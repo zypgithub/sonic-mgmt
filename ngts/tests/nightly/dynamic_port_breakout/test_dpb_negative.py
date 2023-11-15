@@ -51,8 +51,11 @@ class TestDPBNegative:
         """
         try:
             breakout_mode, lb = random.choice(list(self.tested_modes_lb_conf.items()))
-            mutual_breakout_modes = get_mutual_breakout_modes(self.ports_breakout_modes, lb)
-            unsupported_breakout_mode = random.choice(list(all_breakout_options.difference(set(mutual_breakout_modes))))
+            mutual_breakout_modes = set(get_mutual_breakout_modes(self.ports_breakout_modes, lb))
+            for port in lb:
+                curr_breakout_mode = self.cli_object.interface.get_interface_current_breakout_mode(port)
+                mutual_breakout_modes.add(curr_breakout_mode)
+            unsupported_breakout_mode = random.choice(list(all_breakout_options.difference(mutual_breakout_modes)))
             with allure.step(f'Verify unsupported breakout mode {unsupported_breakout_mode} '
                              f'on ports {lb} fails as expected'):
                 self.verify_negative_breakout_configuration(lb, unsupported_breakout_mode)

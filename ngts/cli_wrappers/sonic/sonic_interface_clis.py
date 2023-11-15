@@ -441,6 +441,17 @@ class SonicInterfaceCli(InterfaceCliCommon):
             created_breakout_ports = json.loads(matched_added_ports_json_string)
         return created_breakout_ports
 
+    def get_interface_current_breakout_mode(self, interface):
+        """
+        return current breakout mode on the interface
+        :param interface: i.e, Ethernet0
+        :return: breakout mode, i.e, 1x400G[200G,100G,50G,40G,25G,10G,1G]
+        """
+        output = self.engine.run_cmd(f"show interfaces breakout current-mode {interface}")
+        breakout_pattern = r"(\dx\d+G\[[\d*G,]*\]|\dx\d+G|\dx\d+\[[\d+,]*\])"
+        breakout_mode = re.search(breakout_pattern, output).group(1)
+        return breakout_mode
+
     def config_auto_negotiation_mode(self, interface, mode):
         """
         configure the auto negotiation mode on the interface
