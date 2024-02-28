@@ -119,20 +119,18 @@ class TestLinkLocalIPacket:
         link_local_dst = self.get_port_default_ipv6_link_local_address(ptfhost, 'eth{}'.format(ptf_tx_idx))
         ptf_rx_mac = ptfadapter.dataplane.get_mac(0, ptf_rx_idx).decode("utf-8")
         ptf_tx_mac = ptfadapter.dataplane.get_mac(0, ptf_tx_idx).decode("utf-8")
-
         downlink_uplink_rx_info = [(ptf_pc_port_mac, ptf_pc_port_idx, dut_pc_rx_iface, rx_pc, out_rif_ifaces,
                                     out_ifaces, out_ptf_indices),
                                    (ptf_rx_mac, ptf_rx_idx, rx_iface, None, out_rif_ifaces, out_ifaces, out_ptf_indices)
                                    ]
         yield duthost, mg_facts, pc_ports_map, ptf_indices, ingress_router_mac, rx_iface, tx_iface, ptf_rx_mac, \
-              ptf_rx_idx, ptf_tx_mac, ptf_tx_idx, link_local_src, link_local_dst, downlink_uplink_rx_info, rif_support
-
+            ptf_rx_idx, ptf_tx_mac, ptf_tx_idx, link_local_src, link_local_dst, downlink_uplink_rx_info, rif_support
         # Remove tag from routes
-        tag_route_cmd = "vtysh -c \"configure terminal\" -c \"no ip route {} {} tag 1\"".\
+        tag_route_cmd = "vtysh -c \"configure terminal\" -c \"no ip route {} {} tag 1\"". \
             format(ipv4_prefix, pc_ipv4_addr)
         vtysh_cmd_for_namespace = duthost.get_vtysh_cmd_for_namespace(tag_route_cmd, ptf_port_idx_namespace)
         duthost.shell(vtysh_cmd_for_namespace)
-        tag_route_cmd = "vtysh -c \"configure terminal\" -c \"no ip route {} {} tag 1\"".\
+        tag_route_cmd = "vtysh -c \"configure terminal\" -c \"no ip route {} {} tag 1\"". \
             format(ipv6_prefix, pc_ipv6_addr)
         vtysh_cmd_for_namespace = duthost.get_vtysh_cmd_for_namespace(tag_route_cmd, ptf_port_idx_namespace)
         duthost.shell(vtysh_cmd_for_namespace)
