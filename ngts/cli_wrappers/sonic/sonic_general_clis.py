@@ -39,6 +39,8 @@ from infra.tools.topology_tools.nogaq import get_noga_entire_resource_data
 from ngts.tools.infra import update_platform_info_files
 from ngts.helpers.secure_boot_helper import SecureBootHelper
 from ngts.constants.constants import CliType, FanoutConfigFile
+from ngts.tests.nightly.show_techsupport.constants import HealthEventConst
+from ngts.tests.nightly.show_techsupport.test_health_event import get_health_event_config
 
 logger = logging.getLogger()
 DUMMY_COMMAND = 'echo dummy_command'
@@ -1789,6 +1791,55 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             else:
                 self.engine.run_cmd(f'sed -i "/{async_routing_enabled}/d" {sai_profile_path}')
                 self.engine.run_cmd(f'echo "{async_routing_enabled}=1" >> {sai_profile_path}')
+
+    @staticmethod
+    def config_health_event(dut_engine, severity, category_list=HealthEventConst.CATEGORY_NONE,
+                            max_events=HealthEventConst.MAX_EVENTS_NUM_DEFAULT):
+        """
+        Config health event.
+
+        Parameters:
+        - severity (str): Required, supported values are "fatal", "warning", "notice".
+        - category_list (str): Optional, supported values are "none", "all", "software", "asic_hw", "cpu_hw", "firmware".
+        - max_events (int): Optional, supported values are greater than or equal to 0 integers.
+
+        Example command:
+        sudo config asic-sdk-health-event suppress fatal --category-list firmware,software --max-events 10
+        """
+
+        logger.info(
+            f"Config with parameter: severity={severity}, category_list={category_list}, max_events={max_events}")
+
+        # Check if the "severity" parameter is valid
+        valid_severities = ["fatal", "warning", "notice"]
+        if severity not in valid_severities:
+            raise ValueError(f"Invalid 'severity' parameter: {severity}. Expected one of {valid_severities}.")
+
+        # Ensure at least one of category-list or max-events is provided
+        if not category_list and not max_events:
+            raise ValueError("Invalid command. Please include at least a category-list or max-events parameter.")
+
+        command = f"sudo config asic-sdk-health-event suppress {severity}"
+
+        # Process the "category-list" parameter
+        if category_list is not None:
+            valid_categories = ["none", "all", "software", "asic_hw", "cpu_hw", "firmware"]
+            categories = category_list.split(',')
+            for category in categories:
+                if category not in valid_categories:
+                    raise ValueError(
+                        f"Invalid 'category-list' parameter: {category}. Expected one of {valid_categories}.")
+            command += f" --category-list {category_list}"
+
+        # Process the "max-events" parameter
+        if max_events is not None:
+            if not isinstance(max_events, int) or max_events < 0:
+                raise ValueError(f"Invalid 'max-events' parameter: {max_events}. Expected a non-negative integer.")
+            command += f" --max-events {max_events}"
+
+        logger.info(f"Health event config command is: {command}")
+        dut_engine.run_cmd(command)
+        get_health_event_config(dut_engine)
 
 
 class SonicGeneralCli202012(SonicGeneralCliDefault):
