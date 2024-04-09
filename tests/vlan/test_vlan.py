@@ -26,6 +26,16 @@ PTF_PORT_MAPPING_MODE = "use_orig_interface"
 
 
 @pytest.fixture(autouse=True)
+def populate_mac_table(duthosts):
+    """
+    Ensure that the TOR MAC table is populated, otherwise packets will be flooded
+    to VLAN members
+    """
+    for duthost in duthosts:
+        duthost.shell("docker exec swss supervisorctl restart arp_update", module_ignore_errors=True)
+
+
+@pytest.fixture(autouse=True)
 def ignore_expected_loganalyzer_exceptions(duthosts, rand_one_dut_hostname, loganalyzer):
     """
        Ignore expected errors in logs during test execution
