@@ -145,7 +145,7 @@ def skip_if_active_optical_cable(mlxcables_info):
     """
     Fixture that skips test execution in case setup has Optical Module
     """
-    if re.search(r"Optical\s+Module", mlxcables_info, re.IGNORECASE):
+    if re.search(r"Optical\s+(Module|Cable)", mlxcables_info, re.IGNORECASE):
         pytest.skip("This test is not supported because setup has Optical Module")
 
 
