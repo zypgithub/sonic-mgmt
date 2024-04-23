@@ -21,6 +21,7 @@ import uuid
 from io import StringIO
 from ast import literal_eval
 from scapy.all import sniff as scapy_sniff
+from paramiko.ssh_exception import AuthenticationException
 
 import pytest
 from ansible.parsing.dataloader import DataLoader
@@ -1109,3 +1110,52 @@ def capture_and_check_packet_on_dut(
             pkts_validator(scapy_sniff(offline=temp_pcap.name))
     finally:
         duthost.file(path=pcap_save_path, state="absent")
+
+
+def _paramiko_ssh(ip_address, username, passwords):
+    """
+    Connect to the device via ssh using paramiko
+    Args:
+        ip_address (str): The ip address of device
+        username (str): The username of device
+        passwords (str or list): Potential passwords of device
+            this argument can be either a string or a list of string
+    Returns:
+        AuthResult: the ssh session of device
+    """
+    if isinstance(passwords, str):
+        candidate_passwords = [passwords]
+    elif isinstance(passwords, list):
+        candidate_passwords = passwords
+    else:
+        raise Exception("The passwords argument must be either a string or a list of string.")
+
+    for password in candidate_passwords:
+        try:
+            ssh = paramiko.SSHClient()
+            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            ssh.connect(ip_address, username=username, password=password,
+                        allow_agent=False, look_for_keys=False, timeout=10)
+            return ssh, password
+        except AuthenticationException:
+            continue
+        except Exception as e:
+            logging.info("Cannot access device {} via ssh, error: {}".format(ip_address, e))
+            raise e
+    logging.info("Cannot access device {} via ssh, error: Password incorrect".format(ip_address))
+    raise AuthenticationException
+
+
+def paramiko_ssh(ip_address, username, passwords):
+    ssh, pwd = _paramiko_ssh(ip_address, username, passwords)
+    return ssh
+
+
+def get_dut_current_passwd(ipv4_address, ipv6_address, username, passwords):
+    try:
+        _, passwd = _paramiko_ssh(ipv4_address, username, passwords)
+    except AuthenticationException:
+        raise
+    except Exception:
+        _, passwd = _paramiko_ssh(ipv6_address, username, passwords)
+    return passwd
