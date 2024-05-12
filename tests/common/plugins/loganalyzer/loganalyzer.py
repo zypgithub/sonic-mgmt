@@ -5,6 +5,7 @@ import re
 import time
 import pprint
 
+from ngts.constants.constants import BugHandlerConst
 from . import system_msg_handler
 
 from .system_msg_handler import AnsibleLogAnalyzer as ansible_loganalyzer
@@ -168,10 +169,17 @@ class LogAnalyzer:
             cur_time = time.strftime("%d_%m_%Y_%H_%M_%S", time.gmtime())
             cleaned_marker_prefix = re.sub(r'[\\/\'"<>|]', '_', self.marker_prefix)
             file_path = os.path.join(tmp_folder, "log_error_{}_{}.json".format(cleaned_marker_prefix, cur_time))
-            logging.info("Log errors will be saved in file: {}".format(file_path))
-            data = {'log_errors': log_errors}
-            with open(file_path, "w+") as file:
-                json.dump(data, file)
+            self.write_errors_to_file(file_path, log_errors)
+
+    @staticmethod
+    def write_errors_to_file(file_path, log_errors):
+        """Write error-lines to a file that can be read by the bug-handler."""
+        logging.info("Log errors will be saved in file: {}".format(file_path))
+        if not isinstance(log_errors, str):  # so log_errors is a list of strings
+            log_errors = '\n'.join(log_errors)
+        data = {BugHandlerConst.LOG_ERRORS_FILE_ROOT_ITEM: log_errors}
+        with open(file_path, "w+") as file:
+            json.dump(data, file)
 
     def _results_repr(self, result):
         """

@@ -23,7 +23,7 @@ from ngts.cli_wrappers.linux.linux_cli import LinuxCli, LinuxCliStub
 from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
 from ngts.cli_wrappers.sonic.sonic_cli import SonicCli, SonicCliStub
 from ngts.cli_wrappers.sonic.sonic_general_clis import SonicGeneralCliDefault
-from ngts.constants.constants import PytestConst, NvosCliTypes, DebugKernelConsts
+from ngts.constants.constants import PytestConst, NvosCliTypes, DebugKernelConsts, SerialLoggerConst
 from ngts.helpers.general_helper import get_all_setups, get_dut_cli_obj_from_topo_obj
 from ngts.helpers.sonic_branch_helper import get_sonic_branch, update_branch_in_topology, update_sanitizer_in_topology, \
     get_sonic_image
@@ -70,6 +70,7 @@ def pytest_collection(session):
 pytest_plugins = ('ngts.tools.sysdumps',
                   'ngts.tools.conditional_mark',
                   'ngts.tools.loganalyzer',
+                  'ngts.tools.serial_logger.analyzer',
                   'ngts.tools.infra',
                   'pytester',
                   'ngts.tools.allure_report',
@@ -136,6 +137,10 @@ def pytest_addoption(parser):
                           'when it is "no", it will only run weekend test cases, '
                           'when it is other value, it will run both daily and weekend test cases,'
                           'user need to define which is daily and weekend test case')
+    parser.addoption(SerialLoggerConst.CMD_LINE_KEY, action='store', required=False,
+                     choices=SerialLoggerConst.CMD_LINE_VALUES, default=SerialLoggerConst.MODE_OFF,
+                     help='Action for serial log handler. Options: off (no serial logging), store (without analyzing), '
+                          'analyze, analyze_and_open_bugs')
 
 
 def pytest_runtest_call(item):

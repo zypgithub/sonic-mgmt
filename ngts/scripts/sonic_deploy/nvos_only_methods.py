@@ -6,7 +6,7 @@ import yaml
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from ngts.constants.constants import LinuxConsts
+from ngts.constants.constants import LinuxConsts, SerialLoggerConst
 from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
@@ -30,8 +30,8 @@ class NvosInstallationSteps:
         assert target_version, 'Argument "target_version" must be provided for installing NVOS'
 
     @staticmethod
-    def post_installation_steps(topology_obj, workspace_path, setup_info, base_version='', target_version='',
-                                verify_secure_boot: bool = True):
+    def post_installation_steps(topology_obj, workspace_path, setup_info, serial_log_analyzer,
+                                base_version='', target_version='', verify_secure_boot: bool = True):
         """
         Post-installation steps for NVOS NOS
         :return:
@@ -72,8 +72,9 @@ class NvosInstallationSteps:
                 # if deploy_and_upgrade was invoked also with base_version, meaning that base_version is the version that
                 #   was installed, and now we want to test the scenario where we set pre-defined configuration,
                 #   apply & save it, and upgrade to the given target_version, which is the one that will be used for testing
-                NvosInstallationSteps.upgrade_with_saved_config_flow(topology_obj, dut_engine, dut_device, base_version,
-                                                                     target_version)
+                with serial_log_analyzer.stage(SerialLoggerConst.UPGRADE_STAGE):
+                    NvosInstallationSteps.upgrade_with_saved_config_flow(topology_obj, dut_engine, dut_device,
+                                                                         base_version, target_version)
         else:
             logger.info('NVOS: Argument "base-version" was not given. therefore not running the upgrade with saved '
                         'configuration scenario')
