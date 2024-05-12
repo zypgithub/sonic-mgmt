@@ -1,5 +1,7 @@
 import copy
 import os
+from datetime import datetime
+from enum import Enum
 
 
 class PytestConst:
@@ -1484,20 +1486,27 @@ class BugHandlerConst:
                                         BUG_HANDLER_DECISION_SKIP]
     BUG_TITLE_LIMIT = 230
     BUG_HANDLER_SKIP_BRNACH = ['202305']
+    TIMESTAMP_FORMATS = ["%b %d %H:%M:%S", "%Y %b %d %H:%M:%S", "%Y-%m-%dT%H:%M:%S"]
+    TIMESTAMP_LENGTH = [len(datetime.now().strftime(format)) for format in TIMESTAMP_FORMATS]
+    LOG_ERRORS_FILE_ROOT_ITEM = "log_errors"
 
 
 class SerialLoggerConst:
     LOG_DIR = os.path.join(os.path.sep, ".autodirect", "sw_regression", "system", "NVOS", "MARS", "results",
                            "{setup_name}", "{session_id}", "serial_logs")
-    # CLEAN_DIRS_SCRIPT = os.sep.join([os.environ['REGRESSION_BASE_DIR'],
-    #                                  'sx_fit_regression',
-    #                                  'libs',
-    #                                  'scripts',
-    #                                  'clean_unmodified_dirs_and_files'])
-    UNMODIFIED_FILES_DAYS_TH = 14
     ALL_PERM = 0o777
-    DATETIME_FORMAT = "%b %d %H:%M:%S"
+    DATETIME_FORMAT = BugHandlerConst.TIMESTAMP_FORMATS[0]
     START_SERIAL_LOGGING = "Start Session Logging"
+    MANUFACTURE_STAGE = "Manufacture"
+    UPGRADE_STAGE = "Upgrade"
+    START_STAGE = "    ============== start {test} : {stage} stage ==============\n"
+    END_STAGE = "    ============== end {test} : {stage} stage ==============\n"
+    CMD_LINE_KEY = '--serial_logger'
+    MODE_OFF = "off"
+    MODE_STORE = "store"
+    MODE_ANALYZE = "analyze"
+    MODE_ANALYZE_AND_OPEN_BUGS = "analyze_and_open_bugs"
+    CMD_LINE_VALUES = (MODE_OFF, MODE_STORE, MODE_ANALYZE, MODE_ANALYZE_AND_OPEN_BUGS)
 
 
 class DebugKernelConsts:

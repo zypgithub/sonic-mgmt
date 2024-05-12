@@ -14,7 +14,7 @@ from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.cli_wrappers.sonic.sonic_cli import SonicCli
 from ngts.constants.constants import PlayersAliases, SonicDeployConstants, MarsConstants
 from ngts.cli_wrappers.sonic.sonic_general_clis import SonicGeneralCliDefault
-from ngts.constants.constants import PlayersAliases
+from ngts.constants.constants import PlayersAliases, SerialLoggerConst
 from ngts.helpers.general_helper import extract_host_details_from_topo_obj, get_cli_obj
 from ngts.helpers.run_process_on_host import wait_until_background_procs_done
 from ngts.nvos_tools.Devices.IbDevice import BlackMambaSwitch, CrocodileSwitch
@@ -33,7 +33,8 @@ def test_deploy_and_upgrade(topology_obj, is_simx, is_performance, base_version,
                             serve_files, sonic_topo, neighbor_type, deploy_only_target, port_number, setup_name,
                             platform_params, deploy_dpu, deploy_type, apply_base_config, reboot_after_install,
                             is_shutdown_bgp, fw_pkg_path, recover_by_reboot, reboot, additional_apps, workspace_path,
-                            wjh_deb_url, verify_secure_boot, chip_type, destination_hwsku, show_setup_versions):
+                            wjh_deb_url, verify_secure_boot, chip_type, destination_hwsku, show_setup_versions,
+                            serial_log_analyzers):
     """
         Deploy SONiC/NVOS testing topology and upgrade switch
 
@@ -151,7 +152,9 @@ def test_deploy_and_upgrade(topology_obj, is_simx, is_performance, base_version,
                                                             cli_type=dut['cli_obj'], target_image_url=target_version_url,
                                                             destination_hwsku=destination_hwsku, setup_info=setup_info,
                                                             dut_alias=dut['dut_alias'],
-                                                            fanout_deploy_threads=pre_install_threads)))
+                                                            fanout_deploy_threads=pre_install_threads,
+                                                            serial_log_analyzers=serial_log_analyzers,
+                                                            dut_ip=dut['dut_ip'])))
             wait_until_deploy_background_process(install_threads, timeout=1500)
 
             if "bobcat" in setup_name and base_version_dpu:
@@ -185,7 +188,8 @@ def test_deploy_and_upgrade(topology_obj, is_simx, is_performance, base_version,
                                  deploy_type='bfb', apply_base_config=False,
                                  reboot_after_install=reboot_after_install,
                                  is_shutdown_bgp=is_shutdown_bgp, fw_pkg_path='',
-                                 cli_type=dut['cli_obj'], target_image_url='')
+                                 cli_type=dut['cli_obj'], target_image_url='',
+                                 serial_log_analyzers=serial_log_analyzers, dut_ip=dut['dut_ip'])
 
         with allure.step('verify pre installation processes are done'):
             logger.info("Wait until pre-installation background process done")
@@ -207,7 +211,7 @@ def test_deploy_and_upgrade(topology_obj, is_simx, is_performance, base_version,
                                     fw_pkg_path=fw_pkg_path, reboot=reboot, additional_apps=additional_apps,
                                     setup_info=setup_info, workspace_path=workspace_path, is_performance=is_performance,
                                     chip_type=chip_type, base_version=base_version, deploy_dpu=deploy_dpu,
-                                    verify_secure_boot=verify_secure_boot)
+                                    verify_secure_boot=verify_secure_boot, serial_log_analyzers=serial_log_analyzers)
 
             # Remove .pytest_cache folder after deploy - otherwise  - cached info from old image will be used in skip tests
             cache_full_path = os.path.join(os.path.dirname(__file__), '../../.pytest_cache')
@@ -215,6 +219,13 @@ def test_deploy_and_upgrade(topology_obj, is_simx, is_performance, base_version,
 
     except Exception as err:
         raise AssertionError(err)
+
+    finally:
+        for analyzer in serial_log_analyzers.values():
+            # if manufacture and upgrade stages are both present then we don't analyze the manufacture stage because
+            # it runs an older OS version so we shouldn't debug it.
+            if {SerialLoggerConst.MANUFACTURE_STAGE, SerialLoggerConst.UPGRADE_STAGE} <= set(analyzer.list_stages()):
+                analyzer.ignore_stage(SerialLoggerConst.MANUFACTURE_STAGE)
 
 
 def pre_installation_steps(sonic_topo, neighbor_type, base_version, target_version, setup_info, port_number, is_simx,
@@ -244,8 +255,8 @@ def pre_installation_steps(sonic_topo, neighbor_type, base_version, target_versi
 def post_installation_steps(topology_obj, sonic_topo, recover_by_reboot, deploy_dpu,
                             setup_name, platform_params, apply_base_config, target_version,
                             is_shutdown_bgp, reboot_after_install, deploy_only_target, fw_pkg_path, reboot,
-                            additional_apps, setup_info, workspace_path, is_performance, chip_type, base_version='',
-                            verify_secure_boot=True):
+                            additional_apps, setup_info, workspace_path, is_performance, chip_type,
+                            serial_log_analyzers, base_version='', verify_secure_boot=True):
     """
     Post-installation steps
     :param topology_obj: topology object
@@ -272,7 +283,8 @@ def post_installation_steps(topology_obj, sonic_topo, recover_by_reboot, deploy_
     if isinstance(dut_cli_obj, CumulusGeneralCli):
         CumulusInstallationSteps.post_installation_steps(topology_obj, setup_info)
     elif isinstance(dut_cli_obj, NvueGeneralCli):
-        NvosInstallationSteps.post_installation_steps(topology_obj, workspace_path, setup_info, base_version,
+        NvosInstallationSteps.post_installation_steps(topology_obj, workspace_path, setup_info,
+                                                      serial_log_analyzers[dut_cli_obj.engine.ip], base_version,
                                                       target_version, verify_secure_boot)
     else:
         SonicInstallationSteps.post_installation_steps(topology_obj, sonic_topo, recover_by_reboot, setup_name,
@@ -376,7 +388,8 @@ def get_target_version_url(image_urls):
 
 def deploy_image(topology_obj, setup_name, platform_params, image_url, deploy_type,
                  apply_base_config, reboot_after_install, is_shutdown_bgp, fw_pkg_path, cli_type, target_image_url='',
-                 destination_hwsku=None, setup_info=None, dut_alias=None, fanout_deploy_threads=None):
+                 destination_hwsku=None, setup_info=None, dut_alias=None, fanout_deploy_threads=None,
+                 serial_log_analyzers=None, dut_ip=''):
     """
     This method will deploy sonic image on the dut.
     :param topology_obj: topology object
@@ -395,16 +408,16 @@ def deploy_image(topology_obj, setup_name, platform_params, image_url, deploy_ty
     :param fanout_deploy_threads: dict, contain threads which will run in background
     :return: raise assertion error in case of script failure
     """
-
     if isinstance(cli_type, NvueGeneralCli):
         base_image_url = image_url
         if type(cli_type.device) not in [BlackMambaSwitch, CrocodileSwitch]:
             # if base version specified, installing version with prev default password - adjust engine
             if base_image_url and not isinstance(cli_type, CumulusGeneralCli):
                 cli_type.engine.password = cli_type.device.get_default_password_by_version(base_image_url)
-        NvosInstallationSteps.deploy_image(cli_type, topology_obj, setup_name, platform_params, base_image_url,
-                                           deploy_type,
-                                           apply_base_config, reboot_after_install, fw_pkg_path, target_image_url)
+        with serial_log_analyzers[dut_ip].stage(SerialLoggerConst.MANUFACTURE_STAGE):
+            NvosInstallationSteps.deploy_image(cli_type, topology_obj, setup_name, platform_params, base_image_url,
+                                               deploy_type,
+                                               apply_base_config, reboot_after_install, fw_pkg_path, target_image_url)
     else:
         SonicInstallationSteps.deploy_image(cli_type, topology_obj, setup_name, platform_params, image_url,
                                             deploy_type, apply_base_config, reboot_after_install, is_shutdown_bgp,

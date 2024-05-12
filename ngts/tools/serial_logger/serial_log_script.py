@@ -6,19 +6,20 @@ Based on:
 
 import argparse
 import json
+import logging
 import os
 import subprocess
 import sys
 import time
 import traceback
 from datetime import datetime
-from enum import Enum
 from typing import List, Dict
 
 import psutil
 
 from infra.tools.general_constants.constants import NogaConstants
 
+# this code is necessary for the imports below to work
 path = os.path.abspath(__file__)
 sonic_mgmt_path = path.split('/ngts/')[0]
 sys.path.append(sonic_mgmt_path)
@@ -26,21 +27,48 @@ sys.path.append(os.path.join(sonic_mgmt_path, "sonic-tool", "mars", "scripts"))
 
 from infra.tools.topology_tools import nogaq  # noqa: E402
 from ngts.constants.constants import SerialLoggerConst  # noqa: E402
-from ngts.scripts.serial_log import serial_log_formatter  # noqa: E402
-from lib.utils import get_logger  # noqa: E402
+from ngts.tools.serial_logger import serial_log_formatter  # noqa: E402
+
+
+def get_logger(name, level=logging.DEBUG, format="%(asctime)s %(levelname)s %(name)s:%(lineno)d %(message)s"):
+    logger = logging.getLogger(name)
+    handler = logging.StreamHandler(sys.stdout)
+    logger.setLevel(level)
+    formatter = logging.Formatter(format)
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+    logger.propagate = False
+    return logger
 
 
 logger = get_logger("SerialLogHandler")
 
 
-# SERIAL_LOGS_ERROR_LIST = [r'\[Failed\]',
-#                           r'\[FAILED\]',
-#                           'Root filesystem is busy; re-trying',
-#                           'No such file or directory',
-#                           'target is busy',
-#                           'An error occurred',
-#                           'oops']
-ACTIONS = Enum("ACTIONS", ["OFF", "STORE", "ANALYZE", "ANALYZE_AND_OPEN_BUGS"])
+class SerialLogFileReader:
+    """Wrapper for File object to conveniently read serial logs even if they're still being written."""
+
+    def __init__(self, path):
+        self._path = path
+
+    def __enter__(self):
+        self._file = open(self._path, 'r', encoding="ISO-8859-1")
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._file.close()
+
+    @staticmethod
+    def _decode(text):
+        return text.encode('ascii', 'replace').decode('utf-8')
+
+    def read(self):
+        return self._decode(self._file.read())
+
+    def read_line(self):
+        output = self._decode(self._file.readline())
+        if not output:  # serial-log shouldn't contain empty lines so this means we've reached the end
+            raise EOFError()
+        return output
 
 
 def find_descendant_process_by_name(root_pid, name):
@@ -126,7 +154,6 @@ def create_metadata_dict(log_path, pid, event_to_analyze_ts='', event_to_analyze
      for analysis (e.g. from the last test case end until now)
     @return: the new serial logs session metadata dictionary with empty values
     """
-    event_list = event_list if event_list is not None else []
     return {
         'log_file_path': log_path,
         'hostname': hostname,
@@ -161,13 +188,12 @@ def get_serial_logger_command(target_ip: str, hostname: str) -> str:
     return " | ".join(["exec", serial_command, formatter_command])
 
 
-def start_serial_log(target_ip, log_file_path, append=False, hostname=''):
+def start_serial_log(target_ip, log_file_path, hostname=''):
     """
     @summary: this function creates a new serial connection (in a sub-process)
               with added times to each line and directs its output into a file
     @param target_ip: the ip of the switch we want to log its output
     @param log_file_path: the path to the log file
-    @param append: if False - will overwrite the contents of the logs file
     @param hostname: if not None - will add the hostname in the beginning of each line in the serial logs
     @note: if the target file does not exist - it will be created. If some
            directory in the path does not exists - an exception will be raised
@@ -179,7 +205,7 @@ def start_serial_log(target_ip, log_file_path, append=False, hostname=''):
         create_file_and_dir_if_not_exists(log_file_path)
         cmd = get_serial_logger_command(target_ip, hostname)
         logger.info("Running: " + cmd)
-        sh_process = subprocess.Popen(cmd, shell=True, stdout=open(log_file_path, 'a' if append else 'w'))
+        sh_process = subprocess.Popen(cmd, shell=True, stdout=open(log_file_path, 'a'), stderr=subprocess.STDOUT)
         time.sleep(0.1)
         pid = find_descendant_process_by_name(sh_process.pid, 'ssh')
     except Exception as err:
@@ -250,9 +276,8 @@ def stop_serial_logging_on_all_switches(setup_name, session_id):
         log_path = get_session_serial_log_path(log_dir, switch_ip)
         logger.info(f"Printing contents of {log_path}")
         try:
-            with open(log_path, encoding="ISO-8859-1") as log_file:
+            with SerialLogFileReader(log_path) as log_file:
                 contents = log_file.read()
-                contents = contents.encode('ascii', 'replace').decode('utf-8')  # workaround for logger exception
                 logger.info(f"\n\n===================== SERIAL LOG FOR {switch_ip} =====================\n{contents}" +
                             f"\n===================== END SERIAL LOG FOR {switch_ip} =====================\n\n")
         except Exception as e:
@@ -263,12 +288,6 @@ def parse_args():
     """Handle parsing the command line arguments using argparse. Documented in the code."""
     usage_str = """Script to be used as a regression step in order to start/stop
     serial logging on all the switches on a given setup"""
-    action_help_str = f"""One of the following:
-    {ACTIONS.OFF.name.lower()}: Don't keep serial logs
-    {ACTIONS.STORE.name.lower()}: Store serial logs but don't analyze them
-    {ACTIONS.ANALYZE.name.lower()}: Store serial logs and run log analyzer
-    {ACTIONS.ANALYZE_AND_OPEN_BUGS.name.lower()}: Store serial logs and run log analyzer and bug handler"""
-
     epilog_str = f'How to run the script:\n{usage_str}'
     cmd_line_parser = argparse.ArgumentParser(usage=usage_str, epilog=epilog_str,
                                               formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -278,25 +297,17 @@ def parse_args():
                                  help='Setup name in NOGA')
     cmd_line_parser.add_argument('--session_id',
                                  help='MARS session number')
-    # todo: action is currently ignored until log-analyzer is enabled for serial
-    cmd_line_parser.add_argument('--action',
-                                 choices=[action.name.lower() for action in ACTIONS],
-                                 help=action_help_str)
     return cmd_line_parser.parse_args()
 
 
 if __name__ == '__main__':
     FUNCTION_MAP = {'START': init_serial_logging_on_all_switches,
                     'STOP': stop_serial_logging_on_all_switches,
-                    }  # todo: 'ANALYZE_INSTALL_PHASE': analyze_install_phase_serial_logs_on_all_switches}
+                    }
     try:
         logger.info(f"Start running script ({__file__})")
         args = parse_args()
-        if args.action == ACTIONS.OFF:
-            # not really necessary because if action=off then the script is skipped by mars anyway
-            logger.info("Serial logger is off")
-        else:
-            FUNCTION_MAP[args.function](setup_name=args.setup_name, session_id=args.session_id)
+        FUNCTION_MAP[args.function](setup_name=args.setup_name, session_id=args.session_id)
         logger.info(f"Finished running script ({__file__})")
     except Exception as err:
         logger.error(f"\nException {type(err)} occurred with message: {err}\nTraceback:\n{traceback.format_exc()}")

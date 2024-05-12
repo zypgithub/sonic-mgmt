@@ -1,0 +1,12 @@
+# Each line must begin with one of [#, s, i, r] followed by a space, where:
+# 's' specifies a literal substring to be searched;
+# 'i' specifies a case-insensitive literal substring;
+# 'r' specifies a regex that the line should contain (searching for a match, not a fullmatch).
+
+i [Failed]
+s Root filesystem is busy; re-trying
+s No such file or directory
+s target is busy
+s An error occurred
+s oops
+s -E-

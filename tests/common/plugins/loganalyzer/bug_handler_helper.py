@@ -22,7 +22,7 @@ PYTEST_RUN_CMD = 'pytest_run_cmd'
 
 
 def handle_log_analyzer_errors(cli_type, branch, test_name, duthost, log_analyzer_bug_metadata, testbed,
-                               bug_handler_action):
+                               bug_handler_action, log_errors_dir_path=None, is_serial_log=False):
     """
     Call bug handler on all log errors and return a list of dictionaries with results and a list of the LA errors caught
     :param cli_type: i.e, Sonic
@@ -49,7 +49,9 @@ def handle_log_analyzer_errors(cli_type, branch, test_name, duthost, log_analyze
         la_errors = []
         bug_handler_dumps_results = []
         hostname = duthost.hostname if duthost else "custom"
-        log_errors_dir_path = Path(BugHandlerConst.LOG_ERRORS_DIR_PATH.format(hostname=hostname))
+        if not log_errors_dir_path:
+            log_errors_dir_path = Path(BugHandlerConst.LOG_ERRORS_DIR_PATH.format(hostname=hostname))
+
         try:
             session_id = os.environ.get(InfraConst.ENV_SESSION_ID)
             if not session_id:
@@ -73,7 +75,7 @@ def handle_log_analyzer_errors(cli_type, branch, test_name, duthost, log_analyze
                 with log_errors_file_path.open("r") as log_errors_file:
                     data = json.load(log_errors_file)
                 logger.info(f"Handling the err msg: {data}")
-                log_errors = data.get("log_errors", "")
+                log_errors = data.get(BugHandlerConst.LOG_ERRORS_FILE_ROOT_ITEM, "")
                 la_errors.extend([line for line in log_errors.splitlines() if line.strip()])
                 error_groups = group_log_errors_by_timestamp(log_errors)
                 log_errors_file_path.unlink()
@@ -82,7 +84,7 @@ def handle_log_analyzer_errors(cli_type, branch, test_name, duthost, log_analyze
                     yaml_file_path = create_log_analyzer_yaml_file(error_group, session_tmp_folder, redmine_project,
                                                                    test_name, hostname,
                                                                    log_analyzer_bug_metadata, bug_handler_params,
-                                                                   bug_handler_dumps_results)
+                                                                   bug_handler_dumps_results, is_serial_log)
                     if yaml_file_path:
                         with allure.step("Run Bug Handler on Log Analyzer error"):
                             logger.info(f"Run Bug Handler on Log Analyzer error: {error_group}")
@@ -149,7 +151,7 @@ def skip_loganalyzer_bug_handler(duthost, request):
     return False
 
 
-def log_analyzer_bug_handler(duthost, request):
+def log_analyzer_bug_handler(duthost, request, log_errors_dir_path=None, only_check=False, is_serial_log=False):
     """
     If the run_log_analyzer_bug_handler is True, run this function to handle the err msg detected in the loganalyzer
     """
@@ -158,7 +160,7 @@ def log_analyzer_bug_handler(duthost, request):
     test_id = request.node.nodeid
     test_rm_issues = set()
     log_analyzer_handler_info = get_log_analyzer_handler_info(duthost)
-    bug_handler_actions = get_bug_handler_actions(request)
+    bug_handler_actions = get_bug_handler_actions(request, only_check)
 
     if "allure_server_project_id" in request.config.option:
         allure_project = request.config.getoption('--allure_server_project_id')
@@ -190,7 +192,8 @@ def log_analyzer_bug_handler(duthost, request):
 
     log_analyzer_res, la_error_messages = handle_log_analyzer_errors(log_analyzer_handler_info['cli_type'],
                                                   log_analyzer_handler_info['branch'], test_name, duthost,
-                                                  bug_handler_dict, setup_name, bug_handler_actions)
+                                                  bug_handler_dict, setup_name, bug_handler_actions,
+                                                  log_errors_dir_path, is_serial_log)
     logger.info(f"Log Analyzer result: {json.dumps(log_analyzer_res, indent=2)}")
     error_msg = ''
     if log_analyzer_res[BugHandlerConst.NO_ACTION_MODE]:
@@ -280,9 +283,10 @@ def get_low_layer_components(duthost):
     return comps
 
 
-def get_bug_handler_actions(request):
+def get_bug_handler_actions(request, only_check=False):
     """
-    Get the bug handler actions, the return is a dictionary with 3 keys, "create", "update" and "only_check"
+    Get the bug handler actions, the return is a dictionary with 3 keys, "create", "update" and "only_check".
+    If only_check=True then bugs will not be created or updated.
     """
 
     bug_handler_actions = {
@@ -324,14 +328,13 @@ def get_bug_handler_actions(request):
         "sonic_ci_app_extension": False
     }
 
-    project = os.environ.get("REGRESSION_TYPE")
-    bug_handler_actions['create'] = project_bug_create_map.get(project, False)
-    bug_handler_actions['update'] = project_bug_update_map.get(project, False)
-    bug_handler_actions['only_check'] = project_bug_only_check_map.get(project, True)
-
-    _update_bug_handler_actions(request, bug_handler_actions)
-
-    logger.info(f"The bug handler actions for the {project} is: {bug_handler_actions}")
+    if not only_check:
+        project = os.environ.get("REGRESSION_TYPE")
+        bug_handler_actions['create'] = project_bug_create_map.get(project, False)
+        bug_handler_actions['update'] = project_bug_update_map.get(project, False)
+        bug_handler_actions['only_check'] = project_bug_only_check_map.get(project, True)
+        _update_bug_handler_actions(request, bug_handler_actions)
+        logger.info(f"The bug handler actions for the {project} is: {bug_handler_actions}")
 
     return bug_handler_actions
 

@@ -1,6 +1,8 @@
 import os
 import re
 import subprocess
+from typing import List
+
 import yaml
 import json
 import logging
@@ -15,9 +17,6 @@ from datetime import datetime, timedelta
 from ngts.constants.constants import BugHandlerConst, InfraConst
 from ngts.nvos_constants.constants_nvos import SystemConsts
 
-
-TIMESTAMP_FORMATS = ["%b %d %H:%M:%S", "%Y %b %d %H:%M:%S", "%Y-%m-%dT%H:%M:%S"]
-TIMESTAMP_LENGTH = [len(datetime.now().strftime(format)) for format in TIMESTAMP_FORMATS]
 
 logger = logging.getLogger()
 
@@ -449,7 +448,8 @@ def get_log_analyzer_yaml_path(test_name, dump_path):
 
 
 def create_log_analyzer_yaml_file(log_errors, dump_path, project, test_name, hostname,
-                                  bug_info_dictionary, bug_handler_params, bug_handler_dumps_results):
+                                  bug_info_dictionary, bug_handler_params, bug_handler_dumps_results,
+                                  is_serial_log=False):
     """
     The function will create a YAML file in the needed format for bug handler script
     :param log_errors: list with log errors
@@ -478,7 +478,7 @@ def create_log_analyzer_yaml_file(log_errors, dump_path, project, test_name, hos
         hostname_regex = "sonic"
     else:
         hostname_regex = r'\S+'
-    bug_title = create_bug_title(hostname_regex, log_errors[0])
+    bug_title = create_bug_title(hostname_regex, log_errors[0], is_serial_log)
     bug_regex = '.*' + error_to_regex(bug_title) + '.*'
     description = f'| \n{bug_title}\n' + '\n'.join(log_errors)
     bug_info_dictionary.update({'search_regex': bug_regex,
@@ -497,13 +497,15 @@ def create_log_analyzer_yaml_file(log_errors, dump_path, project, test_name, hos
     return yaml_file_path
 
 
-def create_bug_title(hostname_regex, first_line):
+def create_bug_title(hostname_regex, first_line, is_serial_log=False):
     time_pattern = r'.*\w+\s+\d+\s+\d+:\d+:\d+\.\d+\s+'
     if not re.findall(time_pattern, first_line):
         time_pattern = r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+.*'
     log_prefix = time_pattern + hostname_regex + r'\s'
     bug_title = re.sub(log_prefix, '', first_line)
     bug_title = re.sub(r'message repeated \d+ times: \[ (.*?)\]', r'\1', bug_title)
+    if is_serial_log:
+        bug_title = "[Serial log]" + bug_title
     if len(bug_title) > BugHandlerConst.BUG_TITLE_LIMIT:
         bug_title = bug_title[:BugHandlerConst.BUG_TITLE_LIMIT]
     return bug_title
@@ -539,11 +541,11 @@ def error_to_regex(error_string):
     return error_string
 
 
-def group_log_errors_by_timestamp(log_errors):
+def group_log_errors_by_timestamp(log_errors: str) -> List[List[str]]:
     """
     Group the log errors by timestamp: new group starts if it is bigger than 5 sec from the first line in the group.
     so we will consider it as different bug.
-    :param log_errors: list of log errors
+    :param log_errors: string containing all found errors (one per line)
     :return: error_groups, list of lists. each list is the log errors bug that related to a bug.
     """
     error_line_list = [line for line in log_errors.splitlines() if line.strip()]
@@ -569,7 +571,7 @@ def group_log_errors_by_timestamp(log_errors):
 
 def get_timestamp_from_log_line(line: str) -> datetime:
     result = None
-    for format, length in zip(TIMESTAMP_FORMATS, TIMESTAMP_LENGTH):
+    for format, length in zip(BugHandlerConst.TIMESTAMP_FORMATS, BugHandlerConst.TIMESTAMP_LENGTH):
         try:
             if "%Y" in format:
                 result = datetime.strptime(line[:length], format)
