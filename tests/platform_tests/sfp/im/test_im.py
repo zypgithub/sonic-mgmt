@@ -5,7 +5,7 @@ from tests.platform_tests.sfp.im.helpers import *
 from tests.platform_tests.sfp.util import get_sfp_type, get_dev_conn, read_eeprom_by_page_and_byte,\
     write_eeprom_by_page_and_byte, DICT_WRITABLE_BYTE_FOR_PAGE_0
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
-from tests.common.platform.transceiver_utils import parse_sfp_eeprom_infos, is_passive_cable
+from tests.common.platform.transceiver_utils import parse_sfp_eeprom_infos, is_passive_cable, get_passive_cable_port_list
 
 
 pytestmark = [
@@ -162,16 +162,3 @@ class TestIndependentModuleFunctional:
                 with allure.step(f"Recover original eeprom for {intf} with {offset_data_info}"):
                     write_eeprom_by_page_and_byte(
                         self.duthost, intf, sfp_type, offset_data_info[1], page, offset_data_info[0])
-
-
-def get_passive_cable_port_list(dut):
-    passive_cable_port_list = []
-    cmd_show_eeprom = "sudo sfputil show eeprom -d"
-    eeprom_infos = dut.command(cmd_show_eeprom)['stdout']
-    eeprom_infos = parse_sfp_eeprom_infos(eeprom_infos)
-    for port_name, eeprom_info in eeprom_infos.items():
-        if is_passive_cable(eeprom_info):
-            logging.info(f"{port_name} is passive cable")
-            passive_cable_port_list.append(port_name)
-    logging.info(f"Ports with passive cable are: {passive_cable_port_list}")
-    return passive_cable_port_list

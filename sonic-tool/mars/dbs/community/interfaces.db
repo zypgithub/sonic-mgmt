@@ -64,4 +64,8 @@
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/iface_loopback_action.cases </cases>
     </test>
 
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/fec.cases </cases>
+    </test>
+
 </DBDEF>
