@@ -699,6 +699,7 @@ class SonicInstallationSteps:
                 if is_community(sonic_topo):
                     SonicInstallationSteps.post_install_check(ansible_path=ansible_path, dut_name=dut_name,
                                                               sonic_topo=sonic_topo)
+            cli.engine.run_cmd('sudo sonic-installer cleanup -y')
 
     @staticmethod
     def reboot_validation_sonic(dut_name, sonic_topo, reboot, ansible_path):
