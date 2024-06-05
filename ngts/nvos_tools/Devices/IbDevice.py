@@ -402,7 +402,6 @@ class IbSwitch(BaseSwitch):
                              "TEMPERATURE": self.temperature_sensors}
 
     def wait_for_os_to_become_functional(self, engine, find_prompt_tries=60, find_prompt_delay=10):
-        # DutUtilsTool.check_ssh_for_authentication_error(engine, self)
         return DutUtilsTool.wait_for_nvos_to_become_functional(engine)
 
     def reload_device(self, engine, cmd_list, validate=False):
@@ -1195,10 +1194,6 @@ class JulietScaleoutSwitch(JulietSwitch):
 
     def _relevant_config_filename_by_version(self, version: str) -> str:
         return 'nvos_config_nvl5.yml'
-
-    def wait_for_os_to_become_functional(self, engine, find_prompt_tries=80, find_prompt_delay=15):
-        DutUtilsTool.check_ssh_for_authentication_error(engine, self)
-        return DutUtilsTool.wait_for_nvos_to_become_functional(engine, find_prompt_tries=80, find_prompt_delay=15)
 
 # -------------------------- JulietTTM Switch ----------------------------
 
