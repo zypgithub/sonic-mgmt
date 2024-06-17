@@ -4,17 +4,21 @@
         <!-- parameters passed to setup steps commands-->
         <default_params_type> basic_setup_step_params </default_params_type>
         <DB>
-            <info> PRE TEST </info>
+            <info> BYO BF </info>
             <owner> SONiC </owner>
             <group> SONiC </group>
 
             <!-- OPTIONAL TAGS -->
-            <tags> PRE TEST </tags>
+            <tags> BYO </tags>
 
             <!-- pre db commands - executed once before DB run -->
+            <!-- copy remote tests -->
             <pre>
             </pre>
-            <post></post>
+
+            <!-- post db commands - executed once after DB run -->
+            <post>
+            </post>
         </DB>
         <Test>
             <!--Must reset any dynamic ignore tags created by other tests-->
@@ -48,22 +52,9 @@
             </on_not_success>
         </Case>
     </global>
+
     <test>
-        <cases> sonic-mgmt/sonic-tool/mars/cases/common/log_analyzer_after_sonic_deploy.cases </cases>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/byo.cases </cases>
     </test>
-    <test>
-        <cases> sonic-mgmt/sonic-tool/mars/cases/community/pretest.cases </cases>
-    </test>
-    <test>
-        <cases> sonic-mgmt/sonic-tool/mars/cases/common/cpld.cases </cases>
-    </test>
-    <test>
-        <cases> sonic-mgmt/sonic-tool/mars/cases/community/fanout_checker.cases </cases>
-    </test>
-    <test>
-        <cases> sonic-mgmt/sonic-tool/mars/cases/common/sdk_api.cases </cases>
-    </test>
-    <test>
-        <cases> sonic-mgmt/sonic-tool/mars/cases/common/secure_boot_checker.cases </cases>
-    </test>
+
 </DBDEF>

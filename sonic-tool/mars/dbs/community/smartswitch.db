@@ -4,17 +4,28 @@
         <!-- parameters passed to setup steps commands-->
         <default_params_type> basic_setup_step_params </default_params_type>
         <DB>
-            <info> PRE TEST </info>
+            <info> Smartswitch Tests </info>
             <owner> SONiC </owner>
             <group> SONiC </group>
 
             <!-- OPTIONAL TAGS -->
-            <tags> PRE TEST </tags>
+            <tags> SMARTSWITCH </tags>
+
+            <ignore>
+                <condition>
+                    <key> dut_hwsku </key>
+                    <op> not in </op>
+                    <value> [Mellanox-SN4280-O28] </value>
+                </condition>
+            </ignore>
 
             <!-- pre db commands - executed once before DB run -->
             <pre>
             </pre>
-            <post></post>
+
+            <!-- post db commands - executed once after DB run -->
+            <post>
+            </post>
         </DB>
         <Test>
             <!--Must reset any dynamic ignore tags created by other tests-->
@@ -48,22 +59,13 @@
             </on_not_success>
         </Case>
     </global>
+
     <test>
-        <cases> sonic-mgmt/sonic-tool/mars/cases/common/log_analyzer_after_sonic_deploy.cases </cases>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/dpu_ip_assignment.cases </cases>
     </test>
+
     <test>
-        <cases> sonic-mgmt/sonic-tool/mars/cases/community/pretest.cases </cases>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/byo.cases </cases>
     </test>
-    <test>
-        <cases> sonic-mgmt/sonic-tool/mars/cases/common/cpld.cases </cases>
-    </test>
-    <test>
-        <cases> sonic-mgmt/sonic-tool/mars/cases/community/fanout_checker.cases </cases>
-    </test>
-    <test>
-        <cases> sonic-mgmt/sonic-tool/mars/cases/common/sdk_api.cases </cases>
-    </test>
-    <test>
-        <cases> sonic-mgmt/sonic-tool/mars/cases/common/secure_boot_checker.cases </cases>
-    </test>
+
 </DBDEF>
