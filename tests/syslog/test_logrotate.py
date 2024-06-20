@@ -5,6 +5,8 @@ import allure
 from tests.common.plugins.loganalyzer.loganalyzer import DisableLogrotateCronContext
 from tests.common import config_reload
 from tests.common.helpers.assertions import pytest_assert
+from tests.common.utilities import wait_until
+from tests.conftest import tbinfo
 
 logger = logging.getLogger(__name__)
 
@@ -39,9 +41,6 @@ def backup_syslog(rand_selected_dut):
 
     logger.info('Recover syslog file to syslog')
     duthost.shell('sudo mv /var/log/syslog_bk /var/log/syslog')
-
-    logger.info('Remove temp file /var/log/syslog.1')
-    duthost.shell('sudo rm -f /var/log/syslog.1')
 
     logger.info('Restart rsyslog service')
     duthost.shell('sudo service rsyslog restart')
@@ -234,7 +233,6 @@ def test_logrotate_small_size(rand_selected_dut, simulate_small_var_log_partitio
 
 
 def get_pending_entries(duthost, ignore_list=None):
-    # grep returns error code when there is no match, add 'true' so the ansible module doesn't fail
     pending_entries = set(duthost.shell('sonic-db-cli APPL_DB keys "_*"')['stdout'].split())
 
     if ignore_list:
@@ -243,7 +241,9 @@ def get_pending_entries(duthost, ignore_list=None):
                 pending_entries.remove(entry)
             except ValueError:
                 continue
-    return list(pending_entries)
+    pending_entries = list(pending_entries)
+    logger.info('Pending entries in APPL_DB: {}'.format(pending_entries))
+    return pending_entries
 
 
 def clear_pending_entries(duthost):
@@ -254,34 +254,62 @@ def clear_pending_entries(duthost):
         duthost.shell('sonic-db-cli APPL_DB publish "NEIGH_TABLE_CHANNEL" ""')
 
 
-@pytest.fixture
-def orch_logrotate_setup(rand_selected_dut):
-    clear_pending_entries(rand_selected_dut)
-    rand_selected_dut.shell('sudo ip neigh flush {}'.format(FAKE_IP))
-    target_port = rand_selected_dut.get_up_ip_ports()[0]
+def no_pending_entries(duthost, ignore_list=None):
+    return not bool(get_pending_entries(duthost, ignore_list=ignore_list))
 
-    permanent_pending_entries = get_pending_entries(rand_selected_dut)
+
+@pytest.fixture
+def orch_logrotate_setup(duthosts, enum_rand_one_per_hwsku_frontend_hostname, enum_rand_one_frontend_asic_index):
+    duthost = duthosts[enum_rand_one_per_hwsku_frontend_hostname]
+    if duthost.sonichost.is_multi_asic:
+        asic_id = enum_rand_one_frontend_asic_index
+    else:
+        asic_id = ''
+    clear_pending_entries(duthost)
+    duthost.shell('sudo ip neigh flush {}'.format(FAKE_IP))
+    if duthost.sonichost.is_multi_asic:
+        target_asic = duthost.asics[enum_rand_one_frontend_asic_index]
+        target_port = next(iter(target_asic.get_active_ip_interfaces(tbinfo)))
+    else:
+        target_port = duthost.get_up_ip_ports()[0]
+
+    permanent_pending_entries = get_pending_entries(duthost)
 
     yield permanent_pending_entries, target_port
 
-    rand_selected_dut.shell('sudo ip neigh del {} dev {}'.format(FAKE_IP, target_port))
+    if duthost.sonichost.is_multi_asic:
+        duthost.shell('sudo ip -n asic{} neigh del {} dev {}'.format(asic_id, FAKE_IP, target_port))
+    else:
+        duthost.shell('sudo ip neigh del {} dev {}'.format(FAKE_IP, target_port))
     # Unpause orchagent in case the test gets interrupted
-    rand_selected_dut.control_process('orchagent', pause=False)
-    clear_pending_entries(rand_selected_dut)
+    duthost.control_process('orchagent', pause=False, namespace=asic_id)
+    clear_pending_entries(duthost)
 
 
 # Sometimes other activity on the DUT can flush the missed notification during the test,
 # leading to a false positive pass. Repeat the test multiple times to make sure that it's
 # not a false positive
 @pytest.mark.repeat(5)
-def test_orchagent_logrotate(orch_logrotate_setup, rand_selected_dut):
+def test_orchagent_logrotate(orch_logrotate_setup, duthosts, enum_rand_one_per_hwsku_frontend_hostname,
+                             enum_rand_one_frontend_asic_index):
     """
     Tests for the issue where an orchagent logrotate can cause a missed APPL_DB notification
     """
+    duthost = duthosts[enum_rand_one_per_hwsku_frontend_hostname]
+    if duthost.sonichost.is_multi_asic:
+        asic_id = enum_rand_one_frontend_asic_index
+    else:
+        asic_id = ''
     ignore_entries, target_port = orch_logrotate_setup
-    rand_selected_dut.control_process('orchagent', pause=True)
-    rand_selected_dut.control_process('orchagent', signal='SIGHUP')
-    rand_selected_dut.shell('sudo ip neigh add {} lladdr {} dev {}'.format(FAKE_IP, FAKE_MAC, target_port))
-    rand_selected_dut.control_process('orchagent', pause=False)
-    pending_entries = get_pending_entries(rand_selected_dut, ignore_list=ignore_entries)
-    pytest_assert(not pending_entries, "Found pending entries in APPL_DB: {}".format(pending_entries))
+    duthost.control_process('orchagent', pause=True, namespace=asic_id)
+    duthost.control_process('orchagent', namespace=asic_id, signal='SIGHUP')
+    if duthost.sonichost.is_multi_asic:
+        duthost.shell('sudo ip -n asic{} neigh add {} lladdr {} dev {}'.format(
+            asic_id, FAKE_IP, FAKE_MAC, target_port))
+    else:
+        duthost.shell('sudo ip neigh add {} lladdr {} dev {}'.format(FAKE_IP, FAKE_MAC, target_port))
+    duthost.control_process('orchagent', pause=False, namespace=asic_id)
+    pytest_assert(
+        wait_until(30, 1, 0, no_pending_entries, duthost, ignore_list=ignore_entries),
+        "Found pending entries in APPL_DB"
+    )
