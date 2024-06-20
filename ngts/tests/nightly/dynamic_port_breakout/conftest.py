@@ -41,13 +41,13 @@ def cli_object(topology_obj):
 
 
 @pytest.fixture(autouse=True, scope='session')
-def ports_breakout_modes(dut_engine, cli_object):
-    return get_dut_breakout_modes(dut_engine, cli_object)
+def ports_breakout_modes(dut_engine, cli_object, sw_control_ports):
+    return get_dut_breakout_modes(dut_engine, cli_object, sw_control_ports)
 
 
 @pytest.fixture(autouse=True, scope='session')
-def tested_modes_lb_conf(topology_obj, ports_breakout_modes):
-    return get_random_lb_breakout_conf(topology_obj, ports_breakout_modes)
+def tested_modes_lb_conf(topology_obj, ports_breakout_modes, sw_control_ports):
+    return get_random_lb_breakout_conf(topology_obj, ports_breakout_modes, sw_control_ports)
 
 
 @pytest.fixture(scope='session', autouse=True)
@@ -71,7 +71,7 @@ def dpb_configuration(topology_obj, setup_name, engines, cli_objects, platform_p
     logger.info('DPB cleanup completed')
 
 
-def get_random_lb_breakout_conf(topology_obj, ports_breakout_modes):
+def get_random_lb_breakout_conf(topology_obj, ports_breakout_modes, ports_to_exclude=None):
     """
     :return: A dictionary with different loopback for each supported breakout modes.
     this will be used later in the test t configure different breakout modes on loopbacks and test them.
@@ -81,7 +81,7 @@ def get_random_lb_breakout_conf(topology_obj, ports_breakout_modes):
     """
     conf = {}
     breakout_modes_supported_lb, unbreakout_modes_supported_lb = \
-        divide_breakout_modes_to_breakout_and_unbreakout_modes(topology_obj, ports_breakout_modes)
+        divide_breakout_modes_to_breakout_and_unbreakout_modes(topology_obj, ports_breakout_modes, ports_to_exclude)
     for breakout_mode, supported_lb_list in breakout_modes_supported_lb.items():
         # TODO: Currently SONiC doesn't support 8x breakout in DPB, remove this when 8x breakout is supported
         if '8x' in breakout_mode:
@@ -101,7 +101,7 @@ def get_random_lb_breakout_conf(topology_obj, ports_breakout_modes):
     return conf
 
 
-def divide_breakout_modes_to_breakout_and_unbreakout_modes(topology_obj, ports_breakout_modes):
+def divide_breakout_modes_to_breakout_and_unbreakout_modes(topology_obj, ports_breakout_modes, ports_to_exclude=None):
     """
 
     :return: a dictionary with a list of loopbacks that support each breakout modes
@@ -115,7 +115,7 @@ def divide_breakout_modes_to_breakout_and_unbreakout_modes(topology_obj, ports_b
     unbreakout_modes_supported_lb =
     {'1x200G[100G,50G,40G,25G,10G,1G]': [('Ethernet8', 'Ethernet4'), ('Ethernet36', 'Ethernet40'),..]}
     """
-    breakout_modes = parsed_dut_loopbacks_by_breakout_modes(topology_obj, ports_breakout_modes)
+    breakout_modes = parsed_dut_loopbacks_by_breakout_modes(topology_obj, ports_breakout_modes, ports_to_exclude)
     breakout_modes_supported_lb = {}
     unbreakout_modes_supported_lb = {}
     for breakout_mode, supported_lb_list in breakout_modes.items():
@@ -139,7 +139,7 @@ def is_breakout_mode(breakout_mode):
     return bool(re.search(breakout_pattern, breakout_mode))
 
 
-def parsed_dut_loopbacks_by_breakout_modes(topology_obj, ports_breakout_modes):
+def parsed_dut_loopbacks_by_breakout_modes(topology_obj, ports_breakout_modes, ports_to_exclude=None):
     """
     :return: A dictionary with a list of loopbacks that support each breakout modes.
     i.e,
@@ -152,6 +152,9 @@ def parsed_dut_loopbacks_by_breakout_modes(topology_obj, ports_breakout_modes):
     breakout_modes_supported_lb = {}
     dut_loopback = get_dut_loopbacks(topology_obj)
     for lb in dut_loopback:
+        if ports_to_exclude and set(lb).intersection(set(ports_to_exclude)):
+            logger.info(f'Excluding loopback {lb} from test scenario')
+            continue
         mutual_breakoutmodes = get_mutual_breakout_modes(ports_breakout_modes, lb)
         for breakout_mode in mutual_breakoutmodes:
             if breakout_modes_supported_lb.get(breakout_mode):

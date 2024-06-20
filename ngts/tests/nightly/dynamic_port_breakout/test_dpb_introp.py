@@ -42,6 +42,8 @@ class TestDPBInterop(DependenciesBase):
         """
         try:
             ports_list = get_ports_list_from_loopback_tuple_list(self.tested_modes_lb_conf.values())
+            if not ports_list:
+                pytest.skip(f'Skip TC as ports selected fot testing are SW control')
             ports_dependencies = self.set_dependencies(dependency_list, ports_list, cleanup_list)
             self.verify_breakout_without_force()
             breakout_ports_conf = self.verify_breakout_with_force(cleanup_list, dependency_list, ports_dependencies)
@@ -154,6 +156,8 @@ class TestDPBInterop(DependenciesBase):
                                                    cleanup_list=cleanup_list, conf=self.tested_modes_lb_conf,
                                                    original_speed_conf=self.dut_ports_default_speeds_configuration)
             ports_list = list(breakout_ports_conf.keys())
+            if not ports_list:
+                pytest.skip(f'Skip TC as ports selected fot testing are SW control')
             with allure.step(f'set dependencies on breakout ports: {ports_list}'):
                 ports_dependencies = self.set_dependencies(dependency_list, ports_list, cleanup_list)
             self.verify_remove_breakout_without_force()
