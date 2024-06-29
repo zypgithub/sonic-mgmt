@@ -77,7 +77,9 @@ def get_extended_ignore_list(item):
 def get_ignore_list():
     logger.info('Reading dynamic errors ignore data from file')
     ignore_list = list()
-    la_dynamic_ignore_folder_path = os.path.dirname(__file__)
+    la_dynamic_ignore_folder_path = os.environ.get("DYNAMIC_INGNORE_PATH")
+    if not la_dynamic_ignore_folder_path:
+        la_dynamic_ignore_folder_path = os.path.dirname(__file__)
     path_to_dynamic_la_ignore_file = os.path.join(la_dynamic_ignore_folder_path, 'dynamic_loganalyzer_ignores*.yaml')
     ignore_files_list = glob.glob(path_to_dynamic_la_ignore_file)
     ignore_files = [f for f in ignore_files_list if os.path.exists(f)]
@@ -129,7 +131,9 @@ def get_checkers_result(condition_dict_entry, item, operand='or'):
                           DynamicLaConsts.IMAGE_TYPE: ImageTypeDynamicErrorsIgnore,
                           DynamicLaConsts.REDMINE: RedmineDynamicErrorsIgnore,
                           DynamicLaConsts.GITHUB: GitHubDynamicErrorsIgnore}
-
+    if not item:
+        available_checkers = {DynamicLaConsts.REDMINE: RedmineDynamicErrorsIgnore, 
+                              DynamicLaConsts.GITHUB: GitHubDynamicErrorsIgnore}
     checkers_result = []
 
     # Run the less time-consuming checkers first
@@ -139,8 +143,11 @@ def get_checkers_result(condition_dict_entry, item, operand='or'):
 
     for checker in checkers_ordered_by_prio_list:
         if checker in condition_dict_entry:
-            checker_obj = available_checkers[checker](condition_dict_entry, item)
-            is_checker_matched = checker_obj.is_checker_match()
+            if checker in available_checkers:
+                checker_obj = available_checkers[checker](condition_dict_entry, item)
+                is_checker_matched = checker_obj.is_checker_match()
+            else:
+                is_checker_matched = True
             checkers_result.append(is_checker_matched)
             # Do not continue if operand "and" and we already have failed checker
             if not is_checker_matched and operand == 'and':

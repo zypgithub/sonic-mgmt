@@ -48,7 +48,7 @@ def handle_log_analyzer_errors(cli_type, branch, test_name, duthost, log_analyze
     with allure.step("Log Analyzer bug handler"):
         la_errors = []
         bug_handler_dumps_results = []
-        hostname = duthost.hostname
+        hostname = duthost.hostname if duthost else "custom"
         log_errors_dir_path = Path(BugHandlerConst.LOG_ERRORS_DIR_PATH.format(hostname=hostname))
         try:
             session_id = os.environ.get(InfraConst.ENV_SESSION_ID)
