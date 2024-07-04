@@ -40,6 +40,9 @@ class SonicConst:
     DOCKERS_LIST_BF = ['swss', 'syncd', 'bgp', 'pmon', 'lldp', 'gnmi', 'eventd', 'database']
     DOCKERS_LIST_TOR = DOCKERS_LIST
     DOCKERS_LIST_LEAF = ['swss', 'syncd', 'bgp', 'teamd', 'pmon', 'lldp', 'radv', 'eventd', 'database', 'snmp']
+
+    DOCKERS_FANOUT = ['swss', 'gnmi', 'syncd', 'pmon', 'eventd', 'database', 'snmp']
+
     DAEMONS_DICT = {'swss': [], 'syncd': [], 'bgp': [],
                     'teamd': [], 'pmon': [], 'lldp': [], 'dhcp_relay': []}
     DAEMONS_DICT_BF = {'swss': [],

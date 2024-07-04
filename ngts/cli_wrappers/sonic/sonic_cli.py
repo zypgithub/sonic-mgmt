@@ -145,7 +145,7 @@ class SonicCli:
     def general(self):
         if self._general is None:
             self._general = SonicGeneralCli(branch=self.branch, engine=self.engine, cli_obj=self,
-                                            host_alias=self.dut_alias)
+                                            dut_alias=self.dut_alias)
         return self._general
 
     @property

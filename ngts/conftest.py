@@ -334,8 +334,16 @@ def update_topology_with_cli_class(topology, request=None):
             else:
                 player_info['cli'] = SonicCli(topology, dut_alias=player_key)
                 player_info.update({'stub_cli': SonicCliStub(topology)})
+
+        elif player_key == 'fanout' or player_key == 'fanout-b':
+            if player_info['attributes'].noga_query_data['attributes']['Topology Conn.']['CLI_TYPE'] == CliType.SONIC:
+                player_info['cli'] = SonicCli(topology, dut_alias=player_key)
+            else:
+                player_info['cli'] = LinuxCli(player_info['engine'])
+                player_info.update({'stub_cli': LinuxCliStub(player_info['engine'])})
+
         elif player_key == 'dut-b':
-            player_info['cli'] = SonicCli(topology, dut_alias='dut-b')
+            player_info['cli'] = SonicCli(topology, dut_alias=player_key)
 
         elif player_key == 'left_tg' or player_key == 'right_tg':
             player_info['cli'] = SonicCli(topology, dut_alias=player_key)

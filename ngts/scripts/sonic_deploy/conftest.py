@@ -95,6 +95,9 @@ def pytest_addoption(parser):
     logger.info('Parsing destination hwsku')
     parser.addoption("--dest_hwsku", help="The destination hwsku", default="", action="store")
 
+    logger.info('Parsing fanout_target_version')
+    parser.addoption("--fanout_target_version", help="The target version of fanout. Only for SONiC.", default=None)
+
 
 @pytest.fixture(scope="module")
 def workspace_path(request):
@@ -187,6 +190,19 @@ def destination_hwsku(request):
     :return: destination hwsku
     """
     return request.config.getoption('--dest_hwsku')
+
+
+@pytest.fixture(scope="module")
+def fanout_target_version(request):
+    """
+    Target version of fanout SONiC image
+    :param request: pytest builtin
+    :return: Image path of fanout SONiC image
+    """
+    fanout_target_version = request.config.getoption('--fanout_target_version')
+    if fanout_target_version == "":
+        return None
+    return fanout_target_version
 
 
 @pytest.fixture(scope="module")

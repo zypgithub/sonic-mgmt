@@ -49,6 +49,9 @@
         </Case>
     </global>
     <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/fanout_upgrade.cases </cases>
+    </test>
+    <test>
         <cases> sonic-mgmt/sonic-tool/mars/cases/common/log_analyzer_after_sonic_deploy.cases </cases>
     </test>
     <test>

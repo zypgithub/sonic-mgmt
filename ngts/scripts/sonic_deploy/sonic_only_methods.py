@@ -584,8 +584,11 @@ class SonicInstallationSteps:
 
     @staticmethod
     def deploy_image(cli, topology_obj, setup_name, platform_params, image_url, deploy_type,
-                     apply_base_config, reboot_after_install, is_shutdown_bgp, fw_pkg_path,
-                     destination_hwsku=None, setup_info=None, dut_alias=None, fanout_deploy_threads=None):
+                     apply_base_config, reboot_after_install,
+                     is_shutdown_bgp, fw_pkg_path,
+                     destination_hwsku=None,
+                     setup_info=None, dut_alias=None, fanout_deploy_threads=None,
+                     docker_list=None, fanout_target_version=None):
         """
         This method will deploy sonic image on the dut.
         :param topology_obj: topology object
@@ -602,6 +605,8 @@ class SonicInstallationSteps:
         :param setup_info: setup information
         :param dut_alias: dut alias, such as 'dut-b'
         :param fanout_deploy_threads: dict contains fanout deploy background threads
+        :param docker_list : List of docker name to validate
+        :param fanout_target_version :Path to target version of fanout.
         :return: raise assertion error in case of script failure
         """
         dut_engine = None
@@ -631,7 +636,9 @@ class SonicInstallationSteps:
                                  reboot_after_install=reboot_after_install, fw_pkg_path=fw_pkg_path,
                                  disable_ztp=disable_ztp, configure_dns=True, destination_hwsku=destination_hwsku,
                                  setup_info=setup_info, dut_alias=dut_alias,
-                                 deploy_fanout_threads=fanout_deploy_threads)
+                                 deploy_fanout_threads=fanout_deploy_threads,
+                                 docker_list=docker_list,
+                                 fanout_target_version=fanout_target_version)
 
             if 'r-leopard-72' in setup_name and is_redmine_issue_active(3646924):
                 with allure.step('Change CABLE_LENGTH/AZURE for r-leopard-72 as it has ports 2-3 with optic cables'):

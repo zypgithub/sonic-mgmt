@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CASEDEF>
+    <global>
+        <Test>
+            <info> Fanout Upgrade Test </info>
+            <name> fanout_upgrade </name>
+            <owner> </owner>
+        </Test>
+        <Case>
+            <tags> Fanout Upgrade </tags>
+            <wrapper> [[run_time:db_tests_path]]/sonic-mgmt/sonic-tool/mars/scripts/canonical_mars_pytest_runner.py </wrapper>
+            <tout> 55555 </tout>
+        </Case>
+    </global>
+
+
+
+    <case>
+        <ignore>
+            <!-- Skip if the fanout_target_version not specified-->
+            <condition>
+                <key> fanout_target_version </key>
+                <op> == </op>
+                <value> "" </value>
+            </condition>
+        </ignore>
+        <info> Fanout Upgrade Case </info>
+        <name> fanout_upgrade </name>
+        <cmd>
+             <params>
+                 <static_args> --setup_name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --test_script /root/mars/workspace/sonic-mgmt/ngts/scripts/sonic_deploy/test_fanout_upgrade.py --raw_options "\' --fanout_target_version=[[conf:extra_info.fanout_target_version:'']] --log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 1800 --session-timeout 1800 --allure_server_addr=\"10.215.11.120\"\'"</static_args>
+             </params>
+        </cmd>
+    </case>
+
+</CASEDEF>

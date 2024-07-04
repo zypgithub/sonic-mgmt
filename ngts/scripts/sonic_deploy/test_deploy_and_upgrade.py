@@ -11,10 +11,8 @@ import pytest
 
 from ngts.cli_wrappers.nvue.cumulus.cumulus_general_cli import CumulusGeneralCli
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from ngts.cli_wrappers.sonic.sonic_cli import SonicCli
-from ngts.constants.constants import PlayersAliases, SonicDeployConstants, MarsConstants
+from ngts.constants.constants import PlayersAliases, SonicDeployConstants, MarsConstants, SerialLoggerConst
 from ngts.cli_wrappers.sonic.sonic_general_clis import SonicGeneralCliDefault
-from ngts.constants.constants import PlayersAliases, SerialLoggerConst
 from ngts.helpers.general_helper import extract_host_details_from_topo_obj, get_cli_obj
 from ngts.helpers.run_process_on_host import wait_until_background_procs_done
 from ngts.nvos_tools.Devices.IbDevice import BlackMambaSwitch, CrocodileSwitch
@@ -34,7 +32,7 @@ def test_deploy_and_upgrade(topology_obj, is_simx, is_performance, base_version,
                             platform_params, deploy_dpu, deploy_type, apply_base_config, reboot_after_install,
                             is_shutdown_bgp, fw_pkg_path, recover_by_reboot, reboot, additional_apps, workspace_path,
                             wjh_deb_url, verify_secure_boot, chip_type, destination_hwsku, show_setup_versions,
-                            serial_log_analyzers):
+                            serial_log_analyzers, fanout_target_version):
     """
         Deploy SONiC/NVOS testing topology and upgrade switch
 
@@ -154,7 +152,8 @@ def test_deploy_and_upgrade(topology_obj, is_simx, is_performance, base_version,
                                                             dut_alias=dut['dut_alias'],
                                                             fanout_deploy_threads=pre_install_threads,
                                                             serial_log_analyzers=serial_log_analyzers,
-                                                            dut_ip=dut['dut_ip'])))
+                                                            dut_ip=dut['dut_ip'],
+                                                            fanout_target_version=fanout_target_version)))
             wait_until_deploy_background_process(install_threads, timeout=1500)
 
             if "bobcat" in setup_name and base_version_dpu:
@@ -325,7 +324,7 @@ def get_info_from_topology(topology_obj, workspace_path, include_smartswitch_dpu
     :return: SetupInfo object
     """
     ansible_path = os.path.join(workspace_path, "sonic-mgmt/ansible/")
-    setup_info = {'ansible_path': ansible_path, 'duts': []}
+    setup_info = {'ansible_path': ansible_path, 'duts': [], 'fanouts': []}
 
     with allure.step("Create setup_info object"):
         for host in topology_obj.players:
@@ -342,8 +341,7 @@ def get_info_from_topology(topology_obj, workspace_path, include_smartswitch_dpu
                 else:
                     setup_info['duts'].append(dut_info)
             elif host == 'hypervisor':
-                hypervisor_name = topology_obj.players[host]['attributes'].noga_query_data['attributes']['Common'][
-                    'Name']
+                hypervisor_name = topology_obj.players[host]['attributes'].noga_query_data['attributes']['Common']['Name']
                 hypervisor_ip = topology_obj.players[host]['attributes'].noga_query_data['attributes']['Specific']['ip']
                 hypervisor_info = {'hypervisor_name': hypervisor_name, 'hypervisor_ip': hypervisor_ip}
                 setup_info['hypervisor'] = hypervisor_info
@@ -392,7 +390,8 @@ def get_target_version_url(image_urls):
 def deploy_image(topology_obj, setup_name, platform_params, image_url, deploy_type,
                  apply_base_config, reboot_after_install, is_shutdown_bgp, fw_pkg_path, cli_type, target_image_url='',
                  destination_hwsku=None, setup_info=None, dut_alias=None, fanout_deploy_threads=None,
-                 serial_log_analyzers=None, dut_ip=''):
+                 serial_log_analyzers=None, dut_ip='',
+                 fanout_target_version=None):
     """
     This method will deploy sonic image on the dut.
     :param topology_obj: topology object
@@ -409,6 +408,7 @@ def deploy_image(topology_obj, setup_name, platform_params, image_url, deploy_ty
     :param setup_info: setup information
     :param dut_alias: dut alias, such as 'dut-b'
     :param fanout_deploy_threads: dict, contain threads which will run in background
+    :param fanout_target_version: Path to fanout image. Only for SONiC.
     :return: raise assertion error in case of script failure
     """
     if isinstance(cli_type, NvueGeneralCli):
@@ -422,10 +422,21 @@ def deploy_image(topology_obj, setup_name, platform_params, image_url, deploy_ty
                                                deploy_type,
                                                apply_base_config, reboot_after_install, fw_pkg_path, target_image_url)
     else:
-        SonicInstallationSteps.deploy_image(cli_type, topology_obj, setup_name, platform_params, image_url,
-                                            deploy_type, apply_base_config, reboot_after_install, is_shutdown_bgp,
-                                            fw_pkg_path, destination_hwsku, setup_info, dut_alias,
-                                            fanout_deploy_threads)
+        SonicInstallationSteps.deploy_image(cli=cli_type,
+                                            topology_obj=topology_obj,
+                                            setup_name=setup_name,
+                                            platform_params=platform_params,
+                                            image_url=image_url,
+                                            deploy_type=deploy_type,
+                                            apply_base_config=apply_base_config,
+                                            reboot_after_install=reboot_after_install,
+                                            is_shutdown_bgp=is_shutdown_bgp,
+                                            fw_pkg_path=fw_pkg_path,
+                                            destination_hwsku=destination_hwsku,
+                                            setup_info=setup_info,
+                                            dut_alias=dut_alias,
+                                            fanout_deploy_threads=fanout_deploy_threads,
+                                            fanout_target_version=fanout_target_version)
     time.sleep(30)
 
 

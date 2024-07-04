@@ -39,8 +39,8 @@ class SecureBootHelper:
         return serial_engine
 
     @staticmethod
-    def get_serial_engine_instance(topology_obj):
-        att = topology_obj.players['dut_serial']['attributes'].noga_query_data['attributes']
+    def get_serial_engine_instance(topology_obj, alias="dut_serial"):
+        att = topology_obj.players[alias]['attributes'].noga_query_data['attributes']
         # add connection options to pass connection problems
         extended_rcon_command = att['Specific']['serial_conn_cmd'].split(' ')
         extended_rcon_command.insert(1, DefaultConnectionValues.BASIC_SSH_CONNECTION_OPTIONS)
