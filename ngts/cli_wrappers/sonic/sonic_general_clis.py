@@ -757,9 +757,6 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         # skip deploy fanout for DPU setup
         if setup_name in BluefieldConstants.DPU_SETUP_LIST:
             return False
-        # tmp disable the deploy of fanout for moose setup due to some limitation of liger as fanout
-        if "moose" in setup_name:
-            return False
         return True
 
     def deploy_fanout(self, topology_obj, destination_hwsku, setup_info, dut_alias, threads_dict):

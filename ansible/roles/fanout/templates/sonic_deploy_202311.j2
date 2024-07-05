@@ -43,7 +43,7 @@
 
     {% set ns = {'firstPrinted': False} %}
     "VLAN_MEMBER": {
-    {% for port_name in device_port_vlans[inventory_hostname] %}
+    {% for port_name in fanout_port_config %}
     {% if device_port_vlans[inventory_hostname][port_name]['mode'].lower() == 'access' %}
     {% if ns.firstPrinted %},{% endif %}
         "Vlan{{ device_port_vlans[inventory_hostname][port_name]['vlanids'] }}|{{ fanout_port_config[port_name]['name'] }}": {
