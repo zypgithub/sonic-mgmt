@@ -90,9 +90,10 @@ class GnmiClient:
 
     def gnmic_subscribe_system_events(self, mode: str, username: str = '', password: str = '',
                                       skip_cert_verify: bool = False, cacert='', debug_mode: bool = True,
-                                      cmd_time=None, wait_till_done: bool = False) -> Tuple[str, str]:
+                                      cmd_time=None, keep_session_alive: bool = True,
+                                      wait_till_done: bool = False) -> Tuple[str, str]:
         out, err, _ = self._run_gnmic_subscribe_system_events(mode, username, password, skip_cert_verify, cacert,
-                                                              debug_mode, cmd_time, False, wait_till_done)
+                                                              debug_mode, cmd_time, keep_session_alive, wait_till_done)
         return out, err
 
     def gnmic_capabilities(self, username: str = '', password: str = '', skip_cert_verify: bool = False, cacert='',
