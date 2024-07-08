@@ -42,7 +42,7 @@ class DutUtilsTool:
             list_commands = [command, 'y'] if confirm else [command]
             output = device.reload_device(engine, list_commands)
 
-            if 'abort' in output:
+            if 'aborted' in output.lower() or 'aborting' in output.lower():
                 return ResultObj(result=False, info=output)
 
             with allure.step('Waiting for switch shutdown after reload command'):
