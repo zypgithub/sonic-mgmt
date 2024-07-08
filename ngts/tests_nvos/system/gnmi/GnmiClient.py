@@ -30,7 +30,7 @@ class GnmiClient:
     def verify_gnmic_installation(self):
         with allure.step('check if gnmic already installed'):
             out, err, _ = self.cmd_runner.run_cmd_in_process('gnmic version')
-            gnmic_installed = 'command not found' not in out and 'command not found' not in err
+            gnmic_installed = 'not found' not in out and 'not found' not in err
             self._log(f'gnmic is {"" if gnmic_installed else "not "}installed on player')
         if not gnmic_installed:
             with allure.step('install gnmic on player'):
@@ -44,7 +44,7 @@ class GnmiClient:
     def verify_grpcurl_installation(self):
         with allure.step('check if grpcurl already installed'):
             out, err, _ = self.cmd_runner.run_cmd_in_process('grpcurl -version')
-            grpcurl_installed = 'command not found' not in out and 'command not found' not in err
+            grpcurl_installed = 'not found' not in out and 'not found' not in err
             self._log(f'gnmic is {"" if grpcurl_installed else "not "}installed on player')
         if not grpcurl_installed:
             with allure.step('install grpcurl'):
