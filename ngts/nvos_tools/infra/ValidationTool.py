@@ -267,9 +267,9 @@ class ValidationTool:
             ret_info = ""
             for comp in expected_values_list:
                 if comp in output_list:
-                    logging.info("'{}' found\n")
+                    logging.info(f"'{comp}' found\n")
                 else:
-                    ret_info += "'{}' + cant be found\n".format(comp)
+                    ret_info += f"'{comp}' + cant be found\n"
 
             return ResultObj(not ret_info, ret_info)
 

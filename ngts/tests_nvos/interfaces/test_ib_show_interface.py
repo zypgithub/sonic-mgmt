@@ -217,7 +217,6 @@ def test_ib_show_interface_name_stats(engines, devices, test_api):
 
 
 @pytest.mark.ib_interfaces
-@pytest.mark.nvos_ci
 @pytest.mark.ib
 def test_show_interface_filter(engines):
     """

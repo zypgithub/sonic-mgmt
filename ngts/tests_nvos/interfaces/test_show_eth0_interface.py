@@ -15,7 +15,6 @@ logger = logging.getLogger()
 @pytest.mark.cumulus
 @pytest.mark.ib
 @pytest.mark.simx
-@pytest.mark.nvos_ci
 @pytest.mark.skynet
 @pytest.mark.ib_interfaces
 @pytest.mark.nvos_chipsim_ci
@@ -204,10 +203,10 @@ def verify_mac_address(expected_mac: str,
 @pytest.mark.openapi
 @pytest.mark.ib
 @pytest.mark.simx
-@pytest.mark.nvos_ci
 @pytest.mark.skynet
 @pytest.mark.ib_interfaces
 @pytest.mark.nvos_chipsim_ci
+@pytest.mark.nvos_ci
 def test_mgmt_show_interface_openapi(engines):
     TestToolkit.tested_api = ApiType.OPENAPI
     test_mgmt_show_interface(engines)

@@ -131,7 +131,6 @@ def validate_ip_fields(output_dictionary):
 
 @pytest.mark.openapi
 @pytest.mark.ib
-@pytest.mark.nvos_ci
 def test_ib0_show_interface_openapi(engines):
     TestToolkit.tested_api = ApiType.OPENAPI
     test_ib0_show_interface(engines)
