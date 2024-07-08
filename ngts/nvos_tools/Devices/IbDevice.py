@@ -384,6 +384,10 @@ class IbSwitch(BaseSwitch):
     def reload_device(self, engine, cmd_list, validate=False):
         return engine.send_config_set(cmd_list, exit_config_mode=False, cmd_verify=False)
 
+    def get_bios_file_name(self):
+        return self.current_bios_version_path.split('/')[-1]
+
+
 # -------------------------- Gorilla Switch ----------------------------
 
 
@@ -665,6 +669,10 @@ class JulietSwitch(NvLinkSwitch):
         super()._init_constants()
         self.bmc_image_info = self.FaeImagesTestConsts(current_image_version='bmc_1.pkg', alternate_image_version='bmc_2.pkg')
         self.fpga_image_info = self.FaeImagesTestConsts(current_image_version='fpga_1.pkg', alternate_image_version='fpga_2.pkg')
+        self.current_bios_version_name = "0ACTV_00.00.x07_rc5"
+        self.current_bios_version_path = "/auto/sw_system_release/sx_mlnx_bios/SnowyOwl/0ACTV_00.00.x07_rc5/Release/0ACTV.rom"
+        self.previous_bios_version_name = "0ACTV_00.00.x07_rc4"
+        self.previous_bios_version_path = "/auto/sw_system_release/sx_mlnx_bios/SnowyOwl/0ACTV_00.00.x07_rc4/Release/0ACTV.rom"
 
     def _init_fan_list(self):
         super()._init_fan_list()

@@ -660,6 +660,7 @@ class PlatformConsts:
     INSERTED = 'Inserted'
     TRANSCEIVER_CABLE_TYPE = 'cable-type'
     TRANSCEIVER_CABLE_OPTICAL_MODULE = 'Optical module'
+    TRANSCEIVER_CABLE_COPPER_CABLE = 'Copper cable'
 
 
 class FansConsts:
