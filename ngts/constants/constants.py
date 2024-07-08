@@ -1203,8 +1203,8 @@ class MarsConstants:
     VER_SDK_PATH = "/opt/ver_sdk"
     EXTRA_PACKAGE_PATH_LIST = ["/usr/lib64/python2.7/site-packages"]
 
-    TOPO_ARRAY = ("t0-56-po2vlan", "t0", "t1-lag", "t1-28-lag", "ptf32",
-                  "t0-64", "t1-64-lag", "t0-56", "t0-56-o8v48", "t0-120", "t1-56-lag", "t0-28")
+    TOPO_ARRAY = ("t0-56-po2vlan", "t0", "t1-lag", "t1-28-lag", "ptf32", "t0-64", "t1-64-lag", "t0-56", "t0-56-o8v48",
+                  "t0-120", "t1-56-lag", "t0-28", "dualtor", "dualtor-64", "dualtor-aa")
     TOPO_ARRAY_DUALTOR = ("dualtor", "dualtor-64", "dualtor-aa")
     REBOOT_TYPES = {
         "reboot": "reboot",
