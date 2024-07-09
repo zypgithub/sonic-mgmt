@@ -258,6 +258,7 @@ class ActionConsts:
 
 
 class SystemConsts:
+    MGMT2_HOSTNAME = "mgmt2"
     HOSTNAME = 'hostname'
     STATUS = 'status'
     STATE = 'state'
