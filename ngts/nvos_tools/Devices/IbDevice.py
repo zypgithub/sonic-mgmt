@@ -593,6 +593,26 @@ class CrocodileSwitch(IbSwitch):
         self.stats_fan_header_num_of_lines = 25
         self.stats_power_header_num_of_lines = 17
         self.stats_temperature_header_num_of_lines = 59
+        self.previous_cpld_version = BaseSwitch.CpldImageConsts(
+            burn_image_path="/auto/sw_system_project/NVOS_INFRA/verification_files/cpld_fw/OLD/FUI000273_BURN_CROCODILE_CPLD000232_REV0802_CPLD000357_REV0103_CPLD000358_REV0203_CPLD000359_REV0100.vme",
+            refresh_image_path="/auto/sw_system_project/NVOS_INFRA/verification_files/cpld_fw/OLD/FUI000273_REFRESH_CROCODILE_CPLD000232_REV0802_CPLD000357_REV0103_CPLD000358_REV0203_CPLD000359_REV0100.vme",
+            version_names={
+                "CPLD1": "CPLD000232_REV0802",
+                "CPLD2": "CPLD000357_REV0103",
+                "CPLD3": "CPLD000358_REV0203",
+                "CPLD4": "CPLD000359_REV0100",
+            }
+        )
+        self.current_cpld_version = BaseSwitch.CpldImageConsts(
+            burn_image_path="/auto/sw_system_project/NVOS_INFRA/verification_files/cpld_fw/FUI000274_BURN_CROCODILE_CPLD000232_REV0802_CPLD000357_REV0104_CPLD000358_REV0203_CPLD000339_REV0100.vme",
+            refresh_image_path="/auto/sw_system_project/NVOS_INFRA/verification_files/cpld_fw/FUI000274_REFRESH_CROCODILE_CPLD000232_REV0802_CPLD000357_REV0104_CPLD000358_REV0203_CPLD000339_REV0100.vme",
+            version_names={
+                "CPLD1": "CPLD000232_REV0802",
+                "CPLD2": "CPLD000357_REV0104",
+                "CPLD3": "CPLD000358_REV0203",
+                "CPLD4": "CPLD000359_REV0100",
+            }
+        )
 
     def get_mgmt_ports(self) -> List[str]:
         return self.mgmt_ports
@@ -740,23 +760,23 @@ class JulietScaleoutSwitch(JulietSwitch):
         self.bios_version_name = '0ACTV000_07.rom'
 
         self.current_cpld_version = BaseSwitch.CpldImageConsts(
-            burn_image_path="/auto/sysgwork/eabboud/Juliet_CPLD_updated_26_05_24.vme",
-            refresh_image_path="/auto/sysgwork/eabboud/Juliet_CPLD_updated_26_05_24.vme",
+            burn_image_path="/auto/sw_system_project/NVOS_INFRA/verification_files/cpld_fw/FUI000299_BURN_JULIET_CPLD000370_REV0104_CPLD000371_REV0107_CPLD000373_REV0100_CPLD000372_REV0004.vme",
+            refresh_image_path="",
             version_names={
-                "CPLD1": "CPLD000370_REV0010",
-                "CPLD2": "CPLD000371_REV0010",
-                "CPLD3": "CPLD000373_REV0009",
-                "CPLD4": "CPLD000372_REV0002"
+                "CPLD1": "CPLD000370_REV0104",
+                "CPLD2": "CPLD000371_REV0107",
+                "CPLD3": "CPLD000373_REV0100",
+                "CPLD4": "CPLD000372_REV0004"
             }
         )
         self.previous_cpld_version = BaseSwitch.CpldImageConsts(
-            burn_image_path="/auto/sysgwork/eabboud/Juliet_CPLD_updated_26_05_24.vme",
-            refresh_image_path="/auto/sysgwork/eabboud/Juliet_CPLD_updated_26_05_24.vme",
+            burn_image_path="/auto/sw_system_project/NVOS_INFRA/verification_files/cpld_fw/OLD/FUI000287_BURN_JULIET_CPLD000370_REV0010_CPLD000371_REV0010_CPLD000373_REV0010_CPLD000372_REV0003.vme",
+            refresh_image_path="",
             version_names={
                 "CPLD1": "CPLD000370_REV0010",
                 "CPLD2": "CPLD000371_REV0010",
-                "CPLD3": "CPLD000373_REV0009",
-                "CPLD4": "CPLD000372_REV0002"
+                "CPLD3": "CPLD000373_REV0010",
+                "CPLD4": "CPLD000372_REV0003"
             }
         )
         # self.stats_fan_header_num_of_lines = 25
