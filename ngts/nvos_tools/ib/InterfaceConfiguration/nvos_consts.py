@@ -47,6 +47,7 @@ class IbInterfaceConsts:
     LINK_PHYSICAL_PORT_STATE_POLLING_XDR = 'PortConfigurationTraining'
     LINK_STATE = "state"
     LINK_CONNECTION_MODE = "connection-mode"
+    XDR = "xdr"
     LINK_DIAGNOSTICS = "diagnostics"
     LINK_DIAGNOSTICS_UNPLUGGED_PORT = {'1024': {'status': 'Cable is unplugged'}}
     LINK_DIAGNOSTICS_CLOSED_BY_COMMAND_PORT = {'1': {'status': 'Closed by command'}}

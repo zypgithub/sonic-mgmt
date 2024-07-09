@@ -469,6 +469,8 @@ def create_log_analyzer_yaml_file(log_errors, dump_path, project, test_name, hos
 
     if re.findall(hostname, log_errors[0]):
         hostname_regex = hostname
+        if re.findall(f"{hostname}-{SystemConsts.MGMT2_HOSTNAME}", log_errors[0]):
+            hostname_regex = f"{hostname}-{SystemConsts.MGMT2_HOSTNAME}"
     elif re.findall(r"\d sonic ", log_errors[0]):
         hostname_regex = "sonic"
     else:

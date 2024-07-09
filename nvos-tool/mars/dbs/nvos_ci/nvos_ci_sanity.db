@@ -23,7 +23,7 @@
 		</Case>
 	</global>
 	<test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/CI/nvos_ci_init_flow.cases </cases>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/CI/nvos_ci_sanity.cases </cases>
 	</test>
 
 </DBDEF>

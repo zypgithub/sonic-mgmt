@@ -32,7 +32,7 @@ PATH_TO_IMAGE_TEMPLATE = "{}/amd64/"
 
 # will be removed ones merged to develop
 base_version = "/auto/sw_system_release/nos/nvos/25.01.4000/amd64/dev/nvos-amd64-25.01.4000.bin"
-xdr_base_version = "/auto/sw_system_release/nos/nvos/25.02.0914-003/amd64/dev/nvos-amd64-25.02.0914-003.bin"
+xdr_base_version = "/auto/sw_system_release/nos/nvos/25.02.0916-032/amd64/dev/nvos-amd64-25.02.0916-032.bin"
 BASE_IMAGE_VERSION_TO_INSTALL = "nvos-amd64-{pre_release_name}.bin"
 BASE_IMAGE_VERSION_TO_INSTALL_PATH = "/auto/sw_system_release/nos/nvos/{pre_release_name}/amd64/{base_image}"
 

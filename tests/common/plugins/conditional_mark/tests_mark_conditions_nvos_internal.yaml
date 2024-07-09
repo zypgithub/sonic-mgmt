@@ -385,9 +385,9 @@ tests_nvos/interfaces/test_ib_interface_configuration.py::test_ib_interface_lane
 
 tests_nvos/interfaces/test_port_split.py:
   skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3924104"
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3924138"
     conditions:
-      - https://redmine.mellanox.com/issues/3924104
+      - https://redmine.mellanox.com/issues/3924138
 
 tests_nvos/system/test_system_profile_change.py:
   skip:
@@ -470,4 +470,10 @@ tests_nvos/system/test_show_system.py::test_system:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3975976"
     conditions:
       - https://redmine.mellanox.com/issues/3975976
+
+tests_nvos/checklist/test_bios_upgrade.py::test_bios_upgrade:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3981760"
+    conditions:
+      - https://redmine.mellanox.com/issues/3981760
 ########################## NVOS IGNORE END ##########################

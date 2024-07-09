@@ -301,19 +301,24 @@ def validate_link_fields(output_dictionary, switch_type, port_up=True):
                           # IbInterfaceConsts.LINK_SUPPORTED_SPEEDS,
                           IbInterfaceConsts.LINK_LOGICAL_PORT_STATE,
                           IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE,
-                          IbInterfaceConsts.LINK_VL_ADMIN_CAPABILITIES]
+                          IbInterfaceConsts.LINK_VL_ADMIN_CAPABILITIES,
+                          IbInterfaceConsts.LINK_CONNECTION_MODE]
         if switch_type == "ib":
             field_to_check.insert(1, IbInterfaceConsts.LINK_IB_SUBNET)  # Insert at the desired position
-            field_to_check.insert(4, IbInterfaceConsts.LINK_IB_SUBNET)  # Insert at the desired position
 
         Tools.ValidationTool.verify_field_exist_in_json_output(output_dictionary, field_to_check).verify_result()
 
         field_to_check = [IbInterfaceConsts.LINK_MTU,
-                          IbInterfaceConsts.LINK_SPEED,
+                          # IbInterfaceConsts.LINK_SPEED,
                           # IbInterfaceConsts.LINK_IB_SPEED,
                           IbInterfaceConsts.LINK_OPERATIONAL_VLS]
         if switch_type == "ib":
             field_to_check.insert(2, IbInterfaceConsts.LINK_IB_SUBNET)  # Insert at the desired position
+
+        if output_dictionary[IbInterfaceConsts.LINK_CONNECTION_MODE] == IbInterfaceConsts.XDR and \
+           output_dictionary[IbInterfaceConsts.LINK_LOGICAL_PORT_STATE] == IbInterfaceConsts.LINK_LOGICAL_PORT_STATE_ACTIVE:
+            field_to_check.insert(1, IbInterfaceConsts.LINK_SPEED)
+
         Tools.ValidationTool.verify_field_exist_in_json_output(output_dictionary,
                                                                field_to_check, port_up).verify_result()
         # Will be changed

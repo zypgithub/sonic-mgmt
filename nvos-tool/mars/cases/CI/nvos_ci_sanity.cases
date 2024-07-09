@@ -3,7 +3,7 @@
   <global>
     <Test>
       <group> NVOS </group>
-      <name> Init flow </name>
+      <name> Sanity </name>
       <info> </info>
       <owner> Yana Port </owner>
     </Test>

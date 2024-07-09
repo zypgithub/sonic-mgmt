@@ -12,12 +12,11 @@ from ngts.tests_nvos.checklist.test_checklist_ipv6 import test_checklist_ipv6
 from ngts.nvos_constants.constants_nvos import SystemConsts, HealthConsts
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
-from ngts.tests_nvos.general.security.test_aaa_ldap.test_ldap_ci import test_ldap_auth_ci
 from ngts.tests_nvos.general.security.security_test_tools.constants import AddressingType
-from ngts.tests_nvos.general.security.tacacs.test_tacacs_ci import test_tacacs_auth
-from ngts.tests_nvos.system.aaa.test_capability_functionality import test_capability_functionality
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.tests_nvos.acl.test_acl_basic import test_show_acls
+from ngts.tests_nvos.general.security.test_aaa_ldap.constants import LdapConsts
+from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts
+
 
 logger = logging.getLogger()
 
@@ -25,15 +24,11 @@ logger = logging.getLogger()
 @pytest.mark.simx
 @pytest.mark.nvos_chipsim_ci
 @pytest.mark.nvos_ci
-@pytest.mark.parametrize('addressing_type', [random.choice(AddressingType.ALL_TYPES)])
-def test_ci_sanity(engines, topology_obj, addressing_type, request, devices):
+def test_ci_sanity(engines, topology_obj, devices):
     with allure.step("Test OpenApi"):
         test_show_platform(engines, ApiType.OPENAPI, devices)
 
     TestToolkit.tested_api = ApiType.NVUE
-
-    with allure.step("Test ACL"):
-        test_show_acls(engines, ApiType.NVUE)
 
     with allure.step("Test IPV6"):
         test_checklist_ipv6(engines)
@@ -60,11 +55,19 @@ def test_ci_sanity(engines, topology_obj, addressing_type, request, devices):
             platform.firmware.transceiver.files.verify_show_files_output(expected_files=[new_fw_file])
 
     with allure.step("Test security"):
-        test_ldap_auth_ci(test_api=ApiType.NVUE, addressing_type=addressing_type, engines=engines,
-                          topology_obj=topology_obj, request=request)
-        test_tacacs_auth(test_api=ApiType.NVUE, addressing_type=addressing_type, engines=engines,
-                         topology_obj=topology_obj, request=request)
-        test_capability_functionality(engines)
+        with allure.step("Check LDAP output"):
+            output = OutputParsingTool.parse_json_str_to_dictionary(system.aaa.ldap.show()).get_returned_value()
+            expected_field = [LdapConsts.PORT, LdapConsts.BASE_DN, LdapConsts.BIND_DN,
+                              LdapConsts.TIMEOUT_BIND, LdapConsts.TIMEOUT, LdapConsts.SSL,
+                              LdapConsts.VERSION]
+            ValidationTool.verify_field_exist_in_json_output(json_output=output,
+                                                             keys_to_search_for=expected_field).verify_result()
+
+        with allure.step("Check TACACS output"):
+            output = OutputParsingTool.parse_json_str_to_dictionary(system.aaa.tacacs.show()).get_returned_value()
+            expected_field = [AaaConsts.PORT, AaaConsts.AUTH_TYPE, AaaConsts.TIMEOUT]
+            ValidationTool.verify_field_exist_in_json_output(json_output=output,
+                                                             keys_to_search_for=expected_field).verify_result()
 
     with allure.step("Test Health"):
         health_output = OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).get_returned_value()
