@@ -248,12 +248,13 @@ def wait_for_specific_regex_in_logs(engine, regex):
     :return:
     """
     device = {
-        'device_type': '',
+        'device_type': engine.device_type,
         'host': engine.ip,
         'username': engine.username,
         'password': engine.password,
         'timeout': 70
     }
-    connection = ConnectHandler(**device)
-    connection.send_command('nv show system log follow', delay_factor=2, expect_string=regex)
-    connection.disconnect()
+    with allure.step(f"wait for 70 seconds to see {regex} in logs"):
+        connection = ConnectHandler(**device)
+        connection.send_command('nv show system log follow', delay_factor=2, expect_string=regex)
+        return

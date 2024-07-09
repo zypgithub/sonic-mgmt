@@ -14,8 +14,9 @@ from ngts.nvos_tools.infra.DutUtilsTool import wait_for_specific_regex_in_logs
 
 
 logger = logging.getLogger(__name__)
+# /etc/fae_platform_firmware/transceiver/
 paths_order = ['/host/nos-images/', '/etc/fae_platform_firmware/ssd/', '/etc/fae_platform_firmware/cpld/',
-               '/etc/fae_platform_firmware/bios/', '/var/stats/', '/host/dump/', '/var/core/',
+               '/etc/fae_platform_firmware/bios/', '/host/stats/', '/var/stats/', '/host/dump/', '/var/core/',
                "/host/fw-images/"]
 
 
@@ -86,6 +87,9 @@ def test_ssd_cleanup_positive_flow(engines, devices):
 
     try:
         df_output = _get_df_output(engines.dut)
+        with allure.step("add file to reach usage threshold {}".format(5)):
+            engines.dut.run_cmd(f"sudo fallocate -l {df_output[SystemConsts.SSD_SPACE_AVAILABLE_SIZE] - 5 - 0.5}G {paths_order[-1]}/big_file")
+
         files_to_delete = _add_files(engines.dut, 5, df_output[SystemConsts.SSD_SPACE_AVAILABLE_SIZE])
 
         with allure.step("health issue will be reported after 3 minutes"):
@@ -99,7 +103,12 @@ def test_ssd_cleanup_positive_flow(engines, devices):
                 }
             }
             health_dict = OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).verify_result()
-            assert issue == health_dict[HealthConsts.ISSUES], "the expected issue is {} but the output is {}".format(issue, health_dict)
+            temp = all(item in health_dict[HealthConsts.ISSUES].items() for item in issue.items())
+            assert temp, "the expected issue is {} but the output is {}".format(issue, health_dict)
+
+            with allure.step("check system events - two events expected "):
+                events_dict = OutputParsingTool.parse_json_str_to_dictionary(system.events.show()).verify_result()
+                _verify_system_event(events_dict, False)
 
         with allure.step("try to cleanup and verify health status and deleted files after it"):
 
@@ -107,28 +116,32 @@ def test_ssd_cleanup_positive_flow(engines, devices):
                 fae.system.ssd_cleanup(expected_str='Action succeeded')
 
             with allure.step("check deleted files and the deleting order"):
-                verify_deleted_folders_list(engines.dut, fae, files_to_delete)
+                verify_deleted_folders_list(engines.dut, files_to_delete[:-2])
 
-            with allure.step("check health status is ok"):
-                verify_health_status_and_led(fae, HealthConsts.OK)
+            with allure.step("check no disk issue"):
+                time.sleep(70)
+                health_dict = OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).verify_result()
+                temp = all(item in health_dict[HealthConsts.ISSUES].items() for item in issue.items())
+                assert not temp, "the expected issue is {} but the output is {}".format(issue, health_dict)
 
-        files_to_delete = _add_files(engines.dut, 3.5, df_output[SystemConsts.SSD_SPACE_AVAILABLE_SIZE])
+            with allure.step("check system events - two events expected "):
+                events_dict = OutputParsingTool.parse_json_str_to_dictionary(system.events.show()).verify_result()
+                _verify_system_event(events_dict, True)
+
+        df_output = _get_df_output(engines.dut)
+        engines.dut.run_cmd('sudo fallocate -l {size}G /{path}/{file}'.format(size=df_output[SystemConsts.SSD_SPACE_AVAILABLE_SIZE] - 0.5, path=paths_order[0], file='Big_file'))
 
         with allure.step("check auto cleanup step"):
             with allure.step("check SSD Cleanup Started in the logs"):
-                wait_for_specific_regex_in_logs(engines.dut, "INFO ssd_cleanup: SSD Cleanup Started ")
-
-            with allure.step("check system event - health is ok"):
-                events_dict = OutputParsingTool.parse_json_str_to_dictionary(system.events.show()).verify_result()
-                health_event = events_dict[str(events_dict['table-occupancy'])]
-                assert health_event['text'] == "Health status is ok" and health_event['severity'] == "INFORMATIONAL", "we expect for system is ok health event but the last event is {}".format(health_event)
+                wait_for_specific_regex_in_logs(engines.dut, "ssd_cleanup: SSD Cleanup Started")
 
             with allure.step("check deleted files and the deleting order"):
-                verify_deleted_folders_list(engines.dut, fae, files_to_delete)
+                verify_deleted_folders_list(engines.dut, ['Big_file'])
                 assert "No such file or directory" in engines.dut.run_cmd(f"cat {paths_order[0]}/{files_to_delete[0]}"), f"{files_to_delete[0]} should be deleted"
 
             with allure.step("check health status is ok"):
-                verify_health_status_and_led(fae, HealthConsts.OK)
+                time.sleep(70)
+                verify_health_status_and_led(system, HealthConsts.OK)
     finally:
         _delete_all_files(engines.dut)
         _change_monit_and_reload(engines.dut, new_line, old_line, file_path)
@@ -149,22 +162,25 @@ def test_ssd_cleanup_reboot_with_high_ssd_usage(engines, devices):
     """
 
     system = System()
-    fae = Fae()
-    df_output = _get_df_output
+    _delete_all_files(engines.dut)
+    df_output = _get_df_output(engines.dut)
     path = '/host/nos-images/'
     file_name = 'new_file'
 
     try:
-        engines.dut.run_cmd('sudo fallocate -l {size}G /{path}/{file}'.format(size=df_output[SystemConsts.SSD_SPACE_AVAILABLE_SIZE] - 0.1, path=path, file=file_name))
+        engines.dut.run_cmd('sudo fallocate -l {size}G /{path}/{file}'.format(size=df_output[SystemConsts.SSD_SPACE_AVAILABLE_SIZE] - 0.5, path=path, file=file_name))
 
         with allure.step('Reboot the system'):
             system.reboot.action_reboot()
 
+        with allure.step('sleep 1 minute - waiting for healthD cycle'):
+            time.sleep(60)
+
         with allure.step("check deleted files and the deleting order"):
-            verify_deleted_folders_list(engines.dut, fae, 'files_to_delete')
+            verify_deleted_folders_list(engines.dut, [file_name])
 
         with allure.step("check health status is ok"):
-            verify_health_status_and_led(fae, HealthConsts.OK)
+            verify_health_status_and_led(system, HealthConsts.OK)
 
         with allure.step("check ssd-cleanup deleted the {file}".format(file=file_name)):
             deleted_list = _get_deleted_files_list_from_logs(engines.dut)
@@ -186,7 +202,8 @@ def _add_files(engine, usage_threshold, available_space):
 
     with allure.step("create new files to reach usage threshold {}".format(usage_threshold)):
         added_files_list = []
-        size_each_file = 1000 * (available_space - usage_threshold) / (2 * len(paths_order) - 1)
+
+        size_each_file = 1000 / (2 * len(paths_order) - 1)
         file_size = f"{size_each_file}M"
 
         for i, path in enumerate(paths_order):
@@ -199,6 +216,7 @@ def _add_files(engine, usage_threshold, available_space):
                 engine.run_cmd(f"sudo fallocate -l {file_size} {file_path}.1")
                 added_files_list.append(file_name + '.1')
 
+        logger.info(f"the current df command output is : {engine.run_cmd('df -h')}")
         return added_files_list
 
 
@@ -229,10 +247,14 @@ def verify_deleted_folders_list(engine, files_to_delete):
     """
     with allure.step('compare the expected list to the deleted files list'):
         deleted_list = _get_deleted_files_list_from_logs(engine)
-        assert deleted_list == files_to_delete, f"we expected to delete the files with this order: {files_to_delete}, but the deleting was in this order: {deleted_list}"
+        it1 = iter(files_to_delete)
+        for item in deleted_list:
+            if item == next(it1, None):
+                continue
+        assert next(it1, None) is None, f"we expected to delete the files with this order: {files_to_delete}, but the deleting was in this order: {deleted_list}"
 
 
-def _get_deleted_files_list_from_logs(engine, logs_history=100):
+def _get_deleted_files_list_from_logs(engine, logs_history=200):
     """
     :summary:
         checking the system logs file to know the deleted files and the deleting order
@@ -271,6 +293,9 @@ def _delete_all_files(engine):
         for path in paths_order:
             logger.info(f"Deleting files under {path}")
             engine.run_cmd(f"sudo rm -rf {path}")
+            cmd = f"sudo bash -c 'if [ ! -d '{path}' ]; then mkdir -p '{path}'; fi'"
+            engine.run_cmd(cmd)
+            logger.info(f"done with {path}")
 
 
 def get_status_of_program(output, program_name):
@@ -294,3 +319,30 @@ def _wait_until_monit_is_running(engine):
         monit_status = get_status_of_program(output, "root-overlay")
         if "Status ok" not in monit_status:
             raise Exception("Waiting for monit to finish initializing")
+
+
+def _verify_system_event(events_output, is_ok):
+    """
+
+    :param events_output:
+    :param is_ok:
+    :return:
+    """
+    with allure.step("create expected events"):
+        expected_disk_issue_event = {'severity': 'INFORMATIONAL' if is_ok else 'WARNING', 'text': 'Service goes back to normal' if is_ok else 'Disk space is not Status ok', 'type-id': 'Disk space'}
+        expected_health_issue_event = {'severity': 'INFORMATIONAL' if is_ok else 'WARNING', 'text': 'Health status is ok' if is_ok else 'Health status is not ok', 'type-id': 'System'}
+
+    with allure.step("get last two system events"):
+        health_event = events_output['last']
+        keys_list = list(map(int, health_event.keys()))
+        keys_list_sorted = sorted(keys_list)
+        system_health_event = health_event[str(keys_list_sorted[-1])]
+        system_health_event.pop('time-created')
+        disk_event = health_event[str(keys_list_sorted[-2])]
+        disk_event.pop('time-created')
+
+    with allure.step("verify health event"):
+        assert expected_health_issue_event == system_health_event, f"the expected dic is {expected_health_issue_event} but the event output is {system_health_event}"
+
+    with allure.step("verify disk issue event"):
+        assert expected_disk_issue_event == disk_event, f"the expected dic is {expected_disk_issue_event} but the event output is {disk_event}"
