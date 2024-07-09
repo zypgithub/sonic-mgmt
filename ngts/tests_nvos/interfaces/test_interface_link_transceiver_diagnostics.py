@@ -30,9 +30,11 @@ def test_interface_transceiver_diagnostics_basic(engines, devices):
         platform = Platform()
 
     with allure.step("Run diagnostics for optical cable and verify fields in output"):
+        list_of_transceivers = list(platform.transceiver.get_dict_of_transceivers(cable_type=PlatformConsts.TRANSCEIVER_CABLE_OPTICAL_MODULE))
+        optical_transceiver_name = Tools.RandomizationTool.select_random_value(list_of_transceivers).get_returned_value()
         optical_output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(
-            platform.transceiver.show('sw16')).get_returned_value()
-        yaml_output = platform.transceiver.show('sw16', output_format=OutputFormat.yaml)
+            platform.transceiver.show(optical_transceiver_name)).get_returned_value()
+        yaml_output = platform.transceiver.show(optical_transceiver_name, output_format=OutputFormat.yaml)
         fields_to_check = ["supported-cable-length", "cable-type", "channel", "diagnostics-status", "identifier",
                            "temperature", "vendor-date-code", "vendor-name", "vendor-pn", "vendor-rev", "vendor-sn",
                            "voltage"]
@@ -42,8 +44,10 @@ def test_interface_transceiver_diagnostics_basic(engines, devices):
             verify_result()
 
     with allure.step("Run diagnostics for link which doesn't exist and verify output"):
+        list_of_transceivers = list(platform.transceiver.get_dict_of_transceivers(cable_type=None))
+        transceiver_name = Tools.RandomizationTool.select_random_value(list_of_transceivers).get_returned_value()
         output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(
-            platform.transceiver.show('sw22')).get_returned_value()
+            platform.transceiver.show(transceiver_name)).get_returned_value()
         fields_to_check = ["diagnostics-status"]
         Tools.ValidationTool.verify_field_exist_in_json_output(output_dictionary, fields_to_check).verify_result()
         Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
@@ -53,8 +57,10 @@ def test_interface_transceiver_diagnostics_basic(engines, devices):
             .verify_result()
 
     with allure.step("Run diagnostics for link which is not DDMI and verify output"):
+        list_of_transceivers = list(platform.transceiver.get_dict_of_transceivers(cable_type=PlatformConsts.TRANSCEIVER_CABLE_COPPER_CABLE))
+        transceiver_name = Tools.RandomizationTool.select_random_value(list_of_transceivers).get_returned_value()
         output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(
-            platform.transceiver.show('sw10')).get_returned_value()
+            platform.transceiver.show(transceiver_name)).get_returned_value()
         fields_to_check = ["cable-length", "cable-type", "diagnostics-status", "identifier",
                            "vendor-date-code", "vendor-name", "vendor-pn", "vendor-rev", "vendor-sn"]
         Tools.ValidationTool.verify_field_exist_in_json_output(output_dictionary, fields_to_check).verify_result()
@@ -70,12 +76,12 @@ def test_interface_transceiver_diagnostics_basic(engines, devices):
             assert 'The requested item does not exist.' in output_dictionary, f"Negative command {port} port accepted"
         output_dictionary = platform.transceiver.show(op_param='aa', should_succeed=False)
         assert 'The requested item does not exist.' in output_dictionary, "Negative command aa port accepted"
-        output_dictionary = platform.transceiver.show(op_param='sw16 channel aa', should_succeed=False)
+        output_dictionary = platform.transceiver.show(op_param=f'{optical_transceiver_name} channel aa', should_succeed=False)
         assert 'The requested item does not exist.' in output_dictionary, "Negative command accepted"
 
     with allure.step("Run diagnostics with channel-id for link and verify output"):
         output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(
-            platform.transceiver.show('sw16 channel channel-1')).get_returned_value()
+            platform.transceiver.show(f'{optical_transceiver_name} channel channel-1')).get_returned_value()
         assert output_dictionary['rx-power'] != '-inf mW', "RX power value not as expected"
         assert output_dictionary['tx-bias-current'] != '-inf mW', "TX bias power value not as expected"
         assert output_dictionary['tx-power'] != '-inf mW', "TX power value not as expected"
