@@ -1,5 +1,7 @@
+import concurrent.futures
 import random
 import string
+import time
 
 import pytest
 
@@ -13,7 +15,8 @@ from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.certificate.constants import TestCert
 from ngts.tests_nvos.general.security.conftest import local_adminuser
 from ngts.tests_nvos.system.gnmi.constants import CERTIFICATE, DEFAULT_CERTIFICATE, GnmicErr, GNMI_TEST_CERT
-from ngts.tests_nvos.system.gnmi.helpers import load_certificate_into_gnmi, verify_gnmi_client
+from ngts.tests_nvos.system.gnmi.helpers import load_certificate_into_gnmi, verify_gnmi_client, \
+    get_timestamp_of_first_gnmi_response2
 
 
 @pytest.mark.system
@@ -269,3 +272,34 @@ def test_gnmi_reboot_system(engines, local_adminuser):
             system.aaa.user.user_id[local_adminuser.username].unset().verify_result()
             system.gnmi_server.unset(apply=True).verify_result()
             NvueGeneralCli.save_config(engines.dut)
+
+
+@pytest.mark.system
+@pytest.mark.gnmi
+def test_gnmi_set_cert_response_time(local_adminuser):
+    """
+    Check how long it takes from the time setting certificate, till clients using the CA-cert receive data
+
+    1. set cert-1 to gnmi
+    2. run client using ca-cert of another cert (cert-2)
+    3. set cert-2 to gnmi
+    4. receive data wit client
+    5. measure time between steps 3 and 4
+    """
+    cert1 = TestCert.cert_valid_1
+    cert2 = TestCert.cert_valid_2
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        with allure.step(f'set gnmi cert1: {cert1.name}'):
+            gnmi = System().gnmi_server
+            gnmi.set(CERTIFICATE, cert1.name, apply=True).verify_result()
+            apply_timestamp = time.time()
+        with allure.step(f'run client using cacert of cert2: {cert2.name}'):
+            client_thread = executor.submit(get_timestamp_of_first_gnmi_response2, *(local_adminuser, cert2))
+        with allure.step(f'set gnmi cert2: {cert2.name}'):
+            gnmi.set(CERTIFICATE, cert2.name, apply=True).verify_result()
+        with allure.step(f'wait and get timestamp of first response after cert change'):
+            response_timestamp = client_thread.result()
+            interval_result = response_timestamp - apply_timestamp
+        with allure.step(f'interval result: {interval_result}'):
+            pass

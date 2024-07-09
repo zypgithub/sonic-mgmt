@@ -51,7 +51,7 @@ def aaa_users(engines) -> Dict[str, UserInfo]:
             ldap_server.configure(engines)
         with allure.step('set radius server'):
             rad_server: RemoteAaaServerInfo = RadiusVmServer.SERVER_BY_ADDRESSING_TYPE[
-                random.choice(AddressingType.ALL_TYPES)]
+                random.choice([AddressingType.IPV4, AddressingType.DN])]
             rad_server.configure(engines)
         with allure.step('enable failthrough'):
             System().aaa.authentication.set(AuthConsts.FAILTHROUGH, AaaConsts.ENABLED, apply=True).verify_result()
@@ -70,7 +70,7 @@ def add_etc_host_mapping_for_test_cert(engines):
         cmd_runner = CmdRunner()
         cmd_runner.run_cmd_in_process(f'echo "{engines.dut.ip} {cert.dn}" | sudo tee -a {ETC_HOSTS}')
     yield
-    with allure.step(f'remove hostname mapping fro {ETC_HOSTS}'):
+    with allure.step(f'remove hostname mapping from {ETC_HOSTS}'):
         cmd_runner.run_cmd_in_process(f"sudo sed -i '/{cert.dn}/d' {ETC_HOSTS}", wait_till_done=True)
 
 
@@ -87,7 +87,7 @@ def restore_gnmi_cert(engines):
 @pytest.fixture(scope='module', autouse=True)
 def import_test_certs(scp_player):
     system = System()
-    test_certs = [TestCert.cert_valid_1, TestCert.cert_ca_mismatch]
+    test_certs = [TestCert.cert_valid_1, TestCert.cert_ca_mismatch, TestCert.cert_valid_2]
 
     with allure.step('import test certs'):
         current_certs = OutputParsingTool.parse_json_str_to_dictionary(

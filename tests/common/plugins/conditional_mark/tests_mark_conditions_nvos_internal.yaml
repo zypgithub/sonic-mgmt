@@ -1,5 +1,12 @@
 ########################## NVOS IGNORE START ##########################
 
+tests_nvos/general/security/tpm_attestation/test_tpm_attestation.py:
+  skip:
+    reason: "Testcase skipped on gorilla systems - feature is pruned on gorilla"
+    conditions_logical_operator: and
+    conditions:
+      - "'gorilla' in testbed"
+
 tests_nvos/system/gnmi/test_gnmi_cert.py::test_gnmi_delete_cert_in_use_by_gnmi:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3970205"
