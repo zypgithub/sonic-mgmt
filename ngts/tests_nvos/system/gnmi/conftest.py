@@ -24,10 +24,14 @@ from ngts.tools.test_utils.nvos_general_utils import generate_scp_uri_using_play
 logger = logging.getLogger()
 
 
-@pytest.fixture(scope='session')
-def scp_player(engines) -> LinuxSshEngine:
+def get_scp_player(engines) -> LinuxSshEngine:
     return engines.sonic_mgmt
     # return LinuxSshEngine(ip='10.237.116.70', username='root', password='12345')
+
+
+@pytest.fixture(scope='session')
+def scp_player(engines) -> LinuxSshEngine:
+    return get_scp_player(engines)
 
 
 @pytest.fixture(scope='session', autouse=True)

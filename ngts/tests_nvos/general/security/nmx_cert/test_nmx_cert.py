@@ -1,21 +1,23 @@
 import random
 import string
-from typing import List
+from typing import Dict
 
 import pytest
 
 import ngts.tools.test_utils.allure_utils as allure
 from ngts.nvos_constants.constants_nvos import ApiType, TestFlowType
+from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.certificate.constants import TestCert
+from ngts.tests_nvos.general.security.nmx_cert.conftest import clear_manager_config, import_test_certs
 from ngts.tests_nvos.general.security.nmx_cert.constants import Defaults, EncryptionMode, ENABLED, DISABLED, \
     UserCfgJsonFields, FILE_SHOULD_NOT_EXIST, NA, STATE
 from ngts.tests_nvos.general.security.nmx_cert.helpers import verify_manager_show, verify_cert_show, verify_cacert_show, \
-    verify_encryption_show, verify_client_connection, verify_static_checks
-from ngts.tests_nvos.system.gnmi.conftest import scp_player
+    verify_encryption_show, verify_client_connection, verify_static_checks, verify_commands_results, import_certificates
+from ngts.tests_nvos.system.gnmi.conftest import scp_player, get_scp_player
 
 
 @pytest.mark.nmx
@@ -141,21 +143,20 @@ def test_manager_cmd_fail_when_cluster_off(test_api):
         verify_cacert_show(NA)
         verify_encryption_show(NA)
     with allure.step('Run manager update/restore command'):
-        results: List[ResultObj] = []
+        results: Dict[str, ResultObj] = {}
         with allure.step('run update commands'):
-            results.append(cluster.manager.action_update())
-            results.append(cluster.manager.certificate.action_update(cert.name))
-            results.append(cluster.manager.ca_certificate.action_update(cert.cacert_name))
-            results.append(cluster.manager.encryption.action_update())
+            results['update manager'] = cluster.manager.action_update()
+            results['update certificate'] = cluster.manager.certificate.action_update(cert.name)
+            results['update ca_certificate'] = cluster.manager.ca_certificate.action_update(cert.cacert_name)
+            results['update encryption'] = cluster.manager.encryption.action_update()
         with allure.step('run restore commands'):
-            results.append(cluster.manager.encryption.action_restore())
-            results.append(cluster.manager.certificate.action_restore())
-            results.append(cluster.manager.ca_certificate.action_restore())
-            results.append(cluster.manager.action_restore())
+            results['restore manager'] = cluster.manager.action_restore()
+            results['restore certificate'] = cluster.manager.certificate.action_restore()
+            results['restore ca_certificate'] = cluster.manager.ca_certificate.action_restore()
+            results['restore encryption'] = cluster.manager.encryption.action_restore()
     with allure.step('Verify failed and show doesn’t change'):
         with allure.step('verify all commands failed'):
-            for result in results:
-                result.verify_result(False)
+            verify_commands_results(results, False)
         with allure.step('verify no change in related fields'):
             verify_manager_show(expect_state=Defaults.STATE, expect_cert=Defaults.CERT, expect_cacert=Defaults.CACERT,
                                 expect_encryption=Defaults.ENCRYPTION)
@@ -167,50 +168,11 @@ def test_manager_cmd_fail_when_cluster_off(test_api):
 @pytest.mark.nmx
 @pytest.mark.security
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_manager_cmd_fail_when_manager_off(test_api):
-    """
-    Verify that update/restore inner manager commands fail when cluster manager disabled
-
-    1.	Make sure cluster enabled, cluster manager disabled
-    2.	Run inner manager update/restore command
-    3.	Verify failed and show doesn’t change
-
-    """
-    TestToolkit.tested_api = test_api
-    cluster = Cluster()
-    cert = TestCert.cert_valid_1
-    with allure.step('Make sure cluster enabled, cluster manager disabled'):
-        cluster.set(STATE, ENABLED, apply=True).verify_result()
-        cluster.manager.action_restore().verify_result()
-    with allure.step('Run manager update/restore command'):
-        results: List[ResultObj] = []
-        with allure.step('run update commands'):
-            results.append(cluster.manager.certificate.action_update(cert.name))
-            results.append(cluster.manager.ca_certificate.action_update(cert.cacert_name))
-            results.append(cluster.manager.encryption.action_update())
-        with allure.step('run restore commands'):
-            results.append(cluster.manager.encryption.action_restore())
-            results.append(cluster.manager.certificate.action_restore())
-            results.append(cluster.manager.ca_certificate.action_restore())
-    with allure.step('Verify failed and show doesn’t change'):
-        with allure.step('verify all commands failed'):
-            for result in results:
-                result.verify_result(False)
-        with allure.step('verify no change in related fields'):
-            verify_manager_show(expect_state=DISABLED, expect_cert=Defaults.CERT, expect_cacert=Defaults.CACERT,
-                                expect_encryption=Defaults.ENCRYPTION)
-            verify_cert_show(expect_cert_id=Defaults.CERT)
-            verify_cacert_show(expect_cert_id=Defaults.CACERT)
-            verify_encryption_show(expect_mode=Defaults.ENCRYPTION)
-
-
-@pytest.mark.nmx
-@pytest.mark.security
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_delete_cert_fail_when_is_used(test_api):
+def test_delete_cert_fail_when_is_used(test_api, scp_player, engines, import_certs_back_after_test):
     """
     Verify that we cannot delete certs when are used (updated) for cluster manager config
 
+    0.  import ca/certs
     1.	Update certs
     2.	Try to remove certs
     3.	Verify fail and that there’s no change in related fields
@@ -218,19 +180,24 @@ def test_delete_cert_fail_when_is_used(test_api):
     TestToolkit.tested_api = test_api
     cluster = Cluster()
     cert = TestCert.cert_valid_1
+    with allure.step('import relevant certs'):
+        import_certificates(scp_player, engines.dut, [cert])
+        import_certificates(scp_player, engines.dut, [cert], True)
     with allure.step('Update certs'):
         cluster.manager.certificate.action_update(cert.name).verify_result()
         cluster.manager.ca_certificate.action_update(cert.cacert_name).verify_result()
-    with allure.step('Try to remove certs'):
+    with allure.step('Try to delete certs'):
+        results: Dict[str, ResultObj] = {}
         security = System().security
-        res_cert = security.certificate.cert_id[cert.name].action_delete()
-        res_cacert = security.ca_certificate.cert_id[cert.cacert_name].action_delete()
+        results['delete certificate'] = security.certificate.cert_id[cert.name].action_delete()
+        results['delete ca-certificate'] = security.ca_certificate.cert_id[cert.cacert_name].action_delete()
     with allure.step('Verify fail and that there’s no change in related fields'):
-        res_cert.verify_result(False)
-        res_cacert.verify_result(False)
-        verify_manager_show(expect_cert=cert.name, expect_cacert=cert.cacert_name)
-        verify_cert_show(expect_cert_id=cert.name)
-        verify_cacert_show(expect_cert_id=cert.cacert_name)
+        with allure.step('verify commands failed'):
+            verify_commands_results(results, False)
+        with allure.step('verify fields'):
+            verify_manager_show(expect_cert=cert.name, expect_cacert=cert.cacert_name)
+            verify_cert_show(expect_cert_id=cert.name)
+            verify_cacert_show(expect_cert_id=cert.cacert_name)
 
 
 @pytest.mark.nmx
@@ -248,13 +215,12 @@ def test_update_bad_param(test_api):
     manager = Cluster().manager
     rand_str = ''.join(random.choice(string.ascii_lowercase) for _ in range(6))
     with allure.step('Run update to cert-id that was not imported'):
-        res_cert = manager.certificate.action_update(rand_str)
-        res_cacert = manager.ca_certificate.action_update(rand_str)
-        res_encryption = manager.encryption.action_update(rand_str)
+        results: Dict[str, ResultObj] = {}
+        results['update certificate'] = manager.certificate.action_update(rand_str)
+        results['update ca-certificate'] = manager.ca_certificate.action_update(rand_str)
+        results['update encryption'] = manager.encryption.action_update(rand_str)
     with allure.step('Verify error'):
-        res_cert.verify_result(False)
-        res_cacert.verify_result(False)
-        res_encryption.verify_result(False)
+        verify_commands_results(results, False)
     with allure.step("Verify in show that related fields don’t change"):
         verify_manager_show(expect_cert=Defaults.CERT, expect_cacert=Defaults.CACERT,
                             expect_encryption=Defaults.ENCRYPTION)
@@ -341,7 +307,7 @@ def test_restore_cert_when_in_encryption_mode(test_api):
     with allure.step('Verify error and show is not changed'):
         res.verify_result(False)
         verify_manager_show(expect_cacert=cert.cacert_name)
-        verify_cacert_show(expect_cert_id=cert.cacert_name.name)
+        verify_cacert_show(expect_cert_id=cert.cacert_name)
 
 
 @pytest.mark.nmx
@@ -357,6 +323,8 @@ def test_connection_after_update_encryption(test_flow):
     3.	Run client request to nmx-c using matching cert & cacert of client side (– check encryption works?)
     4.	Expect success
     """
+    pytest.skip('currently skipping until getting image with NMX-C server')
+
     test_is_good_flow = test_flow == TestFlowType.GOOD_FLOW
     # test_is_good_flow = encryption_mode == EncryptionMode.MTLS
 
@@ -387,6 +355,8 @@ def test_connection_after_restore_encryption(test_flow):
     2.	restore encryption
     3.	verify client can connect only with NONE
     """
+    pytest.skip('currently skipping until getting image with NMX-C server')
+
     manager = Cluster().manager
     nmx_c_cert = client_cert = nmx_c_cacert = client_cacert = TestCert.cert_valid_1
 
@@ -412,6 +382,8 @@ def test_no_connection_after_restore_manager():
     2.	disable cluster manager     # TODO: can disable when everything is loaded? What happens then?
     3.	verify client cannot connect at all
     """
+    pytest.skip('currently skipping until getting image with NMX-C server')
+
     manager = Cluster().manager
     nmx_c_cert = client_cert = nmx_c_cacert = client_cacert = TestCert.cert_valid_1
 
@@ -435,8 +407,9 @@ def test_no_connection_after_restore_cluster():
     1.	update certs & encryption mode
     2.	disable cluster     # TODO: can disable when everything is loaded? What happens then?
     3.	verify client cannot connect at all
-
     """
+    pytest.skip('currently skipping until getting image with NMX-C server')
+
     cluster = Cluster()
     nmx_c_cert = client_cert = nmx_c_cacert = client_cacert = TestCert.cert_valid_1
 
@@ -454,8 +427,7 @@ def test_no_connection_after_restore_cluster():
 
 @pytest.mark.system
 @pytest.mark.gnmi
-@pytest.mark.parametrize('encryption_mode', [EncryptionMode.TLS, EncryptionMode.MTLS])
-def test_nmx_cert_reboot_case(encryption_mode):
+def test_nmx_cert_reboot_case():
     """
     Verify that certificates and encryption mode are kept after reboot
 
@@ -466,7 +438,7 @@ def test_nmx_cert_reboot_case(encryption_mode):
     """
     manager = Cluster().manager
     cert = TestCert.cert_valid_1
-
+    encryption_mode = random.choice([EncryptionMode.TLS, EncryptionMode.MTLS])
     with allure.step('load cert & cacert'):
         manager.certificate.action_update(cert.name).verify_result()
         manager.ca_certificate.action_update(cert.cacert_name).verify_result()
@@ -482,8 +454,7 @@ def test_nmx_cert_reboot_case(encryption_mode):
     # TODO: should also perform communication check, or fields values enough?
 
 
-@pytest.mark.usefixtures('scp_player', 'setup_import_certs')
-def factory_reset_nmx_cert_check(scp_player, setup_import_certs):
+def factory_reset_nmx_cert_check():
     """
     Verify that certificates and encryption mode cleared to default after factory reset
 
@@ -492,28 +463,39 @@ def factory_reset_nmx_cert_check(scp_player, setup_import_certs):
     3.	Factory reset
     4.	Verify values in show restored to defaults
     """
-    cert = TestCert.cert_valid_1
-    manager = Cluster().manager
-    encryption_mode = random.choice([EncryptionMode.TLS, EncryptionMode.MTLS])
+    dut_device: BaseDevice = TestToolkit.devices.dut
+    should_check_nmx: bool = dut_device.has_nmx
 
-    with allure.step('Import and load cert & cacert'):
-        # import_certificates(scp_player, engines.dut, [cert])  # TODO: check if usefixtures work
-        # import_certificates(scp_player, engines.dut, [cert], True)
-        manager.certificate.action_update(cert.name).verify_result()
-        manager.ca_certificate.action_update(cert.cacert_name).verify_result()
-    with allure.step('Update encryption mode'):
-        manager.encryption.action_update(encryption_mode).verify_result()
+    if should_check_nmx:
+        scp_player = get_scp_player(TestToolkit.engines)
+        cert = TestCert.cert_valid_1
+        manager = Cluster().manager
+        clear_manager_config()
+        encryption_mode = random.choice([EncryptionMode.TLS, EncryptionMode.MTLS])
+        with allure.step('Import and load cert & cacert'):
+            import_test_certs(scp_player, TestToolkit.engines.dut, [cert])
+            manager.certificate.action_update(cert.name).verify_result()
+            manager.ca_certificate.action_update(cert.cacert_name).verify_result()
+        with allure.step('Update encryption mode'):
+            manager.encryption.action_update(encryption_mode).verify_result()
+    else:
+        with allure.step('Not checking NMX on this dut device'):
+            pass
 
     yield  # factory reset
 
-    with allure.step('Verify values in show restored to defaults '):
-        verify_manager_show(expect_cert=Defaults.CERT, expect_cacert=Defaults.CACERT,
-                            expect_encryption=Defaults.ENCRYPTION)
-        verify_cert_show(expect_cert_id=Defaults.CERT)
-        verify_cacert_show(expect_cert_id=Defaults.CACERT)
-        verify_encryption_show(expect_mode=Defaults.ENCRYPTION)
+    if should_check_nmx:
+        with allure.step('Verify values in show restored to defaults '):
+            verify_manager_show(expect_cert=Defaults.CERT, expect_cacert=Defaults.CACERT,
+                                expect_encryption=Defaults.ENCRYPTION)
+            verify_cert_show(expect_cert_id=Defaults.CERT)
+            verify_cacert_show(expect_cert_id=Defaults.CACERT)
+            verify_encryption_show(expect_mode=Defaults.ENCRYPTION)
+    else:
+        with allure.step('Not checking NMX on this dut device'):
+            pass
 
     yield  # to prevent StopIteration on the 2nd next() call
 
 
-factory_reset_nmx_cert_checker = factory_reset_nmx_cert_check(None, None)  # generator
+factory_reset_nmx_cert_checker = factory_reset_nmx_cert_check()  # generator

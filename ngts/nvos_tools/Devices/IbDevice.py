@@ -665,6 +665,7 @@ class JulietSwitch(NvLinkSwitch):
         super()._init_constants()
         self.bmc_image_info = self.FaeImagesTestConsts(current_image_version='bmc_1.pkg', alternate_image_version='bmc_2.pkg')
         self.fpga_image_info = self.FaeImagesTestConsts(current_image_version='fpga_1.pkg', alternate_image_version='fpga_2.pkg')
+        self.has_nmx = True
 
     def _init_fan_list(self):
         super()._init_fan_list()

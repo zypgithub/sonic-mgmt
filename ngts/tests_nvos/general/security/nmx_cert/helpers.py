@@ -1,21 +1,61 @@
 import logging
-from typing import Union, Dict
+from typing import Union, Dict, List
 
 import ngts.tools.test_utils.allure_utils as allure
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from infra.tools.linux_tools.linux_tools import scp_file
+from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.nmx.Cluster import Cluster
+from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tests_nvos.general.security.certificate.helpers import get_path_of_imported_cert_private_file, \
     get_path_of_imported_cert_public_file, get_path_of_imported_cacert_public_file
 from ngts.tests_nvos.general.security.nmx_cert.constants import FieldsInShowOf, CERTIFICATE, CA_CERTIFICATE, \
-    ENCRYPTION, NMX_C_MGMT_PORT, USR_CFG_JSON, USR_CFG_JSON_PATH, NMX_CERTS_DIR, FILE_NOT_EXIST_ERR, \
+    ENCRYPTION, DEFAULT_NMX_C_MGMT_PORT, USR_CFG_JSON, USR_CFG_JSON_PATH, NMX_CERTS_DIR, FILE_NOT_EXIST_ERR, \
     NMX_CACERTS_DIR, FILE_SHOULD_NOT_EXIST, UserCfgJsonFields, UserCfgJsonValues, STATE
 from ngts.tests_nvos.general.security.nmx_cert.grpc.client.client import run_grpc_client_app
 from ngts.tests_nvos.general.security.nmx_cert.grpc.config import GrpcConfig, GrpcServerConfig, GrpcClientConfig
+from ngts.tools.test_utils.nvos_general_utils import generate_scp_uri_using_player
+
+
+def import_certificates(scp_player: LinuxSshEngine, dut_engine: LinuxSshEngine, certs: List[CertInfo],
+                        ca: bool = False):
+    security_obj = System(force_api=ApiType.NVUE).security
+    cert_obj = security_obj.ca_certificate if ca else security_obj.certificate
+
+    with allure.step(f'import test {"ca" if ca else ""}certs'):
+        current_certs = OutputParsingTool.parse_json_str_to_dictionary(
+            cert_obj.show()).get_returned_value()
+        for cert in certs:
+            name = cert.cacert_name if ca else cert.name
+            if name not in current_certs:
+                with allure.step(f'import {"ca" if ca else ""}cert {name}'):
+                    if ca:
+                        with allure.step('scp cacert data into switch'):
+                            scp_file(dut_engine, cert.cacert, '/tmp/')
+                        with allure.step('import cacert data'):
+                            cert_obj.cert_id[name].action_import(
+                                data=f'"$(cat /tmp/{cert.cacert_filename})"').verify_result()
+                    else:
+                        with allure.step(f'import cert {cert.name}'):
+                            cert_obj.cert_id[cert.name].action_import(
+                                uri_bundle=generate_scp_uri_using_player(scp_player, cert.p12_bundle),
+                                passphrase=cert.p12_password).verify_result()
+
+
+def delete_certificates(ca: bool = False):
+    security_obj = System().security
+    cert_obj = security_obj.ca_certificate if ca else security_obj.certificate
+    with allure.step(f'delete {"ca" if ca else ""}certs from the system'):
+        current_certs = OutputParsingTool.parse_json_str_to_dictionary(
+            cert_obj.show()).get_returned_value()
+        for cert_name in current_certs:
+            with allure.step(f'delete {"ca" if ca else ""}cert {cert_name}'):
+                cert_obj.cert_id[cert_name].action_delete().verify_result()
 
 
 def verify_component_show(component: BaseComponent, required_fields,
@@ -66,7 +106,7 @@ def send_grpc_request_to_nmx_c(tls_mode: str, server_cert: CertInfo, client_cert
         client_config = GrpcConfig(
             server=GrpcServerConfig(
                 address=server_cert.dn or server_cert.ip,
-                port=NMX_C_MGMT_PORT,
+                port=DEFAULT_NMX_C_MGMT_PORT,
                 tls_mode=tls_mode,
                 cert=server_cert,
                 cacert=server_cacert
@@ -222,3 +262,12 @@ def get_path_of_nmx_cacert_public_file(cacert_id, dut_engine: LinuxSshEngine):
     out = dut_engine.run_cmd(f'sudo ls {path}')
     # assert FILE_NOT_EXIST_ERR not in out, f'there is no public pem file for the given cacert-id "{cacert_id}"'
     return path if FILE_NOT_EXIST_ERR not in out else None
+
+
+def verify_commands_results(results: Dict[str, ResultObj], expect_success: bool):
+    issues: List[str] = []
+    for check_name, result in results.items():
+        if result.result != expect_success:
+            issues.append(
+                f'- {check_name} - {"failed but expected to succeed" if expect_success else "succeeded but expected to fail"}')
+    assert not issues, f'some of the commands succeeded while expected to fail:\n' + '\n'.join(issues)

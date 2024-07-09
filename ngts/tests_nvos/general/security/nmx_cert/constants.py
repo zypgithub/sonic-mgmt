@@ -9,7 +9,7 @@ CERTIFICATE = 'certificate'
 CA_CERTIFICATE = 'ca-certificate'
 ENCRYPTION = 'encryption'
 
-NMX_C_MGMT_PORT = 50051  # TODO: find out
+DEFAULT_NMX_C_MGMT_PORT = 51000
 
 USR_CFG_JSON_PATH = '/host/cluster_infra/conf/user_config.json'
 USR_CFG_JSON = USR_CFG_JSON_PATH.split('/')[-1]
