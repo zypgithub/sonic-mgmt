@@ -1,15 +1,15 @@
 import time
+
 import pytest
-import os
-from ngts.tools.test_utils import allure_utils as allure
-from ngts.nvos_tools.system.System import System
-from ngts.nvos_tools.infra.ValidationTool import ValidationTool
+
+from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
+from ngts.nvos_constants.constants_nvos import SystemConsts, NvosConst, OutputFormat
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_constants.constants_nvos import SystemConsts, NvosConst, OutputFormat
-from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
-from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
+from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
+from ngts.nvos_tools.infra.ValidationTool import ValidationTool
+from ngts.nvos_tools.system.System import System
+from ngts.tools.test_utils import allure_utils as allure
 
 
 @pytest.mark.cumulus
@@ -79,13 +79,14 @@ def test_replace_positive(engines, devices):
     with allure.step('set hostname to be {hostname} - without apply'.format(hostname=new_hostname_value)):
         system.set(SystemConsts.HOSTNAME, new_hostname_value, apply=False)
 
-    ib0_port = MgmtPort('ib0')
-    OutputParsingTool.parse_show_interface_output_to_dictionary(ib0_port.interface.show()).get_returned_value()
+    switch_type = devices.dut.switch_type.lower()
+    port = RandomizationTool.select_random_port(requested_ports_state=None, requested_ports_type=switch_type).get_returned_value()
+    OutputParsingTool.parse_show_interface_output_to_dictionary(port.interface.show()).get_returned_value()
 
     new_ib0_description = '"ib0description"'
     with allure.step('set ib0 description to be {description} - with apply'.format(
             description=new_ib0_description)):
-        ib0_port.interface.set(NvosConst.DESCRIPTION, new_ib0_description, apply=True, ask_for_confirmation=True).verify_result()
+        port.interface.set(NvosConst.DESCRIPTION, new_ib0_description, apply=True, ask_for_confirmation=True).verify_result()
 
     with allure.step("Replace config"):
         config_after_hostname_change = config_after_hostname_change.replace('"password": "*"',
@@ -184,7 +185,7 @@ def test_patch_empty_file(engines):
 
 @pytest.mark.general
 @pytest.mark.simx
-def test_patch_positive(engines):
+def test_patch_positive(engines, devices):
     """
 
         Test flow:
@@ -214,11 +215,13 @@ def test_patch_positive(engines):
         with allure.step('set hostname to be {hostname} - without apply'.format(hostname=new_hostname_value)):
             system.set(SystemConsts.HOSTNAME, new_hostname_value, apply=False)
 
-        ib0_port = MgmtPort('ib0')
+        switch_type = devices.dut.switch_type.lower()
+        port = RandomizationTool.select_random_port(requested_ports_state=None,
+                                                    requested_ports_type=switch_type).get_returned_value()
         new_ib0_description = 'TEST'
         with allure.step('set ib0 description to be {description} - with apply'.format(
                 description=new_ib0_description)):
-            ib0_port.interface.set(NvosConst.DESCRIPTION, new_ib0_description, apply=True, ask_for_confirmation=True).verify_result()
+            port.interface.set(NvosConst.DESCRIPTION, new_ib0_description, apply=True, ask_for_confirmation=True).verify_result()
 
         file_name = 'patch'
         file_type = 'yaml'
@@ -234,12 +237,12 @@ def test_patch_positive(engines):
                                                         first_hostname).verify_result()
 
             output_dictionary = OutputParsingTool.parse_show_interface_output_to_dictionary(
-                ib0_port.interface.show()).get_returned_value()
+                port.interface.show()).get_returned_value()
 
             ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
                                                         field_name=NvosConst.DESCRIPTION,
                                                         expected_value=new_ib0_description).verify_result()
-            ib0_port.interface.unset(NvosConst.DESCRIPTION, apply=False).verify_result()
+            port.interface.unset(NvosConst.DESCRIPTION, apply=False).verify_result()
             system.unset(SystemConsts.HOSTNAME, apply=True, ask_for_confirmation=True).verify_result()
 
 
