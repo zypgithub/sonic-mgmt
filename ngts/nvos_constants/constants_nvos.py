@@ -650,6 +650,7 @@ class PlatformConsts:
     ENV_TEMP_CURR_PROP = "current"
     ENV_TEMP_STATE_PROP = "state"
     ENV_TEMP_STATE_OK = 'ok'
+    ENV_TEMP_STATE_FAILED = 'failed'
     HW_COMP_SWITCH = "SWITCH"
     TRANSCEIVER_STATUS = "status"
     TRANSCEIVER_ERROR_STATUS = "error-status"
@@ -715,6 +716,8 @@ class FansConsts:
     STATE_NOT_OK = 'Not OK'
     STATE_ABSENT = 'absent'
     FAN_DIRECTION_MISMATCH_ERR = "is not aligned with fan1 direction"
+    FAN_STATUS_LED = "FAN_STATUS"
+    FAN_FAULT_FILE = "/var/run/hw-management/thermal/fan{}_fault"
 
 
 class IbConsts:

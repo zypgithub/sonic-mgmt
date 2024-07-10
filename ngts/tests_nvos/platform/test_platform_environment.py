@@ -1,10 +1,14 @@
 import logging
 import time
+from contextlib import contextmanager
 import pytest
 import random
 
+from ngts.nvos_tools.infra.FilesTool import TempFileOnEngine
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
+from ngts.tests_nvos.system.test_system_health import verify_health_status_and_led
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.system.System import System
@@ -506,6 +510,84 @@ def simulate_fan_direction(engines, devices, fan_name, direction):
     chmod_cmd = "sudo chmod 644  {}/{}_dir".format(devices.dut.fan_direction_dir, fan_name)
     ret_val = engines.dut.run_cmd(chmod_cmd)
     assert len(ret_val) == 0, "Chmod command for fan file failed"
+
+
+@pytest.mark.platform
+def test_platform_environment_fan_shared_led(engines, devices):
+    """
+    Only for systems with shared fan LED. Tests the LED turns red when any fan has an error. Flow:
+    - Check that health is OK and shared fan led is green before starting the test
+    - Choose 2 random fans
+    - Simulate error in fan A and assert led is amber
+    - Additionally simulate an error in fan B and assert led is amber
+    - Remove error only in fan B and assert led is amber
+    - Remove error in fan A and assert led is green
+    """
+    if FansConsts.FAN_STATUS_LED not in devices.dut.led_list:
+        pytest.skip(f"Skipping test because DUT has no shared fan led")
+
+    with allure.step("Validate initial health status and shared led"):
+        verify_health_status_and_led(System(), HealthConsts.OK)
+        assert_led_color(FansConsts.FAN_STATUS_LED, ok=True)
+
+    with allure.step("Random choose 2"):
+        fan_a, fan_b = RandomizationTool.select_random_values(devices.dut.fan_list, number_of_values_to_select=2,
+                                                              ).get_returned_value()
+    with allure.step(f"{fan_a=}, {fan_b=}"):
+        pass  # Puts the chosen_fans list in the allure report
+
+    with fan_error_context(fan_a, devices.dut, engines.dut):
+        assert_led_color(FansConsts.FAN_STATUS_LED, ok=False)
+        with fan_error_context(fan_b, devices.dut, engines.dut):
+            assert_led_color(FansConsts.FAN_STATUS_LED, ok=False)
+        assert_led_color(FansConsts.FAN_STATUS_LED, ok=False)
+
+    assert_led_color(FansConsts.FAN_STATUS_LED, ok=True)
+
+
+def assert_led_color(led: str, ok: bool):
+    led_name = 'led ' + led
+    expected_color = (HealthConsts.LED_OK_STATUS if ok else HealthConsts.LED_NOT_OK_STATUS)
+    with allure.step(f"Checking that {led_name} is {expected_color}"):
+        led_output = OutputParsingTool.parse_json_str_to_dictionary(Platform().environment.show(led_name)
+                                                                    ).get_returned_value()
+        assert led_output[PlatformConsts.ENV_LED_COLOR_LABEL] == expected_color
+
+
+@contextmanager
+def fan_error_context(fan: str, device, engine):
+    """
+    with fan_error_context("FAN1/2", devices.dut, engines.dut):
+        # this code runs while FAN1/2 status = failed
+    # this code runs while FAN1/2 status = ok
+    """
+    platform = Platform()
+    with allure.step(f"Simulating error in {fan}"):
+        fan_file_number = device.fan_list.index(fan) + 1  # FAN1/1 -> 1, FAN1/2 -> 2, FAN2/1 -> 3, ...
+        fan_fault_file = FansConsts.FAN_FAULT_FILE.format(fan_file_number)
+        logger.info(f"{fan_fault_file=}. Getting the link target:")
+        fan_fault_original_target = engine.run_cmd('readlink -f ' + fan_fault_file)
+        with TempFileOnEngine(engine) as tmp_file:
+            tmp_file.write('1')
+            cmd_output = engine.run_cmd(f"sudo ln -sf {tmp_file.path} {fan_fault_file}")
+            if cmd_output:
+                raise Exception("Test failure. See command and output above.")
+            time.sleep(5)
+            try:
+                fan_output = platform.environment.fan.show(fan)
+                assert (OutputParsingTool.parse_json_str_to_dictionary(fan_output).get_returned_value()
+                        [PlatformConsts.ENV_TEMP_STATE_PROP] == PlatformConsts.ENV_TEMP_STATE_FAILED), \
+                    "Test error: could not simulate fan failure"
+                yield
+            finally:
+                cmd_output = engine.run_cmd(f"sudo ln -sf {fan_fault_original_target} {fan_fault_file}")
+                if cmd_output:
+                    raise Exception("Test failure. See command and output above.")
+                time.sleep(5)
+                fan_output = platform.environment.fan.show(fan)
+                assert (OutputParsingTool.parse_json_str_to_dictionary(fan_output).get_returned_value()
+                        [PlatformConsts.ENV_TEMP_STATE_PROP] == PlatformConsts.ENV_TEMP_STATE_OK), \
+                    "Test error: fan state did not go back to 'ok'"
 
 
 def _verify_temp_prop(temp, temp_prop):

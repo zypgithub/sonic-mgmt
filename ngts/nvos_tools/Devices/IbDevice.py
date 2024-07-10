@@ -707,7 +707,7 @@ class JulietSwitch(NvLinkSwitch):
         super()._init_fan_list()
 
     def _init_led_list(self):
-        self.led_list = ['FAN1', 'FAN2', 'FAN3', 'FAN4', 'FAN5', 'FAN6', "STATUS", "UID"]
+        self.led_list = [FansConsts.FAN_STATUS_LED, "STATUS", "UID"]
 
 
 # -------------------------- JulietScaleout Switch ----------------------------
