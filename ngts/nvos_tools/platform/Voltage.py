@@ -43,7 +43,7 @@ class Voltage(BaseComponent):
     def get_file_name(file_full_detailes, stringtoadd=""):
         match = re.search(r'\s([^ ]+$)', file_full_detailes)
         sensor_name = re.sub(r'PMIC-.\+', '', match.group(1))
-        sensor_name = sensor_name.replace('+', ' ').replace('_', ' ').replace(' Vol', '')
+        sensor_name = sensor_name.replace('+', ' ').replace('_', ' ').replace(' Volt', '').replace(' Vol', '')
 
         return stringtoadd + sensor_name
 
