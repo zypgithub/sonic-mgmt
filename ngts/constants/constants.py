@@ -1600,5 +1600,34 @@ class PerfConsts:
     SLEEP_TIME_BEFORE_SAMPLE = 15
 
 
+class DoroceConsts:
+    BUFFER_CONFIGURATIONS_DICT = {'lossless_double_ipool': ['egress_lossless_pool',
+                                                            'egress_lossy_pool',
+                                                            'ingress_lossless_pool',
+                                                            'ingress_lossy_pool'],
+                                  'lossless_single_ipool': ['egress_lossless_pool',
+                                                            'egress_lossy_pool',
+                                                            'ingress_lossless_pool'],
+                                  'lossy_double_ipool': ['egress_lossy_pool',
+                                                         'ingress_lossy_pool',
+                                                         'roce_reserved_egress_pool',
+                                                         'roce_reserved_ingress_pool']
+                                  }
+    ROCE_POOLS = 'roce_pools'
+    NON_ROCE_POOLS = 'non_roce_pools'
+    PERCENTAGE_POOLS_DICT = {'lossless_double_ipool': {ROCE_POOLS: ['ingress_lossless_pool'],
+                                                       NON_ROCE_POOLS: ['ingress_lossy_pool',
+                                                                        'egress_lossy_pool']},
+                             'lossy_double_ipool': {ROCE_POOLS: ['roce_reserved_egress_pool',
+                                                                 'roce_reserved_ingress_pool'],
+                                                    NON_ROCE_POOLS: ['ingress_lossy_pool',
+                                                                     'egress_lossy_pool']}}
+    BUFFER_CONFIGURATIONS = list(BUFFER_CONFIGURATIONS_DICT.keys())
+    ROCE_PG = 'PG3'
+    NO_ROCE_PG = 'PG0'
+    WATERMARK_THRESHOLD = '1000'
+    ALLOWED_PERCENTAGE_DEVIATION = 2
+
+
 SETUPS_WITH_NON_DEFAULT_PTF = ['r-panther-40', 'r-panther-42', 'r-bobcat-01']
 FILE_INCLUDE_FAILED_SANITY_CHECKER_CASE = "/tmp/file_include_failed_sanity_checker_case.txt"

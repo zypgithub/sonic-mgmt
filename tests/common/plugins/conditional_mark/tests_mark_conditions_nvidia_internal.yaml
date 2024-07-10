@@ -234,7 +234,6 @@ tests/push_build_tests/general/doroce/test_doroce.py:
     conditions:
       - "'simx' in platform"
       - "'sn2' in platform or 'msn2700a1' in platform"
-      - "https://redmine.mellanox.com/issues/3769105 and ('sn5' in platform or 'sn4' in platform)"
 
 tests/nightly/rj45/test_rj45.py:
   skip:

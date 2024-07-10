@@ -81,8 +81,8 @@ class SonicAppExtensionCli:
     def enable_app(self, app_name):
         self.engine.run_cmd('sudo config feature state {} enabled'.format(app_name), validate=True)
 
-    def disable_app(self, app_name):
-        self.engine.run_cmd('sudo config feature state {} disabled'.format(app_name), validate=True)
+    def disable_app(self, app_name, validate=True):
+        self.engine.run_cmd('sudo config feature state {} disabled'.format(app_name), validate=validate)
 
     def install_app_from_tarball(self, tarball_name):
         self.engine.run_cmd("sudo spm install -y --from-tarball {}".format(tarball_name), validate=True)

@@ -5,11 +5,10 @@ import random
 import time
 from retry.api import retry_call
 
-from ngts.config_templates.interfaces_config_template import InterfaceConfigTemplate
 from infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
 from infra.tools.validations.traffic_validations.iperf.iperf_runner import IperfChecker
 from ngts.common.checkers import is_feature_installed
-from ngts.constants.constants import AppExtensionInstallationConstants, SonicConst
+from ngts.constants.constants import AppExtensionInstallationConstants, SonicConst, DoroceConsts
 
 logger = logging.getLogger()
 
@@ -40,24 +39,9 @@ IPERF_VALIDATION = {
     ]
 }
 PING_VALIDATION = {'sender': 'hb', 'args': {'count': 3, 'dst': '40.0.0.2'}}
-BUFFER_CONFIGURATIONS_DICT = {'lossless_double_ipool': ['egress_lossless_pool',
-                                                        'egress_lossy_pool',
-                                                        'ingress_lossless_pool',
-                                                        'ingress_lossy_pool'],
-                              'lossless_single_ipool': ['egress_lossless_pool',
-                                                        'egress_lossy_pool',
-                                                        'ingress_lossless_pool'],
-                              'lossy_double_ipool': ['egress_lossy_pool',
-                                                     'ingress_lossy_pool',
-                                                     'roce_reserved_egress_pool',
-                                                     'roce_reserved_ingress_pool']
-                              }
-BUFFER_CONFIGURATIONS = list(BUFFER_CONFIGURATIONS_DICT.keys())
-RANDOM_CONFIG = random.choice(BUFFER_CONFIGURATIONS)
-ROCE_PG = 'PG3'
-NO_ROCE_PG = 'PG0'
-
-WATERMARK_THRESHOLD = '1000'
+RANDOM_CONFIG = random.choice(DoroceConsts.BUFFER_CONFIGURATIONS)
+ROCE_PERCENTAGE = random.randint(1, 99)
+NON_ROCE_PERCENTAGE = 100 - ROCE_PERCENTAGE
 
 
 @pytest.fixture(scope='module')
@@ -72,11 +56,11 @@ def check_feature_status(cli_objects):
     with allure.step('Validating doroce feature is installed'):
         status, msg, ext_name = check_doai_installed()
         if status:
-            cli_objects.dut.app_ext.disable_app(ext_name)
-            cli_objects.dut.app_ext.enable_app(ext_name)
             # TODO: workaround for the issue https://redmine.mellanox.com/issues/2834968
             # happens in push_gate with reload
             # when will be fixed, must be left only reload_qos
+            cli_objects.dut.app_ext.disable_app(ext_name, validate=False)
+            cli_objects.dut.app_ext.enable_app(ext_name)
             cli_objects.dut.qos.clear_qos()
             time.sleep(10)
             cli_objects.dut.qos.reload_qos()
@@ -107,12 +91,17 @@ def pre_configuration_for_doroce(cli_objects, interfaces, check_feature_status):
 @pytest.fixture(scope='module', autouse=True)
 def check_no_roce_configuration(cli_objects, interfaces, players, is_simx, platform_params,
                                 pre_configuration_for_doroce):
+    is_doroce_enabled = cli_objects.dut.doroce.is_doroce_configuration_enabled()
+    if is_doroce_enabled:
+        cli_objects.dut.doroce.disable_doroce()
     check_no_roce_configurations(cli_objects, interfaces, players, is_simx, platform_params.hwsku)
 
     yield
 
     cli_objects.dut.doroce.disable_doroce()
     check_no_roce_configurations(cli_objects, interfaces, players, is_simx, platform_params.hwsku)
+    if is_doroce_enabled:
+        cli_objects.dut.doroce.config_doroce_lossless_double_ipool()
 
 
 @pytest.fixture(scope='module')
@@ -126,7 +115,7 @@ def doroce_conf_dict(cli_objects):
 @pytest.mark.physical_coverage
 @pytest.mark.build
 @pytest.mark.doroce
-@pytest.mark.parametrize("configuration", BUFFER_CONFIGURATIONS)
+@pytest.mark.parametrize("configuration", DoroceConsts.BUFFER_CONFIGURATIONS)
 @allure.title('DoRoCE test case')
 def test_doroce(configuration, doroce_conf_dict, interfaces, cli_objects, players, is_simx):
     """
@@ -138,7 +127,7 @@ def test_doroce(configuration, doroce_conf_dict, interfaces, cli_objects, player
     :param players: players fixture
     :param is_simx: fixture, True if setup is SIMX, else False
     """
-    pools = BUFFER_CONFIGURATIONS_DICT[configuration]
+    pools = DoroceConsts.BUFFER_CONFIGURATIONS_DICT[configuration]
     do_doroce_test(configuration, pools, doroce_conf_dict, interfaces, cli_objects, players, is_simx)
 
 
@@ -154,7 +143,7 @@ def test_doroce_toggle_ports(doroce_conf_dict, interfaces, cli_objects, players,
     :param players: players fixture
     :param is_simx: fixture, True if setup is SIMX, else False
     """
-    pools = BUFFER_CONFIGURATIONS_DICT[RANDOM_CONFIG]
+    pools = DoroceConsts.BUFFER_CONFIGURATIONS_DICT[RANDOM_CONFIG]
     do_doroce_test(RANDOM_CONFIG, pools, doroce_conf_dict, interfaces,
                    cli_objects, players, is_simx, do_toggle_ports=True)
 
@@ -164,7 +153,11 @@ def do_doroce_test(conf, pools, doroce_conf_dict, interfaces, cli_objects, playe
     Base DoRoCE test. Parametrized test, which running base DoRoCE test with different parameters
     """
     doroce_configuration_method = doroce_conf_dict[conf]
-    doroce_configuration_method()
+    if 'double' in doroce_configuration_method.__name__:
+        doroce_configuration_method([ROCE_PERCENTAGE, NON_ROCE_PERCENTAGE])
+        retry_call(validate_buffer_pools_percentage, fargs=[cli_objects, conf], tries=8, delay=5, logger=logger)
+    else:
+        doroce_configuration_method()
 
     if do_toggle_ports:
         toggle_ports(interfaces, cli_objects)
@@ -172,7 +165,7 @@ def do_doroce_test(conf, pools, doroce_conf_dict, interfaces, cli_objects, playe
     cli_objects.dut.doroce.check_buffer_configurations(pools)
     run_ping(players)
 
-    retry_call(validate_iperf_traffic, fargs=[cli_objects, interfaces, players, is_simx, ROCE_PG],
+    retry_call(validate_iperf_traffic, fargs=[cli_objects, interfaces, players, is_simx, DoroceConsts.ROCE_PG],
                tries=4, delay=5, logger=logger)
     validate_negative_config(doroce_configuration_method)
 
@@ -183,7 +176,7 @@ def run_ping(players):
         retry_call(ping_checker.run_validation, fargs=[], tries=18, delay=5, logger=logger)
 
 
-def validate_iperf_traffic(cli_objects, interfaces, players, is_simx, prio_group=NO_ROCE_PG):
+def validate_iperf_traffic(cli_objects, interfaces, players, is_simx, prio_group=DoroceConsts.NO_ROCE_PG):
     if is_simx:
         logger.info('Skip traffic validation for SIMX devices')
     else:
@@ -201,16 +194,20 @@ def run_traffic(cli_objects, players):
 
 def validate_buffer(cli_objects, interfaces, prio_group):
     stat_results = cli_objects.dut.watermark.show_and_parse_watermarkstat()
-    assert stat_results[interfaces.dut_hb_2][prio_group] > WATERMARK_THRESHOLD, \
+    assert stat_results[interfaces.dut_hb_2][prio_group] > DoroceConsts.WATERMARK_THRESHOLD, \
         f'Unexpected watermark value for ROCE traffic({prio_group}).' \
-        f' Current: {stat_results[interfaces.dut_hb_2][prio_group]}. Expected threshold: {WATERMARK_THRESHOLD}'
+        f' Current: {stat_results[interfaces.dut_hb_2][prio_group]}.' \
+        f' Expected threshold: {DoroceConsts.WATERMARK_THRESHOLD}'
 
 
 def validate_negative_config(configuration_method, exp_err_msg='RoCE is already enabled'):
     with allure.step('Run negative validation'):
-        output = configuration_method()
+        if 'double' in configuration_method.__name__:
+            output = configuration_method([ROCE_PERCENTAGE, NON_ROCE_PERCENTAGE])
+        else:
+            output = configuration_method()
         assert exp_err_msg in output, f'Negative validation failed.\nExpected error message:"{exp_err_msg}" '\
-                                      f'not found in the output: {output}'
+            f'not found in the output: {output}'
         logger.info('The negative validation passed')
 
 
@@ -229,3 +226,61 @@ def check_no_roce_configurations(cli_objects, interfaces, players, is_simx, hwsk
         run_ping(players)
         retry_call(validate_iperf_traffic, fargs=[cli_objects, interfaces, players, is_simx],
                    tries=4, delay=5, logger=logger)
+
+
+def validate_buffer_pools_percentage(cli_objects, conf):
+    buffer_info_pool_sizes_dict = cli_objects.dut.doroce.parse_and_show_buffer_information()
+    doroce_status_pool_configs_dict = cli_objects.dut.doroce.parse_and_show_doroce_status()
+
+    verifify_percentage(conf, doroce_status_pool_configs_dict)
+    compare_sizes(conf, buffer_info_pool_sizes_dict, doroce_status_pool_configs_dict)
+
+
+def get_pools_to_check(conf):
+    """
+    The pools changed according to configuration, take one random pool for RoCE and Non-RoCE pool
+    :param conf: configuration
+    :return: one RoCE and one Non-RoCE pools. Example: ingress_lossless_pool, egress_lossy_pool
+    """
+    # the pools changed according to configuration, take one random pool for RoCE and Non-RoCE pool
+    roce_pools = DoroceConsts.PERCENTAGE_POOLS_DICT[conf][DoroceConsts.ROCE_POOLS]
+    roce_pool = random.choice(roce_pools)
+    non_roce_pools = DoroceConsts.PERCENTAGE_POOLS_DICT[conf][DoroceConsts.NON_ROCE_POOLS]
+    non_roce_pool = random.choice(non_roce_pools)
+    return roce_pool, non_roce_pool
+
+
+def verifify_percentage(conf, doroce_status_pool_configs_dict):
+    tested_roce_pool, tested_non_roce_pool = get_pools_to_check(conf)
+
+    # Check the percentage values
+    assert int(ROCE_PERCENTAGE) == int(doroce_status_pool_configs_dict[tested_roce_pool]['percentage']), \
+        (f'The tested RoCE pool {tested_roce_pool} has unexpected percentage value.'
+         f' Expected :{ROCE_PERCENTAGE}, Actual: {doroce_status_pool_configs_dict[tested_roce_pool]["percentage"]}')
+    assert int(NON_ROCE_PERCENTAGE) == int(doroce_status_pool_configs_dict[tested_non_roce_pool]['percentage']), \
+        (f'The tested Non RoCE pool {tested_roce_pool} has unexpected percentage value.'
+         f' Expected :{NON_ROCE_PERCENTAGE}, Actual: {doroce_status_pool_configs_dict[tested_roce_pool]["percentage"]}')
+
+    # Check the sizes affected from percentage values
+    # Example: 900 is 90%, 100 is 10%
+    #  900/90 is equal to 100/10 with deviation?
+    roce_one_perc_size = int(doroce_status_pool_configs_dict[tested_roce_pool]['size']) / int(ROCE_PERCENTAGE)
+    non_roce_one_perc_size = int(doroce_status_pool_configs_dict[tested_non_roce_pool]['size']) / int(NON_ROCE_PERCENTAGE)
+    concurrent_deviation = abs(roce_one_perc_size - non_roce_one_perc_size)
+    assert concurrent_deviation < DoroceConsts.ALLOWED_PERCENTAGE_DEVIATION, \
+        (f'The current percentage deviation: {concurrent_deviation} is bigger'
+         f' then allowed:{DoroceConsts.ALLOWED_PERCENTAGE_DEVIATION}')
+
+
+def compare_sizes(conf, buffer_info_pool_sizes_dict, doroce_status_pool_configs_dict):
+    tested_roce_pool, tested_non_roce_pool = get_pools_to_check(conf)
+    # RoCE pool
+    assert buffer_info_pool_sizes_dict[tested_roce_pool] == doroce_status_pool_configs_dict[tested_roce_pool]['size'], \
+        (f'The sizes for pool {tested_roce_pool} are different, show buffer'
+         f' information: {buffer_info_pool_sizes_dict[tested_roce_pool]},'
+         f' show doroce status: {doroce_status_pool_configs_dict[tested_roce_pool]["size"]}')
+    # Non RoCE pool
+    assert buffer_info_pool_sizes_dict[tested_non_roce_pool] == doroce_status_pool_configs_dict[tested_non_roce_pool]['size'], \
+        (f'The sizes for pool {tested_non_roce_pool} are different, show buffer'
+         f' information: {buffer_info_pool_sizes_dict[tested_non_roce_pool]},'
+         f' show doroce status: {doroce_status_pool_configs_dict[tested_non_roce_pool]["size"]}')

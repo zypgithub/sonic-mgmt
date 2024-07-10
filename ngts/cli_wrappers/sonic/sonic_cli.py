@@ -253,7 +253,7 @@ class SonicCli:
     @property
     def doroce(self):
         if self._doroce is None:
-            self._doroce = SonicDoroceCli(engine=self.engine)
+            self._doroce = SonicDoroceCli(engine=self.engine, cli_obj=self)
         return self._doroce
 
     @property
