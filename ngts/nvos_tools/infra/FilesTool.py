@@ -1,5 +1,9 @@
 import logging
 import re
+from datetime import datetime
+
+from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
+from ngts.tools.test_utils import allure_utils as allure
 
 from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
 from ngts.tools.test_utils import allure_utils as allure
@@ -55,3 +59,27 @@ class EngineFile:
     def sed(self, pattern: str, new_text: str):
         self.engine.run_cmd(f"sudo sed -i 's/{pattern}/{new_text}/' {self.file_path}")
         logger.info(f"new content of {self.file_path}:\n" + self.get_content())
+
+
+class TempFileOnEngine:
+    """
+    File is created on engine and automatically assigned a name. File is deleted at the end of usage. Usage example:
+    with TempFileOnEngine(engines.dut) as f:
+        logger.info(f.path)
+        f.write('xyz')
+    """
+
+    def __init__(self, engine: ProxySshEngine):
+        self.engine = engine
+        self.path = datetime.now().strftime("/tmp/%Y%m%d%H%M%S.test")
+
+    def __enter__(self):
+        with allure.step(f"Creating temp file: {self.path}"):
+            self.engine.run_cmd(f"touch {self.path}")
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.engine.run_cmd(f"rm -f {self.path}")
+
+    def write(self, text: str, newline=True):
+        self.engine.run_cmd(f"echo {'' if newline else '-n '}'{text}' >> {self.path}")

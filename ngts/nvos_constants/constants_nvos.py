@@ -725,6 +725,7 @@ class FansConsts:
     STATE_NOT_OK = 'Not OK'
     STATE_ABSENT = 'absent'
     FAN_DIRECTION_MISMATCH_ERR = "is not aligned with fan1 direction"
+    FAN_DIRECTION_MISMATCH_ERR_CROC = "direction intake is not aligned"
     FAN_STATUS_LED = "FAN_STATUS"
     FAN_FAULT_FILE = "/var/run/hw-management/thermal/fan{}_fault"
 
