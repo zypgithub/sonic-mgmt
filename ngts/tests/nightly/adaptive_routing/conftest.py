@@ -7,12 +7,13 @@ from ngts.config_templates.ip_config_template import IpConfigTemplate
 from ngts.config_templates.frr_config_template import FrrConfigTemplate
 from ngts.helpers.adaptive_routing_helper import ArHelper
 from ngts.common.checkers import is_feature_installed
-from ngts.constants.constants import AppExtensionInstallationConstants
+from ngts.constants.constants import AppExtensionInstallationConstants, SonicConst
 from ngts.tests.nightly.adaptive_routing.constants import ArConsts
 from ngts.helpers.reboot_reload_helper import get_supported_reboot_reload_types_list
 from ngts.tests.conftest import get_dut_loopbacks
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
+
 
 logger = logging.getLogger()
 ar_helper = ArHelper()
@@ -29,6 +30,29 @@ def is_ar_supported(chip_type, sonic_branch):
         pytest.skip('Adaptive Routing feature is supported on SPC4 and higher chip types')
     if sonic_branch in ['201911', '202012', '202205', '202211']:
         pytest.skip('Adaptive Routing feature is supported at 202305 and higher')
+
+
+@pytest.fixture(scope='module')
+def wa_for_orchagent_issue(cli_objects, engines, platform_params):
+    """
+    This method is applying workaround due to RM #3606485, and adds a SAI parameter to the sai profile.
+    """
+    if is_redmine_issue_active([3606485]):
+        platform = platform_params['platform']
+        hwsku = platform_params['hwsku']
+        sai_profile_dir = SonicConst.SAI_PROFILE_FILE_PATH.format(PLATFORM=platform, HWSKU=hwsku)
+        sai_flag = "SAI_HOSTIF_OPER_STATUS_UPDATE_BY_APP=1"
+        sai_profile_backup = sai_profile_dir + ".bk"
+        # Create and save a backup file for SAI profile
+        engines.dut.run_cmd(f'sudo bash -c \'cp {sai_profile_dir} {sai_profile_backup}\'')
+        # ADD the WA script and reload
+        engines.dut.run_cmd(f'sudo bash -c \'echo "{sai_flag}" >> {sai_profile_dir}\'')
+        cli_objects.dut.general.reload_configuration(force=True)
+
+        yield
+        # Restore the original SAI profile and reload
+        engines.dut.run_cmd(f'sudo bash -c \'cp {sai_profile_backup} {sai_profile_dir}\'')
+        cli_objects.dut.general.reload_configuration(force=True)
 
 
 @pytest.fixture(scope='module')

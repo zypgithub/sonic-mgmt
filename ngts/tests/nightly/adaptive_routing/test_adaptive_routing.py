@@ -17,7 +17,7 @@ class TestArBasic:
 
     @pytest.fixture(autouse=True)
     def setup_param(self, topology_obj, engines, cli_objects, interfaces, players, dut_ha_1_mac, ha_dut_1_mac,
-                    ar_base_config_default_vrf, set_config_db_split_mode):
+                    ar_base_config_default_vrf, set_config_db_split_mode, wa_for_orchagent_issue):
         self.topology_obj = topology_obj
         self.engines = engines
         self.interfaces = interfaces
