@@ -611,6 +611,37 @@ platform_tests/fwutil/test_fwutil.py::test_fwutil_update_next:
   skip:
     reason: "Test flow is covered by push gate with upgrade flow"
 
+platform_tests/fwutil/test_fwutil.py::test_fwutil_install_file[ONIE-/root/mars/workspace/sonic-mgmt/tests/platform_tests/fwutil/firmware.json]:
+  skip:
+    reason: "Test case ignored on SPC4 due to RM issue: https://redmine.mellanox.com/issues/3829488"
+    conditions:
+    - "https://redmine.mellanox.com/issues/3829488 and 'sn5' in platform"
+
+platform_tests/fwutil/test_fwutil.py::test_fwutil_install_bad_name[ONIE-/root/mars/workspace/sonic-mgmt/tests/platform_tests/fwutil/firmware.json]:
+  skip:
+    reason: "Test case ignored on SPC4 due to RM issue: https://redmine.mellanox.com/issues/3829488"
+    conditions:
+    - "https://redmine.mellanox.com/issues/3829488 and 'sn5' in platform"
+
+platform_tests/fwutil/test_fwutil.py::test_fwutil_install_bad_path[ONIE-/root/mars/workspace/sonic-mgmt/tests/platform_tests/fwutil/firmware.json]:
+  skip:
+    reason: "Test case ignored on SPC4 due to RM issue: https://redmine.mellanox.com/issues/3829488"
+    conditions:
+    - "https://redmine.mellanox.com/issues/3829488 and 'sn5' in platform"
+
+platform_tests/fwutil/test_fwutil.py::test_fwutil_update_current[ONIE-/root/mars/workspace/sonic-mgmt/tests/platform_tests/fwutil/firmware.json]:
+  skip:
+    reason: "Test case ignored on SPC4 due to RM issue: https://redmine.mellanox.com/issues/3829488"
+    conditions:
+    - "https://redmine.mellanox.com/issues/3829488 and 'sn5' in platform"
+
+platform_tests/fwutil/test_fwutil.py::test_fwutil_update_bad_config[ONIE-/root/mars/workspace/sonic-mgmt/tests/platform_tests/fwutil/firmware.json]:
+  skip:
+    reason: "Test case ignored on SPC4 due to RM issue: https://redmine.mellanox.com/issues/3829488"
+    conditions:
+    - "https://redmine.mellanox.com/issues/3829488 and 'sn5' in platform"
+
+
 platform_tests/fwutil/test_fwutil.py::test_fwutil_install_file:
   skip:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/2382365 and platform 2100"

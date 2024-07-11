@@ -131,8 +131,6 @@ def component(request, duthost, fw_pkg):
         else:
             available_components = list(set(available_components) | set(host_components))
 
-    if 'ONIE' in available_components:
-        available_components.remove('ONIE')
     if len(available_components) > 0:
         for component in available_components:
             if component_type in component:
