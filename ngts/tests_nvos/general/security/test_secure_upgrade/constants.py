@@ -12,3 +12,5 @@ BAD_SIGNATURE_IMG = 'bad-signature-image'
 BAD_PAYLOAD_IMG = 'bad-payload-image'
 PROD_IMG = 'prod-image'
 DEV_IMG = 'dev-image'
+
+TEXT_TO_INJECT = 'alon da king'
