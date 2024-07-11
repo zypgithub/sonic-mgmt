@@ -23,6 +23,7 @@ class DeviceFactory:
             'QM3400_simx - Crocodile': CrocodileSimxSwitch,
             'QM8790 - Black Mamba': BlackMambaSwitch,
             'QM3000 - Black Mamba': BlackMambaSwitch,
+            'Q3400-RA Black Mamba': BlackMambaSwitch,
             'Mellanox SN4700': Mlx4700Switch,
             'Mellanox SN4600': Mlx4600Switch,
             'Mellanox 2410': Mlx2410Switch,

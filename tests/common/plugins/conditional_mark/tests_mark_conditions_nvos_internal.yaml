@@ -409,12 +409,6 @@ tests_nvos/platform/test_platform_transceiver.py:
       - "'gorilla' not in testbed"
       - https://redmine.mellanox.com/issues/3950840
 
-tests_nvos/general/config_commands/test_config_fetch:
-  skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3955660"
-    conditions:
-      - https://redmine.mellanox.com/issues/3955660
-
 tests_nvos/system/test_system_factory_reset.py::test_reset_factory_without_params:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3958670"
