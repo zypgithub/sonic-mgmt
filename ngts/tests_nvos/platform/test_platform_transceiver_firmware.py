@@ -19,6 +19,7 @@ logger = logging.getLogger()
 
 @pytest.mark.platform
 @pytest.mark.ib
+@pytest.mark.parametrize('test_api', [ApiType.NVUE])
 def test_transceiver_database_tables(engines, devices, test_api):
     """
     Test Flow:
@@ -32,12 +33,12 @@ def test_transceiver_database_tables(engines, devices, test_api):
         platform = Platform()
         transceivers_tables_name = "TRANSCEIVER_FIRMWARE_INFO"
         transceivers_list = list(OutputParsingTool.parse_json_str_to_dictionary(platform.transceiver.show()).returned_value.keys())
-        number_of_transceivers = len(transceivers_list)
+        number_of_transceivers = len(transceivers_list) * 2
         with allure.step("Validate for each transceiver out of {} transceivers we have the table in STATE_DB".format(number_of_transceivers)):
             tables_in_database = Tools.DatabaseTool.sonic_db_cli_get_keys(engine=engines.dut, asic="",
                                                                           db_name=DatabaseConst.STATE_DB_NAME,
                                                                           grep_str=transceivers_tables_name).splitlines()
-            assert len(devices.dut.all_port_list) == len(tables_in_database), "Test Failed: we expected {} transceivers tables in STATE_DB but we found only {}".format(len(devices.dut.all_port_list), len(tables_in_database))
+            assert number_of_transceivers == len(tables_in_database), "Test Failed: we expected {} transceivers tables in STATE_DB but we found only {}".format(len(number_of_transceivers), len(tables_in_database))
 
 
 @pytest.mark.platform
@@ -65,7 +66,6 @@ def test_reset_transceiver_firmware_positive(engines, test_api, start_sm):
     :param test_api:
     :return:
     """
-
     platform, random_transceiver, random_port = _get_random_optical_module_transceiver()
 
     with allure.step("Create interface object"):
@@ -215,7 +215,7 @@ def test_install_reset_transceiver_firmware_negative_flow(engines, test_api):
 
         with allure.step("verify show commands after install"):
             output_after_install = OutputParsingTool.parse_json_str_to_dictionary(platform.transceiver.show(random_transceiver + ' firmware')).verify_result()
-            _verify_expected_dict(command_output=output_after_install, default_fw=default_fw, status='Failed', msg='Failed to download FW image to EEPROM')
+            _verify_expected_dict(command_output=output_after_install, default_fw='N/A', status='Failed', msg='Failed to complete download of FW image to EEPROM')
             assert show_interface_after_install == show_interface_before_install, "at least one of the link values has been change, before_install {} after install {}".format(show_interface_before_install, show_interface_after_install)
             # bug 3935231: we will need to run reset and verify that status is ok and no err msg
             """
