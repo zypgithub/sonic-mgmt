@@ -229,7 +229,8 @@ class TestNewTc:
         if expected_hwsku_in_tc_config_file in TC_CONST.PLATFORMS_WITHOUT_TC_CONFIG_LINK:
             with allure.step(f"verify config file contains the hwsku name"):
                 tc_config_content = self.dut_engine.run_cmd(f'sudo cat {TC_CONST.TC_CONFIG_FILE}')
-                assert expected_hwsku_in_tc_config_file.lower() in tc_config_content, \
+                assert expected_hwsku_in_tc_config_file.lower() or \
+                    expected_hwsku_in_tc_config_file.replace('QM', 'Q').lower() in tc_config_content, \
                     f"tc_config file should contains hwsku name: {expected_hwsku_in_tc_config_file.lower()}"
 
         # RM issue 3769500
@@ -240,7 +241,9 @@ class TestNewTc:
             with allure.step(f"Use {TC_CONST.HW_MGMT_THERMAL_FOLDER}/tc_config_*.json file to verify hwsku"):
                 cmd = f'ls {TC_CONST.HW_MGMT_THERMAL_FOLDER} | grep -i {expected_hwsku_in_tc_config_file.lower()}.json'
                 output = self.dut_engine.run_cmd(cmd)
-                assert expected_hwsku_in_tc_config_file.lower() in output.lower(), "SKU not found in the expected file."
+                assert expected_hwsku_in_tc_config_file.lower() or \
+                    expected_hwsku_in_tc_config_file.replace('QM', 'Q').lower() in output.lower(), \
+                    "SKU not found in the expected file."
         else:
             with allure.step("Use tc_config link to verify hwsku"):
                 tc_config_link = self.dut_engine.run_cmd(f'sudo readlink {TC_CONST.TC_CONFIG_FILE}')
