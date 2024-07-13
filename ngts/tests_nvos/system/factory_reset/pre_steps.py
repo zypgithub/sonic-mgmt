@@ -1,5 +1,6 @@
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.tests_nvos.general.security.nmx_cert.test_nmx_cert import factory_reset_nmx_cert_checker
 from ngts.tests_nvos.general.security.tpm_attestation.helpers import factory_reset_tpm_checker
 from ngts.tests_nvos.system.factory_reset.helpers import *
 from ngts.tests_nvos.system.gnmi.helpers import factory_reset_gnmi_checker
@@ -53,11 +54,17 @@ def factory_reset_no_params_pre_steps(engines, platform_params, system, devices)
         update_timezone(system)
         current_time = get_current_time(engines)
 
-    with allure.step('pre factory reset TPM related check'):
-        next(factory_reset_tpm_checker)
-
-    with allure.step('pre factory reset GNMI cert related check'):
-        next(factory_reset_gnmi_checker)
+    with allure.step('pre factory reset security checks'):
+        pre_factory_reset_security_checks()
 
     return apply_and_save_port, current_time, just_apply_port, last_status_line, machine_type, not_apply_port, \
         username
+
+
+def pre_factory_reset_security_checks():
+    with allure.step('TPM check'):
+        next(factory_reset_tpm_checker)
+    with allure.step('GNMI cert check'):
+        next(factory_reset_gnmi_checker)
+    with allure.step('NMX cert check'):
+        next(factory_reset_nmx_cert_checker)
