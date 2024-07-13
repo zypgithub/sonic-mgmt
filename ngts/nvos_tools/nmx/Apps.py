@@ -1,7 +1,6 @@
 import logging
+
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
-from ngts.nvos_tools.nmx.Installed import Installed
-from ngts.nvos_tools.nmx.Running import Running
 
 logger = logging.getLogger()
 

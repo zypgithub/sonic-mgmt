@@ -39,3 +39,26 @@ class OpenApiClusterCli(OpenApiBaseCli):
         param_name = "url"
         param_value = remote_url
         return OpenApiClusterCli.action(engine, action_type=ActionType.FETCH.value, resource_path=resource_path, param_name=param_name, param_value=param_value)
+
+    @staticmethod
+    def action_update_cluster_manager_property(engine, resource_path, param_name='', param_val=''):
+        logging.info(f'Run action import on: {resource_path} using OpenApi')
+        parameters = {} if not param_name and not param_val else {param_name: param_val}
+        params = \
+            {
+                "state": "start",
+                "parameters": parameters
+            }
+        return OpenApiCommandHelper.execute_action(ActionType.UPDATE, engine.engine.username, engine.engine.password,
+                                                   engine.ip, resource_path, params)
+
+    @staticmethod
+    def action_restore_cluster_manager_property(engine, resource_path):
+        logging.info(f'Run action delete on: {resource_path} using OpenApi')
+        params = \
+            {
+                "state": "start",
+                "parameters": {}
+            }
+        return OpenApiCommandHelper.execute_action(ActionType.RESTORE, engine.engine.username, engine.engine.password,
+                                                   engine.ip, resource_path, params)
