@@ -16,7 +16,6 @@ from ngts.tools.test_utils import allure_utils as allure
 @pytest.mark.system
 @pytest.mark.checklist
 @pytest.mark.reset_factory
-@pytest.mark.nvos_build
 def test_reset_factory_without_params(engines, devices, topology_obj, platform_params):
     """
     Validate reset factory without params cleanup done as expected
