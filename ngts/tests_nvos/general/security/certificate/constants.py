@@ -6,6 +6,12 @@ CERT_MGMT_CERTS = '/auto/sw_system_project/NVOS_INFRA/security/verification/cert
 TEST_CERTS = '/auto/sw_system_project/NVOS_INFRA/security/verification/certs/test_certs'
 GET_SYSTEM_VERSION_PATH = '/nvue_v1/system/version'
 
+DUT_IMPORTED_CERTS_DIR = '/etc/nvue/certificates'
+DUT_IMPORTED_CERTS_PRIVATE_DIR = f'{DUT_IMPORTED_CERTS_DIR}/private'
+DUT_IMPORTED_CERTS_PUBLIC_DIR = f'{DUT_IMPORTED_CERTS_DIR}/public'
+
+DUT_IMPORTED_CACERTS_DIR = '/etc/ssl/certs'
+
 
 class CertMsgs:
     SSL_CERTIFICATE_PROBLEM = 'SSL certificate problem'

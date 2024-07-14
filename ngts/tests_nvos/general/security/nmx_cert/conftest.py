@@ -10,6 +10,7 @@ from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tests_nvos.general.security.certificate.constants import TestCert
+from ngts.tests_nvos.general.security.nmx_cert.constants import STATE, ENABLED, DISABLED
 from ngts.tests_nvos.system.gnmi.conftest import scp_player
 from ngts.tools.test_utils.nvos_general_utils import generate_scp_uri_using_player
 
@@ -55,14 +56,25 @@ def setup_import_certs(scp_player, engines):
     import_certificates(scp_player, engines.dut, [TestCert.cert_valid_1, TestCert.cert_valid_2])
     import_certificates(scp_player, engines.dut, [TestCert.cert_valid_1, TestCert.cert_valid_2], True)
     yield
-    delete_certificates()
-    delete_certificates(True)
+    # delete_certificates()     # TODO: uncomment after finish testing
+    # delete_certificates(True)
 
 
 @pytest.fixture(autouse=True)
 def setup_cleared_manager(scp_player, engines):
-    manager = Cluster().manager
-    manager.encryption.action_restore().verify_result()
-    manager.certificate.action_restore().verify_result()
-    manager.ca_certificate.action_restore().verify_result()
-    manager.action_restore().verify_result()
+    cluster = Cluster()
+    cluster.set(STATE, ENABLED, apply=True).verify_result()
+    cluster.manager.encryption.action_restore().verify_result()
+    cluster.manager.certificate.action_restore().verify_result()
+    cluster.manager.ca_certificate.action_restore().verify_result()
+    cluster.manager.action_restore().verify_result()
+
+
+@pytest.fixture()
+def enable_cluster(setup_cleared_manager):
+    Cluster().set(STATE, ENABLED, apply=True).verify_result()
+
+
+@pytest.fixture()
+def disable_cluster(setup_cleared_manager):
+    Cluster().set(STATE, DISABLED, apply=True).verify_result()

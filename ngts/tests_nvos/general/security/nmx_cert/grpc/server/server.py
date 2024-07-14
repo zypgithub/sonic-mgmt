@@ -29,7 +29,7 @@ class ServerApp:
         self._log('added nmx-c servicer to grpc server')
 
         listening_point = f'[::]:{self.config.server.port}'
-        if self.config.server.tls_mode == EncryptionMode.NONE:
+        if self.config.server.tls_mode == EncryptionMode.DISABLED:
             server.add_insecure_port(listening_point)
         else:
             server.add_secure_port(listening_point, self._get_server_ssl_config())

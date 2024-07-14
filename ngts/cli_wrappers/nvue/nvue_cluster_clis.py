@@ -44,7 +44,7 @@ class NvueClusterCli(NvueBaseCli):
     @check_output
     def action_update_cluster_manager_property(engine, resource_path, param_name='', param_val=''):
         path = resource_path.replace('/', ' ').strip()
-        cmd = f'nv action {ActionType.UPDATE.value} {path} {param_val}'.strip()
+        cmd = f'nv action update {path} {param_val}'.strip()
         logging.info(f"Running action cmd: '{cmd}' on dut using NVUE")
         return engine.run_cmd(cmd)
 
@@ -52,6 +52,6 @@ class NvueClusterCli(NvueBaseCli):
     @check_output
     def action_restore_cluster_manager_property(engine, resource_path):
         path = resource_path.replace('/', ' ').strip()
-        cmd = f'nv action {ActionType.RESTORE.value} {path}'
+        cmd = f'nv action restore {path}'
         logging.info(f"Running action cmd: '{cmd}' on dut using NVUE")
         return engine.run_cmd(cmd)

@@ -27,8 +27,8 @@ class GrpcServerConfig(GrpcPeerConfig):
 
 
 class GrpcClientConfig(GrpcPeerConfig):
-    def __init__(self, address: str, tls_mode: str, cert: CertInfo, cacert: CertInfo, num_requests: int = 1,
-                 delay_between_requests: int = 1):
+    def __init__(self, address: str, tls_mode: str, cert: CertInfo, cacert: CertInfo, num_requests=1,
+                 delay_between_requests=1):
         super().__init__(address, tls_mode, cert, cacert)
         self.num_requests = num_requests
         self.delay_between_requests = delay_between_requests
@@ -61,7 +61,7 @@ CONFIG = GrpcConfig(
         tls_mode=EncryptionMode.TLS,
         cert=TestCert.cert_valid_2,
         cacert=TestCert.cert_valid_1,
-        num_requests=2,
-        delay_between_requests=3
+        num_requests=10,
+        delay_between_requests=1
     )
 )

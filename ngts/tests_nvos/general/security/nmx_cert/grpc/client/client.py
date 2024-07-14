@@ -49,7 +49,7 @@ class ClientApp:
 
     def _get_channel(self):
         dial_to = f'{self.config.server.address}:{self.config.server.port}'
-        if self.config.client.tls_mode == EncryptionMode.NONE:
+        if self.config.client.tls_mode == EncryptionMode.DISABLED:
             return grpc.insecure_channel(dial_to)
         else:
             return grpc.secure_channel(dial_to, self._get_client_ssl_config())

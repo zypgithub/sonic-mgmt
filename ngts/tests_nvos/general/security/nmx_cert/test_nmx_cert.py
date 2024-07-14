@@ -11,9 +11,10 @@ from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.certificate.constants import TestCert
-from ngts.tests_nvos.general.security.nmx_cert.constants import Defaults, EncryptionMode, ENABLED, DISABLED, STATE
+from ngts.tests_nvos.general.security.nmx_cert.constants import Defaults, EncryptionMode, ENABLED, DISABLED, \
+    UserCfgJsonFields, FILE_SHOULD_NOT_EXIST, NA, STATE
 from ngts.tests_nvos.general.security.nmx_cert.helpers import verify_manager_show, verify_cert_show, verify_cacert_show, \
-    verify_encryption_show, verify_client_connection
+    verify_encryption_show, verify_client_connection, verify_static_checks
 from ngts.tests_nvos.system.gnmi.conftest import scp_player
 
 
@@ -36,12 +37,11 @@ def test_manager_cli(test_api):
     TestToolkit.tested_api = test_api
     cluster = Cluster()
     cert = TestCert.cert_valid_1
-    # TODO: add more static checks: config.json and cert files
     with allure.step('Verify outputs contain the required fields'):
         verify_manager_show()
         verify_cert_show()
         verify_cacert_show()
-        verify_encryption_show()  # TODO: is there show encryption?
+        verify_encryption_show()
     with allure.step('Run update ca/certificate'):
         cluster.manager.certificate.action_update(cert.name).verify_result()
         cluster.manager.ca_certificate.action_update(cert.cacert_name).verify_result()
@@ -49,6 +49,30 @@ def test_manager_cli(test_api):
         verify_manager_show(expect_cert=cert.name, expect_cacert=cert.cacert_name)
         verify_cert_show(expect_cert_id=cert.name)
         verify_cacert_show(expect_cert_id=cert.cacert_name)
+    with allure.step('verify files and fields in json'):
+        verify_static_checks({
+            UserCfgJsonFields.CERTIFICATE: cert.name,
+            UserCfgJsonFields.CA_CERTIFICATE: cert.cacert_name
+        }, cert.name, cert.cacert_name)
+    for mode in EncryptionMode.ALL_MODES:
+        with allure.step(f'Run update encryption: {mode}'):
+            cluster.manager.encryption.action_update(mode).verify_result()
+        with allure.step('Verify in show that related field updates accordingly'):
+            verify_manager_show(expect_encryption=mode)
+            verify_encryption_show(expect_mode=mode)
+        with allure.step('verify fields in json'):
+            verify_static_checks({
+                UserCfgJsonFields.ENCRYPTION: mode
+            })
+    with allure.step('Run restore encryption'):
+        cluster.manager.encryption.action_restore().verify_result()
+    with allure.step('Verify in show that related fields restored to default'):
+        verify_manager_show(expect_encryption=Defaults.ENCRYPTION)
+        verify_encryption_show(expect_mode=Defaults.ENCRYPTION)
+    # with allure.step('verify fields in json'):    # TODO: uncomment after bug close: https://redmine.mellanox.com/issues/3993304
+    #     verify_static_checks({
+    #         UserCfgJsonFields.ENCRYPTION: None
+    #     })
     with allure.step('Run restore ca/certificate'):
         cluster.manager.certificate.action_restore().verify_result()
         cluster.manager.ca_certificate.action_restore().verify_result()
@@ -56,25 +80,41 @@ def test_manager_cli(test_api):
         verify_manager_show(expect_cert=Defaults.CERT, expect_cacert=Defaults.CACERT)
         verify_cert_show(expect_cert_id=Defaults.CERT)
         verify_cacert_show(expect_cert_id=Defaults.CACERT)
-    for mode in EncryptionMode.ALL_MODES:
-        with allure.step(f'Run update encryption: {mode}'):
-            cluster.manager.encryption.action_update(mode).verify_result()
-        with allure.step('Verify in show that related field updates accordingly'):
-            verify_manager_show(expect_encryption=mode)
-            verify_encryption_show(expect_mode=mode)
-    with allure.step('Run restore encryption'):
-        cluster.manager.encryption.action_restore().verify_result()
-    with allure.step('Verify in show that related fields restored to default'):
-        verify_manager_show(expect_encryption=Defaults.ENCRYPTION)
-        verify_encryption_show(expect_mode=Defaults.ENCRYPTION)
+    with allure.step('verify files and fields in json deleted'):
+        verify_static_checks({
+            # UserCfgJsonFields.CERTIFICATE: None,    # TODO: uncomment after bug close: https://redmine.mellanox.com/issues/3993304
+            # UserCfgJsonFields.CA_CERTIFICATE: None
+        }, FILE_SHOULD_NOT_EXIST, FILE_SHOULD_NOT_EXIST)
     with allure.step('Run update manager (enable manager communication)'):
         cluster.manager.action_update().verify_result()
     with allure.step('Verify in show that related fields'):
-        verify_manager_show(expect_state=ENABLED)  # TODO: is there state field?
+        verify_manager_show(expect_state=ENABLED)
+    with allure.step('verify fields in json'):
+        verify_static_checks({
+            UserCfgJsonFields.STATE: ENABLED
+        })
     with allure.step('Run restore manager (disable manager communication)'):
-        cluster.manager.action_update().verify_result()
+        cluster.manager.action_restore().verify_result()
     with allure.step('Verify in show that related fields restored to default'):
         verify_manager_show(expect_state=DISABLED)
+    with allure.step('verify fields in json'):
+        verify_static_checks({
+            UserCfgJsonFields.STATE: DISABLED
+        })
+    with allure.step('disable cluster'):
+        cluster.set(STATE, DISABLED, apply=True).verify_result()
+    with allure.step('Verify outputs contain the required fields'):
+        verify_manager_show(NA, NA, NA, NA)
+        verify_cert_show(NA)
+        verify_cacert_show(NA)
+        verify_encryption_show(NA)
+    with allure.step('verify files and fields in json deleted'):
+        verify_static_checks({
+            # UserCfgJsonFields.CERTIFICATE: None,    # TODO: uncomment after bug close: https://redmine.mellanox.com/issues/3993304
+            # UserCfgJsonFields.CA_CERTIFICATE: None,
+            # UserCfgJsonFields.ENCRYPTION: None,
+            UserCfgJsonFields.STATE: DISABLED
+        }, FILE_SHOULD_NOT_EXIST, FILE_SHOULD_NOT_EXIST)
 
 
 @pytest.mark.nmx
@@ -82,7 +122,9 @@ def test_manager_cli(test_api):
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_manager_cmd_fail_when_cluster_off(test_api):
     """
-    Verify that update/restore manager commands fail when cluster disabled
+    Verify that:
+        1. update/restore manager commands fail when cluster disabled
+        2. show commands show empty output (- should be rejected but that's current implementation)
 
     1.	Make sure cluster disabled
     2.	Run manager update/restore command
@@ -92,7 +134,12 @@ def test_manager_cmd_fail_when_cluster_off(test_api):
     cluster = Cluster()
     cert = TestCert.cert_valid_1
     with allure.step('Make sure cluster disabled'):
-        cluster.set(STATE, DISABLED).verify_result()
+        cluster.set(STATE, DISABLED, apply=True).verify_result()
+    with allure.step('verify show outputs empty'):
+        verify_manager_show(NA, NA, NA, NA)
+        verify_cert_show(NA)
+        verify_cacert_show(NA)
+        verify_encryption_show(NA)
     with allure.step('Run manager update/restore command'):
         results: List[ResultObj] = []
         with allure.step('run update commands'):
@@ -133,7 +180,7 @@ def test_manager_cmd_fail_when_manager_off(test_api):
     cluster = Cluster()
     cert = TestCert.cert_valid_1
     with allure.step('Make sure cluster enabled, cluster manager disabled'):
-        cluster.set(STATE, ENABLED).verify_result()
+        cluster.set(STATE, ENABLED, apply=True).verify_result()
         cluster.manager.action_restore().verify_result()
     with allure.step('Run manager update/restore command'):
         results: List[ResultObj] = []
@@ -351,7 +398,7 @@ def test_connection_after_restore_encryption(test_flow):
         manager.encryption.action_restore().verify_result()
     with allure.step('verify client can connect only with NONE'):
         verify_client_connection(test_flow == TestFlowType.ALL_TYPES,
-                                 {mode: mode == EncryptionMode.NONE for mode in EncryptionMode.ALL_MODES},
+                                 {mode: mode == EncryptionMode.DISABLED for mode in EncryptionMode.ALL_MODES},
                                  nmx_c_cert, client_cert, nmx_c_cacert, client_cacert)
 
 
@@ -399,7 +446,7 @@ def test_no_connection_after_restore_cluster():
         cluster.manager.encryption.action_update(
             random.choice([EncryptionMode.TLS, EncryptionMode.MTLS])).verify_result()
     with allure.step('disable cluster'):
-        cluster.set(STATE, DISABLED).verify_result()
+        cluster.set(STATE, DISABLED, apply=True).verify_result()
     with allure.step('verify client cannot connect at all'):
         verify_client_connection(TestFlowType.BAD_FLOW, {mode: False for mode in EncryptionMode.ALL_MODES},
                                  nmx_c_cert, client_cert, nmx_c_cacert, client_cacert)
