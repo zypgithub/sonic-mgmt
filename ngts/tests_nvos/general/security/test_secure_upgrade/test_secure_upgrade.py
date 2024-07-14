@@ -38,16 +38,6 @@ def keep_same_version_installed(engines):
 
 
 @pytest.fixture(scope='session')
-def target_version_realpath(target_version):
-    assert target_version is not None, "No target image is specified"
-    cmd_runner = CmdRunner()
-    with allure.step('get real full path of target version'):
-        target_version_path = cmd_runner.run_cmd(f'realpath {target_version}')
-        logging.info(f'target version path: {target_version_path}')
-    return target_version_path
-
-
-@pytest.fixture(scope='session')
 def non_secure_image_path(target_version_realpath):
     '''
     @summary: will extract the non secure image path from --target_image_list parameter

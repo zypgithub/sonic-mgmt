@@ -24,6 +24,7 @@ from ngts.nvos_tools.Devices.DeviceFactory import DeviceFactory
 from ngts.nvos_tools.Devices.EthDevice import EthSwitch
 from ngts.nvos_tools.cli_coverage.nvue_cli_coverage import NVUECliCoverage
 from ngts.nvos_tools.ib.opensm.OpenSmTool import OpenSmTool
+from ngts.nvos_tools.infra.CmdRunner import CmdRunner
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.nvos_tools.infra.DiskTool import DiskTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
@@ -101,7 +102,8 @@ def update_engine_dut_mgmt_port(topology, dut_engine: LinuxSshEngine, dut_device
     def attach_res_to_allure(available_ports_names, available_ports_ips, chosen_port_name, chosen_port_ip):
         attachment = (f'All ports: {available_ports_names} - {available_ports_ips}\n'
                       f'Chosen port: {chosen_port_name} - {chosen_port_ip}')
-        allure.orig_allure.attach(attachment, 'dut_engine_mgmt_port_used_for_session', allure.orig_allure.attachment_type.TEXT)
+        allure.orig_allure.attach(attachment, 'dut_engine_mgmt_port_used_for_session',
+                                  allure.orig_allure.attachment_type.TEXT)
 
     mgmt_ports = dut_device.get_mgmt_ports()
     if not mgmt_ports or len(mgmt_ports) == 1:
@@ -109,7 +111,8 @@ def update_engine_dut_mgmt_port(topology, dut_engine: LinuxSshEngine, dut_device
         attach_res_to_allure(mgmt_ports, None, mgmt_ports[0] if mgmt_ports else None, dut_engine.ip)
         return
 
-    dut_setup_specific_attributes: Dict[str, str] = topology.players['dut']['attributes'].noga_query_data['attributes']['Specific']
+    dut_setup_specific_attributes: Dict[str, str] = topology.players['dut']['attributes'].noga_query_data['attributes'][
+        'Specific']
     setup_mgmt_ips = [dut_setup_specific_attributes['ip_address'], dut_setup_specific_attributes['ip_address_2']]
     available_mgmt_ips = [ip for ip in setup_mgmt_ips if ip != '']
     if len(available_mgmt_ips) != len(mgmt_ports):
@@ -554,3 +557,13 @@ def prepare_traffic(engines, setup_name):
 @pytest.fixture
 def output_format(test_api):
     return OutputFormat.auto if test_api == ApiType.NVUE else OutputFormat.json
+
+
+@pytest.fixture(scope='session')
+def target_version_realpath(target_version):
+    assert target_version is not None, "No target image is specified"
+    cmd_runner = CmdRunner()
+    with allure.step('get real full path of target version'):
+        target_version_path = cmd_runner.run_cmd(f'realpath {target_version}')
+        logging.info(f'target version path: {target_version_path}')
+    return target_version_path
