@@ -1574,3 +1574,44 @@
   Conditions:
     - Affected_test_cases:
       - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm.py::TestNewTc::test_sensor_errors[fan_err_direction]
+
+# NVOS
+- Errors_list:
+    - '.*suspended \(module .*builtin:omfwd.*\), next retry is.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests_nvos/system/syslog/test_system_syslog.py
+
+# NVOS
+- Errors_list:
+    - '.*WARNING systemd-udevd\[\d+\]: veth.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests_nvos/
+      Redmine:
+        - 3959307
+
+# NVOS
+- Errors_list:
+    - '.*WARNING pmon#thermalctld: Fan fault warning: fan.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests_nvos/system/test_system_health.py::test_simulate_health_problem_with_hw_simulator
+
+# NVOS
+- Errors_list:
+    - '.*WARNING kernel: \[.*\] mst_pci: loading out-of-tree module taints kernel.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests_nvos/system/test_system_reboot.py
+      Redmine:
+        - 3760310
+
+# NVOS
+- Errors_list:
+    - '.*ERR dhclient\[\d+\]: dhclient.c:\d+: Failed to send \d+ byte long packet over fallback interface.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests_nvos/
+      Redmine:
+        - 3951338
