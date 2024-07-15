@@ -12,6 +12,7 @@ from retry import retry
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
+from infra.tools.general_constants.constants import DefaultConnectionValues
 from infra.tools.sql.connect_to_mssql import ConnectMSSQL
 from ngts.cli_wrappers.linux.linux_general_clis import LinuxGeneralCli
 from ngts.cli_wrappers.nvue.nvue_base_clis import NvueBaseCli
@@ -30,6 +31,7 @@ from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.nvos_tools.infra.DiskTool import DiskTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.nvos_tools.infra.PexpectTool import PexpectTool
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.nvos_tools.infra.TrafficGeneratorTool import TrafficGeneratorTool
 from ngts.nvos_tools.system.System import System
@@ -273,6 +275,26 @@ def interfaces(topology_obj):
     return interfaces_data
 
 
+def security_cleanup(ssh_session: PexpectTool) -> bool:
+    success = False
+    if not ssh_session or not isinstance(ssh_session, PexpectTool):
+        return success
+    with allure.step('Security cleanup'):
+        with allure.step('check session still connected to switch'):
+            ssh_session.sendline('nv show system')
+            i = ssh_session.expect(DefaultConnectionValues.DEFAULT_PROMPTS)
+            session_is_live = i < len(DefaultConnectionValues.DEFAULT_PROMPTS) and 'nvos' in ssh_session.last_output
+        if session_is_live:
+            cmds = ['nv unset system aaa authentication order', 'nv unset system aaa authentication failthrough',
+                    'nv config apply -y']
+            with allure.step('unset authentication config to allow local connection'):
+                ssh_session.sendline(' ; '.join(cmds))
+                i = ssh_session.expect(DefaultConnectionValues.DEFAULT_PROMPTS)
+                success = i < len(DefaultConnectionValues.DEFAULT_PROMPTS) and any(
+                    msg in ssh_session.last_output for msg in ['applied', 'config apply executed with no config diff'])
+    return success
+
+
 def clear_security_config(item):
     with allure.step("Clear security config"):
         TestToolkit.update_apis(ApiType.NVUE)
@@ -370,9 +392,12 @@ def save_results_and_clear_after_test(item):
         logging.exception(' ---------------- The test failed - an exception occurred: ---------------- ')
         raise AssertionError(err)
     finally:
-        if hasattr(item, 'active_remote_aaa_server') and item.active_remote_aaa_server:
-            clear_security_config(item)
-        clear_config(markers)
+        with allure.step('Test done - Clear configuration'):
+            # if hasattr(item, 'active_remote_aaa_server') and item.active_remote_aaa_server:
+            #     clear_security_config(item)
+            if hasattr(item, 'security_pexpect_ssh_session') and item.security_pexpect_ssh_session:
+                security_cleanup(item.security_pexpect_ssh_session)
+            clear_config(markers)
 
 
 @pytest.fixture(scope='function', autouse=True)
