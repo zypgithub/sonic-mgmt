@@ -19,6 +19,7 @@ from ngts.cli_wrappers.openapi.openapi_command_builder import OpenApiRequest
 from ngts.constants.constants import DbConstants, CliType, DebugKernelConsts, InfraConst
 from ngts.nvos_constants.constants_nvos import ApiType, OperationTimeConsts, OutputFormat
 from ngts.nvos_constants.constants_nvos import NvosConst
+from ngts.nvos_tools.infra.CmdRunner import CmdRunner
 from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
 from ngts.nvos_tools.Devices.DeviceFactory import DeviceFactory
 from ngts.nvos_tools.Devices.EthDevice import EthSwitch
