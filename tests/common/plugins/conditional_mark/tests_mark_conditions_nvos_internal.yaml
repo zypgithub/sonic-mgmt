@@ -1,5 +1,11 @@
 ########################## NVOS IGNORE START ##########################
 
+ngts.tests_nvos.general.security.bmc_erot_attestation.test_bmc_erot_attestation.test_generate_with_bad_nonce_param:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4005013"
+    conditions:
+      - https://redmine.mellanox.com/issues/4005013
+
 tests_nvos/system/gnmi/test_gnmi_cert.py::test_gnmi_delete_cert_in_use_by_gnmi:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3970205"

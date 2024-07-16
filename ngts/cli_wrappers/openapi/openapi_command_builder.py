@@ -55,10 +55,12 @@ class OpenApiRequest:
 
     @staticmethod
     def print_response(r: requests.Response, req_type):
-        if getattr(r, 'text', '').startswith('<html>'):
+        if req_type == OpenApiReqType.ACTION and getattr(r, 'text', ''):
+            response = r.text
+        elif getattr(r, 'text', '').startswith('<html>'):
             response = r.text
         else:
-            response = json.dumps(r.json(), indent=2) if req_type == OpenApiReqType.PATCH else r.content
+            response = json.dumps(r.json(), indent=2) if req_type in [OpenApiReqType.PATCH, OpenApiReqType.GET] else r.content
         output = f'\n' \
             f'=======Response=======\n' \
             f'{OpenApiRequest.format_json_str(response)}\n' \
@@ -218,6 +220,15 @@ class OpenApiRequest:
         return ResultObj(True, "")
 
     @staticmethod
+    def _check_action_post_response(r: requests.Response) -> ResultObj:
+        html_check_res = OpenApiRequest._check_html_response(r)
+        if not html_check_res.result:
+            return html_check_res
+        if any(err_str in getattr(r, 'text', '') for err_str in ['Bad Request', '400', 'Error', 'error']):
+            return ResultObj(False, r.text, None)
+        return ResultObj(True, 'post request succeeded')
+
+    @staticmethod
     def _validate_response(r: requests.Response, req_type):
         res = OpenApiRequest._check_html_response(r)
         if not res.result:
@@ -331,8 +342,9 @@ class OpenApiRequest:
                               data=json.dumps(OpenApiRequest.payload),
                               headers=REQ_HEADER)
             OpenApiRequest.print_request(r.request, request_data)
+            OpenApiRequest.print_response(r, OpenApiReqType.ACTION)
 
-            validation_res = OpenApiRequest._check_html_response(r)
+            validation_res = OpenApiRequest._check_action_post_response(r)
             if not validation_res.result:
                 return validation_res.info
 
