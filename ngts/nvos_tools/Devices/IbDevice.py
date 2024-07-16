@@ -256,6 +256,7 @@ class IbSwitch(BaseSwitch):
             'sw31p1': 'sw32p1pl1',
             'sw31p2': 'sw32p1pl2'
         }
+        self.default_port = 'sw1p1'
         self.aggregated_port_list = ['sw1p1', 'sw2p1', 'sw32p1']  # total 3 ports
         self.fnm_port_list = ['fnm1']
         self.aggregated_split_port_list = ['sw10p1']
@@ -521,9 +522,9 @@ class BlackMambaSwitch(IbSwitch):
                                 "PSU-2+12V+Vol+Out", "PSU-3+12V+Vol+Out", "PSU-4+12V+Vol+Out", "PSU-5+12V+Vol+Out",
                                 "PSU-6+12V+Vol+Out", "PSU-7+12V+Vol+Out", "PSU-8+12V+Vol+Out"]
 
-        self.stats_fan_header_num_of_lines = 37
+        self.stats_fan_header_num_of_lines = 17
         self.stats_power_header_num_of_lines = 25
-        self.stats_temperature_header_num_of_lines = 103
+        self.stats_temperature_header_num_of_lines = 104
 
     def get_mgmt_ports(self) -> List[str]:
         return self.mgmt_ports
@@ -571,6 +572,7 @@ class CrocodileSwitch(IbSwitch):
         self.ib_ports_num = 64
         self.core_count = 4
         self.asic_type = NvosConst.QTM3
+        self.default_port = 'swA1p1'
         self.mgmt_ports = ['eth0', 'eth1']
         self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH. \
             format("x86_64-nvidia_qm3400-r0")
@@ -590,9 +592,9 @@ class CrocodileSwitch(IbSwitch):
                                 'PMIC-6-ASIC2-DVDD-PL1-Out-2', 'PMIC-6-ASIC2-HVDD-PL1-Out-1', 'PMIC-7-12V-MAIN-In-1',
                                 'PMIC-7-CEX-VDD-Out-1', 'PSU-1-12V-Out', 'PSU-2-12V-Out', 'PSU-3-12V-Out',
                                 'PSU-4-12V-Out']
-        self.stats_fan_header_num_of_lines = 25
+        self.stats_fan_header_num_of_lines = 23
         self.stats_power_header_num_of_lines = 17
-        self.stats_temperature_header_num_of_lines = 59
+        self.stats_temperature_header_num_of_lines = 69
         self.previous_cpld_version = BaseSwitch.CpldImageConsts(
             burn_image_path="/auto/sw_system_project/NVOS_INFRA/verification_files/cpld_fw/OLD/FUI000273_BURN_CROCODILE_CPLD000232_REV0802_CPLD000357_REV0103_CPLD000358_REV0203_CPLD000359_REV0100.vme",
             refresh_image_path="/auto/sw_system_project/NVOS_INFRA/verification_files/cpld_fw/OLD/FUI000273_REFRESH_CROCODILE_CPLD000232_REV0802_CPLD000357_REV0103_CPLD000358_REV0203_CPLD000359_REV0100.vme",

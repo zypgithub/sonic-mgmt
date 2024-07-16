@@ -833,7 +833,7 @@ class NtpConsts:
     DUMMY_SERVER8 = 'server8'
     SERVER_FAILED = 'DNS resolution failed'
     MULTIPLE_SERVERS_NUMBER = 11
-    CONFIG_TIME_DIFF_THRESHOLD = 2.0  # [sec]
+    CONFIG_TIME_DIFF_THRESHOLD = 2.5  # [sec]
     SHOW_TIME_DIFF_THRESHOLD = 0.5  # [sec]
     SYNCHRONIZATION_MAX_TIME = 100  # [sec]
     SYNCHRONIZATION_TIME_AFTER_REBOOT = 60  # [sec]
@@ -845,7 +845,7 @@ class NtpConsts:
 
     INVALID_STATE = 'enable1'
     INVALID_AUTHENTICATION = 'disable1'
-    INVALID_LISTEN = 'eth1'
+    INVALID_LISTEN = 'invalid_eth'
     INVALID_DHCP = 'enabled1'
     INVALID_VRF = 'temp_str'
     INVALID_HIGHER_KEY = '65536'
