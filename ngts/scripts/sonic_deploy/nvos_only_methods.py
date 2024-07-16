@@ -8,6 +8,7 @@ from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.constants.constants import LinuxConsts
 from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
+from ngts.nvos_tools.infra.RegressionConfigurations import RegressionConfigurations
 from ngts.nvos_tools.Devices.IbDevice import BlackMambaSwitch, CrocodileSwitch
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
@@ -83,6 +84,7 @@ class NvosInstallationSteps:
             try:
                 set_base_configurations(dut_engine=dut_engine, timezone=LinuxConsts.JERUSALEM_TIMEZONE, apply=True,
                                         save_conf=True)
+
                 with allure.step('Set timezone using timedatectl command'):
                     logger.info("Configuring same time zone for dut and local engine to {}"
                                 .format(LinuxConsts.JERUSALEM_TIMEZONE))

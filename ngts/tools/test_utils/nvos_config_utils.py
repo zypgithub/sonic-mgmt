@@ -10,7 +10,7 @@ from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.system.System import System
 from ngts.tools.test_utils.nvos_general_utils import set_base_configurations
 import ngts.tools.test_utils.allure_utils as allure
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from ngts.nvos_tools.infra.RegressionConfigurations import Configurations
 
 
 def clear_conf(dut_engine, markers=None, set_base_config_function=set_base_configurations):
@@ -27,7 +27,8 @@ def clear_conf(dut_engine, markers=None, set_base_config_function=set_base_confi
         set_comp = {k: v for comp in show_config_output for k, v in comp.get("set", {}).items()}
 
         with allure.step("Get the non-default set components"):
-            default_conf = NvosConst.DEFAULT_CONFIG
+            default_conf = Configurations.get_regression_default_config(engine=dut_engine)
+            """default_conf = NvosConst.DEFAULT_CONFIG
             default_conf["interface"] = {
                 "eth0": {
                     "acl": {
@@ -75,7 +76,7 @@ def clear_conf(dut_engine, markers=None, set_base_config_function=set_base_confi
                     },
                     "type": "loopback"
                 }
-            }
+            }"""
 
             diff_config = ValidationTool.get_dictionaries_diff(set_comp, default_conf)
             logging.info(diff_config)
@@ -131,8 +132,8 @@ def clear_conf(dut_engine, markers=None, set_base_config_function=set_base_confi
                     logging.info("Execute system unset commands")
                     dut_engine.run_cmd(unset_cli_cmd)
 
-                with allure.step("Set base configurations"):
-                    set_base_config_function(dut_engine=dut_engine, apply=False)
+            with allure.step("Set base configurations"):
+                set_base_config_function(dut_engine=dut_engine, apply=False)
 
             with allure.step("Apply configurations"):
                 NvueGeneralCli.apply_config(dut_engine, ask_for_confirmation=True)

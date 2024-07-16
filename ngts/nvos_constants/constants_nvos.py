@@ -1174,6 +1174,7 @@ class LinkDetectionConsts:
     SUPPORTED_SPEED = "supported_speed"
     CONNECTION_MODE_NDR = 'ndr'
     CONNECTION_MODE_XDR = 'xdr'
+    CONNECTION_MODE = "connection-mode"
 
 
 class MultiPlanarConsts:

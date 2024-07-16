@@ -7,8 +7,8 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.tests_nvos.system.factory_reset.helpers import *
 from ngts.tests_nvos.system.factory_reset.helpers import add_verification_data, \
     verify_cleanup_done, verify_the_setup_is_functional, get_current_time
-from ngts.tests_nvos.system.factory_reset.post_steps import factory_reset_no_params_post_steps, \
-    set_ports_to_legacy_on_croc
+from ngts.nvos_tools.infra.RegressionConfigurations import RegressionConfigurations
+from ngts.tests_nvos.system.factory_reset.post_steps import factory_reset_no_params_post_steps
 from ngts.tests_nvos.system.factory_reset.pre_steps import factory_reset_no_params_pre_steps
 from ngts.tools.test_utils import allure_utils as allure
 
@@ -47,7 +47,7 @@ def test_reset_factory_without_params(engines, devices, topology_obj, platform_p
         with allure.step('post factory reset steps'):
             factory_reset_no_params_post_steps(apply_and_save_port, engines, just_apply_port, last_status_line,
                                                machine_type, not_apply_port, system)
-            set_ports_to_legacy_on_croc(engines, devices)
+            RegressionConfigurations.configure_ports_to_legacy(engine=engines.dut, apply=True, throw_exception=True)
 
     finally:
         with allure.step("Verify the cleanup done successfully"):

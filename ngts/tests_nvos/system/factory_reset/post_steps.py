@@ -22,17 +22,3 @@ def factory_reset_no_params_post_steps(apply_and_save_port, engines, just_apply_
         next(factory_reset_tpm_checker)
     with allure.step('post factory reset GNMI cert related check'):
         next(factory_reset_gnmi_checker)
-
-
-def set_ports_to_legacy_on_croc(engines, devices):
-    if not isinstance(devices.dut, CrocodileSwitch):
-        logger.info("Not a crocodile switch... Skipping...")
-        return
-
-    # This is WA to switch ports which are connected to CX7 to legacy (ndr) because every port is xdr by default.
-    legacy_ports = ['swA1p1', 'swA1p2', 'swA2p1', 'swA2p2']
-    with allure.step(f"Setting {legacy_ports} to legacy"):
-        for legacy_port in legacy_ports:
-            interface = Interface(parent_obj=None, port_name=legacy_port)
-            interface.link.connection_mode.set(LinkDetectionConsts.CONNECTION_MODE_NDR, apply=True,
-                                               ask_for_confirmation=True).verify_result()
