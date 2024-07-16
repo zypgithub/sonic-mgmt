@@ -14,6 +14,7 @@ import re
 import sys
 import time
 import traceback
+from ipaddress import IPv6Interface
 
 # Third-party libs
 from fabric import Config
@@ -25,7 +26,7 @@ from retry.api import retry_call
 # Home-brew libs
 from lib import constants
 from lib.utils import parse_topology, get_logger
-from ipaddress import IPv6Interface
+
 logger = get_logger("UpdateDocker")
 
 CONTAINER_IFACE = "eth0"
@@ -397,7 +398,7 @@ def main():
 
 def get_docker_default_tag(docker_name):
     latest = "latest"
-    default_list = {'docker-ngts': '1.2.322'}
+    default_list = {'docker-ngts': '1.2.325'}
     return default_list.get(docker_name, latest)
 
 
