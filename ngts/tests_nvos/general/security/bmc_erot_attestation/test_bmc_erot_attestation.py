@@ -33,7 +33,7 @@ def test_list_supported_components(test_api):
         assert not missing_components and not extra_components, f'show spdm content is wrong.\nexpected fields: {SpdmConsts.fields}\nactual: {list(out.keys())}'
 
 
-@pytest.mark.parametrize('test_api', [ApiType.NVUE])
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_main_flow(test_api, clear_measurements, available_spdm_components):
     """
     Verify that show component works properly and shows certificate chain
@@ -76,8 +76,7 @@ def test_main_flow(test_api, clear_measurements, available_spdm_components):
             with allure.step(f'generate measurements - expect success: {component_is_available}'):
                 issues: List[str] = []
                 with allure.step(f'Run generate with valid nonce - expect success: {component_is_available}'):
-                    nonce = randomize_hex_str()
-                    res = component_obj.action_generate(nonce)
+                    res = component_obj.action_generate(randomize_hex_str())
                     add_issue_if(res.result != component_is_available, issues,
                                  f'{component} - generate with valid nonce {"succeeded" if res.result else "failed"} but expected to {"succeed" if component_is_available else "fail"}')
                 with allure.step(f'Run generate without nonce param - expect success: {component_is_available}'):
@@ -133,7 +132,7 @@ def test_generate_with_bad_nonce_param(test_api, available_spdm_components):
                 assert not issues, f'found issues:\n' + '\n'.join(issues)
 
 
-def test_generate_without_nonce_give_different_measurement(available_spdm_components):
+def test_generate_give_different_measurement(available_spdm_components):
     """
     Verify that when generating without nonce param multiple times it generates different measurements
 
@@ -147,41 +146,19 @@ def test_generate_without_nonce_give_different_measurement(available_spdm_compon
         with allure.step(f'component: {component}'):
             component_obj = get_component_obj(component)
             with allure.step('generate without nonce'):
-                component_obj.action_generate()  # .verify_result()
+                component_obj.action_generate().verify_result()
             with allure.step('get measurements'):
-                measurements1 = OutputParsingTool.parse_json_str_to_dictionary(component_obj.show()).get_returned_value()[SpdmComponentFields.MEASUREMENTS]
+                measurements1 = \
+                    OutputParsingTool.parse_json_str_to_dictionary(component_obj.show()).get_returned_value()[
+                        SpdmComponentFields.MEASUREMENTS]
             with allure.step('generate without nonce'):
-                component_obj.action_generate()  # .verify_result()
+                component_obj.action_generate().verify_result()
             with allure.step('get measurements'):
-                measurements2 = OutputParsingTool.parse_json_str_to_dictionary(component_obj.show()).get_returned_value()[SpdmComponentFields.MEASUREMENTS]
+                measurements2 = \
+                    OutputParsingTool.parse_json_str_to_dictionary(component_obj.show()).get_returned_value()[
+                        SpdmComponentFields.MEASUREMENTS]
             with allure.step('verify measurements from step 2, 4 are different'):
                 ValidationTool.compare_dictionaries(measurements1, measurements2).verify_result(False)
-
-
-def test_generate_with_nonce_give_same_measurement(available_spdm_components):
-    """
-    Verify that when generating with nonce param multiple times it generates same measurements
-
-    1.	generate with nonce
-    2.	get measurements
-    3.	generate with nonce
-    4.	get measurements
-    5.	verify measurements from step 2, 4 are same
-    """
-    for component in available_spdm_components:
-        with allure.step(f'component: {component}'):
-            component_obj = get_component_obj(component)
-            rand_nonce = randomize_hex_str()
-            with allure.step('generate without nonce'):
-                component_obj.action_generate(rand_nonce)  # .verify_result()
-            with allure.step('get measurements'):
-                measurements1 = OutputParsingTool.parse_json_str_to_dictionary(component_obj.show()).get_returned_value()[SpdmComponentFields.MEASUREMENTS]
-            with allure.step('generate without nonce'):
-                component_obj.action_generate(rand_nonce)  # .verify_result()
-            with allure.step('get measurements'):
-                measurements2 = OutputParsingTool.parse_json_str_to_dictionary(component_obj.show()).get_returned_value()[SpdmComponentFields.MEASUREMENTS]
-            with allure.step('verify measurements from step 2, 4 are different'):
-                ValidationTool.compare_dictionaries(measurements1, measurements2).verify_result(True)
 
 
 def test_reboot_system_keeps_data(available_spdm_components):

@@ -44,7 +44,7 @@ class Spdm(BaseComponent):
 class SpdmComponent(BaseComponent):
     def __init__(self, parent, path):
         super().__init__(parent=parent, path=path)
-        self.certificate = BaseComponent(self, path=f'/{SpdmComponentFields.CERT_CHAIN}')
+        self.certificates = BaseComponent(self, path=f'/{SpdmComponentFields.CERT_CHAIN}s')
         self.measurements = BaseComponent(self, path=f'/{SpdmComponentFields.MEASUREMENTS}')
 
     def action_generate(self, nonce=None, dut_engine=None) -> ResultObj:

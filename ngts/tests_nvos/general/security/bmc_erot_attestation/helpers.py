@@ -2,7 +2,10 @@ import logging
 import random
 from typing import List, Tuple
 
+from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.nvos_tools.infra.TpmTool import TpmTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.system.Spdm import SpdmComponent, SPDMComponents, COMPONENT_TO_SPDM_OBJ_FIELD
 from ngts.nvos_tools.system.System import System
@@ -34,37 +37,6 @@ def randomize_non_hex_str(length: int = VALID_NONCE_LEN) -> str:
     return rand_non_hex_nonce
 
 
-# def check_component_outputs(component_obj: SpdmComponent, expect_cert_chain=None, expect_measurements=None,
-#                             compare_values_to_bmc: bool = True, do_client_verify: bool = False):
-#     dut: LinuxSshEngine = TestToolkit.engines.dut
-#     out = OutputParsingTool.parse_json_str_to_dictionary(component_obj.show()).get_returned_value()
-#     checks = {SpdmComponentFields.CERT_CHAIN: expect_cert_chain, SpdmComponentFields.MEASUREMENTS: expect_measurements}
-#     for field_to_check, expected_value in checks.items():
-#         if expected_value is not None:
-#             with allure.step(f'check field: {field_to_check}'):
-#                 if expected_value != ExpectCodes.DONT_COMPARE:
-#                     with allure.step('verify value is as expected'):
-#                         actual_value = out[field_to_check]
-#                         cond = (isinstance(actual_value,
-#                                            str) and actual_value != '') if expected_value == ExpectCodes.NOT_EMPTY_STR else actual_value == expected_value
-#                         assert cond, f'value of field "{field_to_check}" is not as expected.\nexpected: {expected_value}\nactual: {actual_value}'
-#                 if compare_values_to_bmc:
-#                     with allure.step(f'sanity check for: {field_to_check}'):
-#                         value_from_bmc = get_value_from_bmc(component_obj, field_to_check)
-#                         assert actual_value == value_from_bmc, f'value of field "{field_to_check}" in show different from value returned directly from BMC.\nvalue in show: {actual_value}\nvalue from BMC: {value_from_bmc}'
-#     if do_client_verify:
-#         with allure.step('do client attestation verification'):
-#             run_client_verify(dut, out[SpdmComponentFields.CERT_CHAIN], out[SpdmComponentFields.MEASUREMENTS])
-
-
-# def get_value_from_bmc(component_obj, field_to_check):
-#     return ''  # TODO: complete
-
-
-# def run_client_verify(dut_engine: LinuxSshEngine, cert_chain: str, measurements: str):
-#     pass  # TODO: complete once we know how
-
-
 def verify_component_outputs(component_name: str, component_obj: SpdmComponent, component_is_available: bool,
                              expect_cert=None,
                              expect_measurements=None) -> Tuple[dict, dict]:
@@ -73,7 +45,8 @@ def verify_component_outputs(component_name: str, component_obj: SpdmComponent, 
     with allure.step(f'verify fields {SpdmConsts.Component.fields} exist'):
         ValidationTool.verify_field_exist_in_json_output(comp_out, SpdmConsts.Component.fields).verify_result()
     with allure.step('show component certificate'):
-        cert_out = OutputParsingTool.parse_json_str_to_dictionary(component_obj.certificate.show()).get_returned_value()
+        cert_out = OutputParsingTool.parse_json_str_to_dictionary(
+            component_obj.certificates.show()).get_returned_value()
     with allure.step(f'verify fields {SpdmConsts.Component.Certificate.fields} exist'):
         ValidationTool.verify_field_exist_in_json_output(cert_out,
                                                          SpdmConsts.Component.Certificate.fields).verify_result()
@@ -90,12 +63,11 @@ def verify_component_outputs(component_name: str, component_obj: SpdmComponent, 
             with allure.step('check component has NA values'):
                 verify_component_values_na(component_name, cert_out, measurements_out)
 
-    with allure.step('sanity check on values'):
-        with allure.step('compare show value to value receiving directly from bmc'):
-            # TODO: complete
-            pass
-            # value_from_bmc = get_measurements_from_bmc()
-            # as
+    if component_is_available:
+        with allure.step('sanity check on values'):
+            verify_cert_data_same_as_directly_from_bmc(cert_out)
+            verify_measurements_data_same_as_directly_from_bmc(measurements_out)
+
     return cert_out, measurements_out
 
 
@@ -153,4 +125,43 @@ def add_issue_if(issue_cond: bool, issues: List[str], issue_msg: str):
 
 
 def assert_no_issues(component_name: str, issues: List[str], err_msg_header: str = ''):
-    assert not issues, f'{component_name} - {err_msg_header}\nissues found:\n\t*' + '\n\t*'.join(issues)
+    assert not issues, f'{component_name} - {err_msg_header}\nissues found:\n\t* ' + '\n\t* '.join(issues)
+
+
+def verify_cert_data_same_as_directly_from_bmc(nv_cert: dict):
+    dut_engine: LinuxSshEngine = TestToolkit.engines.dut
+    with allure.step('compare certificates data from nv show to data received directly from BMC'):
+        with allure.step('get nvos password to bmc from tpm'):
+            tpm = TpmTool(dut_engine)
+            bmc_password = tpm.get_tpm_cipher()[:11] + 'A!'
+        with allure.step('get certificates data directly from bmc'):
+            output_file = '/tmp/bmc-certs'
+            dut_engine.run_cmd(f'curl -k -u admin:{bmc_password} -H "Content-Type: application/json" -X GET https://10.0.1.1/redfish/v1/Chassis/MGX_ERoT_BMC_0/Certificates/CertChain > {output_file}')
+            dut_engine.run_cmd(f'echo "" >> {output_file}')
+            bmc_cert_file_content = dut_engine.run_cmd(f'cat {output_file}')
+            bmc_cert = OutputParsingTool.parse_json_str_to_dictionary(bmc_cert_file_content).get_returned_value()
+            bmc_cert = {k: v for k, v in bmc_cert.items() if '@odata' not in k}
+            dut_engine.run_cmd(f'rm -f {output_file}')
+        with allure.step('compare the data of nv and bmc'):
+            ValidationTool.compare_dictionaries(nv_cert, bmc_cert).verify_result()
+
+
+def verify_measurements_data_same_as_directly_from_bmc(nv_measurements: dict):
+    dut_engine: LinuxSshEngine = TestToolkit.engines.dut
+    with allure.step('compare measurements data from nv show to data received directly from BMC'):
+        with allure.step('get nvos password to bmc from tpm'):
+            tpm = TpmTool(dut_engine)
+            bmc_password = tpm.get_tpm_cipher()[:11] + 'A!'
+        with allure.step('get measurements data directly from bmc'):
+            output_file = '/tmp/bmc-measurements'
+            dut_engine.run_cmd(f'curl -k -u admin:{bmc_password} -H "Content-Type: application/json" -X GET https://10.0.1.1/redfish/v1/ComponentIntegrity/MGX_ERoT_BMC_0/Actions/ComponentIntegrity.SPDMGetSignedMeasurements/data > {output_file}')
+            dut_engine.run_cmd(f'echo "" >> {output_file}')
+            bmc_measurements_file_content = dut_engine.run_cmd(f'cat {output_file}')
+            bmc_measurements = OutputParsingTool.parse_json_str_to_dictionary(bmc_measurements_file_content).get_returned_value()
+            bmc_measurements = {k: v for k, v in bmc_measurements.items() if '@odata' not in k}
+            dut_engine.run_cmd(f'rm -f {output_file}')
+        with allure.step('compare the data of nv and bmc'):
+            ValidationTool.compare_dictionaries(nv_measurements, bmc_measurements).verify_result()
+
+# def run_client_verify(dut_engine: LinuxSshEngine, cert_chain: str, measurements: str):
+#     pass  # TODO: complete once we know how
