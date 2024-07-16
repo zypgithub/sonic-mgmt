@@ -1020,7 +1020,8 @@ class JulietSwitch(NvLinkSwitch):
         self.platform_inventory_items_dict.update({'bmc': [PlatformConsts.FW_BMC]})
         platform_inventory_bmc_values = {
             "hardware-version": NvosConst.NOT_AVAILABLE, "model": None,
-            "serial": None, "state": FansConsts.STATE_OK, "type": PlatformConsts.FW_BMC.lower()}
+            "serial": None, PlatformConsts.INV_STATE: FansConsts.STATE_OK,
+            "type": PlatformConsts.FW_BMC.lower()}
         self.platform_inventory_values.update({'bmc': platform_inventory_bmc_values})
 
     def _init_fae_lists(self):
