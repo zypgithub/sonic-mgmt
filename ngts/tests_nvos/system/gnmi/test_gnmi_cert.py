@@ -14,9 +14,10 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.certificate.constants import TestCert
 from ngts.tests_nvos.general.security.conftest import local_adminuser
-from ngts.tests_nvos.system.gnmi.constants import CERTIFICATE, DEFAULT_CERTIFICATE, GnmicErr, GNMI_TEST_CERT
+from ngts.tests_nvos.system.gnmi.constants import CERTIFICATE, DEFAULT_CERTIFICATE, GnmicErr, GNMI_TEST_CERT, \
+    MAX_GNMI_CONNECTIVITY_TIME
 from ngts.tests_nvos.system.gnmi.helpers import load_certificate_into_gnmi, verify_gnmi_client, \
-    get_timestamp_of_first_gnmi_response2
+    get_timestamp_of_first_gnmi_response
 
 
 @pytest.mark.system
@@ -293,13 +294,16 @@ def test_gnmi_set_cert_response_time(local_adminuser):
         with allure.step(f'set gnmi cert1: {cert1.name}'):
             gnmi = System().gnmi_server
             gnmi.set(CERTIFICATE, cert1.name, apply=True).verify_result()
-            apply_timestamp = time.time()
-        with allure.step(f'run client using cacert of cert2: {cert2.name}'):
-            client_thread = executor.submit(get_timestamp_of_first_gnmi_response2, *(local_adminuser, cert2))
+        with allure.step(f'in background - run client using cacert of cert2: {cert2.name}'):
+            client_thread = executor.submit(get_timestamp_of_first_gnmi_response, *(local_adminuser, cert2))
         with allure.step(f'set gnmi cert2: {cert2.name}'):
             gnmi.set(CERTIFICATE, cert2.name, apply=True).verify_result()
+            apply_timestamp = time.time()
         with allure.step(f'wait and get timestamp of first response after cert change'):
             response_timestamp = client_thread.result()
             interval_result = response_timestamp - apply_timestamp
-        with allure.step(f'interval result: {interval_result}'):
-            pass
+        with allure.step(f'interval result: {interval_result} seconds. assert < limit ({MAX_GNMI_CONNECTIVITY_TIME})'):
+            assert interval_result < MAX_GNMI_CONNECTIVITY_TIME, (
+                f'gnmi connectivity time was too long after certificate change.\n'
+                f'expected limit: {MAX_GNMI_CONNECTIVITY_TIME} seconds\n'
+                f'actual: {interval_result} seconds')

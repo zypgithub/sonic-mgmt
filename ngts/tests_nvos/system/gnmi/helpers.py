@@ -489,6 +489,7 @@ def get_timestamp_of_first_gnmi_response(user: UserInfo, cert: CertInfo):
                         cacert=cert.cacert)
     output = GnmicErr.CERT_VERIFY_FAIL
     while any(err_msg in output for err_msg in [GnmicErr.CERT_VERIFY_FAIL, 'Failed', 'failed']):
+        time.sleep(0.5)
         out, err = client.grpcurl_describe(skip_cert_verify=False)
         output = out + err
     return time.time()
