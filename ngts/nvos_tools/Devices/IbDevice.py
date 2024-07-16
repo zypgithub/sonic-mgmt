@@ -702,12 +702,29 @@ class JulietSwitch(NvLinkSwitch):
         }
         cluster_files = ['conf', 'nmx-controller', 'nmx-telemetry']
         self.constants = self.constants._replace(cluster_files=cluster_files)
+        self.constants.dump_files.append('BMCeeprom')
 
     def _init_fan_list(self):
         super()._init_fan_list()
 
     def _init_led_list(self):
         self.led_list = [FansConsts.FAN_STATUS_LED, "STATUS", "UID"]
+
+    def _init_platform_lists(self):
+        super()._init_platform_lists()
+        self.platform_inventory_items.extend([PlatformConsts.FW_BMC])
+        self.platform_inventory_items_dict.update({'bmc': [PlatformConsts.FW_BMC]})
+        platform_inventory_bmc_values = {
+            "hardware-version": NvosConst.NOT_AVAILABLE, "model": None,
+            "serial": None, "state": FansConsts.STATE_OK, "type": PlatformConsts.FW_BMC.lower()}
+        self.platform_inventory_values.update({'bmc': platform_inventory_bmc_values})
+
+    def _init_fae_lists(self):
+        super()._init_fae_lists()
+        self.fae_eeprom_values = {
+            "BMC": {"Manufacturer": "NVIDIA", "Model": None, "PartNumber": ExpectedString(r"[-\d]+"),
+                    "SerialNumber": ExpectedString.number_and_string(""), "State": "Enabled"}
+        }
 
 
 # -------------------------- JulietScaleout Switch ----------------------------
@@ -865,12 +882,6 @@ class JulietScaleoutSwitch(JulietSwitch):
             "max-speed": ExpectedString(range_min=20000, range_max=40000)}
         self.platform_inventory_switch_values.update({"hardware-version": None,
                                                       "model": "692-9K36F-00MV-JS0"})
-        self.platform_inventory_items.extend([PlatformConsts.FW_BMC])
-        self.platform_inventory_items_dict.update({'bmc': [PlatformConsts.FW_BMC]})
-        platform_inventory_bmc_values = {
-            "hardware-version": NvosConst.NOT_AVAILABLE, "model": NvosConst.NOT_AVAILABLE,
-            "serial": NvosConst.NOT_AVAILABLE, "state": FansConsts.STATE_OK, "type": PlatformConsts.FW_BMC.lower()}
-        self.platform_inventory_values.update({'bmc': platform_inventory_bmc_values})
 
     def sleep_after_system_reboot(self):
         logger.info("Sleeping for 80 seconds - Reboot takes longer on juliet for now")

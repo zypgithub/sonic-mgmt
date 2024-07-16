@@ -43,6 +43,7 @@ class BaseDevice(ABC):
         self._init_health_components()
         self._init_platform_lists()
         self._init_system_lists()
+        self._init_fae_lists()
         self._init_security_lists()
         self._init_password_hardening_lists()
 
@@ -101,6 +102,9 @@ class BaseDevice(ABC):
 
     def _init_system_lists(self):
         self.user_fields = []
+
+    def _init_fae_lists(self):
+        pass
 
     def _init_security_lists(self):
         self.kex_algorithms = []
@@ -389,6 +393,10 @@ class BaseSwitch(BaseDevice):
         self.platform_inventory_values = {"fan": self.platform_inventory_fan_values,
                                           "psu": self.platform_inventory_psu_values,
                                           "switch": self.platform_inventory_switch_values}
+
+    def _init_fae_lists(self):
+        super()._init_fae_lists()
+        self.fae_eeprom_values = {}
 
     def _init_fan_direction_dir(self):
         super()._init_fan_direction_dir()

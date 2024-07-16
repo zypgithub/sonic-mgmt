@@ -390,12 +390,15 @@ class ValidationTool:
         return ResultObj((equal == should_be_equal), f"Missing fields: {missing}\nUnexpected fields: {excess}")
 
     @staticmethod
-    def validate_output_of_show(actual: Dict, expected: Dict, should_be_valid=True) -> ResultObj:
+    def validate_output_of_show(actual: Dict, expected: Dict, should_be_valid=True, allow_extra_fields=False) -> ResultObj:
         with allure.step(f"Verify output is {'valid' if should_be_valid else 'invalid'}"):
             with allure.step(f"Testing keys: {expected.keys()}"):
-                keys_comparison = ValidationTool.validate_set_equal(actual.keys(), expected.keys(), should_be_valid)
-                if should_be_valid and not keys_comparison.result:
-                    return keys_comparison
+                missing_keys = set(expected.keys()) - set(actual.keys())
+                excess_keys = set(actual.keys()) - set(expected.keys())
+                if missing_keys or (excess_keys and not allow_extra_fields):
+                    return ResultObj(False, f"Missing fields: {missing_keys}\nUnexpected fields: {excess_keys}")
+                elif excess_keys:
+                    logger.info(f"Dict contained unexpected keys: {excess_keys}")
 
             with allure.step(f"Checking values"):
                 errors = []

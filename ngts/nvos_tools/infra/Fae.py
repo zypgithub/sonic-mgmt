@@ -68,6 +68,7 @@ class FaePlatform(BaseComponent):
         super().__init__(parent_obj, path='/platform',
                          api={ApiType.NVUE: NvuePlatformCli, ApiType.OPENAPI: OpenApiPlatformCli})
         self.firmware = FaeFirmware(self)
+        self.eeprom = BaseComponent(self, path="/eeprom")
 
 
 class FaeFirmware(BaseComponent):
