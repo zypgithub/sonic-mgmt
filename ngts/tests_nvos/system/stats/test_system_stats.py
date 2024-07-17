@@ -412,8 +412,8 @@ def test_system_stats_performance(engines, devices, test_api):
         with allure.step("Perform system reboot"):
             system.reboot.action_reboot(params='force').verify_result()
 
-        with allure.step("Wait 5 minutes..."):
-            time.sleep(StatsConsts.SLEEP_5_MINUTES)
+        with allure.step("Wait 15 seconds..."):
+            time.sleep(StatsConsts.SLEEP_15_SECONDS)
 
         with allure.step("Check internal files were created"):
             check_category_internal_files_exist(engine, category_list)
@@ -441,8 +441,7 @@ def test_system_stats_performance(engines, devices, test_api):
 
         with allure.step("Generate all system files and verify action time"):
             start_time = time.time()
-            system.stats.category.categoryName[StatsConsts.ALL_CATEGORIES].action_general(StatsConsts.GENERATE).\
-                verify_result()
+            system.stats.action_general(StatsConsts.GENERATE).verify_result()
             end_time = time.time()
             diff_time = end_time - start_time
             stats_files_show = OutputParsingTool.parse_json_str_to_dictionary(system.stats.files.show()).\
@@ -1013,13 +1012,12 @@ def set_system_stats_to_default(engine, system):
 
 
 def clear_all_internal_and_external_files(engine, system, category_list):
-    for name in category_list:
-        system.stats.category.categoryName[name].action_general(StatsConsts.CLEAR).verify_result()
-    stats_files_show = OutputParsingTool.parse_json_str_to_dictionary(system.stats.files.show()). \
-        get_returned_value()
+    system.stats.action_general(StatsConsts.CLEAR).verify_result()
+    stats_files_show = OutputParsingTool.parse_json_str_to_dictionary(system.stats.files.show()).get_returned_value()
     if stats_files_show != "":
         for file in stats_files_show.keys():
             system.stats.files.file_name[file].action_delete(should_succeed=True)
+    # clear old files if exist
     engine.run_cmd("sudo rm -f /var/stats/*.old")
 
 
