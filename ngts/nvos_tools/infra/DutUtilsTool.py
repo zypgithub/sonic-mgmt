@@ -240,11 +240,12 @@ def wait_on_systemctl_initialization(engine):
         raise Exception("Waiting for systemctl to finish initializing")
 
 
-def wait_for_specific_regex_in_logs(engine, regex):
+def wait_for_specific_regex_in_logs(engine, regex, timeout=70):
     """
 
     :param engine:
     :param regex:
+    :param timeout
     :return:
     """
     device = {
@@ -252,9 +253,9 @@ def wait_for_specific_regex_in_logs(engine, regex):
         'host': engine.ip,
         'username': engine.username,
         'password': engine.password,
-        'timeout': 70
+        'timeout': timeout
     }
-    with allure.step(f"wait for 70 seconds to see {regex} in logs"):
+    with allure.step(f"wait for {timeout} seconds to see '{regex}' in logs"):
         connection = ConnectHandler(**device)
-        connection.send_command('nv show system log follow', delay_factor=2, expect_string=regex)
+        connection.send_command('nv show system log follow', expect_string=regex)
         return

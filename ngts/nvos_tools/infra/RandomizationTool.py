@@ -299,23 +299,22 @@ class RandomizationTool:
             return ResultObj(True, "Picked random date success", random_date)
 
     @staticmethod
-    def select_random_transceiver(transceivers_output, cable_type, number_of_transceiver_to_select=1):
+    def select_random_transceiver(transceivers_output, field_name, expected_value, number_of_transceiver_to_select=1):
         """
         :summary: select random transceiver with a specific cable type
-
         :param transceivers_output:
-        :param cable_type:
+        :param expected_value:
         :param number_of_transceiver_to_select:
         :return:
         """
-        with allure.step("Select {} random transceiver with cable type: {}".format(number_of_transceiver_to_select, cable_type)):
+        with allure.step("Select {} random transceiver with {}: {}".format(number_of_transceiver_to_select, field_name, expected_value)):
             transceivers_list = []
             for transceiver, transceiver_data in transceivers_output.items():
-                if PlatformConsts.TRANSCEIVER_CABLE_TYPE in transceiver_data and transceiver_data[PlatformConsts.TRANSCEIVER_CABLE_TYPE] == cable_type:
+                if field_name in transceiver_data and transceiver_data[field_name] == expected_value:
                     transceivers_list.append(transceiver)
 
             if len(transceivers_list) < number_of_transceiver_to_select:
-                return ResultObj(False, "Failed to select {} {} transceivers. Only {} were found".format(number_of_transceiver_to_select, cable_type, len(transceivers_list)))
+                return ResultObj(False, "Failed to select {} {} transceivers. Only {} were found".format(number_of_transceiver_to_select, expected_value, len(transceivers_list)))
 
             return ResultObj(True, "picked transceivers success", random.sample(transceivers_list, number_of_transceiver_to_select))
 

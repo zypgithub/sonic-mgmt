@@ -87,8 +87,7 @@ def test_transceiver_files_actions_positive(engines, test_api):
                                                                          unexpected_files=[new_fw_file2])
     finally:
         with allure.step("Delete all files"):
-            files_to_delete = platform.firmware.transceiver.files.file_name[""]
-            files_to_delete.action_delete("Action succeeded")
+            engines.dut.run_cmd(f"sudo rm -f /host/fw-images/module/*")
 
 
 @pytest.mark.platform

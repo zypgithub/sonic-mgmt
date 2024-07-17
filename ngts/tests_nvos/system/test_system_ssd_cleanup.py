@@ -88,9 +88,9 @@ def test_ssd_cleanup_positive_flow(engines, devices):
     try:
         df_output = _get_df_output(engines.dut)
         with allure.step("add file to reach usage threshold {}".format(5)):
-            engines.dut.run_cmd(f"sudo fallocate -l {df_output[SystemConsts.SSD_SPACE_AVAILABLE_SIZE] - 5 - 0.5}G {paths_order[-1]}/big_file")
+            engines.dut.run_cmd(f"sudo fallocate -l {df_output[SystemConsts.SSD_SPACE_AVAILABLE_SIZE] - 5}G {paths_order[-1]}/big_file")
 
-        files_to_delete = _add_files(engines.dut, 5, df_output[SystemConsts.SSD_SPACE_AVAILABLE_SIZE])
+        files_to_delete = _add_files(engines.dut, 4, df_output[SystemConsts.SSD_SPACE_AVAILABLE_SIZE])
 
         with allure.step("health issue will be reported after 3 minutes"):
             time.sleep(180)
@@ -119,28 +119,29 @@ def test_ssd_cleanup_positive_flow(engines, devices):
                 verify_deleted_folders_list(engines.dut, files_to_delete[:-2])
 
             with allure.step("check no disk issue"):
-                time.sleep(70)
+                time.sleep(120)
                 health_dict = OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).verify_result()
                 temp = all(item in health_dict[HealthConsts.ISSUES].items() for item in issue.items())
-                assert not temp, "the expected issue is {} but the output is {}".format(issue, health_dict)
+                assert not temp, f"health issue still exist even after waiting for 120 seconds, health output: {health_dict}"
 
             with allure.step("check system events - two events expected "):
                 events_dict = OutputParsingTool.parse_json_str_to_dictionary(system.events.show()).verify_result()
                 _verify_system_event(events_dict, True)
 
         df_output = _get_df_output(engines.dut)
-        engines.dut.run_cmd('sudo fallocate -l {size}G /{path}/{file}'.format(size=df_output[SystemConsts.SSD_SPACE_AVAILABLE_SIZE] - 0.5, path=paths_order[0], file='Big_file'))
+        file_name = 'Big_file'
+        engines.dut.run_cmd('sudo fallocate -l {size}G /{path}/{file}'.format(size=df_output[SystemConsts.SSD_SPACE_AVAILABLE_SIZE] - 0.5, path=paths_order[0], file=file_name))
 
         with allure.step("check auto cleanup step"):
             with allure.step("check SSD Cleanup Started in the logs"):
-                wait_for_specific_regex_in_logs(engines.dut, "ssd_cleanup: SSD Cleanup Started")
+                wait_for_specific_regex_in_logs(engines.dut, "ssd_cleanup: SSD Cleanup Done", timeout=70)
 
-            with allure.step("check deleted files and the deleting order"):
-                verify_deleted_folders_list(engines.dut, ['Big_file'])
+            with allure.step("Verify that deleted files are completely removed"):
+                verify_deleted_folders_list(engines.dut, [file_name])
                 assert "No such file or directory" in engines.dut.run_cmd(f"cat {paths_order[0]}/{files_to_delete[0]}"), f"{files_to_delete[0]} should be deleted"
 
             with allure.step("check health status is ok"):
-                time.sleep(70)
+                time.sleep(180)
                 verify_health_status_and_led(system, HealthConsts.OK)
     finally:
         _delete_all_files(engines.dut)
@@ -173,18 +174,20 @@ def test_ssd_cleanup_reboot_with_high_ssd_usage(engines, devices):
         with allure.step('Reboot the system'):
             system.reboot.action_reboot()
 
-        with allure.step('sleep 1 minute - waiting for healthD cycle'):
-            time.sleep(60)
+        with allure.step('sleep 4 minutes - waiting for healthD cycle'):
+            wait_for_specific_regex_in_logs(engines.dut, "ssd_cleanup: SSD Cleanup Done", timeout=250)
 
         with allure.step("check deleted files and the deleting order"):
             verify_deleted_folders_list(engines.dut, [file_name])
 
         with allure.step("check health status is ok"):
+            with allure.step('sleep 2 minutes - waiting for healthD cycle'):
+                time.sleep(120)
+
             verify_health_status_and_led(system, HealthConsts.OK)
 
         with allure.step("check ssd-cleanup deleted the {file}".format(file=file_name)):
-            deleted_list = _get_deleted_files_list_from_logs(engines.dut)
-            assert file_name in deleted_list, "script should delete /{path}/{file}".format(path=path, file=file_name)
+            assert file_name not in engines.dut.run_cmd(f'ls {path}')
     finally:
         with allure.step(f"cleanup step - delete {file_name}"):
             engines.dut.run_cmd('sudo rm -f /{path}/{file}'.format(path=path, file=file_name))

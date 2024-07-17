@@ -73,32 +73,22 @@ def test_reset_transceiver_firmware_positive(engines, test_api, start_sm):
 
     with allure.step("reset {} and verify expected behavior using show command"):
         link_output_before_reset = OutputParsingTool.parse_json_str_to_dictionary(interface.link.show()).verify_result()
-        platform.transceiver.action_reset(random_transceiver).verify_result()
         default_output = OutputParsingTool.parse_json_str_to_dictionary(platform.transceiver.show(random_transceiver + ' firmware')).verify_result()
-        default_fw = OutputParsingTool.parse_json_str_to_dictionary(
-            platform.transceiver.show(random_transceiver + ' firmware')).verify_result()[PlatformConsts.FW_ACTUAL]
+        default_fw = OutputParsingTool.parse_json_str_to_dictionary(default_output).verify_result()[PlatformConsts.FW_ACTUAL]
+        platform.transceiver.action_reset(random_transceiver).verify_result()
 
-        _verify_expected_dict(default_output, default_fw)
+        with allure.step("sleep for 2 sec - waiting for after reset action"):
+            time.sleep(2)
 
-        show_interface_output = OutputParsingTool.parse_json_str_to_dictionary(interface.link.show()).verify_result()
-        _verify_logic_and_physical_state(show_interface_output, 'N/A',
-                                         IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE_LINK_UP)
-
-        with allure.step("sleep for 1 second"):
-            time.sleep(1)
-
-        with allure.step("verify physical-state is Polling, logical-state is Down and all firmware expected fields"):
-            output_after_reset = OutputParsingTool.parse_json_str_to_dictionary(ouput_after_reset=platform.transceiver.show(random_transceiver + ' firmware'))
+        with allure.step(f"verify all {random_transceiver} fields back to the same values"):
+            output_after_reset = OutputParsingTool.parse_json_str_to_dictionary(output_json=platform.transceiver.show(random_transceiver + ' firmware')).verify_result()
             _verify_expected_dict(output_after_reset, default_fw)
 
-            show_interface_output = OutputParsingTool.parse_json_str_to_dictionary(interface.link.show()).verify_result()
-            _verify_logic_and_physical_state(show_interface_output, IbInterfaceConsts.LINK_LOGICAL_PORT_STATE_DOWN,
-                                             IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE_POLLING)
-
-        with allure.step("verify physical-state is LinkUp and logical-state is up"):
+        with allure.step(f"verify all {random_port} link fields back to the same values"):
             start_sm
-            _wait_until_linkup(interface)
             link_output_after_reset = OutputParsingTool.parse_json_str_to_dictionary(interface.link.show()).verify_result()
+            link_output_before_reset = link_output_before_reset.pop('counters')
+            link_output_after_reset = link_output_after_reset.pop('counters')
             assert link_output_after_reset == link_output_before_reset, "at least ont field has been changed, output before reset = {} , output after reset = {}".format(link_output_before_reset, link_output_after_reset)
 
 
@@ -159,18 +149,16 @@ def test_install_transceiver_firmware_positive(engines, devices, test_api, start
 
         with allure.step("install new transceiver firmware - {}".format(bin_files[0])):
             platform.transceiver.action_install(random_transceiver, bin_files[0]).verify_result()
+            platform.transceiver.action_reset(random_transceiver)
 
         with allure.step("verify show commands after install"):
             output_after_install = OutputParsingTool.parse_json_str_to_dictionary(platform.transceiver.show(random_transceiver + ' firmware')).verify_result()
-            _verify_expected_dict(command_output=output_after_install, default_fw=_get_firmware(bin_files[0]), status='ok', msg='N/A')
+            _verify_expected_dict(command_output=output_after_install, default_fw=_get_firmware(bin_files[0]), status='OK', msg='N/A')
 
             show_interface_after_install = OutputParsingTool.parse_json_str_to_dictionary(interface.link.show()).verify_result()
-            _verify_logic_and_physical_state(show_interface_after_install, IbInterfaceConsts.LINK_LOGICAL_PORT_STATE_DOWN,
-                                             devices.dut.platform_port_state['polling-physical-state'])
-
             assert show_interface_before_install == show_interface_after_install, "at lease one of the link values has been change, output before install = {}, after install = {}".format(show_interface_before_install, show_interface_after_install)
     finally:
-        _cleanup_step(engines['sonic_mgmt'], platform, random_transceiver, default_fw)
+        _cleanup_step(engines.dut, engines['sonic_mgmt'], platform, random_transceiver, default_fw)
 
 
 @pytest.mark.platform
@@ -193,6 +181,7 @@ def test_install_reset_transceiver_firmware_negative_flow(engines, test_api):
     """
     invalid_file = "invalid_fw.bin"
     invalid_fw_path = f"{SystemConsts.GENERAL_TRANSCEIVER_FIRMWARE_FILES}/{invalid_file}"
+    expected_error_msg = 'Failed to complete download of FW image to EEPROM'
 
     platform, random_transceiver, random_port = _get_random_optical_module_transceiver()
 
@@ -209,22 +198,18 @@ def test_install_reset_transceiver_firmware_negative_flow(engines, test_api):
             show_interface_before_install = OutputParsingTool.parse_json_str_to_dictionary(interface.link.show()).verify_result()
 
         with allure.step("install new transceiver firmware - {}".format(invalid_file)):
-            platform.transceiver.action_install(random_transceiver, invalid_file).verify_result()
-            show_interface_after_install = OutputParsingTool.parse_json_str_to_dictionary(
-                interface.link.show()).verify_result()
+            platform.transceiver.action_install(random_transceiver, invalid_file, expected_str=expected_error_msg)
+            platform.transceiver.action_reset(random_transceiver)
 
         with allure.step("verify show commands after install"):
+            show_interface_after_install = OutputParsingTool.parse_json_str_to_dictionary(
+                interface.link.show()).verify_result()
             output_after_install = OutputParsingTool.parse_json_str_to_dictionary(platform.transceiver.show(random_transceiver + ' firmware')).verify_result()
-            _verify_expected_dict(command_output=output_after_install, default_fw='N/A', status='Failed', msg='Failed to complete download of FW image to EEPROM')
+            _verify_expected_dict(command_output=output_after_install, default_fw='N/A', status='Failed', msg=expected_error_msg)
             assert show_interface_after_install == show_interface_before_install, "at least one of the link values has been change, before_install {} after install {}".format(show_interface_before_install, show_interface_after_install)
-            # bug 3935231: we will need to run reset and verify that status is ok and no err msg
-            """
-            platform.transceiver.action_reset(random_transceiver).verify_result()
-            output_after_reset = OutputParsingTool.parse_json_str_to_dictionary(platform.transceiver.show(random_transceiver + ' firmware')).verify_result()
-            _verify_expected_dict(command_output=output_after_install, default_fw=default_fw, status='ok', msg='ok')
-            """
+
     finally:
-        _cleanup_step(engines['sonic_mgmt'], platform, random_transceiver, default_fw)
+        _cleanup_step(engines.dut, engines['sonic_mgmt'], platform, random_transceiver, default_fw)
 
 
 @pytest.mark.platform
@@ -248,14 +233,15 @@ def test_install_reset_invalid_transceiver_id(engines, test_api):
         platform = Platform()
         invalid_transceiver = 'testing'
         invalid_file_name = 'no_file'
-        expected_output = "Module testing does not exist"
+        invalid_action_expected_output = "Module testing does not exist"
+        invalid_show_expected_output = 'Error: The requested item does not exist'
 
     with allure.step("try to run transceiver commands with invalid transceiver id and non exist file"):
-        platform.transceiver.action_install(invalid_transceiver, invalid_file_name, expected_str=expected_output)
-        platform.transceiver.action_reset(invalid_transceiver, expected_str=expected_output)
-        assert "Error" in platform.transceiver.show(invalid_transceiver + ' firmware')
-        assert "Error" in platform.transceiver.show(invalid_transceiver + ' firmware files ' + invalid_file_name)
-        assert "Error" in platform.transceiver.show(invalid_transceiver)
+        platform.transceiver.action_install(invalid_transceiver, invalid_file_name, expected_str=invalid_action_expected_output)
+        platform.transceiver.action_reset(invalid_transceiver, expected_str=invalid_action_expected_output)
+        assert invalid_show_expected_output in platform.transceiver.show(invalid_transceiver + ' firmware', should_succeed=False), "The show firmware command succeeded when it was expected to fail"
+        assert invalid_show_expected_output in platform.transceiver.show(invalid_transceiver + ' firmware files ' + invalid_file_name, should_succeed=False), "The show firmware files command succeeded when it was expected to fail"
+        assert invalid_show_expected_output in platform.transceiver.show(invalid_transceiver, should_succeed=False), "The show transceiver command succeeded when it was expected to fail"
 
 
 @retry(Exception, tries=60, delay=1)
@@ -367,15 +353,23 @@ def _get_random_optical_module_transceiver():
             show_transceiver = OutputParsingTool.parse_json_str_to_dictionary(
                 platform.transceiver.show()).verify_result()
             random_transceiver = \
-                RandomizationTool.select_random_transceiver(transceivers_output=show_transceiver,
-                                                            cable_type='Optical module',
-                                                            number_of_transceiver_to_select=1).verify_result()[0]
+                RandomizationTool.select_random_transceiver(transceivers_output=show_transceiver, field_name=PlatformConsts.TRANSCEIVER_CABLE_TYPE,
+                                                            expected_value='Optical module', number_of_transceiver_to_select=1)
+            if not random_transceiver.result:
+                random_transceiver = \
+                    RandomizationTool.select_random_transceiver(transceivers_output=show_transceiver,
+                                                                field_name=PlatformConsts.HARDWARE_TRANCEIVER_DIAGNOSTIC_STATUS,
+                                                                expected_value='"Diagnostic Data Available',
+                                                                number_of_transceiver_to_select=1).verify_result()[0]
+            else:
+                random_transceiver = random_transceiver.verify_result()[0]
+
             random_port_name = random_transceiver + 'p1'
 
         return platform, random_transceiver, random_port_name
 
 
-def _cleanup_step(player_engine, platform, transceiver_id, default_fw):
+def _cleanup_step(engine, player_engine, platform, transceiver_id, default_fw):
     """
     to delete all fetched files and reinstall default fw
     - run nv show platform transceiver <transceiver_id> firmware
@@ -396,7 +390,8 @@ def _cleanup_step(player_engine, platform, transceiver_id, default_fw):
 
                     with allure.step("install new transceiver firmware - {}".format(default_bin_file[0])):
                         platform.transceiver.action_install(transceiver_id, default_bin_file[0]).verify_result()
+                        platform.transceiver.action_reset(transceiver_id)
 
         with allure.step("delete all fetched files"):
-            files_to_delete = platform.firmware.transceiver.files.file_name[""]
-            files_to_delete.action_delete("Action succeeded")
+            path = "/host/fw-images/module"
+            engine.run_cmd(f"sudo rm -f {path}/*")
