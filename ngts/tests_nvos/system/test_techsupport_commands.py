@@ -14,7 +14,7 @@ from ngts.tools.test_utils import allure_utils as allure
 @pytest.mark.system
 @pytest.mark.tech_support
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_techsupport_show(engines, test_name, test_api):
+def test_techsupport_show(engines, test_name, test_api, devices):
     """
     Run nv show system tech-support files command and verify the required fields are exist
     command: nv show system tech-support files
@@ -28,7 +28,7 @@ def test_techsupport_show(engines, test_name, test_api):
         6. validate the output format
     """
     system = System(None)
-    operation = 'generate tech-support'
+    operation = devices.dut.generate_tech_support
     TestToolkit.tested_api = test_api
     duration = 0
     with allure.step('Run show/action system tech-support and verify that each results updated as expected'):
@@ -78,7 +78,7 @@ def test_techsupport_since(engines, test_name, test_api):
         3. validate new tar.gz file exist
     """
     system = System(None)
-    operation = 'generate tech-support'
+    operation = devices.dut.generate_tech_support
     TestToolkit.tested_api = test_api
     with allure.step('Run show/action system tech-support and verify that each results updated as expected'):
         yesterday = datetime.datetime.today() - datetime.timedelta(days=1)
@@ -230,7 +230,7 @@ def test_techsupport_multiple_times(engines, test_name, test_api):
         1. run nv action generate system tech-support 4 times in a row
     """
     system = System(None)
-    operation = 'generate tech-support'
+    operation = devices.dut.generate_tech_support
     TestToolkit.tested_api = test_api
     files_names = []
     with allure.step('Run show/action system tech-support 4 times in a row'):

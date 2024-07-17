@@ -512,7 +512,7 @@ def platform_params(show_platform_summary, setup_name, topology_obj):
     platform_data = DottedDict()
     platform_data.platform = show_platform_summary['platform']
     platform_data.filtered_platform = re.search(
-        r"(msn\d{4}a\w?|msn\d{4}c|msn\d{4}|sn\d{4}|qm\d{4}|q\d{4}|mqm\d{4}|mbf.*c|900.*a|bf.*dpu|N5110_LD)",
+        r"(msn\d{4}a\w?|msn\d{4}c|msn\d{4}|sn\d{4}|qm\d{4}|q\d{4}|mqm\d{4}|mbf.*c|900.*a|N5110_LD|N5100_LD)",
         show_platform_summary['platform'], re.IGNORECASE).group(1)
     platform_data.hwsku = show_platform_summary['hwsku']
     platform_data.setup_name = setup_name

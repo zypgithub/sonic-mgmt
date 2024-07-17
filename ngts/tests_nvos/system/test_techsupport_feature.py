@@ -72,12 +72,16 @@ def test_techsupport_expected_files(engines, devices):
     """
 
     system = System()
-
+    cluster_files = getattr(devices.dut.constants, 'cluster_files', None)
     expected_files_dict = {'dump': devices.dut.constants.dump_files,
                            'sai_sdk_dump0': devices.dut.constants.sdk_dump_files,
                            'log': devices.dut.constants.log_dump_files,
                            'stats': devices.dut.constants.stats_dump_files,
                            'hw-mgmt': devices.dut.constants.hw_mgmt_files}
+
+    if cluster_files:
+        expected_files_dict['cluster'] = cluster_files
+
     try:
         with allure.step('Run nv action generate system tech-support and validate dump files'):
             tech_support_folder, duration = system.techsupport.action_generate(test_name='test_techsupport_expected_files')

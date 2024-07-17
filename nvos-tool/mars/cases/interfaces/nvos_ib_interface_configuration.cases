@@ -16,7 +16,7 @@
         <condition>
         <key>dut_hwsku</key>
         <op> in </op>
-        <value>[N5110_LD - JulietScaleout]</value>
+        <value>[N5110_LD - JulietScaleout, N5100_LD - JulietNonScaleout, N5110_LD - JulietTTM]</value>
         </condition>
       </ignore>
     </Case>

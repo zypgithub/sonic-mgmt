@@ -63,6 +63,7 @@ class NvosConst:
     IB_SWITCH_TYPE = "IB"
     QTM2 = "Quantum2"
     QTM3 = "Quantum3"
+    NVL5 = 'NVLink-5 switch'
     DESCRIPTION = 'description'
     PORT_STATUS_UP = 'up'
     PORT_STATUS_DOWN = 'down'
@@ -282,6 +283,7 @@ class SystemConsts:
     DATE_TIME = 'date-time'
     VERSION = 'version'
     SECURITY = 'security'
+    DATE_TIME = 'date-time'
     TECHSUPPORT_FILES_PATH = '/host/dump/'
     TECHSUPPORT_EMPTY_FILES_TO_IGNORE = ['queue.counters_2', 'queue.counters_1.0', 'swapon',
                                          'queue.counters_1', 'queue.counters_2.0']
@@ -600,7 +602,7 @@ class ConfigConsts:
 class PlatformConsts:
     PLATFORM_FW = "firmware"
     FW_PATH = "/auto/sw_system_project/MLNX_OS_INFRA/mlnx_os2/sx_mlnx_fw/"
-    XDR_FW_PATH = "/auto/mswg/release/sx_mlnx_fw/QTM3/rel-35_2014_0938/dev/"
+    XDR_FW_PATH = "/auto/mswg/release/sx_mlnx_fw/QTM3/rel-35_2014_0974/dev/"
     PLATFORM_ENVIRONMENT = "environment"
     PLATFORM_HW = "hardware"
     PLATFORM_SW = "software"
@@ -763,7 +765,7 @@ class ImageConsts:
     SWID = 'swid'
     FW_ASIC = 'ASIC'
     FW_STABLE_VERSION = 'rel-31_2010_4100-004-EVB.mfa'
-    XDR_FW_STABLE_VERSION = 'rel-35_2014_0938.mfa'
+    XDR_FW_STABLE_VERSION = 'rel-35_2014_0974.mfa'
     SCP_PATH = 'scp://{}:{}@{}'.format(NvosConst.ROOT_USER, NvosConst.ROOT_PASSWORD,
                                        'fit70')
     SCP_PATH_SERVER = 'scp://{username}:{password}@{ip}{path}'
@@ -1014,6 +1016,15 @@ class SyslogConsts:
     SYSLOG_LOG_PATH = "/var/log/syslog"
 
 
+class ClusterAppsLogLevels:
+    CRITICAL = 'critical'
+    ERROR = 'error'
+    WARNING = 'warning'
+    NOTICE = 'notice'
+    INFO = 'info'
+    DEBUG = 'debug'
+
+
 class SyslogSeverityLevels:
     NONE = 'none'
     CRIT = 'crit'
@@ -1079,9 +1090,10 @@ class OperationTimeConsts:
     TEST_NAME_COL = 'test_name'
     SESSION_ID_COL = 'session_id'
     DATE_COL = 'date'
-    THRESHOLDS = {'reboot': 220,
+    THRESHOLDS = {'reboot': 180,
                   'julietscaleout_reboot': 500,  # Currently there is a bug on this. Time needs to be decreased once fixed.
-                  'reset factory': 260,
+                  'julietscaleout reset factory': 550,  # Currently there is a bug on this. Time needs to be decreased once fixed.
+                  'reset factory': 250,
                   'install user FW': 450,
                   'install default fw': 360,
                   'port goes up': 30,
@@ -1089,7 +1101,9 @@ class OperationTimeConsts:
                   'reboot with default FW installation': 360,
                   'reboot with new user FW': 450,
                   'set hostname': 12,
-                  'generate tech-support': 75}
+                  'generate tech-support': 75,
+                  'julietscaleout generate_tech_support': 100,
+                  'start stop cluster app': 50}
 
 
 class StatsConsts:
@@ -1315,6 +1329,7 @@ class UfmMadConsts:
     UFM_MAD_TABLE_GENERAL = '\"UFM_MAD_TABLE|general\"'
     NUMBER_OF_ADDRESSES_IN_MAD_RESPONSE = 4
     CONFIG_TIME = 100  # [sec]
+    MST_DEV_NAME = '/dev/mst/mt54002_pciconf0'
     IBSNI_REGISTER = 'IBSNI'
     PMAOS_REGISTER = 'PMAOS'
     NVMAD_PATH = '/auto/sw_system_project/MLNX_OS_INFRA/mad_repository'
@@ -1345,6 +1360,7 @@ class BiosConsts:
     INVALID_PASSWORD_PROMPT = "Invalid Password"
     CREATE_NEW_PASSWORD = "Create New Password"
     ENTER_CURRENT_PASSWORD = "Enter Current Password"
+    NVLINK_ENTER_CURRENT_PASSWORD = "Enter Current Administrator Password"
     CLEAR_OLD_PASSWORD = "Clear Old Password"
     ENABLED_SELECTED = "[1;37;47m[Enabled]"
     DISABLED_SELECTED = "[1;37;47m[Disabled]"

@@ -4,9 +4,13 @@ from ngts.tests_nvos.general.security.tpm_attestation.helpers import factory_res
 from ngts.tests_nvos.system.factory_reset.helpers import *
 from ngts.tests_nvos.system.gnmi.helpers import factory_reset_gnmi_checker
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.nvos_constants.constants_nvos import OutputFormat
+from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
+from ngts.nvos_tools.nmx.Cluster import Cluster
 
 
 def factory_reset_no_params_pre_steps(engines, platform_params, system, devices):
+    init_cluster_status = None
     port_type = devices.dut.switch_type.lower()
 
     with allure.step('Create System object'):
@@ -40,6 +44,16 @@ def factory_reset_no_params_pre_steps(engines, platform_params, system, devices)
         logger.info(f"Set description to {port_type} port")
         not_apply_port.interface.set(NvosConst.DESCRIPTION, description, apply=False).verify_result()
 
+    with allure.step('Check is Juliet Device'):
+        if not isinstance(devices.dut, JulietSwitch):
+            pytest.skip("It's not a Juliet Switch. Skipping NMX configuration")
+        else:
+            with allure.step("Config A reverse cluster state than configured"):
+                cluster = Cluster()
+                # Enable cluster and validate its enabled.
+                init_cluster_status = ClusterTools.check_cluster_state(cluster, output_format=OutputFormat.json)
+                ClusterTools.reverse_cluster_state(cluster, output_format=OutputFormat.json)
+
     with allure.step('Validate ports description'):
         logger.info("Validate ports description")
         validate_port_description(engines.dut, apply_and_save_port, description)
@@ -60,4 +74,4 @@ def factory_reset_no_params_pre_steps(engines, platform_params, system, devices)
         next(factory_reset_gnmi_checker)
 
     return apply_and_save_port, current_time, just_apply_port, last_status_line, machine_type, not_apply_port, \
-        username
+        username, init_cluster_status

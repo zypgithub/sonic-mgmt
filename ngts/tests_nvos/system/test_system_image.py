@@ -33,8 +33,13 @@ PATH_TO_IMAGE_TEMPLATE = "{}/amd64/"
 # will be removed ones merged to develop
 base_version = "/auto/sw_system_release/nos/nvos/25.01.4000/amd64/dev/nvos-amd64-25.01.4000.bin"
 xdr_base_version = "/auto/sw_system_release/nos/nvos/25.02.0916-032/amd64/dev/nvos-amd64-25.02.0916-032.bin"
+nvl5_base_version = "/auto/sw_system_release/nos/nvos/25.02.0506/amd64/dev/nvos-amd64-25.02.0506.bin"
 BASE_IMAGE_VERSION_TO_INSTALL = "nvos-amd64-{pre_release_name}.bin"
 BASE_IMAGE_VERSION_TO_INSTALL_PATH = "/auto/sw_system_release/nos/nvos/{pre_release_name}/amd64/{base_image}"
+
+# will be removed ones merged to develop
+base_versions = {'QTM3': xdr_base_version,
+                 'NVLink-5 switch': nvl5_base_version}
 
 
 @pytest.mark.checklist
@@ -636,8 +641,7 @@ def verify_current_version(original_version, system, device):
     global base_version
     with allure.step("Set base image according to device type"):
         logging.info(f"Device type: {device.asic_type}")
-        if device.asic_type == NvosConst.QTM3:
-            base_version = xdr_base_version
+        base_version = base_versions.get(device.asic_type, base_version)
 
 
 def create_images_output_dictionary(original_images, next_image, current_image, partition_id):

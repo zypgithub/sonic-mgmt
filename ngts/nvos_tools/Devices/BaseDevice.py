@@ -254,7 +254,7 @@ class BaseSwitch(BaseDevice):
     __metaclass__ = ABCMeta
 
     Constants = namedtuple('Constants', ['system', 'dump_files', 'sdk_dump_files', 'firmware', 'log_dump_files',
-                                         'stats_dump_files', 'hw_mgmt_files'])
+                                         'stats_dump_files', 'hw_mgmt_files', 'cluster_files'])
     CpldImageConsts = namedtuple('CpldImageConsts', ('burn_image_path', 'refresh_image_path', 'version_names'))
     SsdImageConsts = namedtuple('SsdImageConsts', ('file', 'current_version', 'alternate_version'))
 
@@ -312,10 +312,13 @@ class BaseSwitch(BaseDevice):
                             "mgmt-interface.csv.gz", "temperature.csv.gz", "voltage.csv.gz"]
         hw_mgmt_files = ['hw-mgmt-dump.tar.gz']
 
+        cluster_files = None
+
         firmware = [PlatformConsts.FW_ASIC, PlatformConsts.FW_BIOS, PlatformConsts.FW_SSD,
                     PlatformConsts.FW_CPLD + '1', PlatformConsts.FW_CPLD + '2', PlatformConsts.FW_CPLD + '3']
         self.constants = BaseSwitch.Constants(system_dic, dump_files, sdk_dump_files, firmware, log_dump_files,
-                                              stats_dump_files, hw_mgmt_files)
+                                              stats_dump_files, hw_mgmt_files, cluster_files)
+
         self.current_bios_version_name = ""
         self.current_bios_version_path = ""
         self.previous_bios_version_name = ""
@@ -339,6 +342,8 @@ class BaseSwitch(BaseDevice):
         self.disk_partition_capacity_limit = DiskConsts.PARTITION_CAPACITY_LIMIT
         self.disk_minimum_free_space = DiskConsts.MINIMUM_FREE_SPACE
         self.reboot_type = 'reboot'  # If system has special reboot (in terms of time) this var will describe it. Useful when extracting THRESHOLDS
+        self.generate_tech_support = 'generate tech-support'
+        self.reset_factory = 'reset factory'
 
     def _init_psu_list(self):
         super()._init_psu_list()

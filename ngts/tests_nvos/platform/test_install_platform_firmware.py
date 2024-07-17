@@ -78,10 +78,11 @@ def test_install_platform_firmware(engines, devices, test_name):
 
 
 def get_version_and_file_name(asic_type: str) -> Tuple[str, str]:
-    if asic_type == NvosConst.QTM2:
-        return "31_2014_0902-024", "fw-QTM2-rel-31_2014_0902-024.mfa"
-    elif asic_type == NvosConst.QTM3:
-        return "35_2014_0902-024", "fw-QTM3-rel-35_2014_0902-024.mfa"
+    firmware_versions = {NvosConst.QTM2: ("31_2014_0902-024", "fw-QTM2-rel-31_2014_0902-024.mfa"),
+                         NvosConst.QTM3: ("35_2014_0902-024", "fw-QTM3-rel-35_2014_0902-024.mfa"),
+                         NvosConst.NVL5: ("35_2014_0402", "fw-QTM3-rel-35_2014_0402.mfa")}
+    if asic_type in firmware_info:
+        return firmware_versions[asic_type]
     else:
         raise NotImplementedError()
 

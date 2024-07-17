@@ -24,13 +24,6 @@
           <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/checklist/test_bios_upgrade.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --clean-alluredir  --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  \'"</static_args>
       </params>
     </cmd>
-    <ignore>
-      <condition>
-        <key>dut_hwsku</key>
-        <op> in </op>
-        <value>[N5110_LD - JulietScaleout]</value>
-      </condition>
-    </ignore>
   </case>
 
   <case>
@@ -42,13 +35,6 @@
           <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/checklist/test_cpld_upgrade.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --clean-alluredir  --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  \'"</static_args>
       </params>
     </cmd>
-    <ignore>
-      <condition>
-        <key>dut_hwsku</key>
-        <op> in </op>
-        <value>[N5110_LD - JulietScaleout]</value>
-      </condition>
-    </ignore>
   </case>
 
   <case>
@@ -60,13 +46,28 @@
           <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/checklist/test_ssd_upgrade.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --clean-alluredir  --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  \'"</static_args>
       </params>
     </cmd>
-    <ignore>
-      <condition>
-        <key>dut_hwsku</key>
-        <op> in </op>
-        <value>[N5110_LD - JulietScaleout]</value>
-      </condition>
-    </ignore>
   </case>
+
+  <case>
+    <name> test bmc firmware upgrade </name>
+    <info> </info>
+    <tout> 3000 </tout>
+    <cmd>
+      <params>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/checklist/test_bmc_install.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --clean-alluredir  --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.loganalyzer_options]]  \'"</static_args>
+      </params>
+    </cmd>
+  </case>
+
+   <case>
+     <name> test fpga firmware upgrade </name>
+     <info> </info>
+     <tout> 3000 </tout>
+     <cmd>
+       <params>
+           <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/checklist/test_fpga_install.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --clean-alluredir  --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.loganalyzer_options]]  \'"</static_args>
+       </params>
+     </cmd>
+   </case>
 
 </CASEDEF>

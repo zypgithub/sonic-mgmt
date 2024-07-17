@@ -29,17 +29,3 @@ class AppName(BaseComponent):
         super().__init__(parent=parent, path=f'/{app_name}')
         self.loglevel = Loglevel(self)
         self.type = Type()
-
-    def action_start_cluster_app(self, engine=None):
-        engine = engine if engine else TestToolkit.engines.dut
-        with allure.step('Start App'):
-            return SendCommandTool.execute_command_expected_str(self._cli_wrapper.action_start_cluster_app,
-                                                                "Action succeeded", engine,
-                                                                self.get_resource_path())
-
-    def action_stop_cluster_app(self, engine=None):
-        engine = engine if engine else TestToolkit.engines.dut
-        with allure.step('Stop App'):
-            return SendCommandTool.execute_command_expected_str(self._cli_wrapper.action_stop_cluster_app,
-                                                                "Action succeeded", engine,
-                                                                self.get_resource_path())

@@ -6,6 +6,7 @@ from datetime import datetime
 from ngts.constants.constants import LinuxConsts
 from ngts.nvos_constants.constants_nvos import HealthConsts, NvosConst, ApiType, SystemConsts
 from ngts.nvos_tools.ib.opensm.OpenSmTool import OpenSmTool
+from ngts.nvos_tools.Devices.IbDevice import JulietSwitch
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.system.System import System
@@ -290,8 +291,14 @@ def verify_profile_and_split(selected_port):
         logging.warning("Currently not supported")
 
 
-def verify_the_setup_is_functional(system, engines):
+def verify_the_setup_is_functional(system, engines, had_sm_before_test=True, dut=None):
     logging.info("Verify the setup is functional")
+
+    if had_sm_before_test:
+        with allure.step("Start OpenSM"):
+            with allure.step('Check is Juliet Device'):
+                if not isinstance(dut, JulietSwitch):
+                    OpenSmTool.start_open_sm(engines).verify_result()
 
     with allure.step("Run show commands"):
         system.message.show()

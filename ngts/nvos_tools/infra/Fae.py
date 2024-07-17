@@ -77,11 +77,11 @@ class FaeFirmware(BaseComponent):
         super().__init__(parent=parent_obj, path='/firmware')
         self.asic1 = FaePlatformComponent(self, 'ASIC1')
         # multi-asic devices also have asic2 but our tests don't need it currently
-        self.cpld = FaeCpldComponent(self, 'CPLD')
-        self.bios = FaeBiosComponent(self, 'BIOS')
-        self.ssd = FaePlatformComponent(self, 'SSD')
+        self.cpld = FaeCpldComponent(self, 'cpld')
+        self.bios = FaeBiosComponent(self, 'bios')
+        self.ssd = FaePlatformComponent(self, 'ssd')
         self.bmc = FaePlatformComponent(self, 'bmc')  # TODO: Fix after bug closed https://redmine.mellanox.com/issues/3955495
-        self.fpga = FaePlatformComponent(self, 'FPGA')
+        self.fpga = FaePlatformComponent(self, 'fpga')
 
     def install_bios_firmware(self, bios_image_path, device):
         with allure.step("installing bios firmware from {action_type}".format(action_type=bios_image_path)):

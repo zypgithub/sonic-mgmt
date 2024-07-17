@@ -115,7 +115,7 @@ class BiosTool:
         @param serial_engine: The RCON serial connection to the switch
         '''
         logger.info("Changing BIOS password if there's one")
-        _, respond = serial_engine.run_cmd('', [BiosConsts.CREATE_NEW_PASSWORD, BiosConsts.ENTER_CURRENT_PASSWORD],
+        _, respond = serial_engine.run_cmd('', [BiosConsts.CREATE_NEW_PASSWORD, BiosConsts.ENTER_CURRENT_PASSWORD, NVLINK_ENTER_CURRENT_PASSWORD],
                                            timeout=BiosConsts.PEXPECT_TIMEOUT,
                                            send_without_enter=True)
         time.sleep(BiosConsts.KEY_STROKE_SLEEP)

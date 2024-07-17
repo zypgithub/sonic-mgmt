@@ -284,7 +284,7 @@ tests_nvos/platform/test_platform_firmware_asic.py::test_show_fae_firmware:
     reason: "Testcase skipped on non gorilla systems due to RM issue: https://redmine.mellanox.com/issues/3863937"
     conditions_logical_operator: and
     conditions:
-      - "'gorilla' not in testbed"
+      - "'gorilla' not in testbed and 'juliet' not in testbed"
       - https://redmine.mellanox.com/issues/3863937
 
 tests_nvos/ib/test_show_ib.py::test_show_ib_device:
@@ -292,7 +292,7 @@ tests_nvos/ib/test_show_ib.py::test_show_ib_device:
     reason: "Testcase skipped on non gorilla systems due to RM issue: https://redmine.mellanox.com/issues/3854563"
     conditions_logical_operator: and
     conditions:
-      - "'gorilla' not in testbed"
+      - "'gorilla' not in testbed and 'juliet' not in testbed"
       - https://redmine.mellanox.com/issues/3854563
 
 tests_nvos/fae/test_sonic_cli.py::test_change_sonic_cli_state:
@@ -343,7 +343,7 @@ tests_nvos/platform/test_platform.py::test_show_platform:
     reason: "Testcase skipped on non gorilla systems due to RM issue: https://redmine.mellanox.com/issues/3922673"
     conditions_logical_operator: and
     conditions:
-      - "'gorilla' not in testbed"
+      - "'gorilla' not in testbed and 'juliet' not in testbed"
       - https://redmine.mellanox.com/issues/3922673
 
 tests_nvos/platform/test_platform_environment.py::test_show_platform_environment:
@@ -351,7 +351,7 @@ tests_nvos/platform/test_platform_environment.py::test_show_platform_environment
     reason: "Testcase skipped on non gorilla systems due to RM issue: https://redmine.mellanox.com/issues/3922682"
     conditions_logical_operator: and
     conditions:
-      - "'gorilla' not in testbed"
+      - "'gorilla' not in testbed and 'juliet' not in testbed"
       - https://redmine.mellanox.com/issues/3922682
 
 tests_nvos/platform/test_platform_environment.py::test_show_platform_environment_temperature:
@@ -359,7 +359,7 @@ tests_nvos/platform/test_platform_environment.py::test_show_platform_environment
     reason: "Testcase skipped on non gorilla systems due to RM issue: https://redmine.mellanox.com/issues/3922682"
     conditions_logical_operator: and
     conditions:
-      - "'gorilla' not in testbed"
+      - "'gorilla' not in testbed and 'juliet' not in testbed"
       - https://redmine.mellanox.com/issues/3922682
 
 tests_nvos/platform/test_platform_firmware.py::test_show_platform_firmware:
@@ -367,7 +367,7 @@ tests_nvos/platform/test_platform_firmware.py::test_show_platform_firmware:
     reason: "Testcase skipped on non gorilla systems due to RM issue: https://redmine.mellanox.com/issues/3956092"
     conditions_logical_operator: and
     conditions:
-      - "'gorilla' not in testbed"
+      - "'gorilla' not in testbed and 'juliet' not in testbed"
       - https://redmine.mellanox.com/issues/3956092
 
 tests_nvos/platform/test_platform.py::test_show_platform_chassis_location:
@@ -398,14 +398,14 @@ tests_nvos/interfaces/nvl5_port/test_nvl5_port.py:
   skip:
     reason: "Testcase skipped on XDR systems"
     conditions:
-      - "'gorilla' not in testbed"
+      - "'juliet' not in testbed"
 
 tests_nvos/platform/test_platform_transceiver.py:
   skip:
     reason: "Testcase skipped on non gorilla systems due to RM issue: https://redmine.mellanox.com/issues/3950840"
     conditions_logical_operator: and
     conditions:
-      - "'gorilla' not in testbed"
+      - "'gorilla' not in testbed and 'juliet' not in testbed"
       - https://redmine.mellanox.com/issues/3950840
 
 tests_nvos/general/config_commands/test_config_fetch:
@@ -455,7 +455,7 @@ tests_nvos/system/test_techsupport_feature.py::test_techsupport_expected_files:
     reason: "Testcase skipped on non gorilla systems due to RM issue: https://redmine.mellanox.com/issues/3960812"
     conditions_logical_operator: and
     conditions:
-      - "'gorilla' not in testbed"
+      - "'gorilla' not in testbed and 'juliet' not in testbed"
       - https://redmine.mellanox.com/issues/3960812
 
 tests_nvos/general/traffic/test_basic_traffic.py::test_basic_traffic:

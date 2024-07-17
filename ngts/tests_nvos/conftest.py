@@ -3,6 +3,7 @@ import logging
 import random
 import smtplib
 import time
+import os
 from email.mime.text import MIMEText
 from typing import Dict
 

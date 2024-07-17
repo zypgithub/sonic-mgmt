@@ -700,6 +700,8 @@ class JulietSwitch(NvLinkSwitch):
             PlatformConsts.CHASSIS_LOCATION_CHAS_ID: "",
             PlatformConsts.CHASSIS_LOCATION_TOPO_ID: ExpectedString(regex=r"^(Loopback|GB200 NVL36|GB200 NVL72|\d+)$")
         }
+        cluster_files = ['conf', 'nmx-controller', 'nmx-telemetry']
+        self.constants = self.constants._replace(cluster_files=cluster_files)
 
     def _init_fan_list(self):
         super()._init_fan_list()
@@ -716,7 +718,13 @@ class JulietScaleoutSwitch(JulietSwitch):
 
     def _init_constants(self):
         super()._init_constants()
+        self.asic_type = NvosConst.NVL5
+        self.cluster_app_nmx_controller = {'app-id': 'nmx-c-nvos', 'app-ver': '0.6.0', 'capabilities': 'sm, gfm, fib, gw-api', 'components-ver': 'sm:5.19.0_d28564d, gfm:565.00-chips-a, fib-fe:0.4.1'}
+        self.cluster_app_nmx_telemetry = {'app-id': 'nmx-telemetry', 'app-ver': '0.4.4', 'capabilities': 'ib-telemetry', 'components-ver': 'ib-telemetry:collectx/build/collectx, nmx-connector:0.4.4'}
+        self.cluster_app = {'nmx-controller': self.cluster_app_nmx_controller, 'nmx-telemetry': self.cluster_app_nmx_telemetry}
         self.reboot_type = 'julietscaleout_reboot'
+        self.reset_factory = 'julietscaleout reset factory'
+        self.generate_tech_support = 'julietscaleout generate_tech_support'
         self.core_count = 8
         self.constants.firmware.extend([PlatformConsts.FW_FPGA, PlatformConsts.FW_BMC])
         self.ssd_image = None
@@ -826,7 +834,7 @@ class JulietScaleoutSwitch(JulietSwitch):
         self.all_nvl5_ports_list = self.nvl5_access_ports_list + self.nvl5_trunk_ports_list + self.network_ports
         self.nvl5_fnm_ports = ['fnm1', 'fnm2', 'fnma0p1', 'fnma1p1']
         self.all_fae_nvl5_ports_list = self.all_nvl5_ports_list + self.nvl5_fnm_ports
-        self.nvl5_port = ['access1p48']
+        self.nvl5_port = ['sw1p1s1']
         self.nvl5_port_speed = '400G'
         self.nvl5_port_type = 'nvl'
         # will be updated
@@ -839,6 +847,7 @@ class JulietScaleoutSwitch(JulietSwitch):
 
     def _init_fan_list(self):
         super()._init_fan_list()
+        self.fan_list = ["FAN1/1", "FAN1/2", "FAN2/1", "FAN2/2", "FAN3/1", "FAN3/2", "FAN4/1", "FAN4/2", "FAN5/1", "FAN5/2", "FAN6/1", "FAN6/2"]
         self.fan_led_list = []
 
     def _init_psu_list(self):
@@ -875,6 +884,90 @@ class JulietScaleoutSwitch(JulietSwitch):
         time.sleep(300)
         DutUtilsTool.check_ssh_for_authentication_error(engine, self)
         return DutUtilsTool.wait_for_nvos_to_become_functional(engine)
+
+# -------------------------- JulietTTM Switch ----------------------------
+
+
+class JulietTTMSwitch(JulietScaleoutSwitch):
+
+    def __init__(self):
+        super().__init__(asic_amount=2)
+
+    def _init_constants(self):
+        super()._init_constants()
+
+    def _init_fan_list(self):
+        super()._init_fan_list()
+        self.fan_list = ["FAN1/1", "FAN1/2", "FAN2/1", "FAN2/2", "FAN3/1", "FAN3/2", "FAN4/1", "FAN4/2"]
+        self.fan_led_list = []
+
+    def _init_led_list(self):
+        super()._init_led_list()
+
+# -------------------------- JulietNonScaleoutSwitch Switch ----------------------------
+
+
+class JulietNonScaleoutSwitch(JulietScaleoutSwitch):
+
+    def __init__(self):
+        super().__init__(asic_amount=2)
+
+    def _init_constants(self):
+        super()._init_constants()
+        self.nvl5_access_ports_list = [
+            'acp1', 'acp2', 'acp3', 'acp4', 'acp5', 'acp6',
+            'acp7', 'acp8', 'acp9', 'acp10', 'acp11', 'acp12',
+            'acp13', 'acp14', 'acp15', 'acp16', 'acp17', 'acp18',
+            'acp19', 'acp20', 'acp21', 'acp22', 'acp23', 'acp24',
+            'acp25', 'acp26', 'acp27', 'acp28', 'acp29', 'acp30',
+            'acp31', 'acp32', 'acp33', 'acp34', 'acp35', 'acp36',
+            'acp37', 'acp38', 'acp39', 'acp40', 'acp41', 'acp42',
+            'acp43', 'acp44', 'acp45', 'acp46', 'acp47', 'acp48',
+            'acp49', 'acp50', 'acp51', 'acp52', 'acp53', 'acp54',
+            'acp55', 'acp56', 'acp57', 'acp58', 'acp59', 'acp60',
+            'acp61', 'acp62', 'acp63', 'acp64', 'acp65', 'acp66',
+            'acp67', 'acp68', 'acp69', 'acp70', 'acp71', 'acp72',
+            'acp73', 'acp74', 'acp75', 'acp76', 'acp77', 'acp78',
+            'acp79', 'acp80', 'acp81', 'acp82', 'acp83', 'acp84',
+            'acp85', 'acp86', 'acp87', 'acp88', 'acp89', 'acp90',
+            'acp91', 'acp92', 'acp93', 'acp94', 'acp95', 'acp96',
+            'acp97', 'acp98', 'acp99', 'acp100', 'acp101', 'acp102',
+            'acp103', 'acp104', 'acp105', 'acp106', 'acp107', 'acp108',
+            'acp109', 'acp110', 'acp111', 'acp112', 'acp113', 'acp114',
+            'acp115', 'acp116', 'acp117', 'acp118', 'acp119', 'acp120',
+            'acp121', 'acp122', 'acp123', 'acp124', 'acp125', 'acp126',
+            'acp127', 'acp128', 'acp129', 'acp130', 'acp131', 'acp132',
+            'acp133', 'acp134', 'acp135', 'acp136', 'acp137', 'acp138',
+            'acp139', 'acp140', 'acp141', 'acp142', 'acp143', 'acp144'
+        ]
+        self.nvl5_trunk_ports_list = []
+        self.network_ports = ['eth0', 'eth1', 'lo']
+        self.all_nvl5_ports_list = self.nvl5_access_ports_list + self.nvl5_trunk_ports_list + self.network_ports
+        self.nvl5_fnm_ports = ['fnm1', 'fnm2', 'fnma0p1', 'fnma1p1']
+        self.all_fae_nvl5_ports_list = self.all_nvl5_ports_list + self.nvl5_fnm_ports
+        self.nvl5_port = ['sw1p1s1']
+        self.nvl5_port_speed = '400G'
+        self.nvl5_port_type = 'nvl'
+        # will be updated
+        self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
+            "x86_64-nvidia_n5100_ld-r0")
+        self.show_platform_output.update({
+            "product-name": "N5100_LD",
+            "asic-model": self.asic_type,
+        })
+
+    def _init_fan_list(self):
+        self.fan_list = ["FAN1/1", "FAN1/2", "FAN2/1", "FAN2/2", "FAN3/1", "FAN3/2", "FAN4/1", "FAN4/2", "FAN5/1", "FAN5/2", "FAN6/1", "FAN6/2"]
+        self.fan_led_list = []
+
+    def _init_platform_lists(self):
+        super()._init_platform_lists()
+        self.platform_environment_fan_values = {
+            "state": FansConsts.STATE_OK, "direction": None, "current-speed": None,
+            "min-speed": ExpectedString(range_min=2000, range_max=10000),
+            "max-speed": ExpectedString(range_min=20000, range_max=40000)}
+        self.platform_inventory_switch_values.update({"hardware-version": None,
+                                                      "model": ExpectedString(regex="692-9K36F-00MV-JS0")})
 
 # -------------------------- Caiman Switch ----------------------------
 

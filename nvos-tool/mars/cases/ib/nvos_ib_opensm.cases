@@ -24,6 +24,13 @@
           <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/ib/test_set_unset_sm_prio_sl.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  \'"</static_args>
       </params>
     </cmd>
+    <ignore>
+        <condition>
+            <key>dut_hwsku</key>
+            <op> in </op>
+            <value>[N5110_LD - JulietScaleout, N5100_LD - JulietNonScaleout, N5110_LD - JulietTTM]</value>
+         </condition>
+     </ignore>
   </case>
 
   <case>
@@ -35,6 +42,13 @@
           <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/ib/test_unset_ib.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  \'"</static_args>
       </params>
     </cmd>
+    <ignore>
+        <condition>
+            <key>dut_hwsku</key>
+            <op> in </op>
+            <value>[N5110_LD - JulietScaleout, N5100_LD - JulietNonScaleout, N5110_LD - JulietTTM]</value>
+         </condition>
+     </ignore>
   </case>
 
   <case>
@@ -46,5 +60,12 @@
           <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/ib/test_set_unset_sm_state.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  \'"</static_args>
       </params>
     </cmd>
+    <ignore>
+        <condition>
+            <key>dut_hwsku</key>
+            <op> in </op>
+            <value>[N5110_LD - JulietScaleout, N5100_LD - JulietNonScaleout, N5110_LD - JulietTTM]</value>
+         </condition>
+     </ignore>
   </case>
 </CASEDEF>

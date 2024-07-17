@@ -18,26 +18,26 @@ class NvueClusterCli(NvueBaseCli):
         self.cli_name = "Cluster"
 
     @staticmethod
-    def action_start_cluster_app(engine, path):
-        return NvueClusterCli.action(engine, action_type=ActionType.START.value, resource_path=path)
+    def action_start_cluster_apps(engine, path):
+        return NvueClusterCli.action(engine, action_type=ActionType.START.replace('@', ''), resource_path=path)
 
     @staticmethod
-    def action_stop_cluster_app(engine, path):
-        return NvueClusterCli.action(engine, action_type=ActionType.STOP.value, resource_path=path)
+    def action_stop_cluster_apps(engine, path):
+        return NvueClusterCli.action(engine, action_type=ActionType.STOP.replace('@', ''), resource_path=path)
 
     @staticmethod
     def action_update_cluster_log_level(engine, path, level=''):
-        return NvueClusterCli.action(engine, action_type=ActionType.UPDATE.value, resource_path=path, param_value=level)
+        return NvueClusterCli.action(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=path, param_value=level)
 
     @staticmethod
     def action_restore_cluster(engine, path):
-        return NvueClusterCli.action(engine, action_type=ActionType.RESTORE.value, resource_path=path)
+        return NvueClusterCli.action(engine, action_type=ActionType.RESTORE.replace('@', ''), resource_path=path)
 
     @staticmethod
     @check_output
     def action_generate(engine, resource_path):
-        return NvueClusterCli.action(engine, action_type=ActionType.GENERATE.value, resource_path=resource_path)
+        return NvueClusterCli.action(engine, action_type=ActionType.GENERATE.replace('@', ''), resource_path=resource_path)
 
     @staticmethod
     def action_fetch(engine, resource_path, remote_url):
-        return NvueClusterCli.action(engine, action_type=ActionType.FETCH.value, resource_path=resource_path, param_value=remote_url)
+        return NvueClusterCli.action(engine, action_type=ActionType.FETCH.replace('@', ''), resource_path=resource_path, param_value=remote_url)
