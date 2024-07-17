@@ -22,6 +22,8 @@ logger = logging.getLogger()
 
 
 class IbSwitch(BaseSwitch):
+    ErotFirmwareImagesTestConsts = namedtuple('ErotFirmwareImagesTestConsts',
+                                              ('previous_image_path', 'current_image_path', 'version_names'))
 
     def __init__(self, asic_amount, switch_type=NvosConst.IB_SWITCH_TYPE):
         super().__init__(switch_type=switch_type, asic_amount=asic_amount)
@@ -209,6 +211,11 @@ class IbSwitch(BaseSwitch):
         self.current_bios_version_path = "/auto/sw_system_release/sx_mlnx_bios/CoffeeLake/0ACQF_06.01.x05_rc1/Release/0ACQF.cab"
         self.previous_bios_version_name = "0ACQF_06.01.004"
         self.previous_bios_version_path = "/auto/sw_system_release/sx_mlnx_bios/CoffeeLake/0ACQF_06.01.x04_rc1/Release/0ACQF.cab"
+        self.erot_fw_image_info = self.ErotFirmwareImagesTestConsts(
+            current_image_path='auto/sw_system_release/erot/juliet/01.03.0202.000/sign/n04/dev/cec1736-ecfw-01.03.0202.0000-n04-dev-initial.bin',
+            previous_image_path='auto/sw_system_release/erot/juliet/01.03.0183.000/sign/n04/dev/cec1736-ecfw-01.03.0183.0000-n04-dev-initial.bin',
+            version_names={'cec1736-ecfw-01.03.0196.0001-n04-dev-initial.fwpkg': '01.03.0196.0001_n04',
+                           'cec1736-ecfw-01.03.0202.0000-n04-dev-initial.fwpkg': '01.03.0202.0000_n04'})
 
         self.category_default_disabled_dict = {
             StatsConsts.HISTORY_DURATION: StatsConsts.HISTORY_DURATION_DEFAULT,
@@ -703,6 +710,13 @@ class JulietSwitch(NvLinkSwitch):
         cluster_files = ['conf', 'nmx-controller', 'nmx-telemetry']
         self.constants = self.constants._replace(cluster_files=cluster_files)
         self.constants.dump_files.append('BMCeeprom')
+        self.erot_fw_image_info = self.ErotFirmwareImagesTestConsts(
+            current_image_path='/mtrsysgwork/vadimp/tmp/erot-new/sign/n04/dev/cec1736-ecfw-01.03.0202.0000-n04-dev-initial.fwpkg',
+            previous_image_path='/mtrsysgwork/vadimp/tmp/sign/n04/dev/cec1736-ecfw-01.03.0196.0001-n04-dev-initial.fwpkg',
+
+            version_names={'cec1736-ecfw-01.03.0196.0001-n04-dev-initial.fwpkg': '01.03.0196.0001_n04',
+                           'cec1736-ecfw-01.03.0202.0000-n04-dev-initial.fwpkg': '01.03.0202.0000_n04'})
+        self.constants.erots.extend(['ERoT_BMC_0', 'ERoT_CPU_0', 'ERoT_FPGA_0', 'ERoT_NVSwitch_0', 'ERoT_NVSwitch_1'])
 
     def _init_fan_list(self):
         super()._init_fan_list()
