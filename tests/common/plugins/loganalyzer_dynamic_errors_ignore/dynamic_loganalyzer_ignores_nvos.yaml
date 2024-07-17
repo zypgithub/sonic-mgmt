@@ -1583,7 +1583,7 @@
 
 # NVOS
 - Errors_list:
-    - '.*WARNING systemd-udevd\[\d+\]: veth.*'
+    - '.*systemd-udevd\[\d+\]: veth.*: Failed to get link config'
   Conditions:
     - Affected_test_cases:
       - tests_nvos/

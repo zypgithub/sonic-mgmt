@@ -17,6 +17,9 @@ class Configurations:
                  "10.7.148.61": ['swA1p1', 'swA1p2']}
     xdr_ports = {}
 
+    post_install_commands = {"10.7.144.153": ['nv set acl ACL_MGMT_INBOUND_CP_DEFAULT rule 120 match ip recent-list hit-count 3000',
+                                              'nv config apply']}
+
     devices_to_configure_ndr_ports = ndr_ports.keys()
 
     default_conf = NvosConst.DEFAULT_CONFIG
