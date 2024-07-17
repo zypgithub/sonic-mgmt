@@ -673,6 +673,12 @@ class PlatformConsts:
     LEAKAGE_DEFAULT_OUTPUT_FIELDS = [LEAKAGE1, LEAKAGE1_ROPE, LEAKAGE2, LEAKAGE2_ROPE, LEAKAGE3, LEAKAGE4]
     LEAKAGE_DEFAULT_OUTPUT_VALUES = [{'state': 'ok'}]
     LEAKAGE_ALL_SENSOR_NOT_OK = [{'state': 'leak'}]
+    BMC_FIRMWARE_INVENTORY_LINK = 'https://10.0.1.1/redfish/v1/UpdateService/FirmwareInventory'
+    BMC_FIRMWARE_BMC_LINK = 'MGX_FW_BMC_0'
+    BMC_FIRMWARE_EROT_LINK = 'MGX_FW_ERoT_BMC_0'
+    BMC_INVENTORY_PATTERN = r'/redfish/v1/UpdateService/FirmwareInventory/([^"]+)'
+    BMC_COMPONENT_VERSION_PATTERN = r'"Version":\s*"([^"]+)"'
+    BMC_LOGIN = 'admin'
 
     PSU_STATE = 'state'
     PS_REDUNDANCY_POLICY = 'policy'
