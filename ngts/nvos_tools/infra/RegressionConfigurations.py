@@ -14,7 +14,11 @@ logger = logging.getLogger()
 class Configurations:
     ndr_ports = {"10.7.148.94": ['swA1p1', 'swA1p2', 'swA2p1', 'swA2p2'],
                  "10.7.148.95": ['swA1p1', 'swA1p2', 'swA2p1', 'swA2p2'],
-                 "10.7.148.61": ['swA1p1', 'swA1p2']}
+                 "10.7.145.61": ['swA1p1', 'swA1p2'],
+                 "10.7.145.62": ['swA1p1', 'swA1p2'],
+                 "10.7.145.88": ['swA1p1', 'swA1p2'],
+                 "10.7.145.89": ['swA1p1', 'swA1p2']}
+
     xdr_ports = {}
 
     post_install_commands = {"10.7.144.153": ['nv set acl ACL_MGMT_INBOUND_CP_DEFAULT rule 120 match ip recent-list hit-count 3000',

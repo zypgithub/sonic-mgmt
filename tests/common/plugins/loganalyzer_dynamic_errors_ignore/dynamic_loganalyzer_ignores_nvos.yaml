@@ -1583,7 +1583,7 @@
 
 # NVOS
 - Errors_list:
-    - '.*systemd-udevd\[\d+\]: veth.*: Failed to get link config'
+    - '.*systemd-udevd\[\d+\]: veth.*: No such device.*'
   Conditions:
     - Affected_test_cases:
       - tests_nvos/
