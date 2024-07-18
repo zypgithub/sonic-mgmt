@@ -1,6 +1,7 @@
 import logging
 import random
 import pytest
+from abc import ABC
 
 from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
