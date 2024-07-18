@@ -27,6 +27,7 @@ all:
           - ptf64
           - t0-64
           - t0-64-32
+          - t0-64-256
           - t0-116
           - t0-backend
           - dualtor
