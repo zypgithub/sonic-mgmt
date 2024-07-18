@@ -30,9 +30,9 @@
     {%- else %}
         {%- if (inventory_hostname == "r-anaconda-81" or inventory_hostname == "arc-switch1025" or inventory_hostname == "mts-sonic-dut") and index >= 30 %}
           <Speed>50000</Speed>
-        {%- elif inventory_hostname == "r-leopard-70" %}:
+        {%- elif inventory_hostname == "r-leopard-70" %}
           <Speed>200000</Speed>
-        {%- elif inventory_hostname == "r-leopard-72" %}:
+        {%- elif inventory_hostname == "r-leopard-72" %}
             {%- if index <= 3 %}
                 <Speed>400000</Speed>
             {%- else %}
@@ -44,11 +44,11 @@
             {%- else %}
                 <Speed>200000</Speed>
             {%- endif %}
-        {%- elif inventory_hostname == "r-leopard-58" %}:
-            {%- if index == 15 %}
-                <Speed>100000</Speed>
-            {%- elif index == 17 or index == 18 %}
-                <Speed>400000</Speed>
+        {%- elif inventory_hostname == "r-leopard-58" %}
+            {%- if index == 14 %}
+          <Speed>100000</Speed>
+            {%- else %}
+          <Speed>400000</Speed>
             {%- endif %}
         {%- elif (inventory_hostname == "r-moose-01" or inventory_hostname == "mtvr-moose-02" or inventory_hostname == "mtvr-moose-03" or inventory_hostname == "mtvr-moose-04") and index >= 62 %}
             {%- if index == 64 %}

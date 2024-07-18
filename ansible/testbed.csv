@@ -47,6 +47,7 @@ arc-switch1004-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-1004,10.213.80.153/16,,
 r-leopard-58-t0,vm-t1,t0,docker-ptf-mlnx,ptf-r-leopard-58,10.213.103.5/16,,server_11,VM1101,r-leopard-58,Mellanox MTR testbed
 r-leopard-58-t1,vm-t1,t1,docker-ptf-mlnx,ptf-r-leopard-58,10.213.103.5/16,,server_11,VM1101,r-leopard-58,Mellanox MTR testbed
 r-leopard-58-t1-lag,vm-t1,t1-lag,docker-ptf-mlnx,ptf-r-leopard-58,10.213.103.5/16,,server_11,VM1101,r-leopard-58,Mellanox MTR testbed
+r-leopard-58-t1-32-lag,vm-t1,t1-32-lag,docker-ptf-mlnx,ptf-r-leopard-58,10.213.103.5/16,,server_11,VM1101,r-leopard-58,Mellanox MTR testbed
 r-leopard-58-t1-56-lag,vm-t1,t1-56-lag,docker-ptf-mlnx,ptf-r-leopard-58,10.213.103.5/16,,server_11,VM1101,r-leopard-58,Mellanox MTR testbed
 r-leopard-58-ptf32,vm-t1,ptf32,docker-ptf-mlnx,ptf-r-leopard-58,10.213.103.5/16,,server_11,VM1101,r-leopard-58,Mellanox MTR testbed
 r-leopard-58-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-r-leopard-58,10.213.103.5/16,,server_11,VM1101,r-leopard-58,Mellanox MTR testbed
@@ -166,6 +167,7 @@ r-leopard-01-t0,vm-t1,t0,docker-ptf-mlnx,ptf-r-leopard-01,10.215.22.61/16,,serve
 r-leopard-01-t0-16,vm-t1,t0-16,docker-ptf-mlnx,ptf-r-leopard-01,10.215.22.61/16,,server_15,VM1501,r-leopard-01,Mellanox MTR testbed
 r-leopard-01-t1,vm-t1,t1,docker-ptf-mlnx,ptf-r-leopard-01,10.215.22.61/16,,server_15,VM1501,r-leopard-01,Mellanox MTR testbed
 r-leopard-01-t1-lag,vm-t1,t1-lag,docker-ptf-mlnx,ptf-r-leopard-01,10.215.22.61/16,,server_15,VM1501,r-leopard-01,Mellanox MTR testbed
+r-leopard-01-t1-32-lag,vm-t1,t1-32-lag,docker-ptf-mlnx,ptf-r-leopard-01,10.215.22.61/16,,server_15,VM1501,r-leopard-01,Mellanox MTR testbed
 r-leopard-01-t1-56-lag,vm-t1,t1-56-lag,docker-ptf-mlnx,ptf-r-leopard-01,10.215.22.61/16,,server_15,VM1501,r-leopard-01,Mellanox MTR testbed
 r-leopard-01-ptf32,vm-t1,ptf32,docker-ptf-mlnx,ptf-r-leopard-01,10.215.22.61/16,,server_15,VM1501,r-leopard-01,Mellanox MTR testbed
 r-leopard-01-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-r-leopard-01,10.215.22.61/16,,server_15,VM1501,r-leopard-01,Mellanox MTR testbed
