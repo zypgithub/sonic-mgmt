@@ -1063,6 +1063,19 @@
     - r-moose-01
   comment: Mellanox MTR testbed
 
+- conf-name: r-moose-01-t0-64-256
+  group-name: vm-t1
+  topo: t0-64-256
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-r-moose-01
+  ptf_ip: 10.215.22.3/16
+  ptf_ipv6:
+  server: server_60
+  vm_base: VM2501
+  dut:
+    - r-moose-01
+  comment: Mellanox MTR testbed
+
 - conf-name: r-moose-01-t1
   group-name: vm-t1
   topo: t1
@@ -1261,6 +1274,19 @@
 - conf-name: mtvr-moose-04-t0-64
   group-name: vm-t1
   topo: t0-64
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-mtvr-moose-04
+  ptf_ip: 10.245.20.62/16
+  ptf_ipv6:
+  server: server_65
+  vm_base: VM3001
+  dut:
+    - mtvr-moose-04
+  comment: Mellanox MTR testbed
+
+- conf-name: mtvr-moose-04-t0-64-256
+  group-name: vm-t1
+  topo: t0-64-256
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-mtvr-moose-04
   ptf_ip: 10.245.20.62/16
