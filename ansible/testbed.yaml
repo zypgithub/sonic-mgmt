@@ -1076,6 +1076,19 @@
     - r-moose-01
   comment: Mellanox MTR testbed
 
+- conf-name: r-moose-01-t0-256
+  group-name: vm-t1
+  topo: t0-256
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-r-moose-01
+  ptf_ip: 10.215.22.3/16
+  ptf_ipv6:
+  server: server_60
+  vm_base: VM2501
+  dut:
+    - r-moose-01
+  comment: Mellanox MTR testbed
+
 - conf-name: r-moose-01-t1
   group-name: vm-t1
   topo: t1
