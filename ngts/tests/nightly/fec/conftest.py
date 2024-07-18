@@ -4,7 +4,7 @@ import logging
 import random
 from retry.api import retry_call
 from ngts.tests.conftest import get_dut_loopbacks
-from ngts.constants.constants import AutonegCommandConstants, SonicConst
+from ngts.constants.constants import AutonegCommandConstants, SonicConst, FecConstants
 from ngts.helpers.interface_helpers import get_lb_mutual_speed
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.tests.nightly.auto_negotition.conftest import is_auto_neg_supported_port, ports_spec_compliance
@@ -215,6 +215,17 @@ def dut_ports_default_mlxlink_configuration(is_simx, platform_params, chip_type,
     return dut_ports_basic_mlxlink_dict
 
 
+def supported_speed_for_part_number(cable_part_number, speed):
+    """
+    The function checks whether the speed gives is supported with the given part number of a cable
+    :param cable_part_number:  part number of a cable
+    :param speed:  a speed option for the cable
+    :return: A boolean stating whether the speed is supported with the given part number
+    """
+    return not (cable_part_number in FecConstants.CABLE_PART_NUMBER_UNSUPPORTED_SPEEDS and
+                speed in FecConstants.CABLE_PART_NUMBER_UNSUPPORTED_SPEEDS[cable_part_number])
+
+
 @pytest.fixture(autouse=True, scope='session')
 def mlxlink_supported_speeds(dut_ports_default_mlxlink_configuration):
     """
@@ -231,6 +242,7 @@ def mlxlink_supported_speeds(dut_ports_default_mlxlink_configuration):
     for port, port_mlxlink_data in dut_ports_default_mlxlink_configuration.items():
         mlxlink_cable_fec_modes_speed_support[port] = dict()
         speed_options = port_mlxlink_data[AutonegCommandConstants.CABLE_SPEED]
+        cable_part_number = port_mlxlink_data[AutonegCommandConstants.PART_NUMBER]
         for speed in speed_options:
             match = mlxlink_split_mode_pattern.search(speed)
             if match:
@@ -241,8 +253,9 @@ def mlxlink_supported_speeds(dut_ports_default_mlxlink_configuration):
             else:  # Speed patterns like 50G without a split should be added to all interface_types
                 interface_types_matched = set(interface_type_per_split.values())
                 base_speed = speed
-            mlxlink_cable_fec_modes_speed_support[port].setdefault(base_speed, set()).update(
-                interface_types_matched)
+            if supported_speed_for_part_number(cable_part_number, base_speed):
+                mlxlink_cable_fec_modes_speed_support[port].setdefault(base_speed, set()).update(
+                    interface_types_matched)
     return mlxlink_cable_fec_modes_speed_support
 
 
@@ -266,7 +279,6 @@ def get_dut_ports_basic_mlxlink_dict(cli_objects, interfaces, tested_lb_dict,
 
     if sw_control_ports and is_redmine_issue_active([3886748]):
         ports = [port for port in ports if port not in sw_control_ports]
-
     for port in ports:
         port_number = dut_ports_number_dict[port]
         mlxlink_conf = retry_call(cli_objects.dut.interface.parse_port_mlxlink_status,
@@ -275,10 +287,12 @@ def get_dut_ports_basic_mlxlink_dict(cli_objects, interfaces, tested_lb_dict,
         port_fec_mode = mlxlink_conf[AutonegCommandConstants.FEC]
         port_width_mode = int(mlxlink_conf[AutonegCommandConstants.WIDTH])
         port_supported_speeds = mlxlink_conf[AutonegCommandConstants.CABLE_SPEED]
+        port_part_number = mlxlink_conf[AutonegCommandConstants.PART_NUMBER]
         dut_ports_basic_mlxlink_dict[port] = {
             AutonegCommandConstants.FEC: port_fec_mode,
             AutonegCommandConstants.TYPE: "CR{}".format(port_width_mode if port_width_mode > 1 else ""),
-            AutonegCommandConstants.CABLE_SPEED: port_supported_speeds
+            AutonegCommandConstants.CABLE_SPEED: port_supported_speeds,
+            AutonegCommandConstants.PART_NUMBER: port_part_number
         }
     logger.debug("port basic fec configuration: {}".format(dut_ports_basic_mlxlink_dict))
     return dut_ports_basic_mlxlink_dict
@@ -352,13 +366,15 @@ def get_basic_fec_mode_dict(cli_objects, fec_modes_speed_support):
     default_fec_mode = SonicConst.FEC_RS_MODE
     default_fec_mode_speed_support = fec_modes_speed_support[default_fec_mode]
     interface_type_index = 0
+    default_part_num = ""
     for port, port_split_mode in ports_split_mode_dict.items():
         port_speed = interfaces_status[port]['Speed']
         basic_fec_mode_dict[port] = {
             AutonegCommandConstants.FEC: default_fec_mode,
             AutonegCommandConstants.TYPE:
                 default_fec_mode_speed_support[port_split_mode][port_speed][interface_type_index],
-            AutonegCommandConstants.CABLE_SPEED: default_fec_mode_speed_support[port_split_mode]
+            AutonegCommandConstants.CABLE_SPEED: default_fec_mode_speed_support[port_split_mode],
+            AutonegCommandConstants.PART_NUMBER: default_part_num
         }
     return basic_fec_mode_dict
 

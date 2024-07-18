@@ -230,6 +230,7 @@ class AutonegCommandConstants:
     FEC_ADMIN = "FEC Admin"
     WIDTH = "Width"
     CABLE_SPEED = "Supported Cable Speed"
+    PART_NUMBER = "Vendor Part Number"
     REGEX_PARSE_EXPRESSION_FOR_MLXLINK = {
         ADMIN: (r"State\s*:\s*(\w*)", "Active", "up", "down", None),
         OPER: (r"Physical state\s*:\s*(.*)", "LinkUp|ENABLE", "up", "down", None),
@@ -239,7 +240,8 @@ class AutonegCommandConstants:
         AUTONEG_MODE: (r"Auto Negotiation\s*:\s*(\w*\s*-*\s*\d*\w_*\d*X*|ON)",
                        r"FORCE\s+-\s+\d+\w_*\d*X*|ON", "enabled", "disabled", "Force"),
         CABLE_SPEED: (r"Supported Cable Speed (?:\(Ext.\))?\s+:\s+0x[0-9a-z]+\s+\(([\w.,]+)\)",
-                      None, None, None, None)
+                      None, None, None, None),
+        PART_NUMBER: (r"Vendor Part Number\s*:\s*(\S+)", None, None, None, None)
     }
     PAM4_MIN_LANE_SPEED_MB = 50000
 
@@ -921,6 +923,8 @@ class FecConstants:
     }
     COPPER_TYPE_PREFIX = 'CR'
     OPTIC_TYPE_PREFIX = 'SR'
+    # Dictionary mapping between part numbers to speeds they do not support
+    CABLE_PART_NUMBER_UNSUPPORTED_SPEEDS = {'MFS1S00-V003E': '10G'}
 
 
 FEC_MODES_TO_ETHTOOL = {
