@@ -61,4 +61,7 @@
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/interfaces/nvos_response_mgmt_ip_inband.cases </cases>
 	</test>
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/platform/nvos_transceiver_upgrade.cases </cases>
+	</test>
 </DBDEF>
