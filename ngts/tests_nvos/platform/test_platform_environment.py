@@ -313,8 +313,9 @@ def test_platform_environment_events_performance(engines, devices):
     TestToolkit.tested_api = ApiType.NVUE
     platform = Platform()
     system = System()
-    fan_dir_mismatch_msg = "direction exhaust is not aligned"
     fan_to_check = devices.dut.fan_list[2]
+    err_found = False
+    show_log_cmd = "nv show sys log | grep '" + str(FansConsts.FAN_DIRECTION_MISMATCH_ERR) + "' | wc -l"
 
     with allure.step('Validate System health status should be {}'.format(HealthConsts.OK)):
         output = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).verify_result()
@@ -346,18 +347,25 @@ def test_platform_environment_events_performance(engines, devices):
             output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show()).get_returned_value()
             fan_error_set = set()
             for events_no in output['last']:
-                if fan_dir_mismatch_msg in str(output["last"][events_no]):
+                output_err_msg = str(output["last"][events_no])
+                if FansConsts.FAN_DIRECTION_MISMATCH_ERR in output_err_msg:
+                    err_found = True
+                elif FansConsts.FAN_DIRECTION_MISMATCH_ERR_CROC in output_err_msg:
+                    # System is crocodile
+                    err_found = True
+                    show_log_cmd = "nv show sys log | grep '" + str(FansConsts.FAN_DIRECTION_MISMATCH_ERR_CROC) + \
+                                   "' | wc -l"
+                if err_found:
                     fan = output["last"][events_no]["type-id"]
                     assert (fan not in fan_error_set), 'Fan mismatch event occurred more times for FAN:{}'.format(fan)
                     fan_error_set.add(fan)
                     logger.info("Fan direction mismatch Event captured for : {}".format(fan))
 
         with allure.step("Validate Fan direction error appears in system log but is not flooded"):
-            log_cmd = "nv show sys log | grep 'direction exhaust is not aligned' | wc -l"
-            no_of_errors_1 = int(engines.dut.run_cmd(log_cmd))
+            no_of_errors_1 = int(engines.dut.run_cmd(show_log_cmd))
             assert no_of_errors_1 > 0, 'Fan direction error does not appear in log'
             time.sleep(130)
-            no_of_errors_2 = int(engines.dut.run_cmd(log_cmd))
+            no_of_errors_2 = int(engines.dut.run_cmd(show_log_cmd))
             assert no_of_errors_1 == no_of_errors_2, 'Fan direction errors are being repeated in logs'
 
     finally:

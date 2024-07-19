@@ -673,7 +673,8 @@ class FansConsts:
     STATE_OK = 'ok'
     STATE_NOT_OK = 'Not OK'
     STATE_ABSENT = 'absent'
-    FAN_DIRECTION_MISMATCH_ERR = "is not aligned with fan1 direction"
+    FAN_DIRECTION_MISMATCH_ERR = "direction exhaust is not aligned"
+    FAN_DIRECTION_MISMATCH_ERR_CROC = "direction intake is not aligned"
 
 
 class IbConsts:
