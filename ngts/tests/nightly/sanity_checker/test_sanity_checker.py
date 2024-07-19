@@ -1,19 +1,54 @@
 import allure
 import logging
 import pytest
+import re
+import csv
 
+from netmiko import ConnectHandler
+from fabric import Connection
 from ngts.cli_util.cli_parsers import generic_sonic_output_parser
 from ngts.helpers.secure_boot_helper import SonicSecureBootHelper
+from ngts.tests.conftest import get_dut_loopbacks
+from tests.common.mellanox_data import SWITCH_MODELS
 
 pytestmark = [
     pytest.mark.disable_loganalyzer
 ]
 
-
 logger = logging.getLogger()
 
 POSSIBLE_CPLD_LIST = ['CPLD1', 'CPLD2', 'CPLD3', 'CPLD4']
 NOT_DEFINED_CPLD_DEVICES_LIST = ['MSN2010', 'SN4800']
+
+
+@pytest.fixture(scope='function')
+def enable_and_disable_fanout_lldp(request, engines, topology_obj, interfaces):
+    """
+    Pytest fixture which is enabling lldp on fanout and disable it when teardown
+    :param request: request object fixture
+    :param engines: engines object fixture
+    :param topology_obj: topology object fixture
+    """
+
+    def enable_lldp(engine):
+        logger.info(f"enable lldp on {engine.ip}")
+        cmd_enalbe_lldp = "sudo config feature state lldp enabled" if engine.device_type == "linux" else "lldp"
+        engine.run_cmd(cmd_enalbe_lldp)
+
+    def disable_lldp(engine):
+        logger.info(f"disable lldp on {engine.ip}")
+        cmd_enalbe_lldp = "sudo config feature state lldp disabled" if engine.device_type == "linux" else "no lldp"
+        engine.run_cmd(cmd_enalbe_lldp)
+
+    enable_lldp(engines.fanout)
+    if "dual" in request.config.getoption("--setup_name"):
+        enable_lldp(engines.fanout_b)
+
+    yield
+
+    disable_lldp(engines.fanout)
+    if "dual" in request.config.getoption("--setup_name"):
+        disable_lldp(engines.fanout_b)
 
 
 @pytest.mark.sanity_checker_common
@@ -69,12 +104,20 @@ def test_device_asic_check(engines, platform_params):
     This test is verify that device asic status is ok.
     If case fail, the consequent regression steps will be stopped by mars
     """
-    # Todo
-    pass
+    regrex_pci_dvice_name = ".*PCI Device Name:(?P<pci_device_name>.*)"
+    device_info = engines.dut.run_cmd('sudo mlxfwmanager --query')
+    pci_device_name = None
+    for line in device_info.split("\n"):
+        res = re.search(regrex_pci_dvice_name, line.strip())
+        if res:
+            pci_device_name = res.groupdict()["pci_device_name"]
+            logger.info(f"pic device name is {pci_device_name}")
+    assert pci_device_name, "device asic is not up"
 
 
 @pytest.mark.sanity_checker_community
-def test_cable_connection_between_dut_and_fanout_check(engines, platform_params):
+def test_cable_connection_between_dut_and_fanout_check(engines, platform_params, topology_obj, request,
+                                                       enable_and_disable_fanout_lldp):
     """
     This test is verify that cable connection between dut and fanout is ok.
     If case fail, the consequent regression steps will be stopped by mars
@@ -83,54 +126,96 @@ def test_cable_connection_between_dut_and_fanout_check(engines, platform_params)
     pass
 
 
-@pytest.mark.sanity_checker_common
-def test_bgp_session_status_check(engines, platform_params):
+@pytest.mark.sanity_checker_community
+def test_bgp_session_status_check(topology_obj):
     """
     This test is verify that bgp session status is ok.
     If case fail, the consequent regression steps will be stopped by mars
     """
-    # Todo
-    pass
+    ip_bgp_summary = topology_obj.players['dut']['cli'].bgp.parse_ip_bgp_summary()
+    regex_full_digit = r"^\d+$"
+    for neighbor_ip, neighbor_info in ip_bgp_summary.items():
+        assert re.match(regex_full_digit, neighbor_info["State/PfxRcd"]), \
+            f"The bpg session with neighbor {neighbor_ip} doesn't work"
 
 
 @pytest.mark.sanity_checker_canonical
-def test_cable_connection_for_canonical_check(engines, platform_params):
+def test_cable_connection_for_canonical_check(topology_obj):
     """
     This test is verify that the cable connection for canonical setup is ok.
     If case fail, the consequent regression steps will be stopped by mars
     """
-    # Todo
-    pass
+    dut_cli_object = topology_obj.players['dut']['cli']
+    lldp_table_info = dut_cli_object.lldp.parse_lldp_table_info()
+
+    def _check_port_between_dut_and_host(host_name):
+        host_cli_object = topology_obj.players[host_name]['cli']
+        host_hostname = host_cli_object.general.hostname()
+
+        for index in range(1, 3):
+            dut_host_port = topology_obj.ports[f"dut-{host_name}-{index}"]
+            host_dut_port = topology_obj.ports[f"{host_name}-dut-{index}"]
+            assert lldp_table_info[dut_host_port][0] == host_hostname \
+                and host_dut_port in lldp_table_info[dut_host_port][3], \
+                f"port {index} connection ({dut_host_port}, {host_dut_port}) " \
+                f"between dut and {host_name} doesn't match the definition in noga"
+
+    _check_port_between_dut_and_host("ha")
+    _check_port_between_dut_and_host("hb")
+
+    # check loopbacks on dut
+    lb_ports = get_dut_loopbacks(topology_obj, split=True)
+    for ports in lb_ports:
+        assert ports[1] == lldp_table_info[ports[0]][
+            3], f"loopback for ports {ports} doesn't match the definition in noga"
 
 
 @pytest.mark.sanity_checker_common
-def test_fan_status_check(engines, platform_params):
+def test_fan_status_check(platform_params, topology_obj):
     """
     This test is verify that the fan status is ok.
     If case fail, we will raise the failed case information in the allure report and disable bug handler tool
     """
-    # Todo
-    pass
+    fan_status_info = topology_obj.players['dut']['cli'].chassis.show_platform_fan()
+    fan_number = SWITCH_MODELS.get(platform_params.platform, None).get("fans", None).get("number", 0)
+    actual_fan_number = 0
+    for fan_name, status_info in fan_status_info.items():
+        if "psu" not in fan_name:
+            actual_fan_number += 1
+        assert status_info["Status"].lower() == "ok", f"The status of {fan_name} is not ok"
+    assert actual_fan_number in [fan_number, fan_number * 2], \
+        f"fan number is not correct. expected:{fan_number} or {fan_number * 2}, actual: {actual_fan_number}"
 
 
 @pytest.mark.sanity_checker_common
-def test_more_then_2_fan_status_wrong_check(engines, platform_params):
+def test_more_then_2_fan_status_wrong_check(topology_obj):
     """
     This test is verify more than 2 fan status are not ok
     If case fail, the consequent regression steps will be stopped by mars
     """
-    # Todo
-    pass
+    fan_status_info = topology_obj.players['dut']['cli'].chassis.show_platform_fan()
+    broken_fan_number = 0
+    fail_case_threshold_for_broken_fan_number = 2
+    for fan_name, status_info in fan_status_info.items():
+        if status_info["Status"].lower() != "ok":
+            broken_fan_number += 1
+    logger.info(f"broken fan number is {broken_fan_number}")
+    assert broken_fan_number < fail_case_threshold_for_broken_fan_number, \
+        f"The status of {broken_fan_number} fan are not ok "
 
 
 @pytest.mark.sanity_checker_common
-def test_psu_status_check(engines, platform_params):
+def test_psu_status_check(platform_params, topology_obj):
     """
     This test is verify the psu status is ok or not
     If case fail, we will raise the failed case information in the allure report and disable bug handler tool
     """
-    # Todo
-    pass
+    psu_status_info = topology_obj.players['dut']['cli'].chassis.show_platform_psu_status()
+    psu_number = SWITCH_MODELS.get(platform_params.platform, None).get("psus", None).get("number", None)
+    actual_psu_number = len(psu_status_info.keys())
+    assert actual_psu_number == psu_number, f"psu number is correct.Expected: {psu_number}, actual: {actual_psu_number}"
+    for psu_name, status_info in psu_status_info.items():
+        assert status_info["Status"].lower() == "ok", f"The status of {psu_name} is not ok"
 
 
 def get_info_about_current_components_version_dict(engine):
@@ -149,3 +234,9 @@ def get_info_about_current_components_version_dict(engine):
         component_versions_dict[component] = version
 
     return component_versions_dict
+
+
+def read_csv_file(csv_file):
+    with open(csv_file) as csv_file_object:
+        reader = csv.DictReader(csv_file_object)
+        return [row for row in reader]

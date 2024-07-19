@@ -1,5 +1,9 @@
 import re
+import logging
 from ngts.cli_wrappers.common.chassis_clis_common import ChassisCliCommon
+from ngts.cli_util.cli_parsers import generic_sonic_output_parser
+
+logger = logging.getLogger()
 
 
 class SonicChassisCli(ChassisCliCommon):
@@ -56,3 +60,38 @@ class SonicChassisCli(ChassisCliCommon):
             split_line = line.split(": ")
             platform_summary_dict.update({split_line[0]: split_line[1]})
         return platform_summary_dict
+
+    def show_platform_fan(self):
+        """
+        This method execute command "show platform fan" on dut
+        :return: the cmd output
+        """
+        fan_status = self.engine.run_cmd("show platform fan")
+
+        fan_status_table_dict = generic_sonic_output_parser(fan_status,
+                                                            headers_ofset=0,
+                                                            len_ofset=1,
+                                                            data_ofset_from_start=2,
+                                                            data_ofset_from_end=-0,
+                                                            column_ofset=2,
+                                                            output_key='FAN')
+
+        logger.info(f"fan status:{fan_status_table_dict}")
+        return fan_status_table_dict
+
+    def show_platform_psu_status(self):
+        """
+        This method execute command "show platform psustatus" on dut
+        :return: the cmd output
+        """
+        psu_status = self.engine.run_cmd("show platform psustatus")
+        psu_status_table_dict = generic_sonic_output_parser(psu_status,
+                                                            headers_ofset=0,
+                                                            len_ofset=1,
+                                                            data_ofset_from_start=2,
+                                                            data_ofset_from_end=-0,
+                                                            column_ofset=2,
+                                                            output_key='PSU')
+
+        logger.info(f"psu status:{psu_status_table_dict}")
+        return psu_status_table_dict
