@@ -1629,5 +1629,7 @@ class DoroceConsts:
     ALLOWED_PERCENTAGE_DEVIATION = 2
 
 
-SETUPS_WITH_NON_DEFAULT_PTF = ['r-panther-40', 'r-panther-42', 'r-bobcat-01']
+SETUPS_WITH_NON_DEFAULT_PTF = ['r-panther-40_setup', 'r-panther-42_setup', 'r-bobcat-01', 'mtvr-tigon-04_setup',
+                               'mtvr-tigon-07_setup', 'r-panther-45_setup', 'mtvr-hippo-02_setup', 'r-panther-48_setup',
+                               'mtvr-panther-03_setup']
 FILE_INCLUDE_FAILED_SANITY_CHECKER_CASE = "/tmp/file_include_failed_sanity_checker_case.txt"
