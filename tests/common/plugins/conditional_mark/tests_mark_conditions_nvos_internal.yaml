@@ -376,6 +376,24 @@ tests_nvos/platform/test_platform.py::test_show_platform_chassis_location:
     conditions:
       - "'juliet' not in testbed"
 
+tests_nvos/platform/test_platform_firmware_bios/test_platform_firmware_bios:
+  skip:
+    reason: "Testcase skipped on Juliet systems, feature is pruned in Juliet"
+    conditions:
+      - "'juliet' in testbed"
+
+tests_nvos/checklist/erot_fw_upgrade/test_erot_upgrade:
+  skip:
+    reason: "Testcase skipped on non Juliet systems, Juliet feature only (as a part of Uberon)"
+    conditions:
+      - "'juliet' not in testbed"
+
+tests_nvos/checklist/test_bios_upgrade:
+  skip:
+    reason: "Testcase skipped on non Juliet systems since they has 'auto-update' which changes the upgrade's flow"
+    conditions:
+      - "'juliet' not in testbed"
+
 tests_nvos/interfaces/test_ib_interface_configuration.py::test_ib_interface_lanes:
   skip:
     reason: "Testcase skipped on XDR systems"

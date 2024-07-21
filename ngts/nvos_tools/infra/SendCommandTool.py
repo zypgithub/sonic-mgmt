@@ -3,7 +3,7 @@ from ngts.nvos_tools.infra.ResultObj import ResultObj, IssueType
 invalid_cmd_str = ['invalid date', 'Invalid config', 'Error', 'command not found', 'Bad Request', 'Not Found',
                    "unrecognized arguments", "error: unrecognized arguments", "invalid choice", "Action failed",
                    "Invalid Command", "You do not have permission", "Incomplete Command", "Unable to change",
-                   'internal error', 'Valid range is',
+                   'internal error', 'Valid range is', 'Invalid file',
                    "You don't have the permission to access the requested resource", 'Cannot create local user',
                    "is not a ", "is not one of", 'File not found', 'unsuccessful', 'Uncaught exception'
                    ]

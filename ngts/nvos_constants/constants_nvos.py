@@ -700,7 +700,10 @@ class PlatformConsts:
     CHASSIS_LOCATION_SLOT_ID = 'slot-index'
     CHASSIS_LOCATION_CHAS_ID = 'chassis-id'
     CHASSIS_LOCATION_TOPO_ID = 'topology-id'
-    CHASSIS_LOCATION_STANDALONE_DICT = {CHASSIS_LOCATION_TRAY_ID: '0'}
+    CHASSIS_LOCATION_STANDALONE_DICT = {CHASSIS_LOCATION_TRAY_ID: '0',
+                                        CHASSIS_LOCATION_SLOT_ID: '0',
+                                        CHASSIS_LOCATION_CHAS_ID: 'N/A',
+                                        CHASSIS_LOCATION_TOPO_ID: 'Loopback'}
 
     INV_STATE = 'state'
     INV_OK = 'ok'

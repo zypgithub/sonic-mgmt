@@ -1,9 +1,11 @@
 import logging
 import time
 from typing import List
-
+from typing import Dict
 import requests
 
+
+from ngts.nvos_tools.infra.DefaultDict import DefaultDict
 from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.cli_wrappers.nvue.nvue_base_clis import NvueBaseCli
 from ngts.cli_wrappers.nvue.nvue_platform_clis import NvuePlatformCli
@@ -12,6 +14,7 @@ from ngts.cli_wrappers.openapi.openapi_base_clis import OpenApiBaseCli
 from ngts.cli_wrappers.openapi.openapi_platform_clis import OpenApiPlatformCli
 from ngts.cli_wrappers.openapi.openapi_system_clis import OpenApiSystemCli
 from ngts.nvos_constants.constants_nvos import ApiType, ActionConsts
+from ngts.nvos_tools.fae.Debug import Debug
 from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
 from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
@@ -21,6 +24,7 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.PortFastRecovery import PortFastRecovery
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
+from ngts.nvos_tools.system.Files import Files
 from ngts.nvos_tools.system.Firmware import Firmware
 from ngts.nvos_tools.system.Health import Health
 from ngts.tools.test_utils import allure_utils as allure
@@ -69,6 +73,7 @@ class FaePlatform(BaseComponent):
                          api={ApiType.NVUE: NvuePlatformCli, ApiType.OPENAPI: OpenApiPlatformCli})
         self.firmware = FaeFirmware(self)
         self.eeprom = BaseComponent(self, path="/eeprom")
+        self.debug = Debug(self)
 
 
 class FaeFirmware(BaseComponent):
@@ -82,13 +87,21 @@ class FaeFirmware(BaseComponent):
         self.bios = FaeBiosComponent(self, 'bios')
         self.ssd = FaePlatformComponent(self, 'ssd')
         self.bmc = FaePlatformComponent(self, 'bmc')  # TODO: Fix after bug closed https://redmine.mellanox.com/issues/3955495
-        self.fpga = FaePlatformComponent(self, 'fpga')
+        self.fpga = FaePlatformComponent(self, 'FPGA')
+        self.erots: Dict[str, ErotComponent] = DefaultDict(lambda erot_name: ErotComponent(self, erot_name=erot_name))
 
     def install_bios_firmware(self, bios_image_path, device):
         with allure.step("installing bios firmware from {action_type}".format(action_type=bios_image_path)):
             return SendCommandTool.execute_command(
                 self.api_obj[TestToolkit.tested_api].action_install_fae_bios_firmware,
                 TestToolkit.engines.dut, bios_image_path, self.get_resource_path(), device)
+
+    def create_erot_components(self, switch):
+        """This method queries the switch for available ERoT components."""
+        erots_names = switch.constants.erots.copy()
+
+        for erot in erots_names:
+            self.erots[erot] = ErotComponent(self, erot)
 
 
 class FaeBiosComponent(BaseComponent):
@@ -144,3 +157,9 @@ class FaeSystem(BaseComponent):
         self.events = BaseComponent(self, path='/events')
         self.fatal = BaseComponent(self, path='/fatal')
         self.fatal.monitor = BaseComponent(self.fatal, path='/monitor')
+
+
+class ErotComponent(BaseComponent):
+    def __init__(self, parent_obj=None, erot_name=None):
+        super().__init__(parent=parent_obj, path=f"/{erot_name}")
+        self.files = Files(self)
