@@ -169,20 +169,20 @@ def test_ssd_cleanup_reboot_with_high_ssd_usage(engines, devices):
     file_name = 'new_file'
 
     try:
-        engines.dut.run_cmd('sudo fallocate -l {size}G /{path}/{file}'.format(size=df_output[SystemConsts.SSD_SPACE_AVAILABLE_SIZE] - 0.5, path=path, file=file_name))
+        engines.dut.run_cmd('sudo fallocate -l {size}G /{path}/{file}'.format(size=df_output[SystemConsts.SSD_SPACE_AVAILABLE_SIZE] - 1, path=path, file=file_name))
 
         with allure.step('Reboot the system'):
             system.reboot.action_reboot()
 
-        with allure.step('sleep 4 minutes - waiting for healthD cycle'):
-            wait_for_specific_regex_in_logs(engines.dut, "ssd_cleanup: SSD Cleanup Done", timeout=250)
+        with allure.step('wait up to 5 minutes for monit to be ready and then healthD cycle'):
+            wait_for_specific_regex_in_logs(engines.dut, "ssd_cleanup: SSD Cleanup Done", timeout=300)
 
         with allure.step("check deleted files and the deleting order"):
             verify_deleted_folders_list(engines.dut, [file_name])
 
         with allure.step("check health status is ok"):
-            with allure.step('sleep 2 minutes - waiting for healthD cycle'):
-                time.sleep(120)
+            with allure.step('sleep 3 minutes - waiting for healthD cycle'):
+                time.sleep(180)
 
             verify_health_status_and_led(system, HealthConsts.OK)
 
@@ -257,16 +257,18 @@ def verify_deleted_folders_list(engine, files_to_delete):
         assert next(it1, None) is None, f"we expected to delete the files with this order: {files_to_delete}, but the deleting was in this order: {deleted_list}"
 
 
-def _get_deleted_files_list_from_logs(engine, logs_history=200):
+def _get_deleted_files_list_from_logs(engine):
     """
     :summary:
         checking the system logs file to know the deleted files and the deleting order
     :param engine:
-    :param logs_history:
     :return: deleted files list
     """
     with allure.step('Get the list of deleted files from logs'):
-        logs_output = engine.run_cmd(f'tail -{logs_history} {SyslogConsts.SYSLOG_LOG_PATH}').splitlines()
+        from_line = "ssd_cleanup: SSD Cleanup Started"
+        to_line = "ssd_cleanup: SSD Cleanup Done"
+        cmd = f"tac {SyslogConsts.SYSLOG_LOG_PATH} | awk '/{to_line}/ {{p=1}} p; /{from_line}/ {{exit}}' | tac"
+        logs_output = engine.run_cmd(cmd).splitlines()
         file_names = [line.split()[-1] for line in logs_output if "ssd_cleanup: Deleting" in line]
 
     return file_names

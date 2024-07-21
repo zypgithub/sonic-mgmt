@@ -297,7 +297,7 @@ class BaseSwitch(BaseDevice):
                       'saidump', 'sensors', 'services.summary', 'ssdhealth', 'STATE_DB.json', 'swapon', 'sysctl',
                       'syseeprom', 'systemd.analyze.blame', 'systemd.analyze.dump', 'systemd.analyze.plot.svg',
                       'temperature', 'top', 'version', 'vlan.summary', 'vmstat', 'vmstat.m', 'vmstat.s', 'who']
-        sdk_dump_files = ['fw_trace_attr.json', 'fw_trace_string_db.json', 'sai_sdk_dump.gz',
+        sdk_dump_files = ['fw_trace_attr.json.gz', 'sai_sdk_dump.gz',
                           'sdk_dump_ext_dev1_summary.txt.gz', 'sdk_dump_ext_dev1_cr_space_2.udmp.gz',
                           'sdk_dump_ext_dev1_gw.udmp.gz', 'sdk_dump_ext_dev1_dpt.txt.gz',
                           'sdk_dump_ext_dev1_fw_trace.txt.gz', 'fw_trace_attr.json.gz', 'fw_trace_string_db.json.gz',
@@ -351,7 +351,7 @@ class BaseSwitch(BaseDevice):
         self.temperature_sensors = ["ASIC", "Ambient-Fan-Side-Temp", "Ambient-Port-Side-Temp",
                                     "CPU-Core-0-Temp", "CPU-Core-1-Temp", "CPU-Pack-Temp",
                                     "PSU-1-Temp", "Drive-Temp", "PMIC-3-Temp", "PMIC-4-Temp",
-                                    "PMIC-5-Temp", "PMIC-1-Temp", "PMIC-6-Temp"]
+                                    "PMIC-5-Temp", "PMIC-1-Temp", "PMIC-6-Temp", "PMIC-2-Temp", "PMIC-7-Temp"]
 
     def _init_health_components(self):
         super()._init_health_components()
