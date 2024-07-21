@@ -1,9 +1,12 @@
 from ngts.nvos_constants.constants_nvos import MultiPlanarConsts
+from ngts.nvos_tools.Devices.IbDevice import CrocodileSwitch
+from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.tools.test_utils import allure_utils as allure
 from retry import retry
+import random
 
 
 class MultiPlanarTool:
@@ -50,10 +53,11 @@ class MultiPlanarTool:
     @staticmethod
     def select_random_aggregated_port(devices):
         with allure.step("Select a random aggregated port"):
-            aggregated_port_name = RandomizationTool.select_random_value(devices.dut.aggregated_port_list). \
-                get_returned_value()
-            selected_fae_aggregated_port = Fae(port_name=aggregated_port_name)
-            return selected_fae_aggregated_port
+            if isinstance(devices.dut, CrocodileSwitch):
+                return Fae(port_name='swA8p1')
+            else:
+                return Fae(port_name=RandomizationTool.select_random_port(
+                    requested_ports_logical_state=IbInterfaceConsts.LINK_LOGICAL_PORT_STATE_ACTIVE))
 
     @staticmethod
     def select_random_fnm_port(devices):
@@ -64,10 +68,10 @@ class MultiPlanarTool:
             return selected_fae_fnm_port
 
     @staticmethod
-    def select_random_plane_port(devices, fae_aggregated_port):
+    def select_random_plane_port(devices, fae_aggregated_port, num_of_planes):
         with allure.step("Choose a random plane port (of the aggregated port)"):
-            plane_name = RandomizationTool.select_random_value(devices.dut.plane_port_list).get_returned_value()
-            plane_port_name = fae_aggregated_port.port.name + plane_name
+            plane_num = str(random.randint(1, num_of_planes))
+            plane_port_name = fae_aggregated_port.port.name + 'pl' + plane_num
             selected_fae_plane_port = Fae(port_name=plane_port_name)
             return selected_fae_plane_port
 

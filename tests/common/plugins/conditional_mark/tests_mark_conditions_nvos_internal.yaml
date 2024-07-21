@@ -226,21 +226,11 @@ tests_nvos/interfaces/multi_planar/test_multi_planar_sym_mgr_and_aport.py::test_
 
 tests_nvos/interfaces/multi_planar/test_multi_planar_sym_mgr_and_aport.py::test_verify_breakout_commands_not_exist:
   skip:
-    reason: "Should run only on xdr Black Mamba system"
+    reason: "Testcase skipped on gorilla systems and due to RM issue: https://redmine.mellanox.com/issues/3996985"
+    conditions_logical_operator: and
     conditions:
       - "'gorilla' in testbed"
-
-tests_nvos/interfaces/test_response_mgmt_ip_inband.py::test_interface_shutdown:
-  skip:
-    reason: "Should run only on xdr Black Mamba system"
-    conditions:
-      - "'gorilla' or 'marlin' in testbed"
-
-tests_nvos/interfaces/test_response_mgmt_ip_inband.py::test_dhcp_shutdown:
-  skip:
-    reason: "Should run only on xdr Black Mamba system"
-    conditions:
-      - "'gorilla' or 'marlin' in testbed"
+      - https://redmine.mellanox.com/issues/3996985
 
 tests_nvos/interfaces/multi_planar/test_multi_planar_sym_mgr_and_aport.py::test_symmetry_manager_log_and_tech_support:
   skip:

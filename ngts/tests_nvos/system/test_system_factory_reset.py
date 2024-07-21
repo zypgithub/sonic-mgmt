@@ -250,13 +250,11 @@ def test_reset_factory_keep_only_files(engines, devices):
         with allure.step(f'Set description to {port_type} ports'):
             logger.info(f"Set description to {port_type} ports")
             description = "with_all_files_param"
-            ports = Tools.RandomizationTool.select_random_ports(requested_ports_state="up",
-                                                                num_of_ports_to_select=2).get_returned_value()
+            ports = Tools.RandomizationTool.select_random_ports(num_of_ports_to_select=3,
+                                                                port_requirements_object=None).get_returned_value()
             apply_and_save_port = ports[0]
             just_apply_port = ports[1]
-            not_apply_port = Tools.RandomizationTool.select_random_ports(requested_ports_state="down",
-                                                                         num_of_ports_to_select=2).get_returned_value()[
-                0]
+            not_apply_port = ports[2]
 
         with allure.step(f'Set and apply description to {port_type} port, save config after it'):
             logger.info(f"Set and apply description to {port_type} port, save config after it")
