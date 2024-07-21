@@ -120,16 +120,9 @@ def test_show_platform_inventory(engines, devices, test_api):
             pass  # Shows the list of random samples in allure report
 
     with allure.step("Checking field values"):
-        errors = False
         for test_class, item in sample_items.items():
-            try:
-                with allure.step(f"For {test_class.ITEM_TYPE} {item}"):
-                    test_class.validate_fields(engines, devices, test_api, output[item])
-            except Exception as e:
-                errors = True
-                logger.error(e)
-
-        assert not errors, f"Errors encountered"
+            with allure.independent_step(f"For {test_class.ITEM_TYPE} {item}"):
+                test_class.validate_fields(engines, devices, test_api, output[item])
 
 
 @pytest.mark.platform
