@@ -475,4 +475,11 @@ tests_nvos/checklist/test_bios_upgrade.py::test_bios_upgrade:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3981760"
     conditions:
       - https://redmine.mellanox.com/issues/3981760
+
+tests_nvos/platform/test_platform_environment.py::test_platform_environment_fan_shared_led:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3978721"
+    conditions:
+      - https://redmine.mellanox.com/issues/3978721
+
 ########################## NVOS IGNORE END ##########################
