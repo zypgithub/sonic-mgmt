@@ -15,7 +15,7 @@ from ngts.constants.constants import MarsConstants
 
 
 logger = logging.getLogger()
-server_ip = "10.237.116.60"
+server_ip = "10.237.22.60"
 
 
 class NvueGeneralCli(SonicGeneralCliDefault):

@@ -12,6 +12,7 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.scripts.code_coverage.code_coverage_consts import SharedConsts, NvosConsts, SonicConsts
 from ngts.nvos_constants.constants_nvos import NvosConst
 from ngts.nvos_tools.infra.HostMethods import HostMethods
+from ngts.nvos_tools.Devices.DeviceFactory import DeviceFactory
 
 logger = logging.getLogger()
 
@@ -30,7 +31,7 @@ def test_extract_python_coverage(topology_obj, dest, engines):
     engine, cli_obj, is_nvos = get_topology_info(topology_obj)
 
     if is_nvos:
-        extract_python_coverage_for_nvos(dest if dest else NvosConsts.DEST_PATH, engines, cli_obj)
+        extract_python_coverage_for_nvos(dest if dest else NvosConsts.DEST_PATH, engines, cli_obj, topology_obj)
     else:
         extract_python_coverage_for_sonic(dest, engines, engine, cli_obj)
 
@@ -149,8 +150,14 @@ def get_topology_info(topology_obj):
         return engine, cli_obj, is_nvos
 
 
-def extract_python_coverage_for_nvos(dest, engines, cli_obj):
-    dest = get_dest_path(engines.dut, dest) + SharedConsts.PYTHON_DIR
+def extract_python_coverage_for_nvos(dest, engines, cli_obj, topology_obj):
+    with allure.step("Create device object if needed"):
+        if not TestToolkit.devices:
+            devices = DeviceFactory.create_devices_object(topology_obj)
+            TestToolkit.update_devices(devices)
+
+    with allure.step("Create coverage report path"):
+        dest = get_dest_path(engines.dut, dest) + SharedConsts.PYTHON_DIR
 
     with allure.step('Get coverage file path'):
         coverage_file = get_python_coverage_file(cli_obj)
