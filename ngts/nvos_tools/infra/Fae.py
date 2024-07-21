@@ -13,6 +13,9 @@ from ngts.cli_wrappers.nvue.nvue_system_clis import NvueSystemCli
 from ngts.cli_wrappers.openapi.openapi_base_clis import OpenApiBaseCli
 from ngts.cli_wrappers.openapi.openapi_platform_clis import OpenApiPlatformCli
 from ngts.cli_wrappers.openapi.openapi_system_clis import OpenApiSystemCli
+from ngts.cli_wrappers.nvue.nvue_cluster_clis import NvueClusterCli
+from ngts.cli_wrappers.openapi.openapi_cluster_clis import OpenApiClusterCli
+from ngts.nvos_tools.infra.DefaultDict import DefaultDict
 from ngts.nvos_constants.constants_nvos import ApiType, ActionConsts
 from ngts.nvos_tools.fae.Debug import Debug
 from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
@@ -46,6 +49,64 @@ class Fae(BaseComponent):
         self.sonic_cli = SonicCli(self)
         self.interface = Interface(self, port_name)
         self.platform = FaePlatform(self)
+        self.cluster = FaeCluster(self)
+
+
+class FaeCluster(BaseComponent):
+    """Represents fae/cluster subtree"""
+
+    def __init__(self, parent_obj=None):
+        super().__init__(parent=parent_obj,
+                         api={ApiType.NVUE: NvueClusterCli, ApiType.OPENAPI: OpenApiClusterCli},
+                         path='/cluster')
+        self.package = FaePackage(self)
+
+
+class FaePackage(BaseComponent):
+
+    def __init__(self, parent_obj=None):
+        super().__init__(parent=parent_obj,
+                         api={ApiType.NVUE: NvueClusterCli, ApiType.OPENAPI: OpenApiClusterCli},
+                         path='/package')
+        self.package_file = FaeFiles(self)
+
+
+class FaeFiles(BaseComponent):
+    def __init__(self, parent_obj=None):
+        super().__init__(parent=parent_obj,
+                         api={ApiType.NVUE: NvueClusterCli, ApiType.OPENAPI: OpenApiClusterCli},
+                         path='/files')
+        self.package_file_name: Dict[str, PackageFile] = DefaultDict(
+            lambda package_file_name: PackageFile(parent=self, package_file_name=package_file_name))
+
+
+class PackageFile(BaseComponent):
+    def __init__(self, parent, package_file_name):
+        super().__init__(parent=parent, api={ApiType.NVUE: NvueClusterCli, ApiType.OPENAPI: OpenApiClusterCli}, path=f'/{package_file_name}')
+
+    def action_install(self, bios_image_path):
+        engine = dut_engine if dut_engine else TestToolkit.engines.dut
+        return SendCommandTool.execute_command(self._cli_wrapper.action_install_fae, engine,
+                                               self.get_resource_path())
+
+    def action_uninstall(self, bios_image_path):
+        engine = dut_engine if dut_engine else TestToolkit.engines.dut
+        return SendCommandTool.execute_command(self._cli_wrapper.action_uninstall_fae, engine,
+                                               self.get_resource_path())
+
+    def action_delete(self, filename) -> ResultObj:
+        engine = dut_engine if dut_engine else TestToolkit.engines.dut
+        return SendCommandTool.execute_command(self._cli_wrapper.action_delete_fae, engine,
+                                               self.get_resource_path())
+
+        fae.cluster.package.package_file.package_file_name['elias'].action_delete_fae
+    # fae: Fae = Fae()
+    # x = fae.cluster.package.package_file.package_file_name['elias']
+    # x = fae.cluster.package.action_fetch()  -- READY
+    # x = fae.cluster.package.package_file.package_file_name['elias'].action_install() TBD
+    # x = fae.cluster.package.package_file.package_file_name['elias'].action_uninstall TBD
+    # x = fae.cluster.package.package_file.package_file_name['elias'].action_uninstall TBD
+    # x = fae.cluster.package.package_file.package_file_name['elias'].action_delete() TBD
 
 
 class Ib(BaseComponent):

@@ -21,7 +21,7 @@ NMX_TELEMETRY = 'nmx-telemetry'
 INITIAL_EXPECTED_APPS = [NMX_CONTROLLER, NMX_TELEMETRY]
 UNDEFINED_STATE = 'undefined'
 UNDEFINED_STATE_ERR_MSG = 'Error: At state: \'undefined\' is not one of [\'enabled\', \'disabled\']'
-NMX_LOG_MESSAGES_TAGS = ['sm', 'fm', 'fib', 'gw_api', 'rest', 'config_daemon']
+NMX_LOG_MESSAGES_TAGS = ['nmxc-sm', 'nmxc-fm', 'nmxc-fib', 'nmxc-gw_api', 'nmxc-rest', 'nmxc-config_daemon']
 DEFAULT_LOG_LEVEL = 'notice'
 UNDEFINED_LOG_LEVEL = '''Output was expected to contain:
 Action succeeded

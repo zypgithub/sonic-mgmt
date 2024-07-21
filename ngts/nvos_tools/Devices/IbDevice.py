@@ -666,7 +666,7 @@ class NvLinkSwitch(IbSwitch):
         super()._init_constants()
         self.ib_ports_num = 64
         self.core_count = 4
-        self.mgmt_ports = ['eth0', 'eth1']
+        self.mgmt_ports = ['eth0']
         self.asic_type = NvosConst.QTM3
         self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
             "x86_64-mlnx_mqm9700-r0")
@@ -890,11 +890,9 @@ class JulietScaleoutSwitch(JulietSwitch):
     def _relevant_config_filename_by_version(self, version: str) -> str:
         return 'nvos_config_nvl5.yml'
 
-    def wait_for_os_to_become_functional(self, engine, find_prompt_tries=60, find_prompt_delay=10):
-        logger.info("Sleeping for 300 seconds - Since bios update on juliet enters ONIE Update menu and takes longer")
-        time.sleep(300)
+    def wait_for_os_to_become_functional(self, engine, find_prompt_tries=80, find_prompt_delay=15):
         DutUtilsTool.check_ssh_for_authentication_error(engine, self)
-        return DutUtilsTool.wait_for_nvos_to_become_functional(engine)
+        return DutUtilsTool.wait_for_nvos_to_become_functional(engine, find_prompt_tries=80, find_prompt_delay=15)
 
 # -------------------------- JulietTTM Switch ----------------------------
 

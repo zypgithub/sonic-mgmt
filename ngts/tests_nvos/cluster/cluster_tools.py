@@ -149,6 +149,13 @@ class ClusterTools:
     def start_app(cluster, app):
         with allure.step(f"Start app {app}"):
             cluster.apps.apps_name[app].action_start_cluster_apps()
+            # TODO -- add back after manual testing for factory reset
+            # with allure.step("Running 'nv show cluster apps running' command and verifying output"):
+            #     output = OutputParsingTool.parse_show_output_to_dict(
+            #         cluster.apps.running.show(output_format=OutputFormat.json),
+            #         output_format=OutputFormat.json).get_returned_value()
+            #     app_status = output[app]['status']
+            #     assert app_status == 'ok', f"App {app} status is {app_status} instead of 'ok"
 
     @staticmethod
     def stop_app(cluster, app):

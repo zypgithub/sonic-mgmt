@@ -237,6 +237,7 @@ class ActionType:
     ENABLE = '@enable'
     DISABLE = '@disable'
     IMPORT = '@import'
+    CREATE = '@create'
 
 
 class ActionConsts:
@@ -1031,7 +1032,7 @@ class SyslogConsts:
 class ClusterAppsLogLevels:
     CRITICAL = 'critical'
     ERROR = 'error'
-    WARNING = 'warning'
+    WARNING = 'warn'
     NOTICE = 'notice'
     INFO = 'info'
     DEBUG = 'debug'
