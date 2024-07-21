@@ -41,6 +41,7 @@ class DutUtilsTool:
         with allure.step('Reload the system with {} command, and wait till system is ready'.format(command)):
             list_commands = [command, 'y'] if confirm else [command]
             output = device.reload_device(engine, list_commands)
+            logger.info(output)
 
             if 'aborted' in output.lower() or 'aborting' in output.lower():
                 return ResultObj(result=False, info=output)

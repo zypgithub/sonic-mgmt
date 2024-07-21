@@ -238,6 +238,7 @@ class ActionType:
     DISABLE = '@disable'
     IMPORT = '@import'
     CREATE = '@create'
+    POWER_CYCLE = '@power-cycle'
 
 
 class ActionConsts:
@@ -257,6 +258,7 @@ class ActionConsts:
     RENAME = 'rename'
     RESET = 'reset'
     RESUME = 'resume'
+    POWER_CYCLE = 'power-cycle'
 
 
 class SystemConsts:
@@ -533,6 +535,7 @@ class SystemConsts:
     REBOOT_RESPONSE_MESSAGES = (
         "Performing reboot",
         "Disconnecting from NVOS, system is offline during reboot",
+        "System will power cycle in a few seconds"
     )
 
 
@@ -1129,7 +1132,9 @@ class OperationTimeConsts:
                   'start stop cluster app': 125,
                   'start stop cluster': 95,
                   'cluster update log level': 5,
-                  'install bmc': 900}
+                  'install bmc': 900,
+                  ActionConsts.POWER_CYCLE: 360,
+                  }
 
 
 class StatsConsts:

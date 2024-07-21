@@ -100,7 +100,9 @@ class NvueBaseCli:
             return DutUtilsTool.reload(engine=engine, device=device, command=command, confirm=(param_name != "force"),
                                        recovery_engine=recovery_engine).verify_result()
         else:
-            return engine.run_cmd(command)
+            output = engine.run_cmd(command)
+            logger.info(output)
+            return output
 
     @staticmethod
     def action_install(engine, device, fae_command=False, args='', expect_reboot=False, force=False):
