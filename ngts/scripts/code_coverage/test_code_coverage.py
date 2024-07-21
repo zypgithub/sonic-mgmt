@@ -54,7 +54,7 @@ def test_extract_gcov_coverage(topology_obj, dest, engines):
         with allure.step('Check that sources exist on the switch'):
             cli_obj.general.ls(NvosConsts.NVOS_SOURCE_PATH, validate=True)
         with allure.step('Extract c coverage for NVOS'):
-            extract_c_coverage_for_nvos(dest, engines, engine, cli_obj)
+            extract_c_coverage_for_nvos(dest, engines, engine, cli_obj, topology_obj)
     else:
         with allure.step('Check that sources exist on the switch'):
             cli_obj.general.ls(SharedConsts.SONIC_SOURCES_PATH[0], validate=True)
@@ -73,8 +73,14 @@ def get_coverage_file_names(sudo_cli_general, containers):
     return gcov_filename_prefix, lcov_filename_prefix
 
 
-def extract_c_coverage_for_nvos(dest, engines, engine, cli_obj):
-    c_dest = get_dest_path(engine, dest) + SharedConsts.C_DIR
+def extract_c_coverage_for_nvos(dest, engines, engine, cli_obj, topology_obj):
+    with allure.step("Create device object if needed"):
+        if not TestToolkit.devices:
+            devices = DeviceFactory.create_devices_object(topology_obj)
+            TestToolkit.update_devices(devices)
+
+    with allure.step("Create coverage report path"):
+        c_dest = get_dest_path(engine, dest) + SharedConsts.C_DIR
 
     with allure.step('Restart system services to get coverage for running services'):
         engines.dut.run_cmd('sudo systemctl restart swss-ibv0@0.service')

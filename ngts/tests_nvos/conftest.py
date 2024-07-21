@@ -39,6 +39,7 @@ from ngts.scripts.code_coverage.code_coverage_consts import NvosConsts
 from ngts.scripts.code_coverage.test_code_coverage import extract_python_coverage_for_nvos
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_config_utils import clear_conf
+from ngts.nvos_tools.infra.RegressionConfigurations import RegressionConfigurations
 from ngts.tools.test_utils.nvos_general_utils import wait_for_ldap_nvued_restart_workaround, set_base_configurations, \
     set_base_configurations_cl
 
@@ -193,6 +194,7 @@ def start_sm(engines, traffic_available):
     Starts OpenSM
     """
     if traffic_available:
+        RegressionConfigurations.configure_ports_to_legacy(engine=engines.dut, apply=True, throw_exception=False)
         result = OpenSmTool.start_open_sm(engines)
         if not result.result:
             logging.warning("Failed to start openSM")
@@ -419,7 +421,8 @@ def teardown_collect_code_coverage(topology_obj, engines):
 
         if collect_coverage:
             with allure.step(f"Collect python coverage (folder capacity {capacity_percentage}%"):
-                extract_python_coverage_for_nvos(dest=NvosConsts.DEST_PATH, engines=engines, cli_obj=cli_obj)
+                extract_python_coverage_for_nvos(dest=NvosConsts.DEST_PATH, engines=engines, cli_obj=cli_obj,
+                                                 topology_obj=topology_obj)
 
 
 @pytest.fixture(scope='function', autouse=True)

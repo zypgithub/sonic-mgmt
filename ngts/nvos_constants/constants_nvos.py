@@ -153,7 +153,7 @@ class NvosConst:
     NVOS_INSTALL_TIMEOUT = 6 * 60  # 6 minutes
 
     COVERAGE_PATH = "/var/lib/python/coverage"
-    MAX_COVERAGE_PATH_CAPACITY_PERCENTAGE = 90
+    MAX_COVERAGE_PATH_CAPACITY_PERCENTAGE = 70
 
     NO_CONFIG_DIFF_APPLY_MSG = "config apply executed with no config diff"
     DECLINED_APPLY_MSG = 'Declined apply after warnings'

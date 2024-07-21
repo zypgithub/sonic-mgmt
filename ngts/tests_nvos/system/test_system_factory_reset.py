@@ -111,20 +111,18 @@ def test_reset_factory_keep_basic(engines):
         with allure.step("Run reset factory with keep basic param"):
             execute_reset_factory(engines, system, "keep basic", current_time)
 
+    finally:
         update_timezone(system)
 
         with allure.step("Validate health status and report"):
             validate_health_status_report(system, last_status_line)
 
-    finally:
         with allure.step("Verify the cleanup done successfully"):
             verify_cleanup_done(engines.dut, current_time, system, username, param=KEEP_BASIC)
             Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
                                                               field_name=NvosConst.DESCRIPTION,
                                                               expected_value='nvosdescription')
             mgmt_port.interface.unset(NvosConst.DESCRIPTION, apply=True).verify_result()
-
-        update_timezone(system)
 
         with allure.step("Verify the setup is functional"):
             verify_the_setup_is_functional(system, engines)

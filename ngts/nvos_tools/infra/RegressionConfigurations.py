@@ -12,8 +12,8 @@ logger = logging.getLogger()
 
 
 class Configurations:
-    ndr_ports = {"10.7.148.94": ['swA1p1', 'swA1p2', 'swA2p1', 'swA2p2'],
-                 "10.7.148.95": ['swA1p1', 'swA1p2', 'swA2p1', 'swA2p2'],
+    ndr_ports = {"10.7.148.94": ['swA1p1', 'swA1p2'],
+                 "10.7.148.95": ['swA1p1', 'swA1p2'],
                  "10.7.145.61": ['swA1p1', 'swA1p2'],
                  "10.7.145.62": ['swA1p1', 'swA1p2'],
                  "10.7.145.88": ['swA1p1', 'swA1p2'],
