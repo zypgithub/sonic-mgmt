@@ -6,6 +6,8 @@ from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
 from ngts.nvos_tools.nmx.App import App
 from ngts.nvos_tools.nmx.Apps import Apps
+from ngts.nvos_tools.nmx.Manager import Manager
+
 logger = logging.getLogger()
 
 
@@ -16,3 +18,4 @@ class Cluster(BaseComponent):
                          path='/cluster')
         self.app = App(self)
         self.apps = Apps(self)
+        self.manager = Manager(self)

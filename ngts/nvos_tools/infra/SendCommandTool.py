@@ -1,6 +1,6 @@
 from ngts.nvos_tools.infra.ResultObj import ResultObj, IssueType
 
-invalid_cmd_str = ['invalid date', 'Invalid config', 'Error', 'command not found', 'Bad Request', 'Not Found',
+invalid_cmd_str = ['invalid date', 'Invalid config', 'Error', 'error', 'command not found', 'Bad Request', 'Not Found',
                    "unrecognized arguments", "error: unrecognized arguments", "invalid choice", "Action failed",
                    "Invalid Command", "You do not have permission", "Incomplete Command", "Unable to change",
                    'internal error', 'Valid range is',
