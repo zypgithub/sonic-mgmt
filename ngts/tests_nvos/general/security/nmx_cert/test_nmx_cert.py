@@ -36,6 +36,7 @@ def test_manager_cli(test_api):
     7.	Run update encryption (to all options)
     8.	Verify in show that related field updates accordingly
     """
+    # TODO: https://redmine.mellanox.com/issues/3993304
     TestToolkit.tested_api = test_api
     cluster = Cluster()
     cert = TestCert.cert_valid_1
@@ -132,6 +133,7 @@ def test_manager_cmd_fail_when_cluster_off(test_api):
     2.	Run manager update/restore command
     3.	Verify failed and show doesn’t change
     """
+    # TODO: https://redmine.mellanox.com/issues/3993892
     TestToolkit.tested_api = test_api
     cluster = Cluster()
     cert = TestCert.cert_valid_1
@@ -177,6 +179,7 @@ def test_delete_cert_fail_when_is_used(test_api, scp_player, engines, import_cer
     2.	Try to remove certs
     3.	Verify fail and that there’s no change in related fields
     """
+    # TODO: https://redmine.mellanox.com/issues/3995421
     TestToolkit.tested_api = test_api
     cluster = Cluster()
     cert = TestCert.cert_valid_1
@@ -427,7 +430,7 @@ def test_no_connection_after_restore_cluster():
 
 @pytest.mark.system
 @pytest.mark.gnmi
-def test_nmx_cert_reboot_case():
+def test_nmx_cert_reboot_case(engines):
     """
     Verify that certificates and encryption mode are kept after reboot
 
@@ -436,7 +439,8 @@ def test_nmx_cert_reboot_case():
     3.	Reboot
     4.	Verify updated values in show kept
     """
-    manager = Cluster().manager
+    cluster = Cluster()
+    manager = cluster.manager
     cert = TestCert.cert_valid_1
     encryption_mode = random.choice([EncryptionMode.TLS, EncryptionMode.MTLS])
     with allure.step('load cert & cacert'):
@@ -446,6 +450,9 @@ def test_nmx_cert_reboot_case():
         manager.encryption.action_update(encryption_mode)
     with allure.step('reboot the system'):
         System().action('reboot', param_name='force', expect_reboot=True, output_format=None).verify_result()
+        engines.dut.disconnect()
+    with allure.step('re-enable cluster after reboot'):
+        cluster.set(STATE, ENABLED, apply=True).verify_result()
     with allure.step('Verify updated values in show kept'):
         verify_manager_show(expect_cert=cert.name, expect_cacert=cert.cacert_name, expect_encryption=encryption_mode)
         verify_cert_show(expect_cert_id=cert.name)
