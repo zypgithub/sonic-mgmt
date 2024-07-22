@@ -449,11 +449,29 @@ gnmi/test_gnmi_configdb.py::test_gnmi_configdb_full_01:
     conditions:
       - "https://redmine.mellanox.com/issues/3923690 and 'sn4280' in platform"
 
+show_techsupport/test_auto_techsupport.py:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/3981172"
+    conditions:
+      - "https://redmine.mellanox.com/issues/3981172 and ('r-bobcat' in testbed) and (topo_name in ['t1-28-lag'])"
+
+bgp/test_bgp_bbr.py:
+  skip:
+    reason: "Testcase ignored due to RM issue:https://redmine.mellanox.com/issues/3981172"
+    conditions:
+      - "https://redmine.mellanox.com/issues/3981172 and ('r-bobcat' in testbed) and (topo_name in ['t1-28-lag'])"
+
+gnmi/test_gnmi_configdb.py::test_gnmi_configdb_incremental_01:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/3983011 and SmartSwitch testbeds"
+    conditions:
+      - "https://redmine.mellanox.com/issues/3983011 and ('r-bobcat' in testbed) and (topo_name in ['t1-28-lag'])"
+
 cacl/test_cacl_application.py::test_cacl_application_nondualtor:
   skip:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/3817421 and SmartSwitch testbeds"
     conditions:
-      - "https://redmine.mellanox.com/issues/3817421 and ('r-leopard-79' in testbed or 'mtvr-leopard-01' in testbed)"
+      - "https://redmine.mellanox.com/issues/3817421 and ('r-bobcat' in testbed) and (topo_name in ['t1-28-lag'])"
 
 dualtor_io/test_link_failure.py::test_active_link_down_upstream[active-standby]:
   skip:
@@ -772,12 +790,6 @@ platform_tests/test_reload_config.py::test_reload_configuration:
     conditions_logical_operator: or
     conditions:
       - "'simx' in platform"
-
-system_health/test_system_health.py::test_device_checker:
-  skip:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/3808455"
-    conditions:
-      - "https://redmine.mellanox.com/issues/3808455"
 
 qos/test_lossless_bum_traffic_drop.py:
   skip:
@@ -1239,6 +1251,23 @@ platform_tests/test_secure_upgrade.py:
     conditions:
       - "https://redmine.mellanox.com/issues/3824755"
 
+syslog/test_syslog_source_ip.py::test_syslog_config_work_after_reboot:
+  skip:
+    reason: "Skip due to https://redmine.mellanox.com/issues/3981121"
+    conditions:
+      - "https://redmine.mellanox.com/issues/3981121 and ('r-bobcat' in testbed)"
+
+system_health/test_system_health.py::test_service_checker:
+  skip:
+    reason: "Testcase skipped due to RM issue:https://redmine.mellanox.com/issues/3948768"
+    conditions:
+      - "https://redmine.mellanox.com/issues/3948768 and 'sn4280' in platform "
+
+system_health/test_system_health.py::test_device_checker:
+  skip:
+    reason: "Test fails on r-bobcat-01 due to bad psu"
+    conditions:
+      - "'r-bobcat-01' in testbed"
 ########################## NVIDIA INTERNAL COMMUNITY IGNORE END ############################
 
 
