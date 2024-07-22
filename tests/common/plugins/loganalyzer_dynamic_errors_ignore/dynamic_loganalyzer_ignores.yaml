@@ -169,7 +169,8 @@
 
 # Ignore these errors on r-bobcat-01 due to a PSU hw issue
 - Errors_list:
-    - '.*r-bobcat-01.*pmon.*psu.*'
+    - '.*r-bobcat-01.*psu.*'
+    - '.*r-bobcat-01.*pmbus.*4-0059.*'
   Conditions:
     - Platform:
         sn4280
