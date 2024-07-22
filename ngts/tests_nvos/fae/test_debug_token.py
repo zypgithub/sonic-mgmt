@@ -29,7 +29,7 @@ def test_debug_token_upload_good_flow(engines, test_name, test_api):
     debug_image = fae.platform.debug.info.debug_image
     with allure.step('generate valid url'):
         player = engines['sonic_mgmt']
-        upload_path = ImageConsts.SCP_PATH_SERVER.format(player.username, player.password, player.ip, '/tmp')
+        upload_path = ImageConsts.SCP_PATH_SERVER.format(username=player.username, password=player.password, ip=player.ip, path='/tmp/')
 
     filename = generate_and_verify_debug_token(debug_image, test_name)
 
@@ -72,7 +72,7 @@ def test_debug_token_upload_bad_flow(engines, test_name, test_api):
         player = engines['sonic_mgmt']
         invalid_url_1 = 'scp://{}:{}{}/tmp/'.format(player.username, player.password, player.ip)
         invalid_url_2 = 'ffff://{}:{}@{}/tmp/'.format(player.username, player.password, player.ip)
-        upload_path = ImageConsts.SCP_PATH_SERVER.format(player.username, player.password, player.ip, '/tmp')
+        upload_path = ImageConsts.SCP_PATH_SERVER.format(username=player.username, password=player.password, ip=player.ip, path='/tmp/')
 
     with allure.step('Try to upload non exist debug info file'):
         fae.platform.debug.info.debug_image.files.file_name['nonexist'].action_upload(upload_path=upload_path,
@@ -193,6 +193,9 @@ def test_debug_info_rename_bad_flow(engines, test_name, test_api):
 
     filename = generate_and_verify_debug_token(debug_image, test_name)
     new_filename = RandomizationTool.get_random_string(9) + '.bin'
+
+    with allure.step('try to rename debug info {} to {}'.format(filename, new_filename)):
+        fae.platform.debug.info.debug_image.files.file_name[filename].action_rename(new_name=new_filename)
 
     with allure.step(f'delete the renamed file {new_filename}'):
         debug_image.files.file_name[new_filename].action_delete()
