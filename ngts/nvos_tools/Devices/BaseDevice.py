@@ -43,6 +43,7 @@ class BaseDevice(ABC):
         self._init_health_components()
         self._init_platform_lists()
         self._init_system_lists()
+        self._init_fae_lists()
         self._init_security_lists()
         self._init_password_hardening_lists()
 
@@ -101,6 +102,9 @@ class BaseDevice(ABC):
 
     def _init_system_lists(self):
         self.user_fields = []
+
+    def _init_fae_lists(self):
+        pass
 
     def _init_security_lists(self):
         self.kex_algorithms = []
@@ -254,7 +258,7 @@ class BaseSwitch(BaseDevice):
     __metaclass__ = ABCMeta
 
     Constants = namedtuple('Constants', ['system', 'dump_files', 'sdk_dump_files', 'firmware', 'log_dump_files',
-                                         'stats_dump_files', 'hw_mgmt_files'])
+                                         'stats_dump_files', 'hw_mgmt_files', 'cluster_files'])
     CpldImageConsts = namedtuple('CpldImageConsts', ('burn_image_path', 'refresh_image_path', 'version_names'))
     SsdImageConsts = namedtuple('SsdImageConsts', ('file', 'current_version', 'alternate_version'))
 
@@ -312,10 +316,13 @@ class BaseSwitch(BaseDevice):
                             "mgmt-interface.csv.gz", "temperature.csv.gz", "voltage.csv.gz"]
         hw_mgmt_files = ['hw-mgmt-dump.tar.gz']
 
+        cluster_files = None
+
         firmware = [PlatformConsts.FW_ASIC, PlatformConsts.FW_BIOS, PlatformConsts.FW_SSD,
                     PlatformConsts.FW_CPLD + '1', PlatformConsts.FW_CPLD + '2', PlatformConsts.FW_CPLD + '3']
         self.constants = BaseSwitch.Constants(system_dic, dump_files, sdk_dump_files, firmware, log_dump_files,
-                                              stats_dump_files, hw_mgmt_files)
+                                              stats_dump_files, hw_mgmt_files, cluster_files)
+
         self.current_bios_version_name = ""
         self.current_bios_version_path = ""
         self.previous_bios_version_name = ""
@@ -339,6 +346,8 @@ class BaseSwitch(BaseDevice):
         self.disk_partition_capacity_limit = DiskConsts.PARTITION_CAPACITY_LIMIT
         self.disk_minimum_free_space = DiskConsts.MINIMUM_FREE_SPACE
         self.reboot_type = 'reboot'  # If system has special reboot (in terms of time) this var will describe it. Useful when extracting THRESHOLDS
+        self.generate_tech_support = 'generate tech-support'
+        self.reset_factory = 'reset factory'
 
     def _init_psu_list(self):
         super()._init_psu_list()
@@ -350,7 +359,8 @@ class BaseSwitch(BaseDevice):
         super()._init_temperature()
         self.temperature_sensors = ["ASIC", "Ambient-Fan-Side-Temp", "Ambient-Port-Side-Temp",
                                     "CPU-Core-0-Temp", "CPU-Core-1-Temp", "CPU-Pack-Temp",
-                                    "PSU-1-Temp"]
+                                    "PSU-1-Temp", "Drive-Temp", "PMIC-3-Temp", "PMIC-4-Temp",
+                                    "PMIC-5-Temp", "PMIC-1-Temp", "PMIC-6-Temp"]
 
     def _init_health_components(self):
         super()._init_health_components()
@@ -366,6 +376,8 @@ class BaseSwitch(BaseDevice):
         self.fan_prop_auto = {"Fan State": "state", "Current Speed (RPM)": "current-speed",
                               "Fan Direction": "direction"}
         self.platform_inventory_items = self.fan_list + self.psu_list + [PlatformConsts.HW_COMP_SWITCH]
+        self.platform_inventory_items_dict = {
+            'fan': self.fan_list, 'psu': self.psu_list, 'switch': [PlatformConsts.HW_COMP_SWITCH]}
         self.platform_inventory_fields = ["hardware-version", "model", "serial", "state", "type"]
         self.platform_inventory_fan_values = {
             "hardware-version": NvosConst.NOT_AVAILABLE, "model": NvosConst.NOT_AVAILABLE,
@@ -379,6 +391,13 @@ class BaseSwitch(BaseDevice):
         self.platform_port_state = {
             "polling-physical-state": IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE_POLLING
         }
+        self.platform_inventory_values = {"fan": self.platform_inventory_fan_values,
+                                          "psu": self.platform_inventory_psu_values,
+                                          "switch": self.platform_inventory_switch_values}
+
+    def _init_fae_lists(self):
+        super()._init_fae_lists()
+        self.fae_eeprom_values = {}
 
     def _init_fan_direction_dir(self):
         super()._init_fan_direction_dir()

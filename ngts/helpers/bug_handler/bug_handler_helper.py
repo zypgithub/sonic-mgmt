@@ -1,20 +1,20 @@
-import os
-import re
-import subprocess
-import yaml
 import json
 import logging
-import allure
 import math
+import os
 import pathlib
-
-from retry.api import retry
-from pathlib import Path
-from jinja2 import Environment, FileSystemLoader
+import re
+import subprocess
 from datetime import datetime, timedelta
+from pathlib import Path
+
+import allure
+import yaml
+from jinja2 import Environment, FileSystemLoader
+from retry.api import retry
+
 from ngts.constants.constants import BugHandlerConst, InfraConst
 from ngts.nvos_constants.constants_nvos import SystemConsts
-
 
 TIMESTAMP_FORMATS = ["%b %d %H:%M:%S", "%Y %b %d %H:%M:%S", "%Y-%m-%dT%H:%M:%S"]
 TIMESTAMP_LENGTH = [len(datetime.now().strftime(format)) for format in TIMESTAMP_FORMATS]
@@ -469,6 +469,8 @@ def create_log_analyzer_yaml_file(log_errors, dump_path, project, test_name, hos
 
     if re.findall(hostname, log_errors[0]):
         hostname_regex = hostname
+        if re.findall(f"{hostname}-{SystemConsts.MGMT2_HOSTNAME}", log_errors[0]):
+            hostname_regex = f"{hostname}-{SystemConsts.MGMT2_HOSTNAME}"
     elif re.findall(r"\d sonic ", log_errors[0]):
         hostname_regex = "sonic"
     else:

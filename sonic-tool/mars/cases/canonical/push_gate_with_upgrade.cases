@@ -19,7 +19,7 @@
     <info> </info>
     <cmd>
       <params>
-          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests/push_build_tests/ --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --clean-alluredir --alluredir=/tmp/allure-results --showlocals --timeout 7200 --session-timeout 14400 --disable_loganalyzer --base_version=[[conf:extra_info.base_version]] --target_version=[[conf:extra_info.target_version]] --wjh_deb_url=[[conf:extra_info.wjh_deb_url:'']] --app_extension_dict_path=[[conf:extra_info.app_extension_dict_path:'']]\'"</static_args>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests/push_build_tests/ --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --clean-alluredir --alluredir=/tmp/allure-results --showlocals --timeout 7200 --session-timeout 14400 --disable_loganalyzer --base_version=[[conf:extra_info.base_version]] --target_version=[[conf:extra_info.target_version]] --skip_weekend_cases=[[conf:extra_info.skip_weekend_cases]] --wjh_deb_url=[[conf:extra_info.wjh_deb_url:'']] --app_extension_dict_path=[[conf:extra_info.app_extension_dict_path:'']]\'"</static_args>
       </params>
     </cmd>
   </case>

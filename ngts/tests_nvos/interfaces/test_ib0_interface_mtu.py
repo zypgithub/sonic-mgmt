@@ -43,7 +43,7 @@ def test_interface_ib0_mtu_disabled_sm(engines, stop_sm):
         ipoib_port.interface.wait_for_mtu_changed(random_mtu)
 
     with allure.step('Negative validation - not supported ib0 mtu value: 500'):
-        ipoib_port.interface.link.set(op_param_name='mtu', op_param_value=500).verify_result(False)
+        ipoib_port.interface.link.set(op_param_name='mtu', op_param_value=500, apply=True).verify_result(False)
         NvueGeneralCli.detach_config(TestToolkit.engines.dut)
         logger.info('Check port status, should be up')
         check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port)

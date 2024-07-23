@@ -41,3 +41,9 @@ class FileType(BaseComponent):
             engine = dut_engine if dut_engine else TestToolkit.engines.dut
             return SendCommandTool.execute_command(self._cli_wrapper.action_fetch, engine,
                                                    self.get_resource_path(), url)
+
+    def action_install_control_plane(self, file, dut_engine=None) -> ResultObj:
+        with allure.step(f'Execute action install for {self.get_resource_path()}'):
+            engine = dut_engine if dut_engine else TestToolkit.engines.dut
+            return SendCommandTool.execute_command(self._cli_wrapper.action_install, engine,
+                                                   self.get_resource_path(), file)

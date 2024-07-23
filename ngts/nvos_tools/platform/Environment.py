@@ -13,6 +13,7 @@ class Environment(BaseComponent):
         self.fan = BaseComponent(self, self.api_obj, '/fan')
         self.led = BaseComponent(self, self.api_obj, '/led')
         self.psu = BaseComponent(self, self.api_obj, '/psu')
+        self.leakage = BaseComponent(self, self.api_obj, '/leakage')
         self.temperature = BaseComponent(self, self.api_obj, '/temperature')
 
     def unset(self, op_param=""):

@@ -1,9 +1,11 @@
 <LabConnectionGraph>
   <PhysicalNetworkGraphDeclaration>
     <Devices>
+      <Device Hostname="juliet-121" HwSku="ACS-N5110_LD" Type="DevSonic"/>
       <Device Hostname="juliet-68" HwSku="ACS-N5110_LD" Type="DevSonic"/>
       <Device Hostname="juliet-54" HwSku="ACS-N5110_LD" Type="DevSonic"/>
       <Device Hostname="juliet-56" HwSku="ACS-N5110_LD" Type="DevSonic"/>
+      <Device Hostname="juliet-126" HwSku="ACS-N5110_LD" Type="DevSonic"/>
       <Device Hostname="mamba-44" HwSku="ACS-QM3000" Type="DevSonic"/>
       <Device Hostname="mamba-112" HwSku="ACS-QM3000" Type="DevSonic"/>
       <Device Hostname="bm-bu-bsp" HwSku="ACS-QM3000" Type="DevSonic"/>
@@ -29,10 +31,10 @@
       <Device Hostname="dev-r-vrt-232-007" HwSku="ACS-MSN3700" Type="DevSonic"/>
       <Device Hostname="dev-r-vrt-233-005" HwSku="ACS-MSN2700" Type="DevSonic"/>
       <Device Hostname="dev-r-vrt-233-007" HwSku="ACS-MSN3700" Type="DevSonic"/>
-      <Device Hostname="r-leopard-58" HwSku="Mellanox-SN4700-O8C48" Type="DevSonic"/>
+      <Device Hostname="r-leopard-58" HwSku="ACS-MSN4700" Type="DevSonic"/>
       <Device Hostname="r-tigris-04" HwSku="ACS-MSN3800" Type="DevSonic"/>
       <Device Hostname="r-tigris-13" HwSku="Mellanox-SN3800-D112C8" Type="DevSonic"/>
-      <Device Hostname="r-leopard-01" HwSku="Mellanox-SN4700-O8C48" Type="DevSonic"/>
+      <Device Hostname="r-leopard-01" HwSku="ACS-MSN4700" Type="DevSonic"/>
       <Device Hostname="r-tigon-04" HwSku="Mellanox-SN4600C-C64" Type="DevSonic"/>
       <Device Hostname="r-tigon-11" HwSku="Mellanox-SN4600C-C64" Type="DevSonic"/>
       <Device Hostname="r-tigon-20" HwSku="Mellanox-SN4600C-C64" Type="DevSonic"/>
@@ -79,7 +81,6 @@
       <Device Hostname="mtvr-liger-03" HwSku="MLNX-OS" Type="FanoutLeaf"/>
       <Device Hostname="mtvr-leopard-02" HwSku="MLNX-OS" Type="FanoutLeaf"/>
       <Device Hostname="mtvr-leopard-04" HwSku="Mellanox-SN4700-O8V48" Type="FanoutLeaf"/>
-      <Device Hostname="mtvr-leopard-05" HwSku="Mellanox-SN4700-O8V48" Type="FanoutLeaf"/>
       <Device Hostname="r-leopard-80" HwSku="MLNX-OS" Type="FanoutLeaf"/>
       <Device Hostname="r-leopard-82" HwSku="MLNX-OS" Type="FanoutLeaf"/>
       <Device Hostname="r-leopard-71" HwSku="Mellanox-SN4700-O8V48" Type="FanoutLeaf"/>
@@ -94,11 +95,8 @@
       <Device Hostname="mtbc-sonic-02-2700" HwSku="MLNX-OS" Type="FanoutLeaf"/>
       <Device Hostname="mtbc-3700c-02" HwSku="MLNX-OS" Type="FanoutLeaf"/>
       <Device Hostname="r-tigon-14" HwSku="Mellanox-SN4600C-C64" Type="FanoutLeaf"/>
-      <Device Hostname="r-anaconda-68" HwSku="MLNX-OS" Type="FanoutLeaf"/>
       <Device Hostname="r-anaconda-69" HwSku="MLNX-OS" Type="FanoutLeaf"/>
       <Device Hostname="r-anaconda-86" HwSku="MLNX-OS" Type="FanoutLeaf"/>
-      <Device Hostname="mtvr-anaconda-01" HwSku="MLNX-OS" Type="FanoutLeaf"/>
-      <Device Hostname="mtvr-panther-04" HwSku="MLNX-OS" Type="FanoutLeaf"/>
       <Device Hostname="dummy-fanout" HwSku="MLNX-OS" Type="FanoutLeaf"/>
       <Device Hostname="arc-host60" HwSku="TestServ" Type="Server"/>
       <Device Hostname="mts-sai-host-3" HwSku="TestServ" Type="Server"/>
@@ -134,7 +132,6 @@
       <Device Hostname="r-r740-09" HwSku="TestServ" Type="Server"/>
       <Device Hostname="r-r740-13" HwSku="TestServ" Type="Server"/>
       <Device Hostname="mtvr-r740-04" HwSku="TestServ" Type="Server"/>
-      <Device Hostname="mtvr-r740-07" HwSku="TestServ" Type="Server"/>
       <Device Hostname="r-r740-14" HwSku="TestServ" Type="Server"/>
       <Device Hostname="mtvr-r740-06" HwSku="TestServ" Type="Server"/>
       <Device Hostname="r-r740-12" HwSku="TestServ" Type="Server"/>
@@ -158,9 +155,8 @@
       <Device Hostname="r-panther-02" HwSku="Mellanox-SN2700-A1" Type="DevSonic"/>
       <Device Hostname="r-panther-42" HwSku="Mellanox-SN2700-A1" Type="DevSonic"/>
       <Device Hostname="r-panther-40" HwSku="Mellanox-SN2700-A1-D48C8" Type="DevSonic"/>
-      <Device Hostname="r-panther-45" HwSku="Mellanox-SN2700" Type="DevSonic"/>
+      <Device Hostname="r-panther-45" HwSku="ACS-MSN2700" Type="DevSonic"/>
       <Device Hostname="r-panther-47" HwSku="Mellanox-SN2700" Type="DevSonic"/>
-      <Device Hostname="r-panther-48" HwSku="Mellanox-SN2700-D40C8S8" Type="DevSonic"/>
       <Device Hostname="r-panther-20" HwSku="Mellanox-SN2700" Type="DevSonic"/>
       <Device Hostname="r-panther-01" HwSku="Mellanox-SN2700-A1-D48C8" Type="DevSonic"/>
       <Device Hostname="r-panther-22" HwSku="Mellanox-SN2700" Type="DevSonic"/>
@@ -185,11 +181,8 @@
       <Device Hostname="mtvr-moose-07" HwSku="ACS-SN5600" Type="DevSonic"/>
       <Device Hostname="mtvr-moose-08" HwSku="ACS-SN5600" Type="DevSonic"/>
       <Device Hostname="mtvr-leopard-01" HwSku="Mellanox-SN4700-O28" Type="DevSonic"/>
-      <Device Hostname="mtvr-panther-02" HwSku="Mellanox-SN2700" Type="DevSonic"/>
-      <Device Hostname="mtvr-panther-03" HwSku="Mellanox-SN2700-D40C8S8" Type="DevSonic"/>
       <Device Hostname="mtvr-hippo-01" HwSku="ACS-SN5400" Type="DevSonic"/>
       <Device Hostname="mtvr-hippo-03" HwSku="ACS-SN5400" Type="DevSonic"/>
-      <Device Hostname="mtvr-hippo-02" HwSku="ACS-SN5400" Type="DevSonic"/>
       <Device Hostname="r-liger-02" HwSku="ACS-MSN4600" Type="DevSonic"/>
       <Device Hostname="r-tigon-15" HwSku="ACS-MSN4600C" Type="DevSonic"/>
       <Device Hostname="r-lionfish-07" HwSku="ACS-MSN3420" Type="DevSonic"/>
@@ -274,15 +267,15 @@
       <Device Hostname="gorilla-simx-87" HwSku="ACS-MQM9700" Type="DevSonic"/>
       <Device Hostname="gorilla-simx-88" HwSku="ACS-MQM9700" Type="DevSonic"/>
       <Device Hostname="gorilla-simx-89" HwSku="ACS-MQM9700" Type="DevSonic"/>
-      <Device Hostname="croc-simx-90" HwSku="ACS-MQM9700" Type="DevSonic"/>
-      <Device Hostname="croc-simx-91" HwSku="ACS-MQM9700" Type="DevSonic"/>
-      <Device Hostname="croc-simx-92" HwSku="ACS-MQM9700" Type="DevSonic"/>
-      <Device Hostname="croc-simx-93" HwSku="ACS-MQM9700" Type="DevSonic"/>
-      <Device Hostname="croc-simx-94" HwSku="ACS-MQM9700" Type="DevSonic"/>
-      <Device Hostname="croc-simx-95" HwSku="ACS-MQM9700" Type="DevSonic"/>
-      <Device Hostname="croc-simx-96" HwSku="ACS-MQM9700" Type="DevSonic"/>
-      <Device Hostname="croc-simx-97" HwSku="ACS-MQM9700" Type="DevSonic"/>
-      <Device Hostname="croc-simx-98" HwSku="ACS-MQM9700" Type="DevSonic"/>
+      <Device Hostname="gorilla-simx-90" HwSku="ACS-MQM9700" Type="DevSonic"/>
+      <Device Hostname="gorilla-simx-91" HwSku="ACS-MQM9700" Type="DevSonic"/>
+      <Device Hostname="gorilla-simx-92" HwSku="ACS-MQM9700" Type="DevSonic"/>
+      <Device Hostname="gorilla-simx-93" HwSku="ACS-MQM9700" Type="DevSonic"/>
+      <Device Hostname="gorilla-simx-94" HwSku="ACS-MQM9700" Type="DevSonic"/>
+      <Device Hostname="gorilla-simx-95" HwSku="ACS-MQM9700" Type="DevSonic"/>
+      <Device Hostname="gorilla-simx-96" HwSku="ACS-MQM9700" Type="DevSonic"/>
+      <Device Hostname="gorilla-simx-97" HwSku="ACS-MQM9700" Type="DevSonic"/>
+      <Device Hostname="gorilla-simx-98" HwSku="ACS-MQM9700" Type="DevSonic"/>
       <Device Hostname="gorilla-chipsim-62" HwSku="ACS-MQM9700" Type="DevSonic"/>
       <Device Hostname="gorilla-chipsim-63" HwSku="ACS-MQM9700" Type="DevSonic"/>
       <Device Hostname="gorilla-chipsim-63" HwSku="ACS-MQM9700" Type="DevSonic"/>
@@ -2251,153 +2244,6 @@
       <DeviceInterfaceLink BandWidth="50000" EndDevice="r-anaconda-69" EndPort="ethernet 1/31/1" StartDevice="r-panther-47" StartPort="Ethernet120"/>
       <DeviceInterfaceLink BandWidth="50000" EndDevice="r-anaconda-69" EndPort="ethernet 1/31/2" StartDevice="r-panther-47" StartPort="Ethernet124"/>
 
-      <DeviceInterfaceLink BandWidth="10000" EndDevice="r-anaconda-68" EndPort="ethernet 1/1/1" StartDevice="r-panther-48" StartPort="Ethernet0"/>
-      <DeviceInterfaceLink BandWidth="10000" EndDevice="r-anaconda-68" EndPort="ethernet 1/1/2" StartDevice="r-panther-48" StartPort="Ethernet1"/>
-      <DeviceInterfaceLink BandWidth="10000" EndDevice="r-anaconda-68" EndPort="ethernet 1/1/3" StartDevice="r-panther-48" StartPort="Ethernet2"/>
-      <DeviceInterfaceLink BandWidth="10000" EndDevice="r-anaconda-68" EndPort="ethernet 1/1/4" StartDevice="r-panther-48" StartPort="Ethernet3"/>
-      <DeviceInterfaceLink BandWidth="10000" EndDevice="r-anaconda-68" EndPort="ethernet 1/3/1" StartDevice="r-panther-48" StartPort="Ethernet8"/>
-      <DeviceInterfaceLink BandWidth="10000" EndDevice="r-anaconda-68" EndPort="ethernet 1/3/2" StartDevice="r-panther-48" StartPort="Ethernet9"/>
-      <DeviceInterfaceLink BandWidth="10000" EndDevice="r-anaconda-68" EndPort="ethernet 1/3/3" StartDevice="r-panther-48" StartPort="Ethernet10"/>
-      <DeviceInterfaceLink BandWidth="10000" EndDevice="r-anaconda-68" EndPort="ethernet 1/3/4" StartDevice="r-panther-48" StartPort="Ethernet11"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="r-anaconda-68" EndPort="ethernet 1/5/1" StartDevice="r-panther-48" StartPort="Ethernet16"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="r-anaconda-68" EndPort="ethernet 1/5/2" StartDevice="r-panther-48" StartPort="Ethernet18"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="r-anaconda-68" EndPort="ethernet 1/6/1" StartDevice="r-panther-48" StartPort="Ethernet20"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="r-anaconda-68" EndPort="ethernet 1/6/2" StartDevice="r-panther-48" StartPort="Ethernet22"/>
-      <DeviceInterfaceLink BandWidth="100000" EndDevice="r-anaconda-68" EndPort="ethernet 1/7" StartDevice="r-panther-48" StartPort="Ethernet24"/>
-      <DeviceInterfaceLink BandWidth="100000" EndDevice="r-anaconda-68" EndPort="ethernet 1/8" StartDevice="r-panther-48" StartPort="Ethernet28"/>
-      <DeviceInterfaceLink BandWidth="100000" EndDevice="r-anaconda-68" EndPort="ethernet 1/9" StartDevice="r-panther-48" StartPort="Ethernet32"/>
-      <DeviceInterfaceLink BandWidth="100000" EndDevice="r-anaconda-68" EndPort="ethernet 1/10" StartDevice="r-panther-48" StartPort="Ethernet36"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="r-anaconda-68" EndPort="ethernet 1/11/1" StartDevice="r-panther-48" StartPort="Ethernet40"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="r-anaconda-68" EndPort="ethernet 1/11/2" StartDevice="r-panther-48" StartPort="Ethernet42"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="r-anaconda-68" EndPort="ethernet 1/12/1" StartDevice="r-panther-48" StartPort="Ethernet44"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="r-anaconda-68" EndPort="ethernet 1/12/2" StartDevice="r-panther-48" StartPort="Ethernet46"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="r-anaconda-68" EndPort="ethernet 1/13/1" StartDevice="r-panther-48" StartPort="Ethernet48"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="r-anaconda-68" EndPort="ethernet 1/13/2" StartDevice="r-panther-48" StartPort="Ethernet50"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="r-anaconda-68" EndPort="ethernet 1/14/1" StartDevice="r-panther-48" StartPort="Ethernet52"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="r-anaconda-68" EndPort="ethernet 1/14/2" StartDevice="r-panther-48" StartPort="Ethernet54"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="r-anaconda-68" EndPort="ethernet 1/15/1" StartDevice="r-panther-48" StartPort="Ethernet56"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="r-anaconda-68" EndPort="ethernet 1/15/2" StartDevice="r-panther-48" StartPort="Ethernet58"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="r-anaconda-68" EndPort="ethernet 1/16/1" StartDevice="r-panther-48" StartPort="Ethernet60"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="r-anaconda-68" EndPort="ethernet 1/16/2" StartDevice="r-panther-48" StartPort="Ethernet62"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="r-anaconda-68" EndPort="ethernet 1/17/1" StartDevice="r-panther-48" StartPort="Ethernet64"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="r-anaconda-68" EndPort="ethernet 1/17/2" StartDevice="r-panther-48" StartPort="Ethernet66"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="r-anaconda-68" EndPort="ethernet 1/18/1" StartDevice="r-panther-48" StartPort="Ethernet68"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="r-anaconda-68" EndPort="ethernet 1/18/2" StartDevice="r-panther-48" StartPort="Ethernet70"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="r-anaconda-68" EndPort="ethernet 1/19/1" StartDevice="r-panther-48" StartPort="Ethernet72"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="r-anaconda-68" EndPort="ethernet 1/19/2" StartDevice="r-panther-48" StartPort="Ethernet74"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="r-anaconda-68" EndPort="ethernet 1/20/1" StartDevice="r-panther-48" StartPort="Ethernet76"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="r-anaconda-68" EndPort="ethernet 1/20/2" StartDevice="r-panther-48" StartPort="Ethernet78"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="r-anaconda-68" EndPort="ethernet 1/21/1" StartDevice="r-panther-48" StartPort="Ethernet80"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="r-anaconda-68" EndPort="ethernet 1/21/2" StartDevice="r-panther-48" StartPort="Ethernet82"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="r-anaconda-68" EndPort="ethernet 1/22/1" StartDevice="r-panther-48" StartPort="Ethernet84"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="r-anaconda-68" EndPort="ethernet 1/22/2" StartDevice="r-panther-48" StartPort="Ethernet86"/>
-      <DeviceInterfaceLink BandWidth="100000" EndDevice="r-anaconda-68" EndPort="ethernet 1/23" StartDevice="r-panther-48" StartPort="Ethernet88"/>
-      <DeviceInterfaceLink BandWidth="100000" EndDevice="r-anaconda-68" EndPort="ethernet 1/24" StartDevice="r-panther-48" StartPort="Ethernet92"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="r-anaconda-68" EndPort="ethernet 1/25/1" StartDevice="r-panther-48" StartPort="Ethernet96"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="r-anaconda-68" EndPort="ethernet 1/25/2" StartDevice="r-panther-48" StartPort="Ethernet100"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="r-anaconda-68" EndPort="ethernet 1/27/1" StartDevice="r-panther-48" StartPort="Ethernet104"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="r-anaconda-68" EndPort="ethernet 1/27/2" StartDevice="r-panther-48" StartPort="Ethernet106"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="r-anaconda-68" EndPort="ethernet 1/28/1" StartDevice="r-panther-48" StartPort="Ethernet108"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="r-anaconda-68" EndPort="ethernet 1/28/2" StartDevice="r-panther-48" StartPort="Ethernet110"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="r-anaconda-68" EndPort="ethernet 1/29/1" StartDevice="r-panther-48" StartPort="Ethernet112"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="r-anaconda-68" EndPort="ethernet 1/29/2" StartDevice="r-panther-48" StartPort="Ethernet114"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="r-anaconda-68" EndPort="ethernet 1/30/1" StartDevice="r-panther-48" StartPort="Ethernet116"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="r-anaconda-68" EndPort="ethernet 1/30/2" StartDevice="r-panther-48" StartPort="Ethernet118"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="r-anaconda-68" EndPort="ethernet 1/31/1" StartDevice="r-panther-48" StartPort="Ethernet120"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="r-anaconda-68" EndPort="ethernet 1/31/2" StartDevice="r-panther-48" StartPort="Ethernet122"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="r-anaconda-68" EndPort="ethernet 1/32/1" StartDevice="r-panther-48" StartPort="Ethernet124"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="r-anaconda-68" EndPort="ethernet 1/32/2" StartDevice="r-panther-48" StartPort="Ethernet126"/>
-
-      <DeviceInterfaceLink BandWidth="100000" EndDevice="mtvr-anaconda-01" EndPort="ethernet 1/1" StartDevice="mtvr-panther-02" StartPort="Ethernet0"/>
-      <DeviceInterfaceLink BandWidth="100000" EndDevice="mtvr-anaconda-01" EndPort="ethernet 1/2" StartDevice="mtvr-panther-02" StartPort="Ethernet4"/>
-      <DeviceInterfaceLink BandWidth="100000" EndDevice="mtvr-anaconda-01" EndPort="ethernet 1/3" StartDevice="mtvr-panther-02" StartPort="Ethernet8"/>
-      <DeviceInterfaceLink BandWidth="100000" EndDevice="mtvr-anaconda-01" EndPort="ethernet 1/4" StartDevice="mtvr-panther-02" StartPort="Ethernet12"/>
-      <DeviceInterfaceLink BandWidth="100000" EndDevice="mtvr-anaconda-01" EndPort="ethernet 1/5" StartDevice="mtvr-panther-02" StartPort="Ethernet16"/>
-      <DeviceInterfaceLink BandWidth="100000" EndDevice="mtvr-anaconda-01" EndPort="ethernet 1/6" StartDevice="mtvr-panther-02" StartPort="Ethernet20"/>
-      <DeviceInterfaceLink BandWidth="100000" EndDevice="mtvr-anaconda-01" EndPort="ethernet 1/7" StartDevice="mtvr-panther-02" StartPort="Ethernet24"/>
-      <DeviceInterfaceLink BandWidth="100000" EndDevice="mtvr-anaconda-01" EndPort="ethernet 1/8" StartDevice="mtvr-panther-02" StartPort="Ethernet28"/>
-      <DeviceInterfaceLink BandWidth="100000" EndDevice="mtvr-anaconda-01" EndPort="ethernet 1/9" StartDevice="mtvr-panther-02" StartPort="Ethernet32"/>
-      <DeviceInterfaceLink BandWidth="100000" EndDevice="mtvr-anaconda-01" EndPort="ethernet 1/10" StartDevice="mtvr-panther-02" StartPort="Ethernet36"/>
-      <DeviceInterfaceLink BandWidth="100000" EndDevice="mtvr-anaconda-01" EndPort="ethernet 1/11" StartDevice="mtvr-panther-02" StartPort="Ethernet40"/>
-      <DeviceInterfaceLink BandWidth="100000" EndDevice="mtvr-anaconda-01" EndPort="ethernet 1/12" StartDevice="mtvr-panther-02" StartPort="Ethernet44"/>
-      <DeviceInterfaceLink BandWidth="100000" EndDevice="mtvr-anaconda-01" EndPort="ethernet 1/13" StartDevice="mtvr-panther-02" StartPort="Ethernet48"/>
-      <DeviceInterfaceLink BandWidth="100000" EndDevice="mtvr-anaconda-01" EndPort="ethernet 1/14" StartDevice="mtvr-panther-02" StartPort="Ethernet52"/>
-      <DeviceInterfaceLink BandWidth="100000" EndDevice="mtvr-anaconda-01" EndPort="ethernet 1/15" StartDevice="mtvr-panther-02" StartPort="Ethernet56"/>
-      <DeviceInterfaceLink BandWidth="100000" EndDevice="mtvr-anaconda-01" EndPort="ethernet 1/16" StartDevice="mtvr-panther-02" StartPort="Ethernet60"/>
-      <DeviceInterfaceLink BandWidth="100000" EndDevice="mtvr-anaconda-01" EndPort="ethernet 1/17" StartDevice="mtvr-panther-02" StartPort="Ethernet64"/>
-      <DeviceInterfaceLink BandWidth="100000" EndDevice="mtvr-anaconda-01" EndPort="ethernet 1/18" StartDevice="mtvr-panther-02" StartPort="Ethernet68"/>
-      <DeviceInterfaceLink BandWidth="100000" EndDevice="mtvr-anaconda-01" EndPort="ethernet 1/19" StartDevice="mtvr-panther-02" StartPort="Ethernet72"/>
-      <DeviceInterfaceLink BandWidth="100000" EndDevice="mtvr-anaconda-01" EndPort="ethernet 1/20" StartDevice="mtvr-panther-02" StartPort="Ethernet76"/>
-      <DeviceInterfaceLink BandWidth="100000" EndDevice="mtvr-anaconda-01" EndPort="ethernet 1/21" StartDevice="mtvr-panther-02" StartPort="Ethernet80"/>
-      <DeviceInterfaceLink BandWidth="100000" EndDevice="mtvr-anaconda-01" EndPort="ethernet 1/22" StartDevice="mtvr-panther-02" StartPort="Ethernet84"/>
-      <DeviceInterfaceLink BandWidth="100000" EndDevice="mtvr-anaconda-01" EndPort="ethernet 1/23" StartDevice="mtvr-panther-02" StartPort="Ethernet88"/>
-      <DeviceInterfaceLink BandWidth="100000" EndDevice="mtvr-anaconda-01" EndPort="ethernet 1/24" StartDevice="mtvr-panther-02" StartPort="Ethernet92"/>
-      <DeviceInterfaceLink BandWidth="100000" EndDevice="mtvr-anaconda-01" EndPort="ethernet 1/25" StartDevice="mtvr-panther-02" StartPort="Ethernet96"/>
-      <DeviceInterfaceLink BandWidth="100000" EndDevice="mtvr-anaconda-01" EndPort="ethernet 1/26" StartDevice="mtvr-panther-02" StartPort="Ethernet100"/>
-      <DeviceInterfaceLink BandWidth="100000" EndDevice="mtvr-anaconda-01" EndPort="ethernet 1/27" StartDevice="mtvr-panther-02" StartPort="Ethernet104"/>
-      <DeviceInterfaceLink BandWidth="100000" EndDevice="mtvr-anaconda-01" EndPort="ethernet 1/28" StartDevice="mtvr-panther-02" StartPort="Ethernet108"/>
-      <DeviceInterfaceLink BandWidth="100000" EndDevice="mtvr-anaconda-01" EndPort="ethernet 1/29" StartDevice="mtvr-panther-02" StartPort="Ethernet112"/>
-      <DeviceInterfaceLink BandWidth="100000" EndDevice="mtvr-anaconda-01" EndPort="ethernet 1/30" StartDevice="mtvr-panther-02" StartPort="Ethernet116"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="mtvr-anaconda-01" EndPort="ethernet 1/31/1" StartDevice="mtvr-panther-02" StartPort="Ethernet120"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="mtvr-anaconda-01" EndPort="ethernet 1/31/2" StartDevice="mtvr-panther-02" StartPort="Ethernet124"/>
-
-      <DeviceInterfaceLink BandWidth="10000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/1/1" StartDevice="mtvr-panther-03" StartPort="Ethernet0"/>
-      <DeviceInterfaceLink BandWidth="10000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/1/2" StartDevice="mtvr-panther-03" StartPort="Ethernet1"/>
-      <DeviceInterfaceLink BandWidth="10000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/1/3" StartDevice="mtvr-panther-03" StartPort="Ethernet2"/>
-      <DeviceInterfaceLink BandWidth="10000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/1/4" StartDevice="mtvr-panther-03" StartPort="Ethernet3"/>
-      <DeviceInterfaceLink BandWidth="10000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/3/1" StartDevice="mtvr-panther-03" StartPort="Ethernet8"/>
-      <DeviceInterfaceLink BandWidth="10000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/3/2" StartDevice="mtvr-panther-03" StartPort="Ethernet9"/>
-      <DeviceInterfaceLink BandWidth="10000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/3/3" StartDevice="mtvr-panther-03" StartPort="Ethernet10"/>
-      <DeviceInterfaceLink BandWidth="10000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/3/4" StartDevice="mtvr-panther-03" StartPort="Ethernet11"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/5/1" StartDevice="mtvr-panther-03" StartPort="Ethernet16"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/5/2" StartDevice="mtvr-panther-03" StartPort="Ethernet18"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/6/1" StartDevice="mtvr-panther-03" StartPort="Ethernet20"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/6/2" StartDevice="mtvr-panther-03" StartPort="Ethernet22"/>
-      <DeviceInterfaceLink BandWidth="100000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/7" StartDevice="mtvr-panther-03" StartPort="Ethernet24"/>
-      <DeviceInterfaceLink BandWidth="100000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/8" StartDevice="mtvr-panther-03" StartPort="Ethernet28"/>
-      <DeviceInterfaceLink BandWidth="100000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/9" StartDevice="mtvr-panther-03" StartPort="Ethernet32"/>
-      <DeviceInterfaceLink BandWidth="100000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/10" StartDevice="mtvr-panther-03" StartPort="Ethernet36"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/11/1" StartDevice="mtvr-panther-03" StartPort="Ethernet40"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/11/2" StartDevice="mtvr-panther-03" StartPort="Ethernet42"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/12/1" StartDevice="mtvr-panther-03" StartPort="Ethernet44"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/12/2" StartDevice="mtvr-panther-03" StartPort="Ethernet46"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/13/1" StartDevice="mtvr-panther-03" StartPort="Ethernet48"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/13/2" StartDevice="mtvr-panther-03" StartPort="Ethernet50"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/14/1" StartDevice="mtvr-panther-03" StartPort="Ethernet52"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/14/2" StartDevice="mtvr-panther-03" StartPort="Ethernet54"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/15/1" StartDevice="mtvr-panther-03" StartPort="Ethernet56"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/15/2" StartDevice="mtvr-panther-03" StartPort="Ethernet58"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/16/1" StartDevice="mtvr-panther-03" StartPort="Ethernet60"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/16/2" StartDevice="mtvr-panther-03" StartPort="Ethernet62"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/17/1" StartDevice="mtvr-panther-03" StartPort="Ethernet64"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/17/2" StartDevice="mtvr-panther-03" StartPort="Ethernet66"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/18/1" StartDevice="mtvr-panther-03" StartPort="Ethernet68"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/18/2" StartDevice="mtvr-panther-03" StartPort="Ethernet70"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/19/1" StartDevice="mtvr-panther-03" StartPort="Ethernet72"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/19/2" StartDevice="mtvr-panther-03" StartPort="Ethernet74"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/20/1" StartDevice="mtvr-panther-03" StartPort="Ethernet76"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/20/2" StartDevice="mtvr-panther-03" StartPort="Ethernet78"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/21/1" StartDevice="mtvr-panther-03" StartPort="Ethernet80"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/21/2" StartDevice="mtvr-panther-03" StartPort="Ethernet82"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/22/1" StartDevice="mtvr-panther-03" StartPort="Ethernet84"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/22/2" StartDevice="mtvr-panther-03" StartPort="Ethernet86"/>
-      <DeviceInterfaceLink BandWidth="100000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/23" StartDevice="mtvr-panther-03" StartPort="Ethernet88"/>
-      <DeviceInterfaceLink BandWidth="100000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/24" StartDevice="mtvr-panther-03" StartPort="Ethernet92"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/25/1" StartDevice="mtvr-panther-03" StartPort="Ethernet96"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/25/2" StartDevice="mtvr-panther-03" StartPort="Ethernet100"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/27/1" StartDevice="mtvr-panther-03" StartPort="Ethernet104"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/27/2" StartDevice="mtvr-panther-03" StartPort="Ethernet106"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/28/1" StartDevice="mtvr-panther-03" StartPort="Ethernet108"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/28/2" StartDevice="mtvr-panther-03" StartPort="Ethernet110"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/29/1" StartDevice="mtvr-panther-03" StartPort="Ethernet112"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/29/2" StartDevice="mtvr-panther-03" StartPort="Ethernet114"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/30/1" StartDevice="mtvr-panther-03" StartPort="Ethernet116"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/30/2" StartDevice="mtvr-panther-03" StartPort="Ethernet118"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/31/1" StartDevice="mtvr-panther-03" StartPort="Ethernet120"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/31/2" StartDevice="mtvr-panther-03" StartPort="Ethernet122"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/32/1" StartDevice="mtvr-panther-03" StartPort="Ethernet124"/>
-      <DeviceInterfaceLink BandWidth="50000" EndDevice="mtvr-panther-04" EndPort="ethernet 1/32/2" StartDevice="mtvr-panther-03" StartPort="Ethernet126"/>
-
       <DeviceInterfaceLink BandWidth="200000" EndDevice="mtvr-leopard-04" EndPort="Ethernet0" StartDevice="mtvr-hippo-03" StartPort="Ethernet0"/>
       <DeviceInterfaceLink BandWidth="200000" EndDevice="mtvr-leopard-04" EndPort="Ethernet8" StartDevice="mtvr-hippo-03" StartPort="Ethernet8"/>
       <DeviceInterfaceLink BandWidth="200000" EndDevice="mtvr-leopard-04" EndPort="Ethernet16" StartDevice="mtvr-hippo-03" StartPort="Ethernet16"/>
@@ -2430,39 +2276,6 @@
       <DeviceInterfaceLink BandWidth="200000" EndDevice="mtvr-leopard-04" EndPort="Ethernet232" StartDevice="mtvr-hippo-03" StartPort="Ethernet232"/>
       <DeviceInterfaceLink BandWidth="200000" EndDevice="mtvr-leopard-04" EndPort="Ethernet240" StartDevice="mtvr-hippo-03" StartPort="Ethernet240"/>
       <DeviceInterfaceLink BandWidth="200000" EndDevice="mtvr-leopard-04" EndPort="Ethernet244" StartDevice="mtvr-hippo-03" StartPort="Ethernet248"/>
-
-      <DeviceInterfaceLink BandWidth="200000" EndDevice="mtvr-leopard-05" EndPort="Ethernet0" StartDevice="mtvr-hippo-02" StartPort="Ethernet0"/>
-      <DeviceInterfaceLink BandWidth="200000" EndDevice="mtvr-leopard-05" EndPort="Ethernet8" StartDevice="mtvr-hippo-02" StartPort="Ethernet8"/>
-      <DeviceInterfaceLink BandWidth="200000" EndDevice="mtvr-leopard-05" EndPort="Ethernet16" StartDevice="mtvr-hippo-02" StartPort="Ethernet16"/>
-      <DeviceInterfaceLink BandWidth="200000" EndDevice="mtvr-leopard-05" EndPort="Ethernet24" StartDevice="mtvr-hippo-02" StartPort="Ethernet24"/>
-      <DeviceInterfaceLink BandWidth="200000" EndDevice="mtvr-leopard-05" EndPort="Ethernet32" StartDevice="mtvr-hippo-02" StartPort="Ethernet32"/>
-      <DeviceInterfaceLink BandWidth="200000" EndDevice="mtvr-leopard-05" EndPort="Ethernet40" StartDevice="mtvr-hippo-02" StartPort="Ethernet40"/>
-      <DeviceInterfaceLink BandWidth="200000" EndDevice="mtvr-leopard-05" EndPort="Ethernet48" StartDevice="mtvr-hippo-02" StartPort="Ethernet48"/>
-      <DeviceInterfaceLink BandWidth="200000" EndDevice="mtvr-leopard-05" EndPort="Ethernet56" StartDevice="mtvr-hippo-02" StartPort="Ethernet56"/>
-      <DeviceInterfaceLink BandWidth="200000" EndDevice="mtvr-leopard-05" EndPort="Ethernet64" StartDevice="mtvr-hippo-02" StartPort="Ethernet64"/>
-      <DeviceInterfaceLink BandWidth="200000" EndDevice="mtvr-leopard-05" EndPort="Ethernet72" StartDevice="mtvr-hippo-02" StartPort="Ethernet72"/>
-      <DeviceInterfaceLink BandWidth="200000" EndDevice="mtvr-leopard-05" EndPort="Ethernet80" StartDevice="mtvr-hippo-02" StartPort="Ethernet80"/>
-      <DeviceInterfaceLink BandWidth="200000" EndDevice="mtvr-leopard-05" EndPort="Ethernet88" StartDevice="mtvr-hippo-02" StartPort="Ethernet88"/>
-      <DeviceInterfaceLink BandWidth="200000" EndDevice="mtvr-leopard-05" EndPort="Ethernet96" StartDevice="mtvr-hippo-02" StartPort="Ethernet96"/>
-      <DeviceInterfaceLink BandWidth="200000" EndDevice="mtvr-leopard-05" EndPort="Ethernet104" StartDevice="mtvr-hippo-02" StartPort="Ethernet104"/>
-      <DeviceInterfaceLink BandWidth="200000" EndDevice="mtvr-leopard-05" EndPort="Ethernet112" StartDevice="mtvr-hippo-02" StartPort="Ethernet112"/>
-      <DeviceInterfaceLink BandWidth="200000" EndDevice="mtvr-leopard-05" EndPort="Ethernet120" StartDevice="mtvr-hippo-02" StartPort="Ethernet120"/>
-      <DeviceInterfaceLink BandWidth="200000" EndDevice="mtvr-leopard-05" EndPort="Ethernet128" StartDevice="mtvr-hippo-02" StartPort="Ethernet128"/>
-      <DeviceInterfaceLink BandWidth="200000" EndDevice="mtvr-leopard-05" EndPort="Ethernet136" StartDevice="mtvr-hippo-02" StartPort="Ethernet136"/>
-      <DeviceInterfaceLink BandWidth="200000" EndDevice="mtvr-leopard-05" EndPort="Ethernet144" StartDevice="mtvr-hippo-02" StartPort="Ethernet144"/>
-      <DeviceInterfaceLink BandWidth="200000" EndDevice="mtvr-leopard-05" EndPort="Ethernet152" StartDevice="mtvr-hippo-02" StartPort="Ethernet152"/>
-      <DeviceInterfaceLink BandWidth="200000" EndDevice="mtvr-leopard-05" EndPort="Ethernet160" StartDevice="mtvr-hippo-02" StartPort="Ethernet160"/>
-      <DeviceInterfaceLink BandWidth="200000" EndDevice="mtvr-leopard-05" EndPort="Ethernet168" StartDevice="mtvr-hippo-02" StartPort="Ethernet168"/>
-      <DeviceInterfaceLink BandWidth="200000" EndDevice="mtvr-leopard-05" EndPort="Ethernet176" StartDevice="mtvr-hippo-02" StartPort="Ethernet176"/>
-      <DeviceInterfaceLink BandWidth="200000" EndDevice="mtvr-leopard-05" EndPort="Ethernet184" StartDevice="mtvr-hippo-02" StartPort="Ethernet184"/>
-      <DeviceInterfaceLink BandWidth="200000" EndDevice="mtvr-leopard-05" EndPort="Ethernet192" StartDevice="mtvr-hippo-02" StartPort="Ethernet192"/>
-      <DeviceInterfaceLink BandWidth="200000" EndDevice="mtvr-leopard-05" EndPort="Ethernet200" StartDevice="mtvr-hippo-02" StartPort="Ethernet200"/>
-      <DeviceInterfaceLink BandWidth="200000" EndDevice="mtvr-leopard-05" EndPort="Ethernet208" StartDevice="mtvr-hippo-02" StartPort="Ethernet208"/>
-      <DeviceInterfaceLink BandWidth="200000" EndDevice="mtvr-leopard-05" EndPort="Ethernet216" StartDevice="mtvr-hippo-02" StartPort="Ethernet216"/>
-      <DeviceInterfaceLink BandWidth="200000" EndDevice="mtvr-leopard-05" EndPort="Ethernet224" StartDevice="mtvr-hippo-02" StartPort="Ethernet224"/>
-      <DeviceInterfaceLink BandWidth="200000" EndDevice="mtvr-leopard-05" EndPort="Ethernet232" StartDevice="mtvr-hippo-02" StartPort="Ethernet232"/>
-      <DeviceInterfaceLink BandWidth="200000" EndDevice="mtvr-leopard-05" EndPort="Ethernet240" StartDevice="mtvr-hippo-02" StartPort="Ethernet240"/>
-      <DeviceInterfaceLink BandWidth="200000" EndDevice="mtvr-leopard-05" EndPort="Ethernet244" StartDevice="mtvr-hippo-02" StartPort="Ethernet248"/>
 
       <DeviceInterfaceLink BandWidth="10000" EndDevice="r-panther-44" EndPort="ethernet 1/1/1" StartDevice="r-panther-23" StartPort="Ethernet0"/>
       <DeviceInterfaceLink BandWidth="10000" EndDevice="r-panther-44" EndPort="ethernet 1/1/2" StartDevice="r-panther-23" StartPort="Ethernet1"/>
@@ -2660,7 +2473,6 @@
       <DeviceInterfaceLink BandWidth="100000" EndDevice="r-r740-12" EndPort="p5p2" StartDevice="r-panther-41" StartPort="ethernet 1/26/2"/>
       <DeviceInterfaceLink BandWidth="100000" EndDevice="r-dl360-01" EndPort="p2p1" StartDevice="r-panther-44" StartPort="ethernet 1/26"/>
       <DeviceInterfaceLink BandWidth="100000" EndDevice="r-dl360-01" EndPort="p2p2" StartDevice="r-panther-46" StartPort="ethernet 1/32"/>
-      <DeviceInterfaceLink BandWidth="100000" EndDevice="r-r740-15" EndPort="p4p1" StartDevice="r-anaconda-68" StartPort="ethernet 1/26"/>
       <DeviceInterfaceLink BandWidth="100000" EndDevice="r-r740-15" EndPort="p4p2" StartDevice="r-anaconda-69" StartPort="ethernet 1/32"/>
       <DeviceInterfaceLink BandWidth="100000" EndDevice="dev-r730-01" EndPort="p6p2" StartDevice="arc-switchmtbc02" StartPort="ethernet 1/32"/>
       <DeviceInterfaceLink BandWidth="100000" EndDevice="arc-host26" EndPort="p4p1" StartDevice="arc-switch1005" StartPort="ethernet 1/32"/>
@@ -2675,9 +2487,6 @@
       <DeviceInterfaceLink BandWidth="200000" EndDevice="mtvr-r640-02" EndPort="p1p1" StartDevice="mtvr-liger-02" StartPort="ethernet 1/64"/>
       <DeviceInterfaceLink BandWidth="200000" EndDevice="mtvr-r740-01" EndPort="p3p1" StartDevice="mtvr-liger-03" StartPort="ethernet 1/64"/>
       <DeviceInterfaceLink BandWidth="200000" EndDevice="mtvr-r740-05" EndPort="p1p1" StartDevice="mtvr-leopard-04" StartPort="Ethernet248"/>
-      <DeviceInterfaceLink BandWidth="200000" EndDevice="mtvr-r740-05" EndPort="p1p2" StartDevice="mtvr-leopard-05" StartPort="Ethernet248"/>
-      <DeviceInterfaceLink BandWidth="100000" EndDevice="mtvr-r740-07" EndPort="p4p1" StartDevice="mtvr-anaconda-01" StartPort="ethernet 1/32"/>
-      <DeviceInterfaceLink BandWidth="100000" EndDevice="mtvr-r740-07" EndPort="p4p2" StartDevice="mtvr-panther-04" StartPort="ethernet 1/26"/>
       <DeviceInterfaceLink BandWidth="50000" EndDevice="r-sonic-04" EndPort="p4p1" StartDevice="r-tigris-17" StartPort="ethernet 1/4/2"/>
       <DeviceInterfaceLink BandWidth="50000" EndDevice="dev-r730-03" EndPort="enp4s0f1" StartDevice="mtbc-sonic-02-2700" StartPort="ethernet 1/26/2"/>
       <DeviceInterfaceLink BandWidth="100000" EndDevice="mtbc-r730-04" EndPort="enp130s0f1" StartDevice="mtbc-3700c-02" StartPort="ethernet 1/32"/>
@@ -2825,26 +2634,14 @@
     <DevicesL3Info Hostname="r-anaconda-69">
       <ManagementIPInterface Name="ManagementIp" Prefix="10.210.24.150/22"/>
     </DevicesL3Info>
-    <DevicesL3Info Hostname="r-anaconda-68">
-      <ManagementIPInterface Name="ManagementIp" Prefix="10.210.24.157/22"/>
-    </DevicesL3Info>
     <DevicesL3Info Hostname="r-anaconda-86">
       <ManagementIPInterface Name="ManagementIp" Prefix="10.210.24.190/24"/>
-    </DevicesL3Info>
-    <DevicesL3Info Hostname="mtvr-anaconda-01">
-      <ManagementIPInterface Name="ManagementIp" Prefix="10.245.21.5/22"/>
-    </DevicesL3Info>
-    <DevicesL3Info Hostname="mtvr-panther-04">
-      <ManagementIPInterface Name="ManagementIp" Prefix="10.245.21.4/22"/>
     </DevicesL3Info>
     <DevicesL3Info Hostname="dummy-fanout">
       <ManagementIPInterface Name="ManagementIp" Prefix="0.0.0.0/0"/>
     </DevicesL3Info>
     <DevicesL3Info Hostname="mtvr-leopard-02">
       <ManagementIPInterface Name="ManagementIp" Prefix="10.245.20.50/22"/>
-    </DevicesL3Info>
-    <DevicesL3Info Hostname="mtvr-leopard-05">
-      <ManagementIPInterface Name="ManagementIp" Prefix="10.245.20.247/22"/>
     </DevicesL3Info>
     <DevicesL3Info Hostname="r-leopard-80">
       <ManagementIPInterface Name="ManagementIp" Prefix="10.210.24.166/22"/>
@@ -5019,65 +4816,6 @@
       <InterfaceVlan mode="Access" portname="ethernet 1/31/2" vlanids="132"/>
       <InterfaceVlan mode="Trunk" portname="ethernet 1/32" vlanids="101-132"/>
     </DevicesL2Info>
-    <DevicesL2Info Hostname="r-anaconda-68">
-      <InterfaceVlan mode="Access" portname="ethernet 1/1/1" vlanids="101"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/1/2" vlanids="102"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/1/3" vlanids="103"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/1/4" vlanids="104"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/3/1" vlanids="105"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/3/2" vlanids="106"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/3/3" vlanids="107"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/3/4" vlanids="108"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/5/1" vlanids="109"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/5/2" vlanids="110"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/6/1" vlanids="111"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/6/2" vlanids="112"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/7" vlanids="113"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/8" vlanids="114"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/9" vlanids="115"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/10" vlanids="116"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/11/1" vlanids="117"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/11/2" vlanids="118"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/12/1" vlanids="119"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/12/2" vlanids="120"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/13/1" vlanids="121"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/13/2" vlanids="122"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/14/1" vlanids="123"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/14/2" vlanids="124"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/15/1" vlanids="125"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/15/2" vlanids="126"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/16/1" vlanids="127"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/16/2" vlanids="128"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/17/1" vlanids="129"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/17/2" vlanids="130"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/18/1" vlanids="131"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/18/2" vlanids="132"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/19/1" vlanids="133"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/19/2" vlanids="134"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/20/1" vlanids="135"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/20/2" vlanids="136"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/21/1" vlanids="137"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/21/2" vlanids="138"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/22/1" vlanids="139"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/22/2" vlanids="140"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/23" vlanids="141"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/24" vlanids="142"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/25/1" vlanids="143"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/25/2" vlanids="144"/>
-      <InterfaceVlan mode="Trunk" portname="ethernet 1/26" vlanids="101-156"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/27/1" vlanids="145"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/27/2" vlanids="146"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/28/1" vlanids="147"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/28/2" vlanids="148"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/29/1" vlanids="149"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/29/2" vlanids="150"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/30/1" vlanids="151"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/30/2" vlanids="152"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/31/1" vlanids="153"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/31/2" vlanids="154"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/32/1" vlanids="155"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/32/2" vlanids="156"/>
-    </DevicesL2Info>
     <DevicesL2Info Hostname="r-anaconda-86">
       <InterfaceVlan mode="Access" portname="ethernet 1/1"   vlanids="101"/>
       <InterfaceVlan mode="Access" portname="ethernet 1/2"   vlanids="102"/>
@@ -5104,100 +4842,6 @@
       <InterfaceVlan mode="Access" portname="ethernet 1/23"   vlanids="123"/>
       <InterfaceVlan mode="Access" portname="ethernet 1/24"   vlanids="124"/>
       <InterfaceVlan mode="Trunk"  portname="ethernet 1/25"   vlanids="121-124"/>
-    </DevicesL2Info>
-    <DevicesL2Info Hostname="mtvr-anaconda-01">
-      <InterfaceVlan mode="Access" portname="ethernet 1/1" vlanids="101"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/2" vlanids="102"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/3" vlanids="103"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/4" vlanids="104"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/5" vlanids="105"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/6" vlanids="106"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/7" vlanids="107"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/8" vlanids="108"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/9" vlanids="109"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/10" vlanids="110"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/11" vlanids="111"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/12" vlanids="112"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/13" vlanids="113"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/14" vlanids="114"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/15" vlanids="115"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/16" vlanids="116"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/17" vlanids="117"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/18" vlanids="118"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/19" vlanids="119"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/20" vlanids="120"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/21" vlanids="121"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/22" vlanids="122"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/23" vlanids="123"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/24" vlanids="124"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/25" vlanids="125"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/26" vlanids="126"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/27" vlanids="127"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/28" vlanids="128"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/29" vlanids="129"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/30" vlanids="130"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/31/1" vlanids="131"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/31/2" vlanids="132"/>
-      <InterfaceVlan mode="Trunk" portname="ethernet 1/32" vlanids="101-132"/>
-    </DevicesL2Info>
-    <DevicesL2Info Hostname="mtvr-panther-04">
-      <InterfaceVlan mode="Access" portname="ethernet 1/1/1" vlanids="101"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/1/2" vlanids="102"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/1/3" vlanids="103"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/1/4" vlanids="104"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/3/1" vlanids="105"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/3/2" vlanids="106"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/3/3" vlanids="107"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/3/4" vlanids="108"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/5/1" vlanids="109"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/5/2" vlanids="110"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/6/1" vlanids="111"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/6/2" vlanids="112"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/7" vlanids="113"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/8" vlanids="114"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/9" vlanids="115"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/10" vlanids="116"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/11/1" vlanids="117"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/11/2" vlanids="118"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/12/1" vlanids="119"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/12/2" vlanids="120"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/13/1" vlanids="121"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/13/2" vlanids="122"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/14/1" vlanids="123"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/14/2" vlanids="124"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/15/1" vlanids="125"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/15/2" vlanids="126"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/16/1" vlanids="127"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/16/2" vlanids="128"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/17/1" vlanids="129"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/17/2" vlanids="130"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/18/1" vlanids="131"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/18/2" vlanids="132"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/19/1" vlanids="133"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/19/2" vlanids="134"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/20/1" vlanids="135"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/20/2" vlanids="136"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/21/1" vlanids="137"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/21/2" vlanids="138"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/22/1" vlanids="139"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/22/2" vlanids="140"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/23" vlanids="141"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/24" vlanids="142"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/25/1" vlanids="143"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/25/2" vlanids="144"/>
-      <InterfaceVlan mode="Trunk" portname="ethernet 1/26" vlanids="101-156"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/27/1" vlanids="145"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/27/2" vlanids="146"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/28/1" vlanids="147"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/28/2" vlanids="148"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/29/1" vlanids="149"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/29/2" vlanids="150"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/30/1" vlanids="151"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/30/2" vlanids="152"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/31/1" vlanids="153"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/31/2" vlanids="154"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/32/1" vlanids="155"/>
-      <InterfaceVlan mode="Access" portname="ethernet 1/32/2" vlanids="156"/>
     </DevicesL2Info>
     <DevicesL2Info Hostname="mtvr-leopard-02">
         <InterfaceVlan mode="Access" portname="ethernet 1/1" vlanids="101"/>
@@ -5229,41 +4873,6 @@
         <InterfaceVlan mode="Access" portname="ethernet 1/27" vlanids="127"/>
         <InterfaceVlan mode="Access" portname="ethernet 1/28" vlanids="128"/>
         <InterfaceVlan mode="Trunk" portname="ethernet 1/32" vlanids="101-132"/>
-    </DevicesL2Info>
-    <DevicesL2Info Hostname="mtvr-leopard-05">
-        <InterfaceVlan mode="Access" portname="Ethernet0" vlanids="101"/>
-        <InterfaceVlan mode="Access" portname="Ethernet8" vlanids="102"/>
-        <InterfaceVlan mode="Access" portname="Ethernet16" vlanids="103"/>
-        <InterfaceVlan mode="Access" portname="Ethernet24" vlanids="104"/>
-        <InterfaceVlan mode="Access" portname="Ethernet32" vlanids="105"/>
-        <InterfaceVlan mode="Access" portname="Ethernet40" vlanids="106"/>
-        <InterfaceVlan mode="Access" portname="Ethernet48" vlanids="107"/>
-        <InterfaceVlan mode="Access" portname="Ethernet56" vlanids="108"/>
-        <InterfaceVlan mode="Access" portname="Ethernet64" vlanids="109"/>
-        <InterfaceVlan mode="Access" portname="Ethernet72" vlanids="110"/>
-        <InterfaceVlan mode="Access" portname="Ethernet80" vlanids="111"/>
-        <InterfaceVlan mode="Access" portname="Ethernet88" vlanids="112"/>
-        <InterfaceVlan mode="Access" portname="Ethernet96" vlanids="113"/>
-        <InterfaceVlan mode="Access" portname="Ethernet104" vlanids="114"/>
-        <InterfaceVlan mode="Access" portname="Ethernet112" vlanids="115"/>
-        <InterfaceVlan mode="Access" portname="Ethernet120" vlanids="116"/>
-        <InterfaceVlan mode="Access" portname="Ethernet128" vlanids="117"/>
-        <InterfaceVlan mode="Access" portname="Ethernet136" vlanids="118"/>
-        <InterfaceVlan mode="Access" portname="Ethernet144" vlanids="119"/>
-        <InterfaceVlan mode="Access" portname="Ethernet152" vlanids="120"/>
-        <InterfaceVlan mode="Access" portname="Ethernet160" vlanids="121"/>
-        <InterfaceVlan mode="Access" portname="Ethernet168" vlanids="122"/>
-        <InterfaceVlan mode="Access" portname="Ethernet176" vlanids="123"/>
-        <InterfaceVlan mode="Access" portname="Ethernet184" vlanids="124"/>
-        <InterfaceVlan mode="Access" portname="Ethernet192" vlanids="125"/>
-        <InterfaceVlan mode="Access" portname="Ethernet200" vlanids="126"/>
-        <InterfaceVlan mode="Access" portname="Ethernet208" vlanids="127"/>
-        <InterfaceVlan mode="Access" portname="Ethernet216" vlanids="128"/>
-        <InterfaceVlan mode="Access" portname="Ethernet224" vlanids="129"/>
-        <InterfaceVlan mode="Access" portname="Ethernet232" vlanids="130"/>
-        <InterfaceVlan mode="Access" portname="Ethernet240" vlanids="131"/>
-        <InterfaceVlan mode="Access" portname="Ethernet244" vlanids="132"/>
-        <InterfaceVlan mode="Trunk" portname="Ethernet248" vlanids="101-132"/>
     </DevicesL2Info>
     <DevicesL2Info Hostname="r-leopard-80">
         <InterfaceVlan mode="Access" portname="ethernet 1/1" vlanids="101"/>
@@ -5443,8 +5052,6 @@
       <DevicePowerControlInfo Hostname="pdu-10-245-2-25" HwSku="Vertiv" ManagementIp="10.245.2.25" Protocol="snmp" Type="Pdu"/>
       <DevicePowerControlInfo Hostname="pdu-10-245-2-35" HwSku="Vertiv" ManagementIp="10.245.2.35" Protocol="snmp" Type="Pdu"/>
       <DevicePowerControlInfo Hostname="pdu-10-245-2-13" HwSku="Vertiv" ManagementIp="10.245.2.13" Protocol="snmp" Type="Pdu"/>
-      <DevicePowerControlInfo Hostname="pdu-10-245-2-15" HwSku="Vertiv" ManagementIp="10.245.2.15" Protocol="snmp" Type="Pdu"/>
-      <DevicePowerControlInfo Hostname="pdu-10-245-2-34" HwSku="Vertiv" ManagementIp="10.245.2.34" Protocol="snmp" Type="Pdu"/>
       <DevicePowerControlInfo Hostname="pdu-10-208-0-191" HwSku="Vertiv" ManagementIp="10.208.0.191" Protocol="snmp" Type="Pdu"/>
       <DevicePowerControlInfo Hostname="pdu-10-208-0-181" HwSku="Sentry" ManagementIp="10.208.0.181" Protocol="snmp" Type="CDU"/>
       <DevicePowerControlInfo Hostname="pdu-10-208-2-14" HwSku="Emerson" ManagementIp="10.208.2.14" Protocol="snmp" Type="Pdu"/>
@@ -5470,8 +5077,6 @@
 
       <PowerControlLinkInfo EndDevice="r-panther-47" EndPort="PSU1" StartDevice="pdu-10-208-2-11" StartPort="1.15"/>
       <PowerControlLinkInfo EndDevice="r-panther-47" EndPort="PSU2" StartDevice="pdu-10-208-2-11" StartPort="1.16"/>
-      <PowerControlLinkInfo EndDevice="r-panther-48" EndPort="PSU1" StartDevice="pdu-10-208-2-11" StartPort="1.17"/>
-      <PowerControlLinkInfo EndDevice="r-panther-48" EndPort="PSU2" StartDevice="pdu-10-208-2-11" StartPort="1.18"/>
 
       <PowerControlLinkInfo EndDevice="r-panther-42" EndPort="PSU1" StartDevice="pdu-10-208-0-191" StartPort="1.13"/>
       <PowerControlLinkInfo EndDevice="r-panther-42" EndPort="PSU2" StartDevice="pdu-10-208-0-191" StartPort="1.15"/>
@@ -5499,11 +5104,6 @@
       <PowerControlLinkInfo EndDevice="r-tigon-19" EndPort="PSU2" StartDevice="pdu-10-208-0-20" StartPort="1.3"/>
       <PowerControlLinkInfo EndDevice="r-tigon-20" EndPort="PSU1" StartDevice="pdu-10-208-0-20" StartPort="1.1"/>
       <PowerControlLinkInfo EndDevice="r-tigon-20" EndPort="PSU2" StartDevice="pdu-10-208-0-20" StartPort="1.4"/>
-
-      <PowerControlLinkInfo EndDevice="mtvr-panther-02" EndPort="PSU1" StartDevice="pdu-10-245-2-15" StartPort="5"/>
-      <PowerControlLinkInfo EndDevice="mtvr-panther-02" EndPort="PSU2" StartDevice="pdu-10-245-2-34" StartPort="5"/>
-      <PowerControlLinkInfo EndDevice="mtvr-panther-03" EndPort="PSU1" StartDevice="pdu-10-245-2-15" StartPort="6"/>
-      <PowerControlLinkInfo EndDevice="mtvr-panther-03" EndPort="PSU2" StartDevice="pdu-10-245-2-34" StartPort="6"/>
 
       <PowerControlLinkInfo EndDevice="mtvr-tigon-01" EndPort="PSU1" StartDevice="pdu-10-245-2-16" StartPort="19"/>
       <PowerControlLinkInfo EndDevice="mtvr-tigon-01" EndPort="PSU2" StartDevice="pdu-10-245-2-40" StartPort="19"/>
@@ -5678,8 +5278,6 @@
 
       <PowerControlLinkInfo EndDevice="mtvr-hippo-03" EndPort="PSU1" StartDevice="pdu-10-245-2-13" StartPort="28"/>
       <PowerControlLinkInfo EndDevice="mtvr-hippo-03" EndPort="PSU2" StartDevice="pdu-10-245-2-35" StartPort="28"/>
-      <PowerControlLinkInfo EndDevice="mtvr-hippo-02" EndPort="PSU1" StartDevice="pdu-10-245-2-13" StartPort="36"/>
-      <PowerControlLinkInfo EndDevice="mtvr-hippo-02" EndPort="PSU2" StartDevice="pdu-10-245-2-35" StartPort="36"/>
 
       <PowerControlLinkInfo EndDevice="mtvr-leopard-01" EndPort="PSU1" StartDevice="pdu-10-245-2-49" StartPort="19"/>
       <PowerControlLinkInfo EndDevice="mtvr-leopard-01" EndPort="PSU2" StartDevice="pdu-10-245-2-25" StartPort="19"/>

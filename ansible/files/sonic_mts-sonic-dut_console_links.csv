@@ -1,0 +1,3 @@
+StartDevice,StartPort,EndDevice,Console_type,Proxy
+s-rcs01,8015,mts-sonic-dut,ssh,root
+s-rcs01,8014,mts-sonic-fanout,ssh,root

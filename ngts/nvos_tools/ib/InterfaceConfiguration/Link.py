@@ -10,3 +10,4 @@ class LinkMgmt(BaseComponent):
         self.stats = MgmtStats(self)
         self.counters = BaseComponent(self, path='/counters')
         self.plan_ports = BaseComponent(self, path='/plan-ports')
+        self.connection_mode = BaseComponent(self, path='/connection-mode')

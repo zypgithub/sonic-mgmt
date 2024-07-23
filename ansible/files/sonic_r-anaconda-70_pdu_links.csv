@@ -1,0 +1,3 @@
+StartDevice,StartPort,EndDevice,EndPort,EndFeed
+pdu-10-208-0-210,5,r-anaconda-70,PSU1,
+pdu-10-208-0-210,15,r-anaconda-70,PSU2,

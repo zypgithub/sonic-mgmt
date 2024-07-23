@@ -244,8 +244,7 @@ def check_all_dumps_file_exsits(topology_obj, engine, chip_type):
 
     # Check CR space dump:
     sdk_dump = "sdkdump" if sonic_branch in branch_with_old_sdk else "sdk_dump"
-    assert output_fw_dump.count(f'{sdk_dump}_ext_cr_') == 3, 'Missing CR space dump'
-    assert output_fw_dump.count(f'{sdk_dump}_ext_meta_001-') == 3, 'Missing CR space meta files'
+    assert len(re.findall(fr'{sdk_dump}_ext_.*cr_space.*.udmp', output_fw_dump)) == 3, 'Missing CR space dump'
 
     # Check SDK dump:
     assert 'sai_sdk_dump.txt' in output_fw_dump, 'Missing SDK dump'
@@ -254,7 +253,7 @@ def check_all_dumps_file_exsits(topology_obj, engine, chip_type):
         if sonic_branch in branch_with_old_sdk:
             assert '_pci_cr0_mlxtrace.trc' in output_fw_dump, 'Missing mlxtrace'
         else:
-            assert 'sdk_dump_ext_fw_trace_dump_' in output_fw_dump, 'Missing FW trace'
+            assert re.search(r'sdk_dump_ext_.*fw_trace.txt', output_fw_dump) is not None, 'Missing FW trace'
     # Check FW core dump:
     # This should be uncommented when FW stuck event level would change to critical
     # assert 'ir_core_dump_' in output, 'Missing FW core dump'

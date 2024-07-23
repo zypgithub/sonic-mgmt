@@ -42,11 +42,12 @@ class MarsConnectDB(ConnectMSSQL):
             la_table_id = self.query_insert_return_la_table_id(insert)
             for la_issue in self.data.la_redmine_issues:
                 insert_la_issue = r"INSERT INTO [dbo].[log_analyzer_redmine_issues]([mars_respond_id], " \
-                    r"[log_analyzer_redmine_issue]) VALUES (" + str(la_table_id) + ", " + \
-                    str(la_issue) + ")"
+                                  r"[log_analyzer_redmine_issue]) VALUES (" + str(la_table_id) + ", " + \
+                                  str(la_issue) + ")"
                 self.query_insert(insert_la_issue)
         except Exception as e:
             logger.error(e)
+            raise Exception(e)
 
     def clear_db(self):
         if self.conn is None:

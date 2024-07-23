@@ -1,0 +1,3 @@
+StartDevice,StartPort,EndDevice,EndPort,EndFeed
+pdu-10-245-2-40,10,mtvr-moose-08,PSU1,
+pdu-10-245-2-40,14,mtvr-moose-08,PSU2,

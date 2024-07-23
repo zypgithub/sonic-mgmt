@@ -1,0 +1,3 @@
+StartDevice,StartPort,EndDevice,EndPort,EndFeed
+pdu-10-208-0-36,1.5,arc-switch1004,PSU1,
+pdu-10-208-0-36,1.9,arc-switch1004,PSU2,

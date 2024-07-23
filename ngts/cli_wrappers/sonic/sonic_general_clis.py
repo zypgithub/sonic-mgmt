@@ -385,8 +385,9 @@ class SonicGeneralCliDefault(GeneralCliCommon):
 
         if deploy_type == 'bfb':
             change_to_one_port_hwsku = 'msn4' in platform_params.platform
+            validate = "sn4280" not in platform_params.platform
             self.deploy_bfb(image_path, topology_obj,
-                            change_to_one_port_hwsku=change_to_one_port_hwsku)
+                            change_to_one_port_hwsku=change_to_one_port_hwsku, validate=validate)
 
         if deploy_type == 'pxe':
             self.deploy_pxe(image_path, topology_obj, platform_params['hwsku'])
@@ -412,6 +413,10 @@ class SonicGeneralCliDefault(GeneralCliCommon):
 
         with allure.step('Verify dockers are up'):
             self.verify_dockers_are_up()
+
+        # Break if it's installing the Bobcat DPUs
+        if deploy_type == 'bfb' and 'sn4280' in platform_params.platform:
+            return
 
         if reboot_after_install:
             with allure.step("Validate dockers are up, reboot if any docker is not up"):
@@ -482,7 +487,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             with allure.step('Configure dhclient on simx dut'):
                 self.engine.run_cmd('sudo dhclient', validate=True)
 
-    def deploy_bfb(self, image_path, topology_obj, change_to_one_port_hwsku=False):
+    def deploy_bfb(self, image_path, topology_obj, change_to_one_port_hwsku=False, validate=True):
         rshim = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific'][
             'Parent_device_NIC_name']
         hyper_name = 'hyper' if 'hyper' in topology_obj.players else 'hypervisor'
@@ -498,25 +503,26 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         # Broken engine after install. Disconnect it. In next run_cmd, it will connect back
         self.engine.disconnect()
 
-        with allure.step('Waiting for switch bring-up after reload'):
-            logger.info('Waiting for switch bring-up after reload')
-            check_port_status_till_alive(True, self.engine.ip, self.engine.ssh_port)
+        if validate:
+            with allure.step('Waiting for switch bring-up after reload'):
+                logger.info('Waiting for switch bring-up after reload')
+                check_port_status_till_alive(True, self.engine.ip, self.engine.ssh_port)
 
-        if change_to_one_port_hwsku:
-            with allure.step('Change hwsku to the one port hwsku(ends with C1)'):
-                config_db = self.get_config_db()
-                hwsku = config_db['DEVICE_METADATA']['localhost']['hwsku']
-                logger.info(f'Current hwsku: {hwsku}')
-                if not hwsku.endswith('-C1'):
-                    hwsku = hwsku.rstrip("-C2")
-                    hwsku += "-C1"
-                    logger.info(f'Generate the configuration for one port hwsku: {hwsku}')
-                    self.engine.run_cmd(
-                        f'sudo sonic-cfggen -k {hwsku} --write-to-db', validate=True)
-                    self.engine.run_cmd('sudo config save -y')
-                    with allure.step('Reload config and wait for DPU bring-up'):
-                        logger.info('Config reload')
-                        self.engine.run_cmd('sudo config reload -yf')
+            if change_to_one_port_hwsku:
+                with allure.step('Change hwsku to the one port hwsku(ends with C1)'):
+                    config_db = self.get_config_db()
+                    hwsku = config_db['DEVICE_METADATA']['localhost']['hwsku']
+                    logger.info(f'Current hwsku: {hwsku}')
+                    if not hwsku.endswith('-C1'):
+                        hwsku = hwsku.rstrip("-C2")
+                        hwsku += "-C1"
+                        logger.info(f'Generate the configuration for one port hwsku: {hwsku}')
+                        self.engine.run_cmd(
+                            f'sudo sonic-cfggen -k {hwsku} --write-to-db', validate=True)
+                        self.engine.run_cmd('sudo config save -y')
+                        with allure.step('Reload config and wait for DPU bring-up'):
+                            logger.info('Config reload')
+                            self.engine.run_cmd('sudo config reload -yf')
 
     def deploy_pxe(self, image_path, topology_obj, hwsku):
         bf_cli_ssh_connect_bringup = 480
@@ -1324,10 +1330,10 @@ class SonicGeneralCliDefault(GeneralCliCommon):
     def is_supported_split_mode(self, hwsku, split_num):
         split_supported_without_unmap = self.is_platform_supports_split_without_unmap(hwsku) or split_num == 2
         platform_not_sn3800 = not re.search("SN3800", hwsku)
-        split_supported_on_sn5600 = True
-        if re.search("SN5600", hwsku) and split_num == 8:
-            split_supported_on_sn5600 = False
-        return split_supported_without_unmap and platform_not_sn3800 and split_supported_on_sn5600
+        split_supported_on_sn5 = True
+        if re.search("SN5[46]00", hwsku) and split_num == 8:
+            split_supported_on_sn5 = False
+        return split_supported_without_unmap and platform_not_sn3800 and split_supported_on_sn5
 
     def update_breakout_mode_for_split_ports(self, split_ports_for_update, hwsku, breakout_cfg_dict,
                                              config_db_json, parsed_platform_json_by_breakout_modes):

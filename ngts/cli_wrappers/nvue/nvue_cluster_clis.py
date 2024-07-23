@@ -1,7 +1,7 @@
 from ngts.cli_wrappers.sonic.sonic_general_clis import *
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.cli_wrappers.nvue.nvue_base_clis import NvueBaseCli, check_output
-from ngts.nvos_constants.constants_nvos import ActionType
+from ngts.nvos_constants.constants_nvos import ActionType, ImageConsts
 
 
 logger = logging.getLogger()
@@ -18,26 +18,73 @@ class NvueClusterCli(NvueBaseCli):
         self.cli_name = "Cluster"
 
     @staticmethod
-    def action_start_cluster_app(engine, path):
-        return NvueClusterCli.action(engine, action_type=ActionType.START.value, resource_path=path)
+    def action_start_cluster_apps(engine, path):
+        return NvueClusterCli.action(engine, action_type=ActionType.START.replace('@', ''), resource_path=path)
 
     @staticmethod
-    def action_stop_cluster_app(engine, path):
-        return NvueClusterCli.action(engine, action_type=ActionType.STOP.value, resource_path=path)
+    def action_stop_cluster_apps(engine, path):
+        return NvueClusterCli.action(engine, action_type=ActionType.STOP.replace('@', ''), resource_path=path)
 
     @staticmethod
     def action_update_cluster_log_level(engine, path, level=''):
-        return NvueClusterCli.action(engine, action_type=ActionType.UPDATE.value, resource_path=path, param_value=level)
+        return NvueClusterCli.action(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=path, param_value=level)
+
+    @staticmethod
+    def action_update_partition_uuid(engine, path, uuid=''):
+        return NvueClusterCli.action(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=path, param_value=uuid)
+
+    @staticmethod
+    def action_update_partition_location(engine, path, location=''):
+        return NvueClusterCli.action(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=path, param_value=location)
+
+    @staticmethod
+    def action_restore_partition_uuid(engine, path, uuid=''):
+        return NvueClusterCli.action(engine, action_type=ActionType.RESTORE.replace('@', ''), resource_path=path, param_value=uuid)
+
+    @staticmethod
+    def action_restore_partition_location(engine, path, location=''):
+        return NvueClusterCli.action(engine, action_type=ActionType.RESTORE.replace('@', ''), resource_path=path, param_value=location)
 
     @staticmethod
     def action_restore_cluster(engine, path):
-        return NvueClusterCli.action(engine, action_type=ActionType.RESTORE.value, resource_path=path)
+        return NvueClusterCli.action(engine, action_type=ActionType.RESTORE.replace('@', ''), resource_path=path)
 
     @staticmethod
     @check_output
     def action_generate(engine, resource_path):
-        return NvueClusterCli.action(engine, action_type=ActionType.GENERATE.value, resource_path=resource_path)
+        return NvueClusterCli.action(engine, action_type=ActionType.GENERATE.replace('@', ''), resource_path=resource_path)
 
     @staticmethod
-    def action_fetch(engine, resource_path, remote_url):
-        return NvueClusterCli.action(engine, action_type=ActionType.FETCH.value, resource_path=resource_path, param_value=remote_url)
+    @check_output
+    def action_delete(engine, resource_path):
+        return NvueClusterCli.action(engine, action_type=ActionType.DELETE.replace('@', ''), resource_path=resource_path)
+
+    @staticmethod
+    def action_fetch(engine, resource_path, path):
+        remote_url = ImageConsts.SCP_PATH + path
+        return NvueClusterCli.action(engine, action_type=ActionType.FETCH.replace('@', ''), resource_path=resource_path, param_value=remote_url)
+
+    @staticmethod
+    def action_install(engine, resource_path, file):
+        return NvueClusterCli.action(engine, action_type=ActionType.INSTALL.replace('@', ''), resource_path=resource_path, param_value=file)
+
+    @staticmethod
+    def action_install_fae(engine, resource_path):
+        return NvueClusterCli.action(engine, action_type=ActionType.INSTALL.replace('@', ''), resource_path=resource_path)
+
+    @staticmethod
+    def action_uninstall_fae(engine, resource_path):
+        return NvueClusterCli.action(engine, action_type=ActionType.UNINSTALL.replace('@', ''), resource_path=resource_path)
+
+    @staticmethod
+    def action_delete_fae(engine, resource_path):
+        return NvueClusterCli.action(engine, action_type=ActionType.DELETE.replace('@', ''), resource_path=resource_path)
+
+    @staticmethod
+    def action_create_partition(engine, name, resiliency_mode, confidential_compute, mcast_limit, uuid='', location='', resource_path=''):
+        if uuid != '':
+            cmd = f"nv action create {resource_path.replace('/', ' ')} name {name} resiliency-mode {resiliency_mode} confidential_compute {confidential - compute} mcast-limit {mcast - limit} uuid {uuid}"
+        else:
+            cmd = f"nv action create {resource_path.replace('/', ' ')} name {name} resiliency-mode {resiliency_mode} confidential_compute {confidential - compute} mcast-limit {mcast - limit} location {location}"
+        logging.info("Running action cmd: '{cmd}' on dut using NVUE".format(cmd=cmd))
+        return engine.run_cmd(cmd)

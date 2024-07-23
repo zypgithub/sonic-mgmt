@@ -175,9 +175,6 @@ if __name__ == "__main__":
     # Update minigraph_facts.py
     mg_facts.write_minigraph_facts()
     logger.info('minigraph_facts.py replaced by stub file')
-    # Update conn_graph_facts.py
-    replace_conn_graph_facts(mgmt_repo)
-    logger.info('conn_graph_facts.py replaced by stub file')
 
     if testbed_csv.entry_exists(dut_name=dut_name):
         logger.warning(f"{conf_files.testbed_csv} - Entry for '{dut_name}' DUT already exists. Skip configuration.")

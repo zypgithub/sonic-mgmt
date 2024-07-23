@@ -33,6 +33,22 @@
 
     <case>
         <ignore>
+            <!-- daily case  -->
+            <condition>
+                <key> skip_weekend_cases </key>
+                <op> == </op>
+                <value> no </value>
+            </condition>
+        </ignore>
+        <cmd>
+             <params>
+                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --allure_server_addr=\"10.215.11.120\"\'" --test-scripts vxlan/test_vxlan_ecmp.py </static_args>
+             </params>
+        </cmd>
+    </case>
+
+    <case>
+        <ignore>
             <!-- weekend case  -->
             <condition>
                 <key> skip_weekend_cases </key>
@@ -62,7 +78,6 @@
 
         <info> Overlay ECMP for T1 weekend cases: Test_VxLAN_underlay_ecmp </info>
         <name> Test_VxLAN_underlay_ecmp </name>
-        <tout> 7200 </tout>
         <cmd>
              <params>
                  <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 7200 --session-timeout 7200 --allure_server_addr=\"10.215.11.120\" --include_long_tests=True -k \"Test_VxLAN_underlay_ecmp\"\'" --test-scripts vxlan/test_vxlan_ecmp.py </static_args>

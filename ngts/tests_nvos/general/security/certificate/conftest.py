@@ -1,10 +1,10 @@
 import pytest
 
+from ngts.nvos_tools.infra.CmdRunner import CmdRunner
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.system.System import System
+from ngts.tests_nvos.system.gnmi.constants import ETC_HOSTS, GNMI_TEST_CERT
 from ngts.tools.test_utils import allure_utils as allure
-from ngts.tests_nvos.system.gnmi.constants import ETC_HOSTS, GNMI_TEST_CERT, DUT_MOUNT_GNMI_CERT_DIR
-from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
 
 
 @pytest.fixture(scope='module', autouse=True)
@@ -25,9 +25,8 @@ def clear_certs():
 def curl_cert_hostname(engines):
     cert = GNMI_TEST_CERT
     with allure.step(f'add mapping of new dut hostname to {ETC_HOSTS}'):
-        client = GnmiClient('', '', '', '')
-        client._run_cmd_in_process(f'echo "{engines.dut.ip} {cert.dn}" | sudo tee -a {ETC_HOSTS}',
-                                   wait_till_done=True)
+        cmd_runner = CmdRunner()
+        cmd_runner.run_cmd_in_process(f'echo "{engines.dut.ip} {cert.dn}" | sudo tee -a {ETC_HOSTS}')
     yield
     with allure.step(f'remove hostname mapping fro {ETC_HOSTS}'):
-        client._run_cmd_in_process(f"sudo sed -i '/{cert.dn}/d' {ETC_HOSTS}", wait_till_done=True)
+        cmd_runner.run_cmd_in_process(f"sudo sed -i '/{cert.dn}/d' {ETC_HOSTS}")

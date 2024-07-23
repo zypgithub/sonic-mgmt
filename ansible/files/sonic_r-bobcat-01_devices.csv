@@ -1,0 +1,7 @@
+Hostname,ManagementIp,HwSku,Type,Protocol,Os
+r-bobcat-01,10.210.26.177/22,Mellanox-SN4280-O28,DevSonic,,sonic
+r-leopard-82,10.210.26.108/22,MLNX-OS,FanoutLeaf,,
+arc-host70,10.215.22.60,TestServ,Server,,
+pdu-10-208-0-181,10.208.0.181,Sentry,CDU,snmp,
+pdu-10-208-2-14,10.208.2.14,Emerson,Pdu,snmp,
+rcon-sws-2-6,10.208.0.85,,ConsoleServer,ssh,sonic

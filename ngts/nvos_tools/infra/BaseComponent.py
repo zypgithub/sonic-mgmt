@@ -66,7 +66,7 @@ class BaseComponent:
 
     def parse_show(self, op_param="", dut_engine=None, should_succeed=True):
         output = self.show(op_param, OutputFormat.json, dut_engine, should_succeed)
-        return OutputParsingTool.parse_json_str_to_dictionary(output).returned_value
+        return OutputParsingTool.parse_json_str_to_dictionary(output).verify_result()
 
     def _set(self, param_name, param_value, expected_str='', apply=False, ask_for_confirmation=False, dut_engine=None):
         if not dut_engine:

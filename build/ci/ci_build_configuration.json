@@ -11,7 +11,6 @@
     "PRIORITY_NUMBER=4",
     "TARBALL_NAME=SONIC_MGMT_TAR.db.1.tgz",
     "OFFICIAL_TESTS=SONIC_MGMT",
-    "MARS_RELEASE_VERSION=/auto/sw_tools/Internal/MARS/mars_apps/RELEASE/4_3_11/",
     "SIMX_ON_FAILURE=stop"
   ],
   "phases": [

@@ -10,6 +10,13 @@
 
             <!-- OPTIONAL TAGS -->
             <tags> DUALTOR </tags>
+            <ignore>
+                <condition>
+                    <key> dut_hwsku </key>
+                    <op> not in </op>
+                    <value>  ["Mellanox-SN4600C-C64"] </value>
+                </condition>
+            </ignore>
 
             <!-- pre db commands - executed once before DB run -->
             <pre>
@@ -49,7 +56,6 @@
             </on_not_success>
         </Case>
     </global>
-
     <test>
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/dualtor.cases </cases>
     </test>

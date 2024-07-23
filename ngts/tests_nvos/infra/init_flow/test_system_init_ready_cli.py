@@ -12,6 +12,7 @@ logger = logging.getLogger()
 
 
 @pytest.mark.init_flow
+@pytest.mark.nvos_ci
 def test_system_init_done_default_values(engines, test_name):
     """
     Test flow:

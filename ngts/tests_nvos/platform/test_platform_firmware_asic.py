@@ -4,7 +4,7 @@ from typing import Tuple
 
 import pytest
 
-from ngts.nvos_constants.constants_nvos import ImageConsts
+from ngts.nvos_constants.constants_nvos import ImageConsts, NvosConst
 from ngts.nvos_constants.constants_nvos import PlatformConsts
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
@@ -108,7 +108,7 @@ def test_platform_firmware_image_rename(engines, devices, topology_obj):
     _, fetched_image_name, _ = get_image_data_and_fetch_random_image_files(platform, dut, topology_obj)
     fetched_image_file = platform.firmware.asic.files.file_name[fetched_image_name]
     with allure.step("Rename image without mfa ending"):
-        if dut.asic_type == 'Quantum3':
+        if dut.asic_type == NvosConst.QTM3 or dut.asic_type == NvosConst.NVL5:
             platform.firmware.asic.action_fetch(f"{PlatformConsts.XDR_FW_PATH}/{fetched_image_name}").verify_result()
         else:
             platform.firmware.asic.action_fetch(f"{PlatformConsts.FW_PATH}/{fetched_image_name}").verify_result()
@@ -256,9 +256,9 @@ def get_image_data(platform, dut) -> Tuple[str, str]:
         original_images = OutputParsingTool.parse_json_str_to_dictionary(
             platform.firmware.show("ASIC")).get_returned_value()
         original_image = original_images[PlatformConsts.FW_ACTUAL]
-        if dut.asic_type == "Quantum2":
+        if dut.asic_type == NvosConst.QTM2:
             default_firmware = 'fw-QTM2.mfa'
-        elif dut.asic_type == "Quantum3":
+        elif dut.asic_type in [NvosConst.QTM3, NvosConst.NVL5]:
             default_firmware = 'fw-QTM3.mfa'
         else:
             raise Exception(f"Unsupported ASIC: {dut.asic_type}")

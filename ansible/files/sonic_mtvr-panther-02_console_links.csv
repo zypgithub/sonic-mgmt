@@ -1,0 +1,3 @@
+StartDevice,StartPort,EndDevice,Console_type,Proxy
+rcon-mtvr-rack-1-7,7032,mtvr-panther-02,ssh,root
+rcon-mtvr-rack-1-7,7033,mtvr-anaconda-01,ssh,root

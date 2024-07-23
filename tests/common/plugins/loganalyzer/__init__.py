@@ -88,8 +88,5 @@ def loganalyzer(duthosts, request):
         raise Exception(f"Some duthost objects are None so loganalyzer can't run: {duthosts=}. This is probably due to "
                         f"a network error.")
     logging.info("Starting to analyse on all DUTs")
-    if len(analyzers) == 1:
-        analyze_logs(analyzers, markers, node=duthosts[0], fail_test=fail_test, store_la_logs=store_la_logs)
-    else:
-        parallel_run(analyze_logs, [analyzers, markers], {'fail_test': fail_test, 'store_la_logs': store_la_logs},
-                     duthosts, timeout=240)
+    parallel_run(analyze_logs, [analyzers, markers], {'fail_test': fail_test, 'store_la_logs': store_la_logs},
+                 duthosts, timeout=240)

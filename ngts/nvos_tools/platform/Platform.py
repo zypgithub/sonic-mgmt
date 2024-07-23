@@ -25,6 +25,7 @@ class Platform(BaseComponent):
         self.inventory = Inventory(self)
         self.ps_redundancy = PSRedundancy(self)
         self.transceiver = Transceiver(self)
+        self.chassis_location = BaseComponent(self, path='/chassis-location')
 
     def set(self, op_param_name="", op_param_value=""):
         raise Exception("set is not implemented for /platform")

@@ -1,4 +1,3 @@
-
 class InternalNvosConsts:
     # Output dictionary
     OPERATIONAL_INDEX = 0
@@ -47,6 +46,8 @@ class IbInterfaceConsts:
     LINK_PHYSICAL_PORT_STATE_POLLING = 'Polling'
     LINK_PHYSICAL_PORT_STATE_POLLING_XDR = 'PortConfigurationTraining'
     LINK_STATE = "state"
+    LINK_CONNECTION_MODE = "connection-mode"
+    XDR = "xdr"
     LINK_DIAGNOSTICS = "diagnostics"
     LINK_DIAGNOSTICS_UNPLUGGED_PORT = {'1024': {'status': 'Cable is unplugged'}}
     LINK_DIAGNOSTICS_CLOSED_BY_COMMAND_PORT = {'1': {'status': 'Closed by command'}}
@@ -87,6 +88,7 @@ class IbInterfaceConsts:
                        LINK_STATS_RCV_ICRC_ERRORS, LINK_STATS_TX_PARITY_ERRORS]
     LINK_BREAKOUT_NDR = "2x-ndr"
     LINK_BREAKOUT_HDR = "2x-hdr"
+    LINK_BREAKOUT_XDR = "2x-xdr"
     LINK_ROUND_TRIP_LATENCY = "round-trip-latency"
     PRIMARY_ASIC = "primary-asic"
     IP_VRF = "vrf"
@@ -115,6 +117,7 @@ class IbInterfaceConsts:
     IB0_IP_AUTOCONF_DEFAULT_VALUE = 'disabled'
     IB0_DHCP_STATE_DEFAULT_VALUE = 'disabled'
     MAX_COUNTERS_AFTER_CLEAR = 700
+    PLANARIZED_PORTS = "planarized-ports"
 
 
 class DataBaseNames:

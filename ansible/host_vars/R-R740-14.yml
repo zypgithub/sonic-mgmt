@@ -1,4 +1,4 @@
 mgmt_bridge: br0
 mgmt_prefixlen: 16
 mgmt_gw: 10.215.0.1
-external_port: enp135s0f0
+external_port: enp216s0f0

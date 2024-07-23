@@ -233,6 +233,7 @@ class AutonegCommandConstants:
         CABLE_SPEED: (r"Supported Cable Speed (?:\(Ext.\))?\s+:\s+0x[0-9a-z]+\s+\(([\w.,]+)\)",
                       None, None, None, None)
     }
+    PAM4_MIN_LANE_SPEED_MB = 50000
 
 
 class DefaultCredentialConstants:
@@ -864,36 +865,45 @@ class FecConstants:
                 }
             },
             SonicConst.FEC_RS_MODE: {
-                SonicConst.PORT_SPLIT_NUM_1: {'50G': ['CR'],
+                SonicConst.PORT_SPLIT_NUM_1: {'25G': ['CR'],
+                                              '50G': ['CR2'],
                                               '100G': ['CR2'],
                                               '200G': ['CR4'],
-                                              '400G': ['CR8']
+                                              '400G': ['CR8'],
                                               },
-                SonicConst.PORT_SPLIT_NUM_2: {'50G': ['CR'],
+                SonicConst.PORT_SPLIT_NUM_2: {'25G': ['CR'],
+                                              '50G': ['CR2'],
                                               '100G': ['CR2'],
-                                              '200G': ['CR4']
+                                              '200G': ['CR4'],
                                               },
-                SonicConst.PORT_SPLIT_NUM_4: {'50G': ['CR'],
-                                              '100G': ['CR2']
+                SonicConst.PORT_SPLIT_NUM_4: {'25G': ['CR'],
+                                              '50G': ['CR2'],
+                                              '100G': ['CR2'],
                                               },
-                SonicConst.PORT_SPLIT_NUM_8: {'50G': ['CR']
+                SonicConst.PORT_SPLIT_NUM_8: {'25G': ['CR'],
+                                              '50G': ['CR'],
                                               }
             },
             SonicConst.FEC_NONE_MODE: {
-                SonicConst.PORT_SPLIT_NUM_1: {'10G': ['CR'],
+                SonicConst.PORT_SPLIT_NUM_1: {'1G': ['CR'],
+                                              '10G': ['CR'],
                                               '25G': ['CR'],
                                               '40G': ['CR4'],
-                                              '50G': ['CR'],
-                                              '100G': ['CR2']
+                                              '50G': ['CR2'],
+                                              '100G': ['CR4']
                                               },
-                SonicConst.PORT_SPLIT_NUM_2: {'10G': ['CR'],
+                SonicConst.PORT_SPLIT_NUM_2: {'1G': ['CR'],
+                                              '10G': ['CR'],
                                               '25G': ['CR'],
                                               '40G': ['CR4'],
-                                              '50G': ['CR']
+                                              '50G': ['CR2'],
+                                              '100G': ['CR4']
                                               },
-                SonicConst.PORT_SPLIT_NUM_4: {'10G': ['CR'],
+                SonicConst.PORT_SPLIT_NUM_4: {'1G': ['CR'],
+                                              '10G': ['CR'],
                                               '25G': ['CR'],
-                                              '50G': ['CR']
+                                              '40G': ['CR4'],
+                                              '50G': ['CR2']
                                               },
                 SonicConst.PORT_SPLIT_NUM_8: {'10G': ['CR'],
                                               '25G': ['CR']
@@ -901,6 +911,8 @@ class FecConstants:
             }
         }
     }
+    COPPER_TYPE_PREFIX = 'CR'
+    OPTIC_TYPE_PREFIX = 'SR'
 
 
 FEC_MODES_TO_ETHTOOL = {
@@ -1184,7 +1196,7 @@ class MarsConstants:
     EXTRA_PACKAGE_PATH_LIST = ["/usr/lib64/python2.7/site-packages"]
 
     TOPO_ARRAY = ("t0-56-po2vlan", "t0", "t1-lag", "t1-28-lag", "ptf32",
-                  "t0-64", "t1-64-lag", "t0-56", "t0-56-o8v48", "t0-120", "t1-56-lag")
+                  "t0-64", "t1-64-lag", "t0-56", "t0-56-o8v48", "t0-120", "t1-56-lag", "t0-28")
     TOPO_ARRAY_DUALTOR = ("dualtor", "dualtor-64", "dualtor-aa")
     REBOOT_TYPES = {
         "reboot": "reboot",
@@ -1196,7 +1208,7 @@ class MarsConstants:
 
     DUT_LOG_BACKUP_PATH = "/.autodirect/sw_system_project/sonic/dut_logs"
 
-    BRANCH_PTF_MAPPING = {'master': 'latest',
+    BRANCH_PTF_MAPPING = {'master': '558858',
                           '202012': '42007',
                           '202106': '42007'
                           }
@@ -1506,7 +1518,7 @@ class CableComplianceConst:
     UNSUPPORTED_SPECIFICATION_COMPLIANCE = {
         SPEC_COMPLIANCE_PREFIX: ["active_cable_media_interface", "sm_media_interface",
                                  "nm_850_media_interface"],
-        EXTENDED_SPEC_COMPLIANCE_PREFIX: [r"\d+GBASE-DR", r"\d+GBASE-SR", r"AOC"]}
+        EXTENDED_SPEC_COMPLIANCE_PREFIX: [r"\d+GBASE-DR", r"\d+GBASE-SR", r"AOC", r"Active Optical Cable"]}
 
 
 class IndependentModuleConst:

@@ -31,6 +31,37 @@ master:
     nbrmgrd: 7
     vxlanmgrd: 7
     sensord: 10
+    snmp-subagent: 10
+    rest-server: 10
+    lldp-syncd: 10
+    lldpd: 10
+    lldpmgrd: 10
+    dialout: 10
+    gnmi-native: 10
+    dhcprelayd: 10
+    rsyslogd: 10
+    pcied: 10
+    psud: 10
+    syseepromd: 10
+    thermalctld: 10
+    xcvrd: 10
+    teammgrd: 10
+    teamsyncd: 10
+    tlm_teamd: 10
+    staticd: 10
+    arp_update: 10
+    coppmgrd: 10
+    fdbsyncd: 10
+    portsyncd: 10
+    unnelmgrd: 10
+    eventd: 10
+    redis: 10
+    wjhd: 100
+    hostcfgd: 25
+    featured: 20
+    caclmgrd: 20
+    containerd: 100
+    healthd: 20
   MSN2010: # Boxer
     total: 4250
     sx_sdk: 1000
@@ -53,6 +84,37 @@ master:
     nbrmgrd: 7
     vxlanmgrd: 7
     sensord: 10
+    snmp-subagent: 10
+    rest-server: 10
+    lldp-syncd: 10
+    lldpd: 10
+    lldpmgrd: 10
+    dialout: 10
+    gnmi-native: 10
+    dhcprelayd: 10
+    rsyslogd: 10
+    pcied: 10
+    psud: 10
+    syseepromd: 10
+    thermalctld: 10
+    xcvrd: 10
+    teammgrd: 10
+    teamsyncd: 10
+    tlm_teamd: 10
+    staticd: 10
+    arp_update: 10
+    coppmgrd: 10
+    fdbsyncd: 10
+    portsyncd: 10
+    unnelmgrd: 10
+    eventd: 10
+    redis: 10
+    wjhd: 100
+    hostcfgd: 25
+    featured: 20
+    caclmgrd: 20
+    containerd: 100
+    healthd: 20
   MSN2100: # Bulldog
     total: 3750
     sx_sdk: 600
@@ -75,6 +137,37 @@ master:
     nbrmgrd: 7
     vxlanmgrd: 7
     sensord: 10
+    snmp-subagent: 10
+    rest-server: 10
+    lldp-syncd: 10
+    lldpd: 10
+    lldpmgrd: 10
+    dialout: 10
+    gnmi-native: 10
+    dhcprelayd: 10
+    rsyslogd: 10
+    pcied: 10
+    psud: 10
+    syseepromd: 10
+    thermalctld: 10
+    xcvrd: 10
+    teammgrd: 10
+    teamsyncd: 10
+    tlm_teamd: 10
+    staticd: 10
+    arp_update: 10
+    coppmgrd: 10
+    fdbsyncd: 10
+    portsyncd: 10
+    unnelmgrd: 10
+    eventd: 10
+    redis: 10
+    wjhd: 100
+    hostcfgd: 25
+    featured: 20
+    caclmgrd: 20
+    containerd: 100
+    healthd: 20
   MSN2410: # Spider
     total: 3750
     sx_sdk: 600
@@ -97,6 +190,37 @@ master:
     nbrmgrd: 7
     vxlanmgrd: 7
     sensord: 10
+    snmp-subagent: 10
+    rest-server: 10
+    lldp-syncd: 10
+    lldpd: 10
+    lldpmgrd: 10
+    dialout: 10
+    gnmi-native: 10
+    dhcprelayd: 10
+    rsyslogd: 10
+    pcied: 10
+    psud: 10
+    syseepromd: 10
+    thermalctld: 10
+    xcvrd: 10
+    teammgrd: 10
+    teamsyncd: 10
+    tlm_teamd: 10
+    staticd: 10
+    arp_update: 10
+    coppmgrd: 10
+    fdbsyncd: 10
+    portsyncd: 10
+    unnelmgrd: 10
+    eventd: 10
+    redis: 10
+    wjhd: 100
+    hostcfgd: 25
+    featured: 20
+    caclmgrd: 20
+    containerd: 100
+    healthd: 20
   SN2700: # Panther
     total: 5000
     sx_sdk: 600
@@ -119,6 +243,37 @@ master:
     nbrmgrd: 7
     vxlanmgrd: 7
     sensord: 10
+    snmp-subagent: 10
+    rest-server: 10
+    lldp-syncd: 10
+    lldpd: 10
+    lldpmgrd: 10
+    dialout: 10
+    gnmi-native: 10
+    dhcprelayd: 10
+    rsyslogd: 10
+    pcied: 10
+    psud: 10
+    syseepromd: 10
+    thermalctld: 10
+    xcvrd: 10
+    teammgrd: 10
+    teamsyncd: 10
+    tlm_teamd: 10
+    staticd: 10
+    arp_update: 10
+    coppmgrd: 10
+    fdbsyncd: 10
+    portsyncd: 10
+    unnelmgrd: 10
+    eventd: 10
+    redis: 10
+    wjhd: 100
+    hostcfgd: 25
+    featured: 20
+    caclmgrd: 20
+    containerd: 100
+    healthd: 20
   MSN2700: # Simx Panther
     total: 5000
     sx_sdk: 1200
@@ -141,6 +296,37 @@ master:
     nbrmgrd: 7
     vxlanmgrd: 7
     sensord: 10
+    snmp-subagent: 10
+    rest-server: 10
+    lldp-syncd: 10
+    lldpd: 10
+    lldpmgrd: 10
+    dialout: 10
+    gnmi-native: 10
+    dhcprelayd: 10
+    rsyslogd: 10
+    pcied: 10
+    psud: 10
+    syseepromd: 10
+    thermalctld: 10
+    xcvrd: 10
+    teammgrd: 10
+    teamsyncd: 10
+    tlm_teamd: 10
+    staticd: 10
+    arp_update: 10
+    coppmgrd: 10
+    fdbsyncd: 10
+    portsyncd: 10
+    unnelmgrd: 10
+    eventd: 10
+    redis: 10
+    wjhd: 100
+    hostcfgd: 25
+    featured: 20
+    caclmgrd: 20
+    containerd: 100
+    healthd: 20
   # SPC2
   MSN3420: # Lionfish
     total: 4750
@@ -164,6 +350,37 @@ master:
     nbrmgrd: 7
     vxlanmgrd: 7
     sensord: 10
+    snmp-subagent: 10
+    rest-server: 10
+    lldp-syncd: 10
+    lldpd: 10
+    lldpmgrd: 10
+    dialout: 10
+    gnmi-native: 10
+    dhcprelayd: 10
+    rsyslogd: 10
+    pcied: 10
+    psud: 10
+    syseepromd: 10
+    thermalctld: 10
+    xcvrd: 10
+    teammgrd: 10
+    teamsyncd: 10
+    tlm_teamd: 10
+    staticd: 10
+    arp_update: 10
+    coppmgrd: 10
+    fdbsyncd: 10
+    portsyncd: 10
+    unnelmgrd: 10
+    eventd: 10
+    redis: 10
+    wjhd: 150
+    hostcfgd: 25
+    featured: 20
+    caclmgrd: 20
+    containerd: 100
+    healthd: 20
   MSN3700: # Anaconda
     total: 5000
     sx_sdk: 1500
@@ -186,6 +403,37 @@ master:
     nbrmgrd: 7
     vxlanmgrd: 7
     sensord: 10
+    snmp-subagent: 10
+    rest-server: 10
+    lldp-syncd: 10
+    lldpd: 10
+    lldpmgrd: 10
+    dialout: 10
+    gnmi-native: 10
+    dhcprelayd: 10
+    rsyslogd: 10
+    pcied: 10
+    psud: 10
+    syseepromd: 10
+    thermalctld: 10
+    xcvrd: 10
+    teammgrd: 10
+    teamsyncd: 10
+    tlm_teamd: 10
+    staticd: 10
+    arp_update: 10
+    coppmgrd: 10
+    fdbsyncd: 10
+    portsyncd: 10
+    unnelmgrd: 10
+    eventd: 10
+    redis: 10
+    wjhd: 150
+    hostcfgd: 25
+    featured: 20
+    caclmgrd: 20
+    containerd: 100
+    healthd: 20
   MSN3700C: # Anaconda C
     total: 4750
     sx_sdk: 1100
@@ -208,6 +456,37 @@ master:
     nbrmgrd: 7
     vxlanmgrd: 7
     sensord: 10
+    snmp-subagent: 10
+    rest-server: 10
+    lldp-syncd: 10
+    lldpd: 10
+    lldpmgrd: 10
+    dialout: 10
+    gnmi-native: 10
+    dhcprelayd: 10
+    rsyslogd: 10
+    pcied: 10
+    psud: 10
+    syseepromd: 10
+    thermalctld: 10
+    xcvrd: 10
+    teammgrd: 10
+    teamsyncd: 10
+    tlm_teamd: 10
+    staticd: 10
+    arp_update: 10
+    coppmgrd: 10
+    fdbsyncd: 10
+    portsyncd: 10
+    unnelmgrd: 10
+    eventd: 10
+    redis: 10
+    wjhd: 150
+    hostcfgd: 25
+    featured: 20
+    caclmgrd: 20
+    containerd: 100
+    healthd: 20
   MSN3800: # Tigris
     total: 4500
     sx_sdk: 1100
@@ -230,6 +509,37 @@ master:
     nbrmgrd: 7
     vxlanmgrd: 7
     sensord: 10
+    snmp-subagent: 10
+    rest-server: 10
+    lldp-syncd: 10
+    lldpd: 10
+    lldpmgrd: 10
+    dialout: 10
+    gnmi-native: 10
+    dhcprelayd: 10
+    rsyslogd: 10
+    pcied: 10
+    psud: 10
+    syseepromd: 10
+    thermalctld: 10
+    xcvrd: 10
+    teammgrd: 10
+    teamsyncd: 10
+    tlm_teamd: 10
+    staticd: 10
+    arp_update: 10
+    coppmgrd: 10
+    fdbsyncd: 10
+    portsyncd: 10
+    unnelmgrd: 10
+    eventd: 10
+    redis: 10
+    wjhd: 150
+    hostcfgd: 25
+    featured: 20
+    caclmgrd: 20
+    containerd: 100
+    healthd: 20
   # SPC3
   SN4280: # Bobcat
     total: 4750
@@ -275,6 +585,37 @@ master:
     nbrmgrd: 7
     vxlanmgrd: 7
     sensord: 10
+    snmp-subagent: 10
+    rest-server: 10
+    lldp-syncd: 10
+    lldpd: 10
+    lldpmgrd: 10
+    dialout: 10
+    gnmi-native: 10
+    dhcprelayd: 10
+    rsyslogd: 10
+    pcied: 10
+    psud: 10
+    syseepromd: 10
+    thermalctld: 10
+    xcvrd: 10
+    teammgrd: 10
+    teamsyncd: 10
+    tlm_teamd: 10
+    staticd: 10
+    arp_update: 10
+    coppmgrd: 10
+    fdbsyncd: 10
+    portsyncd: 10
+    unnelmgrd: 10
+    eventd: 10
+    redis: 10
+    wjhd: 150
+    hostcfgd: 25
+    featured: 20
+    caclmgrd: 20
+    containerd: 100
+    healthd: 20
   MSN4600: # Liger
     total: 4750
     sx_sdk: 1200
@@ -297,6 +638,37 @@ master:
     nbrmgrd: 7
     vxlanmgrd: 7
     sensord: 10
+    snmp-subagent: 10
+    rest-server: 10
+    lldp-syncd: 10
+    lldpd: 10
+    lldpmgrd: 10
+    dialout: 10
+    gnmi-native: 10
+    dhcprelayd: 10
+    rsyslogd: 10
+    pcied: 10
+    psud: 10
+    syseepromd: 10
+    thermalctld: 10
+    xcvrd: 10
+    teammgrd: 10
+    teamsyncd: 10
+    tlm_teamd: 10
+    staticd: 10
+    arp_update: 10
+    coppmgrd: 10
+    fdbsyncd: 10
+    portsyncd: 10
+    unnelmgrd: 10
+    eventd: 10
+    redis: 10
+    wjhd: 150
+    hostcfgd: 25
+    featured: 20
+    caclmgrd: 20
+    containerd: 100
+    healthd: 20
   MSN4600C: # Tigon
     total: 4750
     sx_sdk: 1200
@@ -319,6 +691,37 @@ master:
     nbrmgrd: 7
     vxlanmgrd: 7
     sensord: 10
+    snmp-subagent: 10
+    rest-server: 10
+    lldp-syncd: 10
+    lldpd: 10
+    lldpmgrd: 10
+    dialout: 10
+    gnmi-native: 10
+    dhcprelayd: 10
+    rsyslogd: 10
+    pcied: 10
+    psud: 10
+    syseepromd: 10
+    thermalctld: 10
+    xcvrd: 10
+    teammgrd: 10
+    teamsyncd: 10
+    tlm_teamd: 10
+    staticd: 10
+    arp_update: 10
+    coppmgrd: 10
+    fdbsyncd: 10
+    portsyncd: 10
+    unnelmgrd: 10
+    eventd: 10
+    redis: 10
+    wjhd: 150
+    hostcfgd: 25
+    featured: 20
+    caclmgrd: 20
+    containerd: 100
+    healthd: 20
   MSN4700: # Leopard
     total: 4750
     sx_sdk: 1500
@@ -341,6 +744,37 @@ master:
     nbrmgrd: 7
     vxlanmgrd: 7
     sensord: 10
+    snmp-subagent: 10
+    rest-server: 10
+    lldp-syncd: 10
+    lldpd: 10
+    lldpmgrd: 10
+    dialout: 10
+    gnmi-native: 10
+    dhcprelayd: 10
+    rsyslogd: 10
+    pcied: 10
+    psud: 10
+    syseepromd: 10
+    thermalctld: 10
+    xcvrd: 10
+    teammgrd: 10
+    teamsyncd: 10
+    tlm_teamd: 10
+    staticd: 10
+    arp_update: 10
+    coppmgrd: 10
+    fdbsyncd: 10
+    portsyncd: 10
+    unnelmgrd: 10
+    eventd: 10
+    redis: 10
+    wjhd: 150
+    hostcfgd: 25
+    featured: 20
+    caclmgrd: 20
+    containerd: 100
+    healthd: 20
   # SPC4
   SN5400: # Hippo
     total: 5000
@@ -364,6 +798,37 @@ master:
     nbrmgrd: 7
     vxlanmgrd: 7
     sensord: 10
+    snmp-subagent: 10
+    rest-server: 10
+    lldp-syncd: 10
+    lldpd: 10
+    lldpmgrd: 10
+    dialout: 10
+    gnmi-native: 10
+    dhcprelayd: 10
+    rsyslogd: 10
+    pcied: 10
+    psud: 10
+    syseepromd: 10
+    thermalctld: 10
+    xcvrd: 10
+    teammgrd: 10
+    teamsyncd: 10
+    tlm_teamd: 10
+    staticd: 10
+    arp_update: 10
+    coppmgrd: 10
+    fdbsyncd: 10
+    portsyncd: 10
+    unnelmgrd: 10
+    eventd: 10
+    redis: 10
+    wjhd: 150
+    hostcfgd: 25
+    featured: 20
+    caclmgrd: 20
+    containerd: 100
+    healthd: 20
   SN5600: # Moose/Albatross
     total: 5000
     sx_sdk: 1500
@@ -386,3 +851,34 @@ master:
     nbrmgrd: 7
     vxlanmgrd: 7
     sensord: 10
+    snmp-subagent: 10
+    rest-server: 10
+    lldp-syncd: 10
+    lldpd: 10
+    lldpmgrd: 10
+    dialout: 10
+    gnmi-native: 10
+    dhcprelayd: 10
+    rsyslogd: 10
+    pcied: 10
+    psud: 10
+    syseepromd: 10
+    thermalctld: 10
+    xcvrd: 10
+    teammgrd: 10
+    teamsyncd: 10
+    tlm_teamd: 10
+    staticd: 10
+    arp_update: 10
+    coppmgrd: 10
+    fdbsyncd: 10
+    portsyncd: 10
+    unnelmgrd: 10
+    eventd: 10
+    redis: 10
+    wjhd: 150
+    hostcfgd: 25
+    featured: 20
+    caclmgrd: 20
+    containerd: 100
+    healthd: 20

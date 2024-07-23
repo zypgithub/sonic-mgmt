@@ -34,9 +34,8 @@ def pre_configure_for_fdb_basic(engines, topology_obj, interfaces, cli_objects):
 
     # IP config which will be used in test
     ip_config_dict = {
-        'dut': [{'iface': 'Vlan40', 'ips': [('40.0.0.1', '24')]},
-                {'iface': interfaces.dut_ha_1, 'ips': [('40.0.0.2', '24')]},
-                ],
+        'dut': [{'iface': 'Vlan40', 'ips': [('40.0.0.1', '24')]}],
+        'ha': [{'iface': interfaces.ha_dut_1, 'ips': [('40.0.0.2', '24')]}],
         'hb': [{'iface': interfaces.hb_dut_1, 'ips': [('40.0.0.3', '24')]}]
     }
     VlanConfigTemplate.configuration(topology_obj, vlan_config_dict)

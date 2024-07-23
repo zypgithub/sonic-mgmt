@@ -1,0 +1,3 @@
+StartDevice,StartPort,EndDevice,Console_type,Proxy
+rcon-sws-4-4,7011,arc-switch1004,ssh,root
+rcon-sws-4-4,7025,arc-switch1005,ssh,root

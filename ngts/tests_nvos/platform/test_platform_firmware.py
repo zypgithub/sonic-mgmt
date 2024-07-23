@@ -49,4 +49,4 @@ def test_show_platform_firmware(engines, devices, test_api, output_format):
                 errors[component] = e
 
         assert not errors, f"Test failed for components {list(errors.keys())}. Errors were:\n" + \
-            '\n\n'.join(f"{component}:\n{error}" for component, error in errors.items())
+            '\n\n'.join(f"{component}:\n{type(error).__name__}: {error}" for component, error in errors.items())

@@ -1,0 +1,3 @@
+StartDevice,StartPort,EndDevice,EndPort,EndFeed
+pdu-10-208-2-33,2.2,r-alligator-10,PSU1,
+pdu-10-208-2-33,2.3,r-alligator-10,PSU2,

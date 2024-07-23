@@ -1,0 +1,5 @@
+StartDevice,StartPort,EndDevice,EndPort,EndFeed
+pdu-10-245-2-16,23,mtvr-tigon-04,PSU1,
+pdu-10-245-2-40,23,mtvr-tigon-04,PSU2,
+pdu-10-245-2-16,22,mtvr-tigon-03,PSU1,
+pdu-10-245-2-40,22,mtvr-tigon-03,PSU2,

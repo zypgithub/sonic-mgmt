@@ -1,0 +1,3 @@
+StartDevice,StartPort,EndDevice,EndPort,EndFeed
+pdu-10-208-0-210,11,r-leopard-42,PSU1,
+pdu-10-208-0-210,14,r-leopard-42,PSU2,

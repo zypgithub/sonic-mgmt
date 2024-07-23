@@ -8,14 +8,13 @@ from retry.api import retry_call
 from ngts.config_templates.ip_config_template import IpConfigTemplate
 from ngts.tests.nightly.conftest import reboot_reload_random, cleanup, save_configuration
 from ngts.constants.constants import AutonegCommandConstants, SonicConst, \
-    LinuxConsts
+    LinuxConsts, FecConstants
 from infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.tests.nightly.fec.conftest import get_tested_lb_dict_tested_ports
 from ngts.helpers.interface_helpers import get_lb_mutual_speed, speed_string_to_int_in_mb
 from ngts.tests.nightly.auto_negotition.auto_fec_common import TestAutoFecBase
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
-
 
 logger = logging.getLogger()
 
@@ -28,7 +27,8 @@ class TestFec(TestAutoFecBase):
               fec_capability_for_dut_ports, dut_ports_number_dict,
               split_mode_supported_speeds, tested_dut_to_host_conn, fec_modes_speed_support,
               dut_ports_default_speeds_configuration, dut_ports_default_mlxlink_configuration, chip_type,
-              platform_params, dut_ports_interconnects, host_speed_type_support, is_simx):
+              platform_params, dut_ports_interconnects, host_speed_type_support, is_simx, ports_support_autoneg,
+              mlxlink_supported_speeds):
         self.topology_obj = topology_obj
         self.chip_type = chip_type
         self.platform_params = platform_params
@@ -48,9 +48,11 @@ class TestFec(TestAutoFecBase):
         self.split_mode_supported_speeds = split_mode_supported_speeds
         self.fec_modes_speed_support = fec_modes_speed_support
         self.host_speed_type_support = host_speed_type_support
+        self.ports_support_autoneg = ports_support_autoneg
         # For Cleanup
         self.dut_ports_basic_speeds_configuration = dut_ports_default_speeds_configuration
         self.dut_ports_basic_mlxlink_configuration = dut_ports_default_mlxlink_configuration
+        self.mlxlink_supported_speeds = mlxlink_supported_speeds
 
     @pytest.mark.reboot_reload
     def test_fec_capabilities_loopback_ports(self, cleanup_list, sw_control_ports):
@@ -76,6 +78,7 @@ class TestFec(TestAutoFecBase):
         with allure.step("Verify FEC on dut loopbacks"):
             logger.info("Verify FEC on dut loopbacks returned to default configuration")
             self.verify_fec_configuration(dut_lb_conf)
+        self.pop_autoneg_enabled_from_cleanup_list(tested_ports, cleanup_list)
 
     @pytest.mark.reboot_reload
     def test_fec_capabilities_hosts_ports(self, cleanup_list, sw_control_ports):
@@ -202,6 +205,7 @@ class TestFec(TestAutoFecBase):
             cli_objects.dut.interface.check_link_state(tested_ports)
 
         self.verify_fec_configuration(conf)
+        self.pop_autoneg_enabled_from_cleanup_list(tested_ports, cleanup_list)
 
     @staticmethod
     def get_ports_for_test_flow(tested_lb_dict_for_bug_2705016_flow):
@@ -275,10 +279,14 @@ class TestFec(TestAutoFecBase):
         for split_mode, fec_mode_tested_lb_dict in tested_lb_dict.items():
             for fec_mode, lb_list in fec_mode_tested_lb_dict.items():
                 for lb in lb_list:
-                    speed = self.get_lb_speed_conf_for_fec_mode(lb, split_mode, fec_mode, self.fec_modes_speed_support)
-                    interface_type = random.choice(self.fec_modes_speed_support[fec_mode][split_mode][speed])
-                    for port in lb:
-                        self.update_port_fec_conf_dict(conf, port, speed, fec_mode, interface_type, cleanup_list)
+                    speed, interface_type = self.get_lb_config_for_fec_mode(lb, fec_mode, split_mode)
+                    if speed:
+                        for port in lb:
+                            self.update_port_fec_conf_dict(conf, port, speed, fec_mode, interface_type, cleanup_list)
+                    else:
+                        logger.warning(f"Could not find supported interface type with FEC mode: {fec_mode} with "
+                                       f"split_mode: {split_mode} on loopback: {lb}. "
+                                       f"Skipping fec configuration on that lb")
         return conf
 
     def check_all_speeds_with_fec(self, tested_lb_dict, cleanup_list):
@@ -292,9 +300,16 @@ class TestFec(TestAutoFecBase):
                 random.shuffle(speed_options)
                 for speed in speed_options:
                     with allure.step(f"Configure FEC mode: {fec_mode} with speed: {speed} on loopback: {lb}"):
-                        interface_type = random.choice(self.fec_modes_speed_support[fec_mode][split_mode][speed])
-                        self.configure_fec_speed_on_ports(dut_lb_conf, lb, speed, fec_mode,
-                                                          interface_type, cleanup_list)
+                        supported_interface_types = self.get_lb_interface_types_for_speed(lb, fec_mode, split_mode,
+                                                                                          speed)
+                        if supported_interface_types:
+                            interface_type = random.choice(supported_interface_types)
+                            self.configure_fec_speed_on_ports(dut_lb_conf, lb, speed, fec_mode,
+                                                              interface_type, cleanup_list)
+                        else:
+                            logger.warning(f"Could not find supported interface type with FEC mode: {fec_mode} with "
+                                           f"speed: {speed} on loopback: {lb}. Skipping validation of that speed")
+                            continue
                     with allure.step(f"Verify FEC mode: {fec_mode} with speed: {speed} on loopback: {lb}"):
                         self.verify_fec_configuration(dut_lb_conf)
                 conf.update(dut_lb_conf)
@@ -317,9 +332,10 @@ class TestFec(TestAutoFecBase):
         return speed
 
     def get_lb_speeds_option_for_fec_mode(self, lb, split_mode, fec_mode, fec_modes_speed_support):
-        lb_mutual_speeds = get_lb_mutual_speed(lb, split_mode, self.split_mode_supported_speeds)
+        lb_mutual_speeds = set(get_lb_mutual_speed(lb, split_mode, self.split_mode_supported_speeds))
+        lb_cable_supported_speeds = self.get_lb_cable_mutual_speeds(lb)
         fec_mode_supported_speeds = set(fec_modes_speed_support[fec_mode][split_mode].keys())
-        mutual_speeds_option = list(fec_mode_supported_speeds.intersection(lb_mutual_speeds))
+        mutual_speeds_option = list(lb_mutual_speeds & lb_cable_supported_speeds & fec_mode_supported_speeds)
         return mutual_speeds_option
 
     def configure_fec_on_dut_host_ports(self, cleanup_list):
@@ -471,16 +487,26 @@ class TestFec(TestAutoFecBase):
 
     def update_port_fec_conf_dict(self, conf, port, speed, tested_fec_mode,
                                   interface_type, cleanup_list, set_cleanup=True, disable_autoneg=True):
+        interface_width = self.get_interface_width(interface_type)
         if set_cleanup:
             self.set_speed_fec_cleanup(port, cleanup_list)
+
+        self.cli_objects.dut.interface.disable_interface(port)
         if disable_autoneg:
             self.cli_objects.dut.interface.config_auto_negotiation_mode(port, "disabled")
+
         self.cli_objects.dut.interface.config_interface_type(port, 'none')
         self.cli_objects.dut.interface.set_interface_speed(port, speed)
         self.cli_objects.dut.interface.config_advertised_speeds(port, speed_string_to_int_in_mb(speed))
+        if not self.is_copper_cable(port):
+            interface_type.replace(FecConstants.COPPER_TYPE_PREFIX, FecConstants.OPTIC_TYPE_PREFIX)
         self.cli_objects.dut.interface.config_interface_type(port, interface_type)
         self.cli_objects.dut.interface.config_advertised_interface_types(port, interface_type)
         self.cli_objects.dut.interface.configure_interface_fec(port, tested_fec_mode)
+        if self.port_requires_autoneg_config(port, speed, interface_width):
+            self.cli_objects.dut.interface.config_auto_negotiation_mode(port, "enabled")
+        self.cli_objects.dut.interface.enable_interface(port)
+
         conf[port] = {AutonegCommandConstants.SPEED: speed,
                       AutonegCommandConstants.ADV_SPEED: speed,
                       AutonegCommandConstants.ADV_TYPES: interface_type,
@@ -507,19 +533,33 @@ class TestFec(TestAutoFecBase):
         else:
             return 1
 
+    @staticmethod
+    def is_port_pam4(n_active_lanes, speed):
+        return (speed_string_to_int_in_mb(speed) / n_active_lanes) >= AutonegCommandConstants.PAM4_MIN_LANE_SPEED_MB
+
     def set_speed_fec_cleanup(self, port, cleanup_list):
+        cleanup_list.append((self.cli_objects.dut.interface.disable_interface, (port,)))
         base_speed = self.dut_ports_basic_speeds_configuration[port]
         base_fec = self.dut_ports_basic_mlxlink_configuration[port][AutonegCommandConstants.FEC]
         base_interface_type = self.dut_ports_basic_mlxlink_configuration[port][AutonegCommandConstants.TYPE]
+        if not self.is_copper_cable(port):
+            base_interface_type.replace(FecConstants.COPPER_TYPE_PREFIX, FecConstants.OPTIC_TYPE_PREFIX)
         cleanup_list.append((self.cli_objects.dut.interface.config_auto_negotiation_mode, (port, "disabled")))
         cleanup_list.append((self.cli_objects.dut.interface.config_interface_type, (port,
                                                                                     'none')))
         cleanup_list.append((self.cli_objects.dut.interface.set_interface_speed, (port, base_speed)))
         cleanup_list.append((self.cli_objects.dut.interface.config_interface_type, (port,
                                                                                     base_interface_type)))
-        cleanup_list.append((self.cli_objects.dut.interface.config_advertised_speeds, (port, speed_string_to_int_in_mb(base_speed))))
-        cleanup_list.append((self.cli_objects.dut.interface.config_advertised_interface_types, (port, base_interface_type)))
+        cleanup_list.append(
+            (self.cli_objects.dut.interface.config_advertised_speeds, (port, speed_string_to_int_in_mb(base_speed))))
+        cleanup_list.append(
+            (self.cli_objects.dut.interface.config_advertised_interface_types, (port, base_interface_type)))
+
         cleanup_list.append((self.cli_objects.dut.interface.configure_interface_fec, (port, base_fec)))
+
+        if self.port_requires_autoneg_config(port, base_speed, self.get_interface_width(base_interface_type)):
+            cleanup_list.append((self.cli_objects.dut.interface.config_auto_negotiation_mode, (port, "enabled")))
+        cleanup_list.append((self.cli_objects.dut.interface.enable_interface, (port,)))
 
     def update_conf(self, conf):
         for port, port_conf in conf.items():
@@ -543,3 +583,65 @@ class TestFec(TestAutoFecBase):
         if 'auto' in port_supported_fec_modes:
             port_supported_fec_modes.remove('auto')
         return port_supported_fec_modes
+
+    def port_requires_autoneg_config(self, port, speed, interface_width):
+        """
+        The function returns whether the port should have autoneg enabled before configuring fec.
+        It returns true if the port supports autoneg and is pam4.
+        :param port: A dut port, i.e. 'Ethernet28'
+        :param speed: The speed to be configured on the port (used to check if the port is pam4).
+        :param interface_width: The interface width to be configured on the port (used to check if the port is pam4).
+        :return: A boolean stating whether the port should have autoneg enabled before configuring fec
+        """
+        return port in self.ports_support_autoneg and self.is_port_pam4(interface_width, speed)
+
+    def pop_autoneg_enabled_from_cleanup_list(self, tested_ports, cleanup_list):
+        """
+        As part of the test cleanup, we want to set the fec configurations of dac and pam4 ports. To do that,
+        autoneg must be enabled. In order to return autoneg to its original state, we call this function to remove
+        enable autoneg commands from the cleanup list that will be executed at the end of the test.
+        :param tested_ports: ports that were used during the test
+        :param cleanup_list: cleanup_list containing commands that will eb executed at the end of the test
+        """
+        logger.info("Deleting enable autoneg commands from fec cleanup, so ports have autoneg disabled at the end of "
+                    "the test")
+        for port in tested_ports:
+            cleanup_autoneg_enabled_entry = (
+                self.cli_objects.dut.interface.config_auto_negotiation_mode, (port, "enabled"))
+            if cleanup_autoneg_enabled_entry in cleanup_list:
+                cleanup_list.remove(cleanup_autoneg_enabled_entry)
+
+    def get_lb_interface_types_for_speed(self, lb, fec_mode, split_mode, speed):
+        lb_supported_interface_types = set(self.fec_modes_speed_support[fec_mode][split_mode][speed])
+        for port in lb:
+            lb_supported_interface_types.intersection_update(self.mlxlink_supported_speeds[port][speed])
+        return list(lb_supported_interface_types)
+
+    def get_lb_config_for_fec_mode(self, lb, fec_mode, split_mode):
+        """
+        The function returns a tuple (speed, interface type) that is supported on both lb ports, in this fec and split
+        modes
+        :return: A tuple (speed, interface type) that is supported on both lb ports, in this fec and split modes,
+        if no such tuple is found, it returns None, None
+        """
+
+        mutual_speed_options = self.get_lb_speeds_option_for_fec_mode(lb, split_mode, fec_mode,
+                                                                      self.fec_modes_speed_support)
+        random.shuffle(mutual_speed_options)
+        for speed in mutual_speed_options:
+            interface_types_for_speed = self.get_lb_interface_types_for_speed(lb, fec_mode, split_mode, speed)
+            if interface_types_for_speed:
+                return speed, random.choice(interface_types_for_speed)
+        return None, None
+
+    def get_lb_cable_mutual_speeds(self, lb):
+        first_port_speeds = set(self.mlxlink_supported_speeds[lb[0]].keys())
+        second_port_speeds = set(self.mlxlink_supported_speeds[lb[1]].keys())
+        return first_port_speeds.intersection(second_port_speeds)
+
+    def is_copper_cable(self, port):
+        """
+        The function determines whether the port is using a copper (dac) cable
+        :return: A boolean stating if the port uses a copper (dac) cable or not
+        """
+        return self.is_simx or port in self.ports_support_autoneg

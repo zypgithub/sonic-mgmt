@@ -1,5 +1,17 @@
 ########################## NVOS IGNORE START ##########################
 
+tests_nvos/system/gnmi/test_gnmi_cert.py::test_gnmi_delete_cert_in_use_by_gnmi:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3970205"
+    conditions:
+      - https://redmine.mellanox.com/issues/3970205
+
+tests_nvos/system/gnmi/test_gnmi_cert.py::test_gnmi_reboot_system:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3970593"
+    conditions:
+      - https://redmine.mellanox.com/issues/3970593
+
 tests_nvos/system/gnmi/test_gnmi_pam.py::test_gnmi_auth_failing_clients_ddos:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3942921"
@@ -257,12 +269,6 @@ tests_nvos/system/test_system_ptp.py:
   skip:
     reason: "Decided to disable for now"
 
-tests_nvos/checklist/test_bios_update.py::test_bios_upgrade:
-  skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3848672"
-    conditions:
-      - https://redmine.mellanox.com/issues/3848672
-
 tests_nvos/system/test_system_image.py::test_install_multiple_images:
   skip:
     reason: "Need to fix the test - currently installs the same image twice"
@@ -272,7 +278,7 @@ tests_nvos/platform/test_platform_firmware_asic.py::test_show_fae_firmware:
     reason: "Testcase skipped on non gorilla systems due to RM issue: https://redmine.mellanox.com/issues/3863937"
     conditions_logical_operator: and
     conditions:
-      - "'gorilla' not in testbed"
+      - "'gorilla' not in testbed and 'juliet' not in testbed"
       - https://redmine.mellanox.com/issues/3863937
 
 tests_nvos/ib/test_show_ib.py::test_show_ib_device:
@@ -280,7 +286,7 @@ tests_nvos/ib/test_show_ib.py::test_show_ib_device:
     reason: "Testcase skipped on non gorilla systems due to RM issue: https://redmine.mellanox.com/issues/3854563"
     conditions_logical_operator: and
     conditions:
-      - "'gorilla' not in testbed"
+      - "'gorilla' not in testbed and 'juliet' not in testbed"
       - https://redmine.mellanox.com/issues/3854563
 
 tests_nvos/fae/test_sonic_cli.py::test_change_sonic_cli_state:
@@ -320,12 +326,18 @@ tests_nvos/interfaces/test_lldp.py::test_lldp_interface_flapping:
     conditions:
       - https://redmine.mellanox.com/issues/3937660
 
+tests_nvos/interfaces/link_detection/test_link_detection.py::test_port_ranges:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3953065"
+    conditions:
+      - https://redmine.mellanox.com/issues/3953065
+
 tests_nvos/platform/test_platform.py::test_show_platform:
   skip:
     reason: "Testcase skipped on non gorilla systems due to RM issue: https://redmine.mellanox.com/issues/3922673"
     conditions_logical_operator: and
     conditions:
-      - "'gorilla' not in testbed"
+      - "'gorilla' not in testbed and 'juliet' not in testbed"
       - https://redmine.mellanox.com/issues/3922673
 
 tests_nvos/platform/test_platform_environment.py::test_show_platform_environment:
@@ -333,7 +345,7 @@ tests_nvos/platform/test_platform_environment.py::test_show_platform_environment
     reason: "Testcase skipped on non gorilla systems due to RM issue: https://redmine.mellanox.com/issues/3922682"
     conditions_logical_operator: and
     conditions:
-      - "'gorilla' not in testbed"
+      - "'gorilla' not in testbed and 'juliet' not in testbed"
       - https://redmine.mellanox.com/issues/3922682
 
 tests_nvos/platform/test_platform_environment.py::test_show_platform_environment_temperature:
@@ -341,7 +353,7 @@ tests_nvos/platform/test_platform_environment.py::test_show_platform_environment
     reason: "Testcase skipped on non gorilla systems due to RM issue: https://redmine.mellanox.com/issues/3922682"
     conditions_logical_operator: and
     conditions:
-      - "'gorilla' not in testbed"
+      - "'gorilla' not in testbed and 'juliet' not in testbed"
       - https://redmine.mellanox.com/issues/3922682
 
 tests_nvos/platform/test_platform_firmware.py::test_show_platform_firmware:
@@ -349,8 +361,32 @@ tests_nvos/platform/test_platform_firmware.py::test_show_platform_firmware:
     reason: "Testcase skipped on non gorilla systems due to RM issue: https://redmine.mellanox.com/issues/3956092"
     conditions_logical_operator: and
     conditions:
-      - "'gorilla' not in testbed"
+      - "'gorilla' not in testbed and 'juliet' not in testbed"
       - https://redmine.mellanox.com/issues/3956092
+
+tests_nvos/platform/test_platform.py::test_show_platform_chassis_location:
+  skip:
+    reason: "Testcase skipped on non Juliet systems, Juliet feature only (as a part of Uberon)"
+    conditions:
+      - "'juliet' not in testbed"
+
+tests_nvos/platform/test_platform_firmware_bios/test_platform_firmware_bios.py:
+  skip:
+    reason: "Testcase skipped on Juliet systems, feature is pruned in Juliet"
+    conditions:
+      - "'juliet' in testbed"
+
+tests_nvos/checklist/erot_fw_upgrade/test_erot_upgrade.py:
+  skip:
+    reason: "Testcase skipped on non Juliet systems, Juliet feature only (as a part of Uberon)"
+    conditions:
+      - "'juliet' not in testbed"
+
+tests_nvos/checklist/test_bios_upgrade.py::test_bios_upgrade:
+  skip:
+    reason: "Testcase skipped on non Juliet systems since they has 'auto-update' which changes the upgrade's flow"
+    conditions:
+      - "'juliet' not in testbed"
 
 tests_nvos/interfaces/test_ib_interface_configuration.py::test_ib_interface_lanes:
   skip:
@@ -360,9 +396,9 @@ tests_nvos/interfaces/test_ib_interface_configuration.py::test_ib_interface_lane
 
 tests_nvos/interfaces/test_port_split.py:
   skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3924104"
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3924138"
     conditions:
-      - https://redmine.mellanox.com/issues/3924104
+      - https://redmine.mellanox.com/issues/3924138
 
 tests_nvos/system/test_system_profile_change.py:
   skip:
@@ -374,14 +410,14 @@ tests_nvos/interfaces/nvl5_port/test_nvl5_port.py:
   skip:
     reason: "Testcase skipped on XDR systems"
     conditions:
-      - "'gorilla' not in testbed"
+      - "'juliet' not in testbed"
 
 tests_nvos/platform/test_platform_transceiver.py:
   skip:
     reason: "Testcase skipped on non gorilla systems due to RM issue: https://redmine.mellanox.com/issues/3950840"
     conditions_logical_operator: and
     conditions:
-      - "'gorilla' not in testbed"
+      - "'gorilla' not in testbed and 'juliet' not in testbed"
       - https://redmine.mellanox.com/issues/3950840
 
 tests_nvos/general/config_commands/test_config_fetch:
@@ -431,7 +467,25 @@ tests_nvos/system/test_techsupport_feature.py::test_techsupport_expected_files:
     reason: "Testcase skipped on non gorilla systems due to RM issue: https://redmine.mellanox.com/issues/3960812"
     conditions_logical_operator: and
     conditions:
-      - "'gorilla' not in testbed"
+      - "'gorilla' not in testbed and 'juliet' not in testbed"
       - https://redmine.mellanox.com/issues/3960812
+
+tests_nvos/general/traffic/test_basic_traffic.py::test_basic_traffic:
+  skip:
+    reason: "Testcase skipped on non gorilla systems due to RM issue: https://redmine.mellanox.com/issues/3972021"
+    conditions:
+      - https://redmine.mellanox.com/issues/3972021
+
+tests_nvos/system/test_show_system.py::test_system:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3975976"
+    conditions:
+      - https://redmine.mellanox.com/issues/3975976
+
+tests_nvos/platform/test_platform_environment.py::test_platform_environment_fan_shared_led:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3978721"
+    conditions:
+      - https://redmine.mellanox.com/issues/3978721
 
 ########################## NVOS IGNORE END ##########################

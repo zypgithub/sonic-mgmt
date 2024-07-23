@@ -111,7 +111,8 @@ def test_gnmi_auth_failthrough(test_flow, engines, local_adminuser, aaa_users):
     users_by_auth_method = aaa_users
     users_by_auth_method[AuthConsts.LOCAL] = local_adminuser
 
-    auth_methods = [AuthConsts.LOCAL, random.choice(RemoteAaaType.ALL_TYPES)]
+    rand_aaa_method = random.choice(RemoteAaaType.ALL_TYPES)
+    auth_methods = [AuthConsts.LOCAL, rand_aaa_method]
     random.shuffle(auth_methods)
 
     order = ','.join(auth_methods)
@@ -123,7 +124,10 @@ def test_gnmi_auth_failthrough(test_flow, engines, local_adminuser, aaa_users):
         system.aaa.authentication.set(AuthConsts.ORDER, order).verify_result()
     with allure.step(f'set failthrough: {failthrough}'):
         system.aaa.authentication.set(AuthConsts.FAILTHROUGH, failthrough, apply=True).verify_result()
-        time.sleep(3)
+        if rand_aaa_method == RemoteAaaType.LDAP:
+            wait_for_ldap_nvued_restart_workaround(None)
+        else:
+            time.sleep(3)
 
     user = aaa_users[method2]
     verify_gnmi_client(test_flow, engines.dut.ip, GnmiConsts.GNMI_DEFAULT_PORT, user.username, user.password, True,
@@ -153,8 +157,8 @@ def test_gnmi_auth_existing_streamed_session(engines, local_adminuser):
     with allure.step('set up streamed gnmi session - subscribe client to port description'):
         client = GnmiClient(engines.dut.ip, GnmiConsts.GNMI_DEFAULT_PORT, local_adminuser.username,
                             local_adminuser.password)
-        session = client.run_subscribe_interface_and_keep_session_alive(GnmiMode.STREAM, selected_port.name,
-                                                                        skip_cert_verify=True)
+        session = client.gnmic_subscribe_interface_and_keep_session_alive(GnmiMode.STREAM, selected_port.name,
+                                                                          skip_cert_verify=True)
     with allure.step('change port description'):
         new_descriptions.append(change_interface_description(selected_port))
     with allure.step(f'change password of user "{local_adminuser.username}"'):
@@ -196,12 +200,12 @@ def test_gnmi_auth_failing_clients_ddos(engines, local_adminuser):
         for i in range(MAX_GNMI_SUBSCRIBERS):
             with allure.step(f'run invalid gnmi client #{i}'):
                 invalid_clients.append(
-                    invalid_client.run_subscribe_interface_and_keep_session_alive(GnmiMode.STREAM, selected_port.name,
-                                                                                  skip_cert_verify=True))
+                    invalid_client.gnmic_subscribe_interface_and_keep_session_alive(GnmiMode.STREAM, selected_port.name,
+                                                                                    skip_cert_verify=True))
     with allure.step('run gnmi client with valid creds'):
         client = GnmiClient(engines.dut.ip, GnmiConsts.GNMI_DEFAULT_PORT, local_adminuser.username,
                             local_adminuser.password)
-        out, err = client.run_capabilities(skip_cert_verify=True, wait_till_done=True)
+        out, err = client.gnmic_capabilities(skip_cert_verify=True, wait_till_done=True)
     with allure.step('expect success'):
         for err_msg in GnmicErr.ALL_ERRS:
             verify_msg_not_in_out_or_err(err_msg, out, err)

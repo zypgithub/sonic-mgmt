@@ -70,4 +70,7 @@
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_tacacs.cases </cases>
 	</test>
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_gnmi.cases </cases>
+	</test>
 </DBDEF>

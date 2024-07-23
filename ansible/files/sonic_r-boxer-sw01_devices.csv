@@ -1,0 +1,3 @@
+Hostname,ManagementIp,HwSku,Type,Protocol,Os
+r-boxer-sw01,10.210.25.53,ACS-MSN2010,DevSonic,,sonic
+pdu-10-208-0-23,10.208.0.23,Sentry,CDU,snmp,

@@ -120,9 +120,9 @@ def verify_documents_path(output, validation_key, device):
 
 
 def verify_documents_size(engine, device):
-    files_list = [device.documents_files[DocumentsConsts.TYPE_EULA],
-                  device.documents_files[DocumentsConsts.TYPE_RELEASE_NOTES],
-                  device.documents_files[DocumentsConsts.TYPE_USER_MANUAL]]
+    files_list = [device.documents_path[DocumentsConsts.TYPE_EULA],
+                  device.documents_path[DocumentsConsts.TYPE_RELEASE_NOTES],
+                  device.documents_path[DocumentsConsts.TYPE_USER_MANUAL]]
 
     error_msg = ''
     for file in files_list:

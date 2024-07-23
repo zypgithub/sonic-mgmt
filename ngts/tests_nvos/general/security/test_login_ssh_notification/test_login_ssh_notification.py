@@ -76,7 +76,7 @@ def parse_ssh_login_notification(dut_ip, username, password):
             match = re.findall(regex, notification_login_message)
             if regex == Consts.LAST_SUCCESSFUL_LOGIN_DATE_REGEX:
                 assert match, f'could not find {key} in ssh login message.\nregex: {regex}\n' \
-                              f'login message:\n{notification_login_message}'
+                    f'login message:\n{notification_login_message}'
                 # there will be always output to catch it
                 result[Consts.LAST_SUCCESSFUL_LOGIN_DATE] = convert_linux_date_output_to_datetime_object(match[0])
             elif regex == Consts.LAST_UNSUCCESSFUL_LOGIN_DATE_REGEX:
@@ -226,6 +226,7 @@ def get_current_time_in_secs():
     return current_date
 
 
+@pytest.mark.cumulus
 @pytest.mark.simx_security
 @pytest.mark.login_ssh_notification
 @pytest.mark.checklist
@@ -247,6 +248,7 @@ def test_ssh_login_notifications_default_fields_admin(engines, login_source_ip_a
                                                     last_successful_login=successful_login_time)
 
 
+@pytest.mark.cumulus
 @pytest.mark.login_ssh_notification
 @pytest.mark.checklist
 def test_ssh_login_notification_password_change_admin(engines, login_source_ip_address, disable_password_hardening_rules):
@@ -277,6 +279,7 @@ def test_ssh_login_notification_password_change_admin(engines, login_source_ip_a
                                                         last_successful_login=successful_login_time)
 
 
+@pytest.mark.cumulus
 @pytest.mark.login_ssh_notification
 @pytest.mark.checklist
 def test_ssh_login_notification_role_new_user(engines, login_source_ip_address):
@@ -306,6 +309,7 @@ def test_ssh_login_notification_role_new_user(engines, login_source_ip_address):
                                                     last_successful_login=successful_login_time)
 
 
+@pytest.mark.cumulus
 @pytest.mark.simx_security
 @pytest.mark.login_ssh_notification
 @pytest.mark.checklist
@@ -349,6 +353,7 @@ def test_ssh_login_notification_cli_commands_good_flow(engines, login_source_ip_
         #     "expected: {}, actual: {}".format(record_days, output[Consts.RECORD_PERIOD])
 
 
+@pytest.mark.cumulus
 @pytest.mark.simx_security
 @pytest.mark.login_ssh_notification
 @pytest.mark.checklist

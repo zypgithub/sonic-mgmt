@@ -7,7 +7,7 @@ import sys
 import re
 
 
-BRANCH_PTF_MAPPING = {'master': 'latest',
+BRANCH_PTF_MAPPING = {'master': '558858',
                       '202012': '42007',
                       '202106': '42007'
                       }

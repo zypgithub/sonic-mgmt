@@ -1,6 +1,8 @@
 import logging
 import string
 from random import randint
+from typing import MutableSequence
+
 from .ResultObj import ResultObj
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts, IbInterfaceConsts
 from ngts.nvos_constants.constants_nvos import SystemConsts, PlatformConsts
@@ -123,7 +125,7 @@ class RandomizationTool:
         return RandomizationTool.select_random_values(list_of_ports, None, 1)
 
     @staticmethod
-    def select_random_value(list_of_values, forbidden_values=None):
+    def select_random_value(list_of_values, forbidden_values=None) -> ResultObj:
         """
         Select a random value from provided list of values.
         * user can also specify which values shouldn't be chosen (using 'forbidden_values' parameter).
@@ -137,17 +139,19 @@ class RandomizationTool:
         return result_obj
 
     @staticmethod
-    def select_random_values(list_of_values, forbidden_values=None, number_of_values_to_select=1):
+    def select_random_values(list_of_values, forbidden_values=None, number_of_values_to_select=1,
+                             allow_repetitions=False) -> ResultObj:
         """
         Select random values from provided list of values.
         * user can also specify which values shouldn't be chosen (using 'forbidden_values' parameter).
         :param list_of_values: list of values to select from
         :param forbidden_values: list of forbidden values that should not be selected
         :param number_of_values_to_select: number of values to select
+        :param allow_repetitions: if True then the same value can appear multiple times in the result
         :return: list of random selected values
         """
         with allure.step('Select random values from provided list of values'):
-            list_of_values = list_of_values.copy()
+            list_of_values = list(list_of_values)
             forbidden_values = None if forbidden_values is None else forbidden_values.copy()
 
             result_obj = ResultObj(False, "")
@@ -173,7 +177,7 @@ class RandomizationTool:
                 result_obj.result = True
                 return result_obj
 
-            if len(list_of_values_to_select_from) < number_of_values_to_select:
+            if not allow_repetitions and len(list_of_values_to_select_from) < number_of_values_to_select:
                 result_obj.info = "The number of values to select is more then the number of values in the list"
                 return result_obj
 
@@ -183,7 +187,8 @@ class RandomizationTool:
                 result_obj.returned_value.append(selected_value)
                 logging.info("selected value: {selected_value}".format(selected_value=selected_value))
                 allure.step("selected value: {selected_value}".format(selected_value=selected_value))
-                list_of_values_to_select_from.remove(selected_value)
+                if not allow_repetitions:
+                    list_of_values_to_select_from.remove(selected_value)
 
             result_obj.result = True
             return result_obj
@@ -313,3 +318,13 @@ class RandomizationTool:
                 return ResultObj(False, "Failed to select {} {} transceivers. Only {} were found".format(number_of_transceiver_to_select, cable_type, len(transceivers_list)))
 
             return ResultObj(True, "picked transceivers success", random.sample(transceivers_list, number_of_transceiver_to_select))
+
+    @staticmethod
+    def select_random_asics(dut_device=None, forbidden_values=None, how_many=1) -> ResultObj:
+        """Returns a list of distinct numbers between 1 and asic_amount."""
+        asic_amount = (dut_device or TestToolkit.devices.dut).asic_amount
+        return RandomizationTool.select_random_values(list(range(1, asic_amount + 1)), forbidden_values, how_many)
+
+    @staticmethod
+    def shuffle_in_place(items: MutableSequence) -> None:
+        random.shuffle(items)

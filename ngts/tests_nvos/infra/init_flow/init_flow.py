@@ -3,9 +3,12 @@ import re
 
 import pytest
 
-from ngts.nvos_constants.constants_nvos import NvosConst, DiskConsts, PlatformConsts
+from ngts.nvos_constants.constants_nvos import NvosConst, DiskConsts, PlatformConsts, LinkDetectionConsts
+from ngts.nvos_tools.Devices.IbDevice import CrocodileSwitch
+from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.tests_nvos.system.factory_reset.post_steps import set_ports_to_legacy_on_croc
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_general_utils import check_partitions_capacity
 
@@ -70,6 +73,7 @@ def test_ports_are_up(engines, devices):
     Verifying the NVOS ports are up
     :return: None, raise error in case one or more ports are down
     """
+    set_ports_to_legacy_on_croc(engines, devices)
     with allure.step("Validate all ports status is up"):
         res_obj = devices.dut.verify_ib_ports_state(engines.dut, NvosConst.PORT_STATUS_UP)
         assert res_obj.result, res_obj.info

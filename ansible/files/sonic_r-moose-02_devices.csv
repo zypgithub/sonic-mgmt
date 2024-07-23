@@ -1,0 +1,3 @@
+Hostname,ManagementIp,HwSku,Type,Protocol,Os
+r-moose-02,10.210.24.236/22,ACS-SN5600,DevSonic,,sonic
+pdu-10-208-2-47,10.208.2.47,Vertiv,Pdu,snmp,

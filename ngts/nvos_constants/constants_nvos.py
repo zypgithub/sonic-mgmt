@@ -63,6 +63,7 @@ class NvosConst:
     IB_SWITCH_TYPE = "IB"
     QTM2 = "Quantum2"
     QTM3 = "Quantum3"
+    NVL5 = 'NVLink-5 switch'
     DESCRIPTION = 'description'
     PORT_STATUS_UP = 'up'
     PORT_STATUS_DOWN = 'down'
@@ -236,11 +237,13 @@ class ActionType:
     ENABLE = '@enable'
     DISABLE = '@disable'
     IMPORT = '@import'
+    CREATE = '@create'
 
 
 class ActionConsts:
     CLEANUP = "cleanup"
     RUN = "run"
+    CHANGE = 'change'
     INSTALL = "install"
     UNINSTALL = "uninstall"
     BOOT_NEXT = "boot-next"
@@ -253,9 +256,11 @@ class ActionConsts:
     UPLOAD = 'upload'
     RENAME = 'rename'
     RESET = 'reset'
+    RESUME = 'resume'
 
 
 class SystemConsts:
+    MGMT2_HOSTNAME = "mgmt2"
     HOSTNAME = 'hostname'
     STATUS = 'status'
     STATE = 'state'
@@ -362,6 +367,14 @@ class SystemConsts:
     SERIAL_CONSOLE_DEFAULT_INACTIV_TIMEOUT = '15'
     SERIAL_CONSOLE_DEFAULT_SYSRQ_CAPABILITIES = 'disabled'
     SERIAL_CONSOLE_ENABLED_SYSRQ_CAPABILITIES = 'enabled'
+
+    SERIAL_CONSOLE_CONNECTED_TO = 'connected-to'
+    SERIAL_CONSOLE_OUTPUT_CPU = 'cpu'
+    SERIAL_CONSOLE_OUTPUT_BMC = 'bmc'
+    SERIAL_BMC_CONSOLE_OUTPUT_DEFAULT_FIELD = [SERIAL_CONSOLE_CONNECTED_TO]
+    SERIAL_BMC_CONSOLE_OUTPUT_DEFAULT_VALUE = [SERIAL_CONSOLE_OUTPUT_CPU]
+    SERIAL_BMC_ACTION_CHANGE_BMC = SERIAL_CONSOLE_CONNECTED_TO + " " + SERIAL_CONSOLE_OUTPUT_BMC
+    SERIAL_BMC_ACTION_CHANGE_CPU = SERIAL_CONSOLE_CONNECTED_TO + " " + SERIAL_CONSOLE_OUTPUT_CPU
 
     HOSTNAME_DEFAULT_VALUE = 'nvos'
     POST_LOGOUT_MESSAGE_DEFAULT_VALUE = ""
@@ -590,7 +603,7 @@ class ConfigConsts:
 class PlatformConsts:
     PLATFORM_FW = "firmware"
     FW_PATH = "/auto/sw_system_project/MLNX_OS_INFRA/mlnx_os2/sx_mlnx_fw/"
-    XDR_FW_PATH = "/auto/mswg/release/sx_mlnx_fw/QTM3/rel-35_2014_0938/dev/"
+    XDR_FW_PATH = "/auto/mswg/release/sx_mlnx_fw/QTM3/rel-35_2014_0974/dev/"
     PLATFORM_ENVIRONMENT = "environment"
     PLATFORM_HW = "hardware"
     PLATFORM_SW = "software"
@@ -638,6 +651,7 @@ class PlatformConsts:
     ENV_TEMP_CURR_PROP = "current"
     ENV_TEMP_STATE_PROP = "state"
     ENV_TEMP_STATE_OK = 'ok'
+    ENV_TEMP_STATE_FAILED = 'failed'
     HW_COMP_SWITCH = "SWITCH"
     TRANSCEIVER_STATUS = "status"
     TRANSCEIVER_ERROR_STATUS = "error-status"
@@ -646,6 +660,28 @@ class PlatformConsts:
     ENV_TEMP_MIN = 15  # [Celsius]
     ENV_TEMP_MAX = 90  # [Celsius]
     VOLTAGE_FILES_PATH = '/var/run/hw-management/ui/voltage'
+    LEAKAGE1 = 'LEAKAGE-1'
+    LEAKAGE1_ROPE = 'LEAKAGE-1-ROPE'
+    LEAKAGE2 = 'LEAKAGE-2'
+    LEAKAGE2_ROPE = 'LEAKAGE-2-ROPE'
+    LEAKAGE3 = 'LEAKAGE-3'
+    LEAKAGE4 = 'LEAKAGE-4'
+    LEAKAGE_STATUS_OK = 'ok'
+    LEAKAGE_STATUS_LEAK = 'leak'
+    LEAK_STATUS_LEAK = '0'
+    LEAK_STATUS_OK = '1'
+    LEAKAGE_FILES_FOLDER = '/var/run/hw-management/system/'
+    LEAKAGE_FILES_SYSFS_FOLDER = '/sys/devices/platform/mlxplat/mlxreg-io/hwmon/hwmon3/'
+    LEAKAGE_DEFAULT_OUTPUT_FIELDS = [LEAKAGE1, LEAKAGE1_ROPE, LEAKAGE2, LEAKAGE2_ROPE, LEAKAGE3, LEAKAGE4]
+    LEAKAGE_DEFAULT_OUTPUT_VALUES = [{'state': 'ok'}]
+    LEAKAGE_ALL_SENSOR_NOT_OK = [{'state': 'leak'}]
+    BMC_FIRMWARE_INVENTORY_LINK = 'https://10.0.1.1/redfish/v1/UpdateService/FirmwareInventory'
+    BMC_FIRMWARE_BMC_LINK = 'MGX_FW_BMC_0'
+    BMC_FIRMWARE_EROT_LINK = 'MGX_FW_ERoT_BMC_0'
+    BMC_INVENTORY_PATTERN = r'/redfish/v1/UpdateService/FirmwareInventory/([^"]+)'
+    BMC_COMPONENT_VERSION_PATTERN = r'"Version":\s*"([^"]+)"'
+    BMC_LOGIN = 'admin'
+
     PSU_STATE = 'state'
     PS_REDUNDANCY_POLICY = 'policy'
     PS_REDUNDANCY_MIN_REQ = 'min-required'
@@ -660,6 +696,18 @@ class PlatformConsts:
     INSERTED = 'Inserted'
     TRANSCEIVER_CABLE_TYPE = 'cable-type'
     TRANSCEIVER_CABLE_OPTICAL_MODULE = 'Optical module'
+    TRANSCEIVER_CABLE_COPPER_CABLE = 'Copper cable'
+    CHASSIS_LOCATION_TRAY_ID = 'tray-index'
+    CHASSIS_LOCATION_SLOT_ID = 'slot-index'
+    CHASSIS_LOCATION_CHAS_ID = 'chassis-id'
+    CHASSIS_LOCATION_TOPO_ID = 'topology-id'
+    CHASSIS_LOCATION_STANDALONE_DICT = {CHASSIS_LOCATION_TRAY_ID: '0',
+                                        CHASSIS_LOCATION_SLOT_ID: '0',
+                                        CHASSIS_LOCATION_CHAS_ID: 'N/A',
+                                        CHASSIS_LOCATION_TOPO_ID: 'Loopback'}
+
+    INV_STATE = 'state'
+    INV_OK = 'ok'
 
 
 class FansConsts:
@@ -672,6 +720,8 @@ class FansConsts:
     STATE_NOT_OK = 'Not OK'
     STATE_ABSENT = 'absent'
     FAN_DIRECTION_MISMATCH_ERR = "is not aligned with fan1 direction"
+    FAN_STATUS_LED = "FAN_STATUS"
+    FAN_FAULT_FILE = "/var/run/hw-management/thermal/fan{}_fault"
 
 
 class IbConsts:
@@ -712,7 +762,8 @@ class IbConsts:
     IBDIAGNET_EXPECTED_FILES_LIST = ['ibdiagnet2.db_csv', 'ibdiagnet2.ibnetdiscover', 'ibdiagnet2.log',
                                      'ibdiagnet2.lst',
                                      'ibdiagnet2.net_dump', 'ibdiagnet2.nodes_info', 'ibdiagnet2.pkey', 'ibdiagnet2.pm',
-                                     'ibdiagnet2.sm', 'ibdiagnet2.vports', 'ibdiagnet2.vports_pkey']
+                                     'ibdiagnet2.sm', 'ibdiagnet2.vports', 'ibdiagnet2.vports_pkey',
+                                     'ibdiagnet2.debug', 'ibdiagnet2.net_dump_ext']
     IBDIAGNET_EXPECTED_MESSAGE = 'ibdiagnet output files were archived into ibdiagnet2_output.tgz'
     IB_INTERFACE_NAME_REGEX = "([a-zA-Z]+)(\d+)(p\d+)"  # noqa: E402
 
@@ -727,7 +778,7 @@ class ImageConsts:
     SWID = 'swid'
     FW_ASIC = 'ASIC'
     FW_STABLE_VERSION = 'rel-31_2010_4100-004-EVB.mfa'
-    XDR_FW_STABLE_VERSION = 'rel-35_2014_0938.mfa'
+    XDR_FW_STABLE_VERSION = 'rel-35_2014_0974.mfa'
     SCP_PATH = 'scp://{}:{}@{}'.format(NvosConst.ROOT_USER, NvosConst.ROOT_PASSWORD,
                                        'fit70')
     SCP_PATH_SERVER = 'scp://{username}:{password}@{ip}{path}'
@@ -842,7 +893,7 @@ class NtpConsts:
 
     INVALID_STATE = 'enable1'
     INVALID_AUTHENTICATION = 'disable1'
-    INVALID_LISTEN = 'eth1'
+    INVALID_LISTEN = 'invalid_eth'
     INVALID_DHCP = 'enabled1'
     INVALID_VRF = 'temp_str'
     INVALID_HIGHER_KEY = '65536'
@@ -978,6 +1029,15 @@ class SyslogConsts:
     SYSLOG_LOG_PATH = "/var/log/syslog"
 
 
+class ClusterAppsLogLevels:
+    CRITICAL = 'critical'
+    ERROR = 'error'
+    WARNING = 'warn'
+    NOTICE = 'notice'
+    INFO = 'info'
+    DEBUG = 'debug'
+
+
 class SyslogSeverityLevels:
     NONE = 'none'
     CRIT = 'crit'
@@ -1009,13 +1069,27 @@ class HealthConsts:
     HEALTH_FIRST_FILE = "health_history"
     HEALTH_SECOND_FILE = "health_history.1"
     HEALTH_MONITOR_CONFIG_FILE_PATH = "/usr/share/sonic/device/{}/system_health_monitoring_config.json"
+    ISSUE = "issue"
     ISSUES = "issues"
+    ASIC_HEALTH_ISSUE = "ASIC-HEALTH"
     SUMMARY_REGEX_OK = "INFO {} : Summary: {}".format(NvosConst.DATE_TIME_REGEX, OK)
     SUMMARY_REGEX_NOT_OK = "ERROR {} : Summary: {}".format(NvosConst.DATE_TIME_REGEX, NOT_OK)
     ADD_STATUS_TO_SUMMARY_REGEX = NvosConst.DATE_TIME_REGEX + " : Summary:.*"
     HEALTH_ISSUE_REGEX = "ERROR {time_regex} : {component}: (?:is )?{issue}"
     HEALTH_FIX_REGEX = "INFO {time_regex} : Cleared: {component}: (?:is )?{issue}"
     SYSTEM_LOG_HEALTH_REGEX = '.* Health DB change cache.* new data.*\'summary\': \'{}\''
+
+    FATAL = "FATAL"
+    ASIC_HEALTH_ISSUE_FATAL = "Switch ASIC in fatal mode."
+    FATAL_PROMPT = "[System_Fatal_State]"
+    FATAL_FILE = "/etc/system_fatal"
+    FATAL_HEALTH_EVENT_SIMULATION = {
+        4: "echo health_check_trigger  sx_dbg_test_fw_assert {asic} > /proc/mlx_sx/sx_core",
+        5: "echo health_check_trigger  sx_dbg_test_fw_fatal_cause {asic} > /proc/mlx_sx/sx_core",
+        # todo: more events and warnings
+        "warning": "echo health_check_trigger catas {asic} > /proc/mlx_sx/sx_core",
+    }
+    FATAL_EVENT_IDS = (4, 5)
 
 
 class OperationTimeConsts:
@@ -1029,9 +1103,10 @@ class OperationTimeConsts:
     TEST_NAME_COL = 'test_name'
     SESSION_ID_COL = 'session_id'
     DATE_COL = 'date'
-    THRESHOLDS = {'reboot': 220,
+    THRESHOLDS = {'reboot': 180,
                   'julietscaleout_reboot': 500,  # Currently there is a bug on this. Time needs to be decreased once fixed.
-                  'reset factory': 260,
+                  'julietscaleout reset factory': 550,  # Currently there is a bug on this. Time needs to be decreased once fixed.
+                  'reset factory': 250,
                   'install user FW': 450,
                   'install default fw': 360,
                   'port goes up': 30,
@@ -1039,7 +1114,9 @@ class OperationTimeConsts:
                   'reboot with default FW installation': 360,
                   'reboot with new user FW': 450,
                   'set hostname': 12,
-                  'generate tech-support': 75}
+                  'generate tech-support': 75,
+                  'julietscaleout generate_tech_support': 100,
+                  'start stop cluster app': 50}
 
 
 class StatsConsts:
@@ -1142,6 +1219,21 @@ class StatsConsts:
     DELETE = 'delete'
     UPLOAD = 'upload'
     CLEAR = 'clear'
+
+
+class LinkDetectionConsts:
+    PLATFORM_CAPABILITIES = "capabilities"
+    PLATFORM_LINK_DETECTION = "link_detection"
+    EMPTY_STRING = ""
+    SPEED_WIDTH_MISMATCH = "speed_width_mismatch"
+    NO_NEGOTIATION = "no_negotiation"
+    PLANARIZED_MISMATCH = "planarized_mismatch"
+    PLANARIZED = "planarized"
+    NUM_OF_PLANES = "num_of_planes"
+    SUPPORTED_WIDTH = "supported_width"
+    SUPPORTED_SPEED = "supported_speed"
+    CONNECTION_MODE_NDR = 'ndr'
+    CONNECTION_MODE_XDR = 'xdr'
 
 
 class MultiPlanarConsts:
@@ -1250,6 +1342,7 @@ class UfmMadConsts:
     UFM_MAD_TABLE_GENERAL = '\"UFM_MAD_TABLE|general\"'
     NUMBER_OF_ADDRESSES_IN_MAD_RESPONSE = 4
     CONFIG_TIME = 100  # [sec]
+    MST_DEV_NAME = '/dev/mst/mt54002_pciconf0'
     IBSNI_REGISTER = 'IBSNI'
     PMAOS_REGISTER = 'PMAOS'
     NVMAD_PATH = '/auto/sw_system_project/MLNX_OS_INFRA/mad_repository'
@@ -1280,6 +1373,7 @@ class BiosConsts:
     INVALID_PASSWORD_PROMPT = "Invalid Password"
     CREATE_NEW_PASSWORD = "Create New Password"
     ENTER_CURRENT_PASSWORD = "Enter Current Password"
+    NVLINK_ENTER_CURRENT_PASSWORD = "Enter Current Administrator Password"
     CLEAR_OLD_PASSWORD = "Clear Old Password"
     ENABLED_SELECTED = "[1;37;47m[Enabled]"
     DISABLED_SELECTED = "[1;37;47m[Disabled]"
@@ -1351,6 +1445,9 @@ class AclConsts:
     HASHLIMIT_EXPIRE = 'expire'
     HASHLIMIT_DEST_MASK = 'destination-mask'
     HASHLIMIT_SRC_MASK = 'source-mask'
+    DEFAULT_ACLS = ["ACL_MGMT_INBOUND_CP_DEFAULT", "ACL_MGMT_INBOUND_CP_DEFAULT_IPV6", "ACL_MGMT_INBOUND_DEFAULT",
+                    "ACL_MGMT_INBOUND_DEFAULT_IPV6", "ACL_MGMT_OUTBOUND_CP_DEFAULT",
+                    "ACL_MGMT_OUTBOUND_CP_DEFAULT_IPV6"]
 
 
 class PtpConsts:

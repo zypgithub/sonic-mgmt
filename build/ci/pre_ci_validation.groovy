@@ -178,6 +178,15 @@ def run_step(name) {
         NGCITools().ciTools.run_sh("mkdir -p ${env.nfs_dir}/sonic_devops/build")
         NGCITools().ciTools.run_sh("chmod 777 ${env.nfs_dir}/sonic_devops/build")
 
+        def common_properties_file_path = "/auto/sw_system_release/ci/sonic_devops/build/common/build.properties"
+        def mars_property = "MARS_RELEASE_VERSION"
+        def parameters = readFile(common_properties_file_path)
+        def props = new Properties()
+        props.load(new StringReader(parameters))
+        print "Reading '${mars_property}' from: '${common_properties_file_path}'"
+        env.MARS_RELEASE_VERSION = props.getProperty(mars_property)
+        print("MARS_RELEASE_VERSION = ${env.MARS_RELEASE_VERSION}")
+
 
     } catch (Throwable ex) {
         NGCITools().ciTools.set_error_in_env(ex, "devops", name)

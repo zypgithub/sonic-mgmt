@@ -1,0 +1,3 @@
+StartDevice,StartPort,EndDevice,Console_type,Proxy
+rcon-sws-3-8,7020,r-anaconda-81,ssh,root
+rcon-sws-3-8,7002,arc-switch1039,ssh,root

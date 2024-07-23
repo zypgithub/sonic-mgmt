@@ -24,7 +24,6 @@ class LinuxGeneralCli(GeneralCliCommon):
         """
         if image_path.endswith('.bin'):
             image_path = image_path.replace('.bin', '.bfb')
-        assert os.path.exists(image_path), "The required image path doesn't exists"
         try:
             cmd = f'sudo bfb-install -b {image_path} -r rshim{rshim_num}'
             pattern = r"INFO\[MISC\]: DPU is ready"

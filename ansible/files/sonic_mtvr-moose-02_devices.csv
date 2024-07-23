@@ -1,0 +1,6 @@
+Hostname,ManagementIp,HwSku,Type,Protocol,Os
+mtvr-moose-02,10.245.20.40/22,ACS-MSN4700,DevSonic,,sonic
+mtvr-liger-01,10.245.20.43/22,MLNX-OS,FanoutLeaf,,
+mtvr-r640-01,10.245.20.120,TestServ,Server,,
+pdu-10-245-2-49,10.245.2.49,Vertiv,Pdu,snmp,
+rcon-mtvr-rack-2-6,10.245.2.8,,ConsoleServer,ssh,sonic

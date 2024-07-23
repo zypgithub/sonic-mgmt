@@ -1,0 +1,3 @@
+StartDevice,StartPort,EndDevice,EndPort,EndFeed
+pdu-10-208-2-47,28,r-moose-02,PSU1,
+pdu-10-208-2-47,32,r-moose-02,PSU2,

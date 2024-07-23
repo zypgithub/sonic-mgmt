@@ -4,6 +4,7 @@ import os
 import random
 import smtplib
 import time
+import os
 from email.mime.text import MIMEText
 from typing import Dict
 
@@ -99,9 +100,15 @@ def engines(topology_obj, devices):
 
 
 def update_engine_dut_mgmt_port(topology, dut_engine: LinuxSshEngine, dut_device: BaseDevice):
+    def attach_res_to_allure(available_ports_names, available_ports_ips, chosen_port_name, chosen_port_ip):
+        attachment = (f'All ports: {available_ports_names} - {available_ports_ips}\n'
+                      f'Chosen port: {chosen_port_name} - {chosen_port_ip}')
+        allure.orig_allure.attach(attachment, 'dut_engine_mgmt_port_used_for_session', allure.orig_allure.attachment_type.TEXT)
+
     mgmt_ports = dut_device.get_mgmt_ports()
     if not mgmt_ports or len(mgmt_ports) == 1:
         logger.info('keep original dut engine ip')
+        attach_res_to_allure(mgmt_ports, None, mgmt_ports[0] if mgmt_ports else None, dut_engine.ip)
         return
 
     dut_setup_specific_attributes: Dict[str, str] = topology.players['dut']['attributes'].noga_query_data['attributes']['Specific']
@@ -109,6 +116,7 @@ def update_engine_dut_mgmt_port(topology, dut_engine: LinuxSshEngine, dut_device
     available_mgmt_ips = [ip for ip in setup_mgmt_ips if ip != '']
     if len(available_mgmt_ips) != len(mgmt_ports):
         logger.info('keep original dut engine ip')
+        attach_res_to_allure(mgmt_ports, available_mgmt_ips, mgmt_ports[0] if mgmt_ports else None, dut_engine.ip)
         return
 
     logger.info(f'device mgmt ports names: {mgmt_ports}')
@@ -116,8 +124,9 @@ def update_engine_dut_mgmt_port(topology, dut_engine: LinuxSshEngine, dut_device
 
     chosen_mgmt_port = random.choice(mgmt_ports)
     chosen_mgmt_port_ip = available_mgmt_ips[mgmt_ports.index(chosen_mgmt_port)]
-    logger.info(f'chosen mgmt port for dut engine: {available_mgmt_ips} - {chosen_mgmt_port_ip}')
+    logger.info(f'chosen mgmt port for dut engine: {chosen_mgmt_port} - {chosen_mgmt_port_ip}')
     dut_engine.ip = chosen_mgmt_port_ip
+    attach_res_to_allure(mgmt_ports, available_mgmt_ips, chosen_mgmt_port, dut_engine.ip)
 
 
 @pytest.fixture(scope="session")

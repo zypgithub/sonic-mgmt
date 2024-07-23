@@ -1,0 +1,3 @@
+StartDevice,StartPort,EndDevice,Console_type,Proxy
+rcon-sws-1-5,7028,r-tigon-11,ssh,root
+rcon-sws-1-5,7030,r-tigon-30,ssh,root

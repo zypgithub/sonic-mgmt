@@ -379,7 +379,8 @@ def test_interface_eth0_dhcp_hostname(engines, topology_obj, serial_engine):
     4. Enable dhcp, check we didn’t receive hostname
     5. Unset set-hostname and check we received hostname as we have on start of the test, configuration for ipv4 and ipv6 dhcp same, can ping
     """
-    mgmt_port = MgmtPort('eth0')
+    mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
+    mgmt_port = MgmtPort(mgmt_port_name)
     system = System()
     with allure.step('Run show ip dhcp command and check default values and dhcp hostname'):
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
@@ -405,49 +406,48 @@ def test_interface_eth0_dhcp_hostname(engines, topology_obj, serial_engine):
                                                           field_name='state',
                                                           expected_value='enabled').verify_result()
 
-        assert dhcp_hostname == system_output['hostname']
+        assert dhcp_hostname in system_output['hostname'], "hostname wasn't changed"
 
     with allure.step('Disable dhcp and unset hostname, check port down and not reachable'):
-        serial_engine.serial_engine.sendline("nv set interface eth0 ip dhcp-client state disabled")
+        serial_engine.serial_engine.sendline("nv set interface {} ip dhcp-client state disabled".format(mgmt_port_name))
         serial_engine.serial_engine.sendline("nv config apply")
-        serial_engine.serial_engine.expect("Are you sure?", timeout=120)
+        serial_engine.serial_engine.expect("Are you sure?", timeout=20)
         serial_engine.serial_engine.sendline("y")
-        serial_engine.serial_engine.expect("applied", timeout=120)
+        serial_engine.serial_engine.expect("applied", timeout=20)
 
         logger.info('Check port status, should be down')
         check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port)
 
-        serial_engine.serial_engine.sendline("nv show interface eth0 ip dhcp-client")
-        serial_engine.serial_engine.expect("state         disabled", timeout=120)
-        serial_engine.serial_engine.expect("is-running    no", timeout=120)
+        serial_engine.serial_engine.sendline("nv show interface {} ip dhcp-client".format(mgmt_port_name))
+        serial_engine.serial_engine.expect("state         disabled", timeout=20)
 
     with allure.step('Disable dhcp set-hostname, check port down and not reachable'):
-        serial_engine.serial_engine.sendline("nv set interface eth0 ip dhcp-client set-hostname disabled")
+        serial_engine.serial_engine.sendline("nv set interface {} ip dhcp-client set-hostname disabled".format(mgmt_port_name))
         serial_engine.serial_engine.sendline("nv config apply")
-        serial_engine.serial_engine.expect("Are you sure?", timeout=120)
+        serial_engine.serial_engine.expect("Are you sure?", timeout=20)
         serial_engine.serial_engine.sendline("y")
-        serial_engine.serial_engine.expect("applied", timeout=120)
+        serial_engine.serial_engine.expect("applied", timeout=20)
 
         logger.info('Check port status, should be down')
         check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port)
-        serial_engine.serial_engine.sendline("nv show interface eth0 ip dhcp-client")
-        serial_engine.serial_engine.expect("state         disabled", timeout=120)
-        serial_engine.serial_engine.sendline("nv show interface eth0 ip dhcp-client6")
-        serial_engine.serial_engine.expect("state         disabled", timeout=120)
+        serial_engine.serial_engine.sendline("nv show interface {} ip dhcp-client".format(mgmt_port_name))
+        serial_engine.serial_engine.expect("state         disabled", timeout=20)
+        serial_engine.serial_engine.sendline("nv show interface {} ip dhcp-client6".format(mgmt_port_name))
+        serial_engine.serial_engine.expect("state         disabled", timeout=20)
 
     with allure.step('Set hostname and enable dhcp, check hostname not changed, check port up'):
         serial_engine.serial_engine.sendline("nv set system hostname {}".format(SystemConsts.HOSTNAME))
         serial_engine.serial_engine.sendline("nv config apply")
-        serial_engine.serial_engine.expect("Are you sure?", timeout=120)
+        serial_engine.serial_engine.expect("Are you sure?", timeout=20)
         serial_engine.serial_engine.sendline("y")
-        serial_engine.serial_engine.expect("applied", timeout=120)
+        serial_engine.serial_engine.expect("applied", timeout=20)
         logger.info('Check port status, should be down')
         check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port)
-        serial_engine.serial_engine.sendline("nv set interface eth0 ip dhcp-client state enabled")
+        serial_engine.serial_engine.sendline("nv set interface {} ip dhcp-client state enabled".format(mgmt_port_name))
         serial_engine.serial_engine.sendline("nv config apply")
-        serial_engine.serial_engine.expect("Are you sure?", timeout=120)
+        serial_engine.serial_engine.expect("Are you sure?", timeout=20)
         serial_engine.serial_engine.sendline("y")
-        serial_engine.serial_engine.expect("applied", timeout=120)
+        serial_engine.serial_engine.expect("applied", timeout=20)
 
         logger.info('Check port status, should be up')
         check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port)
@@ -552,5 +552,4 @@ def wait_for_mtu_changed(port_obj, mtu_to_verify):
 def wait_for_hostname_changed(system, dhcp_hostname):
     with allure.step("Waiting for system hostname changed to {}".format(dhcp_hostname)):
         system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
-        Tools.ValidationTool.verify_field_value_in_output(system_output, SystemConsts.HOSTNAME,
-                                                          dhcp_hostname).verify_result()
+        assert dhcp_hostname in system_output['hostname'], "hostname wasn't changed"

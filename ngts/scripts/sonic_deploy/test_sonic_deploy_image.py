@@ -14,7 +14,7 @@ logger = logging.getLogger()
 @allure.title('Deploy sonic image')
 def test_deploy_sonic_image(topology_obj, setup_name, sonic_topo, platform_params, base_version, deploy_type,
                             apply_base_config, reboot_after_install, is_shutdown_bgp, fw_pkg_path, workspace_path,
-                            post_installation_validation, chip_type):
+                            post_installation_validation, chip_type, is_performance):
     """
     This script will deploy sonic image on the dut.
     :param topology_obj: topology object fixture
@@ -26,6 +26,7 @@ def test_deploy_sonic_image(topology_obj, setup_name, sonic_topo, platform_param
     :param reboot_after_install: reboot_after_install fixture
     :param is_shutdown_bgp: shutdown bgp flag, True or False
     :param fw_pkg_path: fw_pkg_path fixture
+    :param is_performance: is_performance fixture, True in case when setup is performance
     :return: raise assertion error in case of script failure
     """
     setup_info = get_info_from_topology(topology_obj, workspace_path, include_smartswitch_dpu=False)
@@ -54,7 +55,8 @@ def test_deploy_sonic_image(topology_obj, setup_name, sonic_topo, platform_param
             topology_obj=topology_obj, sonic_topo=sonic_topo, recover_by_reboot=True, setup_name=setup_name,
             platform_params=platform_params, apply_base_config=apply_base_config, target_version="",
             is_shutdown_bgp=False, reboot_after_install=False, deploy_only_target=False, fw_pkg_path="",
-            reboot="reboot", additional_apps="", setup_info=setup_info, chip_type=chip_type)
+            reboot="reboot", additional_apps="", setup_info=setup_info, chip_type=chip_type,
+            is_performance=is_performance)
 
 
 def check_bgp_is_shutdown(dut_engine):

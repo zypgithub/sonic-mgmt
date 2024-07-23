@@ -37,7 +37,7 @@ def validation_type(platform_params, is_simx, reboot_type):
                                'reload': 'config reload -y'}
         reboot_type = reboot_mapping_dict[reboot_type]
         assert reboot_type in supported_reboot_reload_list, f'Reboot type: "{reboot_type}" is not supported. ' \
-                                                            f'Please provide correct reboot type'
+            f'Please provide correct reboot type'
         validation_type = reboot_type
 
     if is_simx:
@@ -50,7 +50,8 @@ def validation_type(platform_params, is_simx, reboot_type):
 
 @pytest.mark.reboot_reload
 @pytest.mark.disable_loganalyzer
-def test_push_gate_reboot_policer(request, topology_obj, interfaces, engines, shared_params, validation_type, is_simx):
+def test_push_gate_reboot_policer(request, topology_obj, interfaces, engines, shared_params, validation_type, is_simx,
+                                  skip_weekend_cases):
     """
     This tests checks reboot according to test parameter. Test checks data and control plane traffic loss time.
     After reboot/reload finished - test doing functional validations(run PushGate tests)
@@ -60,6 +61,8 @@ def test_push_gate_reboot_policer(request, topology_obj, interfaces, engines, sh
     3. Verify app status is up, after config reload -y
     :param request: pytest build-in
     """
+    if skip_weekend_cases == "yes":
+        pytest.skip("Only run this test case in the weekend regression.")
     try:
         test_reboot_reload = RebootReload(topology_obj, interfaces, engines, shared_params, is_simx)
         test_reboot_reload.push_gate_reboot_test_runner(request, validation_type)

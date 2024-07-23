@@ -1,0 +1,3 @@
+StartDevice,StartPort,EndDevice,Console_type,Proxy
+rcon-mtvr-rack-1-7,7014,mtvr-tigon-06,ssh,root
+rcon-mtvr-rack-1-7,7013,mtvr-tigon-05,ssh,root

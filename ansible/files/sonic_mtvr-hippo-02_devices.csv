@@ -1,0 +1,7 @@
+Hostname,ManagementIp,HwSku,Type,Protocol,Os
+mtvr-hippo-02,10.245.20.246/22,ACS-SN5400,DevSonic,,sonic
+mtvr-leopard-05,10.245.20.247/22,Mellanox-SN4700-O8V48,FanoutLeaf,,sonic
+mtvr-r740-05,10.245.34.120,TestServ,Server,,
+pdu-10-245-2-13,10.245.2.13,Vertiv,Pdu,snmp,
+pdu-10-245-2-35,10.245.2.35,Vertiv,Pdu,snmp,
+rcon-mtvr-rack-1-7,10.245.2.4,,ConsoleServer,ssh,sonic

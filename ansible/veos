@@ -2248,7 +2248,7 @@ server_82
 server_83
 
 [servers:vars]
-topologies=['dualtor', 'dualtor-64', 'dualtor-mixed', 'dualtor-aa', 'dualtor-aa-64', 'dualtor-56', 'dualtor-mixed-56', 'dualtor-aa-56', 't1', 't1-lag', 't1-28-lag', 't1-56-lag', 't1-64-lag', 't1-64-lag-clet', 't0', 't0-16', 't0-56', 't0-56-po2vlan', 't0-56-o8v48', 't0-52', 'ptf32', 'ptf64', 't0-64', 't0-64-32', 't0-80', 't0-116', 't0-120', dpu, dpu-1]
+topologies=['dualtor', 'dualtor-64', 'dualtor-mixed', 'dualtor-aa', 'dualtor-aa-64', 'dualtor-56', 'dualtor-mixed-56', 'dualtor-aa-56', 't1', 't1-lag', 't1-28-lag', 't1-56-lag', 't1-64-lag', 't1-64-lag-clet', 't0', 't0-16', 't0-28', 't0-56', 't0-56-po2vlan', 't0-56-o8v48', 't0-52', 'ptf32', 'ptf64', 't0-64', 't0-64-32', 't0-80', 't0-116', 't0-120', dpu, dpu-1]
 
 [sonic_latest]
 dev-r-vrt-233-010  ansible_host=10.212.233.10 type=simx sonic_version=v2 hwsku="ACS-MSN2700" iface_speed=40000 mgmt_subnet_mask_length=16 vm_base=VM5201

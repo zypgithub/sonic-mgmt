@@ -11,7 +11,7 @@ import pytest
 from ngts.cli_wrappers.nvue.cumulus.cumulus_general_cli import CumulusGeneralCli
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.cli_wrappers.sonic.sonic_cli import SonicCli
-from ngts.constants.constants import PlayersAliases
+from ngts.constants.constants import PlayersAliases, MarsConstants
 from ngts.helpers.run_process_on_host import wait_until_background_procs_done
 from ngts.nvos_constants.constants_nvos import NvosConst
 from ngts.nvos_tools.Devices.DeviceFactory import DeviceFactory
@@ -132,6 +132,14 @@ def test_deploy_and_upgrade(topology_obj, is_simx, is_performance, base_version,
                                                         cli_type=dut['cli_obj'], target_image_url=target_version_url)))
         wait_until_deploy_background_process(install_threads, timeout=1500)
 
+        if "bobcat" in setup_name and base_version_dpu:
+            with allure.step('Copying image to switch dut'):
+                dpu_image_url = MarsConstants.HTTP_SERVER_NBU_NFS + base_version_dpu
+                dest_file = "/tmp/" + base_version_dpu.split('/')[-1]
+                topology_obj.players['dut']['engine'].run_cmd(
+                    f"sudo curl {dpu_image_url} --output {dest_file}")
+            base_version_dpu = dest_file
+
         for dut in smart_switch_dpu_duts:
             with allure.step('Install image on DPU: {}'.format(dut['dut_name'])):
                 # Disconnect ssh connection, prevent "Socket is closed" in case when pre step took more than 15 min
@@ -146,17 +154,16 @@ def test_deploy_and_upgrade(topology_obj, is_simx, is_performance, base_version,
                 topology_obj_dpu.players['dut'] = topology_obj_dpu.players[dut['dut_alias']]
                 if "bobcat" in setup_name:
                     topology_obj_dpu.players['hyper'] = topology_obj.players['dut']
+                topology_obj_dpu.players['hyper']['engine'].disconnect()
                 platform_params_dpu['hwsku'] = get_platform_info(topology_obj_dpu)['hwsku']
                 logger.info(f"Starting to install image on DPU {dut['dut_name']}")
-                install_dpu_threads.append((dut['dut_name'],
-                                            executor.submit(
-                                            deploy_image, topology_obj=topology_obj_dpu, setup_name=setup_name,
-                                            image_url=base_version_dpu, platform_params=platform_params,
-                                            deploy_type='bfb', apply_base_config=False,
-                                            reboot_after_install=reboot_after_install,
-                                            is_shutdown_bgp=is_shutdown_bgp, fw_pkg_path='',
-                                            cli_type=dut['cli_obj'], target_image_url='')))
-        wait_until_deploy_background_process(install_dpu_threads, timeout=1200)
+                deploy_image(topology_obj=topology_obj_dpu, setup_name=setup_name,
+                             image_url=base_version_dpu, platform_params=platform_params,
+                             deploy_type='bfb', apply_base_config=False,
+                             reboot_after_install=reboot_after_install,
+                             is_shutdown_bgp=is_shutdown_bgp, fw_pkg_path='',
+                             cli_type=dut['cli_obj'], target_image_url='')
+
         logger.info("Wait until pre-installation background process done")
         try:
             wait_until_background_procs_done(pre_install_threads)

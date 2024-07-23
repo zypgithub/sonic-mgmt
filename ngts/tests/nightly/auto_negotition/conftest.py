@@ -343,19 +343,25 @@ def is_aoc_cable(engines):
 
 
 @pytest.fixture(scope='session')
-def ports_spec_compliance(topology_obj, engines, cable_compliance_info):
+def ports_spec_compliance(topology_obj, engines, cable_compliance_info, is_simx):
     """
     The function parses the information of the command show interfaces transceiver eeprom to a dictionary that contains
     the compliance eeprom data for each port.
     :param topology_obj: topology_obj fixture
     :param engines: engines fixture
     :param cable_compliance_info: cable_compliance_info fixture
+    :param is_simx: is_simx fixture
     :return: A dictionary mapping each port to a tuple of 2 values. The first value is the specification compliance
     type (extended or not) and the second value is the actual specification compliance value.
     It should be noted that eeprom_info_per_port contains the entire eeprom output of a port,
     so if it is needed for future usage, the function can be adjusted to return it as well.
     Example for entry in the dictionary - {"Ethernet8": ("Specification compliance", "passive_copper_media_interface")}
     """
+    # If the platform is simx, we do not have port compliance and cannot parse it
+    # Currently, auto-neg tests do not run on simx setups but when using this fixture in fec, we need to know if it's
+    # simx
+    if is_simx:
+        return None
     eeprom_info_per_port = parse_show_interfaces_transceiver_eeprom(cable_compliance_info)
     ports_compliance = dict()
     for port_name, port_info in eeprom_info_per_port.items():
@@ -416,13 +422,13 @@ def parse_port_compliance_dict(port_compliance_dict):
     return port_compliance_type, port_compliance
 
 
-def is_auto_neg_supported_port(port, compliance_info_per_port):
+def is_auto_neg_supported_port(port, compliance_info_per_port, used_in_auto_neg_tests=True):
     """
     The function returns True if the port supports auto-neg and false otherwise.
     :param port: port to check
     :param compliance_info_per_port: output of compliance_info_per_port fixture
+    :param used_in_auto_neg_tests: a boolean stating if the function is called from the auto-neg test (and thus port is skipped)
     :return: True if the port supports auto-neg and False otherwise
-
     """
     port_supports_auto_neg = False
     port_spec_type, port_spec_value = compliance_info_per_port[port]
@@ -436,8 +442,9 @@ def is_auto_neg_supported_port(port, compliance_info_per_port):
         matched_unsupported_regex = any(re.search(regex_pattern, port_spec_value) for regex_pattern in
                                         CableComplianceConst.UNSUPPORTED_SPECIFICATION_COMPLIANCE[port_spec_type])
         if matched_unsupported_regex:
-            logger.warning(f"Tests will not run on port {port} because of unsupported cable type - "
-                           f"{port_spec_type} : {port_spec_value}\n")
+            if used_in_auto_neg_tests:
+                logger.warning(f"Tests will not run on port {port} because of unsupported cable type - "
+                               f"{port_spec_type} : {port_spec_value}\n")
         else:
             raise AssertionError(f"Test failed because port {port} has unknown {port_spec_type} : {port_spec_value}\n"
                                  f"Check if the cable should support auto-negotiation and update test accordingly\n")

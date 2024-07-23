@@ -57,9 +57,9 @@ class SonicBgpCli(BgpCliCommon):
         Parse output of command: "show ip bgp summary"
         :param show_bgp_summary_output: "show ip bgp summary" output
         :return: dictionary with parsed data, example:
-        {'20.0.0.2': {'Neighbhor': '20.0.0.2', 'V': '4', 'AS': '501', 'MsgRcvd': '145', 'MsgSent': '147', 'TblVer': '0',
+        {'20.0.0.2': {'Neighbor': '20.0.0.2', 'V': '4', 'AS': '501', 'MsgRcvd': '145', 'MsgSent': '147', 'TblVer': '0',
         'InQ': '0', 'OutQ': '0', 'Up/Down': '00:07:02', 'State/PfxRcd': '2', 'NeighborName': 'HA'},
-        '30.0.0.2': {'Neighbhor': '30.0.0.2', 'V': '4', 'AS': '501', 'MsgRcvd': '145', 'MsgSent': '150', 'TblVer': '0',
+        '30.0.0.2': {'Neighbor': '30.0.0.2', 'V': '4', 'AS': '501', 'MsgRcvd': '145', 'MsgSent': '150', 'TblVer': '0',
         'InQ': '0', 'OutQ': '0', 'Up/Down': '00:07:02', 'State/PfxRcd': '2', 'NeighborName': 'HB'}}
         """
         if not show_bgp_summary_output:
@@ -70,7 +70,7 @@ class SonicBgpCli(BgpCliCommon):
                                                        data_ofset_from_start=10,
                                                        data_ofset_from_end=-2,
                                                        column_ofset=2,
-                                                       output_key='Neighbhor')
+                                                       output_key='Neighbor')
         return bgp_summary_dict
 
     def show_ip_bgp_network(self, network=None):

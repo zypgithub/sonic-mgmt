@@ -17,8 +17,6 @@ ansible/group_vars/vm_host/creds.yml
 ansible/inventory
 ansible/veos
 ansible/lab
-ansible/library/conn_graph_facts.py
-ansible/module_utils/port_utils.py
 ansible/roles/fanout/tasks/main.yml
 ansible/roles/fanout/templates/mlnx_fanout.j2
 ansible/roles/test/files/tools/loganalyzer/loganalyzer_common_ignore.txt

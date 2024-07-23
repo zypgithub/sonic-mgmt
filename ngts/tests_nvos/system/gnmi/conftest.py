@@ -1,12 +1,15 @@
 import logging
 import random
-import string
 from typing import Dict
 
 import pytest
 
 import ngts.tools.test_utils.allure_utils as allure
+from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from ngts.nvos_tools.infra.CmdRunner import CmdRunner
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.system.System import System
+from ngts.tests_nvos.general.security.certificate.constants import TestCert
 from ngts.tests_nvos.general.security.security_test_tools.constants import AddressingType, AuthConsts, AaaConsts
 from ngts.tests_nvos.general.security.security_test_tools.generic_remote_aaa_testing.constants import RemoteAaaType
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.RemoteAaaServerInfo import RemoteAaaServerInfo
@@ -16,39 +19,24 @@ from ngts.tests_nvos.general.security.test_aaa_ldap.ldap_servers_info import Lda
 from ngts.tests_nvos.general.security.test_aaa_radius.constants import RadiusVmServer
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
 from ngts.tests_nvos.system.gnmi.constants import ETC_HOSTS, GNMI_TEST_CERT, DUT_MOUNT_GNMI_CERT_DIR
+from ngts.tools.test_utils.nvos_general_utils import generate_scp_uri_using_player
 
 logger = logging.getLogger()
 
 
-@pytest.fixture(scope='session', autouse=True)
-def install_gnmi_on_player(engines):
-    """
-    enable rsyslog on sonic-mgmt container
-    """
-    with allure.step('check if gnmic already installed'):
-        player = engines.sonic_mgmt
-        out = player.run_cmd('gnmic version')
-        gnmic_installed = 'command not found' not in out
-        logger.info(f'gnmic is {"" if gnmic_installed else "not "}installed on player')
-    if not gnmic_installed:
-        with allure.step('install gnmic on player'):
-            out = player.run_cmd("bash -c \"$(curl -sL https://get-gnmic.openconfig.net)\"")
-            assert 'gnmic installed into /usr/local/bin/gnmic' in out \
-                   or 'gnmic is already at latest' in out, f"gnmic installation failed with: {out}"
+@pytest.fixture(scope='session')
+def scp_player(engines) -> LinuxSshEngine:
+    return engines.sonic_mgmt
+    # return LinuxSshEngine(ip='10.237.116.70', username='root', password='12345')
 
 
 @pytest.fixture(scope='session', autouse=True)
-def install_grpcurl_on_player(engines):
-    with allure.step('install grpcurl'):
-        player = GnmiClient('', '', '', '', 10)
-        player._run_cmd_in_process(
-            'sudo wget -O /tmp/grpcurl.tar.gz https://github.com/fullstorydev/grpcurl/releases/download/v1.8.8/grpcurl_1.8.8_linux_x86_64.tar.gz',
-            wait_till_done=True)
-        player._run_cmd_in_process('sudo tar -xzvf /tmp/grpcurl.tar.gz -C /tmp', wait_till_done=True)
-        player._run_cmd_in_process('sudo mv /tmp/grpcurl /usr/local/bin/', wait_till_done=True)
-        player._run_cmd_in_process('sudo rm /tmp/grpcurl.tar.gz', wait_till_done=True)
-    with allure.step('verify grpcurl installed'):
-        player._verify_grpcurl_installed()
+def verify_gnmi_client_tools_installed_on_player():
+    player = GnmiClient('', '', '', '', 10)
+    with allure.step('verify gnmic installation on test player'):
+        player.verify_gnmic_installation()
+    with allure.step('verify grpcurl  installation on test player'):
+        player.verify_grpcurl_installation()
 
 
 @pytest.fixture()
@@ -75,23 +63,15 @@ def aaa_users(engines) -> Dict[str, UserInfo]:
     # servers config cleared in clear_conf hook func
 
 
-@pytest.fixture()
-def gnmi_cert_hostname(engines):
+@pytest.fixture(scope='module', autouse=True)
+def add_etc_host_mapping_for_test_cert(engines):
     cert = GNMI_TEST_CERT
-    hostname = cert.ip or cert.dn
-
-    if not cert.ip:
-        assert cert.dn, f'{cert.name} has no ip/dn'
-        with allure.step(f'change dut hostname to {cert.dn}'):
-            System().set('hostname', cert.dn, ask_for_confirmation=True, apply=True).verify_result()
-        with allure.step(f'add mapping of new dut hostname to {ETC_HOSTS}'):
-            client = GnmiClient('', '', '', '')
-            client._run_cmd_in_process(f'echo "{engines.dut.ip} {cert.dn}" | sudo tee -a {ETC_HOSTS}',
-                                       wait_till_done=True)
-    yield hostname
-    if not cert.ip:
-        with allure.step(f'remove hostname mapping fro {ETC_HOSTS}'):
-            client._run_cmd_in_process(f"sudo sed -i '/{cert.dn}/d' {ETC_HOSTS}", wait_till_done=True)
+    with allure.step(f'add mapping of new dut hostname to {ETC_HOSTS}'):
+        cmd_runner = CmdRunner()
+        cmd_runner.run_cmd_in_process(f'echo "{engines.dut.ip} {cert.dn}" | sudo tee -a {ETC_HOSTS}')
+    yield
+    with allure.step(f'remove hostname mapping fro {ETC_HOSTS}'):
+        cmd_runner.run_cmd_in_process(f"sudo sed -i '/{cert.dn}/d' {ETC_HOSTS}", wait_till_done=True)
 
 
 @pytest.fixture()
@@ -104,9 +84,24 @@ def restore_gnmi_cert(engines):
         System().gnmi_server.enable_gnmi_server(True)
 
 
-@pytest.fixture()
-def gnmi_cert_id():
-    rand_id = ''.join(random.choice(string.ascii_letters) for _ in range(6))
-    with allure.step(f'import certificate for gnmi as "{rand_id}"'):
-        pass  # TODO: complete
-    return rand_id
+@pytest.fixture(scope='module', autouse=True)
+def import_test_certs(scp_player):
+    system = System()
+    test_certs = [TestCert.cert_valid_1, TestCert.cert_ca_mismatch]
+
+    with allure.step('import test certs'):
+        current_certs = OutputParsingTool.parse_json_str_to_dictionary(
+            system.security.certificate.show()).get_returned_value()
+        for cert in test_certs:
+            if cert.name not in current_certs:
+                with allure.step(f'import cert {cert.name}'):
+                    system.security.certificate.cert_id[cert.name].action_import(
+                        uri_bundle=generate_scp_uri_using_player(scp_player, cert.p12_bundle),
+                        passphrase=cert.p12_password).verify_result()
+    yield
+    with allure.step('delete certs from the system'):
+        current_certs = OutputParsingTool.parse_json_str_to_dictionary(
+            system.security.certificate.show()).get_returned_value()
+        for cert in current_certs:
+            with allure.step(f'delete cert {cert}'):
+                system.security.certificate.cert_id[cert].action_delete().verify_result()

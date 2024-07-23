@@ -11,142 +11,93 @@ import os
 community_develop_set_1_dbs = [
     'pretest.db',
     'routes.db',
-    'clock.db',
+    'counters.db',
     'dhcp.db',
     'pfcwd.db',
+    'layer2.db',
     'layer3.db',
-    'link.db',
+    'common.db',
     'wjh.db',
     'fast_reboot.db',
     'warm_reboot.db',
-    'span.db',
-    'dualtor.db'
+    'span.db'
 ]
 
 community_develop_rpc_dbs = [
     'pre_rpc.db',
     'rpc_qos.db',
-    'rpc_qos_dualtor.db',
     'rpc_pfc_asym_and_copp.db',
+    'rpc_qos_dualtor.db',
     'post_rpc.db'
 ]
 
 community_develop_set_2_dbs = [
     'pretest.db',
-    'bfd.db',
-    'layer2.db',
-    'radv.db',
     'acl.db',
+    'bfd.db',
+    'radv.db',
     'ecmp.db',
     'ip_neigh.db',
     'resources.db',
     'tunnel.db',
-    'counters.db',
+    'generic_hash.db',
     'techsupport.db',
     'interfaces.db',
     'sub_port_interfaces.db',
     'system_health.db',
     'sflow.db',
     'bgp.db',
-    'bgp_with_suppress_fib.db',
     'pbh.db',
     'generic_config_updater.db',
     'cold_reboot.db',
-    'autorestart.db'
+    'autorestart.db',
+    'dualtor.db',
+    'link.db',
+    'upgrade_related.db'
 ]
 
 community_develop_generic_dbs = [
     'system.db',
     'mgmtvrf.db',
-    'tacacs.db',
-    'ssh.db',
-    'scp.db'
 ]
 
-# Community dbs in the 202012 branch
-community_202012_set_1_dbs = [
+community_develop_as_dbs = [
     'pretest.db',
+    'acl.db',
     'routes.db',
     'dhcp.db',
     'pfcwd.db',
+    'layer2.db',
     'layer3.db',
     'link.db',
-    'wjh.db',
-    'fast_reboot.db',
-    'warm_reboot.db',
     'span.db',
-]
-
-community_202012_rpc_dbs = [
-    'pre_rpc.db',
-    'rpc_qos.db',
-    'rpc_pfc_asym_and_copp.db',
-    'post_rpc.db'
-]
-
-community_202012_set_2_dbs = [
-    'pretest.db',
-    'layer2.db',
+    'bfd.db',
     'radv.db',
-    'acl.db',
     'ecmp.db',
     'ip_neigh.db',
     'resources.db',
     'tunnel.db',
+    'generic_hash.db',
     'counters.db',
     'techsupport.db',
     'interfaces.db',
-    'sub_port_interfaces.db',
-    'system_health.db',
-    'sflow.db',
     'bgp.db',
-    'pbh.db',
-    'cold_reboot.db',
-    'autorestart.db'
-]
-
-community_202012_generic_dbs = [
-    'system.db',
-    'mgmtvrf.db',
-    'tacacs.db',
-]
-
-# Community dbs in the 201911 branch
-community_201911_set_1_dbs = [
-    'routes.db',
-    'dhcp.db',
-    'pfcwd.db',
-    'layer3.db',
-    'link.db',
-    'wjh.db',
-    'fast_reboot.db',
-    'warm_reboot.db',
-]
-
-community_201911_rpc_dbs = [
+    'autorestart.db',
+    'sflow.db',
+    'dualtor.db',
+    'dualtor_io.db',
     'pre_rpc.db',
-    'rpc_qos_copp.db',
-    'rpc_pfc_asym.db',
+    'dualtor_dscp_remapping.db',
+    'rpc_qos.db',
     'post_rpc.db'
 ]
 
-community_201911_set_2_dbs = [
-    'routes.db',
-    'layer2.db',
-    'acl.db',
-    'ecmp.db',
-    'ip_neigh.db',
-    'resources.db',
-    'tunnel.db',
-    'counters.db',
-    'techsupport.db',
-    'interfaces.db',
-    'system_health.db',
-    'bgp.db',
-    'cold_reboot.db'
+community_develop_aa_dbs = [
+    'pretest.db',
+    'dualtor.db',
+    'dualtor_io.db',
+    'dualtor_aa_t0.db'
 ]
-
-community_201911_generic_dbs = None
 
 # Canonical dbs for develop branch
 canonical_develop_dbs = [
@@ -154,53 +105,26 @@ canonical_develop_dbs = [
     'platform.db',
     'clock.db',
     'canonical/nightly.db',
-    'canonical/push_gate_without_reboot.db',
-    'dynamic_buffer.db',
-    'techsupport_any_topo.db',
-    'platform_fwutil.db'
-
-]
-
-canonical_upgrade_develop_dbs = [
-    'canonical/pretest.db',
-    'platform.db',
-    'clock.db',
-    'canonical/nightly.db',
     'canonical/push_gate_with_upgrade.db',
     'dynamic_buffer.db',
     'techsupport_any_topo.db',
-    'platform_fwutil.db'
-
+    'platform_fwutil.db',
+    'canonical/secure_boot.db'
 ]
 
-# Canonical dbs for 202012 branch
-canonical_202012_dbs = [
-    'canonical/pretest.db',
-    'platform.db',
-    'canonical/nightly.db',
-    'canonical/push_gate_with_upgrade.db',
-    'dynamic_buffer.db',
-    'techsupport_any_topo.db',
-    'platform_fwutil.db'
-]
 
-# Canonical dbs for 201911 branch
-canonical_201911_dbs = [
-    'platform.db',
-    'canonical/nightly.db',
-    'canonical/push_gate.db'
-]
+community_keys = ["base_version", "target_version", "rpc_image", "custom_tarball_name", "target_version_specified",
+                  "deploy_only_target", "skip_weekend_cases", "regression_type", "branch", "execution_block_generator"]
 
-community_keys = ["additional_apps", "custom_tarball_name", "base_version", "rpc_image",
-                  "skip_weekend_cases", "execution_block_generator"]
+dualtor_as_keys = ["base_version", "rpc_image", "custom_tarball_name", "skip_weekend_cases", "regression_type",
+                   "branch", "execution_block_generator"]
 
-canonical_keys = ["additional_apps", "base_version", "custom_tarball_name", "send_takeover_notification",
-                  "skip_weekend_cases", "execution_block_generator"]
-canonical_upgrade_keys = ["base_version", "target_version", "execution_block_generator"]
+dualtor_aa_keys = ["topology", "base_version", "rpc_image", "custom_tarball_name", "skip_weekend_cases",
+                   "regression_type", "branch", "execution_block_generator"]
 
-canonical_weekend_keys = ["additional_apps", "base_version", "custom_tarball_name", "send_takeover_notification",
-                          "skip_weekend_cases", "execution_block_generator"]
-canonical_weekend_upgrade_keys = ["base_version", "target_version"]
+canonical_keys = ["base_version", "custom_tarball_name", "send_takeover_notification",
+                  "skip_weekend_cases", "regression_type", "branch", "execution_block_generator"]
+canonical_upgrade_keys = ["base_version", "target_version"]
 
 
 def print_configs(f, config_key_list, config_dict):
@@ -217,13 +141,15 @@ def print_configs(f, config_key_list, config_dict):
 
 def gen_community_config(dbs):
     community_config = {
-        "additional_apps": "/auto/sw_regression/system/SONIC/MARS/conf/deploy_configs/verification_app_pointers/"
-                           "main_branch_app_verification_pointer",
-        "custom_tarball_name": "main_branch_verification_pointer.db.1.tgz",
-        "base_version": "/auto/sw_system_release/sonic/main_branch_verification_pointer.bin",
+        "base_version": "/auto/sw_system_release/sonic/main_branch_verification_pointer-base.bin",
+        "target_version": "/auto/sw_system_release/sonic/main_branch_verification_pointer.bin",
         "rpc_image": "/auto/sw_system_release/sonic/main_branch_verification_pointer-rpc.bin",
-        "run_rpc_image": "yes",
+        "custom_tarball_name": "main_branch_verification_pointer.db.1.tgz",
+        "target_version_specified": "yes",
+        "deploy_only_target": "yes",
         "skip_weekend_cases": "yes",
+        "regression_type": "regression",
+        "branch": "master"
     }
     execution_block_generator = [
         {'entry_points': 'SONIC_MGMT', 'tests_dbs_tarball': 'sonic-mgmt/sonic-tool/mars/dbs/community/{}'.format(db)}
@@ -233,22 +159,54 @@ def gen_community_config(dbs):
     return community_config
 
 
-def gen_canonical_config(mars_branch, dbs, upgrade, is_weekend):
-    skip_weekend_cases = "no" if is_weekend else "yes"
+def gen_dualtor_as_config(dbs):
+    as_config = {
+        "base_version": "/auto/sw_system_release/sonic/main_branch_verification_pointer.bin",
+        "rpc_image": "/auto/sw_system_release/sonic/main_branch_verification_pointer-rpc.bin",
+        "custom_tarball_name": "main_branch_verification_pointer.db.1.tgz",
+        "skip_weekend_cases": "all",
+        "regression_type": "regression",
+        "branch": "master"
+    }
+    execution_block_generator = [
+        {'entry_points': 'SONIC_MGMT', 'tests_dbs_tarball': 'sonic-mgmt/sonic-tool/mars/dbs/community/{}'.format(db)}
+        for db in dbs]
+    as_config["execution_block_generator"] = str(execution_block_generator)
+
+    return as_config
+
+
+def gen_dualtor_aa_config(dbs):
+    aa_config = {
+        "topology": "dualtor-aa",
+        "base_version": "/auto/sw_system_release/sonic/main_branch_verification_pointer.bin",
+        "rpc_image": "/auto/sw_system_release/sonic/main_branch_verification_pointer-rpc.bin",
+        "custom_tarball_name": "main_branch_verification_pointer.db.1.tgz",
+        "skip_weekend_cases": "all",
+        "regression_type": "regression",
+        "branch": "master"
+    }
+    execution_block_generator = [
+        {'entry_points': 'SONIC_MGMT', 'tests_dbs_tarball': 'sonic-mgmt/sonic-tool/mars/dbs/community/{}'.format(db)}
+        for db in dbs]
+    aa_config["execution_block_generator"] = str(execution_block_generator)
+
+    return aa_config
+
+
+def gen_canonical_config(mars_branch, dbs, upgrade):
     caonical_config = {
-        "additional_apps": f"/auto/sw_regression/system/SONIC/MARS/conf/deploy_configs/"
-        f"verification_app_pointers/{mars_branch}_app_verification_pointer",
         "base_version": f"/auto/sw_system_release/sonic/{mars_branch}_verification_pointer.bin",
         "custom_tarball_name": f"{mars_branch}_verification_pointer.db.1.tgz",
         "send_takeover_notification": "yes",
-        "skip_weekend_cases": skip_weekend_cases,
+        "skip_weekend_cases": "yes",
+        "regression_type": "regression",
+        "branch": "master",
         "execution_block_generator": ""
     }
-
-    base_version_for_upgrade = "/auto/sw_system_release/sonic/202012/202012_9/sonic-mellanox.bin"
     if upgrade:
         caonical_config["target_version"] = caonical_config["base_version"]
-        caonical_config["base_version"] = base_version_for_upgrade
+        caonical_config["base_version"] = f"/auto/sw_system_release/sonic/{mars_branch}_verification_pointer-base.bin"
 
     execution_block_generator = []
     for db in dbs:
@@ -269,34 +227,37 @@ def print_community_configs(f, dbs):
         print_configs(f, community_keys, mars_config_dict)
 
 
-def print_cononical_configs(f, mars_branch, dbs, upgrade, is_weekend):
-    mars_config_dict = gen_canonical_config(mars_branch, dbs, upgrade, is_weekend)
+def print_dualtor_as_configs(f, dbs):
+    if dbs:
+        mars_config_dict = gen_dualtor_as_config(dbs)
+        print_configs(f, dualtor_as_keys, mars_config_dict)
 
+
+def print_dualtor_aa_configs(f, dbs):
+    if dbs:
+        mars_config_dict = gen_dualtor_aa_config(dbs)
+        print_configs(f, dualtor_aa_keys, mars_config_dict)
+
+
+def print_cononical_configs(f, mars_branch, dbs, upgrade):
+    mars_config_dict = gen_canonical_config(mars_branch, dbs, upgrade)
     if upgrade:
-        if is_weekend:
-            print_configs(f, canonical_weekend_upgrade_keys, mars_config_dict)
-        else:
-            print_configs(f, canonical_upgrade_keys, mars_config_dict)
+        print_configs(f, canonical_upgrade_keys, mars_config_dict)
     else:
-        if is_weekend:
-            print_configs(f, canonical_keys, mars_config_dict)
-        else:
-            print_configs(f, canonical_weekend_keys, mars_config_dict)
+
+        print_configs(f, canonical_keys, mars_config_dict)
 
 
 def print_mars_configs(branch):
     path = os.path.dirname(os.path.abspath(__file__))
     file_name = f"mars_config_{branch}.txt"
     community_set_1_general_dbs = eval(f"community_{branch}_set_1_dbs") + eval(f"community_{branch}_rpc_dbs")
-
-    if eval(f"community_{branch}_generic_dbs"):
-        community_set_1_add_generic_dbs = eval(f"community_{branch}_set_1_dbs") + \
-                                               eval(f"community_{branch}_generic_dbs") + \
-                                               eval(f"community_{branch}_rpc_dbs")
-    else:
-        community_set_1_add_generic_dbs = None
-
     community_set_2_general_dbs = eval(f"community_{branch}_set_2_dbs")
+    if eval(f"community_{branch}_generic_dbs"):
+        community_set_2_add_generic_dbs = eval(f"community_{branch}_set_1_dbs") + \
+                                               eval(f"community_{branch}_generic_dbs")
+    else:
+        community_set_2_add_generic_dbs = None
 
     full_file_name = os.path.join(path, file_name)
     with open(full_file_name, 'w') as f:
@@ -310,47 +271,37 @@ def print_mars_configs(branch):
         f.write("++++++++++++++++++++++++++++++++Community_Regression_Set_1 start+++++++++++++++++++++++\n")
         f.write("################################general config#########################################\n")
         print_community_configs(f, community_set_1_general_dbs)
-        f.write("################################full config############################################\n")
-        if community_set_1_add_generic_dbs:
-            f.write("################################ set_1_add_generic#####################################\n")
-            f.write("########################## needed by r-leopard-58######################################\n")
-            print_community_configs(f, community_set_1_add_generic_dbs)
         f.write("++++++++++++++++++++++++++++++++Community_Regression_Set_1 end+++++++++++++++++++++++++\n")
         f.write("++++++++++++++++++++++++++++++++Community_Regression_Set_2 start+++++++++++++++++++++++\n")
         print_community_configs(f, community_set_2_general_dbs)
+        f.write("################################full config############################################\n")
+        if community_set_2_add_generic_dbs:
+            f.write("################################ set_2_add_generic#####################################\n")
+            f.write("########################## needed by r-leopard-72######################################\n")
+            print_community_configs(f, community_set_2_add_generic_dbs)
         f.write("++++++++++++++++++++++++++++++++Community_Regression_Set_2 end+++++++++++++++++++++++++\n")
-
         f.write("***************************************************************************************\n")
-
         f.write("\n\n")
+
+        f.write("*******************************Dualtor AS***********************************************\n")
+        print_dualtor_as_configs(f, community_develop_as_dbs)
+        f.write("\n\n")
+
+        f.write("*******************************Dualtor AA***********************************************\n")
+        print_dualtor_aa_configs(f, community_develop_aa_dbs)
+        f.write("\n\n")
+
         f.write("*******************************Canonical***********************************************\n")
         canonical_dbs = eval(f"canonical_{branch}_dbs")
-        try:
-            canonical_upgrade_dbs = eval(f"canonical_upgrade_{branch}_dbs")
-        except Exception:
-            canonical_upgrade_dbs = canonical_dbs
 
         f.write("++++++++++++++++++++++++++++++++ canonical_full_regression_main_branch ++++++++++++++++\n")
-        print_cononical_configs(f, "main_branch", canonical_dbs, False, False)
-        if branch != "201911":
-            f.write("########## canonical_full_regression_main_branch, for setups which has upgrade ########\n")
-            f.write("## sonic_lionfish_r-lionfish-07, sonic_spider_r-spider-05, sonic_leopard_r-leopard-56##\n")
-            print_cononical_configs(f, "main_branch", canonical_upgrade_dbs, True, False)
-        f.write("+++++++++++++++++++++++++++++++ canonical_partial_regression_side_branch_1 ++++++++++++\n")
-        print_cononical_configs(f, "side_branch_1", canonical_dbs, False, False)
-        f.write("+++++++++++++++++ canonical_partial_regression_side_branch_2_US_team_setups +++++++++++\n")
-        print_cononical_configs(f, "side_branch_2", canonical_dbs, False, False)
-
-        if branch != "201911" and branch != "202012":
-            f.write("++++++++++++++++++++++++++++++ friday_canonical_full_regression_main_branch ++++++++++++++\n")
-            print_cononical_configs(f, "main_branch", canonical_upgrade_dbs, False, True)
-            f.write("########## friday_canonical_full_regression_main_branch, for setups which has upgrade ########\n")
-            f.write("## sonic_lionfish_r-lionfish-07, sonic_spider_r-spider-05, sonic_leopard_r-leopard-56##\n")
-            print_cononical_configs(f, "main_branch", canonical_upgrade_dbs, True, True)
-        f.write("***************************************************************************************\n")
+        print_cononical_configs(f, "main_branch", canonical_dbs, False)
+        f.write("########## canonical upgrade related setups ########\n")
+        f.write("## sonic_panther_r-panther-13, sonic_lionfish_r-lionfish-07, sonic_leopard_r-leopard-56##\n")
+        print_cononical_configs(f, "main_branch", canonical_dbs, True)
 
 
 if __name__ == "__main__":
-    branch_list = ["201911", "202012", "develop"]
+    branch_list = ["develop"]
     for branch in branch_list:
         print_mars_configs(branch)

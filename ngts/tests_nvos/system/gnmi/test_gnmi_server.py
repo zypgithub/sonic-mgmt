@@ -342,12 +342,12 @@ def test_gnmi_max_subscribers(engines, local_adminuser):
     with allure.step(f'subscribe {MAX_GNMI_SUBSCRIBERS} clients'):
         for i in range(MAX_GNMI_SUBSCRIBERS):
             with allure.step(f'subscribe client #{i}'):
-                client.run_subscribe_interface_and_keep_session_alive(GnmiMode.STREAM, selected_port.name,
-                                                                      skip_cert_verify=True)
+                client.gnmic_subscribe_interface_and_keep_session_alive(GnmiMode.STREAM, selected_port.name,
+                                                                        skip_cert_verify=True)
                 time.sleep(1)
     with allure.step('subscribe another client'):
-        last_process = client.run_subscribe_interface_and_keep_session_alive(GnmiMode.STREAM, selected_port.name,
-                                                                             skip_cert_verify=True)
+        last_process = client.gnmic_subscribe_interface_and_keep_session_alive(GnmiMode.STREAM, selected_port.name,
+                                                                               skip_cert_verify=True)
     with allure.step('change port description'):
         new_description = change_interface_description(selected_port)
     with allure.step('verify last user fails and do not receive update'):

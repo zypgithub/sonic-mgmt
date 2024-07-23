@@ -12,6 +12,7 @@ logger = logging.getLogger()
 
 
 @pytest.mark.system
+@pytest.mark.disable_loganalyzer
 def test_fw_dump_me(engines, devices):
     """
     Test flow:

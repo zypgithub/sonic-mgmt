@@ -395,7 +395,7 @@ def get_ptf_docker_tag(image_path):
     :param image_path: example: /auto/sw_system_release/sonic/master.234-27a6641fb_Internal/Mellanox/sonic-mellanox.bin
     :return: ptf docker tag, example: '42007'
     """
-    ptf_tag = 'latest'
+    ptf_tag = '558858'
     try:
         if is_url(image_path):
             file_path_index = 3

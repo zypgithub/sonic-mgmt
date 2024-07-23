@@ -3,9 +3,12 @@ from typing import Dict
 import logging
 import socket
 import time
+from typing import List
 
 from paramiko.ssh_exception import AuthenticationException
 from netmiko import ConnectHandler
+
+from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from .ResultObj import ResultObj, IssueType
 import subprocess
 from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
@@ -36,11 +39,11 @@ class DutUtilsTool:
         :return:
         """
         with allure.step('Reload the system with {} command, and wait till system is ready'.format(command)):
-            if confirm:
-                list_commands = [command, 'y']
-                device.reload_device(engine, list_commands)
-            else:
-                device.reload_device(engine, [command])
+            list_commands = [command, 'y'] if confirm else [command]
+            output = device.reload_device(engine, list_commands)
+
+            if 'aborted' in output.lower() or 'aborting' in output.lower():
+                return ResultObj(result=False, info=output)
 
             with allure.step('Waiting for switch shutdown after reload command'):
                 check_port_status_till_alive(False, engine.ip, engine.ssh_port)
@@ -54,6 +57,8 @@ class DutUtilsTool:
                 check_port_status_till_alive(True, engine.ip, engine.ssh_port)
                 recovery_engine = recovery_engine if recovery_engine else engine
                 result_obj = device.wait_for_os_to_become_functional(recovery_engine, find_prompt_delay=find_prompt_delay)
+
+        result_obj.returned_value = output
         return result_obj
 
     @staticmethod
@@ -85,11 +90,16 @@ class DutUtilsTool:
             return ResultObj(result=True, info="Reconnected After Running {}".format(command))
 
     @staticmethod
-    def wait_on_system_reboot(engine, recovery_engine=None):
-        """Call this after an operation that should trigger a reboot. Will wait on the switch until it's functional."""
+    def wait_on_system_reboot(engine, recovery_engine=None, wait_time_before_reboot=120):
+        """
+        Call this after an operation that should trigger a reboot. Will wait on the switch until it's functional.
+        :param wait_time_before_reboot: How many seconds to wait for the switch to go down. If this time elapsed and
+            the ports are still alive, we assume the switch did not start reboot at all and raise AssertionError.
+        """
         with allure.step("Waiting for system to reboot and become available"):
             with allure.step("Waiting for switch shutdown after reload command"):
-                check_port_status_till_alive(False, engine.ip, engine.ssh_port)
+                check_port_status_till_alive(False, engine.ip, engine.ssh_port,
+                                             tries=wait_time_before_reboot / 2)  # divide by 2 because 2 delay=2 seconds
                 engine.disconnect()
             with allure.step("Waiting for switch to be ready"):
                 check_port_status_till_alive(True, engine.ip, engine.ssh_port)
@@ -163,6 +173,18 @@ class DutUtilsTool:
                 interface = 'eth' + str(index)
         return interface
 
+    @staticmethod
+    def get_prompt(engine: LinuxSshEngine) -> str:
+        return engine.engine.send_command('', strip_prompt=False)
+
+    @staticmethod
+    def get_running_dockers(engine: LinuxSshEngine) -> List[str]:
+        output = engine.run_cmd('docker ps --format \"table {{.Names}}\"', print_output=False)
+        title, *dockers = output.splitlines()
+        if title.strip().lower() != 'names':
+            raise Exception("Got invalid response: " + output)
+        return dockers
+
 
 def ping_device(ip_add):
     try:
@@ -191,7 +213,7 @@ def _ping_device(ip_add):
             raise Exception(f"ip address {ip_add} is unreachable")
 
 
-@retry(Exception, tries=60, delay=10)
+@retry(Exception, tries=80, delay=15)
 def wait_for_system_table_to_exist(engine):
     output = DatabaseTool.sonic_db_cli_hgetall(engine=engine, asic="",
                                                db_name=DatabaseConst.STATE_DB_NAME,
@@ -202,7 +224,7 @@ def wait_for_system_table_to_exist(engine):
     return True
 
 
-@retry(Exception, tries=60, delay=10)
+@retry(Exception, tries=80, delay=15)
 def wait_until_cli_is_up(engine):
     logger.info('Checking the status of nvued')
     output = engine.run_cmd('nv show system')
@@ -211,7 +233,7 @@ def wait_until_cli_is_up(engine):
         raise Exception("Waiting for NVUE to become functional")
 
 
-@retry(Exception, tries=12, delay=10)
+@retry(Exception, tries=15, delay=10)
 def wait_on_systemctl_initialization(engine):
     output = engine.run_cmd("sudo systemctl is-system-running")
     if "running" not in output:

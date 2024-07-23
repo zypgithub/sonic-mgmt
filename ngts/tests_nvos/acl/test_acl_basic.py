@@ -15,6 +15,8 @@ from scapy import route
 from scapy.ansmachine import send
 from scapy.layers.inet import IP, TCP, ICMP
 from scapy.all import *
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 
 logger = logging.getLogger()
 
@@ -58,6 +60,25 @@ RULE_CONFIG_FUNCTION = {
     AclConsts.DEST_MAC_MASK: None,
     AclConsts.MAC_PROTOCOL: None
 }
+
+
+@pytest.mark.nvos_ci
+@pytest.mark.acl
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_show_acls(engines, test_api):
+    TestToolkit.tested_api = test_api
+
+    with allure.step("Show ACL and verify the output"):
+        acl = Acl()
+        acls = OutputParsingTool.parse_show_output_to_dict(acl.show()).get_returned_value()
+        assert acls and len(acls.keys()) > 1, "No ACLs were found"
+
+        with allure.step("Verify all default ACL are found"):
+            ValidationTool.verify_field_exist_in_json_output(acls, AclConsts.DEFAULT_ACLS).verify_result()
+
+        with allure.step("Verify expected ACL fields"):
+            ValidationTool.verify_field_exist_in_json_output(acls[AclConsts.DEFAULT_ACLS[0]],
+                                                             [AclConsts.RULE, AclConsts.TYPE])
 
 
 @pytest.mark.acl
@@ -1083,6 +1104,7 @@ def test_override_default_rule(engines, topology_obj):
 def get_rule_packets(mgmt_port, acl_id, rule_id=None, rule_direction=AclConsts.INBOUND):
     output = mgmt_port.interface.acl.acl_id[acl_id].parse_show()
     res = {}
+    assert AclConsts.STATISTICS in output.keys(), f"{AclConsts.STATISTICS} is not found in the output"
     if rule_id:
         res[rule_id] = int(output[AclConsts.STATISTICS][rule_id][rule_direction]["packet"])
     else:

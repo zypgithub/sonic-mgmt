@@ -1,0 +1,3 @@
+StartDevice,StartPort,EndDevice,EndPort,EndFeed
+pdu-10-208-0-191,16,r-bobcat-03,PSU1,
+pdu-10-208-0-191,17,r-bobcat-03,PSU2,

@@ -19,10 +19,13 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
+from ngts.tests_nvos.general.security.certificate.constants import TestCert
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
+from ngts.tests_nvos.system.gnmi.constants import CERTIFICATE, \
+    DEFAULT_CERTIFICATE, GnmicErr
 from ngts.tests_nvos.system.gnmi.constants import DUT_GNMI_CERTS_DIR, DOCKER_CERTS_DIR, GnmiMode, \
     GrpcMsg, SERVER_REFLECTION_SUBSCRIBE_RESPONSE
-
+from ngts.tools.test_utils.nvos_general_utils import generate_scp_uri_using_player
 
 logger = logging.getLogger()
 
@@ -340,14 +343,14 @@ def validate_redis_cli_and_gnmi_commands_results(engines, devices, gnmi_list, al
             redis_output = str(sorted(redis_output.split(',')))
             gnmi_client_output = str(sorted(gnmi_client_output.split(',')))
         if command[GnmiConsts.COMPARISON_KEY]:
-            assert gnmi_client_output.lower() == command[GnmiConsts.COMPARISON_KEY][redis_output].lower()
+            Tools.ValidationTool.compare_values(gnmi_client_output.lower(), command[GnmiConsts.COMPARISON_KEY][redis_output].lower()).verify_result()
         elif allowed_range_in_bytes is not None:
             result = abs(int(gnmi_client_output) - int(redis_output))
             assert 0 <= result <= allowed_range_in_bytes, (
                 f"gNMI output: {gnmi_client_output} is not within {allowed_range_in_bytes} to "
                 f"redis output:{redis_output} for field: {prefix_and_path[1]}")
         else:
-            assert gnmi_client_output.lower() == redis_output.lower()
+            Tools.ValidationTool.compare_values(gnmi_client_output.lower(), redis_output.lower()).verify_result()
 
 
 def verify_description_value(output, expected_description):
@@ -355,8 +358,8 @@ def verify_description_value(output, expected_description):
                                                       expected_description).verify_result()
 
 
-def change_interface_description(selected_port):
-    rand_str = ''.join(random.choice(string.ascii_lowercase) for _ in range(20))
+def change_interface_description(selected_port, new_description: str = ''):
+    rand_str = new_description or ''.join(random.choice(string.ascii_lowercase) for _ in range(20))
     selected_port.interface.set(NvosConst.DESCRIPTION, rand_str, apply=True).verify_result()
     time.sleep(GnmiConsts.SLEEP_TIME_FOR_UPDATE)
     return rand_str
@@ -413,11 +416,11 @@ def verify_gnmi_client(test_flow, server_host, server_port, username, password, 
     if test_flow == TestFlowType.GOOD_FLOW:
         with allure.step(f'good-flow: {log_msg}'):
             with allure.step('verify using capabilities command'):
-                out, err = client.run_capabilities(skip_cert_verify=skip_cert_verify)
+                out, err = client.gnmic_capabilities(skip_cert_verify=skip_cert_verify)
                 verify_msg_not_in_out_or_err(err_msg_to_check, out, err)
             with allure.step('verify using subscribe command'):
-                out, err = client.run_subscribe_interface(GnmiMode.ONCE, selected_port.name,
-                                                          skip_cert_verify=skip_cert_verify)
+                out, err = client.gnmic_subscribe_interface(GnmiMode.ONCE, selected_port.name,
+                                                            skip_cert_verify=skip_cert_verify)
                 verify_msg_in_out_or_err(new_description, out)
                 verify_msg_not_in_out_or_err(err_msg_to_check, out, err)
             with allure.step('verify using reflection command'):
@@ -426,11 +429,11 @@ def verify_gnmi_client(test_flow, server_host, server_port, username, password, 
     else:
         with allure.step(f'bad-flow: {log_msg}'):
             with allure.step('verify using capabilities command'):
-                out, err = client.run_capabilities(skip_cert_verify=skip_cert_verify)
+                out, err = client.gnmic_capabilities(skip_cert_verify=skip_cert_verify)
                 verify_msg_in_out_or_err(err_msg_to_check, out, err)
             with allure.step('verify using subscribe command'):
-                out, err = client.run_subscribe_interface(GnmiMode.ONCE, selected_port.name,
-                                                          skip_cert_verify=skip_cert_verify)
+                out, err = client.gnmic_subscribe_interface(GnmiMode.ONCE, selected_port.name,
+                                                            skip_cert_verify=skip_cert_verify)
                 verify_msg_not_in_out_or_err(new_description, out)
                 verify_msg_in_out_or_err(err_msg_to_check, out, err)
             with allure.step('verify using reflection command'):
@@ -438,14 +441,41 @@ def verify_gnmi_client(test_flow, server_host, server_port, username, password, 
 
 
 def verify_server_reflection(test_flow, client, skip_cert_verify, err_msg_to_check, services=None):
-    out_reflect, err_reflect = client.run_describe(skip_cert_verify=skip_cert_verify)
+    out_reflect, err_reflect = client.grpcurl_describe(skip_cert_verify=skip_cert_verify)
     if test_flow == TestFlowType.GOOD_FLOW:
         verify_msg_in_out_or_err(GrpcMsg.MSG_SERVER_REFLECT, out_reflect)
         verify_msg_not_in_out_or_err(err_msg_to_check, out_reflect, err_reflect)
         for service in services:
-            out_reflect, err_reflect = client.run_describe(service=service, skip_cert_verify=skip_cert_verify)
+            out_reflect, err_reflect = client.grpcurl_describe(service=service, skip_cert_verify=skip_cert_verify)
             verify_msg_in_out_or_err(GrpcMsg.ALL_MSGS[service], out_reflect)
             verify_msg_not_in_out_or_err(err_msg_to_check, out_reflect, err_reflect)
     else:
         verify_msg_not_in_out_or_err(GrpcMsg.MSG_SERVER_REFLECT, out_reflect)
         verify_msg_in_out_or_err(err_msg_to_check, out_reflect, err_reflect)
+
+
+def factory_reset_gnmi_check():
+    cert = TestCert.cert_valid_1
+    system = System()
+    dut_engine = TestToolkit.engines.dut
+    with allure.step(f'before factory reset - import and load certificate "{cert.name}" to gnmi'):
+        with allure.step(f'import cert {cert.name}'):
+            system.security.certificate.cert_id[cert.name].action_import(
+                uri_bundle=generate_scp_uri_using_player(dut_engine, cert.p12_bundle),
+                passphrase=cert.p12_password).verify_result()
+        with allure.step(f'set certificate "{cert.name}" to gnmi'):
+            system.gnmi_server.set(CERTIFICATE, cert.name, apply=True).verify_result()
+    yield
+    with allure.step(f'after factory reset - verify default gnmi certificate'):
+        out = OutputParsingTool.parse_json_str_to_dictionary(system.gnmi_server.show()).get_returned_value()
+        assert out[CERTIFICATE] == DEFAULT_CERTIFICATE, (f'value of field "{CERTIFICATE}" not as expected (default)\n'
+                                                         f'expected (default): {DEFAULT_CERTIFICATE}\n'
+                                                         f'actual: {out[CERTIFICATE]}')
+    with allure.step('after factory reset - verify client cannot request using the certificate'):
+        verify_gnmi_client(TestFlowType.BAD_FLOW, cert.ip or cert.dn, GnmiConsts.GNMI_DEFAULT_PORT,
+                           dut_engine.username, dut_engine.password, False, GnmicErr.CERT_VERIFY_FAIL,
+                           cacert=cert.cacert)
+    yield  # to prevent StopIteration on the 2nd next() call
+
+
+factory_reset_gnmi_checker = factory_reset_gnmi_check()  # generator

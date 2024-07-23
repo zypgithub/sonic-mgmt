@@ -44,7 +44,8 @@ def test_bios_upgrade(engines: ProxySshEngine, devices, test_api):
             fae.platform.firmware.bios.action_fetch(devices.dut.previous_bios_version_path).verify_result()
 
         with allure.step('installing Bios image {}'.format(devices.dut.previous_bios_version_name)):
-            fae.platform.firmware.install_bios_firmware(bios_image_path="0ACQF.cab", device=devices.dut)
+            bios_name = devices.dut.previous_bios_version_path.split('/')[-1]
+            fae.platform.firmware.install_bios_firmware(bios_image_path=bios_name, device=devices.dut)
 
         with allure.step('making sure BIOS is now on version {}'.format(devices.dut.previous_bios_version_name)):
             fw_output = Tools.OutputParsingTool.parse_json_str_to_dictionary(platform.firmware.show()).verify_result()
@@ -64,7 +65,8 @@ def test_bios_upgrade(engines: ProxySshEngine, devices, test_api):
             fae.platform.firmware.bios.action_fetch(devices.dut.current_bios_version_path).verify_result()
 
         with allure.step('installing Bios image {}'.format(devices.dut.current_bios_version_name)):
-            fae.platform.firmware.install_bios_firmware(bios_image_path="0ACQF.cab", device=devices.dut)
+            bios_name = devices.dut.current_bios_version_name.split('/')[-1]
+            fae.platform.firmware.install_bios_firmware(bios_image_path=bios_name, device=devices.dut)
 
         with allure.step('making sure BIOS is now on version {}'.format(devices.dut.current_bios_version_name)):
             fw_output = Tools.OutputParsingTool.parse_json_str_to_dictionary(platform.firmware.show()).verify_result()

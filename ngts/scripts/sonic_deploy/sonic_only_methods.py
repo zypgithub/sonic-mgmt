@@ -75,7 +75,7 @@ class SonicInstallationSteps:
         add_topo_cmd = SonicInstallationSteps.get_add_topology_cmd(setup_name, dut_name, sonic_topo, neighbor_type, ptf_tag)
         run_background_process_on_host(threads_dict, 'add_topology', add_topo_cmd, timeout=3600, exec_path=ansible_path)
         if not is_bf_topo(sonic_topo) and not is_dualtor_topo(sonic_topo) and "mtvr-hippo-03" != dut_name and\
-                "mtvr-hippo-02" != dut_name:
+                "mtvr-hippo-02" != dut_name and 'bobcat' not in dut_name:
             gen_mg_cmd = get_generate_minigraph_cmd(setup_info, dut_name, sonic_topo, port_number)
             run_background_process_on_host(threads_dict, 'generate_minigraph', gen_mg_cmd, timeout=300,
                                            exec_path=ansible_path)
@@ -156,7 +156,7 @@ class SonicInstallationSteps:
             example: /auto/sw_system_release/sonic/master.234-27a6641fb_Internal/Mellanox/sonic-mellanox.bin
         :return: ptf docker tag, example: '42007'
         """
-        ptf_tag = 'latest'
+        ptf_tag = '558858'
         try:
             if is_url(image_path):
                 file_path_index = 3
@@ -380,13 +380,13 @@ class SonicInstallationSteps:
         cli = SonicInstallationSteps.get_dut_cli(setup_info)
         cli.cli_obj.general.update_platform_params(platform_params, setup_name)
 
+        dut_name = setup_info['duts'][0]['dut_name']
+        dut_platform_path = f'/usr/share/sonic/device/{platform_params["platform"]}'
+        sonic_mgmt_hwsku_path = '/usr/share/sonic/device/x86_64-kvm_x86_64-r0'
+        sonic_user = os.getenv("SONIC_SWITCH_USER")
+        sonic_password = os.getenv("SONIC_SWITCH_PASSWORD")
+        dut_engine = topology_obj.players['dut']['engine']
         if "mtvr-hippo-03" in setup_name or "mtvr-hippo-02" in setup_name:
-            dut_name = setup_info['duts'][0]['dut_name']
-            dut_platform_path = f'/usr/share/sonic/device/{platform_params["platform"]}'
-            sonic_mgmt_hwsku_path = '/usr/share/sonic/device/x86_64-kvm_x86_64-r0'
-            sonic_user = os.getenv("SONIC_SWITCH_USER")
-            sonic_password = os.getenv("SONIC_SWITCH_PASSWORD")
-            dut_engine = topology_obj.players['dut']['engine']
             SonicInstallationSteps.remove_redundant_service_port(dut_platform_path, platform_params['hwsku'],
                                                                  dut_engine, cli.cli_obj)
             dut_engine.run_cmd(f'sudo sonic-cfggen --preset t1 -p -H -k {platform_params["hwsku"]} > '
@@ -394,6 +394,15 @@ class SonicInstallationSteps:
             execute_script(f'sshpass -p "{sonic_password}" scp -o "StrictHostKeyChecking no"'
                            f' -r {sonic_user}@{dut_name}:{dut_platform_path}/{platform_params["hwsku"]} '
                            f'{sonic_mgmt_hwsku_path}', ansible_path)
+            generate_minigraph(ansible_path, setup_info, dut_name, sonic_topo, None)
+        # TODO: Remove this after SONiC bobcat code is merged to master
+        elif "bobcat" in setup_name:
+            dut_hwsku_paths = ['/usr/share/sonic/device/x86_64-kvm_x86_64-r0/ACS-SN4280',
+                               '/usr/share/sonic/device/x86_64-kvm_x86_64-r0/Mellanox-SN4280-O28']
+            for path in dut_hwsku_paths:
+                execute_script(f'sshpass -p "{sonic_password}" scp -o "StrictHostKeyChecking no"'
+                               f' -r {sonic_user}@{dut_name}:{path} '
+                               f'{sonic_mgmt_hwsku_path}', ansible_path)
             generate_minigraph(ansible_path, setup_info, dut_name, sonic_topo, None)
 
         cli.enable_async_route_feature(platform_params['platform'], platform_params['hwsku'])
@@ -465,11 +474,11 @@ class SonicInstallationSteps:
                 dut_engine.run_cmd("sudo systemctl start ntpd")
             ##########################################################################################################
             if deploy_dpu:
-                with allure.step('Apply virtual smart switch configuration'):
+                with allure.step('Apply DPU IP assignment configuration'):
                     dut_engine = topology_obj.players['dut']['engine']
                     config_path = \
                         os.path.join(MarsConstants.SONIC_MGMT_DIR,
-                                     "tests/virtual_smart_switch/dpu_ip_assignment_config.json")
+                                     "tests/smart_switch/dpu_ip_assignment_config.json")
                     dut_engine.copy_file(source_file=config_path,
                                          dest_file="dpu_ip_assignment_config.json", file_system='/tmp/',
                                          overwrite_file=True, verify_file=False)

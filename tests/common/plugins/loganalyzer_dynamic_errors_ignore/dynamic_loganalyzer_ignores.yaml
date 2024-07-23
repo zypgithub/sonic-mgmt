@@ -167,6 +167,13 @@
     - Affected_test_cases:
       - tests/nightly/logging/test_log_analyzer_errors_during_deploy_sonic.py
 
+# Ignore these errors on r-bobcat-01 due to a PSU hw issue
+- Errors_list:
+    - '.*r-bobcat-01.*pmon.*psu.*'
+  Conditions:
+    - Platform:
+        sn4280
+
 # Due to limitation of SAI, this err msg seems can not be avoided, add it to ignore, details please refer to #3565127
 - Errors_list:
     - '.* ERR syncd#SDK: \[SAI_UTILS.ERR\] .\/src\/mlnx_sai_utils.c.*- get_dispatch_attribs_handler: Failed Get #\d+, EGRESS_ACL, key:PORT \[OID:.*\].*'
@@ -2889,6 +2896,15 @@
     - Redmine:
       - 3657042
 
+- Errors_list:
+    - '.*ERR sonic-db-cli: :- getDbInfo: Key :asicdpu\d is not a valid key name in config file.*'
+  Conditions:
+    - Redmine:
+      - 3949136
+      Platform:
+        - sn4280
+
+
 # NVOS
 - Errors_list:
     - '.* ERR nvued:   ERROR: lifecycle.py:\d+ Failed verify eth interface configuration.*'
@@ -3260,6 +3276,54 @@
         - 3634699
       Branch:
         - 202305
+
+- Errors_list:
+    - '.*(sonic|ERR|CRIT) kernel:.*mlx5_core.*: print_health_info:\d+:\(pid \d+\): Health issue observed, firmware internal error, severity\(2\) CRITICAL:.*'
+    - '.*(sonic|ERR|CRIT) kernel:.*mlx5_core.*: print_health_info:\d+:\(pid \d+\): Health issue observed, firmware internal error, severity\(3\) ERROR:.*'
+    - '.*(sonic|ERR|CRIT) kernel:.*mlx5_core.*: print_health_info:\d+:\(pid \d\): assert_.*'
+    - '.*(sonic|ERR|CRIT) kernel:.*mlx5_core.*: print_health_info:\d+:\(pid \d\): fw_ver.*'
+    - '.*(sonic|ERR|CRIT) kernel:.*mlx5_core.*: print_health_info:\d+:\(pid \d\): time.*'
+    - '.*(sonic|ERR|CRIT) kernel:.*mlx5_core.*: print_health_info:\d+:\(pid \d\): hw_id.*'
+    - '.*(sonic|ERR|CRIT) kernel:.*mlx5_core.*: print_health_info:\d+:\(pid \d\): rfr.*'
+    - '.*(sonic|ERR|CRIT) kernel:.*mlx5_core.*: print_health_info:\d+:\(pid \d\): severity.*'
+    - '.*(sonic|ERR|CRIT) kernel:.*mlx5_core.*: print_health_info:\d+:\(pid \d\): irisc_index.*'
+    - '.*(sonic|ERR|CRIT) kernel:.*mlx5_core.*: print_health_info:\d+:\(pid \d\): ext_synd.*'
+    - '.*(sonic|ERR|CRIT) kernel:.*mlx5_core.*: print_health_info:\d+:\(pid \d\): raw fw_ver.*'
+    - '.*(sonic|ERR|CRIT) kernel:.*mlx5_core.*: print_health_info:\d+:\(pid \d+\): synd.*firmware internal error.*'
+    - '.*(sonic|ERR|CRIT) kernel:.*mlx5_core.*poll_health:840:\(pid \d+\): device.s health compromised.*reached miss count.*'
+    - '.*(sonic|ERR|CRIT) kernel:.*mlx5_core.*mlx5_function_setup:1112:\(pid \d+\): Firmware over 120000 MS in pre-initializing state, aborting.*'
+    - '.*(sonic|ERR|CRIT) kernel:.*mlx5_core.*: probe_one:1725:\(pid \d+\): mlx5_init_one failed with error code -\d+.*'
+    - '.*(sonic|WARNING) kernel:.*mlx5_core: probe of.*failed with error -\d+.*'
+  Conditions:
+    - Redmine:
+        - 3916425
+
+- Errors_list:
+    - '.*(sonic|WARNING) kernel:.*amd-xgbe: probe of.*failed with error -22'
+    - '.*(sonic|ERR) kernel:.*ima: No suitable TPM algorithm for boot aggregate'
+    - '.*(sonic|ERR) kernel:.*amd-xgbe.*: invalid mac address.*'
+  Conditions:
+    - Redmine:
+        - 3917856
+
+- Errors_list:
+    - '.*ERR sfputil: EEPROM file path for sfp \d+ does not exist.*'
+  Conditions:
+    - Redmine:
+        - 3916444
+
+- Errors_list:
+    - '.*sonic ERR swss#orchagent: :- mqPollThread: zmq_bind failed on endpoint: tcp:.*null:\d+, zmqerrno: \d+.*'
+  Conditions:
+    - Redmine:
+        - 3916435
+
+- Errors_list:
+    - '.*ERR kernel:.*ccp.*: firmware: failed to load amd\/sev\.fw.*'
+    - '.*ERR kernel:.*ccp.*: firmware: failed to load amd\/amd_sev_fam17h_model.*h\.sbin.*'
+  Conditions:
+    - Redmine:
+        - 3916448
 
 # In the test case test_sensor_errors[psu_err_present], it has an action to remove the psu file,
 # when pmon try to read the file psu file "/var/run/hw-management/thermal/psu\d+_status",
@@ -3650,6 +3714,12 @@
   Conditions:
     - Redmine:
       - 3735940
+
+- Errors_list:
+    - '.*ERR swss#orchagent: :- addExistingData: No consumer TRANSCEIVER_INFO in Orch.*'
+  Conditions:
+    - Redmine:
+      - 3893574
 
 - Errors_list:
     - '.* ERR syncd#SDK: \[SAI_UTILS.ERR\] .\/src\/mlnx_sai_utils.c.*- set_dispatch_attrib_handler: Failed Set NEXT_HOP_ID, key:ROUTE_ENTRY .*val:NEXT_HOP_GROUP .*'

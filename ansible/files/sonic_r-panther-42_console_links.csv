@@ -1,0 +1,3 @@
+StartDevice,StartPort,EndDevice,Console_type,Proxy
+rcon-SWS-1-3,7011,r-panther-42,ssh,root
+rcon-SWS-1-3,7010,r-panther-43,ssh,root

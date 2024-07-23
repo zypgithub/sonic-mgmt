@@ -1,0 +1,3 @@
+StartDevice,StartPort,EndDevice,EndPort,EndFeed
+pdu-10-245-2-49,19,mtvr-leopard-01,PSU1,
+pdu-10-245-2-25,19,mtvr-leopard-01,PSU2,

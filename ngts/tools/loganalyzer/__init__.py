@@ -52,7 +52,7 @@ def duthosts(ansible_adhoc, topology_obj):
                         NvosCliTypes.NvueCliTypes:
                     if isinstance(err, AnsibleConnectionFailure):
                         logger.error(f'DUT not reachable. Can not create DUT ansible engine. Error: {err}')
-                    if isinstance(err, KeyError) and 'bf' in dut_hostname:
+                    if isinstance(err, KeyError) and ('bf' in dut_hostname or 'dpu' in dut_hostname):
                         logger.info(f'Ignore the DPUs on smart switch setup if the ansible host is not available')
                         continue
                     else:

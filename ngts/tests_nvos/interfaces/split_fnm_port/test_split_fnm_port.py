@@ -38,7 +38,7 @@ def test_interface_fnm_port_split(engines, devices, test_api, players, interface
     system = System(None)
 
     with allure_step('Change system profile to breakout'):
-        system.profile.action_profile_change(params_dict={"adaptive-routing": "enabled", "breakout-mode": "enabled"})
+        system.profile.action_profile_change(params_dict={"adaptive-routing": "enabled"})
         with allure_step('Verify changed values'):
             system_profile_output = OutputParsingTool.parse_json_str_to_dictionary(system.profile.show()) \
                 .get_returned_value()

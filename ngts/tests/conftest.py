@@ -205,6 +205,8 @@ def get_expected_cpu_or_ram_usage_dict(expected_cpu_or_ram_usage_file, sonic_bra
                                          expected_cpu_or_ram_usage_dict)
     update_cpu_usage_for_simx(expected_cpu_or_ram_usage_file, is_simx,
                               chip_type, expected_cpu_or_ram_usage_dict)
+    if is_redmine_issue_active([3956760]):
+        del expected_cpu_or_ram_usage_dict['redis-server']
     return expected_cpu_or_ram_usage_dict
 
 

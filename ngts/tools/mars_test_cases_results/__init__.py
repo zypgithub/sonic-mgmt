@@ -130,6 +130,8 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config):
 
     json_obj = []
     report_url = config.cache.get(ALLURE_REPORT_URL, '')
+    if report_url is None:
+        report_url = ''
     session_id = config.cache.get(SESSION_ID, None)
     setup_name = config.cache.get(SETUP_NAME, '')
     mars_key_id = config.cache.get(MARS_KEY_ID, '')
@@ -180,9 +182,11 @@ def export_data(session_id, mars_key_id, cli_type):
         .format(SESSION_ID=session_id, MARS_KEY_ID=mars_key_id, CLI_TYPE=cli_type)
     try:
         logger.info("Exporting json tests data with command:\n{}".format(export_data_cmd))
-        subprocess.check_output(export_data_cmd, shell=True)
-    except Exception as e:
-        logger.warning("Error: {} has occurred, test data might not be exported".format(e))
+        subprocess.check_output(export_data_cmd, shell=True, stderr=subprocess.STDOUT)
+    except subprocess.CalledProcessError as e:
+        logger.error(e.output.decode())
+        raise Exception(f"Failed to export data to mars db using the command '{export_data_cmd}', "
+                        f"please check the errors in the log for further details")
 
 
 def valid_tests_data(session_id, mars_key_id):

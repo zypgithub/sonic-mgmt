@@ -1,3 +1,4 @@
+import re
 import pytest
 import logging
 import random
@@ -6,6 +7,7 @@ from ngts.tests.conftest import get_dut_loopbacks
 from ngts.constants.constants import AutonegCommandConstants, SonicConst
 from ngts.helpers.interface_helpers import get_lb_mutual_speed
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from ngts.tests.nightly.auto_negotition.conftest import is_auto_neg_supported_port, ports_spec_compliance
 
 logger = logging.getLogger()
 
@@ -94,7 +96,6 @@ def tested_lb_dict(topology_obj, split_mode_supported_speeds):
         mutual_speeds = get_lb_mutual_speed(split_4_lb, 4, split_mode_supported_speeds)
         if mutual_speeds:
             tested_lb_dict[4] = {random.choice(SonicConst.FEC_MODE_LIST): [split_4_lb]}
-
     return tested_lb_dict
 
 
@@ -193,6 +194,37 @@ def dut_ports_default_mlxlink_configuration(is_simx, platform_params, chip_type,
     return dut_ports_basic_mlxlink_dict
 
 
+@pytest.fixture(autouse=True, scope='session')
+def mlxlink_supported_speeds(dut_ports_default_mlxlink_configuration):
+    """
+    The function parses the supported speed of each port from the output of mlxlink command
+    :param dut_ports_default_mlxlink_configuration:  dut_ports_default_mlxlink_configuration fixture
+    :return: A dictionary, mapping between each port to a sub-dictionary that contains the interface types supported
+     by every speed the cable supports, i.e. {'Ethernet136': {'400G': {'CR8'}, '100G': {'CR2'}}}
+    """
+    interface_type_per_split = {1: "CR", 2: "CR2", 4: "CR4", 8: "CR8"}
+    mlxlink_cable_fec_modes_speed_support = dict()
+    mlxlink_split_mode_pattern = re.compile(r"_(\d+)X$")  # Matching mlxlink speeds with split mode like 400G_2X
+    split_factor_group_ind = 1
+    mlxlink_speed_ind = 0
+    for port, port_mlxlink_data in dut_ports_default_mlxlink_configuration.items():
+        mlxlink_cable_fec_modes_speed_support[port] = dict()
+        speed_options = port_mlxlink_data[AutonegCommandConstants.CABLE_SPEED]
+        for speed in speed_options:
+            match = mlxlink_split_mode_pattern.search(speed)
+            if match:
+                split_factor = int(match.group(split_factor_group_ind))
+                base_speed = speed.split('_')[mlxlink_speed_ind]
+                interface_types_matched = {split_interface_type for split, split_interface_type in
+                                           interface_type_per_split.items() if split_factor >= split}
+            else:  # Speed patterns like 50G without a split should be added to all interface_types
+                interface_types_matched = set(interface_type_per_split.values())
+                base_speed = speed
+            mlxlink_cable_fec_modes_speed_support[port].setdefault(base_speed, set()).update(
+                interface_types_matched)
+    return mlxlink_cable_fec_modes_speed_support
+
+
 def get_tested_lb_dict_tested_ports(tested_lb_dict):
     tested_ports_list = []
     for split_mode, fec_mode_tested_lb_dict in tested_lb_dict.items():
@@ -221,9 +253,11 @@ def get_dut_ports_basic_mlxlink_dict(cli_objects, interfaces, tested_lb_dict,
                                   tries=6, delay=10, logger=logger)
         port_fec_mode = mlxlink_conf[AutonegCommandConstants.FEC]
         port_width_mode = int(mlxlink_conf[AutonegCommandConstants.WIDTH])
+        port_supported_speeds = mlxlink_conf[AutonegCommandConstants.CABLE_SPEED]
         dut_ports_basic_mlxlink_dict[port] = {
             AutonegCommandConstants.FEC: port_fec_mode,
-            AutonegCommandConstants.TYPE: "CR{}".format(port_width_mode if port_width_mode > 1 else "")
+            AutonegCommandConstants.TYPE: "CR{}".format(port_width_mode if port_width_mode > 1 else ""),
+            AutonegCommandConstants.CABLE_SPEED: port_supported_speeds
         }
     logger.debug("port basic fec configuration: {}".format(dut_ports_basic_mlxlink_dict))
     return dut_ports_basic_mlxlink_dict
@@ -286,7 +320,7 @@ def get_basic_fec_mode_dict(cli_objects, fec_modes_speed_support):
     "rs" is the default FEC mode because it is supported on all maximum capability
     speed which configured on setup with basic configuration.
     (on SN3700 port with 4 lane max capability speed is 200G)
-    :return: a dictionary with basic FEC mode and interface type on all ports on simx setup
+    :return: a dictionary with basic FEC mode, interface type and cable_supported_speeds on all ports on simx setup
     i.e,
     { "Ethernet0" : { "FEC": "rs" ,"Type": "CR4" }, ...}
     """
@@ -302,7 +336,8 @@ def get_basic_fec_mode_dict(cli_objects, fec_modes_speed_support):
         basic_fec_mode_dict[port] = {
             AutonegCommandConstants.FEC: default_fec_mode,
             AutonegCommandConstants.TYPE:
-                default_fec_mode_speed_support[port_split_mode][port_speed][interface_type_index]
+                default_fec_mode_speed_support[port_split_mode][port_speed][interface_type_index],
+            AutonegCommandConstants.CABLE_SPEED: default_fec_mode_speed_support[port_split_mode]
         }
     return basic_fec_mode_dict
 
@@ -312,3 +347,22 @@ def get_lb_mutual_fec_modes(lb, fec_capability_for_dut_ports):
     for port in lb:
         port_supported_fec_modes.append(set(fec_capability_for_dut_ports[port]))
     return list(set.intersection(*port_supported_fec_modes))
+
+
+@pytest.fixture(scope='session')
+def ports_support_autoneg(topology_obj, ports_spec_compliance, is_simx):
+    """
+    The function returns a set containing ports that support autoneg
+    :param: topology_obj: topology_obj fixture
+    :param: ports_spec_compliance: ports_spec_compliance fixture
+    :param: is_simx: is_simx fixture
+    :returns: A set containing ports that support autoneg, i.e. {"Ethernet0", "Ethernet8", ...}.
+    """
+    ports_supporting_autoneg = set()
+    if is_simx:
+        return ports_supporting_autoneg
+    ports_data = topology_obj.players_all_ports['dut']
+    for port in ports_data:
+        if is_auto_neg_supported_port(port, ports_spec_compliance, used_in_auto_neg_tests=False):
+            ports_supporting_autoneg.add(port)
+    return ports_supporting_autoneg

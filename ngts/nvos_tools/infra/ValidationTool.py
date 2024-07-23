@@ -166,10 +166,10 @@ class ValidationTool:
         result_obj = ResultObj(False, "")
         if value1 == value2:
             result_obj = ResultObj(True, "The values are equal", True) if should_equal else \
-                ResultObj(False, "The values are equal while they shouldn't", False)
+                ResultObj(False, f"The values are equal while they shouldn't\n both values: {value1}", False)
         else:
             result_obj = ResultObj(True, "The values are not equal as expected", True) if not should_equal else \
-                ResultObj(False, "The values are not equal while they should", False)
+                ResultObj(False, f"The values are not equal while they should \n value1: {value1}\nvalue2: {value2}", False)
         return result_obj
 
     @staticmethod
@@ -267,9 +267,9 @@ class ValidationTool:
             ret_info = ""
             for comp in expected_values_list:
                 if comp in output_list:
-                    logging.info("'{}' found\n")
+                    logging.info(f"'{comp}' found\n")
                 else:
-                    ret_info += "'{}' + cant be found\n".format(comp)
+                    ret_info += f"'{comp}' + cant be found\n"
 
             return ResultObj(not ret_info, ret_info)
 
@@ -329,11 +329,11 @@ class ValidationTool:
                 engine.run_cmd('sudo rm -rf ' + zipped_folder_path + '/' + path.split('/')[1])
 
             with allure.step('Validate that all expected files are exist and nothing more'):
-                files = [file for file in output if file not in files_list]
+                files = [file for file in files_list if file not in output]
                 if len(files):
                     return ResultObj(False, "the next files are missed {files}".format(files=files))
 
-                files = [file for file in files_list if file not in output]
+                files = [file for file in output if file not in files_list]
                 if len(files):
                     logger.warning(
                         "the next files are in the dump folder but not in our check list {files}".format(files=files))
@@ -390,12 +390,15 @@ class ValidationTool:
         return ResultObj((equal == should_be_equal), f"Missing fields: {missing}\nUnexpected fields: {excess}")
 
     @staticmethod
-    def validate_output_of_show(actual: Dict, expected: Dict, should_be_valid=True) -> ResultObj:
+    def validate_output_of_show(actual: Dict, expected: Dict, should_be_valid=True, allow_extra_fields=False) -> ResultObj:
         with allure.step(f"Verify output is {'valid' if should_be_valid else 'invalid'}"):
             with allure.step(f"Testing keys: {expected.keys()}"):
-                keys_comparison = ValidationTool.validate_set_equal(actual.keys(), expected.keys(), should_be_valid)
-                if should_be_valid and not keys_comparison.result:
-                    return keys_comparison
+                missing_keys = set(expected.keys()) - set(actual.keys())
+                excess_keys = set(actual.keys()) - set(expected.keys())
+                if missing_keys or (excess_keys and not allow_extra_fields):
+                    return ResultObj(False, f"Missing fields: {missing_keys}\nUnexpected fields: {excess_keys}")
+                elif excess_keys:
+                    logger.info(f"Dict contained unexpected keys: {excess_keys}")
 
             with allure.step(f"Checking values"):
                 errors = []

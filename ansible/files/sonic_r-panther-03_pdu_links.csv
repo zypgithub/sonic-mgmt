@@ -1,0 +1,3 @@
+StartDevice,StartPort,EndDevice,EndPort,EndFeed
+pdu-10-208-0-18,1.11,r-panther-03,PSU1,
+pdu-10-208-0-18,1.12,r-panther-03,PSU2,
