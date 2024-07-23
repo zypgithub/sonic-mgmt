@@ -45,10 +45,7 @@ def test_gnmi_cert_without_cli(test_flow, engines, local_adminuser, restore_gnmi
                            local_adminuser.password, False, GnmicErr.CERT_VERIFY_FAIL, cacert=test_cert.cacert)
 
 
-@pytest.mark.system
-@pytest.mark.gnmi
-@pytest.mark.parametrize('api', ApiType.ALL_TYPES)
-def test_gnmi_cert_cli(api):
+def check_gnmi_cert_cli(api):
     """
     verify gnmi certificate related cli work properly
 
@@ -94,6 +91,48 @@ def test_gnmi_cert_cli(api):
         assert out[CERTIFICATE] == DEFAULT_CERTIFICATE, (f'value of field "{CERTIFICATE}" not as expected (default)\n'
                                                          f'expected (default): {DEFAULT_CERTIFICATE}\n'
                                                          f'actual: {out[CERTIFICATE]}')
+
+
+@pytest.mark.system
+@pytest.mark.gnmi
+@pytest.mark.parametrize('api', ApiType.ALL_TYPES)
+def test_gnmi_cert_cli(api):
+    """
+    verify gnmi certificate related cli work properly
+
+    1. verify in show that certificate field exists and is set to default
+    2. set gnmi certificate
+    3. verify in show the new certificate
+    4. unset gnmi certificate
+    5. verify in show the default certificate value
+    6. set gnmi certificate (again)
+    7. unset gnmi (entire endpoint)
+    8. verify in show the default certificate value
+    """
+    check_gnmi_cert_cli(api)
+
+
+@pytest.mark.system
+@pytest.mark.gnmi
+@pytest.mark.parametrize('api', ApiType.ALL_TYPES)
+def test_gnmi_cert_cli_when_gnmi_disabled(api):
+    """
+    verify gnmi certificate related cli work properly
+
+    0. disable gnmi
+    1. verify in show that certificate field exists and is set to default
+    2. set gnmi certificate
+    3. verify in show the new certificate
+    4. unset gnmi certificate
+    5. verify in show the default certificate value
+    6. set gnmi certificate (again)
+    7. unset gnmi (entire endpoint)
+    8. verify in show the default certificate value
+    """
+    with allure.step('disable gnmi'):
+        System().gnmi_server.set('state', 'disabled', apply=True).verify_result()
+
+    check_gnmi_cert_cli(api)
 
 
 @pytest.mark.system
