@@ -1,17 +1,18 @@
+import datetime as dt
 import logging
+import random
 import string
+from datetime import timedelta, datetime
 from random import randint
 from typing import MutableSequence
 
-from .ResultObj import ResultObj
-from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts, IbInterfaceConsts
+import allure
+
 from ngts.nvos_constants.constants_nvos import SystemConsts, PlatformConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port, PortRequirements
+from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts, IbInterfaceConsts
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-import random
-import allure
-import datetime as dt
-from datetime import timedelta, datetime
+from .ResultObj import ResultObj
 
 logger = logging.getLogger()
 
@@ -20,7 +21,7 @@ class RandomizationTool:
 
     @staticmethod
     def select_random_port(dut_engine=None, requested_ports_state=NvosConsts.LINK_STATE_UP,
-                           requested_ports_logical_state=None, requested_ports_type="ib"):
+                           requested_ports_logical_state=None, requested_ports_type=None):
         """
         Select and return a random port
         :param requested_ports_state: required port state
@@ -30,6 +31,9 @@ class RandomizationTool:
         """
         if not dut_engine:
             dut_engine = TestToolkit.engines.dut
+
+        if not requested_ports_type:
+            requested_ports_type = (TestToolkit.devices.dut.switch_type or IbInterfaceConsts.IB_PORT_TYPE).lower()
 
         result_obj = RandomizationTool.select_random_ports(dut_engine=dut_engine,
                                                            requested_ports_state=requested_ports_state,
@@ -42,7 +46,7 @@ class RandomizationTool:
 
     @staticmethod
     def select_random_ports(requested_ports_state=NvosConsts.LINK_STATE_UP,
-                            requested_ports_type=IbInterfaceConsts.IB_PORT_TYPE,
+                            requested_ports_type=None,
                             requested_ports_logical_state=None,
                             num_of_ports_to_select=1, port_requirements_object=None, dut_engine=None):
         """
@@ -61,6 +65,9 @@ class RandomizationTool:
             if not dut_engine:
                 logging.info('Using engine object which updated in TestToolkit')
                 dut_engine = TestToolkit.engines.dut
+
+            if not requested_ports_type:
+                requested_ports_type = (TestToolkit.devices.dut.switch_type or IbInterfaceConsts.IB_PORT_TYPE).lower()
 
             result_obj = ResultObj(False, "")
 
