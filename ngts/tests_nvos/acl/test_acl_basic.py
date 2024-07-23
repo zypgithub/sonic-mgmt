@@ -1139,9 +1139,9 @@ def config_acl_with_rule_attached_to_interface(engine, acl_id, acl_type, rule_id
             acl_obj.set(AclConsts.TYPE, acl_type).verify_result()
             config_rule(engine, acl_obj, rule_id, rule_configuration_dict).verify_result()
             attach_acl_to_interface(acl_id, mgmt_port, rule_direction, control_plane).verify_result(should_succeed)
-        logger.info("sleep 2 sec after rule attachment")
-        time.sleep(5)
-        return acl_obj
+    logger.info("sleep after rule attachment")
+    time.sleep(15)
+    return acl_obj
 
 
 def attach_acl_to_interface(acl_id, mgmt_port, rule_direction, control_plane=AclConsts.CONTROL_PLANE):
