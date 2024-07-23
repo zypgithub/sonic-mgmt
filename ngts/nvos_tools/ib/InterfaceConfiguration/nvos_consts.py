@@ -45,6 +45,8 @@ class IbInterfaceConsts:
     LINK_PHYSICAL_PORT_STATE_DISABLED = 'Disabled'
     LINK_PHYSICAL_PORT_STATE_POLLING = 'Polling'
     LINK_PHYSICAL_PORT_STATE_POLLING_XDR = 'PortConfigurationTraining'
+    LINK_ADMIN_STATUS = "admin-status"
+    LINK_OPER_STATUS = "oper-status"
     LINK_STATE = "state"
     LINK_CONNECTION_MODE = "connection-mode"
     XDR = "xdr"

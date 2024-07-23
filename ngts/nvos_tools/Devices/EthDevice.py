@@ -62,9 +62,7 @@ class EthSwitch(BaseSwitch):
 
         self.disk_partition_capacity_limit = 70  # Percent value
         self.disk_minimum_free_space = 5.5  # Gig
-
-    def ib_ports_num(self):
-        return 0
+        self.ib_ports_num = 32
 
     def wait_for_os_to_become_functional(self, engine, find_prompt_tries=60, find_prompt_delay=10):
         return DutUtilsTool.wait_for_cumulus_to_become_functional(engine)
@@ -178,6 +176,7 @@ class Mlx2410Switch(EthSwitch):
     def _init_constants(self):
         super()._init_constants()
         self.core_count = 2
+        self.ib_ports_num = 56
         self.asic_type = 'Spectrum-1'
         self.constants.firmware.append(PlatformConsts.FW_SPECTRUM1)
 
@@ -201,6 +200,7 @@ class Mlx4600Switch(EthSwitch):
     def _init_constants(self):
         super()._init_constants()
         self.core_count = 8
+        self.ib_ports_num = 64
         self.asic_type = 'Spectrum-3'
         self.constants.firmware.append(PlatformConsts.FW_SPECTRUM3)
 

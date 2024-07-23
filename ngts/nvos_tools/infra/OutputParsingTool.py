@@ -241,9 +241,14 @@ class OutputParsingTool:
             for port_name in output_dictionary.keys():
 
                 if IbInterfaceConsts.LINK not in output_dictionary[port_name].keys() or \
-                        IbInterfaceConsts.LINK_STATE not in output_dictionary[port_name]["link"].keys() or \
                         IbInterfaceConsts.TYPE not in output_dictionary[port_name].keys():
-                    logger.warning(f"'link'/'state'/'type' fields can't be found for port {port_name}")
+                    logger.warning(f"'link'/'type' fields can't be found for port {port_name}")
+                    continue
+
+                if IbInterfaceConsts.LINK_STATE not in output_dictionary[port_name]["link"].keys() and \
+                        (IbInterfaceConsts.LINK_ADMIN_STATUS not in output_dictionary[port_name]["link"].keys() or
+                         IbInterfaceConsts.LINK_OPER_STATUS not in output_dictionary[port_name]["link"].keys()):
+                    logger.warning(f"'state' fields can't be found for port {port_name}")
                     continue
 
                 dictionary_to_return[port_name] = {}
@@ -257,6 +262,13 @@ class OutputParsingTool:
                     else:
                         dictionary_to_return[port_name][link_field] = \
                             output_dictionary[port_name][IbInterfaceConsts.LINK][link_field]
+
+                if IbInterfaceConsts.LINK_STATE not in output_dictionary[port_name]["link"].keys():
+                    if output_dictionary[port_name][IbInterfaceConsts.LINK][IbInterfaceConsts.LINK_ADMIN_STATUS] == "up" and \
+                            output_dictionary[port_name][IbInterfaceConsts.LINK][IbInterfaceConsts.LINK_OPER_STATUS] == "up":
+                        dictionary_to_return[port_name][IbInterfaceConsts.LINK_STATE] = "up"
+                    else:
+                        dictionary_to_return[port_name][IbInterfaceConsts.LINK_STATE] = "down"
 
                 dictionary_to_return[port_name][IbInterfaceConsts.TYPE] = \
                     output_dictionary[port_name][IbInterfaceConsts.TYPE]
@@ -482,7 +494,7 @@ class OutputParsingTool:
             return ResultObj(True, "", result)
         else:
             return ResultObj(False, f"Parsing error: expected the second line of output to contain only '-' and "
-                                    f"spaces, but line is {output_lines[1]}")
+                             f"spaces, but line is {output_lines[1]}")
 
     @staticmethod
     def parse_auto_output_to_dict(output: str, field_name_dict=None, only_operational=True) -> ResultObj:
@@ -522,7 +534,7 @@ class OutputParsingTool:
             field_names, field_indices = OutputParsingTool._get_field_titles_and_indices(output_lines, field_name_dict)
             if not field_names:
                 return ResultObj(False, f"Parsing error: expected the second line of output to contain only '-' and "
-                                        f"spaces, but line is {output_lines[1]}")
+                                 f"spaces, but line is {output_lines[1]}")
 
             with allure.step("Parsing content"):
                 result = {}
