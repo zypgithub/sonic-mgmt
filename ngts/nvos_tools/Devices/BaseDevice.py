@@ -119,6 +119,9 @@ class BaseDevice(ABC):
     def get_mgmt_ports(self) -> List[str]:
         return None
 
+    def get_default_nvue_config(self, dut_engine=None):
+        return {}
+
     def get_default_password_by_version(self, version: str):
         return self.default_password
 

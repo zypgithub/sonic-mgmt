@@ -30,6 +30,11 @@ class EthSwitch(BaseSwitch):
     def get_voltage_sensors(self, dut_engine=None):
         return self.voltage_sensors
 
+    def get_default_nvue_config(self, dut_engine=None):
+        default_conf = NvosConst.DEFAULT_CL_CONFIG
+        default_conf["interface"] = NvosConst.DEFAULT_CL_IFACE_CONFIG
+        return default_conf
+
     def _init_constants(self):
         super()._init_constants()
         self.pre_login_message = "None\n"

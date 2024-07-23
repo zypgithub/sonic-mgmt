@@ -13,7 +13,7 @@ import ngts.tools.test_utils.allure_utils as allure
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 
-def clear_conf(dut_engine, markers=None, set_base_config_function=set_base_configurations):
+def clear_conf(dut, dut_engine, markers=None, set_base_config_function=set_base_configurations):
     if markers and 'system_profile_cleanup' in markers:
         clear_system_profile_config()
 
@@ -27,56 +27,7 @@ def clear_conf(dut_engine, markers=None, set_base_config_function=set_base_confi
         set_comp = {k: v for comp in show_config_output for k, v in comp.get("set", {}).items()}
 
         with allure.step("Get the non-default set components"):
-            default_conf = NvosConst.DEFAULT_CONFIG
-            default_conf["interface"] = {
-                "eth0": {
-                    "acl": {
-                        "ACL_MGMT_INBOUND_CP_DEFAULT": {
-                            "inbound": {
-                                "control-plane": {}
-                            }
-                        },
-                        "ACL_MGMT_INBOUND_CP_DEFAULT_IPV6": {
-                            "inbound": {
-                                "control-plane": {}
-                            }
-                        },
-                        "ACL_MGMT_INBOUND_DEFAULT": {
-                            "inbound": {}
-                        },
-                        "ACL_MGMT_INBOUND_DEFAULT_IPV6": {
-                            "inbound": {}
-                        },
-                        "ACL_MGMT_OUTBOUND_CP_DEFAULT": {
-                            "outbound": {
-                                "control-plane": {}
-                            }
-                        },
-                        "ACL_MGMT_OUTBOUND_CP_DEFAULT_IPV6": {
-                            "outbound": {
-                                "control-plane": {}
-                            }
-                        }
-                    },
-                    "type": "eth"
-                },
-                "lo": {
-                    "acl": {
-                        "ACL_LOOPBACK_INBOUND_CP_DEFAULT": {
-                            "inbound": {
-                                "control-plane": {}
-                            }
-                        },
-                        "ACL_LOOPBACK_INBOUND_CP_DEFAULT_IPV6": {
-                            "inbound": {
-                                "control-plane": {}
-                            }
-                        }
-                    },
-                    "type": "loopback"
-                }
-            }
-
+            default_conf = dut.get_default_nvue_config()
             diff_config = ValidationTool.get_dictionaries_diff(set_comp, default_conf)
             logging.info(diff_config)
 
@@ -123,6 +74,102 @@ def clear_conf(dut_engine, markers=None, set_base_config_function=set_base_confi
                     unset_cli_cmd += " ".join([f"{unset_system_cli} {NvosConst.SYSTEM_AAA} {aaa_comp}; " for
                                                aaa_comp in aaa_config.keys() if
                                                aaa_comp != NvosConst.SYSTEM_AAA_USER])
+
+                    # unset other system components
+                    unset_cli_cmd += " ".join([f"{unset_system_cli} {set_comp_name}; " for set_comp_name in
+                                               system_config.keys() if set_comp_name != NvosConst.SYSTEM_AAA])
+
+                    logging.info("Execute system unset commands")
+                    dut_engine.run_cmd(unset_cli_cmd)
+
+                with allure.step("Set base configurations"):
+                    set_base_config_function(dut_engine=dut_engine, apply=False)
+
+            with allure.step("Apply configurations"):
+                NvueGeneralCli.apply_config(dut_engine, ask_for_confirmation=True)
+
+            if should_wait_for_nvued_after_apply:
+                DutUtilsTool.wait_for_nvos_to_become_functional(dut_engine).verify_result()
+            if active_port:
+                active_port.interface.wait_for_port_state(state='up', dut_engine=dut_engine).verify_result()
+
+
+def clear_cl_conf(dut, dut_engine, markers=None, set_base_config_function=set_base_configurations):
+    if markers and 'system_profile_cleanup' in markers:
+        clear_system_profile_config()
+
+    with allure.step("Detach config"):
+        NvueGeneralCli.detach_config(dut_engine)
+
+    with allure.step("Get a list of 'set' components"):
+        show_config_output = OutputParsingTool.parse_json_str_to_dictionary(
+            NvueGeneralCli.show_config(dut_engine)).get_returned_value()
+
+        set_comp = {k: v for comp in show_config_output for k, v in comp.get("set", {}).items()}
+
+        with allure.step("Get the non-default set components"):
+            default_conf = dut.get_default_nvue_config()
+            diff_config = ValidationTool.get_dictionaries_diff(set_comp, default_conf)
+            logging.info(diff_config)
+
+        if diff_config:
+            active_port = None
+            if NvosConst.INTERFACE in diff_config.keys():
+                result = RandomizationTool.select_random_ports(num_of_ports_to_select=1, dut_engine=dut_engine)
+                if result.result:
+                    active_port = result.returned_value[-1]
+
+                unset_iface_cli = "nv unset interface"
+                unset_iface_cmd = ""
+                iface_config = diff_config.get(NvosConst.INTERFACE, {})
+                unset_iface_cmd += " ".join([f"{unset_iface_cli} {iface_name}; " for iface_name in
+                                             iface_config.keys()])
+
+                logging.info("Execute interface unset commands")
+                dut_engine.run_cmd(unset_iface_cmd)
+
+            should_wait_for_nvued_after_apply = False
+
+            if NvosConst.SYSTEM in diff_config.keys():
+                with allure.step("Unset each system 'set' command"):
+                    unset_system_cli = "nv unset system"
+                    should_wait_for_nvued_after_apply = NvosConst.SYSTEM_AAA in diff_config[
+                        NvosConst.SYSTEM].keys() \
+                        and NvosConst.SYSTEM_AUTHENTICATION in \
+                        diff_config[NvosConst.SYSTEM][
+                        NvosConst.SYSTEM_AAA].keys() \
+                        and NvosConst.SYSTEM_AUTHENTICATION_ORDER in \
+                        diff_config[NvosConst.SYSTEM][NvosConst.SYSTEM_AAA][
+                        NvosConst.SYSTEM_AUTHENTICATION].keys()
+
+                    unset_cli_cmd = ""
+
+                    system_config = diff_config.get(NvosConst.SYSTEM, {})
+                    aaa_config = system_config.get(NvosConst.SYSTEM_AAA, {})
+                    user_config = aaa_config.get(NvosConst.SYSTEM_AAA_USER, {})
+
+                    # unset system user for non-default users
+                    unset_cli_cmd += " ".join([f"{unset_system_cli} {NvosConst.SYSTEM_AAA} "
+                                               f"{NvosConst.SYSTEM_AAA_USER} {user_comp}; " for user_comp in
+                                               user_config.keys() if
+                                               user_comp != NvosConst.SYSTEM_AAA_USER_ADMIN and
+                                               user_comp != NvosConst.SYSTEM_AAA_USER_MONITOR and
+                                               user_comp != NvosConst.SYSTEM_AAA_USER_CUMULUS])
+
+                    # NVUE cannot remove users that are logged on, so kill any users that will be removed
+                    for user in user_config.keys():
+                        if user != NvosConst.SYSTEM_AAA_USER_ADMIN and \
+                                user != NvosConst.SYSTEM_AAA_USER_MONITOR and \
+                                user != NvosConst.SYSTEM_AAA_USER_CUMULUS:
+                            logging.info(f"killing user: {user}")
+                            dut_engine.run_cmd(f'sudo pkill -9 -u {user}')
+
+                    # unset system aaa components
+                    unset_cli_cmd += " ".join([f"{unset_system_cli} {NvosConst.SYSTEM_AAA} {aaa_comp}; " for
+                                               aaa_comp in aaa_config.keys() if
+                                               aaa_comp != NvosConst.SYSTEM_AAA_USER and
+                                               aaa_comp != NvosConst.SYSTEM_AAA_CLASS and
+                                               aaa_comp != NvosConst.SYSTEM_AAA_ROLE])
 
                     # unset other system components
                     unset_cli_cmd += " ".join([f"{unset_system_cli} {set_comp_name}; " for set_comp_name in

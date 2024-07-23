@@ -50,6 +50,11 @@ class IbSwitch(BaseSwitch):
         return Tools.FilesTool.get_subfiles_list(engine=dut_engine, folder_path=PlatformConsts.VOLTAGE_FILES_PATH,
                                                  subfiles_pattern=PlatformConsts.VOLTAGE_FILES_PATTERN)
 
+    def get_default_nvue_config(self, dut_engine=None):
+        default_conf = NvosConst.DEFAULT_NVOS_CONFIG
+        default_conf["interface"] = NvosConst.DEFAULT_NVOS_IFACE_CONFIG
+        return default_conf
+
     def verify_ib_ports_state(self, dut_engine, expected_port_state):
         logging.info(f"number of ports: {self.ib_ports_num}")
         output_dict = OutputParsingTool.parse_json_str_to_dictionary(

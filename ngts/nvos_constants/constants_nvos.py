@@ -122,8 +122,10 @@ class NvosConst:
     SYSTEM_AAA_USER_ADMIN = 'admin'
     SYSTEM_AAA_USER_MONITOR = 'monitor'
     SYSTEM_AAA_USER_CUMULUS = 'cumulus'
+    SYSTEM_AAA_CLASS = 'class'
+    SYSTEM_AAA_ROLE = 'role'
 
-    DEFAULT_CONFIG = {"system": {
+    DEFAULT_NVOS_CONFIG = {"system": {
         "aaa": {
             "authentication": {
                 "restrictions": {
@@ -144,6 +146,109 @@ class NvosConst:
         },
         "timezone": "Asia/Jerusalem"
     }
+    }
+    DEFAULT_NVOS_IFACE_CONFIG = {
+        "eth0": {
+            "acl": {
+                "ACL_MGMT_INBOUND_CP_DEFAULT": {
+                    "inbound": {
+                        "control-plane": {}
+                    }
+                },
+                "ACL_MGMT_INBOUND_CP_DEFAULT_IPV6": {
+                    "inbound": {
+                        "control-plane": {}
+                    }
+                },
+                "ACL_MGMT_INBOUND_DEFAULT": {
+                    "inbound": {}
+                },
+                "ACL_MGMT_INBOUND_DEFAULT_IPV6": {
+                    "inbound": {}
+                },
+                "ACL_MGMT_OUTBOUND_CP_DEFAULT": {
+                    "outbound": {
+                        "control-plane": {}
+                    }
+                },
+                "ACL_MGMT_OUTBOUND_CP_DEFAULT_IPV6": {
+                    "outbound": {
+                        "control-plane": {}
+                    }
+                }
+            },
+            "type": "eth"
+        },
+        "lo": {
+            "acl": {
+                "ACL_LOOPBACK_INBOUND_CP_DEFAULT": {
+                    "inbound": {
+                        "control-plane": {}
+                    }
+                },
+                "ACL_LOOPBACK_INBOUND_CP_DEFAULT_IPV6": {
+                    "inbound": {
+                        "control-plane": {}
+                    }
+                }
+            },
+            "type": "loopback"
+        }
+    }
+
+    DEFAULT_CL_CONFIG = {
+        "system": {
+            "wjh": {
+                "channel": {
+                    "forwarding": {
+                        "trigger": {
+                            "l2": {},
+                            "l3": {},
+                            "tunnel": {}
+                        }
+                    },
+                },
+                "enable": "on"
+            },
+            "timezone": "Etc/UTC",
+            "hostname": "cumulus",
+            "reboot": {
+                "mode": "cold"
+            },
+            "api": {
+                "state": "enabled"
+            },
+            "control-plane": {
+                "acl": {
+                    "acl-default-dos": {
+                        "inbound": {}
+                    },
+                    "acl-default-whitelist": {
+                        "inbound": {}
+                    }
+                }
+            },
+            "config": {
+                "auto-save": {
+                    "state": "enabled"
+                }
+            },
+            "ssh-server": {
+                "state": "enabled"
+            }
+        }
+    }
+
+    DEFAULT_CL_IFACE_CONFIG = {
+        "eth0": {
+            "ip": {
+                "address": {
+                    "dhcp": {}
+                },
+                "vrf": "mgmt"
+            },
+            "type": "eth"
+        }
     }
 
     ONIE_NOS_INSTALL_CMD = 'onie-nos-install'

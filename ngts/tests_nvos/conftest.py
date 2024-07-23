@@ -35,7 +35,7 @@ from ngts.nvos_tools.system.System import System
 from ngts.scripts.code_coverage.code_coverage_consts import NvosConsts
 from ngts.scripts.code_coverage.test_code_coverage import extract_python_coverage_for_nvos
 from ngts.tools.test_utils import allure_utils as allure
-from ngts.tools.test_utils.nvos_config_utils import clear_conf
+from ngts.tools.test_utils.nvos_config_utils import clear_conf, clear_cl_conf
 from ngts.tools.test_utils.nvos_general_utils import wait_for_ldap_nvued_restart_workaround, set_base_configurations, \
     set_base_configurations_cl
 
@@ -306,18 +306,13 @@ def clear_security_config(item):
 
 
 def clear_config(markers=None):
-    with allure.step("Clear config"):
-        if isinstance(TestToolkit.devices.dut, EthSwitch):
-            clear_switch_config(markers, set_base_config_function=set_base_configurations_cl)
-        else:
-            clear_switch_config(markers, set_base_config_function=set_base_configurations)
-
-
-def clear_switch_config(markers=None, set_base_config_function=None):
     logging.info("Clear config")
     try:
         TestToolkit.update_apis(ApiType.NVUE)
-        clear_conf(TestToolkit.engines.dut, markers, set_base_config_function)
+        if isinstance(TestToolkit.devices.dut, EthSwitch):
+            clear_cl_conf(TestToolkit.devices.dut, TestToolkit.engines.dut, markers, set_base_configurations_cl)
+        else:
+            clear_conf(TestToolkit.devices.dut, TestToolkit.engines.dut, markers, set_base_configurations)
     except Exception as err:
         logging.warning("Failed to clear config:" + str(err))
     finally:
