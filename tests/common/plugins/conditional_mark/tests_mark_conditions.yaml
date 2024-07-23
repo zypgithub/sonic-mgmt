@@ -697,6 +697,37 @@ generic_config_updater/test_pg_headroom_update.py:
       - "topo_type in ['m0', 'mx']"
 
 #######################################
+#####            gnmi             #####
+#######################################
+gnmi/test_gnoi_killprocess.py::test_gnoi_killprocess_then_restart[dhcp_relay-True-]:
+  skip:
+    reason: 'Skipping test case due to bug of https://github.com/sonic-net/sonic-mgmt/issues/15507'
+    conditions:
+      - "asic_type in ['mellanox']"
+      - https://github.com/sonic-net/sonic-mgmt/issues/15507
+
+gnmi/test_gnoi_killprocess.py::test_gnoi_killprocess_then_restart[restapi-True-]:
+  skip:
+    reason: 'Skipping test case due to bug of https://github.com/sonic-net/sonic-mgmt/issues/15507'
+    conditions:
+      - "asic_type in ['mellanox']"
+      - https://github.com/sonic-net/sonic-mgmt/issues/15507
+
+gnmi/test_gnoi_killprocess.py::test_gnoi_killprocess_then_restart[swss-True-]:
+  skip:
+    reason: 'Skipping test case due to bug of https://github.com/sonic-net/sonic-mgmt/issues/15507'
+    conditions:
+      - "asic_type in ['mellanox']"
+      - https://github.com/sonic-net/sonic-mgmt/issues/15507
+
+gnmi/test_gnoi_killprocess.py::test_gnoi_killprocess_then_restart[telemetry-True-]:
+  skip:
+    reason: 'Skipping test case due to bug of https://github.com/sonic-net/sonic-mgmt/issues/15507'
+    conditions:
+      - "asic_type in ['mellanox']"
+      - https://github.com/sonic-net/sonic-mgmt/issues/15507
+
+#######################################
 #####     golden_config_infra     #####
 #######################################
 golden_config_infra/test_config_reload_with_rendered_golden_config.py:
