@@ -384,27 +384,27 @@
 						"reboot": ["cold"]
 					}
 				],
-				"CPLD1": [
+				"CPLD2": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4280/FUI000295/FUI000295.mpfa",
-						"version": "CPLD000370_REV0101",
+						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4280/FUI000307/FUI000307.mpfa",
+						"version": "CPLD060387_REV0104",
 						"reboot": ["power off", "cold"]
 					},
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4280/FUI_BOBCAT_BU/FUIXXX_BOBCAT_COMEX.mpfa",
-						"version": "CPLD000370_REV0010",
+						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4280/FUI000295/FUI000295.mpfa",
+						"version": "CPLD000387_REV0103",
 						"reboot": ["power off", "cold"]
 					}
 				],
 				"DPU1_FPGA": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4280/Bobcat_BF3_All_DPUs_major0_minor5.vme",
-						"version": "FPGA000375_REV0005",
+						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4280/ISP000472/ISP000472.mpfa",
+						"version": "FPGA000375_REV0006",
 						"reboot": ["power off", "cold"]
 					},
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4280/DPU_CHAIN_VERSION_0003_debug_2.vme",
-						"version": "FPGA000375_REV0003",
+						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4280/ISP000005/ISP000005.mpfa",
+						"version": "FPGA000375_REV0005",
 						"reboot": ["power off", "cold"]
 					}
 				]
