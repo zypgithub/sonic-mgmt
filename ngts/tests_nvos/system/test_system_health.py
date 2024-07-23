@@ -1,6 +1,8 @@
 import logging
 import time
 from retry import retry
+
+from ngts.nvos_tools.infra.FilesTool import EngineFile
 from ngts.tools.test_utils import allure_utils as allure
 import pytest
 import random
@@ -170,12 +172,12 @@ def test_ignore_health_issue(engines, devices, loganalyzer):
         7. Fix PSU and FAN health issue
     """
     system = System()
-    ignore_health_issue(None, engines.dut, devices.dut)
+
+    health_config_file = EngineFile(engines.dut, get_system_health_monitoring_config_file_path())
     verify_health_status_and_led(system, OK)
 
     try:
         with allure.step("Simulate PSU and FAN health issue"):
-            logger.info("Simulate PSU and FAN health issue")
             psu_id, fan_id = simulate_fan_and_psu_health_issue(engines, devices)
             psu_display_name = "PSU{}".format(psu_id)
             psu_config_name = "PSU {}".format(psu_id)
@@ -183,25 +185,26 @@ def test_ignore_health_issue(engines, devices, loganalyzer):
             psu_fan_config_name = "psu{}_fan1".format(psu_id)
             fan_display_name = get_fan_display_name(fan_id)
             fan_config_name = "fan{}".format(fan_id)
+            psu_redundancy_display_name = "PSU-Redundancy"
             if loganalyzer:
                 for hostname in loganalyzer.keys():
                     loganalyzer[hostname].ignore_regex.extend(
                         [f"\\.*Fan fault warning: {fan_config_name} is not working\\.*",
                          f"\\.*Fan removed warning: {psu_fan_config_name} was removed from the system, potential overheat hazard\\.*",
                          f"\\.*PSU absence warning: PSU {psu_id} is not present.\\.*",
-                         f"\\.*Insufficient number of working fans warning\\.*"])
+                         f"\\.*Insufficient number of working fans warning\\.*",
+                         ])
 
         with allure.step("Validate health status and report"):
-            logger.info("Validate health status and report")
             system.wait_until_health_status_change_to(NOT_OK)
             verify_health_status_and_led(system, NOT_OK)
             monitor_list = OutputParsingTool.parse_json_str_to_dictionary(Fae().health.show()).get_returned_value()[HealthConsts.MONITOR_LIST]
             verify_devices_health_status_in_monitor_list({psu_display_name: NOT_OK, psu_fan_display_name: NOT_OK, fan_display_name: NOT_OK}, monitor_list)
-            verify_devices_health_status_in_issues_list(system, [psu_display_name, psu_fan_display_name, fan_display_name])
+            verify_devices_health_status_in_issues_list(system, [psu_display_name, psu_fan_display_name,
+                                                                 fan_display_name, psu_redundancy_display_name])
 
         with allure.step("Ignore PSU issue and Validate"):
-            logger.info("Ignore PSU issue and Validate")
-            ignore_health_issue([psu_config_name, psu_fan_config_name], engines.dut, devices.dut)
+            ignore_health_issue([psu_config_name, psu_fan_config_name], health_config_file, ignore_psu_redundancy=True)
             system.wait_until_health_status_change_to(NOT_OK)
             verify_health_status_and_led(system, NOT_OK)
             monitor_list = OutputParsingTool.parse_json_str_to_dictionary(Fae().health.show()).get_returned_value()[
@@ -210,8 +213,8 @@ def test_ignore_health_issue(engines, devices, loganalyzer):
             verify_devices_health_status_in_issues_list(system, [fan_display_name])
 
         with allure.step("Ignore FAN issue too and Validate health state change to OK"):
-            logger.info("Ignore FAN issue too and Validate health state change to OK")
-            ignore_health_issue([psu_config_name, psu_fan_config_name, fan_config_name], engines.dut, devices.dut)
+            ignore_health_issue([psu_config_name, psu_fan_config_name, fan_config_name],
+                                health_config_file, ignore_psu_redundancy=True)
             system.wait_until_health_status_change_to(OK)
             verify_health_status_and_led(system, OK)
             monitor_list = OutputParsingTool.parse_json_str_to_dictionary(Fae().health.show()).get_returned_value()[
@@ -220,8 +223,7 @@ def test_ignore_health_issue(engines, devices, loganalyzer):
             verify_devices_health_status_in_issues_list(system, [])
 
         with allure.step("Remove the ignore from FAN issue and Validate health state change to Not OK"):
-            logger.info("Remove the ignore from FAN issue and Validate health state change to Not OK")
-            ignore_health_issue([psu_config_name, psu_fan_config_name], engines.dut, devices.dut)
+            ignore_health_issue([psu_config_name, psu_fan_config_name], health_config_file, ignore_psu_redundancy=True)
             system.wait_until_health_status_change_to(NOT_OK)
             verify_health_status_and_led(system, NOT_OK)
             monitor_list = OutputParsingTool.parse_json_str_to_dictionary(Fae().health.show()).get_returned_value()[
@@ -230,18 +232,16 @@ def test_ignore_health_issue(engines, devices, loganalyzer):
             verify_devices_health_status_in_issues_list(system, [fan_display_name])
 
         with allure.step("Remove the ignore from PSU issue too and Validate"):
-            logger.info("Remove the ignore from PSU issue too and Validate")
-            ignore_health_issue(None, engines.dut, devices.dut)
+            ignore_health_issue(None, health_config_file, ignore_psu_redundancy=False)
             system.wait_until_health_status_change_to(NOT_OK)
             verify_health_status_and_led(system, NOT_OK)
             verify_devices_health_status_in_monitor_list({psu_display_name: NOT_OK, psu_fan_display_name: NOT_OK, fan_display_name: NOT_OK})
-            verify_devices_health_status_in_issues_list(system, [psu_display_name, psu_fan_display_name, fan_display_name])
+            verify_devices_health_status_in_issues_list(system, [psu_display_name, psu_fan_display_name, fan_display_name, psu_redundancy_display_name])
 
     finally:
 
         with allure.step("Fix PSU and FAN health issue"):
-            logger.info("Fix PSU and FAN health issue")
-            ignore_health_issue(None, engines.dut, devices.dut)
+            health_config_file.revert_to_original()
             HWSimulator.simulate_fix_fan_fault(engines.dut, fan_id)
             HWSimulator.simulate_fix_psu_fault(engines.dut, psu_id)
             system.wait_until_health_status_change_to(OK)
@@ -449,7 +449,8 @@ def verify_devices_health_status_in_monitor_list(device_status_dict, monitor_lis
     monitor_dict = sort_monitor_list(monitor_list)
     for device_name, status in device_status_dict.items():
         if status == HealthConsts.IGNORED and monitor_list:
-            assert device_name not in list(monitor_list.keys()), "{} should be ignored , so should not appear in the monitor list"
+            assert device_name not in list(monitor_list.keys()), \
+                f"{device_name} should be ignored , so should not appear in the monitor list"
         else:
             assert device_name in monitor_dict[status]
 
@@ -461,6 +462,15 @@ def verify_devices_health_status_in_issues_list(system, devices_list):
     """
     issues_dict = OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).get_returned_value()[HealthConsts.ISSUES]
     assert set(devices_list) == set(list(issues_dict.keys()))
+
+
+def get_system_health_monitoring_config_file_path():
+    with allure.step("Get path of system_health_monitoring_config.json"):
+        output = OutputParsingTool.parse_json_str_to_dictionary(System().show()).get_returned_value()
+        platform_name = output[SystemConsts.PLATFORM]
+        ret = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(platform_name)
+        logger.info(ret)
+        return ret
 
 
 def simulate_fan_and_psu_health_issue(engines, devices):
@@ -479,11 +489,12 @@ def get_fan_display_name(fan_id):
     return "FAN{}/{}".format(num, section)
 
 
-def ignore_health_issue(components_list_to_ignore, engine, device):
+def ignore_health_issue(components_list_to_ignore, health_config_file: EngineFile, ignore_psu_redundancy=None):
     components_as_string = ", ".join(["\"{}\"".format(comp) for comp in components_list_to_ignore]) if components_list_to_ignore else ""
-    engine.run_cmd("sudo sed -i 's/{}/{}/' {}".format(DEVICES_TO_IGNORE_LINE.format(".*"),
-                                                      DEVICES_TO_IGNORE_LINE.format(components_as_string),
-                                                      device.health_monitor_config_file_path))
+    health_config_file.sed(DEVICES_TO_IGNORE_LINE.format(".*"), DEVICES_TO_IGNORE_LINE.format(components_as_string))
+    if ignore_psu_redundancy is not None:
+        health_config_file.sed('"supports_ps_redundancy": [^,]*',
+                               '"supports_ps_redundancy": ' + str(not ignore_psu_redundancy).lower())
 
 
 def validate_health_fix_or_issue(system, health_issue_dict, search_since_datetime, is_fix, expected_in_monitor_list=True):
@@ -686,7 +697,10 @@ def create_health_issue_with_user_config_file(engine, device):
     with allure.step("Update monitoring config file with my_checker file"):
         logger.info("Update monitoring config file with my_checker file")
         checker_file = CHECKER_FILE.replace("/", "\\/")
-        engine.run_cmd("sudo sed -i 's/{}/{}/' {}".format(USER_DEFINED_CHECKERS_LINE.format(""), USER_DEFINED_CHECKERS_LINE.format("\"python {}\"".format(checker_file)), device.health_monitor_config_file_path))
+        engine.run_cmd("sudo sed -i 's/{}/{}/' {}".format(
+            USER_DEFINED_CHECKERS_LINE.format(""),
+            USER_DEFINED_CHECKERS_LINE.format("\"python {}\"".format(checker_file)),
+            get_system_health_monitoring_config_file_path()))
         return {"bad_device": "device is out of power"}
 
 
@@ -712,7 +726,10 @@ def simulate_health_issue_with_config_file_and_validate(system, engine, device):
 
 
 def remove_user_config_file(engine, device):
-    engine.run_cmd("sudo sed -i 's/{}/{}/' {}".format(USER_DEFINED_CHECKERS_LINE.format(".*"), USER_DEFINED_CHECKERS_LINE.format(""), device.health_monitor_config_file_path))
+    engine.run_cmd("sudo sed -i 's/{}/{}/' {}".format(
+        USER_DEFINED_CHECKERS_LINE.format(".*"),
+        USER_DEFINED_CHECKERS_LINE.format(""),
+        get_system_health_monitoring_config_file_path()))
 
 
 def cause_health_file_rotation_and_validate(engine, system):

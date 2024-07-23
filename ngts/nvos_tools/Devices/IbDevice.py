@@ -191,7 +191,6 @@ class IbSwitch(BaseSwitch):
         super()._init_constants()
         self.full_version_pattern = r'^nvos-\d{2}\.\d{2}\.\d{4}(-\d{3})?$'
         self.version_number_pattern = r'\d{2}\.\d{2}\.\d{4}'
-        self.health_monitor_config_file_path = ""
         self.platform_file_path = ""
         self.ib_ports_num = 64
         self.primary_asic = f"{IbConsts.DEVICE_ASIC_PREFIX}1"
@@ -390,8 +389,6 @@ class GorillaSwitch(IbSwitch):
         self.core_count = 4
         self.mgmt_ports = ['eth0']
         self.asic_type = NvosConst.QTM2
-        self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
-            "x86_64-mlnx_mqm9700-r0")
         self.platform_file_path = MultiPlanarConsts.PLATFORM_FILE_FULL_PATH.format("x86_64-mlnx_mqm9700-r0")
         self.show_platform_output.update({
             "product-name": "MQM9700",
@@ -482,8 +479,6 @@ class BlackMambaSwitch(IbSwitch):
         self.core_count = 4
         self.mgmt_ports = ['eth0']  # 'eth1' disabled for now
         self.asic_type = NvosConst.QTM3
-        self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH. \
-            format("x86_64-mlnx_qm8790-r0")
         self.platform_file_path = MultiPlanarConsts.PLATFORM_FILE_FULL_PATH.format("x86_64-mlnx_qm8790-r0")
         self.show_platform_output.update({
             "product-name": "Q3400_RA",
@@ -696,8 +691,6 @@ class CrocodileSwitch(IbSwitch):
         self.asic_type = NvosConst.QTM3
         self.default_port = 'swA1p1'
         self.mgmt_ports = ['eth0', 'eth1']
-        self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH. \
-            format("x86_64-nvidia_qm3400-r0")
         self.platform_file_path = MultiPlanarConsts.PLATFORM_FILE_FULL_PATH.format("x86_64-nvidia_qm3400-r0")
         self.show_platform_output.update({
             "product-name": "QM3400",
@@ -864,8 +857,6 @@ class NvLinkSwitch(IbSwitch):
         self.core_count = 4
         self.mgmt_ports = ['eth0', 'eth1']
         self.asic_type = NvosConst.QTM3
-        self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
-            "x86_64-mlnx_mqm9700-r0")
         self.platform_file_path = MultiPlanarConsts.PLATFORM_FILE_FULL_PATH.format("x86_64-mlnx_mqm9700-r0")
 
     def get_mgmt_ports(self) -> List[str]:
@@ -943,8 +934,6 @@ class JulietScaleoutSwitch(JulietSwitch):
             "PMIC-8-COMEX-VDD-MEM-Out-1"
         ]
         # TBD
-        self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
-            "x86_64-nvidia_n5110_ld-r0")
         self.show_platform_output.update({
             "product-name": "N5110_LD",
             "asic-model": self.asic_type,
@@ -1071,8 +1060,6 @@ class CaimanSwitch(NvLinkSwitch):
         super()._init_constants()
         self.ib_ports_num = 64
         self.core_count = 4
-        self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
-            "x86_64-mlnx_mqm9700-r0")
         self.platform_file_path = MultiPlanarConsts.PLATFORM_FILE_FULL_PATH.format("x86_64-mlnx_mqm9700-r0")
 
 
