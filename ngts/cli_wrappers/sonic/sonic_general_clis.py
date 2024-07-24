@@ -1133,17 +1133,14 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         branch = get_sonic_branch(topology_obj, self.cli_obj.dut_alias)
         config_file_prefix = self.get_config_file_prefix(setup_name)
         config_db_file_name = f"{self.get_image_sonic_version()}_{config_file_prefix}config_db.json"
-        if branch in ['202205', '202211', '202305']:
-            base_config_db_json_file_name = SonicConst.CONFIG_DB_JSON
-        else:
-            base_config_db_json_file_name = SonicConst.CONFIG_DB_GNMI_JSON
+        base_config_db_json_file_name = SonicConst.CONFIG_DB_JSON
         base_config_db_json_file_name = config_file_prefix + base_config_db_json_file_name
         base_config_db_json = self.get_config_db_json_obj(setup_name, base_config_db_json_file_name)
         self.create_extended_config_db_file(setup_name, base_config_db_json, file_name=config_db_file_name)
         self.update_config_db_metadata_router(setup_name, config_db_file_name)
         self.update_config_db_metadata_mgmt_port(setup_name, config_db_file_name)
         self.update_config_db_metadata_hwsku(setup_name, hwsku, config_db_file_name)
-        self.update_config_db_features(setup_name, hwsku, platform, config_db_file_name)
+        self.update_config_db_features(setup_name, hwsku, platform, config_db_file_name, branch)
         self.update_config_db_feature_config(setup_name, "database", "auto_restart", "always_enabled",
                                              config_db_file_name)
         default_mtu = "9100"
@@ -1169,17 +1166,27 @@ class SonicGeneralCliDefault(GeneralCliCommon):
 
             return self.create_extended_config_db_file(setup_name, config_db_json, file_name=config_db_json_file_name)
 
-    def update_config_db_features(self, setup_name, hwsku, platform, config_db_json_file_name):
+    def update_config_db_features(self, setup_name, hwsku, platform, config_db_json_file_name, branch):
         init_config_db_json = self.get_init_config_db_json_obj(hwsku, platform, setup_name)
         config_db_json = self.get_config_db_json_obj(setup_name, config_db_json_file_name=config_db_json_file_name)
         image_supported_features = init_config_db_json[ConfigDbJsonConst.FEATURE]
         current_features = config_db_json[ConfigDbJsonConst.FEATURE]
         for feature, feature_properties in image_supported_features.items():
             if feature not in current_features:
-                config_db_json[ConfigDbJsonConst.FEATURE][feature] = feature_properties
-            has_timer_value = config_db_json[ConfigDbJsonConst.FEATURE][feature].pop("has_timer", None)
+                current_features[feature] = feature_properties
+            has_timer_value = current_features[feature].pop("has_timer", None)
             if has_timer_value:
-                config_db_json[ConfigDbJsonConst.FEATURE][feature]["delayed"] = has_timer_value
+                current_features[feature]["delayed"] = has_timer_value
+        if branch not in ['202205', '202211', '202305']:
+            # since 202311 telemetry feature was replaced by gnmi, so we update config_db.json accordingly
+            telemetry_feature = current_features.pop(ConfigDbJsonConst.TELEMETRY, None)
+            if telemetry_feature and ConfigDbJsonConst.GNMI not in current_features:
+                current_features[ConfigDbJsonConst.GNMI] = telemetry_feature
+            auto_techsupport_features = config_db_json.get(ConfigDbJsonConst.AUTO_TECHSUPPORT_FEATURE)
+            if auto_techsupport_features:
+                telemetry_auto_techsupport_feature = auto_techsupport_features.pop(ConfigDbJsonConst.TELEMETRY, None)
+                if telemetry_auto_techsupport_feature and ConfigDbJsonConst.GNMI not in auto_techsupport_features:
+                    auto_techsupport_features[ConfigDbJsonConst.GNMI] = telemetry_auto_techsupport_feature
         return self.create_extended_config_db_file(setup_name, config_db_json, file_name=config_db_json_file_name)
 
     def update_config_db_metadata_router(self, setup_name, config_db_json_file_name):
