@@ -1038,6 +1038,15 @@ class ClusterAppsLogLevels:
     DEBUG = 'debug'
 
 
+class ClusterConsts:
+    APP_VERSION = 'app-ver'
+    NMX_CONTROLLER = 'nmx-controller'
+    NMX_TELEMETRY = 'nmx-telemetry'
+    TELEMETRY_SERVICES = ['nmx-connector', 'ib-telemetry']
+    CONTROLLER_SERVICES = ['nmxc-sdn', 'nmxc-fib', 'redis']
+    INITIAL_EXPECTED_APPS = [NMX_CONTROLLER, NMX_TELEMETRY]
+
+
 class SyslogSeverityLevels:
     NONE = 'none'
     CRIT = 'crit'

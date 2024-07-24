@@ -4,7 +4,7 @@ import time
 from collections import namedtuple
 from typing import List
 
-from ngts.nvos_constants.constants_nvos import HealthConsts, MultiPlanarConsts, PlatformConsts
+from ngts.nvos_constants.constants_nvos import HealthConsts, MultiPlanarConsts, PlatformConsts, ClusterConsts
 from ngts.nvos_constants.constants_nvos import (NvosConst, DatabaseConst, IbConsts, StatsConsts, FansConsts,
                                                 DocumentsConsts)
 from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
@@ -216,7 +216,6 @@ class IbSwitch(BaseSwitch):
             previous_image_path='auto/sw_system_release/erot/juliet/01.03.0183.000/sign/n04/dev/cec1736-ecfw-01.03.0183.0000-n04-dev-initial.bin',
             version_names={'cec1736-ecfw-01.03.0196.0001-n04-dev-initial.fwpkg': '01.03.0196.0001_n04',
                            'cec1736-ecfw-01.03.0202.0000-n04-dev-initial.fwpkg': '01.03.0202.0000_n04'})
-
         self.category_default_disabled_dict = {
             StatsConsts.HISTORY_DURATION: StatsConsts.HISTORY_DURATION_DEFAULT,
             StatsConsts.INTERVAL: StatsConsts.INTERVAL_DEFAULT,
@@ -688,6 +687,8 @@ class NvLinkSwitch(IbSwitch):
 
 class JulietSwitch(NvLinkSwitch):
     FaeImagesTestConsts = namedtuple('FaeImagesTestConsts', ('current_image_version', 'alternate_image_version'))
+    NmxClusterAppsConsts = namedtuple('NmxClusterAppsConsts',
+                                      ('default_path', 'new_path', 'default_version_names', 'new_version_names'))
 
     def __init__(self, asic_amount):
         super().__init__(asic_amount=asic_amount)
@@ -710,13 +711,31 @@ class JulietSwitch(NvLinkSwitch):
         cluster_files = ['conf', 'nmx-controller', 'nmx-telemetry']
         self.constants = self.constants._replace(cluster_files=cluster_files)
         self.constants.dump_files.append('BMCeeprom')
-        self.erot_fw_image_info = self.ErotFirmwareImagesTestConsts(
-            current_image_path='/mtrsysgwork/vadimp/tmp/erot-new/sign/n04/dev/cec1736-ecfw-01.03.0202.0000-n04-dev-initial.fwpkg',
-            previous_image_path='/mtrsysgwork/vadimp/tmp/sign/n04/dev/cec1736-ecfw-01.03.0196.0001-n04-dev-initial.fwpkg',
-
-            version_names={'cec1736-ecfw-01.03.0196.0001-n04-dev-initial.fwpkg': '01.03.0196.0001_n04',
-                           'cec1736-ecfw-01.03.0202.0000-n04-dev-initial.fwpkg': '01.03.0202.0000_n04'})
         self.constants.erots.extend(['ERoT_BMC_0', 'ERoT_CPU_0', 'ERoT_FPGA_0', 'ERoT_NVSwitch_0', 'ERoT_NVSwitch_1'])
+        self.erot_fw_image_info = self.ErotFirmwareImagesTestConsts(
+            current_image_path='/auto/sw_system_release/erot/juliet/01.03.0202.000/sign/n04/dev/cec1736-ecfw-01.03.0202.0000-n04-dev-initial.fwpkg',
+            previous_image_path='/auto/sw_system_release/erot/juliet/01.03.0183.000/sign/n04/dev/cec1736-ecfw-01.03.0183.0000-n04-dev-initial.fwpkg',
+            version_names={'cec1736-ecfw-01.03.0183.0000-n04-dev-initial.fwpkg': '01.03.0183.0000_n04',
+                           'cec1736-ecfw-01.03.0202.0000-n04-dev-initial.fwpkg': '01.03.0202.0000_n04'})
+
+        self.nmx_cluster_apps_versions = self.NmxClusterAppsConsts(
+            default_path={
+                ClusterConsts.NMX_CONTROLLER: "/auto/sw/release/NMX/NMX-controller/package/0.6.0/nmx-c-nvlink_0.6.0_2024-07-04_17-33.tar.gz",
+                ClusterConsts.NMX_TELEMETRY: "/auto/sw/release/NMX/NMX-telemetry/nmx-telemetry_0.4.4_2024-07-08.tgz"
+            },
+            new_path={
+                ClusterConsts.NMX_CONTROLLER: "/auto/sw/release/NMX/NMX-controller/package/0.4.0/nmx-c-nvlink_0.4.0_2024-07-12_12-01.tar.gz",
+                ClusterConsts.NMX_TELEMETRY: "/auto/sw/release/NMX/NMX-telemetry/nmx-telemetry_0.6.0_2024-07-22.tgz"
+            },
+            default_version_names={
+                ClusterConsts.NMX_CONTROLLER: "0.6.0",
+                ClusterConsts.NMX_TELEMETRY: "0.4.4"
+            },
+            new_version_names={
+                ClusterConsts.NMX_CONTROLLER: "0.4.0",
+                ClusterConsts.NMX_TELEMETRY: "0.6.0"
+            }
+        )
 
     def _init_fan_list(self):
         super()._init_fan_list()

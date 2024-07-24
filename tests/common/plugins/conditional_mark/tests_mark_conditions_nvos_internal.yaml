@@ -394,6 +394,12 @@ tests_nvos/checklist/test_bios_upgrade.py::test_bios_upgrade:
     conditions:
       - "'juliet' not in testbed"
 
+tests_nvos/interfaces/test_ib_show_interface.py::test_ib_show_interface_all_state_up:
+  skip:
+    reason: "Testcase skipped on Juliet systems, ability is not implemented in Juliet"
+    conditions:
+      - "'juliet' in testbed"
+
 tests_nvos/interfaces/test_ib_interface_configuration.py::test_ib_interface_lanes:
   skip:
     reason: "Testcase skipped on XDR systems"

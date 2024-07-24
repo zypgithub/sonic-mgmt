@@ -5,7 +5,6 @@ from typing import Dict
 import requests
 
 
-from ngts.nvos_tools.infra.DefaultDict import DefaultDict
 from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.cli_wrappers.nvue.nvue_base_clis import NvueBaseCli
 from ngts.cli_wrappers.nvue.nvue_platform_clis import NvuePlatformCli
@@ -60,53 +59,37 @@ class FaeCluster(BaseComponent):
                          api={ApiType.NVUE: NvueClusterCli, ApiType.OPENAPI: OpenApiClusterCli},
                          path='/cluster')
         self.package = FaePackage(self)
+        self.apps = FaeApps(self)
 
 
 class FaePackage(BaseComponent):
+    def __init__(self, parent_obj=None):
+        super().__init__(parent=parent_obj, path="/package")
+        self.files = Files(self)
 
+    def action_fetch(self, path, base_url='') -> ResultObj:
+        with allure.step(f"fetching nmx package from {path}"):
+            return SendCommandTool.execute_command(
+                self.api_obj[TestToolkit.tested_api].action_fetch,
+                TestToolkit.engines.dut, self.get_resource_path(), path)
+
+
+class FaeApps(BaseComponent):
     def __init__(self, parent_obj=None):
         super().__init__(parent=parent_obj,
                          api={ApiType.NVUE: NvueClusterCli, ApiType.OPENAPI: OpenApiClusterCli},
-                         path='/package')
-        self.package_file = FaeFiles(self)
+                         path='/apps')
+        self.apps_name: Dict[str, FaeAppsName] = DefaultDict(
+            lambda apps_name: FaeAppsName(parent=self, apps_name=apps_name))
 
 
-class FaeFiles(BaseComponent):
-    def __init__(self, parent_obj=None):
-        super().__init__(parent=parent_obj,
-                         api={ApiType.NVUE: NvueClusterCli, ApiType.OPENAPI: OpenApiClusterCli},
-                         path='/files')
-        self.package_file_name: Dict[str, PackageFile] = DefaultDict(
-            lambda package_file_name: PackageFile(parent=self, package_file_name=package_file_name))
+class FaeAppsName(BaseComponent):
+    def __init__(self, parent, apps_name):
+        super().__init__(parent=parent, path=f'/{apps_name}')
 
-
-class PackageFile(BaseComponent):
-    def __init__(self, parent, package_file_name):
-        super().__init__(parent=parent, api={ApiType.NVUE: NvueClusterCli, ApiType.OPENAPI: OpenApiClusterCli}, path=f'/{package_file_name}')
-
-    def action_install(self, bios_image_path):
-        engine = dut_engine if dut_engine else TestToolkit.engines.dut
-        return SendCommandTool.execute_command(self._cli_wrapper.action_install_fae, engine,
-                                               self.get_resource_path())
-
-    def action_uninstall(self, bios_image_path):
-        engine = dut_engine if dut_engine else TestToolkit.engines.dut
-        return SendCommandTool.execute_command(self._cli_wrapper.action_uninstall_fae, engine,
-                                               self.get_resource_path())
-
-    def action_delete(self, filename) -> ResultObj:
-        engine = dut_engine if dut_engine else TestToolkit.engines.dut
-        return SendCommandTool.execute_command(self._cli_wrapper.action_delete_fae, engine,
-                                               self.get_resource_path())
-
-        fae.cluster.package.package_file.package_file_name['elias'].action_delete_fae
-    # fae: Fae = Fae()
-    # x = fae.cluster.package.package_file.package_file_name['elias']
-    # x = fae.cluster.package.action_fetch()  -- READY
-    # x = fae.cluster.package.package_file.package_file_name['elias'].action_install() TBD
-    # x = fae.cluster.package.package_file.package_file_name['elias'].action_uninstall TBD
-    # x = fae.cluster.package.package_file.package_file_name['elias'].action_uninstall TBD
-    # x = fae.cluster.package.package_file.package_file_name['elias'].action_delete() TBD
+    def action_uninstall(self, expect_reboot=False) -> ResultObj:
+        """nv action uninstall fae cluster apps <app_name> [force]"""
+        return self.action(ActionConsts.UNINSTALL, expect_reboot=expect_reboot)
 
 
 class Ib(BaseComponent):

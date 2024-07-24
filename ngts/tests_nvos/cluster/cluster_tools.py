@@ -1,9 +1,12 @@
 import logging
 import time
+from collections import namedtuple
+
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_constants.constants_nvos import PlatformConsts, IbConsts, ApiType, OutputFormat, SystemConsts
+from ngts.nvos_constants.constants_nvos import PlatformConsts, IbConsts, ApiType, OutputFormat, SystemConsts, \
+    ClusterConsts
 from ngts.nvos_tools.ib.Ib import Ib
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 
@@ -144,6 +147,14 @@ class ClusterTools:
             output = OutputParsingTool.parse_show_output_to_dict(
                 cluster.apps.running.show(output_format=output_format),
                 output_format=output_format).get_returned_value()
+
+    @staticmethod
+    def verify_app_version(cluster, app, expected_version):
+        with allure.step("Running 'nv show cluster apps running' command and verifying output"):
+            output = OutputParsingTool.parse_show_output_to_dict(cluster.apps.show()).get_returned_value()
+            ValidationTool.verify_field_value_exist_in_output_dict(output, app).verify_result()
+            assert output[app][ClusterConsts.APP_VERSION] == expected_version, \
+                f"Expected {app} version: {expected_version}. Actual version: {output[app][ClusterConsts.APP_VERSION]}"
 
     @staticmethod
     def start_app(cluster, app):
