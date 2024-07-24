@@ -95,3 +95,19 @@ class SonicChassisCli(ChassisCliCommon):
 
         logger.info(f"psu status:{psu_status_table_dict}")
         return psu_status_table_dict
+
+    def get_platform_hwsku(self):
+        """
+        This method execute command "show platform summary" and return the dut hwsku
+        :return: the dut hwsku
+        """
+        output = self.show_platform_summary()
+        hwsku_pattern = r"HwSKU:\s*(.*)"
+
+        res = re.search(hwsku_pattern, output, re.IGNORECASE)
+        if res:
+            hwsku = res.group(1)
+            logger.info(f"hwsku is {hwsku}")
+            return hwsku
+        else:
+            raise Exception("Could not get hwsku for switch {}".format(self.engine.ip))

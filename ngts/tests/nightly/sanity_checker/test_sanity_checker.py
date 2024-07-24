@@ -3,9 +3,9 @@ import logging
 import pytest
 import re
 import csv
+import os
 
-from netmiko import ConnectHandler
-from fabric import Connection
+from retry.api import retry
 from ngts.cli_util.cli_parsers import generic_sonic_output_parser
 from ngts.helpers.secure_boot_helper import SonicSecureBootHelper
 from ngts.tests.conftest import get_dut_loopbacks
@@ -19,6 +19,7 @@ logger = logging.getLogger()
 
 POSSIBLE_CPLD_LIST = ['CPLD1', 'CPLD2', 'CPLD3', 'CPLD4']
 NOT_DEFINED_CPLD_DEVICES_LIST = ['MSN2010', 'SN4800']
+CURRENT_PATH = os.path.dirname(os.path.abspath(__file__))
 
 
 @pytest.fixture(scope='function')
@@ -37,8 +38,8 @@ def enable_and_disable_fanout_lldp(request, engines, topology_obj, interfaces):
 
     def disable_lldp(engine):
         logger.info(f"disable lldp on {engine.ip}")
-        cmd_enalbe_lldp = "sudo config feature state lldp disabled" if engine.device_type == "linux" else "no lldp"
-        engine.run_cmd(cmd_enalbe_lldp)
+        cmd_disable_lldp = "sudo config feature state lldp disabled" if engine.device_type == "linux" else "no lldp"
+        engine.run_cmd(cmd_disable_lldp)
 
     enable_lldp(engines.fanout)
     if "dual" in request.config.getoption("--setup_name"):
@@ -116,14 +117,25 @@ def test_device_asic_check(engines, platform_params):
 
 
 @pytest.mark.sanity_checker_community
-def test_cable_connection_between_dut_and_fanout_check(engines, platform_params, topology_obj, request,
-                                                       enable_and_disable_fanout_lldp):
+def test_cable_connection_between_dut_and_fanout_check(engines, topology_obj, request, enable_and_disable_fanout_lldp):
     """
     This test is verify that cable connection between dut and fanout is ok.
     If case fail, the consequent regression steps will be stopped by mars
     """
-    # Todo
-    pass
+
+    cli_object_a = topology_obj.players['dut']['cli']
+    dut_a = engines.dut
+
+    with allure.step("Check cable connection between dut a and fanout a"):
+        logger.info("Check cable connection between dut a and fanout a")
+        check_one_dut_to_fanout_cable_connection(cli_object_a, dut_a)
+
+    if "dual" in request.config.getoption("--setup_name"):
+        cli_object_a = topology_obj.players['dut-b']['cli']
+        dut_b = engines.dut_b
+        with allure.step("Check cable connection between dut b and fanout b"):
+            logger.info("Check cable connection between dut b and fanout b")
+            check_one_dut_to_fanout_cable_connection(cli_object_a, dut_b)
 
 
 @pytest.mark.sanity_checker_community
@@ -240,3 +252,52 @@ def read_csv_file(csv_file):
     with open(csv_file) as csv_file_object:
         reader = csv.DictReader(csv_file_object)
         return [row for row in reader]
+
+
+def check_one_dut_to_fanout_cable_connection(cli_object, dut_engine):
+    dut_name = dut_engine.run_cmd("hostname")
+    hwsku = cli_object.chassis.get_platform_hwsku()
+    dut_fanout_link_file = os.path.join(CURRENT_PATH,
+                                        f"../../../../ansible/files/hwsku_vars/{dut_name}_setup/{hwsku}/sonic_nvidia_links.csv")
+    dut_fanout_link_data = read_csv_file(dut_fanout_link_file)
+    logger.info(f"dut_fanout_link_data:\n {dut_fanout_link_data}")
+
+    interface_status_dict = cli_object.interface.parse_interfaces_status()
+    logger.info(f"interface_status_dict:\n {interface_status_dict}")
+
+    map_dut_oper_up_interface_and_fanout_interface = {}
+    for one_dut_fanout_link in dut_fanout_link_data:
+        dut_port = one_dut_fanout_link["StartPort"]
+        if dut_port.startswith("Ethernet") and dut_port in interface_status_dict and \
+                interface_status_dict.get(dut_port, "").get("Oper", "down") == "up":
+            map_dut_oper_up_interface_and_fanout_interface[dut_port] = one_dut_fanout_link["EndPort"]
+
+    logger.info(f"dut port to fanout port map: {map_dut_oper_up_interface_and_fanout_interface}")
+    assert map_dut_oper_up_interface_and_fanout_interface, "Not find any port connecting from dut to fanout"
+
+    check_lldp_info_dut_to_fanout(dut_engine, map_dut_oper_up_interface_and_fanout_interface)
+
+
+@retry(Exception, tries=10, delay=5)
+def check_lldp_info_dut_to_fanout(dut_engine, map_dut_oper_up_interface_and_fanout_interface):
+    lldp_table_res = dut_engine.run_cmd("show lldp table")
+    lldp_table_list = generic_sonic_output_parser(lldp_table_res,
+                                                  headers_ofset=1,
+                                                  len_ofset=2,
+                                                  data_ofset_from_start=3,
+                                                  data_ofset_from_end=-2,
+                                                  column_ofset=2,
+                                                  )
+    logger.info(f"lldp_table_list:\n {lldp_table_list}")
+
+    def _look_up_matched_lldp_info(dut_interface, fanout_interface):
+        for one_lldp_info in lldp_table_list:
+            if dut_interface == one_lldp_info["LocalPort"] and (
+                    fanout_interface.split(" ")[-1] in one_lldp_info["RemotePortID"] or
+                    fanout_interface == one_lldp_info["RemotePortDescr"]):
+                return True
+        assert False, f"Not find the lldp info for dut port {dut_interface} and  fanout port {fanout_interface}. " \
+            f"llp info:{one_lldp_info} Please check the cable connection of the two ports"
+
+    for dut_interface, fanout_interface in map_dut_oper_up_interface_and_fanout_interface.items():
+        _look_up_matched_lldp_info(dut_interface, fanout_interface)
