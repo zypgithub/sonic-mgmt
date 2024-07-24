@@ -598,7 +598,7 @@ def test_symmetry_manager_log_and_tech_support(engines, devices, test_api):
             selected_aggregated_port.interface.link.state.set(op_param_name='down', apply=True).verify_result()
             show_output = system.log.show_log(exit_cmd='q')
             ValidationTool.verify_expected_output(show_output, f"{MultiPlanarConsts.LOG_MSG_SET_FAE_INTERFACE}"
-                                                  f"{selected_aggregated_port.name}/link").verify_result()
+                                                  f"{selected_aggregated_port.name}").verify_result()
 
         with allure.step("Unset fae interface link state and check log file"):
             system.log.rotate_logs()
@@ -606,14 +606,14 @@ def test_symmetry_manager_log_and_tech_support(engines, devices, test_api):
                 verify_result()
             show_output = system.log.show_log(exit_cmd='q')
             ValidationTool.verify_expected_output(show_output, f"{MultiPlanarConsts.LOG_MSG_SET_FAE_INTERFACE}"
-                                                  f"{selected_aggregated_port.name}/link").verify_result()
+                                                  f"{selected_aggregated_port.name}").verify_result()
 
         with allure.step("Run action clear fae interface and check log file"):
             system.log.rotate_logs()
             selected_fae_plane_port.port.interface.link.stats.clear_stats(fae_param="fae").verify_result()
-            # show_output = system.log.show_log(exit_cmd='q')
-            # ValidationTool.verify_expected_output(show_output, MultiPlanarConsts.LOG_MSG_ACTION_CLEAR_FAE_INTERFACE).\
-            #     verify_result()
+            show_output = system.log.show_log(exit_cmd='q')
+            ValidationTool.verify_expected_output(show_output, MultiPlanarConsts.LOG_MSG_ACTION_CLEAR_FAE_INTERFACE.
+                                                  format(port_name=selected_fae_plane_port.port.name)).verify_result()
 
         with allure.step("Validate all asics database files exist in tech support file"):
             validate_mp_database_files_exist_in_techsupport(system, engines.dut)
