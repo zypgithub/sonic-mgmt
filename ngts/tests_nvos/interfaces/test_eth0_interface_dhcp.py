@@ -190,6 +190,7 @@ def test_interface_eth0_speed_duplex_autoneg(engines):
                                                           expected_value="1G")
 
 
+@pytest.mark.cumulus
 @pytest.mark.ib
 @pytest.mark.simx
 def test_interface_eth0_mtu(engines, topology_obj):
@@ -214,8 +215,7 @@ def test_interface_eth0_mtu(engines, topology_obj):
         logger.info('Check port status, should be up')
         check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port)
     with allure.step('Negative validation with not supported for eth mtu 9218'):
-        result_obj = mgmt_port.interface.link.set(op_param_name='mtu', op_param_value='9218', apply=False)
-        assert not result_obj.result and "Valid range is" in result_obj.info, "Set of invalid mtu should fail"
+        mgmt_port.interface.link.set(op_param_name='mtu', op_param_value='9218').verify_result(False)
         NvueGeneralCli.detach_config(TestToolkit.engines.dut)
         logger.info('Check port status, should be up')
         check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port)
@@ -234,6 +234,7 @@ def test_interface_eth0_mtu(engines, topology_obj):
         wait_for_mtu_changed(mgmt_port, 1500)
 
 
+@pytest.mark.cumulus
 @pytest.mark.ib
 @pytest.mark.simx
 def test_interface_eth0_description(engines):
