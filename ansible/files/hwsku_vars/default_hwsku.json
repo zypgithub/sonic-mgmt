@@ -144,8 +144,8 @@
         "support_hwsku": ["ACS-SN5400"]
     },
     "r-moose-01_setup": {
-        "default_hwsku": "ACS-SN5600",
-        "support_hwsku": ["ACS-SN5600"]
+        "default_hwsku": "Mellanox-SN5600-V256",
+        "support_hwsku": ["ACS-SN5600", "Mellanox-SN5600-V256"]
     },
     "mtvr-moose-02_setup": {
         "default_hwsku": "ACS-SN5600",
@@ -156,8 +156,8 @@
         "support_hwsku": ["ACS-SN5600"]
     },
     "mtvr-moose-04_setup": {
-        "default_hwsku": "ACS-SN5600",
-        "support_hwsku": ["ACS-SN5600"]
+        "default_hwsku": "Mellanox-SN5600-V256",
+        "support_hwsku": ["ACS-SN5600", "Mellanox-SN5600-V256"]
     },
     "r-leopard-01_setup": {
         "default_hwsku": "Mellanox-SN4700-O8C48",
