@@ -68,4 +68,8 @@
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/byo.cases </cases>
     </test>
 
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/platform_smartswitch_only.cases </cases>
+    </test>
+
 </DBDEF>
