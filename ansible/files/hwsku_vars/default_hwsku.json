@@ -83,6 +83,10 @@
         "default_hwsku": "Mellanox-SN4600C-C64",
         "support_hwsku": ["Mellanox-SN4600C-C64"]
     },
+    "sonic-dual-tor-leopard": {
+        "default_hwsku": "Mellanox-SN4700-V64",
+        "support_hwsku": ["Mellanox-SN4700-V64"]
+    },
     "r-tigon-04_setup": {
         "default_hwsku": "Mellanox-SN4600C-C64",
         "support_hwsku": ["Mellanox-SN4600C-C64", "Mellanox-SN4600C-D24C52"]
@@ -164,12 +168,12 @@
         "support_hwsku": ["Mellanox-SN4700-O8C48", "Mellanox-SN4700-O32"]
     },
     "r-leopard-70_setup": {
-        "default_hwsku": "Mellanox-SN4700-O8V48",
-        "support_hwsku": ["Mellanox-SN4700-O8V48"]
+        "default_hwsku": "Mellanox-SN4700-V64",
+        "support_hwsku": ["Mellanox-SN4700-O8V48", "Mellanox-SN4700-V64"]
     },
     "r-leopard-72_setup": {
-        "default_hwsku": "Mellanox-SN4700-O8V48",
-        "support_hwsku": ["Mellanox-SN4700-O8V48"]
+        "default_hwsku": "Mellanox-SN4700-V64",
+        "support_hwsku": ["Mellanox-SN4700-O8V48", "Mellanox-SN4700-V64"]
     },
     "mtvr-leopard-01_setup": {
         "default_hwsku": "Mellanox-SN4700-O28",

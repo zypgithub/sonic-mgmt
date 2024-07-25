@@ -49,20 +49,26 @@ class SonicInstallationSteps:
                 dut_names.append(dut['dut_name'])
             with allure.step('Remove topologies'):
                 cached_hwsku = get_cached_hwsku(dut_name)
-                logger.info(f"Copy the setup related file for the hwsku {cached_hwsku}")
                 if cached_hwsku and cached_hwsku != destination_hwsku:
+                    if "dual-tor" in setup_name:
+                        SonicInstallationSteps.remove_topologies(ansible_path=ansible_path, dut_names=None,
+                                                                 setup_name=setup_name, sonic_topo=sonic_topo)
+                    logger.info(f"Copy the setup related file for the hwsku {cached_hwsku}")
                     SonicInstallationSteps.override_hwsku_files(setup_info, cached_hwsku)
-                SonicInstallationSteps.remove_topologies(ansible_path=ansible_path,
-                                                         dut_names=dut_names,
-                                                         setup_name=setup_name,
-                                                         sonic_topo=sonic_topo)
+                    SonicInstallationSteps.remove_topologies(ansible_path=ansible_path, dut_names=dut_names,
+                                                             setup_name=None, sonic_topo=sonic_topo)
+                else:
+                    SonicInstallationSteps.remove_topologies(ansible_path=ansible_path,
+                                                             dut_names=dut_names,
+                                                             setup_name=setup_name,
+                                                             sonic_topo=sonic_topo)
                 if cached_hwsku and cached_hwsku != destination_hwsku:
                     SonicInstallationSteps.override_hwsku_files(setup_info, destination_hwsku)
             SonicInstallationSteps.start_community_background_threads(threads_dict, setup_name,
                                                                       dut_name, sonic_topo, neighbor_type,
                                                                       ptf_tag, port_number,
                                                                       ansible_path, setup_info, destination_hwsku)
-            if is_dualtor_topo(sonic_topo):
+            if is_dualtor_topo(sonic_topo) and "sonic-dual-tor-leopard" not in setup_name:
                 generate_minigraph(ansible_path, setup_info, setup_info['setup_name'], sonic_topo, port_number)
         else:
             SonicInstallationSteps.start_canonical_background_threads(threads_dict, setup_name, dut_name, is_simx)
@@ -273,12 +279,13 @@ class SonicInstallationSteps:
 
         logger.info("Removing topologies to get the clear environment")
         with allure.step("Remove Topologies (community step)"):
-            if is_dualtor_topo(sonic_topo):
+            if setup_name and is_dualtor_topo(sonic_topo):
                 topologies = SonicInstallationSteps.get_topologies_to_remove(sonic_topo, setup_name)
                 _remove_topologies(setup_name, topologies)
-            for dut_name in dut_names:
-                topologies = SonicInstallationSteps.get_topologies_to_remove(sonic_topo, dut_name)
-                _remove_topologies(dut_name, topologies)
+            if dut_names:
+                for dut_name in dut_names:
+                    topologies = SonicInstallationSteps.get_topologies_to_remove(sonic_topo, dut_name)
+                    _remove_topologies(dut_name, topologies)
 
     @staticmethod
     def get_topologies_to_remove(required_topology, dut_name):
@@ -448,6 +455,9 @@ class SonicInstallationSteps:
         if "r-tigon-04" in setup_name:
             hwskus = ['Mellanox-SN4600C-D24C52']
             need_gen_mingraph = True
+        if "sonic-dual-tor-leopard" in setup_name:
+            hwskus = ['Mellanox-SN4700-V64']
+            need_gen_mingraph = True
 
         for hwsku in hwskus:
             if os.path.exists(f'{sonic_mgmt_hwsku_path}/{hwsku}'):
@@ -472,7 +482,12 @@ class SonicInstallationSteps:
             execute_script(f'sed -i "s/200000/100000/g" {sonic_mgmt_hwsku_path}/Mellanox-SN5600-V256/port_config.ini',
                            ansible_path)
         if need_gen_mingraph:
-            generate_minigraph(ansible_path, setup_info, dut_name, sonic_topo, None)
+            if "sonic-dual-tor-leopard" in setup_name:
+                if not setup_info.get('setup_name', None):
+                    setup_info['setup_name'] = setup_name
+                generate_minigraph(ansible_path, setup_info, setup_name, sonic_topo, None)
+            else:
+                generate_minigraph(ansible_path, setup_info, dut_name, sonic_topo, None)
 
         cli.enable_async_route_feature(platform_params['platform'], platform_params['hwsku'])
 
@@ -527,8 +542,10 @@ class SonicInstallationSteps:
                     general_cli_obj.save_configuration()
 
             # Enable IM
-            cli.cli_obj.im.enable_im(topology_obj=topology_obj, platform_params=platform_params, chip_type=chip_type,
-                                     enable_im=True, is_community=True)
+            for dut in setup_info['duts']:
+                cli = dut['cli_obj']
+                cli.cli_obj.im.enable_im(topology_obj=topology_obj, platform_params=platform_params,
+                                         chip_type=chip_type, enable_im=True, is_community=True)
 
             for dut in setup_info['duts']:
                 SonicInstallationSteps.post_install_check_sonic(sonic_topo=sonic_topo, dut_name=dut['dut_name'],

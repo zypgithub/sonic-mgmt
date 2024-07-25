@@ -1227,9 +1227,9 @@ class MarsConstants:
 
     TOPO_ARRAY = ("t0-56-po2vlan", "t0", "t1-lag", "t1-28-lag", "t1-32-lag", "ptf32", "t0-64", "t0-64-256",
                   "t1-64-lag", "t0-56", "t0-56-o8v48", "t0-120", "t0-256", "t1-56-lag",
-                  "t0-28", "dualtor", "dualtor-64", "dualtor-aa")
-
-    TOPO_ARRAY_DUALTOR = ("dualtor", "dualtor-64", "dualtor-aa")
+                  "t0-28", "dualtor", "dualtor-64", "dualtor-aa",
+                  "dualtor-64-breakout", "dualtor-aa-64-breakout")
+    TOPO_ARRAY_DUALTOR = ("dualtor", "dualtor-64", "dualtor-aa", "dualtor-64-breakout", "dualtor-aa-64-breakout")
     REBOOT_TYPES = {
         "reboot": "reboot",
         "fast-reboot": "fast-reboot",
@@ -1597,6 +1597,12 @@ class IndependentModuleConst:
     OPTICS_SI_SETTINGS_FILE_NAME = "optics_si_settings.json"
     IM_INTERFACE_SETTINGS_FILE_PATH = "/usr/share/sonic/device/{PLATFORM}"
     PLATFORM_GENERATION = ['4280', '4700', '5600']
+    MS_HWSKU = ['Mellanox-SN4700-O8C48', 'Mellanox-SN4700-O8V48', 'ACS-SN5600', 'ACS-MSN4700', 'ACS-SN4280',
+                'Mellanox-SN4280-O28', 'Mellanox-SN4700-O32', 'Mellanox-SN4700-V64', 'Mellanox-SN5600-V256']
+    DUTS_SUPPORTING_IM = ['r-leopard-32', 'r-leopard-41', 'r-leopard-56', 'r-leopard-01', 'r-leopard-58',
+                          'r-leopard-70', 'r-leopard-72', 'r-moose-01', 'r-moose-02', 'mtvr-moose-04',
+                          'r-bobcat-01', 'r-bobcat-03']
+
     AOC_VENDOR_PN = ['MMS1V00-WM', 'MMS4X00-NS', 'MFA7U10-H003', 'MMA4Z00-NS']
 
 
