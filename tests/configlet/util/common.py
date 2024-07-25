@@ -103,8 +103,16 @@ scan_dbs = {
                 "TUNNEL_DECAP_TABLE",
                 # BUFFER_PG.*3-4 is an auto created entry by buffermgr
                 # configlet skips it. So skip verification too.
-                "BUFFER_PG_TABLE:Ethernet[0-9][0-9]*:3-4"},
-            "keys_skip_val_comp": set()
+                "BUFFER_PG_TABLE:Ethernet[0-9][0-9]*:3-4",
+                # Diff in TUNNEL_DECAP_TERM_TABLE is expected because router port
+                # is set admin down in the test, which leads to tunnel term change
+                "TUNNEL_DECAP_TERM_TABLE:IPINIP_TUNNEL",
+                "TUNNEL_DECAP_TERM_TABLE:IPINIP_V6_TUNNEL"
+                },
+            "keys_skip_val_comp": {
+                "last_up_time",
+                "flap_count"
+            }
         },
         "state-db": {
             "db_no": 6,
@@ -115,10 +123,10 @@ scan_dbs = {
                 "VLAN_MEMBER_TABLE",
                 "VLAN_TABLE"
             },
-            "keys_to_skip_comp": set(),
-            "keys_skip_val_comp": {
+            "keys_to_skip_comp": {
                 "PORT_TABLE"
-            }
+            },
+            "keys_skip_val_comp": set()
         }
     }
 
@@ -235,8 +243,13 @@ def get_dump(duthost, db_name, db_info, dir_name, data_dir):
     db_write = {}
     for k in db_read:
         # Transient keys start with "_"; Hence skipped
-        if ((not k.startswith("_")) and (not match_key(k, keys_skip_cmp))):
-            db_write[k] = {} if match_key(k, keys_skip_val) else db_read[k]
+        if (not k.startswith("_")) and (not match_key(k, keys_skip_cmp)):
+            value = db_read[k].get("value", {})  # Get the value or empty dictionary if
+
+            for skip_val in keys_skip_val:
+                if match_key(skip_val, value):
+                    value.pop(skip_val)
+            db_write[k] = db_read[k]
 
     dst_file = os.path.join(dir_name, "{}.json".format(db_name))
     with open(dst_file, "w") as s:
@@ -297,19 +310,6 @@ def cmp_dump(db_name, orig_db_dir, clet_db_dir):
 
     with open(os.path.join(clet_db_dir, fname), "r") as s:
         clet_data = json.load(s)
-
-    # Ignore the items that are expected to be changed in APPL_DB due to the minigraph load
-    def _del_flap_count_and_timestamp(data):
-        flap_count_and_timestamp_keys = ["last_up_time", "last_down_time", "flap_count"]
-        for key in data:
-            value = data[key].get('value')
-            if isinstance(value, dict):
-                for flap_count_and_timestamp_key in flap_count_and_timestamp_keys:
-                    if flap_count_and_timestamp_key in value.keys():
-                        del(data[key]['value'][flap_count_and_timestamp_key])
-    if db_name == 'app-db':
-        _del_flap_count_and_timestamp(orig_data)
-        _del_flap_count_and_timestamp(clet_data)
 
     if clet_data == orig_data:
         log_info("{} compared good orig={} clet={}".format(db_name, orig_db_dir, clet_db_dir))
