@@ -76,6 +76,7 @@ class BaseDevice(ABC):
         self.mst_dev_name = ""
         self.constants = None
         self.voltage_sensors = []
+        self.has_nmx = False
 
     def _init_fan_list(self):
         self.fan_list = []

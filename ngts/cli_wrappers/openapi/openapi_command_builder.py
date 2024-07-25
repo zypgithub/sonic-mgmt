@@ -58,7 +58,7 @@ class OpenApiRequest:
         if getattr(r, 'text', '').startswith('<html>'):
             response = r.text
         else:
-            response = json.dumps(r.json(), indent=2) if req_type == OpenApiReqType.PATCH else r.content
+            response = json.dumps(r.json(), indent=2) if req_type in [OpenApiReqType.PATCH, OpenApiReqType.GET] else r.content
         output = f'\n' \
             f'=======Response=======\n' \
             f'{OpenApiRequest.format_json_str(response)}\n' \
@@ -331,6 +331,7 @@ class OpenApiRequest:
                               data=json.dumps(OpenApiRequest.payload),
                               headers=REQ_HEADER)
             OpenApiRequest.print_request(r.request, request_data)
+            OpenApiRequest.print_response(r, OpenApiReqType.ACTION)
 
             validation_res = OpenApiRequest._check_html_response(r)
             if not validation_res.result:
@@ -363,7 +364,7 @@ class OpenApiRequest:
                 if response['state'] == "action_success":
                     return json.loads(r.content.decode('utf-8'))['status']
                 elif response['state'] == 'action_error' and response['issue'] != '':
-                    return json.loads(r.content.decode('utf-8'))['issue'][0]['message']
+                    return 'action_error: ' + json.loads(r.content.decode('utf-8'))['issue'][0]['message']
                 elif response['state'] and response['state'] != "running" and response['state'] != "start":
                     raise Exception(response["status"] + " - issue: " + response["issue"])
                 time.sleep(2)

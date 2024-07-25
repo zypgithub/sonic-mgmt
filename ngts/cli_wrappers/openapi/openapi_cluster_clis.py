@@ -30,25 +30,25 @@ class OpenApiClusterCli(OpenApiBaseCli):
     def action_update_partition_uuid(engine, path, uuid=''):
         param_name = "uuid"
         param_value = uuid
-        return OpenApiClusterCli.action(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=resource_path, param_name=param_name, param_value=param_value)
+        return OpenApiClusterCli.action(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=path, param_name=param_name, param_value=param_value)
 
     @staticmethod
     def action_update_partition_location(engine, path, location=''):
         param_name = "location"
         param_value = location
-        return OpenApiClusterCli.action(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=resource_path, param_name=param_name, param_value=param_value)
+        return OpenApiClusterCli.action(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=path, param_name=param_name, param_value=param_value)
 
     @staticmethod
     def action_restore_partition_uuid(engine, path, uuid=''):
         param_name = "uuid"
         param_value = uuid
-        return OpenApiClusterCli.action(engine, action_type=ActionType.RESTORE.replace('@', ''), resource_path=resource_path, param_name=param_name, param_value=param_value)
+        return OpenApiClusterCli.action(engine, action_type=ActionType.RESTORE.replace('@', ''), resource_path=path, param_name=param_name, param_value=param_value)
 
     @staticmethod
-    def action_restore_partition_location(engine, path, uuid=''):
+    def action_restore_partition_location(engine, path, location=''):
         param_name = "location"
         param_value = location
-        return OpenApiClusterCli.action(engine, action_type=ActionType.RESTORE.replace('@', ''), resource_path=resource_path, param_name=param_name, param_value=param_value)
+        return OpenApiClusterCli.action(engine, action_type=ActionType.RESTORE.replace('@', ''), resource_path=path, param_name=param_name, param_value=param_value)
 
     @staticmethod
     def action_restore_cluster(engine, resource_path):
@@ -107,4 +107,27 @@ class OpenApiClusterCli(OpenApiBaseCli):
             params["parameters"]["location"] = location
 
         return OpenApiCommandHelper.execute_action(ActionType.CREATE, engine.engine.username, engine.engine.password,
+                                                   engine.ip, resource_path, params)
+
+    @staticmethod
+    def action_update_cluster_manager_property(engine, resource_path, param_name='', param_val=''):
+        logging.info(f'Run action import on: {resource_path} using OpenApi')
+        parameters = {} if not param_name and not param_val else {param_name: param_val}
+        params = \
+            {
+                "state": "start",
+                "parameters": parameters
+            }
+        return OpenApiCommandHelper.execute_action(ActionType.UPDATE, engine.engine.username, engine.engine.password,
+                                                   engine.ip, resource_path, params)
+
+    @staticmethod
+    def action_restore_cluster_manager_property(engine, resource_path):
+        logging.info(f'Run action delete on: {resource_path} using OpenApi')
+        params = \
+            {
+                "state": "start",
+                "parameters": {}
+            }
+        return OpenApiCommandHelper.execute_action(ActionType.RESTORE, engine.engine.username, engine.engine.password,
                                                    engine.ip, resource_path, params)
