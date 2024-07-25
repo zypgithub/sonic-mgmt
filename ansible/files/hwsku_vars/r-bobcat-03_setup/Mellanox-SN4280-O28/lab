@@ -15,4 +15,4 @@ fanout
 mgmt_subnet_mask_length="24"
 
 [fanout]
-r-leopard-80        ansible_host=10.210.24.166 os=mellanox
+r-leopard-80        ansible_host=10.210.24.166 os=sonic
