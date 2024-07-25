@@ -769,8 +769,8 @@ class JulietScaleoutSwitch(JulietSwitch):
     def _init_constants(self):
         super()._init_constants()
         self.asic_type = NvosConst.NVL5
-        self.cluster_app_nmx_controller = {'app-id': 'nmx-c-nvos', 'app-ver': '0.6.0', 'capabilities': 'sm, gfm, fib, gw-api', 'components-ver': 'sm:5.19.0_d28564d, gfm:565.00-chips-a, fib-fe:0.4.1'}
-        self.cluster_app_nmx_telemetry = {'app-id': 'nmx-telemetry', 'app-ver': '0.4.4', 'capabilities': 'ib-telemetry', 'components-ver': 'ib-telemetry:collectx/build/collectx, nmx-connector:0.4.4'}
+        self.cluster_app_nmx_controller = {'app-id': 'nmx-c-nvos', 'app-ver': None, 'capabilities': 'sm, gfm, fib, gw-api', 'components-ver': None}
+        self.cluster_app_nmx_telemetry = {'app-id': 'nmx-telemetry', 'app-ver': None, 'capabilities': 'ib-telemetry', 'components-ver': None}
         self.cluster_app = {'nmx-controller': self.cluster_app_nmx_controller, 'nmx-telemetry': self.cluster_app_nmx_telemetry}
         self.reboot_type = 'julietscaleout_reboot'
         self.reset_factory = 'julietscaleout reset factory'

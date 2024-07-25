@@ -73,6 +73,8 @@ def test_cluster_app_start_stop(engines, devices, test_api):
             for app in INITIAL_EXPECTED_APPS:
                 app_status = output[app]['status']
                 assert app_status == 'not ok', f"App {app} status is {app_status} instead of 'not ok'"
+            logger.info("Make sure there are no extra Unexpected apps")
+            assert len(INITIAL_EXPECTED_APPS) == len(output), f"Expected apps {INITIAL_EXPECTED_APPS}, actual apps: {output}"
 
         ClusterTools.start_stop_app(cluster, engines, devices)
 

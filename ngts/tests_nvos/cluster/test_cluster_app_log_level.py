@@ -51,7 +51,7 @@ def test_cluster_app_log_level(engines, devices, test_api):
                 _rotate_logs(system)
                 logger.info("Sleeping for 30 seconds to gather log messages and verify its level")
                 time.sleep(30)
-                _verify_log_level(DEFAULT_LOG_LEVEL, app, output_format, cluster, system)
+                ClusterTools.verify_log_level(DEFAULT_LOG_LEVEL, app, output_format, cluster, system)
 
         with allure.step("Set log level to undefined log level"):
             for app in INITIAL_EXPECTED_APPS:
@@ -60,7 +60,7 @@ def test_cluster_app_log_level(engines, devices, test_api):
                 _rotate_logs(system)
                 logger.info("Sleeping for 30 seconds to gather log messages and verify its level")
                 time.sleep(30)
-                _verify_log_level(DEFAULT_LOG_LEVEL, app, output_format, cluster, system)
+                ClusterTools.verify_log_level(DEFAULT_LOG_LEVEL, app, output_format, cluster, system)
 
         with allure.step("Choose random log level, and set cluster app log level to"):
             for app in INITIAL_EXPECTED_APPS:
@@ -70,7 +70,7 @@ def test_cluster_app_log_level(engines, devices, test_api):
                 _rotate_logs(system)
                 logger.info("Sleeping for 30 seconds to gather log messages and verify its level")
                 time.sleep(30)
-                _verify_log_level(log_level, app, output_format, cluster, system)
+                ClusterTools.verify_log_level(log_level, app, output_format, cluster, system)
                 ClusterTools.stop_app(cluster, app)
 
     finally:
@@ -80,30 +80,8 @@ def test_cluster_app_log_level(engines, devices, test_api):
             _rotate_logs(system)
             logger.info("Sleeping for 30 seconds to gather log messages and verify its level")
             time.sleep(30)
-            _verify_log_level(DEFAULT_LOG_LEVEL, app, output_format, cluster, system)
+            ClusterTools.verify_log_level(DEFAULT_LOG_LEVEL, app, output_format, cluster, system)
             ClusterTools.stop_app(cluster, app)
-
-
-def _verify_log_level(log_level, app, output_format, cluster, system):
-    with allure.step(f"Verifying log level is updated to {log_level}"):
-        output = OutputParsingTool.parse_show_output_to_dict(
-            cluster.apps.apps_name[app].loglevel.show(output_format=output_format),
-            output_format=output_format).get_returned_value()
-        # Add assert on log level
-        assert output['log-level'] == log_level, f"Expected log level: {log_level}, Actual log-level {output['log-level']}"
-
-        # Get the index of the current log level
-        current_level_index = ClusterAppsLogLevelsList.index(log_level)
-
-        # Define the expected log levels based on the current log level
-        expected_log_levels = ClusterAppsLogLevelsList[current_level_index:]
-
-        # Convert expected log levels to uppercase
-        expected_log_levels_upper = [level.upper() for level in expected_log_levels]
-
-        show_output = system.log.show_log(param=f"| grep -E \"{'|'.join(NMX_LOG_MESSAGES_TAGS)}\"", exit_cmd='q').split('\n')[1:]
-        for line in show_output:
-            assert any(level in line for level in expected_log_levels_upper), f"Line in logs is {line}, which does not contain any of the expected log levels {expected_log_levels_upper}"
 
 
 def _rotate_logs(system):

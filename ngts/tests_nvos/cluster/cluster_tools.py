@@ -1,14 +1,16 @@
 import logging
 import time
+import re
 from collections import namedtuple
 
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_constants.constants_nvos import PlatformConsts, IbConsts, ApiType, OutputFormat, SystemConsts, \
-    ClusterConsts
+from ngts.nvos_constants.constants_nvos import PlatformConsts, IbConsts, ApiType, OutputFormat, SystemConsts, ClusterAppsLogLevels, ClusterConsts
 from ngts.nvos_tools.ib.Ib import Ib
+from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
+from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
 
 logger = logging.getLogger()
 
@@ -17,6 +19,10 @@ NMX_TELEMETRY = 'nmx-telemetry'
 TELEMETRY_SERVICES = ['nmx-connector', 'ib-telemetry']
 CONTROLLER_SERVICES = ['nmxc-sdn', 'nmxc-fib', 'redis']
 INITIAL_EXPECTED_APPS = [NMX_CONTROLLER, NMX_TELEMETRY]
+NMX_CONTROLLER_CONFIG_FILE_TYPES = ['fm_config', 'sm_config']  # TODO, add 'rdm_config' once bug is fixed  #3982375
+NMX_CONTROLLER_STATE_FILE_TYPES = ['conn_info']  # TODO add sm_dump and topology once bug is fixed #3985684
+ClusterAppsLogLevelsList = [ClusterAppsLogLevels.DEBUG, ClusterAppsLogLevels.INFO, ClusterAppsLogLevels.NOTICE, ClusterAppsLogLevels.WARNING, ClusterAppsLogLevels.ERROR, ClusterAppsLogLevels.CRITICAL]
+NMX_LOG_MESSAGES_TAGS = ['nmxc-sm', 'nmxc-fm', 'nmxc-fib', 'nmxc-gw_api', 'nmxc-rest', 'nmxc-config_daemon']
 
 
 class ClusterTools:
@@ -30,6 +36,7 @@ class ClusterTools:
                     ClusterTools.verify_app_is_up(engines, app)
                     if app == NMX_CONTROLLER:
                         ClusterTools.verify_lid_value(devices)
+                        ClusterTools.verify_interface_up(devices)
                 with allure.step("Running 'nv show cluster apps running' command and verifying output"):
                     output = OutputParsingTool.parse_show_output_to_dict(
                         cluster.apps.running.show(output_format=OutputFormat.json),
@@ -38,8 +45,8 @@ class ClusterTools:
                     assert app_status == 'ok', f"App {app} status is {app_status} instead of 'ok"
                 with allure.step(f"Stop app {app} and validate its down"):
                     cluster.apps.apps_name[app].action_stop_cluster_apps()
-                    logger.info("Sleeping for 5 seconds to make sure all services are down")
-                    time.sleep(5)
+                    logger.info("Sleeping for 10 seconds to make sure all services are down")
+                    time.sleep(10)
                     # TBD -- once "running" is working, use it to verify app is not running
                     ClusterTools.verify_app_is_down(engines)
             return ResultObj(result=True)
@@ -137,6 +144,37 @@ class ClusterTools:
                     assert dev_output['lid'] > 0, "Invalid number of lid"
 
     @staticmethod
+    def verify_interface_up(devices):
+        port_type = devices.dut.switch_type.lower()
+        selected_port = Tools.RandomizationTool.select_random_port(requested_ports_logical_state=NvosConsts.LINK_LOG_STATE_ACTIVE).get_returned_value()
+        output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
+            selected_port.interface.link.show()).get_returned_value()
+        Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
+                                                          field_name=IbInterfaceConsts.LINK_STATE,
+                                                          expected_value=NvosConsts.LINK_STATE_UP).verify_result()
+        Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
+                                                          field_name=IbInterfaceConsts.LINK_LOGICAL_PORT_STATE,
+                                                          expected_value=NvosConsts.LINK_LOGICAL_PORT_STATE_ACTIVE).verify_result()
+        Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
+                                                          field_name=IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE,
+                                                          expected_value=NvosConsts.LINK_PHYSICAL_PORT_STATE_LINK_UP).verify_result()
+
+    # @staticmethod
+    # def verify_interface_down(devices, selected_port):
+    #     port_type = devices.dut.switch_type.lower()
+    #     output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
+    #         selected_port.interface.link.show()).get_returned_value()
+    #     Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
+    #                                                       field_name=IbInterfaceConsts.LINK_STATE,
+    #                                                       expected_value=NvosConsts.LINK_STATE_DOWN).verify_result()
+    #     Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
+    #                                                       field_name=IbInterfaceConsts.LINK_LOGICAL_PORT_STATE,
+    #                                                       expected_value=IbInterfaceConsts.LINK_LOGICAL_PORT_STATE_DOWN).verify_result()
+    #     Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
+    #                                                       field_name=IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE,
+    #                                                       expected_value=IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE_POLLING).verify_result()
+
+    @staticmethod
     def start_stop_cluster(cluster, output_format):
         ClusterTools.start_cluster(cluster, output_format)
         ClusterTools.stop_cluster(cluster, output_format)
@@ -160,15 +198,69 @@ class ClusterTools:
     def start_app(cluster, app):
         with allure.step(f"Start app {app}"):
             cluster.apps.apps_name[app].action_start_cluster_apps()
-            # TODO -- add back after manual testing for factory reset
-            # with allure.step("Running 'nv show cluster apps running' command and verifying output"):
-            #     output = OutputParsingTool.parse_show_output_to_dict(
-            #         cluster.apps.running.show(output_format=OutputFormat.json),
-            #         output_format=OutputFormat.json).get_returned_value()
-            #     app_status = output[app]['status']
-            #     assert app_status == 'ok', f"App {app} status is {app_status} instead of 'ok"
+            with allure.step("Running 'nv show cluster apps running' command and verifying output"):
+                output = OutputParsingTool.parse_show_output_to_dict(
+                    cluster.apps.running.show(output_format=OutputFormat.json),
+                    output_format=OutputFormat.json).get_returned_value()
+                app_status = output[app]['status']
+                assert app_status == 'ok', f"App {app} status is {app_status} instead of 'ok"
 
     @staticmethod
     def stop_app(cluster, app):
         with allure.step(f"Stop app {app}"):
             cluster.apps.apps_name[app].action_stop_cluster_apps()
+
+    @staticmethod
+    def get_current_config_files_paths(control_plane):
+        files_dict = {}
+        with allure.step("Fetch & Generate config files"):
+            for file_type in NMX_CONTROLLER_CONFIG_FILE_TYPES:
+                output = control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].action_generate_control_plane()
+                installed_file = get_generated_file_name(output.returned_value, 'config')
+                output = OutputParsingTool.parse_show_output_to_dict(control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=OutputFormat.json),
+                                                                     output_format=OutputFormat.json).get_returned_value()
+                current_installed_config_path = output[installed_file]['path']
+                files_dict[file_type] = current_installed_config_path
+        return files_dict
+
+    @staticmethod
+    def get_generated_file_name(output, file_type):
+        # Regular expression to match the file name
+        match = re.search(rf'App {file_type} file (\S+) is successfully generated', output)
+        file_name = None
+        # Extract the file name if found
+        assert match, f"File was not generated successfully"
+        if match:
+            file_name = match.group(1)
+            logger.info(f"Extracted file name: {file_name}")
+        return file_name
+
+    @staticmethod
+    def verify_log_level(log_level, app, output_format, cluster, system):
+        with allure.step(f"Verifying log level is updated to {log_level}"):
+            output = OutputParsingTool.parse_show_output_to_dict(
+                cluster.apps.apps_name[app].loglevel.show(output_format=output_format),
+                output_format=output_format).get_returned_value()
+            # Add assert on log level
+            assert output['log-level'] == log_level, f"Expected log level: {log_level}, Actual log-level {output['log-level']}"
+
+            # Get the index of the current log level
+            current_level_index = ClusterAppsLogLevelsList.index(log_level)
+
+            # Define the expected log levels based on the current log level
+            expected_log_levels = ClusterAppsLogLevelsList[current_level_index:]
+
+            # Convert expected log levels to uppercase
+            expected_log_levels_upper = [level.upper() for level in expected_log_levels]
+
+            show_output = system.log.show_log(param=f"| grep -E \"{'|'.join(NMX_LOG_MESSAGES_TAGS)}\"", exit_cmd='q').split('\n')[1:]
+            for line in show_output:
+                assert any(level in line for level in expected_log_levels_upper), f"Line in logs is {line}, which does not contain any of the expected log levels {expected_log_levels_upper}"
+
+    @staticmethod
+    def verify_app_version(cluster, app, expected_version):
+        with allure.step("Running 'nv show cluster apps running' command and verifying output"):
+            output = OutputParsingTool.parse_show_output_to_dict(cluster.apps.show()).get_returned_value()
+            ValidationTool.verify_field_value_exist_in_output_dict(output, app).verify_result()
+            assert output[app][ClusterConsts.APP_VERSION] == expected_version, \
+                f"Expected {app} version: {expected_version}. Actual version: {output[app][ClusterConsts.APP_VERSION]}"

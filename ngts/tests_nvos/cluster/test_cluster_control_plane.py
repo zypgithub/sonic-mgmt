@@ -38,7 +38,7 @@ PATH_TO_CONFIG = {'fm_config': '/auto/sw_system_release/sx_mlnx_os/developers/ch
 CONFIG_FILE_NAME = {'fm_config': 'fabricmanager_dummy.cfg',
                     'sm_config': 'sm_config_dummy.cfg'}  # TODO, add 'rdm_config' once bug is fixed  #3982375
 NMX_LOG_MESSAGES_TAGS = ['nmxc-sm', 'nmxc-fm', 'nmxc-fib', 'nmxc-gw_api', 'nmxc-rest', 'nmxc-config_daemon']
-INITIAL_CONFIGURATIONS_PATH = '/auto/sysgwork/eabboud/nmx_test_configurations'
+INITIAL_CONFIGURATIONS_PATH = '/auto/sw_system_release/sx_mlnx_os/developers/eabboud/nmx_test_configurations'
 
 
 @pytest.mark.nmx
@@ -74,7 +74,7 @@ def test_cluster_default_factory_reset(engines, devices, test_api):
         with allure.step('Upload initial configurations'):
             for file_type in NMX_CONTROLLER_CONFIG_FILE_TYPES:
                 control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.file_name[config_files_paths[file_type].split('/')[-1]].action_upload(ImageConsts.SCP_PATH + INITIAL_CONFIGURATIONS_PATH)
-                initial_configs_paths_to_restore[file_type] = INITIAL_CONFIGURATIONS_PATH + config_files_paths[file_type].split('/')[-1]
+                initial_configs_paths_to_restore[file_type] = INITIAL_CONFIGURATIONS_PATH + '/' + config_files_paths[file_type].split('/')[-1]
                 logger.info(f"Uploading files: {initial_configs_paths_to_restore[file_type]}")
 
         with allure.step("Fetch & Generate config files"):
@@ -96,7 +96,7 @@ def test_cluster_default_factory_reset(engines, devices, test_api):
                 control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].action_fetch_control_plane(PATH_TO_CONFIG[file_type])
                 control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.file_name[CONFIG_FILE_NAME[file_type]].action_file_install(force=False)
                 output = control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].action_generate_control_plane()
-                installed_file = get_generated_file_name(output.returned_value, 'config')
+                installed_file = ClusterTools.get_generated_file_name(output.returned_value, 'config')
                 output = OutputParsingTool.parse_show_output_to_dict(control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=output_format),
                                                                      output_format=output_format).get_returned_value()
                 all_config_files_paths[file_type] = [item['path'] for item in output.values()]
@@ -116,6 +116,7 @@ def test_cluster_default_factory_reset(engines, devices, test_api):
             for file_type in NMX_CONTROLLER_CONFIG_FILE_TYPES:
                 for file in all_config_files_paths[file_type]:
                     control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.file_name[file].action_delete()
+                    engines.sonic_mgmt.run_cmd(f"sudo rm -rf {initial_configs_paths_to_restore[file_type]}")
             for file_type in NMX_CONTROLLER_STATE_FILE_TYPES:
                 for file in all_state_files_paths[file_type]:
                     control_plane.state.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.file_name[file].action_delete()
@@ -130,7 +131,7 @@ def test_cluster_default_factory_reset(engines, devices, test_api):
 
     finally:
         for app in INITIAL_EXPECTED_APPS:
-            ClusterTools().stop_app(cluster, app)
+            ClusterTools.stop_app(cluster, app)
         cluster.unset(apply=True)
 
 
@@ -150,18 +151,6 @@ def verify_control_plane_state_files_deleted(control_plane: ControlPlane):
             assert not files, f"Expected to get empty output, but instead received {output}"
 
 
-def get_generated_file_name(output, file_type):
-    # Regular expression to match the file name
-    match = re.search(rf'App {file_type} file (\S+) is successfully generated', output)
-    file_name = None
-    # Extract the file name if found
-    assert match, f"File was not generated successfully"
-    if match:
-        file_name = match.group(1)
-        logger.info(f"Extracted file name: {file_name}")
-    return file_name
-
-
 def verify_all_files_are_deleted(engines, files_list):
     for file_path in files_list:
         output = engines.dut.run_cmd(f"ls {file_path}")
@@ -173,7 +162,7 @@ def get_current_config_files_paths(control_plane):
     with allure.step("Fetch & Generate config files"):
         for file_type in NMX_CONTROLLER_CONFIG_FILE_TYPES:
             output = control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].action_generate_control_plane()
-            installed_file = get_generated_file_name(output.returned_value, 'config')
+            installed_file = ClusterTools.get_generated_file_name(output.returned_value, 'config')
             output = OutputParsingTool.parse_show_output_to_dict(control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=OutputFormat.json),
                                                                  output_format=OutputFormat.json).get_returned_value()
             current_installed_config_path = output[installed_file]['path']

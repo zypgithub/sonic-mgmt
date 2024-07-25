@@ -69,7 +69,7 @@ def test_cluster_default_factory_reset(engines, devices, test_api):
 
         with allure.step("Verify cluster in correct state"):
             verify_cluster_state_resetted(cluster)
-            ClusterTools().verify_app_is_down(engines)
+            ClusterTools.verify_app_is_down(engines)
             verify_all_files_are_deleted(engines, all_config_files_paths + all_state_files_paths)
             ClusterTools.start_cluster(cluster, OutputFormat.json)
             verify_control_plane_config_files_deleted(control_plane)
@@ -120,7 +120,7 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name)
 
         with allure.step("Verify cluster in correct state"):
             verify_cluster_state_resetted(cluster)
-            ClusterTools().verify_app_is_down(engines)
+            ClusterTools.verify_app_is_down(engines)
             verify_all_files_are_deleted(engines, all_config_files_paths + all_state_files_paths)
             ClusterTools.start_cluster(cluster, OutputFormat.json)
             verify_control_plane_config_files_deleted(control_plane)
@@ -171,7 +171,7 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name):
 
         with allure.step("Verify cluster in correct state"):
             verify_cluster_state_resetted(cluster)
-            ClusterTools().verify_app_is_down(engines)
+            ClusterTools.verify_app_is_down(engines)
             verify_all_files_are_deleted(engines, all_config_files_paths + all_state_files_paths)
             ClusterTools.start_cluster(cluster, OutputFormat.json)
             verify_control_plane_config_files_deleted(control_plane)
@@ -225,10 +225,10 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
                 next(factory_reset_tpm_checker)
 
         with allure.step("Verify cluster in correct state"):
-            cluster_state = ClusterTools().check_cluster_state(cluster, output_format)
+            cluster_state = ClusterTools.check_cluster_state(cluster, output_format)
             assert cluster_state == NvosConst.ENABLED, f"Expected cluster state {NvosConst.ENABLED}, Actual {cluster_state}"
             for app in INITIAL_EXPECTED_APPS:
-                ClusterTools().verify_app_is_up(engines, app)  # Verify apps are running
+                ClusterTools.verify_app_is_up(engines, app)  # Verify apps are running
             verify_all_files_are_deleted(engines, all_config_files_paths + all_state_files_paths)
             verify_control_plane_config_files_deleted(control_plane)
             verify_control_plane_state_files_deleted(control_plane)
@@ -339,7 +339,7 @@ def reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, s
             control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].action_fetch_control_plane(PATH_TO_CONFIG[file_type])
             control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.file_name[CONFIG_FILE_NAME[file_type]].action_file_install(force=False)
             output = control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].action_generate_control_plane()
-            installed_file = get_generated_file_name(output.returned_value, 'config')
+            installed_file = ClusterTools.get_generated_file_name(output.returned_value, 'config')
             output = OutputParsingTool.parse_show_output_to_dict(control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=output_format),
                                                                  output_format=output_format).get_returned_value()
             all_config_files_paths.extend([item['path'] for item in output.values()])
@@ -395,7 +395,7 @@ def get_current_config_files_paths(control_plane):
     with allure.step("Fetch & Generate config files"):
         for file_type in NMX_CONTROLLER_CONFIG_FILE_TYPES:
             output = control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].action_generate_control_plane()
-            installed_file = get_generated_file_name(output.returned_value, 'config')
+            installed_file = ClusterTools.get_generated_file_name(output.returned_value, 'config')
             output = OutputParsingTool.parse_show_output_to_dict(control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=OutputFormat.json),
                                                                  output_format=OutputFormat.json).get_returned_value()
             current_installed_config_path = output[installed_file]['path']
