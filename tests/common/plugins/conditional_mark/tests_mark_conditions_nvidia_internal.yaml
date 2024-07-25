@@ -143,6 +143,12 @@ tests/push_build_tests/general/wjh/test_wjh.py::test_l3_non_ip_packet:
     conditions:
       - "https://redmine.mellanox.com/issues/3770476 and 'simx' in platform"
 
+tests/push_build_tests/general/wjh/test_wjh.py:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4004895 on SPC2-3"
+    conditions:
+    - " https://redmine.mellanox.com/issues/4004895 and ('sn3' in platform or 'sn4' in platform)"
+
 tests/push_build_tests/L2/vxlan/test_vxlan.py:
   skip:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/2804440 on SIMX platform"
