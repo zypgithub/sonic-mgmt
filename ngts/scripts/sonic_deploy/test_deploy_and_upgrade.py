@@ -115,9 +115,19 @@ def test_deploy_and_upgrade(topology_obj, is_simx, is_performance, base_version,
             sonic_topo, neighbor_type, base_version, target_version, setup_info, port_number, is_simx,
             pre_install_threads, destination_hwsku)
         install_threads = []
-        install_dpu_threads = []
         executor = concurrent.futures.ThreadPoolExecutor()
-        player_dut = topology_obj.players['dut']
+
+        if smart_switch_dpu_duts:
+            logger.info("Start: copy topology obj dpu")
+            player_dut = topology_obj.players['dut']
+            # Deepcopy with the dut cli object sometimes fails due to
+            # "TypeError: cannot pickle '_thread.lock' object",
+            # don't copy it since it will be replaced eventually
+            topology_obj.players['dut'] = None
+            topology_obj_dpu = copy.deepcopy(topology_obj)
+            topology_obj.players['dut'] = player_dut
+            logger.info("End: copy topology obj dpu")
+
         for dut in switch_or_standalone_dpu_duts:
             related_base_version_url = get_related_image_to_switch(base_version_url, dut['dut_name'])
             with allure.step('Install image on dut: {}'.format(dut['dut_name'])):
@@ -148,12 +158,6 @@ def test_deploy_and_upgrade(topology_obj, is_simx, is_performance, base_version,
             with allure.step('Install image on DPU: {}'.format(dut['dut_name'])):
                 # Disconnect ssh connection, prevent "Socket is closed" in case when pre step took more than 15 min
                 topology_obj.players[dut['dut_alias']]['engine'].disconnect()
-                # Deepcopy with the dut cli object sometimes fails due to
-                # "TypeError: cannot pickle '_thread.lock' object",
-                # don't copy it since it will be replaced eventually
-                topology_obj.players['dut'] = None
-                topology_obj_dpu = copy.deepcopy(topology_obj)
-                topology_obj.players['dut'] = player_dut
                 platform_params_dpu = copy.copy(platform_params)
                 topology_obj_dpu.players['dut'] = topology_obj_dpu.players[dut['dut_alias']]
                 if "bobcat" in setup_name:

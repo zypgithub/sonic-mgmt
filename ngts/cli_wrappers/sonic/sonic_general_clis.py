@@ -418,15 +418,15 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                 time.sleep(InfraConst.SLEEP_AFTER_RRBOOT)
                 self.do_installation(topology_obj, image_path, deploy_type, fw_pkg_path, platform_params)
 
+        # Break if it's installing the Bobcat DPUs
+        if deploy_type == 'bfb' and 'sn4280' in platform_params.platform:
+            return
+
         with allure.step('Verify dockers are up'):
             self.verify_dockers_are_up()
 
         if setup_info and dut_alias and self.is_fanout_deploy_needed(setup_name):
             self.disable_ipv6_sonic_fanout(topology_obj, dut_alias)
-
-        # Break if it's installing the Bobcat DPUs
-        if deploy_type == 'bfb' and 'sn4280' in platform_params.platform:
-            return
 
         if reboot_after_install:
             with allure.step("Validate dockers are up, reboot if any docker is not up"):
