@@ -855,9 +855,9 @@ dash/crm/test_dash_crm.py::TestDashCRM::test_dash_acl_rules:
 
 dash/crm/test_dash_crm.py::TestDashCRM::test_dash_crm_cleanup:
   skip:
-    reason: "Testcase ignored due to platform nvda_bf and RM issue: https://redmine.mellanox.com/issues/3424756"
+    reason: "Testcase ignored due to platform nvda_bf and RM issue: https://redmine.mellanox.com/issues/3877668"
     conditions:
-      - "https://redmine.mellanox.com/issues/3424756 and 'nvda_bf' in platform"
+      - "https://redmine.mellanox.com/issues/3877668 and 'nvda_bf' in platform"
 
 platform_tests/test_advanced_reboot.py::test_warm_reboot:
   xfail:
