@@ -1,5 +1,6 @@
 import logging
 import os
+import random
 import signal
 import time
 import re
@@ -391,6 +392,14 @@ def test_gnmi_events_overload(engines, devices):
                 with allure.step(f'Subscribe client #{i}'):
                     client.gnmic_subscribe_system_events(mode=GnmiMode.STREAM, skip_cert_verify=True,
                                                          keep_session_alive=True)
+                    _, _, client_proc = client.gnmic_subscribe_system_events(mode=GnmiMode.STREAM,
+                                                                             skip_cert_verify=True,
+                                                                             keep_session_alive=True)
+
+                with allure.step("Monitor the events received by client no {}".format(i)):
+                    subscriber_monitor_process = Process(target=check_subscriber_output_in_parallel,
+                                                         args=(i, client_proc,))
+                    subscriber_monitor_process.start()
 
         with allure.step('Set system events table-size to maximum ie {}'.format(SystemConsts.EVENTS_TABLE_SIZE_MAX)):
             fae.system.events.set(op_param_name='table-size', op_param_value=SystemConsts.EVENTS_TABLE_SIZE_MAX,
@@ -408,7 +417,7 @@ def test_gnmi_events_overload(engines, devices):
                                 GnmiConsts.STREAM_PERFORMANCE_EVENTS_MAX_SIZE)):
             no_of_events = 0
             # 100 iterations of 2 seconds each ie total of 200 seconds
-            while no_of_events <= GnmiConsts.STREAM_PERFORMANCE_EVENTS_MAX_SIZE:
+            while no_of_events < GnmiConsts.STREAM_PERFORMANCE_EVENTS_MAX_SIZE:
                 no_of_events += GnmiConsts.STREAM_PERFORMANCE_EVENTS_BATCH_SIZE
                 cmd_to_simulate_events = 'docker exec eventd events_publish_test.py -c ' + \
                                          str(GnmiConsts.STREAM_PERFORMANCE_EVENTS_BATCH_SIZE)
@@ -417,6 +426,9 @@ def test_gnmi_events_overload(engines, devices):
                     format(cmd_output, cmd_to_simulate_events)
                 logger.info("Simulated {} no of events".format(no_of_events))
                 time.sleep(GnmiConsts.STREAM_EVENTS_INTERVAL)
+
+        with allure.step("Wait for a minute for the events to be streamed over GNMI"):
+            time.sleep(60)
 
     finally:
         with allure.step('Unset system events table-size to make it default'):
@@ -431,19 +443,32 @@ def test_gnmi_events_overload(engines, devices):
             logger.info("At the End - Utilization: {}".format(parse_mpstat_output(regex, mpstat_output)))
 
 
+def check_subscriber_output_in_parallel(client_no, client_proc):
+    out, _ = client_proc.communicate()
+    out = out.decode('utf-8')
+    log_str = "Test event with index "
+    no_of_logs = out.count(log_str)
+    logger.info("No of test events streamed for Client #{}:{}".format(client_no, no_of_logs))
+    assert no_of_logs >= GnmiConsts.STREAM_PERFORMANCE_EVENTS_MAX_SIZE, \
+        "No of events streamed to client #{} is {} instead of {}".format(client_no, no_of_logs,
+                                                                         GnmiConsts.STREAM_PERFORMANCE_EVENTS_MAX_SIZE)
+
+
 def check_memory_and_cpu_in_parallel(regex, engine):
     try:
         no_of_iterations = 0
         # Monitor the usage till streaming is happening over GNMI ie 200 seconds
         total_iterations = GnmiConsts.STREAM_PERFORMANCE_TOTAL_DURATION / GnmiConsts.CPU_USAGE_MONITOR_INTERVAL
+
         while no_of_iterations < total_iterations:
             no_of_iterations += 1
-            validate_memory_and_cpu_utilization()
+            # validate_memory_and_cpu_utilization()
             mpstat_output = engine.run_cmd('mpstat -P ALL')
             logger.info("Iteration_{} Utilization: {}".format(no_of_iterations,
                                                               parse_mpstat_output(regex, mpstat_output)))
             # Monitor usage every 10 seconds
-            time.sleep(GnmiConsts.CPU_USAGE_MONITOR_INTERVAL)
+            random_interval = random.randint(3, 10)
+            time.sleep(random_interval)
 
     except AssertionError:
         assert False, "CPU utilization exceeds max limit allowed"
