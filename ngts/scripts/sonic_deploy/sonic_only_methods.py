@@ -540,6 +540,12 @@ class SonicInstallationSteps:
                         'sudo sonic-cfggen -j /tmp/dpu_ip_assignment_config.json --write-to-db', validate=True)
                     general_cli_obj.save_configuration()
 
+            # TODO: Remove this WA when RM 3796847 resolved
+            if is_redmine_issue_active([3796847]):
+                for dut in setup_info['duts']:
+                    cli = dut['cli_obj']
+                    cli.remove_minigraph_ipv6_mgmt_interface()
+                    cli.remove_snmp_ipv6_addr()
             # Enable IM
             cli.cli_obj.im.enable_im(topology_obj=topology_obj, platform_params=platform_params, chip_type=chip_type,
                                      enable_im=True, is_community=True)

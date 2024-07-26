@@ -1076,6 +1076,36 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                               overwrite_file=True, verify_file=False)
         self.engine.run_cmd(f'sudo mv /tmp/{SonicConst.CONFIG_DB_JSON} {SonicConst.CONFIG_DB_JSON_PATH}')
 
+    def remove_minigraph_ipv6_mgmt_interface(self):
+        logger.info("Remove IPv6 mgmt interface from minigraph.xml")
+        V6HostIP_line_number = self.engine.run_cmd("awk '/V6HostIP/ {print NR}' /etc/sonic/minigraph.xml")
+        if V6HostIP_line_number.isdecimal():
+            V6HostIP_line_number = int(V6HostIP_line_number)
+            start_line_number = V6HostIP_line_number - 1
+            end_line_number = V6HostIP_line_number + 6
+            self.engine.run_cmd(f"sudo sed -i '{start_line_number},{end_line_number}d' /etc/sonic/minigraph.xml")
+
+    def remove_snmp_ipv6_addr(self):
+        logger.info("Update SNMP config started")
+        config_db = self.cli_obj.general.get_config_db()
+        if 'SNMP_AGENT_ADDRESS_CONFIG' in config_db.keys():
+            logger.info("SNMP_AGENT_ADDRESS_CONFIG in config_db.keys")
+            snmp_config = config_db['SNMP_AGENT_ADDRESS_CONFIG']
+            ipv6_add_to_remove = re.search(r"(\w{4}::.+)", ",".join(snmp_config.keys())).group(1)
+            if ipv6_add_to_remove:
+                snmp_config.pop(ipv6_add_to_remove)
+                config_db['SNMP_AGENT_ADDRESS_CONFIG'] = snmp_config
+                with open('/tmp/config_db.json', 'w') as f:
+                    json.dump(config_db, f, indent=4)
+                os.chmod('/tmp/config_db.json', 0o777)
+                self.engine.copy_file(source_file='/tmp/config_db.json',
+                                      dest_file="config_db.json", file_system='/tmp/',
+                                      overwrite_file=True, verify_file=False)
+                self.engine.run_cmd("sudo cp /tmp/config_db.json /etc/sonic/config_db.json")
+                self.reload_configuration(force=True)
+                self.verify_dockers_are_up()
+                logger.info("Update SNMP config finished")
+
     def update_sai_xml_file(self, platform, hwsku, global_flag=False, local_flags=False):
         switch_sai_xml_path = f'/usr/share/sonic/device/{platform}/{hwsku}'
         default_sai_xml_file_name = 'sai.profile'
