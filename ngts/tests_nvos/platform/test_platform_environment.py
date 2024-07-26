@@ -400,6 +400,7 @@ def test_platform_environment_fan_direction_mismatch(engines, devices):
 def _verify_fan_direction_mismatch_behaviour(engines, devices, feature_enable):
     platform = Platform()
     system = System()
+    def_dir = FansConsts.FORWARD_DIRECTION
     if feature_enable:
         state = FansConsts.STATE_NOT_OK
         should_str = 'be'
