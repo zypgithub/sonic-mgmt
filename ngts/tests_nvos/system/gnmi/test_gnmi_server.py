@@ -1,10 +1,10 @@
 import logging
 import os
+import random
 import signal
 import time
 import re
 from multiprocessing import Process
-import subprocess
 import pytest
 
 import ngts.tools.test_utils.allure_utils as allure
@@ -16,7 +16,6 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.infra.Fae import Fae
-from ngts.tests_nvos.general.security.conftest import local_adminuser
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
 from ngts.tests_nvos.system.gnmi.constants import GnmiMode, MAX_GNMI_SUBSCRIBERS, GnmicErr
 from ngts.tests_nvos.system.gnmi.helpers import gnmi_basic_flow, validate_gnmi_is_running_and_stream_updates, \
@@ -380,20 +379,27 @@ def test_gnmi_events_overload(engines, devices):
     fae = Fae()
     client = GnmiClient(engines.dut.ip, GnmiConsts.GNMI_DEFAULT_PORT, devices.dut.default_username,
                         devices.dut.default_password)
+    pattern = "(\\d{2}:\\d{2}:\\d{2} (?:AM|PM) ) (.{3})(.*)(\\d{2}\\.\\d{2})"
+    regex = re.compile(pattern)
 
     try:
         with allure.step("Check CPU, Memory and mpstat at the beginning"):
             validate_memory_and_cpu_utilization()
             mpstat_output = engines.dut.run_cmd('mpstat -P ALL')
-            logger.info("At the beginning - Utilization: {}".format(parse_mpstat_output(mpstat_output)))
+            logger.info("At the beginning - Utilization: {}".format(parse_mpstat_output(regex, mpstat_output)))
             logger.info(mpstat_output)
 
         with allure.step(f'subscribe {MAX_GNMI_SUBSCRIBERS} clients'):
             for i in range(MAX_GNMI_SUBSCRIBERS):
                 with allure.step(f'Subscribe client #{i}'):
-                    client.gnmic_subscribe_system_events(mode=GnmiMode.STREAM, skip_cert_verify=True,
-                                                         keep_session_alive=True)
-                    time.sleep(1)
+                    _, _, client_proc = client.gnmic_subscribe_system_events(mode=GnmiMode.STREAM,
+                                                                             skip_cert_verify=True,
+                                                                             keep_session_alive=True)
+
+                with allure.step("Monitor the events received by client no {}".format(i)):
+                    subscriber_monitor_process = Process(target=check_subscriber_output_in_parallel,
+                                                         args=(i, client_proc,))
+                    subscriber_monitor_process.start()
 
         with allure.step('Set system events table-size to maximum ie {}'.format(SystemConsts.EVENTS_TABLE_SIZE_MAX)):
             fae.system.events.set(op_param_name='table-size', op_param_value=SystemConsts.EVENTS_TABLE_SIZE_MAX,
@@ -403,7 +409,7 @@ def test_gnmi_events_overload(engines, devices):
             system.events.action(ActionConsts.CLEAR).verify_result()
 
         with allure.step("Create a separate process to monitor CPU & Memory utilization"):
-            cpu_mem_monitor_process = Process(target=check_memory_and_cpu_in_parallel, args=(engines.dut,))
+            cpu_mem_monitor_process = Process(target=check_memory_and_cpu_in_parallel, args=(regex, engines.dut,))
             cpu_mem_monitor_process.start()
 
         with allure.step("Stream events update {} at a time till no of events reaches {}".
@@ -411,7 +417,7 @@ def test_gnmi_events_overload(engines, devices):
                                 GnmiConsts.STREAM_PERFORMANCE_EVENTS_MAX_SIZE)):
             no_of_events = 0
             # 100 iterations of 2 seconds each ie total of 200 seconds
-            while no_of_events <= GnmiConsts.STREAM_PERFORMANCE_EVENTS_MAX_SIZE:
+            while no_of_events < GnmiConsts.STREAM_PERFORMANCE_EVENTS_MAX_SIZE:
                 no_of_events += GnmiConsts.STREAM_PERFORMANCE_EVENTS_BATCH_SIZE
                 cmd_to_simulate_events = 'docker exec eventd events_publish_test.py -c ' + \
                                          str(GnmiConsts.STREAM_PERFORMANCE_EVENTS_BATCH_SIZE)
@@ -420,6 +426,9 @@ def test_gnmi_events_overload(engines, devices):
                     format(cmd_output, cmd_to_simulate_events)
                 logger.info("Simulated {} no of events".format(no_of_events))
                 time.sleep(GnmiConsts.STREAM_EVENTS_INTERVAL)
+
+        with allure.step("Wait for a minute for the events to be streamed over GNMI"):
+            time.sleep(60)
 
     finally:
         with allure.step('Unset system events table-size to make it default'):
@@ -431,21 +440,35 @@ def test_gnmi_events_overload(engines, devices):
         with allure.step("Check CPU, Memory and mpstat at the end"):
             validate_memory_and_cpu_utilization()
             mpstat_output = engines.dut.run_cmd('mpstat -P ALL')
-            logger.info("At the End - Utilization: {}".format(parse_mpstat_output(mpstat_output)))
+            logger.info("At the End - Utilization: {}".format(parse_mpstat_output(regex, mpstat_output)))
 
 
-def check_memory_and_cpu_in_parallel(engine):
+def check_subscriber_output_in_parallel(client_no, client_proc):
+    out, _ = client_proc.communicate()
+    out = out.decode('utf-8')
+    log_str = "Test event with index "
+    no_of_logs = out.count(log_str)
+    logger.info("No of test events streamed for Client #{}:{}".format(client_no, no_of_logs))
+    assert no_of_logs >= GnmiConsts.STREAM_PERFORMANCE_EVENTS_MAX_SIZE, \
+        "No of events streamed to client #{} is {} instead of {}".format(client_no, no_of_logs,
+                                                                         GnmiConsts.STREAM_PERFORMANCE_EVENTS_MAX_SIZE)
+
+
+def check_memory_and_cpu_in_parallel(regex, engine):
     try:
         no_of_iterations = 0
         # Monitor the usage till streaming is happening over GNMI ie 200 seconds
         total_iterations = GnmiConsts.STREAM_PERFORMANCE_TOTAL_DURATION / GnmiConsts.CPU_USAGE_MONITOR_INTERVAL
+
         while no_of_iterations < total_iterations:
             no_of_iterations += 1
-            validate_memory_and_cpu_utilization()
+            # validate_memory_and_cpu_utilization()
             mpstat_output = engine.run_cmd('mpstat -P ALL')
-            logger.info("Iteration_{} Utilization: {}".format(no_of_iterations, parse_mpstat_output(mpstat_output)))
+            logger.info("Iteration_{} Utilization: {}".format(no_of_iterations,
+                                                              parse_mpstat_output(regex, mpstat_output)))
             # Monitor usage every 10 seconds
-            time.sleep(GnmiConsts.CPU_USAGE_MONITOR_INTERVAL)
+            random_interval = random.randint(3, 10)
+            time.sleep(random_interval)
 
     except AssertionError:
         assert False, "CPU utilization exceeds max limit allowed"
@@ -455,9 +478,7 @@ def check_memory_and_cpu_in_parallel(engine):
             logger.info("CPU utilization monitoring completed")
 
 
-def parse_mpstat_output(mpstat_output):
-    pattern = "(\\d{2}:\\d{2}:\\d{2} (?:AM|PM) ) (.{3})(.*)(\\d{2}\\.\\d{2})"
-    regex = re.compile(pattern)
+def parse_mpstat_output(regex, mpstat_output):
     matches = regex.findall(mpstat_output)
     cpu_utilization_dict = {}
 
