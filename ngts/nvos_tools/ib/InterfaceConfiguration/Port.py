@@ -1,16 +1,18 @@
-from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
-from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_constants.constants_nvos import OutputFormat
-from ngts.nvos_tools.infra.BaseComponent import BaseComponent
-from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+import logging
+
+import allure
+from retry import retry
+
 from ngts.cli_wrappers.nvue.nvue_ib_interface_clis import NvueIbInterfaceCli
 from ngts.cli_wrappers.openapi.openapi_ib_interface_clis import OpenApiIbInterfaceCli
 from ngts.nvos_constants.constants_nvos import ApiType
-from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
+from ngts.nvos_constants.constants_nvos import OutputFormat
 from ngts.nvos_tools.acl.acl import Acl
-import allure
-import logging
-from retry import retry
+from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
+from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
+from ngts.nvos_tools.infra.BaseComponent import BaseComponent
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 
 logger = logging.getLogger()
 
@@ -112,8 +114,11 @@ class Port(BaseComponent):
                        port_requirements_list != port_name:
                         select_port = False
                         break
-                    elif port_requirements_list and field_name in port_details.keys() and \
-                            port_details[field_name] != port_requirements_list:
+                    elif field_name == IbInterfaceConsts.LINK_STATE and isinstance(port_requirements_list, list):
+                        if not any(port_details[field_name] == expected_state for expected_state in port_requirements_list):
+                            select_port = False
+                            break
+                    elif port_requirements_list and field_name in port_details.keys() and port_details[field_name] != port_requirements_list:
                         select_port = False
                         break
 

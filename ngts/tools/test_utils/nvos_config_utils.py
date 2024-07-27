@@ -1,5 +1,6 @@
 import logging
 
+import ngts.tools.test_utils.allure_utils as allure
 from ngts.cli_wrappers.nvue.nvue_base_clis import NvueBaseCli
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import NvosConst, SystemConsts
@@ -9,11 +10,9 @@ from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.system.System import System
 from ngts.tools.test_utils.nvos_general_utils import set_base_configurations
-import ngts.tools.test_utils.allure_utils as allure
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 
-def clear_conf(dut_engine, markers=None, set_base_config_function=set_base_configurations):
+def clear_conf(dut_engine, markers=None, set_base_config_function=set_base_configurations, dut_device=None):
     if markers and 'system_profile_cleanup' in markers:
         clear_system_profile_config()
 
@@ -83,7 +82,7 @@ def clear_conf(dut_engine, markers=None, set_base_config_function=set_base_confi
         if diff_config:
             active_port = None
             if NvosConst.INTERFACE in diff_config.keys():
-                result = RandomizationTool.select_random_ports(num_of_ports_to_select=1, dut_engine=dut_engine)
+                result = RandomizationTool.select_random_ports(num_of_ports_to_select=1, dut_engine=dut_engine, dut_device=dut_device)
                 if result.result:
                     active_port = result.returned_value[-1]
                 NvueBaseCli.unset(dut_engine, NvosConst.INTERFACE)

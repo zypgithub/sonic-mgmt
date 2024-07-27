@@ -48,7 +48,7 @@ class RandomizationTool:
     def select_random_ports(requested_ports_state=NvosConsts.LINK_STATE_UP,
                             requested_ports_type=None,
                             requested_ports_logical_state=None,
-                            num_of_ports_to_select=1, port_requirements_object=None, dut_engine=None):
+                            num_of_ports_to_select=1, port_requirements_object=None, dut_engine=None, dut_device=None):
         """
         Select and return list of random ports
         if num_of_ports_to_select is 0, all relevant ports will be selected
@@ -61,13 +61,17 @@ class RandomizationTool:
         """
         with allure.step('Choose {num_of_ports_to_select} random ports with provided requirements'.format(
                 num_of_ports_to_select=num_of_ports_to_select)):
-
             if not dut_engine:
                 logging.info('Using engine object which updated in TestToolkit')
                 dut_engine = TestToolkit.engines.dut
 
             if not requested_ports_type:
-                requested_ports_type = (TestToolkit.devices.dut.switch_type or IbInterfaceConsts.IB_PORT_TYPE).lower()
+                if not dut_device and TestToolkit.devices:
+                    dut_device = getattr(TestToolkit.devices, 'dut', None)
+                if dut_device:
+                    requested_ports_type = dut_device.switch_type.lower()
+                else:
+                    requested_ports_type = IbInterfaceConsts.IB_PORT_TYPE.lower()
 
             result_obj = ResultObj(False, "")
 
@@ -77,10 +81,15 @@ class RandomizationTool:
                 return result_obj
 
             logging.info("Verify the provided port state is legal (up/down only)")
-            if requested_ports_state and requested_ports_state != NvosConsts.LINK_STATE_UP and \
-                    requested_ports_state != NvosConsts.LINK_STATE_DOWN:
-                result_obj.info = "Provided an invalid port state"
-                return result_obj
+            if requested_ports_state:
+                if isinstance(requested_ports_state, list):
+                    arg_is_valid = not any(s not in NvosConsts.LINK_STATE_ALL_TYPES for s in requested_ports_state)
+                else:
+                    arg_is_valid = requested_ports_state in NvosConsts.LINK_STATE_ALL_TYPES
+                if not arg_is_valid:
+                    result_obj.info = (f'Provided an invalid port state argument.\nactual: {requested_ports_state}\n'
+                                       f'expected: {NvosConsts.LINK_STATE_ALL_TYPES}')
+                    return result_obj
 
             logging.info("Update port requirements object")
             if not port_requirements_object:
