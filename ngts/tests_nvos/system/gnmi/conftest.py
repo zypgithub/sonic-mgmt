@@ -19,6 +19,7 @@ from ngts.tests_nvos.general.security.test_aaa_ldap.ldap_servers_info import Lda
 from ngts.tests_nvos.general.security.test_aaa_radius.constants import RadiusVmServer
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
 from ngts.tests_nvos.system.gnmi.constants import ETC_HOSTS, GNMI_TEST_CERT, DUT_MOUNT_GNMI_CERT_DIR
+from ngts.tests_nvos.system.gnmi.helpers import get_scp_player
 from ngts.tools.test_utils.nvos_general_utils import generate_scp_uri_using_player
 
 logger = logging.getLogger()
@@ -26,8 +27,7 @@ logger = logging.getLogger()
 
 @pytest.fixture(scope='session')
 def scp_player(engines) -> LinuxSshEngine:
-    return engines.sonic_mgmt
-    # return LinuxSshEngine(ip='10.237.116.70', username='root', password='12345')
+    return get_scp_player(engines)
 
 
 @pytest.fixture(scope='session', autouse=True)
