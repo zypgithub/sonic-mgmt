@@ -178,6 +178,18 @@
     command: docker exec -i ptf_{{ vm_set_name }} sysctl -w net.ipv6.route.max_size=168000
     become: yes
 
+  - name: Add sshd to root user and group at ptf_{{ vm_set_name }}
+    command: docker exec -i ptf_{{ vm_set_name }} chown root:root /run/sshd
+    become: yes
+
+  - name: Chown 775 for sshd at ptf_{{ vm_set_name }}
+    command: docker exec -i ptf_{{ vm_set_name }} chmod 755 /run/sshd
+    become: yes
+
+  - name: Start ssh service at ptf_{{ vm_set_name }}
+    command: docker exec -i ptf_{{ vm_set_name }} service ssh start
+    become: yes
+
   - name: Get dut ports
     include_tasks: get_dut_port.yml
     loop: "{{ duts_name.split(',') }}"
