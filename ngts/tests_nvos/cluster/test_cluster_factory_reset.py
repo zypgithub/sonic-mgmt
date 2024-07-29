@@ -33,8 +33,8 @@ CONTROLLER_SERVICES = ['nmxc-sdn', 'nmxc-fib', 'redis']
 ClusterAppsLogLevelsList = [ClusterAppsLogLevels.DEBUG, ClusterAppsLogLevels.INFO, ClusterAppsLogLevels.NOTICE, ClusterAppsLogLevels.WARNING, ClusterAppsLogLevels.ERROR, ClusterAppsLogLevels.CRITICAL]
 NMX_CONTROLLER_CONFIG_FILE_TYPES = ['fm_config', 'sm_config']  # TODO, add 'rdm_config' once bug is fixed  #3982375
 NMX_CONTROLLER_STATE_FILE_TYPES = ['conn_info']  # TODO add sm_dump and topology once bug is fixed #3985684
-PATH_TO_CONFIG = {'fm_config': '/auto/sw_system_release/sx_mlnx_os/developers/chrisy1/fabricmanager_dummy.cfg',
-                  'sm_config': '/auto/sw_system_release/sx_mlnx_os/developers/chrisy1/sm_config_dummy.cfg'}  # TODO, add 'rdm_config' once bug is fixed  #3982375
+PATH_TO_CONFIG = {'fm_config': '/auto/sw_system_project/NVOS_INFRA/verification_files/cluster/config_files_to_fetch/fabricmanager_dummy.cfg',
+                  'sm_config': '/auto/sw_system_project/NVOS_INFRA/verification_files/cluster/config_files_to_fetch/sm_config_dummy.cfg'}  # TODO, add 'rdm_config' once bug is fixed  #3982375
 CONFIG_FILE_NAME = {'fm_config': 'fabricmanager_dummy.cfg',
                     'sm_config': 'sm_config_dummy.cfg'}  # TODO, add 'rdm_config' once bug is fixed  #3982375
 NMX_LOG_MESSAGES_TAGS = ['nmxc-sm', 'nmxc-fm', 'nmxc-fib', 'nmxc-gw_api', 'nmxc-rest', 'nmxc-config_daemon']

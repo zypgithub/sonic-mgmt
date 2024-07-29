@@ -1126,8 +1126,9 @@ class OperationTimeConsts:
                   'generate tech-support': 75,
                   'julietscaleout generate_tech_support': 100,
                   'start stop cluster app': 50,
-                  'install bmc': 900,
-                  }
+                  'start stop cluster': 5,
+                  'cluster update log level': 5,
+                  'install bmc': 900}
 
 
 class StatsConsts:

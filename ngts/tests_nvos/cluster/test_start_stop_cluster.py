@@ -6,6 +6,7 @@ import time
 from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
+from ngts.nvos_tools.infra.StressResourcesTool import StressResourcesTool
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.nvos_constants.constants_nvos import PlatformConsts, IbConsts, ApiType, OutputFormat, SystemConsts
@@ -95,15 +96,47 @@ def test_stress_cluster_app_start_stop(engines, devices, test_api, test_name):
     try:
         with allure.step("Stress testing start/stop apps"):
             ClusterTools.start_cluster(cluster, output_format)
-            durations = []
             for i in range(100):
                 logger.info(f"Starting iteration {i}")
-                result_obj, duration = OperationTime.save_duration('start/stop cluster', '', test_name, ClusterTools.start_stop_app, cluster, engines, devices)
+                result_obj, duration = OperationTime.save_duration('start stop cluster app', '', test_name, ClusterTools.start_stop_app, cluster, engines, devices)
                 OperationTime.verify_operation_time(duration, 'start stop cluster app').verify_result()
 
     finally:
         with allure.step("Stop cluster"):
             ClusterTools.stop_cluster(cluster, output_format)
+
+
+@pytest.mark.nmx
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_cluster_app_start_stop_under_stressed_resources(engines, devices, test_api, test_name):
+    TestToolkit.tested_api = test_api
+    output_format = OutputFormat.json
+
+    with allure.step("Create Cluster object"):
+        cluster = Cluster()
+        installed_packages = []
+    try:
+        with allure.step("Test cluster with stressed CPU and Memory utilization"):
+            # This will run in background &
+            installed_packages = StressResourcesTool.stress_cpu_and_memory(engines, devices.dut.core_count)
+            timeout = 300  # for example, 300 seconds
+
+            # Get the current time
+            start_time = time.time()
+
+            # Loop until the timeout is reached
+            while time.time() - start_time < timeout:
+                ClusterTools.start_cluster(cluster, output_format)
+                result_obj, duration = OperationTime.save_duration('start stop cluster app', '', test_name, ClusterTools.start_stop_app, cluster, engines, devices)
+                OperationTime.verify_operation_time(duration, 'start stop cluster app').verify_result()
+                logger.info("Sleeping for 30 seconds.")
+                time.sleep(30)
+
+    finally:
+        with allure.step("Stop cluster"):
+            ClusterTools.stop_cluster(cluster, output_format)
+        if installed_packages:
+            StressResourcesTool.delete_pacages(engines, installed_packages)
 
 
 @pytest.mark.nmx

@@ -64,10 +64,10 @@ class ClusterTools:
                     cluster.show(output_format=output_format),
                     output_format=output_format).get_returned_value()
 
-                with allure.step("Validate state is enabled"):
-                    assert output[SystemConsts.STATE] == 'enabled', f"Cluster state is , " \
-                        f"{output[SystemConsts.STATE]}, Expected to be: " \
-                        f"enabled"
+            with allure.step("Validate state is enabled"):
+                assert output[SystemConsts.STATE] == 'enabled', f"Cluster state is , " \
+                    f"{output[SystemConsts.STATE]}, Expected to be: " \
+                    f"enabled"
 
     @staticmethod
     def check_cluster_state(cluster, output_format):
@@ -180,11 +180,16 @@ class ClusterTools:
         ClusterTools.stop_cluster(cluster, output_format)
 
     @staticmethod
-    def verify_apps_running(cluster, expected_state, output_format):
+    def verify_apps_running(engines, devices, cluster, expected_state, output_format):
         with allure.step("Running 'nv show cluster apps running' command and verifying output"):
-            output = OutputParsingTool.parse_show_output_to_dict(
-                cluster.apps.running.show(output_format=output_format),
-                output_format=output_format).get_returned_value()
+            for app in INITIAL_EXPECTED_APPS:
+                output = OutputParsingTool.parse_show_output_to_dict(
+                    cluster.apps.running.show(output_format=output_format),
+                    output_format=output_format).get_returned_value()
+                app_status = output[app]['status']
+                assert app_status == expected_state, f"App {app} status is {app_status} instead of {expected_state}"
+                ClusterTools.verify_app_is_up(engines, app)
+            ClusterTools.verify_lid_value(devices)
 
     @staticmethod
     def verify_app_version(cluster, app, expected_version):

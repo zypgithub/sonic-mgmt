@@ -7,6 +7,7 @@ from ngts.nvos_tools.infra.BaseComponent import BaseComponent
 from ngts.nvos_tools.nmx.App import App
 from ngts.nvos_tools.nmx.Config import Config
 from ngts.nvos_tools.nmx.State import State
+from ngts.nvos_tools.nmx.Partition import Partition
 logger = logging.getLogger()
 
 
@@ -17,3 +18,4 @@ class ControlPlane(BaseComponent):
                          path='/control-plane')
         self.config = Config(self)
         self.state = State(self)
+        self.partition = Partition(self)

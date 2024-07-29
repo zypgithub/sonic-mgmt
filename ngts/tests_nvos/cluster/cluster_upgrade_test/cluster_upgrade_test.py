@@ -1,0 +1,239 @@
+import logging
+import random
+import pytest
+import copy
+
+from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.nvos_tools.infra.ValidationTool import ValidationTool
+from ngts.tools.test_utils import allure_utils as allure
+from ngts.nvos_tools.nmx.Cluster import Cluster
+from ngts.nvos_tools.nmx.ControlPlane import ControlPlane
+from ngts.nvos_constants.constants_nvos import PlatformConsts, SystemConsts, OutputFormat, ApiType, IbConsts, NvosConst, ClusterAppsLogLevels, ImageConsts
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.nvos_tools.ib.Ib import Ib
+from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
+from ngts.scripts.sonic_deploy.nvos_only_methods import NvosInstallationSteps
+from ngts.scripts.sonic_deploy.image_preparetion_methods import get_real_paths, prepare_images
+from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
+from ngts.nvos_tools.Devices.DeviceFactory import DeviceFactory
+from ngts.nvos_tools.system.System import System
+from ngts.scripts.sonic_deploy.test_deploy_and_upgrade import get_target_version_url, get_base_version_url, prepare_images_to_install
+
+ClusterAppsLogLevelsList = [ClusterAppsLogLevels.DEBUG, ClusterAppsLogLevels.INFO, ClusterAppsLogLevels.NOTICE, ClusterAppsLogLevels.WARNING, ClusterAppsLogLevels.ERROR, ClusterAppsLogLevels.CRITICAL]
+
+NMX_CONTROLLER_CONFIG_FILE_TYPES = ['fm_config', 'sm_config']  # TODO, add 'rdm_config' once bug is fixed  #3982375
+NMX_CONTROLLER_STATE_FILE_TYPES = ['conn_info']  # TODO add sm_dump and topology once bug is fixed #3985684
+PATH_TO_CONFIG = {'fm_config': '/auto/sw_system_project/NVOS_INFRA/verification_files/cluster/config_files_to_fetch/fabricmanager_dummy.cfg',
+                  'sm_config': '/auto/sw_system_project/NVOS_INFRA/verification_files/cluster/config_files_to_fetch/sm_config_dummy.cfg'}  # TODO, add 'rdm_config' once bug is fixed  #3982375
+CONFIG_FILE_NAME = {'fm_config': 'fabricmanager_dummy.cfg',
+                    'sm_config': 'sm_config_dummy.cfg'}  # TODO, add 'rdm_config' once bug is fixed  #3982375
+INITIAL_CONFIGURATIONS_PATH = '/auto/sw_system_project/NVOS_INFRA/verification_files/cluster/uploaded_control_plane_files'
+
+
+logger = logging.getLogger()
+NMX_CONTROLLER = 'nmx-controller'
+NMX_TELEMETRY = 'nmx-telemetry'
+INITIAL_EXPECTED_APPS = [NMX_CONTROLLER, NMX_TELEMETRY]
+UNDEFINED_STATE = 'undefined'
+UNDEFINED_STATE_ERR_MSG = 'Error: At state: \'undefined\' is not one of [\'enabled\', \'disabled\']'
+
+
+@pytest.mark.nmx
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_upgrade_with_nmx_enabled(test_api, devices, base_version,
+                                  target_version, topology_obj, setup_name, platform_params, engines, release_name):
+    '''
+    Test will install a base version (Taken from regression).
+    On base version perform the following:
+        1. Enabled cluster.
+        2. Configure log level.
+        3. fetch config files.
+        4. install config files.
+        5. Perform upgrade.
+        6. Verify cluster still enabled, log level still changed, and fetched/installed files are still here.
+    Cleanup:
+        1. Includes disabling the cluster.
+        2. Deleting fetched files.
+        3. Installing initial control plane files.
+        4. Restore log level.
+    '''
+    TestToolkit.tested_api = test_api
+    output_format = OutputFormat.json
+
+    base_version, target_version = get_real_paths(base_version, target_version)
+    image_urls = prepare_images_to_install(base_version, target_version, None)
+    base_version_url = get_base_version_url(False, image_urls)
+    target_version_url = '' if not target_version else get_target_version_url(image_urls)
+    platform_params_copy = copy.deepcopy(platform_params)
+    target_image_installed = False
+    cli_obj = NvueGeneralCli(engines.dut, devices.dut)
+
+    NvosInstallationSteps.deploy_image(cli_obj, topology_obj, setup_name, platform_params_copy, base_version_url, 'onie',
+                                       None, None, None, base_version_url)
+
+    with allure.step("Create Cluster object"):
+        cluster = Cluster()
+        system = System()
+        control_plane = ControlPlane()
+        all_config_files_paths = {}
+        initial_config_contents = {}
+        initial_configs_paths_to_restore = {}
+        log_levels = {}
+
+    try:
+        with allure.step("Running 'nv show cluster' command and parsing output"):
+            output = OutputParsingTool.parse_show_output_to_dict(
+                cluster.show(output_format=output_format),
+                output_format=output_format).get_returned_value()
+            with allure.step("Validate initial state is disabled"):
+                assert output[SystemConsts.STATE] == NvosConst.DISABLED, f"initial state is , " \
+                    f"{output[SystemConsts.STATE]}, Expected to be: " \
+                    f"{NvosConst.DISABLED}"
+
+        with allure.step("Enable cluster and perform configurations"):
+            ClusterTools.start_cluster(cluster, output_format)
+            with allure.step("Choose random log level, and set cluster app log level to"):
+                for app in INITIAL_EXPECTED_APPS:
+                    ClusterTools.start_app(cluster, app)
+                    log_level = random.choice(ClusterAppsLogLevelsList)
+                    cluster.apps.apps_name[app].loglevel.action_update_cluster_log_level(level=log_level)
+                    log_levels[app] = log_level
+
+            config_files_paths = ClusterTools.get_current_config_files_paths(control_plane)
+            for file_type, file_path in config_files_paths.items():
+                initial_config_contents[file_type] = engines.dut.run_cmd("sudo cat {}".format(file_path))
+
+            with allure.step('Upload initial configurations'):
+                for file_type in NMX_CONTROLLER_CONFIG_FILE_TYPES:
+                    control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.file_name[config_files_paths[file_type].split('/')[-1]].action_upload(ImageConsts.SCP_PATH + INITIAL_CONFIGURATIONS_PATH)
+                    initial_configs_paths_to_restore[file_type] = INITIAL_CONFIGURATIONS_PATH + '/' + config_files_paths[file_type].split('/')[-1]
+                    logger.info(f"Uploading files: {initial_configs_paths_to_restore[file_type]}")
+
+            with allure.step("Install config file"):
+                for file_type in NMX_CONTROLLER_CONFIG_FILE_TYPES:
+                    control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].action_fetch_control_plane(PATH_TO_CONFIG[file_type])
+                    control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.file_name[CONFIG_FILE_NAME[file_type]].action_file_install(force=False)
+                    output = control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].action_generate_control_plane()
+                    installed_file = ClusterTools.get_generated_file_name(output.returned_value, 'config')
+                    output = OutputParsingTool.parse_show_output_to_dict(control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=output_format),
+                                                                         output_format=output_format).get_returned_value()
+                    all_config_files_paths[file_type] = [item['path'] for item in output.values()]
+                    current_installed_config_path = output[installed_file]['path']
+                    current_config_content = engines.dut.run_cmd("sudo cat {}".format(current_installed_config_path))
+                    expected_config_content = engines.sonic_mgmt.run_cmd("sudo cat {}".format(PATH_TO_CONFIG[file_type]))
+                    assert current_config_content == expected_config_content, f"Config file was not loaded properly. Expected content {expected_config_content}, Actual content: {current_config_content}"
+                    assert current_config_content != initial_config_contents[file_type], f"Current content has not changed, still same as in init state. init: {initial_config_contents[file_type]}, \ncurrent{current_config_content}"
+
+        with allure.step("Performing upgrade:"):
+            orig_engine: LinuxSshEngine = TestToolkit.engines.dut
+            original_images, _, original_image_partition, partition_id_for_new_image, fetched_image = \
+                get_image_data_and_fetch_base_image(system, target_version)
+            # Example of target version: '/auto/sw_system_release/nos/nvos/25.02.0506/amd64/dev/nvos-amd64-25.02.0506.bin'
+            # fetched_image_file.action_rename(fetched_image)
+            install_image_and_verify(orig_engine=orig_engine, image_name=fetched_image, partition_id=partition_id_for_new_image,
+                                     original_images=original_images, system=system, release_name=release_name,
+                                     test_name='test_downgrade_upgrade')
+            target_image_installed = True
+
+        with allure.step("Running 'nv show cluster' command and parsing output"):
+            output = OutputParsingTool.parse_show_output_to_dict(
+                cluster.show(output_format=output_format),
+                output_format=output_format).get_returned_value()
+            with allure.step("Validate enabled state is preserved after upgrade"):
+                assert output[SystemConsts.STATE] == NvosConst.ENABLED, f"initial state after upgrade is , " \
+                    f"{output[SystemConsts.STATE]}, Expected to be: " \
+                    f"{NvosConst.ENABLED}"
+
+        with allure.step("Validate apps are still running"):
+            ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format)
+        with allure.step("Check log level"):
+            for app in INITIAL_EXPECTED_APPS:
+                _rotate_logs(system)
+                logger.info("Sleeping for 30 seconds to gather log messages and verify its level")
+                time.sleep(30)
+                ClusterTools.verify_log_level(log_levels[app], app, output_format, cluster, system)
+
+        with allure.step("Make sure config is saved"):
+            output = control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].action_generate_control_plane()
+            installed_file = ClusterTools.get_generated_file_name(output.returned_value, 'config')
+            output = OutputParsingTool.parse_show_output_to_dict(control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=output_format),
+                                                                 output_format=output_format).get_returned_value()
+            all_config_files_paths[file_type] = [item['path'] for item in output.values()]
+            current_installed_config_path = output[installed_file]['path']
+            current_config_content = engines.dut.run_cmd("sudo cat {}".format(current_installed_config_path))
+            expected_config_content = engines.sonic_mgmt.run_cmd("sudo cat {}".format(PATH_TO_CONFIG[file_type]))
+            assert current_config_content == expected_config_content, f"Config file was not loaded properly. Expected content {expected_config_content}, Actual content: {current_config_content}"
+
+    finally:
+        if not target_image_installed:
+            NvosInstallationSteps.deploy_image(cli_obj, topology_obj, setup_name, platform_params_copy, target_version_url, 'onie',
+                                               None, None, None, target_version_url)
+        with allure.step("Install initial configurations"):
+            for file_type in NMX_CONTROLLER_CONFIG_FILE_TYPES:
+                control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].action_fetch_control_plane(initial_configs_paths_to_restore[file_type])
+                conf_file_name = initial_configs_paths_to_restore[file_type].split('/')[-1]
+                control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.file_name[conf_file_name].action_file_install(force=False)
+
+        with allure.step("Delete state/config Files"):
+            for file_type in NMX_CONTROLLER_CONFIG_FILE_TYPES:
+                for file in all_config_files_paths[file_type]:
+                    control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.file_name[file].action_delete()
+                    engines.sonic_mgmt.run_cmd(f"sudo rm -rf {initial_configs_paths_to_restore[file_type]}")
+            engines.sonic_mgmt.run_cmd(f"sudo rm -rf {INITIAL_CONFIGURATIONS_PATH}/*")
+
+        with allure.step("Restore log level"):
+            cluster.apps.apps_name[app].loglevel.action_restore_cluster()
+
+        cluster.unset(apply=True)
+
+
+def install_image_and_verify(orig_engine, image_name, partition_id, original_images, system, release_name,
+                             test_name=''):
+    with allure.step("Installing image {}".format(image_name)):
+        device: BaseDevice = TestToolkit.devices.dut
+        new_engine = LinuxSshEngine(orig_engine.ip, orig_engine.username,
+                                    device.get_default_password_by_version(release_name))
+        OperationTime.save_duration('image install', '', test_name,
+                                    system.image.files.file_name[image_name].action_file_install_with_reboot,
+                                    "", True, None, None, new_engine)
+
+    with allure.step('replace dut engine'):
+        TestToolkit.engines.dut = new_engine  # if install succeeded, need to replace dut engine
+
+    with allure.step("Verify installed image"):
+        time.sleep(5)
+        expected_show_images_output = create_images_output_dictionary(original_images, image_name, image_name, partition_id)
+        system.image.verify_show_images_output(expected_show_images_output)
+        return expected_show_images_output
+
+
+def get_image_data_and_fetch_base_image(system, base_version):
+    original_images, original_image, original_image_partition, partition_id_for_new_image = get_image_data(system)
+
+    with allure.step(f"Fetch image {base_version}"):
+        player = TestToolkit.engines['sonic_mgmt']
+        system.image.action_fetch(ImageConsts.SCP_PATH_SERVER.format(username=player.username, password=player.password,
+                                                                     ip=player.ip, path=base_version))
+    image_name = base_version.split("/")[-1]
+    return original_images, original_image, original_image_partition, partition_id_for_new_image, image_name
+
+
+def get_image_data(system):
+    with allure.step("Save original installed image name"):
+        original_images = system.image.get_image_field_values()
+        original_image = original_images[ImageConsts.CURRENT_IMG]
+        original_image_partition = system.image.get_image_partition(original_image, original_images)
+        partition_id_for_new_image = get_next_partition_id(original_image_partition)
+        logger.info("Original image: {}, partition: {}".format(original_image, original_image_partition))
+        return original_images, original_image, original_image_partition, partition_id_for_new_image
+
+
+def get_next_partition_id(partition_id):
+    return ImageConsts.PARTITION2_IMG if partition_id == ImageConsts.PARTITION1_IMG else ImageConsts.PARTITION1_IMG
+
+
+def _rotate_logs(system):
+    with allure.step("Rotate logs"):
+        logging.info("Rotate logs")
+        system.log.rotate_logs()

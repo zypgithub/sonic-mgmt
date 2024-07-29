@@ -7,6 +7,7 @@ import pytest
 from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
+from ngts.nvos_tools.infra.StressResourcesTool import StressResourcesTool
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.nvos_constants.constants_nvos import PlatformConsts, SystemConsts, OutputFormat, ApiType, IbConsts, NvosConst, ClusterAppsLogLevels
@@ -75,8 +76,68 @@ def test_cluster_app_log_level(engines, devices, test_api):
 
     finally:
         for app in INITIAL_EXPECTED_APPS:
-            ClusterTools.start_app(cluster, app)
+            output = OutputParsingTool.parse_show_output_to_dict(
+                cluster.apps.running.show(output_format=OutputFormat.json),
+                output_format=OutputFormat.json).get_returned_value()
+            app_status = output[app]['status']
+            if app_status != 'ok':
+                ClusterTools.start_app(cluster, app)
             cluster.apps.apps_name[app].loglevel.action_restore_cluster()
+            _rotate_logs(system)
+            logger.info("Sleeping for 30 seconds to gather log messages and verify its level")
+            time.sleep(30)
+            ClusterTools.verify_log_level(DEFAULT_LOG_LEVEL, app, output_format, cluster, system)
+            ClusterTools.stop_app(cluster, app)
+
+
+@pytest.mark.nmx
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_cluster_app_log_level_under_stress(engines, devices, test_api):
+    TestToolkit.tested_api = test_api
+    output_format = OutputFormat.json
+
+    try:
+        with allure.step("Create Cluster object"):
+            cluster = Cluster()
+            system = System()
+            logger.info("Setting cluster state to enabled")
+            installed_packages = []
+            ClusterTools.start_cluster(cluster, output_format)
+
+            installed_packages = StressResourcesTool.stress_cpu_and_memory(engines, devices.dut.core_count)
+            timeout = 300  # for example, 300 seconds
+
+            # Get the current time
+            start_time = time.time()
+
+        while time.time() - start_time < timeout:
+            with allure.step("Choose random log level, and set cluster app log level to"):
+                for app in INITIAL_EXPECTED_APPS:
+                    ClusterTools.start_app(cluster, app)
+                    log_level = random.choice(ClusterAppsLogLevelsList)
+
+                    result_obj, duration = OperationTime.save_duration('cluster update log level', '', test_name, cluster.apps.apps_name[app].loglevel.action_update_cluster_log_level, log_level)
+                    OperationTime.verify_operation_time(duration, 'cluster update log level').verify_result()
+                    logger.info("Sleeping for 30 seconds between iterations")
+                    time.sleep(30)
+                    _rotate_logs(system)
+                    logger.info("Sleeping for 30 seconds to gather log messages and verify its level")
+                    time.sleep(30)
+                    ClusterTools.verify_log_level(log_level, app, output_format, cluster, system)
+    finally:
+        if installed_packages:
+            StressResourcesTool.delete_pacages(engines, installed_packages)
+        for app in INITIAL_EXPECTED_APPS:
+            with allure.step("Make sure apps are still running"):
+                output = OutputParsingTool.parse_show_output_to_dict(
+                    cluster.apps.running.show(output_format=OutputFormat.json),
+                    output_format=OutputFormat.json).get_returned_value()
+                app_status = output[app]['status']
+                with allure.step("Start apps that were stopped"):
+                    if app_status != 'ok':
+                        ClusterTools.start_app(cluster, app)
+            with allure.step("Restore log level"):
+                cluster.apps.apps_name[app].loglevel.action_restore_cluster()
             _rotate_logs(system)
             logger.info("Sleeping for 30 seconds to gather log messages and verify its level")
             time.sleep(30)
