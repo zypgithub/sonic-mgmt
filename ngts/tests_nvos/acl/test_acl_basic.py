@@ -506,9 +506,11 @@ def test_acl_match_dest_ip(engines, test_api, topology_obj):
     """
     Validate ACL match dest-ip rules.
     steps:
-    1. config ACL with a match dest-ip rule
-    2. send packet
-    3. validate counter increased
+    For each ip-string in the list:
+        - Define ACL rule for ip, with the lowest rule-ID so it has the highest priority
+        - Attach rule to the interface
+        - Send packet over interface
+        - Assert the rule statistics have increased
     """
     TestToolkit.tested_api = test_api
     mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
@@ -1103,15 +1105,16 @@ def test_override_default_rule(engines, topology_obj):
 # ------------------- functions -------------------
 
 def get_rule_packets(mgmt_port, acl_id, rule_id=None, rule_direction=AclConsts.INBOUND):
-    output = mgmt_port.interface.acl.acl_id[acl_id].parse_show()
-    res = {}
-    assert AclConsts.STATISTICS in output.keys(), f"{AclConsts.STATISTICS} is not found in the output"
-    if rule_id:
-        res[rule_id] = int(output[AclConsts.STATISTICS][rule_id][rule_direction]["packet"])
-    else:
-        for rule_id, rule_obj in output[AclConsts.STATISTICS].items():
-            res[rule_id] = int(rule_obj[rule_direction]["packet"])
-    return res
+    with allure.step(f"get_rule_packet({mgmt_port.name=}, {acl_id=}, {rule_id=}, {rule_direction=})"):
+        output = mgmt_port.interface.acl.acl_id[acl_id].parse_show()
+        res = {}
+        assert AclConsts.STATISTICS in output.keys(), f"{AclConsts.STATISTICS} is not found in the output"
+        if rule_id:
+            res[rule_id] = int(output[AclConsts.STATISTICS][rule_id][rule_direction]["packet"])
+        else:
+            for rule_id, rule_obj in output[AclConsts.STATISTICS].items():
+                res[rule_id] = int(rule_obj[rule_direction]["packet"])
+        return res
 
 
 def config_rule(engine, acl_id_obj, rule_id, rule_config_dict):
@@ -1155,12 +1158,16 @@ def attach_acl_to_interface(acl_id, mgmt_port, rule_direction, control_plane=Acl
 
 
 def validate_counters_after_traffic(engine, rule_direction, mgmt_port, acl_id, rule_id, ping_dest=None, packet=None):
-    with allure.step(f"Validate {rule_direction} counters increased"):
+    with allure.step(f"Verify {rule_direction} rule captures relevant traffic"):
         rule_packets_before = get_rule_packets(mgmt_port, acl_id, rule_id, rule_direction=rule_direction)
         if packet:
-            scapy_send_packet(engine, packet)
+            ping_output = scapy_send_packet(engine, packet, interface=mgmt_port.name)
+            if "Traceback" in ping_output:
+                raise Exception("scapy failed")
         elif ping_dest:
-            engine.run_cmd('ping {} -c {}'.format(ping_dest, 2))
+            ping_output = engine.run_cmd(f"ping {ping_dest} -c {2} -I {mgmt_port.name}")
+            if "100% packet loss" in ping_output:
+                raise Exception("Failed to ping")
         time.sleep(5)
         rule_packets_after = get_rule_packets(mgmt_port, acl_id, rule_id, rule_direction=rule_direction)
         assert int(rule_packets_after[rule_id]) > int(rule_packets_before[rule_id]), \
@@ -1173,17 +1180,21 @@ def dest_ip_test(engines, mgmt_port, acl_type, acl_id, dest_ip_list, ping_dest):
         acl_obj = None
 
     for dest_ip in dest_ip_list:
-        rule_configuration_dict = {AclConsts.ACTION: AclConsts.PERMIT, AclConsts.DEST_IP: dest_ip}
-        acl_obj = config_acl_with_rule_attached_to_interface(engines.dut, acl_id, acl_type, rule_id,
-                                                             rule_configuration_dict, mgmt_port, AclConsts.OUTBOUND,
-                                                             AclConsts.CONTROL_PLANE, acl_obj=acl_obj)
-        time.sleep(5)
-        validate_counters_after_traffic(engines.dut, AclConsts.OUTBOUND, mgmt_port, acl_id, rule_id, ping_dest=ping_dest)
-        rule_id = str(int(rule_id) - 1)
+        with allure.step(f"{dest_ip=}"):
+            rule_configuration_dict = {AclConsts.ACTION: AclConsts.PERMIT, AclConsts.DEST_IP: dest_ip}
+            acl_obj = config_acl_with_rule_attached_to_interface(engines.dut, acl_id, acl_type, rule_id,
+                                                                 rule_configuration_dict, mgmt_port, AclConsts.OUTBOUND,
+                                                                 AclConsts.CONTROL_PLANE, acl_obj=acl_obj)
+            time.sleep(5)
+            validate_counters_after_traffic(engines.dut, AclConsts.OUTBOUND, mgmt_port, acl_id, rule_id, ping_dest=ping_dest)
+            rule_id = str(int(rule_id) - 1)
 
 
-def scapy_send_packet(engine, packet):
-    cmd_set = ["sudo scapy", f"send({packet})", "exit()"]
+def scapy_send_packet(engine, packet, interface=''):
+    args = packet
+    if interface:
+        args += f', iface="{interface}"'
+    cmd_set = ["sudo scapy", f"send({args})", "exit()"]
     return engine.run_cmd_set(cmd_set, validate=False, patterns_list=[">>>"])
 
 
@@ -1192,13 +1203,14 @@ def match_ip_port_test(engines, mgmt_port, acl_type, acl_id, port_list, dest_add
     acl_obj = None
 
     for port in port_list:
-        rule_configuration_dict = {AclConsts.ACTION: AclConsts.PERMIT, AclConsts.IP_PROTOCOL: 'tcp', port_direction: port}
-        acl_obj = config_acl_with_rule_attached_to_interface(engines.dut, acl_id, acl_type, rule_id,
-                                                             rule_configuration_dict, mgmt_port, AclConsts.INBOUND,
-                                                             control_plane="", acl_obj=acl_obj)
-        if port == 'ANY':
-            port = 1234
-        port = port if isinstance(port, int) else f"\"{port}\""
-        packet = f"IP(dst=\"{dest_addr}\") / TCP(sport={port}, dport={port})"
-        validate_counters_after_traffic(engine_send_packet, AclConsts.INBOUND, mgmt_port, acl_id, rule_id, dest_addr, packet=packet)
-        rule_id = str(int(rule_id) - 1)
+        with allure.step(f"{port=}"):
+            rule_configuration_dict = {AclConsts.ACTION: AclConsts.PERMIT, AclConsts.IP_PROTOCOL: 'tcp', port_direction: port}
+            acl_obj = config_acl_with_rule_attached_to_interface(engines.dut, acl_id, acl_type, rule_id,
+                                                                 rule_configuration_dict, mgmt_port, AclConsts.INBOUND,
+                                                                 control_plane="", acl_obj=acl_obj)
+            if port == 'ANY':
+                port = 1234
+            port = port if isinstance(port, int) else f"\"{port}\""
+            packet = f"IP(dst=\"{dest_addr}\") / TCP(sport={port}, dport={port})"
+            validate_counters_after_traffic(engine_send_packet, AclConsts.INBOUND, mgmt_port, acl_id, rule_id, dest_addr, packet=packet)
+            rule_id = str(int(rule_id) - 1)

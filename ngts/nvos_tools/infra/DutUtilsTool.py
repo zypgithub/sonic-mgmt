@@ -171,6 +171,7 @@ class DutUtilsTool:
         for index, mgmt_ip in enumerate(setup_mgmt_ips):
             if mgmt_ip == engine.ip:
                 interface = 'eth' + str(index)
+        logger.info(f"engine {interface=}")
         return interface
 
     @staticmethod
