@@ -28,24 +28,30 @@ class GnmiClient:
                 self.verify_grpcurl_installation()
 
     def verify_gnmic_installation(self):
-        with allure.step('check if gnmic already installed'):
+        def _gnmic_is_installed() -> bool:
             out, err, _ = self.cmd_runner.run_cmd_in_process('gnmic version')
             gnmic_installed = 'not found' not in out and 'not found' not in err
             self._log(f'gnmic is {"" if gnmic_installed else "not "}installed on player')
+            return gnmic_installed
+
+        with allure.step('check if gnmic already installed'):
+            gnmic_installed = _gnmic_is_installed()
         if not gnmic_installed:
             with allure.step('install gnmic on player'):
-                out, err, _ = self.cmd_runner.run_cmd_in_process(
-                    "bash -c \"$(curl -sL https://get-gnmic.openconfig.net)\"")
+                self.cmd_runner.run_cmd_in_process("bash -c \"$(curl -sL https://get-gnmic.openconfig.net)\"")
             with allure.step('verify gnmic is installed'):
-                output = f'out:\n{out}\nerr:\n{err}'
-                assert 'gnmic installed into /usr/local/bin/gnmic' in output \
-                       or 'gnmic is already at latest' in output, f"gnmic installation failed with: {output}"
+                gnmic_installed = _gnmic_is_installed()
+                assert gnmic_installed, f'failed to install gnmic'
 
     def verify_grpcurl_installation(self):
-        with allure.step('check if grpcurl already installed'):
+        def _grpcurl_is_installed() -> bool:
             out, err, _ = self.cmd_runner.run_cmd_in_process('grpcurl -version')
             grpcurl_installed = 'not found' not in out and 'not found' not in err
             self._log(f'gnmic is {"" if grpcurl_installed else "not "}installed on player')
+            return grpcurl_installed
+
+        with allure.step('check if grpcurl already installed'):
+            grpcurl_installed = _grpcurl_is_installed()
         if not grpcurl_installed:
             with allure.step('install grpcurl'):
                 self.cmd_runner.run_cmd_in_process(
@@ -54,9 +60,8 @@ class GnmiClient:
                 self.cmd_runner.run_cmd_in_process('sudo mv /tmp/grpcurl /usr/local/bin/')
                 self.cmd_runner.run_cmd_in_process('sudo rm /tmp/grpcurl.tar.gz')
             with allure.step('verify grpcurl installed'):
-                out, err, _ = self.cmd_runner.run_cmd_in_process('grpcurl -version')
-                output = f'out:\n{out}\nerr:\n{err}'
-                assert 'command not found' not in output, f"failed to install grpcurl: {output}"
+                grpcurl_installed = _grpcurl_is_installed()
+                assert grpcurl_installed, "failed to install grpcurl"
 
     def gnmic_subscribe(self, prefix, path, mode: str, flat: bool = False, username='', password='',
                         skip_cert_verify: bool = False, cacert='', debug_mode: bool = True,
