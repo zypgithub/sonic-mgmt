@@ -238,13 +238,13 @@ def call_fwutil(duthost, localhost, pdu_ctrl, fw_pkg, component=None, next_image
     # Only one chassis
     chassis = list(init_versions["chassis"].keys())[0]
     paths = get_install_paths(duthost, fw_pkg, init_versions, chassis, component)
+    if component not in paths:
+        pytest.skip("No available firmware to install on {}. Skipping".format(component))
     boot_type = boot if boot else paths[component]["reboot"][0]
     if boot_type == POWER_CYCLE:
         assert pdu_ctrl, "pdu_ctrl is not ready, fail test"
 
     current = duthost.shell('sonic_installer list | grep Current | cut -f2 -d " "')['stdout']
-    if component not in paths:
-        pytest.skip("No available firmware to install on {}. Skipping".format(component))
 
     allure.step("Upload firmware to DUT")
     generate_config(duthost, paths, init_versions)
