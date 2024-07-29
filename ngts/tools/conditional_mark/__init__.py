@@ -46,11 +46,8 @@ def pytest_sessionstart(session):
         dut_name = topology.players['dut']['attributes'].noga_query_data['attributes']['Common']['Name']
         session.config.option.testbed = f'{dut_name}-{setup_topology}'
     if is_dualtor_topo(setup_topology):
-        testbed_file = 'testbed.yaml'
         session.config.option.testbed = f'{session.config.option.setup_name}-{setup_topology}'
-    else:
-        testbed_file = 'testbed.csv'
-    testbed_file_full_path = session.config.option.ansible_inventory.replace('inventory', testbed_file)
+    testbed_file_full_path = session.config.option.ansible_inventory.replace('inventory', 'testbed.yaml')
     session.config.option.testbed_file = testbed_file_full_path
 
     if not mark_conditions_files_param_already_provided(session):
