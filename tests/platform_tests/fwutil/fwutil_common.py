@@ -26,6 +26,7 @@ REBOOT_TYPES = {
     WARM_REBOOT: "warm-reboot",
     FAST_REBOOT: "fast-reboot"
 }
+LATEST_VERSION_IDX = 0
 
 
 def find_pattern(lines, pattern):
@@ -90,7 +91,7 @@ def complete_install(duthost, localhost, boot_type, res, pdu_ctrl, auto_reboot=F
         wait_until(300, 30, 0, duthost.critical_services_fully_started)
         time.sleep(60)
 
-        # Reboot back into original image if neccesary
+        # Reboot back into original image if necessary
         if next_image and auto_reboot:
             logger.info("We booted into the new image... booting back into the image under test.")
             duthost.command("sonic-installer set-default {}".format(current))
@@ -119,7 +120,7 @@ def show_firmware(duthost):
 
         for sep in separators:
             curr_len = len(sep)
-            data.append(line[start:start+curr_len].strip())
+            data.append(line[start:start + curr_len].strip())
             start += curr_len + num_spaces
 
         if data[0].strip() != "":
@@ -223,93 +224,94 @@ def validate_versions(init, final, config, chassis, boot):
     for comp, dat in list(config.items()):
         logger.info("Validating {} is version {} (is {})".format(comp, dat["version"], final[comp]))
         if (dat["version"] != final[comp] or init[comp] == final[comp]) and boot in dat["reboot"]:
-            pytest.fail("Failed to install FW verison {} on {}".format(dat["version"], comp))
+            pytest.fail("Failed to install FW version {} on {}".format(dat["version"], comp))
             return False
     return True
 
 
 def call_fwutil(duthost, localhost, pdu_ctrl, fw_pkg, component=None, next_image=None, boot=None, basepath=None):
-    allure.step("Collect firmware versions")
-    logger.info("Calling fwutil with component: {} | next_image: {} | boot: {} | basepath: {}".format(component,
-                                                                                                      next_image,
-                                                                                                      boot, basepath))
-    init_versions = show_firmware(duthost)
-    logger.info("Initial Versions: {}".format(init_versions))
-    # Only one chassis
-    chassis = list(init_versions["chassis"].keys())[0]
-    paths = get_install_paths(duthost, fw_pkg, init_versions, chassis, component)
-    if component not in paths:
-        pytest.skip("No available firmware to install on {}. Skipping".format(component))
-    boot_type = boot if boot else paths[component]["reboot"][0]
-    if boot_type == POWER_CYCLE:
-        assert pdu_ctrl, "pdu_ctrl is not ready, fail test"
+    with allure.step("Collect firmware versions"):
+        logger.info("Calling fwutil with component: {} | next_image: {} | boot: {} | basepath: {}".format(component,
+                                                                                                          next_image,
+                                                                                                          boot, basepath))
+        init_versions = show_firmware(duthost)
+        logger.info("Initial Versions: {}".format(init_versions))
+        # Only one chassis
+        chassis = list(init_versions["chassis"].keys())[0]
+        paths = get_install_paths(duthost, fw_pkg, init_versions, chassis, component)
+        if component not in paths:
+            pytest.skip("No available firmware to install on {}. Skipping".format(component))
+        boot_type = boot if boot else paths[component]["reboot"][0]
+        if boot_type == POWER_CYCLE:
+            assert pdu_ctrl, "pdu_ctrl is not ready, fail test"
 
-    current = duthost.shell('sonic_installer list | grep Current | cut -f2 -d " "')['stdout']
+        current = duthost.shell('sonic_installer list | grep Current | cut -f2 -d " "')['stdout']
 
-    allure.step("Upload firmware to DUT")
-    generate_config(duthost, paths, init_versions)
-    upload_platform(duthost, paths, next_image)
+    with allure.step("Upload firmware to DUT"):
+        generate_config(duthost, paths, init_versions)
+        upload_platform(duthost, paths, next_image)
 
-    allure.step("Execute fwutil command")
-    command = "fwutil"
-    if basepath is not None:
-        command += " install"
-        auto_reboot = paths[component].get("force_reboot", False)
-    else:
-        command += " update"
-        auto_reboot = True
+    with allure.step("Execute fwutil command"):
+        command = "fwutil"
+        if basepath is not None:
+            command += " install"
+            auto_reboot = paths[component].get("force_reboot", False)
+        else:
+            command += " update"
+            auto_reboot = True
 
-    if component is None:
-        command += " all fw"
-    else:
-        command += " chassis component {} fw".format(component)
+        if component is None:
+            command += " all fw"
+        else:
+            command += " chassis component {} fw".format(component)
 
-    if basepath is not None:
-        # Install file is override if API implementation needs a different file for install / update
-        filepath = paths[component]["firmware"]
-        command += " {}".format(os.path.join(basepath, os.path.basename(filepath)))
+        if basepath is not None:
+            # Install file is override if API implementation needs a different file for install / update
+            filepath = paths[component]["firmware"]
+            command += " {}".format(os.path.join(basepath, os.path.basename(filepath)))
 
-    if next_image is not None:
-        command += " --image={}".format("next" if next_image else "current")
+        if next_image is not None:
+            command += " --image={}".format("next" if next_image else "current")
 
-    if boot is not None:
-        command += " --boot={}".format(boot)
-        auto_reboot = False
-    else:
-        command += " -y"
+        if boot is not None:
+            command += " --boot={}".format(boot)
+            auto_reboot = False
+        else:
+            command += " -y"
 
-    logger.info("Running install command: {}".format(command))
-    task, res = duthost.command(command, module_ignore_errors=True, module_async=True)
+        logger.info("Running install command: {}".format(command))
+        task, res = duthost.command(command, module_ignore_errors=True, module_async=True)
 
-    allure.step("Perform Neccesary Reboot")
-    timeout = max([v.get("timeout", TIMEOUT) for k, v in list(paths.items())])
-    pdu_delay = fw_pkg["chassis"][chassis].get("power_cycle_delay", 60)
-    complete_install(duthost, localhost, boot_type, res, pdu_ctrl, auto_reboot, current, next_image, timeout, pdu_delay)
+    with allure.step("Perform Necessary Reboot"):
+        timeout = max([v.get("timeout", TIMEOUT) for k, v in list(paths.items())])
+        pdu_delay = fw_pkg["chassis"][chassis].get("power_cycle_delay", 60)
+        complete_install(duthost, localhost, boot_type, res, pdu_ctrl, auto_reboot, current, next_image, timeout,
+                         pdu_delay)
 
-    allure.step("Collect Updated Firmware Versions")
-    time.sleep(2)  # Give a little bit of time in case of no-op install for mounts to complete
-    final_versions = show_firmware(duthost)
-    test_result = validate_versions(init_versions, final_versions, paths, chassis, boot_type)
+    with allure.step("Collect Updated Firmware Versions"):
+        time.sleep(2)  # Give a little bit of time in case of no-op install for mounts to complete
+        final_versions = show_firmware(duthost)
+        test_result = validate_versions(init_versions, final_versions, paths, chassis, boot_type)
 
-    allure.step("Begin Switch Restoration")
-    if next_image is None:
-        duthost.copy(src=os.path.join("firmware", "platform_components_backup.json"),
-                     dest=os.path.join("/", DEVICES_PATH, duthost.facts["platform"], "platform_components.json"))
-        logger.info("Restoring backup platform_components.json to {}".format(
-            os.path.join(DEVICES_PATH, duthost.facts["platform"])))
+    with allure.step("Begin Switch Restoration"):
+        if next_image is None:
+            duthost.copy(src=os.path.join("firmware", "platform_components_backup.json"),
+                         dest=os.path.join("/", DEVICES_PATH, duthost.facts["platform"], "platform_components.json"))
+            logger.info("Restoring backup platform_components.json to {}".format(
+                os.path.join(DEVICES_PATH, duthost.facts["platform"])))
 
-    update_needed = deepcopy(fw_pkg)
-    update_needed["chassis"][chassis]["component"] = {}
-    defined_components = get_defined_components(duthost, fw_pkg, chassis)
-    final_components = final_versions["chassis"][chassis]["component"]
-    for comp in list(paths.keys()):
-        if defined_components[comp][0]["version"] != final_components[comp] and \
-                boot in defined_components[comp][0]["reboot"] + [None] and \
-                not paths[comp].get("upgrade_only", False):
-            update_needed["chassis"][chassis]["component"][comp] = defined_components[comp]
-    if len(list(update_needed["chassis"][chassis]["component"].keys())) > 0:
-        logger.info("Latest firmware not installed after test. Installing....")
-        call_fwutil(duthost, localhost, pdu_ctrl, update_needed, component, None, boot,
-                    os.path.join("/", DEVICES_PATH, duthost.facts['platform']) if basepath is not None else None)
+        update_needed = deepcopy(fw_pkg)
+        update_needed["chassis"][chassis]["component"] = {}
+        defined_components = get_defined_components(duthost, fw_pkg, chassis)
+        final_components = final_versions["chassis"][chassis]["component"]
+        for comp in list(paths.keys()):
+            if defined_components[comp][LATEST_VERSION_IDX]["version"] != final_components[comp] and \
+                    boot in defined_components[comp][LATEST_VERSION_IDX]["reboot"] + [None] and \
+                    not paths[comp].get("upgrade_only", False):
+                update_needed["chassis"][chassis]["component"][comp] = defined_components[comp]
+        if len(list(update_needed["chassis"][chassis]["component"].keys())) > 0:
+            logger.info("Latest firmware not installed after test. Installing....")
+            call_fwutil(duthost, localhost, pdu_ctrl, update_needed, component, None, boot,
+                        os.path.join("/", DEVICES_PATH, duthost.facts['platform']) if basepath is not None else None)
 
     return test_result
