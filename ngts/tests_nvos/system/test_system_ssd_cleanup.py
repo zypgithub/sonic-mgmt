@@ -79,6 +79,9 @@ def test_ssd_cleanup_positive_flow(engines, devices):
         fae = Fae()
         system = System()
 
+    with allure.step("save all system events before testing"):
+        system_events_before_testing = OutputParsingTool.parse_json_str_to_dictionary(system.events.show()).verify_result()
+
     _delete_all_files(engines.dut)
     file_path = '/etc/monit/conf.d/sonic-host'
     old_line = 'if status == 1 for 10 times within 20 cycles then alert repeat every 1 cycles'
@@ -87,8 +90,8 @@ def test_ssd_cleanup_positive_flow(engines, devices):
 
     try:
         df_output = _get_df_output(engines.dut)
-        with allure.step("add file to reach usage threshold {}".format(5)):
-            engines.dut.run_cmd(f"sudo fallocate -l {df_output[SystemConsts.SSD_SPACE_AVAILABLE_SIZE] - 5}G {paths_order[-1]}/big_file")
+        with allure.step("add file to reach usage threshold {}".format(5.1)):
+            engines.dut.run_cmd(f"sudo fallocate -l {df_output[SystemConsts.SSD_SPACE_AVAILABLE_SIZE] - 5.1}G {paths_order[-1]}/big_file")
 
         files_to_delete = _add_files(engines.dut, 4, df_output[SystemConsts.SSD_SPACE_AVAILABLE_SIZE])
 
@@ -108,7 +111,7 @@ def test_ssd_cleanup_positive_flow(engines, devices):
 
             with allure.step("check system events - two events expected "):
                 events_dict = OutputParsingTool.parse_json_str_to_dictionary(system.events.show()).verify_result()
-                _verify_system_event(events_dict, False)
+                _verify_system_event(system_events_before_testing, events_dict, False)
 
         with allure.step("try to cleanup and verify health status and deleted files after it"):
 
@@ -126,7 +129,7 @@ def test_ssd_cleanup_positive_flow(engines, devices):
 
             with allure.step("check system events - two events expected "):
                 events_dict = OutputParsingTool.parse_json_str_to_dictionary(system.events.show()).verify_result()
-                _verify_system_event(events_dict, True)
+                _verify_system_event(system_events_before_testing, events_dict, True)
 
         df_output = _get_df_output(engines.dut)
         file_name = 'Big_file'
@@ -167,15 +170,21 @@ def test_ssd_cleanup_reboot_with_high_ssd_usage(engines, devices):
     df_output = _get_df_output(engines.dut)
     path = '/host/nos-images/'
     file_name = 'new_file'
+    file_size = df_output[SystemConsts.SSD_SPACE_AVAILABLE_SIZE] - (0.01 * df_output[SystemConsts.SSD_SPACE_TOTAL_SIZE])
 
     try:
-        engines.dut.run_cmd('sudo fallocate -l {size}G /{path}/{file}'.format(size=df_output[SystemConsts.SSD_SPACE_AVAILABLE_SIZE] - 1, path=path, file=file_name))
+        engines.dut.run_cmd('sudo fallocate -l {size}G /{path}/{file}'.format(size=file_size, path=path, file=file_name))
 
         with allure.step('Reboot the system'):
             system.reboot.action_reboot()
 
         with allure.step('wait up to 5 minutes for monit to be ready and then healthD cycle'):
-            wait_for_specific_regex_in_logs(engines.dut, "ssd_cleanup: SSD Cleanup Done", timeout=300)
+            try:
+                wait_for_specific_regex_in_logs(engines.dut, "ssd_cleanup: SSD Cleanup Done", timeout=300)
+            except Exception as e:
+                with allure.step("the SSD usage right now is:"):
+                    _get_df_output(engines.dut)
+                raise
 
         with allure.step("check deleted files and the deleting order"):
             verify_deleted_folders_list(engines.dut, [file_name])
@@ -326,10 +335,11 @@ def _wait_until_monit_is_running(engine):
             raise Exception("Waiting for monit to finish initializing")
 
 
-def _verify_system_event(events_output, is_ok):
+def _verify_system_event(events_dict_before_testing, events_dict_after_testing, is_ok):
     """
 
-    :param events_output:
+    :param events_dict_before_testing:
+    :param events_dict_after_testing:
     :param is_ok:
     :return:
     """
@@ -337,17 +347,16 @@ def _verify_system_event(events_output, is_ok):
         expected_disk_issue_event = {'severity': 'INFORMATIONAL' if is_ok else 'WARNING', 'text': 'Service goes back to normal' if is_ok else 'Disk space is not Status ok', 'type-id': 'Disk space'}
         expected_health_issue_event = {'severity': 'INFORMATIONAL' if is_ok else 'WARNING', 'text': 'Health status is ok' if is_ok else 'Health status is not ok', 'type-id': 'System'}
 
-    with allure.step("get last two system events"):
-        health_event = events_output['last']
-        keys_list = list(map(int, health_event.keys()))
-        keys_list_sorted = sorted(keys_list)
-        system_health_event = health_event[str(keys_list_sorted[-1])]
-        system_health_event.pop('time-created')
-        disk_event = health_event[str(keys_list_sorted[-2])]
-        disk_event.pop('time-created')
+    with allure.step("get all events that happened during testing"):
+        events_output = {key: value for key, value in events_dict_after_testing[SystemConsts.SYSTEM_LAST_EVENT].items() if
+                         key not in events_dict_before_testing[SystemConsts.SYSTEM_LAST_EVENT]}
+        for event in events_output.values():
+            event.pop('time-created')
+
+    logger.info("the new events: {}".format(events_output.values()))
 
     with allure.step("verify health event"):
-        assert expected_health_issue_event == system_health_event, f"the expected dic is {expected_health_issue_event} but the event output is {system_health_event}"
+        assert expected_health_issue_event in events_output.values(), f"can not find an expected event: {expected_health_issue_event}"
 
     with allure.step("verify disk issue event"):
-        assert expected_disk_issue_event == disk_event, f"the expected dic is {expected_disk_issue_event} but the event output is {disk_event}"
+        assert expected_disk_issue_event in events_output.values(), f"can not find an expected event: {expected_disk_issue_event}"

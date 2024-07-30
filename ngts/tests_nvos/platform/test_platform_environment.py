@@ -10,7 +10,7 @@ from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.nvos_constants.constants_nvos import PlatformConsts, HealthConsts, ActionConsts
+from ngts.nvos_constants.constants_nvos import PlatformConsts, HealthConsts, ActionConsts, SystemConsts
 from ngts.nvos_constants.constants_nvos import OutputFormat
 from ngts.nvos_constants.constants_nvos import FansConsts
 from ngts.nvos_constants.constants_nvos import ApiType
@@ -346,8 +346,8 @@ def test_platform_environment_events_performance(engines, devices):
         with allure.step('Run show system events command & validate there is 1 FAN direction issue per FAN'):
             output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show()).get_returned_value()
             fan_error_set = set()
-            for events_no in output['last']:
-                output_err_msg = str(output["last"][events_no])
+            for events_no in output[SystemConsts.SYSTEM_LAST_EVENT]:
+                output_err_msg = str(output[SystemConsts.SYSTEM_LAST_EVENT][events_no])
                 if FansConsts.FAN_DIRECTION_MISMATCH_ERR in output_err_msg:
                     err_found = True
                 elif FansConsts.FAN_DIRECTION_MISMATCH_ERR_CROC in output_err_msg:

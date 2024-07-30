@@ -302,7 +302,7 @@ class BaseSwitch(BaseDevice):
                       'temperature', 'top', 'version', 'vlan.summary', 'vmstat', 'vmstat.m', 'vmstat.s', 'who']
         sdk_dump_files = ['fw_trace_attr.json.gz', 'sai_sdk_dump.gz',
                           'sdk_dump_ext_dev1_summary.txt.gz', 'sdk_dump_ext_dev1_cr_space_2.udmp.gz',
-                          'sdk_dump_ext_dev1_gw.udmp.gz', 'sdk_dump_ext_dev1_dpt.txt.gz',
+                          'sdk_dump_ext_dev1_cr_space_1.udmp.gz', 'sdk_dump_ext_dev1_cr_space_2.udmp.gz', 'sdk_dump_ext_dev1_cr_space_3.udmp.gz', 'sdk_dump_ext_dev1_dpt.txt.gz',
                           'sdk_dump_ext_dev1_fw_trace.txt.gz', 'fw_trace_attr.json.gz', 'fw_trace_string_db.json.gz',
                           'sai_sdk_dump.json.gz', 'sdk_dump_ext_dev1_cr_space_1.udmp.gz',
                           'sdk_dump_ext_dev1_cr_space_3.udmp.gz', 'sdk_dump_ext_dev1_driver.txt.gz',

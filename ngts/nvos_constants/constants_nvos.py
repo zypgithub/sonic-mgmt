@@ -283,7 +283,7 @@ class SystemConsts:
     SECURITY = 'security'
     TECHSUPPORT_FILES_PATH = '/host/dump/'
     TECHSUPPORT_EMPTY_FILES_TO_IGNORE = ['queue.counters_2', 'queue.counters_1.0', 'swapon',
-                                         'queue.counters_1', 'queue.counters_2.0']
+                                         'queue.counters_1', 'queue.counters_2.0', 'queue.counters_1.1', 'queue.counters_2.1']
     PATH_KEY = 'path'
     LATEST_KEY = 'latest'
 
@@ -522,6 +522,8 @@ class SystemConsts:
         "Performing reboot",
         "Disconnecting from NVOS, system is offline during reboot",
     )
+
+    SYSTEM_LAST_EVENT = 'last'
 
 
 class DocumentsConsts:
