@@ -2,6 +2,7 @@ import logging
 import pytest
 from retry import retry
 
+from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.acl.acl import Acl
@@ -18,6 +19,7 @@ from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 
 logger = logging.getLogger()
 
+SLEEP_TIME = 5
 RULE_CONFIG_FUNCTION = {
     AclConsts.ACTION: lambda rule_id_obj, param: rule_id_obj.action.set(param),
     AclConsts.ACTION_LOG_PREFIX: lambda rule_id_obj, param: rule_id_obj.action.log.set_log_prefix(param),
@@ -452,10 +454,10 @@ def test_inbound_outbound_counters(engines, test_api, topology_obj):
                                                                                     AclConsts.OUTBOUND, control_plane)
 
     with allure.step("Validate outbound counters increased only"):
-        time.sleep(5)
+        sleep()
         rule_packets_1_before = get_rule_packets(mgmt_port, acl_id_inbound_match_dest_ip, rule_id_match_dest_ip, rule_direction=AclConsts.INBOUND)
         rule_packets_2_before = get_rule_packets(mgmt_port, acl_id_outbound_match_dest_ip, rule_id_match_dest_ip, rule_direction=AclConsts.OUTBOUND)
-        engines.dut.run_cmd('ping {} -c {}'.format(sonic_mgmt_ip, 2))
+        ping(engines.dut, sonic_mgmt_ip, mgmt_port_name)
         rule_packets_1_after = get_rule_packets(mgmt_port, acl_id_inbound_match_dest_ip, rule_id_match_dest_ip, rule_direction=AclConsts.INBOUND)
         rule_packets_2_after = get_rule_packets(mgmt_port, acl_id_outbound_match_dest_ip, rule_id_match_dest_ip, rule_direction=AclConsts.OUTBOUND)
         assert rule_packets_1_after[rule_id_match_dest_ip] == rule_packets_1_before[rule_id_match_dest_ip], \
@@ -491,6 +493,7 @@ def test_inbound_outbound_counters(engines, test_api, topology_obj):
 
     with allure.step("Unset source-ip rule from inbound acl"):
         acl_obj_inbound_match_dest_ip.rule.rule_id[rule_id_match_src_ip].unset(apply=True)
+        sleep()
 
     with allure.step("Validate outbound counters are still 0"):
         send(ping_packet)
@@ -1104,6 +1107,11 @@ def test_override_default_rule(engines, topology_obj):
 
 # ------------------- functions -------------------
 
+def sleep():
+    logger.info(f"sleep {SLEEP_TIME}")
+    time.sleep(SLEEP_TIME)
+
+
 def get_rule_packets(mgmt_port, acl_id, rule_id=None, rule_direction=AclConsts.INBOUND):
     with allure.step(f"get_rule_packet({mgmt_port.name=}, {acl_id=}, {rule_id=}, {rule_direction=})"):
         output = mgmt_port.interface.acl.acl_id[acl_id].parse_show()
@@ -1126,6 +1134,7 @@ def config_rule(engine, acl_id_obj, rule_id, rule_config_dict):
             RULE_CONFIG_FUNCTION[key](rule_id_obj, value).verify_result()
 
         result_obj = SendCommandTool.execute_command(TestToolkit.GeneralApi[TestToolkit.tested_api].apply_config, engine)
+        sleep()
         return result_obj
 
 
@@ -1142,8 +1151,7 @@ def config_acl_with_rule_attached_to_interface(engine, acl_id, acl_type, rule_id
             acl_obj.set(AclConsts.TYPE, acl_type).verify_result()
             config_rule(engine, acl_obj, rule_id, rule_configuration_dict).verify_result()
             attach_acl_to_interface(acl_id, mgmt_port, rule_direction, control_plane).verify_result(should_succeed)
-    logger.info("sleep after rule attachment")
-    time.sleep(15)
+    sleep()
     return acl_obj
 
 
@@ -1165,13 +1173,18 @@ def validate_counters_after_traffic(engine, rule_direction, mgmt_port, acl_id, r
             if "Traceback" in ping_output:
                 raise Exception("scapy failed")
         elif ping_dest:
-            ping_output = engine.run_cmd(f"ping {ping_dest} -c {2} -I {mgmt_port.name}")
-            if "100% packet loss" in ping_output:
-                raise Exception("Failed to ping")
+            ping(engine, ping_dest, mgmt_port.name)
         time.sleep(5)
         rule_packets_after = get_rule_packets(mgmt_port, acl_id, rule_id, rule_direction=rule_direction)
         assert int(rule_packets_after[rule_id]) > int(rule_packets_before[rule_id]), \
             "expect to see difference in the counters after the ping"
+
+
+def ping(engine: ProxySshEngine, dest: str, source_interface: str, count=2) -> str:
+    ping_output = engine.run_cmd(f"ping {dest} -c {count} -I {source_interface}")
+    if "100% packet loss" in ping_output:
+        raise Exception("Failed to ping")
+    return ping_output
 
 
 def dest_ip_test(engines, mgmt_port, acl_type, acl_id, dest_ip_list, ping_dest):
