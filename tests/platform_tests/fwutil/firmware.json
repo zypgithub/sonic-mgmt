@@ -85,9 +85,9 @@
             "component":{
 				"ONIE": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0012-rc8/115200/onie-updater-x86_64-mlnx_x86-r0",
+						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_os/onie_release/sn2201/2021.08-nvidia_sn2201_v1.1/115200/onie-updater-x86_64-nvidia_sn2201-r0",
 						"force_reboot": true,
-						"version": "2022.08-5.3.0012-rc8-115200",
+						"version": "2021.08-nvidia_sn2201_v1.1-115200",
 						"reboot": ["cold"]
 					},
 					{
