@@ -263,6 +263,7 @@ class ReloadTest(BaseTest):
         # one is the reachability_watcher thread
         # second is the fast send_in_background
         self.dataplane_io_lock = threading.Lock()
+        self.installed_sonic_version = self.get_installed_sonic_version()
 
         self.allow_vlan_flooding = bool(
             self.test_params['allow_vlan_flooding'])
@@ -1447,6 +1448,11 @@ class ReloadTest(BaseTest):
         teamd_state = stdout[0].strip()
         return teamd_state
 
+    def get_installed_sonic_version(self):
+        stdout, _, _ = self.dut_connection.execCommand(
+            "sudo sonic_installer list | grep Current | awk '{print $2}'")
+        return stdout[0]
+
     def wait_until_teamd_goes_down(self):
         self.log('Waiting for teamd service to go down')
         teamd_state = self.get_teamd_state()
@@ -1472,16 +1478,19 @@ class ReloadTest(BaseTest):
 
         self.log("Rebooting remote side")
         if self.reboot_type != 'service-warm-restart' and self.test_params['other_vendor_flag'] is False:
-            # Check to see if the warm-reboot script knows about the retry count feature
-            stdout, stderr, return_code = self.dut_connection.execCommand(
-                "sudo " + self.reboot_type + " -h", timeout=5)
-            if "retry count" in stdout:
-                if self.test_params['neighbor_type'] == "sonic":
-                    reboot_command = self.reboot_type + " -N"
-                else:
-                    reboot_command = self.reboot_type + " -n"
-            else:
+            if '202205_5' in self.installed_sonic_version:  # TODO remove when RM issue 4004637 is solved
                 reboot_command = self.reboot_type
+            else:
+                # Check to see if the warm-reboot script knows about the retry count feature
+                stdout, stderr, return_code = self.dut_connection.execCommand(
+                    "sudo " + self.reboot_type + " -h", timeout=5)
+                if "retry count" in stdout:
+                    if self.test_params['neighbor_type'] == "sonic":
+                        reboot_command = self.reboot_type + " -N"
+                    else:
+                        reboot_command = self.reboot_type + " -n"
+                else:
+                    reboot_command = self.reboot_type
 
             # create an empty log file to capture output of reboot command
             reboot_log_file = "/host/{}.log".format(reboot_command.replace(' ', ''))
