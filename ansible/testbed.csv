@@ -505,6 +505,7 @@ r-moose-simx-53-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,serv
 r-moose-simx-57-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,r-moose-simx-57,Mellanox MTR testbed
 r-moose-simx-242-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,r-moose-simx-242,Mellanox MTR testbed
 r-moose-simx-246-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,r-moose-simx-246,Mellanox MTR testbed
+r-bison-simx-250-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,r-bison-simx-250,Mellanox MTR testbed
 r-spider-05-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,r-spider-05,Mellanox MTR testbed
 moose-42-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,moose-42,Mellanox MTR testbed
 r-moose-02-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,r-moose-02,Mellanox MTR testbed
