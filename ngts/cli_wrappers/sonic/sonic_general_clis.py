@@ -1,43 +1,44 @@
-import re
-import allure
-import logging
-import time
-import netmiko
 import json
-import traceback
+import logging
 import os
-from retry import retry
-from retry.api import retry_call
+import re
+import time
+import traceback
 import xml.etree.ElementTree as ET
 
+import allure
+import netmiko
+from retry import retry
+from retry.api import retry_call
+
+import ngts.helpers.json_file_helper as json_file_helper
+from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from infra.tools.general_constants.constants import DefaultTestServerCred
+from infra.tools.general_constants.constants import SonicSimxConstants, SonicHostsConstants
+from infra.tools.nvidia_air_tools.air import get_dhcp_ips_dict
+from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from infra.tools.topology_tools.nogaq import get_noga_entire_resource_data
+from infra.tools.utilities.onie_sonic_clis import SonicOnieCli as SonicOnieCliDevts
+from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.cli_util.cli_constants import SonicConstant
+from ngts.cli_util.cli_parsers import generic_sonic_output_parser
 from ngts.cli_wrappers.common.general_clis_common import GeneralCliCommon
 from ngts.cli_wrappers.linux.linux_general_clis import LinuxGeneralCli
-from ngts.helpers.run_process_on_host import run_process_on_host
-from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from ngts.cli_wrappers.sonic.sonic_chassis_clis import SonicChassisCli
+from ngts.cli_wrappers.sonic.sonic_onie_clis import SonicOnieCli, OnieInstallationError, get_latest_onie_version
 from ngts.constants.constants import SonicConst, InfraConst, ConfigDbJsonConst, PerformanceSetupConstants, \
     AppExtensionInstallationConstants, DefaultCredentialConstants, BluefieldConstants, \
     PlatformTypesConstants, PerfConsts
 from ngts.helpers.breakout_helpers import get_port_current_breakout_mode, get_all_split_ports_parents, \
     get_split_mode_supported_breakout_modes, get_split_mode_supported_speeds, get_all_unsplit_ports
-from ngts.cli_util.cli_parsers import generic_sonic_output_parser
-import ngts.helpers.json_file_helper as json_file_helper
-from ngts.helpers.interface_helpers import get_dut_default_ports_list
 from ngts.helpers.config_db_utils import save_config_db_json
-from ngts.helpers.sonic_branch_helper import get_sonic_branch
-from ngts.tests.nightly.app_extension.app_extension_helper import get_installed_mellanox_extensions
-from ngts.cli_wrappers.sonic.sonic_onie_clis import SonicOnieCli, OnieInstallationError, get_latest_onie_version
-from infra.tools.utilities.onie_sonic_clis import SonicOnieCli as SonicOnieCliDevts
-from infra.tools.general_constants.constants import SonicSimxConstants, SonicHostsConstants
-from ngts.cli_wrappers.sonic.sonic_chassis_clis import SonicChassisCli
-from ngts.scripts.check_and_store_sanitizer_dump import check_sanitizer_and_store_dump
-from infra.tools.nvidia_air_tools.air import get_dhcp_ips_dict
-from infra.tools.general_constants.constants import DefaultTestServerCred
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
-from infra.tools.topology_tools.nogaq import get_noga_entire_resource_data
-from ngts.tools.infra import update_platform_info_files
+from ngts.helpers.interface_helpers import get_dut_default_ports_list
+from ngts.helpers.run_process_on_host import run_process_on_host
 from ngts.helpers.secure_boot_helper import SecureBootHelper
+from ngts.helpers.sonic_branch_helper import get_sonic_branch
+from ngts.scripts.check_and_store_sanitizer_dump import check_sanitizer_and_store_dump
+from ngts.tests.nightly.app_extension.app_extension_helper import get_installed_mellanox_extensions
+from ngts.tools.infra import update_platform_info_files
 
 logger = logging.getLogger()
 DUMMY_COMMAND = 'echo dummy_command'
@@ -72,6 +73,21 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         self.cli_obj = cli_obj
         self.dut_alias = dut_alias
         self.backup_logs_stored = False
+
+    def is_dut_supports_image(self, base_version_url, dut_name) -> bool:
+        """
+        This method checks whether the given base version url is supported for the given dut , or not
+        :return: True/False
+        """
+        image_supports = True
+        # device mtvr-moose-01 is production and supports only prod versions of ONIE and SONiC
+        if dut_name == 'mtvr-moose-01' and "prod" not in base_version_url:
+            image_supports = False
+        # when executed deploy of production image, skip the flow on not production devices
+        if dut_name != 'mtvr-moose-01' and 'prod' in base_version_url:
+            image_supports = False
+        logger.info(f"dut: {dut_name} {'supports' if image_supports else 'does not support'} version: {base_version_url}")
+        return image_supports
 
     def show_feature_status(self):
         """

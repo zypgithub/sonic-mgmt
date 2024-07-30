@@ -1,11 +1,14 @@
-import allure
 import logging
-from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
-from ngts.nvos_tools.infra.BaseComponent import BaseComponent
+
+import allure
+
 from ngts.nvos_constants.constants_nvos import ApiType, ActionConsts
 from ngts.nvos_constants.constants_nvos import ImageConsts
+from ngts.nvos_tools.infra.BaseComponent import BaseComponent
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.nvos_tools.infra.ResultObj import ResultObj
+from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.nvos_tools.system.Files import Files
 
 logger = logging.getLogger()
@@ -19,23 +22,27 @@ class Image(BaseComponent):
     def unset(self, op_param=""):
         raise Exception("unset is not implemented for /image")
 
-    def _action(self, action_type, op_param="", expected_str="Action succeeded", dut_engine=None):
+    def _action(self, action_type, op_param="", expected_str="Action succeeded", dut_engine=None, verify_res: bool = True):
         if not dut_engine:
             dut_engine = TestToolkit.engines.dut
-        return SendCommandTool.execute_command_expected_str(self.api_obj[TestToolkit.tested_api].action_image,
-                                                            expected_str, dut_engine,
-                                                            action_type, self.get_resource_path(),
-                                                            op_param).get_returned_value()
+        res: ResultObj = SendCommandTool.execute_command_expected_str(self.api_obj[TestToolkit.tested_api].action_image,
+                                                                      expected_str, dut_engine,
+                                                                      action_type, self.get_resource_path(),
+                                                                      op_param)
+        if verify_res:
+            return res.get_returned_value()
+        else:
+            return res.returned_value
 
     def action_install(self, params="", expected_str="", dut_engine=None):
         with allure.step("Install {params} system image".format(params=params)):
             logging.info("Install {params} system image".format(params=params))
             return self._action(ActionConsts.INSTALL, params, expected_str, dut_engine)
 
-    def action_uninstall(self, params="", expected_str="", engine=None):
+    def action_uninstall(self, params="", expected_str="", engine=None, verify_res: bool = True):
         with allure.step("Uninstall {params} system image".format(params=params)):
             logging.info("Uninstall {params} system image".format(params=params))
-            return self._action(ActionConsts.UNINSTALL, params, expected_str, dut_engine=engine)
+            return self._action(ActionConsts.UNINSTALL, params, expected_str, dut_engine=engine, verify_res=verify_res)
 
     def action_fetch(self, url="", expected_str="Action succeeded", dut_engine=None):
         with allure.step("Image fetch {url} ".format(url=url)):

@@ -139,7 +139,10 @@ class BaseDevice(ABC):
         version_num, _ = get_version_info(version)
         if version_num:
             version_num = int(version_num.split('.')[-1])
-            return f'nvos_config_ga_{(version_num // 1000) * 1000}.yml'
+            relevant_ga_num_for_conf = (version_num // 1000) * 1000
+            if relevant_ga_num_for_conf == 0:
+                relevant_ga_num_for_conf = 4000
+            return f'nvos_config_ga_{relevant_ga_num_for_conf}.yml'
         return 'nvos_config_ga_3000.yml'
 
     def verify_databases(self, dut_engine):

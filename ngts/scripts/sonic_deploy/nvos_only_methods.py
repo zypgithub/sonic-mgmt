@@ -8,7 +8,6 @@ from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.constants.constants import LinuxConsts
 from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
-from ngts.nvos_tools.Devices.IbDevice import BlackMambaSwitch, CrocodileSwitch
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
@@ -138,13 +137,13 @@ class NvosInstallationSteps:
         with allure.step('Clear fetched files for the tests'):
             system = System()
             dut_engine.disconnect()  # force engines.dut to reconnect
-            if type(dut_device) not in [BlackMambaSwitch, CrocodileSwitch]:
-                with allure.step('Delete fetched image file'):
-                    system.image.files.delete_files([bin_filename], engine=dut_engine)
-                with allure.step('Delete config files'):
-                    system.config.files.delete_files([config_filename], engine=dut_engine)
+
+            with allure.step('Delete fetched image file'):
+                system.image.files.delete_all_existing_files(engine=dut_engine)
+            with allure.step('Delete config files'):
+                system.config.files.delete_all_existing_files(engine=dut_engine)
             with allure.step('Uninstall older version'):
-                system.image.action_uninstall(engine=dut_engine)
+                system.image.action_uninstall(engine=dut_engine, verify_res=False)
 
     @staticmethod
     def verify_config_after_upgrade(config_file_path, dut_engine):
