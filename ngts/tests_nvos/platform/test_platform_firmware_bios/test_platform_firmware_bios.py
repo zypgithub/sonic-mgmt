@@ -18,13 +18,12 @@ logger = logging.getLogger()
 def test_bios_auto_update_disabled(devices, engines, test_api, original_version, get_image_data_and_fetch_image, test_name):
     """
     Test flow:
-        1. fetch current and previous system image versions
+        1. fetch target image version
         2. fetch current and previous BIOS versions
-        3. downgrade the system image version to base_version
-        4. downgrade to previous BIOS version
-        5. install original image
-        6. validate BIOS version was not updated in nv show platform firmware
-        7. cleanup
+        3. downgrade to previous BIOS version
+        4. install target image
+        5. validate BIOS version was NOT updated in nv show platform firmware
+        6. cleanup
     """
     TestToolkit.tested_api = test_api
     with allure.step('Create System objects'):
@@ -35,7 +34,9 @@ def test_bios_auto_update_disabled(devices, engines, test_api, original_version,
     verify_current_version(original_version, system)
     verify_bios_auto_update_value(platform, NvosConst.ENABLED)
 
-    original_image_partition, fetched_image_curr = get_image_data_and_fetch_image
+    with allure.step('Fetch image - target_version_realpath fixture'):
+        original_image_partition, fetched_image_curr = get_image_data_and_fetch_image
+
     try:
 
         orig_engine: LinuxSshEngine = TestToolkit.engines.dut
@@ -72,13 +73,12 @@ def test_bios_auto_update_disabled(devices, engines, test_api, original_version,
 def test_bios_auto_update_enabled(devices, engines, test_api, original_version, get_image_data_and_fetch_image, test_name):
     """
     Test flow:
-        1. fetch current and previous system image versions
+        1. fetch target image version
         2. fetch current and previous BIOS versions
-        3. downgrade the system image version to base_version
-        4. downgrade to previous BIOS version
-        5. install original image
-        6. validate BIOS version was updated in nv show platform firmware
-        7. cleanup
+        3. downgrade to previous BIOS version
+        4. install target image
+        5. validate BIOS version was updated in nv show platform firmware
+        6. cleanup
     """
     TestToolkit.tested_api = test_api
     with allure.step('Create System objects'):
@@ -89,7 +89,8 @@ def test_bios_auto_update_enabled(devices, engines, test_api, original_version, 
     verify_current_version(original_version, system)
     verify_bios_auto_update_value(platform, NvosConst.ENABLED)
 
-    original_image_partition, fetched_image_curr = get_image_data_and_fetch_image
+    with allure.step('Fetch image - target_version_realpath fixture'):
+        original_image_partition, fetched_image_curr = get_image_data_and_fetch_image
 
     try:
 
@@ -103,7 +104,6 @@ def test_bios_auto_update_enabled(devices, engines, test_api, original_version, 
             platform.firmware.bios.set(op_param_name=PlatformConsts.FW_AUTO_UPDATE,
                                        op_param_value=NvosConst.ENABLED, apply=True).verify_result()
             TestToolkit.GeneralApi[test_api].save_config(engine=engines.dut)
-
         verify_bios_version(devices, platform)
 
         install_image_and_verify(orig_engine=orig_engine, image_name=fetched_image_curr, system=system,

@@ -1,4 +1,6 @@
 import time
+import re
+
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from infra.tools.redmine.redmine_api import *
 from ngts.nvos_constants.constants_nvos import ImageConsts, PlatformConsts
@@ -69,7 +71,8 @@ def verify_current_version(original_version, system):
 
 
 def normalize_image_name(image_name) -> str:
-    return image_name.replace("-amd64", "").replace(".bin", "")
+    # Remove any instance of "-amd64", ".bin", and "-coverage"
+    return re.sub(r'(-amd64|\.bin|-coverage)', '', image_name)
 
 
 def cleanup_test(system, original_image_partition):
