@@ -11,6 +11,7 @@ import pytest
 from ngts.cli_wrappers.nvue.cumulus.cumulus_general_cli import CumulusGeneralCli
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.cli_wrappers.sonic.sonic_cli import SonicCli
+from ngts.cli_wrappers.sonic.sonic_general_clis import SonicGeneralCliDefault
 from ngts.constants.constants import PlayersAliases
 from ngts.helpers.run_process_on_host import wait_until_background_procs_done
 from ngts.nvos_constants.constants_nvos import NvosConst
@@ -117,7 +118,8 @@ def test_deploy_and_upgrade(topology_obj, is_simx, is_performance, base_version,
         executor = concurrent.futures.ThreadPoolExecutor()
         player_dut = topology_obj.players['dut']
         for dut in switch_or_standalone_dpu_duts:
-            if not is_dut_supports_image(base_version_url, dut['dut_name']):
+            cli_obj: SonicGeneralCliDefault = dut['cli_obj']
+            if not cli_obj.is_dut_supports_image(base_version_url, dut['dut_name']):
                 continue
             with allure.step('Install image on dut: {}'.format(dut['dut_name'])):
                 # Disconnect ssh connection, prevent "Socket is closed" in case when pre step took more than 15 min
@@ -262,17 +264,6 @@ def get_cli_obj(topology_obj, cli_type, switch_type, engine, host, dut_alias):
         cli_obj = SonicCli(topology_obj, dut_alias=dut_alias).general
 
     return cli_obj
-
-
-def is_dut_supports_image(base_version_url, dut_name):
-    image_supports = True
-    # device mtvr-moose-01 is production and supports only prod versions of ONIE and SONiC
-    if dut_name == 'mtvr-moose-01' and "prod" not in base_version_url:
-        image_supports = False
-    # when executed deploy of production image, skip the flow on not production devices
-    if dut_name != 'mtvr-moose-01' and 'prod' in base_version_url:
-        image_supports = False
-    return image_supports
 
 
 def wait_until_deploy_background_process(install_threads, timeout=1200):

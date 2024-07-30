@@ -1,18 +1,14 @@
-import json
-
-from infra.tools.linux_tools.linux_tools import scp_file
-from ngts.cli_wrappers.sonic.sonic_general_clis import *
-from ngts.tools.test_utils import allure_utils as allure
-from ngts.cli_wrappers.nvue.nvue_system_clis import NvueSystemCli
-from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
-from ngts.nvos_constants.constants_nvos import NvosConst, ActionConsts, SystemConsts, ConfState
-from ngts.constants.constants import InfraConst
-from infra.tools.general_constants.constants import DefaultConnectionValues
 from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from infra.tools.general_constants.constants import DefaultConnectionValues
+from infra.tools.linux_tools.linux_tools import scp_file
 from infra.tools.validations.traffic_validations.ping.send import ping_till_alive
+from ngts.cli_wrappers.nvue.nvue_system_clis import NvueSystemCli
+from ngts.cli_wrappers.sonic.sonic_general_clis import *
+from ngts.constants.constants import InfraConst
 from ngts.constants.constants import MarsConstants
-
+from ngts.nvos_constants.constants_nvos import NvosConst, ActionConsts, SystemConsts, ConfState
+from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
+from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
 server_ip = "10.237.22.60"
@@ -53,6 +49,15 @@ class NvueGeneralCli(SonicGeneralCliDefault):
         """
         with allure.step("Validate dockers are up"):
             NvueGeneralCli._verify_dockers_are_up(self, dockers_list)
+
+    def is_dut_supports_image(self, base_version_url, dut_name) -> bool:
+        """
+        This method checks whether the given base version url is supported for the given dut , or not
+        :return: True/False
+        """
+        image_supports = True
+        logger.info(f"dut: {dut_name} {'supports' if image_supports else 'does not support'} version: {base_version_url}")
+        return image_supports
 
     def _verify_dockers_are_up(self, dockers_list):
         """
