@@ -1040,6 +1040,7 @@ class ClusterAppsLogLevels:
 
 class ClusterConsts:
     APP_VERSION = 'app-ver'
+    APP_NAME = 'app-name'
     NMX_CONTROLLER = 'nmx-controller'
     NMX_TELEMETRY = 'nmx-telemetry'
     TELEMETRY_SERVICES = ['nmx-connector', 'ib-telemetry']

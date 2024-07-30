@@ -1,3 +1,7 @@
+from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from ngts.nvos_tools.infra.CurlTool import CurlTool
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.nvos_tools.infra.TpmTool import TpmTool
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_constants.constants_nvos import SystemConsts
@@ -57,7 +61,7 @@ def test_techsupport_with_dockers_down(engines, dockers_list=['gnmi-server']):
 
 @pytest.mark.general
 @pytest.mark.tech_support
-def test_techsupport_expected_files(engines, devices):
+def test_techsupport_expected_files(engines, devices, test_name):
     """
     Run nv show system tech-support files command and verify the required fields are exist
     and measure how long it takes
@@ -73,6 +77,7 @@ def test_techsupport_expected_files(engines, devices):
 
     system = System()
     cluster_files = getattr(devices.dut.constants, 'cluster_files', None)
+    bmc_dump_files = getattr(devices.dut.constants, 'bmc_dump_files', None)
     expected_files_dict = {'dump': devices.dut.constants.dump_files,
                            'sai_sdk_dump0': devices.dut.constants.sdk_dump_files,
                            'log': devices.dut.constants.log_dump_files,
@@ -82,9 +87,12 @@ def test_techsupport_expected_files(engines, devices):
     if cluster_files:
         expected_files_dict['cluster'] = cluster_files
 
+    if bmc_dump_files:
+        expected_files_dict['bmc'] = bmc_dump_files
+
     try:
         with allure.step('Run nv action generate system tech-support and validate dump files'):
-            tech_support_folder, duration = system.techsupport.action_generate(test_name='test_techsupport_expected_files')
+            tech_support_folder, duration = system.techsupport.action_generate(test_name=test_name)
             with allure.step("Tech-support generation takes: {} seconds".format(duration)):
                 logger.info("Tech-support generation takes: {} seconds".format(duration))
             system.techsupport.extract_techsupport_files(engines.dut)
@@ -99,6 +107,59 @@ def test_techsupport_expected_files(engines, devices):
                 files_list = system.techsupport.get_techsupport_empty_files(engines.dut, folder)
                 verify_techsupport_files_sizes(files_list, folder)
     finally:
+        system.techsupport.cleanup(engines.dut)
+        if system.techsupport.file_name:
+            system.techsupport.action_delete(system.techsupport.file_name)
+
+
+@pytest.mark.general
+@pytest.mark.tech_support
+def test_techsupport_bmc_badflow(engines, test_name):
+    """
+    This test verifies the behavior of the system when generating tech-support data and handling BMC failures.
+
+    Steps:
+    1. Initialize the system object.
+    2. Retrieve the password for BMC from TPM.
+    3. Gracefully restart the BMC via Redfish.
+    4. Generate system tech-support data.
+    5. Extract tech-support files.
+    6. Verify that the BMC folder in the tech-support files is empty.
+    7. Check for the specific error message in the system logs.
+    8. Perform cleanup operations.
+    """
+
+    system = System()
+    try:
+        dut_engine: LinuxSshEngine = TestToolkit.engines.dut
+        with allure.step('compare certificates data from nv show to data received directly from BMC'):
+            with allure.step('get nvos password to bmc from tpm'):
+                tpm = TpmTool(dut_engine)
+                bmc_password = tpm.get_tpm_cipher()[:11] + 'A!'
+
+        with allure.step('gracefully restart bmc via redfish'):
+            client = CurlTool(server_host='10.0.1.1', username='admin',
+                              password=bmc_password)
+            output = client.graceful_restart_bmc()
+            assert 'The request completed successfully.' in output, f"Failed to reboot bmc via redfish.\nGot: {output}"
+
+        with allure.step('Run nv action generate system tech-support'):
+            tech_support_folder, duration = system.techsupport.action_generate(test_name=test_name)
+            with allure.step("Tech-support generation takes: {} seconds".format(duration)):
+                logger.info("Tech-support generation takes: {} seconds".format(duration))
+
+        system.techsupport.extract_techsupport_files(engines.dut)
+
+        with allure.step('verify bmc folder is empty'):
+            files_list = system.techsupport.get_techsupport_files_list(engines.dut, 'bmc')
+            assert not files_list, f'bmc folder is not empty and got: {files_list}'
+
+        with allure.step('verify error msg in logs'):
+            output = engines.dut.run_cmd("cat /var/log/syslog | grep 'bmc'")
+            assert 'Failed to extract BMC debug log dump' in output, f"Expected to find 'Failed' in out. Got: {output}"
+
+    finally:
+        engines.dut.run_cmd("sudo ifup usb0")
         system.techsupport.cleanup(engines.dut)
         if system.techsupport.file_name:
             system.techsupport.action_delete(system.techsupport.file_name)

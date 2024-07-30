@@ -128,9 +128,9 @@ class FaeFirmware(BaseComponent):
         self.asic1 = FaePlatformComponent(self, 'ASIC1')
         # multi-asic devices also have asic2 but our tests don't need it currently
         self.cpld = FaeCpldComponent(self, 'CPLD')
-        self.bios = FaeBiosComponent(self, 'BIOS')
+        self.bios = FaePlatformComponent(self, 'BIOS')
         self.ssd = FaePlatformComponent(self, 'SSD')
-        self.bmc = FaePlatformComponent(self, 'BMC')
+        self.bmc = FaePlatformComponent(self, 'BMC')  # TODO: Fix after bug closed https://redmine.mellanox.com/issues/3955495
         self.fpga = FaePlatformComponent(self, 'FPGA')
         self.erots: Dict[str, ErotComponent] = DefaultDict(lambda erot_name: ErotComponent(self, erot_name=erot_name))
 

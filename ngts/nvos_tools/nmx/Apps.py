@@ -34,7 +34,7 @@ class AppsName(BaseComponent):
         engine = engine if engine else TestToolkit.engines.dut
         with allure.step('Start App'):
             return SendCommandTool.execute_command_expected_str(self._cli_wrapper.action_start_cluster_apps,
-                                                                "Action succeeded", engine,
+                                                                "App has been successfully started", engine,
                                                                 self.get_resource_path())
 
     def action_stop_cluster_apps(self, engine=None):

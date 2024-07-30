@@ -390,7 +390,19 @@ tests_nvos/platform/test_platform_firmware_bios/test_platform_firmware_bios.py:
 
 tests_nvos/checklist/erot_fw_upgrade/test_erot_upgrade.py:
   skip:
-    reason: "Testcase skipped on non Juliet systems, Juliet feature only (as a part of Uberon)"
+    reason: "Testcase skipped on non Juliet systems, Juliet feature only"
+    conditions:
+      - "'juliet' not in testbed"
+
+tests_nvos/fae/test_debug_token.py:
+  skip:
+    reason: "Testcase skipped on non Juliet systems, Juliet feature only"
+    conditions:
+      - "'juliet' not in testbed"
+
+tests_nvos/fae/test_nmx_package.py:
+  skip:
+    reason: "Testcase skipped on non Juliet systems, Juliet feature only"
     conditions:
       - "'juliet' not in testbed"
 
@@ -511,5 +523,11 @@ tests_nvos/platform/test_platform_environment.py::test_platform_environment_fan_
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3978721"
     conditions:
       - https://redmine.mellanox.com/issues/3978721
+
+tests_nvos/system/test_techsupport_feature.py::test_techsupport_bmc_badflow:
+  skip:
+    reason: "Testcase skipped on non Juliet systems, only Juliet has BMC"
+    conditions:
+      - "'juliet' not in testbed"
 
 ########################## NVOS IGNORE END ##########################

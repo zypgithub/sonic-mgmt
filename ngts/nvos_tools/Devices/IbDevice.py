@@ -699,10 +699,6 @@ class JulietSwitch(NvLinkSwitch):
         self.bmc_base_version_path = '/auto/sw_system_release/low_level/openbmc/88.0002.0460/dev/juliet-bmc/cec1736-apfw-4fec.fwpkg'
         self.fpga_image_info = self.FaeImagesTestConsts(current_image_version='fpga_1.pkg', alternate_image_version='fpga_2.pkg')
         self.has_nmx = True
-        self.current_bios_version_name = "0ACTV_00.00.x07_rc5"
-        self.current_bios_version_path = "/auto/sw_system_release/sx_mlnx_bios/SnowyOwl/0ACTV_00.00.x07_rc5/Release/0ACTV.rom"
-        self.previous_bios_version_name = "0ACTV_00.00.x07_rc4"
-        self.previous_bios_version_path = "/auto/sw_system_release/sx_mlnx_bios/SnowyOwl/0ACTV_00.00.x07_rc4/Release/0ACTV.rom"
         self.is_standalone = True
         self.show_platform_chassis_location_output = {
             PlatformConsts.CHASSIS_LOCATION_TRAY_ID: ExpectedString(range_min=-1, range_max=9),
@@ -712,6 +708,8 @@ class JulietSwitch(NvLinkSwitch):
         }
         cluster_files = ['conf', 'nmx-controller', 'nmx-telemetry']
         self.constants = self.constants._replace(cluster_files=cluster_files)
+        bmc_dump_files = ['bmc_debug_log_dump.tar']
+        self.constants = self.constants._replace(bmc_dump_files=bmc_dump_files)
         self.constants.dump_files.append('BMCeeprom')
         self.constants.erots.extend(['ERoT_BMC_0', 'ERoT_CPU_0', 'ERoT_FPGA_0', 'ERoT_NVSwitch_0', 'ERoT_NVSwitch_1'])
         self.erot_fw_image_info = self.ErotFirmwareImagesTestConsts(
@@ -738,6 +736,11 @@ class JulietSwitch(NvLinkSwitch):
                 ClusterConsts.NMX_TELEMETRY: "0.6.0"
             }
         )
+
+        self.current_bios_version_name = "0ACTV_00.00.015_rc6"
+        self.current_bios_version_path = '/auto/sw_system_release/sx_mlnx_bios/SnowyOwl/0ACTV_00.00.015_rc6/Release/erot_sign_debug/cec1736-apfw-000000f.fwpkg'
+        self.previous_bios_version_name = "0ACTV_00.00.015_rc5"
+        self.previous_bios_version_path = '/auto/sw_system_release/sx_mlnx_bios/SnowyOwl/0ACTV_00.00.015_rc5/Release/erot_sign_debug/cec1736-apfw-000000f.fwpkg'
 
     def _init_fan_list(self):
         super()._init_fan_list()
@@ -834,11 +837,6 @@ class JulietScaleoutSwitch(JulietSwitch):
             "product-name": "N5110_LD",
             "asic-model": self.asic_type,
         })
-        self.current_bios_version_name = "0ACTV_0.00.007"
-        self.current_bios_version_path = "/auto/sw_system_release/sx_mlnx_bios/SnowyOwl/BringUp/0ACTV000_07_BU3/Release/0ACTV000_07.rom"
-        self.previous_bios_version_name = "0ACTV_0.00.007"
-        self.previous_bios_version_path = "/auto/sw_system_release/sx_mlnx_bios/SnowyOwl/BringUp/0ACTV000_07_BU3/Release/0ACTV000_07.rom"
-        self.bios_version_name = '0ACTV000_07.rom'
 
         self.current_cpld_version = BaseSwitch.CpldImageConsts(
             burn_image_path="/auto/sw_system_project/NVOS_INFRA/verification_files/cpld_fw/FUI000299_BURN_JULIET_CPLD000370_REV0104_CPLD000371_REV0107_CPLD000373_REV0100_CPLD000372_REV0004.vme",
