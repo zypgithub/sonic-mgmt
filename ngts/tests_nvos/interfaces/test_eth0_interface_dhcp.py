@@ -16,7 +16,8 @@ from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 logger = logging.getLogger()
 
 
-@pytest.mark.ib
+@pytest.mark.eth0
+@pytest.mark.system
 def test_interface_eth0_enable_disable(engines, topology_obj):
     """
     Connect via serial port, verify eth0 enable by default, can be disabled and enable it back
@@ -77,7 +78,8 @@ def test_interface_eth0_enable_disable(engines, topology_obj):
                                                           expected_value=NvosConsts.LINK_STATE_UP).verify_result()
 
 
-@pytest.mark.ib
+@pytest.mark.eth0
+@pytest.mark.system
 @pytest.mark.simx
 def test_interface_eth0_speed_duplex_autoneg(engines):
     """
@@ -190,7 +192,8 @@ def test_interface_eth0_speed_duplex_autoneg(engines):
                                                           expected_value="1G")
 
 
-@pytest.mark.ib
+@pytest.mark.eth0
+@pytest.mark.system
 @pytest.mark.simx
 def test_interface_eth0_mtu(engines, topology_obj):
     """
@@ -234,7 +237,8 @@ def test_interface_eth0_mtu(engines, topology_obj):
         wait_for_mtu_changed(mgmt_port, 1500)
 
 
-@pytest.mark.ib
+@pytest.mark.eth0
+@pytest.mark.system
 @pytest.mark.simx
 def test_interface_eth0_description(engines):
     """
@@ -284,7 +288,8 @@ def test_interface_eth0_description(engines):
             "Expected not to have description field after unset command, but we still have this field."
 
 
-@pytest.mark.ib
+@pytest.mark.eth0
+@pytest.mark.system
 def test_interface_eth0_ip_address(engines, topology_obj, serial_engine):
     """
     Verify can configure ipv address, switch ip updated by dhcp
@@ -345,7 +350,8 @@ def test_interface_eth0_ip_address(engines, topology_obj, serial_engine):
         serial_engine.serial_engine.expect(switch_ip, timeout=120)
 
 
-@pytest.mark.ib
+@pytest.mark.eth0
+@pytest.mark.system
 @pytest.mark.simx
 def test_interface_eth0_show_dhcp(engines):
     """
@@ -366,7 +372,8 @@ def test_interface_eth0_show_dhcp(engines):
             logging.info("All expected fields were found")
 
 
-@pytest.mark.ib
+@pytest.mark.eth0
+@pytest.mark.system
 @pytest.mark.simx
 def test_interface_eth0_dhcp_hostname(engines, topology_obj, serial_engine):
     """
@@ -482,7 +489,8 @@ def test_interface_eth0_dhcp_hostname(engines, topology_obj, serial_engine):
         wait_for_hostname_changed(system, dhcp_hostname)
 
 
-@pytest.mark.ib
+@pytest.mark.eth0
+@pytest.mark.system
 @pytest.mark.simx
 def test_mgmt_interface_default(engines, topology_obj):
     """
@@ -522,6 +530,24 @@ def test_mgmt_interface_default(engines, topology_obj):
                           IbInterfaceConsts.LINK_STATS_OUT_DROPS, IbInterfaceConsts.LINK_STATS_OUT_ERRORS,
                           IbInterfaceConsts.LINK_STATS_OUT_PKTS]
         Tools.ValidationTool.verify_field_exist_in_json_output(output_dictionary, field_to_check).verify_result()
+
+
+@pytest.mark.eth0
+@pytest.mark.system
+@pytest.mark.simx
+def test_mgmt_interface_dhcpv6_ztp(engines, topology_obj):
+    """
+    Test to verify ztp dhcpv6 vendor class bug https://redmine.mellanox.com/issues/3963391
+
+    flow:
+    1. Run tcpdump and catch 5 packets dhcpv6 ztp vendor class
+    """
+    mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
+
+    with allure.step('Run tcpdump and catch dhcpv6 ztp vendor class'):
+        tcpdump_output = Tools.IpTool.run_tcpdump(engines.dut, mgmt_port_name,
+                                                  filter='port 546 or port 547 -e -c 5 -n -vv')
+        assert '5 packets received by filter' in tcpdump_output, 'DHCPv6 Vendor class packets not caught'
 
 
 def validate_interface_ip_address(address, output_dictionary, validate_in=True):

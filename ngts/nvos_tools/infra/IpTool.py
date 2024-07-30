@@ -167,3 +167,9 @@ class IpTool:
         command = "cat /sys/class/net/{}/address".format(interface)
         mac_address = host_obj.run_cmd(command)
         return mac_address
+
+    @staticmethod
+    def run_tcpdump(engine, interface: str, filter: str, params: str = '') -> str:
+        command = "sudo tcpdump -i {0} {1} {2}".format(interface, filter, params)
+        tcpdump_output = engine.run_cmd(command)
+        return tcpdump_output
