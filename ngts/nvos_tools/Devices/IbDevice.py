@@ -695,7 +695,7 @@ class JulietSwitch(NvLinkSwitch):
 
     def _init_constants(self):
         super()._init_constants()
-        self.bmc_image_info = self.FaeImagesTestConsts(current_image_version='bmc_1.pkg', alternate_image_version='bmc_2.pkg')
+        self.bmc_base_version_path = '/auto/sw_system_release/low_level/openbmc/88.0002.0460/dev/juliet-bmc/cec1736-apfw-4fec.fwpkg'
         self.fpga_image_info = self.FaeImagesTestConsts(current_image_version='fpga_1.pkg', alternate_image_version='fpga_2.pkg')
         self.has_nmx = True
         self.current_bios_version_name = "0ACTV_00.00.x07_rc5"

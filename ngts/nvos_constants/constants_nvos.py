@@ -1125,7 +1125,9 @@ class OperationTimeConsts:
                   'set hostname': 12,
                   'generate tech-support': 75,
                   'julietscaleout generate_tech_support': 100,
-                  'start stop cluster app': 50}
+                  'start stop cluster app': 50,
+                  'install bmc': 900,
+                  }
 
 
 class StatsConsts:
