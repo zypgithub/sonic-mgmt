@@ -184,6 +184,10 @@ def log_analyzer_bug_handler(duthost, request):
                         'detected_in_version': log_analyzer_handler_info['version'],
                         'setup_name': setup_name,
                         'report_url': allure_report_url}
+
+    if "components" in log_analyzer_handler_info:
+        bug_handler_dict["components"] = log_analyzer_handler_info["components"]
+
     log_analyzer_res, la_error_messages = handle_log_analyzer_errors(log_analyzer_handler_info['cli_type'],
                                                   log_analyzer_handler_info['branch'], test_name, duthost,
                                                   bug_handler_dict, setup_name, bug_handler_actions)
@@ -262,8 +266,18 @@ def get_log_analyzer_handler_info(duthost):
     log_analyzer_handler_info['cli_type'] = cli_type
     log_analyzer_handler_info['branch'] = get_sonic_branch(duthost, cli_type)
     log_analyzer_handler_info['version'] = duthost.os_version
-
+    if cli_type == "Sonic":
+        log_analyzer_handler_info['components'] = get_low_layer_components(duthost)
     return log_analyzer_handler_info
+
+
+def get_low_layer_components(duthost):
+    components = duthost.show_and_parse("get_component_versions.py", module_ignore_errors=True)
+    comps = ""
+    for component in components:
+        comps += f"{component['component']}: {component['actual']} \n"
+
+    return comps
 
 
 def get_bug_handler_actions(request):
