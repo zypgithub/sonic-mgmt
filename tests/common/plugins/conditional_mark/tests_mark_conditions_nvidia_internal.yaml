@@ -682,7 +682,7 @@ platform_tests/test_reboot.py::test_warm_reboot:
     conditions:
       - "'2100' in platform"
 
-platform_tests/test_reboot.py::test_power_off_reboot:
+platform_tests/test_power_off_reboot.py::test_power_off_reboot:
   skip:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/3013086 and platform 2100"
     conditions:
