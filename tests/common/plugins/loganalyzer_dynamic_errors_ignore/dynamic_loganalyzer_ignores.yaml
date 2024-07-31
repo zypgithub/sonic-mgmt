@@ -2296,7 +2296,7 @@
 - Errors_list:
     - '.*ERR systemctl.*: Failed to start dhcp_relay\.service: Unit dhcp_relay\.service is masked.*'
     - '.*ERR ntpd.*: CONFIG: restrict nopeer ignored.*'
-    - '.*sonic ERR kernel:.*ima: impossible to appraise a kernel image without a file descriptor; try using kexec_file_load syscall.*'
+    - '.*ERR kernel:.*ima: impossible to appraise a kernel image without a file descriptor; try using kexec_file_load syscall.*'
     - '.*ERR kernel:.*x86\/cpu: SGX disabled by BIOS.*'
   Conditions:
     - Redmine:
