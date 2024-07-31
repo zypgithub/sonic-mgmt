@@ -4034,6 +4034,15 @@
     - Affected_test_cases:
       - tests_nvos/system/test_fw_dump_me.py::test_fw_dump_me
 
+# NVOS
+- Errors_list:
+    - '.*Exception \[ztp section not found in JSON data\].*'
+    - '.*ZTP JSON file .* processing failed.*'
+    - '.*IPv4 hosts not reachable.*'
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/system/test_system_ztp.py::test_ztp_json
+
 # NVOS gorilla-100 PSU2 is missing.
 - Errors_list:
     - '.*gorilla-100 ERR health-statsd#health_history: PSU2: is missing or not available.*'
