@@ -2,6 +2,7 @@ import time
 import logging
 import allure
 import pexpect
+import re
 from retry.api import retry_call
 
 from infra.tools.connection_tools.onie_engine import OnieEngine
@@ -84,15 +85,24 @@ class SonicOnieCli:
         if f'boot_reason={mode}' not in boot_info_output:
             logger.info(f'Changing the ONIE boot mode to {mode}')
             self.is_nos_installed, _ = self.run_cmd_set(['ls /dev/sda3'])
-            if self.is_nos_installed:
-                # If NOS installed - set GRUB force boot into ONIE
-                cmds_list = ['mkdir /boot',
-                             'mount /dev/sda3  /boot/',
-                             'grub-editenv /boot/grub/grubenv set next_entry=ONIE',
-                             'mount LABEL=ONIE-BOOT /mnt/onie-boot',
-                             'onie-nos-mode -c -v']
+            if self.is_efi_system():
+                cmds_list = ['mkdir -p /mnt/onie-boot',
+                             'mount LABEL="ONIE-BOOT" /mnt/onie-boot']
                 self.run_cmd_set(cmds_list)
-            self.run_cmd_set([f'onie-boot-mode -o {mode}'])
+                self.set_efi_next_boot_onie()
+                set_onie_mode_output, _ = self.run_cmd_set([f"grub-editenv /mnt/onie-boot/grub/grubenv set onie_mode={mode}"])
+                if "grub-editenv: error" in set_onie_mode_output:
+                    self.manual_set_onie_mode_efi_system(mode)
+            else:
+                if self.is_nos_installed:
+                    # If NOS installed - set GRUB force boot into ONIE
+                    cmds_list = ['mkdir /boot',
+                                 'mount /dev/sda3  /boot/',
+                                 'grub-editenv /boot/grub/grubenv set next_entry=ONIE',
+                                 'mount LABEL=ONIE-BOOT /mnt/onie-boot',
+                                 'onie-nos-mode -c -v']
+                    self.run_cmd_set(cmds_list)
+                self.run_cmd_set([f'onie-boot-mode -o {mode}'])
             self.reboot()
         else:
             logger.info(f'Switch is in ONIE {mode} mode')
@@ -106,6 +116,39 @@ class SonicOnieCli:
                 break
             time.sleep(1)
         return boot_info_output
+
+    def is_efi_system(self):
+        # right after reboot, we can get the empty output from cmd run.
+        for _ in range(3):
+            efibootmgr_output, _ = self.run_cmd_set(["efibootmgr"])
+            if 'BootOrder' in efibootmgr_output:
+                return True
+            if 'EFI variables are not supported' in efibootmgr_output:
+                return False
+            time.sleep(1)
+        raise AssertionError(f'Can not detect if system is EFI or not.\nefibootmgr output:\n{efibootmgr_output}')
+
+    def set_efi_next_boot_onie(self):
+        logger.info('in set efi next boot')
+        boot_line_pattern = re.compile(r'^Boot(\d+)\* ONIE.*$', re.IGNORECASE | re.MULTILINE)
+        for _ in range(3):
+            efibootmgr_output, _ = self.run_cmd_set(['efibootmgr'], custum_prompts=["ONIE:~ #", pexpect.EOF])
+            match = boot_line_pattern.search(efibootmgr_output)
+            if match:
+                onie_boot_num = match.group(1)
+                self.run_cmd_set([f'efibootmgr -n {onie_boot_num}'])
+                return
+            time.sleep(1)
+        raise AssertionError(f'Can not parse efibootmgr output:\n{efibootmgr_output}')
+
+    def manual_set_onie_mode_efi_system(self, mode):
+        # This flow restoring the grub config
+        logger.warning(f'Failed to set onie_mode {mode} in /mnt/onie-boot/grub/grubenv.'
+                       f'\n Will use manual set of onie_mode')
+        self.run_cmd_set([f'if ! grep -q "onie_mode=" /mnt/onie-boot/grub/grubenv;'
+                          f' then echo "onie_mode={mode}" >> /mnt/onie-boot/grub/grubenv; '
+                          f'else sed -i "s/onie_mode=.*/onie_mode={mode}/" /mnt/onie-boot/grub/grubenv; '
+                          f'fi'])
 
     def reboot(self):
         self.run_cmd_set(['reboot'])
@@ -208,10 +251,15 @@ class SonicOnieCli:
                 # restore engine after reboot
                 self.create_engine(True)
                 if self.is_nos_installed:
-                    # If NOS installed - set GRUB force boot into ONIE
-                    cmds_list = ['mkdir /boot',
-                                 'mount /dev/sda3  /boot/',
-                                 'grub-editenv /boot/grub/grubenv set next_entry=ONIE']
+                    if self.is_efi_system():
+                        self.set_efi_next_boot_onie()
+                        cmds_list = ['mkdir -p /mnt/onie-boot',
+                                     'mount LABEL="ONIE-BOOT" /mnt/onie-boot']
+                    else:
+                        # If NOS installed - set GRUB force boot into ONIE
+                        cmds_list = ['mkdir /boot',
+                                     'mount /dev/sda3  /boot/',
+                                     'grub-editenv /boot/grub/grubenv set next_entry=ONIE']
                     self.run_cmd_set(cmds_list)
                 cmd_output, _ = self.run_cmd_set([f'onie-self-update {self.latest_onie_url}'])
                 logger.info(f'onie-self-update command output:\n{cmd_output}')
