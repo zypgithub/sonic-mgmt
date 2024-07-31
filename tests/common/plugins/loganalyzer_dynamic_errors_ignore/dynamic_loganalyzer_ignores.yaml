@@ -4254,3 +4254,12 @@
   Conditions:
   - Affected_test_cases:
     - tests/nightly/logging/test_log_analyzer_errors_during_deploy_sonic.py
+
+- Errors_list:
+  - '.*ERR swss#orchagent: :- handleSchedulerTable: Object with name:port_scheduler not found.*'
+  - '.*ERR swss#orchagent: :- doTask: Failed to process invalid QOS task.*'
+  Conditions:
+  - Redmine:
+    - 4013836
+  - Affected_test_cases:
+    - tests/push_build_tests/general/doroce/test_doroce.py::test_doroce[lossless_double_ipool]
