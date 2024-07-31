@@ -121,6 +121,9 @@ class BaseDevice(ABC):
     def get_ib_ports_num(self):
         pass
 
+    def get_available_erot_names(self, setup_name: str) -> List[str]:
+        return []
+
     def get_mgmt_ports(self) -> List[str]:
         return None
 

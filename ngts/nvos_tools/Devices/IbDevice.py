@@ -2,7 +2,7 @@ import logging
 import os
 import time
 from collections import namedtuple
-from typing import List
+from typing import List, Dict
 
 from ngts.nvos_constants.constants_nvos import HealthConsts, MultiPlanarConsts, PlatformConsts, ClusterConsts
 from ngts.nvos_constants.constants_nvos import (NvosConst, DatabaseConst, IbConsts, StatsConsts, FansConsts,
@@ -15,6 +15,7 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.infra.ValidationTool import ExpectedString
+from ngts.nvos_tools.system.Spdm import SPDMComponents
 from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts
 from ngts.tools.test_utils.nvos_general_utils import get_version_info
 
@@ -759,6 +760,20 @@ class JulietSwitch(NvLinkSwitch):
             "BMC": {"Manufacturer": "NVIDIA", "Model": None, "PartNumber": ExpectedString(r"[-\d]+"),
                     "SerialNumber": ExpectedString.number_and_string(""), "State": "Enabled"}
         }
+
+    def get_available_erot_names(self, setup_name: str) -> List[str]:
+        available_erots_per_juliet_number: Dict[str, List[str]] = {
+            '68': [SPDMComponents.BMC],
+            '121': SPDMComponents.ALL_SUPPORTED_COMPONENTS,
+            '126': [SPDMComponents.BMC],
+            '128': [SPDMComponents.BMC],
+        }
+        for juliet_num, available_erots in available_erots_per_juliet_number.items():
+            if setup_name.endswith(juliet_num):
+                logging.info(f'available ERoTs for {setup_name} - {available_erots}')
+                return available_erots
+        logging.info(f'no available ERoTs found for {setup_name}')
+        return []
 
 
 # -------------------------- JulietScaleout Switch ----------------------------

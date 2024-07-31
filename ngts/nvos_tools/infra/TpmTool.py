@@ -58,12 +58,24 @@ class TpmTool:
     def is_tpm_lockout_counter_cleared(self) -> Tuple[bool, str]:
         expected_counter_hex = '0x0'
         with allure.step(f'check if tpm lockout counter is cleared: {expected_counter_hex}'):
-            actual_counter_hex = self.engine.run_cmd('sudo tpm2 getcap properties-variable | grep TPM2_PT_LOCKOUT_COUNTER:').split(':')[1].strip()
+            actual_counter_hex = \
+                self.engine.run_cmd('sudo tpm2 getcap properties-variable | grep TPM2_PT_LOCKOUT_COUNTER:').split(':')[
+                    1].strip()
             return actual_counter_hex == expected_counter_hex, actual_counter_hex
 
     def clear_tpm_lockout_counter(self):
         with allure.step('clear tpm lockout counter'):
             self.engine.run_cmd('sudo tpm2_dictionarylockout --setup-parameters --clear-lockout')
+
+    def get_tpm_cipher(self):
+        with allure.step('get tpm cipher'):
+            salt = "1300NVOS-BMC-USER-Const"
+            file_name = "kdfconst.bin"
+            self.engine.run_cmd(f'echo {salt} | xxd -r -p > {file_name}')
+            return \
+                (self.engine.run_cmd(
+                    f'sudo tpm2_createprimary -C o -G aes256cfb -u {file_name} | grep symcipher:')).split(
+                    ':')[1].strip()
 
     """ Helper methods """
 
@@ -96,8 +108,8 @@ class TpmTool:
             with allure.step('check target attributes'):
                 target_attributes = parsed_out['TPM2_PT_STARTUP_CLEAR']
                 return 'phEnable' in target_attributes and target_attributes['phEnable'] == '1' \
-                       and 'shEnable' in target_attributes and target_attributes['shEnable'] == '1' \
-                       and 'ehEnable' in target_attributes and target_attributes['ehEnable'] == '1'
+                    and 'shEnable' in target_attributes and target_attributes['shEnable'] == '1' \
+                    and 'ehEnable' in target_attributes and target_attributes['ehEnable'] == '1'
 
     def _is_tpm_provisioned(self) -> bool:
         return True  # TODO: complete
