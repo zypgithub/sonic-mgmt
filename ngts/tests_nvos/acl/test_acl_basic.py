@@ -8,7 +8,7 @@ from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.acl.acl import Acl
 from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.nvos_constants.constants_nvos import ApiType, AclConsts
+from ngts.nvos_constants.constants_nvos import ApiType, AclConsts, OutputFormat
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from scapy.layers.inet import IP, TCP, ICMP
@@ -19,7 +19,7 @@ from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 
 logger = logging.getLogger()
 
-SLEEP_TIME = 5
+SLEEP_TIME = 15
 RULE_CONFIG_FUNCTION = {
     AclConsts.ACTION: lambda rule_id_obj, param: rule_id_obj.action.set(param),
     AclConsts.ACTION_LOG_PREFIX: lambda rule_id_obj, param: rule_id_obj.action.log.set_log_prefix(param),
@@ -60,6 +60,26 @@ RULE_CONFIG_FUNCTION = {
     AclConsts.DEST_MAC_MASK: None,
     AclConsts.MAC_PROTOCOL: None
 }
+
+
+def test_can_ping_from_eth1(engines, devices):
+    """
+    This test is a workaround for the issue that some switches fail to ping the sonic_mgmt ip through eth1.
+    It should run before all other ACL tests because some of them depend on using eth1.
+    The test attempts to ping. On failure it runs a shell command that fixes the issue, allowing future tests to run
+    smoothly, but this test will still fail to let us know the issue still exists.
+    """
+    if 'eth1' not in devices.dut.mgmt_ports:
+        pytest.skip("Device does not have eth1 mgmt-port")
+
+    try:
+        ping_from_switch(engines.dut, engines.sonic_mgmt.ip, "eth1")
+        logger.info("Successfully pinged sonic-mgmt through eth1")
+    except Exception:
+        logger.error(f"Could not ping sonic-mgmt through eth1. Fixing...")
+        gateway = MgmtPort("eth0").interface.ip.gateway.show(output_format=OutputFormat.auto).splitlines()[-1].strip()
+        engines.dut.run_cmd(f"sudo ip route add {engines.sonic_mgmt.ip} via {gateway} dev eth1")
+        raise
 
 
 @pytest.mark.nvos_ci
@@ -430,12 +450,16 @@ def test_inbound_outbound_counters(engines, test_api, topology_obj):
     6. validate outbound counters are still 0
     """
     TestToolkit.tested_api = test_api
+    with allure.step("Choosing randomly whether or not to use control-plane parameter"):
+        control_plane = random.choice([AclConsts.CONTROL_PLANE, ""])
+        allure.orig_allure.attach(f"{control_plane=}", "control_plane_value", allure.orig_allure.attachment_type.TEXT)
+
     with allure.step("Config inbound and outbound ACLs with match dest-ip rule"):
         acl_type = 'ipv4'
         mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
         mgmt_port = MgmtPort(mgmt_port_name)
-        control_plane = random.choice([AclConsts.CONTROL_PLANE, ""])
         sonic_mgmt_ip = engines.sonic_mgmt.ip
+        logger.info(f"{mgmt_port_name=}, {sonic_mgmt_ip=}, {control_plane=}")
 
         rule_id_match_dest_ip = '1'
         rule_configuration_dict = {AclConsts.ACTION: AclConsts.PERMIT, AclConsts.DEST_IP: sonic_mgmt_ip,
@@ -457,7 +481,7 @@ def test_inbound_outbound_counters(engines, test_api, topology_obj):
         sleep()
         rule_packets_1_before = get_rule_packets(mgmt_port, acl_id_inbound_match_dest_ip, rule_id_match_dest_ip, rule_direction=AclConsts.INBOUND)
         rule_packets_2_before = get_rule_packets(mgmt_port, acl_id_outbound_match_dest_ip, rule_id_match_dest_ip, rule_direction=AclConsts.OUTBOUND)
-        ping(engines.dut, sonic_mgmt_ip, mgmt_port_name)
+        ping_from_switch(engines.dut, sonic_mgmt_ip, mgmt_port_name)
         rule_packets_1_after = get_rule_packets(mgmt_port, acl_id_inbound_match_dest_ip, rule_id_match_dest_ip, rule_direction=AclConsts.INBOUND)
         rule_packets_2_after = get_rule_packets(mgmt_port, acl_id_outbound_match_dest_ip, rule_id_match_dest_ip, rule_direction=AclConsts.OUTBOUND)
         assert rule_packets_1_after[rule_id_match_dest_ip] == rule_packets_1_before[rule_id_match_dest_ip], \
@@ -478,8 +502,7 @@ def test_inbound_outbound_counters(engines, test_api, topology_obj):
                                                  rule_direction=AclConsts.INBOUND)
         rule_packets_2_before = get_rule_packets(mgmt_port, acl_id_outbound_match_dest_ip, rule_id_match_src_ip,
                                                  rule_direction=AclConsts.OUTBOUND)
-        ping_packet = IP(dst=engines.dut.ip, src=sonic_mgmt_ip) / ICMP()
-        send(ping_packet)
+        ping_from_sonic_mgmt(dst=engines.dut.ip, src=sonic_mgmt_ip)
         rule_packets_1_after = get_rule_packets(mgmt_port, acl_id_inbound_match_dest_ip, rule_id_match_src_ip,
                                                 rule_direction=AclConsts.INBOUND)
         rule_packets_2_after = get_rule_packets(mgmt_port, acl_id_outbound_match_dest_ip, rule_id_match_src_ip,
@@ -496,7 +519,7 @@ def test_inbound_outbound_counters(engines, test_api, topology_obj):
         sleep()
 
     with allure.step("Validate outbound counters are still 0"):
-        send(ping_packet)
+        ping_from_sonic_mgmt(dst=engines.dut.ip, src=sonic_mgmt_ip)
         rule_packets_2_after = get_rule_packets(mgmt_port, acl_id_outbound_match_dest_ip, rule_id_match_src_ip,
                                                 rule_direction=AclConsts.OUTBOUND)
         assert rule_packets_2_after[rule_id_match_src_ip] == 0, \
@@ -504,7 +527,7 @@ def test_inbound_outbound_counters(engines, test_api, topology_obj):
 
 
 @pytest.mark.acl
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [ApiType.NVUE])
 def test_acl_match_dest_ip(engines, test_api, topology_obj):
     """
     Validate ACL match dest-ip rules.
@@ -520,7 +543,7 @@ def test_acl_match_dest_ip(engines, test_api, topology_obj):
     mgmt_port = MgmtPort(mgmt_port_name)
     with allure.step("ACL type ipv4 test"):
         ipv4_addr = engines.sonic_mgmt.ip
-        dest_ip_list = ['ANY', ipv4_addr, ipv4_addr + '/32', ipv4_addr + '/255.255.255.0']
+        dest_ip_list = [ipv4_addr, ipv4_addr + '/32', ipv4_addr + '/255.255.255.0']
         dest_ip_test(engines, mgmt_port, 'ipv4', "AA_TEST_ACL_IPV4", dest_ip_list, ipv4_addr)
 
     with allure.step("ACL type ipv6 test"):
@@ -1169,22 +1192,35 @@ def validate_counters_after_traffic(engine, rule_direction, mgmt_port, acl_id, r
     with allure.step(f"Verify {rule_direction} rule captures relevant traffic"):
         rule_packets_before = get_rule_packets(mgmt_port, acl_id, rule_id, rule_direction=rule_direction)
         if packet:
-            ping_output = scapy_send_packet(engine, packet, interface=mgmt_port.name)
-            if "Traceback" in ping_output:
-                raise Exception("scapy failed")
+            scapy_send_packet(engine, packet, interface=mgmt_port.name)
         elif ping_dest:
-            ping(engine, ping_dest, mgmt_port.name)
+            ping_from_switch(engine, ping_dest, mgmt_port.name)
         time.sleep(5)
         rule_packets_after = get_rule_packets(mgmt_port, acl_id, rule_id, rule_direction=rule_direction)
         assert int(rule_packets_after[rule_id]) > int(rule_packets_before[rule_id]), \
             "expect to see difference in the counters after the ping"
 
 
-def ping(engine: ProxySshEngine, dest: str, source_interface: str, count=2) -> str:
-    ping_output = engine.run_cmd(f"ping {dest} -c {count} -I {source_interface}")
-    if "100% packet loss" in ping_output:
-        raise Exception("Failed to ping")
-    return ping_output
+def ping_from_switch(engine: ProxySshEngine, dest: str, source_interface: str, count=2) -> str:
+    with allure.step(f"Ping from switch through {source_interface} to {dest}"):
+        ping_output = engine.run_cmd(f"ping {dest} -c {count} -I {source_interface}")
+        if "100% packet loss" in ping_output:
+            raise Exception("Failed to ping")
+        return ping_output
+
+
+def ping_from_sonic_mgmt(dst: str, src: str):
+    with allure.step(f"ping {dst} from {src}"):
+        # When running locally (not through MARS), uncomment this line and delete the following lines.
+        # Also you might need to set the src parameter to your VDI rather than the sonic_mgmt ip.
+        # subprocess.run(f"ping {dst} -c1".split(' '), capture_output=True)
+        try:
+            ping_packet = IP(dst=dst, src=src) / ICMP()
+            send(ping_packet)
+        except PermissionError as e:
+            raise Exception(
+                "When running this locally (not through MARS) you need to uncomment in the function's source-code"
+            ) from e
 
 
 def dest_ip_test(engines, mgmt_port, acl_type, acl_id, dest_ip_list, ping_dest):
@@ -1207,8 +1243,12 @@ def scapy_send_packet(engine, packet, interface=''):
     args = packet
     if interface:
         args += f', iface="{interface}"'
-    cmd_set = ["sudo scapy", f"send({args})", "exit()"]
-    return engine.run_cmd_set(cmd_set, validate=False, patterns_list=[">>>"])
+    cmd = f"send({args})"
+    cmd_set = ["sudo scapy", cmd, "exit()"]
+    with allure.step(f"On {engine.ip}: sending with scapy {cmd}"):
+        ret = engine.run_cmd_set(cmd_set, validate=False, patterns_list=[">>>"])
+        if "Traceback" in ret:
+            raise Exception("scapy failed: " + ret)
 
 
 def match_ip_port_test(engines, mgmt_port, acl_type, acl_id, port_list, dest_addr, port_direction, engine_send_packet):

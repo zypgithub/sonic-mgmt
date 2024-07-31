@@ -16,6 +16,16 @@
   </global>
 
   <case>
+    <name> test_can_ping_from_eth1 </name>
+    <info></info>
+    <tout> 300 </tout>
+    <cmd>
+      <params>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/acl/test_acl_basic.py --raw_options "\' --rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini -k test_can_ping_from_eth1 --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  \'"</static_args>
+      </params>
+    </cmd>
+  </case>
+  <case>
     <name> test_adding_new_rule </name>
     <info></info>
     <tout> 1200 </tout>
