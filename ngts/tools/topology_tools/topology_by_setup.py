@@ -17,6 +17,9 @@ def update_dut_alias(topology):
             topology.players['dut'] = topology.players.pop('dut-b')
             topology.players['dut_serial'] = topology.players.pop('dut-b_serial')
             topology.players['dut']['attributes'].noga_query_data['attributes']['Common']['Description'] = 'dut'
+            topology.players['fanout'] = topology.players.pop('fanout-b')
+            topology.players['fanout_serial'] = topology.players.pop('fanout-b_serial')
+            topology.players['fanout']['attributes'].noga_query_data['attributes']['Common']['Description'] = 'fanout'
         for alias in PlayersAliases.Aliases_list:
             if alias in topology.players.keys():
                 topology.players['dut'] = topology.players[alias]
