@@ -156,7 +156,7 @@ def log_analyzer_bug_handler(duthost, request):
     test_name = re.sub(r'[\\/\'"<>|]', '_', request.node.name)
     la_rm_issues = request.session.config.cache.get(BugHandlerConst.LA_RM_ISSUES_DICT, dict())
     test_id = request.node.nodeid
-    test_rm_issues = []
+    test_rm_issues = set()
     log_analyzer_handler_info = get_log_analyzer_handler_info(duthost)
     bug_handler_actions = get_bug_handler_actions(request)
 
@@ -200,7 +200,7 @@ def log_analyzer_bug_handler(duthost, request):
             err_logs = err_with_no_action[BugHandlerConst.LA_ERROR]
             if bug_id:
                 error_msg += f"Relative bug is #{bug_id} detected for the err logs: {err_logs} \n"
-                test_rm_issues.append(bug_id)
+                test_rm_issues.add(bug_id)
             else:
                 error_msg += f"No relative bug detected for the err logs: {err_logs} \n"
 
@@ -215,18 +215,18 @@ def log_analyzer_bug_handler(duthost, request):
         error_msg += f"There are {len(created_bug_items)} new Log Analyzer bugs Created: \n"
         for index, (bug_id, bug_title) in enumerate(created_bug_items.items(), start=1):
             error_msg += f"{index}) {REDMINE_ISSUES_URL+str(bug_id)}:  {bug_title}\n"
-            test_rm_issues.append(bug_id)
+            test_rm_issues.add(bug_id)
     elif log_analyzer_res[BugHandlerConst.BUG_HANDLER_DECISION_UPDATE]:
         created_bug_items = log_analyzer_res[BugHandlerConst.BUG_HANDLER_DECISION_UPDATE]
         for index, (bug_id, bug_title) in enumerate(created_bug_items.items(), start=1):
-            test_rm_issues.append(bug_id)
+            test_rm_issues.add(bug_id)
     if log_analyzer_res[BugHandlerConst.BUG_HANDLER_FAILURE]:
         la_error_messages = f"{BugHandlerConst.BUG_HANDLER_FAILURE_EXCEPTION}, due to the following:" \
                             f"{json.dumps(log_analyzer_res[BugHandlerConst.BUG_HANDLER_FAILURE], indent=2)}"
         error_msg = error_msg + la_error_messages
 
     if error_msg:
-        la_rm_issues[test_id] = (test_rm_issues, la_error_messages)
+        la_rm_issues[test_id] = (list(test_rm_issues), la_error_messages)
         request.session.config.cache.set(BugHandlerConst.LA_RM_ISSUES_DICT, la_rm_issues)
         raise Exception(error_msg)
 
