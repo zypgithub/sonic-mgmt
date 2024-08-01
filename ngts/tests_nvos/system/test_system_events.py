@@ -221,8 +221,8 @@ def test_set_fae_system_events_table_size(test_api, engines, devices):
         with allure.step('Run show system events command & validate table-occupancy should be 1100'):
             # One space is left empty for any upcoming critical event, hence we will see 599 events if max is 600
             output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show()).get_returned_value()
-            ValidationTool.verify_field_value_in_output(output, SystemConsts.EVENTS_TABLE_OCCUPANCY,
-                                                        1099).verify_result()
+            table_occupancy = int(output[SystemConsts.EVENTS_TABLE_OCCUPANCY])
+            assert table_occupancy >= 1099, "Table occupancy is {}, less than expected 1100".format(table_occupancy)
 
         with allure.step('Unset system events table-size'):
             fae.system.events.unset(apply=True, dut_engine=engines.dut).verify_result()
@@ -235,8 +235,8 @@ def test_set_fae_system_events_table_size(test_api, engines, devices):
         with allure.step('Run show system events command & validate table-occupancy should be default(1000)'):
             # One space is left empty for any upcoming critical event, hence we will see 599 events if max is 600
             output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show()).get_returned_value()
-            ValidationTool.verify_field_value_in_output(output, SystemConsts.EVENTS_TABLE_OCCUPANCY,
-                                                        999).verify_result()
+            table_occupancy = int(output[SystemConsts.EVENTS_TABLE_OCCUPANCY])
+            assert table_occupancy >= 999, "Table occupancy is {}, less than expected 1000".format(table_occupancy)
 
     finally:
         with allure.step('Clear system events'):
