@@ -114,7 +114,7 @@
     </cmd>
     <ignore>
       <condition>
-        <key>dut_name</key>
+        <key>dut_type</key>
         <op> in </op>
         <value>[gorilla]</value>
       </condition>
