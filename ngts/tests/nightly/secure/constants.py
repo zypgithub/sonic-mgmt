@@ -28,6 +28,7 @@ class SecureBootConsts:
     SECURE_BOOT_NOT_ENABLED_MESSAGE = 'Secure Boot function is not enabled in UEFI'
     SECURE_BOOT_NOT_SUPPORTED_MESSAGE = 'Secure Boot function is not supported at this switch'
     REBOOT = "sudo reboot -f"
+    WORKSPACE_PATH = '/root/mars/workspace/'
 
     # numerical expressions
     SLEEP_AFTER_ONIE_INSTALL = 45
