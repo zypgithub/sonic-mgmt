@@ -251,4 +251,4 @@ r-moose-01,Ethernet496,r-liger-12,Ethernet248,100000,349,Access
 r-moose-01,Ethernet498,r-liger-12,Ethernet250,100000,350,Access
 r-moose-01,Ethernet500,r-liger-12,Ethernet249,100000,351,Access
 r-moose-01,Ethernet502,r-liger-12,Ethernet251,100000,352,Access
-r-liger-12,Ethernet252,mtvr-r740-01,p3p1,200000,101-352,Trunk
+r-liger-12,Ethernet252,r-r640-15,p4p1,200000,101-164,Trunk
