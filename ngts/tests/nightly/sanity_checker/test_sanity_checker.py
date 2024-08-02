@@ -9,7 +9,6 @@ from retry.api import retry
 from ngts.cli_util.cli_parsers import generic_sonic_output_parser
 from ngts.helpers.secure_boot_helper import SonicSecureBootHelper
 from ngts.tests.conftest import get_dut_loopbacks
-from tests.common.mellanox_data import SWITCH_MODELS
 
 pytestmark = [
     pytest.mark.disable_loganalyzer
@@ -189,7 +188,11 @@ def test_fan_status_check(platform_params, topology_obj):
     If case fail, we will raise the failed case information in the allure report and disable bug handler tool
     """
     fan_status_info = topology_obj.players['dut']['cli'].chassis.show_platform_fan()
-    fan_number = SWITCH_MODELS.get(platform_params.platform, None).get("fans", None).get("number", 0)
+    platform_json_data = topology_obj.players['dut']['cli'].chassis.get_platform_json_data()
+    if len(platform_json_data["chassis"]["fan_drawers"]) == 1:
+        fan_number = len(platform_json_data["chassis"]["fan_drawers"][0]["fans"])
+    else:
+        fan_number = len(platform_json_data["chassis"]["fan_drawers"])
     actual_fan_number = 0
     for fan_name, status_info in fan_status_info.items():
         if "psu" not in fan_name:
@@ -223,7 +226,8 @@ def test_psu_status_check(platform_params, topology_obj):
     If case fail, we will raise the failed case information in the allure report and disable bug handler tool
     """
     psu_status_info = topology_obj.players['dut']['cli'].chassis.show_platform_psu_status()
-    psu_number = SWITCH_MODELS.get(platform_params.platform, None).get("psus", None).get("number", None)
+    platform_json_data = topology_obj.players['dut']['cli'].chassis.get_platform_json_data()
+    psu_number = len(platform_json_data["chassis"]["psus"])
     actual_psu_number = len(psu_status_info.keys())
     assert actual_psu_number == psu_number, f"psu number is correct.Expected: {psu_number}, actual: {actual_psu_number}"
     for psu_name, status_info in psu_status_info.items():

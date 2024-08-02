@@ -111,3 +111,15 @@ class SonicChassisCli(ChassisCliCommon):
             return hwsku
         else:
             raise Exception("Could not get hwsku for switch {}".format(self.engine.ip))
+
+    def get_platform_json_data(self):
+        """
+        This method is to get the platform json data from the file of /usr/share/sonic/device/{platform}/platform.json
+        :return: the platform json data
+        """
+        cmd_get_platform_json_content = f"cat /usr/share/sonic/device/{self.get_platform()}/platform.json"
+        logger.info(f"cmd get platform json content: {cmd_get_platform_json_content}")
+        platform_json_content = self.engine.run_cmd(cmd_get_platform_json_content)
+        cmd_get_platform_json_content_dict = eval(platform_json_content)
+        logger.info("cmd_get_platform_json_content_dict")
+        return cmd_get_platform_json_content_dict
