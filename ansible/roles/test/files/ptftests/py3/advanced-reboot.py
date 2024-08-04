@@ -263,7 +263,6 @@ class ReloadTest(BaseTest):
         # one is the reachability_watcher thread
         # second is the fast send_in_background
         self.dataplane_io_lock = threading.Lock()
-        self.installed_sonic_version = self.get_installed_sonic_version()
 
         self.allow_vlan_flooding = bool(
             self.test_params['allow_vlan_flooding'])
@@ -274,7 +273,7 @@ class ReloadTest(BaseTest):
             password=self.test_params['dut_password'],
             alt_password=self.test_params.get('alt_password')
         )
-
+        self.installed_sonic_version = self.get_installed_sonic_version()
         self.sender_thr = threading.Thread(target=self.send_in_background)
         self.sniff_thr = threading.Thread(target=self.sniff_in_background)
 
