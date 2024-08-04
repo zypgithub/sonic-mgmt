@@ -45,8 +45,10 @@ def verify_tpm_lockout_counter_is_zero(engines, check_tpm_ready_for_testing):
 
 @pytest.fixture(scope='session', autouse=True)
 def check_tpm_ready_for_testing(engines):
-    if not TpmTool(engines.dut).is_tpm_attestation_ready():
+    tpm_tool = TpmTool(engines.dut)
+    if not tpm_tool.is_tpm_attestation_ready():
         pytest.skip('TPM is not ready for testing on current setup')
+    assert tpm_tool.is_host_tpm_dir_exists(), f'TPM dir /host/tpm does not exist. failing the test'
 
 
 @pytest.fixture(scope='session')
