@@ -41,10 +41,11 @@ disable_onie_access() {
 # ONIE entry must exist in grub config
 find_onie_menuentry() {
   onie_entry="$(cat $os_boot/grub/grub.cfg | grep -e 'menuentry' | cat -n | awk '$0~/ONIE/ {print $1-1}')"
-  if [ $onie_entry -eq 1 ]; then
+  entries_num="$(echo "$onie_entry" | grep -E '^[0-9]+$' | wc -l)"
+  if [ $entries_num -eq 1 ] && [ $onie_entry -ge 1 ]; then
     return 0
-	fi
-	return 1
+  fi
+  return 1
 }
 
 change_grub_boot_order() {
