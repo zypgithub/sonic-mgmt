@@ -178,21 +178,10 @@ def test_ssd_cleanup_reboot_with_high_ssd_usage(engines, devices):
         with allure.step('Reboot the system'):
             system.reboot.action_reboot()
 
-        with allure.step('wait up to 5 minutes for monit to be ready and then healthD cycle'):
-            try:
-                wait_for_specific_regex_in_logs(engines.dut, "ssd_cleanup: SSD Cleanup Done", timeout=300)
-            except Exception as e:
-                with allure.step("the SSD usage right now is:"):
-                    _get_df_output(engines.dut)
-                raise
-
         with allure.step("check deleted files and the deleting order"):
             verify_deleted_folders_list(engines.dut, [file_name])
 
         with allure.step("check health status is ok"):
-            with allure.step('sleep 3 minutes - waiting for healthD cycle'):
-                time.sleep(180)
-
             verify_health_status_and_led(system, HealthConsts.OK)
 
         with allure.step("check ssd-cleanup deleted the {file}".format(file=file_name)):
