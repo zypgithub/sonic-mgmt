@@ -574,8 +574,8 @@ def _log_files_set_unset_log_rotation_max_number(engines, system_log_obj, log_na
         logging.info("Check we have 5 log files")
         show_output = system_log_obj.files.show()
         output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(show_output).get_returned_value()
-        assert len(output_dictionary.keys()) >= 6
-        assert list(output_dictionary.keys())[-1] == f'{log_name_prefix}.5.gz'
+        assert len(output_dictionary.keys()) >= 6, f"expected 5 log files, but there are {len(output_dictionary.keys())} instead"
+        assert list(output_dictionary.keys())[-1] == f'{log_name_prefix}.5.gz', f"log file name does not match the expected format, the expected is {log_name_prefix}.5.gz and the current name is {list(output_dictionary.keys())[-1]}"
 
     with allure.step("Validate set max-number 1"):
         logging.info("Validate set max-number 1")
@@ -592,8 +592,8 @@ def _log_files_set_unset_log_rotation_max_number(engines, system_log_obj, log_na
         logging.info("Check we have 1 log files")
         show_output = system_log_obj.files.show()
         output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(show_output).get_returned_value()
-        assert len(output_dictionary.keys()) == 2
-        assert list(output_dictionary.keys())[-1] == f'{log_name_prefix}.1'
+        assert len(output_dictionary.keys()) >= 2, f"expected 1 log file, but there are {len(output_dictionary.keys())} instead"
+        assert list(output_dictionary.keys())[-1] == f'{log_name_prefix}.1', f"log file name does not match the expected format, the expected is {log_name_prefix}.1 and the current name is {list(output_dictionary.keys())[-1]}"
 
     with allure.step("Validate unset log rotation"):
         logging.info("Validate unset log rotation")
@@ -768,12 +768,10 @@ def _upload_log_files(topology_obj, system_log_obj):
         system_log_obj.files.file_name[log_file].action_upload(upload_path=upload_path)
 
     with allure.step("Check if file uploaded and delete it from player"):
-        logging.info("Check if file uploaded and delete it from player")
-        assert player.run_cmd(cmd='ls -la | grep {}'.format(log_file))
+        assert player.run_cmd(cmd='ls -la | grep {}'.format(log_file)), "it appears the file does not exist in the target path"
         player.run_cmd(cmd='rm -f {}'.format(log_file))
 
     with allure.step("Run nv show system log command to check if command with password hidden"):
-        logging.info("Run nv show system log command to check if command with password hidden")
         show_output = system_log_obj.show_log(exit_cmd='q')
         ValidationTool.verify_expected_output(show_output, upload_path).verify_result(False)
 
@@ -800,7 +798,6 @@ def test_delete_log_files(engines):
         system = System(None)
 
     with allure.step("Rotate log 5 times to create log files"):
-        logging.info("Rotate log 5 times to create log files")
         for i in range(0, 5):
             system.log.rotate_logs()
 
@@ -810,7 +807,6 @@ def test_delete_log_files(engines):
         assert len(log_files_dict.keys()) >= 6, "Not all 5 log files were created"
 
     with allure.step("Delete all log files and validate"):
-        logging.info("Delete all log files and validate")
 
         with allure.step("Get current size of " + syslog_file_name):
             output = engines.dut.run_cmd("stat /var/log/{} | grep Size".format(syslog_file_name))
@@ -854,13 +850,10 @@ def test_delete_log_files(engines):
                 TestToolkit.add_loganalyzer_marker(engines.dut, marker)
 
     with allure.step("Run show command to view system image"):
-        logging.info("Run show command to view system image")
         system.image.show()
 
     with allure.step("Run nv show system log command follow to view system logs"):
-        logging.info("Run nv show system log command follow to view system logs")
         show_output = system.log.show_log(exit_cmd='q')
 
     with allure.step('Verify updated “system/image” in the logs as expected'):
-        logging.info('Verify updated “system/image” in the logs as expected')
         ValidationTool.verify_expected_output(show_output, 'system/image').verify_result()

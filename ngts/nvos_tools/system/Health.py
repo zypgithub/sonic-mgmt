@@ -68,14 +68,14 @@ class History(BaseComponent):
             engine.run_cmd("sudo systemctl restart logrotate")
         time.sleep(10)
         line = self.search_line("health_history file deleted, creating new file")
-        assert len(line) > 0
+        assert len(line) > 0, "expected a new health file to be created, but it was not generated"
 
     @retry(Exception, tries=10, delay=60)
     def validate_new_summary_line_in_history_file_after_boot(self, last_summary_line):
         health_history_output = self.show()
         assert self.search_line(HealthConsts.SUMMARY_REGEX_OK, health_history_output)[
             -1] != last_summary_line, "Didn't print new summary line after boot"
-        assert "Monitoring service reboot, clearing issues history." in health_history_output
+        assert "Monitoring service reboot, clearing issues history." in health_history_output, "expected a new summary line after boot, but it was missing"
 
     @retry(Exception, tries=12, delay=30)
     def retry_get_health_history_file_summary_line(self, summary_regex=HealthConsts.SUMMARY_REGEX_OK):
