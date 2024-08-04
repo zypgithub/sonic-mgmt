@@ -29,20 +29,8 @@ class NvueClusterCli(NvueBaseCli):
         return NvueClusterCli.action(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=path, param_value=level)
 
     @staticmethod
-    def action_update_partition_uuid(engine, path, uuid=''):
-        return NvueClusterCli.action(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=path, param_value=uuid)
-
-    @staticmethod
-    def action_update_partition_location(engine, path, location=''):
-        return NvueClusterCli.action(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=path, param_value=location)
-
-    @staticmethod
-    def action_restore_partition_uuid(engine, path, uuid=''):
-        return NvueClusterCli.action(engine, action_type=ActionType.RESTORE.replace('@', ''), resource_path=path, param_value=uuid)
-
-    @staticmethod
-    def action_restore_partition_location(engine, path, location=''):
-        return NvueClusterCli.action(engine, action_type=ActionType.RESTORE.replace('@', ''), resource_path=path, param_value=location)
+    def action_update(engine, path):
+        return NvueClusterCli.action(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=path)
 
     @staticmethod
     def action_restore_cluster(engine, path):
@@ -76,11 +64,7 @@ class NvueClusterCli(NvueBaseCli):
         return NvueClusterCli.action(engine, action_type=ActionType.UNINSTALL.replace('@', ''), resource_path=resource_path)
 
     @staticmethod
-    def action_delete_fae(engine, resource_path):
-        return NvueClusterCli.action(engine, action_type=ActionType.DELETE.replace('@', ''), resource_path=resource_path)
-
-    @staticmethod
-    def action_create_partition(engine, name, resiliency_mode, confidential_compute, mcast_limit, uuid='', location='', resource_path=''):
+    def action_create_partition(engine, resource_path, name, resiliency_mode, confidential_compute, mcast_limit, uuid='', location=''):
         if uuid != '':
             cmd = f"nv action create {resource_path.replace('/', ' ')} name {name} resiliency-mode {resiliency_mode} confidential_compute {confidential_compute} mcast-limit {mcast_limit} uuid {uuid}"
         else:

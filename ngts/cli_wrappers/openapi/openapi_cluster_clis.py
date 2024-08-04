@@ -27,28 +27,8 @@ class OpenApiClusterCli(OpenApiBaseCli):
         return OpenApiClusterCli.action(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=resource_path, param_name=param_name, param_value=param_value)
 
     @staticmethod
-    def action_update_partition_uuid(engine, path, uuid=''):
-        param_name = "uuid"
-        param_value = uuid
-        return OpenApiClusterCli.action(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=path, param_name=param_name, param_value=param_value)
-
-    @staticmethod
-    def action_update_partition_location(engine, path, location=''):
-        param_name = "location"
-        param_value = location
-        return OpenApiClusterCli.action(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=path, param_name=param_name, param_value=param_value)
-
-    @staticmethod
-    def action_restore_partition_uuid(engine, path, uuid=''):
-        param_name = "uuid"
-        param_value = uuid
-        return OpenApiClusterCli.action(engine, action_type=ActionType.RESTORE.replace('@', ''), resource_path=path, param_name=param_name, param_value=param_value)
-
-    @staticmethod
-    def action_restore_partition_location(engine, path, location=''):
-        param_name = "location"
-        param_value = location
-        return OpenApiClusterCli.action(engine, action_type=ActionType.RESTORE.replace('@', ''), resource_path=path, param_name=param_name, param_value=param_value)
+    def action_update(engine, path):
+        return OpenApiClusterCli.action(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=path)
 
     @staticmethod
     def action_restore_cluster(engine, resource_path):
@@ -84,11 +64,7 @@ class OpenApiClusterCli(OpenApiBaseCli):
         return OpenApiClusterCli.action(engine, action_type=ActionType.UNINSTALL.replace('@', ''), resource_path=resource_path)
 
     @staticmethod
-    def action_delete_fae(engine, resource_path):
-        return OpenApiClusterCli.action(engine, action_type=ActionType.DELETE.replace('@', ''), resource_path=resource_path)
-
-    @staticmethod
-    def action_create_partition(engine, name, resiliency_mode, confidential_compute, mcast_limit, uuid='', location='', resource_path=''):
+    def action_create_partition(engine, resource_path, name, resiliency_mode, confidential_compute, mcast_limit, uuid='', location=''):
         logging.info("Running action: 'generate' on dut using OpenApi")
         params = {
             "state": "start",
