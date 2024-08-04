@@ -215,7 +215,7 @@ def _add_files(engine, usage_threshold, available_space):
     with allure.step("create new files to reach usage threshold {}".format(usage_threshold)):
         added_files_list = []
 
-        size_each_file = 1000 / (2 * len(paths_order) - 1)
+        size_each_file = 700 / (2 * len(paths_order) - 1)
         file_size = f"{size_each_file}M"
 
         for i, path in enumerate(paths_order):

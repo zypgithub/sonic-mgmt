@@ -19,11 +19,10 @@ class Health(BaseComponent):
         BaseComponent.__init__(self, parent=parent_obj, path='/health')
         self.history = History(self)
 
-    @retry(Exception, tries=12,
-           delay=30)  # BUG 3355421 - after reboot it takes almost 5 min until the status change to OK
+    @retry(Exception, tries=12, delay=30)
     def wait_until_health_status_change_after_reboot(self, expected_status):
         output = OutputParsingTool.parse_json_str_to_dictionary(self.show()).get_returned_value()
-        assert output[HealthConsts.STATUS] == expected_status
+        assert output[HealthConsts.STATUS] == expected_status, f"health should be {expected_status} within 5 minutes after reboot"
 
 
 class History(BaseComponent):
