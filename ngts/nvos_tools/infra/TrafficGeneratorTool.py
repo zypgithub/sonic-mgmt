@@ -29,31 +29,6 @@ class TrafficGeneratorTool:
         :param should_success: True of False
         """
         with allure.step("Generate ib traffic"):
-            ha = players['ha']['engine']
-            hb = players['hb']['engine']
-
-            output = ha.run_cmd("ibdev2netdev")
-            assert output, f"failed to get port name for {ha.ip}"
-            ha_port = output.split()[0]
-
-            output = hb.run_cmd("ibdev2netdev")
-            assert output, f"failed to get port name for {hb.ip}"
-            hb_port = output.split()[0]
-
-            with allure.step(f"Set {hb.ip} as a listener"):
-                t1 = threading.Thread(target=TrafficGeneratorTool.create_listener, args=(hb, hb_port,))
-                t1.start()
-
-            with allure.step(f"Send ib traffic from {ha.ip}"):
-                output = ha.run_cmd(f"ib_send_lat -F -n 5 -s 512 -i 1 {hb.ip} -d {ha_port}")
-
-            with allure.step("Verify traffic sent successfully"):
-                if "Completion with error" in output:
-                    return ResultObj(False, f"Failed to send traffic: \n {output}")
-                else:
-                    return ResultObj(True)
-
-        """with allure.step("Generate ib traffic"):
             validation_obj = TrafficGeneratorTool._create_validation_obj(
                 interfaces=interfaces,
                 traffic_type=InternalNvosConsts.IB_TRAFFIC_LAT_TYPE,
@@ -65,7 +40,7 @@ class TrafficGeneratorTool:
                     IBTrafficChecker(players, validation_obj).run_validation()
                     return ResultObj(True, "IB traffic validation ended successfully")
                 except BaseException as ex:
-                    return ResultObj(False, "IB traffic validation failed - check log for more info.")"""
+                    return ResultObj(False, "IB traffic validation failed - check log for more info.")
 
     @staticmethod
     def send_ipoib_traffic(players, interfaces, should_success):
