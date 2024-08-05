@@ -513,8 +513,6 @@ def error_to_regex(error_string):
                             into a regular expression
     @return: A SINGLE regular expression string
     """
-    if len(error_string) > BugHandlerConst.BUG_TITLE_LIMIT:
-        error_string = error_string[:BugHandlerConst.BUG_TITLE_LIMIT]
     # -- Escapes out of all the meta characters --#
     error_string = re.escape(error_string)
     error_string = error_string.replace("\\", "\\\\")
@@ -528,6 +526,10 @@ def error_to_regex(error_string):
     # -- Replaces a hex number with the hex regular expression
     error_string = re.sub(r"0x[0-9a-fA-F]+", r"0x[\\\\d+a-fA-F]+", error_string)
     error_string = re.sub(r"\b[0-9a-fA-F]{3,}\b", r"[\\\\d+a-fA-F]+", error_string)
+
+    # -- Replaces etp1, etp1a, etp7, etp7a to etp[0-9][a-g]
+    error_string = re.sub(r"etp[1-9][0-9a-g]*", r"etp[\\\\d+a-g]*", error_string)
+
     # -- Replaces any remaining digits with the digit regular expression
     error_string = re.sub(r"\d+", r"\\\\d+", error_string)
     error_string = re.sub(r'"', r'\"', error_string)
