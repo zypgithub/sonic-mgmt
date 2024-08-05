@@ -518,12 +518,6 @@ tests_nvos/system/test_show_system.py::test_system:
     conditions:
       - https://redmine.mellanox.com/issues/3975976
 
-tests_nvos/platform/test_platform_environment.py::test_platform_environment_fan_shared_led:
-  skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3978721"
-    conditions:
-      - https://redmine.mellanox.com/issues/3978721
-
 tests_nvos/system/test_techsupport_feature.py::test_techsupport_bmc_badflow:
   skip:
     reason: "Testcase skipped on non Juliet systems, only Juliet has BMC"
