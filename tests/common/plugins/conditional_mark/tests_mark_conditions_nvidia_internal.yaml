@@ -422,6 +422,7 @@ show_techsupport/test_auto_techsupport.py::TestAutoTechSupport::test_max_limit:
     - "https://redmine.mellanox.com/issues/3876676"
 
 passw_hardening/test_passw_hardening.py:
+  skip:
     reason: "Testcase skipped because the test is related to performance, no meaningful to run it on simx platform "
     conditions_logical_operator: or
     conditions:
