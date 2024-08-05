@@ -7,17 +7,18 @@ from ngts.nvos_constants.constants_nvos import LinkDetectionConsts
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import NvosConst
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 
 logger = logging.getLogger()
 
 
 class Configurations:
-    ndr_ports = {"10.7.148.94": ['swA1p1', 'swA1p2'],
-                 "10.7.148.95": ['swA1p1', 'swA1p2'],
-                 "10.7.145.61": ['swA1p1', 'swA1p2'],
-                 "10.7.145.62": ['swA1p1', 'swA1p2'],
-                 "10.7.148.88": ['swA1p1', 'swA1p2'],
-                 "10.7.148.89": ['swA1p1', 'swA1p2']}
+    ndr_ports = {"10.7.148.94": ['swA1p1', 'swA2p1'],
+                 "10.7.148.95": ['swA1p1', 'swA2p1'],
+                 "10.7.145.61": ['swA1p1', 'swA2p1'],
+                 "10.7.145.62": ['swA1p1', 'swA2p1'],
+                 "10.7.148.88": ['swA1p1', 'swA2p1'],
+                 "10.7.148.89": ['swA1p1', 'swA2p1']}
 
     xdr_ports = {}
 
@@ -28,7 +29,7 @@ class Configurations:
 
     default_conf = NvosConst.DEFAULT_CONFIG
     default_conf["interface"] = {
-        "eth0": {
+        "eth0-1": {
             "acl": {
                 "ACL_MGMT_INBOUND_CP_DEFAULT": {
                     "inbound": {
@@ -80,11 +81,12 @@ class Configurations:
     def get_regression_default_config(engine):
         try:
             if engine.ip in Configurations.devices_to_configure_ndr_ports:
-                for port in Configurations.ndr_ports[engine.ip]:
-                    Configurations.default_conf["interface"][port] = \
-                        {"link": {
-                            "connection-mode": "ndr"
-                        }}
+                ndr_ports = ",".join(list(Configurations.ndr_ports[engine.ip]))
+                Configurations.default_conf["interface"][ndr_ports] = \
+                    {"link": {
+                        "connection-mode": "ndr"
+                    }, "type": "ib"}
+
             return Configurations.default_conf
         except BaseException:
             return Configurations.default_conf
@@ -97,22 +99,25 @@ class RegressionConfigurations:
         try:
             if engine.ip in Configurations.devices_to_configure_ndr_ports:
                 with allure.step("Updating connection mode for ndr ports"):
+                    port_updated = False
                     for port in Configurations.ndr_ports[engine.ip]:
                         ndr_port = Port(port, "", "")
                         ndr_port_show = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
-                            ndr_port.interface.link.show()).get_returned_value()
+                            ndr_port.interface.link.show(dut_engine=engine)).get_returned_value()
 
                         if ndr_port_show[LinkDetectionConsts.CONNECTION_MODE] != LinkDetectionConsts.CONNECTION_MODE_NDR:
                             ndr_port.interface.link.connection_mode.set(LinkDetectionConsts.CONNECTION_MODE_NDR,
                                                                         apply=False, dut_engine=engine,
                                                                         ask_for_confirmation=True).verify_result()
-                    if apply:
+                            port_updated = True
+
+                    if apply and port_updated:
                         with allure.step("Apply configuration"):
                             output = NvueGeneralCli.apply_config(engine=engine, option='--assume-yes')
                             assert "applied" in output, "Failed to apply config"
 
-                    if wait_till_port_up:
-                        Port.wait_for_port_state(ndr_port, NvosConsts.LINK_STATE_UP)
+                        if wait_till_port_up:
+                            Port.wait_for_port_state(ndr_port, NvosConsts.LINK_STATE_UP)
 
         except BaseException as ex:
             if throw_exception:
