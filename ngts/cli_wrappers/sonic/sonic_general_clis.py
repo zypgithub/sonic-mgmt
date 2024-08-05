@@ -74,6 +74,9 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         self.dut_alias = dut_alias
         self.backup_logs_stored = False
 
+    def show_setup_versions(self):
+        return ''
+
     def is_dut_supports_image(self, base_version_url, dut_name) -> bool:
         """
         This method checks whether the given base version url is supported for the given dut , or not

@@ -12,27 +12,26 @@ import json
 import logging
 import os
 import re
-import time
 
+import allure
 import pytest
-import requests
 from dotted_dict import DottedDict
 from paramiko.ssh_exception import SSHException
 
-from ngts.tools.topology_tools.topology_by_setup import get_topology_by_setup_name_and_aliases
-from ngts.cli_wrappers.sonic.sonic_cli import SonicCli, SonicCliStub
+from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.cli_wrappers.linux.linux_cli import LinuxCli, LinuxCliStub
 from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
-from ngts.constants.constants import PytestConst, NvosCliTypes, DebugKernelConsts, \
-    BugHandlerConst, InfraConst, PlayersAliases
-from ngts.tools.infra import get_platform_info, get_devinfo, is_deploy_run, get_chip_type
-from ngts.tests.nightly.app_extension.app_extension_helper import APP_INFO
+from ngts.cli_wrappers.sonic.sonic_cli import SonicCli, SonicCliStub
+from ngts.cli_wrappers.sonic.sonic_general_clis import SonicGeneralCliDefault
+from ngts.constants.constants import PytestConst, NvosCliTypes, DebugKernelConsts
+from ngts.helpers.general_helper import get_all_setups, get_dut_cli_obj_from_topo_obj
 from ngts.helpers.sonic_branch_helper import get_sonic_branch, update_branch_in_topology, update_sanitizer_in_topology, \
     get_sonic_image
+from ngts.tests.nightly.app_extension.app_extension_helper import APP_INFO
 from ngts.tools.allure_report.allure_report_attacher import add_fixture_end_tag, add_fixture_name, \
     clean_stored_cmds_with_fixture_scope, update_fixture_scope_list, enable_record_cmds
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from ngts.helpers.general_helper import get_all_setups
+from ngts.tools.infra import get_platform_info, get_devinfo, is_deploy_run, get_chip_type
+from ngts.tools.topology_tools.topology_by_setup import get_topology_by_setup_name_and_aliases
 
 logger = logging.getLogger()
 
@@ -628,3 +627,23 @@ def should_skip_bug_handler_action(request, disable_loganalyzer):
 @pytest.fixture(autouse=False)
 def setups_list():
     return get_all_setups()
+
+
+@pytest.fixture()
+def show_setup_versions(topology_obj):
+    cli_obj: SonicGeneralCliDefault = get_dut_cli_obj_from_topo_obj(topology_obj)
+
+    def _attach_setup_versions():
+        cli: SonicGeneralCliDefault = cli_obj
+        try:
+            with allure.step('get setup versions'):
+                outputs = cli.show_setup_versions()
+            if outputs:
+                with allure.step('attach setup versions outputs to allure report'):
+                    allure.attach(outputs, 'setup_versions', allure.attachment_type.TEXT)
+        except Exception:
+            logger.info('could not get setup versions')
+
+    _attach_setup_versions()
+    yield
+    _attach_setup_versions()
