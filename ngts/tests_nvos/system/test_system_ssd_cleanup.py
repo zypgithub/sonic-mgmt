@@ -114,6 +114,8 @@ def test_ssd_cleanup_positive_flow(engines, devices):
                 _verify_system_event(system_events_before_testing, events_dict, False)
 
         with allure.step("try to cleanup and verify health status and deleted files after it"):
+            with allure.step("Rotate logs"):
+                system.log.rotate_logs()
 
             with allure.step("cleanup SSD"):
                 fae.system.ssd_cleanup(expected_str='Action succeeded')
@@ -174,6 +176,9 @@ def test_ssd_cleanup_reboot_with_high_ssd_usage(engines, devices):
 
     try:
         engines.dut.run_cmd('sudo fallocate -l {size}G /{path}/{file}'.format(size=file_size, path=path, file=file_name))
+
+        with allure.step("Rotate logs"):
+            system.log.rotate_logs()
 
         with allure.step('Reboot the system'):
             system.reboot.action_reboot()

@@ -17,7 +17,8 @@ class Configurations:
                  "10.7.148.95": ['swA1p1', 'swA2p1'],
                  "10.7.145.61": ['swA1p1', 'swA2p1'],
                  "10.7.145.62": ['swA1p1', 'swA2p1'],
-                 "10.7.148.88": ['swA1p1', 'swA2p1'],
+                 "10.7.148.80": ['swA8p1', 'swA8p2', 'swB7p1', 'swB7p2', 'swB8p1', 'swB8p2'],
+                 "10.7.148.88": ['swA1p1', 'swA2p1', 'swA8p1', 'swA8p2'],
                  "10.7.148.89": ['swA1p1', 'swA2p1']}
 
     xdr_ports = {}
