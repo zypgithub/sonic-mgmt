@@ -4,6 +4,7 @@ import time
 from collections import namedtuple
 from typing import List, Dict
 
+from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_constants.constants_nvos import HealthConsts, MultiPlanarConsts, PlatformConsts, ClusterConsts
 from ngts.nvos_constants.constants_nvos import (NvosConst, DatabaseConst, IbConsts, StatsConsts, FansConsts,
                                                 DocumentsConsts)
@@ -52,6 +53,14 @@ class IbSwitch(BaseSwitch):
     def get_voltage_sensors(self, dut_engine=None):
         return Tools.FilesTool.get_subfiles_list(engine=dut_engine, folder_path=PlatformConsts.VOLTAGE_FILES_PATH,
                                                  subfiles_pattern=PlatformConsts.VOLTAGE_FILES_PATTERN)
+
+    def show_setup_versions(self, dut_engine: LinuxSshEngine = None):
+        outputs = {
+            'system version': dut_engine.run_cmd('nv show system version'),
+            'platform firmware': dut_engine.run_cmd('nv show platform firmware'),
+        }
+        res = [f'{title.upper()}:\n{output}\n' for title, output in outputs.items()]
+        return '\n'.join(res)
 
     def verify_ib_ports_state(self, dut_engine, expected_port_state):
         logging.info(f"number of ports: {self.ib_ports_num}")
@@ -693,6 +702,18 @@ class JulietSwitch(NvLinkSwitch):
 
     def __init__(self, asic_amount):
         super().__init__(asic_amount=asic_amount)
+
+    def show_setup_versions(self, dut_engine: LinuxSshEngine = None):
+        get_bmc_version_cmd = 'curl -k -u root:{} -X GET https://10.0.1.1/redfish/v1/UpdateService/FirmwareInventory/MGX_FW_BMC_0'
+        psws = ['0penBmc', 'Test123!', 'ABYX12#14artb']
+        outputs = {
+            'system version': dut_engine.run_cmd('nv show system version'),
+            'platform firmware': dut_engine.run_cmd('nv show platform firmware'),
+        }
+        for i, pw in enumerate(psws):
+            outputs[f'bmc version {i} (redfish)'] = dut_engine.run_cmd(get_bmc_version_cmd.format(pw))
+        res = [f'{title.upper()}:\n{output}\n' for title, output in outputs.items()]
+        return '\n'.join(res)
 
     def _init_constants(self):
         super()._init_constants()

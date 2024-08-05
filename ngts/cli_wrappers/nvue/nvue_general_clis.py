@@ -50,6 +50,10 @@ class NvueGeneralCli(SonicGeneralCliDefault):
         with allure.step("Validate dockers are up"):
             NvueGeneralCli._verify_dockers_are_up(self, dockers_list)
 
+    def show_setup_versions(self):
+        out = self.device.show_setup_versions(self.engine)
+        return out
+
     def is_dut_supports_image(self, base_version_url, dut_name) -> bool:
         """
         This method checks whether the given base version url is supported for the given dut , or not

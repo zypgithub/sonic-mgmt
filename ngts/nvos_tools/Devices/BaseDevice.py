@@ -5,6 +5,7 @@ from abc import abstractmethod, ABCMeta, ABC
 from collections import namedtuple
 from typing import Tuple, List
 
+from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_constants.constants_nvos import DatabaseConst, FansConsts, NvosConst, PlatformConsts, SystemConsts, \
     DiskConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
@@ -246,6 +247,10 @@ class BaseDevice(ABC):
 
     @abstractmethod
     def get_voltage_sensors(self, dut_engine=None):
+        raise Exception(f"Not implemented for this switch {self.__class__.__name__}")
+
+    @abstractmethod
+    def show_setup_versions(self, dut_engine: LinuxSshEngine = None):
         raise Exception(f"Not implemented for this switch {self.__class__.__name__}")
 
 # -------------------------- Base Appliance ----------------------------
