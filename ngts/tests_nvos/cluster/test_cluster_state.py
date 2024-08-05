@@ -16,9 +16,6 @@ from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
 
 
 logger = logging.getLogger()
-NMX_CONTROLLER = 'nmx-controller'
-NMX_TELEMETRY = 'nmx-telemetry'
-INITIAL_EXPECTED_APPS = [NMX_CONTROLLER, NMX_TELEMETRY]
 UNDEFINED_STATE = 'undefined'
 UNDEFINED_STATE_ERR_MSG = 'Error: At state: \'undefined\' is not one of [\'enabled\', \'disabled\']'
 
@@ -89,12 +86,9 @@ def test_cluster_state(engines, devices, test_api):
                         f"{output[SystemConsts.STATE]}, Expected to be: " \
                         f"{state}"
     finally:
-        with allure.step("Restore cluster to initial state"):
-            output = OutputParsingTool.parse_show_output_to_dict(
-                cluster.show(output_format=output_format),
-                output_format=output_format).get_returned_value()
-            if output[SystemConsts.STATE] == NvosConst.ENABLED:
-                cluster.set(op_param_name="state", op_param_value=NvosConst.DISABLED, apply=True)
+        with allure.step("Reset cluster state"):
+            cluster.unset(apply=True)
+            ClusterTools.wait_for_apps_to_be_in_wanted_state()
 
 
 @pytest.mark.nmx
@@ -114,8 +108,9 @@ def test_stress_cluster_state(engines, devices, test_api):
                 OperationTime.verify_operation_time(duration, 'start stop cluster').verify_result()
 
     finally:
-        with allure.step("Stop cluster"):
-            ClusterTools.stop_cluster(cluster, output_format)
+        with allure.step("Reset cluster state"):
+            cluster.unset(apply=True)
+            ClusterTools.wait_for_apps_to_be_in_wanted_state()
 
 
 @pytest.mark.nmx
@@ -144,7 +139,8 @@ def test_cluster_state_with_stressed_resources(engines, devices, test_api):
                 logger.info("Sleeping for 30 seconds between iterations")
                 time.sleep(30)
     finally:
-        with allure.step("Stop cluster"):
-            ClusterTools.stop_cluster(cluster, output_format)
-            if installed_packages:
-                StressResourcesTool.delete_pacages(engines, installed_packages)
+        with allure.step("Reset cluster state"):
+            cluster.unset(apply=True)
+            ClusterTools.wait_for_apps_to_be_in_wanted_state()
+        if installed_packages:
+            StressResourcesTool.delete_pacages(engines, installed_packages)

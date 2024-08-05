@@ -43,7 +43,7 @@ INITIAL_CONFIGURATIONS_PATH = '/auto/sw_system_project/NVOS_INFRA/verification_f
 
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_cluster_default_factory_reset(engines, devices, test_api):
+def test_cluster_control_plane(engines, devices, test_api):
 
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
@@ -62,8 +62,7 @@ def test_cluster_default_factory_reset(engines, devices, test_api):
         logger.info("Setting cluster state to enabled")
         ClusterTools.start_cluster(cluster, output_format)
 
-        for app in INITIAL_EXPECTED_APPS:
-            ClusterTools.start_app(cluster, app)
+        ClusterTools.wait_for_apps_to_be_in_wanted_state()
 
         time.sleep(3)
 
@@ -130,9 +129,8 @@ def test_cluster_default_factory_reset(engines, devices, test_api):
             pass
 
     finally:
-        for app in INITIAL_EXPECTED_APPS:
-            ClusterTools.stop_app(cluster, app)
         cluster.unset(apply=True)
+        ClusterTools.wait_for_apps_to_be_in_wanted_state()
 
 
 def verify_control_plane_config_files_deleted(control_plane: ControlPlane):

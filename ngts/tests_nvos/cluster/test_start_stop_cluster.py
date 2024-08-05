@@ -68,20 +68,22 @@ def test_cluster_app_start_stop(engines, devices, test_api):
             verify_apps_attributes(output)
 
         with allure.step("Running 'nv show cluster apps running' command and verifying output"):
+            ClusterTools.wait_for_apps_to_be_in_wanted_state()
             output = OutputParsingTool.parse_show_output_to_dict(
                 cluster.apps.running.show(output_format=OutputFormat.json),
                 output_format=OutputFormat.json).get_returned_value()
             for app in INITIAL_EXPECTED_APPS:
                 app_status = output[app]['status']
-                assert app_status == 'not ok', f"App {app} status is {app_status} instead of 'not ok'"
+                assert app_status == 'ok', f"App {app} status is {app_status} instead of 'ok'"
             logger.info("Make sure there are no extra Unexpected apps")
             assert len(INITIAL_EXPECTED_APPS) == len(output), f"Expected apps {INITIAL_EXPECTED_APPS}, actual apps: {output}"
 
-        ClusterTools.start_stop_app(cluster, engines, devices)
+        ClusterTools.stop_start_app(cluster, engines, devices)
 
     finally:
-        logger.info("Setting cluster state to disabled")
-        ClusterTools.stop_cluster(cluster, output_format)
+        with allure.step("Reset cluster state"):
+            cluster.unset(apply=True)
+            ClusterTools.wait_for_apps_to_be_in_wanted_state()
 
 
 @pytest.mark.nmx
@@ -96,14 +98,16 @@ def test_stress_cluster_app_start_stop(engines, devices, test_api, test_name):
     try:
         with allure.step("Stress testing start/stop apps"):
             ClusterTools.start_cluster(cluster, output_format)
+            ClusterTools.wait_for_apps_to_be_in_wanted_state()
             for i in range(100):
                 logger.info(f"Starting iteration {i}")
-                result_obj, duration = OperationTime.save_duration('start stop cluster app', '', test_name, ClusterTools.start_stop_app, cluster, engines, devices)
+                result_obj, duration = OperationTime.save_duration('start stop cluster app', '', test_name, ClusterTools.stop_start_app, cluster, engines, devices)
                 OperationTime.verify_operation_time(duration, 'start stop cluster app').verify_result()
 
     finally:
-        with allure.step("Stop cluster"):
-            ClusterTools.stop_cluster(cluster, output_format)
+        with allure.step("Reset cluster state"):
+            cluster.unset(apply=True)
+            ClusterTools.wait_for_apps_to_be_in_wanted_state()
 
 
 @pytest.mark.nmx
@@ -127,14 +131,16 @@ def test_cluster_app_start_stop_under_stressed_resources(engines, devices, test_
             # Loop until the timeout is reached
             while time.time() - start_time < timeout:
                 ClusterTools.start_cluster(cluster, output_format)
-                result_obj, duration = OperationTime.save_duration('start stop cluster app', '', test_name, ClusterTools.start_stop_app, cluster, engines, devices)
+                ClusterTools.wait_for_apps_to_be_in_wanted_state()
+                result_obj, duration = OperationTime.save_duration('start stop cluster app', '', test_name, ClusterTools.stop_start_app, cluster, engines, devices)
                 OperationTime.verify_operation_time(duration, 'start stop cluster app').verify_result()
                 logger.info("Sleeping for 30 seconds.")
                 time.sleep(30)
 
     finally:
-        with allure.step("Stop cluster"):
-            ClusterTools.stop_cluster(cluster, output_format)
+        with allure.step("Reset cluster state"):
+            cluster.unset(apply=True)
+            ClusterTools.wait_for_apps_to_be_in_wanted_state()
         if installed_packages:
             StressResourcesTool.delete_pacages(engines, installed_packages)
 

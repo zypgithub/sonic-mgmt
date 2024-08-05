@@ -44,6 +44,7 @@ def test_cluster_app_log_level(engines, devices, test_api):
             system = System()
             logger.info("Setting cluster state to enabled")
             ClusterTools.start_cluster(cluster, output_format)
+            ClusterTools.wait_for_apps_to_be_in_wanted_state()
         with allure.step("Validate initial log level"):
             for app in INITIAL_EXPECTED_APPS:
                 output = OutputParsingTool.parse_show_output_to_dict(
@@ -65,7 +66,6 @@ def test_cluster_app_log_level(engines, devices, test_api):
 
         with allure.step("Choose random log level, and set cluster app log level to"):
             for app in INITIAL_EXPECTED_APPS:
-                ClusterTools.start_app(cluster, app)
                 log_level = random.choice(ClusterAppsLogLevelsList)
                 cluster.apps.apps_name[app].loglevel.action_update_cluster_log_level(level=log_level)
                 _rotate_logs(system)
@@ -87,7 +87,8 @@ def test_cluster_app_log_level(engines, devices, test_api):
             logger.info("Sleeping for 30 seconds to gather log messages and verify its level")
             time.sleep(30)
             ClusterTools.verify_log_level(DEFAULT_LOG_LEVEL, app, output_format, cluster, system)
-            ClusterTools.stop_app(cluster, app)
+        cluster.unset(apply=True)
+        ClusterTools.wait_for_apps_to_be_in_wanted_state()
 
 
 @pytest.mark.nmx
@@ -113,7 +114,7 @@ def test_cluster_app_log_level_under_stress(engines, devices, test_api):
         while time.time() - start_time < timeout:
             with allure.step("Choose random log level, and set cluster app log level to"):
                 for app in INITIAL_EXPECTED_APPS:
-                    ClusterTools.start_app(cluster, app)
+                    ClusterTools.wait_for_apps_to_be_in_wanted_state()
                     log_level = random.choice(ClusterAppsLogLevelsList)
 
                     result_obj, duration = OperationTime.save_duration('cluster update log level', '', test_name, cluster.apps.apps_name[app].loglevel.action_update_cluster_log_level, log_level)
@@ -142,7 +143,8 @@ def test_cluster_app_log_level_under_stress(engines, devices, test_api):
             logger.info("Sleeping for 30 seconds to gather log messages and verify its level")
             time.sleep(30)
             ClusterTools.verify_log_level(DEFAULT_LOG_LEVEL, app, output_format, cluster, system)
-            ClusterTools.stop_app(cluster, app)
+        cluster.unset(apply=True)
+        ClusterTools.wait_for_apps_to_be_in_wanted_state()
 
 
 def _rotate_logs(system):

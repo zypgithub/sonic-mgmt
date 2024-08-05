@@ -82,7 +82,7 @@ def test_cluster_default_factory_reset(engines, devices, test_api):
             verify_config_files_content_not_changed(control_plane, initial_config_contents, engines)
     finally:
         cluster.unset(apply=True)
-
+        ClusterTools.wait_for_apps_to_be_in_wanted_state()
         with allure.step("Verify the cleanup done successfully"):
             verify_cleanup_done(engines.dut, current_time, system, username)
 
@@ -133,7 +133,7 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name)
             verify_config_files_content_not_changed(control_plane, initial_config_contents, engines)
     finally:
         cluster.unset(apply=True)
-
+        ClusterTools.wait_for_apps_to_be_in_wanted_state()
         with allure.step("Verify the cleanup done successfully"):
             verify_cleanup_done(engines.dut, current_time, system, username, param='keep basic')
 
@@ -184,7 +184,7 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name):
             verify_config_files_content_not_changed(control_plane, initial_config_contents, engines)
     finally:
         cluster.unset(apply=True)
-
+        ClusterTools.wait_for_apps_to_be_in_wanted_state()
         with allure.step("Verify the cleanup done successfully"):
             verify_cleanup_done(engines.dut, current_time, system, username, param='only-files')
 
@@ -241,7 +241,7 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
         for app in INITIAL_EXPECTED_APPS:
             cluster.apps.apps_name[app].loglevel.action_restore_cluster()
         cluster.unset(apply=True)
-
+        ClusterTools.wait_for_apps_to_be_in_wanted_state()
         with allure.step("Verify the cleanup done successfully"):
             verify_cleanup_done(engines.dut, current_time, system, username, param='keep-all-config')
 
@@ -314,8 +314,9 @@ def reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, s
     logger.info("Setting cluster state to enabled")
     ClusterTools.start_cluster(cluster, output_format)
 
-    for app in INITIAL_EXPECTED_APPS:
-        ClusterTools.start_app(cluster, app)
+    ClusterTools.wait_for_apps_to_be_in_wanted_state()
+    # for app in INITIAL_EXPECTED_APPS:
+    #     ClusterTools.start_app(cluster, app)
 
     with allure.step("Choose random log level, and set cluster app log level to and start app"):
         for app in INITIAL_EXPECTED_APPS:

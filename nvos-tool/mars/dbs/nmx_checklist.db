@@ -38,7 +38,7 @@
 		</Case>
 	</global>
 	<test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/cluster/nmx_cluster.cases </cases>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/cluster/nmx_checklist.cases</cases>
 	</test>
 
 

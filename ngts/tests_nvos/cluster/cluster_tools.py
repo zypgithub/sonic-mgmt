@@ -23,16 +23,16 @@ NMX_CONTROLLER_CONFIG_FILE_TYPES = ['fm_config', 'sm_config']  # TODO, add 'rdm_
 NMX_CONTROLLER_STATE_FILE_TYPES = ['conn_info']  # TODO add sm_dump and topology once bug is fixed #3985684
 ClusterAppsLogLevelsList = [ClusterAppsLogLevels.DEBUG, ClusterAppsLogLevels.INFO, ClusterAppsLogLevels.NOTICE, ClusterAppsLogLevels.WARNING, ClusterAppsLogLevels.ERROR, ClusterAppsLogLevels.CRITICAL]
 NMX_LOG_MESSAGES_TAGS = ['nmxc-sm', 'nmxc-fm', 'nmxc-fib', 'nmxc-gw_api', 'nmxc-rest', 'nmxc-config_daemon']
+WAIT_FOR_APPS_RUNNING = 35  # Should be reduced to ~7 once bug is fixed [NVOS - Design] Bug SW #4010133: [Non-Functional ] [NMX] | No immediate NVOS reflection for showing running apps after being started/stopped | Assignee: Chris Yang | Status: Assigned
 
 
 class ClusterTools:
 
     @staticmethod
-    def start_stop_app(cluster, engines, devices):
-        with allure.step("Start/Stop apps"):
+    def stop_start_app(cluster, engines, devices):
+        with allure.step("Stop/Start apps"):
             for app in INITIAL_EXPECTED_APPS:
-                with allure.step(f"Start app {app} and validate its up"):
-                    output = cluster.apps.apps_name[app].action_start_cluster_apps()
+                with allure.step(f"Validate app {app} is up"):
                     ClusterTools.verify_app_is_up(engines, app)
                     if app == NMX_CONTROLLER:
                         ClusterTools.verify_lid_value(devices)
@@ -49,6 +49,21 @@ class ClusterTools:
                     time.sleep(10)
                     # TBD -- once "running" is working, use it to verify app is not running
                     ClusterTools.verify_app_is_down(engines)
+
+                with allure.step(f"Start app again {app} and validate its up"):
+                    output = cluster.apps.apps_name[app].action_start_cluster_apps()
+                    ClusterTools.wait_for_apps_to_be_in_wanted_state()
+                ClusterTools.verify_app_is_up(engines, app)
+                if app == NMX_CONTROLLER:
+                    ClusterTools.verify_lid_value(devices)
+                    ClusterTools.verify_interface_up(devices)
+                with allure.step("Running 'nv show cluster apps running' command and verifying output"):
+                    output = OutputParsingTool.parse_show_output_to_dict(
+                        cluster.apps.running.show(output_format=OutputFormat.json),
+                        output_format=OutputFormat.json).get_returned_value()
+                    app_status = output[app]['status']
+                    assert app_status == 'ok', f"App {app} status is {app_status} instead of 'ok"
+
             return ResultObj(result=True)
 
     @staticmethod
@@ -269,3 +284,8 @@ class ClusterTools:
             ValidationTool.verify_field_value_exist_in_output_dict(output, app).verify_result()
             assert output[app][ClusterConsts.APP_VERSION] == expected_version, \
                 f"Expected {app} version: {expected_version}. Actual version: {output[app][ClusterConsts.APP_VERSION]}"
+
+    @staticmethod
+    def wait_for_apps_to_be_in_wanted_state():
+        time.sleep(WAIT_FOR_APPS_RUNNING)
+        logger.info(f'Sleeping for {WAIT_FOR_APPS_RUNNING} seconds until apps are running')
