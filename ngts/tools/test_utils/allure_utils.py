@@ -82,3 +82,7 @@ def _step(step_msg, independent=False):
                 raise error
         finally:
             print_step_log_info(f'Step end [{"FAIL" if error else "SUCCESS"}]: {step_msg}', lineno, filename)
+
+
+def attach(title: str, msg: str, attachment_type=orig_allure.attachment_type.TEXT):
+    orig_allure.attach(msg, title, attachment_type)

@@ -64,9 +64,16 @@ def test_bmc_install(engines, devices, topology_obj):
     TestToolkit.tested_api = ApiType.NVUE
     with allure.step(f"With {TestToolkit.tested_api}"):
         initial_version, initial_version_path = _get_initial_version_and_path(platform)
+        allure.attach("bmc_initial_version", f"{initial_version=}, {initial_version_path=}")
+        base_version = _get_version_from_path(bmc_base_version_path)
+        allure.attach("bmc_base_version", f"{base_version=}, {bmc_base_version_path=}")
+        with allure.step("Assert versions are different"):
+            if base_version == initial_version:
+                raise Exception(f"Can't run test because the BMC version we want to install is the same as the version "
+                                f"already installed: {initial_version}")
+
         initial_files = fae.platform.firmware.bmc.show_files_as_list()
         base_version_filename = _fetch_image(bmc_base_version_path, fae, initial_files)
-        base_version = _get_version_from_path(bmc_base_version_path)
 
     try:
         _install_image(fae, base_version_filename, base_version, engines, topology_obj, platform)
