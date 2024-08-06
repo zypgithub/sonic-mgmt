@@ -319,7 +319,7 @@ tests/push_build_tests/general/wjh/test_wjh.py::test_l1_raw_drop:
     conditions:
       - "https://redmine.mellanox.com/issues/3834140"
 
-tests/nightly/secure/test_secure_boot.py:
+tests/nightly/secure/test_secure_boot/test_secure_boot.py:
   skip:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/3824755"
     conditions:
