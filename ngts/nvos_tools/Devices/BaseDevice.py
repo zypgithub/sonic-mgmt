@@ -30,6 +30,8 @@ class BaseDevice(ABC):
         self.switch_type = switch_type
         self.cli_coverage_path = ""
         self.cli_coverage_project_name = ""
+        self.cur_mgmt_port_name = ''
+        self.cur_mgmt_port_ip = ''
 
         self._init_constants()
         self._init_available_databases()
@@ -116,6 +118,10 @@ class BaseDevice(ABC):
     @abstractmethod
     def get_ib_ports_num(self):
         pass
+
+    def update_mgmt_port(self, name, ip):
+        self.cur_mgmt_port_name = name
+        self.cur_mgmt_port_ip = ip
 
     def get_mgmt_ports(self) -> List[str]:
         return None

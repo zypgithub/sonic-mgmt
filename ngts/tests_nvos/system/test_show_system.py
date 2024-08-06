@@ -5,7 +5,9 @@ import pytest
 
 from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.nvos_constants.constants_nvos import SystemConsts
+from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
+from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
@@ -34,48 +36,53 @@ def test_system(test_api, engines, devices, topology_obj, test_name):
             11. verify hostname changed to ""nvos"
     """
     TestToolkit.tested_api = test_api
+    dut_device: BaseDevice = devices.dut
 
     with allure.step('Run show system command and verify that each field has a value'):
         system = System()
         system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
+
+    with allure.step('validate expected fields exist in output'):
         system_output.pop(SystemConsts.VERSION)
         ValidationTool.verify_all_fields_value_exist_in_output_dictionary(
             system_output, system.get_expected_fields(devices.dut, 'system')).verify_result()
 
-    with allure.step('Run set system hostname command and verify that hostname is updated'):
-        new_hostname_value = "NOS-NVOS"
-        hostname_default = SystemConsts.HOSTNAME_DEFAULT_VALUE
-        dhcp_hostname = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific']['dhcp_hostname']
-        output = OutputParsingTool.parse_json_str_to_dictionary(
-            engines.dut.run_cmd("nv show interface eth0 ip dhcp-client -o json")).get_returned_value()
+    with allure.step('get default hostname value'):
+        output = OutputParsingTool.parse_json_str_to_dictionary(Interface(None, dut_device.cur_mgmt_port_name).show()).get_returned_value()
         dhcp_enabled = 'state' in output and output['state'] == "enabled"
         if dhcp_enabled:
-            hostname_default = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()[
-                "hostname"]
+            noga_query_data = topology_obj.players['dut']['attributes'].noga_query_data['attributes']
+            dhcp_hostname = noga_query_data['Specific']['dhcp_hostname'] or noga_query_data['Common']['Name']
             if dhcp_hostname:
-                ValidationTool.verify_field_value_in_output(system_output, SystemConsts.HOSTNAME,
-                                                            dhcp_hostname).verify_result()
+                assert system_output[SystemConsts.HOSTNAME] in [dhcp_hostname, f'{dhcp_hostname}-mgmt2'], f'unexpected "{SystemConsts.HOSTNAME}" value.\nexpected: {[dhcp_hostname, f"{dhcp_hostname}-mgmt2"]}\nactual: {system_output[SystemConsts.HOSTNAME]}'
+            default_hostname = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()[SystemConsts.HOSTNAME]
+        else:
+            default_hostname = SystemConsts.HOSTNAME_DEFAULT_VALUE
 
-        res_obj, duration = OperationTime.save_duration('set hostname', '', test_name, system.set,
-                                                        SystemConsts.HOSTNAME, new_hostname_value,
-                                                        apply=True, ask_for_confirmation=True)
-        res_obj.verify_result()
-        time.sleep(3)
-        OperationTime.verify_operation_time(duration, 'set hostname').verify_result()
-        system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
-        ValidationTool.verify_field_value_in_output(system_output, SystemConsts.HOSTNAME,
-                                                    new_hostname_value).verify_result()
+    with allure.step('set system hostname command and verify that hostname is updated'):
+        with allure.step('set new hostname'):
+            new_hostname_value = "NOS-NVOS"
+            res_obj, duration = OperationTime.save_duration('set hostname', '', test_name, system.set,
+                                                            SystemConsts.HOSTNAME, new_hostname_value,
+                                                            apply=True, ask_for_confirmation=True)
+            res_obj.verify_result()
+            time.sleep(3)
+        with allure.step('verify duration'):
+            OperationTime.verify_operation_time(duration, 'set hostname').verify_result()
+        with allure.step('verify change in show'):
+            system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
+            ValidationTool.verify_field_value_in_output(system_output, SystemConsts.HOSTNAME, new_hostname_value).verify_result()
 
     with allure.step('Run unset system hostname command and verify that hostname is updated'):
-        system.unset(SystemConsts.HOSTNAME, apply=True, ask_for_confirmation=True).verify_result()
-        if dhcp_enabled:
-            logging.info("Wait till the management interface will be reloaded to get a hostname from DHCP")
-            time.sleep(30)
-        system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
-        time.sleep(3)
-        ValidationTool.verify_field_value_in_output(system_output, SystemConsts.HOSTNAME,
-                                                    hostname_default if dhcp_enabled
-                                                    else SystemConsts.HOSTNAME_DEFAULT_VALUE).verify_result()
+        with allure.step('unset hostname'):
+            system.unset(SystemConsts.HOSTNAME, apply=True, ask_for_confirmation=True).verify_result()
+            if dhcp_enabled:
+                logging.info("Wait till the management interface will be reloaded to get a hostname from DHCP")
+                time.sleep(30)
+        with allure.step('verify hostname is back to default'):
+            system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
+            time.sleep(3)
+            assert system_output[SystemConsts.HOSTNAME] in [default_hostname, f'{default_hostname}-mgmt2'], f'unexpected "{SystemConsts.HOSTNAME}" value.\nexpected: {[default_hostname, f"{default_hostname}-mgmt2"]}\nactual: {system_output[SystemConsts.HOSTNAME]}'
 
 
 @pytest.mark.system

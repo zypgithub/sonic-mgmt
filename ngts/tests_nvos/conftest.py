@@ -20,7 +20,6 @@ from ngts.cli_wrappers.openapi.openapi_command_builder import OpenApiRequest
 from ngts.constants.constants import DbConstants, CliType, DebugKernelConsts, InfraConst
 from ngts.nvos_constants.constants_nvos import ApiType, OperationTimeConsts, OutputFormat
 from ngts.nvos_constants.constants_nvos import NvosConst
-from ngts.nvos_tools.infra.CmdRunner import CmdRunner
 from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
 from ngts.nvos_tools.Devices.DeviceFactory import DeviceFactory
 from ngts.nvos_tools.Devices.EthDevice import EthSwitch
@@ -32,6 +31,7 @@ from ngts.nvos_tools.infra.DiskTool import DiskTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.PexpectTool import PexpectTool
+from ngts.nvos_tools.infra.RegressionConfigurations import RegressionConfigurations
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.nvos_tools.infra.TrafficGeneratorTool import TrafficGeneratorTool
 from ngts.nvos_tools.system.System import System
@@ -39,7 +39,6 @@ from ngts.scripts.code_coverage.code_coverage_consts import NvosConsts
 from ngts.scripts.code_coverage.test_code_coverage import extract_python_coverage_for_nvos
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_config_utils import clear_conf
-from ngts.nvos_tools.infra.RegressionConfigurations import RegressionConfigurations
 from ngts.tools.test_utils.nvos_general_utils import wait_for_ldap_nvued_restart_workaround, set_base_configurations, \
     set_base_configurations_cl
 
@@ -110,6 +109,9 @@ def update_engine_dut_mgmt_port(topology, dut_engine: LinuxSshEngine, dut_device
                                   allure.orig_allure.attachment_type.TEXT)
 
     mgmt_ports = dut_device.get_mgmt_ports()
+
+    dut_device.update_mgmt_port(mgmt_ports[0], dut_engine.ip)
+
     if not mgmt_ports or len(mgmt_ports) == 1:
         logger.info('keep original dut engine ip')
         attach_res_to_allure(mgmt_ports, None, mgmt_ports[0] if mgmt_ports else None, dut_engine.ip)
@@ -131,6 +133,7 @@ def update_engine_dut_mgmt_port(topology, dut_engine: LinuxSshEngine, dut_device
     chosen_mgmt_port_ip = available_mgmt_ips[mgmt_ports.index(chosen_mgmt_port)]
     logger.info(f'chosen mgmt port for dut engine: {chosen_mgmt_port} - {chosen_mgmt_port_ip}')
     dut_engine.ip = chosen_mgmt_port_ip
+    dut_device.update_mgmt_port(chosen_mgmt_port, chosen_mgmt_port_ip)
     attach_res_to_allure(mgmt_ports, available_mgmt_ips, chosen_mgmt_port, dut_engine.ip)
 
 
