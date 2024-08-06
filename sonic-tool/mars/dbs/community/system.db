@@ -123,6 +123,10 @@
     </test>
 
     <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/jit_user.cases </cases>
+    </test>
+
+    <test>
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/authorization.cases </cases>
     </test>
 
@@ -139,6 +143,14 @@
     </test>
     <test>
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/critical_process_monitoring.cases </cases>
+    </test>
+
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/forced_mgmt_route.cases </cases>
+    </test>
+
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/mgmt_ipv6.cases </cases>
     </test>
 
 </DBDEF>
