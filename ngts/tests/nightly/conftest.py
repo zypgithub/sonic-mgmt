@@ -303,3 +303,26 @@ def is_sw_control_feature_enabled(cli_objects):
 def sw_control_ports(cli_objects, is_sw_control_feature_enabled, dut_ports_number_dict):
     if is_sw_control_feature_enabled:
         return cli_objects.dut.im.get_ports_supporting_im(dut_ports_number_dict)
+
+
+@pytest.fixture(scope='module')
+def disable_rsyslog_ratelimit(engines, request):
+    dut_engine = engines.dut
+    container_name = request.param
+    cmd_comment_interval = rf'docker exec -i {container_name} sed -e "s/\$SystemLogRateLimitInterval/\#\$SystemLogRateLimitInterval/g" -i /etc/rsyslog.conf'
+    cmd_comment_burst = rf'docker exec -i {container_name} sed -e "s/\$SystemLogRateLimitBurst/\#\$SystemLogRateLimitBurst/g" -i /etc/rsyslog.conf'
+
+    cmd_restart_rsyslogd = f'docker exec -i {container_name} supervisorctl restart rsyslogd'
+
+    cmd_uncomment_interval = rf'docker exec -i {container_name} sed -e "s/\#\$SystemLogRateLimitInterval/\$SystemLogRateLimitInterval/g" -i /etc/rsyslog.conf '
+    cmd_uncomment_burst = rf'docker exec -i {container_name} sed -e "s/\#\$SystemLogRateLimitBurst/\$SystemLogRateLimitBurst/g" -i /etc/rsyslog.conf'
+
+    with allure.step(f'Disabling rate limit for rsyslogd in {container_name} docker'):
+        dut_engine.run_cmd(cmd_comment_interval)
+        dut_engine.run_cmd(cmd_comment_burst)
+        dut_engine.run_cmd(cmd_restart_rsyslogd)
+    yield
+    with allure.step(f'Enabling rate limit for rsyslogd in {container_name} docker'):
+        dut_engine.run_cmd(cmd_uncomment_interval)
+        dut_engine.run_cmd(cmd_uncomment_burst)
+        dut_engine.run_cmd(cmd_restart_rsyslogd)

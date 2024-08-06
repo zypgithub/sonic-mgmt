@@ -13,8 +13,10 @@ logger = logging.getLogger()
 @pytest.fixture(scope='module')
 def env(duthosts, topology_obj, setup_name, platform_params):
     """ Fixture which contains DUT - engine and CLI objects """
+
     class Collector:
         pass
+
     Collector.duthost = duthosts[0]
     Collector.dut_engine = topology_obj.players['dut']['engine']
     Collector.sonic_cli = topology_obj.players['dut']['cli']
@@ -222,24 +224,3 @@ def stop_arp_update(env):
     yield
     with allure.step('Start arp_update in SONIC'):
         env.dut_engine.run_cmd(cmd_template.format(action='start'))
-
-
-@pytest.fixture(scope='module')
-def disable_rsyslog_ratelimit(env):
-    cmd_comment_interval = r'docker exec -i swss sed -e "s/\$SystemLogRateLimitInterval/\#\$SystemLogRateLimitInterval/g" -i /etc/rsyslog.conf'
-    cmd_comment_burst = r'docker exec -i swss sed -e "s/\$SystemLogRateLimitBurst/\#\$SystemLogRateLimitBurst/g" -i /etc/rsyslog.conf'
-
-    cmd_restart_rsyslogd = 'docker exec -i swss supervisorctl restart rsyslogd'
-
-    cmd_uncomment_interval = r'docker exec -i swss sed -e "s/\#\$SystemLogRateLimitInterval/\$SystemLogRateLimitInterval/g" -i /etc/rsyslog.conf '
-    cmd_uncomment_burst = r'docker exec -i swss sed -e "s/\#\$SystemLogRateLimitBurst/\$SystemLogRateLimitBurst/g" -i /etc/rsyslog.conf'
-
-    with allure.step('Disabling rate limit for rsyslogd in swss docker'):
-        env.dut_engine.run_cmd(cmd_comment_interval)
-        env.dut_engine.run_cmd(cmd_comment_burst)
-        env.dut_engine.run_cmd(cmd_restart_rsyslogd)
-    yield
-    with allure.step('Enabling rate limit for rsyslogd in swss docker'):
-        env.dut_engine.run_cmd(cmd_uncomment_interval)
-        env.dut_engine.run_cmd(cmd_uncomment_burst)
-        env.dut_engine.run_cmd(cmd_restart_rsyslogd)

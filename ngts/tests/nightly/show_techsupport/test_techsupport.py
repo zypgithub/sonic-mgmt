@@ -57,8 +57,9 @@ def test_techsupport_fw_stuck_dump(topology_obj, loganalyzer, engines, cli_objec
             cli_objects.dut.general.reboot_reload_flow(topology_obj=topology_obj)
 
 
+@pytest.mark.parametrize('disable_rsyslog_ratelimit', ['syncd'], indirect=True)
 @pytest.mark.parametrize("fw_event", ["FW_HEALTH_EVENT", "PLL_LOCK_EVENT"])
-def test_techsupport_mellanox_sdk_dump(topology_obj, engines, cli_objects, loganalyzer, fw_event):
+def test_techsupport_mellanox_sdk_dump(topology_obj, engines, cli_objects, loganalyzer, fw_event, disable_rsyslog_ratelimit):
     duthost = engines.dut
     logger.info("Health event generated is {}".format(fw_event))
     event_id = FW_EVENTS_DICT[fw_event]
@@ -72,7 +73,7 @@ def test_techsupport_mellanox_sdk_dump(topology_obj, engines, cli_objects, logan
     with allure.step('STEP2: Trigger SDK health event at dut'):
         duthost.run_cmd('docker exec -it syncd python mellanox_sdk_trigger_event_script.py --fw_event {}'.format(event_id))
         for dut in loganalyzer:
-            loganalyzer[dut].expect_regex.extend(["Health event happened, severity"])
+            loganalyzer[dut].expect_regex.extend(["Health event happened"])
             ignoreRegex = [
                 r".*SX_HEALTH_FATAL Detected with cause : FW health issue.*",
                 r".*SDK health event, device.*",
