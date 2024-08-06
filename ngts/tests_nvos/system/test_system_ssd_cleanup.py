@@ -6,7 +6,6 @@ from retry import retry
 
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.infra.Fae import Fae
-from ngts.tests_nvos.system.test_system_health import verify_health_status_and_led
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_constants.constants_nvos import HealthConsts, SyslogConsts, SystemConsts
 from ngts.tools.test_utils import allure_utils as allure
@@ -99,15 +98,7 @@ def test_ssd_cleanup_positive_flow(engines, devices):
             time.sleep(180)
 
         with allure.step("check health status is not ok"):
-            verify_health_status_and_led(system, HealthConsts.NOT_OK)
-            issue = {
-                'Disk space': {
-                    "issue": "Not OK"
-                }
-            }
-            health_dict = OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).verify_result()
-            temp = all(item in health_dict[HealthConsts.ISSUES].items() for item in issue.items())
-            assert temp, "the expected issue is {} but the output is {}".format(issue, health_dict)
+            _check_disk_issue(system, False)
 
             with allure.step("check system events - two events expected "):
                 events_dict = OutputParsingTool.parse_json_str_to_dictionary(system.events.show()).verify_result()
@@ -124,10 +115,9 @@ def test_ssd_cleanup_positive_flow(engines, devices):
                 verify_deleted_folders_list(engines.dut, files_to_delete[:-2])
 
             with allure.step("check no disk issue"):
-                time.sleep(120)
-                health_dict = OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).verify_result()
-                temp = all(item in health_dict[HealthConsts.ISSUES].items() for item in issue.items())
-                assert not temp, f"health issue still exist even after waiting for 120 seconds, health output: {health_dict}"
+                with allure.step("waiting for 180 seconds, for monit and healthD"):
+                    time.sleep(120)
+                _check_disk_issue(system)
 
             with allure.step("check system events - two events expected "):
                 events_dict = OutputParsingTool.parse_json_str_to_dictionary(system.events.show()).verify_result()
@@ -145,9 +135,10 @@ def test_ssd_cleanup_positive_flow(engines, devices):
                 verify_deleted_folders_list(engines.dut, [file_name])
                 assert "No such file or directory" in engines.dut.run_cmd(f"cat {paths_order[0]}/{files_to_delete[0]}"), f"{files_to_delete[0]} should be deleted"
 
-            with allure.step("check health status is ok"):
-                time.sleep(180)
-                verify_health_status_and_led(system, HealthConsts.OK)
+            with allure.step("check no disk issue"):
+                with allure.step("waiting for 180 seconds, for monit and healthD"):
+                    time.sleep(180)
+                _check_disk_issue(system)
     finally:
         _delete_all_files(engines.dut)
         _change_monit_and_reload(engines.dut, new_line, old_line, file_path)
@@ -186,8 +177,8 @@ def test_ssd_cleanup_reboot_with_high_ssd_usage(engines, devices):
         with allure.step("check deleted files and the deleting order"):
             verify_deleted_folders_list(engines.dut, [file_name])
 
-        with allure.step("check health status is ok"):
-            verify_health_status_and_led(system, HealthConsts.OK)
+        with allure.step("check no disk issue"):
+            _check_disk_issue(system)
 
         with allure.step("check ssd-cleanup deleted the {file}".format(file=file_name)):
             assert file_name not in engines.dut.run_cmd(f'ls {path}')
@@ -304,6 +295,24 @@ def _delete_all_files(engine):
             cmd = f"sudo bash -c 'if [ ! -d '{path}' ]; then mkdir -p '{path}'; fi'"
             engine.run_cmd(cmd)
             logger.info(f"done with {path}")
+
+
+def _check_disk_issue(system, no_disk_issue=True):
+    """
+    :summary:
+
+    :param system:
+    :param is_ok:
+    :return:
+    """
+    issue = {
+        'Disk space': {
+            "issue": "Not OK"
+        }
+    }
+    health_dict = OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).verify_result()
+    temp = all(item in health_dict[HealthConsts.ISSUES].items() for item in issue.items())
+    assert (no_disk_issue ^ temp), "we{}expect disk issue, but the health output is {}".format(' do not ' if no_disk_issue else '', health_dict)
 
 
 def get_status_of_program(output, program_name):
