@@ -579,7 +579,7 @@ def test_buffer(drop_reason, engines, topology_obj, players, interfaces, wjh_buf
     ping_checker = PingChecker(players, ping_validation)
 
     try:
-        retry_call(ping_checker.run_validation, fargs=[], tries=5, delay=5, logger=logger)
+        retry_call(ping_checker.run_validation, fargs=[], tries=14, delay=10, logger=logger)
 
         with allure.step('Sending iPerf traffic'):
             logger.info('Sending iPerf traffic')

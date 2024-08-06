@@ -13,10 +13,11 @@ class DoroceConfigTemplate:
     This class contains 2 methods for configuring and cleaning-up DoRoCE related settings.
     """
     @staticmethod
-    def configuration(topology_obj, request=None):
+    def configuration(topology_obj, platform, request=None):
         """
         Method which are performing DoRoCE configuration
         :param topology_obj: topology object fixture
+        :param platform: device platform info
         :param request: request object fixture
         """
         if request:
@@ -25,7 +26,8 @@ class DoroceConfigTemplate:
                 request.addfinalizer(cleanup)
 
         cli_object = topology_obj.players['dut']['cli']
-        if AppExtensionInstallationConstants.DOAI in cli_object.general.show_and_parse_feature_status():
+        if ('sn2' not in platform and 'simx' not in platform and
+                AppExtensionInstallationConstants.DOAI in cli_object.general.show_and_parse_feature_status()):
             logger.info('Applying DoRoCE configuration')
             with allure.step('Applying DoRoCE configuration'):
                 cli_object.app_ext.disable_app(AppExtensionInstallationConstants.DOAI, validate=False)
@@ -38,19 +40,21 @@ class DoroceConfigTemplate:
                 cli_object.qos.reload_qos()
                 cli_object.doroce.config_doroce_lossless_double_ipool(ports_list=topology_obj.players_all_ports['dut'])
         else:
-            logger.info('Feature DoAI is not installed')
+            logger.info('Skip DoAI configurations')
 
     @staticmethod
-    def cleanup(topology_obj):
+    def cleanup(topology_obj, platform):
         """
         Method which are doing DoRoCE configuration cleanup
         :param topology_obj: topology object fixture
+        :param platform: device platform info
         """
         cli_object = topology_obj.players['dut']['cli']
-        if AppExtensionInstallationConstants.DOAI in cli_object.general.show_and_parse_feature_status():
+        if ('sn2' not in platform and 'simx' not in platform and
+                AppExtensionInstallationConstants.DOAI in cli_object.general.show_and_parse_feature_status()):
             logger.info('Performing DoRoCE configuration cleanup')
             with allure.step('Performing DoRoCE configuration cleanup'):
                 cli_object.doroce.disable_doroce()
                 cli_object.app_ext.disable_app(AppExtensionInstallationConstants.DOAI)
         else:
-            logger.info('Feature DoAI is not installed')
+            logger.info('Skip DoAI configurations')
