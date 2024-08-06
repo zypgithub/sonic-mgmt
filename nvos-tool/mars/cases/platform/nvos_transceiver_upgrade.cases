@@ -3,12 +3,12 @@
   <global>
     <Test>
       <group> NVOS </group>
-      <name> Transceiver Firmware </name>
+      <name> Transceiver Firmware Upgrade </name>
       <info> </info>
       <owner> Rowaida Mahameed </owner>
     </Test>
     <Case>
-      <tags> Transceiver Firmware </tags>
+      <tags> Transceiver Firmware Upgrade </tags>
       <wrapper> [[run_time:db_tests_path]]/sonic-mgmt/sonic-tool/mars/scripts/canonical_mars_pytest_runner.py </wrapper>
       <tout> 3000 </tout>
       <tags>ALL</tags>

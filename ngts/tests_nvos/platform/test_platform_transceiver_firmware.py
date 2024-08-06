@@ -359,7 +359,7 @@ def _get_random_optical_module_transceiver():
                 random_transceiver = \
                     RandomizationTool.select_random_transceiver(transceivers_output=show_transceiver,
                                                                 field_name=PlatformConsts.HARDWARE_TRANCEIVER_DIAGNOSTIC_STATUS,
-                                                                expected_value='"Diagnostic Data Available',
+                                                                expected_value='Diagnostic Data Available',
                                                                 number_of_transceiver_to_select=1).verify_result()[0]
             else:
                 random_transceiver = random_transceiver.verify_result()[0]
