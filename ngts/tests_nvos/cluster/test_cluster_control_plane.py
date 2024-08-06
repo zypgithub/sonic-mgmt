@@ -57,6 +57,7 @@ def test_cluster_control_plane(engines, devices, test_api):
         all_config_files_paths = {}
         initial_config_contents = {}
         initial_configs_paths_to_restore = {}
+        initial_configuration_restored = False
     try:
 
         logger.info("Setting cluster state to enabled")
@@ -111,6 +112,8 @@ def test_cluster_control_plane(engines, devices, test_api):
                 conf_file_name = initial_configs_paths_to_restore[file_type].split('/')[-1]
                 control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.file_name[conf_file_name].action_file_install(force=False)
 
+        initial_configuration_restored = True
+
         with allure.step("Delete state/config Files"):
             for file_type in NMX_CONTROLLER_CONFIG_FILE_TYPES:
                 for file in all_config_files_paths[file_type]:
@@ -129,6 +132,21 @@ def test_cluster_control_plane(engines, devices, test_api):
             pass
 
     finally:
+        if not initial_configuration_restored:
+            with allure.step("Install initial configurations"):
+                for file_type in NMX_CONTROLLER_CONFIG_FILE_TYPES:
+                    control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].action_fetch_control_plane(initial_configs_paths_to_restore[file_type])
+                    conf_file_name = initial_configs_paths_to_restore[file_type].split('/')[-1]
+                    control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.file_name[conf_file_name].action_file_install(force=False)
+
+            with allure.step("Delete state/config Files"):
+                for file_type in NMX_CONTROLLER_CONFIG_FILE_TYPES:
+                    for file in all_config_files_paths[file_type]:
+                        control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.file_name[file].action_delete()
+                        engines.sonic_mgmt.run_cmd(f"sudo rm -rf {initial_configs_paths_to_restore[file_type]}")
+                for file_type in NMX_CONTROLLER_STATE_FILE_TYPES:
+                    for file in all_state_files_paths[file_type]:
+                        control_plane.state.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.file_name[file].action_delete()
         cluster.unset(apply=True)
         ClusterTools.wait_for_apps_to_be_in_wanted_state()
 

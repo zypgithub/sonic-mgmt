@@ -6,7 +6,7 @@ from collections import namedtuple
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_constants.constants_nvos import PlatformConsts, IbConsts, ApiType, OutputFormat, SystemConsts, ClusterAppsLogLevels, ClusterConsts
+from ngts.nvos_constants.constants_nvos import PlatformConsts, IbConsts, ApiType, OutputFormat, SystemConsts, ClusterAppsLogLevels, ClusterConsts, NvosConst
 from ngts.nvos_tools.ib.Ib import Ib
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
@@ -24,6 +24,8 @@ NMX_CONTROLLER_STATE_FILE_TYPES = ['conn_info']  # TODO add sm_dump and topology
 ClusterAppsLogLevelsList = [ClusterAppsLogLevels.DEBUG, ClusterAppsLogLevels.INFO, ClusterAppsLogLevels.NOTICE, ClusterAppsLogLevels.WARNING, ClusterAppsLogLevels.ERROR, ClusterAppsLogLevels.CRITICAL]
 NMX_LOG_MESSAGES_TAGS = ['nmxc-sm', 'nmxc-fm', 'nmxc-fib', 'nmxc-gw_api', 'nmxc-rest', 'nmxc-config_daemon']
 WAIT_FOR_APPS_RUNNING = 35  # Should be reduced to ~7 once bug is fixed [NVOS - Design] Bug SW #4010133: [Non-Functional ] [NMX] | No immediate NVOS reflection for showing running apps after being started/stopped | Assignee: Chris Yang | Status: Assigned
+NMXC_CONN = 'nmxc-conn'
+NMXC_CONN_STATE_PER_CLUSTER_STATE = {NvosConst.ENABLED: 'up', NvosConst.DISABLED: 'down'}
 
 
 class ClusterTools:
@@ -75,6 +77,7 @@ class ClusterTools:
 
             if output[SystemConsts.STATE] == 'disabled':
                 cluster.set(op_param_name="state", op_param_value='enabled', apply=True)
+                ClusterTools.wait_for_apps_to_be_in_wanted_state()
                 output = OutputParsingTool.parse_show_output_to_dict(
                     cluster.show(output_format=output_format),
                     output_format=output_format).get_returned_value()
@@ -83,6 +86,9 @@ class ClusterTools:
                 assert output[SystemConsts.STATE] == 'enabled', f"Cluster state is , " \
                     f"{output[SystemConsts.STATE]}, Expected to be: " \
                     f"enabled"
+                assert NMXC_CONN in output, f"{NMXC_CONN} was not found in {output}"
+                expected_nmxc_state = NMXC_CONN_STATE_PER_CLUSTER_STATE[output[SystemConsts.STATE]]
+                assert output[NMXC_CONN] == expected_nmxc_state, f"{NMXC_CONN} state was expected to be {expected_nmxc_state} but instead it was {output[NMXC_CONN]}"
 
     @staticmethod
     def check_cluster_state(cluster, output_format):
@@ -108,6 +114,7 @@ class ClusterTools:
 
             if output[SystemConsts.STATE] == 'enabled':
                 cluster.set(op_param_name="state", op_param_value='disabled', apply=True)
+                ClusterTools.wait_for_apps_to_be_in_wanted_state()
 
             with allure.step("Validate state is disabled"):
                 output = OutputParsingTool.parse_show_output_to_dict(
@@ -116,6 +123,9 @@ class ClusterTools:
                 assert output[SystemConsts.STATE] == 'disabled', f"State state is , " \
                     f"{output[SystemConsts.STATE]}, Expected to be: " \
                     f"disabled"
+                assert NMXC_CONN in output, f"{NMXC_CONN} was not found in {output}"
+                expected_nmxc_state = NMXC_CONN_STATE_PER_CLUSTER_STATE[output[SystemConsts.STATE]]
+                assert output[NMXC_CONN] == expected_nmxc_state, f"{NMXC_CONN} state was expected to be {expected_nmxc_state} but instead it was {output[NMXC_CONN]}"
 
     @staticmethod
     def verify_app_is_up(engines, app):
@@ -193,6 +203,7 @@ class ClusterTools:
     def start_stop_cluster(cluster, output_format):
         ClusterTools.start_cluster(cluster, output_format)
         ClusterTools.stop_cluster(cluster, output_format)
+        return ResultObj(result=True)
 
     @staticmethod
     def verify_apps_running(engines, devices, cluster, expected_state, output_format):
