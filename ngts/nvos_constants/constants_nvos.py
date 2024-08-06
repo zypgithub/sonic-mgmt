@@ -639,6 +639,10 @@ class SystemConsts:
         "Disconnecting from NVOS, system is offline during reboot",
     )
 
+    LOCALHOST = "127.0.0.1"
+    DUMMY_IMAGE = "dummy.bin"
+    DUMMY_IMAGE_PATH = "/tmp/"
+
 
 class DocumentsConsts:
     MIN_FILES_SIZE = 30000

@@ -457,6 +457,50 @@ def test_system_image_install_reject_with_random_char(engines, test_api, origina
     system_image_install_reject_with_prompt(engines, system, prompt_response, original_version, devices)
 
 
+@pytest.mark.system
+@pytest.mark.simx
+@pytest.mark.image
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_system_image_fetch_from_local(engines, test_api, devices):
+    """
+    Check the image is being fetched if scp is tried from switch itself
+    1. Create a dummy image file in the switch
+    2. Attempt image fetch command using the scp method
+    3. Check the image is fetched
+    4. Remove the dummy image file created un step 1
+    5. Delete the file fetched in step 2
+    """
+    TestToolkit.tested_api = test_api
+    system = System()
+    scp_path = 'scp://{}:{}@{}'.format(devices.dut.default_username, devices.dut.default_password,
+                                       SystemConsts.LOCALHOST)
+    image_created = False
+    image_fetched = False
+    try:
+        with allure.step("Create a dummy image"):
+            engines.dut.run_cmd("touch " + SystemConsts.DUMMY_IMAGE_PATH + SystemConsts.DUMMY_IMAGE)
+            engines.dut.run_cmd("ls -latr " + SystemConsts.DUMMY_IMAGE_PATH)
+            image_created = True
+
+        with allure.step("Fetch an image {}".format(scp_path + SystemConsts.DUMMY_IMAGE_PATH +
+                                                    SystemConsts.DUMMY_IMAGE)):
+            system.image.action_fetch(scp_path + SystemConsts.DUMMY_IMAGE_PATH + SystemConsts.DUMMY_IMAGE)
+
+        with allure.step("Verify if the image is fetched"):
+            files = OutputParsingTool.parse_json_str_to_dictionary(system.image.files.show()).get_returned_value()
+            if SystemConsts.DUMMY_IMAGE in str(files):
+                image_fetched = True
+            assert image_fetched, "File {} was not fetched".format(SystemConsts.DUMMY_IMAGE)
+
+    finally:
+        if image_created:
+            with allure.step("Clear the dummy image file created"):
+                engines.dut.run_cmd("rm -rf " + SystemConsts.DUMMY_IMAGE_PATH + SystemConsts.DUMMY_IMAGE)
+        if image_fetched:
+            with allure.step("Delete the image fetched"):
+                system.image.files.delete_files([SystemConsts.DUMMY_IMAGE])
+
+
 def system_image_install_reject_with_prompt(engines, system, prompt_response, original_version, devices):
 
     verify_current_version(original_version, system, devices.dut)
