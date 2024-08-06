@@ -36,6 +36,7 @@ def factory_reset_no_params_post_steps(apply_and_save_port, engines, just_apply_
                 # Enable cluster and validate its enabled.
                 state = ClusterTools.check_cluster_state(cluster, output_format=OutputFormat.json)
                 assert state == init_cluster_status, f"State is {state} instead of {init_cluster_status}"
+                cluster.unset(apply=True)
 
 
 def set_ports_to_legacy_on_croc(engines, devices):

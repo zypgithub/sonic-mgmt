@@ -42,14 +42,14 @@ def test_reset_factory_without_params(engines, devices, topology_obj, platform_p
     try:
         with allure.step('pre factory reset steps'):
             apply_and_save_port, current_time, just_apply_port, last_status_line, machine_type, not_apply_port, \
-                username = factory_reset_no_params_pre_steps(engines, platform_params, system, devices)
+                username, init_cluster_status = factory_reset_no_params_pre_steps(engines, platform_params, system, devices)
 
         with allure.step("Run reset factory without params"):
             execute_reset_factory(engines, system, devices.dut.reset_factory, "", current_time)
 
         with allure.step('post factory reset steps'):
             factory_reset_no_params_post_steps(apply_and_save_port, engines, just_apply_port, last_status_line,
-                                               machine_type, not_apply_port, system)
+                                               machine_type, not_apply_port, system, init_cluster_status)
 
     finally:
         with allure.step("Verify the cleanup done successfully"):
