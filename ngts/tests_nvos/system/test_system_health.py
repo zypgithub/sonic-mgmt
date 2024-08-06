@@ -404,6 +404,7 @@ def test_simulate_health_problem_with_docker_stop(devices, engines):
                                            value=NvosConst.DOCKER_STATUS_DISABLED)
             # DatabaseTool.redis_cli_hset(engines.dut, DatabaseConst.CONFIG_DB_NAME, "FEATURE|{}".format(docker_to_stop), NvosConst.DOCKER_AUTO_RESTART, NvosConst.DOCKER_STATUS_DISABLED)
         with allure.step("stop {} docker".format(docker_to_stop)):
+            time.sleep(3)
             output = engines.dut.run_cmd("docker stop {}".format(docker_to_stop))
             assert docker_to_stop in output, "Failed to stop docker"
         health_issue_dict = {docker_to_stop: f"Container '{docker_to_stop}' is not running"}
@@ -508,7 +509,6 @@ def validate_health_fix_or_issue(system, health_issue_dict, search_since_datetim
     status = OK if is_fix else NOT_OK
     regex = HealthConsts.HEALTH_FIX_REGEX if is_fix else HealthConsts.HEALTH_ISSUE_REGEX
     with allure.step("Validate health issues {}".format("fix" if is_fix else "")):
-        logger.info("Validate health issues {}".format("fix" if is_fix else ""))
         system.wait_until_health_status_change_to(status)
 
         with allure.step("Validate health output issues"):
