@@ -1,10 +1,8 @@
 import datetime
 import logging
-import os
 import random
 import smtplib
 import time
-import os
 from email.mime.text import MIMEText
 from typing import Dict
 
@@ -14,7 +12,6 @@ from retry import retry
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
-
 from infra.tools.sql.connect_to_mssql import ConnectMSSQL
 from ngts.cli_wrappers.linux.linux_general_clis import LinuxGeneralCli
 from ngts.cli_wrappers.nvue.nvue_base_clis import NvueBaseCli
@@ -107,6 +104,9 @@ def update_engine_dut_mgmt_port(topology, dut_engine: LinuxSshEngine, dut_device
         allure.orig_allure.attach(attachment, 'dut_engine_mgmt_port_used_for_session', allure.orig_allure.attachment_type.TEXT)
 
     mgmt_ports = dut_device.get_mgmt_ports()
+
+    dut_device.update_mgmt_port(mgmt_ports[0], dut_engine.ip)
+
     if not mgmt_ports or len(mgmt_ports) == 1:
         logger.info('keep original dut engine ip')
         attach_res_to_allure(mgmt_ports, None, mgmt_ports[0] if mgmt_ports else None, dut_engine.ip)
@@ -127,6 +127,7 @@ def update_engine_dut_mgmt_port(topology, dut_engine: LinuxSshEngine, dut_device
     chosen_mgmt_port_ip = available_mgmt_ips[mgmt_ports.index(chosen_mgmt_port)]
     logger.info(f'chosen mgmt port for dut engine: {chosen_mgmt_port} - {chosen_mgmt_port_ip}')
     dut_engine.ip = chosen_mgmt_port_ip
+    dut_device.update_mgmt_port(chosen_mgmt_port, chosen_mgmt_port_ip)
     attach_res_to_allure(mgmt_ports, available_mgmt_ips, chosen_mgmt_port, dut_engine.ip)
 
 
