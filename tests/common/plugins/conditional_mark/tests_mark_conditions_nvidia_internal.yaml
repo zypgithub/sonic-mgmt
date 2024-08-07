@@ -263,6 +263,18 @@ tests/nightly/app_extension/test_app_extension_basic.py::test_app_techsupport_in
     conditions:
       - "https://redmine.mellanox.com/issues/3272016 and 'simx' in platform"
 
+tests/nightly/app_extension/test_app_extension_install_uninstall.py:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/3943532 on SPC5 platform"
+    conditions:
+      - "https://redmine.mellanox.com/issues/3943532 and 'sn5640' in platform"
+
+tests/nightly/app_extension/test_app_extension_upgrade.py:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/3943532 on SPC5 platform"
+    conditions:
+      - "https://redmine.mellanox.com/issues/3943532 and 'sn5640' in platform"
+
 tests/nightly/app_extension:
   skip:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/3245030 on Air setups"
