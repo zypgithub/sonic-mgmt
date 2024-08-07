@@ -81,7 +81,7 @@ class BaseFWUpgradeTest:
             set_firmware_property(fw_component, PlatformConsts.FW_SOURCE, PlatformConsts.FW_SOURCE_CUSTOM)
 
             fetched_image_file = fw_component.files.file_name[prev_filename]
-            fetched_image_file.action_file_install()
+            fetched_image_file.action_file_install(force=False)
 
             recover_dut_with_remote_reboot(topology_obj, engines, should_clear_config=False)
 
@@ -94,7 +94,7 @@ class BaseFWUpgradeTest:
             fw_component.files.verify_show_files_output(expected_files=[prev_filename, curr_filename])
 
             fetched_image_file = fw_component.files.file_name[curr_filename]
-            fetched_image_file.action_file_install()
+            fetched_image_file.action_file_install(force=False)
 
             recover_dut_with_remote_reboot(topology_obj, engines, should_clear_config=False)
 

@@ -132,7 +132,7 @@ def verify_cert_data_same_as_directly_from_bmc(erot_name: str, nv_cert: dict):
     with allure.step('compare certificates data from nv show to data received directly from BMC'):
         with allure.step('get nvos password to bmc from tpm'):
             tpm = TpmTool(dut_engine)
-            bmc_password = tpm.get_tpm_cipher()[:11] + 'A!'
+            bmc_password = tpm.get_bmc_admin_password_from_tpm()
         with allure.step('get certificates data directly from bmc'):
             output_file = '/tmp/bmc-certs'
             redfish_erot_name = f'MGX_{erot_name}'
@@ -152,7 +152,7 @@ def verify_measurements_data_same_as_directly_from_bmc(erot_name: str, nv_measur
     with allure.step('compare measurements data from nv show to data received directly from BMC'):
         with allure.step('get nvos password to bmc from tpm'):
             tpm = TpmTool(dut_engine)
-            bmc_password = tpm.get_tpm_cipher()[:11] + 'A!'
+            bmc_password = tpm.get_bmc_admin_password_from_tpm()
         with allure.step('get measurements data directly from bmc'):
             output_file = '/tmp/bmc-measurements'
             redfish_erot_name = f'MGX_{erot_name}'

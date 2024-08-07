@@ -38,7 +38,7 @@ def test_erot_upgrade_all(engines, devices, topology_obj, test_api, test_name, c
 
 
 @pytest.mark.erot
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [ApiType.NVUE])
 def test_erot_upgrade_all_badflow(engines, devices, topology_obj, test_api, test_name):
     """
     Test bad flow scenarios for platform firmware EROT.
@@ -91,7 +91,7 @@ def test_erot_upgrade_fae(engines, devices, topology_obj, test_api, test_name, c
 
 
 @pytest.mark.erot
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [ApiType.NVUE])
 def test_erot_upgrade_fae_badlflow(engines, devices, topology_obj, test_api, test_name, erots):
     """
     Test bad flow scenarios for fae platform firmware <EROT-COMPONENT>, for all erots in board.

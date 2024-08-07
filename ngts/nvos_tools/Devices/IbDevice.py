@@ -699,6 +699,7 @@ class JulietSwitch(NvLinkSwitch):
     FaeImagesTestConsts = namedtuple('FaeImagesTestConsts', ('current_image_version', 'alternate_image_version'))
     NmxClusterAppsConsts = namedtuple('NmxClusterAppsConsts',
                                       ('default_path', 'new_path', 'default_version_names', 'new_version_names'))
+    BiosImagesTestConsts = namedtuple('BiosImagesTestConsts', ('current_version', 'alternate_version'))
 
     def __init__(self, asic_amount):
         super().__init__(asic_amount=asic_amount)
@@ -759,10 +760,17 @@ class JulietSwitch(NvLinkSwitch):
         )
         self.supported_commands.extend([ActionConsts.POWER_CYCLE])
 
-        self.current_bios_version_name = "0ACTV_00.00.015_rc6"
-        self.current_bios_version_path = '/auto/sw_system_release/sx_mlnx_bios/SnowyOwl/0ACTV_00.00.015_rc6/Release/erot_sign_debug/cec1736-apfw-000000f.fwpkg'
-        self.previous_bios_version_name = "0ACTV_00.00.015_rc5"
-        self.previous_bios_version_path = '/auto/sw_system_release/sx_mlnx_bios/SnowyOwl/0ACTV_00.00.015_rc5/Release/erot_sign_debug/cec1736-apfw-000000f.fwpkg'
+        self.bios_image_info = self.BiosImagesTestConsts(
+            current_version={
+                'path': '/auto/sw_system_release/sx_mlnx_bios/SnowyOwl/0ACTV_00.00.016/Release/erot_sign_debug/cec1736-apfw-0000010.fwpkg',
+                'filename': 'cec1736-apfw-0000010.fwpkg',
+                'version_name': '00.00.016',
+                'date': '08/05/2024'},
+            alternate_version={
+                'path': '/auto/sw_system_release/sx_mlnx_bios/SnowyOwl/0ACTV_00.00.015_rc7/Release/erot_sign_debug/cec1736-apfw-000000f.fwpkg',
+                'filename': 'cec1736-apfw-000000f.fwpkg',
+                'version_name': '00.00.015_rc7',
+                'date': '08/05/2024'})
 
     def _init_fan_list(self):
         super()._init_fan_list()

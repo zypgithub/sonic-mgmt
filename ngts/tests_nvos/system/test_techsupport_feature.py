@@ -4,7 +4,7 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.TpmTool import TpmTool
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_constants.constants_nvos import SystemConsts
+from ngts.nvos_constants.constants_nvos import SystemConsts, PlatformConsts
 from ngts.tools.test_utils import allure_utils as allure
 import logging
 import pytest
@@ -135,10 +135,10 @@ def test_techsupport_bmc_badflow(engines, test_name):
         with allure.step('compare certificates data from nv show to data received directly from BMC'):
             with allure.step('get nvos password to bmc from tpm'):
                 tpm = TpmTool(dut_engine)
-                bmc_password = tpm.get_tpm_cipher()[:11] + 'A!'
+                bmc_password = tpm.get_bmc_admin_password_from_tpm()
 
         with allure.step('gracefully restart bmc via redfish'):
-            client = CurlTool(server_host='10.0.1.1', username='admin',
+            client = CurlTool(server_host=PlatformConsts.BMC_INTERNAL_IP, username=PlatformConsts.BMC_LOGIN,
                               password=bmc_password)
             output = client.graceful_restart_bmc()
             assert 'The request completed successfully.' in output, f"Failed to reboot bmc via redfish.\nGot: {output}"

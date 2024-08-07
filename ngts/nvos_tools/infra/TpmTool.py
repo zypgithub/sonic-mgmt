@@ -77,6 +77,10 @@ class TpmTool:
                     f'sudo tpm2_createprimary -C o -G aes256cfb -u {file_name} | grep symcipher:')).split(
                     ':')[1].strip()
 
+    def get_bmc_admin_password_from_tpm(self):
+        with allure.step('get bmc admin password from tpm'):
+            return self.get_tpm_cipher()[:11] + 'A!'
+
     """ Helper methods """
 
     def _is_sys_tpm_dir_exists(self) -> bool:
