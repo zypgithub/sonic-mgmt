@@ -5,7 +5,7 @@ import logging
 import re
 import ipaddress
 
-from test_crm import RESTORE_CMDS, get_nh_ip
+from tests.crm.test_crm import RESTORE_CMDS, get_nh_ip
 from tests.common.helpers.crm import CRM_POLLING_INTERVAL
 from tests.common.errors import RunAnsibleModuleFail
 from tests.common.utilities import wait_until, recover_acl_rule
@@ -82,7 +82,7 @@ def crm_thresholds(duthosts, enum_rand_one_per_hwsku_frontend_hostname):
     duthost = duthosts[enum_rand_one_per_hwsku_frontend_hostname]
     cmd = "sonic-db-cli CONFIG_DB hget \"CRM|Config\" {threshold_name}_{type}_threshold"
     crm_res_list = ["ipv4_route", "ipv6_route", "ipv4_nexthop", "ipv6_nexthop", "ipv4_neighbor", "ipv6_neighbor",
-                    "nexthop_group_member", "nexthop_group", "acl_counter", "acl_entry", "fdb_entry"]
+                    "nexthop_group_member", "nexthop_group", "acl_counter", "acl_entry", "fdb_entry", "dram"]
     res = {}
     for item in crm_res_list:
         high = duthost.command(cmd.format(threshold_name=item, type="high"))["stdout_lines"][0]
@@ -239,7 +239,7 @@ def get_vlan_ipv4_prefix_len(asichost, tbinfo):
     assert False, "Not find v4 prefix for vlan interface config"
 
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="module")
 def shutdown_unnecessary_intf(
         duthosts, tbinfo, enum_frontend_asic_index, enum_rand_one_per_hwsku_frontend_hostname, crm_interface):
     """ Shutdown unused interfaces to avoid fdb entry influenced by mac learning """

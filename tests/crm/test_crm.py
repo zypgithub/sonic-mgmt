@@ -7,6 +7,7 @@ import copy
 import logging
 import os
 import tempfile
+import re
 
 from jinja2 import Template
 from tests.common.cisco_data import is_cisco_device
@@ -19,10 +20,12 @@ from tests.common.fixtures.duthost_utils import disable_fdb_aging       # noqa F
 from tests.common.utilities import wait_until, get_data_acl
 from tests.common.mellanox_data import is_mellanox_device
 from tests.common.helpers.dut_utils import get_sai_sdk_dump_file
+from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 
 
 pytestmark = [
-    pytest.mark.topology("any")
+    pytest.mark.topology("any"),
+    pytest.mark.usefixtures("shutdown_unnecessary_intf")
 ]
 
 logger = logging.getLogger(__name__)
@@ -38,6 +41,8 @@ RESTORE_CMDS = {"test_crm_route": [],
                 "test_acl_entry": [],
                 "test_acl_counter": [],
                 "test_crm_fdb_entry": [],
+                "test_crm_dram_counters": ["sudo rm -f /dev/shm/memtest"],
+                "test_crm_dram_thresholds": [],
                 "crm_cli_res": None,
                 "wait": 0}
 
@@ -224,6 +229,14 @@ def verify_thresholds(duthost, asichost, **kwargs):
     Verifies the following threshold parameters: percentage, actual used, actual free
     """
     loganalyzer = LogAnalyzer(ansible_host=duthost, marker_prefix='crm_test')
+
+    if kwargs["crm_cli_res"] == "dram":
+        kwargs["dram_margin"] = 204800
+        dram_percent_margin = 10
+    else:
+        kwargs["dram_margin"] = 0
+        dram_percent_margin = 0
+
     for key, value in list(THR_VERIFY_CMDS.items()):
         logger.info("Verifying CRM threshold '{}'".format(key))
         template = Template(value)
@@ -250,16 +263,16 @@ def verify_thresholds(duthost, asichost, **kwargs):
                                    verification for exceeded_percentage is skipped"
                                    .format(kwargs["crm_cli_res"], used_percent))
                     continue
-                kwargs["th_lo"] = used_percent - 1
-                kwargs["th_hi"] = used_percent
+                kwargs["th_lo"] = max(used_percent - 1 - dram_percent_margin * 2, 0)
+                kwargs["th_hi"] = max(used_percent - dram_percent_margin, 0)
                 loganalyzer.expect_regex = [EXPECT_EXCEEDED]
             elif key == "clear_percentage":
                 if used_percent >= 100 or used_percent < 1:
                     logger.warning("The used percentage for {} is {} and verification for clear_percentage is skipped"
                                    .format(kwargs["crm_cli_res"], used_percent))
                     continue
-                kwargs["th_lo"] = used_percent
-                kwargs["th_hi"] = used_percent + 1
+                kwargs["th_lo"] = min(used_percent + dram_percent_margin, 100)
+                kwargs["th_hi"] = min(used_percent + 1 + dram_percent_margin * 2, 100)
                 loganalyzer.expect_regex = [EXPECT_CLEAR]
 
         kwargs['crm_used'], kwargs['crm_avail'] = get_crm_stats(kwargs['crm_cmd'], duthost)
@@ -1207,3 +1220,74 @@ def test_crm_fdb_entry(duthosts, enum_rand_one_per_hwsku_frontend_hostname, enum
     if not is_cel_e1031_device(duthost):
         pytest_assert(new_crm_stats_fdb_entry_available - crm_stats_fdb_entry_available >= 0,
                       "Counter 'crm_stats_fdb_entry_available' was not incremented")
+
+
+def get_dram_crm_stats(duthost):
+    output = duthost.shell("crm show resources all | grep dram")['stdout']
+    used_count = int(re.findall(r"\d+", output)[0])
+    available_count = int(re.findall(r"\d+", output)[1])
+    return used_count, available_count
+
+
+def check_dram_crm_stats(duthost, tolerance_percent=0.2, **kwargs):
+    origin_used_count = kwargs['origin_used_count']
+    origin_available_count = kwargs['origin_available_count']
+    used_increment = kwargs['used_increment']
+    current_used_count, current_available_count = get_dram_crm_stats(duthost)
+    tolerance = abs(used_increment * tolerance_percent)
+
+    if abs(current_used_count - origin_used_count - used_increment) > tolerance:
+        logger.error(f"The DRAM crm used count is not changed as expected:\n"
+                     f"origin: {origin_used_count}\n"
+                     f"current: {current_used_count}\n"
+                     f"expected increment: {used_increment}\n"
+                     f"tolerance: {tolerance}")
+        return False
+    if abs(origin_available_count - current_available_count - used_increment) > tolerance:
+        logger.error(f"The DRAM crm available count is not changed as expected:\n"
+                     f"origin: {origin_used_count}\n"
+                     f"current: {current_used_count}\n"
+                     f"expected increment: {used_increment}\n"
+                     f"tolerance: {tolerance}")
+        return False
+    return True
+
+
+def test_crm_dram_counters(duthost):
+    with allure.step('Get the DRAM crm counters'):
+        used_count, available_count = get_dram_crm_stats(duthost)
+    with allure.step('Consume the memory by 1024M at maximum'):
+        memory_size_to_consume = min(1024, available_count//2//1024)
+        duthost.shell(f"dd if=/dev/zero of=/dev/shm/memtest bs=1M count={memory_size_to_consume}")
+    with allure.step('Check the DRAM crm counters'):
+        pytest_assert(wait_until(10, 1, 0, check_dram_crm_stats, duthost, origin_used_count=used_count,
+                                 origin_available_count=available_count, used_increment=memory_size_to_consume * 1024),
+                      "The validation for DRAM crm counters is failed, please check the test log.")
+    with allure.step('Get the new DRAM crm counters'):
+        used_count, available_count = get_dram_crm_stats(duthost)
+    with allure.step('Free the memory'):
+        duthost.shell(f"rm -f /dev/shm/memtest")
+    with allure.step('Check the DRAM crm counters again'):
+        pytest_assert(wait_until(10, 1, 0, check_dram_crm_stats, duthost, origin_used_count=used_count,
+                                 origin_available_count=available_count, used_increment=-memory_size_to_consume * 1024),
+                      "The validation for DRAM crm counters is failed, please check the test log.")
+
+
+def test_crm_dram_thresholds(duthost, enum_frontend_asic_index):
+    asichost = duthost.asic_instance(enum_frontend_asic_index)
+    get_dram_stats = f"{asichost.sonic_db_cli} COUNTERS_DB HMGET CRM:STATS crm_stats_dram_used crm_stats_dram_available"
+    with allure.step('Check the default value of thresholds'):
+        output = duthost.shell("crm show thresholds dram")['stdout_lines'][-1]
+        is_percentage = "percentage" in output
+        default_low, default_high = re.findall(r"\d+", output)
+        pytest_assert((is_percentage and default_low == '90' and default_high == '95'),
+                      "The default DRAM thresholds are not as expected.")
+        RESTORE_CMDS["test_crm_dram_thresholds"].append("crm config thresholds dram type percentage")
+        RESTORE_CMDS["test_crm_dram_thresholds"].append(f"crm config thresholds dram high {default_high}")
+        RESTORE_CMDS["test_crm_dram_thresholds"].append(f"crm config thresholds dram low {default_low}")
+    with allure.step('Set the thresholds to 100% to clear existing alarms'):
+        duthost.shell("crm config thresholds dram high 100")
+        duthost.shell("crm config thresholds dram low 100")
+        time.sleep(CRM_UPDATE_TIME)
+    with allure.step('Verify the thresholds for DRAM'):
+        verify_thresholds(duthost, asichost, crm_cli_res="dram", crm_cmd=get_dram_stats)
