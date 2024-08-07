@@ -968,10 +968,30 @@ class JulietScaleoutSwitch(JulietSwitch):
 class JulietTTMSwitch(JulietScaleoutSwitch):
 
     def __init__(self):
-        super().__init__(asic_amount=2)
+        super().__init__()
 
     def _init_constants(self):
         super()._init_constants()
+        self.current_cpld_version = BaseSwitch.CpldImageConsts(
+            burn_image_path="/auto/sw_system_project/NVOS_INFRA/verification_files/cpld_fw/FUI000319_BURN_JULIET_TTM_CPLD000370_REV0104_CPLD000377_REV0104_CPLD000373_REV0100_CPLD000390_REV0100_IPN.vme",
+            refresh_image_path="",
+            version_names={
+                "CPLD1": "CPLD000370_REV0104",
+                "CPLD2": "CPLD000377_REV0104",
+                "CPLD3": "CPLD000373_REV0100",
+                "CPLD4": "CPLD000390_REV0100"
+            }
+        )
+        self.previous_cpld_version = BaseSwitch.CpldImageConsts(
+            burn_image_path="/auto/sw_system_project/NVOS_INFRA/verification_files/cpld_fw/OLD/FUI000314_BURN_JULIET_TTM_CPLD000370_REV0104_CPLD000377_REV0102_CPLD000373_REV0100_CPLD000390_REV0100_IPN.vme",
+            refresh_image_path="",
+            version_names={
+                "CPLD1": "CPLD000370_REV0104",
+                "CPLD2": "CPLD000377_REV0102",
+                "CPLD3": "CPLD000373_REV0100",
+                "CPLD4": "CPLD000390_REV0100"
+            }
+        )
 
     def _init_fan_list(self):
         super()._init_fan_list()
@@ -987,7 +1007,7 @@ class JulietTTMSwitch(JulietScaleoutSwitch):
 class JulietNonScaleoutSwitch(JulietScaleoutSwitch):
 
     def __init__(self):
-        super().__init__(asic_amount=2)
+        super().__init__()
 
     def _init_constants(self):
         super()._init_constants()
