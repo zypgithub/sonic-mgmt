@@ -15,13 +15,21 @@ logger = logging.getLogger()
 class Configurations:
     ndr_ports = {"10.7.148.94": ['swA1p1', 'swA2p1'],
                  "10.7.148.95": ['swA1p1', 'swA2p1'],
-                 "10.7.145.61": ['swA1p1', 'swA2p1'],
-                 "10.7.145.62": ['swA1p1', 'swA2p1'],
+                 "10.7.145.61": ['swA1p1', 'swB5p1'],
+                 "10.7.145.62": ['swA1p1', 'swB5p1'],
                  "10.7.148.80": ['swA8p1', 'swA8p2', 'swB7p1', 'swB7p2', 'swB8p1', 'swB8p2'],
+                 "10.7.148.81": ['swA8p1', 'swA8p2', 'swB7p1', 'swB7p2', 'swB8p1', 'swB8p2'],
                  "10.7.148.88": ['swA1p1', 'swA2p1', 'swA8p1', 'swA8p2'],
-                 "10.7.148.89": ['swA1p1', 'swA2p1']}
+                 "10.7.148.89": ['swA1p1', 'swA2p1', 'swA8p1', 'swA8p2'],
+                 }
 
-    xdr_ports = {}
+    xdr_ports = {"10.7.145.61": ['swA8p1', 'swB2p1', 'swB8p1'],
+                 "10.7.145.62": ['swA8p1', 'swB2p1', 'swB8p1'],
+                 "10.7.148.112": ['sw8p1', 'sw16p1', 'sw67p1'],
+                 "10.7.148.113": ['sw8p1', 'sw16p1', 'sw67p1'],
+                 }
+
+    ports_by_rate = {"ndr": ndr_ports, "xdr": xdr_ports}
 
     post_install_commands = {"10.7.144.153": ['nv set acl ACL_MGMT_INBOUND_CP_DEFAULT rule 120 match ip recent-list hit-count 3000',
                                               'nv config apply']}

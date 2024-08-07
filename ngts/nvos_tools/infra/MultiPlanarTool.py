@@ -57,7 +57,7 @@ class MultiPlanarTool:
                 return Fae(port_name='swA8p1')
             else:
                 return Fae(port_name=RandomizationTool.select_random_port(
-                    requested_ports_logical_state=IbInterfaceConsts.LINK_LOGICAL_PORT_STATE_ACTIVE))
+                    requested_ports_logical_state=IbInterfaceConsts.LINK_LOGICAL_PORT_STATE_ACTIVE).get_returned_value())
 
     @staticmethod
     def select_random_fnm_port(devices):
