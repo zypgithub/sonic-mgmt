@@ -287,6 +287,8 @@ def test_show_platform_environment_temperature(engines, devices, test_api):
     with allure.step("Check that all sensors in required range"):
         logging.info("Check that all sensors in required range")
         for temp, temp_prop in output.items():
+            if temp_prop.get("state") == 'absent':
+                continue
             _verify_temp_in_range(temp, temp_prop, PlatformConsts.ENV_TEMP_MIN,
                                   PlatformConsts.ENV_TEMP_MAX)
 
@@ -536,7 +538,8 @@ def verify_sensor_group_by_tolerance(output, category):
         logging.info("Check that {} temps are within the specified range from mean by tolerance of {}%"
                      .format(category, PlatformConsts.ENV_TEMP_TOLERANCE))
     sensors = {temp: float(temp_prop[PlatformConsts.ENV_TEMP_CURR_PROP]) for temp, temp_prop in output.items()
-               if category in temp}
+               if category in temp.upper() and temp_prop.get("state") != 'absent'}
+    assert sensors, f'Output is missing sensor category "{category}"'
     sensor_mean_temp = sum(sensors.values()) / len(sensors)
 
     for sensor, sensor_temp in sensors.items():
