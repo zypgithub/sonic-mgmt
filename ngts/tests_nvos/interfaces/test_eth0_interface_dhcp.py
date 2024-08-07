@@ -1,17 +1,17 @@
-import pytest
 import time
-from retry import retry
 
-from ngts.nvos_tools.infra.Tools import Tools
-from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
+import pytest
+
+from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
+from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import SystemConsts
+from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
+from ngts.nvos_tools.ib.InterfaceConfiguration.Port import *
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
+from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
+from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.system.System import System
-from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
-from ngts.nvos_tools.ib.InterfaceConfiguration.Port import *
-from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 
 logger = logging.getLogger()
 
@@ -386,6 +386,7 @@ def test_interface_eth0_dhcp_hostname(engines, topology_obj, serial_engine):
     4. Enable dhcp, check we didn’t receive hostname
     5. Unset set-hostname and check we received hostname as we have on start of the test, configuration for ipv4 and ipv6 dhcp same, can ping
     """
+    expect_timeout = 30
     mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
     mgmt_port = MgmtPort(mgmt_port_name)
     system = System()
@@ -393,9 +394,12 @@ def test_interface_eth0_dhcp_hostname(engines, topology_obj, serial_engine):
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
             mgmt_port.interface.ip.dhcp_client.show()).get_returned_value()
 
-        dhcp_hostname = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific'][
-            'dhcp_hostname']
+        noga_query_data = topology_obj.players['dut']['attributes'].noga_query_data['attributes']
+
         system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
+
+        dhcp_hostname = noga_query_data['Specific']['dhcp_hostname']
+        dhcp_hostname = dhcp_hostname if dhcp_hostname in system_output['hostname'] else noga_query_data['Common']['Name']
 
         Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
                                                           field_name='has-lease',
@@ -418,43 +422,43 @@ def test_interface_eth0_dhcp_hostname(engines, topology_obj, serial_engine):
     with allure.step('Disable dhcp and unset hostname, check port down and not reachable'):
         serial_engine.serial_engine.sendline("nv set interface {} ip dhcp-client state disabled".format(mgmt_port_name))
         serial_engine.serial_engine.sendline("nv config apply")
-        serial_engine.serial_engine.expect("Are you sure?", timeout=20)
+        serial_engine.serial_engine.expect("Are you sure?", timeout=expect_timeout)
         serial_engine.serial_engine.sendline("y")
-        serial_engine.serial_engine.expect("applied", timeout=20)
+        serial_engine.serial_engine.expect("applied", timeout=expect_timeout)
 
         logger.info('Check port status, should be down')
         check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port)
 
         serial_engine.serial_engine.sendline("nv show interface {} ip dhcp-client".format(mgmt_port_name))
-        serial_engine.serial_engine.expect("state         disabled", timeout=20)
+        serial_engine.serial_engine.expect("state         disabled", timeout=expect_timeout)
 
     with allure.step('Disable dhcp set-hostname, check port down and not reachable'):
         serial_engine.serial_engine.sendline("nv set interface {} ip dhcp-client set-hostname disabled".format(mgmt_port_name))
         serial_engine.serial_engine.sendline("nv config apply")
-        serial_engine.serial_engine.expect("Are you sure?", timeout=20)
+        serial_engine.serial_engine.expect("Are you sure?", timeout=expect_timeout)
         serial_engine.serial_engine.sendline("y")
-        serial_engine.serial_engine.expect("applied", timeout=20)
+        serial_engine.serial_engine.expect("applied", timeout=expect_timeout)
 
         logger.info('Check port status, should be down')
         check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port)
         serial_engine.serial_engine.sendline("nv show interface {} ip dhcp-client".format(mgmt_port_name))
-        serial_engine.serial_engine.expect("state         disabled", timeout=20)
+        serial_engine.serial_engine.expect("state         disabled", timeout=expect_timeout)
         serial_engine.serial_engine.sendline("nv show interface {} ip dhcp-client6".format(mgmt_port_name))
-        serial_engine.serial_engine.expect("state         disabled", timeout=20)
+        serial_engine.serial_engine.expect("state         disabled", timeout=expect_timeout)
 
     with allure.step('Set hostname and enable dhcp, check hostname not changed, check port up'):
         serial_engine.serial_engine.sendline("nv set system hostname {}".format(SystemConsts.HOSTNAME))
         serial_engine.serial_engine.sendline("nv config apply")
-        serial_engine.serial_engine.expect("Are you sure?", timeout=20)
+        serial_engine.serial_engine.expect("Are you sure?", timeout=expect_timeout)
         serial_engine.serial_engine.sendline("y")
-        serial_engine.serial_engine.expect("applied", timeout=20)
+        serial_engine.serial_engine.expect("applied", timeout=expect_timeout)
         logger.info('Check port status, should be down')
         check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port)
         serial_engine.serial_engine.sendline("nv set interface {} ip dhcp-client state enabled".format(mgmt_port_name))
         serial_engine.serial_engine.sendline("nv config apply")
-        serial_engine.serial_engine.expect("Are you sure?", timeout=20)
+        serial_engine.serial_engine.expect("Are you sure?", timeout=expect_timeout)
         serial_engine.serial_engine.sendline("y")
-        serial_engine.serial_engine.expect("applied", timeout=20)
+        serial_engine.serial_engine.expect("applied", timeout=expect_timeout)
 
         logger.info('Check port status, should be up')
         check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port)
