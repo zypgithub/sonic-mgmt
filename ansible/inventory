@@ -453,6 +453,11 @@ juliet-56 ansible_host=juliet-56  sonic_version=v2  sonic_hwsku=ACS-N5110_LD    
 juliet-126-ptf-any ansible_host=juliet-126  sonic_version=v2  sonic_hwsku=ACS-N5110_LD            serial_console="ssh -l rcon:7006 10.7.150.239" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=5c:25:73:35:31:d8 serial=MT2425X00171 model=N5110_LD syseeprom_info="{'0x28': u'x86_64-nvidia_n5110_ld-r0', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'N5110_LD', '0x23': u'MT2416X02631', '0x21': u'n5110_ld', '0x26': u'17', '0x24': u'10:70:fd:86:70:28', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
 juliet-126 ansible_host=juliet-126  sonic_version=v2  sonic_hwsku=ACS-N5110_LD             serial_console="ssh -l rcon:7006 10.7.150.239" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=5c:25:73:35:31:d8 serial=MT2425X00171 model=N5110_LD syseeprom_info="{'0x28': u'x86_64-nvidia_n5110_ld-r0', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'n5110_ld', '0x23': u'MT2416X02631', '0x21': u'n5110_ld', '0x26': u'17', '0x24': u'10:70:fd:86:70:28', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
 
+#juliet-136 topologies
+juliet-136-ptf-any ansible_host=juliet-136  sonic_version=v2  sonic_hwsku=ACS-N5110_LD            serial_console="ssh -l rcon:7006 10.7.150.239" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=5c:25:73:35:31:d8 serial=MT2425X00171 model=N5110_LD syseeprom_info="{'0x28': u'x86_64-nvidia_n5110_ld-r0', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'N5110_LD', '0x23': u'MT2416X02631', '0x21': u'n5110_ld', '0x26': u'17', '0x24': u'10:70:fd:86:70:28', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
+juliet-136 ansible_host=juliet-136  sonic_version=v2  sonic_hwsku=ACS-N5110_LD             serial_console="ssh -l rcon:7006 10.7.150.239" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=5c:25:73:35:31:d8 serial=MT2425X00171 model=N5110_LD syseeprom_info="{'0x28': u'x86_64-nvidia_n5110_ld-r0', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'n5110_ld', '0x23': u'MT2416X02631', '0x21': u'n5110_ld', '0x26': u'17', '0x24': u'10:70:fd:86:70:28', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
+
 # NVOS testbed bm-bu-bsp topologies
 bm-bu-bsp-ptf-any ansible_host=bm-bu-bsp  sonic_version=v2  sonic_hwsku=ACS-QM3000            serial_console="ssh -l rcon:7016 10.7.218.105" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=10:70:fd:86:70:28 serial=MT2348X00105 model=QM3400-WS2F_QP1 syseeprom_info="{'0x28': u'x86_64-nvidia_qm3000-r0', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MQM9700-WS2F_QP1', '0x23': u'MT2348X00105', '0x21': u'mqm9700', '0x26': u'17', '0x24': u'10:70:fd:86:70:28', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
 bm-bu-bsp ansible_host=bm-bu-bsp  sonic_version=v2  sonic_hwsku=ACS-QM3000             serial_console="ssh -l rcon:7016 10.7.218.105" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=10:70:fd:86:70:28 serial=MT2348X00105 model=QM3400-WS2F_QP1 syseeprom_info="{'0x28': u'x86_64-nvidia_qm3000-r0', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'mqm9700-WS2F_QP1', '0x23': u'MT2348X00105', '0x21': u'mqm9700', '0x26': u'17', '0x24': u'10:70:fd:86:70:28', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
@@ -2580,6 +2585,9 @@ juliet-128
 
 juliet-126-ptf-any
 juliet-126
+
+juliet-136-ptf-any
+juliet-136
 
 gorilla-11-ptf-any
 gorilla-11
