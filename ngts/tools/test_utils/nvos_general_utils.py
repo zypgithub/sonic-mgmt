@@ -85,6 +85,8 @@ def set_base_configurations(dut_engine, timezone=LinuxConsts.JERUSALEM_TIMEZONE,
             logging.info('Save configurations')
             NvueGeneralCli.save_config(dut_engine)
     finally:
+        logging.info('Delete pending list')
+        NvueGeneralCli.detach_config(dut_engine)
         logging.info(f'Change tested api back to {orig_api}')
         TestToolkit.tested_api = orig_api
 
