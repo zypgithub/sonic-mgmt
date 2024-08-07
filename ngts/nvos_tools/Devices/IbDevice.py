@@ -790,7 +790,7 @@ class JulietSwitch(NvLinkSwitch):
             '68': [SPDMComponents.BMC],
             '121': SPDMComponents.ALL_SUPPORTED_COMPONENTS,
             '126': [SPDMComponents.BMC],
-            '128': [SPDMComponents.BMC],
+            '128': [SPDMComponents.BMC, SPDMComponents.FPGA, SPDMComponents.NVSWITCH_0],
         }
         for juliet_num, available_erots in available_erots_per_juliet_number.items():
             if setup_name.endswith(juliet_num):

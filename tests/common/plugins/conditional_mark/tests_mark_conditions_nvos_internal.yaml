@@ -1,10 +1,10 @@
 ########################## NVOS IGNORE START ##########################
 
-ngts.tests_nvos.general.security.bmc_erot_attestation.test_bmc_erot_attestation.test_generate_with_bad_nonce_param:
+tests_nvos/general/security/bmc_erot_attestation/test_bmc_erot_attestation.py:
   skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4005013"
+    reason: "BMC ERoT Attestation tests should run only on Juliet"
     conditions:
-      - https://redmine.mellanox.com/issues/4005013
+      - "'juliet' not in testbed"
 
 tests_nvos/system/gnmi/test_gnmi_cert.py::test_gnmi_cert_cli_when_gnmi_disabled:
   skip:

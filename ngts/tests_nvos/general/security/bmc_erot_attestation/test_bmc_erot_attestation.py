@@ -1,21 +1,30 @@
+import json
+import logging
+import os
 import random
 from typing import List
 
 import pytest
 
-from ngts.nvos_constants.constants_nvos import ApiType
+from ngts.nvos_constants.constants_nvos import ApiType, TestFlowType
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.system.Spdm import SpdmComponentFields
 from ngts.nvos_tools.system.System import System
+from ngts.tests_nvos.general.security.bmc_erot_attestation.client_verification.utils import CLIENT_VERIFICATION_DIR
 from ngts.tests_nvos.general.security.bmc_erot_attestation.constants import VALID_NONCE_LEN, SpdmConsts, NOT_EMPTY
 from ngts.tests_nvos.general.security.bmc_erot_attestation.helpers import get_component_obj, randomize_hex_str, \
-    randomize_non_hex_str, assert_no_issues, add_issue_if, verify_component_outputs
+    randomize_non_hex_str, verify_component_outputs, run_client_verification, \
+    run_client_measurements_verification_usecanse
+from ngts.tests_nvos.general.security.helpers import add_issue_if, assert_no_issues
 from ngts.tools.test_utils import allure_utils as allure
 
 
+@pytest.mark.bmc
+@pytest.mark.erot
+@pytest.mark.security
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_list_supported_components(test_api):
     """
@@ -33,8 +42,23 @@ def test_list_supported_components(test_api):
         assert not missing_components and not extra_components, f'show spdm content is wrong.\nexpected fields: {SpdmConsts.fields}\nactual: {list(out.keys())}'
 
 
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_main_flow(test_api, clear_measurements, available_spdm_components):
+@pytest.mark.bmc
+@pytest.mark.erot
+@pytest.mark.security
+def test_available_components(available_spdm_components):
+    """
+    Check which components ERoTs are available
+    """
+    unavailable_erots = [erot for erot in SpdmConsts.components if erot not in available_spdm_components]
+    assert not unavailable_erots, f'unavailable SPDM ERoTs: {unavailable_erots}'
+
+
+@pytest.mark.bmc
+@pytest.mark.erot
+@pytest.mark.security
+@pytest.mark.parametrize("component, test_api",
+                         [(component, random.choice(ApiType.ALL_TYPES)) for component in SpdmConsts.components])
+def test_main_flow(component, test_api, clear_measurements, available_spdm_components):
     """
     Verify that show component works properly and shows certificate chain
 
@@ -67,30 +91,37 @@ def test_main_flow(test_api, clear_measurements, available_spdm_components):
     with allure.step(f'verify all components ({SpdmConsts.fields}) exist as fields'):
         ValidationTool.verify_field_exist_in_json_output(out, SpdmConsts.fields).verify_result()
 
-    for component in SpdmConsts.components:
-        with allure.step(f'component: {component}'):
-            component_obj = get_component_obj(component)
-            component_is_available: bool = component in available_spdm_components
-            with allure.step('verify inner outputs before generate'):
-                cert_out, _ = verify_component_outputs(component, component_obj, component_is_available, None, None)
-            with allure.step(f'generate measurements - expect success: {component_is_available}'):
-                issues: List[str] = []
-                with allure.step(f'Run generate with valid nonce - expect success: {component_is_available}'):
-                    res = component_obj.action_generate(randomize_hex_str())
-                    add_issue_if(res.result != component_is_available, issues,
-                                 f'{component} - generate with valid nonce {"succeeded" if res.result else "failed"} but expected to {"succeed" if component_is_available else "fail"}')
-                with allure.step(f'Run generate without nonce param - expect success: {component_is_available}'):
-                    res = component_obj.action_generate()
-                    add_issue_if(res.result != component_is_available, issues,
-                                 f'{component} - generate without nonce {"succeeded" if res.result else "failed"} but expected to {"succeed" if component_is_available else "fail"}')
-                with allure.step('assert no issues'):
-                    assert_no_issues(component, issues, 'some generate commands failed')
-            with allure.step('verify inner outputs after generate'):
-                verify_component_outputs(component, component_obj, component_is_available,
-                                         expect_cert=cert_out[SpdmConsts.Component.Certificate.CERT_STRING],
-                                         expect_measurements=NOT_EMPTY)
+    # for component in [SPDMComponents.BMC]:  #SpdmConsts.components:
+    with allure.step(f'component: {component}'):
+        component_obj = get_component_obj(component)
+        component_is_available: bool = component in available_spdm_components
+        with allure.step('verify inner outputs before generate'):
+            cert_out, _ = verify_component_outputs(component, component_obj, component_is_available, None, None)
+        with allure.step(f'generate measurements - expect success: {component_is_available}'):
+            issues: List[str] = []
+            with allure.step(f'Run generate without nonce param - expect success: {component_is_available}'):
+                res = component_obj.action_generate()
+                add_issue_if(res.result != component_is_available, issues,
+                             f'{component} - generate without nonce {"succeeded" if res.result else "failed"} but expected to {"succeed" if component_is_available else "fail"}')
+            with allure.step(f'Run generate with valid nonce - expect success: {component_is_available}'):
+                rand_nonce = randomize_hex_str()
+                res = component_obj.action_generate(rand_nonce)
+                add_issue_if(res.result != component_is_available, issues,
+                             f'{component} - generate with valid nonce {"succeeded" if res.result else "failed"} but expected to {"succeed" if component_is_available else "fail"}')
+            with allure.step('assert no issues'):
+                assert_no_issues(component, issues, 'some generate commands failed')
+        with allure.step('verify inner outputs after generate'):
+            verify_component_outputs(component, component_obj, component_is_available,
+                                     expect_cert=cert_out[SpdmConsts.Component.Certificates.CERT_STRING],
+                                     expect_measurements=NOT_EMPTY)
+        if component_is_available:
+            run_client_measurements_verification_usecanse(component_obj,
+                                                          rand_nonce.lower())  # TODO: lower until talk with lev about request nonce and capitals
 
 
+@pytest.mark.bmc
+@pytest.mark.erot
+@pytest.mark.security
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_generate_with_bad_nonce_param(test_api, available_spdm_components):
     """
@@ -132,6 +163,9 @@ def test_generate_with_bad_nonce_param(test_api, available_spdm_components):
                 assert not issues, f'found issues:\n' + '\n'.join(issues)
 
 
+@pytest.mark.bmc
+@pytest.mark.erot
+@pytest.mark.security
 def test_generate_give_different_measurement(available_spdm_components):
     """
     Verify that when generating without nonce param multiple times it generates different measurements
@@ -161,6 +195,9 @@ def test_generate_give_different_measurement(available_spdm_components):
                 ValidationTool.compare_dictionaries(measurements1, measurements2).verify_result(False)
 
 
+@pytest.mark.bmc
+@pytest.mark.erot
+@pytest.mark.security
 def test_reboot_system_keeps_data(available_spdm_components):
     """
     Verify that reboot keeps the results of the show
@@ -193,3 +230,29 @@ def test_reboot_system_keeps_data(available_spdm_components):
                     add_issue_if(not res.result, issues, f'component: {component}\n{res.info}\n')
     with allure.step('verify no issues in the comparison'):
         assert_no_issues(component, issues, 'there are output mismatches before and after reboot')
+
+
+@pytest.mark.bmc
+@pytest.mark.erot
+@pytest.mark.security
+@pytest.mark.parametrize('test_flow', TestFlowType.ALL_TYPES)
+def test_dummy_attestation_verification(test_flow):
+    """
+    this is as unit-test to run_client_verification helper function, to make sure it fails for invalid nonce too
+    """
+    test_is_good_flow = test_flow == TestFlowType.GOOD_FLOW
+    correct_nonce = '5b017bcbe464aa0d5d4d029f7d6c77afee391d5e3f2ad7bdbc6045350d12bc35'
+    invalid_nonce = '5b017bcbe464aa0d5d4d029f7d6c76afee391d5e3f2ad7bdbc6045350d12bc35'
+    example_nonce = correct_nonce if test_is_good_flow else invalid_nonce
+    example_component_data_json_file = os.path.join(CLIENT_VERIFICATION_DIR, 'bmc_nvue_response.json')
+    with allure.step('get component data'):
+        with open(example_component_data_json_file, 'r') as file:
+            component_data = json.load(file)
+    with allure.step('show cert chain'):
+        cert_chain_str = component_data[SpdmComponentFields.CERTIFICATES][SpdmConsts.Component.Certificates.CERT_STRING]
+        logging.info(f'certificate chain str:\n{cert_chain_str}')
+    with allure.step('show measurements'):
+        measurements_data = component_data[SpdmComponentFields.MEASUREMENTS]
+        logging.info(f'measurements data:\n{measurements_data}')
+    with allure.step('verify'):
+        run_client_verification(cert_chain_str, measurements_data, example_nonce, test_is_good_flow)

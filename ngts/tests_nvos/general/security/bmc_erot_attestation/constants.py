@@ -17,7 +17,7 @@ class SpdmConsts:
     class Component:
         fields = SpdmComponentFields.ALL_FIELDS
 
-        class Certificate:
+        class Certificates:
             CERT_STRING = 'CertificateString'
             CERT_TYPE = 'CertificateType'
             CERT_USAGE_TYPES = 'CertificateUsageTypes'

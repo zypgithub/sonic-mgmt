@@ -26,9 +26,9 @@ COMPONENT_TO_SPDM_OBJ_FIELD: Dict[str, str] = {
 
 
 class SpdmComponentFields:
-    CERT_CHAIN = 'certificate'
+    CERTIFICATES = 'certificates'
     MEASUREMENTS = 'measurements'
-    ALL_FIELDS = [CERT_CHAIN, MEASUREMENTS]
+    ALL_FIELDS = [CERTIFICATES, MEASUREMENTS]
 
 
 class Spdm(BaseComponent):
@@ -44,7 +44,7 @@ class Spdm(BaseComponent):
 class SpdmComponent(BaseComponent):
     def __init__(self, parent, path):
         super().__init__(parent=parent, path=path)
-        self.certificates = BaseComponent(self, path=f'/{SpdmComponentFields.CERT_CHAIN}s')
+        self.certificates = BaseComponent(self, path=f'/{SpdmComponentFields.CERTIFICATES}')
         self.measurements = BaseComponent(self, path=f'/{SpdmComponentFields.MEASUREMENTS}')
 
     def action_generate(self, nonce=None, dut_engine=None) -> ResultObj:
