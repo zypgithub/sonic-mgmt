@@ -241,9 +241,9 @@ def test_ignore_health_issue(engines, devices, loganalyzer):
     finally:
 
         with allure.step("Fix PSU and FAN health issue"):
-            health_config_file.revert_to_original()
             HWSimulator.simulate_fix_fan_fault(engines.dut, fan_id)
             HWSimulator.simulate_fix_psu_fault(engines.dut, psu_id)
+            health_config_file.revert_to_original()
             system.wait_until_health_status_change_to(OK)
             verify_health_status_and_led(system, OK)
 

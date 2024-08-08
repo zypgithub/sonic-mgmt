@@ -37,17 +37,21 @@ class EngineFile:
 
         with allure.step(f"Storing original content of file for later recovery: {file_path}"):
             self.original_content = self.get_content()
+            logger.info(self.original_content)
 
     def get_content(self) -> str:
-        return self.engine.run_cmd("sudo cat " + self.file_path)
+        return self.engine.run_cmd("sudo cat " + self.file_path, print_output=False)
 
     def revert_to_original(self):
         self.replace_whole_content(self.original_content)
+        new_content = self.get_content()
+        if new_content != self.original_content:
+            raise Exception(f"Failed to restore original content of {self.file_path}")
 
     def replace_whole_content(self, content: str):
         """Writes `content` to file, overwriting any existing content."""
-        self.engine.run_cmd(f"sudo cat > {self.file_path} << EOF\n{content}\nEOF")
+        self.engine.run_cmd_set(["sudo su", f"cat > {self.file_path} << EOF\n{content}\nEOF", "exit"])
 
     def sed(self, pattern: str, new_text: str):
         self.engine.run_cmd(f"sudo sed -i 's/{pattern}/{new_text}/' {self.file_path}")
-        self.get_content()  # print new content to log
+        logger.info(f"new content of {self.file_path}:\n" + self.get_content())
