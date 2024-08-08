@@ -9,6 +9,7 @@ from ngts.constants.constants import MarsConstants
 from ngts.nvos_constants.constants_nvos import NvosConst, ActionConsts, SystemConsts, ConfState
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.tools.test_utils import allure_utils as allure
+from infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 logger = logging.getLogger()
 server_ip = "10.237.116.60"
@@ -367,7 +368,9 @@ class NvueGeneralCli(SonicGeneralCliDefault):
 
         logger.info("Enter ONIE install mode")
         logger.info("Wait for NVOS/ONIE grub menu")
-        output, respond = serial_engine.run_cmd('', ['ONIE\\s+', '\\*ONIE: Install OS'], timeout=240,
+        # Set timeout based on the active status of Redmine issue #4028150
+        to = 360 if is_redmine_issue_active([4028150])[0] else 240
+        output, respond = serial_engine.run_cmd('', ['ONIE\\s+', '\\*ONIE: Install OS'], timeout=to,
                                                 send_without_enter=True)
         if respond == 0:
             logger.info("System in NVOS grub menu, entering ONIE grub menu")
