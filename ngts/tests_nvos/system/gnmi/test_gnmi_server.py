@@ -8,13 +8,11 @@ import pytest
 import ngts.tools.test_utils.allure_utils as allure
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.constants.constants import GnmiConsts
-from ngts.nvos_constants.constants_nvos import ApiType
-from ngts.nvos_constants.constants_nvos import NvosConst, DatabaseConst
+from ngts.nvos_constants.constants_nvos import NvosConst, DatabaseConst, ApiType
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.system.System import System
-from ngts.tests_nvos.general.security.conftest import local_adminuser
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
 from ngts.tests_nvos.system.gnmi.constants import GnmiMode, MAX_GNMI_SUBSCRIBERS, GnmicErr
 from ngts.tests_nvos.system.gnmi.helpers import gnmi_basic_flow, validate_gnmi_is_running_and_stream_updates, \
@@ -199,16 +197,14 @@ def test_gnmi_bad_flow(test_api, engines, devices):
     TestToolkit.tested_api = test_api
     system = System()
     gnmi_server_obj = system.gnmi_server
+    xpath = f'interfaces/interface[name={devices.dut.default_port}]/state/counters/in-broadcast-pkts'
     validate_gnmi_is_running_and_stream_updates(system, gnmi_server_obj, engines, engines.dut.ip)
 
     with allure.step("invalid command"):
         gnmi_server_obj.set(GnmiConsts.GNMI_STATE_FIELD, Tools.RandomizationTool.get_random_string(7), "Error")
 
     with allure.step("Subscribe to the gnmi server for data that is not supported"):
-        if devices.dut.asic_type == NvosConst.QTM3:
-            xpath = 'interfaces/interface[name=swA1p1]/state/counters/in-broadcast-pkts'
-        else:
-            xpath = 'interfaces/interface[name=sw1p1]/state/counters/in-broadcast-pkts'
+        xpath = f'interfaces/interface[name={devices.dut.default_port}]/state/counters/in-broadcast-pkts'
         gnmi_stream_updates = run_gnmi_client_and_parse_output(engines, devices, xpath, engines.dut.ip)
         gnmi_stream_updates_value = list(gnmi_stream_updates.values())[0]
         assert gnmi_stream_updates_value == '0', f'{xpath} is unsupported field,' \

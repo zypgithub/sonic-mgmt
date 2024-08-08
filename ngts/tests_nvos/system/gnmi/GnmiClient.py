@@ -30,7 +30,7 @@ class GnmiClient:
     def verify_gnmic_installation(self):
         def _gnmic_is_installed() -> bool:
             out, err, _ = self.cmd_runner.run_cmd_in_process('gnmic version')
-            gnmic_installed = 'command not found' not in out and 'command not found' not in err
+            gnmic_installed = 'not found' not in out and 'not found' not in err
             self._log(f'gnmic is {"" if gnmic_installed else "not "}installed on player')
             return gnmic_installed
 
@@ -46,7 +46,7 @@ class GnmiClient:
     def verify_grpcurl_installation(self):
         def _grpcurl_is_installed() -> bool:
             out, err, _ = self.cmd_runner.run_cmd_in_process('grpcurl -version')
-            grpcurl_installed = 'command not found' not in out and 'command not found' not in err
+            grpcurl_installed = 'not found' not in out and 'not found' not in err
             self._log(f'gnmic is {"" if grpcurl_installed else "not "}installed on player')
             return grpcurl_installed
 
@@ -95,10 +95,11 @@ class GnmiClient:
 
     def gnmic_subscribe_system_events(self, mode: str, username: str = '', password: str = '',
                                       skip_cert_verify: bool = False, cacert='', debug_mode: bool = True,
-                                      cmd_time=None, wait_till_done: bool = False) -> Tuple[str, str]:
-        out, err, _ = self._run_gnmic_subscribe_system_events(mode, username, password, skip_cert_verify, cacert,
-                                                              debug_mode, cmd_time, False, wait_till_done)
-        return out, err
+                                      cmd_time=None, keep_session_alive: bool = True,
+                                      wait_till_done: bool = False) -> Tuple[str, str, subprocess.Popen]:
+        out, err, sub_proc = self._run_gnmic_subscribe_system_events(mode, username, password, skip_cert_verify, cacert,
+                                                                     debug_mode, cmd_time, keep_session_alive, wait_till_done)
+        return out, err, sub_proc
 
     def gnmic_capabilities(self, username: str = '', password: str = '', skip_cert_verify: bool = False, cacert='',
                            debug_mode: bool = True, cmd_time=None, wait_till_done: bool = False) -> Tuple[str, str]:

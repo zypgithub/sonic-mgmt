@@ -21,6 +21,7 @@ SERVICE_KEY = 'service.key'
 SERVICE_PEM = 'service.pem'
 
 MAX_GNMI_SUBSCRIBERS = 10
+MAX_GNMI_CONNECTIVITY_TIME = 6
 
 CERTIFICATE = 'certificate'
 DEFAULT_CERTIFICATE = 'self-signed'
