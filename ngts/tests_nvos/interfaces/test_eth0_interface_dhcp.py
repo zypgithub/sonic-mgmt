@@ -346,6 +346,7 @@ def test_interface_eth0_ip_address(engines, topology_obj, serial_engine):
         serial_engine.serial_engine.expect(switch_ip, timeout=120)
 
 
+@pytest.mark.cumulus
 @pytest.mark.ib
 @pytest.mark.simx
 def test_interface_eth0_show_dhcp(engines):
@@ -483,6 +484,7 @@ def test_interface_eth0_dhcp_hostname(engines, topology_obj, serial_engine):
         wait_for_hostname_changed(system, dhcp_hostname)
 
 
+@pytest.mark.cumulus
 @pytest.mark.ib
 @pytest.mark.simx
 def test_mgmt_interface_default(engines, topology_obj):

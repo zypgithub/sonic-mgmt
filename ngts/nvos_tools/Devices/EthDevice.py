@@ -93,7 +93,7 @@ class EthSwitch(BaseSwitch):
         self.platform_environment_fan_values = {
             "state": FansConsts.STATE_OK, "direction": None, "current-speed": None,
             "min-speed": ExpectedString(range_min=2000, range_max=10000),
-            "max-speed": ExpectedString(range_min=20000, range_max=40000)}
+            "max-speed": ExpectedString(range_min=19500, range_max=40000)}
         self.platform_environment_absent_fan_values = {
             "state": FansConsts.STATE_ABSENT, "direction": "N/A", "current-speed": "N/A",
             "min-speed": "N/A", "max-speed": "N/A"}
@@ -171,6 +171,21 @@ class AnacondaSwitch(EthSwitch):
             "asic-model": self.asic_type
         })
 
+        self.voltage_sensors = ["PMIC-1-ASIC-0.8V-VCORE-RAIL-OUT", "PMIC-1-PSU-12V-RAIL-IN1",
+                                "PMIC-2-ASIC-3.3V-RAIL-OUT", "PMIC-2-PSU-12V-RAIL-IN1",
+                                "PMIC-2-PSU-12V-RAIL-IN2", "PMIC-3-COMEX-1.8V-RAIL-OUT",
+                                "PMIC-3-PSU-12V-RAIL-IN1", "PMIC-3-PSU-12V-RAIL-IN2",
+                                "PMIC-4-COMEX-1.2V-RAIL-OUT", "PMIC-4-PSU-12V-RAIL-IN1",
+                                "PMIC-4-PSU-12V-RAIL-IN2", "PSU-1-12V-RAIL-OUT",
+                                "PSU-1-220V-RAIL-IN", "PSU-2-12V-RAIL-OUT",
+                                "PSU-2-220V-RAIL-IN"]
+
+    def _init_temperature(self):
+        self.temperature_sensors = ["Asic-Temp-Sensor", "CPU-Package-Sensor", "Main-Board-Ambient-Sensor",
+                                    "CPU-Core-Sensor-0", "CPU-Core-Sensor-1",
+                                    "PSU1-Temp-Sensor", "PSU2-Temp-Sensor",
+                                    "Port-Ambient-Sensor"]
+
 # -------------------------- Mlx2410 Switch -----------------------------
 
 
@@ -191,6 +206,12 @@ class Mlx2410Switch(EthSwitch):
         })
 
         self.voltage_sensors = ["VIN", "VOUT1", "VOUT2"]
+
+    def _init_temperature(self):
+        self.temperature_sensors = ["Asic-Temp-Sensor", "CPU-Package-Sensor", "Main-Board-Ambient-Sensor",
+                                    "CPU-Core-Sensor-0", "CPU-Core-Sensor-1",
+                                    "PSU1-Temp-Sensor", "PSU2-Temp-Sensor",
+                                    "Port-Ambient-Sensor"]
 
     def _init_fan_list(self):
         self.fan_list = ["FAN1/1", "FAN1/2", "FAN2/1", "FAN2/2", "FAN3/1", "FAN3/2", "FAN4/1", "FAN4/2"]
@@ -226,7 +247,7 @@ class Mlx4600Switch(EthSwitch):
                                 "PSU-1R-220V-RAIL-IN"]
 
     def _init_fan_list(self):
-        self.fan_list = ["FAN1/1", "FAN1/2", "FAN2/1"]
+        self.fan_list = ["FAN1/1", "FAN2/1", "FAN3/1"]
 
 # -------------------------- Mlx4700 Switch -----------------------------
 

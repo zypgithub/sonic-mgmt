@@ -76,7 +76,7 @@ def test_show_platform_environment_fan(engines, devices, test_api, output_format
                                           ).verify_result()
 
     with allure.step("Assert all fans have the same direction"):
-        directions = {fan["direction"] for fan in output.values() if fan["direction"] != "None"}
+        directions = {fan["direction"] for fan in output.values() if fan["direction"] != "N/A"}
         assert len(directions) == 1, f"Not all fans show the same direction: {output}"
 
     with allure.step("Checking properties of random fan"):
@@ -88,7 +88,7 @@ def test_show_platform_environment_fan(engines, devices, test_api, output_format
             if output.get(fan).get("state") == "absent":
                 _test_absent_fan(fan, output_format, devices.dut.platform_environment_absent_fan_values, output, platform)
                 continue
-        _test_specific_fan(fan, output_format, devices.dut.platform_environment_fan_values, output, platform)
+            _test_specific_fan(fan, output_format, devices.dut.platform_environment_fan_values, output, platform)
 
 
 def _test_absent_fan(fan, output_format, expected, output, platform):
