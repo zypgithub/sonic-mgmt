@@ -18,7 +18,6 @@ from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.authentication_restrictions.constants import RestrictionsConsts
 from ngts.tests_nvos.system.clock.ClockConsts import ClockConsts
 from ngts.tools.test_utils import allure_utils as allure
-from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 
 
 def set_base_configurations_cl(dut_engine, timezone=LinuxConsts.ETC_UTC_TIMEZONE, apply=False, save_conf=False):
@@ -85,8 +84,6 @@ def set_base_configurations(dut_engine, timezone=LinuxConsts.JERUSALEM_TIMEZONE,
             logging.info('Save configurations')
             NvueGeneralCli.save_config(dut_engine)
     finally:
-        logging.info('Delete pending list')
-        NvueGeneralCli.detach_config(dut_engine)
         logging.info(f'Change tested api back to {orig_api}')
         TestToolkit.tested_api = orig_api
 
