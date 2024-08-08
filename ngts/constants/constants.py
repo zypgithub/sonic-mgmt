@@ -1627,3 +1627,31 @@ SETUPS_WITH_NON_DEFAULT_PTF = ['r-panther-40_setup', 'r-panther-42_setup', 'r-bo
                                'mtvr-tigon-07_setup', 'r-panther-45_setup', 'mtvr-hippo-02_setup', 'r-panther-48_setup',
                                'mtvr-panther-03_setup']
 FILE_INCLUDE_FAILED_SANITY_CHECKER_CASE = "/tmp/file_include_failed_sanity_checker_case.txt"
+
+
+class WJHConsts:
+    BUFFER_TABLE_SEPARATOR = "Buffer Info"
+    ACL_TABLE_SEPARATOR = "Rules Info"
+    RAW_PACKET_COUNT = 1
+    AGG_PACKET_COUNT = 50
+    AGGREGATE_FLAG = "--aggregate"
+    WJH_POLL_CMD_PREFIX = "show what-just-happened poll"
+    FORWARDING = "forwarding"
+    BUFFER = "buffer"
+    LAYER_1 = "layer-1"
+    ACL = "acl"
+    TCP_PROTO = 'tcp'
+    UDP_PROTO = 'udp'
+    IP_PROTO = 'ip'
+    RAW_CHANNEL = 'raw'
+    AGG_CHANNEL = 'aggregate'
+    RAW_TABLE = 'raw'
+    RAW_ACL_TABLE = 'raw_acl_buffer_info'
+    AGG_TABLE = 'agg'
+    AGG_ACL_TABLE = 'agg_acl_buffer_info'
+    TESTED_SRC_MAC = '00:11:22:33:44:55'
+    TESTED_SRC_IP = '40.0.0.6'
+    TESTED_DST_IP = '40.0.0.7'
+    NA = 'N/A'
+    TCP_IPV4_PACKET_FORMAT = 'Ether(src="{SRC_MAC}", dst="{DST_MAC}")/IP(src="{SRC_IP}", dst="{DST_IP}")/TCP()'
+    TCP_IPV6_PACKET_FORMAT = 'Ether(src="{SRC_MAC}", dst="{DST_MAC}")/IPv6(src="{SRC_IP}", dst="{DST_IP}")/TCP()'

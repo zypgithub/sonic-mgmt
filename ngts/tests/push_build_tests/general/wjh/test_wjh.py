@@ -9,8 +9,9 @@ from ngts.config_templates.wjh_buffer_config_template import WjhBufferConfigTemp
 from ngts.cli_util.cli_parsers import generic_sonic_output_parser
 from infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
 from ngts.common.checkers import is_feature_ready
-from ngts.constants.constants import SonicConst
+from ngts.constants.constants import SonicConst, WJHConsts
 from ngts.tests.push_build_tests.general.wjh import utils
+from scapy.all import Ether, Dot1Q, IP, IPv6, Raw, TCP
 
 pytest.CHANNEL_CONF = None
 logger = logging.getLogger()
@@ -31,12 +32,14 @@ l3_drop_reason_dict = {
     "multicast_mac_mismatch": "Multicast MAC mismatch - Bad packet was received from the peer",
     "ip_dst_loopback": "Destination IP is loopback address - Bad packet was received from the peer",
     "limited_broadcast_src_ip": "IPv4 source IP is limited broadcast - Bad packet was received from the peer",
-    "non_ip_packet": "Non IP packet - Destination MAC is the router, packet is not routable"}
+    "non_ip_packet": "Non IP packet - Destination MAC is the router, packet is not routable",
+    "packet_size_larger_than_mtu": "Packet size is larger than router interface MTU - Validate the router interface "
+                                   "MTU configuration"}
 
 acl_drop_reason_dict = {"ingress_router_acl": "Ingress port ACL - Validate ACL configuration"}
 
 table_parser_info = {
-    'raw':
+    WJHConsts.RAW_TABLE:
         {'headers_ofset': 0,
          'header_len': 2,
          'len_ofset': 2,
@@ -44,7 +47,7 @@ table_parser_info = {
          'column_ofset': 1,
          'output_key': '#'
          },
-    'raw_acl_buffer_info':
+    WJHConsts.RAW_ACL_TABLE:
         {'headers_ofset': 1,
          'header_len': 1,
          'len_ofset': 2,
@@ -52,7 +55,7 @@ table_parser_info = {
          'column_ofset': 1,
          'output_key': '#'
          },
-    'agg':
+    WJHConsts.AGG_TABLE:
         {'headers_ofset': 2,
          'header_len': 1,
          'len_ofset': 3,
@@ -60,7 +63,7 @@ table_parser_info = {
          'column_ofset': 1,
          'output_key': '#'
          },
-    'agg_acl_buffer_info':
+    WJHConsts.AGG_ACL_TABLE:
         {'headers_ofset': 1,
          'header_len': 1,
          'len_ofset': 2,
@@ -309,7 +312,7 @@ def validate_wjh_table(engines, cmd, table_type, interface, dst_ip, src_ip, prot
     :param engines: engines fixture
     :param cmd: command to execute on DUT
     :param table_type: table type
-    :param interfaces: interfaces
+    :param interface: an interface name
     :param dst_ip: dst ip
     :param src_ip: src ip
     :param proto: protocol
@@ -332,7 +335,7 @@ def validate_wjh_acl_buffer_table(engines, cmd, table_types, interface, dst_ip, 
     :param engines: engines fixture
     :param cmd: command to execute on DUT
     :param table_types: table types
-    :param interfaces: interfaces
+    :param interface: an interface name
     :param dst_ip: dst ip
     :param src_ip: src ip
     :param proto: protocol
@@ -416,7 +419,7 @@ def check_buffer_info_table(table, entry, drop_reason, table_type, is_dynamic_bu
     if not entry_found:
         pytest.fail("Buffer info table does not contain the entry found on raw/agg table.")
 
-    if (table_type == 'raw'):
+    if (table_type == WJHConsts.RAW_TABLE):
         if drop_reason == 'buffer_congestion':
             if (tc_id == expected_tc_id and (
                     (occupancy_exceed_substring in tc_usage) or (tc_usage != "N/A" and int(tc_usage) > 0)) and
@@ -429,7 +432,7 @@ def check_buffer_info_table(table, entry, drop_reason, table_type, is_dynamic_bu
                     tc_watermark == "N/A" and latency_watermark == "N/A"):
                 return
 
-    elif (table_type == 'agg'):
+    elif (table_type == WJHConsts.AGG_TABLE):
         if drop_reason == 'buffer_congestion':
             if (tc_id == expected_tc_id and tc_usage == "N/A" and latency == "N/A" and
                     ((tc_watermark_exceed_substring in tc_watermark) or (
@@ -464,8 +467,9 @@ def do_raw_test(engines, cli_object, channel, channel_type, interface, dst_ip, s
     """
     check_if_channel_enabled(cli_object, engines, channel, channel_type)
 
-    retry_call(validate_wjh_table, fargs=[engines, command, 'raw', interface, dst_ip, src_ip, proto, drop_reason,
-                                          dst_mac, src_mac],
+    retry_call(validate_wjh_table,
+               fargs=[engines, command, WJHConsts.RAW_TABLE, interface, dst_ip, src_ip, proto, drop_reason,
+                      dst_mac, src_mac],
                tries=3, delay=3, logger=logger)
 
 
@@ -513,8 +517,9 @@ def do_agg_test(engines, cli_object, channel, channel_type, interface, dst_ip, s
     """
     check_if_channel_enabled(cli_object, engines, channel, channel_type)
 
-    retry_call(validate_wjh_table, fargs=[engines, command, 'agg', interface, dst_ip, src_ip, proto, drop_reason,
-                                          dst_mac, src_mac],
+    retry_call(validate_wjh_table,
+               fargs=[engines, command, WJHConsts.AGG_TABLE, interface, dst_ip, src_ip, proto, drop_reason,
+                      dst_mac, src_mac],
                tries=3, delay=3, logger=logger)
 
 
@@ -542,6 +547,23 @@ def do_acl_buffer_agg_test(engines, cli_object, channel, channel_types, interfac
                                                      drop_reason_message, dst_mac, src_mac,
                                                      drop_reason, table_separator],
                tries=3, delay=3, logger=logger)
+
+
+def scapy_packet_validation(interfaces, pkt, topology_obj, count):
+    vlan_interface = f"{interfaces.ha_dut_2}.40"
+    validation = {'sender': 'ha', 'send_args': {'interface': vlan_interface, 'packets': pkt, 'count': count}}
+    ScapyChecker(topology_obj.players, validation).run_validation()
+
+
+def generate_wjh_poll_cmd(channel, aggregate=False):
+    """
+    The function generates the wjh poll command according to the given channel
+    :param channel: A WJH channel, i.e. forwarding
+    :param aggregate: whether to include the '-- aggregate' flag in the command
+    :return: Returns a full WJH polling cmd, i.e. show what-just-happened poll layer-1 --aggregate
+    """
+    aggregate_flag = WJHConsts.AGGREGATE_FLAG if aggregate else ''
+    return ' '.join([WJHConsts.WJH_POLL_CMD_PREFIX, channel, aggregate_flag])
 
 
 @pytest.mark.wjh
@@ -590,13 +612,13 @@ def test_buffer(drop_reason, engines, topology_obj, players, interfaces, wjh_buf
         drop_reason_message = drop_reason_dict[drop_reason]
         cli_object = topology_obj.players['dut']['cli']
         with allure.step('Validating WJH raw table output'):
-            do_acl_buffer_raw_test(engines=engines, cli_object=cli_object, channel='buffer',
-                                   channel_types=['raw', 'raw_acl_buffer_info'], interface=interfaces.dut_hb_2,
-                                   dst_ip=ha_ip,
-                                   src_ip=hb_ip, proto='udp', drop_reason_message=drop_reason_message,
+            do_acl_buffer_raw_test(engines=engines, cli_object=cli_object, channel=WJHConsts.BUFFER,
+                                   channel_types=[WJHConsts.RAW_TABLE, WJHConsts.RAW_ACL_TABLE],
+                                   interface=interfaces.dut_hb_2, dst_ip=ha_ip,
+                                   src_ip=hb_ip, proto=WJHConsts.UDP_PROTO, drop_reason_message=drop_reason_message,
                                    dst_mac=ha_dut_2_mac, src_mac=hb_dut_2_mac,
-                                   command='show what-just-happened poll buffer',
-                                   drop_reason=drop_reason, table_separator=utils.BUFFER_TABLE_SEPARATOR)
+                                   command=generate_wjh_poll_cmd(WJHConsts.BUFFER),
+                                   drop_reason=drop_reason, table_separator=WJHConsts.BUFFER_TABLE_SEPARATOR)
 
         with allure.step('Sending iPerf traffic'):
             logger.info('Sending iPerf traffic')
@@ -607,14 +629,14 @@ def test_buffer(drop_reason, engines, topology_obj, players, interfaces, wjh_buf
             # It will be displayed as "ip" in the table.
             # As Extend WJH linux channel support with current buffer capabilities via WJH lib feature
             # It will be displayed as "udp" in the pull buffer aggregate table in master and 202311 branch
-            agg_proto = 'ip' if sonic_branch in ['202211', '202305'] else 'udp'
-            do_acl_buffer_agg_test(engines=engines, cli_object=cli_object, channel='buffer',
-                                   channel_types=['agg', 'agg_acl_buffer_info'], interface=interfaces.dut_hb_2,
-                                   dst_ip=ha_ip,
+            agg_proto = WJHConsts.IP_PROTO if sonic_branch in ['202211', '202305'] else WJHConsts.UDP_PROTO
+            do_acl_buffer_agg_test(engines=engines, cli_object=cli_object, channel=WJHConsts.BUFFER,
+                                   channel_types=[WJHConsts.AGG_TABLE, WJHConsts.AGG_ACL_TABLE],
+                                   interface=interfaces.dut_hb_2, dst_ip=ha_ip,
                                    src_ip=hb_ip, proto=agg_proto, drop_reason_message=drop_reason_message,
                                    dst_mac=ha_dut_2_mac, src_mac=hb_dut_2_mac,
-                                   command='show what-just-happened poll buffer --aggregate', drop_reason=drop_reason,
-                                   table_separator=utils.BUFFER_TABLE_SEPARATOR)
+                                   command=generate_wjh_poll_cmd(WJHConsts.BUFFER, aggregate=True),
+                                   drop_reason=drop_reason, table_separator=WJHConsts.BUFFER_TABLE_SEPARATOR)
     except Exception as e:
         pytest.fail(f"Could not finish the test due to exception: \n{e}.\nAborting!.")
 
@@ -631,11 +653,12 @@ def test_l1_raw_drop(engines, cli_objects):
             cli_objects.dut.interface.disable_interface(port)
 
         drop_reason_message = 'Generic L1 event - Check layer 1 aggregated information'
-        na = 'N/A'
+        na = WJHConsts.NA
         with allure.step('Validating WJH raw table output'):
-            do_raw_test(engines=engines, cli_object=cli_objects.dut, channel='layer-1', channel_type='raw',
+            do_raw_test(engines=engines, cli_object=cli_objects.dut, channel=WJHConsts.LAYER_1,
+                        channel_type=WJHConsts.RAW_CHANNEL,
                         interface=port, dst_ip=na, src_ip=na, proto=na, drop_reason=drop_reason_message,
-                        dst_mac=na, src_mac=na, command='show what-just-happened poll layer-1')
+                        dst_mac=na, src_mac=na, command=generate_wjh_poll_cmd(WJHConsts.LAYER_1))
     except Exception as e:
         pytest.fail(f"Could not finish the test due to exception: \n{str(e)}.\nAborting!.")
     finally:
@@ -646,17 +669,17 @@ def test_l1_raw_drop(engines, cli_objects):
 @pytest.mark.build
 @allure.title('WJH L1 Aggregated test case')
 def test_l1_agg_drop(engines, cli_objects):
-    check_if_channel_enabled(cli_objects.dut, engines, 'layer-1', 'aggregate')
+    check_if_channel_enabled(cli_objects.dut, engines, WJHConsts.LAYER_1, WJHConsts.AGG_CHANNEL)
     port = cli_objects.dut.interface.get_active_phy_port()
     if not port:
         pytest.skip("Could not find port in active state. Skipping the test.")
     with allure.step('Shutting down {} interface'.format(port)):
         cli_objects.dut.interface.disable_interface(port)
     drop_reason_message = 'Port admin down - Validate port configuration'
-    na = 'N/A'
     try:
         with allure.step('Validating WJH L1 Aggregated table output with down port'):
-            table = get_parsed_table(engines.dut, 'show what-just-happened poll layer-1 --aggregate', 'agg')
+            table = get_parsed_table(engines.dut, generate_wjh_poll_cmd(WJHConsts.LAYER_1, aggregate=True),
+                                     WJHConsts.AGG_TABLE)
             verify_l1_agg_drop_exists(table, port, 'Down', drop_reason_message)
 
         with allure.step('Starting up {} interface'.format(port)):
@@ -666,7 +689,8 @@ def test_l1_agg_drop(engines, cli_objects):
             time.sleep(3)
 
         with allure.step('Validating WJH L1 Aggregated table output with up port'):
-            table = get_parsed_table(engines.dut, 'show what-just-happened poll layer-1 --aggregate', 'agg')
+            table = get_parsed_table(engines.dut, generate_wjh_poll_cmd(WJHConsts.LAYER_1, aggregate=True),
+                                     WJHConsts.AGG_TABLE)
             verify_l1_agg_drop_exists(table, port, 'Up', drop_reason_message)
     except Exception as e:
         pytest.fail(f"Could not finish the test due to exception: \n{str(e)}.\nAborting!.")
@@ -694,39 +718,30 @@ def verify_l1_agg_drop_exists(table, port, state, drop_reason_message):
 @pytest.mark.push_gate
 @allure.title('WJH L2 test case')
 def test_l2_src_mac_equals_dst_mac(engines, cli_objects, topology_obj, interfaces, hb_dut_2_mac):
-    src_ip = '1.1.1.1'
-    dst_ip = '40.0.0.3'
-    count = 50
-    pkt = 'Ether(src="{}", dst="{}")/IP(dst="{}", src="{}")/TCP()'.format(hb_dut_2_mac, hb_dut_2_mac, dst_ip, src_ip)
+    src_ip = WJHConsts.TESTED_SRC_IP
+    dst_ip = WJHConsts.TESTED_DST_IP
+    pkt = WJHConsts.TCP_IPV4_PACKET_FORMAT.format(SRC_MAC=hb_dut_2_mac, DST_MAC=hb_dut_2_mac, SRC_IP=src_ip, DST_IP=dst_ip)
     drop_reason_message = l2_drop_reason_dict["src_mac_equals_dst_mac"]
     try:
         with allure.step('Sending packet with src mac = dst mac'):
-            validation = {
-                'sender': 'ha', 'send_args': {'interface': '{}.40'.format(interfaces.ha_dut_2),
-                                              'packets': pkt,
-                                              'count': 1}
-            }
-            ScapyChecker(topology_obj.players, validation).run_validation()
+            scapy_packet_validation(interfaces, pkt, topology_obj, WJHConsts.RAW_PACKET_COUNT)
 
         with allure.step('Validating WJH L2 raw table output'):
-            do_raw_test(engines=engines, cli_object=cli_objects.dut, channel='forwarding', channel_type='raw',
-                        interface=interfaces.dut_ha_2, dst_ip=dst_ip, src_ip=src_ip, proto='tcp',
+            do_raw_test(engines=engines, cli_object=cli_objects.dut, channel=WJHConsts.FORWARDING,
+                        channel_type=WJHConsts.RAW_CHANNEL,
+                        interface=interfaces.dut_ha_2, dst_ip=dst_ip, src_ip=src_ip, proto=WJHConsts.TCP_PROTO,
                         drop_reason=drop_reason_message, dst_mac=hb_dut_2_mac, src_mac=hb_dut_2_mac,
-                        command='show what-just-happened poll forwarding')
+                        command=generate_wjh_poll_cmd(WJHConsts.FORWARDING))
 
-        with allure.step('Sending {} packets with src mac = dst mac'.format(count)):
-            validation = {
-                'sender': 'ha', 'send_args': {'interface': '{}.40'.format(interfaces.ha_dut_2),
-                                              'packets': pkt,
-                                              'count': count}
-            }
-            ScapyChecker(topology_obj.players, validation).run_validation()
+        with allure.step(f'Sending {WJHConsts.AGG_PACKET_COUNT} packets with src mac = dst mac'):
+            scapy_packet_validation(interfaces, pkt, topology_obj, WJHConsts.AGG_PACKET_COUNT)
 
         with allure.step('Validating WJH L2 aggregated table output'):
-            do_agg_test(engines=engines, cli_object=cli_objects.dut, channel='forwarding', channel_type='aggregate',
-                        interface=interfaces.dut_ha_2, dst_ip=dst_ip, src_ip=src_ip, proto='tcp',
+            do_agg_test(engines=engines, cli_object=cli_objects.dut, channel=WJHConsts.FORWARDING,
+                        channel_type=WJHConsts.AGG_CHANNEL,
+                        interface=interfaces.dut_ha_2, dst_ip=dst_ip, src_ip=src_ip, proto=WJHConsts.TCP_PROTO,
                         drop_reason=drop_reason_message, dst_mac=hb_dut_2_mac, src_mac=hb_dut_2_mac,
-                        command='show what-just-happened poll forwarding --aggregate')
+                        command=generate_wjh_poll_cmd(WJHConsts.FORWARDING, aggregate=True))
 
     except Exception as e:
         pytest.fail(f"Could not finish the test due to exception: \n{str(e)}.\nAborting!.")
@@ -737,41 +752,32 @@ def test_l2_src_mac_equals_dst_mac(engines, cli_objects, topology_obj, interface
 @pytest.mark.push_gate
 @allure.title('WJH L3 test case')
 def test_l3_dst_ip_is_loopback(engines, cli_objects, topology_obj, interfaces):
-    src_mac = '00:11:22:33:44:55'
+    src_mac = WJHConsts.TESTED_SRC_MAC
     broadcast_mac = 'ff:ff:ff:ff:ff:ff'
     loopback_ip = '127.0.0.1'
-    src_ip = '40.0.0.2'
-    count = 50
-    pkt = 'Ether(src="{}", dst="{}")/IP(dst="{}", src="{}")/TCP()'.format(src_mac, broadcast_mac, loopback_ip, src_ip)
+    src_ip = WJHConsts.TESTED_SRC_IP
+    pkt = WJHConsts.TCP_IPV4_PACKET_FORMAT.format(SRC_MAC=src_mac, DST_MAC=broadcast_mac, SRC_IP=src_ip, DST_IP=loopback_ip)
     drop_reason_message = l3_drop_reason_dict["ip_dst_loopback"]
     try:
         with allure.step('Sending loopback dst ip packet'):
-            validation = {
-                'sender': 'ha', 'send_args': {'interface': '{}.40'.format(interfaces.ha_dut_2),
-                                              'packets': pkt,
-                                              'count': 1}
-            }
-            ScapyChecker(topology_obj.players, validation).run_validation()
+            scapy_packet_validation(interfaces, pkt, topology_obj, WJHConsts.RAW_PACKET_COUNT)
 
         with allure.step('Validating WJH L3 raw table output'):
-            do_raw_test(engines=engines, cli_object=cli_objects.dut, channel='forwarding', channel_type='raw',
-                        interface=interfaces.dut_ha_2, dst_ip=loopback_ip, src_ip=src_ip, proto='tcp',
+            do_raw_test(engines=engines, cli_object=cli_objects.dut, channel=WJHConsts.FORWARDING,
+                        channel_type=WJHConsts.RAW_CHANNEL,
+                        interface=interfaces.dut_ha_2, dst_ip=loopback_ip, src_ip=src_ip, proto=WJHConsts.TCP_PROTO,
                         drop_reason=drop_reason_message, dst_mac=broadcast_mac, src_mac=src_mac,
-                        command='show what-just-happened poll forwarding')
+                        command=generate_wjh_poll_cmd(WJHConsts.FORWARDING))
 
-        with allure.step('Sending {} loopback dst ip packets'.format(count)):
-            validation = {
-                'sender': 'ha', 'send_args': {'interface': '{}.40'.format(interfaces.ha_dut_2),
-                                              'packets': pkt,
-                                              'count': 50}
-            }
-            ScapyChecker(topology_obj.players, validation).run_validation()
+        with allure.step(f'Sending {WJHConsts.AGG_PACKET_COUNT} loopback dst ip packets'):
+            scapy_packet_validation(interfaces, pkt, topology_obj, WJHConsts.AGG_PACKET_COUNT)
 
         with allure.step('Validating WJH L3 aggregated table output'):
-            do_agg_test(engines=engines, cli_object=cli_objects.dut, channel='forwarding', channel_type='aggregate',
-                        interface=interfaces.dut_ha_2, dst_ip=loopback_ip, src_ip=src_ip, proto='tcp',
+            do_agg_test(engines=engines, cli_object=cli_objects.dut, channel=WJHConsts.FORWARDING,
+                        channel_type=WJHConsts.AGG_CHANNEL,
+                        interface=interfaces.dut_ha_2, dst_ip=loopback_ip, src_ip=src_ip, proto=WJHConsts.TCP_PROTO,
                         drop_reason=drop_reason_message, dst_mac=broadcast_mac, src_mac=src_mac,
-                        command='show what-just-happened poll forwarding --aggregate')
+                        command=generate_wjh_poll_cmd(WJHConsts.FORWARDING, aggregate=True))
 
     except Exception as e:
         pytest.fail(f"Could not finish the test due to exception: \n{str(e)}.\nAborting!.")
@@ -782,40 +788,31 @@ def test_l3_dst_ip_is_loopback(engines, cli_objects, topology_obj, interfaces):
 @allure.title('WJH L2 test case')
 def test_l2_src_mac_is_multicast(engines, cli_objects, topology_obj, interfaces):
     src_mac = '01:00:5e:01:02:04'
-    broadcast_mac = cli_objects.dut.mac.get_mac_address_for_interface(interfaces.dut_ha_2)
-    src_ip = '1.1.1.2'
-    dst_ip = '40.0.0.5'
-    count = 50
-    pkt = 'Ether(src="{}", dst="{}")/IP(dst="{}", src="{}")/TCP()'.format(src_mac, broadcast_mac, dst_ip, src_ip)
+    dst_mac = cli_objects.dut.mac.get_mac_address_for_interface(interfaces.dut_hb_2)
+    src_ip = WJHConsts.TESTED_SRC_IP
+    dst_ip = WJHConsts.TESTED_DST_IP
+    pkt = WJHConsts.TCP_IPV4_PACKET_FORMAT.format(SRC_MAC=src_mac, DST_MAC=dst_mac, SRC_IP=src_ip, DST_IP=dst_ip)
     drop_reason_message = l2_drop_reason_dict["multicast_src_mac"]
     try:
         with allure.step('Sending multicast src mac packet'):
-            validation = {
-                'sender': 'ha', 'send_args': {'interface': '{}.40'.format(interfaces.ha_dut_2),
-                                              'packets': pkt,
-                                              'count': 1}
-            }
-            ScapyChecker(topology_obj.players, validation).run_validation()
+            scapy_packet_validation(interfaces, pkt, topology_obj, WJHConsts.RAW_PACKET_COUNT)
 
         with allure.step('Validating WJH L2 raw table output'):
-            do_raw_test(engines=engines, cli_object=cli_objects.dut, channel='forwarding', channel_type='raw',
-                        interface=interfaces.dut_ha_2, dst_ip=dst_ip, src_ip=src_ip, proto='tcp',
-                        drop_reason=drop_reason_message, dst_mac=broadcast_mac, src_mac=src_mac,
-                        command='show what-just-happened poll forwarding')
+            do_raw_test(engines=engines, cli_object=cli_objects.dut, channel=WJHConsts.FORWARDING,
+                        channel_type=WJHConsts.RAW_CHANNEL,
+                        interface=interfaces.dut_ha_2, dst_ip=dst_ip, src_ip=src_ip, proto=WJHConsts.TCP_PROTO,
+                        drop_reason=drop_reason_message, dst_mac=dst_mac, src_mac=src_mac,
+                        command=generate_wjh_poll_cmd(WJHConsts.FORWARDING))
 
-        with allure.step('Sending {} multicast src mac packets'.format(count)):
-            validation = {
-                'sender': 'ha', 'send_args': {'interface': '{}.40'.format(interfaces.ha_dut_2),
-                                              'packets': pkt,
-                                              'count': 50}
-            }
-            ScapyChecker(topology_obj.players, validation).run_validation()
+        with allure.step(f'Sending {WJHConsts.AGG_PACKET_COUNT} multicast src mac packets'):
+            scapy_packet_validation(interfaces, pkt, topology_obj, WJHConsts.AGG_PACKET_COUNT)
 
         with allure.step('Validating WJH L2 aggregated table output'):
-            do_agg_test(engines=engines, cli_object=cli_objects.dut, channel='forwarding', channel_type='aggregate',
-                        interface=interfaces.dut_ha_2, dst_ip=dst_ip, src_ip=src_ip, proto='tcp',
-                        drop_reason=drop_reason_message, dst_mac=broadcast_mac, src_mac=src_mac,
-                        command='show what-just-happened poll forwarding --aggregate')
+            do_agg_test(engines=engines, cli_object=cli_objects.dut, channel=WJHConsts.FORWARDING,
+                        channel_type=WJHConsts.AGG_CHANNEL,
+                        interface=interfaces.dut_ha_2, dst_ip=dst_ip, src_ip=src_ip, proto=WJHConsts.TCP_PROTO,
+                        drop_reason=drop_reason_message, dst_mac=dst_mac, src_mac=src_mac,
+                        command=generate_wjh_poll_cmd(WJHConsts.FORWARDING, aggregate=True))
 
     except Exception as e:
         pytest.fail(f"Could not finish the test due to exception: \n{str(e)}.\nAborting!.")
@@ -825,41 +822,32 @@ def test_l2_src_mac_is_multicast(engines, cli_objects, topology_obj, interfaces)
 @pytest.mark.build
 @allure.title('WJH L3 test case')
 def test_l3_ipv6_dst_multicast_scope_ffx0(engines, cli_objects, topology_obj, interfaces):
-    src_mac = "00:11:22:33:44:56"
-    broadcast_mac = cli_objects.dut.mac.get_mac_address_for_interface(interfaces.dut_ha_2)
+    src_mac = WJHConsts.TESTED_SRC_MAC
+    dst_mac = cli_objects.dut.mac.get_mac_address_for_interface(interfaces.dut_hb_2)
     dst_ip = "ff00::42:1"
     src_ip = "2001:db8::1"
-    count = 50
-    pkt = 'Ether(src="{}", dst="{}")/IPv6(dst="{}", src="{}")/TCP()'.format(src_mac, broadcast_mac, dst_ip, src_ip)
+    pkt = WJHConsts.TCP_IPV6_PACKET_FORMAT.format(SRC_MAC=src_mac, DST_MAC=dst_mac, SRC_IP=src_ip, DST_IP=dst_ip)
     drop_reason_message = l3_drop_reason_dict["ipv6_multicast_ffx0"]
     try:
         with allure.step('Sending ffx0 multicast dst ip packet'):
-            validation = {
-                'sender': 'ha', 'send_args': {'interface': '{}.40'.format(interfaces.ha_dut_2),
-                                              'packets': pkt,
-                                              'count': 1}
-            }
-            ScapyChecker(topology_obj.players, validation).run_validation()
+            scapy_packet_validation(interfaces, pkt, topology_obj, WJHConsts.RAW_PACKET_COUNT)
 
         with allure.step('Validating WJH L3 raw table output'):
-            do_raw_test(engines=engines, cli_object=cli_objects.dut, channel='forwarding', channel_type='raw',
-                        interface=interfaces.dut_ha_2, dst_ip=dst_ip, src_ip=src_ip, proto='tcp',
-                        drop_reason=drop_reason_message, dst_mac=broadcast_mac, src_mac=src_mac,
-                        command='show what-just-happened poll forwarding')
+            do_raw_test(engines=engines, cli_object=cli_objects.dut, channel=WJHConsts.FORWARDING,
+                        channel_type=WJHConsts.RAW_CHANNEL,
+                        interface=interfaces.dut_ha_2, dst_ip=dst_ip, src_ip=src_ip, proto=WJHConsts.TCP_PROTO,
+                        drop_reason=drop_reason_message, dst_mac=dst_mac, src_mac=src_mac,
+                        command=generate_wjh_poll_cmd(WJHConsts.FORWARDING))
 
-        with allure.step('Sending {} ffx0 multicast dst ip packets'.format(count)):
-            validation = {
-                'sender': 'ha', 'send_args': {'interface': '{}.40'.format(interfaces.ha_dut_2),
-                                              'packets': pkt,
-                                              'count': 50}
-            }
-            ScapyChecker(topology_obj.players, validation).run_validation()
+        with allure.step(f'Sending {WJHConsts.AGG_PACKET_COUNT} ffx0 multicast dst ip packets'):
+            scapy_packet_validation(interfaces, pkt, topology_obj, WJHConsts.AGG_PACKET_COUNT)
 
         with allure.step('Validating WJH L3 aggregated table output'):
-            do_agg_test(engines=engines, cli_object=cli_objects.dut, channel='forwarding', channel_type='aggregate',
-                        interface=interfaces.dut_ha_2, dst_ip=dst_ip, src_ip=src_ip, proto='tcp',
-                        drop_reason=drop_reason_message, dst_mac=broadcast_mac, src_mac=src_mac,
-                        command='show what-just-happened poll forwarding --aggregate')
+            do_agg_test(engines=engines, cli_object=cli_objects.dut, channel=WJHConsts.FORWARDING,
+                        channel_type=WJHConsts.AGG_CHANNEL,
+                        interface=interfaces.dut_ha_2, dst_ip=dst_ip, src_ip=src_ip, proto=WJHConsts.TCP_PROTO,
+                        drop_reason=drop_reason_message, dst_mac=dst_mac, src_mac=src_mac,
+                        command=generate_wjh_poll_cmd(WJHConsts.FORWARDING, aggregate=True))
 
     except Exception as e:
         pytest.fail(f"Could not finish the test due to exception: \n{str(e)}.\nAborting!.")
@@ -869,41 +857,32 @@ def test_l3_ipv6_dst_multicast_scope_ffx0(engines, cli_objects, topology_obj, in
 @pytest.mark.build
 @allure.title('WJH L3 test case')
 def test_l3_ipv6_dst_multicast_scope_ffx1(engines, cli_objects, topology_obj, interfaces):
-    src_mac = "00:11:22:33:44:57"
-    broadcast_mac = cli_objects.dut.mac.get_mac_address_for_interface(interfaces.dut_ha_2)
+    src_mac = WJHConsts.TESTED_SRC_MAC
+    dst_mac = cli_objects.dut.mac.get_mac_address_for_interface(interfaces.dut_hb_2)
     dst_ip = "ff01::42:1"
     src_ip = "2001:db8::2"
-    count = 50
-    pkt = 'Ether(src="{}", dst="{}")/IPv6(dst="{}", src="{}")/TCP()'.format(src_mac, broadcast_mac, dst_ip, src_ip)
+    pkt = WJHConsts.TCP_IPV6_PACKET_FORMAT.format(SRC_MAC=src_mac, DST_MAC=dst_mac, SRC_IP=src_ip, DST_IP=dst_ip)
     drop_reason_message = l3_drop_reason_dict["ipv6_multicast_ffx1"]
     try:
         with allure.step('Sending ffx1 multicast dst ip packet'):
-            validation = {
-                'sender': 'ha', 'send_args': {'interface': '{}.40'.format(interfaces.ha_dut_2),
-                                              'packets': pkt,
-                                              'count': 1}
-            }
-            ScapyChecker(topology_obj.players, validation).run_validation()
+            scapy_packet_validation(interfaces, pkt, topology_obj, WJHConsts.RAW_PACKET_COUNT)
 
         with allure.step('Validating WJH L3 raw table output'):
-            do_raw_test(engines=engines, cli_object=cli_objects.dut, channel='forwarding', channel_type='raw',
-                        interface=interfaces.dut_ha_2, dst_ip=dst_ip, src_ip=src_ip, proto='tcp',
-                        drop_reason=drop_reason_message, dst_mac=broadcast_mac, src_mac=src_mac,
-                        command='show what-just-happened poll forwarding')
+            do_raw_test(engines=engines, cli_object=cli_objects.dut, channel=WJHConsts.FORWARDING,
+                        channel_type=WJHConsts.RAW_CHANNEL,
+                        interface=interfaces.dut_ha_2, dst_ip=dst_ip, src_ip=src_ip, proto=WJHConsts.TCP_PROTO,
+                        drop_reason=drop_reason_message, dst_mac=dst_mac, src_mac=src_mac,
+                        command=generate_wjh_poll_cmd(WJHConsts.FORWARDING))
 
-        with allure.step('Sending {} ffx1 multicast dst ip packets'.format(count)):
-            validation = {
-                'sender': 'ha', 'send_args': {'interface': '{}.40'.format(interfaces.ha_dut_2),
-                                              'packets': pkt,
-                                              'count': 50}
-            }
-            ScapyChecker(topology_obj.players, validation).run_validation()
+        with allure.step(f'Sending {WJHConsts.AGG_PACKET_COUNT} ffx1 multicast dst ip packets'):
+            scapy_packet_validation(interfaces, pkt, topology_obj, WJHConsts.AGG_PACKET_COUNT)
 
         with allure.step('Validating WJH L3 aggregated table output'):
-            do_agg_test(engines=engines, cli_object=cli_objects.dut, channel='forwarding', channel_type='aggregate',
-                        interface=interfaces.dut_ha_2, dst_ip=dst_ip, src_ip=src_ip, proto='tcp',
-                        drop_reason=drop_reason_message, dst_mac=broadcast_mac, src_mac=src_mac,
-                        command='show what-just-happened poll forwarding --aggregate')
+            do_agg_test(engines=engines, cli_object=cli_objects.dut, channel=WJHConsts.FORWARDING,
+                        channel_type=WJHConsts.AGG_CHANNEL,
+                        interface=interfaces.dut_ha_2, dst_ip=dst_ip, src_ip=src_ip, proto=WJHConsts.TCP_PROTO,
+                        drop_reason=drop_reason_message, dst_mac=dst_mac, src_mac=src_mac,
+                        command=generate_wjh_poll_cmd(WJHConsts.FORWARDING, aggregate=True))
 
     except Exception as e:
         pytest.fail(f"Could not finish the test due to exception: \n{str(e)}.\nAborting!.")
@@ -913,41 +892,32 @@ def test_l3_ipv6_dst_multicast_scope_ffx1(engines, cli_objects, topology_obj, in
 @pytest.mark.build
 @allure.title('WJH L3 test case')
 def test_l3_multicast_mac_mismatch(engines, cli_objects, topology_obj, interfaces):
-    src_mac = "00:11:22:33:44:56"
-    broadcast_mac = cli_objects.dut.mac.get_mac_address_for_interface(interfaces.dut_ha_2)
-    src_ip = '40.0.0.6'
+    src_mac = WJHConsts.TESTED_SRC_MAC
+    dst_mac = cli_objects.dut.mac.get_mac_address_for_interface(interfaces.dut_hb_2)
+    src_ip = WJHConsts.TESTED_SRC_IP
     dst_ip = '224.0.0.12'
-    count = 50
-    pkt = 'Ether(src="{}", dst="{}")/IP(dst="{}", src="{}")/TCP()'.format(src_mac, broadcast_mac, dst_ip, src_ip)
+    pkt = WJHConsts.TCP_IPV4_PACKET_FORMAT.format(SRC_MAC=src_mac, DST_MAC=dst_mac, SRC_IP=src_ip, DST_IP=dst_ip)
     drop_reason_message = l3_drop_reason_dict["multicast_mac_mismatch"]
     try:
         with allure.step('Sending multicast mac mismatch packet'):
-            validation = {
-                'sender': 'ha', 'send_args': {'interface': '{}.40'.format(interfaces.ha_dut_2),
-                                              'packets': pkt,
-                                              'count': 1}
-            }
-            ScapyChecker(topology_obj.players, validation).run_validation()
+            scapy_packet_validation(interfaces, pkt, topology_obj, WJHConsts.RAW_PACKET_COUNT)
 
         with allure.step('Validating WJH L3 raw table output'):
-            do_raw_test(engines=engines, cli_object=cli_objects.dut, channel='forwarding', channel_type='raw',
-                        interface=interfaces.dut_ha_2, dst_ip=dst_ip, src_ip=src_ip, proto='tcp',
-                        drop_reason=drop_reason_message, dst_mac=broadcast_mac, src_mac=src_mac,
-                        command='show what-just-happened poll forwarding')
+            do_raw_test(engines=engines, cli_object=cli_objects.dut, channel=WJHConsts.FORWARDING,
+                        channel_type=WJHConsts.RAW_CHANNEL,
+                        interface=interfaces.dut_ha_2, dst_ip=dst_ip, src_ip=src_ip, proto=WJHConsts.TCP_PROTO,
+                        drop_reason=drop_reason_message, dst_mac=dst_mac, src_mac=src_mac,
+                        command=generate_wjh_poll_cmd(WJHConsts.FORWARDING))
 
-        with allure.step('Sending {} multicast mac mismatch packets'.format(count)):
-            validation = {
-                'sender': 'ha', 'send_args': {'interface': '{}.40'.format(interfaces.ha_dut_2),
-                                              'packets': pkt,
-                                              'count': 50}
-            }
-            ScapyChecker(topology_obj.players, validation).run_validation()
+        with allure.step(f'Sending {WJHConsts.AGG_PACKET_COUNT} multicast mac mismatch packets'):
+            scapy_packet_validation(interfaces, pkt, topology_obj, WJHConsts.AGG_PACKET_COUNT)
 
         with allure.step('Validating WJH L3 aggregated table output'):
-            do_agg_test(engines=engines, cli_object=cli_objects.dut, channel='forwarding', channel_type='aggregate',
-                        interface=interfaces.dut_ha_2, dst_ip=dst_ip, src_ip=src_ip, proto='tcp',
-                        drop_reason=drop_reason_message, dst_mac=broadcast_mac, src_mac=src_mac,
-                        command='show what-just-happened poll forwarding --aggregate')
+            do_agg_test(engines=engines, cli_object=cli_objects.dut, channel=WJHConsts.FORWARDING,
+                        channel_type=WJHConsts.AGG_CHANNEL,
+                        interface=interfaces.dut_ha_2, dst_ip=dst_ip, src_ip=src_ip, proto=WJHConsts.TCP_PROTO,
+                        drop_reason=drop_reason_message, dst_mac=dst_mac, src_mac=src_mac,
+                        command=generate_wjh_poll_cmd(WJHConsts.FORWARDING, aggregate=True))
 
     except Exception as e:
         pytest.fail(f"Could not finish the test due to exception: \n{str(e)}.\nAborting!.")
@@ -957,41 +927,32 @@ def test_l3_multicast_mac_mismatch(engines, cli_objects, topology_obj, interface
 @pytest.mark.build
 @allure.title('WJH L3 test case')
 def test_l3_ipv4_limited_broadcast_src_ip(engines, cli_objects, topology_obj, interfaces):
-    src_mac = "00:11:22:33:44:56"
-    broadcast_mac = cli_objects.dut.mac.get_mac_address_for_interface(interfaces.dut_ha_2)
+    src_mac = WJHConsts.TESTED_SRC_MAC
+    dst_mac = cli_objects.dut.mac.get_mac_address_for_interface(interfaces.dut_hb_2)
     src_ip = '255.255.255.255'
-    dst_ip = '40.0.0.5'
-    count = 50
-    pkt = 'Ether(src="{}", dst="{}")/IP(dst="{}", src="{}")/TCP()'.format(src_mac, broadcast_mac, dst_ip, src_ip)
+    dst_ip = WJHConsts.TESTED_DST_IP
+    pkt = WJHConsts.TCP_IPV4_PACKET_FORMAT.format(SRC_MAC=src_mac, DST_MAC=dst_mac, SRC_IP=src_ip, DST_IP=dst_ip)
     drop_reason_message = l3_drop_reason_dict["limited_broadcast_src_ip"]
     try:
         with allure.step('Sending limited broadcast src ip packet'):
-            validation = {
-                'sender': 'ha', 'send_args': {'interface': '{}.40'.format(interfaces.ha_dut_2),
-                                              'packets': pkt,
-                                              'count': 1}
-            }
-            ScapyChecker(topology_obj.players, validation).run_validation()
+            scapy_packet_validation(interfaces, pkt, topology_obj, WJHConsts.RAW_PACKET_COUNT)
 
         with allure.step('Validating WJH L3 raw table output'):
-            do_raw_test(engines=engines, cli_object=cli_objects.dut, channel='forwarding', channel_type='raw',
-                        interface=interfaces.dut_ha_2, dst_ip=dst_ip, src_ip=src_ip, proto='tcp',
-                        drop_reason=drop_reason_message, dst_mac=broadcast_mac, src_mac=src_mac,
-                        command='show what-just-happened poll forwarding')
+            do_raw_test(engines=engines, cli_object=cli_objects.dut, channel=WJHConsts.FORWARDING,
+                        channel_type=WJHConsts.RAW_CHANNEL,
+                        interface=interfaces.dut_ha_2, dst_ip=dst_ip, src_ip=src_ip, proto=WJHConsts.TCP_PROTO,
+                        drop_reason=drop_reason_message, dst_mac=dst_mac, src_mac=src_mac,
+                        command=generate_wjh_poll_cmd(WJHConsts.FORWARDING))
 
-        with allure.step('Sending {} limited broadcast src ip packets'.format(count)):
-            validation = {
-                'sender': 'ha', 'send_args': {'interface': '{}.40'.format(interfaces.ha_dut_2),
-                                              'packets': pkt,
-                                              'count': 50}
-            }
-            ScapyChecker(topology_obj.players, validation).run_validation()
+        with allure.step(f'Sending {WJHConsts.AGG_PACKET_COUNT} limited broadcast src ip packets'):
+            scapy_packet_validation(interfaces, pkt, topology_obj, WJHConsts.AGG_PACKET_COUNT)
 
         with allure.step('Validating WJH L3 aggregated table output'):
-            do_agg_test(engines=engines, cli_object=cli_objects.dut, channel='forwarding', channel_type='aggregate',
-                        interface=interfaces.dut_ha_2, dst_ip=dst_ip, src_ip=src_ip, proto='tcp',
-                        drop_reason=drop_reason_message, dst_mac=broadcast_mac, src_mac=src_mac,
-                        command='show what-just-happened poll forwarding --aggregate')
+            do_agg_test(engines=engines, cli_object=cli_objects.dut, channel=WJHConsts.FORWARDING,
+                        channel_type=WJHConsts.AGG_CHANNEL,
+                        interface=interfaces.dut_ha_2, dst_ip=dst_ip, src_ip=src_ip, proto=WJHConsts.TCP_PROTO,
+                        drop_reason=drop_reason_message, dst_mac=dst_mac, src_mac=src_mac,
+                        command=generate_wjh_poll_cmd(WJHConsts.FORWARDING, aggregate=True))
 
     except Exception as e:
         pytest.fail(f"Could not finish the test due to exception: \n{str(e)}.\nAborting!.")
@@ -1001,41 +962,32 @@ def test_l3_ipv4_limited_broadcast_src_ip(engines, cli_objects, topology_obj, in
 @pytest.mark.build
 @allure.title('WJH L3 test case')
 def test_l3_ipv4_dst_local_network(engines, cli_objects, topology_obj, interfaces):
-    src_mac = "00:11:22:33:44:56"
-    broadcast_mac = cli_objects.dut.mac.get_mac_address_for_interface(interfaces.dut_ha_2)
-    src_ip = '40.0.0.6'
+    src_mac = WJHConsts.TESTED_SRC_MAC
+    dst_mac = cli_objects.dut.mac.get_mac_address_for_interface(interfaces.dut_hb_2)
+    src_ip = WJHConsts.TESTED_SRC_IP
     dst_ip = '0.0.0.2'
-    count = 50
-    pkt = 'Ether(src="{}", dst="{}")/IP(dst="{}", src="{}")/TCP()'.format(src_mac, broadcast_mac, dst_ip, src_ip)
+    pkt = WJHConsts.TCP_IPV4_PACKET_FORMAT.format(SRC_MAC=src_mac, DST_MAC=dst_mac, SRC_IP=src_ip, DST_IP=dst_ip)
     drop_reason_message = l3_drop_reason_dict["ipv4_dst_ip_local_network"]
     try:
         with allure.step('Sending ipv4 ip dst local network packet'):
-            validation = {
-                'sender': 'ha', 'send_args': {'interface': '{}.40'.format(interfaces.ha_dut_2),
-                                              'packets': pkt,
-                                              'count': 1}
-            }
-            ScapyChecker(topology_obj.players, validation).run_validation()
+            scapy_packet_validation(interfaces, pkt, topology_obj, WJHConsts.RAW_PACKET_COUNT)
 
         with allure.step('Validating WJH L3 raw table output'):
-            do_raw_test(engines=engines, cli_object=cli_objects.dut, channel='forwarding', channel_type='raw',
-                        interface=interfaces.dut_ha_2, dst_ip=dst_ip, src_ip=src_ip, proto='tcp',
-                        drop_reason=drop_reason_message, dst_mac=broadcast_mac, src_mac=src_mac,
-                        command='show what-just-happened poll forwarding')
+            do_raw_test(engines=engines, cli_object=cli_objects.dut, channel=WJHConsts.FORWARDING,
+                        channel_type=WJHConsts.RAW_CHANNEL,
+                        interface=interfaces.dut_ha_2, dst_ip=dst_ip, src_ip=src_ip, proto=WJHConsts.TCP_PROTO,
+                        drop_reason=drop_reason_message, dst_mac=dst_mac, src_mac=src_mac,
+                        command=generate_wjh_poll_cmd(WJHConsts.FORWARDING))
 
-        with allure.step('Sending {} ipv4 ip dst local network packets'.format(count)):
-            validation = {
-                'sender': 'ha', 'send_args': {'interface': '{}.40'.format(interfaces.ha_dut_2),
-                                              'packets': pkt,
-                                              'count': 50}
-            }
-            ScapyChecker(topology_obj.players, validation).run_validation()
+        with allure.step(f'Sending {WJHConsts.AGG_PACKET_COUNT} ipv4 ip dst local network packets'):
+            scapy_packet_validation(interfaces, pkt, topology_obj, WJHConsts.AGG_PACKET_COUNT)
 
         with allure.step('Validating WJH L3 aggregated table output'):
-            do_agg_test(engines=engines, cli_object=cli_objects.dut, channel='forwarding', channel_type='aggregate',
-                        interface=interfaces.dut_ha_2, dst_ip=dst_ip, src_ip=src_ip, proto='tcp',
-                        drop_reason=drop_reason_message, dst_mac=broadcast_mac, src_mac=src_mac,
-                        command='show what-just-happened poll forwarding --aggregate')
+            do_agg_test(engines=engines, cli_object=cli_objects.dut, channel=WJHConsts.FORWARDING,
+                        channel_type=WJHConsts.AGG_CHANNEL,
+                        interface=interfaces.dut_ha_2, dst_ip=dst_ip, src_ip=src_ip, proto=WJHConsts.TCP_PROTO,
+                        drop_reason=drop_reason_message, dst_mac=dst_mac, src_mac=src_mac,
+                        command=generate_wjh_poll_cmd(WJHConsts.FORWARDING, aggregate=True))
 
     except Exception as e:
         pytest.fail(f"Could not finish the test due to exception: \n{str(e)}.\nAborting!.")
@@ -1045,87 +997,68 @@ def test_l3_ipv4_dst_local_network(engines, cli_objects, topology_obj, interface
 @pytest.mark.build
 @allure.title('WJH L2 test case')
 def test_l2_dst_mac_is_reserved(engines, cli_objects, topology_obj, interfaces):
-    src_mac = '00:11:22:33:44:55'
+    src_mac = WJHConsts.TESTED_SRC_MAC
     dst_mac = '01:80:c2:00:00:01'
-    src_ip = '1.1.1.2'
-    dst_ip = '40.0.0.6'
-    count = 50
-    pkt = 'Ether(src="{}", dst="{}")/IP(dst="{}", src="{}")/TCP()'.format(src_mac, dst_mac, dst_ip, src_ip)
+    src_ip = WJHConsts.TESTED_SRC_IP
+    dst_ip = WJHConsts.TESTED_DST_IP
+    pkt = WJHConsts.TCP_IPV4_PACKET_FORMAT.format(SRC_MAC=src_mac, DST_MAC=dst_mac, SRC_IP=src_ip, DST_IP=dst_ip)
     drop_reason_message = l2_drop_reason_dict["dst_mac_is_reserved"]
     try:
         with allure.step('Sending reserved dst mac packet'):
-            validation = {
-                'sender': 'ha', 'send_args': {'interface': '{}.40'.format(interfaces.ha_dut_2),
-                                              'packets': pkt,
-                                              'count': 1}
-            }
-            ScapyChecker(topology_obj.players, validation).run_validation()
+            scapy_packet_validation(interfaces, pkt, topology_obj, WJHConsts.RAW_PACKET_COUNT)
 
         with allure.step('Validating WJH L2 raw table output'):
-            do_raw_test(engines=engines, cli_object=cli_objects.dut, channel='forwarding', channel_type='raw',
-                        interface=interfaces.dut_ha_2, dst_ip=dst_ip, src_ip=src_ip, proto='tcp',
+            do_raw_test(engines=engines, cli_object=cli_objects.dut, channel=WJHConsts.FORWARDING,
+                        channel_type=WJHConsts.RAW_CHANNEL,
+                        interface=interfaces.dut_ha_2, dst_ip=dst_ip, src_ip=src_ip, proto=WJHConsts.TCP_PROTO,
                         drop_reason=drop_reason_message, dst_mac=dst_mac, src_mac=src_mac,
-                        command='show what-just-happened poll forwarding')
+                        command=generate_wjh_poll_cmd(WJHConsts.FORWARDING))
 
-        with allure.step('Sending {} reserved dst mac packets'.format(count)):
-            validation = {
-                'sender': 'ha', 'send_args': {'interface': '{}.40'.format(interfaces.ha_dut_2),
-                                              'packets': pkt,
-                                              'count': 50}
-            }
-            ScapyChecker(topology_obj.players, validation).run_validation()
+        with allure.step(f'Sending {WJHConsts.AGG_PACKET_COUNT} reserved dst mac packets'):
+            scapy_packet_validation(interfaces, pkt, topology_obj, WJHConsts.AGG_PACKET_COUNT)
 
         with allure.step('Validating WJH L2 aggregated table output'):
-            do_agg_test(engines=engines, cli_object=cli_objects.dut, channel='forwarding', channel_type='aggregate',
-                        interface=interfaces.dut_ha_2, dst_ip=dst_ip, src_ip=src_ip, proto='tcp',
+            do_agg_test(engines=engines, cli_object=cli_objects.dut, channel=WJHConsts.FORWARDING,
+                        channel_type=WJHConsts.AGG_CHANNEL,
+                        interface=interfaces.dut_ha_2, dst_ip=dst_ip, src_ip=src_ip, proto=WJHConsts.TCP_PROTO,
                         drop_reason=drop_reason_message, dst_mac=dst_mac, src_mac=src_mac,
-                        command='show what-just-happened poll forwarding --aggregate')
+                        command=generate_wjh_poll_cmd(WJHConsts.FORWARDING, aggregate=True))
 
     except Exception as e:
         pytest.fail(f"Could not finish the test due to exception: \n{str(e)}.\nAborting!.")
 
 
 @pytest.mark.wjh
-@pytest.mark.build
+@pytest.mark.buildW
 @allure.title('WJH L3 test case')
 def test_l3_non_ip_packet(engines, cli_objects, topology_obj, interfaces):
-    src_mac = '00:11:22:33:44:55'
-    broadcast_mac = cli_objects.dut.mac.get_mac_address_for_interface(interfaces.dut_ha_2)
-    na = 'N/A'
-    src_ip = na
-    dst_ip = na
-    proto = na
-    count = 50
-    pkt = 'Ether(src="{}", dst="{}")'.format(src_mac, broadcast_mac)
+    src_mac = WJHConsts.TESTED_SRC_MAC
+    dst_mac = cli_objects.dut.mac.get_mac_address_for_interface(interfaces.dut_hb_2)
+    src_ip = WJHConsts.NA
+    dst_ip = WJHConsts.NA
+    proto = WJHConsts.NA
+    pkt = f'Ether(src="{src_mac}", dst="{dst_mac}")'
     drop_reason_message = l3_drop_reason_dict["non_ip_packet"]
     try:
         with allure.step('Sending non ip packet'):
-            validation = {
-                'sender': 'ha', 'send_args': {'interface': '{}.40'.format(interfaces.ha_dut_2),
-                                              'packets': pkt,
-                                              'count': 1}
-            }
-            ScapyChecker(topology_obj.players, validation).run_validation()
+            scapy_packet_validation(interfaces, pkt, topology_obj, WJHConsts.RAW_PACKET_COUNT)
 
         with allure.step('Validating WJH L3 raw table output'):
-            do_raw_test(engines=engines, cli_object=cli_objects.dut, channel='forwarding', channel_type='raw',
+            do_raw_test(engines=engines, cli_object=cli_objects.dut, channel=WJHConsts.FORWARDING,
+                        channel_type=WJHConsts.RAW_CHANNEL,
                         interface=interfaces.dut_ha_2, dst_ip=dst_ip, src_ip=src_ip, proto=proto,
-                        drop_reason=drop_reason_message, dst_mac=broadcast_mac, src_mac=src_mac,
-                        command='show what-just-happened poll forwarding')
+                        drop_reason=drop_reason_message, dst_mac=dst_mac, src_mac=src_mac,
+                        command=generate_wjh_poll_cmd(WJHConsts.FORWARDING))
 
-        with allure.step('Sending {} non ip packets'.format(count)):
-            validation = {
-                'sender': 'ha', 'send_args': {'interface': '{}.40'.format(interfaces.ha_dut_2),
-                                              'packets': pkt,
-                                              'count': 50}
-            }
-            ScapyChecker(topology_obj.players, validation).run_validation()
+        with allure.step(f'Sending {WJHConsts.AGG_PACKET_COUNT} non ip packets'):
+            scapy_packet_validation(interfaces, pkt, topology_obj, WJHConsts.AGG_PACKET_COUNT)
 
         with allure.step('Validating WJH L3 aggregated table output'):
-            do_agg_test(engines=engines, cli_object=cli_objects.dut, channel='forwarding', channel_type='aggregate',
+            do_agg_test(engines=engines, cli_object=cli_objects.dut, channel=WJHConsts.FORWARDING,
+                        channel_type=WJHConsts.AGG_CHANNEL,
                         interface=interfaces.dut_ha_2, dst_ip=dst_ip, src_ip=src_ip, proto=proto,
-                        drop_reason=drop_reason_message, dst_mac=broadcast_mac, src_mac=src_mac,
-                        command='show what-just-happened poll forwarding --aggregate')
+                        drop_reason=drop_reason_message, dst_mac=dst_mac, src_mac=src_mac,
+                        command=generate_wjh_poll_cmd(WJHConsts.FORWARDING, aggregate=True))
 
     except Exception as e:
         pytest.fail(f"Could not finish the test due to exception: \n{str(e)}.\nAborting!.")
@@ -1134,44 +1067,37 @@ def test_l3_non_ip_packet(engines, cli_objects, topology_obj, interfaces):
 @pytest.mark.wjh
 @allure.title('WJH ACL test case')
 def test_acl_ingress_router(engines, cli_objects, topology_obj, interfaces):
-    src_mac = "00:11:22:33:44:55"
-    broadcast_mac = cli_objects.dut.mac.get_mac_address_for_interface(interfaces.dut_ha_2)
+    src_mac = WJHConsts.TESTED_SRC_MAC
+    dst_mac = cli_objects.dut.mac.get_mac_address_for_interface(interfaces.dut_hb_2)
     src_ip = utils.get_drop_src_ip_from_ingress_acl_table(topology_obj.players['dut']['cli'])
-    dst_ip = "40.0.0.1"
-    count = 50
-    pkt = f'Ether(src="{src_mac}", dst="{broadcast_mac}")/IP(dst="{dst_ip}", src="{src_ip}")/TCP()'
+    dst_ip = WJHConsts.TESTED_DST_IP
+    pkt = WJHConsts.TCP_IPV4_PACKET_FORMAT.format(SRC_MAC=src_mac, DST_MAC=dst_mac, SRC_IP=src_ip, DST_IP=dst_ip)
     drop_reason_message = acl_drop_reason_dict["ingress_router_acl"]
     try:
         with allure.step('Sending a packet when acl is configured to drop it'):
-            validation = {
-                'sender': 'ha', 'send_args': {'interface': '{}.40'.format(interfaces.ha_dut_2),
-                                              'packets': pkt,
-                                              'count': 1}
-            }
-            ScapyChecker(topology_obj.players, validation).run_validation()
+            scapy_packet_validation(interfaces, pkt, topology_obj, WJHConsts.RAW_PACKET_COUNT)
 
         with allure.step('Validating WJH ACL raw table output'):
-            do_acl_buffer_raw_test(engines=engines, cli_object=cli_objects.dut, channel='acl',
-                                   channel_types=['raw', 'raw_acl_buffer_info'], interface=interfaces.dut_ha_2,
-                                   dst_ip=dst_ip, src_ip=src_ip, proto='tcp', drop_reason_message=drop_reason_message,
-                                   dst_mac=broadcast_mac, src_mac=src_mac, command='show what-just-happened poll acl',
-                                   table_separator=utils.ACL_TABLE_SEPARATOR)
+            do_acl_buffer_raw_test(engines=engines, cli_object=cli_objects.dut, channel=WJHConsts.ACL,
+                                   channel_types=[WJHConsts.RAW_CHANNEL, WJHConsts.RAW_ACL_TABLE],
+                                   interface=interfaces.dut_ha_2,
+                                   dst_ip=dst_ip, src_ip=src_ip, proto=WJHConsts.TCP_PROTO,
+                                   drop_reason_message=drop_reason_message,
+                                   dst_mac=dst_mac, src_mac=src_mac, command=generate_wjh_poll_cmd(WJHConsts.ACL),
+                                   table_separator=WJHConsts.ACL_TABLE_SEPARATOR)
 
-        with allure.step('Sending {} packets when acl is configured to drop them'.format(count)):
-            validation = {
-                'sender': 'ha', 'send_args': {'interface': '{}.40'.format(interfaces.ha_dut_2),
-                                              'packets': pkt,
-                                              'count': 50}
-            }
-            ScapyChecker(topology_obj.players, validation).run_validation()
+        with allure.step(f'Sending {WJHConsts.AGG_PACKET_COUNT} packets when acl is configured to drop them'):
+            scapy_packet_validation(interfaces, pkt, topology_obj, WJHConsts.AGG_PACKET_COUNT)
 
         with allure.step('Validating WJH ACL aggregated table output'):
-            do_acl_buffer_agg_test(engines=engines, cli_object=cli_objects.dut, channel='acl',
-                                   channel_types=['agg', 'agg_acl_buffer_info'], interface=interfaces.dut_ha_2,
-                                   dst_ip=dst_ip, src_ip=src_ip, proto='tcp', drop_reason_message=drop_reason_message,
-                                   dst_mac=broadcast_mac, src_mac=src_mac,
-                                   command='show what-just-happened poll acl --aggregate',
-                                   table_separator=utils.ACL_TABLE_SEPARATOR)
+            do_acl_buffer_agg_test(engines=engines, cli_object=cli_objects.dut, channel=WJHConsts.ACL,
+                                   channel_types=[WJHConsts.AGG_TABLE, WJHConsts.AGG_ACL_TABLE],
+                                   interface=interfaces.dut_ha_2,
+                                   dst_ip=dst_ip, src_ip=src_ip, proto=WJHConsts.TCP_PROTO,
+                                   drop_reason_message=drop_reason_message,
+                                   dst_mac=dst_mac, src_mac=src_mac,
+                                   command=generate_wjh_poll_cmd(WJHConsts.ACL, aggregate=True),
+                                   table_separator=WJHConsts.ACL_TABLE_SEPARATOR)
 
     except Exception as e:
         pytest.fail(f"Could not finish the test due to exception: \n{str(e)}.\nAborting!.")

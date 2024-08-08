@@ -1,8 +1,6 @@
 import re
 
 ACL_INGRESS_TABLE_NAME = "DATA_INGRESS_L3TEST"
-BUFFER_TABLE_SEPARATOR = "Buffer Info"
-ACL_TABLE_SEPARATOR = "Rules Info"
 
 
 def parse_ip_address_from_packet(ip_string):
