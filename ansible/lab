@@ -164,6 +164,7 @@ croc-80      ansible_host=10.7.148.80 ansible_hostv6="" sonic_version=v2 hwsku="
 croc-88      ansible_host=10.7.148.88 ansible_hostv6="" sonic_version=v2 hwsku="ACS-QM3400" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 croc-94      ansible_host=10.7.148.94 ansible_hostv6="" sonic_version=v2 hwsku="ACS-QM3400" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 croc-98      ansible_host=10.7.148.98 ansible_hostv6="" sonic_version=v2 hwsku="ACS-QM3400" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
+croc-138      ansible_host=10.7.148.138 ansible_hostv6="" sonic_version=v2 hwsku="ACS-QM3400" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 croc-skt-208      ansible_host=10.7.145.208 ansible_hostv6="" sonic_version=v2 hwsku="ACS-QM3400" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 bm-bu-nos      ansible_host=10.7.144.191 ansible_hostv6="" sonic_version=v2 hwsku="ACS-QM8790" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 r-bsp-qm3400      ansible_host=10.209.48.158 ansible_hostv6="" sonic_version=v2 hwsku="ACS-QM3400" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
