@@ -21,10 +21,10 @@ class TestArPerformance:
         self.players = players
         self.cli_objects = cli_objects
         self.ar_helper = ArHelper()
-        self.ar_perf_helper = ArPerfHelper(self.engines)
+        self.ar_perf_helper = ArPerfHelper(self.topology_obj, self.engines)
         self.dut_mac = self.ar_perf_helper.get_switch_mac(self.topology_obj, 'dut')
-        self.dut_tx_ports = self.ar_perf_helper.get_dut_ports(self.topology_obj)
-        self.tg_ports = self.ar_perf_helper.get_ports_by_type(self.topology_obj)
+        self.tg_ports = self.ar_perf_helper.all_engines_ports
+        self.dut_tx_ports = self.ar_perf_helper.all_engines_ports['dut']
         self.tx_ports_left_tg = self.tg_ports[PerfConsts.LEFT_TG_ALIAS]["egress_ports"]
         self.tx_ports_right_tg = self.tg_ports[PerfConsts.RIGHT_TG_ALIAS]["egress_ports"]
         self.tg_tx_ports = {PerfConsts.LEFT_TG_ALIAS: self.tx_ports_left_tg, PerfConsts.RIGHT_TG_ALIAS: self.tx_ports_right_tg}

@@ -24,29 +24,29 @@ def skip_if_not_performance_setup(is_performance):
 
 @pytest.fixture(scope='module')
 def config_node(cli_objects, engines, topology_obj):
-    ar_perf_helper = ArPerfHelper(engines)
+    ar_perf_helper = ArPerfHelper(topology_obj, engines)
     tg_engines = ar_perf_helper.tg_engines
     for engine in tg_engines:
+        half_ports_num = len(ar_perf_helper.all_engines_ports[engine]["egress_ports"])
         copy_files_to_syncd(engines[engine], PerfConsts.CONFIG_FILES_DICT[engine], PerfConsts.CONFIG_FILES_DIR)
         ar_perf_helper.run_cmd_on_syncd(engines[engine], PerfConsts.DISABLE_MAC_SCRIPT, python=True)
         cli_objects[engine].mac.clear_fdb()
         ar_perf_helper.run_cmd_on_syncd(engines[engine], PerfConsts.LB_SCRIPT_TG,
-                                        additional_args=PerfConsts.LOG_PORTS_DICT[engine])
+                                        additional_args=[PerfConsts.LOG_PORTS_DICT[engine], half_ports_num])
         ar_perf_helper.copy_traffic_cmds_to_node(engines[engine], engine)
 
 
 @pytest.fixture(scope='module')
 def config_dut(cli_objects, engines, topology_obj):
-    ar_perf_helper = ArPerfHelper(engines)
-    dut_engine = engines.dut
-    ar_perf_helper.config_ip_neighbors_on_dut(dut_engine, topology_obj)
-    ar_perf_helper.ensure_ar_perf_config_set(cli_objects, topology_obj)
+    ar_perf_helper = ArPerfHelper(topology_obj, engines)
+    ar_perf_helper.config_ip_neighbors_on_dut(engines, topology_obj)
+    ar_perf_helper.ensure_ar_perf_config_set(cli_objects, topology_obj, engines)
 
 
 @pytest.fixture(scope='module')
 def load_ibm_profile(engines, cli_objects, topology_obj):
     logger.info('Load ingress buffer mode custom AR profile')
-    ar_perf_helper = ArPerfHelper(engines)
+    ar_perf_helper = ArPerfHelper(topology_obj, engines)
     ar_ibm_profile_config_folder_path = os.path.dirname(os.path.abspath(__file__)) + '/' + PerfConsts.AR_PERF_CONFIG_FOLDER
     ar_perf_helper.copy_and_load_profile_config(engines, cli_objects, ar_ibm_profile_config_folder_path, PerfConsts.CUSTOM_IBM_PROFILE_JSON)
 
