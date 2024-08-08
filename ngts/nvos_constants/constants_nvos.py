@@ -1138,7 +1138,7 @@ class OperationTimeConsts:
                   'install bmc': 900,
                   'install fpga': 900,
                   ActionConsts.POWER_CYCLE: 360,
-                  'juliet-power-cycle': 415
+                  'juliet-power-cycle': 445
                   }
     THRESHOLDS['start stop cluster app stressed resources'] = THRESHOLDS['start stop cluster app'] * 1.1
     THRESHOLDS['start stop cluster stressed resources'] = THRESHOLDS['start stop cluster'] * 1.1

@@ -1,14 +1,20 @@
 import logging
+import re
+from datetime import datetime, timedelta
+
 import pytest
 
+from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from ngts.nvos_constants.constants_nvos import ApiType, ActionConsts, SystemConsts
+from ngts.nvos_constants.constants_nvos import ApiType, ActionConsts, SystemConsts, PlatformConsts
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
-from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.nvos_tools.infra.RandomizationTool import random_api
 from ngts.nvos_tools.infra.ResultObj import ResultObj
+from ngts.nvos_tools.infra.TpmTool import TpmTool
 from ngts.nvos_tools.system.System import System
+from ngts.tests_nvos.system.clock.ClockTools import ClockTools
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
@@ -16,10 +22,13 @@ logger = logging.getLogger()
 
 @pytest.mark.system
 @pytest.mark.bmc
-@pytest.mark.parametrize(['test_api', 'force_str'], [[ApiType.NVUE, ""], [ApiType.NVUE, "force"],
-                                                     [ApiType.OPENAPI, "force"]])
+@pytest.mark.parametrize(['test_api', 'force_str'], [[ApiType.NVUE, ""],
+                                                     [random_api(), "immediate"],
+                                                     [random_api(), "force"],
+                                                     [ApiType.NVUE, "force immediate"]  # todo openapi multiple flags
+                                                     ])
 def test_power_cycle_system(engines, devices, test_name, test_api, force_str):
-    """Test for `nv action power-cycle system [force]`. See documentation of _test functions below."""
+    """Test for `nv action power-cycle system [force] [immediate]`. See documentation of _test functions below."""
     TestToolkit.tested_api = test_api
     if ActionConsts.POWER_CYCLE in devices.dut.supported_commands:
         with allure.step("Test action power-cycle"):
@@ -39,32 +48,32 @@ def _test_command_supported(engines, devices, test_name, test_api, force_str):
     - Verify the config-change from stage 1 was not saved
     """
     system = System()
-    interface = MgmtPort("eth1")
-    with allure.step("Make some config change"):
-        obj, param, value = interface.interface, "description", '"NVOS TESTS"'
-        original_value = OutputParsingTool.parse_json_str_to_dictionary(obj.show()).get_returned_value().get(param)
-        obj.set(op_param_name=param, op_param_value=value, apply=True).verify_result(should_succeed=True)
+    start_time = datetime.now()
 
-    try:
-        with allure.step("Run power-cycle command and measure duration"):
-            result_obj, duration = OperationTime.save_duration(ActionConsts.POWER_CYCLE, force_str, test_name,
-                                                               do_power_cycle, force_str)
-            result_obj.verify_result()
-            logger.error(duration)
-            OperationTime.verify_operation_time(duration, devices.dut.power_cycle_type).verify_result()
+    with allure.step("Run power-cycle command and measure duration"):
+        system_time = ClockTools.get_datetime_object_from_show_system_output(system.show())
+        result_obj, duration = OperationTime.save_duration(ActionConsts.POWER_CYCLE, force_str, test_name,
+                                                           do_power_cycle, force_str)
+        result_obj.verify_result()
+        logger.info(f"power-cycle took {duration} seconds")
 
-        with allure.step("Check reboot cause"):
-            # todo: currently it shows reason unknown
-            OutputParsingTool.parse_json_str_to_dictionary(system.reboot.show(SystemConsts.REBOOT_REASON)).get_returned_value()
-            OutputParsingTool.parse_json_str_to_dictionary(system.reboot.show(SystemConsts.REBOOT_HISTORY)).get_returned_value()
+    with allure.step("Assert that power-cycle happened"):
+        bmc_uptime = get_bmc_uptime(engines.dut)
+        assert bmc_uptime.seconds < (datetime.now() - start_time).total_seconds(), \
+            f"Power-cycle did not actually happen: {bmc_uptime.seconds=}"
 
-        with allure.step("Assert config change was reverted"):
-            current_param_value = OutputParsingTool.parse_json_str_to_dictionary(obj.show()).get_returned_value().get(param)
-            assert current_param_value == original_value
+    with allure.step("Check reboot cause"):
+        output = OutputParsingTool.parse_json_str_to_dictionary(system.reboot.show(SystemConsts.REBOOT_REASON)
+                                                                ).get_returned_value()
+        reboot_time = ClockTools.parse_datetime(output["gentime"])
+        assert reboot_time >= system_time, \
+            f"power-cycle command sent at {system_time.strftime('%H:%M:%S')} but 'show system reboot' shows {output}"
+        # todo assert output["reason"] == action power cycle (currently it shows reason unknown, needs newer CPLD)
+        # https://redmine.mellanox.com/issues/4031927
+        # https://redmine.mellanox.com/issues/4030950
 
-    except Exception:
-        obj.set(op_param_name=param, op_param_value=original_value, apply=True).verify_result(should_succeed=True)
-        raise
+    with allure.step("Assert power-cycle duration was not too long"):
+        OperationTime.verify_operation_time(duration, devices.dut.power_cycle_type).verify_result()
 
 
 def _test_command_not_supported(engines, devices, test_name, test_api, force_str):
@@ -84,3 +93,29 @@ def _test_command_not_supported(engines, devices, test_name, test_api, force_str
 
 def do_power_cycle(force_str: str) -> ResultObj:
     return System().action(ActionConsts.POWER_CYCLE, expect_reboot=True, param_name=force_str)
+
+
+def get_bmc_uptime(engine: LinuxSshEngine) -> timedelta:
+    uptime_output = ssh_to_bmc("uptime", engine)
+    uptime_match = re.search(r' up\s+([^,]+),', uptime_output)
+    uptime_str, = uptime_match.groups()
+    uptime = None
+    for time_format in ["%H:%M", "%M min", "%S sec"]:
+        try:
+            uptime = datetime.strptime(uptime_str, time_format)
+            break
+        except ValueError:
+            pass
+    if uptime is None:
+        raise Exception(uptime_str)
+    return timedelta(hours=uptime.hour, minutes=uptime.minute, seconds=uptime.second)
+
+
+def ssh_to_bmc(cmd: str, engine: LinuxSshEngine) -> str:
+    """Runs cmd over ssh to the BMC and returns the output"""
+    host = f"{PlatformConsts.BMC_LOGIN}@{PlatformConsts.BMC_INTERNAL_IP}"
+    password_prompt = f"{host}'s password:"
+    bmc_password = TpmTool(engine).get_bmc_admin_password_from_tpm()
+    output = engine.run_cmd_set([f"ssh -o StrictHostKeyChecking=no {host} {cmd}", bmc_password],
+                                patterns_list=[re.escape(password_prompt)])
+    return output

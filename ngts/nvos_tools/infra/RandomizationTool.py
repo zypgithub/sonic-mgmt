@@ -9,16 +9,18 @@ from typing import MutableSequence, Optional
 import allure
 
 from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
-from .RegressionConfigurations import Configurations
-from .ResultObj import ResultObj
-from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts, IbInterfaceConsts
-from ngts.nvos_constants.constants_nvos import SystemConsts, PlatformConsts
+from ngts.nvos_constants.constants_nvos import SystemConsts, ApiType
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port, PortRequirements
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts, IbInterfaceConsts
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from .RegressionConfigurations import Configurations
 from .ResultObj import ResultObj
 
 logger = logging.getLogger()
+
+
+def random_api():
+    return random.choice(ApiType.ALL_TYPES)
 
 
 class RandomizationTool:

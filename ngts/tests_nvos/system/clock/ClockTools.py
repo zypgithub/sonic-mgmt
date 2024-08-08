@@ -13,7 +13,7 @@ from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.tests_nvos.system.clock.ClockConsts import ClockConsts
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.nvos_constants.constants_nvos import ApiType, NvosConst
+from ngts.nvos_constants.constants_nvos import ApiType, NvosConst, StatsConsts
 
 
 class ClockTools:
@@ -116,6 +116,11 @@ class ClockTools:
         """
         time_regex = re.compile(r'\b((\d{4}-\d{2}-\d{2}) (0[0-9]|1[0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9]))\b')
         return bool(time_regex.match(s))
+
+    @staticmethod
+    def parse_datetime(s: str) -> datetime:
+        """Parses YYYY-MM-DD hh:mm:ss into datetime object."""
+        return datetime.strptime(s, StatsConsts.SYSTEM_TIME_FORMAT)
 
     @staticmethod
     def alternate_capital_lower(s):

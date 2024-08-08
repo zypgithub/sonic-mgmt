@@ -97,7 +97,8 @@ class NvueBaseCli:
         command = ' '.join(command.split())  # delete double-spaces
         logger.info(f"Running command: {command}")
         if expect_reboot:
-            return DutUtilsTool.reload(engine=engine, device=device, command=command, confirm=(param_name != "force"),
+            confirm = not ("force" in param_name)
+            return DutUtilsTool.reload(engine=engine, device=device, command=command, confirm=confirm,
                                        recovery_engine=recovery_engine).verify_result()
         else:
             output = engine.run_cmd(command)
