@@ -13,7 +13,7 @@ r-leopard-58,Ethernet80,r-leopard-59,Ethernet80,400000,111,Access
 r-leopard-58,Ethernet88,r-leopard-59,Ethernet88,400000,112,Access
 r-leopard-58,Ethernet96,r-leopard-59,Ethernet96,400000,113,Access
 r-leopard-58,Ethernet104,r-leopard-59,Ethernet104,400000,114,Access
-r-leopard-58,Ethernet112,r-leopard-59,Ethernet112,100000,115,Access
+r-leopard-58,Ethernet112,r-leopard-59,Ethernet112,400000,115,Access
 r-leopard-58,Ethernet120,r-leopard-59,Ethernet120,400000,116,Access
 r-leopard-58,Ethernet128,r-leopard-59,Ethernet128,400000,117,Access
 r-leopard-58,Ethernet136,r-leopard-59,Ethernet136,400000,118,Access
