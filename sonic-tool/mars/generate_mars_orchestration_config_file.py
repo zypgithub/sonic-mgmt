@@ -114,16 +114,17 @@ canonical_develop_dbs = [
 
 
 community_keys = ["base_version", "target_version", "rpc_image", "custom_tarball_name", "target_version_specified",
-                  "deploy_only_target", "skip_weekend_cases", "regression_type", "branch", "execution_block_generator"]
+                  "deploy_only_target", "skip_weekend_cases", "regression_type", "branch",
+                  "skip_stop_regression", "execution_block_generator"]
 
 dualtor_as_keys = ["base_version", "rpc_image", "custom_tarball_name", "skip_weekend_cases", "regression_type",
-                   "branch", "execution_block_generator"]
+                   "skip_stop_regression", "branch", "execution_block_generator"]
 
 dualtor_aa_keys = ["topology", "base_version", "rpc_image", "custom_tarball_name", "skip_weekend_cases",
-                   "regression_type", "branch", "execution_block_generator"]
+                   "regression_type", "branch", "skip_stop_regression", "execution_block_generator"]
 
 canonical_keys = ["base_version", "custom_tarball_name", "send_takeover_notification",
-                  "skip_weekend_cases", "regression_type", "branch", "execution_block_generator"]
+                  "skip_weekend_cases", "regression_type", "branch", "skip_stop_regression", "execution_block_generator"]
 canonical_upgrade_keys = ["base_version", "target_version"]
 
 
@@ -149,13 +150,13 @@ def gen_community_config(dbs):
         "deploy_only_target": "yes",
         "skip_weekend_cases": "yes",
         "regression_type": "regression",
-        "branch": "master"
+        "branch": "master",
+        "skip_stop_regression": "no"
     }
     execution_block_generator = [
         {'entry_points': 'SONIC_MGMT', 'tests_dbs_tarball': 'sonic-mgmt/sonic-tool/mars/dbs/community/{}'.format(db)}
         for db in dbs]
     community_config["execution_block_generator"] = str(execution_block_generator)
-
     return community_config
 
 
@@ -166,7 +167,8 @@ def gen_dualtor_as_config(dbs):
         "custom_tarball_name": "main_branch_verification_pointer.db.1.tgz",
         "skip_weekend_cases": "all",
         "regression_type": "regression",
-        "branch": "master"
+        "branch": "master",
+        "skip_stop_regression": "no"
     }
     execution_block_generator = [
         {'entry_points': 'SONIC_MGMT', 'tests_dbs_tarball': 'sonic-mgmt/sonic-tool/mars/dbs/community/{}'.format(db)}
@@ -184,7 +186,8 @@ def gen_dualtor_aa_config(dbs):
         "custom_tarball_name": "main_branch_verification_pointer.db.1.tgz",
         "skip_weekend_cases": "all",
         "regression_type": "regression",
-        "branch": "master"
+        "branch": "master",
+        "skip_stop_regression": "no"
     }
     execution_block_generator = [
         {'entry_points': 'SONIC_MGMT', 'tests_dbs_tarball': 'sonic-mgmt/sonic-tool/mars/dbs/community/{}'.format(db)}
@@ -202,6 +205,7 @@ def gen_canonical_config(mars_branch, dbs, upgrade):
         "skip_weekend_cases": "yes",
         "regression_type": "regression",
         "branch": "master",
+        "skip_stop_regression": "no",
         "execution_block_generator": ""
     }
     if upgrade:
