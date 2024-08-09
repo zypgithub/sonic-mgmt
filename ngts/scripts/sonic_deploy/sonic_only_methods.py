@@ -503,36 +503,6 @@ class SonicInstallationSteps:
                     general_cli_obj.cli_obj.ip.apply_dns_servers_into_resolv_conf(
                         is_air_setup=platform_params.setup_name.startswith('air'))
                     general_cli_obj.save_configuration()
-            ##########################################################################################################
-            # TODO: This is a WA for the NTP config schema change.
-            #  remove this after the correct config can be generated from minigraph.
-            if is_bf_topo(sonic_topo):
-                dut_engine = topology_obj.players['dut']['engine']
-                config_db = general_cli_obj.get_config_db()
-                NTP_SERVER_CONFIG = {
-                    "internal_ntp_server": {
-                        "association_type": "server",
-                        "iburst": "on",
-                        "admin_state": "enabled",
-                        "version": 3,
-                        "resolve_as": "10.211.0.124"
-                    }
-                }
-                config_db['NTP_SERVER'] = NTP_SERVER_CONFIG
-                with open('/tmp/config_db.json', 'w') as f:
-                    json.dump(config_db, f, indent=4)
-                os.chmod('/tmp/config_db.json', 0o777)
-                dut_engine.copy_file(source_file='/tmp/config_db.json',
-                                     dest_file="config_db.json", file_system='/tmp/',
-                                     overwrite_file=True, verify_file=False)
-                dut_engine.run_cmd("sudo cp /tmp/config_db.json /etc/sonic/config_db.json")
-                ports_list = ['Ethernet0'] if sonic_topo == "dpu-1" else ['Ethernet0', 'Ethernet4']
-                setup_info['duts'][0]['cli_obj'].reload_flow(ports_list=ports_list,
-                                                             reload_force=True)
-                dut_engine.run_cmd("sudo systemctl stop ntpd")
-                dut_engine.run_cmd("sudo ntpd -gq")
-                dut_engine.run_cmd("sudo systemctl start ntpd")
-            ##########################################################################################################
             if deploy_dpu:
                 with allure.step('Apply DPU IP assignment configuration'):
                     dut_engine = topology_obj.players['dut']['engine']
