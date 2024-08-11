@@ -806,14 +806,6 @@
         - sn5640_simx
 
 - Errors_list:
-    - '.*ERR swss#buffermgrd: :- recalculateSharedBufferPool: Buffer pool \w+: Invalid size -\d+, exceeding the mmu size \d+.*'
-  Conditions:
-    - Redmine:
-      - 4021103
-      Platform:
-        - sn5640_simx
-
-- Errors_list:
     - '.*ERR syncd#SDK: \[SAI_BUFFER.ERR\] mlnx_sai_buffer.c\[\d+\].*Failed to prepare bulk counter for pg occupancy stats.*'
     - '.*ERR syncd#SDK: \[SAI_QUEUE\.ERR\] mlnx_sai_queue.c\[\d*\]- .*Failed to prepare bulk counter for queue stats.'
   Conditions:
