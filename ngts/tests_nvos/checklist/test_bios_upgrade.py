@@ -76,7 +76,7 @@ def fetch_and_install_bios(fae, path, name, filename):
         fae.platform.firmware.bios.action_fetch(path).verify_result()
 
     with allure.step(f'installing Bios image {name}'):
-        fae.platform.firmware.bios.action_install(filename=filename, device=None, expect_reboot=False)
+        fae.platform.firmware.bios.action_install(filename=filename, device=None, expect_reboot=False).verify_result()
 
 
 def get_bios_info_from_device(device, version):

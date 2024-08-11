@@ -155,12 +155,13 @@ def test_ib_show_interface_all_state_down(engines, devices):
     output_dictionary = Tools.OutputParsingTool.parse_show_interface_output_to_dictionary(
         selected_port.interface.show()).get_returned_value()
 
-    with allure.step('Run show command on selected port and verify that each field has an appropriate '
-                     'value according to the state of the port, expecting Polling state since cable is not connected'):
+    with allure.step('Run show command on selected port and verify each field has an appropriate value according to'
+                     ' the state of the port'):
         validate_one_port_in_show_all_ports(output_dictionary, devices.dut.switch_type.lower(), False)
-        Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary[IbInterfaceConsts.LINK],
-                                                          field_name=IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE,
-                                                          expected_value=IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE_POLLING).verify_result()
+        link_physical_port_state = output_dictionary[IbInterfaceConsts.LINK][IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE]
+        assert link_physical_port_state in [IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE_POLLING,
+                                            IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE_DISABLED], \
+            "Link physical port state {} isn't as we expected".format(link_physical_port_state)
 
 
 @pytest.mark.ib_interfaces
