@@ -718,6 +718,23 @@ class JulietSwitch(NvLinkSwitch):
 
     def _init_constants(self):
         super()._init_constants()
+        self.category_list = ['temperature', 'cpu', 'disk', 'fan', 'mgmt-interface', 'voltage']
+        self.category_disabled_dict = {
+            self.category_list[0]: self.category_default_disabled_dict,
+            self.category_list[1]: self.category_default_disabled_dict,
+            self.category_list[2]: self.category_disk_default_disable_dict,
+            self.category_list[3]: self.category_default_disabled_dict,
+            self.category_list[4]: self.category_default_disabled_dict,
+            self.category_list[5]: self.category_default_disabled_dict
+        }
+        self.category_list_default_dict = {
+            self.category_list[0]: self.category_default_dict,
+            self.category_list[1]: self.category_default_dict,
+            self.category_list[2]: self.category_disk_default_dict,
+            self.category_list[3]: self.category_default_dict,
+            self.category_list[4]: self.category_default_dict,
+            self.category_list[5]: self.category_default_dict
+        }
         self.bmc_base_version_path = "/auto/sw_system_release/low_level/openbmc/88.0002.0472/dev/juliet-bmc/erot_sign_debug/cec1736-apfw-000201d8.fwpkg"
         self.fpga_image_info = self.FaeImagesTestConsts(current_image_version='fpga_1.pkg', alternate_image_version='fpga_2.pkg')
         self.has_nmx = True
@@ -827,7 +844,6 @@ class JulietScaleoutSwitch(JulietSwitch):
         self.core_count = 8
         self.constants.firmware.extend([PlatformConsts.FW_FPGA, PlatformConsts.FW_BMC])
         self.ssd_image = None
-        self.category_list = ['temperature', 'cpu', 'disk', 'fan', 'mgmt-interface', 'voltage']
         self.voltage_sensors = [
             "HSC-VinDC-In",
             "HSC-VinDC-Out",

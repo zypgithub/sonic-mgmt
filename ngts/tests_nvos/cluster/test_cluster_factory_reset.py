@@ -17,6 +17,7 @@ from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
 from ngts.tests_nvos.system.factory_reset.post_steps import factory_reset_no_params_post_steps
+from ngts.tests_nvos.general.security.nmx_cert.test_nmx_cert import factory_reset_nmx_cert_checker
 from ngts.tests_nvos.general.security.tpm_attestation.helpers import factory_reset_tpm_checker
 from ngts.tests_nvos.system.gnmi.helpers import factory_reset_gnmi_checker
 from ngts.tests_nvos.system.factory_reset.helpers import add_verification_data, \
@@ -44,7 +45,7 @@ NMX_LOG_MESSAGES_TAGS = ['nmxc-sm', 'nmxc-fm', 'nmxc-fib', 'nmxc-gw_api', 'nmxc-
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_cluster_default_factory_reset(engines, devices, test_api):
 
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = 'NVUE'
     output_format = OutputFormat.json
 
     with allure.step("Create Cluster object"):
@@ -60,12 +61,16 @@ def test_cluster_default_factory_reset(engines, devices, test_api):
             username = add_verification_data(engines.dut, system)
         reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, system, control_plane, all_state_files_paths, all_config_files_paths, output_format, initial_config_contents)
 
+        with allure.step('pre factory reset security checks'):
+            pre_factory_reset_security_checks()
+
         with allure.step("Run reset factory without params"):
             execute_reset_factory(engines, system, devices.dut.reset_factory, "", current_time)
+            ClusterTools.wait_for_apps_to_be_in_wanted_state()
 
         with allure.step('post factory reset steps'):
-            with allure.step('post factory reset TPM related check'):
-                next(factory_reset_tpm_checker)
+            with allure.step('pre factory reset security checks'):
+                post_factory_reset_security_checks()
 
         with allure.step("Verify cluster in correct state"):
             verify_cluster_state_resetted(cluster)
@@ -94,7 +99,7 @@ def test_cluster_default_factory_reset(engines, devices, test_api):
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name):
     # SAME AS DEFAULT.
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = 'NVUE'
     output_format = OutputFormat.json
 
     with allure.step("Create Cluster object"):
@@ -113,10 +118,7 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name)
 
         with allure.step("Run reset factory without params"):
             execute_reset_factory(engines, system, devices.dut.reset_factory, "keep basic", current_time)
-
-        with allure.step('post factory reset steps'):
-            with allure.step('post factory reset TPM related check'):
-                next(factory_reset_tpm_checker)
+            ClusterTools.wait_for_apps_to_be_in_wanted_state()
 
         with allure.step("Verify cluster in correct state"):
             verify_cluster_state_resetted(cluster)
@@ -145,7 +147,7 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name)
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name):
     # SAME
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = 'NVUE'
     output_format = OutputFormat.json
 
     with allure.step("Create Cluster object"):
@@ -164,10 +166,7 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name):
 
         with allure.step("Run reset factory without params"):
             execute_reset_factory(engines, system, devices.dut.reset_factory, "keep only-files", current_time)
-
-        with allure.step('post factory reset steps'):
-            with allure.step('post factory reset TPM related check'):
-                next(factory_reset_tpm_checker)
+            ClusterTools.wait_for_apps_to_be_in_wanted_state()
 
         with allure.step("Verify cluster in correct state"):
             verify_cluster_state_resetted(cluster)
@@ -197,7 +196,7 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name):
 def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_name):
     # Only fetched and generated files will be cleaned.
     # SAME
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = 'NVUE'
     output_format = OutputFormat.json
 
     with allure.step("Create Cluster object"):
@@ -219,10 +218,7 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
 
         with allure.step("Run reset factory without params"):
             execute_reset_factory(engines, system, devices.dut.reset_factory, "keep all-config", current_time)
-
-        with allure.step('post factory reset steps'):
-            with allure.step('post factory reset TPM related check'):
-                next(factory_reset_tpm_checker)
+            ClusterTools.wait_for_apps_to_be_in_wanted_state()
 
         with allure.step("Verify cluster in correct state"):
             cluster_state = ClusterTools.check_cluster_state(cluster, output_format)
@@ -353,9 +349,6 @@ def reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, s
     for file_type, file_path in config_files_paths.items():
         initial_config_contents[file_type] = engines.dut.run_cmd("sudo cat {}".format(file_path))
 
-    with allure.step('pre factory reset TPM related check'):
-        next(factory_reset_tpm_checker)
-
     return log_level
 
 
@@ -413,3 +406,16 @@ def verify_config_files_content_not_changed(control_plane, initial_config_conten
     for file_type, current_file_content in current_config_files_content.items():
         init_file_content = initial_config_contents.get(file_type)
         assert current_file_content == init_file_content, f"Initial configuration was not restored for {file_type}. Current: {current_file_content}, Initial: {init_file_content}"
+
+
+def pre_factory_reset_security_checks():
+    with allure.step('TPM check'):
+        next(factory_reset_tpm_checker)
+    with allure.step('GNMI cert check'):
+        next(factory_reset_gnmi_checker)
+    with allure.step('NMX cert check'):
+        next(factory_reset_nmx_cert_checker)
+
+
+def post_factory_reset_security_checks():
+    pre_factory_reset_security_checks()

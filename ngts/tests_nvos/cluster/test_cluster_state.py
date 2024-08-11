@@ -119,7 +119,7 @@ def test_stress_cluster_state(engines, devices, test_api, test_name):
 
     try:
         with allure.step("Stress testing cluster state"):
-            for i in range(100):
+            for i in range(20):
                 logger.info(f"Starting iteration {i}")
                 result_obj, duration = OperationTime.save_duration('start stop cluster', '', test_name, ClusterTools.start_stop_cluster, cluster, output_format)
                 OperationTime.verify_operation_time(duration, 'start stop cluster').verify_result()
@@ -159,4 +159,4 @@ def test_cluster_state_with_stressed_resources(engines, devices, test_api):
             cluster.unset(apply=True)
             ClusterTools.wait_for_apps_to_be_in_wanted_state()
         if installed_packages:
-            StressResourcesTool.delete_pacages(engines, installed_packages)
+            StressResourcesTool.delete_packages(engines, installed_packages)

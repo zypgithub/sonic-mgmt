@@ -31,7 +31,7 @@ class StressResourcesTool:
         return packages_to_delete
 
     @staticmethod
-    def delete_pacages(engines, packages):
+    def delete_packages(engines, packages_to_delete):
         with allure.step("Delete packages that were installed during the test"):
             for package in packages_to_delete:
                 output = engines.dut.run_cmd(f"sudo apt-get remove -y {package}")

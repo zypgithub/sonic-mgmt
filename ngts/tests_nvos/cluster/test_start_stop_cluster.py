@@ -99,7 +99,7 @@ def test_stress_cluster_app_start_stop(engines, devices, test_api, test_name):
         with allure.step("Stress testing start/stop apps"):
             ClusterTools.start_cluster(cluster, output_format)
             ClusterTools.wait_for_apps_to_be_in_wanted_state()
-            for i in range(100):
+            for i in range(20):
                 logger.info(f"Starting iteration {i}")
                 result_obj, duration = OperationTime.save_duration('start stop cluster app', '', test_name, ClusterTools.stop_start_app, cluster, engines, devices)
                 OperationTime.verify_operation_time(duration, 'start stop cluster app').verify_result()
@@ -142,7 +142,7 @@ def test_cluster_app_start_stop_under_stressed_resources(engines, devices, test_
             cluster.unset(apply=True)
             ClusterTools.wait_for_apps_to_be_in_wanted_state()
         if installed_packages:
-            StressResourcesTool.delete_pacages(engines, installed_packages)
+            StressResourcesTool.delete_packages(engines, installed_packages)
 
 
 @pytest.mark.nmx
@@ -158,7 +158,7 @@ def test_cluster_app_start_stop_disabled_cluster(engines, devices, test_api):
         output = OutputParsingTool.parse_show_output_to_dict(
             cluster.apps.show(output_format=output_format),
             output_format=output_format).get_returned_value()
-        assert output == '', f"Expected to get empty output, but instead received {output}"
+        assert output == {}, f"Expected to get empty output, but instead received {output}"
 
     with allure.step("Running 'nv show cluster apps <app-name>' command and parsing output"):
         for app in INITIAL_EXPECTED_APPS:

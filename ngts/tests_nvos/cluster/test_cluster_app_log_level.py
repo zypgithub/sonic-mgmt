@@ -127,7 +127,7 @@ def test_cluster_app_log_level_under_stress(engines, devices, test_api):
                     ClusterTools.verify_log_level(log_level, app, output_format, cluster, system)
     finally:
         if installed_packages:
-            StressResourcesTool.delete_pacages(engines, installed_packages)
+            StressResourcesTool.delete_packages(engines, installed_packages)
         for app in INITIAL_EXPECTED_APPS:
             with allure.step("Make sure apps are still running"):
                 output = OutputParsingTool.parse_show_output_to_dict(

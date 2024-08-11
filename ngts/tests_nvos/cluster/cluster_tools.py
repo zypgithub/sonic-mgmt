@@ -88,6 +88,9 @@ class ClusterTools:
                     f"enabled"
                 assert NMXC_CONN in output, f"{NMXC_CONN} was not found in {output}"
                 expected_nmxc_state = NMXC_CONN_STATE_PER_CLUSTER_STATE[output[SystemConsts.STATE]]
+                Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output,
+                                                                  field_name=NMXC_CONN,
+                                                                  expected_value=expected_nmxc_state).verify_result()
                 assert output[NMXC_CONN] == expected_nmxc_state, f"{NMXC_CONN} state was expected to be {expected_nmxc_state} but instead it was {output[NMXC_CONN]}"
 
     @staticmethod
@@ -179,10 +182,10 @@ class ClusterTools:
                                                           expected_value=NvosConsts.LINK_STATE_UP).verify_result()
         Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
                                                           field_name=IbInterfaceConsts.LINK_LOGICAL_PORT_STATE,
-                                                          expected_value=NvosConsts.LINK_LOGICAL_PORT_STATE_ACTIVE).verify_result()
+                                                          expected_value=IbInterfaceConsts.LINK_LOGICAL_PORT_STATE_ACTIVE).verify_result()
         Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
                                                           field_name=IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE,
-                                                          expected_value=NvosConsts.LINK_PHYSICAL_PORT_STATE_LINK_UP).verify_result()
+                                                          expected_value=IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE_LINK_UP).verify_result()
 
     # @staticmethod
     # def verify_interface_down(devices, selected_port):

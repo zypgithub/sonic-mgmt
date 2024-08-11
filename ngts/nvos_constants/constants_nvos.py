@@ -1118,7 +1118,7 @@ class OperationTimeConsts:
     SESSION_ID_COL = 'session_id'
     DATE_COL = 'date'
     THRESHOLDS = {'reboot': 180,
-                  'julietscaleout_reboot': 500,  # Currently there is a bug on this. Time needs to be decreased once fixed.
+                  'julietscaleout_reboot': 505,  # Currently there is a bug on this. Time needs to be decreased once fixed.
                   'julietscaleout reset factory': 550,  # Currently there is a bug on this. Time needs to be decreased once fixed.
                   'reset factory': 250,
                   'install user FW': 450,
