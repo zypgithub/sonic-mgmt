@@ -1176,7 +1176,6 @@ class StatsConsts:
     LOG_MSG_ERROR_DB = "..."  # TODO: Update message (parameter not found in redis DB)...
 
     INVALID_CATEGORY_NAME = 'invalid_category_name'
-    ALL_CATEGORIES = 'all'
     INVALID_STATE = 'invalid_state'
     INVALID_INTERVAL_LOW = 0
     INVALID_INTERVAL_HIGH = 1441
