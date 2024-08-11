@@ -120,7 +120,7 @@ class SonicCli:
     @property
     def interface(self):
         if self._interface is None:
-            self._interface = SonicInterfaceCli(engine=self.engine)
+            self._interface = SonicInterfaceCli(engine=self.engine, cli_obj=self)
         return self._interface
 
     @property

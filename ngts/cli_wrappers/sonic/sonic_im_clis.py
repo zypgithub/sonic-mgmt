@@ -23,7 +23,7 @@ class SonicImClis:
         @summary: This method is for check if system supports IM
         @return: True in case system is SPC3 or higher
         """
-        if self.general_cli.is_spc1(self.cli_obj) or self.general_cli.is_spc2(self.cli_obj):
+        if self.general_cli.is_spc1() or self.general_cli.is_spc2():
             return False
         else:
             return True
