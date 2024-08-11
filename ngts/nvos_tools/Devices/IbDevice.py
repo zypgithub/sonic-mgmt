@@ -1234,6 +1234,10 @@ class JulietTTMSwitch(JulietScaleoutSwitch):
         self.fan_list = ["FAN1/1", "FAN1/2", "FAN2/1", "FAN2/2", "FAN3/1", "FAN3/2", "FAN4/1", "FAN4/2"]
         self.fan_led_list = []
 
+    def _init_platform_lists(self):
+        super()._init_platform_lists()
+        self.platform_inventory_switch_values.update({"model": "692-9K36F-00MV-JSL"})
+
     def _init_led_list(self):
         super()._init_led_list()
 
