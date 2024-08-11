@@ -100,7 +100,7 @@ def test_system_ready_state_down(engines, devices, topology_obj):
     """
     with allure.step('pick a docker to kill'):
         system = System(None)
-        docker_to_kill = [i for i in devices.dut.available_services if i.startswith('swss')][0]
+        docker_to_kill = 'lldp.service'
         logger.info("after reboot we will stop {}".format(docker_to_kill))
 
     with allure.step('reboot the system'):
