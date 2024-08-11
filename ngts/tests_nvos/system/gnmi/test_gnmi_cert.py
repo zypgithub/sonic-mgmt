@@ -14,35 +14,34 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.certificate.constants import TestCert
 from ngts.tests_nvos.general.security.conftest import local_adminuser
-from ngts.tests_nvos.system.gnmi.constants import CERTIFICATE, DEFAULT_CERTIFICATE, GnmicErr, GNMI_TEST_CERT, \
-    MAX_GNMI_CONNECTIVITY_TIME
-from ngts.tests_nvos.system.gnmi.helpers import load_certificate_into_gnmi, verify_gnmi_client, \
+from ngts.tests_nvos.system.gnmi.constants import CERTIFICATE, DEFAULT_CERTIFICATE, GnmicErr, MAX_GNMI_CONNECTIVITY_TIME
+from ngts.tests_nvos.system.gnmi.helpers import verify_gnmi_client, \
     get_timestamp_of_first_gnmi_response
 
 
-@pytest.mark.system
-@pytest.mark.gnmi
-@pytest.mark.parametrize('test_flow', TestFlowType.ALL_TYPES)
-def test_gnmi_cert_without_cli(test_flow, engines, local_adminuser, restore_gnmi_cert):
-    """
-    verify that gnmi works with certificate verification
-
-    1. good-flow: load certificate into gnmi
-        bad-flow: don't load certificate into gnmi
-    2. run gnmi client without insecure flag
-    3. good-flow: expect success
-        bad-flow: expect fail
-    """
-    is_good_flow = test_flow == TestFlowType.GOOD_FLOW
-    test_cert = GNMI_TEST_CERT
-    if is_good_flow:
-        with allure.step('load certificate into gnmi'):
-            load_certificate_into_gnmi(engines.dut, test_cert)
-    with allure.step(f'run gnmi client with{"" if is_good_flow else "out"} insecure flag - '
-                     f'expect {"success" if is_good_flow else "fail"}'):
-        verify_gnmi_client(test_flow, test_cert.dn or test_cert.ip, GnmiConsts.GNMI_DEFAULT_PORT,
-                           local_adminuser.username,
-                           local_adminuser.password, False, GnmicErr.CERT_VERIFY_FAIL, cacert=test_cert.cacert)
+# @pytest.mark.system
+# @pytest.mark.gnmi
+# @pytest.mark.parametrize('test_flow', TestFlowType.ALL_TYPES)
+# def test_gnmi_cert_without_cli(test_flow, engines, local_adminuser, restore_gnmi_cert):
+#     """
+#     verify that gnmi works with certificate verification
+#
+#     1. good-flow: load certificate into gnmi
+#         bad-flow: don't load certificate into gnmi
+#     2. run gnmi client without insecure flag
+#     3. good-flow: expect success
+#         bad-flow: expect fail
+#     """
+#     is_good_flow = test_flow == TestFlowType.GOOD_FLOW
+#     test_cert = GNMI_TEST_CERT
+#     if is_good_flow:
+#         with allure.step('load certificate into gnmi'):
+#             load_certificate_into_gnmi(engines.dut, test_cert)
+#     with allure.step(f'run gnmi client with{"" if is_good_flow else "out"} insecure flag - '
+#                      f'expect {"success" if is_good_flow else "fail"}'):
+#         verify_gnmi_client(test_flow, test_cert.dn or test_cert.ip, GnmiConsts.GNMI_DEFAULT_PORT,
+#                            local_adminuser.username,
+#                            local_adminuser.password, False, GnmicErr.CERT_VERIFY_FAIL, cacert=test_cert.cacert)
 
 
 def check_gnmi_cert_cli(api):

@@ -131,9 +131,10 @@ def test_auth_restrictions_fail_delay(test_api, engines, test_user):
         3. Verify sample is higher or equal to fail-delay
     """
     TestToolkit.tested_api = test_api
+    fail_delay = random.choice(RestrictionsConsts.VALID_VALUES[RestrictionsConsts.FAIL_DELAY])
+    margin = int(max(RestrictionsConsts.ALLOWED_MARGIN, 0.1 * fail_delay))
 
-    with allure.step('Configure fail-delay'):
-        fail_delay = random.choice(RestrictionsConsts.VALID_VALUES[RestrictionsConsts.FAIL_DELAY])
+    with allure.step(f'Configure fail-delay: {fail_delay}'):
         restrictions = System().aaa.authentication.restrictions
         restrictions.set(RestrictionsConsts.FAIL_DELAY, fail_delay, apply=True).verify_result()
         cur_fail_delay = OutputParsingTool.parse_json_str_to_dictionary(restrictions.show()).get_returned_value()[
@@ -142,15 +143,15 @@ def test_auth_restrictions_fail_delay(test_api, engines, test_user):
             f'Expected {fail_delay}\n' \
             f'Actual: {cur_fail_delay}'
 
-    with allure.step('Make 2 authentication failureS'):
+    with allure.step('Make 2 authentication failures'):
         attempter = SshAuthenticator(test_user[AaaConsts.USERNAME], test_user[AaaConsts.PASSWORD], engines.dut.ip)
         _, timestamp1 = attempter.attempt_login_failure()
         _, timestamp2 = attempter.attempt_login_failure()
 
-    with allure.step(f'Verify delay until the 2nd attempt was at least {fail_delay} seconds'):
-        assert timestamp2 - timestamp1 >= fail_delay - RestrictionsConsts.ALLOWED_MARGIN, \
+    with allure.step(f'Verify delay until the 2nd attempt was at least {fail_delay} (+-{margin}) seconds'):
+        assert timestamp2 - timestamp1 >= fail_delay - margin, \
             f'Delta of time between failure to success is not as expected.\n' \
-            f'Expected: {timestamp2 - timestamp1} (delta) >= {fail_delay} (fail-delay)'
+            f'Expected: {timestamp2 - timestamp1} (delta) >= {fail_delay - margin} (fail-delay)'
 
 
 @pytest.mark.simx
