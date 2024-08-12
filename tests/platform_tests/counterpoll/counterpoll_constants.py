@@ -6,7 +6,7 @@ class CounterpollConstants:
     COUNTERPOLL_RESTORE = 'counterpoll {} {}'
     COUNTERPOLL_INTERVAL_STR = 'counterpoll {} interval {}'
     COUNTERPOLL_QUEST = 'counterpoll --help'
-    EXCLUDE_COUNTER_SUB_COMMAND = ['show', 'config-db', "flowcnt-trap", "tunnel"]
+    EXCLUDE_COUNTER_SUB_COMMAND = ['show', 'config-db', "flowcnt-trap", "tunnel", "delay"]
     INTERVAL = 'interval (in ms)'
     TYPE = 'type'
     STATUS = 'status'

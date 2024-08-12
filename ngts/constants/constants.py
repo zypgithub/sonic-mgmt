@@ -1088,7 +1088,7 @@ class CounterpollConstants:
     COUNTERPOLL_RESTORE = 'sudo counterpoll {} {}'
     COUNTERPOLL_INTERVAL_STR = 'sudo counterpoll {} interval {}'
     COUNTERPOLL_QUEST = 'sudo counterpoll --help'
-    EXCLUDE_COUNTER_SUB_COMMAND = ['show', 'config-db', "flowcnt-trap", "flowcnt-route", "tunnel"]
+    EXCLUDE_COUNTER_SUB_COMMAND = ['show', 'config-db', "flowcnt-trap", "flowcnt-route", "tunnel", "delay"]
     INTERVAL = 'Interval (in ms)'
     TYPE = 'Type'
     STATUS = 'Status'
