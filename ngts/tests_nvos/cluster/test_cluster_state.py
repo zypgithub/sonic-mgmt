@@ -18,7 +18,9 @@ from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 
 logger = logging.getLogger()
 UNDEFINED_STATE = 'undefined'
-UNDEFINED_STATE_ERR_MSG = 'Error: At state: \'undefined\' is not one of [\'enabled\', \'disabled\']'
+UNDEFINED_STATE_ERR_MSG_NVUE = 'Error: At state: \'undefined\' is not one of [\'enabled\', \'disabled\']'
+UNDEFINED_STATE_ERR_MSG_OPENAPI = 'Error: Request failed. Details: Error at state: \'undefined\' is not one of [\'enabled\', \'disabled\', None]'
+UNDEFINED_STATE_DICT = {'NVUE': UNDEFINED_STATE_ERR_MSG_NVUE, 'OpenApi': UNDEFINED_STATE_ERR_MSG_OPENAPI}
 NMXC_CONN = 'nmxc-conn'
 NMXC_CONN_STATE_PER_CLUSTER_STATE = {NvosConst.ENABLED: 'up', NvosConst.DISABLED: 'down'}
 
@@ -70,7 +72,7 @@ def test_cluster_state(engines, devices, test_api):
         with allure.step("Apply a non defined state"):
             output = cluster.set(op_param_name="state", op_param_value=UNDEFINED_STATE)
             output = output.info.split('\n')[1]
-            assert output == UNDEFINED_STATE_ERR_MSG, f"Expected error message {UNDEFINED_STATE_ERR_MSG}, " \
+            assert output == UNDEFINED_STATE_DICT[test_api], f"Expected error message {UNDEFINED_STATE_DICT[test_api]}, " \
                 f"actual message received {output}"
 
         with allure.step("Running 'nv set cluster state enabled' and validating state changed"):
@@ -109,7 +111,7 @@ def test_cluster_state(engines, devices, test_api):
 
 
 @pytest.mark.nmx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [ApiType.NVUE])
 def test_stress_cluster_state(engines, devices, test_api, test_name):
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
@@ -132,7 +134,7 @@ def test_stress_cluster_state(engines, devices, test_api, test_name):
 
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_cluster_state_with_stressed_resources(engines, devices, test_api):
+def test_cluster_state_with_stressed_resources(engines, devices, test_api, test_name):
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
 

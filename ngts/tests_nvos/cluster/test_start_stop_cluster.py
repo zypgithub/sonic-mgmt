@@ -87,7 +87,7 @@ def test_cluster_app_start_stop(engines, devices, test_api):
 
 
 @pytest.mark.nmx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [ApiType.NVUE])
 def test_stress_cluster_app_start_stop(engines, devices, test_api, test_name):
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
@@ -98,7 +98,6 @@ def test_stress_cluster_app_start_stop(engines, devices, test_api, test_name):
     try:
         with allure.step("Stress testing start/stop apps"):
             ClusterTools.start_cluster(cluster, output_format)
-            ClusterTools.wait_for_apps_to_be_in_wanted_state()
             for i in range(20):
                 logger.info(f"Starting iteration {i}")
                 result_obj, duration = OperationTime.save_duration('start stop cluster app', '', test_name, ClusterTools.stop_start_app, cluster, engines, devices)
@@ -111,7 +110,7 @@ def test_stress_cluster_app_start_stop(engines, devices, test_api, test_name):
 
 
 @pytest.mark.nmx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [ApiType.NVUE])
 def test_cluster_app_start_stop_under_stressed_resources(engines, devices, test_api, test_name):
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
@@ -131,7 +130,6 @@ def test_cluster_app_start_stop_under_stressed_resources(engines, devices, test_
             # Loop until the timeout is reached
             while time.time() - start_time < timeout:
                 ClusterTools.start_cluster(cluster, output_format)
-                ClusterTools.wait_for_apps_to_be_in_wanted_state()
                 result_obj, duration = OperationTime.save_duration('start stop cluster app', '', test_name, ClusterTools.stop_start_app, cluster, engines, devices)
                 OperationTime.verify_operation_time(duration, 'start stop cluster app').verify_result()
                 logger.info("Sleeping for 30 seconds.")

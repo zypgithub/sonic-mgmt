@@ -93,7 +93,6 @@ def test_upgrade_with_nmx_enabled(test_api, devices, base_version,
 
         with allure.step("Enable cluster and perform configurations"):
             ClusterTools.start_cluster(cluster, output_format)
-            ClusterTools.wait_for_apps_to_be_in_wanted_state()
             with allure.step("Choose random log level, and set cluster app log level to"):
                 for app in INITIAL_EXPECTED_APPS:
                     log_level = random.choice(ClusterAppsLogLevelsList)

@@ -63,8 +63,6 @@ def test_cluster_control_plane(engines, devices, test_api):
         logger.info("Setting cluster state to enabled")
         ClusterTools.start_cluster(cluster, output_format)
 
-        ClusterTools.wait_for_apps_to_be_in_wanted_state()
-
         time.sleep(3)
 
         config_files_paths = get_current_config_files_paths(control_plane)

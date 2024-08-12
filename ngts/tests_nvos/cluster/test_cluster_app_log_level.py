@@ -44,7 +44,6 @@ def test_cluster_app_log_level(engines, devices, test_api):
             system = System()
             logger.info("Setting cluster state to enabled")
             ClusterTools.start_cluster(cluster, output_format)
-            ClusterTools.wait_for_apps_to_be_in_wanted_state()
         with allure.step("Validate initial log level"):
             for app in INITIAL_EXPECTED_APPS:
                 output = OutputParsingTool.parse_show_output_to_dict(

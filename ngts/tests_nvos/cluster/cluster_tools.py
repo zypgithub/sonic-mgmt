@@ -77,10 +77,11 @@ class ClusterTools:
 
             if output[SystemConsts.STATE] == 'disabled':
                 cluster.set(op_param_name="state", op_param_value='enabled', apply=True)
-                ClusterTools.wait_for_apps_to_be_in_wanted_state()
-                output = OutputParsingTool.parse_show_output_to_dict(
-                    cluster.show(output_format=output_format),
-                    output_format=output_format).get_returned_value()
+
+            ClusterTools.wait_for_apps_to_be_in_wanted_state()
+            output = OutputParsingTool.parse_show_output_to_dict(
+                cluster.show(output_format=output_format),
+                output_format=output_format).get_returned_value()
 
             with allure.step("Validate state is enabled"):
                 assert output[SystemConsts.STATE] == 'enabled', f"Cluster state is , " \
@@ -117,7 +118,11 @@ class ClusterTools:
 
             if output[SystemConsts.STATE] == 'enabled':
                 cluster.set(op_param_name="state", op_param_value='disabled', apply=True)
-                ClusterTools.wait_for_apps_to_be_in_wanted_state()
+
+            ClusterTools.wait_for_apps_to_be_in_wanted_state()
+            output = OutputParsingTool.parse_show_output_to_dict(
+                cluster.show(output_format=output_format),
+                output_format=output_format).get_returned_value()
 
             with allure.step("Validate state is disabled"):
                 output = OutputParsingTool.parse_show_output_to_dict(

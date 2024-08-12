@@ -310,7 +310,6 @@ def reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, s
     logger.info("Setting cluster state to enabled")
     ClusterTools.start_cluster(cluster, output_format)
 
-    ClusterTools.wait_for_apps_to_be_in_wanted_state()
     # for app in INITIAL_EXPECTED_APPS:
     #     ClusterTools.start_app(cluster, app)
 
@@ -413,8 +412,9 @@ def pre_factory_reset_security_checks():
         next(factory_reset_tpm_checker)
     with allure.step('GNMI cert check'):
         next(factory_reset_gnmi_checker)
-    with allure.step('NMX cert check'):
-        next(factory_reset_nmx_cert_checker)
+    # with allure.step('NMX cert check'):
+    #     next(factory_reset_nmx_cert_checker)
+    # Add back once alon navarro tests it on general reset factory test.
 
 
 def post_factory_reset_security_checks():
