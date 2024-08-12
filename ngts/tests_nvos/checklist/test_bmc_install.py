@@ -53,8 +53,8 @@ def test_bmc_install(engines, devices, topology_obj):
     """
     device = devices.dut
     with allure.step('Check whether device has BMC'):
-        bmc_base_version_path = getattr(device, 'bmc_base_version_path', None)
-        if bmc_base_version_path is None:
+        bmc_older_version_path = getattr(device, 'bmc_older_version_path', None)
+        if bmc_older_version_path is None:
             pytest.skip("Device does not have BMC. Skipping the test")
 
     with allure.step('Create System objects'):
@@ -65,18 +65,18 @@ def test_bmc_install(engines, devices, topology_obj):
     with allure.step(f"With {TestToolkit.tested_api}"):
         initial_version, initial_version_path = _get_initial_version_and_path(platform)
         allure.attach("bmc_initial_version", f"{initial_version=}, {initial_version_path=}")
-        base_version = _get_version_from_path(bmc_base_version_path)
-        allure.attach("bmc_base_version", f"{base_version=}, {bmc_base_version_path=}")
+        older_version = _get_version_from_path(bmc_older_version_path)
+        allure.attach("bmc_older_version", f"{older_version=}, {bmc_older_version_path=}")
         with allure.step("Assert versions are different"):
-            if base_version == initial_version:
+            if older_version == initial_version:
                 raise Exception(f"Can't run test because the BMC version we want to install is the same as the version "
                                 f"already installed: {initial_version}")
 
         initial_files = fae.platform.firmware.bmc.show_files_as_list()
-        base_version_filename = _fetch_image(bmc_base_version_path, fae, initial_files)
+        older_version_filename = _fetch_image(bmc_older_version_path, fae, initial_files)
 
     try:
-        _install_image(fae, base_version_filename, base_version, engines, topology_obj, platform)
+        _install_image(fae, older_version_filename, older_version, engines, topology_obj, platform)
 
     finally:
         TestToolkit.tested_api = ApiType.OPENAPI
@@ -88,7 +88,7 @@ def test_bmc_install(engines, devices, topology_obj):
         TestToolkit.tested_api = ApiType.NVUE
 
         with allure.step("Deleting image file"):
-            fae.platform.firmware.bmc.action_delete(base_version_filename).verify_result()
+            fae.platform.firmware.bmc.action_delete(older_version_filename).verify_result()
             fae.platform.firmware.bmc.action_delete(initial_version_filename).verify_result()
 
 

@@ -14,5 +14,6 @@ class Firmware(BaseComponent):
         self.asic = Asic(self)
         self.transceiver = Transceiver(self)
         self.bmc = BaseComponent(self, path='/BMC')
+        self.fpga = BaseComponent(self, path='/FPGA')
         self.bios = BaseComponent(self, path='/BIOS')
         self.erot = Erot(self)

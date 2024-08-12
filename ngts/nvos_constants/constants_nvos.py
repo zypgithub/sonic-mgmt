@@ -1134,6 +1134,7 @@ class OperationTimeConsts:
                   'start stop cluster': 155,
                   'cluster update log level': 5,
                   'install bmc': 900,
+                  'install fpga': 900,
                   ActionConsts.POWER_CYCLE: 360,
                   }
 
