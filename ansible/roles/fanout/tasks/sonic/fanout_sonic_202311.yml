@@ -36,11 +36,29 @@
   become: yes
   when: "'mellanox' in fanout_sonic_version.asic_type"
 
-- name: Disable software control module function in SAI
-  lineinfile:
-    path: /usr/share/sonic/device/{{ fanout_platform }}/{{ fanout_hwsku }}/sai.profile
-    line: 'SAI_INDEPENDENT_MODULE_MODE=1'
-    state: absent
+- name: Disable software control module function
+  block:
+    - name: Disable software control module function in SAI
+      lineinfile:
+        path: /usr/share/sonic/device/{{ fanout_platform }}/{{ fanout_hwsku }}/sai.profile
+        line: 'SAI_INDEPENDENT_MODULE_MODE=1'
+        state: absent
+
+    - name: Skip transceiver cmis manager
+      lineinfile:
+        path: /usr/share/sonic/device/{{ fanout_platform }}/{{ fanout_hwsku }}/pmon_daemon_control.json
+        regexp: '"skip_xcvrd_cmis_mgr": false'
+        line: '    "skip_xcvrd_cmis_mgr": true'
+
+    - name: Remove media setting file
+      file:
+        path: /usr/share/sonic/device/{{ fanout_platform }}/{{ fanout_hwsku }}/media_settings.json
+        state: absent
+
+    - name: Remove optical setting file
+      file:
+        path: /usr/share/sonic/device/{{ fanout_platform }}/{{ fanout_hwsku }}/optics_si_settings.json
+        state: absent
   become: yes
   when: "'mellanox' in fanout_sonic_version.asic_type"
 
