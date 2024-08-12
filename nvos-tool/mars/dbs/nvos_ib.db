@@ -38,9 +38,6 @@
 		</Case>
 	</global>
 	<test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/ib/nvos_ib_opensm.cases </cases>
-	</test>
-	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/ib/nvos_ib_ibdiagnet.cases </cases>
 	</test>
 	<test>

@@ -42,11 +42,11 @@ def test_show_system_events(test_api, engines, devices):
 
     with allure.step('Run show system events command & validate there are 50(default) no of events in the output'):
         output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show()).get_returned_value()
-        no_of_events = len(output['last'])
+        no_of_events = len(output[SystemConsts.SYSTEM_LAST_EVENT])
         assert no_of_events is 50, 'No of events in show output is {} instead of {}'.format(no_of_events, 50)
 
     with allure.step('Run show system events last command & validate there are 20(default) events in the output'):
-        output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show('last')).get_returned_value()
+        output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show(SystemConsts.SYSTEM_LAST_EVENT)).get_returned_value()
         no_of_events = len(output)
         assert no_of_events is 20, 'No of events in show output is {} instead of {}'.format(no_of_events, 20)
 
@@ -254,5 +254,5 @@ def clear_system_events(system, engines):
 
     with allure.step('Validate events are cleared'):
         output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show()).get_returned_value()
-        no_of_events = len(output['last'])
+        no_of_events = len(output[SystemConsts.SYSTEM_LAST_EVENT])
         assert no_of_events is 0, 'System events are not cleared, is {} instead of {}'.format(no_of_events, 0)

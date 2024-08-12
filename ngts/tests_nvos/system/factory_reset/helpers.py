@@ -154,11 +154,12 @@ def verify_cleanup_done(engine, current_time, system, username, param=''):
                 if current_time >= file_date_time:
                     errors += "\n/etc/sonic/nvue.d/platform/immutables.yaml was not deleted"
 
-            output = engine.run_cmd("stat /etc/sonic/nvue.d/startup.yaml | grep Birth")
-            if output and "No such file or directory" not in output:
-                file_date_time = create_date_time_obj(output)
-                if current_time >= file_date_time:
-                    errors += "\n/etc/sonic/nvue.d/startup.yaml was not deleted"
+            if param != KEEP_ALL_CONFIG:
+                output = engine.run_cmd("stat /etc/sonic/nvue.d/startup.yaml | grep Birth")
+                if output and "No such file or directory" not in output:
+                    file_date_time = create_date_time_obj(output)
+                    if current_time >= file_date_time:
+                        errors += "\n/etc/sonic/nvue.d/startup.yaml was not deleted"
 
     with allure.step("Verify sonic.target stopped"):
         if param != KEEP_ONLY_FILES:

@@ -77,11 +77,11 @@ class FaeFirmware(BaseComponent):
         super().__init__(parent=parent_obj, path='/firmware')
         self.asic1 = FaePlatformComponent(self, 'ASIC1')
         # multi-asic devices also have asic2 but our tests don't need it currently
-        self.cpld = FaeCpldComponent(self, 'cpld')
-        self.bios = FaeBiosComponent(self, 'bios')
-        self.ssd = FaePlatformComponent(self, 'ssd')
+        self.cpld = FaeCpldComponent(self, 'CPLD')
+        self.bios = FaePlatformComponent(self, 'BIOS')
+        self.ssd = FaePlatformComponent(self, 'SSD')
         self.bmc = FaePlatformComponent(self, 'bmc')  # TODO: Fix after bug closed https://redmine.mellanox.com/issues/3955495
-        self.fpga = FaePlatformComponent(self, 'fpga')
+        self.fpga = FaePlatformComponent(self, 'FPGA')
 
     def install_bios_firmware(self, bios_image_path, device):
         with allure.step("installing bios firmware from {action_type}".format(action_type=bios_image_path)):
@@ -143,3 +143,7 @@ class FaeSystem(BaseComponent):
         self.events = BaseComponent(self, path='/events')
         self.fatal = BaseComponent(self, path='/fatal')
         self.fatal.monitor = BaseComponent(self.fatal, path='/monitor')
+
+    def ssd_cleanup(self, expected_str="", dut_engine=None):
+        """nv action run fae system ssd-cleanup """
+        return self.action(ActionConsts.RUN, 'ssd-cleanup', expected_output=expected_str)

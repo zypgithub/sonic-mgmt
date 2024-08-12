@@ -5,6 +5,7 @@ from abc import abstractmethod, ABCMeta, ABC
 from collections import namedtuple
 from typing import Tuple, List
 
+from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_constants.constants_nvos import DatabaseConst, FansConsts, NvosConst, PlatformConsts, SystemConsts, \
     DiskConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
@@ -29,6 +30,8 @@ class BaseDevice(ABC):
         self.switch_type = switch_type
         self.cli_coverage_path = ""
         self.cli_coverage_project_name = ""
+        self.cur_mgmt_port_name = ''
+        self.cur_mgmt_port_ip = ''
 
         self._init_constants()
         self._init_available_databases()
@@ -116,6 +119,10 @@ class BaseDevice(ABC):
     def get_ib_ports_num(self):
         pass
 
+    def update_mgmt_port(self, name, ip):
+        self.cur_mgmt_port_name = name
+        self.cur_mgmt_port_ip = ip
+
     def get_mgmt_ports(self) -> List[str]:
         return None
 
@@ -137,7 +144,10 @@ class BaseDevice(ABC):
         version_num, _ = get_version_info(version)
         if version_num:
             version_num = int(version_num.split('.')[-1])
-            return f'nvos_config_ga_{(version_num // 1000) * 1000}.yml'
+            relevant_ga_num_for_conf = (version_num // 1000) * 1000
+            if relevant_ga_num_for_conf == 0:
+                relevant_ga_num_for_conf = 4000
+            return f'nvos_config_ga_{relevant_ga_num_for_conf}.yml'
         return 'nvos_config_ga_3000.yml'
 
     def verify_databases(self, dut_engine):
@@ -240,6 +250,10 @@ class BaseDevice(ABC):
     def get_voltage_sensors(self, dut_engine=None):
         raise Exception(f"Not implemented for this switch {self.__class__.__name__}")
 
+    @abstractmethod
+    def show_setup_versions(self, dut_engine: LinuxSshEngine = None):
+        raise Exception(f"Not implemented for this switch {self.__class__.__name__}")
+
 # -------------------------- Base Appliance ----------------------------
 
 
@@ -300,9 +314,9 @@ class BaseSwitch(BaseDevice):
                       'saidump', 'sensors', 'services.summary', 'ssdhealth', 'STATE_DB.json', 'swapon', 'sysctl',
                       'syseeprom', 'systemd.analyze.blame', 'systemd.analyze.dump', 'systemd.analyze.plot.svg',
                       'temperature', 'top', 'version', 'vlan.summary', 'vmstat', 'vmstat.m', 'vmstat.s', 'who']
-        sdk_dump_files = ['fw_trace_attr.json', 'fw_trace_string_db.json', 'sai_sdk_dump.gz',
+        sdk_dump_files = ['fw_trace_attr.json.gz', 'sai_sdk_dump.gz',
                           'sdk_dump_ext_dev1_summary.txt.gz', 'sdk_dump_ext_dev1_cr_space_2.udmp.gz',
-                          'sdk_dump_ext_dev1_gw.udmp.gz', 'sdk_dump_ext_dev1_dpt.txt.gz',
+                          'sdk_dump_ext_dev1_cr_space_1.udmp.gz', 'sdk_dump_ext_dev1_cr_space_2.udmp.gz', 'sdk_dump_ext_dev1_cr_space_3.udmp.gz', 'sdk_dump_ext_dev1_dpt.txt.gz',
                           'sdk_dump_ext_dev1_fw_trace.txt.gz', 'fw_trace_attr.json.gz', 'fw_trace_string_db.json.gz',
                           'sai_sdk_dump.json.gz', 'sdk_dump_ext_dev1_cr_space_1.udmp.gz',
                           'sdk_dump_ext_dev1_cr_space_3.udmp.gz', 'sdk_dump_ext_dev1_driver.txt.gz',
@@ -358,7 +372,8 @@ class BaseSwitch(BaseDevice):
         super()._init_temperature()
         self.temperature_sensors = ["ASIC", "Ambient-Fan-Side-Temp", "Ambient-Port-Side-Temp",
                                     "CPU-Core-0-Temp", "CPU-Core-1-Temp", "CPU-Pack-Temp",
-                                    "PSU-1-Temp"]
+                                    "PSU-1-Temp", "Drive-Temp", "PMIC-3-Temp", "PMIC-4-Temp",
+                                    "PMIC-5-Temp", "PMIC-1-Temp", "PMIC-6-Temp", "PMIC-2-Temp", "PMIC-7-Temp"]
 
     def _init_health_components(self):
         super()._init_health_components()

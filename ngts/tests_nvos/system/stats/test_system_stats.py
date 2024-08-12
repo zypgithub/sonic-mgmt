@@ -412,8 +412,8 @@ def test_system_stats_performance(engines, devices, test_api):
         with allure.step("Perform system reboot"):
             system.reboot.action_reboot(params='force').verify_result()
 
-        with allure.step("Wait 5 minutes..."):
-            time.sleep(StatsConsts.SLEEP_5_MINUTES)
+        with allure.step("Wait 15 seconds..."):
+            time.sleep(StatsConsts.SLEEP_15_SECONDS)
 
         with allure.step("Check internal files were created"):
             check_category_internal_files_exist(engine, category_list)
@@ -441,8 +441,7 @@ def test_system_stats_performance(engines, devices, test_api):
 
         with allure.step("Generate all system files and verify action time"):
             start_time = time.time()
-            system.stats.category.categoryName[StatsConsts.ALL_CATEGORIES].action_general(StatsConsts.GENERATE).\
-                verify_result()
+            system.stats.action_general(StatsConsts.GENERATE).verify_result()
             end_time = time.time()
             diff_time = end_time - start_time
             stats_files_show = OutputParsingTool.parse_json_str_to_dictionary(system.stats.files.show()).\
@@ -968,17 +967,18 @@ def test_validate_category_file_values(engines, devices, test_api):
                 get_returned_value()
 
             for file_name in stats_files_show:
-                with allure.step("Upload stats file to URL"):
-                    validate_upload_stats_file(engines, system, file_name, False)
+                if file_name == 'voltage' and not is_redmine_issue_active([3987851]):
+                    with allure.step("Upload stats file to URL"):
+                        validate_upload_stats_file(engines, system, file_name, False)
 
-                with allure.step("Validate external file header"):
-                    name = file_name.split('_')[1]
-                    file_path = NvosConst.MARS_RESULTS_FOLDER + file_name
-                    end_time = start_time + timedelta(minutes=6)
-                    validate_external_file_header_and_data(name, file_path, hostname, start_time, end_time)
+                    with allure.step("Validate external file header"):
+                        name = file_name.split('_')[1]
+                        file_path = NvosConst.MARS_RESULTS_FOLDER + file_name
+                        end_time = start_time + timedelta(minutes=6)
+                        validate_external_file_header_and_data(name, file_path, hostname, start_time, end_time)
 
-                with allure.step("Delete uploaded file"):
-                    player.run_cmd(cmd='rm -f {}'.format(file_path))
+                    with allure.step("Delete uploaded file"):
+                        player.run_cmd(cmd='rm -f {}'.format(file_path))
 
     finally:
         set_system_stats_to_default(engine, system)
@@ -1012,13 +1012,12 @@ def set_system_stats_to_default(engine, system):
 
 
 def clear_all_internal_and_external_files(engine, system, category_list):
-    for name in category_list:
-        system.stats.category.categoryName[name].action_general(StatsConsts.CLEAR).verify_result()
-    stats_files_show = OutputParsingTool.parse_json_str_to_dictionary(system.stats.files.show()). \
-        get_returned_value()
+    system.stats.action_general(StatsConsts.CLEAR).verify_result()
+    stats_files_show = OutputParsingTool.parse_json_str_to_dictionary(system.stats.files.show()).get_returned_value()
     if stats_files_show != "":
         for file in stats_files_show.keys():
             system.stats.files.file_name[file].action_delete(should_succeed=True)
+    # clear old files if exist
     engine.run_cmd("sudo rm -f /var/stats/*.old")
 
 

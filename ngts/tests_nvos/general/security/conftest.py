@@ -5,19 +5,46 @@ import pexpect
 import pytest
 
 import ngts.tools.test_utils.allure_utils as allure
+from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from infra.tools.general_constants.constants import DefaultConnectionValues
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import SystemConsts
 from ngts.nvos_tools.Devices.EthDevice import EthSwitch  # temporary, needed until nv unification RM 3735390.
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.nvos_tools.infra.PexpectTool import PexpectTool
 from ngts.nvos_tools.system.System import System
+from ngts.tests_nvos.conftest import security_cleanup
 from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts, AuthConsts
 from ngts.tests_nvos.general.security.security_test_tools.security_test_utils import set_local_users
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
-from ngts.tools.test_utils.switch_recovery import generate_strong_password
+from ngts.tools.test_utils.switch_recovery import generate_strong_password, recover_dut_with_remote_reboot
 
 logger = logging.getLogger(__name__)
+
+
+@pytest.fixture()
+def cleanup_after_aaa(topology_obj, engines, request):
+    dut: LinuxSshEngine = engines.dut
+
+    with allure.step('ssh the switch with long logout time'):
+        # ssh_cmd = f'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ServerAliveInterval=60 -o ServerAliveCountMax=5 {dut.username}@{dut.ip}'
+        sshpass_cmd = f"sshpass -p '{dut.password}' ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ServerAliveInterval=60 -o ServerAliveCountMax=5 {dut.username}@{dut.ip}"
+        ssh_session = PexpectTool(sshpass_cmd)
+        # ssh_session.expect('[Pp]assword:')
+        i = ssh_session.expect(DefaultConnectionValues.DEFAULT_PROMPTS)
+        assert i < len(DefaultConnectionValues.DEFAULT_PROMPTS), 'could not ssh the switch'
+    with allure.step('update pytest item for the cleanup stage'):
+        item = request.node
+        item.security_pexpect_ssh_session = ssh_session
+
+    yield
+
+    skip_rr = security_cleanup(ssh_session)
+
+    if engines and topology_obj and not skip_rr:
+        with allure.step('try recover with remote reboot'):
+            recover_dut_with_remote_reboot(topology_obj, engines)
 
 
 def create_ssh_login_engine(dut_ip, username, port=22, custom_ssh_options=None):
@@ -118,8 +145,9 @@ def show_sys_version(engines):
     """
     with allure.step('Before test case: show system info'):
         system = System()
-        if isinstance(TestToolkit.devices.dut, EthSwitch):     # temporary, needed until nv unification RM 3735390.
-            attachment = '\n'.join([system.show(), engines.dut.run_cmd('cat /etc/image-release'), NvueGeneralCli.show_config(engines.dut)])
+        if isinstance(TestToolkit.devices.dut, EthSwitch):  # temporary, needed until nv unification RM 3735390.
+            attachment = '\n'.join(
+                [system.show(), engines.dut.run_cmd('cat /etc/image-release'), NvueGeneralCli.show_config(engines.dut)])
         else:
             attachment = '\n'.join([system.show(), system.version.show(), NvueGeneralCli.show_config(engines.dut)])
         allure.orig_allure.attach(attachment, 'system_version_and_conf', allure.orig_allure.attachment_type.TEXT)

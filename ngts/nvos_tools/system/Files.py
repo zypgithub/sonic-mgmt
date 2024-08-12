@@ -43,6 +43,11 @@ class Files(BaseComponent):
             for file in files_to_delete:
                 self.file_name[file].action_delete(expected_str, dut_engine=engine)
 
+    def delete_all_existing_files(self, engine=None):
+        with allure.step(f'delete all existing files of: {self.get_resource_path()}'):
+            out: dict = OutputParsingTool.parse_json_str_to_dictionary(self.show(dut_engine=engine)).get_returned_value()
+            self.delete_files(files_to_delete=list(out.keys()), engine=engine)
+
 
 class File(BaseComponent):
     def __init__(self, parent=None, filename=''):

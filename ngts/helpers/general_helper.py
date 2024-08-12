@@ -1,8 +1,16 @@
-import re
 import datetime as dt
+import re
+
 from perscache import Cache
+
 from infra.tools.topology_tools.topology_setup_utils import get_all_setups_per_group
+from ngts.cli_wrappers.nvue.cumulus.cumulus_general_cli import CumulusGeneralCli
+from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
+from ngts.cli_wrappers.sonic.sonic_cli import SonicCli
+from ngts.cli_wrappers.sonic.sonic_general_clis import SonicGeneralCliDefault
 from ngts.constants.constants import SonicConst
+from ngts.nvos_constants.constants_nvos import NvosConst
+from ngts.nvos_tools.Devices.DeviceFactory import DeviceFactory
 
 cache = Cache()
 
@@ -36,3 +44,34 @@ def filter_canonical_setups(canonical_setups_platforms):
                 keys_to_remove.append(setup_name)
     for key in keys_to_remove:
         canonical_setups_platforms.pop(key)
+
+
+def get_cli_obj(topology_obj, cli_type, switch_type, engine, host, dut_alias) -> SonicGeneralCliDefault:
+    if cli_type == NvosConst.NVUE_CLI:
+        device_name = topology_obj.players[host]['attributes'].noga_query_data['attributes']['Specific']. \
+            get('switch_type', '')
+        device = DeviceFactory.create_device(device_name)
+        if switch_type == NvosConst.CUMULUS_SWITCH:
+            cli_obj = CumulusGeneralCli(engine, device)
+        else:
+            cli_obj = NvueGeneralCli(engine, device)
+    else:
+        cli_obj = SonicCli(topology_obj, dut_alias=dut_alias).general
+
+    return cli_obj
+
+
+def extract_host_details_from_topo_obj(topology_obj, host):
+    dut_name = topology_obj.players[host]['attributes'].noga_query_data['attributes']['Common']['Name']
+    dut_alias = topology_obj.players[host]['attributes'].noga_query_data['attributes']['Common']['Description']
+    cli_type = topology_obj[0][host]['attributes'].noga_query_data['attributes']['Topology Conn.']['CLI_TYPE']
+    switch_type = topology_obj.players[host]['attributes'].noga_query_data['attributes']['Specific'].get('TYPE', '')
+    dut_ip = topology_obj.players[host]['attributes'].noga_query_data['attributes']['Specific'].get('ip address', '')
+    engine = topology_obj.players[host]['engine']
+    return cli_type, dut_alias, dut_ip, dut_name, engine, switch_type
+
+
+def get_dut_cli_obj_from_topo_obj(topology_obj) -> SonicGeneralCliDefault:
+    host = 'dut'
+    cli_type, dut_alias, dut_ip, dut_name, engine, switch_type = extract_host_details_from_topo_obj(topology_obj, host)
+    return get_cli_obj(topology_obj, cli_type, switch_type, engine, host, dut_alias)

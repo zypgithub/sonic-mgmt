@@ -14,12 +14,14 @@ from infra.tools.linux_tools.linux_tools import scp_file
 from ngts.constants.constants import GnmiConsts
 from ngts.nvos_constants.constants_nvos import HealthConsts, NvosConst, DatabaseConst, SystemConsts, TestFlowType
 from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
+from ngts.nvos_tools.infra.CmdRunner import CmdRunner
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tests_nvos.general.security.certificate.constants import TestCert
+from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
 from ngts.tests_nvos.system.gnmi.constants import CERTIFICATE, \
     DEFAULT_CERTIFICATE, GnmicErr
@@ -343,7 +345,8 @@ def validate_redis_cli_and_gnmi_commands_results(engines, devices, gnmi_list, al
             redis_output = str(sorted(redis_output.split(',')))
             gnmi_client_output = str(sorted(gnmi_client_output.split(',')))
         if command[GnmiConsts.COMPARISON_KEY]:
-            Tools.ValidationTool.compare_values(gnmi_client_output.lower(), command[GnmiConsts.COMPARISON_KEY][redis_output].lower()).verify_result()
+            Tools.ValidationTool.compare_values(gnmi_client_output.lower(), command[GnmiConsts.COMPARISON_KEY][
+                redis_output].lower()).verify_result()
         elif allowed_range_in_bytes is not None:
             result = abs(int(gnmi_client_output) - int(redis_output))
             assert 0 <= result <= allowed_range_in_bytes, (
@@ -454,14 +457,21 @@ def verify_server_reflection(test_flow, client, skip_cert_verify, err_msg_to_che
         verify_msg_in_out_or_err(err_msg_to_check, out_reflect, err_reflect)
 
 
+def get_scp_player(engines) -> LinuxSshEngine:
+    return engines.sonic_mgmt
+    # return LinuxSshEngine(ip='10.237.116.70', username='root', password='12345')
+
+
 def factory_reset_gnmi_check():
+    engines = TestToolkit.engines
     cert = TestCert.cert_valid_1
     system = System()
-    dut_engine = TestToolkit.engines.dut
+    scp_engine = get_scp_player(engines)
+    dut_engine = engines.dut
     with allure.step(f'before factory reset - import and load certificate "{cert.name}" to gnmi'):
         with allure.step(f'import cert {cert.name}'):
             system.security.certificate.cert_id[cert.name].action_import(
-                uri_bundle=generate_scp_uri_using_player(dut_engine, cert.p12_bundle),
+                uri_bundle=generate_scp_uri_using_player(scp_engine, cert.p12_bundle),
                 passphrase=cert.p12_password).verify_result()
         with allure.step(f'set certificate "{cert.name}" to gnmi'):
             system.gnmi_server.set(CERTIFICATE, cert.name, apply=True).verify_result()
@@ -479,3 +489,26 @@ def factory_reset_gnmi_check():
 
 
 factory_reset_gnmi_checker = factory_reset_gnmi_check()  # generator
+
+
+def get_timestamp_of_first_gnmi_response(user: UserInfo, cert: CertInfo):
+    client = GnmiClient(cert.dn or cert.ip, GnmiConsts.GNMI_DEFAULT_PORT, user.username, user.password,
+                        cacert=cert.cacert)
+    output = GnmicErr.CERT_VERIFY_FAIL
+    while any(err_msg in output for err_msg in [GnmicErr.CERT_VERIFY_FAIL, 'Failed', 'failed']):
+        time.sleep(0.5)
+        out, err = client.grpcurl_describe(skip_cert_verify=False)
+        output = out + err
+    return time.time()
+
+
+def get_timestamp_of_first_gnmi_response2(user: UserInfo, cert: CertInfo):
+    current_file_path = os.path.realpath(__file__)
+    current_dir = os.path.dirname(current_file_path)
+    script_path = os.path.join(current_dir, 'grpcurl_in_loop.sh')
+    script_path_absolute_path = os.path.abspath(script_path)
+
+    cmd_runner = CmdRunner()
+    cmd_runner.run_cmd_in_process(f'bash {script_path_absolute_path} {cert.cacert} {user.username} {user.password}')
+
+    return time.time()

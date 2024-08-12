@@ -68,10 +68,6 @@ class System(BaseComponent):
         self.ptp = BaseComponent(self, path='/ptp')
         self.lldp = Lldp(self)
 
-    def ssd_cleanup(self, expected_str="", dut_engine=None):
-        """nv action run fae system ssd-cleanup """
-        return self.action(ActionConsts.RUN, 'ssd-cleanup', expected_output=expected_str)
-
     @staticmethod
     def get_expected_fields(device, resource):
         return device.constants.system[resource]

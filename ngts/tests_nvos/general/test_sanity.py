@@ -12,7 +12,7 @@ from ngts.tests_nvos.checklist.test_checklist_ipv6 import test_checklist_ipv6
 from ngts.nvos_constants.constants_nvos import SystemConsts, HealthConsts
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
-from ngts.tests_nvos.general.security.security_test_tools.constants import AddressingType
+from ngts.tests_nvos.acl.test_acl_basic import test_show_acls
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.tests_nvos.general.security.test_aaa_ldap.constants import LdapConsts
 from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts
@@ -29,6 +29,9 @@ def test_ci_sanity(engines, topology_obj, devices):
         test_show_platform(engines, ApiType.OPENAPI, devices)
 
     TestToolkit.tested_api = ApiType.NVUE
+
+    with allure.step("Test ACL"):
+        test_show_acls(engines, ApiType.NVUE)
 
     with allure.step("Test IPV6"):
         test_checklist_ipv6(engines)
@@ -69,11 +72,11 @@ def test_ci_sanity(engines, topology_obj, devices):
             ValidationTool.verify_field_exist_in_json_output(json_output=output,
                                                              keys_to_search_for=expected_field).verify_result()
 
-    """with allure.step("Test Health"):
+    with allure.step("Test Health"):
         health_output = OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).get_returned_value()
         ValidationTool.validate_all_values_exists_in_list([HealthConsts.STATUS, HealthConsts.STATUS_LED],
                                                           health_output.keys()).verify_result()
-        system.validate_health_status(HealthConsts.OK)"""
+        system.validate_health_status(HealthConsts.OK)
 
     with allure.step("Show SNMP"):
         system_snmp_output = OutputParsingTool.parse_json_str_to_dictionary(system.snmp_server.show()) \

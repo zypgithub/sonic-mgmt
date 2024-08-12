@@ -472,6 +472,7 @@ def get_module_index_supporting_sensor(dut):
 def get_tc_config(cli_objects):
     tc_config_content = cli_objects.dut.general.read_file(f"{TC_CONST.TC_CONFIG_FILE}")
     tc_config_content = tc_config_content.replace('asic\\\\d+', 'asic')
+    tc_config_content = tc_config_content.replace('asic\\\\d*', 'asic')
     tc_config_dict = json.loads(tc_config_content)
     logger.info(f"tc_config: {tc_config_dict}")
     return tc_config_dict

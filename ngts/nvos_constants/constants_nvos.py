@@ -63,7 +63,6 @@ class NvosConst:
     IB_SWITCH_TYPE = "IB"
     QTM2 = "Quantum2"
     QTM3 = "Quantum3"
-    NVL5 = 'NVLink-5 switch'
     DESCRIPTION = 'description'
     PORT_STATUS_UP = 'up'
     PORT_STATUS_DOWN = 'down'
@@ -125,7 +124,7 @@ class NvosConst:
     SYSTEM_AAA_CLASS = 'class'
     SYSTEM_AAA_ROLE = 'role'
 
-    DEFAULT_NVOS_CONFIG = {"system": {
+    DEFAULT_CONFIG = {"system": {
         "aaa": {
             "authentication": {
                 "restrictions": {
@@ -259,7 +258,7 @@ class NvosConst:
     NVOS_INSTALL_TIMEOUT = 6 * 60  # 6 minutes
 
     COVERAGE_PATH = "/var/lib/python/coverage"
-    MAX_COVERAGE_PATH_CAPACITY_PERCENTAGE = 90
+    MAX_COVERAGE_PATH_CAPACITY_PERCENTAGE = 70
 
     NO_CONFIG_DIFF_APPLY_MSG = "config apply executed with no config diff"
     DECLINED_APPLY_MSG = 'Declined apply after warnings'
@@ -388,10 +387,9 @@ class SystemConsts:
     DATE_TIME = 'date-time'
     VERSION = 'version'
     SECURITY = 'security'
-    DATE_TIME = 'date-time'
     TECHSUPPORT_FILES_PATH = '/host/dump/'
     TECHSUPPORT_EMPTY_FILES_TO_IGNORE = ['queue.counters_2', 'queue.counters_1.0', 'swapon',
-                                         'queue.counters_1', 'queue.counters_2.0']
+                                         'queue.counters_1', 'queue.counters_2.0', 'queue.counters_1.1', 'queue.counters_2.1']
     PATH_KEY = 'path'
     LATEST_KEY = 'latest'
 
@@ -643,6 +641,8 @@ class SystemConsts:
     DUMMY_IMAGE = "dummy.bin"
     DUMMY_IMAGE_PATH = "/tmp/"
 
+    SYSTEM_LAST_EVENT = 'last'
+
 
 class DocumentsConsts:
     MIN_FILES_SIZE = 30000
@@ -821,7 +821,8 @@ class FansConsts:
     STATE_OK = 'ok'
     STATE_NOT_OK = 'Not OK'
     STATE_ABSENT = 'absent'
-    FAN_DIRECTION_MISMATCH_ERR = "is not aligned with fan1 direction"
+    FAN_DIRECTION_MISMATCH_ERR = "direction exhaust is not aligned"
+    FAN_DIRECTION_MISMATCH_ERR_CROC = "direction intake is not aligned"
 
 
 class IbConsts:
@@ -878,7 +879,7 @@ class ImageConsts:
     SWID = 'swid'
     FW_ASIC = 'ASIC'
     FW_STABLE_VERSION = 'rel-31_2010_4100-004-EVB.mfa'
-    XDR_FW_STABLE_VERSION = 'rel-35_2014_0974.mfa'
+    XDR_FW_STABLE_VERSION = 'rel-35_2014_0938.mfa'
     SCP_PATH = 'scp://{}:{}@{}'.format(NvosConst.ROOT_USER, NvosConst.ROOT_PASSWORD,
                                        'fit70')
     SCP_PATH_SERVER = 'scp://{username}:{password}@{ip}{path}'
@@ -949,7 +950,6 @@ class NtpConsts:
     REFERENCE = 'reference'
     SERVER = 'server'
     STATE = 'state'
-    DHCP = 'dhcp'
     STATUS = 'status'
     VRF = 'vrf'
     KEY = 'key'
@@ -981,7 +981,7 @@ class NtpConsts:
     DUMMY_SERVER8 = 'server8'
     SERVER_FAILED = 'DNS resolution failed'
     MULTIPLE_SERVERS_NUMBER = 11
-    CONFIG_TIME_DIFF_THRESHOLD = 2.0  # [sec]
+    CONFIG_TIME_DIFF_THRESHOLD = 2.5  # [sec]
     SHOW_TIME_DIFF_THRESHOLD = 0.5  # [sec]
     SYNCHRONIZATION_MAX_TIME = 100  # [sec]
     SYNCHRONIZATION_TIME_AFTER_REBOOT = 60  # [sec]
@@ -1257,7 +1257,6 @@ class StatsConsts:
     LOG_MSG_ERROR_DB = "..."  # TODO: Update message (parameter not found in redis DB)...
 
     INVALID_CATEGORY_NAME = 'invalid_category_name'
-    ALL_CATEGORIES = 'all'
     INVALID_STATE = 'invalid_state'
     INVALID_INTERVAL_LOW = 0
     INVALID_INTERVAL_HIGH = 1441
@@ -1334,6 +1333,7 @@ class LinkDetectionConsts:
     SUPPORTED_SPEED = "supported_speed"
     CONNECTION_MODE_NDR = 'ndr'
     CONNECTION_MODE_XDR = 'xdr'
+    CONNECTION_MODE = "connection-mode"
 
 
 class MultiPlanarConsts:
@@ -1388,7 +1388,7 @@ class MultiPlanarConsts:
                        'COUNTERS_DB_2', 'CONFIG_DB', 'STATE_DB', 'FLEX_COUNTER_DB']
     LOG_MSG_UNSET_FAE_INTERFACE = "PATCH..."  # TODO: complete
     LOG_MSG_SET_FAE_INTERFACE = "PATCH /nvue_v1/interface/"
-    LOG_MSG_ACTION_CLEAR_FAE_INTERFACE = "Cleared counters successfully"
+    LOG_MSG_ACTION_CLEAR_FAE_INTERFACE = 'Clearing counters for interface {port_name} for user admin'
     CONFIG_STATE_RETRIES = 5
 
 

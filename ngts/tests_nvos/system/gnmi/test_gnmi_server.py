@@ -200,16 +200,14 @@ def test_gnmi_bad_flow(test_api, engines, devices):
     TestToolkit.tested_api = test_api
     system = System()
     gnmi_server_obj = system.gnmi_server
+    xpath = f'interfaces/interface[name={devices.dut.default_port}]/state/counters/in-broadcast-pkts'
     validate_gnmi_is_running_and_stream_updates(system, gnmi_server_obj, engines, engines.dut.ip)
 
     with allure.step("invalid command"):
         gnmi_server_obj.set(GnmiConsts.GNMI_STATE_FIELD, Tools.RandomizationTool.get_random_string(7), "Error")
 
     with allure.step("Subscribe to the gnmi server for data that is not supported"):
-        if devices.dut.asic_type == NvosConst.QTM3:
-            xpath = 'interfaces/interface[name=swA1p1]/state/counters/in-broadcast-pkts'
-        else:
-            xpath = 'interfaces/interface[name=sw1p1]/state/counters/in-broadcast-pkts'
+        xpath = f'interfaces/interface[name={devices.dut.default_port}]/state/counters/in-broadcast-pkts'
         gnmi_stream_updates = run_gnmi_client_and_parse_output(engines, devices, xpath, engines.dut.ip)
         gnmi_stream_updates_value = list(gnmi_stream_updates.values())[0]
         assert gnmi_stream_updates_value == '0', f'{xpath} is unsupported field,' \
@@ -375,12 +373,12 @@ def test_gnmi_events_overload(engines, devices):
             10. Clear system events
             11. Check CPU, Memory and mpstat
     """
+    pattern = "(\\d{2}:\\d{2}:\\d{2} (?:AM|PM) ) (.{3})(.*)(\\d{2}\\.\\d{2})"
+    regex = re.compile(pattern)
     system = System()
     fae = Fae()
     client = GnmiClient(engines.dut.ip, GnmiConsts.GNMI_DEFAULT_PORT, devices.dut.default_username,
                         devices.dut.default_password)
-    pattern = "(\\d{2}:\\d{2}:\\d{2} (?:AM|PM) ) (.{3})(.*)(\\d{2}\\.\\d{2})"
-    regex = re.compile(pattern)
 
     try:
         with allure.step("Check CPU, Memory and mpstat at the beginning"):
@@ -392,6 +390,8 @@ def test_gnmi_events_overload(engines, devices):
         with allure.step(f'subscribe {MAX_GNMI_SUBSCRIBERS} clients'):
             for i in range(MAX_GNMI_SUBSCRIBERS):
                 with allure.step(f'Subscribe client #{i}'):
+                    client.gnmic_subscribe_system_events(mode=GnmiMode.STREAM, skip_cert_verify=True,
+                                                         keep_session_alive=True)
                     _, _, client_proc = client.gnmic_subscribe_system_events(mode=GnmiMode.STREAM,
                                                                              skip_cert_verify=True,
                                                                              keep_session_alive=True)

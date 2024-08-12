@@ -223,7 +223,8 @@ class OpenApiRequest:
         if not res.result:
             return res
         if req_type == OpenApiReqType.DELETE:
-            assert r.status_code == 204, f"Response code is: {r.status_code}, instead of 204"
+            if r.status_code != 204:
+                return ResultObj(False, f"Error. Response code is: {r.status_code}, instead of 204")
         else:
             if req_type == OpenApiReqType.PATCH:
                 response = r.json()

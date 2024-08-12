@@ -12,6 +12,11 @@ class Stats(BaseComponent):
         self.category = StatsCategory(self, devices_dut)
         self.files = Files(self)
 
+    def action_general(self, action_str):
+        with allure.step("Run system stats action '{action_type}'".format(action_type=action_str)):
+            return SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].action_general,
+                                                   TestToolkit.engines.dut, action_str, self.get_resource_path())
+
 
 class StatsCategory(BaseComponent):
     categoryName = {}
@@ -23,8 +28,6 @@ class StatsCategory(BaseComponent):
                 self.categoryName.update({name: StatsCategoryName(self, name)})
             self.categoryName.update(
                 {StatsConsts.INVALID_CATEGORY_NAME: StatsCategoryName(self, StatsConsts.INVALID_CATEGORY_NAME)})
-            self.categoryName.update(
-                {StatsConsts.ALL_CATEGORIES: StatsCategoryName(self, StatsConsts.ALL_CATEGORIES)})
 
 
 class StatsCategoryName(BaseComponent):

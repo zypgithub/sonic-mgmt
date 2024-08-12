@@ -12,6 +12,7 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.scripts.code_coverage.code_coverage_consts import SharedConsts, NvosConsts, SonicConsts
 from ngts.nvos_constants.constants_nvos import NvosConst
 from ngts.nvos_tools.infra.HostMethods import HostMethods
+from ngts.nvos_tools.Devices.DeviceFactory import DeviceFactory
 
 logger = logging.getLogger()
 
@@ -30,7 +31,7 @@ def test_extract_python_coverage(topology_obj, dest, engines):
     engine, cli_obj, is_nvos = get_topology_info(topology_obj)
 
     if is_nvos:
-        extract_python_coverage_for_nvos(dest if dest else NvosConsts.DEST_PATH, engines, cli_obj)
+        extract_python_coverage_for_nvos(dest if dest else NvosConsts.DEST_PATH, engines, cli_obj, topology_obj)
     else:
         extract_python_coverage_for_sonic(dest, engines, engine, cli_obj)
 
@@ -53,7 +54,7 @@ def test_extract_gcov_coverage(topology_obj, dest, engines):
         with allure.step('Check that sources exist on the switch'):
             cli_obj.general.ls(NvosConsts.NVOS_SOURCE_PATH, validate=True)
         with allure.step('Extract c coverage for NVOS'):
-            extract_c_coverage_for_nvos(dest, engines, engine, cli_obj)
+            extract_c_coverage_for_nvos(dest, engines, engine, cli_obj, topology_obj)
     else:
         with allure.step('Check that sources exist on the switch'):
             cli_obj.general.ls(SharedConsts.SONIC_SOURCES_PATH[0], validate=True)
@@ -72,8 +73,14 @@ def get_coverage_file_names(sudo_cli_general, containers):
     return gcov_filename_prefix, lcov_filename_prefix
 
 
-def extract_c_coverage_for_nvos(dest, engines, engine, cli_obj):
-    c_dest = get_dest_path(engine, dest) + SharedConsts.C_DIR
+def extract_c_coverage_for_nvos(dest, engines, engine, cli_obj, topology_obj):
+    with allure.step("Create device object if needed"):
+        if not TestToolkit.devices:
+            devices = DeviceFactory.create_devices_object(topology_obj)
+            TestToolkit.update_devices(devices)
+
+    with allure.step("Create coverage report path"):
+        c_dest = get_dest_path(engine, dest) + SharedConsts.C_DIR
 
     with allure.step('Restart system services to get coverage for running services'):
         engines.dut.run_cmd('sudo systemctl restart swss-ibv0@0.service')
@@ -149,8 +156,14 @@ def get_topology_info(topology_obj):
         return engine, cli_obj, is_nvos
 
 
-def extract_python_coverage_for_nvos(dest, engines, cli_obj):
-    dest = get_dest_path(engines.dut, dest) + SharedConsts.PYTHON_DIR
+def extract_python_coverage_for_nvos(dest, engines, cli_obj, topology_obj):
+    with allure.step("Create device object if needed"):
+        if not TestToolkit.devices:
+            devices = DeviceFactory.create_devices_object(topology_obj)
+            TestToolkit.update_devices(devices)
+
+    with allure.step("Create coverage report path"):
+        dest = get_dest_path(engines.dut, dest) + SharedConsts.PYTHON_DIR
 
     with allure.step('Get coverage file path'):
         coverage_file = get_python_coverage_file(cli_obj)

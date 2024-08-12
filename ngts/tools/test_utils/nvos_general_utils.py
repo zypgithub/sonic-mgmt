@@ -13,6 +13,7 @@ from ngts.constants.constants import LinuxConsts
 from ngts.nvos_constants.constants_nvos import ApiType, DiskConsts
 from ngts.nvos_tools.infra.DiskTool import DiskTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.nvos_tools.infra.RegressionConfigurations import RegressionConfigurations
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.authentication_restrictions.constants import RestrictionsConsts
 from ngts.nvos_constants.constants_nvos import NvosConst, SystemConsts
@@ -74,6 +75,8 @@ def set_base_configurations(dut_engine, timezone=LinuxConsts.JERUSALEM_TIMEZONE,
                                                    RestrictionsConsts.DISABLED, dut_engine=dut_engine).verify_result()
         system.aaa.authentication.restrictions.set(RestrictionsConsts.FAIL_DELAY, 0,
                                                    dut_engine=dut_engine).verify_result()
+
+        RegressionConfigurations.configure_ports_to_legacy(engine=dut_engine, apply=False, throw_exception=False)
 
         if apply:
             logging.info('Apply configurations')

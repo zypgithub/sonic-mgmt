@@ -4,7 +4,8 @@ import time
 from collections import namedtuple
 from typing import List
 
-from ngts.nvos_constants.constants_nvos import HealthConsts, MultiPlanarConsts, PlatformConsts
+from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from ngts.nvos_constants.constants_nvos import MultiPlanarConsts, PlatformConsts
 from ngts.nvos_constants.constants_nvos import (NvosConst, DatabaseConst, IbConsts, StatsConsts, FansConsts,
                                                 DocumentsConsts)
 from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
@@ -51,9 +52,17 @@ class IbSwitch(BaseSwitch):
                                                  subfiles_pattern=PlatformConsts.VOLTAGE_FILES_PATTERN)
 
     def get_default_nvue_config(self, dut_engine=None):
-        default_conf = NvosConst.DEFAULT_NVOS_CONFIG
+        default_conf = NvosConst.DEFAULT_CONFIG
         default_conf["interface"] = NvosConst.DEFAULT_NVOS_IFACE_CONFIG
         return default_conf
+
+    def show_setup_versions(self, dut_engine: LinuxSshEngine = None):
+        outputs = {
+            'system version': dut_engine.run_cmd('nv show system version'),
+            'platform firmware': dut_engine.run_cmd('nv show platform firmware'),
+        }
+        res = [f'{title.upper()}:\n{output}\n' for title, output in outputs.items()]
+        return '\n'.join(res)
 
     def verify_ib_ports_state(self, dut_engine, expected_port_state):
         logging.info(f"number of ports: {self.ib_ports_num}")
@@ -196,7 +205,6 @@ class IbSwitch(BaseSwitch):
         super()._init_constants()
         self.full_version_pattern = r'^nvos-\d{2}\.\d{2}\.\d{4}(-\d{3})?$'
         self.version_number_pattern = r'\d{2}\.\d{2}\.\d{4}'
-        self.health_monitor_config_file_path = ""
         self.platform_file_path = ""
         self.ib_ports_num = 64
         self.primary_asic = f"{IbConsts.DEVICE_ASIC_PREFIX}1"
@@ -261,6 +269,7 @@ class IbSwitch(BaseSwitch):
             'sw31p1': 'sw32p1pl1',
             'sw31p2': 'sw32p1pl2'
         }
+        self.default_port = 'sw1p1'
         self.aggregated_port_list = ['sw1p1', 'sw2p1', 'sw32p1']  # total 3 ports
         self.fnm_port_list = ['fnm1']
         self.aggregated_split_port_list = ['sw10p1']
@@ -268,24 +277,12 @@ class IbSwitch(BaseSwitch):
         self.fnm_external_port_list = ['fnm1']
         self.fnm_external_child_port = 'fnm1s1'
         self.child_aggregated_port = 'sw10p1s1'
-        self.aggregated_port_planarized_ports = 4
+        self.num_of_plane_ports = 4
+        self.num_of_fnm_plane_ports = 2
         self.fnm_plane_port_list = ['fnm1pl1', 'fnm1pl2']  # total 2 ports
         self.network_ports = ['eth0', 'ib0', 'lo']  # total 3 ports
-        self.non_aggregated_port_list = ['sw10p1', 'sw10p2', 'sw11p1', 'sw11p2', 'sw12p1', 'sw12p2', 'sw13p1', 'sw13p2',
-                                         'sw14p1', 'sw14p2', 'sw15p1', 'sw15p2', 'sw16p1', 'sw16p2', 'sw17p1', 'sw17p2',
-                                         'sw18p1', 'sw18p2', 'sw19p1', 'sw19p2', 'sw20p1', 'sw20p2', 'sw21p1', 'sw21p2',
-                                         'sw22p1', 'sw22p2', 'sw23p1', 'sw23p2', 'sw24p1', 'sw24p2', 'sw25p1', 'sw25p2',
-                                         'sw26p1', 'sw26p2', 'sw27p1', 'sw27p2', 'sw28p1', 'sw28p2', 'sw29p1', 'sw29p2',
-                                         'sw30p1', 'sw3p1', 'sw3p2', 'sw4p1', 'sw4p2', 'sw5p1', 'sw5p2', 'sw6p1',
-                                         'sw6p2',
-                                         'sw7p1', 'sw7p2', 'sw8p1', 'sw8p2', 'sw9p1', 'sw9p2']  # total 55 ports
-        self.all_plane_port_list = ['sw1p1pl1', 'sw1p1pl2', 'sw2p1pl1', 'sw2p1pl2', 'sw32p1pl1', 'sw32p1pl2']
-        self.all_port_list = self.non_aggregated_port_list + self.aggregated_port_list + self.fnm_external_port_list
-        self.all_port_list += self.fnm_external_port_list + self.network_ports
         self.fnm_link_speed = '400G'
-        # TODO, ADD MORE PORTS, WE WANT IT TO BE MORE REALISTIC. MAYBE WE CAN USE THE FULL LIST OF ALL PORTS FOR NVL5
         self.fnm_port_type = 'fnm'
-        self.all_fae_port_list = self.all_port_list + self.all_plane_port_list + self.fnm_plane_port_list
         self.asic0 = 'asic0'
         self.asic1 = 'asic1'
         self.counters_db_name = 'COUNTERS_DB'
@@ -406,8 +403,6 @@ class GorillaSwitch(IbSwitch):
         self.core_count = 4
         self.mgmt_ports = ['eth0']
         self.asic_type = NvosConst.QTM2
-        self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
-            "x86_64-mlnx_mqm9700-r0")
         self.platform_file_path = MultiPlanarConsts.PLATFORM_FILE_FULL_PATH.format("x86_64-mlnx_mqm9700-r0")
         self.show_platform_output.update({
             "product-name": "MQM9700",
@@ -496,13 +491,11 @@ class BlackMambaSwitch(IbSwitch):
         super()._init_constants()
         self.ib_ports_num = 64
         self.core_count = 4
-        self.mgmt_ports = ['eth0', 'eth1']
+        self.mgmt_ports = ['eth0']  # 'eth1' disabled for now
         self.asic_type = NvosConst.QTM3
-        self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH. \
-            format("x86_64-mlnx_qm8790-r0")
         self.platform_file_path = MultiPlanarConsts.PLATFORM_FILE_FULL_PATH.format("x86_64-mlnx_qm8790-r0")
         self.show_platform_output.update({
-            "product-name": "QM3000",
+            "product-name": "Q3400_RA",
             "asic-model": self.asic_type,
         })
 
@@ -526,9 +519,143 @@ class BlackMambaSwitch(IbSwitch):
                                 "PSU-2+12V+Vol+Out", "PSU-3+12V+Vol+Out", "PSU-4+12V+Vol+Out", "PSU-5+12V+Vol+Out",
                                 "PSU-6+12V+Vol+Out", "PSU-7+12V+Vol+Out", "PSU-8+12V+Vol+Out"]
 
-        self.stats_fan_header_num_of_lines = 37
+        self.stats_fan_header_num_of_lines = 17
         self.stats_power_header_num_of_lines = 25
-        self.stats_temperature_header_num_of_lines = 103
+        self.stats_temperature_header_num_of_lines = 104
+        self.fnm_link_speed = '800G'
+        self.interface_list = ['eth0', 'eth1', 'fnm1', 'ib0', 'lo', 'sw10p1', 'sw10p2', 'sw11p1', 'sw11p2', 'sw12p1',
+                               'sw12p2', 'sw13p1', 'sw13p2', 'sw14p1', 'sw14p2', 'sw15p1', 'sw15p2', 'sw16p1', 'sw16p2',
+                               'sw17p1', 'sw17p2', 'sw18p1', 'sw18p2', 'sw19p1', 'sw19p2', 'sw1p1', 'sw1p2', 'sw20p1',
+                               'sw20p2', 'sw21p1', 'sw21p2', 'sw22p1', 'sw22p2', 'sw23p1', 'sw23p2', 'sw24p1', 'sw24p2',
+                               'sw25p1', 'sw25p2', 'sw26p1', 'sw26p2', 'sw27p1', 'sw27p2', 'sw28p1', 'sw28p2', 'sw29p1',
+                               'sw29p2', 'sw2p1', 'sw2p2', 'sw30p1', 'sw30p2', 'sw31p1', 'sw31p2', 'sw32p1', 'sw32p2',
+                               'sw33p1', 'sw33p2', 'sw34p1', 'sw34p2', 'sw35p1', 'sw35p2', 'sw36p1', 'sw36p2', 'sw37p1',
+                               'sw37p2', 'sw38p1', 'sw38p2', 'sw39p1', 'sw39p2', 'sw3p1', 'sw3p2', 'sw40p1', 'sw40p2',
+                               'sw41p1', 'sw41p2', 'sw42p1', 'sw42p2', 'sw43p1', 'sw43p2', 'sw44p1', 'sw44p2', 'sw45p1',
+                               'sw45p2', 'sw46p1', 'sw46p2', 'sw47p1', 'sw47p2', 'sw48p1', 'sw48p2', 'sw49p1', 'sw49p2',
+                               'sw4p1', 'sw4p2', 'sw50p1', 'sw50p2', 'sw51p1', 'sw51p2', 'sw52p1', 'sw52p2', 'sw53p1',
+                               'sw53p2', 'sw54p1', 'sw54p2', 'sw55p1', 'sw55p2', 'sw56p1', 'sw56p2', 'sw57p1', 'sw57p2',
+                               'sw58p1', 'sw58p2', 'sw59p1', 'sw59p2', 'sw5p1', 'sw5p2', 'sw60p1', 'sw60p2', 'sw61p1',
+                               'sw61p2', 'sw62p1', 'sw62p2', 'sw63p1', 'sw63p2', 'sw64p1', 'sw64p2', 'sw65p1', 'sw65p2',
+                               'sw66p1', 'sw66p2', 'sw67p1', 'sw67p2', 'sw68p1', 'sw68p2', 'sw69p1', 'sw69p2', 'sw6p1',
+                               'sw6p2', 'sw70p1', 'sw70p2', 'sw71p1', 'sw71p2', 'sw72p1', 'sw72p2', 'sw7p1', 'sw7p2',
+                               'sw8p1', 'sw8p2', 'sw9p1', 'sw9p2']
+        self.interface_fae_list = ['eth0', 'eth1', 'fnm1', 'fnm1pl1', 'fnm1pl2', 'fnm1pl3', 'fnm1pl4', 'fnma1p1',
+                                   'fnma1p2', 'fnma1p3', 'fnma2p1', 'fnma2p2', 'fnma2p3', 'fnma3p1', 'fnma3p2',
+                                   'fnma3p3', 'fnma4p1', 'fnma4p2', 'fnma4p3', 'ib0', 'lo', 'sw10p1', 'sw10p1pl1',
+                                   'sw10p1pl2', 'sw10p1pl3', 'sw10p1pl4', 'sw10p2', 'sw10p2pl1', 'sw10p2pl2',
+                                   'sw10p2pl3', 'sw10p2pl4', 'sw11p1', 'sw11p1pl1', 'sw11p1pl2', 'sw11p1pl3',
+                                   'sw11p1pl4', 'sw11p2', 'sw11p2pl1', 'sw11p2pl2', 'sw11p2pl3', 'sw11p2pl4', 'sw12p1',
+                                   'sw12p1pl1', 'sw12p1pl2', 'sw12p1pl3', 'sw12p1pl4', 'sw12p2', 'sw12p2pl1',
+                                   'sw12p2pl2', 'sw12p2pl3', 'sw12p2pl4', 'sw13p1', 'sw13p1pl1', 'sw13p1pl2',
+                                   'sw13p1pl3', 'sw13p1pl4', 'sw13p2', 'sw13p2pl1', 'sw13p2pl2', 'sw13p2pl3',
+                                   'sw13p2pl4', 'sw14p1', 'sw14p1pl1', 'sw14p1pl2', 'sw14p1pl3', 'sw14p1pl4', 'sw14p2',
+                                   'sw14p2pl1', 'sw14p2pl2', 'sw14p2pl3', 'sw14p2pl4', 'sw15p1', 'sw15p1pl1',
+                                   'sw15p1pl2', 'sw15p1pl3', 'sw15p1pl4', 'sw15p2', 'sw15p2pl1', 'sw15p2pl2',
+                                   'sw15p2pl3', 'sw15p2pl4', 'sw16p1', 'sw16p1pl1', 'sw16p1pl2', 'sw16p1pl3',
+                                   'sw16p1pl4', 'sw16p2', 'sw16p2pl1', 'sw16p2pl2', 'sw16p2pl3', 'sw16p2pl4', 'sw17p1',
+                                   'sw17p1pl1', 'sw17p1pl2', 'sw17p1pl3', 'sw17p1pl4', 'sw17p2', 'sw17p2pl1',
+                                   'sw17p2pl2', 'sw17p2pl3', 'sw17p2pl4', 'sw18p1', 'sw18p1pl1', 'sw18p1pl2',
+                                   'sw18p1pl3', 'sw18p1pl4', 'sw18p2', 'sw18p2pl1', 'sw18p2pl2', 'sw18p2pl3',
+                                   'sw18p2pl4', 'sw19p1', 'sw19p1pl1', 'sw19p1pl2', 'sw19p1pl3', 'sw19p1pl4', 'sw19p2',
+                                   'sw19p2pl1', 'sw19p2pl2', 'sw19p2pl3', 'sw19p2pl4', 'sw1p1', 'sw1p1pl1', 'sw1p1pl2',
+                                   'sw1p1pl3', 'sw1p1pl4', 'sw1p2', 'sw1p2pl1', 'sw1p2pl2', 'sw1p2pl3', 'sw1p2pl4',
+                                   'sw20p1', 'sw20p1pl1', 'sw20p1pl2', 'sw20p1pl3', 'sw20p1pl4', 'sw20p2', 'sw20p2pl1',
+                                   'sw20p2pl2', 'sw20p2pl3', 'sw20p2pl4', 'sw21p1', 'sw21p1pl1', 'sw21p1pl2',
+                                   'sw21p1pl3', 'sw21p1pl4', 'sw21p2', 'sw21p2pl1', 'sw21p2pl2', 'sw21p2pl3',
+                                   'sw21p2pl4', 'sw22p1', 'sw22p1pl1', 'sw22p1pl2', 'sw22p1pl3', 'sw22p1pl4', 'sw22p2',
+                                   'sw22p2pl1', 'sw22p2pl2', 'sw22p2pl3', 'sw22p2pl4', 'sw23p1', 'sw23p1pl1',
+                                   'sw23p1pl2', 'sw23p1pl3', 'sw23p1pl4', 'sw23p2', 'sw23p2pl1', 'sw23p2pl2',
+                                   'sw23p2pl3', 'sw23p2pl4', 'sw24p1', 'sw24p1pl1', 'sw24p1pl2', 'sw24p1pl3',
+                                   'sw24p1pl4', 'sw24p2', 'sw24p2pl1', 'sw24p2pl2', 'sw24p2pl3', 'sw24p2pl4', 'sw25p1',
+                                   'sw25p1pl1', 'sw25p1pl2', 'sw25p1pl3', 'sw25p1pl4', 'sw25p2', 'sw25p2pl1',
+                                   'sw25p2pl2', 'sw25p2pl3', 'sw25p2pl4', 'sw26p1', 'sw26p1pl1', 'sw26p1pl2',
+                                   'sw26p1pl3', 'sw26p1pl4', 'sw26p2', 'sw26p2pl1', 'sw26p2pl2', 'sw26p2pl3',
+                                   'sw26p2pl4', 'sw27p1', 'sw27p1pl1', 'sw27p1pl2', 'sw27p1pl3', 'sw27p1pl4', 'sw27p2',
+                                   'sw27p2pl1', 'sw27p2pl2', 'sw27p2pl3', 'sw27p2pl4', 'sw28p1', 'sw28p1pl1',
+                                   'sw28p1pl2', 'sw28p1pl3', 'sw28p1pl4', 'sw28p2', 'sw28p2pl1', 'sw28p2pl2',
+                                   'sw28p2pl3', 'sw28p2pl4', 'sw29p1', 'sw29p1pl1', 'sw29p1pl2', 'sw29p1pl3',
+                                   'sw29p1pl4', 'sw29p2', 'sw29p2pl1', 'sw29p2pl2', 'sw29p2pl3', 'sw29p2pl4', 'sw2p1',
+                                   'sw2p1pl1', 'sw2p1pl2', 'sw2p1pl3', 'sw2p1pl4', 'sw2p2', 'sw2p2pl1', 'sw2p2pl2',
+                                   'sw2p2pl3', 'sw2p2pl4', 'sw30p1', 'sw30p1pl1', 'sw30p1pl2', 'sw30p1pl3', 'sw30p1pl4',
+                                   'sw30p2', 'sw30p2pl1', 'sw30p2pl2', 'sw30p2pl3', 'sw30p2pl4', 'sw31p1', 'sw31p1pl1',
+                                   'sw31p1pl2', 'sw31p1pl3', 'sw31p1pl4', 'sw31p2', 'sw31p2pl1', 'sw31p2pl2',
+                                   'sw31p2pl3', 'sw31p2pl4', 'sw32p1', 'sw32p1pl1', 'sw32p1pl2', 'sw32p1pl3',
+                                   'sw32p1pl4', 'sw32p2', 'sw32p2pl1', 'sw32p2pl2', 'sw32p2pl3', 'sw32p2pl4', 'sw33p1',
+                                   'sw33p1pl1', 'sw33p1pl2', 'sw33p1pl3', 'sw33p1pl4', 'sw33p2', 'sw33p2pl1',
+                                   'sw33p2pl2', 'sw33p2pl3', 'sw33p2pl4', 'sw34p1', 'sw34p1pl1', 'sw34p1pl2',
+                                   'sw34p1pl3', 'sw34p1pl4', 'sw34p2', 'sw34p2pl1', 'sw34p2pl2', 'sw34p2pl3',
+                                   'sw34p2pl4', 'sw35p1', 'sw35p1pl1', 'sw35p1pl2', 'sw35p1pl3', 'sw35p1pl4', 'sw35p2',
+                                   'sw35p2pl1', 'sw35p2pl2', 'sw35p2pl3', 'sw35p2pl4', 'sw36p1', 'sw36p1pl1',
+                                   'sw36p1pl2', 'sw36p1pl3', 'sw36p1pl4', 'sw36p2', 'sw36p2pl1', 'sw36p2pl2',
+                                   'sw36p2pl3', 'sw36p2pl4', 'sw37p1', 'sw37p1pl1', 'sw37p1pl2', 'sw37p1pl3',
+                                   'sw37p1pl4', 'sw37p2', 'sw37p2pl1', 'sw37p2pl2', 'sw37p2pl3', 'sw37p2pl4', 'sw38p1',
+                                   'sw38p1pl1', 'sw38p1pl2', 'sw38p1pl3', 'sw38p1pl4', 'sw38p2', 'sw38p2pl1',
+                                   'sw38p2pl2', 'sw38p2pl3', 'sw38p2pl4', 'sw39p1', 'sw39p1pl1', 'sw39p1pl2',
+                                   'sw39p1pl3', 'sw39p1pl4', 'sw39p2', 'sw39p2pl1', 'sw39p2pl2', 'sw39p2pl3',
+                                   'sw39p2pl4', 'sw3p1', 'sw3p1pl1', 'sw3p1pl2', 'sw3p1pl3', 'sw3p1pl4', 'sw3p2',
+                                   'sw3p2pl1', 'sw3p2pl2', 'sw3p2pl3', 'sw3p2pl4', 'sw40p1', 'sw40p1pl1', 'sw40p1pl2',
+                                   'sw40p1pl3', 'sw40p1pl4', 'sw40p2', 'sw40p2pl1', 'sw40p2pl2', 'sw40p2pl3',
+                                   'sw40p2pl4', 'sw41p1', 'sw41p1pl1', 'sw41p1pl2', 'sw41p1pl3', 'sw41p1pl4', 'sw41p2',
+                                   'sw41p2pl1', 'sw41p2pl2', 'sw41p2pl3', 'sw41p2pl4', 'sw42p1', 'sw42p1pl1',
+                                   'sw42p1pl2', 'sw42p1pl3', 'sw42p1pl4', 'sw42p2', 'sw42p2pl1', 'sw42p2pl2',
+                                   'sw42p2pl3', 'sw42p2pl4', 'sw43p1', 'sw43p1pl1', 'sw43p1pl2', 'sw43p1pl3',
+                                   'sw43p1pl4', 'sw43p2', 'sw43p2pl1', 'sw43p2pl2', 'sw43p2pl3', 'sw43p2pl4', 'sw44p1',
+                                   'sw44p1pl1', 'sw44p1pl2', 'sw44p1pl3', 'sw44p1pl4', 'sw44p2', 'sw44p2pl1',
+                                   'sw44p2pl2', 'sw44p2pl3', 'sw44p2pl4', 'sw45p1', 'sw45p1pl1', 'sw45p1pl2',
+                                   'sw45p1pl3', 'sw45p1pl4', 'sw45p2', 'sw45p2pl1', 'sw45p2pl2', 'sw45p2pl3',
+                                   'sw45p2pl4', 'sw46p1', 'sw46p1pl1', 'sw46p1pl2', 'sw46p1pl3', 'sw46p1pl4', 'sw46p2',
+                                   'sw46p2pl1', 'sw46p2pl2', 'sw46p2pl3', 'sw46p2pl4', 'sw47p1', 'sw47p1pl1',
+                                   'sw47p1pl2', 'sw47p1pl3', 'sw47p1pl4', 'sw47p2', 'sw47p2pl1', 'sw47p2pl2',
+                                   'sw47p2pl3', 'sw47p2pl4', 'sw48p1', 'sw48p1pl1', 'sw48p1pl2', 'sw48p1pl3',
+                                   'sw48p1pl4', 'sw48p2', 'sw48p2pl1', 'sw48p2pl2', 'sw48p2pl3', 'sw48p2pl4', 'sw49p1',
+                                   'sw49p1pl1', 'sw49p1pl2', 'sw49p1pl3', 'sw49p1pl4', 'sw49p2', 'sw49p2pl1',
+                                   'sw49p2pl2', 'sw49p2pl3', 'sw49p2pl4', 'sw4p1', 'sw4p1pl1', 'sw4p1pl2', 'sw4p1pl3',
+                                   'sw4p1pl4', 'sw4p2', 'sw4p2pl1', 'sw4p2pl2', 'sw4p2pl3', 'sw4p2pl4', 'sw50p1',
+                                   'sw50p1pl1', 'sw50p1pl2', 'sw50p1pl3', 'sw50p1pl4', 'sw50p2', 'sw50p2pl1',
+                                   'sw50p2pl2', 'sw50p2pl3', 'sw50p2pl4', 'sw51p1', 'sw51p1pl1', 'sw51p1pl2',
+                                   'sw51p1pl3', 'sw51p1pl4', 'sw51p2', 'sw51p2pl1', 'sw51p2pl2', 'sw51p2pl3',
+                                   'sw51p2pl4', 'sw52p1', 'sw52p1pl1', 'sw52p1pl2', 'sw52p1pl3', 'sw52p1pl4', 'sw52p2',
+                                   'sw52p2pl1', 'sw52p2pl2', 'sw52p2pl3', 'sw52p2pl4', 'sw53p1', 'sw53p1pl1',
+                                   'sw53p1pl2', 'sw53p1pl3', 'sw53p1pl4', 'sw53p2', 'sw53p2pl1', 'sw53p2pl2',
+                                   'sw53p2pl3', 'sw53p2pl4', 'sw54p1', 'sw54p1pl1', 'sw54p1pl2', 'sw54p1pl3',
+                                   'sw54p1pl4', 'sw54p2', 'sw54p2pl1', 'sw54p2pl2', 'sw54p2pl3', 'sw54p2pl4', 'sw55p1',
+                                   'sw55p1pl1', 'sw55p1pl2', 'sw55p1pl3', 'sw55p1pl4', 'sw55p2', 'sw55p2pl1',
+                                   'sw55p2pl2', 'sw55p2pl3', 'sw55p2pl4', 'sw56p1', 'sw56p1pl1', 'sw56p1pl2',
+                                   'sw56p1pl3', 'sw56p1pl4', 'sw56p2', 'sw56p2pl1', 'sw56p2pl2', 'sw56p2pl3',
+                                   'sw56p2pl4', 'sw57p1', 'sw57p1pl1', 'sw57p1pl2', 'sw57p1pl3', 'sw57p1pl4', 'sw57p2',
+                                   'sw57p2pl1', 'sw57p2pl2', 'sw57p2pl3', 'sw57p2pl4', 'sw58p1', 'sw58p1pl1',
+                                   'sw58p1pl2', 'sw58p1pl3', 'sw58p1pl4', 'sw58p2', 'sw58p2pl1', 'sw58p2pl2',
+                                   'sw58p2pl3', 'sw58p2pl4', 'sw59p1', 'sw59p1pl1', 'sw59p1pl2', 'sw59p1pl3',
+                                   'sw59p1pl4', 'sw59p2', 'sw59p2pl1', 'sw59p2pl2', 'sw59p2pl3', 'sw59p2pl4', 'sw5p1',
+                                   'sw5p1pl1', 'sw5p1pl2', 'sw5p1pl3', 'sw5p1pl4', 'sw5p2', 'sw5p2pl1', 'sw5p2pl2',
+                                   'sw5p2pl3', 'sw5p2pl4', 'sw60p1', 'sw60p1pl1', 'sw60p1pl2', 'sw60p1pl3', 'sw60p1pl4',
+                                   'sw60p2', 'sw60p2pl1', 'sw60p2pl2', 'sw60p2pl3', 'sw60p2pl4', 'sw61p1', 'sw61p1pl1',
+                                   'sw61p1pl2', 'sw61p1pl3', 'sw61p1pl4', 'sw61p2', 'sw61p2pl1', 'sw61p2pl2',
+                                   'sw61p2pl3', 'sw61p2pl4', 'sw62p1', 'sw62p1pl1', 'sw62p1pl2', 'sw62p1pl3',
+                                   'sw62p1pl4', 'sw62p2', 'sw62p2pl1', 'sw62p2pl2', 'sw62p2pl3', 'sw62p2pl4', 'sw63p1',
+                                   'sw63p1pl1', 'sw63p1pl2', 'sw63p1pl3', 'sw63p1pl4', 'sw63p2', 'sw63p2pl1',
+                                   'sw63p2pl2', 'sw63p2pl3', 'sw63p2pl4', 'sw64p1', 'sw64p1pl1', 'sw64p1pl2',
+                                   'sw64p1pl3', 'sw64p1pl4', 'sw64p2', 'sw64p2pl1', 'sw64p2pl2', 'sw64p2pl3',
+                                   'sw64p2pl4', 'sw65p1', 'sw65p1pl1', 'sw65p1pl2', 'sw65p1pl3', 'sw65p1pl4', 'sw65p2',
+                                   'sw65p2pl1', 'sw65p2pl2', 'sw65p2pl3', 'sw65p2pl4', 'sw66p1', 'sw66p1pl1',
+                                   'sw66p1pl2', 'sw66p1pl3', 'sw66p1pl4', 'sw66p2', 'sw66p2pl1', 'sw66p2pl2',
+                                   'sw66p2pl3', 'sw66p2pl4', 'sw67p1', 'sw67p1pl1', 'sw67p1pl2', 'sw67p1pl3',
+                                   'sw67p1pl4', 'sw67p2', 'sw67p2pl1', 'sw67p2pl2', 'sw67p2pl3', 'sw67p2pl4', 'sw68p1',
+                                   'sw68p1pl1', 'sw68p1pl2', 'sw68p1pl3', 'sw68p1pl4', 'sw68p2', 'sw68p2pl1',
+                                   'sw68p2pl2', 'sw68p2pl3', 'sw68p2pl4', 'sw69p1', 'sw69p1pl1', 'sw69p1pl2',
+                                   'sw69p1pl3', 'sw69p1pl4', 'sw69p2', 'sw69p2pl1', 'sw69p2pl2', 'sw69p2pl3',
+                                   'sw69p2pl4', 'sw6p1', 'sw6p1pl1', 'sw6p1pl2', 'sw6p1pl3', 'sw6p1pl4', 'sw6p2',
+                                   'sw6p2pl1', 'sw6p2pl2', 'sw6p2pl3', 'sw6p2pl4', 'sw70p1', 'sw70p1pl1', 'sw70p1pl2',
+                                   'sw70p1pl3', 'sw70p1pl4', 'sw70p2', 'sw70p2pl1', 'sw70p2pl2', 'sw70p2pl3',
+                                   'sw70p2pl4', 'sw71p1', 'sw71p1pl1', 'sw71p1pl2', 'sw71p1pl3', 'sw71p1pl4', 'sw71p2',
+                                   'sw71p2pl1', 'sw71p2pl2', 'sw71p2pl3', 'sw71p2pl4', 'sw72p1', 'sw72p1pl1',
+                                   'sw72p1pl2', 'sw72p1pl3', 'sw72p1pl4', 'sw72p2', 'sw72p2pl1', 'sw72p2pl2',
+                                   'sw72p2pl3', 'sw72p2pl4', 'sw7p1', 'sw7p1pl1', 'sw7p1pl2', 'sw7p1pl3', 'sw7p1pl4',
+                                   'sw7p2', 'sw7p2pl1', 'sw7p2pl2', 'sw7p2pl3', 'sw7p2pl4', 'sw8p1', 'sw8p1pl1',
+                                   'sw8p1pl2', 'sw8p1pl3', 'sw8p1pl4', 'sw8p2', 'sw8p2pl1', 'sw8p2pl2', 'sw8p2pl3',
+                                   'sw8p2pl4', 'sw9p1', 'sw9p1pl1', 'sw9p1pl2', 'sw9p1pl3', 'sw9p1pl4', 'sw9p2',
+                                   'sw9p2pl1', 'sw9p2pl2', 'sw9p2pl3', 'sw9p2pl4']
 
     def get_mgmt_ports(self) -> List[str]:
         return self.mgmt_ports
@@ -576,9 +703,8 @@ class CrocodileSwitch(IbSwitch):
         self.ib_ports_num = 64
         self.core_count = 4
         self.asic_type = NvosConst.QTM3
+        self.default_port = 'swA1p1'
         self.mgmt_ports = ['eth0', 'eth1']
-        self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH. \
-            format("x86_64-nvidia_qm3400-r0")
         self.platform_file_path = MultiPlanarConsts.PLATFORM_FILE_FULL_PATH.format("x86_64-nvidia_qm3400-r0")
         self.show_platform_output.update({
             "product-name": "QM3400",
@@ -595,9 +721,9 @@ class CrocodileSwitch(IbSwitch):
                                 'PMIC-6-ASIC2-DVDD-PL1-Out-2', 'PMIC-6-ASIC2-HVDD-PL1-Out-1', 'PMIC-7-12V-MAIN-In-1',
                                 'PMIC-7-CEX-VDD-Out-1', 'PSU-1-12V-Out', 'PSU-2-12V-Out', 'PSU-3-12V-Out',
                                 'PSU-4-12V-Out']
-        self.stats_fan_header_num_of_lines = 25
+        self.stats_fan_header_num_of_lines = 23
         self.stats_power_header_num_of_lines = 17
-        self.stats_temperature_header_num_of_lines = 59
+        self.stats_temperature_header_num_of_lines = 69
         self.previous_cpld_version = BaseSwitch.CpldImageConsts(
             burn_image_path="/auto/sw_system_project/NVOS_INFRA/verification_files/cpld_fw/OLD/FUI000273_BURN_CROCODILE_CPLD000232_REV0802_CPLD000357_REV0103_CPLD000358_REV0203_CPLD000359_REV0100.vme",
             refresh_image_path="/auto/sw_system_project/NVOS_INFRA/verification_files/cpld_fw/OLD/FUI000273_REFRESH_CROCODILE_CPLD000232_REV0802_CPLD000357_REV0103_CPLD000358_REV0203_CPLD000359_REV0100.vme",
@@ -618,6 +744,78 @@ class CrocodileSwitch(IbSwitch):
                 "CPLD4": "CPLD000359_REV0100",
             }
         )
+        self.fnm_link_speed = '800G'
+        self.interface_list = ['eth0', 'eth1', 'fnm1', 'ib0', 'lo', 'swA10p1', 'swA10p2', 'swA11p1', 'swA11p2',
+                               'swA12p1', 'swA12p2', 'swA13p1', 'swA13p2', 'swA14p1', 'swA14p2', 'swA15p1', 'swA15p2',
+                               'swA16p1', 'swA16p2', 'swA17p1', 'swA17p2', 'swA18p1', 'swA18p2', 'swA1p1', 'swA1p2',
+                               'swA2p1', 'swA2p2', 'swA3p1', 'swA3p2', 'swA4p1', 'swA4p2', 'swA5p1', 'swA5p2', 'swA6p1',
+                               'swA6p2', 'swA7p1', 'swA7p2', 'swA8p1', 'swA8p2', 'swA9p1', 'swA9p2', 'swB10p1',
+                               'swB10p2', 'swB11p1', 'swB11p2', 'swB12p1', 'swB12p2', 'swB13p1', 'swB13p2', 'swB14p1',
+                               'swB14p2', 'swB15p1', 'swB15p2', 'swB16p1', 'swB16p2', 'swB17p1', 'swB17p2', 'swB18p1',
+                               'swB18p2', 'swB1p1', 'swB1p2', 'swB2p1', 'swB2p2', 'swB3p1', 'swB3p2', 'swB4p1',
+                               'swB4p2', 'swB5p1', 'swB5p2', 'swB6p1', 'swB6p2', 'swB7p1', 'swB7p2', 'swB8p1', 'swB8p2',
+                               'swB9p1', 'swB9p2']
+        self.interface_fae_list = ['eth0', 'eth1', 'fnm1', 'fnm1pl1', 'fnm1pl2', 'fnma0p1', 'fnma0p2', 'fnma0p3',
+                                   'fnma0p4', 'fnma1p1', 'fnma1p2', 'ib0', 'lo', 'swA10p1', 'swA10p1pl1', 'swA10p1pl2',
+                                   'swA10p1pl3', 'swA10p1pl4', 'swA10p2', 'swA10p2pl1', 'swA10p2pl2', 'swA10p2pl3',
+                                   'swA10p2pl4', 'swA11p1', 'swA11p1pl1', 'swA11p1pl2', 'swA11p1pl3', 'swA11p1pl4',
+                                   'swA11p2', 'swA11p2pl1', 'swA11p2pl2', 'swA11p2pl3', 'swA11p2pl4', 'swA12p1',
+                                   'swA12p1pl1', 'swA12p1pl2', 'swA12p1pl3', 'swA12p1pl4', 'swA12p2', 'swA12p2pl1',
+                                   'swA12p2pl2', 'swA12p2pl3', 'swA12p2pl4', 'swA13p1', 'swA13p1pl1', 'swA13p1pl2',
+                                   'swA13p1pl3', 'swA13p1pl4', 'swA13p2', 'swA13p2pl1', 'swA13p2pl2', 'swA13p2pl3',
+                                   'swA13p2pl4', 'swA14p1', 'swA14p1pl1', 'swA14p1pl2', 'swA14p1pl3', 'swA14p1pl4',
+                                   'swA14p2', 'swA14p2pl1', 'swA14p2pl2', 'swA14p2pl3', 'swA14p2pl4', 'swA15p1',
+                                   'swA15p1pl1', 'swA15p1pl2', 'swA15p1pl3', 'swA15p1pl4', 'swA15p2', 'swA15p2pl1',
+                                   'swA15p2pl2', 'swA15p2pl3', 'swA15p2pl4', 'swA16p1', 'swA16p1pl1', 'swA16p1pl2',
+                                   'swA16p1pl3', 'swA16p1pl4', 'swA16p2', 'swA16p2pl1', 'swA16p2pl2', 'swA16p2pl3',
+                                   'swA16p2pl4', 'swA17p1', 'swA17p1pl1', 'swA17p1pl2', 'swA17p1pl3', 'swA17p1pl4',
+                                   'swA17p2', 'swA17p2pl1', 'swA17p2pl2', 'swA17p2pl3', 'swA17p2pl4', 'swA18p1',
+                                   'swA18p1pl1', 'swA18p1pl2', 'swA18p1pl3', 'swA18p1pl4', 'swA18p2', 'swA18p2pl1',
+                                   'swA18p2pl2', 'swA18p2pl3', 'swA18p2pl4', 'swA1p1', 'swA1p1pl1', 'swA1p1pl2',
+                                   'swA1p1pl3', 'swA1p1pl4', 'swA1p2', 'swA1p2pl1', 'swA1p2pl2', 'swA1p2pl3',
+                                   'swA1p2pl4', 'swA2p1', 'swA2p1pl1', 'swA2p1pl2', 'swA2p1pl3', 'swA2p1pl4',
+                                   'swA2p2', 'swA2p2pl1', 'swA2p2pl2', 'swA2p2pl3', 'swA2p2pl4', 'swA3p1', 'swA3p1pl1',
+                                   'swA3p1pl2', 'swA3p1pl3', 'swA3p1pl4', 'swA3p2', 'swA3p2pl1', 'swA3p2pl2',
+                                   'swA3p2pl3', 'swA3p2pl4', 'swA4p1', 'swA4p1pl1', 'swA4p1pl2', 'swA4p1pl3',
+                                   'swA4p1pl4', 'swA4p2', 'swA4p2pl1', 'swA4p2pl2', 'swA4p2pl3', 'swA4p2pl4', 'swA5p1',
+                                   'swA5p1pl1', 'swA5p1pl2', 'swA5p1pl3', 'swA5p1pl4', 'swA5p2', 'swA5p2pl1',
+                                   'swA5p2pl2', 'swA5p2pl3', 'swA5p2pl4', 'swA6p1', 'swA6p1pl1', 'swA6p1pl2',
+                                   'swA6p1pl3', 'swA6p1pl4', 'swA6p2', 'swA6p2pl1', 'swA6p2pl2', 'swA6p2pl3',
+                                   'swA6p2pl4', 'swA7p1', 'swA7p1pl1', 'swA7p1pl2', 'swA7p1pl3', 'swA7p1pl4', 'swA7p2',
+                                   'swA7p2pl1', 'swA7p2pl2', 'swA7p2pl3', 'swA7p2pl4', 'swA8p1', 'swA8p1pl1',
+                                   'swA8p1pl2', 'swA8p1pl3', 'swA8p1pl4', 'swA8p2', 'swA8p2pl1', 'swA8p2pl2',
+                                   'swA8p2pl3', 'swA8p2pl4', 'swA9p1', 'swA9p1pl1', 'swA9p1pl2', 'swA9p1pl3',
+                                   'swA9p1pl4', 'swA9p2', 'swA9p2pl1', 'swA9p2pl2', 'swA9p2pl3', 'swA9p2pl4', 'swB10p1',
+                                   'swB10p1pl1', 'swB10p1pl2', 'swB10p1pl3', 'swB10p1pl4', 'swB10p2', 'swB10p2pl1',
+                                   'swB10p2pl2', 'swB10p2pl3', 'swB10p2pl4', 'swB11p1', 'swB11p1pl1', 'swB11p1pl2',
+                                   'swB11p1pl3', 'swB11p1pl4', 'swB11p2', 'swB11p2pl1', 'swB11p2pl2', 'swB11p2pl3',
+                                   'swB11p2pl4', 'swB12p1', 'swB12p1pl1', 'swB12p1pl2', 'swB12p1pl3', 'swB12p1pl4',
+                                   'swB12p2', 'swB12p2pl1', 'swB12p2pl2', 'swB12p2pl3', 'swB12p2pl4', 'swB13p1',
+                                   'swB13p1pl1', 'swB13p1pl2', 'swB13p1pl3', 'swB13p1pl4', 'swB13p2', 'swB13p2pl1',
+                                   'swB13p2pl2', 'swB13p2pl3', 'swB13p2pl4', 'swB14p1', 'swB14p1pl1', 'swB14p1pl2',
+                                   'swB14p1pl3', 'swB14p1pl4', 'swB14p2', 'swB14p2pl1', 'swB14p2pl2', 'swB14p2pl3',
+                                   'swB14p2pl4', 'swB15p1', 'swB15p1pl1', 'swB15p1pl2', 'swB15p1pl3', 'swB15p1pl4',
+                                   'swB15p2', 'swB15p2pl1', 'swB15p2pl2', 'swB15p2pl3', 'swB15p2pl4', 'swB16p1',
+                                   'swB16p1pl1', 'swB16p1pl2', 'swB16p1pl3', 'swB16p1pl4', 'swB16p2', 'swB16p2pl1',
+                                   'swB16p2pl2', 'swB16p2pl3', 'swB16p2pl4', 'swB17p1', 'swB17p1pl1', 'swB17p1pl2',
+                                   'swB17p1pl3', 'swB17p1pl4', 'swB17p2', 'swB17p2pl1', 'swB17p2pl2', 'swB17p2pl3',
+                                   'swB17p2pl4', 'swB18p1', 'swB18p1pl1', 'swB18p1pl2', 'swB18p1pl3', 'swB18p1pl4',
+                                   'swB18p2', 'swB18p2pl1', 'swB18p2pl2', 'swB18p2pl3', 'swB18p2pl4', 'swB1p1',
+                                   'swB1p1pl1', 'swB1p1pl2', 'swB1p1pl3', 'swB1p1pl4', 'swB1p2', 'swB1p2pl1',
+                                   'swB1p2pl2', 'swB1p2pl3', 'swB1p2pl4', 'swB2p1', 'swB2p1pl1', 'swB2p1pl2',
+                                   'swB2p1pl3', 'swB2p1pl4', 'swB2p2', 'swB2p2pl1', 'swB2p2pl2', 'swB2p2pl3',
+                                   'swB2p2pl4', 'swB3p1', 'swB3p1pl1', 'swB3p1pl2', 'swB3p1pl3', 'swB3p1pl4', 'swB3p2',
+                                   'swB3p2pl1', 'swB3p2pl2', 'swB3p2pl3', 'swB3p2pl4', 'swB4p1', 'swB4p1pl1',
+                                   'swB4p1pl2', 'swB4p1pl3', 'swB4p1pl4', 'swB4p2', 'swB4p2pl1', 'swB4p2pl2',
+                                   'swB4p2pl3', 'swB4p2pl4', 'swB5p1', 'swB5p1pl1', 'swB5p1pl2', 'swB5p1pl3',
+                                   'swB5p1pl4', 'swB5p2', 'swB5p2pl1', 'swB5p2pl2', 'swB5p2pl3', 'swB5p2pl4', 'swB6p1',
+                                   'swB6p1pl1', 'swB6p1pl2', 'swB6p1pl3', 'swB6p1pl4', 'swB6p2', 'swB6p2pl1',
+                                   'swB6p2pl2', 'swB6p2pl3', 'swB6p2pl4', 'swB7p1', 'swB7p1pl1', 'swB7p1pl2',
+                                   'swB7p1pl3', 'swB7p1pl4', 'swB7p2', 'swB7p2pl1', 'swB7p2pl2', 'swB7p2pl3',
+                                   'swB7p2pl4', 'swB8p1', 'swB8p1pl1', 'swB8p1pl2', 'swB8p1pl3', 'swB8p1pl4', 'swB8p2',
+                                   'swB8p2pl1', 'swB8p2pl2', 'swB8p2pl3', 'swB8p2pl4', 'swB9p1', 'swB9p1pl1',
+                                   'swB9p1pl2', 'swB9p1pl3', 'swB9p1pl4', 'swB9p2', 'swB9p2pl1', 'swB9p2pl2',
+                                   'swB9p2pl3', 'swB9p2pl4']
 
     def get_mgmt_ports(self) -> List[str]:
         return self.mgmt_ports
@@ -673,8 +871,6 @@ class NvLinkSwitch(IbSwitch):
         self.core_count = 4
         self.mgmt_ports = ['eth0', 'eth1']
         self.asic_type = NvosConst.QTM3
-        self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
-            "x86_64-mlnx_mqm9700-r0")
         self.platform_file_path = MultiPlanarConsts.PLATFORM_FILE_FULL_PATH.format("x86_64-mlnx_mqm9700-r0")
 
     def get_mgmt_ports(self) -> List[str]:
@@ -690,6 +886,18 @@ class JulietSwitch(NvLinkSwitch):
     def __init__(self, asic_amount):
         super().__init__(asic_amount=asic_amount)
 
+    def show_setup_versions(self, dut_engine: LinuxSshEngine = None):
+        get_bmc_version_cmd = 'curl -k -u root:{} -X GET https://10.0.1.1/redfish/v1/UpdateService/FirmwareInventory/MGX_FW_BMC_0'
+        psws = ['0penBmc', 'Test123!', 'ABYX12#14artb']
+        outputs = {
+            'system version': dut_engine.run_cmd('nv show system version'),
+            'platform firmware': dut_engine.run_cmd('nv show platform firmware'),
+        }
+        for i, pw in enumerate(psws):
+            outputs[f'bmc version {i} (redfish)'] = dut_engine.run_cmd(get_bmc_version_cmd.format(pw))
+        res = [f'{title.upper()}:\n{output}\n' for title, output in outputs.items()]
+        return '\n'.join(res)
+
     def _init_constants(self):
         super()._init_constants()
         self.bmc_image_info = self.FaeImagesTestConsts(current_image_version='bmc_1.pkg', alternate_image_version='bmc_2.pkg')
@@ -698,15 +906,6 @@ class JulietSwitch(NvLinkSwitch):
         self.current_bios_version_path = "/auto/sw_system_release/sx_mlnx_bios/SnowyOwl/0ACTV_00.00.x07_rc5/Release/0ACTV.rom"
         self.previous_bios_version_name = "0ACTV_00.00.x07_rc4"
         self.previous_bios_version_path = "/auto/sw_system_release/sx_mlnx_bios/SnowyOwl/0ACTV_00.00.x07_rc4/Release/0ACTV.rom"
-        self.is_standalone = True
-        self.show_platform_chassis_location_output = {
-            PlatformConsts.CHASSIS_LOCATION_TRAY_ID: ExpectedString(range_min=-1, range_max=9),
-            PlatformConsts.CHASSIS_LOCATION_SLOT_ID: ExpectedString(range_min=4, range_max=18),
-            PlatformConsts.CHASSIS_LOCATION_CHAS_ID: "",
-            PlatformConsts.CHASSIS_LOCATION_TOPO_ID: ExpectedString(regex=r"^(Loopback|GB200 NVL36|GB200 NVL72|\d+)$")
-        }
-        cluster_files = ['conf', 'nmx-controller', 'nmx-telemetry']
-        self.constants = self.constants._replace(cluster_files=cluster_files)
 
     def _init_fan_list(self):
         super()._init_fan_list()
@@ -723,13 +922,7 @@ class JulietScaleoutSwitch(JulietSwitch):
 
     def _init_constants(self):
         super()._init_constants()
-        self.asic_type = NvosConst.NVL5
-        self.cluster_app_nmx_controller = {'app-id': 'nmx-c-nvos', 'app-ver': '0.6.0', 'capabilities': 'sm, gfm, fib, gw-api', 'components-ver': 'sm:5.19.0_d28564d, gfm:565.00-chips-a, fib-fe:0.4.1'}
-        self.cluster_app_nmx_telemetry = {'app-id': 'nmx-telemetry', 'app-ver': '0.4.4', 'capabilities': 'ib-telemetry', 'components-ver': 'ib-telemetry:collectx/build/collectx, nmx-connector:0.4.4'}
-        self.cluster_app = {'nmx-controller': self.cluster_app_nmx_controller, 'nmx-telemetry': self.cluster_app_nmx_telemetry}
         self.reboot_type = 'julietscaleout_reboot'
-        self.reset_factory = 'julietscaleout reset factory'
-        self.generate_tech_support = 'julietscaleout generate_tech_support'
         self.core_count = 8
         self.constants.firmware.extend([PlatformConsts.FW_FPGA, PlatformConsts.FW_BMC])
         self.ssd_image = None
@@ -767,8 +960,6 @@ class JulietScaleoutSwitch(JulietSwitch):
             "PMIC-8-COMEX-VDD-MEM-Out-1"
         ]
         # TBD
-        self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
-            "x86_64-nvidia_n5110_ld-r0")
         self.show_platform_output.update({
             "product-name": "N5110_LD",
             "asic-model": self.asic_type,
@@ -780,23 +971,23 @@ class JulietScaleoutSwitch(JulietSwitch):
         self.bios_version_name = '0ACTV000_07.rom'
 
         self.current_cpld_version = BaseSwitch.CpldImageConsts(
-            burn_image_path="/auto/sw_system_project/NVOS_INFRA/verification_files/cpld_fw/FUI000299_BURN_JULIET_CPLD000370_REV0104_CPLD000371_REV0107_CPLD000373_REV0100_CPLD000372_REV0004.vme",
-            refresh_image_path="",
-            version_names={
-                "CPLD1": "CPLD000370_REV0104",
-                "CPLD2": "CPLD000371_REV0107",
-                "CPLD3": "CPLD000373_REV0100",
-                "CPLD4": "CPLD000372_REV0004"
-            }
-        )
-        self.previous_cpld_version = BaseSwitch.CpldImageConsts(
-            burn_image_path="/auto/sw_system_project/NVOS_INFRA/verification_files/cpld_fw/OLD/FUI000287_BURN_JULIET_CPLD000370_REV0010_CPLD000371_REV0010_CPLD000373_REV0010_CPLD000372_REV0003.vme",
-            refresh_image_path="",
+            burn_image_path="/auto/sysgwork/eabboud/Juliet_CPLD_updated_26_05_24.vme",
+            refresh_image_path="/auto/sysgwork/eabboud/Juliet_CPLD_updated_26_05_24.vme",
             version_names={
                 "CPLD1": "CPLD000370_REV0010",
                 "CPLD2": "CPLD000371_REV0010",
-                "CPLD3": "CPLD000373_REV0010",
-                "CPLD4": "CPLD000372_REV0003"
+                "CPLD3": "CPLD000373_REV0009",
+                "CPLD4": "CPLD000372_REV0002"
+            }
+        )
+        self.previous_cpld_version = BaseSwitch.CpldImageConsts(
+            burn_image_path="/auto/sysgwork/eabboud/Juliet_CPLD_updated_26_05_24.vme",
+            refresh_image_path="/auto/sysgwork/eabboud/Juliet_CPLD_updated_26_05_24.vme",
+            version_names={
+                "CPLD1": "CPLD000370_REV0010",
+                "CPLD2": "CPLD000371_REV0010",
+                "CPLD3": "CPLD000373_REV0009",
+                "CPLD4": "CPLD000372_REV0002"
             }
         )
         # self.stats_fan_header_num_of_lines = 25
@@ -852,7 +1043,6 @@ class JulietScaleoutSwitch(JulietSwitch):
 
     def _init_fan_list(self):
         super()._init_fan_list()
-        self.fan_list = ["FAN1/1", "FAN1/2", "FAN2/1", "FAN2/2", "FAN3/1", "FAN3/2", "FAN4/1", "FAN4/2", "FAN5/1", "FAN5/2", "FAN6/1", "FAN6/2"]
         self.fan_led_list = []
 
     def _init_psu_list(self):
@@ -869,13 +1059,7 @@ class JulietScaleoutSwitch(JulietSwitch):
             "min-speed": ExpectedString(range_min=2000, range_max=10000),
             "max-speed": ExpectedString(range_min=20000, range_max=40000)}
         self.platform_inventory_switch_values.update({"hardware-version": None,
-                                                      "model": "692-9K36F-00MV-JS0"})
-        self.platform_inventory_items.extend([PlatformConsts.FW_BMC])
-        self.platform_inventory_items_dict.update({'bmc': [PlatformConsts.FW_BMC]})
-        platform_inventory_bmc_values = {
-            "hardware-version": NvosConst.NOT_AVAILABLE, "model": NvosConst.NOT_AVAILABLE,
-            "serial": NvosConst.NOT_AVAILABLE, "state": FansConsts.STATE_OK, "type": PlatformConsts.FW_BMC.lower()}
-        self.platform_inventory_values.update({'bmc': platform_inventory_bmc_values})
+                                                      "model": ExpectedString(regex="N5110_LD.*")})
 
     def sleep_after_system_reboot(self):
         logger.info("Sleeping for 80 seconds - Reboot takes longer on juliet for now")
@@ -890,90 +1074,6 @@ class JulietScaleoutSwitch(JulietSwitch):
         DutUtilsTool.check_ssh_for_authentication_error(engine, self)
         return DutUtilsTool.wait_for_nvos_to_become_functional(engine)
 
-# -------------------------- JulietTTM Switch ----------------------------
-
-
-class JulietTTMSwitch(JulietScaleoutSwitch):
-
-    def __init__(self):
-        super().__init__(asic_amount=2)
-
-    def _init_constants(self):
-        super()._init_constants()
-
-    def _init_fan_list(self):
-        super()._init_fan_list()
-        self.fan_list = ["FAN1/1", "FAN1/2", "FAN2/1", "FAN2/2", "FAN3/1", "FAN3/2", "FAN4/1", "FAN4/2"]
-        self.fan_led_list = []
-
-    def _init_led_list(self):
-        super()._init_led_list()
-
-# -------------------------- JulietNonScaleoutSwitch Switch ----------------------------
-
-
-class JulietNonScaleoutSwitch(JulietScaleoutSwitch):
-
-    def __init__(self):
-        super().__init__(asic_amount=2)
-
-    def _init_constants(self):
-        super()._init_constants()
-        self.nvl5_access_ports_list = [
-            'acp1', 'acp2', 'acp3', 'acp4', 'acp5', 'acp6',
-            'acp7', 'acp8', 'acp9', 'acp10', 'acp11', 'acp12',
-            'acp13', 'acp14', 'acp15', 'acp16', 'acp17', 'acp18',
-            'acp19', 'acp20', 'acp21', 'acp22', 'acp23', 'acp24',
-            'acp25', 'acp26', 'acp27', 'acp28', 'acp29', 'acp30',
-            'acp31', 'acp32', 'acp33', 'acp34', 'acp35', 'acp36',
-            'acp37', 'acp38', 'acp39', 'acp40', 'acp41', 'acp42',
-            'acp43', 'acp44', 'acp45', 'acp46', 'acp47', 'acp48',
-            'acp49', 'acp50', 'acp51', 'acp52', 'acp53', 'acp54',
-            'acp55', 'acp56', 'acp57', 'acp58', 'acp59', 'acp60',
-            'acp61', 'acp62', 'acp63', 'acp64', 'acp65', 'acp66',
-            'acp67', 'acp68', 'acp69', 'acp70', 'acp71', 'acp72',
-            'acp73', 'acp74', 'acp75', 'acp76', 'acp77', 'acp78',
-            'acp79', 'acp80', 'acp81', 'acp82', 'acp83', 'acp84',
-            'acp85', 'acp86', 'acp87', 'acp88', 'acp89', 'acp90',
-            'acp91', 'acp92', 'acp93', 'acp94', 'acp95', 'acp96',
-            'acp97', 'acp98', 'acp99', 'acp100', 'acp101', 'acp102',
-            'acp103', 'acp104', 'acp105', 'acp106', 'acp107', 'acp108',
-            'acp109', 'acp110', 'acp111', 'acp112', 'acp113', 'acp114',
-            'acp115', 'acp116', 'acp117', 'acp118', 'acp119', 'acp120',
-            'acp121', 'acp122', 'acp123', 'acp124', 'acp125', 'acp126',
-            'acp127', 'acp128', 'acp129', 'acp130', 'acp131', 'acp132',
-            'acp133', 'acp134', 'acp135', 'acp136', 'acp137', 'acp138',
-            'acp139', 'acp140', 'acp141', 'acp142', 'acp143', 'acp144'
-        ]
-        self.nvl5_trunk_ports_list = []
-        self.network_ports = ['eth0', 'eth1', 'lo']
-        self.all_nvl5_ports_list = self.nvl5_access_ports_list + self.nvl5_trunk_ports_list + self.network_ports
-        self.nvl5_fnm_ports = ['fnm1', 'fnm2', 'fnma0p1', 'fnma1p1']
-        self.all_fae_nvl5_ports_list = self.all_nvl5_ports_list + self.nvl5_fnm_ports
-        self.nvl5_port = ['sw1p1s1']
-        self.nvl5_port_speed = '400G'
-        self.nvl5_port_type = 'nvl'
-        # will be updated
-        self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
-            "x86_64-nvidia_n5100_ld-r0")
-        self.show_platform_output.update({
-            "product-name": "N5100_LD",
-            "asic-model": self.asic_type,
-        })
-
-    def _init_fan_list(self):
-        self.fan_list = ["FAN1/1", "FAN1/2", "FAN2/1", "FAN2/2", "FAN3/1", "FAN3/2", "FAN4/1", "FAN4/2", "FAN5/1", "FAN5/2", "FAN6/1", "FAN6/2"]
-        self.fan_led_list = []
-
-    def _init_platform_lists(self):
-        super()._init_platform_lists()
-        self.platform_environment_fan_values = {
-            "state": FansConsts.STATE_OK, "direction": None, "current-speed": None,
-            "min-speed": ExpectedString(range_min=2000, range_max=10000),
-            "max-speed": ExpectedString(range_min=20000, range_max=40000)}
-        self.platform_inventory_switch_values.update({"hardware-version": None,
-                                                      "model": ExpectedString(regex="692-9K36F-00MV-JS0")})
-
 # -------------------------- Caiman Switch ----------------------------
 
 
@@ -986,8 +1086,6 @@ class CaimanSwitch(NvLinkSwitch):
         super()._init_constants()
         self.ib_ports_num = 64
         self.core_count = 4
-        self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
-            "x86_64-mlnx_mqm9700-r0")
         self.platform_file_path = MultiPlanarConsts.PLATFORM_FILE_FULL_PATH.format("x86_64-mlnx_mqm9700-r0")
 
 

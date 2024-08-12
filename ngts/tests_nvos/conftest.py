@@ -13,6 +13,7 @@ from retry import retry
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
+from infra.tools.general_constants.constants import DefaultConnectionValues
 from infra.tools.sql.connect_to_mssql import ConnectMSSQL
 from ngts.cli_wrappers.linux.linux_general_clis import LinuxGeneralCli
 from ngts.cli_wrappers.nvue.nvue_base_clis import NvueBaseCli
@@ -25,10 +26,13 @@ from ngts.nvos_tools.Devices.DeviceFactory import DeviceFactory
 from ngts.nvos_tools.Devices.EthDevice import EthSwitch
 from ngts.nvos_tools.cli_coverage.nvue_cli_coverage import NVUECliCoverage
 from ngts.nvos_tools.ib.opensm.OpenSmTool import OpenSmTool
+from ngts.nvos_tools.infra.CmdRunner import CmdRunner
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.nvos_tools.infra.DiskTool import DiskTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.nvos_tools.infra.PexpectTool import PexpectTool
+from ngts.nvos_tools.infra.RegressionConfigurations import RegressionConfigurations
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.nvos_tools.infra.TrafficGeneratorTool import TrafficGeneratorTool
 from ngts.nvos_tools.system.System import System
@@ -102,15 +106,20 @@ def update_engine_dut_mgmt_port(topology, dut_engine: LinuxSshEngine, dut_device
     def attach_res_to_allure(available_ports_names, available_ports_ips, chosen_port_name, chosen_port_ip):
         attachment = (f'All ports: {available_ports_names} - {available_ports_ips}\n'
                       f'Chosen port: {chosen_port_name} - {chosen_port_ip}')
-        allure.orig_allure.attach(attachment, 'dut_engine_mgmt_port_used_for_session', allure.orig_allure.attachment_type.TEXT)
+        allure.orig_allure.attach(attachment, 'dut_engine_mgmt_port_used_for_session',
+                                  allure.orig_allure.attachment_type.TEXT)
 
     mgmt_ports = dut_device.get_mgmt_ports()
+
+    dut_device.update_mgmt_port(mgmt_ports[0], dut_engine.ip)
+
     if not mgmt_ports or len(mgmt_ports) == 1:
         logger.info('keep original dut engine ip')
         attach_res_to_allure(mgmt_ports, None, mgmt_ports[0] if mgmt_ports else None, dut_engine.ip)
         return
 
-    dut_setup_specific_attributes: Dict[str, str] = topology.players['dut']['attributes'].noga_query_data['attributes']['Specific']
+    dut_setup_specific_attributes: Dict[str, str] = topology.players['dut']['attributes'].noga_query_data['attributes'][
+        'Specific']
     setup_mgmt_ips = [dut_setup_specific_attributes['ip_address'], dut_setup_specific_attributes['ip_address_2']]
     available_mgmt_ips = [ip for ip in setup_mgmt_ips if ip != '']
     if len(available_mgmt_ips) != len(mgmt_ports):
@@ -125,6 +134,7 @@ def update_engine_dut_mgmt_port(topology, dut_engine: LinuxSshEngine, dut_device
     chosen_mgmt_port_ip = available_mgmt_ips[mgmt_ports.index(chosen_mgmt_port)]
     logger.info(f'chosen mgmt port for dut engine: {chosen_mgmt_port} - {chosen_mgmt_port_ip}')
     dut_engine.ip = chosen_mgmt_port_ip
+    dut_device.update_mgmt_port(chosen_mgmt_port, chosen_mgmt_port_ip)
     attach_res_to_allure(mgmt_ports, available_mgmt_ips, chosen_mgmt_port, dut_engine.ip)
 
 
@@ -188,6 +198,7 @@ def start_sm(engines, traffic_available):
     Starts OpenSM
     """
     if traffic_available:
+        RegressionConfigurations.configure_ports_to_legacy(engine=engines.dut, apply=True, throw_exception=False)
         result = OpenSmTool.start_open_sm(engines)
         if not result.result:
             logging.warning("Failed to start openSM")
@@ -268,6 +279,26 @@ def interfaces(topology_obj):
     interfaces_data.ha_dut_1 = topology_obj.ports['ha-dut-1']
     interfaces_data.hb_dut_1 = topology_obj.ports['hb-dut-1']
     return interfaces_data
+
+
+def security_cleanup(ssh_session: PexpectTool) -> bool:
+    success = False
+    if not ssh_session or not isinstance(ssh_session, PexpectTool):
+        return success
+    with allure.step('Security cleanup'):
+        with allure.step('check session still connected to switch'):
+            ssh_session.sendline('nv show system')
+            i = ssh_session.expect(DefaultConnectionValues.DEFAULT_PROMPTS)
+            session_is_live = i < len(DefaultConnectionValues.DEFAULT_PROMPTS) and 'nvos' in ssh_session.last_output
+        if session_is_live:
+            cmds = ['nv unset system aaa authentication order', 'nv unset system aaa authentication failthrough',
+                    'nv config apply -y']
+            with allure.step('unset authentication config to allow local connection'):
+                ssh_session.sendline(' ; '.join(cmds))
+                i = ssh_session.expect(DefaultConnectionValues.DEFAULT_PROMPTS)
+                success = i < len(DefaultConnectionValues.DEFAULT_PROMPTS) and any(
+                    msg in ssh_session.last_output for msg in ['applied', 'config apply executed with no config diff'])
+    return success
 
 
 def clear_security_config(item):
@@ -362,9 +393,12 @@ def save_results_and_clear_after_test(item):
         logging.exception(' ---------------- The test failed - an exception occurred: ---------------- ')
         raise AssertionError(err)
     finally:
-        if hasattr(item, 'active_remote_aaa_server') and item.active_remote_aaa_server:
-            clear_security_config(item)
-        clear_config(markers)
+        with allure.step('Test done - Clear configuration'):
+            # if hasattr(item, 'active_remote_aaa_server') and item.active_remote_aaa_server:
+            #     clear_security_config(item)
+            if hasattr(item, 'security_pexpect_ssh_session') and item.security_pexpect_ssh_session:
+                security_cleanup(item.security_pexpect_ssh_session)
+            clear_config(markers)
 
 
 @pytest.fixture(scope='function', autouse=True)
@@ -386,7 +420,8 @@ def teardown_collect_code_coverage(topology_obj, engines):
 
         if collect_coverage:
             with allure.step(f"Collect python coverage (folder capacity {capacity_percentage}%"):
-                extract_python_coverage_for_nvos(dest=NvosConsts.DEST_PATH, engines=engines, cli_obj=cli_obj)
+                extract_python_coverage_for_nvos(dest=NvosConsts.DEST_PATH, engines=engines, cli_obj=cli_obj,
+                                                 topology_obj=topology_obj)
 
 
 @pytest.fixture(scope='function', autouse=True)
@@ -550,3 +585,13 @@ def prepare_traffic(engines, setup_name):
 @pytest.fixture
 def output_format(test_api):
     return OutputFormat.auto if test_api == ApiType.NVUE else OutputFormat.json
+
+
+@pytest.fixture(scope='session')
+def target_version_realpath(target_version):
+    assert target_version is not None, "No target image is specified"
+    cmd_runner = CmdRunner()
+    with allure.step('get real full path of target version'):
+        target_version_path = cmd_runner.run_cmd(f'realpath {target_version}')
+        logging.info(f'target version path: {target_version_path}')
+    return target_version_path

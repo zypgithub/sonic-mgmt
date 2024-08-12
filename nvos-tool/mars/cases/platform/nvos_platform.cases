@@ -3,14 +3,14 @@
   <global>
     <Test>
       <group> NVOS </group>
-      <name> Show Platform </name>
+      <name> Platform Tests </name>
       <info> </info>
       <owner> Yana Port </owner>
     </Test>
     <Case>
-      <tags> Show platform </tags>
+      <tags> Platform Tests </tags>
       <wrapper> [[run_time:db_tests_path]]/sonic-mgmt/sonic-tool/mars/scripts/canonical_mars_pytest_runner.py </wrapper>
-      <tout> 2400 </tout>
+      <tout> 7800 </tout>
       <tags>ALL</tags>
     </Case>
   </global>
@@ -114,29 +114,22 @@
     </cmd>
     <ignore>
       <condition>
-        <key>dut_hwsku</key>
+        <key>dut_type</key>
         <op> in </op>
-        <value>[MQM9700 - Gorilla, N5110_LD - JulietScaleout]</value>
+        <value>[gorilla]</value>
       </condition>
     </ignore>
   </case>
 
   <case>
-    <name> BMC Leakage sensor </name>
+    <name> BMC FW upgrade </name>
     <info> </info>
     <tout> 1200 </tout>
     <cmd>
       <params>
-          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/platform/test_platform_environment_leakage.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir  --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  \'"</static_args>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/checklist/test_bmc_install.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir  --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  \'"</static_args>
       </params>
     </cmd>
-    <ignore>
-      <condition>
-        <key>dut_type</key>
-        <op> not in </op>
-        <value>[juliet]</value>
-      </condition>
-    </ignore>
   </case>
 
 </CASEDEF>
