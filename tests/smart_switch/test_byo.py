@@ -6,6 +6,7 @@ import ptf.packet as scapy
 import datetime
 import types
 import re
+import time
 
 from ptf.mask import Mask
 from tests.common.config_reload import config_reload
@@ -189,6 +190,9 @@ def test_byo(ptfadapter, duthost, option, platform):
     with allure.step("Check the BYO is successfully enabled"):
         pytest_assert(wait_until(byo_check_timeout, 20, 0, check_byo_status, "enabled", dut_run_command),
                       "Failed to enable BYO.")
+
+    # 5 seconds delay for the DPDK configuration to take effect
+    time.sleep(5)
 
     with allure.step("Send a packet with DPU data port mac address as the dst mac address,"
                      " and check it is forwarded by the DPU"):
