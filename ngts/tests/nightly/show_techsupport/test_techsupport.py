@@ -120,6 +120,8 @@ def test_techsupport_health_event_sdk_dump(topology_obj, loganalyzer, engines, c
                     r".*mlnx_switch_health_event_handle: Health event happened.*HW catastrophic.*"
                     r"event",
                     r"on_switch_shutdown_request: Syncd stopped",
+                    r".*on_switch_shutdown_request: Orchagent aborted due to fatal SAI error received.*",
+                    r".*onSwitchAsicSdkHealthEvent: \[fatal\] ASIC/SDK health event occurred.*",
                     r".*Sysfs running counter is not updated for more than \d+ sec.*"
                 ]
                 loganalyzer[dut].ignore_regex.extend(ignoreRegex)
