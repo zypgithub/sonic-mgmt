@@ -1,5 +1,6 @@
 import logging
 import subprocess
+import threading
 from ngts.nvos_constants.constants_nvos import NvosConst, SystemConsts
 from ngts.nvos_tools.hypervisor.VerifyServerFunctionality import verify_server_is_functional
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import InternalNvosConsts
@@ -15,6 +16,10 @@ logger = logging.getLogger()
 
 
 class TrafficGeneratorTool:
+    @staticmethod
+    def create_listener(host, port):
+        host.run_cmd(f"ib_send_lat -F -n 5 -s 512 -i 1 -d {port}")
+
     @staticmethod
     def send_ib_traffic(players, interfaces, should_success):
         """

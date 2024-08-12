@@ -30,16 +30,8 @@ PATH_TO_IMAGE_TEMPLATE = "{}/amd64/"
 # BASE_IMAGE_VERSION_TO_INSTALL = "nvos-amd64-{pre_release_name}-001.bin"
 # BASE_IMAGE_VERSION_TO_INSTALL_PATH = "/auto/sw_system_release/nos/nvos/{pre_release_name}-001/amd64/{base_image}"
 
-# will be removed ones merged to develop
-base_version = "/auto/sw_system_release/nos/nvos/25.01.4000/amd64/dev/nvos-amd64-25.01.4000.bin"
-xdr_base_version = "/auto/sw_system_release/nos/nvos/25.02.0916-032/amd64/dev/nvos-amd64-25.02.0916-032.bin"
-nvl5_base_version = "/auto/sw_system_release/nos/nvos/25.02.0506/amd64/dev/nvos-amd64-25.02.0506.bin"
 BASE_IMAGE_VERSION_TO_INSTALL = "nvos-amd64-{pre_release_name}.bin"
 BASE_IMAGE_VERSION_TO_INSTALL_PATH = "/auto/sw_system_release/nos/nvos/{pre_release_name}/amd64/{base_image}"
-
-# will be removed ones merged to develop
-base_versions = {'QTM3': xdr_base_version,
-                 'NVLink-5 switch': nvl5_base_version}
 
 
 @pytest.mark.checklist
@@ -89,7 +81,7 @@ def test_show_system_image(original_version):
 @pytest.mark.image
 @pytest.mark.system
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_downgrade_upgrade(release_name, test_api, original_version, devices):
+def test_downgrade_upgrade(release_name, test_api, original_version, devices, base_version):
     """
     Check the image rename cmd.
     Validate that install and delete commands will success with the new name
@@ -180,7 +172,7 @@ def test_system_image_upload(engines, release_name, test_api, original_version, 
 @pytest.mark.image
 @pytest.mark.system
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_image_uninstall(release_name, test_api, original_version, test_name, devices):
+def test_image_uninstall(release_name, test_api, original_version, test_name, devices, base_version):
     """
      Will check the uninstall commands
 
@@ -192,14 +184,14 @@ def test_image_uninstall(release_name, test_api, original_version, test_name, de
     5. Validate that uninstall will success
     """
     TestToolkit.tested_api = test_api
-    image_uninstall_test(release_name, original_version, devices, uninstall_force="", test_name=test_name)
+    image_uninstall_test(release_name, original_version, devices, uninstall_force="", test_name=test_name, base_version=base_version)
 
 
 @pytest.mark.checklist
 @pytest.mark.simx
 @pytest.mark.image
 @pytest.mark.system
-def test_image_uninstall_force(release_name, original_version, test_name, devices):
+def test_image_uninstall_force(release_name, original_version, test_name, devices, base_version):
     """
      Will check the uninstall force commands
 
@@ -210,7 +202,7 @@ def test_image_uninstall_force(release_name, original_version, test_name, device
     4. Set the original image to be booted next
     5. Validate that uninstall force will success
     """
-    image_uninstall_test(release_name, original_version, devices, uninstall_force="force", test_name=test_name)
+    image_uninstall_test(release_name, original_version, devices, uninstall_force="force", test_name=test_name, base_version=base_version)
 
 
 @pytest.mark.checklist
@@ -354,7 +346,7 @@ def test_install_multiple_images(release_name, test_name, test_api, original_ver
         cleanup_test(system, original_images, original_image_partition, image_files, orig_engine)
 
 
-def image_uninstall_test(release_name, original_version, devices, uninstall_force="", test_name=""):
+def image_uninstall_test(release_name, original_version, devices, uninstall_force="", test_name="", base_version=''):
     """
      Will check the uninstall commands
      for uninstall force command , the uninstall_force param need to get "force"
@@ -495,7 +487,7 @@ def system_image_install_reject_with_prompt(engines, system, prompt_response, or
             # Increment action-job-id for latest command status
             action_job_id_str = str(action_job_id + 1)
             # extract last command execution status
-            output = OutputParsingTool.parse_json_str_to_dictionary(action.show(action_job_id_str)).\
+            output = OutputParsingTool.parse_json_str_to_dictionary(action.show(action_job_id_str)). \
                 get_returned_value()
             assert output['detail'] == 'Image install aborted by user' and \
                 output['http_status'] == 200 and \
@@ -636,12 +628,6 @@ def verify_current_version(original_version, system, device):
     with allure.step(f"Verify that current image is {original_version}"):
         current_version = OutputParsingTool.parse_json_str_to_dictionary(system.version.show()).get_returned_value()['image']
         assert current_version == original_version, f"Current version is invalid: {current_version}, expected: {original_version}"
-
-    # this allure step will be deleted ones the first XDR GA will be released
-    global base_version
-    with allure.step("Set base image according to device type"):
-        logging.info(f"Device type: {device.asic_type}")
-        base_version = base_versions.get(device.asic_type, base_version)
 
 
 def create_images_output_dictionary(original_images, next_image, current_image, partition_id):

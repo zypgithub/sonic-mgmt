@@ -2,6 +2,7 @@ import logging
 import pytest
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.infra.Tools import Tools
+from infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 logger = logging.getLogger()
 

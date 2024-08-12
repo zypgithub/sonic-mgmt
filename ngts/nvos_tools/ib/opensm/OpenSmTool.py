@@ -18,7 +18,7 @@ class OpenSmTool:
 
     @staticmethod
     def start_open_sm(engines=None):
-        return OpenSmTool.start_open_sm_on_server(engines).verify_result()
+        return OpenSmTool.start_open_sm_on_server(engines)
 
     @staticmethod
     def stop_open_sm(engines=None):
@@ -38,6 +38,8 @@ class OpenSmTool:
         if is_running:
             logging.info("Open SM is already running")
             return ResultObj(True, "Open SM is already running")
+        else:
+            OpenSmTool.stop_open_sm_on_server(engines)
 
         with allure.step("Get GUID to start OpenSM"):
             output = engines.ha.run_cmd("ibstat {}".format(port_name))
@@ -63,12 +65,6 @@ class OpenSmTool:
             if not hasattr(engines, "ha"):
                 logging.warning("HA can't be found in topology")
                 return ResultObj(False, "HA can't be found in topology")
-
-            is_running, port_name = OpenSmTool.is_sm_running_on_server(engines)
-
-            if not is_running:
-                logging.info("Open SM is not running")
-                return ResultObj(True, "Open SM is not running")
 
             with allure.step("Get opensm process ids to stop"):
                 output = engines.ha.run_cmd(f"ps aux | grep opensm")

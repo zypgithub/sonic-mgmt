@@ -4,10 +4,14 @@ import random
 import string
 from datetime import timedelta, datetime
 from random import randint
-from typing import MutableSequence
+from typing import MutableSequence, Optional
 
 import allure
 
+from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
+from .RegressionConfigurations import Configurations
+from .ResultObj import ResultObj
+from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts, IbInterfaceConsts
 from ngts.nvos_constants.constants_nvos import SystemConsts, PlatformConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port, PortRequirements
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts, IbInterfaceConsts
@@ -133,11 +137,14 @@ class RandomizationTool:
         return RandomizationTool.select_random_values(list_of_ports, None, number_of_values_to_select)
 
     @staticmethod
-    def get_random_traffic_port():
-        list_of_ports = Port.get_list_of_active_ports()
-        list_of_ports = list(port for port in list_of_ports if
-                             port.name.startswith("sw1p") or port.name.startswith("sw2p") or
-                             port.name.startswith("swA1p") or port.name.startswith("swA2p"))
+    def get_random_traffic_port(engine: Optional[ProxySshEngine] = None, data_rate="ndr") -> ResultObj:
+        engine = engine or TestToolkit.engines.dut
+        list_of_ports = Configurations.ports_by_rate[data_rate].get(engine.ip)
+        if not list_of_ports:
+            list_of_ports = Port.get_list_of_active_ports()
+            list_of_ports = list(port for port in list_of_ports if
+                                 port.name.startswith("sw1p") or port.name.startswith("sw2p") or
+                                 port.name.startswith("swA1p") or port.name.startswith("swA2p"))
         return RandomizationTool.select_random_values(list_of_ports, None, 1)
 
     @staticmethod
@@ -315,23 +322,22 @@ class RandomizationTool:
             return ResultObj(True, "Picked random date success", random_date)
 
     @staticmethod
-    def select_random_transceiver(transceivers_output, cable_type, number_of_transceiver_to_select=1):
+    def select_random_transceiver(transceivers_output, field_name, expected_value, number_of_transceiver_to_select=1):
         """
         :summary: select random transceiver with a specific cable type
-
         :param transceivers_output:
-        :param cable_type:
+        :param expected_value:
         :param number_of_transceiver_to_select:
         :return:
         """
-        with allure.step("Select {} random transceiver with cable type: {}".format(number_of_transceiver_to_select, cable_type)):
+        with allure.step("Select {} random transceiver with {}: {}".format(number_of_transceiver_to_select, field_name, expected_value)):
             transceivers_list = []
             for transceiver, transceiver_data in transceivers_output.items():
-                if PlatformConsts.TRANSCEIVER_CABLE_TYPE in transceiver_data and transceiver_data[PlatformConsts.TRANSCEIVER_CABLE_TYPE] == cable_type:
+                if field_name in transceiver_data and transceiver_data[field_name] == expected_value:
                     transceivers_list.append(transceiver)
 
             if len(transceivers_list) < number_of_transceiver_to_select:
-                return ResultObj(False, "Failed to select {} {} transceivers. Only {} were found".format(number_of_transceiver_to_select, cable_type, len(transceivers_list)))
+                return ResultObj(False, "Failed to select {} {} transceivers. Only {} were found".format(number_of_transceiver_to_select, expected_value, len(transceivers_list)))
 
             return ResultObj(True, "picked transceivers success", random.sample(transceivers_list, number_of_transceiver_to_select))
 

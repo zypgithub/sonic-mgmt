@@ -7,6 +7,7 @@ from ngts.nvos_constants.constants_nvos import NvosConst, SystemConsts
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
+from ngts.nvos_tools.infra.RegressionConfigurations import Configurations
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.system.System import System
 from ngts.tools.test_utils.nvos_general_utils import set_base_configurations
@@ -27,7 +28,8 @@ def clear_conf(dut_engine, markers=None, set_base_config_function=set_base_confi
             set_comp = {k: v for comp in show_config_output for k, v in comp.get("set", {}).items()}
 
             with allure.step("Get the non-default set components"):
-                default_conf = NvosConst.DEFAULT_CONFIG
+                default_conf = Configurations.get_regression_default_config(engine=dut_engine)
+                """default_conf = NvosConst.DEFAULT_CONFIG
                 default_conf["interface"] = {
                     "eth0": {
                         "acl": {
@@ -75,7 +77,7 @@ def clear_conf(dut_engine, markers=None, set_base_config_function=set_base_confi
                         },
                         "type": "loopback"
                     }
-                }
+                }"""
 
                 diff_config = ValidationTool.get_dictionaries_diff(set_comp, default_conf)
                 logging.info(diff_config)

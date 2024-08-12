@@ -94,10 +94,14 @@ class NvosAddSessionInfo(SessionAddInfo):
 
     def _get_tarball_name(self):
         tarball = self.conf_obj.get_extra_info().get("custom_tarball_name")
+        if not tarball:
+            return ''
         return tarball.replace('SONIC_CANONICAL-sonic-mgmt_', '').replace('.db.1.tgz', '').replace('.b.1.tgz', '')
 
     def _get_version_from_version_param(self, version_param_name) -> str:
         param_val = self.conf_obj.get_extra_info().get(version_param_name)
+        if not param_val:
+            return ''
         path = self._get_real_file_path(param_val)
         return self._get_formal_version_info(path) or self._get_dev_version_info(path)
 

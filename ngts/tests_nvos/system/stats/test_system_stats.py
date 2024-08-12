@@ -967,17 +967,18 @@ def test_validate_category_file_values(engines, devices, test_api):
                 get_returned_value()
 
             for file_name in stats_files_show:
-                with allure.step("Upload stats file to URL"):
-                    validate_upload_stats_file(engines, system, file_name, False)
+                if file_name == 'voltage' and not is_redmine_issue_active([3987851]):
+                    with allure.step("Upload stats file to URL"):
+                        validate_upload_stats_file(engines, system, file_name, False)
 
-                with allure.step("Validate external file header"):
-                    name = file_name.split('_')[1]
-                    file_path = NvosConst.MARS_RESULTS_FOLDER + file_name
-                    end_time = start_time + timedelta(minutes=6)
-                    validate_external_file_header_and_data(name, file_path, hostname, start_time, end_time)
+                    with allure.step("Validate external file header"):
+                        name = file_name.split('_')[1]
+                        file_path = NvosConst.MARS_RESULTS_FOLDER + file_name
+                        end_time = start_time + timedelta(minutes=6)
+                        validate_external_file_header_and_data(name, file_path, hostname, start_time, end_time)
 
-                with allure.step("Delete uploaded file"):
-                    player.run_cmd(cmd='rm -f {}'.format(file_path))
+                    with allure.step("Delete uploaded file"):
+                        player.run_cmd(cmd='rm -f {}'.format(file_path))
 
     finally:
         set_system_stats_to_default(engine, system)

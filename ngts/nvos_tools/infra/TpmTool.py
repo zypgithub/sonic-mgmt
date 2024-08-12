@@ -67,6 +67,11 @@ class TpmTool:
         with allure.step('clear tpm lockout counter'):
             self.engine.run_cmd('sudo tpm2_dictionarylockout --setup-parameters --clear-lockout')
 
+    def is_host_tpm_dir_exists(self) -> bool:
+        with allure.step('check if system tpm directory exists'):
+            out = self.engine.run_cmd('sudo ls /host/tpm')
+            return out != '' and PATH_NO_EXIST_ERR not in out
+
     def get_tpm_cipher(self):
         with allure.step('get tpm cipher'):
             salt = "1300NVOS-BMC-USER-Const"

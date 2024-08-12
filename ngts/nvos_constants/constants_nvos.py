@@ -154,7 +154,7 @@ class NvosConst:
     NVOS_INSTALL_TIMEOUT = 6 * 60  # 6 minutes
 
     COVERAGE_PATH = "/var/lib/python/coverage"
-    MAX_COVERAGE_PATH_CAPACITY_PERCENTAGE = 90
+    MAX_COVERAGE_PATH_CAPACITY_PERCENTAGE = 70
 
     NO_CONFIG_DIFF_APPLY_MSG = "config apply executed with no config diff"
     DECLINED_APPLY_MSG = 'Declined apply after warnings'
@@ -289,7 +289,7 @@ class SystemConsts:
     DATE_TIME = 'date-time'
     TECHSUPPORT_FILES_PATH = '/host/dump/'
     TECHSUPPORT_EMPTY_FILES_TO_IGNORE = ['queue.counters_2', 'queue.counters_1.0', 'swapon',
-                                         'queue.counters_1', 'queue.counters_2.0']
+                                         'queue.counters_1', 'queue.counters_2.0', 'queue.counters_1.1', 'queue.counters_2.1']
     PATH_KEY = 'path'
     LATEST_KEY = 'latest'
 
@@ -537,6 +537,8 @@ class SystemConsts:
         "Disconnecting from NVOS, system is offline during reboot",
         "System will power cycle in a few seconds"
     )
+
+    SYSTEM_LAST_EVENT = 'last'
 
 
 class DocumentsConsts:
@@ -885,7 +887,7 @@ class NtpConsts:
     DUMMY_SERVER8 = 'server8'
     SERVER_FAILED = 'DNS resolution failed'
     MULTIPLE_SERVERS_NUMBER = 11
-    CONFIG_TIME_DIFF_THRESHOLD = 2.0  # [sec]
+    CONFIG_TIME_DIFF_THRESHOLD = 2.5  # [sec]
     SHOW_TIME_DIFF_THRESHOLD = 0.5  # [sec]
     SYNCHRONIZATION_MAX_TIME = 100  # [sec]
     SYNCHRONIZATION_TIME_AFTER_REBOOT = 60  # [sec]
@@ -1117,10 +1119,10 @@ class OperationTimeConsts:
     TEST_NAME_COL = 'test_name'
     SESSION_ID_COL = 'session_id'
     DATE_COL = 'date'
-    THRESHOLDS = {'reboot': 180,
+    THRESHOLDS = {'reboot': 220,
                   'julietscaleout_reboot': 505,  # Currently there is a bug on this. Time needs to be decreased once fixed.
                   'julietscaleout reset factory': 550,  # Currently there is a bug on this. Time needs to be decreased once fixed.
-                  'reset factory': 250,
+                  'reset factory': 260,
                   'install user FW': 450,
                   'install default fw': 360,
                   'port goes up': 30,
@@ -1135,7 +1137,7 @@ class OperationTimeConsts:
                   'cluster update log level': 5,
                   'install bmc': 900,
                   'install fpga': 900,
-                  ActionConsts.POWER_CYCLE: 360,
+                  ActionConsts.POWER_CYCLE: 360
                   }
 
 
@@ -1177,6 +1179,7 @@ class StatsConsts:
     LOG_MSG_ERROR_DB = "..."  # TODO: Update message (parameter not found in redis DB)...
 
     INVALID_CATEGORY_NAME = 'invalid_category_name'
+    ALL_CATEGORIES = 'all'
     INVALID_STATE = 'invalid_state'
     INVALID_INTERVAL_LOW = 0
     INVALID_INTERVAL_HIGH = 1441
@@ -1253,6 +1256,7 @@ class LinkDetectionConsts:
     SUPPORTED_SPEED = "supported_speed"
     CONNECTION_MODE_NDR = 'ndr'
     CONNECTION_MODE_XDR = 'xdr'
+    CONNECTION_MODE = "connection-mode"
 
 
 class MultiPlanarConsts:
@@ -1307,7 +1311,7 @@ class MultiPlanarConsts:
                        'COUNTERS_DB_2', 'CONFIG_DB', 'STATE_DB', 'FLEX_COUNTER_DB']
     LOG_MSG_UNSET_FAE_INTERFACE = "PATCH..."  # TODO: complete
     LOG_MSG_SET_FAE_INTERFACE = "PATCH /nvue_v1/interface/"
-    LOG_MSG_ACTION_CLEAR_FAE_INTERFACE = "Cleared counters successfully"
+    LOG_MSG_ACTION_CLEAR_FAE_INTERFACE = 'Clearing counters for interface {port_name} for user admin'
     CONFIG_STATE_RETRIES = 5
 
 

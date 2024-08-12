@@ -9,6 +9,7 @@ from ngts.nvos_constants.constants_nvos import OutputFormat, PlatformConsts
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.nvos_constants.constants_nvos import NvosConst, SystemConsts
+from ngts.nvos_tools.infra.RegressionConfigurations import RegressionConfigurations
 
 logger = logging.getLogger()
 

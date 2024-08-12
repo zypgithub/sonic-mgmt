@@ -14,7 +14,7 @@ from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.nvos_constants.constants_nvos import PlatformConsts, HealthConsts, ActionConsts
+from ngts.nvos_constants.constants_nvos import PlatformConsts, HealthConsts, ActionConsts, SystemConsts
 from ngts.nvos_constants.constants_nvos import OutputFormat
 from ngts.nvos_constants.constants_nvos import FansConsts
 from ngts.nvos_constants.constants_nvos import ApiType
@@ -317,8 +317,9 @@ def test_platform_environment_events_performance(engines, devices):
     TestToolkit.tested_api = ApiType.NVUE
     platform = Platform()
     system = System()
-    fan_dir_mismatch_msg = "direction exhaust is not aligned"
     fan_to_check = devices.dut.fan_list[2]
+    err_found = False
+    show_log_cmd = "nv show sys log | grep '" + str(FansConsts.FAN_DIRECTION_MISMATCH_ERR) + "' | wc -l"
 
     with allure.step('Validate System health status should be {}'.format(HealthConsts.OK)):
         output = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).verify_result()
@@ -349,19 +350,26 @@ def test_platform_environment_events_performance(engines, devices):
         with allure.step('Run show system events command & validate there is 1 FAN direction issue per FAN'):
             output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show()).get_returned_value()
             fan_error_set = set()
-            for events_no in output['last']:
-                if fan_dir_mismatch_msg in str(output["last"][events_no]):
+            for events_no in output[SystemConsts.SYSTEM_LAST_EVENT]:
+                output_err_msg = str(output[SystemConsts.SYSTEM_LAST_EVENT][events_no])
+                if FansConsts.FAN_DIRECTION_MISMATCH_ERR in output_err_msg:
+                    err_found = True
+                elif FansConsts.FAN_DIRECTION_MISMATCH_ERR_CROC in output_err_msg:
+                    # System is crocodile
+                    err_found = True
+                    show_log_cmd = "nv show sys log | grep '" + str(FansConsts.FAN_DIRECTION_MISMATCH_ERR_CROC) + \
+                                   "' | wc -l"
+                if err_found:
                     fan = output["last"][events_no]["type-id"]
                     assert (fan not in fan_error_set), 'Fan mismatch event occurred more times for FAN:{}'.format(fan)
                     fan_error_set.add(fan)
                     logger.info("Fan direction mismatch Event captured for : {}".format(fan))
 
         with allure.step("Validate Fan direction error appears in system log but is not flooded"):
-            log_cmd = "nv show sys log | grep 'direction exhaust is not aligned' | wc -l"
-            no_of_errors_1 = int(engines.dut.run_cmd(log_cmd))
+            no_of_errors_1 = int(engines.dut.run_cmd(show_log_cmd))
             assert no_of_errors_1 > 0, 'Fan direction error does not appear in log'
             time.sleep(130)
-            no_of_errors_2 = int(engines.dut.run_cmd(log_cmd))
+            no_of_errors_2 = int(engines.dut.run_cmd(show_log_cmd))
             assert no_of_errors_1 == no_of_errors_2, 'Fan direction errors are being repeated in logs'
 
     finally:
@@ -397,6 +405,7 @@ def test_platform_environment_fan_direction_mismatch(engines, devices):
 def _verify_fan_direction_mismatch_behaviour(engines, devices, feature_enable):
     platform = Platform()
     system = System()
+    def_dir = FansConsts.FORWARD_DIRECTION
     if feature_enable:
         state = FansConsts.STATE_NOT_OK
         should_str = 'be'

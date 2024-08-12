@@ -36,18 +36,18 @@ def test_show_ztp_command(engines, devices, serial_engine):
             show_output = system.log.show_log(param="| grep ztp")
             ValidationTool.verify_expected_output(show_output, 'ztp').verify_result()
 
-        # with allure.step("Run nv show system log command and check ztp logs inside"):
-        #     serial_engine.serial_engine.expect("ztp", timeout=30) #TBD we need to implement parallel serial checker
+        with allure.step("Run nv show system log command and check ztp logs inside"):
+            serial_engine.serial_engine.expect("ztp", timeout=30)
 
-        # with allure.step("Check ztp log file exist"): TBD uncomment when redmine.mellanox.com/issues/3919469 fixed
-        #     wc_output = engines.dut.run_cmd(f'wc -c {SystemConsts.ZTP_DEFAULT_LOG_FILE}')
-        #     assert SystemConsts.ZTP_DEFAULT_LOG_FILE in wc_output, 'ZTP log file not exist'
+        with allure.step("Check ztp log file exist"):
+            wc_output = engines.dut.run_cmd(f'wc -c {SystemConsts.ZTP_DEFAULT_LOG_FILE}')
+            assert SystemConsts.ZTP_DEFAULT_LOG_FILE in wc_output, 'ZTP log file not exist'
 
         with allure.step("Save configuration"):
             NvueGeneralCli.save_config(engines.dut)
 
-        # _wait_until_ztp_values_fields_changed( TBD uncomment when redmine.mellanox.com/issues/3919469 fixed
-        #     system, SystemConsts.ZTP_OUTPUT_FIELDS, SystemConsts.ZTP_AFTER_CONFIG_SAVE_VALUES)
+        _wait_until_ztp_values_fields_changed(system, SystemConsts.ZTP_OUTPUT_FIELDS,
+                                              SystemConsts.ZTP_AFTER_CONFIG_SAVE_VALUES)
 
         with allure.step("Run nv set system ztp config-save enabled"):
             system.ztp.set('config-save', 'enabled').verify_result(True)
@@ -104,8 +104,8 @@ def test_ztp_json(engines, devices):
                 system.ztp.action_run_ztp()
 
             with allure.step("Validate ztp error in ztp log file"):
-                _validate_ztp_log_file(engines,
-                                       string_to_validate='occurred while processing ZTP JSON file /host/ztp/ztp_data_local.json')
+                _validate_ztp_log_file(
+                    engines, string_to_validate='occurred while processing ZTP JSON file /host/ztp/ztp_data_local.json')
 
         with allure.step("Download positive json file"):
             _download_ztp_json_config(engines, SystemConsts.POSITIVE_JSON)
@@ -147,7 +147,11 @@ def test_ztp_json(engines, devices):
             with allure.step("Run show ztp and verify default values"):
                 _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_IN_PROGRESS)
                 _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_FAILED)
-                _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_IN_PROGRESS)
+
+            with allure.step("Run nv show system log command and check ztp logs inside"):
+                show_output = system.log.show_log(param="| grep ztp")
+                ValidationTool.verify_expected_output(show_output,
+                                                      'Waiting for 300 seconds before restarting ZTP').verify_result()
 
         with allure.step("Run nv abort run system ztp and delete json file"):
             system.ztp.action_abort_ztp()
@@ -183,22 +187,18 @@ def test_ztp_image(engines, devices):
             with allure.step("Run nv action run system ztp"):
                 system.ztp.action_run_ztp()
 
-            with allure.step("Check ztp status"):
-                _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_IN_PROGRESS)
-                _wait_until_ztp_step_status(system, '01-image', SystemConsts.ZTP_STATUS_IN_PROGRESS)
-                _wait_until_ztp_step_status(system, '01-image', SystemConsts.ZTP_STATUS_SUCESS)
-                output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(
-                    system.image.show()).get_returned_value()
-                assert output_dictionary['current'] == output_dictionary['next'], 'Image not installed'
-                _wait_until_ztp_step_status(system, '02-image', SystemConsts.ZTP_STATUS_IN_PROGRESS)
-                _wait_until_ztp_step_status(system, '02-image', SystemConsts.ZTP_STATUS_SUCESS)
-                output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(
-                    system.image.show()).get_returned_value()
-                assert output_dictionary['current'] != output_dictionary['next'], 'Image not uninstalled'
+            with allure.step("Check ztp status for image test"):
+                with allure.step("Check ztp status for download and install image"):
+                    _wait_until_ztp_step_status(system, '01-image', SystemConsts.ZTP_STATUS_SUCESS, tries=100, delay=5)
+                    output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(
+                        system.image.show()).get_returned_value()
+                    assert output_dictionary['current'] == output_dictionary['next'], 'Image not installed'
 
-        with allure.step("Run nv abort run system ztp and delete json file"):
-            system.ztp.action_abort_ztp()
-            engines.dut.run_cmd('sudo rm -f /host/ztp/ztp_data_local.json')
+                with allure.step("Check ztp status for uninstall image"):
+                    _wait_until_ztp_step_status(system, '02-image', SystemConsts.ZTP_STATUS_SUCESS)
+                    output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(
+                        system.image.show()).get_returned_value()
+                    assert output_dictionary['current'] == output_dictionary['next'], 'Image not uninstalled'
 
     except Exception as e:
         logger.info("Received Exception during test_ztp_image: {}".format(e))
@@ -412,11 +412,14 @@ def _wait_until_ztp_status(system, ztp_status=''):
         assert ztp_output['status'] == ztp_status, f'ztp status not changed to {ztp_status}'
 
 
-@retry(Exception, tries=30, delay=2)
-def _wait_until_ztp_step_status(system, ztp_step='', ztp_status=''):
-    with allure.step("Waiting for ztp status changed to status {}".format(ztp_status)):
-        ztp_output = OutputParsingTool.parse_json_str_to_dictionary(system.ztp.show()).get_returned_value()
-        assert ztp_output['stage'][ztp_step]['status'] == ztp_status, f'ztp status not changed to {ztp_status}'
+def _wait_until_ztp_step_status(system, ztp_step='', ztp_status='', tries=30, delay=2):
+    @retry(Exception, tries=tries, delay=delay)
+    def _retry_decorator(system_obj, ztp_step_name='', ztp_status_name=''):
+        with allure.step("Waiting for ztp status changed to status {}".format(ztp_status_name)):
+            ztp_output = OutputParsingTool.parse_json_str_to_dictionary(system_obj.ztp.show()).get_returned_value()
+            assert ztp_output['stage'][ztp_step_name]['status'] == ztp_status_name, \
+                f'ztp status not changed to {ztp_status_name}'
+    _retry_decorator(system, ztp_step, ztp_status)
 
 
 def _validate_interface_description_field(selected_port, description_value, should_be_equal=True):
@@ -427,7 +430,7 @@ def _validate_interface_description_field(selected_port, description_value, shou
                                                               description_value).verify_result(should_be_equal)
 
 
-@retry(Exception, tries=5, delay=2)
+@retry(Exception, tries=30, delay=3)
 def _wait_until_ztp_values_fields_changed(system, ztp_output_fields, ztp_output_values):
     with allure.step("Run show ztp and verify default values"):
         system_ztp_output = OutputParsingTool.parse_json_str_to_dictionary(system.ztp.show()).get_returned_value()

@@ -1,7 +1,8 @@
 import logging
 import random
-import pytest
 from abc import ABC
+
+import pytest
 
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
@@ -20,8 +21,7 @@ class InventoryItemBaseTest(ABC):
 
     @classmethod
     def skip_if_needed(cls, devices):
-        if not devices.dut.platform_inventory_items_dict.get(cls.ITEM_TYPE):
-            pytest.skip(f"Skipping test because DUT has no {cls.ITEM_TYPE}")
+        return
 
     @classmethod
     def choose_item(cls, engines, devices, test_api) -> str:
@@ -59,6 +59,11 @@ class InventoryPsuTest(InventoryItemBaseTest):
     ITEM_TYPE = 'psu'
 
     @classmethod
+    def skip_if_needed(cls, devices):
+        if not devices.dut.psu_list:
+            pytest.skip("Skipping test because DUT has no PSUs")
+
+    @classmethod
     def choose_item(cls, engines, devices, test_api) -> str:
         platform = Platform()
         psu_list = list(devices.dut.psu_list)
@@ -79,10 +84,6 @@ class InventoryFanTest(InventoryItemBaseTest):
 
 class InventorySwitchTest(InventoryItemBaseTest):
     ITEM_TYPE = 'switch'
-
-
-class InventoryBmcTest(InventoryItemBaseTest):
-    ITEM_TYPE = 'bmc'
 
 
 @pytest.mark.platform

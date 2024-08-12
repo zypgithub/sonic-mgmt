@@ -8,6 +8,7 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.tests_nvos.system.factory_reset.helpers import *
 from ngts.tests_nvos.system.factory_reset.helpers import add_verification_data, \
     verify_cleanup_done, verify_the_setup_is_functional, get_current_time
+from ngts.nvos_tools.infra.RegressionConfigurations import RegressionConfigurations
 from ngts.tests_nvos.system.factory_reset.post_steps import factory_reset_no_params_post_steps
 from ngts.tests_nvos.system.factory_reset.pre_steps import factory_reset_no_params_pre_steps
 from ngts.tools.test_utils import allure_utils as allure
@@ -30,9 +31,8 @@ def test_reset_factory_without_params(engines, devices, topology_obj, platform_p
             4. Run reset factory without params
             5. After system is up again, verify the cleanup done successfully
             6. Verify the setup is functional:
-                6.1.	Start openSM
-                6.2.	Run several show commands
-                6.3.    Run set command & apply
+                6.1.	Run several show commands
+                6.2.    Run set command & apply
     """
     current_time = get_current_time(engines)
     system = System()
@@ -50,6 +50,7 @@ def test_reset_factory_without_params(engines, devices, topology_obj, platform_p
         with allure.step('post factory reset steps'):
             factory_reset_no_params_post_steps(apply_and_save_port, engines, just_apply_port, last_status_line,
                                                machine_type, not_apply_port, system, init_cluster_status)
+            RegressionConfigurations.configure_ports_to_legacy(engine=engines.dut, apply=True, throw_exception=True)
 
     finally:
         with allure.step("Verify the cleanup done successfully"):
@@ -76,9 +77,8 @@ def test_reset_factory_keep_basic(engines, devices):
             4. Run reset factory with keep basic param
             5. After system is up again, verify the cleanup done successfully
             6. Verify the setup is functional:
-                6.1.	Start openSM
-                6.2.	Run several show commands
-                6.3.    Run set command & apply
+                6.1.	Run several show commands
+                6.2.    Run set command & apply
     """
     try:
         with allure.step('Create System object'):
@@ -152,9 +152,8 @@ def test_reset_factory_keep_all_config(engines, devices):
             4. Run reset factory with keep all config params
             5. After system is up again, verify the cleanup done successfully
             6. Verify the setup is functional:
-                6.1.	Start openSM
-                6.2.	Run several show commands
-                6.3.    Run set command & apply
+                6.1.	Run several show commands
+                6.2.    Run set command & apply
     """
     try:
         port_type = devices.dut.switch_type.lower()
@@ -238,9 +237,8 @@ def test_reset_factory_keep_only_files(engines, devices):
             4. Run reset factory with keep only files param
             5. After system is up again, verify the cleanup done successfully
             6. Verify the setup is functional:
-                6.1.	Start openSM
-                6.2.	Run several show commands
-                6.3.    Run set command & apply
+                6.1.	Run several show commands
+                6.2.    Run set command & apply
     """
     try:
         port_type = devices.dut.switch_type.lower()
@@ -257,13 +255,11 @@ def test_reset_factory_keep_only_files(engines, devices):
         with allure.step(f'Set description to {port_type} ports'):
             logger.info(f"Set description to {port_type} ports")
             description = "with_all_files_param"
-            ports = Tools.RandomizationTool.select_random_ports(requested_ports_state="up",
-                                                                num_of_ports_to_select=2).get_returned_value()
+            ports = Tools.RandomizationTool.select_random_ports(num_of_ports_to_select=3,
+                                                                port_requirements_object=None).get_returned_value()
             apply_and_save_port = ports[0]
             just_apply_port = ports[1]
-            not_apply_port = Tools.RandomizationTool.select_random_ports(requested_ports_state="down",
-                                                                         num_of_ports_to_select=2).get_returned_value()[
-                0]
+            not_apply_port = ports[2]
 
         with allure.step(f'Set and apply description to {port_type} port, save config after it'):
             logger.info(f"Set and apply description to {port_type} port, save config after it")

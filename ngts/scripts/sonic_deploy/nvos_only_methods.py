@@ -82,6 +82,7 @@ class NvosInstallationSteps:
             try:
                 set_base_configurations(dut_engine=dut_engine, timezone=LinuxConsts.JERUSALEM_TIMEZONE, apply=True,
                                         save_conf=True)
+
                 with allure.step('Set timezone using timedatectl command'):
                     logger.info("Configuring same time zone for dut and local engine to {}"
                                 .format(LinuxConsts.JERUSALEM_TIMEZONE))

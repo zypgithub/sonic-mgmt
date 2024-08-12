@@ -1,16 +1,23 @@
 ########################## NVOS IGNORE START ##########################
 
-tests_nvos/general/security/bmc_erot_attestation/test_bmc_erot_attestation.py:
+tests_nvos/general/security/tpm_attestation/test_tpm_attestation.py:
   skip:
-    reason: "BMC ERoT Attestation tests should run only on Juliet"
+    reason: "Testcase skipped on gorilla systems - feature is pruned on gorilla"
+    conditions_logical_operator: and
     conditions:
-      - "'juliet' not in testbed"
+      - "'gorilla' in testbed"
 
 tests_nvos/system/gnmi/test_gnmi_cert.py::test_gnmi_cert_cli_when_gnmi_disabled:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4001833"
     conditions:
       - https://redmine.mellanox.com/issues/4001833
+
+tests_nvos/general/security/bmc_erot_attestation/test_bmc_erot_attestation.py:
+  skip:
+    reason: "BMC ERoT Attestation tests should run only on Juliet"
+    conditions:
+      - "'juliet' not in testbed"
 
 tests_nvos/system/gnmi/test_gnmi_cert.py::test_gnmi_delete_cert_in_use_by_gnmi:
   skip:
@@ -314,11 +321,11 @@ tests_nvos/interfaces/test_ib_interface_counters.py::test_range_clear_counters_n
       - https://redmine.mellanox.com/issues/3916837
       - https://redmine.mellanox.com/issues/3920791
 
-tests_nvos/system/test_system_ztp.py::test_ztp_json_complex:
+tests_nvos/system/test_system_ztp.py::test_ztp_startup_file_commands_list:
   skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3919469"
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3980592"
     conditions:
-      - https://redmine.mellanox.com/issues/3919469
+      - https://redmine.mellanox.com/issues/3980592
 
 tests_nvos/interfaces/test_lldp.py::test_lldp_additional_ipv6:
   skip:
@@ -376,24 +383,6 @@ tests_nvos/platform/test_platform_firmware.py::test_show_platform_firmware:
       - "'gorilla' not in testbed and 'juliet' not in testbed"
       - https://redmine.mellanox.com/issues/3956092
 
-tests_nvos/platform/test_platform.py::test_show_platform_chassis_location:
-  skip:
-    reason: "Testcase skipped on non Juliet systems, Juliet feature only (as a part of Uberon)"
-    conditions:
-      - "'juliet' not in testbed"
-
-tests_nvos/platform/test_platform_firmware_bios/test_platform_firmware_bios.py:
-  skip:
-    reason: "Testcase skipped on Juliet systems, feature is pruned in Juliet"
-    conditions:
-      - "'juliet' in testbed"
-
-tests_nvos/checklist/erot_fw_upgrade/test_erot_upgrade.py:
-  skip:
-    reason: "Testcase skipped on non Juliet systems, Juliet feature only"
-    conditions:
-      - "'juliet' not in testbed"
-
 tests_nvos/fae/test_debug_token.py:
   skip:
     reason: "Testcase skipped on non Juliet systems, Juliet feature only"
@@ -403,12 +392,6 @@ tests_nvos/fae/test_debug_token.py:
 tests_nvos/fae/test_nmx_package.py:
   skip:
     reason: "Testcase skipped on non Juliet systems, Juliet feature only"
-    conditions:
-      - "'juliet' not in testbed"
-
-tests_nvos/checklist/test_bios_upgrade.py::test_bios_upgrade:
-  skip:
-    reason: "Testcase skipped on non Juliet systems since they has 'auto-update' which changes the upgrade's flow"
     conditions:
       - "'juliet' not in testbed"
 
@@ -423,6 +406,30 @@ tests_nvos/interfaces/test_ib_show_interface.py::test_ib_show_interface_all_stat
     reason: "Testcase skipped on Juliet systems, ability is not implemented in Juliet"
     conditions:
       - "'juliet' in testbed"
+
+tests_nvos/platform/test_platform.py::test_show_platform_chassis_location:
+  skip:
+    reason: "Testcase skipped on non Juliet systems, Juliet feature only (as a part of Uberon)"
+    conditions:
+      - "'juliet' not in testbed"
+
+tests_nvos/platform/test_platform_firmware_bios/test_platform_firmware_bios.py:
+  skip:
+    reason: "Testcase skipped on Juliet systems, feature is pruned in Juliet"
+    conditions:
+      - "'juliet' in testbed"
+
+tests_nvos/checklist/erot_fw_upgrade/test_erot_upgrade.py:
+  skip:
+    reason: "Testcase skipped on non Juliet systems, Juliet feature only (as a part of Uberon)"
+    conditions:
+      - "'juliet' not in testbed"
+
+tests_nvos/checklist/test_bios_upgrade.py::test_bios_upgrade:
+  skip:
+    reason: "Testcase skipped on non Juliet systems since they has 'auto-update' which changes the upgrade's flow"
+    conditions:
+      - "'juliet' not in testbed"
 
 tests_nvos/interfaces/test_ib_interface_configuration.py::test_ib_interface_lanes:
   skip:
@@ -506,17 +513,18 @@ tests_nvos/system/test_techsupport_feature.py::test_techsupport_expected_files:
       - "'gorilla' not in testbed and 'juliet' not in testbed"
       - https://redmine.mellanox.com/issues/3960812
 
-tests_nvos/general/traffic/test_basic_traffic.py::test_basic_traffic:
-  skip:
-    reason: "Testcase skipped on non gorilla systems due to RM issue: https://redmine.mellanox.com/issues/3972021"
-    conditions:
-      - https://redmine.mellanox.com/issues/3972021
-
 tests_nvos/system/test_show_system.py::test_system:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3975976"
     conditions:
       - https://redmine.mellanox.com/issues/3975976
+
+tests_nvos/platform/test_platform_environment.py::test_platform_environment_fan_shared_led:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3978721"
+    conditions:
+      - https://redmine.mellanox.com/issues/3978721
+
 
 tests_nvos/system/test_techsupport_feature.py::test_techsupport_bmc_badflow:
   skip:

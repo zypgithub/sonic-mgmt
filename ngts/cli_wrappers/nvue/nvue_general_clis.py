@@ -12,7 +12,7 @@ from ngts.tools.test_utils import allure_utils as allure
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 logger = logging.getLogger()
-server_ip = "10.237.116.60"
+server_ip = "10.237.22.60"
 
 
 class NvueGeneralCli(SonicGeneralCliDefault):

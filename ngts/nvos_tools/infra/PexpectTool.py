@@ -1,4 +1,5 @@
 import logging
+
 import pexpect
 
 from infra.tools.general_constants.constants import DefaultConnectionValues
@@ -12,6 +13,7 @@ class PexpectTool:
         self.expect_error_msg = default_expect_err_msg
         if spawn_cmd:
             self.spawn(spawn_cmd)
+        self.last_output = ''
 
     def __del__(self):
         self.child.close()
@@ -34,7 +36,8 @@ class PexpectTool:
             res_index = self.child.expect(expect_list)
             decoded_before = self.child.before.decode('utf-8', errors='replace') if hasattr(self.child.before, 'decode') else ''
             decoded_after = self.child.after.decode('utf-8', errors='replace') if hasattr(self.child.after, 'decode') else ''
-            logging.info(f'Output:\n{decoded_before + decoded_after}')
+            self.last_output = decoded_before + decoded_after
+            logging.info(f'Output:\n{self.last_output}')
             assert res_index != len(expect_list) - 1, err_msg
         except pexpect.exceptions.TIMEOUT as timeout_exception:
             logging.info(f'Got pexpect TIMEOUT exception.\n{err_msg}')

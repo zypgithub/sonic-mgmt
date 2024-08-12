@@ -1,9 +1,9 @@
+import time
+import re
 import logging
 import string
 from typing import Tuple
 import string
-import time
-
 import pytest
 
 
@@ -35,6 +35,12 @@ def verify_bios_version(devices, platform, is_current_bios=False):
         assert installed_bios_version == expected_version, \
             "BIOS firmware is {}, expected {} after the install".format(installed_bios_version,
                                                                         expected_version)
+
+
+def get_bios_version(platform) -> str:
+    with allure.step('get  BIOS version '):
+        fw_output = Tools.OutputParsingTool.parse_json_str_to_dictionary(platform.firmware.show()).verify_result()
+        return fw_output[PlatformConsts.FW_BIOS][PlatformConsts.FW_ACTUAL]
 
 
 def install_bios(devices, fae, version_name):
@@ -71,40 +77,21 @@ def verify_current_version(original_version, system):
         assert current_version == original_version, f"Current version is invalid: {current_version}, expected: {original_version}"
 
 
-def normalize_image_name(image_name):
-    return image_name.replace("-amd64", "").replace(".bin", "")
+def normalize_image_name(image_name) -> str:
+    # Remove any instance of "-amd64", ".bin", and "-coverage"
+    return re.sub(r'(-amd64|\.bin|-coverage)', '', image_name)
 
 
-def cleanup_test(system, original_image_partition, fetched_image_files, orig_engine=None):
+def cleanup_test(system, original_image_partition):
     with allure.step("Cleanup step"):
         with allure.step("Set the original image to be booted next and verify"):
             system.image.boot_next_and_verify(original_image_partition)
 
         with allure.step("Reboot the system"):
-            system.reboot.action_reboot(recovery_engine=orig_engine)
-
-        with allure.step('restore original dut engine'):
-            TestToolkit.engines.dut = orig_engine or TestToolkit.engines.dut
-
-        with allure.step("Delete all images that have been fetch during the test and verify"):
-            system.image.files.delete_files(fetched_image_files)
-            system.image.files.verify_show_files_output(unexpected_files=fetched_image_files)
+            system.reboot.action_reboot()
 
 
-def get_image_data_and_fetch_image(system, image_version):
-    original_image_partition = get_image_data(system)
-
-    with allure.step(f"Fetch image {image_version}"):
-        # player = TestToolkit.engines['sonic_mgmt']
-        player = ConnectionTool.create_ssh_conn('10.237.116.70', 'root', '12345').verify_result()
-
-        system.image.action_fetch(ImageConsts.SCP_PATH_SERVER.format(username=player.username, password=player.password,
-                                                                     ip=player.ip, path=image_version))
-    image_name = image_version.split("/")[-1]
-    return original_image_partition, image_name
-
-
-def get_image_data(system):
+def get_image_data(system) -> str:
     with allure.step("Save original installed image name"):
         original_images = system.image.get_image_field_values()
         original_image = original_images[ImageConsts.CURRENT_IMG]

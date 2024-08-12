@@ -15,6 +15,7 @@
       <Device Hostname="croc-88" HwSku="ACS-QM3400" Type="DevSonic"/>
       <Device Hostname="croc-94" HwSku="ACS-QM3400" Type="DevSonic"/>
       <Device Hostname="croc-98" HwSku="ACS-QM3400" Type="DevSonic"/>
+      <Device Hostname="croc-138" HwSku="ACS-QM3400" Type="DevSonic"/>
       <Device Hostname="croc-skt-208" HwSku="ACS-QM3400" Type="DevSonic"/>
       <Device Hostname="bm-bu-nos" HwSku="ACS-QM8790" Type="DevSonic"/>
       <Device Hostname="r-bsp-qm3400" HwSku="ACS-QM3400" Type="DevSonic"/>

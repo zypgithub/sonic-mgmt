@@ -1419,6 +1419,12 @@
         - tests_nvos/general/security/test_aaa_ldap/test_aaa_ldap.py::test_ldap_server_unreachable[OpenApi-BadFlow]
         - tests_nvos/general/security/test_aaa_ldap/test_aaa_ldap.py::test_ldap_server_unreachable[NVUE-BadFlow]
 
+- Errors_list:
+    - '.*WARNING nslcd\[.*\]:.*failed to bind to LDAP server ldap://unreachable.*/: Can''t contact LDAP server*'
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/general/security/test_aaa_ldap/test_aaa_ldap.py::test_ldap_server_unreachable
+
 # NVOS ldap bad flow
 - Errors_list:
     - '.*WARNING nslcd\[\d+\]: \[\w+\].*failed to bind to LDAP server.*'
@@ -1569,7 +1575,96 @@
       - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm.py::TestNewTc::test_sensor_errors[fan_err_direction]
       - tests_nvos/platform/test_platform_environment.py::test_platform_environment_fan_direction_mismatch
 
+# NVOS
 - Errors_list:
+    - '.*suspended \(module .*builtin:omfwd.*\), next retry is.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests_nvos/system/syslog/test_system_syslog.py
+
+# NVOS
+- Errors_list:
+    - '.*systemd-udevd\[\d+\]: veth.*: No such device.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests_nvos/
+      Redmine:
+        - 3959307
+
+# NVOS
+- Errors_list:
+    - '.*WARNING pmon#thermalctld: Fan fault warning: fan.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests_nvos/system/test_system_health.py::test_simulate_health_problem_with_hw_simulator
+
+# NVOS
+- Errors_list:
+    - '.*WARNING kernel: \[.*\] mst_pci: loading out-of-tree module taints kernel.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests_nvos/system/test_system_reboot.py
+      Redmine:
+        - 3760310
+
+# NVOS
+- Errors_list:
+    - '.*ERR dhclient\[\d+\]: dhclient.c:\d+: Failed to send \d+ byte long packet over fallback interface.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests_nvos/
+      Redmine:
+        - 3951338
+
+# --------------------------------------------------
+# New HW thermal control ignores:
+# --------------------------------
+# In the test case test_sensor_errors[psu_err_present], it has an action to remove the psu file,
+# when pmon try to read the file psu file "/var/run/hw-management/thermal/psu\d+_status",
+# following error msg will be logged to syslog, it is not an real issue, so it is safe to ignore these err msg
+- Errors_list:
+    - '.*ERR pmon#psud: Failed to read from file \/var\/run\/hw-management\/thermal\/psu\d+_status - FileNotFoundError.*No such file or directory.*'
+    - '.*ERR pmon#psud: Failed to read from file \/var\/run\/hw-management\/thermal\/psu\d+_status - ValueError.*invalid literal for int.* with base.*'
+    - '.*ERR pmon#thermalctld: Failed to read from file \/var\/run\/hw-management\/thermal\/psu\d+_status - ValueError.*invalid literal for int.* with base.*'
+    - '.*ERR pmon#thermalctld: Failed to read from file \/var\/run\/hw-management\/thermal\/psu\d+_status - FileNotFoundError.*No such file or directory.*'
+    - '.*ERR health-statsd#health_history: PSU\d: is missing or not available.*'
+    - '.*ERR health-statsd#health_history: PSU\d\/FAN: is missing.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm.py::TestNewTc::test_sensor_errors[psu_err_present]
+
+# In the test case test_sensor_errors[psu_err_direction], it has an action to remove the psu file,
+# when pmon try to read the file psu file "/var/run/hw-management/thermal/psu\d+_fan_dir",
+# following error msg will be logged to syslog, it is not an real issue, so it is safe to ignore these err msg
+- Errors_list:
+    - '.*ERR pmon#psud: Failed to read from file \/var\/run\/hw-management\/thermal\/psu\d+_fan_dir - FileNotFoundError.*No such file or directory.*'
+    - '.*ERR pmon#psud: Failed to read from file \/var\/run\/hw-management\/thermal\/psu\d+_fan_dir - ValueError.*invalid literal for int.* with base.*'
+    - '.*ERR pmon#thermalctld: Failed to read from file \/var\/run\/hw-management\/thermal\/psu\d+_fan_dir - ValueError.*invalid literal for int.* with base.*'
+    - '.*ERR pmon#thermalctld: Failed to read from file \/var\/run\/hw-management\/thermal\/psu\d+_fan_dir - FileNotFoundError.*No such file or directory.*'
+    - '.*ERR health-statsd#health_history: PSU\d: is missing or not available.*'
+    - '.*ERR health-statsd#health_history: PSU\d\/FAN: is missing.*'
+    - '.*ERR health-statsd#health_history: PSU\d\/FAN: direction exhaust is not aligned with fan1 direction intake.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm.py::TestNewTc::test_sensor_errors[psu_err_direction]
+
+# In the test case test_sensor_errors[fan_err_present], it has an action to remove the fan status file,
+# when pmon try to read the file psu file "/var/run/hw-management/thermal/fan\d+_status",
+# following error msg will be logged to syslog, it is not an real issue, so it is safe to ignore these err msg
+- Errors_list:
+    - '.*ERR pmon#thermalctld: Failed to read from file \/var\/run\/hw-management\/thermal\/fan\d+_status - FileNotFoundError.*No such file or directory.*'
+    - '.*ERR pmon#thermalctld: Failed to read from file \/var\/run\/hw-management\/thermal\/fan\d+_status.*ValueError.*invalid literal for int.* with base.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm.py::TestNewTc::test_sensor_errors[fan_err_present]
+
+# In the test case test_sensor_errors[fan_err_direction], it has an action to remove the fan status file,
+# when pmon try to read the file psu file "/var/run/hw-management/thermal/fan\d+_dir",
+# following error msg will be logged to syslog, it is not an real issue, so it is safe to ignore these err msg
+- Errors_list:
+    - '.*ERR pmon#thermalctld: Failed to read from file \/var\/run\/hw-management\/thermal\/fan\d+_dir  - FileNotFoundError.*No such file or directory.*'
+    - '.*ERR pmon#thermalctld: Failed to read from file \/var\/run\/hw-management\/thermal\/fan\d+_dir.*ValueError.*invalid literal for int.* with base.*'
+    - '.*ERR health-statsd#health_history: FAN\d\/\d: direction intake is not aligned with fan1 direction exhaust.*'
     - '.*ERR health-statsd#health_history: PSU-Redundancy: Power redundancy policy grid-redundant requires all (4) power supplies to be working, currently system has only 3.*'
   Conditions:
     - Affected_test_cases:
@@ -1615,3 +1710,61 @@
       - tests_nvos/
       Redmine:
         - 3951338
+# In the test case test_temperature_sweep, it has an action to remove the sensors files,
+# when pmon try to read the file psu file "/var/run/hw-management/thermal/sensor_file",
+# following error msg will be logged to syslog, it is not an real issue, so it is safe to ignore these err msg
+- Errors_list:
+    - '.*ERR pmon#.*: Failed to read from file \/var\/run\/hw-management\/thermal\/.* - FileNotFoundError.*No such file or directory.*'
+    - '.*ERR pmon#.*: message repeated \d+ times:.* Failed to read from file \/var\/run\/hw-management\/thermal\/.* - FileNotFoundError.*No such file or directory.*'
+    - '.*ERR pmon#.*: Failed to read from file \/var\/run\/hw-management\/thermal\/.*ValueError.*invalid literal for int.*with base.*'
+    - '.*ERR pmon#.*: message repeated \d+ times:.*Failed to read from file \/var\/run\/hw-management\/thermal\/.*ValueError.*invalid literal for int.* with base.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm.py::TestNewTc::test_temperature_sweep
+
+# In the test case test_sensor_errors[fan_err_tacho], it has an action to remove the fan\d+_speed_get file,
+# when pmon try to read the file psu file "/var/run/hw-management/thermal/fan\d+_speed_get",
+# following error msg will be logged to syslog, it is not an real issue, so it is safe to ignore these err msg
+- Errors_list:
+    - '.*ERR pmon#thermalctld: Failed to read from file \/var\/run\/hw-management\/thermal\/fan\d+_speed_get - FileNotFoundError.*No such file or directory.*'
+    - '.*ERR pmon#thermalctld: Failed to read from file \/var\/run\/hw-management\/thermal\/fan\d+_speed_get - ValueError.*invalid literal for int.* with base.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm.py::TestNewTc::test_sensor_errors[fan_err_tacho]
+
+# In the test case test_sensor_errors and test_sensor_blacklist, it has an action to remove the port_amb file,
+# when pmon try to read the file psu file "/var/run/hw-management/thermal/port_amb",
+# following error msg will be logged to syslog, it is not an real issue, so it is safe to ignore these err msg
+- Errors_list:
+    - '.*ERR pmon#psud.*: Failed to read from file \/var\/run\/hw-management\/thermal\/port_amb - ValueError.*invalid literal for int.*with base.*'
+    - '.*ERR pmon#psud: Failed to read from file \/var\/run\/hw-management\/thermal\/port_amb - FileNotFoundError.*No such file or directory.*'
+    - '.*ERR pmon#psud: message repeated \d+ times.*Failed to read from file \/var\/run\/hw-management\/thermal\/port_amb - ValueError.*invalid literal for int.* with base.*'
+    - '.*ERR pmon#psud: message repeated \d+ times:.*Failed to read from file \/var\/run\/hw-management\/thermal\/port_amb - FileNotFoundError.*No such file or directory.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm.py::TestNewTc::test_sensor_errors
+      - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm.py::TestNewTc::test_sensor_blacklist
+
+# NVOS - expected errors during thermal algo tests
+- Errors_list:
+    - '.*ERR pmon#thermalctld: Failed to read from file \/var\/run\/hw-management\/thermal.*'
+    - '.*ERR health-statsd#health_history: FAN\d\/\d: is missing.*'
+    - '.*ERR health-statsd#health_history: ASIC: Invalid temperature data.*'
+    - '.*ERR health-statsd#health_history: PSU\d\/FAN: speed is out of range.*'
+    - '.*ERR health-statsd#health_history: PSU\d\/FAN: Invalid fan speed data.*'
+    - '.*ERR health-statsd#health_history: FAN\d\/\d: speed is out of range.*'
+  Conditions:
+    - Affected_test_cases:
+        - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm.py::TestNewTc::test_temperature_sweep
+        - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm.py::TestNewTc::test_sensor_errors
+        - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm.py::TestNewTc::test_sensor_blacklist
+        - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm.py::TestNewTc::test_check_tc_config_link
+        - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm.py::TestNewTc::test_operate_tc_service
+
+# NVOS
+- Errors_list:
+    - '.*ERR health-statsd#health_history: .*: speed is out of range, speed=.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests/nightly/new_hw_thermal_control/test_new_hw_tc_service.py::test_operate_tc_service
+# --------------------------------------------------

@@ -2,8 +2,8 @@ import logging
 
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
 from ngts.nvos_tools.system.Asic import Asic
-from ngts.nvos_tools.system.Erot import Erot
 from ngts.nvos_tools.system.Transceiver import Transceiver
+from ngts.nvos_tools.system.Erot import Erot
 
 logger = logging.getLogger()
 
