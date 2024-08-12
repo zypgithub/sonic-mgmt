@@ -1302,6 +1302,17 @@ class JulietNonScaleoutSwitch(JulietScaleoutSwitch):
         self.platform_inventory_switch_values.update({"hardware-version": None,
                                                       "model": ExpectedString(regex="692-9K36F-00MV-JS0")})
 
+
+# -------------------------- JulietNonScaleout Switch ----------------------------
+class JulietNonScaleoutSwitch(JulietScaleoutSwitch):
+
+    def __init__(self):
+        super().__init__()
+
+    def _init_constants(self):
+        super()._init_constants()
+
+
 # -------------------------- Caiman Switch ----------------------------
 
 
