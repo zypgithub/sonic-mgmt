@@ -386,6 +386,28 @@ master:
     nbrmgrd: 2
     vxlanmgrd: 2
     sensord: 2
+  SN5640: # Bison
+    total: 10
+    sx_sdk: 5
+    syncd: 2
+    redis-server: 2
+    snmpd: 2
+    zebra: 2
+    bgpd: 2
+    bgpcfgd: 2
+    bgpmon: 2
+    fpmsyncd: 2
+    orchagent: 2
+    ntpd: 2
+    neighsyncd: 2
+    vlanmgrd: 2
+    intfmgrd: 2
+    portmgrd: 2
+    buffermgrd: 2
+    vrfmgrd: 2
+    nbrmgrd: 2
+    vxlanmgrd: 2
+    sensord: 2
 202106:
   # SPC1
   SN2201: # Alligator
