@@ -18,7 +18,7 @@ ENDPOINT_URL_TEMPLATE = 'https://{ip}:{port_num}/nvue_v1'
 REQ_HEADER = {"Content-Type": "application/json"}
 INVALID_RESPONSE = ["ays_fail", "invalid", "Bad Request", "Not Found", "Forbidden", "Internal Server Error"]
 PENDING_RESPONSE = "pending"
-APPLIED_RESPONSE = "applied"
+APPLIED_RESPONSES = ["applied", "applied_and_saved"]
 
 
 class RequestData:
@@ -182,7 +182,7 @@ class OpenApiRequest:
             obj = json.loads(r.content)
 
             if "state" in obj.keys():
-                if obj["state"] == APPLIED_RESPONSE:
+                if obj["state"] in APPLIED_RESPONSES:
                     return ResultObj(True, "Configuration applied successfully")
                 if str(obj["state"]) in INVALID_RESPONSE:
                     logging.info("Apply state: " + str(obj["state"]))

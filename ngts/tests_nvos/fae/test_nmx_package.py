@@ -99,14 +99,18 @@ def fetch_and_verify_package(fae, app, path):
     return filename
 
 
-def uninstall_install_and_verify_package(fae, app, filename, expected_version):
+def uninstall_install_and_verify_package(fae, app, filename, expected_version, cluster):
     with allure.step(f'try to uninstall nmx package app {app}'):
         fae.cluster.apps.apps_name[app].action_uninstall()
+
+    with allure.step(f'verify nmx package app {app} not in installed apps'):
+        output = OutputParsingTool.parse_show_output_to_dict(cluster.apps.show()).get_returned_value()
+        ValidationTool.verify_field_value_exist_in_output_dict(output, app).verify_result(False)
 
     with allure.step(f'try to install nmx package file {filename}'):
         fae.cluster.package.files.file_name[filename].action_file_install(force=False).verify_result()
 
-    with allure.step(f'verify installation'):
+    with allure.step(f'verify installation nmx package file {filename}'):
         ClusterTools.verify_app_version(fae.cluster, app, expected_version)
 
 
@@ -133,7 +137,7 @@ def test_nmx_package_flow(fae, cluster, app, path, new_version):
     4. Delete the package file.
     """
     filename = fetch_and_verify_package(fae, app, path)
-    uninstall_install_and_verify_package(fae, app, filename, new_version)
+    uninstall_install_and_verify_package(fae, app, filename, new_version, cluster)
     verify_start_stop(cluster, app)
     delete_package_file(fae, filename)
 
