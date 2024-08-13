@@ -1064,13 +1064,17 @@ class SonicGeneralCliDefault(GeneralCliCommon):
 
         self.upload_config_db_file(topology_obj, setup_name, hwsku, platform, shared_path)
 
-        with allure.step("Disable autoneg on SW control ports if SW control feature enabled"):
+        with allure.step("Disable autoneg on AOC cables and enable for passive copper"):
             if self.cli_obj.im.is_im_enabled():
                 port_supporting_im = self.cli_obj.im.get_ports_supporting_im(
                     self.cli_obj.im.dut_ports_number_dict(topology_obj))
-                if port_supporting_im:
-                    with allure.step('Disable autoneg on ports supporting IM'):
-                        self.cli_obj.im.disable_autoneg_on_ports_supporting_im(port_supporting_im)
+                if port_supporting_im.get('aoc_cables'):
+                    with allure.step('Disable autoneg on AOC ports if SW controlled'):
+                        self.cli_obj.im.disable_autoneg_on_ports_supporting_im(port_supporting_im.get('aoc_cables'))
+                if port_supporting_im.get('passive_copper_cables'):
+                    with allure.step('Enable autoneg on copper cable ports if SW controlled'):
+                        self.cli_obj.im.enable_autoneg_on_passive_copper(port_supporting_im.
+                                                                         get('passive_copper_cables'))
 
         if is_redmine_issue_active([3858467]) and platform == 'x86_64-mlnx_msn4700-r0':
             self.reboot_reload_flow(r_type=SonicConst.CONFIG_RELOAD_CMD, topology_obj=topology_obj, reload_force=True)

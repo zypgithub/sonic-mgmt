@@ -161,6 +161,18 @@ def test_rpc_check_and_set_topology(topology_obj, engines, cli_objects, current_
         cmd = "./testbed-cli.sh deploy-mg {SWITCH}-{TOPO} lab vault".format(SWITCH=dut_name, TOPO=expected_topo)
         run_testbed_cli_script(cmd, ansible_path)
 
+    with allure.step("Check if FW control feature enabled, if yes - disable auto neg on ports supporting FW control"):
+        if cli_objects.dut.im.is_im_enabled():
+            port_supporting_im = cli_objects.dut.im.get_ports_supporting_im(
+                cli_objects.dut.im.dut_ports_number_dict(topology_obj, is_community=True))
+            if port_supporting_im.get('aoc_cables'):
+                with allure.step('Disable autoneg on active optical cables ports supporting IM'):
+                    cli_objects.dut.im.disable_autoneg_on_ports_supporting_im(port_supporting_im.get('aoc_cables'))
+            if port_supporting_im.get(['passive_copper_cables']):
+                with allure.step('Enable autoneg on copper ports if SW controlled'):
+                    cli_objects.dut.im.enable_autoneg_on_passive_copper(port_supporting_im.
+                                                                        get(['passive_copper_cables']))
+
     with allure.step("Post upgrade checks"):
         cmd = "ansible-playbook -i inventory --limit {SWITCH} post_upgrade_check.yml " \
               "-e topo={TOPO} -b -vvv ".format(SWITCH=dut_name, TOPO=expected_topo)

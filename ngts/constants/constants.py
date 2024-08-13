@@ -1574,6 +1574,8 @@ class IndependentModuleConst:
                           'r-leopard-70', 'r-leopard-72', 'r-moose-01', 'r-moose-02', 'mtvr-moose-04',
                           'r-bobcat-01', 'r-bobcat-03']
 
+    AOC_VENDOR_PN = ['MMS1V00-WM', 'MMS4X00-NS', 'MFA7U10-H003', 'MMA4Z00-NS']
+
 
 class PerfConsts:
     CONFIG_FILES_DIR = os.path.join(BugHandlerConst.NGTS_PATH, 'tests/performance/config_files')
