@@ -23,6 +23,7 @@ podset_number=200
 r-moose-01
 r-moose-01-t0
 r-moose-01-t0-64
+r-moose-01-t0-64-256
 r-moose-01-t1
 r-moose-01-t1-lag
 r-moose-01-ptf32

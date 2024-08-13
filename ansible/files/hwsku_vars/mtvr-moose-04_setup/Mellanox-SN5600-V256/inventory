@@ -23,6 +23,7 @@ podset_number=200
 mtvr-moose-04
 mtvr-moose-04-t0
 mtvr-moose-04-t0-64
+mtvr-moose-04-t0-64-256
 mtvr-moose-04-t1
 mtvr-moose-04-t1-lag
 mtvr-moose-04-ptf32

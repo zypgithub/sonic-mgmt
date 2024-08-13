@@ -3,6 +3,7 @@
 mtvr-moose-04  ansible_host=10.245.20.42 sonic_version=v2  sonic_hwsku=ACS-SN5600 iface_speed=200000 serial_console="ssh -l rcon:7012 10.245.2.8" ptf_host=ptf-mtvr-moose-04 ptf_portmap="roles/test/files/mlnx/mtvr-moose-04_interface_to_front_map.ini" pdu_host=pdu-10-245-2-49
 mtvr-moose-04-t0  ansible_host=10.245.20.42 sonic_version=v2  sonic_hwsku=ACS-SN5600 iface_speed=200000 serial_console="ssh -l rcon:7012 10.245.2.8" ptf_host=ptf-mtvr-moose-04 ptf_portmap="roles/test/files/mlnx/mtvr-moose-04_interface_to_front_map.ini" pdu_host=pdu-10-245-2-49
 mtvr-moose-04-t0-64  ansible_host=10.245.20.42 sonic_version=v2  sonic_hwsku=ACS-SN5600 iface_speed=200000 serial_console="ssh -l rcon:7012 10.245.2.8" ptf_host=ptf-mtvr-moose-04 ptf_portmap="roles/test/files/mlnx/mtvr-moose-04_interface_to_front_map.ini" pdu_host=pdu-10-245-2-49
+mtvr-moose-04-t0-64-256  ansible_host=10.245.20.42 sonic_version=v2  sonic_hwsku=ACS-SN5600 iface_speed=200000 serial_console="ssh -l rcon:7012 10.245.2.8" ptf_host=ptf-mtvr-moose-04 ptf_portmap="roles/test/files/mlnx/mtvr-moose-04_interface_to_front_map.ini" pdu_host=pdu-10-245-2-49
 mtvr-moose-04-t1  ansible_host=10.245.20.42 sonic_version=v2  sonic_hwsku=ACS-SN5600 iface_speed=200000 serial_console="ssh -l rcon:7012 10.245.2.8" ptf_host=ptf-mtvr-moose-04 ptf_portmap="roles/test/files/mlnx/mtvr-moose-04_interface_to_front_map.ini" pdu_host=pdu-10-245-2-49
 mtvr-moose-04-t1-lag  ansible_host=10.245.20.42 sonic_version=v2  sonic_hwsku=ACS-SN5600 iface_speed=200000 serial_console="ssh -l rcon:7012 10.245.2.8" ptf_host=ptf-mtvr-moose-04 ptf_portmap="roles/test/files/mlnx/mtvr-moose-04_interface_to_front_map.ini" pdu_host=pdu-10-245-2-49
 mtvr-moose-04-ptf32  ansible_host=10.245.20.42 sonic_version=v2  sonic_hwsku=ACS-SN5600 iface_speed=200000 serial_console="ssh -l rcon:7012 10.245.2.8" ptf_host=ptf-mtvr-moose-04 ptf_portmap="roles/test/files/mlnx/mtvr-moose-04_interface_to_front_map.ini" pdu_host=pdu-10-245-2-49
@@ -22,6 +23,7 @@ podset_number=200
 mtvr-moose-04
 mtvr-moose-04-t0
 mtvr-moose-04-t0-64
+mtvr-moose-04-t0-64-256
 mtvr-moose-04-t1
 mtvr-moose-04-t1-lag
 mtvr-moose-04-ptf32
