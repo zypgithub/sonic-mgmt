@@ -316,7 +316,6 @@ def test_platform_environment_events_performance(engines, devices):
     platform = Platform()
     system = System()
     fan_to_check = devices.dut.fan_list[2]
-    err_found = False
     show_log_cmd = "nv show sys log | grep '" + str(FansConsts.FAN_DIRECTION_MISMATCH_ERR) + "' | wc -l"
 
     with allure.step('Validate System health status should be {}'.format(HealthConsts.OK)):
@@ -350,6 +349,7 @@ def test_platform_environment_events_performance(engines, devices):
             fan_error_set = set()
             for events_no in output[SystemConsts.SYSTEM_LAST_EVENT]:
                 output_err_msg = str(output[SystemConsts.SYSTEM_LAST_EVENT][events_no])
+                err_found = False
                 if FansConsts.FAN_DIRECTION_MISMATCH_ERR in output_err_msg:
                     err_found = True
                 elif FansConsts.FAN_DIRECTION_MISMATCH_ERR_CROC in output_err_msg:
