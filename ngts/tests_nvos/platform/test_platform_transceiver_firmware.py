@@ -18,7 +18,7 @@ logger = logging.getLogger()
 
 
 @pytest.mark.platform
-@pytest.mark.ib
+@pytest.mark.transceiver
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
 def test_transceiver_database_tables(engines, devices, test_api):
     """
@@ -42,7 +42,7 @@ def test_transceiver_database_tables(engines, devices, test_api):
 
 
 @pytest.mark.platform
-@pytest.mark.ib
+@pytest.mark.transceiver
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_reset_transceiver_firmware_positive(engines, test_api, start_sm):
     """
@@ -93,7 +93,7 @@ def test_reset_transceiver_firmware_positive(engines, test_api, start_sm):
 
 
 @pytest.mark.platform
-@pytest.mark.ib
+@pytest.mark.transceiver
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_install_transceiver_firmware_positive(engines, devices, test_api, start_sm):
     """
@@ -162,7 +162,7 @@ def test_install_transceiver_firmware_positive(engines, devices, test_api, start
 
 
 @pytest.mark.platform
-@pytest.mark.ib
+@pytest.mark.transceiver
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_install_reset_transceiver_firmware_negative_flow(engines, test_api):
     """
@@ -213,7 +213,7 @@ def test_install_reset_transceiver_firmware_negative_flow(engines, test_api):
 
 
 @pytest.mark.platform
-@pytest.mark.ib
+@pytest.mark.transceiver
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_install_reset_invalid_transceiver_id(engines, test_api):
     """

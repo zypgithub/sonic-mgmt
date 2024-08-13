@@ -24,9 +24,8 @@ class RegisterTool:
             f'sudo mlxreg -d {mst_dev_name} --reg_name {reg_name} {additional_params} -s {set_params} -y')
 
     @staticmethod
-    def update_pmaos_register(engine, device, admin_status, asic_number="0", slot_index=0, module_index=0):
+    def update_pmaos_register(engine, device, admin_status, mst_dev_name, slot_index=0, module_index=0):
         indexes = f"-i slot_index={slot_index},module={module_index}"
         set_params = f"ase=1,e=1,ee=1,admin_status={admin_status}"
-        mst_dev_name = f"{device.mst_dev_name[0:-1]}{asic_number}"
         return RegisterTool.set_mst_register_value(engine, mst_dev_name, UfmMadConsts.PMAOS_REGISTER,
                                                    set_params, additional_params=indexes)

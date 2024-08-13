@@ -810,6 +810,7 @@ class PlatformConsts:
 
     INV_STATE = 'state'
     INV_OK = 'ok'
+    ASIC_CONF_FILE_PATH = "/usr/share/sonic/device/{}/asic.conf"
 
 
 class FansConsts:
