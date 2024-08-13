@@ -3,6 +3,7 @@ import pytest
 import random
 
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
+from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.constants.constants import PerfConsts
 from ngts.helpers.adaptive_routing_helper import ArHelper, ArPerfHelper
 from retry.api import retry_call
@@ -27,10 +28,16 @@ class TestArPerformance:
         self.dut_tx_ports = self.ar_perf_helper.all_engines_ports['dut']
         self.tx_ports_left_tg = self.tg_ports[PerfConsts.LEFT_TG_ALIAS]["egress_ports"]
         self.tx_ports_right_tg = self.tg_ports[PerfConsts.RIGHT_TG_ALIAS]["egress_ports"]
-        self.tg_tx_ports = {PerfConsts.LEFT_TG_ALIAS: self.tx_ports_left_tg, PerfConsts.RIGHT_TG_ALIAS: self.tx_ports_right_tg}
+        self.tg_tx_ports = {PerfConsts.LEFT_TG_ALIAS: self.tx_ports_left_tg,
+                            PerfConsts.RIGHT_TG_ALIAS: self.tx_ports_right_tg}
         self.mloop_ports_left_tg = self.tg_ports[PerfConsts.LEFT_TG_ALIAS]["mloop_ports"]
         self.mloop_ports_right_tg = self.tg_ports[PerfConsts.RIGHT_TG_ALIAS]["mloop_ports"]
         self.random_dut_ports = random.sample(self.dut_tx_ports, 2)
+        self.tg_ports_num = len(self.tx_ports_left_tg) if len(self.tx_ports_right_tg) == len(
+            self.tx_ports_right_tg) else None
+        if is_redmine_issue_active([3677516]):
+            # TODO: WA due to a community bug in which AR configuration isn't applied if syncd starts before doai docker
+            self.ar_helper.config_save_reload(cli_objects, topology_obj)
 
     def test_ar_perf_node_full_utilization(self):
         """
@@ -39,7 +46,7 @@ class TestArPerformance:
          """
         try:
             with allure.step('Generate traffic from left and right nodes to fully utilize the links'):
-                self.ar_perf_helper.generate_traffic_from_node(self.engines, self.dut_mac)
+                self.ar_perf_helper.generate_traffic_from_node(self.engines, self.dut_mac, self.tg_ports_num)
             for tg in self.tg_tx_ports:
                 retry_call(self.ar_perf_helper.validate_tx_utilization,
                            fargs=[self.cli_objects, self.tg_tx_ports[tg], tg],
@@ -59,7 +66,8 @@ class TestArPerformance:
         try:
             with allure.step(f'Generate traffic with packet size {packet_size}'
                              f' from left and right nodes to fully utilize the links'):
-                self.ar_perf_helper.generate_traffic_from_node(self.engines, self.dut_mac, packet_size)
+                self.ar_perf_helper.generate_traffic_from_node(self.engines, self.dut_mac, self.tg_ports_num,
+                                                               packet_size)
             self.ar_perf_helper.validate_tx_utilization(self.cli_objects, self.dut_tx_ports,
                                                         device="dut",
                                                         ibm=False,
@@ -77,7 +85,8 @@ class TestArPerformance:
         try:
             with allure.step(f'Generate traffic with packet size {packet_size}'
                              f' from left and right nodes to fully utilize the links'):
-                self.ar_perf_helper.generate_traffic_from_node(self.engines, self.dut_mac, packet_size)
+                self.ar_perf_helper.generate_traffic_from_node(self.engines, self.dut_mac, self.tg_ports_num,
+                                                               packet_size)
             self.ar_perf_helper.validate_tx_utilization(self.cli_objects, self.dut_tx_ports,
                                                         device="dut",
                                                         ibm=True,
@@ -93,7 +102,7 @@ class TestArPerformance:
         """
         try:
             with allure.step(f'Generate traffic from left and right nodes to fully utilize the links'):
-                self.ar_perf_helper.generate_traffic_from_node(self.engines, self.dut_mac)
+                self.ar_perf_helper.generate_traffic_from_node(self.engines, self.dut_mac, self.tg_ports_num)
             retry_call(self.ar_perf_helper.validate_tx_utilization,
                        fargs=[self.cli_objects, self.dut_tx_ports, "dut"],
                        tries=5,
@@ -119,7 +128,7 @@ class TestArPerformance:
         """
         try:
             with allure.step(f'Generate traffic from left and right nodes to fully utilize the links'):
-                self.ar_perf_helper.generate_traffic_from_node(self.engines, self.dut_mac)
+                self.ar_perf_helper.generate_traffic_from_node(self.engines, self.dut_mac, self.tg_ports_num)
             retry_call(self.ar_perf_helper.validate_tx_utilization,
                        fargs=[self.cli_objects, self.dut_tx_ports, "dut"],
                        tries=5,

@@ -593,13 +593,13 @@ class ArPerfHelper(ArHelper):
         self.tg_engines = self.get_tg_engines(engines)
         self.all_engines_ports = self.get_ports_by_type(topology_obj, engines)
 
-    def generate_traffic_from_node(self, engines, dest_mac, packet_size=4000):
+    def generate_traffic_from_node(self, engines, dest_mac, num_of_ports, packet_size=4000):
         num_of_packets = PerfConsts.PACKET_SIZE_TO_PACKET_NUM_DICT[packet_size]
         self.verify_traffic_generation_enabled(engines)
         logger.info(f'Generate traffic from left and right node with packet size {packet_size}')
         for engine in self.tg_engines:
             engines[engine].run_cmd(f'sudo python3 {PerfConsts.TRAFFIC_SENDER_SCRIPT_TG} -s {packet_size} '
-                                    f'-n {num_of_packets} -m {dest_mac} -g {engine}', validate=True)
+                                    f'-n {num_of_packets} -m {dest_mac} -g {engine} -p {num_of_ports}', validate=True)
 
     def get_tg_engines(self, engines):
         tg_engines = [engine for engine in engines if re.search("tg$", engine)]

@@ -267,6 +267,14 @@ r-panther-13 ansible_host=r-panther-13  sonic_version=v2  sonic_hwsku=Mellanox-S
 mtvr-moose-01-ptf-any ansible_host=mtvr-moose-01  sonic_version=v2  sonic_hwsku=ACS-SN5600             serial_console="ssh -l rcon:7010 10.245.2.8" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-245-2-49 base_mac=9C:05:91:9B:EC:00 serial=MT2324XZ0TAX model=920-9N42F-00RI-5N0 syseeprom_info="{'0x28': u'x86_64-nvidia_sn5600-r0', '0x29': u'2022.08-5.3.0010-115200', '0x22': u'920-9N42F-00RI-5N0', '0x23': u'MT2324XZ0TAX', '0x21': u'SN5600', '0x26': u'0', '0x24': u'9C:05:91:9B:EC:00', '0x25': u'08/03/2023 11:08:57', '0xfe': u'0x5D327D70', '0x2b': u'Nvidia', '0x2a': u'512'}"
 mtvr-moose-01 ansible_host=mtvr-moose-01  sonic_version=v2  sonic_hwsku=ACS-SN5600            serial_console="ssh -l rcon:7010 10.245.2.8" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-245-2-49 base_mac=9C:05:91:9B:EC:00 serial=MT2324XZ0TAX model=920-9N42F-00RI-5N0 syseeprom_info="{'0x28': u'x86_64-nvidia_sn5600-r0', '0x29': u'2022.08-5.3.0010-115200', '0x22': u'920-9N42F-00RI-5N0', '0x23': u'MT2324XZ0TAX', '0x21': u'SN5600', '0x26': u'0', '0x24': u'9C:05:91:9B:EC:00', '0x25': u'08/03/2023 11:08:57', '0xfe': u'0x5D327D70', '0x2b': u'Nvidia', '0x2a': u'512'}"
 
+# MTVR canonical testbed sonic_performance_mtvr-moose-02 topologies
+# MTVR canonical testbed sonic_performance_mtvr-moose-02 topologies
+mtvr-moose-02-ptf-any ansible_host=mtvr-moose-02  sonic_version=v2  sonic_hwsku=ACS-SN5600             serial_console="ssh -l rcon:7014 10.245.2.8" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-245-2-49 base_mac=9C:05:91:9A:DA:00 serial=MT2321XZ0JJ3 model=MSN-9N402-00RI-5CR syseeprom_info="{'0x28': u'x86_64-nvidia_sn5600-r0', '0x29': u'2022.08-5.3.0010-115200', '0x22': u''MSN-9N402-00RI-5CR, '0x23': u'MT2321XZ0JJ3', '0x21': u'SN5600', '0x26': u'0', '0x24': u'9C:05:91:9A:DA:00', '0x25': u'06/05/2023 03:49:09', '0xfe': u'0x9247A584', '0x2b': u'Nvidia', '0x2a': u'512'}"
+mtvr-moose-02 ansible_host=mtvr-moose-02  sonic_version=v2  sonic_hwsku=ACS-SN5600            serial_console="ssh -l rcon:7010 10.245.2.8" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-245-2-49 base_mac=9C:05:91:9A:DA:00 serial=MT2321XZ0JJ3 model=MSN-9N402-00RI-5CR syseeprom_info="{'0x28': u'x86_64-nvidia_sn5600-r0', '0x29': u'2022.08-5.3.0010-115200', '0x22': u''MSN-9N402-00RI-5CR, '0x23': u'MT2321XZ0JJ3', '0x21': u'SN5600', '0x26': u'0', '0x24': u'9C:05:91:9A:DA:00', '0x25': u'06/05/2023 03:49:09', '0xfe': u'0x9247A584', '0x2b': u'Nvidia', '0x2a': u'512'}"
+
+mtvr-moose-03-ptf-any ansible_host=mtvr-moose-03  sonic_version=v2  sonic_hwsku=ACS-SN5600             serial_console="ssh -l rcon:7014 10.245.2.8" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-245-2-49 base_mac=9C:05:91:9B:56:00 serial=MT2321XZ0JKZ model=MSN-9N402-00RI-5CR syseeprom_info="{'0x28': u'x86_64-nvidia_sn5600-r0', '0x29': u'2022.08-5.3.0010-115200', '0x22': u''MSN-9N402-00RI-5CR, '0x23': u'MT2321XZ0JKZ', '0x21': u'SN5600', '0x26': u'0', '0x24': u'9C:05:91:9B:56:00', '0x25': u'06/05/2023 01:44:09', '0xfe': u'0xA8E0BA3D', '0x2b': u'Nvidia', '0x2a': u'512'}"
+mtvr-moose-03 ansible_host=mtvr-moose-03  sonic_version=v2  sonic_hwsku=ACS-SN5600          serial_console="ssh -l rcon:7014 10.245.2.8" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-245-2-49 base_mac=9C:05:91:9B:56:00 serial=MT2321XZ0JKZ model=MSN-9N402-00RI-5CR syseeprom_info="{'0x28': u'x86_64-nvidia_sn5600-r0', '0x29': u'2022.08-5.3.0010-115200', '0x22': u''MSN-9N402-00RI-5CR, '0x23': u'MT2321XZ0JKZ', '0x21': u'SN5600', '0x26': u'0', '0x24': u'9C:05:91:9B:56:00', '0x25': u'06/05/2023 01:44:09', '0xfe': u'0xA8E0BA3D', '0x2b': u'Nvidia', '0x2a': u'512'}"
+
 
 mtvr-moose-05-ptf-any ansible_host=mtvr-moose-05  sonic_version=v2  sonic_hwsku=ACS-SN5600             serial_console="ssh -l rcon:7016 10.245.2.8" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-245-2-49 base_mac=9C:05:91:9A:E8:00 serial=MT2321XZ0JJA model=MSN-9N402-00RI-5CR syseeprom_info="{'0x28': u'x86_64-nvidia_sn5600-r0', '0x29': u'2022.08-5.3.0010-dev-115200-dev', '0x22': u'MSN-9N402-00RI-5CR', '0x23': u'MT2321XZ0JJA', '0x21': u'SN5600', '0x26': u'0', '0x24': u'9C:05:91:9A:E8:00', '0x25': u'06/06/2023 21:00:13', '0xfe': u'0xCF1EB48A', '0x2b': u'Nvidia', '0x2a': u'512'}"
 mtvr-moose-05 ansible_host=mtvr-moose-05  sonic_version=v2  sonic_hwsku=ACS-SN5600             serial_console="ssh -l rcon:7016 10.245.2.8" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-245-2-49 base_mac=9C:05:91:9A:E8:00 serial=MT2321XZ0JJA model=MSN-9N402-00RI-5CR syseeprom_info="{'0x28': u'x86_64-nvidia_sn5600-r0', '0x29': u'2022.08-5.3.0010-dev-115200-dev', '0x22': u'MSN-9N402-00RI-5CR', '0x23': u'MT2321XZ0JJA', '0x21': u'SN5600', '0x26': u'0', '0x24': u'9C:05:91:9A:E8:00', '0x25': u'06/06/2023 21:00:13', '0xfe': u'0xCF1EB48A', '0x2b': u'Nvidia', '0x2a': u'512'}"
@@ -1046,6 +1054,12 @@ r-panther-13
 
 mtvr-moose-01-ptf-any
 mtvr-moose-01
+
+mtvr-moose-02-ptf-any
+mtvr-moose-02
+
+mtvr-moose-03-ptf-any
+mtvr-moose-03
 
 mtvr-moose-05-ptf-any
 mtvr-moose-05

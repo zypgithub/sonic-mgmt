@@ -147,14 +147,6 @@
         "default_hwsku": "Mellanox-SN5600-V256",
         "support_hwsku": ["ACS-SN5600", "Mellanox-SN5600-V256"]
     },
-    "mtvr-moose-02_setup": {
-        "default_hwsku": "ACS-SN5600",
-        "support_hwsku": ["ACS-SN5600"]
-    },
-    "mtvr-moose-03_setup": {
-        "default_hwsku": "ACS-SN5600",
-        "support_hwsku": ["ACS-SN5600"]
-    },
     "mtvr-moose-04_setup": {
         "default_hwsku": "Mellanox-SN5600-V256",
         "support_hwsku": ["ACS-SN5600", "Mellanox-SN5600-V256"]

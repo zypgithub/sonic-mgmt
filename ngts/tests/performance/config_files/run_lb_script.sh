@@ -33,7 +33,9 @@ check_rc()
 
 cat /tmp/sai.profile | grep SAI_INDEPENDENT_MODULE_MODE=1
 if  [ $? -eq 0 ]; then
-  im_enabled=1;
+  im_enabled=1
+  else
+  im_enabled=0
 fi
 echo $im_enabled
 # Run the loop 64 times

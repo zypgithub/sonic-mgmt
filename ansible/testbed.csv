@@ -94,18 +94,6 @@ r-moose-01-t1-lag,vm-t1,t1-lag,docker-ptf-mlnx,ptf-r-moose-01,10.215.22.3/16,,se
 r-moose-01-ptf32,vm-t1,ptf32,docker-ptf-mlnx,ptf-r-moose-01,10.215.22.3/16,,server_60,VM2501,r-moose-01,Mellanox MTR testbed
 r-moose-01-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-r-moose-01,10.215.22.3/16,,server_60,VM2501,r-moose-01,Mellanox MTR testbed
 
-mtvr-moose-02-t0,vm-t1,t0,docker-ptf-mlnx,ptf-mtvr-moose-02,10.245.20.122/16,,server_63,VM2801,mtvr-moose-02,Mellanox MTR testbed
-mtvr-moose-02-t1,vm-t1,t1,docker-ptf-mlnx,ptf-mtvr-moose-02,10.245.20.122/16,,server_63,VM2801,mtvr-moose-02,Mellanox MTR testbed
-mtvr-moose-02-t1-lag,vm-t1,t1-lag,docker-ptf-mlnx,ptf-mtvr-moose-02,10.245.20.122/16,,server_63,VM2801,mtvr-moose-02,Mellanox MTR testbed
-mtvr-moose-02-ptf32,vm-t1,ptf32,docker-ptf-mlnx,ptf-mtvr-moose-02,10.245.20.122/16,,server_63,VM2801,mtvr-moose-02,Mellanox MTR testbed
-mtvr-moose-02-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-mtvr-moose-02,10.245.20.122/16,,server_63,VM2801,mtvr-moose-02,Mellanox MTR testbed
-
-mtvr-moose-03-t0,vm-t1,t0,docker-ptf-mlnx,ptf-mtvr-moose-03,10.245.20.182/16,,server_64,VM2901,mtvr-moose-03,Mellanox MTR testbed
-mtvr-moose-03-t1,vm-t1,t1,docker-ptf-mlnx,ptf-mtvr-moose-03,10.245.20.182/16,,server_64,VM2901,mtvr-moose-03,Mellanox MTR testbed
-mtvr-moose-03-t1-lag,vm-t1,t1-lag,docker-ptf-mlnx,ptf-mtvr-moose-03,10.245.20.182/16,,server_64,VM2901,mtvr-moose-03,Mellanox MTR testbed
-mtvr-moose-03-ptf32,vm-t1,ptf32,docker-ptf-mlnx,ptf-mtvr-moose-03,10.245.20.182/16,,server_64,VM2901,mtvr-moose-03,Mellanox MTR testbed
-mtvr-moose-03-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-mtvr-moose-03,10.245.20.182/16,,server_64,VM2901,mtvr-moose-03,Mellanox MTR testbed
-
 mtvr-moose-04-t0,vm-t1,t0,docker-ptf-mlnx,ptf-mtvr-moose-04,10.245.20.62/16,,server_65,VM3001,mtvr-moose-04,Mellanox MTR testbed
 mtvr-moose-04-t0-64,vm-t1,t0-64,docker-ptf-mlnx,ptf-mtvr-moose-04,10.245.20.62/16,,server_65,VM3001,mtvr-moose-04,Mellanox MTR testbed
 mtvr-moose-04-t0-64-256,vm-t1,t0-64-256,docker-ptf-mlnx,ptf-mtvr-moose-04,10.245.20.62/16,,server_65,VM3001,mtvr-moose-04,Mellanox MTR testbed
@@ -114,6 +102,8 @@ mtvr-moose-04-t1-lag,vm-t1,t1-lag,docker-ptf-mlnx,ptf-mtvr-moose-04,10.245.20.62
 mtvr-moose-04-ptf32,vm-t1,ptf32,docker-ptf-mlnx,ptf-mtvr-moose-04,10.245.20.62/16,,server_65,VM3001,mtvr-moose-04,Mellanox MTR testbed
 mtvr-moose-04-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-mtvr-moose-04,10.245.20.62/16,,server_65,VM3001,mtvr-moose-04,Mellanox MTR testbed
 mtvr-moose-01-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,mtvr-moose-01,Mellanox MTR testbed
+mtvr-moose-02-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,mtvr-moose-02,Mellanox MTR testbed
+mtvr-moose-03-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,mtvr-moose-03,Mellanox MTR testbed
 mtvr-moose-05-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,mtvr-moose-05,Mellanox MTR testbed
 mtvr-moose-06-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,mtvr-moose-06,Mellanox MTR testbed
 mtvr-moose-07-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,mtvr-moose-07,Mellanox MTR testbed

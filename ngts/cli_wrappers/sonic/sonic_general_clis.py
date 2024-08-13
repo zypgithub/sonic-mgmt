@@ -1029,13 +1029,14 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                 self.reboot_reload_flow(r_type=SonicConst.CONFIG_RELOAD_CMD, topology_obj=topology_obj,
                                         reload_force=True)
 
-        with allure.step("Apply qos and dynamic buffer config"):
-            self.cli_obj.qos.reload_qos()
-            self.verify_dockers_are_up(dockers_list=['swss'])
-            if is_redmine_issue_active([3589124]):
-                time.sleep(120)
-            self.cli_obj.qos.stop_buffermgrd()
-            self.cli_obj.qos.start_buffermgrd()
+        if not self.is_performance_setup(setup_name):
+            with allure.step("Apply qos and dynamic buffer config"):
+                self.cli_obj.qos.reload_qos()
+                self.verify_dockers_are_up(dockers_list=['swss'])
+                if is_redmine_issue_active([3589124]):
+                    time.sleep(120)
+                self.cli_obj.qos.stop_buffermgrd()
+                self.cli_obj.qos.start_buffermgrd()
 
         with allure.step("Enable INFO logging on swss"):
             self.enable_info_logging_on_docker(docker_name='swss')
@@ -1054,7 +1055,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
 
         if setup_name.startswith('air'):
             self.prepare_nvidia_air_basic_config_db_json(topology_obj, setup_name, hwsku, platform)
-        else:
+        elif not self.is_performance_setup(setup_name):
             # No need to modify port_config.ini for NvidiaAir setups - because ports split not supported yet
             self.upload_port_config_ini(platform, hwsku, shared_path)
 
@@ -1184,6 +1185,8 @@ class SonicGeneralCliDefault(GeneralCliCommon):
     def get_updated_config_db(self, topology_obj, setup_name, hwsku, platform):
         branch = get_sonic_branch(topology_obj, self.cli_obj.dut_alias)
         config_file_prefix = self.get_config_file_prefix(setup_name)
+        if self.is_performance_setup(setup_name):
+            return f"{config_file_prefix}config_db.json"
         config_db_file_name = f"{self.get_image_sonic_version()}_{config_file_prefix}config_db.json"
         base_config_db_json_file_name = SonicConst.CONFIG_DB_JSON
         base_config_db_json_file_name = config_file_prefix + base_config_db_json_file_name
