@@ -117,8 +117,8 @@ class TpmTool:
             with allure.step('check target attributes'):
                 target_attributes = parsed_out['TPM2_PT_STARTUP_CLEAR']
                 return 'phEnable' in target_attributes and target_attributes['phEnable'] == '1' \
-                    and 'shEnable' in target_attributes and target_attributes['shEnable'] == '1' \
-                    and 'ehEnable' in target_attributes and target_attributes['ehEnable'] == '1'
+                       and 'shEnable' in target_attributes and target_attributes['shEnable'] == '1' \
+                       and 'ehEnable' in target_attributes and target_attributes['ehEnable'] == '1'
 
     def _is_tpm_provisioned(self) -> bool:
         return True  # TODO: complete

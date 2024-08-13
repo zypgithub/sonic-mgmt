@@ -5,7 +5,8 @@ from collections import namedtuple
 from typing import List, Dict
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from ngts.nvos_constants.constants_nvos import MultiPlanarConsts, PlatformConsts, HealthConsts, ClusterConsts, ActionConsts
+from ngts.nvos_constants.constants_nvos import MultiPlanarConsts, PlatformConsts, HealthConsts, ClusterConsts, \
+    ActionConsts
 from ngts.nvos_constants.constants_nvos import (NvosConst, DatabaseConst, IbConsts, StatsConsts, FansConsts,
                                                 DocumentsConsts)
 from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
@@ -916,8 +917,11 @@ class JulietSwitch(NvLinkSwitch):
             'system version': dut_engine.run_cmd('nv show system version'),
             'platform firmware': dut_engine.run_cmd('nv show platform firmware'),
         }
-        for i, pw in enumerate(psws):
-            outputs[f'bmc version {i} (redfish)'] = dut_engine.run_cmd(get_bmc_version_cmd.format(pw))
+        for pw in psws:
+            out = dut_engine.run_cmd(get_bmc_version_cmd.format(pw))
+            if 'error' not in out:
+                outputs['bmc version (redfish)'] = out
+                break
         res = [f'{title.upper()}:\n{output}\n' for title, output in outputs.items()]
         return '\n'.join(res)
 

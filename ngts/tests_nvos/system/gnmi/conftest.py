@@ -17,17 +17,11 @@ from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo 
 from ngts.tests_nvos.general.security.tacacs.constants import TacacsDockerServer0
 from ngts.tests_nvos.general.security.test_aaa_ldap.ldap_servers_info import LdapServersP3
 from ngts.tests_nvos.general.security.test_aaa_radius.constants import RadiusVmServer
-from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
 from ngts.tests_nvos.system.gnmi.constants import ETC_HOSTS, GNMI_TEST_CERT, DUT_MOUNT_GNMI_CERT_DIR
-from ngts.tests_nvos.system.gnmi.helpers import get_scp_player
+from ngts.tests_nvos.system.gnmi.helpers import get_scp_player, verify_gnmi_client_tools_installed
 from ngts.tools.test_utils.nvos_general_utils import generate_scp_uri_using_player
 
 logger = logging.getLogger()
-
-
-def get_scp_player(engines) -> LinuxSshEngine:
-    return engines.sonic_mgmt
-    # return LinuxSshEngine(ip='10.237.116.70', username='root', password='12345')
 
 
 @pytest.fixture(scope='session')
@@ -37,11 +31,7 @@ def scp_player(engines) -> LinuxSshEngine:
 
 @pytest.fixture(scope='session', autouse=True)
 def verify_gnmi_client_tools_installed_on_player():
-    player = GnmiClient('', '', '', '', 10)
-    with allure.step('verify gnmic installation on test player'):
-        player.verify_gnmic_installation()
-    with allure.step('verify grpcurl  installation on test player'):
-        player.verify_grpcurl_installation()
+    verify_gnmi_client_tools_installed()
 
 
 @pytest.fixture()

@@ -462,29 +462,42 @@ def get_scp_player(engines) -> LinuxSshEngine:
     # return LinuxSshEngine(ip='10.237.116.70', username='root', password='12345')
 
 
+def verify_gnmi_client_tools_installed():
+    player = GnmiClient('', '', '', '', 10)
+    with allure.step('verify gnmic installation on test player'):
+        player.verify_gnmic_installation()
+    with allure.step('verify grpcurl  installation on test player'):
+        player.verify_grpcurl_installation()
+
+
 def factory_reset_gnmi_check():
     engines = TestToolkit.engines
     cert = TestCert.cert_valid_1
     system = System()
     scp_engine = get_scp_player(engines)
     dut_engine = engines.dut
-    with allure.step(f'before factory reset - import and load certificate "{cert.name}" to gnmi'):
-        with allure.step(f'import cert {cert.name}'):
-            system.security.certificate.cert_id[cert.name].action_import(
-                uri_bundle=generate_scp_uri_using_player(scp_engine, cert.p12_bundle),
-                passphrase=cert.p12_password).verify_result()
-        with allure.step(f'set certificate "{cert.name}" to gnmi'):
-            system.gnmi_server.set(CERTIFICATE, cert.name, apply=True).verify_result()
+    with allure.step('pre factory reset GNMI steps'):
+        with allure.step('verify player has gnmi client tools'):
+            verify_gnmi_client_tools_installed()
+        with allure.step(f'import and load certificate "{cert.name}" to gnmi'):
+            with allure.step(f'import cert {cert.name}'):
+                system.security.certificate.cert_id[cert.name].action_import(
+                    uri_bundle=generate_scp_uri_using_player(scp_engine, cert.p12_bundle),
+                    passphrase=cert.p12_password).verify_result()
+            with allure.step(f'set certificate "{cert.name}" to gnmi'):
+                system.gnmi_server.set(CERTIFICATE, cert.name, apply=True).verify_result()
     yield
-    with allure.step(f'after factory reset - verify default gnmi certificate'):
-        out = OutputParsingTool.parse_json_str_to_dictionary(system.gnmi_server.show()).get_returned_value()
-        assert out[CERTIFICATE] == DEFAULT_CERTIFICATE, (f'value of field "{CERTIFICATE}" not as expected (default)\n'
-                                                         f'expected (default): {DEFAULT_CERTIFICATE}\n'
-                                                         f'actual: {out[CERTIFICATE]}')
-    with allure.step('after factory reset - verify client cannot request using the certificate'):
-        verify_gnmi_client(TestFlowType.BAD_FLOW, cert.ip or cert.dn, GnmiConsts.GNMI_DEFAULT_PORT,
-                           dut_engine.username, dut_engine.password, False, GnmicErr.CERT_VERIFY_FAIL,
-                           cacert=cert.cacert)
+    with allure.step('post factory reset GNMI steps'):
+        with allure.step(f'verify default gnmi certificate'):
+            out = OutputParsingTool.parse_json_str_to_dictionary(system.gnmi_server.show()).get_returned_value()
+            assert out[CERTIFICATE] == DEFAULT_CERTIFICATE, (
+                f'value of field "{CERTIFICATE}" not as expected (default)\n'
+                f'expected (default): {DEFAULT_CERTIFICATE}\n'
+                f'actual: {out[CERTIFICATE]}')
+        with allure.step('verify client cannot request using the certificate'):
+            verify_gnmi_client(TestFlowType.BAD_FLOW, cert.ip or cert.dn, GnmiConsts.GNMI_DEFAULT_PORT,
+                               dut_engine.username, dut_engine.password, False, GnmicErr.CERT_VERIFY_FAIL,
+                               cacert=cert.cacert)
     yield  # to prevent StopIteration on the 2nd next() call
 
 

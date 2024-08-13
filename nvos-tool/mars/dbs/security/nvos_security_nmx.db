@@ -4,7 +4,7 @@
 		<default_params_type> extended_setup_step_params </default_params_type>
 		<DB>
 			<info> </info>
-			<owner> Yana P </owner>
+			<owner> Alon N. </owner>
 			<group> NVOS </group>
 			<dimension> VER </dimension>
 
@@ -37,46 +37,7 @@
             </on_not_success>
 		</Case>
 	</global>
-	<test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_ssh_hardening.cases </cases>
-	</test>
-	<test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_tpm_attestation.cases </cases>
-	</test>
-    <test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_bmc.cases </cases>
-    </test>
     <test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_nmx.cases </cases>
     </test>
-	<test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_authentication_restrictions.cases </cases>
-	</test>
-	<test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_ldap.cases </cases>
-	</test>
-	<test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_radius.cases </cases>
-	</test>
-	<test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_ssh_config.cases </cases>
-	</test>
-	<test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_login_ssh_notification.cases </cases>
-	</test>
-	<test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_password_hardening.cases </cases>
-	</test>
-	<test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_secure_boot_and_upgrade.cases </cases>
-	</test>
-	<test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_grub_password.cases </cases>
-	</test>
-	<test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_tacacs.cases </cases>
-	</test>
-	<test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_gnmi.cases </cases>
-	</test>
 </DBDEF>

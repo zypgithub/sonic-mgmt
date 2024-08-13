@@ -286,7 +286,6 @@ class SystemConsts:
     DATE_TIME = 'date-time'
     VERSION = 'version'
     SECURITY = 'security'
-    DATE_TIME = 'date-time'
     TECHSUPPORT_FILES_PATH = '/host/dump/'
     TECHSUPPORT_EMPTY_FILES_TO_IGNORE = ['queue.counters_2', 'queue.counters_1.0', 'swapon',
                                          'queue.counters_1', 'queue.counters_2.0', 'queue.counters_1.1', 'queue.counters_2.1']
@@ -855,7 +854,6 @@ class NtpConsts:
     REFERENCE = 'reference'
     SERVER = 'server'
     STATE = 'state'
-    DHCP = 'dhcp'
     STATUS = 'status'
     VRF = 'vrf'
     KEY = 'key'

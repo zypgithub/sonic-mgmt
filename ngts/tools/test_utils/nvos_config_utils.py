@@ -133,8 +133,8 @@ def clear_conf(dut_engine, markers=None, set_base_config_function=set_base_confi
                         logging.info("Execute system unset commands")
                         dut_engine.run_cmd(unset_cli_cmd)
 
-                    with allure.step("Set base configurations"):
-                        set_base_config_function(dut_engine=dut_engine, apply=False)
+                with allure.step("Set base configurations"):
+                    set_base_config_function(dut_engine=dut_engine, apply=False)
 
                 with allure.step("Apply configurations"):
                     NvueGeneralCli.apply_config(dut_engine, option='-y')

@@ -78,13 +78,13 @@ def set_base_configurations(dut_engine, timezone=LinuxConsts.JERUSALEM_TIMEZONE,
 
         if apply:
             logging.info('Apply configurations')
-            NvueGeneralCli.apply_config(engine=dut_engine, option='--assume-yes')
+            NvueGeneralCli.apply_config(engine=dut_engine, option='-y')
 
         if save_conf:
             logging.info('Save configurations')
             NvueGeneralCli.save_config(dut_engine)
     finally:
-        logging.info(f'Change tested api back to {orig_api}')   # hello
+        logging.info(f'Change tested api back to {orig_api}')
         TestToolkit.tested_api = orig_api
 
 

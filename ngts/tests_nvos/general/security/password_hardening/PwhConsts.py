@@ -95,6 +95,8 @@ class PwhConsts:
     ERR_INCOMPLETE_SET_CMD = 'Error: Incomplete Command'
     ERR_INVALID_SET_ENABLE_DISABLED = "is not one of ['enabled', 'disabled']"
     ERR_PW_SHOULD_CONTAIN = 'Password should contain at least '
+    ERR_MAX_RANGE = 'Error: At {}: {} is greater than the maximum of {}'
+    ERR_MIN_RANGE = 'Error: At {}: {} is less than the minimum of {}'
     ERR_RANGE = 'Valid range is'
     ERR_VALUE_LESS_THAN_MIN = "Error: At {}: {} is less than the minimum of {}"
     ERR_VALUE_GREATER_THAN_MAX = "Error: At {}: {} is greater than the maximum of {}"
