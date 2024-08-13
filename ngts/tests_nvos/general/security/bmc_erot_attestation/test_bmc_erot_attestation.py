@@ -232,9 +232,6 @@ def test_reboot_system_keeps_data(available_spdm_components):
         assert_no_issues(component, issues, 'there are output mismatches before and after reboot')
 
 
-@pytest.mark.bmc
-@pytest.mark.erot
-@pytest.mark.security
 @pytest.mark.parametrize('test_flow', TestFlowType.ALL_TYPES)
 def test_dummy_attestation_verification(test_flow):
     """

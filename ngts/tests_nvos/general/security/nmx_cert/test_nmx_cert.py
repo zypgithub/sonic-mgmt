@@ -14,9 +14,9 @@ from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.certificate.constants import TestCert
 from ngts.tests_nvos.general.security.nmx_cert.conftest import clear_manager_config, import_test_certs
 from ngts.tests_nvos.general.security.nmx_cert.constants import Defaults, EncryptionMode, ENABLED, DISABLED, \
-    UserCfgJsonFields, FILE_SHOULD_NOT_EXIST, NA, STATE
+    UserCfgJsonFields, FILE_SHOULD_NOT_EXIST, NA, STATE, UserCfgJsonValues
 from ngts.tests_nvos.general.security.nmx_cert.helpers import verify_manager_show, verify_cert_show, verify_cacert_show, \
-    verify_encryption_show, verify_client_connection, verify_static_checks, verify_commands_results, import_certificates
+    verify_encryption_show, verify_client_connection, verify_static_checks, verify_commands_results
 from ngts.tests_nvos.system.gnmi.conftest import scp_player, get_scp_player
 
 
@@ -54,8 +54,9 @@ def test_manager_cli(test_api):
         verify_cacert_show(expect_cert_id=cert.cacert_name)
     with allure.step('verify files and fields in json'):
         verify_static_checks({
-            UserCfgJsonFields.CERTIFICATE: cert.name,
-            UserCfgJsonFields.CA_CERTIFICATE: cert.cacert_name
+            UserCfgJsonFields.CERTIFICATE: UserCfgJsonValues.CERTIFICATE,
+            UserCfgJsonFields.PRIVATE_KEY: UserCfgJsonValues.PRIVATE_KEY,
+            UserCfgJsonFields.CA_CERTIFICATE: UserCfgJsonValues.CA_CERTIFICATE
         }, cert.name, cert.cacert_name)
     for mode in EncryptionMode.ALL_MODES:
         with allure.step(f'Run update encryption: {mode}'):
@@ -72,10 +73,10 @@ def test_manager_cli(test_api):
     with allure.step('Verify in show that related fields restored to default'):
         verify_manager_show(expect_encryption=Defaults.ENCRYPTION)
         verify_encryption_show(expect_mode=Defaults.ENCRYPTION)
-    # with allure.step('verify fields in json'):    # TODO: uncomment after bug close: https://redmine.mellanox.com/issues/3993304
-    #     verify_static_checks({
-    #         UserCfgJsonFields.ENCRYPTION: None
-    #     })
+    with allure.step('verify fields in json'):    # TODO: uncomment after bug close: https://redmine.mellanox.com/issues/3993304
+        verify_static_checks({
+            UserCfgJsonFields.ENCRYPTION: None
+        })
     with allure.step('Run restore ca/certificate'):
         cluster.manager.certificate.action_restore().verify_result()
         cluster.manager.ca_certificate.action_restore().verify_result()
@@ -85,8 +86,9 @@ def test_manager_cli(test_api):
         verify_cacert_show(expect_cert_id=Defaults.CACERT)
     with allure.step('verify files and fields in json deleted'):
         verify_static_checks({
-            # UserCfgJsonFields.CERTIFICATE: None,    # TODO: uncomment after bug close: https://redmine.mellanox.com/issues/3993304
-            # UserCfgJsonFields.CA_CERTIFICATE: None
+            UserCfgJsonFields.CERTIFICATE: None,    # TODO: uncomment after bug close: https://redmine.mellanox.com/issues/3993304
+            UserCfgJsonFields.PRIVATE_KEY: None,
+            UserCfgJsonFields.CA_CERTIFICATE: None
         }, FILE_SHOULD_NOT_EXIST, FILE_SHOULD_NOT_EXIST)
     with allure.step('Run update manager (enable manager communication)'):
         cluster.manager.action_update().verify_result()
@@ -113,9 +115,10 @@ def test_manager_cli(test_api):
         verify_encryption_show(NA)
     with allure.step('verify files and fields in json deleted'):
         verify_static_checks({
-            # UserCfgJsonFields.CERTIFICATE: None,    # TODO: uncomment after bug close: https://redmine.mellanox.com/issues/3993304
-            # UserCfgJsonFields.CA_CERTIFICATE: None,
-            # UserCfgJsonFields.ENCRYPTION: None,
+            UserCfgJsonFields.CERTIFICATE: None,    # TODO: uncomment after bug close: https://redmine.mellanox.com/issues/3993304
+            UserCfgJsonFields.PRIVATE_KEY: None,
+            UserCfgJsonFields.CA_CERTIFICATE: None,
+            UserCfgJsonFields.ENCRYPTION: None,
             UserCfgJsonFields.STATE: DISABLED
         }, FILE_SHOULD_NOT_EXIST, FILE_SHOULD_NOT_EXIST)
 
@@ -139,7 +142,7 @@ def test_manager_cmd_fail_when_cluster_off(test_api):
     cert = TestCert.cert_valid_1
     with allure.step('Make sure cluster disabled'):
         cluster.set(STATE, DISABLED, apply=True).verify_result()
-    with allure.step('verify show outputs empty'):
+    with allure.step('verify show outputs NAs'):
         verify_manager_show(NA, NA, NA, NA)
         verify_cert_show(NA)
         verify_cacert_show(NA)
@@ -159,7 +162,13 @@ def test_manager_cmd_fail_when_cluster_off(test_api):
     with allure.step('Verify failed and show doesn’t change'):
         with allure.step('verify all commands failed'):
             verify_commands_results(results, False)
-        with allure.step('verify no change in related fields'):
+        with allure.step('verify show outputs NAs'):
+            verify_manager_show(NA, NA, NA, NA)
+            verify_cert_show(NA)
+            verify_cacert_show(NA)
+            verify_encryption_show(NA)
+        with allure.step('enable cluster and verify all fields were not changed and still default'):
+            cluster.set(STATE, ENABLED, apply=True).verify_result()
             verify_manager_show(expect_state=Defaults.STATE, expect_cert=Defaults.CERT, expect_cacert=Defaults.CACERT,
                                 expect_encryption=Defaults.ENCRYPTION)
             verify_cert_show(expect_cert_id=Defaults.CERT)
@@ -179,16 +188,13 @@ def test_delete_cert_fail_when_is_used(test_api, scp_player, engines, import_cer
     2.	Try to remove certs
     3.	Verify fail and that there’s no change in related fields
     """
-    # TODO: https://redmine.mellanox.com/issues/3995421
     TestToolkit.tested_api = test_api
     cluster = Cluster()
     cert = TestCert.cert_valid_1
-    with allure.step('import relevant certs'):
-        import_certificates(scp_player, engines.dut, [cert])
-        import_certificates(scp_player, engines.dut, [cert], True)
     with allure.step('Update certs'):
         cluster.manager.certificate.action_update(cert.name).verify_result()
         cluster.manager.ca_certificate.action_update(cert.cacert_name).verify_result()
+        cluster.manager.show()
     with allure.step('Try to delete certs'):
         results: Dict[str, ResultObj] = {}
         security = System().security
@@ -196,6 +202,7 @@ def test_delete_cert_fail_when_is_used(test_api, scp_player, engines, import_cer
         results['delete ca-certificate'] = security.ca_certificate.cert_id[cert.cacert_name].action_delete()
     with allure.step('Verify fail and that there’s no change in related fields'):
         with allure.step('verify commands failed'):
+            cluster.manager.show()
             verify_commands_results(results, False)
         with allure.step('verify fields'):
             verify_manager_show(expect_cert=cert.name, expect_cacert=cert.cacert_name)
