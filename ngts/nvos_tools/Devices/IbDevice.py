@@ -836,7 +836,7 @@ class CrocodileSwitch(IbSwitch):
 
     def _init_temperature(self):
         super()._init_temperature()
-        self.temperature_sensors += ["ASIC1", "ASIC2", "PSU-3-Temp", "PSU-4-Temp"]
+        self.temperature_sensors += ["ASIC1", "ASIC2", "PSU-3-Temp", "PSU-4-Temp", "PMIC-2-Temp", "PMIC-7-Temp"]
         self.temperature_sensors.remove("ASIC")
 
     def _relevant_config_filename_by_version(self, version: str) -> str:

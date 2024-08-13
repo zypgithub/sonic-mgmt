@@ -83,9 +83,12 @@ def extract_c_coverage_for_nvos(dest, engines, engine, cli_obj, topology_obj):
         c_dest = get_dest_path(engine, dest) + SharedConsts.C_DIR
 
     with allure.step('Restart system services to get coverage for running services'):
-        engines.dut.run_cmd('sudo systemctl restart swss-ibv0@0.service')
-        engines.dut.run_cmd('sudo systemctl restart syncd-ibv0@0.service')
+        engines.dut.run_cmd('sudo systemctl stop swss-ibv0@0.service')
+        engines.dut.run_cmd('sudo systemctl stop swss-ibv0@1.service')
         time.sleep(5)
+        engines.dut.run_cmd('sudo systemctl start swss-ibv0@0.service')
+        engines.dut.run_cmd('sudo systemctl start swss-ibv0@1.service')
+        time.sleep(10)
 
     with allure.step("Get sudo cli object"):
         sudo_cli_general = get_sudo_cli_obj(engine)
