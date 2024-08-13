@@ -80,6 +80,7 @@ def test_cluster_app_log_level(engines, devices, test_api):
                 output_format=OutputFormat.json).get_returned_value()
             app_status = output[app]['status']
             if app_status != 'ok':
+                ClusterTools.stop_app(cluster, app)
                 ClusterTools.start_app(cluster, app)
             cluster.apps.apps_name[app].loglevel.action_restore_cluster()
             _rotate_logs(system)
@@ -135,6 +136,7 @@ def test_cluster_app_log_level_under_stress(engines, devices, test_api):
                 app_status = output[app]['status']
                 with allure.step("Start apps that were stopped"):
                     if app_status != 'ok':
+                        ClusterTools.stop_app(cluster, app)
                         ClusterTools.start_app(cluster, app)
             with allure.step("Restore log level"):
                 cluster.apps.apps_name[app].loglevel.action_restore_cluster()

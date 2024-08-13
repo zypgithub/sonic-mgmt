@@ -237,6 +237,7 @@ class ClusterTools:
     def start_app(cluster, app):
         with allure.step(f"Start app {app}"):
             cluster.apps.apps_name[app].action_start_cluster_apps()
+            ClusterTools.wait_for_apps_to_be_in_wanted_state()
             with allure.step("Running 'nv show cluster apps running' command and verifying output"):
                 output = OutputParsingTool.parse_show_output_to_dict(
                     cluster.apps.running.show(output_format=OutputFormat.json),
@@ -248,6 +249,7 @@ class ClusterTools:
     def stop_app(cluster, app):
         with allure.step(f"Stop app {app}"):
             cluster.apps.apps_name[app].action_stop_cluster_apps()
+            ClusterTools.wait_for_apps_to_be_in_wanted_state()
 
     @staticmethod
     def get_current_config_files_paths(control_plane):
