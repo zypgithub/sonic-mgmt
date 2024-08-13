@@ -1135,7 +1135,8 @@ class OperationTimeConsts:
                   'cluster update log level': 5,
                   'install bmc': 900,
                   'install fpga': 900,
-                  ActionConsts.POWER_CYCLE: 360
+                  ActionConsts.POWER_CYCLE: 360,
+                  'juliet-power-cycle': 410
                   }
 
 

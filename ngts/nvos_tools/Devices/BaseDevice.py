@@ -369,6 +369,7 @@ class BaseSwitch(BaseDevice):
         self.reboot_type = 'reboot'  # If system has special reboot (in terms of time) this var will describe it. Useful when extracting THRESHOLDS
         self.generate_tech_support = 'generate tech-support'
         self.reset_factory = 'reset factory'
+        self.power_cycle_type = 'power-cycle'
 
     def _init_psu_list(self):
         super()._init_psu_list()

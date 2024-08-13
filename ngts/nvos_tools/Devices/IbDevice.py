@@ -998,6 +998,8 @@ class JulietSwitch(NvLinkSwitch):
                 'version_name': '00.00.015_rc7',
                 'date': '08/05/2024'})
 
+        self.power_cycle_type = 'juliet-power-cycle'
+
     def _init_fan_list(self):
         super()._init_fan_list()
 
@@ -1047,10 +1049,10 @@ class JulietScaleoutSwitch(JulietSwitch):
         self.cluster_app_nmx_controller = {'app-id': 'nmx-c-nvos', 'app-ver': None, 'capabilities': 'sm, gfm, fib, gw-api', 'components-ver': None}
         self.cluster_app_nmx_telemetry = {'app-id': 'nmx-telemetry', 'app-ver': None, 'capabilities': 'ib-telemetry', 'components-ver': None}
         self.cluster_app = {'nmx-controller': self.cluster_app_nmx_controller, 'nmx-telemetry': self.cluster_app_nmx_telemetry}
+        self.core_count = 8
         self.reboot_type = 'julietscaleout_reboot'
         self.reset_factory = 'julietscaleout reset factory'
         self.generate_tech_support = 'julietscaleout generate_tech_support'
-        self.core_count = 8
         self.constants.firmware.extend([PlatformConsts.FW_FPGA, PlatformConsts.FW_BMC])
         self.ssd_image = None
         self.voltage_sensors = [

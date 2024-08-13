@@ -51,7 +51,7 @@ def _test_command_supported(engines, devices, test_name, test_api, force_str):
                                                                do_power_cycle, force_str)
             result_obj.verify_result()
             logger.error(duration)
-            OperationTime.verify_operation_time(duration, ActionConsts.POWER_CYCLE).verify_result()
+            OperationTime.verify_operation_time(duration, devices.dut.power_cycle_type).verify_result()
 
         with allure.step("Check reboot cause"):
             # todo: currently it shows reason unknown

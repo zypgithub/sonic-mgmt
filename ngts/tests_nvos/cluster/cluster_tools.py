@@ -23,7 +23,7 @@ NMX_CONTROLLER_CONFIG_FILE_TYPES = ['fm_config', 'sm_config']  # TODO, add 'rdm_
 NMX_CONTROLLER_STATE_FILE_TYPES = ['conn_info']  # TODO add sm_dump and topology once bug is fixed #3985684
 ClusterAppsLogLevelsList = [ClusterAppsLogLevels.DEBUG, ClusterAppsLogLevels.INFO, ClusterAppsLogLevels.NOTICE, ClusterAppsLogLevels.WARNING, ClusterAppsLogLevels.ERROR, ClusterAppsLogLevels.CRITICAL]
 NMX_LOG_MESSAGES_TAGS = ['nmxc-sm', 'nmxc-fm', 'nmxc-fib', 'nmxc-gw_api', 'nmxc-rest', 'nmxc-config_daemon']
-WAIT_FOR_APPS_RUNNING = 35  # Should be reduced to ~7 once bug is fixed [NVOS - Design] Bug SW #4010133: [Non-Functional ] [NMX] | No immediate NVOS reflection for showing running apps after being started/stopped | Assignee: Chris Yang | Status: Assigned
+WAIT_FOR_APPS_RUNNING = 40  # Should be reduced to ~7 once bug is fixed [NVOS - Design] Bug SW #4010133: [Non-Functional ] [NMX] | No immediate NVOS reflection for showing running apps after being started/stopped | Assignee: Chris Yang | Status: Assigned
 NMXC_CONN = 'nmxc-conn'
 NMXC_CONN_STATE_PER_CLUSTER_STATE = {NvosConst.ENABLED: 'up', NvosConst.DISABLED: 'down'}
 
