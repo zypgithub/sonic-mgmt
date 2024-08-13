@@ -11,7 +11,7 @@ logger = logging.getLogger()
 
 
 @pytest.mark.platform
-@pytest.mark.ib
+@pytest.mark.transceiver
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_transceiver_files_actions_positive(engines, test_api):
     """
@@ -91,7 +91,7 @@ def test_transceiver_files_actions_positive(engines, test_api):
 
 
 @pytest.mark.platform
-@pytest.mark.ib
+@pytest.mark.transceiver
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_transceiver_files_negative(engines, test_api):
     """
