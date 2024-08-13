@@ -227,6 +227,12 @@ tests/push_build_tests/general/wjh/test_wjh.py::test_buffer:
     conditions:
       - "'simx' in platform"
 
+tests/push_build_tests/general/wjh/test_wjh.py::test_buffer[tail_drop]:
+  skip:
+    reason: "Ignored due to RM issue 4033200"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4033200"
+
 tests/push_build_tests/general/doroce/test_doroce.py:
   skip:
     reason: "Testcase ignored on simx or due to SPC1 or due to RM issue 3769105 on SPC4 and SPC3"
