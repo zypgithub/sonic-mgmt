@@ -738,6 +738,8 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         """
         Check if deploy is needed for onyx fanout switch
         """
+        logger.info("Save configuration at ONYX fanout switch")
+        onyx_engine.run_cmd("configuration write")
         logger.info(f"Get into ONYX shell of {onyx_name}")
         dst_md5 = onyx_engine.run_cmd(f"md5sum {FanoutConfigFile.ONYX_CONFIG_PATH + FanoutConfigFile.ONYX}",
                                       run_in_shell=True).strip().split()[0]
