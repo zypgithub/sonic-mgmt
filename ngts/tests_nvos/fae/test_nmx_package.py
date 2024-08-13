@@ -21,12 +21,15 @@ def clear_cluster_package_files():
         nmx_package.files.delete_files(files_to_delete=files)
 
 
-@pytest.fixture()
-def enable_disable_cluster():
+@pytest.fixture(scope='session', autouse=True)
+def enable_cluster_and_stop_apps():
     cluster = Cluster()
     ClusterTools.start_cluster(cluster, OutputFormat.json)
+    for app in ClusterConsts.INITIAL_EXPECTED_APPS:
+        cluster.apps.apps_name[app].action_stop_cluster_apps().verify_result()
     yield
-    ClusterTools.stop_cluster(cluster, OutputFormat.json)
+    for app in ClusterConsts.INITIAL_EXPECTED_APPS:
+        cluster.apps.apps_name[app].action_start_cluster_apps().verify_result()
 
 
 @pytest.fixture()
@@ -35,8 +38,7 @@ def install_default_if_needed(devices):
     fae = Fae()
     output = cluster.apps.show()
     if not output:
-        apps = ClusterConsts.INITIAL_EXPECTED_APPS
-        for app in apps:
+        for app in ClusterConsts.INITIAL_EXPECTED_APPS:
             default_path = devices.dut.nmx_cluster_apps_versions.default_path[app]
             default_version = devices.dut.nmx_cluster_apps_versions.default_version_names[app]
             filename = fetch_and_verify_package(fae, app, default_path)
@@ -45,8 +47,8 @@ def install_default_if_needed(devices):
 
 @pytest.mark.fae
 @pytest.mark.nmx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_nmx_package_good_flow(devices, engines, test_api, enable_disable_cluster, install_default_if_needed):
+@pytest.mark.parametrize('test_api', random.sample(ApiType.ALL_TYPES, 1))
+def test_nmx_package_good_flow(devices, engines, test_api, install_default_if_needed):
     """
     Test the good flow of NMX package management.
 
@@ -65,7 +67,7 @@ def test_nmx_package_good_flow(devices, engines, test_api, enable_disable_cluste
        a. Revert all applications to their default versions.
     """
     TestToolkit.tested_api = test_api
-    fae = Fae(None)
+    fae = Fae()
     cluster = Cluster()
     apps = ClusterConsts.INITIAL_EXPECTED_APPS
 

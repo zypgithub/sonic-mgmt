@@ -968,20 +968,20 @@ class JulietSwitch(NvLinkSwitch):
 
         self.nmx_cluster_apps_versions = self.NmxClusterAppsConsts(
             default_path={
+                ClusterConsts.NMX_CONTROLLER: "/auto/sw/release/NMX/NMX-controller/package/0.6.0/nmx-c-nvlink_0.6.0_2024-08-05_09-24_internal.tar.gz",
+                ClusterConsts.NMX_TELEMETRY: "/auto/sw/release/NMX/NMX-telemetry/nmx-telemetry_0.6.0_2024-07-22.tgz"
+            },
+            new_path={
                 ClusterConsts.NMX_CONTROLLER: "/auto/sw/release/NMX/NMX-controller/package/0.6.0/nmx-c-nvlink_0.6.0_2024-07-04_17-33.tar.gz",
                 ClusterConsts.NMX_TELEMETRY: "/auto/sw/release/NMX/NMX-telemetry/nmx-telemetry_0.4.4_2024-07-08.tgz"
             },
-            new_path={
-                ClusterConsts.NMX_CONTROLLER: "/auto/sw/release/NMX/NMX-controller/package/0.4.0/nmx-c-nvlink_0.4.0_2024-07-12_12-01.tar.gz",
-                ClusterConsts.NMX_TELEMETRY: "/auto/sw/release/NMX/NMX-telemetry/nmx-telemetry_0.6.0_2024-07-22.tgz"
-            },
             default_version_names={
-                ClusterConsts.NMX_CONTROLLER: "0.6.0",
-                ClusterConsts.NMX_TELEMETRY: "0.4.4"
+                ClusterConsts.NMX_CONTROLLER: "0.6.0_2024-08-05_09-24_internal",
+                ClusterConsts.NMX_TELEMETRY: "0.6.0"
             },
             new_version_names={
-                ClusterConsts.NMX_CONTROLLER: "0.4.0",
-                ClusterConsts.NMX_TELEMETRY: "0.6.0"
+                ClusterConsts.NMX_CONTROLLER: "0.6.0",
+                ClusterConsts.NMX_TELEMETRY: "0.4.4"
             }
         )
         self.supported_commands.extend([ActionConsts.POWER_CYCLE])
