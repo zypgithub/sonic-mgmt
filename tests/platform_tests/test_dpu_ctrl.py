@@ -13,14 +13,14 @@ pytestmark = [
     pytest.mark.topology('t1')
 ]
 
-DPU_LIST = ["dpu1", "dpu2", "dpu3", "dpu4"]
+DPU_LIST = ["dpu0", "dpu1", "dpu2", "dpu3"]
 SKU_SUPPORT_DPU_CTL_LIST = ["Mellanox-SN4280-O28"]
 
 DPU_PIC_ID_RISHIM_MAP = {
-    "dpu1": {"pci_id": "0000:06:00.0", "rshim": "rshim@0"},
-    "dpu2": {"pci_id": "0000:05:00.0", "rshim": "rshim@1"},
-    "dpu3": {"pci_id": "0000:01:00.0", "rshim": "rshim@2"},
-    "dpu4": {"pci_id": "0000:02:00.0", "rshim": "rshim@3"},
+    "dpu0": {"pci_id": "0000:06:00.0", "rshim": "rshim@0"},
+    "dpu1": {"pci_id": "0000:05:00.0", "rshim": "rshim@1"},
+    "dpu2": {"pci_id": "0000:01:00.0", "rshim": "rshim@2"},
+    "dpu3": {"pci_id": "0000:02:00.0", "rshim": "rshim@3"},
 }
 
 
@@ -49,8 +49,8 @@ def dpu_bridge_midplane_ip_map(duthost):
     config_db_res = json.loads(duthost.shell(cmd_dump_config_db)["stdout"])
     dpu_bridge_midplane_ip_map = {}
     for dpu in DPU_LIST:
-        dpu_name_in_config_db = update_dpu_name_same_as_config_db(dpu)
-        dpu_bridge_midplane_ip_map[dpu] = config_db_res[f"DHCP_SERVER_IPV4_PORT|bridge-midplane|{dpu_name_in_config_db}"].get('value').get('ips@')
+        dpu_bridge_midplane_ip_map[dpu] = \
+            config_db_res[f"DHCP_SERVER_IPV4_PORT|bridge-midplane|{dpu}"].get('value').get('ips@')
     logger.info(f"dpu bridge midplane ips map is:{dpu_bridge_midplane_ip_map}")
     yield dpu_bridge_midplane_ip_map
 
@@ -187,12 +187,11 @@ def verify_dpu_pci_links(duthost, dpu_list, is_link_existing):
 def verify_dpu_bridge_midplane_ip_link(duthost, dpu_list, is_link_existing):
     dpu_bridge_midplane_ip_link = get_dpu_bridge_midplane_ip_links(duthost)
     for dpu in dpu_list:
-        dpu_name_in_config_db = update_dpu_name_same_as_config_db(dpu)
         if is_link_existing:
-            assert dpu_name_in_config_db in ",".join(dpu_bridge_midplane_ip_link), \
+            assert dpu in ",".join(dpu_bridge_midplane_ip_link), \
                 f"For {dpu}, the bridge midplane doesn't exist in {dpu_bridge_midplane_ip_link}"
         else:
-            assert dpu_name_in_config_db not in ",".join(dpu_bridge_midplane_ip_link), \
+            assert dpu not in ",".join(dpu_bridge_midplane_ip_link), \
                 f"For {dpu}, the bridge midplane still exists in {dpu_bridge_midplane_ip_link}"
             assert len(dpu_bridge_midplane_ip_link) == (len(DPU_LIST) -len(dpu_list)),\
                 f" bridge midplane ip number is not correct.test pud list {dpu_list}\n, " \
@@ -215,7 +214,7 @@ def get_test_dpu_and_port(dpu_num, dpu_npu_port_list, rand_one_dut_hostname):
     dpu_list_arg = ",".join(test_dpu_list) if dpu_num == "random" else f" --{dpu_num}"
     temp_dpu_npu_port_list = dpu_npu_port_list[rand_one_dut_hostname]
     temp_dpu_npu_port_list.sort(key=lambda port: int(port.replace("Ethernet", "")))
-    test_dpu_npu_port_list = [temp_dpu_npu_port_list[int(dpu.replace('dpu', "")) - 1] for dpu in test_dpu_list]
+    test_dpu_npu_port_list = [temp_dpu_npu_port_list[int(dpu.replace('dpu', ""))] for dpu in test_dpu_list]
     logger.info(f"test dpu info:\n test dpu list:{test_dpu_list}"
                 f"\ntest dpu port list:{test_dpu_npu_port_list} "
                 f"\ndpu list arg:{dpu_list_arg} ")
@@ -274,8 +273,3 @@ def do_verification_after_power_on_dpu(duthost, test_dpu_list, test_dpu_npu_port
     verify_dpu_ip_links_and_pci_link_and_dpu_ip_pingable(duthost, dpu_bridge_midplane_ip_map, test_dpu_list,
                                                          is_link_existing=True)
 
-
-def update_dpu_name_same_as_config_db(dpu_name):
-    dpu_name_in_config_db = f"dpu{int(dpu_name.split('dpu')[1]) - 1}"
-    logger.info(f"{dpu_name} in config db is {dpu_name_in_config_db}")
-    return dpu_name_in_config_db
