@@ -342,9 +342,9 @@ def clear_config(markers=None):
     try:
         TestToolkit.update_apis(ApiType.NVUE)
         if isinstance(TestToolkit.devices.dut, EthSwitch):
-            clear_cl_conf(TestToolkit.devices.dut, TestToolkit.engines.dut, markers, set_base_configurations_cl)
+            clear_cl_conf(TestToolkit.engines.dut, markers, set_base_configurations_cl, TestToolkit.devices.dut)
         else:
-            clear_conf(TestToolkit.devices.dut, TestToolkit.engines.dut, markers, set_base_configurations)
+            clear_conf(TestToolkit.engines.dut, markers, set_base_configurations, TestToolkit.devices.dut)
     except Exception as err:
         logging.warning("Failed to clear config:" + str(err))
     finally:

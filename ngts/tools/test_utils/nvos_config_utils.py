@@ -148,7 +148,7 @@ def clear_conf(dut_engine, markers=None, set_base_config_function=set_base_confi
             NvueGeneralCli.detach_config(dut_engine)
 
 
-def clear_cl_conf(dut, dut_engine, markers=None, set_base_config_function=set_base_configurations):
+def clear_cl_conf(dut_engine, markers=None, set_base_config_function=set_base_configurations, dut=None):
     if markers and 'system_profile_cleanup' in markers:
         clear_system_profile_config()
 
