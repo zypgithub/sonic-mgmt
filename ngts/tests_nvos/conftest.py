@@ -293,8 +293,10 @@ def security_cleanup(ssh_session: PexpectTool) -> bool:
             cmds = ['nv unset system aaa authentication order', 'nv unset system aaa authentication failthrough',
                     'nv config apply -y']
             with allure.step('unset authentication config to allow local connection'):
+                expect_timeout = 60
                 ssh_session.sendline(' ; '.join(cmds))
-                i = ssh_session.expect(DefaultConnectionValues.DEFAULT_PROMPTS)
+                i = ssh_session.expect(DefaultConnectionValues.DEFAULT_PROMPTS, timeout=expect_timeout, raise_exception_for_timeout=False)
+                assert i != PexpectTool.TIMEOUT, f'security cleanup failed: expect prompt after apply failed: exceeded expect timeout: {expect_timeout} seconds'
                 success = i < len(DefaultConnectionValues.DEFAULT_PROMPTS) and any(
                     msg in ssh_session.last_output for msg in ['applied', 'config apply executed with no config diff'])
     return success

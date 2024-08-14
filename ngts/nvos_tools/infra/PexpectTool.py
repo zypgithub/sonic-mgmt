@@ -9,7 +9,7 @@ class PexpectTool:
     TIMEOUT = -1
 
     def __init__(self, spawn_cmd: str = '', default_expect_err_msg: str = 'Expect failed'):
-        self.child = None
+        self.child: pexpect.spawn = None
         self.expect_error_msg = default_expect_err_msg
         if spawn_cmd:
             self.spawn(spawn_cmd)
@@ -23,7 +23,7 @@ class PexpectTool:
         self.child = pexpect.spawn(cmd)
         self.child.delaybeforesend = DefaultConnectionValues.PEXPECT_DELAYBEFORESEND
 
-    def expect(self, expect_msg, error_message='', raise_exception_for_timeout: bool = True):
+    def expect(self, expect_msg, error_message='', raise_exception_for_timeout: bool = True, timeout=None):
         err_msg = error_message if error_message else self.expect_error_msg
         if isinstance(expect_msg, list):
             logging.info(f'Expect: {expect_msg}')
@@ -33,7 +33,7 @@ class PexpectTool:
             expect_list = [expect_msg, pexpect.EOF]
 
         try:
-            res_index = self.child.expect(expect_list)
+            res_index = self.child.expect(expect_list) if timeout is None else self.child.expect(expect_list, timeout)
             decoded_before = self.child.before.decode('utf-8', errors='replace') if hasattr(self.child.before, 'decode') else ''
             decoded_after = self.child.after.decode('utf-8', errors='replace') if hasattr(self.child.after, 'decode') else ''
             self.last_output = decoded_before + decoded_after
