@@ -47,7 +47,7 @@ def test_cluster_control_plane(engines, devices, test_api):
 
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
-
+    config_files_deleted = False
     with allure.step("Create Cluster object"):
         cluster = Cluster()
         current_time = get_current_time(engines)
@@ -129,7 +129,7 @@ def test_cluster_control_plane(engines, devices, test_api):
                 for file in all_config_files_paths[file_type]:
                     file = file.split('/')[-1]
                     control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.file_name[file].action_delete()
-                    engines.sonic_mgmt.run_cmd(f"sudo rm -rf {initial_configs_paths_to_restore[file_type]}")
+                engines.sonic_mgmt.run_cmd(f"sudo rm -rf {initial_configs_paths_to_restore[file_type]}")
             for file_type in NMX_CONTROLLER_STATE_FILE_TYPES:
                 for file in all_state_files_paths[file_type]:
                     file = file.split('/')[-1]
@@ -137,11 +137,12 @@ def test_cluster_control_plane(engines, devices, test_api):
 
             # INSTEAD OF THE ABOVE, YOU CAN USE THE FOLLOWING: control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.delete_files() and provide with a files list
             # Make sure all files are deleted.
-            verify_control_plane_config_files_deleted(control_plane)
-            verify_control_plane_state_files_deleted(control_plane)
+            ClusterTools.verify_control_plane_config_files_deleted(control_plane)
+            ClusterTools.verify_control_plane_state_files_deleted(control_plane)
             verify_all_files_are_deleted(engines, all_state_files_paths)
             verify_all_files_are_deleted(engines, all_config_files_paths)
-            pass
+
+        config_files_deleted = True
 
     finally:
         if not initial_configuration_restored:
@@ -151,32 +152,20 @@ def test_cluster_control_plane(engines, devices, test_api):
                     conf_file_name = initial_configs_paths_to_restore[file_type].split('/')[-1]
                     control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.file_name[conf_file_name].action_file_install(force=False)
 
+        if not config_files_deleted:
             with allure.step("Delete state/config Files"):
                 for file_type in NMX_CONTROLLER_CONFIG_FILE_TYPES:
                     for file in all_config_files_paths[file_type]:
+                        file = file.split('/')[-1]
                         control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.file_name[file].action_delete()
-                        engines.sonic_mgmt.run_cmd(f"sudo rm -rf {initial_configs_paths_to_restore[file_type]}")
+                    engines.sonic_mgmt.run_cmd(f"sudo rm -rf {initial_configs_paths_to_restore[file_type]}")
                 for file_type in NMX_CONTROLLER_STATE_FILE_TYPES:
                     for file in all_state_files_paths[file_type]:
+                        file = file.split('/')[-1]
                         control_plane.state.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.file_name[file].action_delete()
+                    # engines.sonic_mgmt.run_cmd(f"sudo rm -rf {initial_configs_paths_to_restore[file_type]}")
         cluster.unset(apply=True)
         ClusterTools.wait_for_apps_to_be_in_wanted_state()
-
-
-def verify_control_plane_config_files_deleted(control_plane: ControlPlane):
-    with allure.step("Running nv show control-plane config app <app> type <type> files and make sure files are deleted"):
-        for file_type in NMX_CONTROLLER_CONFIG_FILE_TYPES:
-            files = OutputParsingTool.parse_show_output_to_dict(control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=OutputFormat.json),
-                                                                output_format=OutputFormat.json).get_returned_value()
-            assert not files, f"Expected to get empty output, but instead received {output}"
-
-
-def verify_control_plane_state_files_deleted(control_plane: ControlPlane):
-    with allure.step("Running nv show control-plane state app <app> type <type> files and make sure files are deleted"):
-        for file_type in NMX_CONTROLLER_STATE_FILE_TYPES:
-            files = OutputParsingTool.parse_show_output_to_dict(control_plane.state.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=OutputFormat.json),
-                                                                output_format=OutputFormat.json).get_returned_value()
-            assert not files, f"Expected to get empty output, but instead received {output}"
 
 
 def verify_all_files_are_deleted(engines, files_list):

@@ -53,6 +53,7 @@ def test_cluster_default_factory_reset(engines, devices, test_api):
         all_state_files_paths = []
         all_config_files_paths = []
         initial_config_contents = {}
+        control_plane_files_deleted = False
     try:
         with allure.step("Add data before reset factory"):
             username = add_verification_data(engines.dut, system)
@@ -74,8 +75,9 @@ def test_cluster_default_factory_reset(engines, devices, test_api):
             ClusterTools.verify_app_is_down(engines)
             verify_all_files_are_deleted(engines, all_config_files_paths + all_state_files_paths)
             ClusterTools.start_cluster(cluster, OutputFormat.json)
-            verify_control_plane_config_files_deleted(control_plane)
-            verify_control_plane_state_files_deleted(control_plane)
+            ClusterTools.verify_control_plane_config_files_deleted(control_plane)
+            ClusterTools.verify_control_plane_state_files_deleted(control_plane)
+            control_plane_files_deleted = True
             rotate_logs(system)
             logger.info("Sleeping for 30 seconds to gather nmx log messages")
             time.sleep(30)
@@ -84,6 +86,7 @@ def test_cluster_default_factory_reset(engines, devices, test_api):
             verify_config_files_content_not_changed(control_plane, initial_config_contents, engines)
     finally:
         engines.sonic_mgmt.run_cmd(f"sudo rm -rf {INITIAL_CONFIGURATIONS_PATH + '/*'}")
+        delete_all_control_plane_fetched_generated_files(control_plane, all_config_files_paths)
         cluster.unset(apply=True)
         ClusterTools.wait_for_apps_to_be_in_wanted_state()
         with allure.step("Verify the cleanup done successfully"):
@@ -91,6 +94,9 @@ def test_cluster_default_factory_reset(engines, devices, test_api):
 
         with allure.step("Verify the setup is functional"):
             verify_the_setup_is_functional(system, engines, had_sm_before_test=False, dut=devices.dut)
+
+        if not control_plane_files_deleted:
+            delete_all_control_plane_fetched_generated_files(control_plane, all_config_files_paths, all_state_files_paths)
 
 
 @pytest.mark.nmx
@@ -108,6 +114,7 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name)
         all_state_files_paths = []
         all_config_files_paths = []
         initial_config_contents = {}
+        control_plane_files_deleted = False
 
     try:
         with allure.step("Add data before reset factory"):
@@ -123,8 +130,9 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name)
             ClusterTools.verify_app_is_down(engines)
             verify_all_files_are_deleted(engines, all_config_files_paths + all_state_files_paths)
             ClusterTools.start_cluster(cluster, OutputFormat.json)
-            verify_control_plane_config_files_deleted(control_plane)
-            verify_control_plane_state_files_deleted(control_plane)
+            ClusterTools.verify_control_plane_config_files_deleted(control_plane)
+            ClusterTools.verify_control_plane_state_files_deleted(control_plane)
+            control_plane_files_deleted = True
             rotate_logs(system)
             logger.info("Sleeping for 30 seconds to gather nmx log messages")
             time.sleep(30)
@@ -140,6 +148,9 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name)
 
         with allure.step("Verify the setup is functional"):
             verify_the_setup_is_functional(system, engines, had_sm_before_test=False, dut=devices.dut)
+
+        if not control_plane_files_deleted:
+            delete_all_control_plane_fetched_generated_files(control_plane, all_config_files_paths, all_state_files_paths)
 
 
 @pytest.mark.nmx
@@ -157,7 +168,7 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name):
         all_state_files_paths = []
         all_config_files_paths = []
         initial_config_contents = {}
-
+        control_plane_files_deleted = False
     try:
         with allure.step("Add data before reset factory"):
             username = add_verification_data(engines.dut, system)
@@ -172,8 +183,9 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name):
             ClusterTools.verify_app_is_down(engines)
             verify_all_files_are_deleted(engines, all_config_files_paths + all_state_files_paths)
             ClusterTools.start_cluster(cluster, OutputFormat.json)
-            verify_control_plane_config_files_deleted(control_plane)
-            verify_control_plane_state_files_deleted(control_plane)
+            ClusterTools.verify_control_plane_config_files_deleted(control_plane)
+            ClusterTools.verify_control_plane_state_files_deleted(control_plane)
+            control_plane_files_deleted = True
             rotate_logs(system)
             logger.info("Sleeping for 30 seconds to gather nmx log messages")
             time.sleep(30)
@@ -189,6 +201,9 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name):
 
         with allure.step("Verify the setup is functional"):
             verify_the_setup_is_functional(system, engines, had_sm_before_test=False, dut=devices.dut)
+
+        if not control_plane_files_deleted:
+            delete_all_control_plane_fetched_generated_files(control_plane, all_config_files_paths, all_state_files_paths)
 
 
 @pytest.mark.nmx
@@ -208,7 +223,7 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
         all_config_files_paths = []
         log_level = ''
         initial_config_contents = {}
-
+        control_plane_files_deleted = False
     try:
         with allure.step("Add data before reset factory"):
             username = add_verification_data(engines.dut, system)
@@ -226,13 +241,15 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
             for app in INITIAL_EXPECTED_APPS:
                 ClusterTools.verify_app_is_up(engines, app)  # Verify apps are running
             verify_all_files_are_deleted(engines, all_config_files_paths + all_state_files_paths)
-            verify_control_plane_config_files_deleted(control_plane)
-            verify_control_plane_state_files_deleted(control_plane)
+            ClusterTools.verify_control_plane_config_files_deleted(control_plane)
+            ClusterTools.verify_control_plane_state_files_deleted(control_plane)
+            control_plane_files_deleted = True
             rotate_logs(system)
             time.sleep(30)
             verify_log_level(log_level, output_format, cluster, system)
             verify_apps_in_expected_state(cluster, 'ok')  # Apps should be running
             verify_config_files_content_not_changed(control_plane, initial_config_contents, engines)
+
     finally:
         engines.sonic_mgmt.run_cmd(f"sudo rm -rf {INITIAL_CONFIGURATIONS_PATH + '/*'}")
         for app in INITIAL_EXPECTED_APPS:
@@ -244,6 +261,9 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
 
         with allure.step("Verify the setup is functional"):
             verify_the_setup_is_functional(system, engines, had_sm_before_test=False, dut=devices.dut)
+
+        if not control_plane_files_deleted:
+            delete_all_control_plane_fetched_generated_files(control_plane, all_config_files_paths, all_state_files_paths)
 
 
 def execute_reset_factory(engines, system, operation, flag, current_time):
@@ -260,22 +280,6 @@ def verify_cluster_state_resetted(cluster):
             assert output[SystemConsts.STATE] == NvosConst.DISABLED, f"initial state is , " \
                 f"{output[SystemConsts.STATE]}, Expected to be: " \
                 f"{NvosConst.DISABLED}"
-
-
-def verify_control_plane_config_files_deleted(control_plane: ControlPlane):
-    with allure.step("Running nv show control-plane config app <app> type <type> files and make sure files are deleted"):
-        for file_type in NMX_CONTROLLER_CONFIG_FILE_TYPES:
-            files = OutputParsingTool.parse_show_output_to_dict(control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=OutputFormat.json),
-                                                                output_format=OutputFormat.json).get_returned_value()
-            assert not files, f"Expected to get empty output, but instead received {output}"
-
-
-def verify_control_plane_state_files_deleted(control_plane: ControlPlane):
-    with allure.step("Running nv show control-plane state app <app> type <type> files and make sure files are deleted"):
-        for file_type in NMX_CONTROLLER_STATE_FILE_TYPES:
-            files = OutputParsingTool.parse_show_output_to_dict(control_plane.state.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=OutputFormat.json),
-                                                                output_format=OutputFormat.json).get_returned_value()
-            assert not files, f"Expected to get empty output, but instead received {output}"
 
 
 def verify_apps_in_expected_state(cluster, status):
@@ -435,3 +439,16 @@ def pre_factory_reset_security_checks():
 
 def post_factory_reset_security_checks():
     pre_factory_reset_security_checks()
+
+
+def delete_all_control_plane_fetched_generated_files(control_plane, all_config_files_paths, all_state_files_paths):
+    with allure.step("Delete state/config Files"):
+        for file_type in NMX_CONTROLLER_CONFIG_FILE_TYPES:
+            for file in all_config_files_paths[file_type]:
+                file = file.split('/')[-1]
+                control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.file_name[file].action_delete()
+            engines.sonic_mgmt.run_cmd(f"sudo rm -rf {initial_configs_paths_to_restore[file_type]}")
+        for file_type in NMX_CONTROLLER_STATE_FILE_TYPES:
+            for file in all_state_files_paths[file_type]:
+                file = file.split('/')[-1]
+                control_plane.state.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.file_name[file].action_delete()
