@@ -1,6 +1,8 @@
 import logging
 import os
+from typing import List
 
+from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_constants.constants_nvos import NvosConst, FansConsts, PlatformConsts, CumulusConsts, DiskConsts
 from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
@@ -15,6 +17,7 @@ class EthSwitch(BaseSwitch):
     def __init__(self, asic_amount):
         super().__init__()
         self.asic_amount = asic_amount
+        self.mgmt_ports = ['eth0']
         self._init_sensors_dict()
         self.open_api_port = "8765"
         self.default_password = os.environ["CUMULUS_SWITCH_PASSWORD"]
@@ -34,6 +37,14 @@ class EthSwitch(BaseSwitch):
         default_conf = NvosConst.DEFAULT_CL_CONFIG
         default_conf["interface"] = NvosConst.DEFAULT_CL_IFACE_CONFIG
         return default_conf
+
+    def show_setup_versions(self, dut_engine: LinuxSshEngine = None):
+        outputs = {
+            'system version': dut_engine.run_cmd('nv show system version'),
+            'platform firmware': dut_engine.run_cmd('nv show platform firmware'),
+        }
+        res = [f'{title.upper()}:\n{output}\n' for title, output in outputs.items()]
+        return '\n'.join(res)
 
     def _init_constants(self):
         super()._init_constants()
@@ -74,6 +85,9 @@ class EthSwitch(BaseSwitch):
 
     def reload_device(self, engine, cmd_set, validate=False):
         engine.run_cmd_set(cmd_set, validate=False)
+
+    def get_mgmt_ports(self) -> List[str]:
+        return self.mgmt_ports
 
     def _init_fan_list(self):
         self.fan_list = ["FAN1/1", "FAN1/2", "FAN2/1", "FAN2/2", "FAN3/1", "FAN3/2", "FAN4/1", "FAN4/2",
