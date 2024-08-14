@@ -3,7 +3,7 @@ import time
 
 import pytest
 
-from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
+from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port, PortRequirements
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts, IbInterfaceConsts
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.LinuxCmdBuilderTool import LinuxCmdBuilderTool
@@ -44,8 +44,8 @@ def test_transceiver_status(engines, test_api):
 
     plugged_module = _get_module_with_status(platform, PlatformConsts.INSERTED)
     unplugged_module = _get_module_with_status(platform, PlatformConsts.REMOVED)
-    up_ports = _create_two_ports_for_module(plugged_module)
-    down_ports = _create_two_ports_for_module(unplugged_module)
+    up_ports = _get_ports_for_module(plugged_module)
+    down_ports = _get_ports_for_module(unplugged_module)
 
     _verify_link_state_up(up_ports)
     _verify_transceiver_status(platform, transceiver_id=plugged_module, expected_module_status=PlatformConsts.INSERTED)
@@ -75,7 +75,7 @@ def test_transceiver_status_unplug(engines, devices, test_api, asic_conf_dict):
     with allure.step(f"Get module with state {desired_state}"):
         module_under_test = _get_module_with_status(platform, PlatformConsts.INSERTED)
         mst_dev_name = _get_mst_dev_name(engines, module_under_test, asic_conf_dict)
-        ports = _create_two_ports_for_module(module_under_test)
+        ports = _get_ports_for_module(module_under_test)
         assert module_under_test, f"No module with state {desired_state} found"
         module_index = int(
             ''.join(c for c in module_under_test if c.isdigit())) - 1  # module start from 0, while sw from 1
@@ -129,7 +129,7 @@ def test_transceiver_status_with_reboot(engines, devices, test_api, asic_conf_di
     with allure.step(f"Get module with state {desired_state}"):
         module_under_test = _get_module_with_status(platform, PlatformConsts.INSERTED)
         mst_dev_name = _get_mst_dev_name(engines, module_under_test, asic_conf_dict)
-        ports = _create_two_ports_for_module(module_under_test)
+        ports = _get_ports_for_module(module_under_test)
         assert module_under_test, f"No module with state {desired_state} found"
         module_index = int(
             ''.join(c for c in module_under_test if c.isdigit())) - 1  # module start from 0, while sw from 1
@@ -228,9 +228,11 @@ def _get_module_with_status(platform, status):
         assert False, f"No transceiver with status {status} found"
 
 
-def _create_two_ports_for_module(module_name):
-    return [Port(f"{module_name}p1", "", ""),
-            Port(f"{module_name}p2", "", "")]
+def _get_ports_for_module(module_name):
+    with allure.step(f"Get ports for module {module_name}"):
+        ports = Port.get_list_of_ports()
+        ports_for_module = [port for port in ports if f"{module_name}p" in port.name]
+        return ports_for_module
 
 
 def _get_asic_dev_id_number(asic_number):
