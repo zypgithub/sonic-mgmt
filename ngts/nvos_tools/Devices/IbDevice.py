@@ -1056,37 +1056,15 @@ class JulietScaleoutSwitch(JulietSwitch):
         self.constants.firmware.extend([PlatformConsts.FW_FPGA, PlatformConsts.FW_BMC])
         self.ssd_image = None
         self.voltage_sensors = [
-            "HSC-VinDC-In",
-            "HSC-VinDC-Out",
-            "PDB-1-Conv-In-1",
-            "PDB-1-Conv-Out-1",
-            "PDB-2-Conv-In-1",
-            "PDB-2-Conv-Out-1",
-            "PDB-3-Conv-In-1",
-            "PDB-3-Conv-Out-1",
-            "PDB-4-Conv-In-1",
-            "PDB-4-Conv-Out-1",
-            "PMIC-1-12V-VDD-ASIC1-In-1",
-            "PMIC-1-ASIC1-VDD-Out-1",
-            "PMIC-2-12V-HVDD-DVDD-ASIC1-In-1",
-            "PMIC-2-ASIC1-DVDD-PL0-Out-2",
-            "PMIC-2-ASIC1-HVDD-PL0-Out-1",
-            "PMIC-3-12V-HVDD-DVDD-ASIC1-In-1",
-            "PMIC-3-ASIC1-DVDD-PL1-Out-2",
-            "PMIC-3-ASIC1-HVDD-PL1-Out-1",
-            "PMIC-4-12V-VDD-ASIC2-In-1",
-            "PMIC-4-ASIC2-VDD-Out-1",
-            "PMIC-5-12V-HVDD-DVDD-ASIC2-In-1",
-            "PMIC-5-ASIC2-DVDD-PL0-Out-2",
-            "PMIC-5-ASIC2-HVDD-PL0-Out-1",
-            "PMIC-6-12V-HVDD-DVDD-ASIC2-In-1",
-            "PMIC-6-ASIC2-DVDD-PL1-Out-2",
-            "PMIC-6-ASIC2-HVDD-PL1-Out-1",
-            "PMIC-7-12V-MAIN-In-1",
-            "PMIC-7-CEX-VDD-Out-1",
-            "PMIC-8-COMEX-VDD-MEM-In-1",
-            "PMIC-8-COMEX-VDD-MEM-Out-1"
-        ]
+            'HSC-VinDC-In', 'HSC-VinDC-Out', 'PDB-1-Conv-In-1', 'PDB-1-Conv-Out-1', 'PDB-2-Conv-In-1',
+            'PDB-2-Conv-Out-1', 'PDB-3-Conv-In-1', 'PDB-3-Conv-Out-1', 'PDB-4-Conv-In-1', 'PDB-4-Conv-Out-1',
+            'PMIC-1-12V-VDD-ASIC1-In-1', 'PMIC-1-ASIC1-VDD-Out-1', 'PMIC-2-12V-HVDD-DVDD-ASIC1-In-1',
+            'PMIC-2-ASIC1-DVDD-PL0-Out-2', 'PMIC-2-ASIC1-HVDD-PL0-Out-1', 'PMIC-3-12V-HVDD-DVDD-ASIC1-In-1',
+            'PMIC-3-ASIC1-DVDD-PL1-Out-2', 'PMIC-3-ASIC1-HVDD-PL1-Out-1', 'PMIC-4-12V-VDD-ASIC2-In-1',
+            'PMIC-4-ASIC2-VDD-Out-1', 'PMIC-5-12V-HVDD-DVDD-ASIC2-In-1', 'PMIC-5-ASIC2-DVDD-PL0-Out-2',
+            'PMIC-5-ASIC2-HVDD-PL0-Out-1', 'PMIC-6-12V-HVDD-DVDD-ASIC2-In-1', 'PMIC-6-ASIC2-DVDD-PL1-Out-2',
+            'PMIC-6-ASIC2-HVDD-PL1-Out-1', 'PMIC-7-12V-MAIN-In-1', 'PMIC-7-CEX-VDD-Out-1',
+            'PMIC-8-COMEX-VDD-MEM-In-1', 'PMIC-8-COMEX-VDD-MEM-Out-1']
         # TBD
         self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
             "x86_64-nvidia_n5110_ld-r0")
@@ -1162,9 +1140,11 @@ class JulietScaleoutSwitch(JulietSwitch):
 
     def _init_temperature(self):
         super()._init_temperature()
-        self.temperature_sensors = ["ASIC", "Ambient-Port-Side-Temp",
-                                    "CPU-Core-0-Temp", "CPU-Core-1-Temp", "CPU-Core-2-Temp", "CPU-Core-3-Temp",
-                                    "swb_asic1", "swb_asic2", "SODIMM-1-Temp"]
+        self.temperature_sensors = [
+            'ASIC1', 'ASIC2', 'Ambient-Fan-Side-Temp', 'CPU-Pack-Temp', 'Drive-Temp', 'HSC-VinDC-Temp', 'PDB-Conv-1-Temp',
+            'PDB-Conv-2-Temp', 'PDB-Conv-3-Temp', 'PDB-Conv-4-Temp', 'PMIC-1-Temp', 'PMIC-2-Temp', 'PMIC-3-Temp',
+            'PMIC-4-Temp', 'PMIC-5-Temp', 'PMIC-6-Temp', 'PMIC-7-Temp', 'PMIC-8-Temp', 'SODIMM-1-Temp',
+            'SWB-ASIC1-PCB-Temp', 'SWB-ASIC2-PCB-Temp']
 
     def _init_fan_list(self):
         super()._init_fan_list()
