@@ -539,11 +539,10 @@ class SonicSecureBootHelper(SecureBootHelper):
         return component_versions_dict
 
     @staticmethod
-    def restore_cpld(cli_objects, engines, topology_obj, platform_params):
+    def restore_cpld(cli_objects, engines, topology_obj, platform_params, cpld):
         """
         Restore the CPLD to the expected latest one defined in firmware.json
         """
-        cpld = SonicSecureBootConsts.CPLD_COMPONENT
         cpld_component_data = SonicSecureBootHelper.get_component_data(platform_params, cpld)
         url, latest_cpld_version = SonicSecureBootHelper.get_latest_expected_cpld(cpld_component_data, cpld)
         with allure.step(f"Restore the cpld back to {url}"):
