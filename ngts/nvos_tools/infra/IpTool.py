@@ -1,10 +1,13 @@
-from ngts.nvos_constants.constants_nvos import IpConsts
-from ngts.nvos_tools.infra.ResultObj import ResultObj
-
 import logging
 import random
-import allure
 import re
+from typing import List
+
+import allure
+
+from ngts.nvos_constants.constants_nvos import IpConsts
+from ngts.nvos_tools.infra.CmdRunner import CmdRunner
+from ngts.nvos_tools.infra.ResultObj import ResultObj
 
 logger = logging.getLogger()
 
@@ -173,3 +176,42 @@ class IpTool:
         command = "sudo tcpdump -i {0} {1} {2}".format(interface, filter, params)
         tcpdump_output = engine.run_cmd(command)
         return tcpdump_output
+
+    @staticmethod
+    def get_player_ipv4_addr(dut_engine) -> str:
+        ipv4_pattern = 'src\\s+(\\d+\\.\\d+\\.\\d+\\.\\d+)'
+        output = CmdRunner('IpTool').run_cmd(f'ip -o route get {dut_engine.ip}')
+        matches = re.findall(ipv4_pattern, output)
+        assert matches, f'could not find ipv4 address of the player.\nip route output: {output}'
+        return matches[0]
+
+    @staticmethod
+    def get_player_ipv6_addr(player_ipv4_addr: str) -> str:
+        ipv6_pattern = r'inet6\s+([0-9a-fA-F:]+)'
+
+        def _is_interface_line(s: str) -> bool:
+            return bool(re.match(r'^\d+: ', s))
+
+        def _split_interfaces(all_lines: List[str]) -> List[str]:
+            interfaces = []
+            for line in all_lines:
+                if _is_interface_line(line):
+                    interfaces.append([line])
+                else:
+                    assert isinstance(interfaces[-1],
+                                      list), f'cannot add the line to any added interface.\noutput:\n{all_lines}'
+                    interfaces[-1].append(line)
+            return ['\n'.join(interface) for interface in interfaces]
+
+        out_lines = CmdRunner('IpTool').run_cmd('ip addr').split('\n')
+        interfaces = _split_interfaces(out_lines)
+
+        for interface in interfaces:
+            if player_ipv4_addr not in interface:
+                continue
+            interface_ipv6_addresses = re.findall(ipv6_pattern, interface)
+            assert interface_ipv6_addresses, f'interface of {player_ipv4_addr} has no inet6 records.\ninterface:\n{interface}\nall output:\n{interfaces}'
+            return interface_ipv6_addresses[0]
+
+        raise ValueError(
+            f'could not find ipv6 address that is attached to same interface as given ipv4 address: {player_ipv4_addr}')
