@@ -47,8 +47,7 @@ class ClusterTools:
                     assert app_status == 'ok', f"App {app} status is {app_status} instead of 'ok"
                 with allure.step(f"Stop app {app} and validate its down"):
                     cluster.apps.apps_name[app].action_stop_cluster_apps()
-                    logger.info("Sleeping for 10 seconds to make sure all services are down")
-                    time.sleep(10)
+                    ClusterTools.wait_for_apps_to_be_in_wanted_state()
                     # TBD -- once "running" is working, use it to verify app is not running
                     ClusterTools.verify_app_is_down(engines)
 

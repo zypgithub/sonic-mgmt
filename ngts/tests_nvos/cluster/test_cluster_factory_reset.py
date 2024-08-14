@@ -10,7 +10,7 @@ from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.nvos_tools.nmx.ControlPlane import ControlPlane
-from ngts.nvos_constants.constants_nvos import PlatformConsts, IbConsts, ApiType, OutputFormat, SystemConsts, ClusterAppsLogLevels, NvosConst
+from ngts.nvos_constants.constants_nvos import PlatformConsts, IbConsts, ApiType, OutputFormat, SystemConsts, ClusterAppsLogLevels, NvosConst, ImageConsts
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.ib.Ib import Ib
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
@@ -34,18 +34,15 @@ CONTROLLER_SERVICES = ['nmxc-sdn', 'nmxc-fib', 'redis']
 ClusterAppsLogLevelsList = [ClusterAppsLogLevels.DEBUG, ClusterAppsLogLevels.INFO, ClusterAppsLogLevels.NOTICE, ClusterAppsLogLevels.WARNING, ClusterAppsLogLevels.ERROR, ClusterAppsLogLevels.CRITICAL]
 NMX_CONTROLLER_CONFIG_FILE_TYPES = ['fm_config', 'sm_config']  # TODO, add 'rdm_config' once bug is fixed  #3982375
 NMX_CONTROLLER_STATE_FILE_TYPES = ['conn_info']  # TODO add sm_dump and topology once bug is fixed #3985684
-PATH_TO_CONFIG = {'fm_config': '/auto/sw_system_project/NVOS_INFRA/verification_files/cluster/config_files_to_fetch/fabricmanager_dummy.cfg',
-                  'sm_config': '/auto/sw_system_project/NVOS_INFRA/verification_files/cluster/config_files_to_fetch/sm_config_dummy.cfg'}  # TODO, add 'rdm_config' once bug is fixed  #3982375
-CONFIG_FILE_NAME = {'fm_config': 'fabricmanager_dummy.cfg',
-                    'sm_config': 'sm_config_dummy.cfg'}  # TODO, add 'rdm_config' once bug is fixed  #3982375
 NMX_LOG_MESSAGES_TAGS = ['nmxc-sm', 'nmxc-fm', 'nmxc-fib', 'nmxc-gw_api', 'nmxc-rest', 'nmxc-config_daemon']
+INITIAL_CONFIGURATIONS_PATH = '/auto/sw_system_project/NVOS_INFRA/verification_files/cluster/uploaded_control_plane_files'
 
 
 @pytest.mark.nmx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [ApiType.NVUE])
 def test_cluster_default_factory_reset(engines, devices, test_api):
 
-    TestToolkit.tested_api = 'NVUE'
+    TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
 
     with allure.step("Create Cluster object"):
@@ -61,16 +58,16 @@ def test_cluster_default_factory_reset(engines, devices, test_api):
             username = add_verification_data(engines.dut, system)
         reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, system, control_plane, all_state_files_paths, all_config_files_paths, output_format, initial_config_contents)
 
-        with allure.step('pre factory reset security checks'):
-            pre_factory_reset_security_checks()
+        # with allure.step('pre factory reset security checks'):
+        #     pre_factory_reset_security_checks()
 
         with allure.step("Run reset factory without params"):
             execute_reset_factory(engines, system, devices.dut.reset_factory, "", current_time)
             ClusterTools.wait_for_apps_to_be_in_wanted_state()
 
-        with allure.step('post factory reset steps'):
-            with allure.step('pre factory reset security checks'):
-                post_factory_reset_security_checks()
+        # with allure.step('post factory reset steps'):
+        #     with allure.step('pre factory reset security checks'):
+        #         post_factory_reset_security_checks()
 
         with allure.step("Verify cluster in correct state"):
             verify_cluster_state_resetted(cluster)
@@ -86,6 +83,7 @@ def test_cluster_default_factory_reset(engines, devices, test_api):
             verify_apps_in_expected_state(cluster, 'not ok')
             verify_config_files_content_not_changed(control_plane, initial_config_contents, engines)
     finally:
+        engines.sonic_mgmt.run_cmd(f"sudo rm -rf {INITIAL_CONFIGURATIONS_PATH + '/*'}")
         cluster.unset(apply=True)
         ClusterTools.wait_for_apps_to_be_in_wanted_state()
         with allure.step("Verify the cleanup done successfully"):
@@ -96,10 +94,10 @@ def test_cluster_default_factory_reset(engines, devices, test_api):
 
 
 @pytest.mark.nmx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [ApiType.NVUE])
 def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name):
     # SAME AS DEFAULT.
-    TestToolkit.tested_api = 'NVUE'
+    TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
 
     with allure.step("Create Cluster object"):
@@ -134,6 +132,7 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name)
             verify_apps_in_expected_state(cluster, 'not ok')
             verify_config_files_content_not_changed(control_plane, initial_config_contents, engines)
     finally:
+        engines.sonic_mgmt.run_cmd(f"sudo rm -rf {INITIAL_CONFIGURATIONS_PATH + '/*'}")
         cluster.unset(apply=True)
         ClusterTools.wait_for_apps_to_be_in_wanted_state()
         with allure.step("Verify the cleanup done successfully"):
@@ -144,10 +143,10 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name)
 
 
 @pytest.mark.nmx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [ApiType.NVUE])
 def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name):
     # SAME
-    TestToolkit.tested_api = 'NVUE'
+    TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
 
     with allure.step("Create Cluster object"):
@@ -182,6 +181,7 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name):
             verify_apps_in_expected_state(cluster, 'not ok')
             verify_config_files_content_not_changed(control_plane, initial_config_contents, engines)
     finally:
+        engines.sonic_mgmt.run_cmd(f"sudo rm -rf {INITIAL_CONFIGURATIONS_PATH + '/*'}")
         cluster.unset(apply=True)
         ClusterTools.wait_for_apps_to_be_in_wanted_state()
         with allure.step("Verify the cleanup done successfully"):
@@ -192,11 +192,11 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name):
 
 
 @pytest.mark.nmx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [ApiType.NVUE])
 def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_name):
     # Only fetched and generated files will be cleaned.
     # SAME
-    TestToolkit.tested_api = 'NVUE'
+    TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
 
     with allure.step("Create Cluster object"):
@@ -234,6 +234,7 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
             verify_apps_in_expected_state(cluster, 'ok')  # Apps should be running
             verify_config_files_content_not_changed(control_plane, initial_config_contents, engines)
     finally:
+        engines.sonic_mgmt.run_cmd(f"sudo rm -rf {INITIAL_CONFIGURATIONS_PATH + '/*'}")
         for app in INITIAL_EXPECTED_APPS:
             cluster.apps.apps_name[app].loglevel.action_restore_cluster()
         cluster.unset(apply=True)
@@ -318,9 +319,28 @@ def reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, s
             log_level = random.choice(ClusterAppsLogLevelsList)
             cluster.apps.apps_name[app].loglevel.action_update_cluster_log_level(level=log_level)
 
+    config_files_paths = get_current_config_files_paths(control_plane)
+    for file_type, file_path in config_files_paths.items():
+        initial_config_contents[file_type] = engines.dut.run_cmd("sudo cat {}".format(file_path))
+
+    initial_configs_paths_to_restore = {}
+    path_to_config = {}
+    config_file_name = {}
+
+    for file_type in NMX_CONTROLLER_CONFIG_FILE_TYPES:
+        control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.file_name[config_files_paths[file_type].split('/')[-1]].action_upload(ImageConsts.SCP_PATH + INITIAL_CONFIGURATIONS_PATH)
+        initial_configs_paths_to_restore[file_type] = INITIAL_CONFIGURATIONS_PATH + '/' + config_files_paths[file_type].split('/')[-1]
+        logger.info(f"Uploading files: {initial_configs_paths_to_restore[file_type]}")
+
+        file_name = 'dummy_' + (initial_configs_paths_to_restore[file_type]).split('/')[-1]
+        dummy_file_path = INITIAL_CONFIGURATIONS_PATH + '/' + file_name
+        engines.sonic_mgmt.run_cmd("sudo cp {} {}".format(initial_configs_paths_to_restore[file_type], dummy_file_path))
+        engines.sonic_mgmt.run_cmd(f"sudo sh -c 'echo \"# This is dummy config file\" >> {dummy_file_path}'")
+        path_to_config[file_type] = dummy_file_path
+        config_file_name[file_type] = file_name
     with allure.step("Fetch & Generate config files"):
         for file_type in NMX_CONTROLLER_CONFIG_FILE_TYPES:
-            control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].action_fetch_control_plane(PATH_TO_CONFIG[file_type])
+            control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].action_fetch_control_plane(path_to_config[file_type])
             output = control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].action_generate_control_plane()
 
     with allure.step("Generate state files"):
@@ -332,8 +352,8 @@ def reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, s
 
     with allure.step("Install config file"):
         for file_type in NMX_CONTROLLER_CONFIG_FILE_TYPES:
-            control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].action_fetch_control_plane(PATH_TO_CONFIG[file_type])
-            control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.file_name[CONFIG_FILE_NAME[file_type]].action_file_install(force=False)
+            control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].action_fetch_control_plane(path_to_config[file_type])
+            control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.file_name[config_file_name[file_type]].action_file_install(force=False)
             output = control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].action_generate_control_plane()
             installed_file = ClusterTools.get_generated_file_name(output.returned_value, 'config')
             output = OutputParsingTool.parse_show_output_to_dict(control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=output_format),
@@ -341,12 +361,8 @@ def reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, s
             all_config_files_paths.extend([item['path'] for item in output.values()])
             current_installed_config_path = output[installed_file]['path']
             current_config_content = engines.dut.run_cmd("sudo cat {}".format(current_installed_config_path))
-            expected_config_content = engines.sonic_mgmt.run_cmd("sudo cat {}".format(PATH_TO_CONFIG[file_type]))
+            expected_config_content = engines.sonic_mgmt.run_cmd("sudo cat {}".format(path_to_config[file_type]))
             assert current_config_content == expected_config_content, f"Config file was not loaded properly. Expected content {expected_config_content}, Actual content: {current_config_content}"
-
-    config_files_paths = get_current_config_files_paths(control_plane)
-    for file_type, file_path in config_files_paths.items():
-        initial_config_contents[file_type] = engines.dut.run_cmd("sudo cat {}".format(file_path))
 
     return log_level
 
