@@ -378,7 +378,7 @@ class GenericHashTest(BaseTest):
         """
         send the packet and check it is received by one of the expected ports
         """
-        testutils.send_packet(self, sending_port, pkt)
+        testutils.send_packet(self, sending_port, pkt, count=2)
         port_index, received = testutils.verify_packet_any_port(
             self, masked_expected_pkt, self.expected_port_list, timeout=0.1)
         # The port_index is the index of expected_port_list, need to convert it to the ptf port index
