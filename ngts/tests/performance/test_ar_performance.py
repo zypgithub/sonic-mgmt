@@ -111,7 +111,7 @@ class TestArPerformance:
 
             with allure.step(f'Perform link flap to {self.random_dut_ports}'):
                 self.ar_perf_helper.link_flap_flow(self.cli_objects, self.random_dut_ports)
-            self.ar_perf_helper.config_ip_neighbors_on_dut(self.dut_engine, self.topology_obj)
+            self.ar_perf_helper.config_ip_neighbors_on_dut(self.engines, self.topology_obj)
 
             retry_call(self.ar_perf_helper.validate_tx_utilization,
                        fargs=[self.cli_objects, self.random_dut_ports, "dut"],
@@ -138,7 +138,7 @@ class TestArPerformance:
             with allure.step(f'Randomly choose {reboot_type} type, and execute it'):
                 self.cli_objects.dut.general.reboot_reload_flow(r_type=reboot_type, topology_obj=self.topology_obj)
 
-            self.ar_perf_helper.config_ip_neighbors_on_dut(self.dut_engine, self.topology_obj)
+            self.ar_perf_helper.config_ip_neighbors_on_dut(self.engines, self.topology_obj)
 
             retry_call(self.ar_perf_helper.validate_tx_utilization,
                        fargs=[self.cli_objects, self.dut_tx_ports, "dut"],

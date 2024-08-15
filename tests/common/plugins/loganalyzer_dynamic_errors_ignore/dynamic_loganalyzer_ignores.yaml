@@ -105,6 +105,7 @@
       - tests/push_build_tests/system/test_startup_time_degradation.py
       - tests/nightly/routing/test_routing.py::TestRouting::test_reboot
       - tests/nightly/adaptive_routing/test_adaptive_routing.py
+      - tests/performance/test_ar_performance.py
       # 2 tests below temporary added - they doing "config reload -y"
       - tests/push_build_tests/L3/dhcp_relay/test_dhcp6_relay.py::TestDHCP6Relay::test_dhcp6_relay_remove_dhcp_server
       - tests/push_build_tests/L3/dhcp_relay/test_dhcp6_relay.py::TestDHCP6Relay::test_dhcp6_relay_multiple_dhcp_servers

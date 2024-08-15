@@ -53,13 +53,13 @@ def load_ibm_profile(engines, cli_objects, topology_obj):
     # Enable AR custom profile
     with allure.step(f'Enable {PerfConsts.IBM_CUSTOM_PROFILE_NAME} profile'):
         ar_perf_helper.enable_ar_profile(cli_objects, PerfConsts.IBM_CUSTOM_PROFILE_NAME, restart_swss=True)
-        dut_ports = ar_perf_helper.get_dut_ports(topology_obj)
+        dut_ports = ar_perf_helper.all_engines_ports['dut']
         cli_objects.dut.interface.check_link_state(dut_ports)
-        ar_perf_helper.config_ip_neighbors_on_dut(engines.dut, topology_obj)
+        ar_perf_helper.config_ip_neighbors_on_dut(engines, topology_obj)
 
     yield
 
     with allure.step(f'Return to default profile {ArConsts.GOLDEN_PROFILE0} at the end of the test'):
         ar_helper.enable_ar_profile(cli_objects, ArConsts.GOLDEN_PROFILE0, restart_swss=True)
         cli_objects.dut.interface.check_link_state(dut_ports)
-        ar_perf_helper.config_ip_neighbors_on_dut(engines.dut, topology_obj)
+        ar_perf_helper.config_ip_neighbors_on_dut(engines, topology_obj)
