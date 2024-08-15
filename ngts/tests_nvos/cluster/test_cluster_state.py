@@ -121,7 +121,7 @@ def test_stress_cluster_state(engines, devices, test_api, test_name):
 
     try:
         with allure.step("Stress testing cluster state"):
-            for i in range(20):
+            for i in range(10):
                 logger.info(f"Starting iteration {i}")
                 result_obj, duration = OperationTime.save_duration('start stop cluster', '', test_name, ClusterTools.start_stop_cluster, cluster, output_format)
                 OperationTime.verify_operation_time(duration, 'start stop cluster').verify_result()

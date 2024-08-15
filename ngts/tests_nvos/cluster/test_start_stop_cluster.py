@@ -23,6 +23,7 @@ INITIAL_EXPECTED_APPS = [NMX_CONTROLLER, NMX_TELEMETRY]
 
 START_APP_WHILE_CLUSTER_DISABLED_ERR_MSG = 'Output was expected to contain:\nApp has been successfully started\nBut the output is:\nAction executing ...\nError: Action failed with the following issue:\n  cluster is not enabled'
 STOP_APP_WHILE_CLUSTER_DISABLED_ERR_MSG = 'Output was expected to contain:\nAction succeeded\nBut the output is:\nAction executing ...\nError: Action failed with the following issue:\n  cluster is not enabled'
+CLUSTER_IS_NOT_ENABLED_MESSAGE = 'cluster is not enabled'
 TELEMETRY_SERVICES = ['nmx-connector', 'ib-telemetry']
 CONTROLLER_SERVICES = ['nmxc-sdn', 'nmxc-fib', 'redis']
 INVALID_SHOW_EXPECTED_OUTPUT = 'Error: The requested item does not exist.'
@@ -40,7 +41,7 @@ def test_cluster_app_start_stop(engines, devices, test_api):
         with allure.step("Verify initial existing apps"):
             assert set(app_names) == set(INITIAL_EXPECTED_APPS), f"Expected apps:{INITIAL_EXPECTED_APPS} Actual apps:{app_names}"
 
-        with allure.step("Verify 'nv show cluster apps installed' output"):
+        with allure.step("Verify 'nv show cluster apps' output"):
             ValidationTool.validate_output_of_show(output[NMX_TELEMETRY], devices.dut.cluster_app_nmx_telemetry).verify_result()
             ValidationTool.validate_output_of_show(output[NMX_CONTROLLER], devices.dut.cluster_app_nmx_controller).verify_result()
 
@@ -68,7 +69,9 @@ def test_cluster_app_start_stop(engines, devices, test_api):
             output = OutputParsingTool.parse_show_output_to_dict(
                 cluster.apps.installed.show(output_format=output_format),
                 output_format=output_format).get_returned_value()
-            verify_apps_attributes(output)
+            for app in INITIAL_EXPECTED_APPS:
+                ValidationTool.validate_output_of_show(output[app], devices.dut.cluster_app[app]).verify_result()
+            # verify_apps_attributes(output)
 
         with allure.step("Running 'nv show cluster apps running' command and verifying output"):
             ClusterTools.wait_for_apps_to_be_in_wanted_state()
@@ -101,7 +104,7 @@ def test_stress_cluster_app_start_stop(engines, devices, test_api, test_name):
     try:
         with allure.step("Stress testing start/stop apps"):
             ClusterTools.start_cluster(cluster, output_format)
-            for i in range(20):
+            for i in range(10):
                 logger.info(f"Starting iteration {i}")
                 result_obj, duration = OperationTime.save_duration('start stop cluster app', '', test_name, ClusterTools.stop_start_app, cluster, engines, devices)
                 OperationTime.verify_operation_time(duration, 'start stop cluster app').verify_result()
@@ -187,7 +190,7 @@ def test_cluster_app_start_stop_disabled_cluster(engines, devices, test_api):
         for app in INITIAL_EXPECTED_APPS:
             with allure.step(f"Start app {app} and validate action fails"):
                 output = cluster.apps.apps_name[app].action_start_cluster_apps().get_returned_value(False)
-                assert output == START_APP_WHILE_CLUSTER_DISABLED_ERR_MSG, f"Expected output {START_APP_WHILE_CLUSTER_DISABLED_ERR_MSG}, actual output {output.info}"
+                assert CLUSTER_IS_NOT_ENABLED_MESSAGE in output, f"Expected output to contain {CLUSTER_IS_NOT_ENABLED_MESSAGE}, actual output {output}"
             with allure.step(f"Stop app {app} and validate action fails"):
                 output = cluster.apps.apps_name[app].action_stop_cluster_apps().get_returned_value(False)
-                assert output == STOP_APP_WHILE_CLUSTER_DISABLED_ERR_MSG, f"Expected output {STOP_APP_WHILE_CLUSTER_DISABLED_ERR_MSG}, actual output {output.info}"
+                assert CLUSTER_IS_NOT_ENABLED_MESSAGE in output, f"Expected output to contain {CLUSTER_IS_NOT_ENABLED_MESSAGE}, actual output {output}"

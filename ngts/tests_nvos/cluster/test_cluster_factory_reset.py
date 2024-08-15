@@ -16,7 +16,6 @@ from ngts.nvos_tools.ib.Ib import Ib
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
-from ngts.tests_nvos.system.factory_reset.post_steps import factory_reset_no_params_post_steps
 from ngts.tests_nvos.general.security.nmx_cert.test_nmx_cert import factory_reset_nmx_cert_checker
 from ngts.tests_nvos.general.security.tpm_attestation.helpers import factory_reset_tpm_checker
 from ngts.tests_nvos.system.gnmi.helpers import factory_reset_gnmi_checker
@@ -70,6 +69,9 @@ def test_cluster_default_factory_reset(engines, devices, test_api):
         #     with allure.step('pre factory reset security checks'):
         #         post_factory_reset_security_checks()
 
+        with allure.step("Verify the cleanup done successfully"):
+            verify_cleanup_done(engines.dut, current_time, system, username)
+
         with allure.step("Verify cluster in correct state"):
             verify_cluster_state_resetted(cluster)
             ClusterTools.verify_app_is_down(engines)
@@ -82,15 +84,12 @@ def test_cluster_default_factory_reset(engines, devices, test_api):
             logger.info("Sleeping for 30 seconds to gather nmx log messages")
             time.sleep(30)
             verify_log_level(ClusterAppsLogLevels.NOTICE, output_format, cluster, system)
-            verify_apps_in_expected_state(cluster, 'not ok')
+            verify_apps_in_expected_state(cluster, 'ok')
             verify_config_files_content_not_changed(control_plane, initial_config_contents, engines)
     finally:
         engines.sonic_mgmt.run_cmd(f"sudo rm -rf {INITIAL_CONFIGURATIONS_PATH + '/*'}")
-        delete_all_control_plane_fetched_generated_files(control_plane, all_config_files_paths)
         cluster.unset(apply=True)
         ClusterTools.wait_for_apps_to_be_in_wanted_state()
-        with allure.step("Verify the cleanup done successfully"):
-            verify_cleanup_done(engines.dut, current_time, system, username)
 
         with allure.step("Verify the setup is functional"):
             verify_the_setup_is_functional(system, engines, had_sm_before_test=False, dut=devices.dut)
@@ -125,6 +124,9 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name)
             execute_reset_factory(engines, system, devices.dut.reset_factory, "keep basic", current_time)
             ClusterTools.wait_for_apps_to_be_in_wanted_state()
 
+        with allure.step("Verify the cleanup done successfully"):
+            verify_cleanup_done(engines.dut, current_time, system, username, param='keep basic')
+
         with allure.step("Verify cluster in correct state"):
             verify_cluster_state_resetted(cluster)
             ClusterTools.verify_app_is_down(engines)
@@ -137,14 +139,12 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name)
             logger.info("Sleeping for 30 seconds to gather nmx log messages")
             time.sleep(30)
             verify_log_level(ClusterAppsLogLevels.NOTICE, output_format, cluster, system)
-            verify_apps_in_expected_state(cluster, 'not ok')
+            verify_apps_in_expected_state(cluster, 'ok')
             verify_config_files_content_not_changed(control_plane, initial_config_contents, engines)
     finally:
         engines.sonic_mgmt.run_cmd(f"sudo rm -rf {INITIAL_CONFIGURATIONS_PATH + '/*'}")
         cluster.unset(apply=True)
         ClusterTools.wait_for_apps_to_be_in_wanted_state()
-        with allure.step("Verify the cleanup done successfully"):
-            verify_cleanup_done(engines.dut, current_time, system, username, param='keep basic')
 
         with allure.step("Verify the setup is functional"):
             verify_the_setup_is_functional(system, engines, had_sm_before_test=False, dut=devices.dut)
@@ -178,6 +178,9 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name):
             execute_reset_factory(engines, system, devices.dut.reset_factory, "keep only-files", current_time)
             ClusterTools.wait_for_apps_to_be_in_wanted_state()
 
+        with allure.step("Verify the cleanup done successfully"):
+            verify_cleanup_done(engines.dut, current_time, system, username, param='only-files')
+
         with allure.step("Verify cluster in correct state"):
             verify_cluster_state_resetted(cluster)
             ClusterTools.verify_app_is_down(engines)
@@ -190,14 +193,12 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name):
             logger.info("Sleeping for 30 seconds to gather nmx log messages")
             time.sleep(30)
             verify_log_level(ClusterAppsLogLevels.NOTICE, output_format, cluster, system)
-            verify_apps_in_expected_state(cluster, 'not ok')
+            verify_apps_in_expected_state(cluster, 'ok')
             verify_config_files_content_not_changed(control_plane, initial_config_contents, engines)
     finally:
         engines.sonic_mgmt.run_cmd(f"sudo rm -rf {INITIAL_CONFIGURATIONS_PATH + '/*'}")
         cluster.unset(apply=True)
         ClusterTools.wait_for_apps_to_be_in_wanted_state()
-        with allure.step("Verify the cleanup done successfully"):
-            verify_cleanup_done(engines.dut, current_time, system, username, param='only-files')
 
         with allure.step("Verify the setup is functional"):
             verify_the_setup_is_functional(system, engines, had_sm_before_test=False, dut=devices.dut)
@@ -235,6 +236,9 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
             execute_reset_factory(engines, system, devices.dut.reset_factory, "keep all-config", current_time)
             ClusterTools.wait_for_apps_to_be_in_wanted_state()
 
+        with allure.step("Verify the cleanup done successfully"):
+            verify_cleanup_done(engines.dut, current_time, system, username, param='keep-all-config')
+
         with allure.step("Verify cluster in correct state"):
             cluster_state = ClusterTools.check_cluster_state(cluster, output_format)
             assert cluster_state == NvosConst.ENABLED, f"Expected cluster state {NvosConst.ENABLED}, Actual {cluster_state}"
@@ -256,8 +260,6 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
             cluster.apps.apps_name[app].loglevel.action_restore_cluster()
         cluster.unset(apply=True)
         ClusterTools.wait_for_apps_to_be_in_wanted_state()
-        with allure.step("Verify the cleanup done successfully"):
-            verify_cleanup_done(engines.dut, current_time, system, username, param='keep-all-config')
 
         with allure.step("Verify the setup is functional"):
             verify_the_setup_is_functional(system, engines, had_sm_before_test=False, dut=devices.dut)
@@ -319,8 +321,8 @@ def reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, s
     #     ClusterTools.start_app(cluster, app)
 
     with allure.step("Choose random log level, and set cluster app log level to and start app"):
+        log_level = random.choice(ClusterAppsLogLevelsList)
         for app in INITIAL_EXPECTED_APPS:
-            log_level = random.choice(ClusterAppsLogLevelsList)
             cluster.apps.apps_name[app].loglevel.action_update_cluster_log_level(level=log_level)
 
     config_files_paths = get_current_config_files_paths(control_plane)

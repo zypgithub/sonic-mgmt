@@ -16,7 +16,6 @@ from ngts.nvos_tools.ib.Ib import Ib
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
-from ngts.tests_nvos.system.factory_reset.post_steps import factory_reset_no_params_post_steps
 from ngts.tests_nvos.general.security.tpm_attestation.helpers import factory_reset_tpm_checker
 from ngts.tests_nvos.system.gnmi.helpers import factory_reset_gnmi_checker
 from ngts.tests_nvos.system.factory_reset.helpers import add_verification_data, \

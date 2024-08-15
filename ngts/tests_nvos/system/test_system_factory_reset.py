@@ -4,6 +4,7 @@ from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.Devices.IbDevice import JulietSwitch
 from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
+from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.tests_nvos.system.factory_reset.helpers import *
 from ngts.tests_nvos.system.factory_reset.helpers import add_verification_data, \
@@ -36,6 +37,7 @@ def test_reset_factory_without_params(engines, devices, topology_obj, platform_p
     """
     current_time = get_current_time(engines)
     system = System()
+    cluster = Cluster()
     had_sm_before_test = False
     username = ''
 
@@ -58,6 +60,8 @@ def test_reset_factory_without_params(engines, devices, topology_obj, platform_p
 
         with allure.step("Verify the setup is functional"):
             verify_the_setup_is_functional(system, engines, had_sm_before_test=had_sm_before_test, dut=devices.dut)
+
+        cluster.unset(apply=True)
 
 
 @pytest.mark.system
