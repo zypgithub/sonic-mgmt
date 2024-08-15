@@ -107,6 +107,12 @@ tests/nightly/copp/test_copp.py::test_copp_policer[LLDP]:
     conditions:
       - "https://redmine.mellanox.com/issues/2682609 and 'simx' in platform"
 
+tests/nightly/copp/test_copp.py:
+  xfail:
+    reason: "Testcase statistically fails due to RM 4031452 on SPC5 platform"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4031452 and 'sn564' in platform"
+
 tests/nightly/sflow/test_sflow.py:
   skip:
     reason: "Test is not supported on simx"
