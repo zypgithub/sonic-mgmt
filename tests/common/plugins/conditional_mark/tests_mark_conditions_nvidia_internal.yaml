@@ -217,7 +217,7 @@ tests/nightly/show_techsupport/test_techsupport.py::test_techsupport_fw_stuck_du
       - "'simx' in platform"
       - "'ASAN' in build_version"
 
-tests/nightly/show_techsupport/test_techsupport.py::test_techsupport_mellanox_sdk_dump[PLL_LOCK_EVENT]:
+tests/nightly/show_techsupport/test_techsupport.py::test_techsupport_mellanox_sdk_dump[PLL_LOCK_EVENT-syncd]:
   skip:
     reason: "Testcase ignored on platforms SPC, SPC2"
     conditions:
