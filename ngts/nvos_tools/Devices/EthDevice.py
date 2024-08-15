@@ -113,12 +113,8 @@ class EthSwitch(BaseSwitch):
             "min-speed": "N/A", "max-speed": "N/A"}
         self.platform_inventory_items = self.fan_list + self.psu_list + self.psu_fan_list \
             + [PlatformConsts.HW_COMP_SWITCH]
-        self.platform_inventory_switch_values = {
-            "model": ExpectedString(regex="MSN.*"),
-            "serial": None,
-            "hardware-version": None,
-            "state": FansConsts.STATE_OK,
-            "type": PlatformConsts.HW_COMP_SWITCH.lower()}
+        self.platform_inventory_switch_values.update({"hardware-version": None,
+                                                      "model": ExpectedString(regex="MSN.*")})
 
     def _init_psu_list(self):
         self.psu_list = ["PSU1", "PSU2"]
