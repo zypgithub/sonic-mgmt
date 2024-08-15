@@ -6,12 +6,14 @@ from contextlib import contextmanager
 import allure
 from exceptiongroup import ExceptionGroup
 
+from ngts.nvos_tools.infra import ExceptionTool
+
 logger = logging.getLogger()
 
 orig_allure = allure
 
 
-_allure_step_stack = []  # push/pop items when enter/exit allure step. each item is a list of failed sub-steps.
+_allure_step_stack = []  # push/pop items when enter/exit allure step. each item is a dict of failed sub-steps.
 
 
 def print_step_log_info(log_info_msg: str, lineno, filename):
@@ -61,27 +63,33 @@ def _step(step_msg, independent=False):
     caller_file = inspect.getframeinfo(caller_frame).filename
     lineno = caller_frame.f_lineno
     filename = os.path.basename(caller_file)
+    error = None
 
-    with allure.step(step_msg) as allure_step_context:
-        print_step_log_info(f'Step start: {step_msg}', lineno, filename)
-        error = None
-        _allure_step_stack.append([])
-        try:
-            yield allure_step_context
-        except Exception as e:
-            error = e
-            _allure_step_stack.pop(-1)
-            if independent:
-                _allure_step_stack[-1].append(e)
-            else:
+    try:
+        with allure.step(step_msg) as allure_step_context:
+            print_step_log_info(f'Step start: {step_msg}', lineno, filename)
+            _allure_step_stack.append({})
+            try:
+                yield allure_step_context
+            except Exception as e:
+                error = e
                 raise
+            else:
+                errors = _allure_step_stack[-1]
+                if errors:
+                    failure_message = (f"{len(errors)} sub-steps failed:\n" + "\n".join(
+                        "  " + msg + ":\n    " + ExceptionTool.format_exception(err) for msg, err in errors.items()))
+                    error = ExceptionGroup(failure_message, list(errors.values()))
+                    ExceptionTool.log_exception(error)
+                    raise error
+            finally:
+                _allure_step_stack.pop(-1)
+                print_step_log_info(f'Step end [{"FAIL" if error else "SUCCESS"}]: {step_msg}', lineno, filename)
+    except Exception as e:
+        if independent:
+            _allure_step_stack[-1][step_msg] = e
         else:
-            errors = _allure_step_stack.pop(-1)
-            if errors:
-                error = ExceptionGroup(f"{len(errors)} sub-steps failed", errors)
-                raise error
-        finally:
-            print_step_log_info(f'Step end [{"FAIL" if error else "SUCCESS"}]: {step_msg}', lineno, filename)
+            raise
 
 
 def attach(title: str, msg: str, attachment_type=orig_allure.attachment_type.TEXT):
