@@ -14,6 +14,7 @@ GEN_SENSORS_DATA_PATH = os.path.dirname(os.path.abspath(__file__))
 
 PSU_SENSORS_DATA_PATH = f"{MarsConstants.SONIC_MGMT_DIR}/tests/platform_tests/sensors_utils/psu_sensors.json"
 PSU_NUM_PLACE_HOLDER = "PSU-*"
+PSU_FAN_DIR_PATTERN = r'-(PSF|PSR)-'
 
 
 @pytest.mark.disable_loganalyzer
@@ -40,8 +41,9 @@ def test_gen_psu_sensors_data_yml(topology_obj):
             psu_sensor_dict = filter_psu_platform_sensors(sensors_dict, psu_dict, psu_sensor_prefix)
         with allure.step("Gen yml file for sensors data"):
             for psu_model, psu_sensors in psu_sensor_dict.items():
-                yml_file_full_path = os.path.join(GEN_SENSORS_DATA_PATH, f"psu_sensors_{psu_model}.yml")
-                gen_sensors_data_yaml_file(yml_file_full_path, psu_model, psu_sensors)
+                psu_model_no_fan_dir = re.sub(PSU_FAN_DIR_PATTERN, '-', psu_model)
+                yml_file_full_path = os.path.join(GEN_SENSORS_DATA_PATH, f"psu_sensors_{psu_model_no_fan_dir}.yml")
+                gen_sensors_data_yaml_file(yml_file_full_path, psu_model_no_fan_dir, psu_sensors)
 
     except Exception as err:
         raise AssertionError(err)
