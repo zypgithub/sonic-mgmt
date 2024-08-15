@@ -159,10 +159,16 @@ def test_reset_factory_keep_all_config(engines, devices):
                 6.1.	Run several show commands
                 6.2.    Run set command & apply
     """
+    with allure.step("Get current time"):
+        system = System()
+        update_timezone(system)
+        current_time = get_current_time(engines)
+
+    with allure.step("Add data before reset factory"):
+        username = add_verification_data(engines.dut, system)
+
     try:
         port_type = devices.dut.switch_type.lower()
-        with allure.step('Create System object'):
-            system = System()
 
         with allure.step('Validate health status is OK'):
             logger.info("Validate health status is OK")
@@ -194,9 +200,6 @@ def test_reset_factory_keep_all_config(engines, devices):
             validate_port_description(engines.dut, apply_and_save_port, description)
             validate_port_description(engines.dut, just_apply_port, description)
             validate_port_description(engines.dut, not_apply_port, "")
-
-        with allure.step("Add data before reset factory"):
-            username = add_verification_data(engines.dut, system)
 
         with allure.step("Get current time"):
             update_timezone(system)
@@ -244,12 +247,16 @@ def test_reset_factory_keep_only_files(engines, devices):
                 6.1.	Run several show commands
                 6.2.    Run set command & apply
     """
+    with allure.step("Get current time"):
+        system = System()
+        update_timezone(system)
+        current_time = get_current_time(engines)
+
+    with allure.step("Add data before reset factory"):
+        username = add_verification_data(engines.dut, system)
+
     try:
         port_type = devices.dut.switch_type.lower()
-        with allure.step('Create System object'):
-            system = System()
-            date_time_str = engines.dut.run_cmd("date").split(" ", 1)[1]
-            current_time = datetime.strptime(date_time_str, '%d %b %Y %H:%M:%S %p %Z')
 
         with allure.step('Validate health status is OK'):
             logger.info("Validate health status is OK")
@@ -281,9 +288,6 @@ def test_reset_factory_keep_only_files(engines, devices):
             validate_port_description(engines.dut, apply_and_save_port, description)
             validate_port_description(engines.dut, just_apply_port, description)
             validate_port_description(engines.dut, not_apply_port, "")
-
-        with allure.step("Add data before reset factory"):
-            username = add_verification_data(engines.dut, system)
 
         with allure.step("Get current time"):
             update_timezone(system)
