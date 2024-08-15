@@ -1327,6 +1327,42 @@ system_health/test_system_health.py::test_device_checker:
     reason: "Test fails on r-bobcat-01 due to bad psu"
     conditions:
       - "'r-bobcat-01' in testbed"
+
+ip/link_local/test_link_local_ip.py::TestLinkLocalIPacket::test_link_local_dst_ipv6_packet[:
+  skip:
+    reason: "Skip due to TC issue RM 3899758 for affected setups"
+    conditions:
+    - "https://redmine.mellanox.com/issues/3899758 and ('bobcat' in testbed or 'r-leopard-70' in testbed or 'r-tigon-04' in testbed)"
+
+ip/link_local/test_link_local_ip.py::TestLinkLocalIPacket::test_link_local_dst_ipv4_packet:
+  skip:
+    reason: "Skip due to TC issue RM 3899758 for affected setups"
+    conditions:
+    - "https://redmine.mellanox.com/issues/3899758 and ('bobcat' in testbed or 'r-leopard-70' in testbed or 'r-tigon-04' in testbed)"
+
+pfcwd/test_pfcwd_timer_accuracy.py:
+  skip:
+    reason: "Skip due to https://redmine.mellanox.com/issues/4034515"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4034515"
+
+disk/test_disk_exhaustion.py:
+  skip:
+    reason: "Skip due to https://github.com/sonic-net/sonic-mgmt/issues/14091"
+    conditions:
+      - https://github.com/sonic-net/sonic-mgmt/issues/14091
+
+ssh/test_ssh_ciphers.py:
+  skip:
+    reason: "Skip due to https://github.com/sonic-net/sonic-mgmt/issues/14091"
+    conditions:
+      - https://github.com/sonic-net/sonic-mgmt/issues/14091
+
+ssh/test_ssh_limit.py:
+  skip:
+    reason: "Skip due to https://github.com/sonic-net/sonic-mgmt/issues/14091"
+    conditions:
+      - https://github.com/sonic-net/sonic-mgmt/issues/14091
 ########################## NVIDIA INTERNAL COMMUNITY IGNORE END ############################
 
 
