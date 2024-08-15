@@ -225,6 +225,12 @@ tests/nightly/show_techsupport/test_techsupport.py::test_techsupport_mellanox_sd
       - "'simx' in platform"
       - "https://redmine.mellanox.com/issues/3894921"
 
+tests/nightly/show_techsupport/test_health_event.py:
+  skip:
+    reason: "Testcase ignored due to RM issue 4033193"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4033193"
+
 tests/push_build_tests/general/wjh/test_wjh.py::test_buffer:
   skip:
     reason: "Testcase is not supported on simx"
