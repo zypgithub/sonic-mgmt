@@ -237,6 +237,13 @@ tests/nightly/show_techsupport/test_health_event.py:
     conditions:
       - "https://redmine.mellanox.com/issues/4033193"
 
+tests/nightly/show_techsupport/test_techsupport.py::test_techsupport_validate_api_sniffer_dumps:
+  skip:
+    reason: "API Sniffer Feature is not supported on SIMX platforms"
+    conditions_logical_operator: or
+    conditions:
+      - "'simx' in platform"
+
 tests/push_build_tests/general/wjh/test_wjh.py::test_buffer:
   skip:
     reason: "Testcase is not supported on simx"

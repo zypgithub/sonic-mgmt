@@ -20,6 +20,17 @@ SDK_DUMP_DIR = '/var/log/mellanox/sdk-dumps'
 FW_EVENTS_DICT = {"FW_HEALTH_EVENT": 1, "PLL_LOCK_EVENT": 6}
 HEALTH_CHECK_INJECT_FILE_PATH = '/proc/mlx_sx/sx_core'
 
+SAI_PROFILE_PATH = "/etc/mlnx/sai-common.profile"
+SNIFFER_MODE_KEY = "SAI_KEY_SDK_SNIFFER_MODE"
+POSSIBLE_API_SNIFFER_MODES = ['cyclic', 'linear']
+API_SNIFFER_DUMPS_PATH = "/var/log/sdk_dbg"
+PCAP_FILE_FORMAT = "sx_sdk*.pcap*"  # pattern that captures .pcap and .pcap.gz files with ls command
+LIST_PCAP_CMD = f"ls -la {API_SNIFFER_DUMPS_PATH}/{PCAP_FILE_FORMAT}"
+PARSE_FILE_NAME_CMD = "awk '{{print $NF}}'"
+FIRST_PCAP_REGEX_PATTERN = r".*sx_sdk.*_0\.pcap"
+GREP_PCAP_FILES_CMD = r"grep 'sx_sdk.*\.pcap.*'"
+ZIPPED_FILE_POSTFIX = ".gz"
+
 
 @pytest.mark.disable_loganalyzer
 @allure.title('Tests that DumpMeNow dump contains all the expected dumps when fw stuck occurs')
@@ -59,7 +70,8 @@ def test_techsupport_fw_stuck_dump(topology_obj, loganalyzer, engines, cli_objec
 
 @pytest.mark.parametrize('disable_rsyslog_ratelimit', ['syncd'], indirect=True)
 @pytest.mark.parametrize("fw_event", ["FW_HEALTH_EVENT", "PLL_LOCK_EVENT"])
-def test_techsupport_mellanox_sdk_dump(topology_obj, engines, cli_objects, loganalyzer, fw_event, disable_rsyslog_ratelimit):
+def test_techsupport_mellanox_sdk_dump(topology_obj, engines, cli_objects, loganalyzer, fw_event,
+                                       disable_rsyslog_ratelimit):
     duthost = engines.dut
     logger.info("Health event generated is {}".format(fw_event))
     event_id = FW_EVENTS_DICT[fw_event]
@@ -71,7 +83,8 @@ def test_techsupport_mellanox_sdk_dump(topology_obj, engines, cli_objects, logan
         number_of_sdk_error_before = generate_tech_support_and_count_sdk_dumps(duthost)
 
     with allure.step('STEP2: Trigger SDK health event at dut'):
-        duthost.run_cmd('docker exec -it syncd python mellanox_sdk_trigger_event_script.py --fw_event {}'.format(event_id))
+        duthost.run_cmd(
+            'docker exec -it syncd python mellanox_sdk_trigger_event_script.py --fw_event {}'.format(event_id))
         for dut in loganalyzer:
             loganalyzer[dut].expect_regex.extend(["Health event happened"])
             ignoreRegex = [
@@ -160,6 +173,57 @@ def test_techsupport_health_event_sdk_dump(topology_obj, loganalyzer, engines, c
     finally:
         with allure.step('Reload switch'):
             cli_objects.dut.general.reload_flow(topology_obj=topology_obj, reload_force=True)
+
+
+def is_api_sniffer_enabled(duthost):
+    cmd = f"docker exec syncd cat {SAI_PROFILE_PATH} | grep {SNIFFER_MODE_KEY}"
+    sniffer_mode = duthost.run_cmd(cmd)
+    sniffer_mode_regex = rf"{SNIFFER_MODE_KEY}=([^ ]+)"
+    match = re.search(sniffer_mode_regex, sniffer_mode)
+    sniffer_mode_val_group = 1
+    # return true if the match is not none (hence the mode is configured) and the mode is valid
+    return match and match.group(sniffer_mode_val_group) in POSSIBLE_API_SNIFFER_MODES
+
+
+@allure.title('Tests that the api sniffer feature dumps are included in the techsupport command')
+def test_techsupport_validate_api_sniffer_dumps(topology_obj, engines, cli_objects):
+    duthost = engines.dut
+    with allure.step("Check that the API Sniffer is enabled"):
+        if not is_api_sniffer_enabled(duthost):
+            pytest.skip("Skipping test as API Sniffer is not enabled")
+
+    with allure.step("Fetch API Sniffer dumps and assert at least one exists"):
+        # Fetch all .pcap files of the API SNIFFER
+        pcap_file_paths = duthost.run_cmd(f"{LIST_PCAP_CMD} | {PARSE_FILE_NAME_CMD}").strip().split('\n')
+        pcap_file_names = [os.path.basename(file_path) for file_path in pcap_file_paths]  # get base file names
+        pattern = re.compile(FIRST_PCAP_REGEX_PATTERN)
+        # Check if any filename matches the regex pattern
+        assert any(pattern.match(filename) for filename in pcap_file_names), (
+            "No .pcap file was found in sniffer api dumps, "
+            "expected at least one file")
+    try:
+        with allure.step("Verify existing API Sniffer dumps are valid .pcap files"):
+            for file_path in pcap_file_paths:
+                if ZIPPED_FILE_POSTFIX in file_path:
+                    tcpdump_cmd = f"zcat {file_path} | tcpdump -r - -c 1"
+                else:
+                    tcpdump_cmd = f"tcpdump -r {file_path} -c 1"
+                duthost.run_cmd(tcpdump_cmd, validate=True)
+    except Exception as err:
+        raise AssertionError(f"Failed to validate .pcap files, error={err}")
+
+    with allure.step("Show tech support and verify the expected .pcap files are in it"):
+        dump_file = cli_objects.dut.general.generate_techsupport()
+        fetch_pcap_from_techsupport_cmd = f"sudo tar -tf {dump_file} | {GREP_PCAP_FILES_CMD}"
+        res = duthost.run_cmd(fetch_pcap_from_techsupport_cmd).strip().split('\n')
+        # Add .gz to none-compressed files
+        pcap_techsupport_expected_files = set(
+            [f"{file}{ZIPPED_FILE_POSTFIX}" if ZIPPED_FILE_POSTFIX not in file else file for file in pcap_file_names])
+        pcap_files_techsupport = set(
+            [f"{os.path.basename(file_path)}" for file_path in res])  # Fetch base file names
+        assert pcap_techsupport_expected_files == pcap_files_techsupport, (f"techsupport .pcap files are not as "
+                                                                           f"expected.\n Expected: {pcap_techsupport_expected_files},"
+                                                                           f"Actual: {pcap_files_techsupport}")
 
 
 def cp_sdk_event_trigger_script_to_dut_syncd(engine):
