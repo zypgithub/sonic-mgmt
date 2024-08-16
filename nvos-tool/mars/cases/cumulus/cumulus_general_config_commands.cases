@@ -37,13 +37,35 @@
     </cmd>
   </case>
 
-   <case>
+  <case>
     <name> Config Apply/Detach </name>
     <info> </info>
     <tout> 4800 </tout>
     <cmd>
       <params>
           <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/general/config_commands/test_apply_detach.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini -v -m cumulus --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  \'"</static_args>
+      </params>
+    </cmd>
+  </case>
+
+  <case>
+    <name> Save After Reboot </name>
+    <info> </info>
+    <tout> 4800 </tout>
+    <cmd>
+      <params>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/general/config_commands/test_save_after_reboot.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini -v -m cumulus --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  \'"</static_args>
+      </params>
+    </cmd>
+  </case>
+
+  <case>
+    <name> Show Diff History </name>
+    <info> </info>
+    <tout> 4800 </tout>
+    <cmd>
+      <params>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/general/config_commands/test_show_diff_history.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini -v -m cumulus --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  \'"</static_args>
       </params>
     </cmd>
   </case>
