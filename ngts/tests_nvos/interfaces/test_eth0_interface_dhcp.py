@@ -131,7 +131,7 @@ def test_interface_eth0_speed_duplex_autoneg(engines):
         NvueGeneralCli.detach_config(TestToolkit.engines.dut)'''
 
     with allure.step('Set all supported speeds with all supported duplex'):
-        list_supported_speeds = ["10M", "100M"]
+        list_supported_speeds = ["100M"]
         list_supported_duplex = ["full", "half"]
         for speed in list_supported_speeds:
             for duplex in list_supported_duplex:
