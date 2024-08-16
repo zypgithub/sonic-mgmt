@@ -1,5 +1,6 @@
 import re
 import logging
+import json
 from ngts.cli_wrappers.common.chassis_clis_common import ChassisCliCommon
 from ngts.cli_util.cli_parsers import generic_sonic_output_parser
 
@@ -117,9 +118,17 @@ class SonicChassisCli(ChassisCliCommon):
         This method is to get the platform json data from the file of /usr/share/sonic/device/{platform}/platform.json
         :return: the platform json data
         """
-        cmd_get_platform_json_content = f"cat /usr/share/sonic/device/{self.get_platform()}/platform.json"
-        logger.info(f"cmd get platform json content: {cmd_get_platform_json_content}")
-        platform_json_content = self.engine.run_cmd(cmd_get_platform_json_content)
-        cmd_get_platform_json_content_dict = eval(platform_json_content)
-        logger.info("cmd_get_platform_json_content_dict")
-        return cmd_get_platform_json_content_dict
+        full_path_platform_json_in_dut = f"/usr/share/sonic/device/{self.get_platform()}/platform.json"
+        dest_path = "/tmp/platform.json"
+        logger.info(f"fetch platform.json from dut:{full_path_platform_json_in_dut}")
+        self.engine.copy_file(source_file=full_path_platform_json_in_dut,
+                              dest_file=dest_path,
+                              file_system='/',
+                              overwrite_file=True,
+                              direction="get",
+                              verify_file=False)
+
+        with open(f"{dest_path}", "r") as f:
+            platform_json_dict = json.load(f)
+        logger.info(f"platform json dict:\n {platform_json_dict}")
+        return platform_json_dict

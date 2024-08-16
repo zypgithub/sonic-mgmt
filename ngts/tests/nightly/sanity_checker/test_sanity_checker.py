@@ -21,6 +21,12 @@ NOT_DEFINED_CPLD_DEVICES_LIST = ['MSN2010', 'SN4800']
 CURRENT_PATH = os.path.dirname(os.path.abspath(__file__))
 
 
+@pytest.fixture(scope='module')
+def platform_json_data(topology_obj):
+    platform_json_data = topology_obj.players['dut']['cli'].chassis.get_platform_json_data()
+    yield platform_json_data
+
+
 @pytest.fixture(scope='function')
 def enable_and_disable_fanout_lldp(request, engines, topology_obj, interfaces):
     """
@@ -98,6 +104,7 @@ def test_cpld_version_check(topology_obj, engines, platform_params, cli_objects)
                         f'Current {defined_cpld} version: {current_cpld_ver} is not latest: {latest_cpld_ver}'
 
 
+@pytest.mark.sanity_checker_ci
 @pytest.mark.sanity_checker_common
 def test_device_asic_check(engines, platform_params):
     """
@@ -181,14 +188,15 @@ def test_cable_connection_for_canonical_check(topology_obj):
             3], f"loopback for ports {ports} doesn't match the definition in noga"
 
 
+@pytest.mark.sanity_checker_ci
 @pytest.mark.sanity_checker_common
-def test_fan_status_check(platform_params, topology_obj):
+def test_fan_status_check(platform_params, topology_obj, platform_json_data):
     """
     This test is verify that the fan status is ok.
     If case fail, we will raise the failed case information in the allure report and disable bug handler tool
     """
     fan_status_info = topology_obj.players['dut']['cli'].chassis.show_platform_fan()
-    platform_json_data = topology_obj.players['dut']['cli'].chassis.get_platform_json_data()
+
     if len(platform_json_data["chassis"]["fan_drawers"]) == 1:
         fan_number = len(platform_json_data["chassis"]["fan_drawers"][0]["fans"])
     else:
@@ -202,6 +210,7 @@ def test_fan_status_check(platform_params, topology_obj):
         f"fan number is not correct. expected:{fan_number} or {fan_number * 2}, actual: {actual_fan_number}"
 
 
+@pytest.mark.sanity_checker_ci
 @pytest.mark.sanity_checker_common
 def test_more_then_2_fan_status_wrong_check(topology_obj):
     """
@@ -219,14 +228,14 @@ def test_more_then_2_fan_status_wrong_check(topology_obj):
         f"The status of {broken_fan_number} fan are not ok "
 
 
+@pytest.mark.sanity_checker_ci
 @pytest.mark.sanity_checker_common
-def test_psu_status_check(platform_params, topology_obj):
+def test_psu_status_check(platform_params, topology_obj, platform_json_data):
     """
     This test is verify the psu status is ok or not
     If case fail, we will raise the failed case information in the allure report and disable bug handler tool
     """
     psu_status_info = topology_obj.players['dut']['cli'].chassis.show_platform_psu_status()
-    platform_json_data = topology_obj.players['dut']['cli'].chassis.get_platform_json_data()
     psu_number = len(platform_json_data["chassis"]["psus"])
     actual_psu_number = len(psu_status_info.keys())
     assert actual_psu_number == psu_number, f"psu number is correct.Expected: {psu_number}, actual: {actual_psu_number}"
