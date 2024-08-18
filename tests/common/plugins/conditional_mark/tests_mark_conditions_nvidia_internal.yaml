@@ -1561,10 +1561,10 @@ platform_tests/fwutil/test_fwutil.py::test_fwutil_show:
       - "https://redmine.mellanox.com/issues/3783313 and ('sn5400' in platform)"
 
 tests/nightly/lag/test_lag.py:
-  skip:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/3783776"
+  xfail:
+    reason: "Testcase can fails due to RM 4031452 on SPC5 platform"
     conditions:
-      - "https://redmine.mellanox.com/issues/3783776 and ('sn5400' in platform)"
+      - "https://redmine.mellanox.com/issues/4031452 and 'sn564' in platform"
 
 process_monitoring/test_critical_process_monitoring.py::test_monitoring_critical_processes:
   skip:
