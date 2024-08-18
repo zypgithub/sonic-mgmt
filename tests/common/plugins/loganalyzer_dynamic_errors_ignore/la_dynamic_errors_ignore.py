@@ -73,6 +73,7 @@ def get_extended_ignore_list(item):
                 break
     return extended_ignore_list
 
+
 @cache(ttl=dt.timedelta(hours=36))
 def get_ignore_list():
     logger.info('Reading dynamic errors ignore data from file')
@@ -385,14 +386,21 @@ class GitHubDynamicErrorsIgnore(LaDynamicErrorsIgnore):
         :param issue_url:  github issue URL
         :return: True/False
         """
-        issue_url = self.get_github_issue_api_url(issue_url)
-        response = self.make_github_request(issue_url)
-        if response.get('state') == 'closed':
-            if self.is_duplicate(response):
-                logger.warning('GitHub issue: {} looks like duplicate and was closed. Please re-check and ignore'
-                               'the test on the parent issue'.format(issue_url))
+        try:
+            issue_url = self.get_github_issue_api_url(issue_url)
+            response = self.make_github_request(issue_url)
+
+            if response.get('state') == 'closed':
+                if self.is_duplicate(response):
+                    logger.warning('GitHub issue: {} looks like a duplicate and was closed. '
+                                   'Please re-check and ignore the test on the parent issue.'.format(issue_url))
+                return False
+
+            return True
+
+        except Exception as e:
+            logger.error(f"An error occurred while checking GitHub issue: {e}")
             return False
-        return True
 
     @staticmethod
     def is_duplicate(issue_data):

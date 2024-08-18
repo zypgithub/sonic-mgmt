@@ -81,7 +81,7 @@ def test_interface_eth0_enable_disable(engines, topology_obj):
 @pytest.mark.eth0
 @pytest.mark.system
 @pytest.mark.simx
-def test_interface_eth0_speed_duplex_autoneg(engines):
+def test_interface_eth0_speed_duplex_autoneg(engines, devices):
     """
     Verify speed, duplex, autoneg configuration parameters can be changed
 
@@ -131,10 +131,16 @@ def test_interface_eth0_speed_duplex_autoneg(engines):
         NvueGeneralCli.detach_config(TestToolkit.engines.dut)'''
 
     with allure.step('Set all supported speeds with all supported duplex'):
-        list_supported_speeds = ["100M"]
-        list_supported_duplex = ["full", "half"]
+        list_supported_speeds = devices.dut.supported_eth0_speeds
+        list_supported_duplex = ["half", "full"]
         for speed in list_supported_speeds:
-            for duplex in list_supported_duplex:
+            # Only allow full and half duplex if the speed is "10M" or "100M"
+            if speed in ["10M", "100M"]:
+                applicable_duplex = list_supported_duplex
+            else:
+                applicable_duplex = ["full"]  # For other speeds, only "full" duplex is applicable
+
+            for duplex in applicable_duplex:
                 mgmt_port.interface.link.set(op_param_name='speed', op_param_value=speed, apply=True,
                                              ask_for_confirmation=True).verify_result()
 
