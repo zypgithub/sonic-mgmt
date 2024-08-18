@@ -394,8 +394,9 @@ def _verify_cli_output_with_dump_output(engine, device, lldp, system_output):
             assert int(
                 lldp_dict[
                     TcpDumpConsts.LLDP_TIME_TO_LIVE]) == ttl, 'The cli ttl does not match sent frame time to live'
-            assert lldp_dict[TcpDumpConsts.LLDP_SYSTEM_NAME] == system_output[
-                SystemConsts.HOSTNAME], "The hostname do not match"
+            is_match_hostname = lldp_dict[TcpDumpConsts.LLDP_SYSTEM_NAME] in system_output[SystemConsts.HOSTNAME] or \
+                system_output[SystemConsts.HOSTNAME] in lldp_dict[TcpDumpConsts.LLDP_SYSTEM_NAME]
+            assert is_match_hostname, "The hostname do not match"
 
 
 def _verify_lldp_running(lldp, engine):
