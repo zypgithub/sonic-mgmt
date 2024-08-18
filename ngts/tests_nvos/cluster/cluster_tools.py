@@ -49,7 +49,7 @@ class ClusterTools:
                     cluster.apps.apps_name[app].action_stop_cluster_apps()
                     ClusterTools.wait_for_apps_to_be_in_wanted_state()
                     # TBD -- once "running" is working, use it to verify app is not running
-                    ClusterTools.verify_app_is_down(engines)
+                    ClusterTools.verify_app_is_down(engines, app)
 
                 with allure.step(f"Start app again {app} and validate its up"):
                     output = cluster.apps.apps_name[app].action_start_cluster_apps()
@@ -145,10 +145,13 @@ class ClusterTools:
             assert all_services_present, f"Missing services - expected services {expected_services}, actual: {output}"
 
     @staticmethod
-    def verify_app_is_down(engines):
+    def verify_app_is_down(engines, app):
         with allure.step("Checking if service is down using docker ps | grep -i nmx"):
             output = engines.dut.run_cmd('docker ps | grep -i nmx')
-            assert output == '', f"nmx docker is still up, {output}"
+            output = output.split('\n')
+            expected_services = CONTROLLER_SERVICES if app == NMX_CONTROLLER else TELEMETRY_SERVICES
+            none_services_present = all(not any(service in line for line in output) for service in expected_services)
+            assert none_services_present, f"nmx docker is still up, {output}"
 
     @staticmethod
     def verify_lid_value(devices):

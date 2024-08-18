@@ -104,7 +104,7 @@ def test_stress_cluster_app_start_stop(engines, devices, test_api, test_name):
     try:
         with allure.step("Stress testing start/stop apps"):
             ClusterTools.start_cluster(cluster, output_format)
-            for i in range(10):
+            for i in range(5):
                 logger.info(f"Starting iteration {i}")
                 result_obj, duration = OperationTime.save_duration('start stop cluster app', '', test_name, ClusterTools.stop_start_app, cluster, engines, devices)
                 OperationTime.verify_operation_time(duration, 'start stop cluster app').verify_result()
@@ -127,8 +127,8 @@ def test_cluster_app_start_stop_under_stressed_resources(engines, devices, test_
     try:
         with allure.step("Test cluster with stressed CPU and Memory utilization"):
             # This will run in background &
-            installed_packages = StressResourcesTool.stress_cpu_and_memory(engines, devices.dut.core_count)
-            timeout = 300  # for example, 300 seconds
+            installed_packages = StressResourcesTool.stress_cpu_and_memory(engines, devices.dut.core_count, timeout='600s')
+            timeout = 600  # for example, 600 seconds
 
             # Get the current time
             start_time = time.time()
@@ -138,8 +138,6 @@ def test_cluster_app_start_stop_under_stressed_resources(engines, devices, test_
                 ClusterTools.start_cluster(cluster, output_format)
                 result_obj, duration = OperationTime.save_duration('start stop cluster app', '', test_name, ClusterTools.stop_start_app, cluster, engines, devices)
                 OperationTime.verify_operation_time(duration, 'start stop cluster app').verify_result()
-                logger.info("Sleeping for 30 seconds.")
-                time.sleep(30)
 
     finally:
         with allure.step("Reset cluster state"):

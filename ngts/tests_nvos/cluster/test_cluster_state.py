@@ -154,8 +154,6 @@ def test_cluster_state_with_stressed_resources(engines, devices, test_api, test_
             while time.time() - start_time < timeout:
                 result_obj, duration = OperationTime.save_duration('start stop cluster', '', test_name, ClusterTools.start_stop_cluster, cluster, output_format)
                 OperationTime.verify_operation_time(duration, 'start stop cluster').verify_result()
-                logger.info("Sleeping for 30 seconds between iterations")
-                time.sleep(30)
     finally:
         with allure.step("Reset cluster state"):
             cluster.unset(apply=True)

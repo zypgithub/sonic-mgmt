@@ -74,7 +74,8 @@ def test_cluster_default_factory_reset(engines, devices, test_api):
 
         with allure.step("Verify cluster in correct state"):
             verify_cluster_state_resetted(cluster)
-            ClusterTools.verify_app_is_down(engines)
+            for app in INITIAL_EXPECTED_APPS:
+                ClusterTools.verify_app_is_down(engines, app)
             verify_all_files_are_deleted(engines, all_config_files_paths + all_state_files_paths)
             ClusterTools.start_cluster(cluster, OutputFormat.json)
             ClusterTools.verify_control_plane_config_files_deleted(control_plane)
@@ -129,7 +130,8 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name)
 
         with allure.step("Verify cluster in correct state"):
             verify_cluster_state_resetted(cluster)
-            ClusterTools.verify_app_is_down(engines)
+            for app in INITIAL_EXPECTED_APPS:
+                ClusterTools.verify_app_is_down(engines, app)
             verify_all_files_are_deleted(engines, all_config_files_paths + all_state_files_paths)
             ClusterTools.start_cluster(cluster, OutputFormat.json)
             ClusterTools.verify_control_plane_config_files_deleted(control_plane)
@@ -183,7 +185,8 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name):
 
         with allure.step("Verify cluster in correct state"):
             verify_cluster_state_resetted(cluster)
-            ClusterTools.verify_app_is_down(engines)
+            for app in INITIAL_EXPECTED_APPS:
+                ClusterTools.verify_app_is_down(engines, app)
             verify_all_files_are_deleted(engines, all_config_files_paths + all_state_files_paths)
             ClusterTools.start_cluster(cluster, OutputFormat.json)
             ClusterTools.verify_control_plane_config_files_deleted(control_plane)

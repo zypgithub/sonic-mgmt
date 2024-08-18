@@ -11,15 +11,17 @@ from ...nvos_constants.constants_nvos import NvosConst
 
 logger = logging.getLogger()
 
-PACKAGES_TO_STRESS_CPU_AND_MEMORY = ['stres-ng', 'bc']
+PACKAGES_TO_STRESS_CPU_AND_MEMORY = ['stress-ng', 'bc']
 
 
 class StressResourcesTool:
 
     @staticmethod
-    def stress_cpu_and_memory(engines, core_number, cpu_load=95, vm=8, vm_bytes='75%', timeout='300s'):
+    def stress_cpu_and_memory(engines, core_number, cpu_load=95, vm=8, vm_bytes='85%', timeout='300s'):
         with allure.step("Checking if needed packages are installed"):
             packages_to_delete = []
+            with allure.step("Updating package lists"):
+                engines.dut.run_cmd("sudo apt-get update")
             for package in PACKAGES_TO_STRESS_CPU_AND_MEMORY:
                 output = engines.dut.run_cmd(f"dpkg-query -l {package}")
                 if "no packages found" in output or output == "":
