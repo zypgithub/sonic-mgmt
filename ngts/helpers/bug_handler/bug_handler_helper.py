@@ -269,9 +269,12 @@ def run_err_msg_bug_handler_tool(conf_path, redmine_project, branch, yaml_parsed
         logger.info(f"Running uploading attchment command: {upload_cmd}")
         upload_attachment_output = subprocess.run(upload_cmd, shell=True, capture_output=True).stdout
         logger.info(upload_attachment_output)
-        upload_attachment_result = json.loads(upload_attachment_output)
-        if "error" in upload_attachment_result:
-            logger.error(f"Failed to upload the file: {upload_attachment_result}")
+        try:
+            upload_attachment_result = json.loads(upload_attachment_output)
+            if "error" in upload_attachment_result:
+                raise Exception(upload_attachment_result)
+        except Exception as e:
+            logger.error(f"Failed to upload the file: {e}")
         bug_handler_file_result["file_name"] = tar_file_path
     return bug_handler_file_result
 
