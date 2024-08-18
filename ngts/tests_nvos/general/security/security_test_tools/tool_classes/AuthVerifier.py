@@ -6,6 +6,7 @@ import string
 from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
 from infra.tools.general_constants.constants import DefaultConnectionValues
 from infra.tools.linux_tools.linux_tools import LinuxSshEngine, scp_file
+from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.cli_wrappers.openapi.openapi_command_builder import OpenApiRequest
 from ngts.nvos_constants.constants_nvos import ApiType, SystemConsts
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
@@ -57,9 +58,16 @@ class AuthVerifier:
                 system.message.unset(op_param=SystemConsts.PRE_LOGIN_MESSAGE,
                                      dut_engine=self.engine).verify_result(should_succeed=user_is_admin)
         finally:
-            logging.info('Clear global OpenApi changeset and payload')
-            OpenApiRequest.clear_changeset_and_payload()
-            self.change_test_api(orig_test_api)
+            with allure.step('cleanup after authorization check'):
+                with allure.step('Clear global OpenApi changeset and payload'):
+                    OpenApiRequest.clear_changeset_and_payload()
+                if self.api == ApiType.NVUE:
+                    with allure.step(f'detach config of user: {self.engine.username}'):
+                        try:
+                            NvueGeneralCli.detach_config(self.engine)
+                        except Exception:
+                            pass
+                self.change_test_api(orig_test_api)
 
 
 class SshAuthVerifier(AuthVerifier):

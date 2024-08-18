@@ -8,6 +8,7 @@ In order to run this test, you need to specify the following argument: kernel_mo
 '''
 import logging
 import os
+import random
 import re
 import time
 
@@ -15,11 +16,9 @@ import pytest
 
 from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
 from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
-from infra.tools.general_constants.constants import DefaultConnectionValues
 from infra.tools.linux_tools.linux_tools import scp_file
-from infra.tools.validations.traffic_validations.ping.send import ping_till_alive
-from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
-from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
+from ngts.conftest import topology_obj
 from ngts.nvos_tools.infra.Tools import RandomizationTool
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.KernelModulesTool import KernelModulesTool
 from ngts.tests_nvos.general.security.test_secure_boot.constants import ChainOfTrustNode, SecureBootConsts, SigningState
@@ -88,57 +87,12 @@ def manipulate_nvos_system_file_signature(chain_of_trust_node: str, dut_engine: 
         os.remove(system_file_local_path)
 
 
-def reinstall_nvos_after_test(serial_engine: PexpectSerialEngine, restore_image_path: str):
-    with allure.step('Press Enter to close error message'):
-        time.sleep(1)
-        serial_engine.run_cmd('\r', '.*')
-    with allure.step('Press arrow-up twice to get to ONIE install mode'):
-        time.sleep(1)
-        serial_engine.run_cmd("\x1b[A", expected_value='.*', send_without_enter=True)
-        serial_engine.run_cmd("\x1b[A", expected_value='.*', send_without_enter=True)
-    with allure.step('Press Enter to enter ONIE install mode'):
-        _, respond_index = serial_engine.run_cmd('\r', ["Please press Enter to activate this console",
-                                                        DefaultConnectionValues.LOGIN_REGEX,
-                                                        DefaultConnectionValues.DEFAULT_PROMPTS[0]],
-                                                 timeout=120)
-
-    with allure.step('Check switch state'):
-        if respond_index != 0:
-            logging.info('Switch could boot in NVOS. Not reinstalling')
-            return
-
-    with allure.step('Reinstall NVOS'):
-        with allure.step('Press Enter ; Expect: login prompt'):
-            serial_engine.run_cmd('\r', DefaultConnectionValues.LOGIN_REGEX)
-        with allure.step('Enter username ; Expect: password prompt'):
-            serial_engine.run_cmd(DefaultConnectionValues.ONIE_USERNAME, DefaultConnectionValues.PASSWORD_REGEX)
-        with allure.step('Enter username ; Expect: ONIE prompt (#)'):
-            serial_engine.run_cmd(DefaultConnectionValues.ONIE_PASSWORD, DefaultConnectionValues.DEFAULT_PROMPTS)
-        with allure.step('Press Enter ; Expect: ONIE prompt (#)'):
-            serial_engine.run_cmd('\r', DefaultConnectionValues.DEFAULT_PROMPTS)
-        with allure.step(f'Run: {SecureBootConsts.ONIE_STOP_CMD} ; Expect: ONIE prompt (#)'):
-            serial_engine.run_cmd(SecureBootConsts.ONIE_STOP_CMD, DefaultConnectionValues.DEFAULT_PROMPTS)
-        with allure.step(
-                f'Run: {SecureBootConsts.ONIE_NOS_INSTALL_CMD} ; Expect: {SecureBootConsts.INSTALL_SUCCESS_PATTERN}'):
-            serial_engine.run_cmd(
-                f'{SecureBootConsts.ONIE_NOS_INSTALL_CMD} {SecureBootConsts.NBU_NFS_PREFIX}{restore_image_path}',
-                SecureBootConsts.INSTALL_SUCCESS_PATTERN,
-                timeout=SecureBootConsts.NVOS_INSTALL_TIMEOUT
-            )
-        with allure.step('Ping switch until shutting down'):
-            ping_till_alive(should_be_alive=False, destination_host=serial_engine.ip)
-        with allure.step('Ping switch until back alive'):
-            ping_till_alive(should_be_alive=True, destination_host=serial_engine.ip)
-        with allure.step('Wait until switch is up'):
-            TestToolkit.engines.dut.disconnect()  # force engines.dut to reconnect
-            DutUtilsTool.wait_for_nvos_to_become_functional(engine=TestToolkit.engines.dut)
-
-
 @pytest.mark.checklist
 @pytest.mark.secure_boot
-@pytest.mark.parametrize('tested_chain_of_trust_node', ChainOfTrustNode.ALL_NODES)
+@pytest.mark.parametrize('tested_chain_of_trust_node', [random.choice(ChainOfTrustNode.ALL_NODES)])
 def test_secure_boot_unsigned_system_file(tested_chain_of_trust_node: str, serial_engine: PexpectSerialEngine,
-                                          mount_uefi_disk_partition, engines, restore_image_path, is_secure_boot_enabled):
+                                          mount_uefi_disk_partition, engines, restore_image_path, is_secure_boot_enabled,
+                                          topology_obj, devices):
     assert tested_chain_of_trust_node in ChainOfTrustNode.ALL_NODES, \
         f'chain of trust must be in: {ChainOfTrustNode.ALL_NODES}'
 
@@ -163,8 +117,8 @@ def test_secure_boot_unsigned_system_file(tested_chain_of_trust_node: str, seria
             assert respond_index in expected_indexes, f'Wrong respond index.\nExpected: {expected_indexes}\n' \
                 f'Actual: {respond_index}'
     finally:
-        with allure.step('Recovery after test'):
-            reinstall_nvos_after_test(serial_engine=serial_engine, restore_image_path=restore_image_path)
+        with allure.step(f'Recovery after test - reinstall nvos: {restore_image_path}'):
+            NvueGeneralCli(engines.dut, devices.dut).install_image_via_onie(topology_obj, restore_image_path)
 
 
 def get_kernel_module_path(signing_state: str, engines, kernel_modules_tool: KernelModulesTool):

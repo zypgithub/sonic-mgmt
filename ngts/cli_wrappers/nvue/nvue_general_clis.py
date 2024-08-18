@@ -8,8 +8,8 @@ from ngts.constants.constants import InfraConst
 from ngts.constants.constants import MarsConstants
 from ngts.nvos_constants.constants_nvos import NvosConst, ActionConsts, SystemConsts, ConfState
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
+from ngts.tests_nvos.general.security.test_secure_boot.constants import SecureBootConsts
 from ngts.tools.test_utils import allure_utils as allure
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 logger = logging.getLogger()
 server_ip = "10.237.22.60"
@@ -154,6 +154,9 @@ class NvueGeneralCli(SonicGeneralCliDefault):
     def deploy_onie(self, image_path, in_onie, fw_pkg_path, platform_params, topology_obj):
         assert in_onie, 'NVOS install failed - not in ONIE'
         self.install_image_onie(self.engine, image_path, platform_params, topology_obj)
+
+    def install_image_via_onie(self, topology_obj, image_path):
+        self.deploy_image(topology_obj, image_path, None, None, None, 'onie', None, None, None)
 
     def deploy_image(self, topology_obj, image_path, apply_base_config=False, setup_name=None,
                      platform_params=None, deploy_type='sonic', reboot_after_install=None, fw_pkg_path=None,
@@ -370,33 +373,45 @@ class NvueGeneralCli(SonicGeneralCliDefault):
         logger.info("Wait for NVOS/ONIE grub menu")
         # Set timeout based on the active status of Redmine issue #4028150
         to = 360 if is_redmine_issue_active([4028150])[0] else 240
-        output, respond = serial_engine.run_cmd('', ['ONIE\\s+', '\\*ONIE: Install OS'], timeout=to,
-                                                send_without_enter=True)
-        if respond == 0:
-            logger.info("System in NVOS grub menu, entering ONIE grub menu")
-            for i in range(2):
-                logger.info("Sending one arrow down")
-                serial_engine.run_cmd("\x1b[B", expected_value='.*', send_without_enter=True)
-                time.sleep(0.3)
-            logger.info("Onie option selected")
+        onie_grub_menu_pattern = '\\*ONIE: Install OS'
+        grub_menu_patterns = ['ONIE\\s+', onie_grub_menu_pattern]
+        all_patterns = grub_menu_patterns + SecureBootConsts.INVALID_SIGNATURE
+        output, respond = serial_engine.run_cmd('', all_patterns, timeout=to, send_without_enter=True)
 
-            logger.info("Pressing Enter to enter ONIE grub menu")
-            _, respond = serial_engine.run_cmd('\r',
-                                               expected_value=['Due to security constraints, '
-                                                               'this option will uninstall your current OS',
-                                                               'Answer "YES" to continue', '\\*ONIE:.*'],
-                                               timeout=30, send_without_enter=True)
+        if respond != 1:
+            if respond >= len(grub_menu_patterns):
+                with allure.step('Secure boot error - handle'):
+                    with allure.step('hit Enter till no error message'):
+                        while respond >= len(grub_menu_patterns):
+                            logger.info('Hit Enter on secure boot error message')
+                            output, respond = serial_engine.run_cmd("\r", expected_value=all_patterns, timeout=to, send_without_enter=True)
+                            time.sleep(1)
 
-            if respond != 2:
-                logger.info("MLNX-OS system. Enter 'YES' and wait till in ONIE grub menu")
-                serial_engine.run_cmd('YES', '\\*ONIE: Install OS', timeout=420)
+            elif respond == 0:
+                logger.info("System in NVOS grub menu, entering ONIE grub menu")
+                for i in range(2):
+                    logger.info("Sending one arrow down")
+                    serial_engine.run_cmd("\x1b[B", expected_value='.*', send_without_enter=True)
+                    time.sleep(0.3)
+                logger.info("Onie option selected")
 
-            logger.info("System in ONIE grub menu")
-            logger.info("Send up arrows for case default mode is Rescue")
-            for i in range(2):
-                logger.info("Sending one arrow up")
-                serial_engine.run_cmd("\x1b[A", expected_value='.*', send_without_enter=True)
-                time.sleep(0.3)
+                logger.info("Pressing Enter to enter ONIE grub menu")
+                _, respond = serial_engine.run_cmd('\r',
+                                                   expected_value=['Due to security constraints, '
+                                                                   'this option will uninstall your current OS',
+                                                                   'Answer "YES" to continue', '\\*ONIE:.*'],
+                                                   timeout=30, send_without_enter=True)
+
+                if respond != 2:
+                    logger.info("MLNX-OS system. Enter 'YES' and wait till in ONIE grub menu")
+                    serial_engine.run_cmd('YES', onie_grub_menu_pattern, timeout=420)
+
+            with allure.step('in ONIE grub menu: Go up to onie install mode'):
+                logger.info("Send up arrows for case default mode is Rescue")
+                for i in range(5):
+                    logger.info("Sending one arrow up")
+                    serial_engine.run_cmd("\x1b[A", expected_value='.*', send_without_enter=True)
+                    time.sleep(0.3)
 
         logger.info("Waiting for onie prompt")
         self.wait_for_onie_prompt(serial_engine)
