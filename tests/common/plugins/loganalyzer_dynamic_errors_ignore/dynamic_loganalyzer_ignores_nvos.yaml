@@ -1767,4 +1767,14 @@
   Conditions:
     - Affected_test_cases:
       - tests/nightly/new_hw_thermal_control/test_new_hw_tc_service.py::test_operate_tc_service
+
+# NVOS
+- Errors_list:
+    - '.*ERR health-statsd#health_history: Containers: is not Status ok.*'
+    - '.*ERR health-statsd#health_history: Summary: Not OK.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests_nvos/infra/init_flow/init_flow/test_ports_are_up.py
+      Redmine:
+        - 4038479
 # --------------------------------------------------
