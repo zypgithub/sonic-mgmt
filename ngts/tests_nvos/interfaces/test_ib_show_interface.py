@@ -160,7 +160,8 @@ def test_ib_show_interface_all_state_down(engines, devices):
         validate_one_port_in_show_all_ports(output_dictionary, devices.dut.switch_type.lower(), False)
         link_physical_port_state = output_dictionary[IbInterfaceConsts.LINK][IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE]
         assert link_physical_port_state in [IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE_POLLING,
-                                            IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE_DISABLED], \
+                                            IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE_DISABLED,
+                                            IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE_POLLING_XDR], \
             "Link physical port state {} isn't as we expected".format(link_physical_port_state)
 
 

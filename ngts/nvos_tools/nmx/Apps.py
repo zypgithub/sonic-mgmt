@@ -41,5 +41,5 @@ class AppsName(BaseComponent):
         engine = engine if engine else TestToolkit.engines.dut
         with allure.step('Stop App'):
             return SendCommandTool.execute_command_expected_str(self._cli_wrapper.action_stop_cluster_apps,
-                                                                "Action succeeded", engine,
+                                                                "App has been successfully stopped", engine,
                                                                 self.get_resource_path())

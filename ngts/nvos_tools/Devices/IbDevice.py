@@ -38,6 +38,7 @@ class IbSwitch(BaseSwitch):
         self.default_username = os.environ["NVU_SWITCH_USER"]
         self.prev_default_password = os.environ["NVU_SWITCH_PASSWORD"]
         self._init_ib_speeds()
+        self._init_eth0_speeds()
         self.init_documents_consts()
         self.init_cli_coverage_prop("nvos")
 
@@ -79,6 +80,9 @@ class IbSwitch(BaseSwitch):
     def _init_ib_speeds(self):
         self.invalid_ib_speeds = {'qdr': '40G'}
         self.supported_ib_speeds = {'hdr': '200G', 'edr': '100G', 'fdr': '56G', 'sdr': '10G', 'ndr': '400G'}
+
+    def _init_eth0_speeds(self):
+        self.supported_eth0_speeds = ['100M', '1G']
 
     def _init_fan_list(self):
         self.fan_list = ["FAN1/1", "FAN1/2", "FAN2/1", "FAN2/2", "FAN3/1", "FAN3/2", "FAN4/1", "FAN4/2",
@@ -476,6 +480,10 @@ class GorillaSwitch(IbSwitch):
         self.platform_inventory_switch_values.update({"hardware-version": None,
                                                       "model": ExpectedString(regex="MQM9700.*")})
 
+    def _init_eth0_speeds(self):
+        super()._init_eth0_speeds()
+        self.supported_eth0_speeds += ['10M']
+
 
 # -------------------------- Gorilla BF3 Switch ----------------------------
 class GorillaSwitchBF3(GorillaSwitch):
@@ -707,6 +715,10 @@ class BlackMambaSwitch(IbSwitch):
         self.platform_inventory_switch_values.update({"hardware-version": None,
                                                       "model": None})
 
+    def _init_eth0_speeds(self):
+        super()._init_eth0_speeds()
+        self.supported_eth0_speeds += ['10M']
+
     def _relevant_config_filename_by_version(self, version: str) -> str:
         return 'nvos_config_xdr.yml'
 
@@ -857,6 +869,10 @@ class CrocodileSwitch(IbSwitch):
         super()._init_temperature()
         self.temperature_sensors += ["ASIC1", "ASIC2", "PSU-3-Temp", "PSU-4-Temp"]
         self.temperature_sensors.remove("ASIC")
+
+    def _init_eth0_speeds(self):
+        super()._init_eth0_speeds()
+        self.supported_eth0_speeds += ['10M']
 
     def _relevant_config_filename_by_version(self, version: str) -> str:
         return 'nvos_config_xdr.yml'
