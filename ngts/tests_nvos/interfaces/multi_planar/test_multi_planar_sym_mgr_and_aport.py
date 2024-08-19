@@ -84,6 +84,11 @@ def test_fae_interface_commands(engines, devices, test_api):
         ValidationTool.compare_values(output_keys.sort(), dut_device.interface_fae_list.sort()).\
             verify_result()
 
+        with allure.step("Validate all internal fnm ports are up"):
+            up_fnm_ports = {port for port, data in output_dictionary.items()
+                            if NvosConsts.LINK_STATE_UP in data[IbInterfaceConsts.LINK][IbInterfaceConsts.LINK_STATE]}
+            assert up_fnm_ports == set(devices.dut.interface_active_internal_fnm_ports)
+
     with allure.step("Validate all multi planar fields exist in show fae interface <port>"):
         output_fae_port = OutputParsingTool.parse_show_interface_output_to_dictionary(
             selected_fae_plane_port.port.interface.show()).get_returned_value()
