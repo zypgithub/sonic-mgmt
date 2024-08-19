@@ -236,12 +236,6 @@ tests_nvos/interfaces/multi_planar/test_multi_planar_sym_mgr_and_aport.py::test_
     conditions:
       - "'gorilla' in testbed"
 
-tests_nvos/interfaces/multi_planar/test_multi_planar_sym_mgr_and_aport.py::test_verify_breakout_commands_not_exist:
-  skip:
-    reason: "Should run only on xdr Black Mamba system"
-    conditions:
-      - "'gorilla' in testbed"
-
 tests_nvos/interfaces/test_response_mgmt_ip_inband.py::test_interface_shutdown:
   skip:
     reason: "Should run only on xdr Black Mamba system"
@@ -501,4 +495,17 @@ tests_nvos/platform/test_platform_environment.py::test_platform_environment_fan_
     conditions:
       - https://redmine.mellanox.com/issues/3978721
 
+tests_nvos/interfaces/multi_planar/test_multi_planar_sym_mgr_and_aport.py::test_verify_breakout_commands_not_exist:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4039460"
+    conditions_logical_operator: or
+    conditions:
+      - "'gorilla' in testbed"
+      - https://redmine.mellanox.com/issues/4039460
+
+tests_nvos/multi_asic/test_interface_ipoib.py::test_interface_ipoib_mapping_basic_functionality:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3975478"
+    conditions:
+      - https://redmine.mellanox.com/issues/3975478
 ########################## NVOS IGNORE END ##########################
