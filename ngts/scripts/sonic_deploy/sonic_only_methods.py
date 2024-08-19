@@ -49,15 +49,20 @@ class SonicInstallationSteps:
             for dut in setup_info['duts']:
                 dut_names.append(dut['dut_name'])
             with allure.step('Remove topologies'):
+                cached_hwsku = get_cached_hwsku(dut_name)
+                logger.info(f"Copy the setup related file for the hwsku {cached_hwsku}")
+                if cached_hwsku and cached_hwsku != destination_hwsku:
+                    SonicInstallationSteps.override_hwsku_files(setup_info, cached_hwsku)
                 SonicInstallationSteps.remove_topologies(ansible_path=ansible_path,
                                                          dut_names=dut_names,
                                                          setup_name=setup_name,
                                                          sonic_topo=sonic_topo)
-
+                if cached_hwsku and cached_hwsku != destination_hwsku:
+                    SonicInstallationSteps.override_hwsku_files(setup_info, destination_hwsku)
             SonicInstallationSteps.start_community_background_threads(threads_dict, setup_name,
                                                                       dut_name, sonic_topo, neighbor_type,
                                                                       ptf_tag, port_number,
-                                                                      ansible_path, setup_info)
+                                                                      ansible_path, setup_info, destination_hwsku)
             if is_dualtor_topo(sonic_topo):
                 generate_minigraph(ansible_path, setup_info, setup_info['setup_name'], sonic_topo, port_number)
         else:
@@ -65,7 +70,7 @@ class SonicInstallationSteps:
 
     @staticmethod
     def start_community_background_threads(threads_dict, setup_name, dut_name, sonic_topo, neighbor_type, ptf_tag,
-                                           port_number, ansible_path, setup_info):
+                                           port_number, ansible_path, setup_info, hwsku):
         """
         Start background threads for community setup
         """
@@ -75,7 +80,7 @@ class SonicInstallationSteps:
                                                     setup_name=setup_name,
                                                     dut_names=[dut_name],
                                                     sonic_topo=sonic_topo)
-        add_topo_cmd = SonicInstallationSteps.get_add_topology_cmd(setup_name, dut_name, sonic_topo, neighbor_type, ptf_tag)
+        add_topo_cmd = SonicInstallationSteps.get_add_topology_cmd(setup_name, dut_name, sonic_topo, neighbor_type, ptf_tag, hwsku)
         run_background_process_on_host(threads_dict, 'add_topology', add_topo_cmd, timeout=3600, exec_path=ansible_path)
         if not is_bf_topo(sonic_topo) and not is_dualtor_topo(sonic_topo) and "mtvr-hippo-03" != dut_name and\
                 "mtvr-hippo-02" != dut_name and 'bobcat' not in dut_name and "r-leopard-01" != dut_name \
@@ -246,6 +251,7 @@ class SonicInstallationSteps:
             logger.info(
                 f"Remove topologies: {topo_list}. This may increase a chance to deploy a new one successful")
             cached_vm_type = get_cached_vm_type(setup)
+
             for topo in topo_list:
                 if cached_vm_type == 'vsonic':
                     logger.info(f"Stopping vsonic VMs")
@@ -262,7 +268,7 @@ class SonicInstallationSteps:
                 logger.info("Remove topo {}".format(topo))
                 logger.info("Running CMD: {}".format(cmd))
                 try:
-                    execute_script(cmd, ansible_path, validate=False, timeout=600)
+                    execute_script(cmd, ansible_path, validate=True, timeout=600)
                 except Exception as err:
                     logger.warning(f'Failed to remove topology. Got error: {err}')
 
@@ -292,15 +298,16 @@ class SonicInstallationSteps:
         return topos_to_remove
 
     @staticmethod
-    def get_add_topology_cmd(setup_name, dut_name, sonic_topo, neighbor_type, ptf_tag):
+    def get_add_topology_cmd(setup_name, dut_name, sonic_topo, neighbor_type, ptf_tag, hwsku=None):
         testbed_file = ''
         if is_dualtor_topo(sonic_topo):
             dut_name = setup_name
             if is_dualtor_aa_topo(sonic_topo):
                 testbed_file = '-t testbed.yaml'
-        cmd = "./testbed-cli.sh {TESTBED_FILE} -k {NEIGHBOR_TYPE} add-topo {SWITCH}-{TOPO} vault -e " \
+        cmd = "./testbed-cli.sh {TESTBED_FILE} -k {NEIGHBOR_TYPE} -h {HWSKU} add-topo {SWITCH}-{TOPO} vault -e " \
               "ptf_imagetag={PTF_TAG} -vvvvv".format(TESTBED_FILE=testbed_file, SWITCH=dut_name,
-                                                     TOPO=sonic_topo, PTF_TAG=ptf_tag, NEIGHBOR_TYPE=neighbor_type)
+                                                     TOPO=sonic_topo, PTF_TAG=ptf_tag, NEIGHBOR_TYPE=neighbor_type,
+                                                     HWSKU=hwsku)
         return cmd
 
     @staticmethod
@@ -779,3 +786,16 @@ def get_cached_vm_type(dut_name):
         if ',' in topo_vm_type:
             cached_vm_type = topo_vm_type.split(',')[1].strip()
     return cached_vm_type
+
+
+def get_cached_hwsku(dut_name):
+    cached_hwsku = None
+    cached_topo_vm_type_path = f"{MarsConstants.SONIC_MARS_BASE_PATH}/cached_deployed_topologies/"
+    setup_cached_topo_file = Path(f"{cached_topo_vm_type_path}/{dut_name}")
+    if setup_cached_topo_file.is_file():
+        topo_vm_type = setup_cached_topo_file.read_text().strip()
+        if ',' in topo_vm_type:
+            cached_vars = topo_vm_type.split(',')
+            if len(cached_vars) >= 3:
+                cached_hwsku = cached_vars[2].strip()
+    return cached_hwsku
