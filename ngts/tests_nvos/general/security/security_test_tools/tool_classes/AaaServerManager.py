@@ -1,4 +1,5 @@
 import datetime
+import itertools
 import os
 import re
 from typing import List
@@ -68,12 +69,21 @@ class AaaServerManager:
     def __show_op_on_accounting_log_file(self, accounting_file_path: str, show_cmd: str, grep: List[str] = None,
                                          after_time: str = '') -> AaaAccountingLogsFileContent:
         if grep:
-            cmd = f'grep -E "{grep[0]}'
-            for pattern in grep[1:]:
-                cmd += f'|{pattern}'
-            cmd += f'" {accounting_file_path} | {show_cmd}'
+            greps = [g.replace('.', '\\.') for g in grep]    # replace dot for ip address
+            greps_permutations = [list(perm) for perm in itertools.permutations(greps)]  # order doesn't matter
+            greps = ['.*'.join(perm) for perm in greps_permutations]
+            grep_pattern = '|'.join(greps)  # or between all greps permutations
+            cmd = f'grep -E "{grep_pattern}" {accounting_file_path} | {show_cmd}'
         else:
             cmd = f'{show_cmd} {accounting_file_path}'
+
+        # if grep:
+        #     cmd = f'grep -E "{grep[0]}'
+        #     for pattern in grep[1:]:
+        #         cmd += f'|{pattern}'
+        #     cmd += f'" {accounting_file_path} | {show_cmd}'
+        # else:
+        #     cmd = f'{show_cmd} {accounting_file_path}'
 
         # cmd = f'{show_cmd} {accounting_file_path}'
         # if grep:

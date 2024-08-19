@@ -23,7 +23,7 @@ def login_source_ip_addresses(engines) -> List[str]:
     logger.info(f"Login source IPv4 address is {src_ipv4}")
     src_ipv6 = IpTool.get_player_ipv6_addr(src_ipv4)
     logger.info(f"Login source IPv6 address is {src_ipv6}")
-    return [src_ipv4, src_ipv6]
+    return [src_ipv4, src_ipv6] if src_ipv6 else [src_ipv4]
 
 
 @pytest.fixture(scope='function')

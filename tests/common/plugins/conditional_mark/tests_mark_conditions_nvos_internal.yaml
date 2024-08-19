@@ -1,5 +1,11 @@
 ########################## NVOS IGNORE START ##########################
 
+tests_nvos/general/security/test_ssh_config/test_ssh_config::test_ssh_config_good_flow:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4040069"
+    conditions:
+      - https://redmine.mellanox.com/issues/4040069
+
 tests_nvos/general/security/nmx_cert/test_nmx_cert.py::test_delete_cert_fail_when_is_used:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3995421"

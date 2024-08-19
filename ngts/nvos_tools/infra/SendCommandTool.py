@@ -28,15 +28,17 @@ class SendCommandTool:
                                  f"But the output is:\n{cmd_output_str}", cmd_output_str)
 
         if cmd_output_str:
-            output_first_lines = "".join(cmd_output_str.split('\n')[:15])
+            lines = cmd_output_str.split('\n')
+            k = min(15, len(lines) // 2)
+            output_lines = ''.join(lines[:k] + lines[-k:])
 
             # Check for any invalid command messages
-            if any(err_msg in output_first_lines for err_msg in invalid_cmd_str):
+            if any(err_msg in output_lines for err_msg in invalid_cmd_str):
                 return ResultObj(False, f"Command failed with the following output: \n{cmd_output_str}", None,
                                  IssueType.PossibleBug)
 
             # Check for any timeout messages
-            if any(timeout_msg in output_first_lines for timeout_msg in timeout_cmd_str):
+            if any(timeout_msg in output_lines for timeout_msg in timeout_cmd_str):
                 return ResultObj(False, f"Timeout occurred with the following output: \n{cmd_output_str}", None,
                                  IssueType.TestIssue)
 

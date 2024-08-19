@@ -1,9 +1,8 @@
-import logging
 import random
-from ngts.tools.test_utils import allure_utils as allure
-import pytest
+
 import pexpect
 
+from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.switch_recovery import recover_dut_with_remote_reboot
 
 
@@ -19,8 +18,8 @@ def test_grub_password(topology_obj, engines, serial_engine, is_secure_boot_enab
     '''
     try:
         with allure.step("Rebooting and entering grub cli"):
-            serial_engine.serial_engine.sendline("nv action reboot system force")
-            serial_engine.serial_engine.expect("select which entry is highlighted", timeout=120)
+            serial_engine.serial_engine.sendline("sudo reboot now")
+            serial_engine.serial_engine.expect("select which entry is highlighted", timeout=180)
 
         cli_grub_activation_character = random.choice(['e', 'c'])
         with allure.step("Entering cli command-line using {} character".format(cli_grub_activation_character)):
@@ -29,7 +28,7 @@ def test_grub_password(topology_obj, engines, serial_engine, is_secure_boot_enab
 
         with allure.step('Verify grub is password protected'):
             assert res_index == 0, f"Didn't get username/password prompt " \
-                                   f"when entered '{cli_grub_activation_character}' in grub menu"
+                f"when entered '{cli_grub_activation_character}' in grub menu"
     finally:
         with allure.step("Test is Done. remote reboot to recover"):
-            recover_dut_with_remote_reboot(topology_obj, engines, should_clear_config=False)
+            recover_dut_with_remote_reboot(topology_obj, engines, False, 60)
