@@ -151,7 +151,7 @@ def test_upgrade_with_nmx_enabled(test_api, devices, base_version,
                 _rotate_logs(system)
                 logger.info("Sleeping for 30 seconds to gather log messages and verify its level")
                 time.sleep(30)
-                ClusterTools.verify_log_level(log_levels[app], app, output_format, cluster, system)
+                ClusterTools.verify_log_level(log_levels[app], app, output_format, cluster)
 
         with allure.step("Make sure config is saved"):
             output = control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].action_generate_control_plane()

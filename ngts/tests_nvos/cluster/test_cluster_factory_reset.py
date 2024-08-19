@@ -84,7 +84,8 @@ def test_cluster_default_factory_reset(engines, devices, test_api):
             rotate_logs(system)
             logger.info("Sleeping for 30 seconds to gather nmx log messages")
             time.sleep(30)
-            verify_log_level(ClusterAppsLogLevels.NOTICE, output_format, cluster, system)
+            for app in INITIAL_EXPECTED_APPS:
+                ClusterTools.verify_log_level(ClusterAppsLogLevels.NOTICE, app, output_format, cluster)
             verify_apps_in_expected_state(cluster, 'ok')
             verify_config_files_content_not_changed(control_plane, initial_config_contents, engines)
     finally:
@@ -140,7 +141,8 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name)
             rotate_logs(system)
             logger.info("Sleeping for 30 seconds to gather nmx log messages")
             time.sleep(30)
-            verify_log_level(ClusterAppsLogLevels.NOTICE, output_format, cluster, system)
+            for app in INITIAL_EXPECTED_APPS:
+                ClusterTools.verify_log_level(ClusterAppsLogLevels.NOTICE, app, output_format, cluster)
             verify_apps_in_expected_state(cluster, 'ok')
             verify_config_files_content_not_changed(control_plane, initial_config_contents, engines)
     finally:
@@ -195,7 +197,8 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name):
             rotate_logs(system)
             logger.info("Sleeping for 30 seconds to gather nmx log messages")
             time.sleep(30)
-            verify_log_level(ClusterAppsLogLevels.NOTICE, output_format, cluster, system)
+            for app in INITIAL_EXPECTED_APPS:
+                ClusterTools.verify_log_level(ClusterAppsLogLevels.NOTICE, app, output_format, cluster)
             verify_apps_in_expected_state(cluster, 'ok')
             verify_config_files_content_not_changed(control_plane, initial_config_contents, engines)
     finally:
@@ -253,7 +256,8 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
             control_plane_files_deleted = True
             rotate_logs(system)
             time.sleep(30)
-            verify_log_level(log_level, output_format, cluster, system)
+            for app in INITIAL_EXPECTED_APPS:
+                ClusterTools.verify_log_level(log_level, app, output_format, cluster)
             verify_apps_in_expected_state(cluster, 'ok')  # Apps should be running
             verify_config_files_content_not_changed(control_plane, initial_config_contents, engines)
 
@@ -374,32 +378,6 @@ def reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, s
             assert current_config_content == expected_config_content, f"Config file was not loaded properly. Expected content {expected_config_content}, Actual content: {current_config_content}"
 
     return log_level
-
-
-def verify_log_level(log_level, output_format, cluster, system):
-    for app in INITIAL_EXPECTED_APPS:
-        with allure.step(f"Verifying log level is updated to {log_level}"):
-            output = OutputParsingTool.parse_show_output_to_dict(
-                cluster.apps.apps_name[app].loglevel.show(output_format=output_format),
-                output_format=output_format).get_returned_value()
-            # Add assert on log level
-            assert output['log-level'] == log_level, f"Expected log level: {log_level}, Actual log-level {output['log-level']}"
-
-            # Get the index of the current log level
-            current_level_index = ClusterAppsLogLevelsList.index(log_level)
-            # Define the expected log levels based on the current log level
-            expected_log_levels = ClusterAppsLogLevelsList[current_level_index:]
-
-            # Convert expected log levels to uppercase
-            expected_log_levels_upper = [level.upper() for level in expected_log_levels]
-
-            try:
-                show_output = system.log.show_log(param=f"| grep -E \"{'|'.join(NMX_LOG_MESSAGES_TAGS)}\"", exit_cmd='q').split('\n')[1:]
-            except Exception as e:
-                logger.info("No messages were caught! Exception: %s", str(e))
-                show_output = []
-            for line in show_output:
-                assert any(level in line for level in expected_log_levels_upper), f"Line in logs is {line}, which does not contain any of the expected log levels {expected_log_levels_upper}"
 
 
 def rotate_logs(system):

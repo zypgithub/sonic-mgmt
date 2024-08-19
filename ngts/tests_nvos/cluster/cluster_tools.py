@@ -23,7 +23,7 @@ NMX_CONTROLLER_CONFIG_FILE_TYPES = ['fm_config', 'sm_config']  # TODO, add 'rdm_
 NMX_CONTROLLER_STATE_FILE_TYPES = ['conn_info']  # TODO add sm_dump and topology once bug is fixed #3985684
 ClusterAppsLogLevelsList = [ClusterAppsLogLevels.DEBUG, ClusterAppsLogLevels.INFO, ClusterAppsLogLevels.NOTICE, ClusterAppsLogLevels.WARNING, ClusterAppsLogLevels.ERROR, ClusterAppsLogLevels.CRITICAL]
 NMX_LOG_MESSAGES_TAGS = ['nmxc-sm', 'nmxc-fm', 'nmxc-fib', 'nmxc-gw_api', 'nmxc-rest', 'nmxc-config_daemon']
-WAIT_FOR_APPS_RUNNING = 40  # Should be reduced to ~7 once bug is fixed [NVOS - Design] Bug SW #4010133: [Non-Functional ] [NMX] | No immediate NVOS reflection for showing running apps after being started/stopped | Assignee: Chris Yang | Status: Assigned
+WAIT_FOR_APPS_RUNNING = 30  # Should be reduced to ~7 once bug is fixed [NVOS - Design] Bug SW #4010133: [Non-Functional ] [NMX] | No immediate NVOS reflection for showing running apps after being started/stopped | Assignee: Chris Yang | Status: Assigned
 NMXC_CONN = 'nmxc-conn'
 NMXC_CONN_STATE_PER_CLUSTER_STATE = {NvosConst.ENABLED: 'up', NvosConst.DISABLED: 'down'}
 
@@ -279,7 +279,7 @@ class ClusterTools:
         return file_name
 
     @staticmethod
-    def verify_log_level(log_level, app, output_format, cluster, system):
+    def verify_log_level(log_level, app, output_format, cluster):
         with allure.step(f"Verifying log level is updated to {log_level}"):
             output = OutputParsingTool.parse_show_output_to_dict(
                 cluster.apps.apps_name[app].loglevel.show(output_format=output_format),
@@ -287,18 +287,20 @@ class ClusterTools:
             # Add assert on log level
             assert output['log-level'] == log_level, f"Expected log level: {log_level}, Actual log-level {output['log-level']}"
 
-            # Get the index of the current log level
-            current_level_index = ClusterAppsLogLevelsList.index(log_level)
+    @staticmethod
+    def verify_log_messages_log_level(log_level, system):
+        # Get the index of the current log level
+        current_level_index = ClusterAppsLogLevelsList.index(log_level)
 
-            # Define the expected log levels based on the current log level
-            expected_log_levels = ClusterAppsLogLevelsList[current_level_index:]
+        # Define the expected log levels based on the current log level
+        expected_log_levels = ClusterAppsLogLevelsList[current_level_index:]
 
-            # Convert expected log levels to uppercase
-            expected_log_levels_upper = [level.upper() for level in expected_log_levels]
+        # Convert expected log levels to uppercase
+        expected_log_levels_upper = [level.upper() for level in expected_log_levels]
 
-            show_output = system.log.show_log(param=f"| grep -E \"{'|'.join(NMX_LOG_MESSAGES_TAGS)}\"", exit_cmd='q').split('\n')[1:]
-            for line in show_output:
-                assert any(level in line for level in expected_log_levels_upper), f"Line in logs is {line}, which does not contain any of the expected log levels {expected_log_levels_upper}"
+        show_output = system.log.show_log(param=f"| grep -E \"{'|'.join(NMX_LOG_MESSAGES_TAGS)}\"", exit_cmd='q').split('\n')[1:]
+        for line in show_output:
+            assert any(level in line for level in expected_log_levels_upper), f"Line in logs is {line}, which does not contain any of the expected log levels {expected_log_levels_upper}"
 
     @staticmethod
     def verify_app_version(cluster, app, expected_version):
