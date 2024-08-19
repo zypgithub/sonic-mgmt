@@ -210,7 +210,11 @@ class IpTool:
             if player_ipv4_addr not in interface:
                 continue
             interface_ipv6_addresses = re.findall(ipv6_pattern, interface)
-            assert interface_ipv6_addresses, f'interface of {player_ipv4_addr} has no inet6 records.\ninterface:\n{interface}\nall output:\n{interfaces}'
+            if not interface_ipv6_addresses:
+                logging.warning(f'interface of {player_ipv4_addr} has no inet6 records.\n\ninterface:\n{interface}\n\nall output:\n{interfaces}')
+                return ''
+            # assert interface_ipv6_addresses, f'interface of {player_ipv4_addr} has no inet6 records.\n\ninterface:\n{interface}\n\nall output:\n{interfaces}'
+            logging.info(f'ipv6 address of interface: {interface_ipv6_addresses[0]}')
             return interface_ipv6_addresses[0]
 
         raise ValueError(

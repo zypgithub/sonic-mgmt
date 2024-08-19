@@ -5,7 +5,7 @@ invalid_cmd_str = ['invalid date', 'Invalid config', 'Error', 'command not found
                    "Invalid Command", "You do not have permission", "Incomplete Command", "Unable to change",
                    'internal error', 'Valid range is',
                    "You don't have the permission to access the requested resource", 'Cannot create local user',
-                   "is not a ", "is not one of", 'File not found', 'unsuccessful', 'Uncaught exception'
+                   "is not a ", "is not one of", 'File not found', 'unsuccessful', 'Uncaught exception', 'action_error'
                    ]
 timeout_cmd_str = ['Timeout while waiting for client response']
 
@@ -27,15 +27,17 @@ class SendCommandTool:
                                  f"But the output is:\n{cmd_output_str}", cmd_output_str)
 
         if cmd_output_str:
-            output_first_lines = "".join(cmd_output_str.split('\n')[:4])
+            lines = cmd_output_str.split('\n')
+            k = min(15, len(lines) // 2)
+            output_lines = ''.join(lines[:k] + lines[-k:])
 
             # Check for any invalid command messages
-            if any(err_msg in output_first_lines for err_msg in invalid_cmd_str):
+            if any(err_msg in output_lines for err_msg in invalid_cmd_str):
                 return ResultObj(False, f"Command failed with the following output: \n{cmd_output_str}", None,
                                  IssueType.PossibleBug)
 
             # Check for any timeout messages
-            if any(timeout_msg in output_first_lines for timeout_msg in timeout_cmd_str):
+            if any(timeout_msg in output_lines for timeout_msg in timeout_cmd_str):
                 return ResultObj(False, f"Timeout occurred with the following output: \n{cmd_output_str}", None,
                                  IssueType.TestIssue)
 

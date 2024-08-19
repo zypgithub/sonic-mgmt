@@ -1,5 +1,11 @@
 ########################## NVOS IGNORE START ##########################
 
+tests_nvos/general/security/test_ssh_config/test_ssh_config::test_ssh_config_good_flow:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4040069"
+    conditions:
+      - https://redmine.mellanox.com/issues/4040069
+
 tests_nvos/general/security/tpm_attestation/test_tpm_attestation.py:
   skip:
     reason: "Testcase skipped on gorilla systems - feature is pruned on gorilla"

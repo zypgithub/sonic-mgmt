@@ -1,5 +1,6 @@
 import logging
 import subprocess
+import time
 from typing import Tuple
 
 import ngts.tools.test_utils.allure_utils as allure
@@ -37,11 +38,16 @@ class GnmiClient:
         with allure.step('check if gnmic already installed'):
             gnmic_installed = _gnmic_is_installed()
         if not gnmic_installed:
-            with allure.step('install gnmic on player'):
-                self.cmd_runner.run_cmd_in_process("bash -c \"$(curl -sL https://get-gnmic.openconfig.net)\"")
-            with allure.step('verify gnmic is installed'):
-                gnmic_installed = _gnmic_is_installed()
-                assert gnmic_installed, f'failed to install gnmic'
+            for i in range(3):
+                with allure.step(f'attempt {i + 1}: install gnmic on player'):
+                    self.cmd_runner.run_cmd_in_process("bash -c \"$(curl -sL https://get-gnmic.openconfig.net)\"")
+                with allure.step('verify gnmic is installed'):
+                    gnmic_installed = _gnmic_is_installed()
+                    if gnmic_installed:
+                        break
+                    else:
+                        time.sleep(3)
+            assert gnmic_installed, f'failed to install gnmic'
 
     def verify_grpcurl_installation(self):
         def _grpcurl_is_installed() -> bool:
