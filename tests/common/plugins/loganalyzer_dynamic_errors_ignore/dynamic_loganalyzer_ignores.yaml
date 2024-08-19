@@ -4273,3 +4273,10 @@
     - 4013836
   - Affected_test_cases:
     - tests/push_build_tests/general/doroce/test_doroce.py::test_doroce[lossless_double_ipool]
+
+# Ignore errors based on analysis of RM issue 3869675
+- Errors_list:
+  - '.*ERR syncd#SDK: \[SX_API_DBG.ERR\] .* halt irisc \d  halt_addr.*'
+  Conditions:
+  - Affected_test_cases:
+    - tests/nightly/show_techsupport/test_techsupport.py::test_techsupport_health_event_sdk_dump
