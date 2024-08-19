@@ -1,0 +1,206 @@
+import logging
+import pytest
+import time
+
+from ngts.tools.test_utils import allure_utils as allure
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.nvos_constants.constants_nvos import ApiType
+
+log = logging.getLogger()
+
+
+@pytest.mark.platform
+@pytest.mark.cumulus
+@pytest.mark.cumulus_only
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_watchdog_good_kill(engines, test_api):
+    """
+    Name: Watchdog Good Kill
+    ===============================================
+
+    Description:
+    ===============================================
+    This test ensures that when the watchdog is killed correctly the system
+    does not restart due to a watchdog timeout
+
+    Steps:
+    ===============================================
+    1. Enable the watchdog if it is not enabled
+    2. Kill the watchdog
+    3. Ensure the system does not restart
+    """
+    TestToolkit.tested_api = test_api
+
+    with allure.step("If watchdog is not running, Skip the test"):
+        pid_wd = engines.dut.run_cmd("pidof wd_keepalive")
+        if not pid_wd:
+            pytest.skip("No pid for wd_keep_alive skipping test.")
+
+    with allure.step("Getting the current time of the watchdog."):
+        watchdog_timeout = int(get_current_watchdog_time(engines))
+
+    # Need to get the boot id to see if it actually shuts down
+    with allure.step("Get boot id before shutting down watchdog."):
+        cmd = "cat /proc/sys/kernel/random/boot_id"
+        start_boot_id = engines.dut.run_cmd(cmd)
+
+    # Kill watchdog
+    with allure.step("Killing the watchdog process correctly."):
+        engines.dut.run_cmd("sudo kill -TERM %s" % pid_wd)
+
+    # Give enough time for the reset to occur
+    with allure.step("Wait to ensure DUT doesn't reboot."):
+        log.info(
+            "Waiting %d seconds to ensure DUT stays up." %
+            (
+                (watchdog_timeout * 4) + 5
+            )
+        )
+        time.sleep((watchdog_timeout * 4) + 5)
+
+        try:
+            code = check_shutdown_state(engines, start_boot_id)
+        except Exception:
+            # TBD: Take console output
+            # self._dump_console_out()
+            assert False, "DUT never came back after the watchdog fired"
+
+        # Code of 1 means the DUT did not shutdown, good
+        if code != 1:
+            # TBD: Take console output
+            # self._dump_console_out()
+            assert (False), "DUT either shutdown or rebooted when the correct \
+shutdown for the watchdog was used."
+        else:
+            log.info("DUT correctly stayed up with a 'good' kill of watchdog")
+
+    with allure.step("Restart watchdog"):
+        engines.dut.run_cmd("sudo systemctl start wd_keepalive")
+        new_pid_wd = engines.dut.run_cmd("pidof wd_keepalive")
+        if not new_pid_wd or (new_pid_wd == pid_wd):
+            assert False, "Watchdog restart failed"
+
+    log.info("Pass")
+
+
+@pytest.mark.platform
+@pytest.mark.cumulus
+@pytest.mark.cumulus_only
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_watchdog_bad_kill(engines, test_api):
+    """
+    Name: Watchdog Bad Kill
+    ===============================================
+
+    Description:
+    ===============================================
+    This test ensures that when the watchdog is killed incorrectly (kill -9)
+    that the system will reset after the timer expires
+
+    Steps:
+    ===============================================
+    1. Enable the watchdog if it is not enabled
+    2. Kill the watchdog incorrectly
+    3. Ensure the system restarts
+    """
+    TestToolkit.tested_api = test_api
+
+    with allure.step("If watchdog is not running, Skip the test"):
+        pid_wd = engines.dut.run_cmd("pidof wd_keepalive")
+        if not pid_wd:
+            pytest.skip("No pid for wd_keep_alive skipping test.")
+
+    with allure.step("Getting the current time of the watchdog."):
+        watchdog_timeout = int(get_current_watchdog_time(engines))
+
+    # Need to get the boot id to see if it actually shuts down
+    with allure.step("Get boot id before shutting down watchdog."):
+        cmd = "cat /proc/sys/kernel/random/boot_id"
+        start_boot_id = engines.dut.run_cmd(cmd)
+
+    # Kill watchdog
+    with allure.step("Killing the watchdog process INCORRECTLY."):
+        engines.dut.run_cmd("sudo kill -9 %s" % pid_wd)
+
+    # Give enough time for the reset to occur
+    with allure.step("Wait to ensure DUT eventually reboots."):
+        log.info(
+            "Waiting %d seconds to ensure DUT eventually resets."
+            % ((watchdog_timeout * 6) + 5)
+        )
+        time.sleep((watchdog_timeout * 6) + 5)
+
+        try:
+            code = check_shutdown_state(engines, start_boot_id)
+        except Exception:
+            # TBD: Take console output
+            # self._dump_console_out()
+            assert False, "DUT never came back after the watchdog fired"
+
+        # Code of 2 means the DUT restarted, good
+        if code != 2:
+            # TBD: Take console output
+            # self._dump_console_out()
+            assert False, "DUT did not reset when the watchdog was killed \
+incorrectly."
+        else:
+            log.info(
+                "DUT correctly restarted when the watchdog was killed \
+incorrectly."
+            )
+
+    with allure.step("Restart watchdog"):
+        engines.dut.run_cmd("sudo systemctl start wd_keepalive")
+        new_pid_wd = engines.dut.run_cmd("pidof wd_keepalive")
+        if not new_pid_wd or (new_pid_wd == pid_wd):
+            assert False, "Watchdog restart failed"
+
+    log.info("Pass")
+
+
+def get_current_watchdog_time(engines):
+    """Grabs the amount of time the watchdog uses before reset
+
+    This function is used to know the time the watchdog takes before it will
+    actually reset the device
+
+    :Returns:
+        Returns the time in seconds that the watchdog takes before reset
+    """
+
+    timer_location = "/etc/watchdog.conf"
+
+    time_for_reset = engines.dut.run_cmd("sudo grep 'watchdog-timeout' %s"
+                                         % timer_location).split("=")[1]
+    time_for_reset = time_for_reset.strip()
+
+    return time_for_reset
+
+
+def check_shutdown_state(engines, start_boot_id):
+    """
+    Returns 0 for good shutdown
+    Returns 1 for a system that did not shutdown
+    Returns 2 for a system that shutdown but also restarted
+    """
+
+    # Get the time right now
+    current_time = time.time()
+
+    # Give it a maximum of 100 seconds before assuming the correct behavior
+    while (time.time() - current_time) < 100:
+        try:
+            # If this works, test failed
+            cmd = "cat /proc/sys/kernel/random/boot_id"
+            new_boot_id = engines.dut.run_cmd(cmd)
+        except Exception:
+            continue
+
+        if new_boot_id == start_boot_id:
+            # This means the DUT never actually shutdown
+            return 1
+        else:
+            # This means that the DUT rebooted
+            return 2
+
+    return 0
