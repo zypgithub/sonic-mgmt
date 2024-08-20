@@ -1,5 +1,6 @@
 import logging
 import random
+import re
 import time
 
 import pexpect
@@ -7,7 +8,11 @@ import pytest
 
 from infra.tools.general_constants.constants import DefaultConnectionValues
 from ngts.nvos_tools.acl.acl import Acl
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.nvos_tools.infra.PexpectTool import PexpectTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
+from ngts.nvos_tools.infra.SshCmdBuilder import SshCmdBuilder
+from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.conftest import create_ssh_login_engine, \
     ssh_to_device_and_retrieve_raw_login_ssh_notification
@@ -50,15 +55,30 @@ def test_ssh_config_good_flow(engines, devices, rand_ssh_port):
 
     with allure.step("Validating login authentication-retries"):
         auth_retries = random.randint(SshConfigConsts.MIN_AUTH_RETRIES, SshConfigConsts.MAX_AUTH_RETRIES)
+
         with allure.step("Configuring {} as number of authentication-retries".format(auth_retries)):
             system.ssh_server.set(SshConfigConsts.AUTH_RETRIES, auth_retries,
                                   apply=True, ask_for_confirmation=True).verify_result()
+
+        with allure.step(f'verify configuration: authentication-retries -> {auth_retries}'):
+            with allure.independent_step('verify in show'):
+                out = OutputParsingTool.parse_json_str_to_dictionary(system.ssh_server.show()).get_returned_value()
+                ValidationTool.verify_field_value_in_output(out, str(SshConfigConsts.AUTH_RETRIES), str(auth_retries)).verify_result()
+            with allure.independent_step('verify in ssh config file'):
+                out = engines.dut.run_cmd('sudo cat /etc/ssh/sshd_config | grep MaxAuthTries')
+                pattern = r'.*MaxAuthTries\s+(\d+)'
+                matches = re.findall(pattern, out)
+                assert len(matches) == 1, (f'could not match pattern to find MaxAuthTries value in sshd_config file.\n'
+                                           f'pattern: {pattern}\n'
+                                           f'out: {out}\n'
+                                           f'matches: {matches}')
+                assert matches[0].strip() == str(auth_retries)
+
         with allure.step("Failing to Connect {} times to get logged out of session".format(auth_retries)):
             try:
-                connection = create_ssh_login_engine(engines.dut.ip,
-                                                     username=DefaultConnectionValues.ADMIN,
-                                                     port=SshConfigConsts.DEFAULT_PORT,
-                                                     custom_ssh_options=SshConfigConsts.SSH_CONFIG_CONNECTION_OPTIONS)
+                _ssh_command = SshCmdBuilder(DefaultConnectionValues.ADMIN, engines.dut.ip, SshConfigConsts.DEFAULT_PORT)\
+                    .set_ssn().set_num_password_prompts(auth_retries * 2).build()
+                connection = PexpectTool(_ssh_command)
                 for iteration in range(auth_retries):
                     random_password = RandomizationTool.get_random_string(
                         random.randint(LoginSSHNotificationConsts.PASSWORD_MIN_LEN,
@@ -66,13 +86,13 @@ def test_ssh_config_good_flow(engines, devices, rand_ssh_port):
                     logger.info(
                         "Iteration {} - connecting using random password: {} for"
                         " user: {}".format(iteration, random_password, DefaultConnectionValues.ADMIN))
-                    connection.expect(DefaultConnectionValues.PASSWORD_REGEX)
+                    connection.expect('[Pp]assword[:?]')
                     connection.sendline(random_password)
 
                 with allure.step("Expecting to log out of authentication process and return to terminal"):
                     connection.expect('Too many authentication failures')
             finally:
-                connection.close()
+                pass  # connection.close()
 
     with allure.step("Validating ssh login ports"):
         with allure.step("validating ssh login ports, in range [{}-{}]".format(SshConfigConsts.MIN_LOGIN_PORT,
