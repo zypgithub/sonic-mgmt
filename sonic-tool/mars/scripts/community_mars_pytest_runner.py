@@ -170,6 +170,9 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
             if self.test_type == "yaml":
                 self.raw_options += " -m yaml"
 
+        if '--alluredir' not in self.raw_options:
+            self.raw_options += ' --alluredir="/tmp/allure-results" '
+
         if '--allure_server_project_id' in self.raw_options:
             allure_proj_pytest_arg = ''
         else:
