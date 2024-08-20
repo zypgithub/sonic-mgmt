@@ -201,6 +201,7 @@ class FaeSystem(BaseComponent):
         self.events = BaseComponent(self, path='/events')
         self.fatal = BaseComponent(self, path='/fatal')
         self.fatal.monitor = BaseComponent(self.fatal, path='/monitor')
+        self.serial_console = BaseComponent(self, path='/serial-console')
 
     def ssd_cleanup(self, expected_str="", dut_engine=None):
         """nv action run fae system ssd-cleanup """
