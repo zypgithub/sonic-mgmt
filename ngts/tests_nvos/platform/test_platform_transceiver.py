@@ -181,25 +181,33 @@ def _verify_transceiver_status(platform, transceiver_id, expected_module_status=
 
 
 def _verify_link_state_up(up_ports):
-    outputs = [
+    link_states = [
         OutputParsingTool.parse_json_str_to_dictionary(port.interface.link.state.show()).get_returned_value()
         for port in up_ports
     ]
     port_names = [port.name for port in up_ports]
     with allure.step(f"Verify link for any of the {port_names} is {NvosConsts.LINK_STATE_UP}"):
-        assert any(
-            NvosConsts.LINK_STATE_UP in output for output in
-            outputs), f"None of the ports are {NvosConsts.LINK_STATE_UP}"
+        for link_state in link_states:
+            if not link_state:
+                assert False, "Link state is empty should be up or down"
+            # At least one of the ports should be up for inserted transceiver.
+            if NvosConsts.LINK_STATE_UP in link_state:
+                return
+        assert False, f"None of the ports are {NvosConsts.LINK_STATE_UP}"
 
 
 def _verify_link_state_down(down_ports):
-    outputs = [
+    link_states = [
         OutputParsingTool.parse_json_str_to_dictionary(port.interface.link.state.show()).get_returned_value()
         for port in down_ports
     ]
     port_names = [port.name for port in down_ports]
     with allure.step(f"Verify all {port_names} are down"):
-        assert all(NvosConsts.LINK_STATE_DOWN in output for output in outputs), "All the ports should be down"
+        for link_state in link_states:
+            if not link_state:
+                assert False, "Link state is empty should be up or down"
+            if NvosConsts.LINK_STATE_DOWN not in link_state:
+                assert False, "The link state is up for removed transceiver"
 
 
 def _simulate_plugin_event(engine, device, module_index, mst_dev_name):
