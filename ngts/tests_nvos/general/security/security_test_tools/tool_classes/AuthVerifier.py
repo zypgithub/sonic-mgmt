@@ -4,6 +4,7 @@ import random
 import string
 
 from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
+from ngts.nvos_tools.infra.PexpectTool import PexpectTool
 from infra.tools.general_constants.constants import DefaultConnectionValues
 from infra.tools.linux_tools.linux_tools import LinuxSshEngine, scp_file
 from ngts.cli_wrappers.openapi.openapi_command_builder import OpenApiRequest
@@ -179,6 +180,41 @@ class ScpAuthVerifier(AuthVerifier):
 
         with allure.step('Verify SCP with root privileged path on the switch. Expect success: False'):
             self._verify_scp_download_and_upload(AuthConsts.SWITCH_ROOT_DIR, expect_success=False)
+
+
+class PKAAuthVerifier(AuthVerifier):
+
+    def __init__(self, username, private_key_path, hostname, password=None, engines=None, topology_obj=None):
+        super().__init__(username, password, engines, topology_obj)
+        self.username = username
+        self.private_key_path = private_key_path
+        self.hostname = hostname
+
+    def _authenticate(self, expect_success):
+        with allure.step('For SSH - run empty command on engine to trigger authentication'):
+            logging.info(f'Create PKA engine for user: {self.username}')
+            ssh_pka_connection_cmd = f'ssh -i {self.private_key_path} {self.username}@{self.hostname}'
+            self.engine = PexpectTool(spawn_cmd=ssh_pka_connection_cmd)
+            self.engine.expect(f'{self.username}@.*~', error_message='Expected login success, but failed')
+            self.engine.expect('.*')
+
+    def verify_authorization(self, user_is_admin):
+        expected_msg = "" if user_is_admin else "Error: No permission to execute this command"
+        try:
+            with allure.step(f'Run show command. Expect success: True'):
+                self.engine.sendline('nv show system')
+                self.engine.expect('?')
+            with allure.step(f'Run set command. Expect success: {user_is_admin}'):
+                self.engine.sendline('nv set system message pre-login NVOS TESTS')
+                self.engine.expect(expected_msg)
+            with allure.step(f'cleanup between two sets'):
+                self.engine.sendline('nv config detach')
+            with allure.step(f'Run unset command. Expect success: {user_is_admin}'):
+                self.engine.sendline('nv unset system message pre-login')
+                self.engine.expect(expected_msg)
+        finally:
+            with allure.step(f'cleanup'):
+                self.engine.sendline('nv config detach')
 
 
 AUTH_VERIFIERS = {
