@@ -111,7 +111,7 @@ class Interface(BaseComponent):
             if not engine:
                 engine = TestToolkit.engines.dut
             result_obj = SendCommandTool.execute_command(self.port_obj._cli_wrapper.clear_stats, engine,
-                                                         self.mgmt_path, interface_name, fae_param)
+                                                         interface_name, fae_param)
             return result_obj
 
     def get_sorted_interfaces_list(self):

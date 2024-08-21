@@ -57,10 +57,18 @@ def test_fae_interface_commands(engines, devices, test_api):
         selected_fae_plane_port = MultiPlanarTool.select_random_plane_port(
             devices, selected_fae_port, dut_device.num_of_plane_ports)
 
-    with allure.step("Select random fnm port and fnm plane port"):
+    with (allure.step("Select random external fnm port and fnm plane port")):
         selected_fae_fnm_port = MultiPlanarTool.select_random_fnm_port(devices)
         selected_fae_fnm_plane_port = MultiPlanarTool.select_random_plane_port(
             devices, selected_fae_fnm_port, dut_device.num_of_fnm_plane_ports)
+
+        with allure.step(f"Verify external FNM port is in connection_mode {IbInterfaceConsts.XDR}"):
+            output_fae_fnm_port = OutputParsingTool.parse_show_interface_output_to_dictionary(
+                selected_fae_fnm_port.port.interface.show()).get_returned_value()
+            if output_fae_fnm_port[IbInterfaceConsts.LINK][IbInterfaceConsts.LINK_CONNECTION_MODE] != IbInterfaceConsts.XDR:
+                MgmtPort(selected_fae_fnm_port.port.name).interface.link.connection_mode.set(
+                    op_param_name=IbInterfaceConsts.XDR, apply=True, ask_for_confirmation=True).verify_result()
+
     # ------------- show commands -------------------------------------------------------------
 
     with allure.step("Validate show interface command"):
@@ -69,7 +77,7 @@ def test_fae_interface_commands(engines, devices, test_api):
         output_keys = list(output_dictionary.keys())
         ValidationTool.compare_values(output_keys.sort(), dut_device.interface_list.sort()).verify_result()
 
-    with allure.step("Validate FNM port speed"):
+    with allure.step("Validate external FNM port speed"):
         output_dictionary = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
             selected_fae_fnm_plane_port.port.interface.link.show()).get_returned_value()
         if output_dictionary[IbInterfaceConsts.LINK_STATE] == NvosConsts.LINK_STATE_UP:
@@ -84,10 +92,10 @@ def test_fae_interface_commands(engines, devices, test_api):
         ValidationTool.compare_values(output_keys.sort(), dut_device.interface_fae_list.sort()).\
             verify_result()
 
-        with allure.step("Validate all internal fnm ports are up"):
-            up_fnm_ports = {port for port, data in output_dictionary.items()
-                            if NvosConsts.LINK_STATE_UP in data[IbInterfaceConsts.LINK][IbInterfaceConsts.LINK_STATE]}
-            assert up_fnm_ports == set(devices.dut.interface_active_internal_fnm_ports)
+    with allure.step(f"Validate all internal fnm ports are {NvosConsts.LINK_STATE_UP}"):
+        for fnm_internal_port in devices.dut.interface_active_internal_fnm_ports:
+            assert output_dictionary[fnm_internal_port][IbInterfaceConsts.LINK_STATE] == NvosConsts.LINK_STATE_UP, \
+                f"{fnm_internal_port} is not {NvosConsts.LINK_STATE_UP}"
 
     with allure.step("Validate all multi planar fields exist in show fae interface <port>"):
         output_fae_port = OutputParsingTool.parse_show_interface_output_to_dictionary(

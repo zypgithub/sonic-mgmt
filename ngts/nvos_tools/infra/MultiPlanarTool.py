@@ -54,7 +54,7 @@ class MultiPlanarTool:
     def select_random_aggregated_port(devices):
         with allure.step("Select a random aggregated port"):
             if isinstance(devices.dut, CrocodileSwitch):
-                return Fae(port_name='swA8p1')
+                return Fae(port_name='swA10p1')
             else:
                 return Fae(port_name=RandomizationTool.select_random_port(
                     requested_ports_logical_state=IbInterfaceConsts.LINK_LOGICAL_PORT_STATE_ACTIVE).get_returned_value())

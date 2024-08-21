@@ -80,7 +80,7 @@ class OpenSmTool:
                 output = engines.ha.run_cmd(cmd)
                 return ResultObj(True, info=output)
         except BaseException as ex:
-            logging.error("Failed to start opensm")
+            logging.error("Failed to stop opensm")
             return False, 0
 
     @staticmethod
