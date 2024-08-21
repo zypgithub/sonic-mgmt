@@ -2,6 +2,7 @@ import logging
 import random
 import socket
 import string
+import time
 
 from netmiko.ssh_exception import NetmikoAuthenticationException
 
@@ -18,9 +19,12 @@ from ngts.tests_nvos.conftest import clear_config
 logger = logging.getLogger(__name__)
 
 
-def recover_dut_with_remote_reboot(topology_obj, engines, should_clear_config: bool = True):
+def recover_dut_with_remote_reboot(topology_obj, engines, should_clear_config: bool = True, wait_after_rr=None):
     with allure.step('Execute remote reboot'):
         NvueGeneralCli(engines.dut).remote_reboot(topology_obj)
+    if wait_after_rr:
+        with allure.step(f'sleep {wait_after_rr} seconds'):
+            time.sleep(wait_after_rr)
     with allure.step('Wait for switch to be up'):
         engines.dut.disconnect()
         DutUtilsTool.wait_for_nvos_to_become_functional(engines.dut).verify_result()
@@ -53,7 +57,7 @@ def new_handle_change_password_prompt(engine: ProxySshEngine):
     # _ssh_command = DefaultConnectionValues.SSH_CMD.copy() + ['-p', str(port)] + ['-l', username, ip]
     # ssh_cmd = ' '.join(_ssh_command)
     ssh_cmd = f'ssh -tt -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o GSSAPIAuthentication=no -o ' \
-              f'PubkeyAuthentication=no -p {port} -l {username} {ip}'
+        f'PubkeyAuthentication=no -p {port} -l {username} {ip}'
     with allure.step('SSH the switch'):
         pexpect_tool = PexpectTool(spawn_cmd=ssh_cmd)
     with allure.step('Expect password prompt'):
@@ -92,7 +96,7 @@ def new_handle_change_password_prompt(engine: ProxySshEngine):
                 return FAIL
         with allure.step('Reset password'):
             reset_cmd = f'nv set sys se p st dis ; nv c a ; nv se sys a u {username} pa {orig_password} ; nv c a ; nv ' \
-                        f'set sys se p st en; nv c a ; nv c save '
+                f'set sys se p st en; nv c a ; nv c save '
             pexpect_tool.sendline(reset_cmd)
         with allure.step('Expect default prompt after login and finish'):
             expect = DefaultConnectionValues.DEFAULT_PROMPTS

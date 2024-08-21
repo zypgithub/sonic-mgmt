@@ -20,9 +20,11 @@
     <info> </info>
     <cmd>
       <params>
-          <static_args>  --setup_name [[conf:extra_info.setup_name]]  --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/general/security/test_secure_upgrade/test_secure_upgrade.py
+          <static_args>  --setup_name [[conf:extra_info.setup_name]]
+          --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/general/security/test_secure_upgrade/test_secure_upgrade.py
           --raw_options "\' -k test_non_secure_boot_upgrade_failure --rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini
-          --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results  --target_version=[[conf:extra_info.target_version]] --showlocals  [[conf:extra_info.additional_options]]   \'"</static_args>
+          --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results
+          --target_version=[[conf:extra_info.target_version]] --showlocals  [[conf:extra_info.additional_options]]   \'"</static_args>
       </params>
     </cmd>
   </case>
@@ -32,7 +34,11 @@
     <info> </info>
     <cmd>
       <params>
-          <static_args>  --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/general/security/test_secure_boot/test_secure_boot.py --raw_options "\' -k test_kernel_module_loading --rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]   \'"</static_args>
+          <static_args>  --setup_name [[conf:extra_info.setup_name]]
+          --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/general/security/test_secure_boot/test_secure_boot.py
+          --raw_options "\' -k test_kernel_module_loading --rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini
+          --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results
+          --showlocals  [[conf:extra_info.additional_options]]   \'"</static_args>
       </params>
     </cmd>
   </case>
@@ -42,7 +48,11 @@
     <info> </info>
     <cmd>
       <params>
-          <static_args> --setup_name [[conf:extra_info.setup_name]]  --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/general/security/test_secure_boot/test_secure_boot.py --raw_options "\' -k test_secure_boot_unsigned_system_file --rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results --restore_to_image=[[conf:extra_info.target_version]] --showlocals  [[conf:extra_info.additional_options]]   --disable_loganalyzer \'"  </static_args>
+          <static_args> --setup_name [[conf:extra_info.setup_name]]
+          --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/general/security/test_secure_boot/test_secure_boot.py
+          --raw_options "\' -k test_secure_boot_unsigned_system_file --rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini
+          --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results
+          --target_version=[[conf:extra_info.target_version]] --showlocals  [[conf:extra_info.additional_options]]  --disable_loganalyzer \'"  </static_args>
       </params>
     </cmd>
   </case>

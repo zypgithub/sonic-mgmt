@@ -18,7 +18,7 @@ ENDPOINT_URL_TEMPLATE = 'https://{ip}:{port_num}/nvue_v1'
 REQ_HEADER = {"Content-Type": "application/json"}
 INVALID_RESPONSE = ["ays_fail", "invalid", "Bad Request", "Not Found", "Forbidden", "Internal Server Error"]
 PENDING_RESPONSE = "pending"
-APPLIED_RESPONSE = "applied"
+APPLIED_RESPONSES = ["applied", "applied_and_saved"]
 
 
 class RequestData:
@@ -55,10 +55,12 @@ class OpenApiRequest:
 
     @staticmethod
     def print_response(r: requests.Response, req_type):
-        if getattr(r, 'text', '').startswith('<html>'):
+        if req_type == OpenApiReqType.ACTION and getattr(r, 'text', ''):
+            response = r.text
+        elif getattr(r, 'text', '').startswith('<html>'):
             response = r.text
         else:
-            response = json.dumps(r.json(), indent=2) if req_type == OpenApiReqType.PATCH else r.content
+            response = json.dumps(r.json(), indent=2) if req_type in [OpenApiReqType.PATCH, OpenApiReqType.GET] else r.content
         output = f'\n' \
             f'=======Response=======\n' \
             f'{OpenApiRequest.format_json_str(response)}\n' \
@@ -180,7 +182,7 @@ class OpenApiRequest:
             obj = json.loads(r.content)
 
             if "state" in obj.keys():
-                if obj["state"] == APPLIED_RESPONSE:
+                if obj["state"] in APPLIED_RESPONSES:
                     return ResultObj(True, "Configuration applied successfully")
                 if str(obj["state"]) in INVALID_RESPONSE:
                     logging.info("Apply state: " + str(obj["state"]))
@@ -216,6 +218,15 @@ class OpenApiRequest:
             if any(msg in response_first_lines for msg in INVALID_RESPONSE):
                 return ResultObj(False, "Error: Request failed. Details:\n" + response)
         return ResultObj(True, "")
+
+    @staticmethod
+    def _check_action_post_response(r: requests.Response) -> ResultObj:
+        html_check_res = OpenApiRequest._check_html_response(r)
+        if not html_check_res.result:
+            return html_check_res
+        if any(err_str in getattr(r, 'text', '') for err_str in ['Bad Request', '400', 'Error', 'error']):
+            return ResultObj(False, r.text, None)
+        return ResultObj(True, 'post request succeeded')
 
     @staticmethod
     def _validate_response(r: requests.Response, req_type):
@@ -332,8 +343,9 @@ class OpenApiRequest:
                               data=json.dumps(OpenApiRequest.payload),
                               headers=REQ_HEADER)
             OpenApiRequest.print_request(r.request, request_data)
+            OpenApiRequest.print_response(r, OpenApiReqType.ACTION)
 
-            validation_res = OpenApiRequest._check_html_response(r)
+            validation_res = OpenApiRequest._check_action_post_response(r)
             if not validation_res.result:
                 return validation_res.info
 
@@ -364,7 +376,7 @@ class OpenApiRequest:
                 if response['state'] == "action_success":
                     return json.loads(r.content.decode('utf-8'))['status']
                 elif response['state'] == 'action_error' and response['issue'] != '':
-                    return json.loads(r.content.decode('utf-8'))['issue'][0]['message']
+                    return 'action_error: ' + json.loads(r.content.decode('utf-8'))['issue'][0]['message']
                 elif response['state'] and response['state'] != "running" and response['state'] != "start":
                     raise Exception(response["status"] + " - issue: " + response["issue"])
                 time.sleep(2)
