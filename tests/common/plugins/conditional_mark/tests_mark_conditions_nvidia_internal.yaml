@@ -156,9 +156,9 @@ tests/push_build_tests/general/wjh/test_wjh.py::test_l3_non_ip_packet:
 
 tests/push_build_tests/general/wjh/test_wjh.py:
   skip:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4004895 on SPC2-3"
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4036305"
     conditions:
-    - " https://redmine.mellanox.com/issues/4004895 and ('sn3' in platform or 'sn4' in platform)"
+    - "https://redmine.mellanox.com/issues/4036305"
 
 tests/push_build_tests/L2/vxlan/test_vxlan.py:
   skip:
@@ -198,11 +198,11 @@ tests/nightly/fec/test_fec.py::TestFec::test_negative_fec:
 
 tests/nightly/fec/test_fec.py::TestFec::test_fec_capabilities_loopback_ports:
   skip:
-    reason: "Testcase ignored due to platform 2201 or RM issue: https://redmine.mellanox.com/issues/3864087"
+    reason: "Testcase ignored due to platform 2201 or RM issue 3971501/4042558"
     conditions_logical_operator: or
     conditions:
       - "'2201' in platform"
-      - "https://redmine.mellanox.com/issues/3864087 and 'mtvr-hippo-01' in testbed"
+      - "https://redmine.mellanox.com/issues/4042558 and 'r-panther-13' in testbed"
     xfail:
       reason: "Testcase may fail due to RM https://redmine.mellanox.com/issues/3971501 on r-leopard-56"
       conditions:
@@ -1624,9 +1624,9 @@ tests/nightly/secure/test_secure_upgrade/test_secure_upgrade.py:
 
 tests/push_build_tests/system/test_reboot_reload.py:
   skip:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/3795822"
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4042611"
     conditions:
-      - "https://redmine.mellanox.com/issues/3795822 and ('sn5400' in platform)"
+      - "https://redmine.mellanox.com/issues/4042611 and ('r-panther-13' in testbed)"
 
 platform_tests/cli/test_show_platform.py::test_show_platform_pcieinfo:
   skip:
