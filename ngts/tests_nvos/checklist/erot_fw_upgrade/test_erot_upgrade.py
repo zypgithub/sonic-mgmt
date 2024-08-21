@@ -58,7 +58,8 @@ def test_erot_upgrade_all_badflow(engines, devices, topology_obj, test_api, test
         test = BaseFWUpgradeTest(firmware_component=platform.firmware.erot)
 
     with allure.step(f"Bad flow (through {test_api})"):
-        test.test_badflow(engines=engines, switch=devices.dut, topology_obj=topology_obj, test_api=test_api)
+        test.test_badflow(engines=engines, switch=devices.dut, topology_obj=topology_obj,
+                          test_api=test_api, force=False)
 
 
 @pytest.mark.erot
@@ -109,4 +110,5 @@ def test_erot_upgrade_fae_badlflow(engines, devices, topology_obj, test_api, tes
     for name, component in erots.items():
         with allure.step(f"Bad flow on {name} (through {test_api})"):
             test = BaseFWUpgradeTest(firmware_component=component)
-            test.test_badflow(engines=engines, switch=devices.dut, topology_obj=topology_obj, test_api=test_api)
+            test.test_badflow(engines=engines, switch=devices.dut, topology_obj=topology_obj,
+                              test_api=test_api, force=True)

@@ -47,7 +47,7 @@ class BaseFWUpgradeTest:
             self._firmware_component = firmware_component
             self._firmware_components = None
 
-    def test_badflow(self, engines, switch, topology_obj, test_api):
+    def test_badflow(self, engines, switch, topology_obj, test_api, force):
         TestToolkit.tested_api = test_api
         filename, _ = get_image_names(switch)
         fw_component = self._firmware_component
@@ -62,7 +62,7 @@ class BaseFWUpgradeTest:
 
         fetched_image_file = fw_component.files.file_name[filename]
         with allure.step("Trying to install non-existing image"):
-            fetched_image_file.action_file_install(force=False).verify_result(False)
+            fetched_image_file.action_file_install(force=force).verify_result(False)
 
     def test(self, engines, switch, topology_obj, test_api):
         TestToolkit.tested_api = test_api

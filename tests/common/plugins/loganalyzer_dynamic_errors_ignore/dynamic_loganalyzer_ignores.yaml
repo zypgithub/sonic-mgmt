@@ -2915,6 +2915,13 @@
 
 # NVOS
 - Errors_list:
+    - '.*ERR nvued:   ERROR: cluster_utils.py:\d+ File name package_info.json does not exist in package.*'
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/fae/test_nmx_package.py::test_nmx_package_bad_flow
+
+# NVOS
+- Errors_list:
     - '.*ERR systemd[1]: Failed to start ib-utils container.*'
   Conditions:
     - Affected_test_cases:
