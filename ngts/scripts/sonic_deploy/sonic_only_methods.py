@@ -493,16 +493,6 @@ class SonicInstallationSteps:
                 deploy_minigpraph(ansible_path=ansible_path, dut_name=dut['dut_name'], sonic_topo=sonic_topo,
                                   recover_by_reboot=recover_by_reboot, topology_obj=topology_obj,
                                   cli_obj=general_cli_obj)
-            ##########################################################################################################
-            # TODO: This is a WA for DPU before the Mars python3 migrations is completed.
-            #  A new version of libdashapi_1.0.0 is needed
-            if is_bf_topo(sonic_topo):
-                logger.info("Temp WA to install the libdashapi_1.0.0")
-                os.system("wget 'https://sonic-build.azurewebsites.net/api/sonic/artifacts?branchName=master&"
-                          "definitionId=1055&artifactName=sonic-buildimage.amd64.ubuntu20_04&"
-                          "target=libdashapi_1.0.0_amd64.deb' -O libdashapi_1.0.0_amd64.deb")
-                os.system("dpkg --install ./libdashapi_1.0.0_amd64.deb")
-
             with allure.step('Apply DNS servers configuration'):
                 for dut in setup_info['duts']:
                     general_cli_obj = dut['cli_obj']
