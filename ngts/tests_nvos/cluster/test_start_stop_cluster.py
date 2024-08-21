@@ -65,6 +65,7 @@ def test_cluster_app_start_stop(engines, devices, test_api):
                     output_format=OutputFormat.json).get_returned_value()
                 ValidationTool.validate_output_of_show(output, devices.dut.cluster_app[app]).verify_result()
 
+        TestToolkit.tested_api = 'NVUE'
         with allure.step("Running 'nv show cluster apps installed' command and verifying output"):
             output = OutputParsingTool.parse_show_output_to_dict(
                 cluster.apps.installed.show(output_format=output_format),
@@ -83,6 +84,8 @@ def test_cluster_app_start_stop(engines, devices, test_api):
                 assert app_status == 'ok', f"App {app} status is {app_status} instead of 'ok'"
             logger.info("Make sure there are no extra Unexpected apps")
             assert len(INITIAL_EXPECTED_APPS) == len(output), f"Expected apps {INITIAL_EXPECTED_APPS}, actual apps: {output}"
+
+        TestToolkit.tested_api = test_api
 
         ClusterTools.stop_start_app(cluster, engines, devices)
 
@@ -172,6 +175,8 @@ def test_cluster_app_start_stop_disabled_cluster(engines, devices, test_api):
                 err = e.args[0].split('\n')[-1]
                 assert err == INVALID_SHOW_EXPECTED_OUTPUT, f"Expected {INVALID_SHOW_EXPECTED_OUTPUT}, but instead received {output}"
 
+    TestToolkit.tested_api = 'NVUE'
+
     with allure.step("Running 'nv show cluster apps installed' command and verifying output"):
         output = OutputParsingTool.parse_show_output_to_dict(
             cluster.apps.installed.show(output_format=output_format),
@@ -184,6 +189,7 @@ def test_cluster_app_start_stop_disabled_cluster(engines, devices, test_api):
             output_format=output_format).get_returned_value()
         assert output == {}, f"Expected to get empty output, but instead received {output}"
 
+    TestToolkit.tested_api = test_api
     with allure.step("Start/Stop apps"):
         for app in INITIAL_EXPECTED_APPS:
             with allure.step(f"Start app {app} and validate action fails"):
