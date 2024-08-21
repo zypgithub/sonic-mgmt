@@ -126,9 +126,9 @@ class OpenApiRequest:
         with allure.step("Config diff"):
             logging.info("Config diff")
             params = {
-                'rev': 'applied',
+                'rev': OpenApiRequest.changeset,
                 'filled': 'False',
-                'diff': OpenApiRequest.changeset
+                'diff': 'applied'
             }
             r = requests.get(url=f'{OpenApiRequest._get_endpoint_url(request_data)}/', params=params, verify=False,
                              auth=OpenApiRequest._get_http_auth(request_data))

@@ -363,20 +363,22 @@ class NvueGeneralCli(SonicGeneralCliDefault):
                 b. if the ONIE grub menu appears just do nothing (the install entry will be marked and after 5 secs it
                 will enter the install mode)
         '''
-        logger.info("Initializing serial connection to device")
-        serial_engine = self.enter_serial_connection_context(topology_obj)
 
-        logger.info('Executing remote reboot')
-        self.remote_reboot(topology_obj)
+        with allure.step("Initializing serial connection to device"):
+            serial_engine = self.enter_serial_connection_context(topology_obj)
 
-        logger.info("Enter ONIE install mode")
-        logger.info("Wait for NVOS/ONIE grub menu")
-        # Set timeout based on the active status of Redmine issue #4028150
-        to = 360 if is_redmine_issue_active([4028150])[0] else 240
-        onie_grub_menu_pattern = '\\*ONIE: Install OS'
-        grub_menu_patterns = ['ONIE\\s+', onie_grub_menu_pattern]
-        all_patterns = grub_menu_patterns + SecureBootConsts.INVALID_SIGNATURE
-        output, respond = serial_engine.run_cmd('', all_patterns, timeout=to, send_without_enter=True)
+        with allure.step('Executing remote reboot'):
+            self.remote_reboot(topology_obj)
+
+        with allure.step('wait for NVOS/ONIE grub menu'):
+            logger.info("Enter ONIE install mode")
+            logger.info("Wait for NVOS/ONIE grub menu")
+            # Set timeout based on the active status of Redmine issue #4028150
+            to = 360 if is_redmine_issue_active([4028150])[0] else 240
+            onie_grub_menu_pattern = '\\*ONIE: Install OS'
+            grub_menu_patterns = ['ONIE\\s+', onie_grub_menu_pattern]
+            all_patterns = grub_menu_patterns + SecureBootConsts.INVALID_SIGNATURE
+            output, respond = serial_engine.run_cmd('', all_patterns, timeout=to, send_without_enter=True)
 
         if respond != 1:
             if respond >= len(grub_menu_patterns):
@@ -388,59 +390,59 @@ class NvueGeneralCli(SonicGeneralCliDefault):
                             time.sleep(1)
 
             elif respond == 0:
-                logger.info("System in NVOS grub menu, entering ONIE grub menu")
-                for i in range(2):
-                    logger.info("Sending one arrow down")
-                    serial_engine.run_cmd("\x1b[B", expected_value='.*', send_without_enter=True)
-                    time.sleep(0.3)
-                logger.info("Onie option selected")
+                with allure.step("System in NVOS grub menu, entering ONIE grub menu"):
+                    for i in range(2):
+                        logger.info("Sending one arrow down")
+                        serial_engine.run_cmd("\x1b[B", expected_value='.*', send_without_enter=True)
+                        time.sleep(0.3)
+                    logger.info("Onie option selected")
 
-                logger.info("Pressing Enter to enter ONIE grub menu")
-                _, respond = serial_engine.run_cmd('\r',
-                                                   expected_value=['Due to security constraints, '
-                                                                   'this option will uninstall your current OS',
-                                                                   'Answer "YES" to continue', '\\*ONIE:.*'],
-                                                   timeout=30, send_without_enter=True)
+                    logger.info("Pressing Enter to enter ONIE grub menu")
+                    _, respond = serial_engine.run_cmd('\r',
+                                                       expected_value=['Due to security constraints, '
+                                                                       'this option will uninstall your current OS',
+                                                                       'Answer "YES" to continue', '\\*ONIE:.*'],
+                                                       timeout=30, send_without_enter=True)
 
-                if respond != 2:
-                    logger.info("MLNX-OS system. Enter 'YES' and wait till in ONIE grub menu")
-                    serial_engine.run_cmd('YES', onie_grub_menu_pattern, timeout=420)
+                    if respond != 2:
+                        with allure.step("MLNX-OS system. Enter 'YES' and wait till in ONIE grub menu"):
+                            serial_engine.run_cmd('YES', onie_grub_menu_pattern, timeout=420)
 
             with allure.step('in ONIE grub menu: Go up to onie install mode'):
-                logger.info("Send up arrows for case default mode is Rescue")
-                for i in range(5):
-                    logger.info("Sending one arrow up")
-                    serial_engine.run_cmd("\x1b[A", expected_value='.*', send_without_enter=True)
-                    time.sleep(0.3)
+                with allure.step("Send up arrows for case default mode is Rescue"):
+                    for i in range(5):
+                        logger.info("Sending one arrow up")
+                        serial_engine.run_cmd("\x1b[A", expected_value='.*', send_without_enter=True)
+                        time.sleep(0.3)
 
-        logger.info("Waiting for onie prompt")
-        self.wait_for_onie_prompt(serial_engine)
+        with allure.step("Waiting for onie prompt"):
+            self.wait_for_onie_prompt(serial_engine)
 
-        logger.info("Send 'onie-stop'")
-        self.send_onie_stop(serial_engine)
+        with allure.step("Send 'onie-stop'"):
+            self.send_onie_stop(serial_engine)
 
     def send_onie_stop(self, serial_engine):
         logger.info('Send: "\\r"')
         output, respond = serial_engine.run_cmd('\r', ['login:', 'ONIE:/ #'], timeout=5, send_without_enter=True)
         logger.info(f'index: {respond} ; output:\n{output}')
         if respond == 0:
-            logger.info('System is secured. Login to ONIE with credentials')
-            logger.info(f'Send line: "{DefaultConnectionValues.ONIE_USERNAME}"')
-            output, respond = serial_engine.run_cmd(DefaultConnectionValues.ONIE_USERNAME, '[Pp]assword:', timeout=10)
-            logger.info(output)
-            logger.info(f'Send line: "{DefaultConnectionValues.ONIE_PASSWORD}"')
-            output, respond = serial_engine.run_cmd(DefaultConnectionValues.ONIE_PASSWORD, 'ONIE:~ #', timeout=20)
+            with allure.step('System is secured. Login to ONIE with credentials'):
+                logger.info(f'Send line: "{DefaultConnectionValues.ONIE_USERNAME}"')
+                output, respond = serial_engine.run_cmd(DefaultConnectionValues.ONIE_USERNAME, '[Pp]assword:', timeout=10)
+                logger.info(output)
+                logger.info(f'Send line: "{DefaultConnectionValues.ONIE_PASSWORD}"')
+                output, respond = serial_engine.run_cmd(DefaultConnectionValues.ONIE_PASSWORD, 'ONIE:~ #', timeout=20)
+                logger.info(output)
+
+        with allure.step('Send line: "onie-stop"'):
+            output, respond = serial_engine.run_cmd('onie-stop', 'done.', timeout=10)
             logger.info(output)
 
-        logger.info('Send line: "onie-stop"')
-        output, respond = serial_engine.run_cmd('onie-stop', 'done.', timeout=10)
-        logger.info(output)
-
-        for _ in range(3):
-            time.sleep(1)
-            logger.info('Send new line')
-            output, respond = serial_engine.run_cmd('\r', '.*', timeout=10, send_without_enter=True)
-            logger.info(output)
+            for _ in range(3):
+                time.sleep(1)
+                logger.info('Send new line')
+                output, respond = serial_engine.run_cmd('\r', '.*', timeout=10, send_without_enter=True)
+                logger.info(output)
 
     def prepare_for_installation(self, topology_obj):
         '''
