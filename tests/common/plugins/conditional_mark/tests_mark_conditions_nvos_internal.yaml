@@ -147,6 +147,13 @@ tests_nvos/interfaces/test_eth0_interface_dhcp.py::test_interface_eth0_descripti
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3527752"
     conditions:
       - https://redmine.mellanox.com/issues/3527752
+      
+tests_nvos/interfaces/test_eth0_interface_dhcp.py::test_interface_eth0_speed_duplex_autoneg:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4041979"
+    conditions:
+      - "'juliet' in testbed"
+      - https://redmine.mellanox.com/issues/4041979
 
 tests_nvos/system/test_system_profile_change.py::test_system_profile_redis_db_crash:
   skip:
