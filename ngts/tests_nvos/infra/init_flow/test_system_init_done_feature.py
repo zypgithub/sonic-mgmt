@@ -1,14 +1,8 @@
-import logging
-import time
-
-from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.tools.test_utils import allure_utils as allure
-from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
-from ngts.nvos_tools.system.System import System
 from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
-from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
-from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_constants.constants_nvos import *
+from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
+from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
+from ngts.nvos_tools.infra.Tools import Tools
 from ngts.tests_nvos.general.security.conftest import *
 
 logger = logging.getLogger()
@@ -87,6 +81,7 @@ def test_system_ready_state_up(engines, devices, topology_obj):
         assert res_obj.result, res_obj.info
 
 
+@pytest.mark.timeout(20, func_only=True)
 @pytest.mark.init_flow
 def test_system_ready_state_down(engines, devices, topology_obj):
     """

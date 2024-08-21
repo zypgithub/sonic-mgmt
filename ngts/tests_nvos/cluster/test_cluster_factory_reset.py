@@ -1,27 +1,23 @@
 import logging
 import random
-import pytest
-import time
 import re
+import time
 
-from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
+import pytest
+
+from ngts.nvos_constants.constants_nvos import ApiType, OutputFormat, SystemConsts, ClusterAppsLogLevels, NvosConst, \
+    ImageConsts
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_tools.infra.ValidationTool import ValidationTool
-from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.nvos_tools.nmx.ControlPlane import ControlPlane
-from ngts.nvos_constants.constants_nvos import PlatformConsts, IbConsts, ApiType, OutputFormat, SystemConsts, ClusterAppsLogLevels, NvosConst, ImageConsts
-from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.nvos_tools.ib.Ib import Ib
-from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
-from ngts.nvos_tools.infra.ResultObj import ResultObj
+from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
-from ngts.tests_nvos.general.security.nmx_cert.test_nmx_cert import factory_reset_nmx_cert_checker
 from ngts.tests_nvos.general.security.tpm_attestation.helpers import factory_reset_tpm_checker
-from ngts.tests_nvos.system.gnmi.helpers import factory_reset_gnmi_checker
 from ngts.tests_nvos.system.factory_reset.helpers import add_verification_data, \
     verify_cleanup_done, verify_the_setup_is_functional, get_current_time
-from ngts.nvos_tools.system.System import System
+from ngts.tests_nvos.system.gnmi.helpers import factory_reset_gnmi_checker
+from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
 NMX_CONTROLLER = 'nmx-controller'
@@ -37,6 +33,7 @@ NMX_LOG_MESSAGES_TAGS = ['nmxc-sm', 'nmxc-fm', 'nmxc-fib', 'nmxc-gw_api', 'nmxc-
 INITIAL_CONFIGURATIONS_PATH = '/auto/sw_system_project/NVOS_INFRA/verification_files/cluster/uploaded_control_plane_files'
 
 
+@pytest.mark.timeout(20, func_only=True)
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
 def test_cluster_default_factory_reset(engines, devices, test_api):
@@ -100,6 +97,7 @@ def test_cluster_default_factory_reset(engines, devices, test_api):
             delete_all_control_plane_fetched_generated_files(control_plane, all_config_files_paths, all_state_files_paths)
 
 
+@pytest.mark.timeout(20, func_only=True)
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
 def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name):
@@ -157,6 +155,7 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name)
             delete_all_control_plane_fetched_generated_files(control_plane, all_config_files_paths, all_state_files_paths)
 
 
+@pytest.mark.timeout(20, func_only=True)
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
 def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name):
@@ -213,6 +212,7 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name):
             delete_all_control_plane_fetched_generated_files(control_plane, all_config_files_paths, all_state_files_paths)
 
 
+@pytest.mark.timeout(20, func_only=True)
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
 def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_name):

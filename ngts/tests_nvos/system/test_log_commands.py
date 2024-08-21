@@ -8,6 +8,7 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.system.System import System
+from ngts.tests_nvos.constants import MINUTE
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
@@ -638,6 +639,7 @@ def test_log_files_rotation_force(engines):
         ValidationTool.verify_expected_output(show_output, 'system/image').verify_result(False)
 
 
+@pytest.mark.timeout(20 * MINUTE, func_only=True)
 @pytest.mark.system
 @pytest.mark.log
 @pytest.mark.simx

@@ -1,20 +1,20 @@
 import pytest
 
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
-from ngts.nvos_tools.Devices.IbDevice import JulietSwitch
 from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
-from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.nvos_tools.infra.RegressionConfigurations import RegressionConfigurations
+from ngts.nvos_tools.nmx.Cluster import Cluster
+from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.system.factory_reset.helpers import *
 from ngts.tests_nvos.system.factory_reset.helpers import add_verification_data, \
     verify_cleanup_done, verify_the_setup_is_functional, get_current_time
-from ngts.nvos_tools.infra.RegressionConfigurations import RegressionConfigurations
 from ngts.tests_nvos.system.factory_reset.post_steps import factory_reset_no_params_post_steps
 from ngts.tests_nvos.system.factory_reset.pre_steps import factory_reset_no_params_pre_steps
 from ngts.tools.test_utils import allure_utils as allure
 
 
+@pytest.mark.timeout(25 * MINUTE, func_only=True)
 @pytest.mark.system
 @pytest.mark.checklist
 @pytest.mark.reset_factory
@@ -139,6 +139,7 @@ def test_reset_factory_keep_basic(engines, devices):
             verify_the_setup_is_functional(system, engines, had_sm_before_test=True, dut=devices.dut)
 
 
+@pytest.mark.timeout(20 * MINUTE, func_only=True)
 @pytest.mark.system
 @pytest.mark.checklist
 @pytest.mark.reset_factory
@@ -227,6 +228,7 @@ def test_reset_factory_keep_all_config(engines, devices):
             verify_the_setup_is_functional(system, engines, had_sm_before_test=True, dut=devices.dut)
 
 
+@pytest.mark.timeout(25 * MINUTE, func_only=True)
 @pytest.mark.system
 @pytest.mark.checklist
 @pytest.mark.reset_factory
