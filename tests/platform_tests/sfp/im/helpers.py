@@ -80,7 +80,7 @@ BER_KEY_MAP = {
     BER_RAW_PHYSICAL_BER
 }
 
-MS_HWSKUS = ['Mellanox-SN4700-O8C48', 'Mellanox-SN4700-O8V48', 'ACS-SN5600', 'ACS-MSN4700']
+MS_HWSKUS = ['Mellanox-SN4700-O8C48', 'Mellanox-SN4700-O8V48', 'ACS-SN5600', 'ACS-MSN4700', 'Mellanox-SN4280-O28']
 
 
 def enable_cmis_mgr_in_pmon_file(duthost):
