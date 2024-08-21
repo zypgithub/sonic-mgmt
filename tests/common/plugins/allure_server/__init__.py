@@ -246,6 +246,10 @@ def get_pytest_run_cmd(request, get_current_test_run_cmd=False):
                 specific_arg_value = arg.split(specific_arg)[1]
                 pytest_cmd_line_args[pytest_cmd_line_args.index(arg)] = '{}"{}"'.format(specific_arg,
                                                                                         specific_arg_value)
+        for specific_arg in ['-k']:
+            if specific_arg == arg:
+                specific_arg_value = pytest_cmd_line_args[pytest_cmd_line_args.index(arg) + 1]
+                pytest_cmd_line_args[pytest_cmd_line_args.index(arg)+1] = f'"{specific_arg_value}"'
 
         if get_current_test_run_cmd:
             # If need pytest run command for specific test only - then building args with path to test case
