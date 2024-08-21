@@ -10,17 +10,17 @@
     <Case>
             <tags> Platform </tags>
             <wrapper> [[run_time:db_tests_path]]/sonic-mgmt/sonic-tool/mars/scripts/community_mars_pytest_runner.py  </wrapper>
-            <tout> 7200 </tout>
+            <tout> 10800 </tout>
     </Case>
   </global>
 
   <case>
         <name> show_platform_summary</name>
         <info> </info>
-        <tout> 300 </tout>
+        <tout> 10800 </tout>
         <cmd>
              <params>
-                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals  [[conf:extra_info.additional_options]]   --clean-alluredir --alluredir=/tmp/allure-results --allure_server_addr=\"10.215.11.120\" -k \"test_show_platform_summary\" \'" --test-scripts platform_tests/cli/test_show_platform.py </static_args>
+                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals  [[conf:extra_info.additional_options]]  --timeout 900    --clean-alluredir --alluredir=/tmp/allure-results --allure_server_addr=\"10.215.11.120\" -k \"test_show_platform_summary\" \'" --test-scripts platform_tests/cli/test_show_platform.py </static_args>
              </params>
         </cmd>
     </case>
@@ -28,10 +28,10 @@
     <case>
         <name> Test Show Platform - ssdhealth </name>
         <info> </info>
-        <tout> 300 </tout>
+        <tout> 10800 </tout>
         <cmd>
              <params>
-                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals  [[conf:extra_info.additional_options]]   --clean-alluredir --alluredir=/tmp/allure-results --allure_server_addr=\"10.215.11.120\" -k \"test_show_platform_ssdhealth\" \'" --test-scripts platform_tests/cli/test_show_platform.py </static_args>
+                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals  [[conf:extra_info.additional_options]]  --timeout 900    --clean-alluredir --alluredir=/tmp/allure-results --allure_server_addr=\"10.215.11.120\" -k \"test_show_platform_ssdhealth\" \'" --test-scripts platform_tests/cli/test_show_platform.py </static_args>
              </params>
         </cmd>
     </case>
@@ -39,10 +39,10 @@
     <case>
         <name> Test Show Platform -  psustatus </name>
         <info> </info>
-        <tout> 300 </tout>
+        <tout> 10800 </tout>
         <cmd>
              <params>
-                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals  [[conf:extra_info.additional_options]]   --clean-alluredir --alluredir=/tmp/allure-results --allure_server_addr=\"10.215.11.120\" -k \"test_show_platform_psustatus\" \'" --test-scripts platform_tests/cli/test_show_platform.py </static_args>
+                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals  [[conf:extra_info.additional_options]]  --timeout 900    --clean-alluredir --alluredir=/tmp/allure-results --allure_server_addr=\"10.215.11.120\" -k \"test_show_platform_psustatus\" \'" --test-scripts platform_tests/cli/test_show_platform.py </static_args>
              </params>
         </cmd>
     </case>
@@ -50,10 +50,10 @@
     <case>
         <name> Test Show Platform - psustatus_json </name>
         <info> </info>
-        <tout> 300 </tout>
+        <tout> 10800 </tout>
         <cmd>
              <params>
-                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals  [[conf:extra_info.additional_options]]   --clean-alluredir --alluredir=/tmp/allure-results --allure_server_addr=\"10.215.11.120\" -k \"test_show_platform_psustatus_json\" \'" --test-scripts platform_tests/cli/test_show_platform.py </static_args>
+                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals  [[conf:extra_info.additional_options]]  --timeout 900    --clean-alluredir --alluredir=/tmp/allure-results --allure_server_addr=\"10.215.11.120\" -k \"test_show_platform_psustatus_json\" \'" --test-scripts platform_tests/cli/test_show_platform.py </static_args>
              </params>
         </cmd>
     </case>
@@ -61,10 +61,10 @@
     <case>
         <name> Test Show Platform - fan </name>
         <info> </info>
-        <tout> 300 </tout>
+        <tout> 10800 </tout>
         <cmd>
              <params>
-                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals  [[conf:extra_info.additional_options]]   --clean-alluredir --alluredir=/tmp/allure-results --allure_server_addr=\"10.215.11.120\" -k \"test_show_platform_fan\" \'" --test-scripts platform_tests/cli/test_show_platform.py </static_args>
+                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals  [[conf:extra_info.additional_options]]  --timeout 900    --clean-alluredir --alluredir=/tmp/allure-results --allure_server_addr=\"10.215.11.120\" -k \"test_show_platform_fan\" \'" --test-scripts platform_tests/cli/test_show_platform.py </static_args>
              </params>
         </cmd>
     </case>
@@ -72,10 +72,10 @@
     <case>
         <name> Test Show Platform - temperature </name>
         <info> </info>
-        <tout> 300 </tout>
+        <tout> 10800 </tout>
         <cmd>
              <params>
-                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals  [[conf:extra_info.additional_options]]   --clean-alluredir --alluredir=/tmp/allure-results --allure_server_addr=\"10.215.11.120\" -k \"test_show_platform_temperature\" \'" --test-scripts platform_tests/cli/test_show_platform.py </static_args>
+                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals  [[conf:extra_info.additional_options]]  --timeout 900    --clean-alluredir --alluredir=/tmp/allure-results --allure_server_addr=\"10.215.11.120\" -k \"test_show_platform_temperature\" \'" --test-scripts platform_tests/cli/test_show_platform.py </static_args>
              </params>
         </cmd>
     </case>
@@ -83,10 +83,10 @@
     <case>
         <name> Test Show Platform - firmware_status </name>
         <info> </info>
-        <tout> 300 </tout>
+        <tout> 10800 </tout>
         <cmd>
              <params>
-                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals  [[conf:extra_info.additional_options]]   --clean-alluredir --alluredir=/tmp/allure-results --allure_server_addr=\"10.215.11.120\" -k \"test_show_platform_firmware_status\" \'" --test-scripts platform_tests/cli/test_show_platform.py </static_args>
+                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals  [[conf:extra_info.additional_options]]  --timeout 900    --clean-alluredir --alluredir=/tmp/allure-results --allure_server_addr=\"10.215.11.120\" -k \"test_show_platform_firmware_status\" \'" --test-scripts platform_tests/cli/test_show_platform.py </static_args>
              </params>
         </cmd>
     </case>

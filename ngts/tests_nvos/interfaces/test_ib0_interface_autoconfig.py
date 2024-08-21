@@ -1,15 +1,17 @@
 import time
 
 import pytest
-from ngts.nvos_tools.infra.Tools import Tools
+
 from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import *
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.nvos_constants.constants_nvos import ApiType
+from ngts.nvos_tools.infra.Tools import Tools
+from ngts.tests_nvos.constants import MINUTE
 
 logger = logging.getLogger()
 
 
+@pytest.mark.timeout(40 * MINUTE, func_only=True)
 @pytest.mark.ib
 @pytest.mark.simx
 def test_interface_ib0_autoconfig_disabled_sm(engines, topology_obj, stop_sm):

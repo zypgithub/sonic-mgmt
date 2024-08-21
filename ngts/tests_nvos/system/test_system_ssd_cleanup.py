@@ -1,16 +1,17 @@
-import time
-import pytest
 import logging
 import re
+import time
+
+import pytest
 from retry import retry
 
-from ngts.nvos_tools.system.System import System
+from ngts.nvos_constants.constants_nvos import HealthConsts, SyslogConsts, SystemConsts
+from ngts.nvos_tools.infra.DutUtilsTool import wait_for_specific_regex_in_logs
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_constants.constants_nvos import HealthConsts, SyslogConsts, SystemConsts
+from ngts.nvos_tools.system.System import System
+from ngts.tests_nvos.constants import MINUTE
 from ngts.tools.test_utils import allure_utils as allure
-from ngts.nvos_tools.infra.DutUtilsTool import wait_for_specific_regex_in_logs
-
 
 logger = logging.getLogger(__name__)
 # /etc/fae_platform_firmware/transceiver/
@@ -52,6 +53,7 @@ def test_ssd_cleanup_before_adding_files(engines, devices):
             assert len(deleted_list) == 0, "no files should be deleted but the cleanup script deleted {}".format(deleted_list)
 
 
+@pytest.mark.timeout(30 * MINUTE, func_only=True)
 @pytest.mark.system
 @pytest.mark.checklist
 def test_ssd_cleanup_positive_flow(engines, devices):

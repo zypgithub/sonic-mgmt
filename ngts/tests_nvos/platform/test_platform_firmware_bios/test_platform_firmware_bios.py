@@ -1,17 +1,19 @@
-from ngts.tests_nvos.platform.test_platform_firmware_bios.helpers import *
+import random
+
+import pytest
+
+from ngts.nvos_constants.constants_nvos import ApiType, NvosConst
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.platform.Platform import Platform
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from infra.tools.redmine.redmine_api import *
-from ngts.nvos_constants.constants_nvos import ApiType, PlatformConsts, NvosConst
-from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.system.System import System
+from ngts.tests_nvos.constants import MINUTE
+from ngts.tests_nvos.platform.test_platform_firmware_bios.helpers import *
 from ngts.tools.test_utils import allure_utils as allure
-import random
-import pytest
+
 logger = logging.getLogger()
 
 
+@pytest.mark.timeout(20 * MINUTE, func_only=True)
 @pytest.mark.bios
 @pytest.mark.system
 @pytest.mark.parametrize('test_api', random.sample(ApiType.ALL_TYPES, 1))
@@ -67,6 +69,7 @@ def test_bios_auto_update_disabled(devices, engines, test_api, original_version,
         TestToolkit.GeneralApi[test_api].save_config(engine=engines.dut)
 
 
+@pytest.mark.timeout(20 * MINUTE, func_only=True)
 @pytest.mark.bios
 @pytest.mark.system
 @pytest.mark.parametrize('test_api', random.sample(ApiType.ALL_TYPES, 1))

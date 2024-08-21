@@ -1,21 +1,23 @@
-import time
-import pytest
-import logging
-import threading
 import concurrent.futures
+import logging
 import random
 import re
+import threading
 import time
 
-from ngts.nvos_tools.system.System import System
-from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
+import pytest
+
 from ngts.nvos_constants.constants_nvos import SystemConsts
+from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.nvos_tools.system.System import System
+from ngts.tests_nvos.constants import MINUTE
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger(__name__)
 
 
+@pytest.mark.timeout(20 * MINUTE, func_only=True)
 @pytest.mark.ssh_config
 @pytest.mark.system
 def test_parallel_cli_commands(engines, devices):

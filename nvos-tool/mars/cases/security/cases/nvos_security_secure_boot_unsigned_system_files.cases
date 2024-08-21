@@ -10,7 +10,7 @@
     <Case>
       <tags> security </tags>
       <wrapper> [[run_time:db_tests_path]]/sonic-mgmt/sonic-tool/mars/scripts/canonical_mars_pytest_runner.py </wrapper>
-      <tout> 4800 </tout>
+      <tout> 10800 </tout>
       <tags>ALL</tags>
     </Case>
   </global>
@@ -25,7 +25,7 @@
           --raw_options "\' -k test_secure_boot_unsigned_system_file --rootdir=/root/mars/workspace/sonic-mgmt/ngts
           -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]]
           --clean-alluredir --alluredir=/tmp/allure-results --target_version=[[conf:extra_info.target_version]]
-          --showlocals  [[conf:extra_info.additional_options]]   --disable_loganalyzer \'"  </static_args>
+          --showlocals  [[conf:extra_info.additional_options]]  --timeout 900    --disable_loganalyzer \'"  </static_args>
       </params>
     </cmd>
   </case>
