@@ -67,7 +67,7 @@ def test_techsupport_show(engines, test_name, test_api, devices):
 @pytest.mark.system
 @pytest.mark.tech_support
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_techsupport_since(engines, test_name, test_api):
+def test_techsupport_since(engines, devices, test_name, test_api):
     """
     Run nv show system tech-support files command and verify the required fields are exist
     command: nv show system tech-support files

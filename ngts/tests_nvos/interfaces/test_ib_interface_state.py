@@ -13,7 +13,8 @@ logger = logging.getLogger()
 
 
 @pytest.mark.ib_interfaces
-def test_ib_interface_state(test_name):
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_ib_interface_state(test_name, test_api):
     """
     Configure port interface state and verify the configuration applied successfully
     Relevant cli commands:
@@ -28,6 +29,7 @@ def test_ib_interface_state(test_name):
     5. Wait until the port is up
     6. Verify the configuration applied by running “show” command
     """
+    TestToolkit.tested_api = test_api
     selected_port = Tools.RandomizationTool.select_random_port().get_returned_value()
     TestToolkit.update_tested_ports([selected_port])
     toggle_port_state(selected_port, NvosConsts.LINK_STATE_DOWN, test_name)
@@ -60,7 +62,8 @@ def toggle_port_state(selected_port, port_state, test_name=''):
 
 
 @pytest.mark.ib_interfaces
-def test_ib_interface_state_invalid(engines):
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_ib_interface_state_invalid(engines, test_api):
     """
     Configure port interface state using an invalid value
     Relevant cli commands:
@@ -74,6 +77,7 @@ def test_ib_interface_state_invalid(engines):
     4. Verify the new value remain original in StateDB
     5. Verify the value remain original by running “show” command
     """
+    TestToolkit.tested_api = test_api
     selected_port = Tools.RandomizationTool.select_random_port().get_returned_value()
 
     TestToolkit.update_tested_ports([selected_port])
@@ -90,7 +94,8 @@ def test_ib_interface_state_invalid(engines):
 
 
 @pytest.mark.ib_interfaces
-def test_ib_interface_state_unset(engines):
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_ib_interface_state_unset(engines, test_api):
     """
     Configure port interface state using an invalid value
     Relevant cli commands:
@@ -107,6 +112,7 @@ def test_ib_interface_state_unset(engines):
     6. Verify the new value remain original in StateDB
     7. Verify the value remain original by running “show” command
     """
+    TestToolkit.tested_api = test_api
     selected_port = Tools.RandomizationTool.select_random_port().get_returned_value()
 
     TestToolkit.update_tested_ports([selected_port])
@@ -124,26 +130,3 @@ def test_ib_interface_state_unset(engines):
     Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
                                                       field_name=IbInterfaceConsts.LINK_STATE,
                                                       expected_value=NvosConsts.LINK_STATE_UP).verify_result()
-
-
-# ------------ Open API tests -----------------
-
-@pytest.mark.openapi
-@pytest.mark.ib_interfaces
-def test_ib_interface_state_openapi(test_name):
-    TestToolkit.tested_api = ApiType.OPENAPI
-    test_ib_interface_state(test_name)
-
-
-@pytest.mark.openapi
-@pytest.mark.ib_interfaces
-def test_ib_interface_state_invalid_openapi(engines):
-    TestToolkit.tested_api = ApiType.OPENAPI
-    test_ib_interface_state_invalid(engines)
-
-
-@pytest.mark.openapi
-@pytest.mark.ib_interfaces
-def test_ib_interface_state_unset_openapi(engines):
-    TestToolkit.tested_api = ApiType.OPENAPI
-    test_ib_interface_state_unset(engines)
