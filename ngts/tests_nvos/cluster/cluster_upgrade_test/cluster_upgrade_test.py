@@ -8,7 +8,7 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.nmx.Cluster import Cluster
-from ngts.nvos_tools.nmx.ControlPlane import ControlPlane
+from ngts.nvos_tools.nmx.Sdn import Sdn
 from ngts.nvos_constants.constants_nvos import PlatformConsts, SystemConsts, OutputFormat, ApiType, IbConsts, NvosConst, ClusterAppsLogLevels, ImageConsts
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.ib.Ib import Ib
@@ -75,7 +75,7 @@ def test_upgrade_with_nmx_enabled(test_api, devices, base_version,
     with allure.step("Create Cluster object"):
         cluster = Cluster()
         system = System()
-        control_plane = ControlPlane()
+        sdn = Sdn()
         all_config_files_paths = {}
         initial_config_contents = {}
         initial_configs_paths_to_restore = {}
@@ -99,23 +99,23 @@ def test_upgrade_with_nmx_enabled(test_api, devices, base_version,
                     cluster.apps.apps_name[app].loglevel.action_update_cluster_log_level(level=log_level)
                     log_levels[app] = log_level
 
-            config_files_paths = ClusterTools.get_current_config_files_paths(control_plane)
+            config_files_paths = ClusterTools.get_current_config_files_paths(sdn)
             for file_type, file_path in config_files_paths.items():
                 initial_config_contents[file_type] = engines.dut.run_cmd("sudo cat {}".format(file_path))
 
             with allure.step('Upload initial configurations'):
                 for file_type in NMX_CONTROLLER_CONFIG_FILE_TYPES:
-                    control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.file_name[config_files_paths[file_type].split('/')[-1]].action_upload(ImageConsts.SCP_PATH + INITIAL_CONFIGURATIONS_PATH)
+                    sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.file_name[config_files_paths[file_type].split('/')[-1]].action_upload(ImageConsts.SCP_PATH + INITIAL_CONFIGURATIONS_PATH)
                     initial_configs_paths_to_restore[file_type] = INITIAL_CONFIGURATIONS_PATH + '/' + config_files_paths[file_type].split('/')[-1]
                     logger.info(f"Uploading files: {initial_configs_paths_to_restore[file_type]}")
 
             with allure.step("Install config file"):
                 for file_type in NMX_CONTROLLER_CONFIG_FILE_TYPES:
-                    control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].action_fetch_control_plane(PATH_TO_CONFIG[file_type])
-                    control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.file_name[CONFIG_FILE_NAME[file_type]].action_file_install(force=False)
-                    output = control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].action_generate_control_plane()
+                    sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].action_fetch_sdn(PATH_TO_CONFIG[file_type])
+                    sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.file_name[CONFIG_FILE_NAME[file_type]].action_file_install(force=False)
+                    output = sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].action_generate_sdn()
                     installed_file = ClusterTools.get_generated_file_name(output.returned_value, 'config')
-                    output = OutputParsingTool.parse_show_output_to_dict(control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=output_format),
+                    output = OutputParsingTool.parse_show_output_to_dict(sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=output_format),
                                                                          output_format=output_format).get_returned_value()
                     all_config_files_paths[file_type] = [item['path'] for item in output.values()]
                     current_installed_config_path = output[installed_file]['path']
@@ -154,9 +154,9 @@ def test_upgrade_with_nmx_enabled(test_api, devices, base_version,
                 ClusterTools.verify_log_level(log_levels[app], app, output_format, cluster)
 
         with allure.step("Make sure config is saved"):
-            output = control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].action_generate_control_plane()
+            output = sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].action_generate_sdn()
             installed_file = ClusterTools.get_generated_file_name(output.returned_value, 'config')
-            output = OutputParsingTool.parse_show_output_to_dict(control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=output_format),
+            output = OutputParsingTool.parse_show_output_to_dict(sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=output_format),
                                                                  output_format=output_format).get_returned_value()
             all_config_files_paths[file_type] = [item['path'] for item in output.values()]
             current_installed_config_path = output[installed_file]['path']
@@ -170,14 +170,14 @@ def test_upgrade_with_nmx_enabled(test_api, devices, base_version,
                                                None, None, None, target_version_url)
         with allure.step("Install initial configurations"):
             for file_type in NMX_CONTROLLER_CONFIG_FILE_TYPES:
-                control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].action_fetch_control_plane(initial_configs_paths_to_restore[file_type])
+                sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].action_fetch_sdn(initial_configs_paths_to_restore[file_type])
                 conf_file_name = initial_configs_paths_to_restore[file_type].split('/')[-1]
-                control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.file_name[conf_file_name].action_file_install(force=False)
+                sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.file_name[conf_file_name].action_file_install(force=False)
 
         with allure.step("Delete state/config Files"):
             for file_type in NMX_CONTROLLER_CONFIG_FILE_TYPES:
                 for file in all_config_files_paths[file_type]:
-                    control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.file_name[file].action_delete()
+                    sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.file_name[file].action_delete()
                     engines.sonic_mgmt.run_cmd(f"sudo rm -rf {initial_configs_paths_to_restore[file_type]}")
             engines.sonic_mgmt.run_cmd(f"sudo rm -rf {INITIAL_CONFIGURATIONS_PATH}/*")
 

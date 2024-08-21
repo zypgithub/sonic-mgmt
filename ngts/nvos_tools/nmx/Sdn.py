@@ -11,11 +11,11 @@ from ngts.nvos_tools.nmx.Partition import Partition
 logger = logging.getLogger()
 
 
-class ControlPlane(BaseComponent):
+class Sdn(BaseComponent):
     def __init__(self, parent_obj=None):
         super().__init__(parent=parent_obj,
                          api={ApiType.NVUE: NvueClusterCli, ApiType.OPENAPI: OpenApiClusterCli},
-                         path='/control-plane')
+                         path='/sdn')
         self.config = Config(self)
         self.state = State(self)
         self.partition = Partition(self)

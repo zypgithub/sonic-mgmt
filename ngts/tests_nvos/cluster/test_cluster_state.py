@@ -110,6 +110,7 @@ def test_cluster_state(engines, devices, test_api):
             ClusterTools.wait_for_apps_to_be_in_wanted_state()
 
 
+@pytest.mark.timeout(30 * MINUTE, func_only=True)
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
 def test_stress_cluster_state(engines, devices, test_api, test_name):

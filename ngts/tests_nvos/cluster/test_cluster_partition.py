@@ -10,7 +10,7 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.nmx.Cluster import Cluster
-from ngts.nvos_tools.nmx.ControlPlane import ControlPlane
+from ngts.nvos_tools.nmx.Sdn import Sdn
 from ngts.nvos_constants.constants_nvos import PlatformConsts, IbConsts, ApiType, OutputFormat, SystemConsts, ClusterAppsLogLevels, NvosConst, ImageConsts
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.ib.Ib import Ib
@@ -44,7 +44,7 @@ def test_cluster_partition(engines, devices, test_api):
 
     with allure.step("Create Cluster object"):
         cluster = Cluster()
-        control_plane = ControlPlane()
+        sdn = Sdn()
 
         used_partition_ids = []
         used_locations_uuids = []
@@ -58,7 +58,7 @@ def test_cluster_partition(engines, devices, test_api):
             ClusterTools().start_cluster(cluster, output_format)
 
         with allure.step("Show All Partitions"):
-            output = OutputParsingTool.parse_show_output_to_dict(control_plane.partition.show(output_format=output_format),
+            output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
                                                                  output_format=output_format).get_returned_value()
             # Todo - Add assert for initial expected state.
             # Todo - Save all "location_ids" and "uuids"
@@ -68,7 +68,7 @@ def test_cluster_partition(engines, devices, test_api):
             pass
             # Todo - Once we have output, fetch all partitions (1) - part_id, need to check if there is multiple.
             for part_id in partitions:
-                output = OutputParsingTool.parse_show_output_to_dict(control_plane.partition.partition_id[part_id].show(output_format=output_format),
+                output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.partition_id[part_id].show(output_format=output_format),
                                                                      output_format=output_format).get_returned_value()
                 # Here, we can create a mapping between uuid and location ID! key is partition, value is list of tuples, uuid and loc id
                 list_of_gpus = []  # You can see it from HLD.
@@ -88,15 +88,15 @@ def test_cluster_partition(engines, devices, test_api):
             confidential_compute = random.choice(CONFIDENTIAL_COMPUTE)
             mcast_limit = random.randint(100, 1000)  # TODO - check with chris, what is the expected range of values here? And what is the usage of this param?
             created_partition_id, location_id_uuid, gpu_taken_from_partition, create_output = \
-                create_and_validate_partition(used_partition_ids, control_plane, used_locations_uuids,
+                create_and_validate_partition(used_partition_ids, sdn, used_locations_uuids,
                                               partition_mapping_to_location_uuid, output_format,
                                               partition_id=partition_id, resiliency_mode=resiliency_mode,
                                               confidential_compute=confidential_compute, mcast_limit=mcast_limit)
             with allure.step("Validate partition is created"):
-                output = OutputParsingTool.parse_show_output_to_dict(control_plane.partition.show(output_format=output_format),
+                output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
                                                                      output_format=output_format).get_returned_value()
                 # Todo - validate output.
-                output = OutputParsingTool.parse_show_output_to_dict(control_plane.partition.partition_id[partition_id].show(output_format=output_format),
+                output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.partition_id[partition_id].show(output_format=output_format),
                                                                      output_format=output_format).get_returned_value()
                 # Todo - validate output.
 
@@ -105,17 +105,17 @@ def test_cluster_partition(engines, devices, test_api):
             location_id_uuid, partition_to_take_gpu_from = choose_gpu_to_move_from_partition(partition_mapping_to_location_uuid, used_locations_uuids)
             used_locations_uuids.append(location_id_uuid)
             if add_mode == 'uuid':
-                control_plane.partition.partition_id[created_partition_id].uuid.uuid_value[param_value].action_update_partition()
+                sdn.partition.partition_id[created_partition_id].uuid.uuid_value[param_value].action_update_partition()
             else:
-                control_plane.partition.partition_id[created_partition_id].location.location_id[param_value].action_update_partition()
+                sdn.partition.partition_id[created_partition_id].location.location_id[param_value].action_update_partition()
 
             update_partition_to_location_uuid_map(partition_id, created_partition_id, location_id_uuid, partition_to_take_gpu_from, partition_mapping_to_location_uuid)
 
             with allure.step("Validate partition is created"):
-                output = OutputParsingTool.parse_show_output_to_dict(control_plane.partition.show(output_format=output_format),
+                output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
                                                                      output_format=output_format).get_returned_value()
                 # Todo - validate output.
-                output = OutputParsingTool.parse_show_output_to_dict(control_plane.partition.partition_id[partition_id].show(output_format=output_format),
+                output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.partition_id[partition_id].show(output_format=output_format),
                                                                      output_format=output_format).get_returned_value()
                 # Todo - validate output.
 
@@ -126,18 +126,18 @@ def test_cluster_partition(engines, devices, test_api):
             confidential_compute = random.choice(CONFIDENTIAL_COMPUTE)
             mcast_limit = random.randint(100, 1000)  # TODO - check with chris, what is the expected range of values here? And what is the usage of this param?
             second_created_partition_id, second_location_id_uuid, second_gpu_taken_from_partition, create_output = \
-                create_and_validate_partition(used_partition_ids, control_plane, used_locations_uuids, partition_mapping_to_location_uuid,
+                create_and_validate_partition(used_partition_ids, sdn, used_locations_uuids, partition_mapping_to_location_uuid,
                                               output_format, partition_id=partition_id, resiliency_mode=resiliency_mode,
                                               confidential_compute=confidential_compute, mcast_limit=mcast_limit)
             with allure.step("Validate partition is created"):
-                output = OutputParsingTool.parse_show_output_to_dict(control_plane.partition.show(output_format=output_format),
+                output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
                                                                      output_format=output_format).get_returned_value()
                 # Todo - validate output.
-                output = OutputParsingTool.parse_show_output_to_dict(control_plane.partition.partition_id[second_created_partition_id].show(output_format=output_format),
+                output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.partition_id[second_created_partition_id].show(output_format=output_format),
                                                                      output_format=output_format).get_returned_value()
                 # Todo - validate output.
 
-        # control_plane.partition.partition_id[partition_id].action_create_partition_id(PARTITIONS_NAMES[0], resiliency_mode, confidential_compute, mcast_limit, uuid=param_value)
+        # sdn.partition.partition_id[partition_id].action_create_partition_id(PARTITIONS_NAMES[0], resiliency_mode, confidential_compute, mcast_limit, uuid=param_value)
 
         with allure.step("Use ansible to verify connectivity between two gpus on same partition"):
             pass
@@ -145,14 +145,14 @@ def test_cluster_partition(engines, devices, test_api):
         with allure.step("Use ansible to verify no connectivity between two gpus on different partition"):
             pass
 
-        with allure.step("restore control plane partition - which removes a GPU from partition"):
+        with allure.step("restore sdn partition - which removes a GPU from partition"):
             location_id_uuid, partition_to_take_gpu_from = choose_gpu_to_move_from_partition(partition_mapping_to_location_uuid, used_locations_uuids)
             if add_mode == 'uuid':
-                control_plane.partition.partition_id[created_partition_id].uuid.uuid_value[param_value].action_restore_partition()
+                sdn.partition.partition_id[created_partition_id].uuid.uuid_value[param_value].action_restore_partition()
             else:
-                control_plane.partition.partition_id[created_partition_id].location.location_id[param_value].action_restore_partition()
+                sdn.partition.partition_id[created_partition_id].location.location_id[param_value].action_restore_partition()
 
-            output = OutputParsingTool.parse_show_output_to_dict(control_plane.partition.partition_id[partition_to_take_gpu_from].show(output_format=output_format),
+            output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.partition_id[partition_to_take_gpu_from].show(output_format=output_format),
                                                                  output_format=output_format).get_returned_value()
 
             if location_id_uuid in used_locations_uuids:
@@ -163,15 +163,15 @@ def test_cluster_partition(engines, devices, test_api):
         with allure.step("Delete created partitions"):
             # TODO Show second partition, and save all uuids/locations we have there, and remove them from used location uuid list.
             # TODO Then after deleting, update partition_mapping_to_location_uuid, deleted partition will be removed, and default one will get all its components.
-            control_plane.partition.partition_id[second_created_partition_id].action_delete_partition()
+            sdn.partition.partition_id[second_created_partition_id].action_delete_partition()
             used_partition_ids.remove(second_created_partition_id)
             with allure.step("Show All Partitions"):
-                output = OutputParsingTool.parse_show_output_to_dict(control_plane.partition.show(output_format=output_format),
+                output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
                                                                      output_format=output_format).get_returned_value()
                 # TODO -  Make sure partition is indeed deleted.
-            control_plane.partition.partition_id[created_partition_id].action_delete_partition()
+            sdn.partition.partition_id[created_partition_id].action_delete_partition()
             with allure.step("Show All Partitions"):
-                output = OutputParsingTool.parse_show_output_to_dict(control_plane.partition.show(output_format=output_format),
+                output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
                                                                      output_format=output_format).get_returned_value()
                 # TODO -  Make sure partition is indeed deleted.
 
@@ -182,7 +182,7 @@ def test_cluster_partition(engines, devices, test_api):
             partitions = partition_mapping_to_location_uuid.keys()
             for partition in partitions:
                 if partition != DEFAULT_PARTITION:
-                    control_plane.partition.partition_id[partition].action_delete_partition()
+                    sdn.partition.partition_id[partition].action_delete_partition()
 
 
 @pytest.mark.nmx
@@ -194,7 +194,7 @@ def test_cluster_partition_bad_flow(engines, devices, test_api):
 
     with allure.step("Create Cluster object"):
         cluster = Cluster()
-        control_plane = ControlPlane()
+        sdn = Sdn()
 
         used_partition_ids = []
         used_locations_uuids = []
@@ -208,7 +208,7 @@ def test_cluster_partition_bad_flow(engines, devices, test_api):
             ClusterTools().start_cluster(cluster, output_format)
 
         with allure.step("Show All Partitions"):
-            output = OutputParsingTool.parse_show_output_to_dict(control_plane.partition.show(output_format=output_format),
+            output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
                                                                  output_format=output_format).get_returned_value()
             # Todo - Add assert for initial expected state.
             # Todo - Save all "location_ids" and "uuids"
@@ -218,7 +218,7 @@ def test_cluster_partition_bad_flow(engines, devices, test_api):
             pass
             # Todo - Once we have output, fetch all partitions (1) - part_id, need to check if there is multiple.
             for part_id in partitions:
-                output = OutputParsingTool.parse_show_output_to_dict(control_plane.partition.partition_id[part_id].show(output_format=output_format),
+                output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.partition_id[part_id].show(output_format=output_format),
                                                                      output_format=output_format).get_returned_value()
                 # Here, we can create a mapping between uuid and location ID! key is partition, value is list of tuples, uuid and loc id
                 list_of_gpus = []  # You can see it from HLD.
@@ -238,15 +238,15 @@ def test_cluster_partition_bad_flow(engines, devices, test_api):
             confidential_compute = random.choice(CONFIDENTIAL_COMPUTE)
             mcast_limit = random.randint(100, 1000)  # TODO - check with chris, what is the expected range of values here? And what is the usage of this param?
             created_partition_id, location_id_uuid, gpu_taken_from_partition, create_output = \
-                create_and_validate_partition(used_partition_ids, control_plane, used_locations_uuids,
+                create_and_validate_partition(used_partition_ids, sdn, used_locations_uuids,
                                               partition_mapping_to_location_uuid, output_format,
                                               partition_id=partition_id, resiliency_mode=resiliency_mode,
                                               confidential_compute=confidential_compute, mcast_limit=mcast_limit)
             with allure.step("Validate partition is created"):
-                output = OutputParsingTool.parse_show_output_to_dict(control_plane.partition.show(output_format=output_format),
+                output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
                                                                      output_format=output_format).get_returned_value()
                 # Todo - validate output.
-                output = OutputParsingTool.parse_show_output_to_dict(control_plane.partition.partition_id[partition_id].show(output_format=output_format),
+                output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.partition_id[partition_id].show(output_format=output_format),
                                                                      output_format=output_format).get_returned_value()
                 # Todo - validate output.
 
@@ -254,17 +254,17 @@ def test_cluster_partition_bad_flow(engines, devices, test_api):
                 add_mode = random.choice(['location-id', 'uuid'])
                 if add_mode == 'uuid':
                     pass  # Dont have current format for uuid in order to generate a non real one.
-                    create_output = control_plane.partition.partition_id[partition_id].action_create_partition_id(PARTITIONS_NAMES[0], resiliency_mode, confidential_compute, mcast_limit, uuid=location_id_uuid[1])
+                    create_output = sdn.partition.partition_id[partition_id].action_create_partition_id(PARTITIONS_NAMES[0], resiliency_mode, confidential_compute, mcast_limit, uuid=location_id_uuid[1])
                 else:
-                    create_output = control_plane.partition.partition_id[partition_id].action_create_partition_id(PARTITIONS_NAMES[0], resiliency_mode, confidential_compute, mcast_limit, location=location_id_uuid[0])
+                    create_output = sdn.partition.partition_id[partition_id].action_create_partition_id(PARTITIONS_NAMES[0], resiliency_mode, confidential_compute, mcast_limit, location=location_id_uuid[0])
 
                 # TODO Validate correct error message
 
                 with allure.step("Validate partition is created"):
-                    output = OutputParsingTool.parse_show_output_to_dict(control_plane.partition.show(output_format=output_format),
+                    output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
                                                                          output_format=output_format).get_returned_value()
                     # Todo - validate output. nothing is changed
-                    output = OutputParsingTool.parse_show_output_to_dict(control_plane.partition.partition_id[created_partition_id].show(output_format=output_format),
+                    output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.partition_id[created_partition_id].show(output_format=output_format),
                                                                          output_format=output_format).get_returned_value()
                     # Todo - validate output. nothing is changed
 
@@ -275,17 +275,17 @@ def test_cluster_partition_bad_flow(engines, devices, test_api):
                 add_mode = random.choice(['location-id', 'uuid'])
                 if add_mode == 'uuid':
                     pass  # Dont have current format for uuid in order to generate a non real one.
-                    create_output = control_plane.partition.partition_id[partition_id].action_create_partition_id(PARTITIONS_NAMES[0], resiliency_mode, confidential_compute, mcast_limit, uuid=location_id_uuid[1])
+                    create_output = sdn.partition.partition_id[partition_id].action_create_partition_id(PARTITIONS_NAMES[0], resiliency_mode, confidential_compute, mcast_limit, uuid=location_id_uuid[1])
                 else:
-                    create_output = control_plane.partition.partition_id[partition_id].action_create_partition_id(PARTITIONS_NAMES[0], resiliency_mode, confidential_compute, mcast_limit, location=location_id_uuid[0])
+                    create_output = sdn.partition.partition_id[partition_id].action_create_partition_id(PARTITIONS_NAMES[0], resiliency_mode, confidential_compute, mcast_limit, location=location_id_uuid[0])
 
                 # TODO - Check that parameters of the already existing partition is being updated.
 
                 with allure.step("Validate partition is created"):
-                    output = OutputParsingTool.parse_show_output_to_dict(control_plane.partition.show(output_format=output_format),
+                    output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
                                                                          output_format=output_format).get_returned_value()
                     # Todo - validate output.
-                    output = OutputParsingTool.parse_show_output_to_dict(control_plane.partition.partition_id[created_partition_id].show(output_format=output_format),
+                    output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.partition_id[created_partition_id].show(output_format=output_format),
                                                                          output_format=output_format).get_returned_value()
                     # Todo - validate output.
 
@@ -298,16 +298,16 @@ def test_cluster_partition_bad_flow(engines, devices, test_api):
                 add_mode = random.choice(['location-id', 'uuid'])
                 if add_mode == 'uuid':
                     pass  # Dont have current format for uuid in order to generate a non real one.
-                    create_output = control_plane.partition.partition_id[partition_id].action_create_partition_id(PARTITIONS_NAMES[0], resiliency_mode, confidential_compute, mcast_limit, uuid=location_id_uuid[1])
+                    create_output = sdn.partition.partition_id[partition_id].action_create_partition_id(PARTITIONS_NAMES[0], resiliency_mode, confidential_compute, mcast_limit, uuid=location_id_uuid[1])
                 else:
-                    create_output = control_plane.partition.partition_id[partition_id].action_create_partition_id(PARTITIONS_NAMES[0], resiliency_mode, confidential_compute, mcast_limit, location=random_location_id)
+                    create_output = sdn.partition.partition_id[partition_id].action_create_partition_id(PARTITIONS_NAMES[0], resiliency_mode, confidential_compute, mcast_limit, location=random_location_id)
                     # Todo - Validate we get a proper fail message.
                 # TODO - Check that we get a proper fail message.
                 with allure.step("Validate partition is not created"):
-                    output = OutputParsingTool.parse_show_output_to_dict(control_plane.partition.show(output_format=output_format),
+                    output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
                                                                          output_format=output_format).get_returned_value()
                     # Todo - validate output.
-                    output = OutputParsingTool.parse_show_output_to_dict(control_plane.partition.partition_id[created_partition_id].show(output_format=output_format),
+                    output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.partition_id[created_partition_id].show(output_format=output_format),
                                                                          output_format=output_format).get_returned_value()
                     # Todo - validate output.
 
@@ -329,22 +329,22 @@ def test_cluster_partition_bad_flow(engines, devices, test_api):
                 add_mode = random.choice(['location-id', 'uuid'])
                 if add_mode == 'uuid':
                     pass  # Dont have current format for uuid in order to generate a non real one.
-                    # create_output = control_plane.partition.partition_id[partition_id].action_create_partition_id(PARTITIONS_NAMES[0], resiliency_mode, confidential_compute, mcast_limit, uuid=location_id_uuid[1])
+                    # create_output = sdn.partition.partition_id[partition_id].action_create_partition_id(PARTITIONS_NAMES[0], resiliency_mode, confidential_compute, mcast_limit, uuid=location_id_uuid[1])
                 else:
-                    create_output = control_plane.partition.partition_id[partition_id].action_create_partition_id(PARTITIONS_NAMES[0], resiliency_mode, confidential_compute, mcast_limit, location=random_location_id)
+                    create_output = sdn.partition.partition_id[partition_id].action_create_partition_id(PARTITIONS_NAMES[0], resiliency_mode, confidential_compute, mcast_limit, location=random_location_id)
                     # Todo - Validate we get a proper fail message.
 
                 with allure.step("Restore non existing partition"):
                     add_mode = random.choice(['location-id', 'uuid'])
                     if add_mode == 'uuid':
                         pass  # Dont have current format for uuid in order to generate a non real one.
-                        control_plane.partition.partition_id[partition_id].uuid.uuid_value[location_id_uuid[1]].action_restore_partition()
+                        sdn.partition.partition_id[partition_id].uuid.uuid_value[location_id_uuid[1]].action_restore_partition()
                     else:
-                        control_plane.partition.partition_id[partition_id].location.location_id[random_location_id].action_restore_partition()
+                        sdn.partition.partition_id[partition_id].location.location_id[random_location_id].action_restore_partition()
                     # Todo - Validate we get a proper fail message.
 
                 with allure.step("Delete non existing partition"):
-                    output = control_plane.partition.partition_id[partition_id].action_delete_partition()
+                    output = sdn.partition.partition_id[partition_id].action_delete_partition()
                     # Todo - Make sure to get proper failure message.
 
         with allure.step("Update existing partition"):
@@ -353,17 +353,17 @@ def test_cluster_partition_bad_flow(engines, devices, test_api):
             location_id_uuid, partition_to_take_gpu_from = choose_gpu_to_move_from_partition(partition_mapping_to_location_uuid, used_locations_uuids)
             # used_locations_uuids.append(location_id_uuid)
             if add_mode == 'uuid':
-                control_plane.partition.partition_id[created_partition_id].uuid.uuid_value[location_id_uuid[1]].action_update_partition()
+                sdn.partition.partition_id[created_partition_id].uuid.uuid_value[location_id_uuid[1]].action_update_partition()
             else:
-                control_plane.partition.partition_id[created_partition_id].location.location_id[location_id_uuid[0]].action_update_partition()
+                sdn.partition.partition_id[created_partition_id].location.location_id[location_id_uuid[0]].action_update_partition()
 
             update_partition_to_location_uuid_map(partition_id, created_partition_id, location_id_uuid, partition_to_take_gpu_from, partition_mapping_to_location_uuid)
 
             with allure.step("Validate partition is created"):
-                output = OutputParsingTool.parse_show_output_to_dict(control_plane.partition.show(output_format=output_format),
+                output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
                                                                      output_format=output_format).get_returned_value()
                 # Todo - validate output.
-                output = OutputParsingTool.parse_show_output_to_dict(control_plane.partition.partition_id[partition_id].show(output_format=output_format),
+                output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.partition_id[partition_id].show(output_format=output_format),
                                                                      output_format=output_format).get_returned_value()
                 # Todo - validate output.
 
@@ -372,9 +372,9 @@ def test_cluster_partition_bad_flow(engines, devices, test_api):
             # used_locations_uuids[add_mode].append(param_value)
             # used_locations_uuids.append(location_id_uuid)
             if add_mode == 'uuid':
-                control_plane.partition.partition_id[created_partition_id].uuid.uuid_value[location_id_uuid[1]].action_update_partition()
+                sdn.partition.partition_id[created_partition_id].uuid.uuid_value[location_id_uuid[1]].action_update_partition()
             else:
-                control_plane.partition.partition_id[created_partition_id].location.location_id[location_id_uuid[0]].action_update_partition()
+                sdn.partition.partition_id[created_partition_id].location.location_id[location_id_uuid[0]].action_update_partition()
             # Todo - Validate we get error msg, and its not added again (Verify show partition [part_id] output is still the same as in prev step.
 
         with allure.step("Try to add A GPU to a non-existing partition"):
@@ -386,24 +386,24 @@ def test_cluster_partition_bad_flow(engines, devices, test_api):
             # used_locations_uuids[add_mode].append(param_value)
             used_locations_uuids.append(location_id_uuid)
             if add_mode == 'uuid':
-                control_plane.partition.partition_id[non_existing_partition].uuid.uuid_value[location_id_uuid[1]].action_update_partition()
+                sdn.partition.partition_id[non_existing_partition].uuid.uuid_value[location_id_uuid[1]].action_update_partition()
             else:
-                control_plane.partition.partition_id[non_existing_partition].location.location_id[location_id_uuid[0]].action_update_partition()
+                sdn.partition.partition_id[non_existing_partition].location.location_id[location_id_uuid[0]].action_update_partition()
             # Todo - Validate we get error msg, and its not added again (Verify show partition [part_id] output is still the same as in prev step.
 
         with allure.step("Restore non existing partition"):
             add_mode = random.choice(['location-id', 'uuid'])
             if add_mode == 'uuid':
-                control_plane.partition.partition_id[non_existing_partition].uuid.uuid_value[location_id_uuid[1]].action_restore_partition()
+                sdn.partition.partition_id[non_existing_partition].uuid.uuid_value[location_id_uuid[1]].action_restore_partition()
             else:
-                control_plane.partition.partition_id[non_existing_partition].location.location_id[location_id_uuid[0]].action_restore_partition()
+                sdn.partition.partition_id[non_existing_partition].location.location_id[location_id_uuid[0]].action_restore_partition()
 
     finally:
         with allure.step('Restore to initial state - delete all partitions Except for default partition'):
             partitions = partition_mapping_to_location_uuid.keys()
             for partition in partitions:
                 if partition != DEFAULT_PARTITION:
-                    control_plane.partition.partition_id[partition].action_delete_partition()
+                    sdn.partition.partition_id[partition].action_delete_partition()
 
 
 def update_partition_to_location_uuid_map(partition_id, created_partition_id, location_id_uuid, partition_to_take_gpu_from, partition_mapping_to_location_uuid):
@@ -419,19 +419,19 @@ def generate_random_id():
     return f"{random.randint(0, 255)}.{random.randint(0, 255)}.{random.randint(0, 255)}.{random.randint(0, 255)}"
 
 
-def create_and_validate_partition(used_partition_ids, control_plane, used_locations_uuids, partition_mapping_to_location_uuid,
+def create_and_validate_partition(used_partition_ids, sdn, used_locations_uuids, partition_mapping_to_location_uuid,
                                   output_format, location_id_uuid='', gpu_taken_from_partition='', partition_id='', resiliency_mode='',
                                   confidential_compute='', mcast_limit=''):
     with allure.step("Randomly Choose whether to create partition using uuid or location-id and randomize other parameters"):
-        # nv action create control-plane partition 1 name part1 resiliency-mode FULL_BANDWIDTH confidential-compute true mcast-limit 10 location-id 1.1.1.1
+        # nv action create sdn partition 1 name part1 resiliency-mode FULL_BANDWIDTH confidential-compute true mcast-limit 10 location-id 1.1.1.1
         add_mode = random.choice(['location-id', 'uuid'])
         if location_id_uuid == '' or gpu_taken_from_partition == '':
             location_id_uuid, gpu_taken_from_partition = choose_gpu_to_move_from_partition(partition_mapping_to_location_uuid, used_locations_uuids)
         used_locations_uuids.append(location_id_uuid)
     if add_mode == 'uuid':
-        create_output = control_plane.partition.partition_id[partition_id].action_create_partition_id(PARTITIONS_NAMES[0], resiliency_mode, confidential_compute, mcast_limit, uuid=location_id_uuid[1])
+        create_output = sdn.partition.partition_id[partition_id].action_create_partition_id(PARTITIONS_NAMES[0], resiliency_mode, confidential_compute, mcast_limit, uuid=location_id_uuid[1])
     else:
-        create_output = control_plane.partition.partition_id[partition_id].action_create_partition_id(PARTITIONS_NAMES[0], resiliency_mode, confidential_compute, mcast_limit, location=location_id_uuid[0])
+        create_output = sdn.partition.partition_id[partition_id].action_create_partition_id(PARTITIONS_NAMES[0], resiliency_mode, confidential_compute, mcast_limit, location=location_id_uuid[0])
 
         if partition_id not in partition_mapping_to_location_uuid.keys():
             partition_mapping_to_location_uuid[partition_id] = []

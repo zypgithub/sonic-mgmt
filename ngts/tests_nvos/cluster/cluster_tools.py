@@ -254,13 +254,13 @@ class ClusterTools:
             ClusterTools.wait_for_apps_to_be_in_wanted_state()
 
     @staticmethod
-    def get_current_config_files_paths(control_plane):
+    def get_current_config_files_paths(sdn):
         files_dict = {}
         with allure.step("Fetch & Generate config files"):
             for file_type in NMX_CONTROLLER_CONFIG_FILE_TYPES:
-                output = control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].action_generate_control_plane()
+                output = sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].action_generate_sdn()
                 installed_file = get_generated_file_name(output.returned_value, 'config')
-                output = OutputParsingTool.parse_show_output_to_dict(control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=OutputFormat.json),
+                output = OutputParsingTool.parse_show_output_to_dict(sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=OutputFormat.json),
                                                                      output_format=OutputFormat.json).get_returned_value()
                 current_installed_config_path = output[installed_file]['path']
                 files_dict[file_type] = current_installed_config_path
@@ -316,17 +316,17 @@ class ClusterTools:
         logger.info(f'Sleeping for {WAIT_FOR_APPS_RUNNING} seconds until apps are running')
 
     @staticmethod
-    def verify_control_plane_config_files_deleted(control_plane):
-        with allure.step("Running nv show control-plane config app <app> type <type> files and make sure files are deleted"):
+    def verify_sdn_config_files_deleted(sdn):
+        with allure.step("Running nv show sdn config app <app> type <type> files and make sure files are deleted"):
             for file_type in NMX_CONTROLLER_CONFIG_FILE_TYPES:
-                files = OutputParsingTool.parse_show_output_to_dict(control_plane.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=OutputFormat.json),
+                files = OutputParsingTool.parse_show_output_to_dict(sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=OutputFormat.json),
                                                                     output_format=OutputFormat.json).get_returned_value()
                 assert not files, f"Expected to get empty output, but instead received {output}"
 
     @staticmethod
-    def verify_control_plane_state_files_deleted(control_plane):
-        with allure.step("Running nv show control-plane state app <app> type <type> files and make sure files are deleted"):
+    def verify_sdn_state_files_deleted(sdn):
+        with allure.step("Running nv show sdn state app <app> type <type> files and make sure files are deleted"):
             for file_type in NMX_CONTROLLER_STATE_FILE_TYPES:
-                files = OutputParsingTool.parse_show_output_to_dict(control_plane.state.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=OutputFormat.json),
+                files = OutputParsingTool.parse_show_output_to_dict(sdn.state.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=OutputFormat.json),
                                                                     output_format=OutputFormat.json).get_returned_value()
                 assert not files, f"Expected to get empty output, but instead received {output}"
