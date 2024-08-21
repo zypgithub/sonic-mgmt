@@ -46,7 +46,7 @@ class OpenApiIbInterfaceCli(OpenApiBaseCli):
             "state": "start",
             "parameters":
             {
-                "clear-target": "counters"
+                "counters": "counters"
             }
         }
 
