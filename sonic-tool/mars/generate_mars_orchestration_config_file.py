@@ -258,7 +258,7 @@ def print_mars_configs(branch):
     community_set_1_general_dbs = eval(f"community_{branch}_set_1_dbs") + eval(f"community_{branch}_rpc_dbs")
     community_set_2_general_dbs = eval(f"community_{branch}_set_2_dbs")
     if eval(f"community_{branch}_generic_dbs"):
-        community_set_2_add_generic_dbs = eval(f"community_{branch}_set_1_dbs") + \
+        community_set_2_add_generic_dbs = eval(f"community_{branch}_set_2_dbs") + \
                                                eval(f"community_{branch}_generic_dbs")
     else:
         community_set_2_add_generic_dbs = None
