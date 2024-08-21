@@ -1241,6 +1241,50 @@ class JulietTTMSwitch(JulietScaleoutSwitch):
     def _init_led_list(self):
         super()._init_led_list()
 
+# -------------------------- Ariel Switch ----------------------------
+
+
+class JulietAriel(JulietTTMSwitch):
+
+    def __init__(self):
+        super().__init__()
+
+    def _init_constants(self):
+        super()._init_constants()
+        # TODO - Need to be changed to correct values for Ariel. Double check with tamuz.
+        self.current_cpld_version = BaseSwitch.CpldImageConsts(
+            burn_image_path="/auto/sw_system_project/NVOS_INFRA/verification_files/cpld_fw/FUI000319_BURN_JULIET_TTM_CPLD000370_REV0104_CPLD000377_REV0104_CPLD000373_REV0100_CPLD000390_REV0100_IPN.vme",
+            refresh_image_path="",
+            version_names={
+                "CPLD1": "CPLD000370_REV0104",
+                "CPLD2": "CPLD000377_REV0104",
+                "CPLD3": "CPLD000373_REV0100",
+                "CPLD4": "CPLD000390_REV0100"
+            }
+        )
+        self.previous_cpld_version = BaseSwitch.CpldImageConsts(
+            burn_image_path="/auto/sw_system_project/NVOS_INFRA/verification_files/cpld_fw/OLD/FUI000314_BURN_JULIET_TTM_CPLD000370_REV0104_CPLD000377_REV0102_CPLD000373_REV0100_CPLD000390_REV0100_IPN.vme",
+            refresh_image_path="",
+            version_names={
+                "CPLD1": "CPLD000370_REV0104",
+                "CPLD2": "CPLD000377_REV0102",
+                "CPLD3": "CPLD000373_REV0100",
+                "CPLD4": "CPLD000390_REV0100"
+            }
+        )
+        self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
+            "x86_64-nvidia_n5112_ld-r0")
+        self.show_platform_output.update({
+            "product-name": "N5112_LD",
+            "asic-model": self.asic_type,
+        })
+
+
+def _init_platform_lists(self):
+    super()._init_platform_lists()
+    self.platform_inventory_switch_values.update({"model": "692-9K36F-A5MV-JS0"})
+
+
 # -------------------------- JulietNonScaleoutSwitch Switch ----------------------------
 
 
