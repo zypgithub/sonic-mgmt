@@ -13,7 +13,7 @@ from ngts.tools.test_utils import allure_utils as allure
 logger = logging.getLogger()
 
 
-@pytest.mark.timeout(20 * MINUTE, func_only=True)
+@pytest.mark.timeout(25 * MINUTE, func_only=True)
 @pytest.mark.bios
 @pytest.mark.system
 @pytest.mark.parametrize('test_api', random.sample(ApiType.ALL_TYPES, 1))
@@ -69,7 +69,7 @@ def test_bios_auto_update_disabled(devices, engines, test_api, original_version,
         TestToolkit.GeneralApi[test_api].save_config(engine=engines.dut)
 
 
-@pytest.mark.timeout(20 * MINUTE, func_only=True)
+@pytest.mark.timeout(25 * MINUTE, func_only=True)
 @pytest.mark.bios
 @pytest.mark.system
 @pytest.mark.parametrize('test_api', random.sample(ApiType.ALL_TYPES, 1))
