@@ -213,7 +213,7 @@ class IbSwitch(BaseSwitch):
         self.platform_file_path = ""
         self.primary_asic = f"{IbConsts.DEVICE_ASIC_PREFIX}1"
         self.primary_swid = f"{IbConsts.SWID}0"
-        self.primary_ipoib_interface = IbConsts.IPOIB_INT0
+        self.primary_ipoib_interface = IbConsts.IPOIB_INT.format(self.asic_amount - 1)
         self.multi_asic_system = False
         self.login_pattern = NvosConst.INSTALL_SUCCESS_PATTERN
         self.install_patterns = {self.login_pattern: 0}

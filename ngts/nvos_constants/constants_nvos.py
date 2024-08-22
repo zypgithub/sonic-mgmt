@@ -849,8 +849,9 @@ class IbConsts:
     SIGNAL_DEGRADE = "signal-degrade"
     DEVICE_ASIC_PREFIX = 'ASIC'
     SWID = "SWID"
-    IPOIB_INT0 = "ib0"
-    IPOIB_INT1 = "ib1"
+    IPOIB_INT = "ib{}"
+    IPOIB_INT0 = IPOIB_INT.format(0)
+    IPOIB_INT1 = IPOIB_INT.format(1)
     DEVICE_SYSTEM = 'SYSTEM'
     DEVICE_ASIC_LIST = ['guid', 'lid', 'subnet', 'type']
     DEVICE_SYSTEM_LIST = ['guid']
