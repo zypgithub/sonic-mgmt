@@ -185,9 +185,11 @@ tests/push_build_tests/L3/dhcp_relay/test_dhcp_relay.py::TestDHCPRelay::test_dhc
 
 tests/nightly/adaptive_routing:
   skip:
-    reason: "Adaptive Routing is not supported on SimX Platform"
+    reason: "Adaptive Routing is not supported on SimX Platform or on ACS-SN5400 hwsku(AR is not supported on Hippos due to missing SAI_HOSTIF_OPER_STATUS_UPDATE_BY_APP=1 in sai.profile)"
+    conditions_logical_operator: or
     conditions:
     - "'simx' in platform"
+    - "'ACS-SN5400' in hwsku"
 
 tests/nightly/fec/test_fec.py::TestFec::test_negative_fec:
   skip:
