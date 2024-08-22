@@ -141,12 +141,6 @@ tests_nvos/system/test_system_factory_reset.py:
     conditions:
       - "'marlin' in testbed"
       - https://redmine.mellanox.com/issues/3484447
-
-tests_nvos/interfaces/test_eth0_interface_dhcp.py::test_interface_eth0_description:
-  skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3527752"
-    conditions:
-      - https://redmine.mellanox.com/issues/3527752
       
 tests_nvos/interfaces/test_eth0_interface_dhcp.py::test_interface_eth0_speed_duplex_autoneg:
   skip:
