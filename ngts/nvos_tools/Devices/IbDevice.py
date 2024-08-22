@@ -507,25 +507,22 @@ class BlackMambaSwitch(IbSwitch):
             "asic-model": self.asic_type,
         })
 
-        self.voltage_sensors = ["PMIC-1+12V_VDD_ASIC1+Vol+In+1", "PMIC-1+ASIC1_VDD+Vol+Out+1",
-                                "PMIC-2+12V_HVDD_DVDD_ASIC1+Vol+In+1", "PMIC-2+ASIC1_DVDD_PL0+Vol+Out+2",
-                                "PMIC-2+ASIC1_HVDD_PL0+Vol+Out+1", "PMIC-3+12V_HVDD_DVDD_ASIC1+Vol+In+1",
-                                "PMIC-3+ASIC1_DVDD_PL1+Vol+Out+2", "PMIC-3+ASIC1_HVDD_PL1+Vol+Out+1",
-                                "PMIC-4+12V_VDD_ASIC2+Vol+In+1", "PMIC-4+ASIC2_VDD+Vol+Out+1",
-                                "PMIC-5+12V_HVDD_DVDD_ASIC2+Vol+In+1", "PMIC-5+ASIC2_DVDD_PL0+Vol+Out+2",
-                                "PMIC-5+ASIC2_HVDD_PL0+Vol+Out+1", "PMIC-6+12V_HVDD_DVDD_ASIC2+Vol+In+1",
-                                "PMIC-6+ASIC2_DVDD_PL1+Vol+Out+2", "PMIC-6+ASIC2_HVDD_PL1+Vol+Out+1",
-                                "PMIC-7+12V_VDD_ASIC3+Vol+In+1", "PMIC-7+ASIC3_VDD+Vol+Out+1",
-                                "PMIC-8+12V_HVDD_DVDD_ASIC3+Vol+In+1", "PMIC-8+ASIC3_DVDD_PL0+Vol+Out+2",
-                                "PMIC-8+ASIC3_HVDD_PL0+Vol+Out+1", "PMIC-9+12V_HVDD_DVDD_ASIC3+Vol+In+1",
-                                "PMIC-9+ASIC3_DVDD_PL1+Vol+Out+2", "PMIC-9+ASIC3_HVDD_PL1+Vol+Out+1",
-                                "PMIC-10+12V_VDD_ASIC4+Vol+In+1", "PMIC-10+ASIC4_VDD+Vol+Out+1",
-                                "PMIC-11+12V_HVDD_DVDD_ASIC4+Vol+In+1", "PMIC-11+ASIC4_DVDD_PL0+Vol+Out+2",
-                                "PMIC-11+ASIC4_HVDD_PL0+Vol+Out+1", "PMIC-12+12V_HVDD_DVDD_ASIC4+Vol+In+1",
-                                "PMIC-12+ASIC4_DVDD_PL1+Vol+Out+2", "PMIC-12+ASIC4_HVDD_PL1+Vol+Out+1",
-                                "PMIC-13+12V_MAIN+Vol+In+1", "PMIC-13+CEX_VDD+Vol+Out+1", "PSU-1+12V+Vol+Out",
-                                "PSU-2+12V+Vol+Out", "PSU-3+12V+Vol+Out", "PSU-4+12V+Vol+Out", "PSU-5+12V+Vol+Out",
-                                "PSU-6+12V+Vol+Out", "PSU-7+12V+Vol+Out", "PSU-8+12V+Vol+Out"]
+        self.voltage_sensors = [
+            "PMIC-1-12V-VDD-ASIC1-In-1", "PMIC-1-ASIC1-VDD-Out-1", "PMIC-2-12V-HVDD-DVDD-ASIC1-In-1",
+            "PMIC-2-ASIC1-DVDD-PL0-Out-2", "PMIC-2-ASIC1-HVDD-PL0-Out-1", "PMIC-3-12V-HVDD-DVDD-ASIC1-In-1",
+            "PMIC-3-ASIC1-DVDD-PL1-Out-2", "PMIC-3-ASIC1-HVDD-PL1-Out-1", "PMIC-4-12V-VDD-ASIC2-In-1",
+            "PMIC-4-ASIC2-VDD-Out-1", "PMIC-5-12V-HVDD-DVDD-ASIC2-In-1", "PMIC-5-ASIC2-DVDD-PL0-Out-2",
+            "PMIC-5-ASIC2-HVDD-PL0-Out-1", "PMIC-6-12V-HVDD-DVDD-ASIC2-In-1", "PMIC-6-ASIC2-DVDD-PL1-Out-2",
+            "PMIC-6-ASIC2-HVDD-PL1-Out-1", "PMIC-7-12V-VDD-ASIC3-In-1", "PMIC-7-ASIC3-VDD-Out-1",
+            "PMIC-8-12V-HVDD-DVDD-ASIC3-In-1", "PMIC-8-ASIC3-DVDD-PL0-Out-2", "PMIC-8-ASIC3-HVDD-PL0-Out-1",
+            "PMIC-9-12V-HVDD-DVDD-ASIC3-In-1", "PMIC-9-ASIC3-DVDD-PL1-Out-2", "PMIC-9-ASIC3-HVDD-PL1-Out-1",
+            "PMIC-10-12V-VDD-ASIC4-In-1", "PMIC-10-ASIC4-VDD-Out-1", "PMIC-11-12V-HVDD-DVDD-ASIC4-In-1",
+            "PMIC-11-ASIC4-DVDD-PL0-Out-2", "PMIC-11-ASIC4-HVDD-PL0-Out-1", "PMIC-12-12V-HVDD-DVDD-ASIC4-In-1",
+            "PMIC-12-ASIC4-DVDD-PL1-Out-2", "PMIC-12-ASIC4-HVDD-PL1-Out-1", "PMIC-13-12V-MAIN-In-1",
+            "PMIC-13-CEX-VDD-Out-1",
+            "PSU-1-12V-Out", "PSU-2-12V-Out", "PSU-3-12V-Out", "PSU-4-12V-Out", "PSU-5-12V-Out", "PSU-6-12V-Out",
+            "PSU-7-12V-Out", "PSU-8-12V-Out",
+        ]
 
         self.stats_fan_header_num_of_lines = 17
         self.stats_power_header_num_of_lines = 25
