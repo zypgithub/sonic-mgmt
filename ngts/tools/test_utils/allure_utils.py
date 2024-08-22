@@ -38,8 +38,8 @@ def step(step_msg):
         Context manager that wraps allure step context and a log with the same message
     @param step_msg: The desired step message
     """
-    with _step(step_msg, independent=False):
-        yield
+    with _step(step_msg, independent=False) as allure_step_context:
+        yield allure_step_context
 
 
 @contextmanager
@@ -53,8 +53,8 @@ def independent_step(step_msg):
     if not _allure_step_stack:
         raise Exception("Error calling allure.independent_step: an independent step must be placed inside a normal "
                         "allure.step, because we test for independent-step failure only when the parent step finishes")
-    with _step(step_msg, independent=True):
-        yield
+    with _step(step_msg, independent=True) as allure_step_context:
+        yield allure_step_context
 
 
 @contextmanager
