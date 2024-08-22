@@ -36,8 +36,9 @@ def test_watchdog_good_kill(engines, test_api):
         if not pid_wd:
             pytest.skip("No pid for wd_keep_alive skipping test.")
 
-    with allure.step("Getting the current time of the watchdog."):
+    with allure.step("Getting the current timeout of the watchdog."):
         watchdog_timeout = int(get_current_watchdog_time(engines))
+        log.info(f"Current watchdog timeout - {watchdog_timeout}")
 
     # Need to get the boot id to see if it actually shuts down
     with allure.step("Get boot id before shutting down watchdog."):
@@ -61,14 +62,10 @@ def test_watchdog_good_kill(engines, test_api):
         try:
             code = check_shutdown_state(engines, start_boot_id)
         except Exception:
-            # TBD: Take console output
-            # self._dump_console_out()
             assert False, "DUT never came back after the watchdog fired"
 
         # Code of 1 means the DUT did not shutdown, good
         if code != 1:
-            # TBD: Take console output
-            # self._dump_console_out()
             assert (False), "DUT either shutdown or rebooted when the correct \
 shutdown for the watchdog was used."
         else:
@@ -110,8 +107,9 @@ def test_watchdog_bad_kill(engines, test_api):
         if not pid_wd:
             pytest.skip("No pid for wd_keep_alive skipping test.")
 
-    with allure.step("Getting the current time of the watchdog."):
+    with allure.step("Getting the current timeout of the watchdog."):
         watchdog_timeout = int(get_current_watchdog_time(engines))
+        log.info(f"Current watchdog timeout - {watchdog_timeout}")
 
     # Need to get the boot id to see if it actually shuts down
     with allure.step("Get boot id before shutting down watchdog."):
@@ -133,14 +131,10 @@ def test_watchdog_bad_kill(engines, test_api):
         try:
             code = check_shutdown_state(engines, start_boot_id)
         except Exception:
-            # TBD: Take console output
-            # self._dump_console_out()
             assert False, "DUT never came back after the watchdog fired"
 
         # Code of 2 means the DUT restarted, good
         if code != 2:
-            # TBD: Take console output
-            # self._dump_console_out()
             assert False, "DUT did not reset when the watchdog was killed \
 incorrectly."
         else:
