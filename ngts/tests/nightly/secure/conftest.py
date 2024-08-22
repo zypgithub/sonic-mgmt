@@ -31,7 +31,7 @@ def check_if_secure_boot_need_to_be_skip(cli_objects):
     """
     This fixture will check whether secure boot is enabled
     """
-    boot_config_status = cli_objects.dut.general.get_bootctl_status()
+    boot_config_status = cli_objects.dut.general.get_secureboot_status()
     SonicSecureBootHelper.check_secure_boot_status(boot_config_status)
 
 

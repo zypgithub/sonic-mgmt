@@ -1797,12 +1797,12 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         logger.info(f'sai version:{sai_version}')
         return sai_version
 
-    def get_bootctl_status(self):
+    def get_secureboot_status(self):
         """
-        This method is to get the output of bootctl command
-        :return: bootctl output
+        This method is to get the output of command 'mokutil --sb-state'
+        :return: output
         """
-        return self.engine.run_cmd('bootctl', validate=True)
+        return self.engine.run_cmd('mokutil --sb-state', validate=True)
 
     def is_async_route_enabled(self, async_route_param):
         """

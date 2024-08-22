@@ -419,11 +419,11 @@ class SonicSecureBootHelper(SecureBootHelper):
 
     @staticmethod
     def is_secure_boot_supported(boot_config):
-        return 'Not booted with EFI' not in boot_config
+        return 'EFI variables are not supported' not in boot_config
 
     @staticmethod
     def is_secure_boot_enabled(boot_config):
-        return 'Secure Boot: enabled' in boot_config
+        return 'SecureBoot enabled' in boot_config
 
     @staticmethod
     def check_secure_boot_status(boot_config_status):
