@@ -1,0 +1,3 @@
+StartDevice,StartPort,EndDevice,EndPort,EndFeed
+pdu-10-245-2-24,32,mtvr-hippo-05,PSU1,
+pdu-10-245-2-24,36,mtvr-hippo-05,PSU2,

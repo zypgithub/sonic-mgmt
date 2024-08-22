@@ -29,7 +29,7 @@ from ngts.cli_wrappers.sonic.sonic_onie_clis import SonicOnieCli, OnieInstallati
 from ngts.constants.constants import CliType, FanoutConfigFile
 from ngts.constants.constants import SonicConst, InfraConst, ConfigDbJsonConst, PerformanceSetupConstants, \
     AppExtensionInstallationConstants, DefaultCredentialConstants, BluefieldConstants, \
-    PlatformTypesConstants, PerfConsts
+    PlatformTypesConstants, PerfConsts, SonicDeployConstants
 from ngts.helpers.breakout_helpers import get_port_current_breakout_mode, get_all_split_ports_parents, \
     get_split_mode_supported_breakout_modes, get_split_mode_supported_speeds, get_all_unsplit_ports
 from ngts.helpers.config_db_utils import save_config_db_json
@@ -88,11 +88,11 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         :return: True/False
         """
         image_supports = True
-        # device mtvr-moose-01 is production and supports only prod versions of ONIE and SONiC
-        if dut_name == 'mtvr-moose-01' and "prod" not in base_version_url:
+        # production devices support only prod versions of ONIE and SONiC
+        if dut_name in SonicDeployConstants.PRODUCTION_DUTS and "prod" not in base_version_url:
             image_supports = False
         # when executed deploy of production image, skip the flow on not production devices
-        if dut_name != 'mtvr-moose-01' and 'prod' in base_version_url:
+        if dut_name not in SonicDeployConstants.PRODUCTION_DUTS and 'prod' in base_version_url:
             image_supports = False
         logger.info(f"dut: {dut_name} {'supports' if image_supports else 'does not support'} version: {base_version_url}")
         return image_supports

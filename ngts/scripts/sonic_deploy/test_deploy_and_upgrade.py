@@ -295,8 +295,8 @@ def post_installation_steps(topology_obj, sonic_topo, recover_by_reboot, deploy_
 
 
 def get_related_image_to_switch(base_version, dut_name):
-    # device mtvr-moose-01 is production and supports only prod versions of ONIE and SONiC
-    if dut_name == 'mtvr-moose-01':
+    # production devices support only prod versions of ONIE and SONiC
+    if dut_name in SonicDeployConstants.PRODUCTION_DUTS:
         prod_base_version = base_version.replace('/dev/', '/prod/')
         if prod_base_version.startswith('http'):
             prod_base_version = '/auto/' + prod_base_version.split('/auto/')[1]
