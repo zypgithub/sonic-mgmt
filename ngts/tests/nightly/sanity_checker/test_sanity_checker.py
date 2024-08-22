@@ -280,6 +280,8 @@ def check_one_dut_to_fanout_cable_connection(cli_object, dut_engine):
 
     map_dut_oper_up_interface_and_fanout_interface = {}
     for one_dut_fanout_link in dut_fanout_link_data:
+        if one_dut_fanout_link["StartDevice"] != dut_name:
+            continue
         dut_port = one_dut_fanout_link["StartPort"]
         if dut_port.startswith("Ethernet") and dut_port in interface_status_dict and \
                 interface_status_dict.get(dut_port, "").get("Oper", "down") == "up":
