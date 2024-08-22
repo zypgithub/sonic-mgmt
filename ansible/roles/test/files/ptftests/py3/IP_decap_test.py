@@ -49,6 +49,7 @@ import six
 import ipaddress
 import itertools
 import fib
+import time
 
 import ptf
 import ptf.packet as scapy
@@ -445,7 +446,9 @@ class DecapPacketTest(BaseTest):
                 self, masked_exp_pkt, expected_ports, timeout=1)
         except AssertionError:
             logging.error("Traffic wasn't sent successfully, trying again")
-            send_packet(self, src_port, pkt, count=5)
+            for _ in range(5):
+                send_packet(self, src_port, pkt, count=1)
+                time.sleep(0.1)
 
             expected_ports = list(itertools.chain(*exp_port_lists))
             logging.info('Sent Ether(src={}, dst={})/IP(src={}, dst={}, (tos|tc)={}, ttl={})/'
