@@ -284,3 +284,41 @@ class Mlx4700Switch(EthSwitch):
             "product-name": "MSN4700",
             "asic-model": self.asic_type
         })
+
+
+# -------------------------- Mlx4600C Switch -----------------------------
+
+class Mlx4600CSwitch(EthSwitch):
+    def __init__(self):
+        super().__init__(asic_amount=1)
+
+    def _init_constants(self):
+        super()._init_constants()
+        self.core_count = 8
+        self.ib_ports_num = 64
+        self.asic_type = 'Spectrum-3'
+        self.constants.firmware.append(PlatformConsts.FW_SPECTRUM3)
+
+        self.show_platform_output.update({
+            "product-name": "MSN4600C",
+            "asic-model": self.asic_type
+        })
+
+        self.voltage_sensors = ["PMIC-1-PSU-12V-RAIL-IN1", "PMIC-2-ASIC-1.2V_MAIN-RAIL-OUT2",
+                                "PMIC-2-ASIC-1.8V_MAIN-RAIL-OUT1", "PMIC-2-PSU-12V-RAIL-IN1",
+                                "PMIC-2-PSU-12V-RAIL-IN2", "PMIC-3-ASIC-1.8V_T0_1-RAIL-OUT2",
+                                "PMIC-3-PSU-12V-RAIL-IN1", "PMIC-3-PSU-12V-RAIL-IN2",
+                                "PMIC-4-ASIC-1.8V_T2_3-RAIL-OUT2", "PMIC-4-PSU-12V-RAIL-IN1",
+                                "PMIC-4-PSU-12V-RAIL-IN2", "PMIC-5-ASIC-1.8V_T4_5-RAIL-OUT2",
+                                "PMIC-5-PSU-12V-RAIL-IN1", "PMIC-5-PSU-12V-RAIL-IN2",
+                                "PMIC-6-ASIC-1.8V_T6_7-RAIL-OUT2", "PMIC-6-PSU-12V-RAIL-IN1",
+                                "PMIC-6-PSU-12V-RAIL-IN2", "PMIC-7-ASIC-1.2V_T0_3-RAIL-OUT1",
+                                "PMIC-7-ASIC-1.2V_T4_7-RAIL-OUT2", "PMIC-7-PSU-12V-RAIL-IN1",
+                                "PMIC-7-PSU-12V-RAIL-IN2", "PMIC-8-COMEX-1.8V-RAIL-OUT1",
+                                "PMIC-8-PSU-12V-RAIL-IN1", "PMIC-8-PSU-12V-RAIL-IN2",
+                                "PMIC-9-COMEX-1.2V-RAIL-OUT", "PMIC-9-PSU-12V-RAIL-IN1",
+                                "PMIC-9-PSU-12V-RAIL-IN2", "PSU-1R-12V-RAIL-OUT",
+                                "PSU-1R-220V-RAIL-IN"]
+
+    def _init_fan_list(self):
+        self.fan_list = ["FAN1/1", "FAN2/1", "FAN3/1"]

@@ -746,6 +746,9 @@ mlx-4600a1-05 ansible_host=mlx-4700a1-05  sonic_version=v2  sonic_hwsku=Mellanox
 mlx-4700a1-07-ptf-any ansible_host=mlx-4700a1-07  sonic_version=v2  sonic_hwsku=Mellanox-SN4700            serial_console="telnet console-swr-a2 6037" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=B8:CE:F6:B7:DD:34 serial=MT2122X18547 model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00', '0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
 mlx-4700a1-07 ansible_host=mlx-4700a1-07  sonic_version=v2  sonic_hwsku=Mellanox-SN4700             serial_console="telnet console-swr-a2 6037" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=B8:CE:F6:B7:DD:34 serial=MT2122X18547 model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00', '0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
 
+# Cumulus testbed mlx-4600ca1-02 topologies
+mlx-4600ca1-02-ptf-any ansible_host=mlx-4600ca1-02 sonic_version=v2  sonic_hwsku=Mellanox-SN4600C            serial_console="telnet console-swr-b3 6021" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=08:c0:eb:45:1c:22 serial=MT2122X18547 model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+mlx-4600ca1-02 ansible_host=mlx-4600ca1-02  sonic_version=v2  sonic_hwsku=Mellanox-SN4600C             serial_console="telnet console-swr-b3 6021" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=08:c0:eb:45:1c:22 serial=MT2122X18547 model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
 
 #  MTR community testbeds
 
@@ -1484,6 +1487,9 @@ mtvr-croc-19
 
 mtvr-croc-50-ptf-any
 mtvr-croc-50
+
+mlx-4600ca1-02-ptf-any
+mlx-4600ca1-02
 
 [leaf_topo_1:vars]
 podset_number=200
