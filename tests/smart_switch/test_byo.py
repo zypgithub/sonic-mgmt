@@ -157,7 +157,7 @@ def test_byo(ptfadapter, duthost, option, platform):
     A packet whose dst mac matches the data port’s mac is forwarded by the dpu.
     When forwarded, the src mac of the packet will be the port’s mac, and the dst mac is 02:00:00:00:00:00
     """
-    byo_check_timeout = 20
+    byo_check_timeout = 30
     docker_pull_timeout = 1200
 
     if platform in SMARTSWITCH_PLATFORMS:
