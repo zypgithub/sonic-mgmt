@@ -288,6 +288,7 @@ def _copp_runner(dut, ptf, protocol, test_params, dut_type, has_trap=True):
                relax=None,
                debug_level=None,
                device_sockets=device_sockets,
+               timeout=300,
                is_python3=True)
     return True
 
