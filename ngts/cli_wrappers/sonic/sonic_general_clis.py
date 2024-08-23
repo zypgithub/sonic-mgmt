@@ -409,9 +409,9 @@ class SonicGeneralCliDefault(GeneralCliCommon):
 
         if deploy_type == 'bfb':
             change_to_one_port_hwsku = 'msn4' in platform_params.platform
-            validate = "sn4280" not in platform_params.platform
+            is_smartswitch = "sn4280" in platform_params.platform
             self.deploy_bfb(image_path, topology_obj,
-                            change_to_one_port_hwsku=change_to_one_port_hwsku, validate=validate)
+                            change_to_one_port_hwsku=change_to_one_port_hwsku, is_smartswitch=is_smartswitch)
 
         if deploy_type == 'pxe':
             self.deploy_pxe(image_path, topology_obj, platform_params['hwsku'])
@@ -518,19 +518,21 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             with allure.step('Configure dhclient on simx dut'):
                 self.engine.run_cmd('sudo dhclient', validate=True)
 
-    def deploy_bfb(self, image_path, topology_obj, change_to_one_port_hwsku=False, validate=True):
+    def deploy_bfb(self, image_path, topology_obj, change_to_one_port_hwsku=False, is_smartswitch=True):
         rshim = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific'][
             'Parent_device_NIC_name']
         hyper_name = 'hyper' if 'hyper' in topology_obj.players else 'hypervisor'
         hyper_engine = topology_obj.players[hyper_name]['engine']
+        use_sonic_installer = False if not is_smartswitch else True
 
-        with allure.step('Installing image by "bfb-install" on server'):
-            LinuxGeneralCli(hyper_engine).install_bfb_image(image_path=image_path, rshim_num=rshim)
+        with allure.step('Installing image by "bfb-install" on the switch/server'):
+            LinuxGeneralCli(hyper_engine).install_bfb_image(
+                image_path=image_path, rshim_num=rshim, sonic_installer=use_sonic_installer)
 
         # Broken engine after install. Disconnect it. In next run_cmd, it will connect back
         self.engine.disconnect()
 
-        if validate:
+        if not is_smartswitch:
             with allure.step('Waiting for switch bring-up after reload'):
                 logger.info('Waiting for switch bring-up after reload')
                 check_port_status_till_alive(True, self.engine.ip, self.engine.ssh_port)

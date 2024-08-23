@@ -155,6 +155,13 @@ def test_deploy_and_upgrade(topology_obj, is_simx, is_performance, base_version,
             wait_until_deploy_background_process(install_threads, timeout=1500)
 
             if "bobcat" in setup_name and base_version_dpu:
+                with allure.step('Power cycle the switch if any of the DPUs is shutdown'):
+                    dpu_ready = topology_obj.players['dut']['engine'].run_cmd(
+                        "dpuctl dpu-status | awk '{print $2}'")
+                    if "False" in dpu_ready:
+                        cli_obj.remote_reboot(topology_obj)
+                        cli_obj.verify_dockers_are_up()
+
                 with allure.step('Copying image to switch dut'):
                     dpu_image_url = MarsConstants.HTTP_SERVER_NBU_NFS + base_version_dpu
                     dest_file = "/tmp/" + base_version_dpu.split('/')[-1]

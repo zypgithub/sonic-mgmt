@@ -14,7 +14,7 @@ class LinuxGeneralCli(GeneralCliCommon):
     def __init__(self, engine):
         self.engine = engine
 
-    def install_bfb_image(self, image_path, rshim_num):
+    def install_bfb_image(self, image_path, rshim_num, sonic_installer=False):
         """
         Installation of BFB image on Bluefield from Server
         To use this method, the class must be created with hypervisor engine
@@ -25,14 +25,17 @@ class LinuxGeneralCli(GeneralCliCommon):
         if image_path.endswith('.bin'):
             image_path = image_path.replace('.bin', '.bfb')
         try:
-            cmd = f'sudo bfb-install -b {image_path} -r rshim{rshim_num}'
-            pattern = r"INFO\[MISC\]: DPU is ready"
+            if not sonic_installer:
+                cmd = f'sudo bfb-install -b {image_path} -r rshim{rshim_num}'
+                pattern = "Installation finished"
+            else:
+                cmd = f'sudo sonic-bfb-installer.sh -b {image_path} -r rshim{rshim_num}'
+                pattern = "Installation Successful"
             logger.info(f'Install sonic BFB image: {image_path},  on Server: {self.engine.ip},  RSHIM: {rshim_num}')
             logger.info(f'Executing command on hypervisor: {cmd}')
             output = self.engine.run_cmd_set([cmd], tries_after_run_cmd=75, patterns_list=[pattern])
-            assert re.search(r'INFO\[MISC\]: Linux up.*INFO\[MISC\]: DPU is ready', output, re.DOTALL) or \
-                re.search(r'INFO\[MISC\]: Installation finished', output), f'Installation failed, please '\
-                f'check bfb-install output:\n{output}'
+            assert re.search(pattern, output, re.DOTALL), \
+                f'Installation failed, please check bfb-install output:\n{output}'
             return output
         except Exception as e:
             logger.error(f"Command: {cmd} failed with error {e} when was expected to pass")
