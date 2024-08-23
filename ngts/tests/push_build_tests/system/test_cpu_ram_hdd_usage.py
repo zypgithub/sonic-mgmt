@@ -45,8 +45,9 @@ def is_parent_folder(parent_path, child_path):
 class TestCpuRamHddUsage:
 
     @pytest.fixture(autouse=True)
-    def setup(self, engines):
+    def setup(self, engines, cli_objects):
         self.dut_engine = engines.dut
+        self.cli_objects = cli_objects
 
     def get_sai_fdw_dump_size(self):
         """
@@ -90,6 +91,14 @@ class TestCpuRamHddUsage:
         partition_dir = partition_usage['partition']
         if is_parent_folder(partition_dir, SDK_DUMPS_PATH):
             partition_usage['max_usage'] += self.get_sai_fdw_dump_size()
+
+        # Update max_usage threshold if there are more than one available image
+        image_list = self.cli_objects.dut.general.get_sonic_image_list()
+        lines = [line.strip() for line in image_list.split('\n')]
+        available_index = lines.index('Available:')
+        available_images = [item for item in lines[available_index + 1:] if item]
+        if len(available_images) > 1:
+            partition_usage['max_usage'] = 11000
 
         logger.info(f"\nChecking hdd_usage of {partition_dir} with max_usage of {partition_usage['max_usage']}\n")
         do_hdd_usage_test(self.dut_engine, partition_usage)
