@@ -1801,7 +1801,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         This method is to get the output of command 'mokutil --sb-state'
         :return: output
         """
-        return self.engine.run_cmd('mokutil --sb-state', validate=True)
+        return self.engine.run_cmd('mokutil --sb-state')
 
     def is_async_route_enabled(self, async_route_param):
         """
