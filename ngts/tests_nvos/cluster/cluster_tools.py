@@ -11,6 +11,7 @@ from ngts.nvos_tools.ib.Ib import Ib
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 
 logger = logging.getLogger()
 
@@ -259,7 +260,7 @@ class ClusterTools:
         with allure.step("Fetch & Generate config files"):
             for file_type in NMX_CONTROLLER_CONFIG_FILE_TYPES:
                 output = sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].action_generate_sdn()
-                installed_file = get_generated_file_name(output.returned_value, 'config')
+                installed_file = ClusterTools().get_generated_file_name(output.returned_value, 'config')
                 output = OutputParsingTool.parse_show_output_to_dict(sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=OutputFormat.json),
                                                                      output_format=OutputFormat.json).get_returned_value()
                 current_installed_config_path = output[installed_file]['path']

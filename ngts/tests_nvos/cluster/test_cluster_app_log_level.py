@@ -41,7 +41,6 @@ def test_cluster_app_log_level(engines, devices, test_api):
     output_format = OutputFormat.json
 
     try:
-        ClusterTools.verify_log_messages_log_level(log_level, system, test_api)
         with allure.step("Create Cluster object"):
             cluster = Cluster()
             system = System()
