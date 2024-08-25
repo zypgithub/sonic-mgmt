@@ -8,6 +8,7 @@ from ngts.nvos_tools.infra.FilesTool import TempFileOnEngine
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
+from ngts.nvos_tools.Devices.IbDevice import JulietSwitch
 from ngts.tests_nvos.system.test_system_health import verify_health_status_and_led
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.platform.Platform import Platform

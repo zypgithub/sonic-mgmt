@@ -403,6 +403,12 @@ tests_nvos/fae/test_debug_token.py:
     conditions:
       - "'juliet' not in testbed"
 
+tests_nvos/platform/test_platform_environment.py::test_show_platform_environment_psu:
+  skip:
+    reason: "Testcase skipped on Juliet systems, Juliet Does not have PSU"
+    conditions:
+      - "'juliet' in testbed"
+
 tests_nvos/fae/test_nmx_package.py:
   skip:
     reason: "Testcase skipped on non Juliet systems, Juliet feature only"

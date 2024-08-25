@@ -47,8 +47,8 @@ def test_cluster_default_factory_reset(engines, devices, test_api):
         current_time = get_current_time(engines)
         system = System()
         sdn = Sdn()
-        all_state_files_paths = []
-        all_config_files_paths = []
+        all_state_files_paths = {}
+        all_config_files_paths = {}
         initial_config_contents = {}
         sdn_files_deleted = False
     try:
@@ -74,7 +74,10 @@ def test_cluster_default_factory_reset(engines, devices, test_api):
             verify_cluster_state_resetted(cluster)
             for app in INITIAL_EXPECTED_APPS:
                 ClusterTools.verify_app_is_down(engines, app)
-            verify_all_files_are_deleted(engines, all_config_files_paths + all_state_files_paths)
+            for file_type in NMX_CONTROLLER_CONFIG_FILE_TYPES:
+                verify_all_files_are_deleted(engines, all_config_files_paths[file_type])
+            for file_type in NMX_CONTROLLER_STATE_FILE_TYPES:
+                verify_all_files_are_deleted(engines, all_state_files_paths[file_type])
             ClusterTools.start_cluster(cluster, OutputFormat.json)
             ClusterTools.verify_sdn_config_files_deleted(sdn)
             ClusterTools.verify_sdn_state_files_deleted(sdn)
@@ -84,8 +87,8 @@ def test_cluster_default_factory_reset(engines, devices, test_api):
             time.sleep(30)
             for app in INITIAL_EXPECTED_APPS:
                 ClusterTools.verify_log_level(ClusterAppsLogLevels.NOTICE, app, output_format, cluster)
-            verify_apps_in_expected_state(cluster, 'ok')
             verify_config_files_content_not_changed(sdn, initial_config_contents, engines)
+            verify_apps_in_expected_state(cluster, 'ok')
     finally:
         engines.sonic_mgmt.run_cmd(f"sudo rm -rf {INITIAL_CONFIGURATIONS_PATH + '/*'}")
         cluster.unset(apply=True)
@@ -111,8 +114,8 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name)
         current_time = get_current_time(engines)
         system = System()
         sdn = Sdn()
-        all_state_files_paths = []
-        all_config_files_paths = []
+        all_state_files_paths = {}
+        all_config_files_paths = {}
         initial_config_contents = {}
         sdn_files_deleted = False
 
@@ -132,7 +135,10 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name)
             verify_cluster_state_resetted(cluster)
             for app in INITIAL_EXPECTED_APPS:
                 ClusterTools.verify_app_is_down(engines, app)
-            verify_all_files_are_deleted(engines, all_config_files_paths + all_state_files_paths)
+            for file_type in NMX_CONTROLLER_CONFIG_FILE_TYPES:
+                verify_all_files_are_deleted(engines, all_config_files_paths[file_type])
+            for file_type in NMX_CONTROLLER_STATE_FILE_TYPES:
+                verify_all_files_are_deleted(engines, all_state_files_paths[file_type])
             ClusterTools.start_cluster(cluster, OutputFormat.json)
             ClusterTools.verify_sdn_config_files_deleted(sdn)
             ClusterTools.verify_sdn_state_files_deleted(sdn)
@@ -142,8 +148,8 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name)
             time.sleep(30)
             for app in INITIAL_EXPECTED_APPS:
                 ClusterTools.verify_log_level(ClusterAppsLogLevels.NOTICE, app, output_format, cluster)
-            verify_apps_in_expected_state(cluster, 'ok')
             verify_config_files_content_not_changed(sdn, initial_config_contents, engines)
+            verify_apps_in_expected_state(cluster, 'ok')
     finally:
         engines.sonic_mgmt.run_cmd(f"sudo rm -rf {INITIAL_CONFIGURATIONS_PATH + '/*'}")
         cluster.unset(apply=True)
@@ -169,8 +175,8 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name):
         current_time = get_current_time(engines)
         system = System()
         sdn = Sdn()
-        all_state_files_paths = []
-        all_config_files_paths = []
+        all_state_files_paths = {}
+        all_config_files_paths = {}
         initial_config_contents = {}
         sdn_files_deleted = False
     try:
@@ -189,7 +195,10 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name):
             verify_cluster_state_resetted(cluster)
             for app in INITIAL_EXPECTED_APPS:
                 ClusterTools.verify_app_is_down(engines, app)
-            verify_all_files_are_deleted(engines, all_config_files_paths + all_state_files_paths)
+            for file_type in NMX_CONTROLLER_CONFIG_FILE_TYPES:
+                verify_all_files_are_deleted(engines, all_config_files_paths[file_type])
+            for file_type in NMX_CONTROLLER_STATE_FILE_TYPES:
+                verify_all_files_are_deleted(engines, all_state_files_paths[file_type])
             ClusterTools.start_cluster(cluster, OutputFormat.json)
             ClusterTools.verify_sdn_config_files_deleted(sdn)
             ClusterTools.verify_sdn_state_files_deleted(sdn)
@@ -199,8 +208,8 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name):
             time.sleep(30)
             for app in INITIAL_EXPECTED_APPS:
                 ClusterTools.verify_log_level(ClusterAppsLogLevels.NOTICE, app, output_format, cluster)
-            verify_apps_in_expected_state(cluster, 'ok')
             verify_config_files_content_not_changed(sdn, initial_config_contents, engines)
+            verify_apps_in_expected_state(cluster, 'ok')
     finally:
         engines.sonic_mgmt.run_cmd(f"sudo rm -rf {INITIAL_CONFIGURATIONS_PATH + '/*'}")
         cluster.unset(apply=True)
@@ -227,8 +236,8 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
         current_time = get_current_time(engines)
         system = System()
         sdn = Sdn()
-        all_state_files_paths = []
-        all_config_files_paths = []
+        all_state_files_paths = {}
+        all_config_files_paths = {}
         log_level = ''
         initial_config_contents = {}
         sdn_files_deleted = False
@@ -251,7 +260,10 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
             assert cluster_state == NvosConst.ENABLED, f"Expected cluster state {NvosConst.ENABLED}, Actual {cluster_state}"
             for app in INITIAL_EXPECTED_APPS:
                 ClusterTools.verify_app_is_up(engines, app)  # Verify apps are running
-            verify_all_files_are_deleted(engines, all_config_files_paths + all_state_files_paths)
+            for file_type in NMX_CONTROLLER_CONFIG_FILE_TYPES:
+                verify_all_files_are_deleted(engines, all_config_files_paths[file_type])
+            for file_type in NMX_CONTROLLER_STATE_FILE_TYPES:
+                verify_all_files_are_deleted(engines, all_state_files_paths[file_type])
             ClusterTools.verify_sdn_config_files_deleted(sdn)
             ClusterTools.verify_sdn_state_files_deleted(sdn)
             sdn_files_deleted = True
@@ -259,8 +271,8 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
             time.sleep(30)
             for app in INITIAL_EXPECTED_APPS:
                 ClusterTools.verify_log_level(log_level, app, output_format, cluster)
-            verify_apps_in_expected_state(cluster, 'ok')  # Apps should be running
             verify_config_files_content_not_changed(sdn, initial_config_contents, engines)
+            verify_apps_in_expected_state(cluster, 'ok')  # Apps should be running
 
     finally:
         engines.sonic_mgmt.run_cmd(f"sudo rm -rf {INITIAL_CONFIGURATIONS_PATH + '/*'}")
@@ -362,7 +374,7 @@ def reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, s
             output = sdn.state.app.app_name[NMX_CONTROLLER].type.file_type[file_type].action_generate_sdn()
             output = OutputParsingTool.parse_show_output_to_dict(sdn.state.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=output_format),
                                                                  output_format=output_format).get_returned_value()
-            all_state_files_paths.extend([item['path'] for item in output.values()])
+            all_state_files_paths[file_type].extend([item['path'] for item in output.values()])
 
     with allure.step("Install config file"):
         for file_type in NMX_CONTROLLER_CONFIG_FILE_TYPES:
@@ -372,7 +384,7 @@ def reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, s
             installed_file = ClusterTools.get_generated_file_name(output.returned_value, 'config')
             output = OutputParsingTool.parse_show_output_to_dict(sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=output_format),
                                                                  output_format=output_format).get_returned_value()
-            all_config_files_paths.extend([item['path'] for item in output.values()])
+            all_config_files_paths[file_type].extend([item['path'] for item in output.values()])
             current_installed_config_path = output[installed_file]['path']
             current_config_content = engines.dut.run_cmd("sudo cat {}".format(current_installed_config_path))
             expected_config_content = engines.sonic_mgmt.run_cmd("sudo cat {}".format(path_to_config[file_type]))

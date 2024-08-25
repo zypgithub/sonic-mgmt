@@ -86,11 +86,12 @@ def test_cluster_app_start_stop(engines, devices, test_api):
             logger.info("Make sure there are no extra Unexpected apps")
             assert len(INITIAL_EXPECTED_APPS) == len(output), f"Expected apps {INITIAL_EXPECTED_APPS}, actual apps: {output}"
 
-        TestToolkit.tested_api = test_api
+        # TestToolkit.tested_api = test_api
 
         ClusterTools.stop_start_app(cluster, engines, devices)
 
     finally:
+        TestToolkit.tested_api = test_api
         with allure.step("Reset cluster state"):
             cluster.unset(apply=True)
             ClusterTools.wait_for_apps_to_be_in_wanted_state()

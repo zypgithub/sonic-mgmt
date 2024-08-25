@@ -288,7 +288,8 @@ class ClusterTools:
             assert output['log-level'] == log_level, f"Expected log level: {log_level}, Actual log-level {output['log-level']}"
 
     @staticmethod
-    def verify_log_messages_log_level(log_level, system):
+    def verify_log_messages_log_level(log_level, system, test_api):
+        TestToolkit.tested_api = 'NVUE'
         # Get the index of the current log level
         current_level_index = ClusterAppsLogLevelsList.index(log_level)
 
@@ -301,6 +302,8 @@ class ClusterTools:
         show_output = system.log.show_log(param=f"| grep -E \"{'|'.join(NMX_LOG_MESSAGES_TAGS)}\"", exit_cmd='q').split('\n')[1:]
         for line in show_output:
             assert any(level in line for level in expected_log_levels_upper), f"Line in logs is {line}, which does not contain any of the expected log levels {expected_log_levels_upper}"
+
+        TestToolkit.tested_api = test_api
 
     @staticmethod
     def verify_app_version(cluster, app, expected_version):

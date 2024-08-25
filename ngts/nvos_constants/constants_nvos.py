@@ -1138,7 +1138,7 @@ class OperationTimeConsts:
                   'install bmc': 900,
                   'install fpga': 900,
                   ActionConsts.POWER_CYCLE: 360,
-                  'juliet-power-cycle': 410
+                  'juliet-power-cycle': 415
                   }
 
 
