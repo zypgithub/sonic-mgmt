@@ -60,6 +60,7 @@ class IbSwitch(BaseSwitch):
         outputs = {
             'system version': dut_engine.run_cmd('nv show system version'),
             'platform firmware': dut_engine.run_cmd('nv show platform firmware'),
+            'fae platform firmware': dut_engine.run_cmd('nv show fae platform firmware'),
         }
         res = [f'{title.upper()}:\n{output}\n' for title, output in outputs.items()]
         return '\n'.join(res)
@@ -932,6 +933,7 @@ class JulietSwitch(NvLinkSwitch):
         outputs = {
             'system version': dut_engine.run_cmd('nv show system version'),
             'platform firmware': dut_engine.run_cmd('nv show platform firmware'),
+            'fae platform firmware': dut_engine.run_cmd('nv show fae platform firmware'),
         }
         for pw in psws:
             out = dut_engine.run_cmd(get_bmc_version_cmd.format(pw))
@@ -977,10 +979,10 @@ class JulietSwitch(NvLinkSwitch):
         self.constants.dump_files.append('BMCeeprom')
         self.constants.erots.extend(['ERoT_BMC_0', 'ERoT_CPU_0', 'ERoT_FPGA_0', 'ERoT_NVSwitch_0', 'ERoT_NVSwitch_1'])
         self.erot_fw_image_info = self.ErotFirmwareImagesTestConsts(
-            current_image_path='/auto/sw_system_release/erot/juliet/01.03.0202.000/sign/n04/dev/cec1736-ecfw-01.03.0202.0000-n04-dev-initial.fwpkg',
-            previous_image_path='/auto/sw_system_release/erot/juliet/01.03.0183.000/sign/n04/dev/cec1736-ecfw-01.03.0183.0000-n04-dev-initial.fwpkg',
-            version_names={'cec1736-ecfw-01.03.0183.0000-n04-dev-initial.fwpkg': '01.03.0183.0000_n04',
-                           'cec1736-ecfw-01.03.0202.0000-n04-dev-initial.fwpkg': '01.03.0202.0000_n04'})
+            current_image_path='/auto/sw_system_release/erot/juliet/01.03.0216.0000/dev/cec1736-ecfw-01.03.0216.0000-n04-dev-initial.fwpkg',
+            previous_image_path='/auto/sw_system_release/erot/juliet/01.03.0202.000/sign/n04/dev/cec1736-ecfw-01.03.0202.0000-n04-dev-initial.fwpkg',
+            version_names={'cec1736-ecfw-01.03.0202.0000-n04-dev-initial.fwpkg': '01.03.0202.0000_n04',
+                           'cec1736-ecfw-01.03.0216.0000-n04-dev-initial.fwpkg': '01.03.0216.0000_n04'})
 
         self.nmx_cluster_apps_versions = self.NmxClusterAppsConsts(
             default_path={

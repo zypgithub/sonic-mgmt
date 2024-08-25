@@ -11,7 +11,7 @@ from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.scripts.bios_config import configure_bios
 from ngts.tools.test_utils.switch_recovery import recover_dut_with_remote_reboot
-
+from ngts.tests_nvos.constants import MINUTE
 
 logger = logging.getLogger()
 
@@ -22,6 +22,7 @@ def restore_bios(topology_obj):
     configure_bios(topology_obj)
 
 
+@pytest.mark.timeout(20 * MINUTE, func_only=True)
 @pytest.mark.bios
 @pytest.mark.parametrize('test_api', random.sample(ApiType.ALL_TYPES, 1))
 def test_bios_upgrade(engines, devices, topology_obj, test_api):
