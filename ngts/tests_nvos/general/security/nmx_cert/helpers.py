@@ -14,10 +14,9 @@ from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tests_nvos.general.security.certificate.helpers import get_path_of_imported_cert_private_file, \
     get_path_of_imported_cert_public_file, get_path_of_imported_cacert_public_file
-from ngts.tests_nvos.general.security.helpers import add_issue_if, assert_no_issues
-from ngts.tests_nvos.general.security.nmx_cert.constants import FieldsInShowOf, CERTIFICATE, CA_CERTIFICATE, \
-    ENCRYPTION, DEFAULT_NMX_C_MGMT_PORT, USR_CFG_JSON, USR_CFG_JSON_PATH, NMX_CERTS_DIR, FILE_NOT_EXIST_ERR, \
-    NMX_CACERTS_DIR, FILE_SHOULD_NOT_EXIST, STATE
+from ngts.tests_nvos.general.security.nmx_cert.constants import FieldsInShowOf, CERTIFICATE, CA_CERTIFICATE, ENCRYPTION, \
+    DEFAULT_NMX_C_MGMT_PORT, USR_CFG_JSON, USR_CFG_JSON_PATH, NMX_CERTS_DIR, FILE_NOT_EXIST_ERR, NMX_CACERTS_DIR, \
+    FILE_SHOULD_NOT_EXIST, STATE
 from ngts.tests_nvos.general.security.nmx_cert.grpc.client.client import run_grpc_client_app
 from ngts.tests_nvos.general.security.nmx_cert.grpc.config import GrpcConfig, GrpcServerConfig, GrpcClientConfig
 from ngts.tools.test_utils.nvos_general_utils import generate_scp_uri_using_player
@@ -29,8 +28,7 @@ def import_certificates(scp_player: LinuxSshEngine, dut_engine: LinuxSshEngine, 
     cert_obj = security_obj.ca_certificate if ca else security_obj.certificate
 
     with allure.step(f'import test {"ca" if ca else ""}certs'):
-        current_certs = OutputParsingTool.parse_json_str_to_dictionary(
-            cert_obj.show()).get_returned_value()
+        current_certs = OutputParsingTool.parse_json_str_to_dictionary(cert_obj.show()).get_returned_value()
         for cert in certs:
             name = cert.cacert_name if ca else cert.name
             if name not in current_certs:
@@ -52,8 +50,7 @@ def delete_certificates(ca: bool = False):
     security_obj = System().security
     cert_obj = security_obj.ca_certificate if ca else security_obj.certificate
     with allure.step(f'delete {"ca" if ca else ""}certs from the system'):
-        current_certs = OutputParsingTool.parse_json_str_to_dictionary(
-            cert_obj.show()).get_returned_value()
+        current_certs = OutputParsingTool.parse_json_str_to_dictionary(cert_obj.show()).get_returned_value()
         for cert_name in current_certs:
             with allure.step(f'delete {"ca" if ca else ""}cert {cert_name}'):
                 cert_obj.cert_id[cert_name].action_delete().verify_result()
@@ -64,20 +61,19 @@ def verify_component_show(component: BaseComponent, required_fields,
     with allure.step(f'verify show: {component._resource_path}'):
         with allure.step('run show command'):
             out = OutputParsingTool.parse_json_str_to_dictionary(component.show()).get_returned_value()
-        with allure.step('verify required fields exist'):
+        with allure.independent_step('verify required fields exist'):
             missing_fields = [field for field in required_fields if field not in out]
             assert not missing_fields, f'some required fields are missing in show cluster manager output:\n{missing_fields}'
-        problems = []
         for field, expected in value_expectations.items():
-            with allure.step(f'verify expected {field} - {expected}'):
-                add_issue_if(expected is not None and out[field] != expected, problems, f'expected {field}: {expected} ; actual: {out[field]}')
-        assert_no_issues(f'component - {component._resource_path}', problems, 'some mismatches in show output')
+            with allure.independent_step(f'verify expected {field} - {expected}'):
+                assert expected is None or out[
+                    field] == expected, f'mismatch with field "{field}": expected {field}: {expected}, actual: {out[field]}'
 
 
 def verify_manager_show(expect_state=None, expect_cert=None, expect_cacert=None, expect_encryption=None):
-    verify_component_show(Cluster().manager, FieldsInShowOf.MANAGER, {
-        STATE: expect_state, CERTIFICATE: expect_cert, CA_CERTIFICATE: expect_cacert, ENCRYPTION: expect_encryption
-    })
+    verify_component_show(Cluster().manager, FieldsInShowOf.MANAGER,
+                          {STATE: expect_state, CERTIFICATE: expect_cert, CA_CERTIFICATE: expect_cacert,
+                              ENCRYPTION: expect_encryption})
 
 
 def verify_cert_show(expect_cert_id=None):
@@ -96,41 +92,21 @@ def verify_encryption_show(expect_mode=None):
 def send_grpc_request_to_nmx_c(tls_mode: str, server_cert: CertInfo, client_cert: CertInfo, server_cacert: CertInfo,
                                client_cacert: CertInfo, num_requests: int = 1,
                                delay_between_requests: int = 1) -> ResultObj:
-    result = ResultObj(
-        result=True,
-        info='client successfully communicated with nmx-c',
-        returned_value=True
-    )
+    result = ResultObj(result=True, info='client successfully communicated with nmx-c', returned_value=True)
 
     with allure.step('create config for grpc client'):
         client_config = GrpcConfig(
-            server=GrpcServerConfig(
-                address=server_cert.dn or server_cert.ip,
-                port=DEFAULT_NMX_C_MGMT_PORT,
-                tls_mode=tls_mode,
-                cert=server_cert,
-                cacert=server_cacert
-            ),
-            client=GrpcClientConfig(
-                address=client_cert.dn or client_cert.ip,
-                tls_mode=tls_mode,
-                cert=client_cert,
-                cacert=client_cacert,
-                num_requests=num_requests,
-                delay_between_requests=delay_between_requests
-            )
-        )
+            server=GrpcServerConfig(address=server_cert.dn or server_cert.ip, port=DEFAULT_NMX_C_MGMT_PORT,
+                                    tls_mode=tls_mode, cert=server_cert, cacert=server_cacert),
+            client=GrpcClientConfig(address=client_cert.dn or client_cert.ip, tls_mode=tls_mode, cert=client_cert,
+                                    cacert=client_cacert, num_requests=num_requests, delay_between_requests=delay_between_requests))
 
     with allure.step('run grpc client'):
         try:
             responses = run_grpc_client_app(client_config, logging)
             result.returned_value = responses
         except Exception as e:
-            result = ResultObj(
-                result=False,
-                info=f'client failed:\n{e}',
-                returned_value=None
-            )
+            result = ResultObj(result=False, info=f'client failed:\n{e}', returned_value=None)
 
     return result
 
@@ -176,72 +152,59 @@ def verify_static_checks(expect_fields: Dict[str, Union[str, None]] = None, cert
     * if cert/cacert = -1 (FILE_SHOULD_NOT_EXIST) - file should not exist
     """
     dut: LinuxSshEngine = TestToolkit.engines.dut
-    issues: List[str] = []
+    with allure.step('verify static checks'):
+        if expect_fields:
+            with allure.independent_step(f'verify fields in {USR_CFG_JSON}'):
+                with allure.step('get content of the file'):
+                    content = OutputParsingTool.parse_json_str_to_dictionary(
+                        get_user_config_json_file_content(dut)).get_returned_value()
+                for field, expect in expect_fields.items():
+                    with allure.independent_step(
+                            f'verify field "{field}" ' + 'does not exist' if expect is None else f'verify field "{field}" = "{expect}"'):
+                        if expect is None:
+                            assert field not in content, f'field "{field}" exists in {USR_CFG_JSON}, while it should not.\ncontent:\n{content}'
+                        else:
+                            assert content[
+                                field] == expect, f'bad value of field "{field}" in {USR_CFG_JSON}\nexpected: "{expect}"\nactual: "{content[field]}"\ncontent:\n{content}'
 
-    if expect_fields:
-        with allure.step(f'verify fields in {USR_CFG_JSON}'):
-            with allure.step('get content of the file'):
-                content = OutputParsingTool.parse_json_str_to_dictionary(
-                    get_user_config_json_file_content(dut)).get_returned_value()
-            for field, expect in expect_fields.items():
-                with allure.step(f'verify field "{field}" ' + 'does not exist' if expect is None else f'= "{expect}"'):
-                    if expect is None:
-                        add_issue_if(field in content, issues,
-                                     f'field "{field}" exists in {USR_CFG_JSON}, while it should not.\ncontent:\n{content}')
+        if cert_id:
+            cert_should_not_exist = cert_id == FILE_SHOULD_NOT_EXIST
+            with allure.independent_step(
+                    f'verify certificate files {"do not " if cert_should_not_exist else ""}exist for cert-id: {cert_id}'):
+                with allure.independent_step('verify private'):
+                    nmx_private_path = get_path_of_nmx_cert_private_file(cert_id, dut)
+                    if cert_should_not_exist:
+                        assert not nmx_private_path, f'nmx private key file exists while expected not to.\nat: {nmx_private_path}'
                     else:
-                        add_issue_if(content[field] != expect, issues,
-                                     f'bad value of field "{field}" in {USR_CFG_JSON}\nexpected: "{expect}"\nactual: "{content[field]}"\ncontent:\n{content}')
+                        assert nmx_private_path, f'nmx private key file does not exists while expected to exist.\ncert-id: {cert_id}'
+                        nmx_private_content = get_cert_key_content(nmx_private_path, dut)
+                        imported_private_content = get_cert_key_content(
+                            get_path_of_imported_cert_private_file(cert_id, dut), dut)
+                        assert nmx_private_content == imported_private_content, f'nmx cert private key file do not match imported. cert-id: {cert_id}'
+                with allure.independent_step('verify public'):
+                    nmx_public_path = get_path_of_nmx_cert_public_file(cert_id, dut)
+                    if cert_should_not_exist:
+                        assert not nmx_public_path, f'nmx public crt file exists while expected not to.\nat: {nmx_public_path}'
+                    else:
+                        assert nmx_public_path, f'nmx public crt file does not exists while expected to exist.\ncert-id: {cert_id}'
+                        nmx_public_content = get_cert_key_content(nmx_public_path, dut)
+                        imported_public_content = get_cert_key_content(
+                            get_path_of_imported_cert_public_file(cert_id, dut), dut)
+                        assert nmx_public_content == imported_public_content, f'nmx cert public crt file do not match imported. cert-id: {cert_id}'
 
-    if cert_id:
-        cert_should_not_exist = cert_id == FILE_SHOULD_NOT_EXIST
-        with allure.step(
-                f'verify certificate files {"do not " if cert_should_not_exist else ""}exist for cert-id: {cert_id}'):
-            with allure.step('verify private'):
-                nmx_private_path = get_path_of_nmx_cert_private_file(cert_id, dut)
-                if cert_should_not_exist:
-                    add_issue_if(nmx_private_path, issues,
-                                 f'nmx private key file exists while expected not to.\nat: {nmx_private_path}')
+        if cacert_id:
+            cacert_should_not_exist = cacert_id == FILE_SHOULD_NOT_EXIST
+            with allure.independent_step(
+                    f'verify ca-cert files {"do not " if cacert_should_not_exist else ""}exist for cacert-id: {cacert_id}'):
+                nmx_cacert_path = get_path_of_nmx_cacert_public_file(cacert_id, dut)
+                if cacert_should_not_exist:
+                    assert not nmx_cacert_path, f'nmx cacert file exists while expected not to.\nat: {nmx_cacert_path}'
                 else:
-                    add_issue_if(not nmx_private_path, issues,
-                                 f'nmx private key file does not exists while expected to exist.\ncert-id: {cert_id}')
-                    nmx_private_content = get_cert_key_content(nmx_private_path, dut)
-                    imported_private_content = get_cert_key_content(
-                        get_path_of_imported_cert_private_file(cert_id, dut), dut)
-                    add_issue_if(nmx_private_content != imported_private_content, issues,
-                                 f'nmx cert private key file do not match imported. cert-id: {cert_id}')
-            with allure.step('verify public'):
-                nmx_public_path = get_path_of_nmx_cert_public_file(cert_id, dut)
-                if cert_should_not_exist:
-                    add_issue_if(nmx_public_path, issues,
-                                 f'nmx public crt file exists while expected not to.\nat: {nmx_public_path}')
-                else:
-                    add_issue_if(not nmx_public_path, issues,
-                                 f'nmx public crt file does not exists while expected to exist.\ncert-id: {cert_id}')
-                    nmx_public_content = get_cert_key_content(nmx_public_path, dut)
-                    imported_public_content = get_cert_key_content(get_path_of_imported_cert_public_file(cert_id, dut),
-                                                                   dut)
-                    add_issue_if(nmx_public_content != imported_public_content, issues,
-                                 f'nmx cert public crt file do not match imported. cert-id: {cert_id}')
-
-    if cacert_id:
-        cacert_should_not_exist = cacert_id == FILE_SHOULD_NOT_EXIST
-        with allure.step(
-                f'verify ca-cert files {"do not " if cacert_should_not_exist else ""}exist for cacert-id: {cacert_id}'):
-            nmx_cacert_path = get_path_of_nmx_cacert_public_file(cacert_id, dut)
-            if cacert_should_not_exist:
-                add_issue_if(nmx_cacert_path, issues,
-                             f'nmx cacert file exists while expected not to.\nat: {nmx_cacert_path}')
-            else:
-                add_issue_if(not nmx_cacert_path, issues,
-                             f'nmx cacert file does not exists while expected to exist.\ncert-id: {cacert_id}')
-                nmx_cacert_content = get_cert_key_content(nmx_cacert_path, dut)
-                imported_cacert_content = get_cert_key_content(get_path_of_imported_cacert_public_file(cacert_id, dut),
-                                                               dut)
-                add_issue_if(nmx_cacert_content != imported_cacert_content, issues,
-                             f'nmx cert cacert file do not match imported. cert-id: {cacert_id}')
-
-    with allure.step('assert no issues in all static checks'):
-        assert_no_issues('nmx cert static checks', issues)
+                    assert nmx_cacert_path, f'nmx cacert file does not exists while expected to exist.\ncert-id: {cacert_id}'
+                    nmx_cacert_content = get_cert_key_content(nmx_cacert_path, dut)
+                    imported_cacert_content = get_cert_key_content(
+                        get_path_of_imported_cacert_public_file(cacert_id, dut), dut)
+                    assert nmx_cacert_content == imported_cacert_content, f'nmx cert cacert file do not match imported. cert-id: {cacert_id}'
 
 
 def get_cert_key_content(cert_file, dut_engine: LinuxSshEngine):
@@ -272,10 +235,3 @@ def get_path_of_nmx_cacert_public_file(cacert_id, dut_engine: LinuxSshEngine):
     out = dut_engine.run_cmd(f'sudo ls {path}')
     # assert FILE_NOT_EXIST_ERR not in out, f'there is no public pem file for the given cacert-id "{cacert_id}"'
     return path if FILE_NOT_EXIST_ERR not in out else None
-
-
-def verify_commands_results(results: Dict[str, ResultObj], expect_success: bool):
-    issues: List[str] = []
-    for check_name, result in results.items():
-        add_issue_if(result.result != expect_success, issues, f'{check_name} - {"failed but expected to succeed" if expect_success else "succeeded but expected to fail"}')
-    assert_no_issues('', issues, 'some of the commands succeeded while expected to fail')
