@@ -21,18 +21,24 @@ class Configurations:
                  "10.7.148.81": ['swB7p1', 'swB7p2', 'swB8p1', 'swB8p2'],
                  "10.7.148.88": ['swA1p1', 'swA2p1'],
                  "10.7.148.89": ['swA1p1', 'swA2p1', 'swA8p1', 'swA8p2'],
+                 "10.7.148.112": ['sw16p1', 'sw16p2', 'sw38p1', 'sw38p2'],
+                 "10.7.148.113": ['sw16p1', 'sw16p2', 'sw38p1', 'sw38p2'],
                  }
 
     xdr_ports = {"10.7.145.61": ['swA8p1', 'swB2p1', 'swB8p1'],
                  "10.7.145.62": ['swA8p1', 'swB2p1', 'swB8p1'],
-                 "10.7.148.112": ['sw8p1', 'sw16p1', 'sw67p1'],
-                 "10.7.148.113": ['sw8p1', 'sw16p1', 'sw67p1'],
+                 "10.7.148.112": ['sw5p1', 'sw5p2', 'sw6p1', 'sw6p2', 'sw53p1', 'sw53p2', 'sw67p1', 'sw67p2', 'sw69p1', 'sw69p2'],
+                 "10.7.148.113": ['sw5p1', 'sw5p2', 'sw6p1', 'sw6p2', 'sw53p1', 'sw53p2', 'sw67p1', 'sw67p2', 'sw69p1', 'sw69p2'],
                  }
 
     ports_by_rate = {"ndr": ndr_ports, "xdr": xdr_ports}
 
     post_install_commands = {"10.7.144.153": ['nv set acl ACL_MGMT_INBOUND_CP_DEFAULT rule 120 match ip recent-list hit-count 3000',
-                                              'nv config apply']}
+                                              'nv config apply'],
+                             "10.7.148.112": ['nv set fae system fatal reboot-state disabled',
+                                              'nv config apply',
+                                              'nv config save'],
+                             }
 
     devices_to_configure_ndr_ports = ndr_ports.keys()
 
