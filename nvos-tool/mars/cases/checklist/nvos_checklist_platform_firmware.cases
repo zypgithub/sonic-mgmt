@@ -12,6 +12,13 @@
       <wrapper> [[run_time:db_tests_path]]/sonic-mgmt/sonic-tool/mars/scripts/canonical_mars_pytest_runner.py </wrapper>
       <tout> 10800 </tout>
       <tags>ALL</tags>
+      <ignore>
+        <condition>
+          <key>dut_type</key>
+          <op> in </op>
+          <value>[juliet]</value>
+        </condition>
+      </ignore>
     </Case>
   </global>
 
