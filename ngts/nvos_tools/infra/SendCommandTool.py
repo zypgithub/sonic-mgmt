@@ -29,8 +29,8 @@ class SendCommandTool:
 
         if cmd_output_str:
             lines = cmd_output_str.split('\n')
-            k = min(15, len(lines) // 2)
-            output_lines = ''.join(lines[:k] + lines[-k:])
+            k = min(15, (len(lines) // 2) + 1)
+            output_lines = '\n'.join(lines[:k] + lines[-k:])
 
             # Check for any invalid command messages
             if any(err_msg in output_lines for err_msg in invalid_cmd_str):
