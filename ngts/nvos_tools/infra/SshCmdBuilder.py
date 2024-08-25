@@ -1,7 +1,7 @@
 class SshCmdBuilder:
     SSH_CMD_TEMPLATE = 'ssh {opts} -p {port} -l {usr} {host}'
 
-    def __init__(self, user: str, host: str, port):
+    def __init__(self, user: str, host: str, port=22):
         self.user = user
         self.host = host
         self.port = port
@@ -85,3 +85,16 @@ class SshCmdBuilder:
 
     def set_long_lasting_session(self, num_intervals=5, interval_seconds=60) -> 'SshCmdBuilder':
         return self.ServerAliveInterval(interval_seconds).ServerAliveCountMax(num_intervals)
+
+
+class SshPassCmdBuilder(SshCmdBuilder):
+    SSH_CMD_TEMPLATE = "sshpass -p '{pw}' " + SshCmdBuilder.SSH_CMD_TEMPLATE
+
+    def __init__(self, user: str, password: str, host: str, port=22):
+        super().__init__(user, host, port)
+        self.password = password
+
+    def build(self) -> str:
+        self.options.strip()
+        return SshPassCmdBuilder.SSH_CMD_TEMPLATE.format(pw=self.password, opts=self.options, port=self.port,
+                                                         usr=self.user, host=self.host).strip()

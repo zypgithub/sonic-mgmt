@@ -39,6 +39,8 @@ def test_gnmi_authentication(test_flow, engines, local_adminuser, aaa_users):
     system = System()
     auth = system.aaa.authentication
     selected_port = Tools.RandomizationTool.select_random_port(requested_ports_state=None).returned_value
+    with allure.step(f'change description of interface: "{selected_port.name}"'):
+        new_description = change_interface_description(selected_port)
     for auth_method in ['default', AuthConsts.LOCAL] + RemoteAaaType.ALL_TYPES:
         with allure.step(f'test with auth method: {auth_method}'):
             user = UserInfo(engines.dut.username, engines.dut.password,
@@ -53,7 +55,7 @@ def test_gnmi_authentication(test_flow, engines, local_adminuser, aaa_users):
                         time.sleep(3)
             verify_gnmi_client(test_flow, engines.dut.ip, GnmiConsts.GNMI_DEFAULT_PORT, user.username,
                                user.password if test_flow == TestFlowType.GOOD_FLOW else 'abcde', True,
-                               GnmicErr.AUTH_FAIL, selected_port)
+                               GnmicErr.AUTH_FAIL, selected_port, new_port_description_to_check=new_description)
 
 
 @pytest.mark.system
@@ -74,8 +76,7 @@ def test_gnmi_auth_change_local_user_password(test_flow, engines, local_adminuse
         local_adminuser.password = new_password
 
     verify_gnmi_client(test_flow, engines.dut.ip, GnmiConsts.GNMI_DEFAULT_PORT, local_adminuser.username,
-                       new_password if test_flow == TestFlowType.GOOD_FLOW else old_password, True,
-                       GnmicErr.AUTH_FAIL)
+                       new_password if test_flow == TestFlowType.GOOD_FLOW else old_password, True, GnmicErr.AUTH_FAIL)
 
 
 @pytest.mark.system

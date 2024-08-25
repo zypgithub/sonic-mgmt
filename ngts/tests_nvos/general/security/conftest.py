@@ -13,6 +13,7 @@ from ngts.nvos_tools.Devices.EthDevice import EthSwitch  # temporary, needed unt
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.PexpectTool import PexpectTool
+from ngts.nvos_tools.infra.SshCmdBuilder import SshPassCmdBuilder
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.conftest import security_cleanup
 from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts, AuthConsts
@@ -29,7 +30,7 @@ def cleanup_after_aaa(topology_obj, engines, request):
 
     with allure.step('ssh the switch with long logout time'):
         # ssh_cmd = f'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ServerAliveInterval=60 -o ServerAliveCountMax=5 {dut.username}@{dut.ip}'
-        sshpass_cmd = f"sshpass -p '{dut.password}' ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ServerAliveInterval=60 -o ServerAliveCountMax=5 {dut.username}@{dut.ip}"
+        sshpass_cmd = SshPassCmdBuilder(dut.username, dut.password, dut.ip).set_ssn().set_long_lasting_session().build()
         ssh_session = PexpectTool(sshpass_cmd)
         # ssh_session.expect('[Pp]assword:')
         i = ssh_session.expect(DefaultConnectionValues.DEFAULT_PROMPTS)
