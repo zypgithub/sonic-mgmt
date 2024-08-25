@@ -144,6 +144,7 @@ class GnmiClient:
                       username: str = '', password: str = '', keep_session_alive: bool = False,
                       wait_till_done: bool = False) -> Tuple[
             str, str, subprocess.Popen]:
+        debug_mode = debug_mode and not skip_cert_verify
         with allure.step('compose the gnmic command'):
             username = username or self.username
             password = password or self.password

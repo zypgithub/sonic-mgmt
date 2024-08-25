@@ -23,10 +23,9 @@ from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tests_nvos.general.security.certificate.constants import TestCert
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
-from ngts.tests_nvos.system.gnmi.constants import CERTIFICATE, \
-    DEFAULT_CERTIFICATE, GnmicErr
-from ngts.tests_nvos.system.gnmi.constants import DUT_GNMI_CERTS_DIR, DOCKER_CERTS_DIR, GnmiMode, \
-    GrpcMsg, SERVER_REFLECTION_SUBSCRIBE_RESPONSE
+from ngts.tests_nvos.system.gnmi.constants import CERTIFICATE, DEFAULT_CERTIFICATE, GnmicErr
+from ngts.tests_nvos.system.gnmi.constants import DUT_GNMI_CERTS_DIR, DOCKER_CERTS_DIR, GnmiMode, GrpcMsg, \
+    SERVER_REFLECTION_SUBSCRIBE_RESPONSE
 from ngts.tools.test_utils.nvos_general_utils import generate_scp_uri_using_player
 
 logger = logging.getLogger()
@@ -36,14 +35,13 @@ def validate_memory_and_cpu_utilization():
     system = System()
     output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(system.show("memory")).get_returned_value()
     memory_util = output_dictionary[SystemConsts.MEMORY_PHYSICAL_KEY]["utilization"]
-    assert SystemConsts.MEMORY_PERCENT_THRESH_MIN < memory_util < SystemConsts.MEMORY_PERCENT_THRESH_MAX, \
-        "Physical utilization percentage is out of range"
+    assert SystemConsts.MEMORY_PERCENT_THRESH_MIN < memory_util < SystemConsts.MEMORY_PERCENT_THRESH_MAX, "Physical utilization percentage is out of range"
     output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(system.show("cpu")).get_returned_value()
     cpu_utilization = output_dictionary[SystemConsts.CPU_UTILIZATION_KEY]
     logger.info(f"cpu utilization: {cpu_utilization}")
-    assert cpu_utilization < SystemConsts.CPU_PERCENT_THRESH_MAX, \
-        "CPU utilization: {actual}% is higher than the maximum limit of: {expected}%" \
-        "".format(actual=cpu_utilization, expected=SystemConsts.CPU_PERCENT_THRESH_MAX)
+    assert cpu_utilization < SystemConsts.CPU_PERCENT_THRESH_MAX, "CPU utilization: {actual}% is higher than the maximum limit of: {expected}%" \
+                                                                  "".format(actual=cpu_utilization,
+                                                                            expected=SystemConsts.CPU_PERCENT_THRESH_MAX)
 
 
 def run_gnmi_client_in_the_background(target_ip, xpath, device):
@@ -109,8 +107,8 @@ def validate_gnmi_server_docker_state(engines, should_run=True):
 
 def validate_show_gnmi(gnmi_server_obj, engines, gnmi_state=GnmiConsts.GNMI_STATE_ENABLED,
                        gnmi_is_running=GnmiConsts.GNMI_IS_RUNNING):
-    gnmi_server_obj.compare_show_gnmi_output(expected={GnmiConsts.GNMI_STATE_FIELD: gnmi_state,
-                                                       GnmiConsts.GNMI_IS_RUNNING_FIELD: gnmi_is_running})
+    gnmi_server_obj.compare_show_gnmi_output(
+        expected={GnmiConsts.GNMI_STATE_FIELD: gnmi_state, GnmiConsts.GNMI_IS_RUNNING_FIELD: gnmi_is_running})
     should_run = gnmi_is_running == GnmiConsts.GNMI_IS_RUNNING
     validate_gnmi_server_docker_state(engines, should_run=should_run)
 
@@ -175,10 +173,10 @@ def change_port_description_and_validate_gnmi_updates(engines, port_description,
     time.sleep(GnmiConsts.SLEEP_TIME_FOR_UPDATE)
     gnmi_stream_updates = run_gnmi_client_and_parse_output(engines, devices, xpath, target_ip, mode=mode,
                                                            username=username, password=password)
-    assert port_description in list(gnmi_stream_updates.values()), \
-        "we expect to see the new port description in the gnmi-client output but we didn't.\n" \
-        f"port description: {port_description}\n" \
-        f"but got: {list(gnmi_stream_updates.values())}"
+    assert port_description in list(
+        gnmi_stream_updates.values()), "we expect to see the new port description in the gnmi-client output but we didn't.\n" \
+                                       f"port description: {port_description}\n" \
+                                       f"but got: {list(gnmi_stream_updates.values())}"
 
 
 @retry(Exception, tries=3, delay=3)
@@ -195,10 +193,8 @@ def validate_gnmi_server_in_health_issues(system, expected_gnmi_health_issue):
 def create_gnmi_and_redis_cmd_dict(redis_cmd_db_num, redis_cmd_table, redis_cmd_key, xpath_gnmi_cmd,
                                    comparison_dict=None):
     gnmi_cmd_dict = {GnmiConsts.REDIS_CMD_DB_NAME: DatabaseConst.REDIS_DB_NUM_TO_NAME[redis_cmd_db_num],
-                     GnmiConsts.REDIS_CMD_TABLE_NAME: redis_cmd_table,
-                     GnmiConsts.REDIS_CMD_PARAM: redis_cmd_key,
-                     GnmiConsts.XPATH_KEY: xpath_gnmi_cmd,
-                     GnmiConsts.COMPARISON_KEY: comparison_dict}
+                     GnmiConsts.REDIS_CMD_TABLE_NAME: redis_cmd_table, GnmiConsts.REDIS_CMD_PARAM: redis_cmd_key,
+                     GnmiConsts.XPATH_KEY: xpath_gnmi_cmd, GnmiConsts.COMPARISON_KEY: comparison_dict}
     return gnmi_cmd_dict
 
 
@@ -235,16 +231,14 @@ def create_interface_state_commands_list(port_name, infiniband_name):
 def create_platform_general_commands_list():
     usage_name = "USAGE"
     state_xpath = "components/platform-general/{field}"
-    gnmi_list = [
-        create_gnmi_and_redis_cmd_dict(6, f"DISK_INFO|{usage_name}", "disk_total_size",
-                                       state_xpath.format(field="disk-total-size")),
-        create_gnmi_and_redis_cmd_dict(6, f"DISK_INFO|{usage_name}", "disk_usage",
-                                       state_xpath.format(field="disk-used")),
-        create_gnmi_and_redis_cmd_dict(6, f"RAM_INFO|{usage_name}", "memory_total_size",
-                                       state_xpath.format(field="memory-total-size")),
-        create_gnmi_and_redis_cmd_dict(6, f"RAM_INFO|{usage_name}", "memory_usage",
-                                       state_xpath.format(field="memory-used")),
-    ]
+    gnmi_list = [create_gnmi_and_redis_cmd_dict(6, f"DISK_INFO|{usage_name}", "disk_total_size",
+                                                state_xpath.format(field="disk-total-size")),
+                 create_gnmi_and_redis_cmd_dict(6, f"DISK_INFO|{usage_name}", "disk_usage",
+                                                state_xpath.format(field="disk-used")),
+                 create_gnmi_and_redis_cmd_dict(6, f"RAM_INFO|{usage_name}", "memory_total_size",
+                                                state_xpath.format(field="memory-total-size")),
+                 create_gnmi_and_redis_cmd_dict(6, f"RAM_INFO|{usage_name}", "memory_usage",
+                                                state_xpath.format(field="memory-used")), ]
     return gnmi_list
 
 
@@ -275,19 +269,13 @@ def create_gnmi_infiniband_list(port_name, port_oid, infiniband_name):
     state_xpath = "interfaces/interface[name={port_name}]/infiniband/state/{field}"
     gnmi_list = [create_gnmi_and_redis_cmd_dict(2, f"COUNTERS:{port_oid}", "SAI_PORT_STAT_INFINIBAND_LOGICAL_STATE",
                                                 state_xpath.format(port_name=port_name, field="logical-port-state"),
-                                                comparison_dict={"1": "Down",
-                                                                 "2": "Initialize",
-                                                                 "3": "Armed",
+                                                comparison_dict={"1": "Down", "2": "Initialize", "3": "Armed",
                                                                  "4": "Active"}),
                  create_gnmi_and_redis_cmd_dict(2, f"COUNTERS:{port_oid}", "SAI_PORT_STAT_INFINIBAND_PHYSICAL_STATE",
                                                 state_xpath.format(port_name=port_name, field="physical-port-state"),
-                                                comparison_dict={"1": "Sleep",
-                                                                 "2": "Polling",
-                                                                 "3": "Disabled",
-                                                                 "4": "PortConfigurationTraining",
-                                                                 "5": "LINK_UP",
-                                                                 "6": "LinkErrorRecovery",
-                                                                 "7": "Phy Test",
+                                                comparison_dict={"1": "Sleep", "2": "Polling", "3": "Disabled",
+                                                                 "4": "PortConfigurationTraining", "5": "LINK_UP",
+                                                                 "6": "LinkErrorRecovery", "7": "Phy Test",
                                                                  "8": "Disabled By Chassis Manager"}),
                  create_gnmi_and_redis_cmd_dict(6, f"IB_PORT_TABLE|{infiniband_name}", "speed_admin",
                                                 state_xpath.format(port_name=port_name, field="supported-ib-speeds")),
@@ -298,13 +286,8 @@ def create_gnmi_infiniband_list(port_name, port_oid, infiniband_name):
                                                 comparison_dict={'on': 'true', 'off': 'false'}),
                  create_gnmi_and_redis_cmd_dict(6, f"IB_PORT_TABLE|{infiniband_name}", "lanes_admin",
                                                 state_xpath.format(port_name=port_name, field="supported-widths"),
-                                                comparison_dict={"1": "1X",
-                                                                 "2": "2X",
-                                                                 "3": "1X_2X",
-                                                                 "4": "4X",
-                                                                 "5": "1X_4X",
-                                                                 "6": "2X_4X",
-                                                                 "7": "1X_2X_4X"}),
+                                                comparison_dict={"1": "1X", "2": "2X", "3": "1X_2X", "4": "4X",
+                                                                 "5": "1X_4X", "6": "2X_4X", "7": "1X_2X_4X"}),
                  create_gnmi_and_redis_cmd_dict(6, f"IB_PORT_TABLE|{infiniband_name}", "mtu_max",
                                                 state_xpath.format(port_name=port_name, field="max-supported-MTUs")),
                  create_gnmi_and_redis_cmd_dict(2, f"COUNTERS:{port_oid}", "SAI_PORT_STAT_INFINIBAND_MTU_OPER",
@@ -314,15 +297,9 @@ def create_gnmi_infiniband_list(port_name, port_oid, infiniband_name):
                                                 comparison_dict={"0": "infiniband-default", "1": "infiniband-1"}),
                  create_gnmi_and_redis_cmd_dict(6, f"IB_PORT_TABLE|{infiniband_name}", "vl_admin",
                                                 state_xpath.format(port_name=port_name, field="vl-capabilities"),
-                                                comparison_dict={"1": "VL0",
-                                                                 "2": "VL0-VL1",
-                                                                 "3": "VL0-VL2",
-                                                                 "4": "VL0-VL3",
-                                                                 "5": "VL0-VL4",
-                                                                 "6": "VL0-VL5",
-                                                                 "7": "VL0-VL6",
-                                                                 "8": "VL0-VL7",
-                                                                 "15": "VL0-VL14"})]
+                                                comparison_dict={"1": "VL0", "2": "VL0-VL1", "3": "VL0-VL2",
+                                                                 "4": "VL0-VL3", "5": "VL0-VL4", "6": "VL0-VL5",
+                                                                 "7": "VL0-VL6", "8": "VL0-VL7", "15": "VL0-VL14"})]
     return gnmi_list
 
 
@@ -391,8 +368,8 @@ def verify_msg_existence_in_out_or_err(msg: str, should_be_in: bool, out: str, e
     msg_in_out = msg in out
     msg_in_err = msg in err if err else False
     assert (msg_in_out or msg_in_err) == should_be_in, ((f'"{msg}" unexpectedly was{" not" if should_be_in else ""} '
-                                                         f'found in out{"/err" if err is not None else ""}.\nout: {out}') +
-                                                        (f'\nerr: {err}' if err is not None else ''))
+                                                         f'found in out{"/err" if err is not None else ""}.\nout: {out}') + (
+        f'\nerr: {err}' if err is not None else ''))
 
 
 def verify_msg_not_in_out_or_err(msg: str, out: str, err: str = None):
@@ -404,18 +381,26 @@ def verify_msg_in_out_or_err(msg: str, out: str, err: str = None):
 
 
 def verify_gnmi_client(test_flow, server_host, server_port, username, password, skip_cert_verify: bool,
-                       err_msg_to_check: str, port_to_change=None, cacert=''):
+                       err_msg_to_check: str, port_to_change=None, cacert='', new_port_description_to_check=None):
     assert cacert or skip_cert_verify, 'given cacert can not be empty when skip_cert_verify is False'
 
     log_msg = (f'verify gnmi client with{"" if skip_cert_verify else "out"} skip-verify '
                f'and credentials: {username} / {password}')
-    selected_port = port_to_change or Tools.RandomizationTool.select_random_port(
-        requested_ports_state=None).returned_value
+
+    if port_to_change:
+        selected_port = port_to_change
+    else:
+        with allure.step('randomize port to change description'):
+            selected_port = Tools.RandomizationTool.select_random_port(requested_ports_state=None).returned_value
+
+    if port_to_change and new_port_description_to_check:
+        new_description = new_port_description_to_check
+    else:
+        with allure.step(f'change description of interface: "{selected_port.name}"'):
+            new_description = change_interface_description(selected_port)
 
     with allure.step('create gnmi client'):
         client = GnmiClient(server_host, server_port, username, password, cacert=cacert, cmd_time=10)
-    with allure.step(f'change description of interface: "{selected_port.name}"'):
-        new_description = change_interface_description(selected_port)
     if test_flow == TestFlowType.GOOD_FLOW:
         with allure.step(f'good-flow: {log_msg}'):
             with allure.step('verify using capabilities command'):
@@ -458,8 +443,7 @@ def verify_server_reflection(test_flow, client, skip_cert_verify, err_msg_to_che
 
 
 def get_scp_player(engines) -> LinuxSshEngine:
-    return engines.sonic_mgmt
-    # return LinuxSshEngine(ip='10.237.116.70', username='root', password='12345')
+    return engines.sonic_mgmt  # return LinuxSshEngine(ip='10.237.116.70', username='root', password='12345')
 
 
 def verify_gnmi_client_tools_installed():

@@ -10,6 +10,7 @@ from ngts.nvos_tools.infra.CmdRunner import CmdRunner
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.certificate.constants import TestCert
+from ngts.tests_nvos.general.security.conftest import cleanup_after_aaa
 from ngts.tests_nvos.general.security.security_test_tools.constants import AddressingType, AuthConsts, AaaConsts
 from ngts.tests_nvos.general.security.security_test_tools.generic_remote_aaa_testing.constants import RemoteAaaType
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.RemoteAaaServerInfo import RemoteAaaServerInfo
@@ -35,7 +36,7 @@ def verify_gnmi_client_tools_installed_on_player():
 
 
 @pytest.fixture()
-def aaa_users(engines) -> Dict[str, UserInfo]:
+def aaa_users(engines, cleanup_after_aaa) -> Dict[str, UserInfo]:
     with allure.step('set AAA servers'):
         with allure.step('set tacacs server'):
             tac_server: RemoteAaaServerInfo = TacacsDockerServer0.SERVER_BY_ADDRESSING_TYPE[
@@ -50,12 +51,8 @@ def aaa_users(engines) -> Dict[str, UserInfo]:
             rad_server.configure(engines)
         with allure.step('enable failthrough'):
             System().aaa.authentication.set(AuthConsts.FAILTHROUGH, AaaConsts.ENABLED, apply=True).verify_result()
-    return {
-        RemoteAaaType.TACACS: tac_server.users[0],
-        RemoteAaaType.LDAP: ldap_server.users[0],
-        RemoteAaaType.RADIUS: rad_server.users[0],
-    }
-    # servers config cleared in clear_conf hook func
+    return {RemoteAaaType.TACACS: tac_server.users[0], RemoteAaaType.LDAP: ldap_server.users[0],
+            RemoteAaaType.RADIUS: rad_server.users[0], }  # servers config cleared in clear_conf hook func
 
 
 @pytest.fixture(scope='module', autouse=True)
