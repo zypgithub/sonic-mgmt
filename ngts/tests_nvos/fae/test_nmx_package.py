@@ -77,7 +77,7 @@ def test_nmx_package_good_flow(devices, engines, test_api, install_default_if_ne
 
             # Will be added in future
             # ClusterTools.verify_app_version(fae.cluster, app, default_version)
-            test_nmx_package_flow(app, new_path, new_version)
+            nmx_package_flow(app, new_path, new_version)
 
     finally:
         with allure.step(f'cleanup - returning to default versions'):
@@ -85,7 +85,7 @@ def test_nmx_package_good_flow(devices, engines, test_api, install_default_if_ne
                 default_path = devices.dut.nmx_cluster_apps_versions.default_path[app]
                 default_version = devices.dut.nmx_cluster_apps_versions.default_version_names[app]
 
-                test_nmx_package_flow(app, default_path, default_version)
+                nmx_package_flow(app, default_path, default_version)
 
 
 def fetch_and_verify_package(fae, app, path):
@@ -126,7 +126,7 @@ def delete_package_file(fae, filename):
         fae.cluster.package.files.verify_show_files_output()
 
 
-def test_nmx_package_flow(app, path, new_version):
+def nmx_package_flow(app, path, new_version):
     """
     Handle the package flow for a given application.
 

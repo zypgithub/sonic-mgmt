@@ -25,10 +25,11 @@ def test_show_eeprom_bmc(devices, test_api, output_format):
         if not device.platform_inventory_items_dict.get("bmc"):
             pytest.skip(f"Skipping test because DUT has no BMC")
 
-    output = OutputParsingTool.parse_show_output_to_dict(
-        fae.platform.eeprom.show("BMC", output_format=output_format),
-        output_format=output_format, field_name_dict={}).get_returned_value()
+    with allure.step("Verify fields and values for fae platform eeprom BMC"):
+        output = OutputParsingTool.parse_show_output_to_dict(
+            fae.platform.eeprom.show("BMC", output_format=output_format),
+            output_format=output_format, field_name_dict={}).get_returned_value()
 
-    output = {key: value["value"] for key, value in output.items()}
-    expected = device.fae_eeprom_values['BMC']
-    ValidationTool.validate_output_of_show(output, expected, allow_extra_fields=True).verify_result()
+        output = {key: value["value"] for key, value in output.items()}
+        expected = device.fae_eeprom_values['BMC']
+        ValidationTool.validate_output_of_show(output, expected, allow_extra_fields=True).verify_result()
