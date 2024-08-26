@@ -1083,6 +1083,7 @@
       - tests_nvos/system/test_system_snmp.py::test_system_snmp_redis_crash
       - tests_nvos/system/test_system_snmp.py::test_snmp_default_values_fields
       - tests_nvos/system/test_system_snmp.py::test_system_snmp_negative
+      - tests_nvos/interfaces/lldp/test_lldp.py::test_lldp_disabled
 
 # NVOS
 - Errors_list:

@@ -45,20 +45,18 @@ def install_bios(devices, fae, version_name):
         fae.platform.firmware.bios.action_fetch(path).verify_result()
 
     with allure.step('installing Bios image {}'.format(version_name)):
-        fae.platform.firmware.install_bios_firmware(bios_image_path=devices.dut.get_bios_file_name(), device=devices.dut)
+        fae.platform.firmware.install_bios_firmware(bios_image_path=devices.dut.get_bios_file_name(),
+                                                    device=devices.dut)
 
 
-def install_image_and_verify(orig_engine, image_name, system, test_name=''):
+def install_image_and_verify(image_name, system):
     with allure.step("Installing image {}".format(image_name)):
-        new_engine = LinuxSshEngine(orig_engine.ip, orig_engine.username,
-                                    TestToolkit.devices.dut.get_default_password_by_version(""))
-        OperationTime.save_duration('image install', '', test_name,
-                                    system.image.files.file_name[image_name].action_file_install_with_reboot,
-                                    "", True, None, None, new_engine)
-
-    with allure.step('replace dut engine'):
-        TestToolkit.engines.dut = new_engine  # if install succeeded, need to replace dut engine
-
+        try:
+            system.image.files.file_name[image_name].action_file_install_with_reboot(
+                expected_str='Performing reboot').verify_result()
+        except BaseException:
+            # Reboot skipped on NVOS since image is the same, manually rebooting
+            system.reboot.action_reboot()
     with allure.step("Verify installed image"):
         time.sleep(5)
         verify_current_version(normalize_image_name(image_name), system)
@@ -66,7 +64,8 @@ def install_image_and_verify(orig_engine, image_name, system, test_name=''):
 
 def verify_current_version(original_version, system):
     with allure.step(f"Verify that current image is {original_version}"):
-        current_version = OutputParsingTool.parse_json_str_to_dictionary(system.version.show()).get_returned_value()['image']
+        current_version = OutputParsingTool.parse_json_str_to_dictionary(system.version.show()).get_returned_value()[
+            'image']
         assert current_version == original_version, f"Current version is invalid: {current_version}, expected: {original_version}"
 
 
