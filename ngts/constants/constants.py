@@ -1565,9 +1565,11 @@ class IndependentModuleConst:
     MEDIA_SETTINGS_FILE_NAME = "media_settings.json"
     OPTICS_SI_SETTINGS_FILE_NAME = "optics_si_settings.json"
     IM_INTERFACE_SETTINGS_FILE_PATH = "/usr/share/sonic/device/{PLATFORM}"
-    MS_HWSKU = ['Mellanox-SN4700-O8C48', 'Mellanox-SN4700-O8V48', 'ACS-SN5600', 'ACS-MSN4700']
+    MS_HWSKU = ['Mellanox-SN4700-O8C48', 'Mellanox-SN4700-O8V48', 'ACS-SN5600',
+                'ACS-MSN4700', 'ACS-SN4280', 'Mellanox-SN4280-O28']
     DUTS_SUPPORTING_IM = ['r-leopard-32', 'r-leopard-41', 'r-leopard-56', 'r-leopard-01', 'r-leopard-58',
-                          'r-leopard-70', 'r-leopard-72', 'r-moose-01', 'r-moose-02', 'mtvr-moose-04']
+                          'r-leopard-70', 'r-leopard-72', 'r-moose-01', 'r-moose-02', 'mtvr-moose-04',
+                          'r-bobcat-01', 'r-bobcat-03']
 
 
 class PerfConsts:
