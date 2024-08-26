@@ -220,9 +220,9 @@ tests_nvos/ib/test_set_unset_sm_state.py::test_set_unset_sm_state_many_times:
 
 tests_nvos/interfaces/split_fnm_port/test_split_fnm_port.py::test_interface_fnm_port_split:
   skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3854671"
+    reason: "Testcase skipped on non gorilla systems"
     conditions:
-      - https://redmine.mellanox.com/issues/3854671
+      - "'gorilla' not in testbed"
 
 tests_nvos/ib/test_ibdiagnet.py:
   skip:
