@@ -22,12 +22,8 @@ from ngts.scripts.sonic_deploy.test_deploy_and_upgrade import get_target_version
 
 ClusterAppsLogLevelsList = [ClusterAppsLogLevels.DEBUG, ClusterAppsLogLevels.INFO, ClusterAppsLogLevels.NOTICE, ClusterAppsLogLevels.WARNING, ClusterAppsLogLevels.ERROR, ClusterAppsLogLevels.CRITICAL]
 
-NMX_CONTROLLER_CONFIG_FILE_TYPES = ['fm_config', 'sm_config']  # TODO, add 'rdm_config' once bug is fixed  #3982375
-NMX_CONTROLLER_STATE_FILE_TYPES = ['conn_info']  # TODO add sm_dump and topology once bug is fixed #3985684
-PATH_TO_CONFIG = {'fm_config': '/auto/sw_system_project/NVOS_INFRA/verification_files/cluster/config_files_to_fetch/fabricmanager_dummy.cfg',
-                  'sm_config': '/auto/sw_system_project/NVOS_INFRA/verification_files/cluster/config_files_to_fetch/sm_config_dummy.cfg'}  # TODO, add 'rdm_config' once bug is fixed  #3982375
-CONFIG_FILE_NAME = {'fm_config': 'fabricmanager_dummy.cfg',
-                    'sm_config': 'sm_config_dummy.cfg'}  # TODO, add 'rdm_config' once bug is fixed  #3982375
+NMX_CONTROLLER_CONFIG_FILE_TYPES = ['fm_config', 'sm_config']  # Todo - add rdm_config once bug is fixed [NVOS - Design] Bug SW #4047277: [Functional] [NMX -Juliet] | Cannot generate SDN rdm_config config file | Assignee: Oren Reiss | Status: Assigned
+NMX_CONTROLLER_STATE_FILE_TYPES = ['conn_info', 'sm_dump', 'topology']
 INITIAL_CONFIGURATIONS_PATH = '/auto/sw_system_project/NVOS_INFRA/verification_files/cluster/uploaded_control_plane_files'
 
 
@@ -80,7 +76,9 @@ def test_upgrade_with_nmx_enabled(test_api, devices, base_version,
         initial_config_contents = {}
         initial_configs_paths_to_restore = {}
         log_levels = {}
-
+        initial_configuration_restored = False
+        path_to_config = {config_type: '' for config_type in NMX_CONTROLLER_CONFIG_FILE_TYPES}
+        config_file_name = {config_type: '' for config_type in NMX_CONTROLLER_CONFIG_FILE_TYPES}
     try:
         with allure.step("Running 'nv show cluster' command and parsing output"):
             output = OutputParsingTool.parse_show_output_to_dict(
@@ -109,10 +107,18 @@ def test_upgrade_with_nmx_enabled(test_api, devices, base_version,
                     initial_configs_paths_to_restore[file_type] = INITIAL_CONFIGURATIONS_PATH + '/' + config_files_paths[file_type].split('/')[-1]
                     logger.info(f"Uploading files: {initial_configs_paths_to_restore[file_type]}")
 
+                    # Create a dummy config file.
+                    file_name = 'dummy_' + (initial_configs_paths_to_restore[file_type]).split('/')[-1]
+                    dummy_file_path = INITIAL_CONFIGURATIONS_PATH + '/' + file_name
+                    engines.sonic_mgmt.run_cmd("sudo cp {} {}".format(initial_configs_paths_to_restore[file_type], dummy_file_path))
+                    engines.sonic_mgmt.run_cmd(f"sudo sh -c 'echo \"# This is dummy config file\" >> {dummy_file_path}'")
+                    path_to_config[file_type] = dummy_file_path
+                    config_file_name[file_type] = file_name
+
             with allure.step("Install config file"):
                 for file_type in NMX_CONTROLLER_CONFIG_FILE_TYPES:
-                    sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].action_fetch_sdn(PATH_TO_CONFIG[file_type])
-                    sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.file_name[CONFIG_FILE_NAME[file_type]].action_file_install(force=False)
+                    sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].action_fetch_sdn(path_to_config[file_type])
+                    sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.file_name[config_file_name[file_type]].action_file_install(force=False)
                     output = sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].action_generate_sdn()
                     installed_file = ClusterTools.get_generated_file_name(output.returned_value, 'config')
                     output = OutputParsingTool.parse_show_output_to_dict(sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=output_format),
@@ -120,7 +126,7 @@ def test_upgrade_with_nmx_enabled(test_api, devices, base_version,
                     all_config_files_paths[file_type] = [item['path'] for item in output.values()]
                     current_installed_config_path = output[installed_file]['path']
                     current_config_content = engines.dut.run_cmd("sudo cat {}".format(current_installed_config_path))
-                    expected_config_content = engines.sonic_mgmt.run_cmd("sudo cat {}".format(PATH_TO_CONFIG[file_type]))
+                    expected_config_content = engines.sonic_mgmt.run_cmd("sudo cat {}".format(path_to_config[file_type]))
                     assert current_config_content == expected_config_content, f"Config file was not loaded properly. Expected content {expected_config_content}, Actual content: {current_config_content}"
                     assert current_config_content != initial_config_contents[file_type], f"Current content has not changed, still same as in init state. init: {initial_config_contents[file_type]}, \ncurrent{current_config_content}"
 
@@ -154,15 +160,16 @@ def test_upgrade_with_nmx_enabled(test_api, devices, base_version,
                 ClusterTools.verify_log_level(log_levels[app], app, output_format, cluster)
 
         with allure.step("Make sure config is saved"):
-            output = sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].action_generate_sdn()
-            installed_file = ClusterTools.get_generated_file_name(output.returned_value, 'config')
-            output = OutputParsingTool.parse_show_output_to_dict(sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=output_format),
-                                                                 output_format=output_format).get_returned_value()
-            all_config_files_paths[file_type] = [item['path'] for item in output.values()]
-            current_installed_config_path = output[installed_file]['path']
-            current_config_content = engines.dut.run_cmd("sudo cat {}".format(current_installed_config_path))
-            expected_config_content = engines.sonic_mgmt.run_cmd("sudo cat {}".format(PATH_TO_CONFIG[file_type]))
-            assert current_config_content == expected_config_content, f"Config file was not loaded properly. Expected content {expected_config_content}, Actual content: {current_config_content}"
+            for file_type in NMX_CONTROLLER_CONFIG_FILE_TYPES:
+                output = sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].action_generate_sdn()
+                installed_file = ClusterTools.get_generated_file_name(output.returned_value, 'config')
+                output = OutputParsingTool.parse_show_output_to_dict(sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=output_format),
+                                                                     output_format=output_format).get_returned_value()
+                all_config_files_paths[file_type] = [item['path'] for item in output.values()]
+                current_installed_config_path = output[installed_file]['path']
+                current_config_content = engines.dut.run_cmd("sudo cat {}".format(current_installed_config_path))
+                expected_config_content = engines.sonic_mgmt.run_cmd("sudo cat {}".format(path_to_config[file_type]))
+                assert current_config_content == expected_config_content, f"Config file was not loaded properly. Expected content {expected_config_content}, Actual content: {current_config_content}"
 
     finally:
         if not target_image_installed:

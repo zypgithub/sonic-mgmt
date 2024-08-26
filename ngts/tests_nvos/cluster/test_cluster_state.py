@@ -14,7 +14,7 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.ib.Ib import Ib
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
-
+from ngts.tests_nvos.constants import MINUTE
 
 logger = logging.getLogger()
 UNDEFINED_STATE = 'undefined'

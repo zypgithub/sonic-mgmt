@@ -30,12 +30,8 @@ START_APP_WHILE_CLUSTER_DISABLED_ERR_MSG = 'Output was expected to contain:\nAct
 TELEMETRY_SERVICES = ['nmx-connector', 'ib-telemetry']
 CONTROLLER_SERVICES = ['nmxc-sdn', 'nmxc-fib', 'redis']
 ClusterAppsLogLevelsList = [ClusterAppsLogLevels.DEBUG, ClusterAppsLogLevels.INFO, ClusterAppsLogLevels.NOTICE, ClusterAppsLogLevels.WARNING, ClusterAppsLogLevels.ERROR, ClusterAppsLogLevels.CRITICAL]
-NMX_CONTROLLER_CONFIG_FILE_TYPES = ['fm_config', 'sm_config']  # TODO, add 'rdm_config' once bug is fixed  #3982375
-NMX_CONTROLLER_STATE_FILE_TYPES = ['conn_info']  # TODO add sm_dump and topology once bug is fixed #3985684
-PATH_TO_CONFIG = {'fm_config': '/auto/sw_system_project/NVOS_INFRA/verification_files/cluster/config_files_to_fetch/fabricmanager_dummy.cfg',
-                  'sm_config': '/auto/sw_system_project/NVOS_INFRA/verification_files/cluster/config_files_to_fetch/sm_config_dummy.cfg'}  # TODO, add 'rdm_config' once bug is fixed  #3982375
-CONFIG_FILE_NAME = {'fm_config': 'fabricmanager_dummy.cfg',
-                    'sm_config': 'sm_config_dummy.cfg'}  # TODO, add 'rdm_config' once bug is fixed  #3982375
+NMX_CONTROLLER_CONFIG_FILE_TYPES = ['fm_config', 'sm_config']  # Todo - add rdm_config once bug is fixed [NVOS - Design] Bug SW #4047277: [Functional] [NMX -Juliet] | Cannot generate SDN rdm_config config file | Assignee: Oren Reiss | Status: Assigned
+NMX_CONTROLLER_STATE_FILE_TYPES = ['conn_info', 'sm_dump', 'topology']
 NMX_LOG_MESSAGES_TAGS = ['nmxc-sm', 'nmxc-fm', 'nmxc-fib', 'nmxc-gw_api', 'nmxc-rest', 'nmxc-config_daemon']
 INITIAL_CONFIGURATIONS_PATH = '/auto/sw_system_project/NVOS_INFRA/verification_files/cluster/uploaded_control_plane_files'
 
@@ -57,10 +53,9 @@ def test_cluster_sdn(engines, devices, test_api):
         initial_config_contents = {}
         initial_configs_paths_to_restore = {}
         initial_configuration_restored = False
-        path_to_config = {'fm_config': '',
-                          'sm_config': ''}  # TODO, add 'rdm_config' once bug is fixed  #3982375
-        config_file_name = {'fm_config': '',
-                            'sm_config': ''}  # TODO, add 'rdm_config' once bug is fixed  #3982375
+        path_to_config = {config_type: '' for config_type in NMX_CONTROLLER_CONFIG_FILE_TYPES}
+        config_file_name = {config_type: '' for config_type in NMX_CONTROLLER_CONFIG_FILE_TYPES}
+
     try:
 
         logger.info("Setting cluster state to enabled")
