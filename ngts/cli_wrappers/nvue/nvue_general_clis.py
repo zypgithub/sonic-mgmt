@@ -6,13 +6,12 @@ from ngts.cli_wrappers.nvue.nvue_system_clis import NvueSystemCli
 from ngts.cli_wrappers.sonic.sonic_general_clis import *
 from ngts.constants.constants import InfraConst
 from ngts.constants.constants import MarsConstants
-from ngts.nvos_constants.constants_nvos import NvosConst, ActionConsts, SystemConsts, ConfState
+from ngts.nvos_constants.constants_nvos import NvosConst, ActionConsts, SystemConsts, ConfState, TopologyConsts
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.tests_nvos.general.security.test_secure_boot.constants import SecureBootConsts
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
-server_ip = "10.237.22.60"
 
 
 class NvueGeneralCli(SonicGeneralCliDefault):
@@ -330,6 +329,13 @@ class NvueGeneralCli(SonicGeneralCliDefault):
         cmd = topology_obj.players['dut_serial']['attributes'].noga_query_data['attributes']['Specific'][
             'remote_reboot']
         assert cmd, "Reboot command is empty"
+
+        setup_site = topology_obj.players['dut_serial']['attributes'].noga_query_data['attributes']['Common']['Site']
+        if setup_site and setup_site in TopologyConsts.site_server_ip.keys():
+            server_ip = TopologyConsts.site_server_ip[setup_site]
+        else:
+            server_ip = TopologyConsts.site_server_ip[TopologyConsts.MTL]   # default
+
         ssh_conn = LinuxSshEngine(ip=server_ip, username=os.getenv("TEST_SERVER_USER"),
                                   password=os.getenv("TEST_SERVER_PASSWORD"))
         ssh_conn.run_cmd(cmd)

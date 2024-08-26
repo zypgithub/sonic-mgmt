@@ -266,6 +266,15 @@ class NvosConst:
     Y_COMMAND_NOT_FOUND = 'y: command not found'
 
 
+class TopologyConsts:
+    MTL = "MTL"
+    MTVR = "MTVR"
+    CL = "CL"
+    site_server_ip = {MTL: "10.237.22.60",
+                      MTVR: "10.237.22.60",
+                      CL: "10.188.20.9"}
+
+
 class CertificateFiles:
     BUNDLE_FILE = 'bundle_uri'
     PUBLIC_KEY_FILE = 'uri-public-key'
