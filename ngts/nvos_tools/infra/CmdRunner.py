@@ -1,8 +1,6 @@
 import logging
 import os
-import signal
 import subprocess
-import time
 from typing import Tuple, List
 
 
@@ -77,11 +75,14 @@ class CmdRunner:
         @param delay: number of seconds to wait before killing the process
         @return: output, err of the command process
         """
-        if delay and process.poll() is None:
-            self._log(f'process not finished yet. wait {delay} seconds')
-            time.sleep(delay)
-        self._log(f'kill process and get output')
-        os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+
+        self._log(f'wait for process done or kill it by {delay} seconds')
+        try:
+            process.wait(timeout=delay)
+            self._log('process finished normally')
+        except subprocess.TimeoutExpired:
+            self._log(f'{delay} seconds passed - kill the process')
+            process.kill()
         return self.wait_for_cmd_process(process)
 
     def wait_for_cmd_process(self, process: subprocess.Popen) -> Tuple[str, str]:

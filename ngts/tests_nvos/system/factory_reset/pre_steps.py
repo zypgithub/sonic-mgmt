@@ -49,10 +49,14 @@ def factory_reset_no_params_pre_steps(engines, platform_params, system, devices)
         update_timezone(system)
         current_time = get_current_time(engines)
 
-    with allure.step('pre factory reset TPM related check'):
+    with allure.step('pre factory reset security checks'):
+        pre_factory_reset_security_checks()
+
+    return apply_and_save_port, current_time, just_apply_port, last_status_line, machine_type, not_apply_port, username
+
+
+def pre_factory_reset_security_checks():
+    with allure.step('TPM check'):
         next(factory_reset_tpm_checker)
-
-    with allure.step('pre factory reset GNMI cert related check'):
+    with allure.step('GNMI cert check'):
         next(factory_reset_gnmi_checker)
-
-    return apply_and_save_port, current_time, just_apply_port, last_status_line, machine_type, not_apply_port, username, init_cluster_status

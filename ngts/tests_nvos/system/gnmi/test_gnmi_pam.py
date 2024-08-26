@@ -55,7 +55,8 @@ def test_gnmi_authentication(test_flow, engines, local_adminuser, aaa_users):
                         time.sleep(3)
             verify_gnmi_client(test_flow, engines.dut.ip, GnmiConsts.GNMI_DEFAULT_PORT, user.username,
                                user.password if test_flow == TestFlowType.GOOD_FLOW else 'abcde', True,
-                               GnmicErr.AUTH_FAIL, selected_port, new_port_description_to_check=new_description)
+                               GnmicErr.AUTH_FAIL, selected_port, new_port_description_to_check=new_description,
+                               client_cmd_time=20 if test_flow == TestFlowType.BAD_FLOW else None)
 
 
 @pytest.mark.system
