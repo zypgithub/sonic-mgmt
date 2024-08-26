@@ -214,24 +214,24 @@ def get_cert_key_content(cert_file, dut_engine: LinuxSshEngine):
 
 
 def get_path_of_nmx_cert_private_file(cert_id, dut_engine: LinuxSshEngine):
-    # path = f'{NMX_CERTS_DIR}/{cert_id}.key'   # TODO: not that?
-    path = f'{NMX_CERTS_DIR}/nmx.key'
+    path = f'{NMX_CERTS_DIR}/{cert_id}.key'
+    # path = f'{NMX_CERTS_DIR}/nmx.key'
     out = dut_engine.run_cmd(f'sudo ls {path}')
     # assert FILE_NOT_EXIST_ERR not in out, f'there is no private key file for the given cert-id "{cert_id}"'
     return path if FILE_NOT_EXIST_ERR not in out else None
 
 
 def get_path_of_nmx_cert_public_file(cert_id, dut_engine: LinuxSshEngine):
-    # path = f'{NMX_CERTS_DIR}/{cert_id}.crt'   # TODO: not that?
-    path = f'{NMX_CERTS_DIR}/nmx.pem'
+    path = f'{NMX_CERTS_DIR}/{cert_id}.crt'
+    # path = f'{NMX_CERTS_DIR}/nmx.pem'
     out = dut_engine.run_cmd(f'sudo ls {path}')
     # assert FILE_NOT_EXIST_ERR not in out, f'there is no public crt file for the given cert-id "{cert_id}"'
     return path if FILE_NOT_EXIST_ERR not in out else None
 
 
 def get_path_of_nmx_cacert_public_file(cacert_id, dut_engine: LinuxSshEngine):
-    # path = f'{NMX_CACERTS_DIR}/{cacert_id}.pem'   # TODO: not that?
-    path = f'{NMX_CACERTS_DIR}/ca_nmx.crt'
+    path = f'{NMX_CACERTS_DIR}/{cacert_id}.crt'
+    # path = f'{NMX_CACERTS_DIR}/ca_nmx.crt'
     out = dut_engine.run_cmd(f'sudo ls {path}')
     # assert FILE_NOT_EXIST_ERR not in out, f'there is no public pem file for the given cacert-id "{cacert_id}"'
     return path if FILE_NOT_EXIST_ERR not in out else None

@@ -12,11 +12,11 @@ class Manager(BaseComponent):
         self.ca_certificate = CertificateComponent(self, '/ca-certificate')
         self.encryption = Encryption(self)
 
-    def action_update(self, dut_engine=None) -> ResultObj:
+    def action_update(self, state: str = '', dut_engine=None) -> ResultObj:
         with allure.step(f'Execute action update for {self.get_resource_path()}'):
             engine = dut_engine or TestToolkit.engines.dut
             return SendCommandTool.execute_command(self._cli_wrapper.action_update_cluster_manager_property, engine,
-                                                   self.get_resource_path())
+                                                   self.get_resource_path(), 'state', state)
 
     def action_restore(self, dut_engine=None) -> ResultObj:
         with allure.step(f'Execute action restore for {self.get_resource_path()}'):

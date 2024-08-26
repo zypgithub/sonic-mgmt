@@ -55,7 +55,7 @@ class AaaServerManager:
     def __init__(self, ip: str, server_docker_name: str = '') -> None:
         self.ip = ip
         self.server_docker_name: str = server_docker_name
-        self.server_engine = LinuxSshEngine(ip, os.getenv('VM_USER'), os.getenv('VM_PASSWORD'))
+        self.server_engine = LinuxSshEngine(ip, os.getenv('TEST_SERVER_USER'), os.getenv('TEST_SERVER_PASSWORD'))
 
     def __assert_ip(self):
         assert self.ip, 'Tried to make operation with manager of empty ip!'

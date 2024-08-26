@@ -381,7 +381,7 @@ def verify_msg_in_out_or_err(msg: str, out: str, err: str = None):
 
 
 def verify_gnmi_client(test_flow, server_host, server_port, username, password, skip_cert_verify: bool,
-                       err_msg_to_check: str, port_to_change=None, cacert='', new_port_description_to_check=None):
+                       err_msg_to_check: str, port_to_change=None, cacert='', new_port_description_to_check=None, client_cmd_time=None):
     assert cacert or skip_cert_verify, 'given cacert can not be empty when skip_cert_verify is False'
 
     log_msg = (f'verify gnmi client with{"" if skip_cert_verify else "out"} skip-verify '
@@ -400,7 +400,7 @@ def verify_gnmi_client(test_flow, server_host, server_port, username, password, 
             new_description = change_interface_description(selected_port)
 
     with allure.step('create gnmi client'):
-        client = GnmiClient(server_host, server_port, username, password, cacert=cacert, cmd_time=10)
+        client = GnmiClient(server_host, server_port, username, password, cacert=cacert, cmd_time=client_cmd_time or 10)
     if test_flow == TestFlowType.GOOD_FLOW:
         with allure.step(f'good-flow: {log_msg}'):
             with allure.step('verify using capabilities command'):

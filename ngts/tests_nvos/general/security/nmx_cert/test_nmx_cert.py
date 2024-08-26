@@ -59,9 +59,9 @@ def test_manager_cli(test_api):
             with allure.independent_step('verify cacert show'):
                 verify_cacert_show(expect_cert_id=cert.cacert_name)
         with allure.independent_step('verify files and fields in json'):
-            verify_static_checks({UserCfgJsonFields.CERTIFICATE: UserCfgJsonValues.CERTIFICATE,
-                                  UserCfgJsonFields.PRIVATE_KEY: UserCfgJsonValues.PRIVATE_KEY,
-                                  UserCfgJsonFields.CA_CERTIFICATE: UserCfgJsonValues.CA_CERTIFICATE}, cert.name, cert.cacert_name)
+            verify_static_checks({UserCfgJsonFields.CERTIFICATE: UserCfgJsonValues.CERTIFICATE.format(filename=cert.name),
+                                  UserCfgJsonFields.PRIVATE_KEY: UserCfgJsonValues.PRIVATE_KEY.format(filename=cert.name),
+                                  UserCfgJsonFields.CA_CERTIFICATE: UserCfgJsonValues.CA_CERTIFICATE.format(filename=cert.cacert_name)}, cert.name, cert.cacert_name)
     with allure.step('check values after update encryption'):
         for mode in EncryptionMode.ALL_MODES:
             with allure.step(f'Run update encryption: {mode}'):
@@ -101,12 +101,13 @@ def test_manager_cli(test_api):
                                   UserCfgJsonFields.PRIVATE_KEY: None, UserCfgJsonFields.CA_CERTIFICATE: None}, FILE_SHOULD_NOT_EXIST,
                                  FILE_SHOULD_NOT_EXIST)
     with allure.step('check values after update manager'):
-        with allure.step('Run update manager (enable manager communication)'):
-            cluster.manager.action_update().verify_result()
-        with allure.independent_step('Verify in manager show that related fields'):
-            verify_manager_show(expect_state=ENABLED)
-        with allure.independent_step('verify fields in json'):
-            verify_static_checks({UserCfgJsonFields.STATE: ENABLED})
+        for state in [ENABLED, DISABLED]:
+            with allure.step(f'Run update manager: state {state}'):
+                cluster.manager.action_update(state).verify_result()
+            with allure.independent_step('Verify in manager show that related fields'):
+                verify_manager_show(expect_state=state)
+            with allure.independent_step('verify fields in json'):
+                verify_static_checks({UserCfgJsonFields.STATE: state})
     with allure.step('check values after restore manager'):
         with allure.step('Run restore manager (disable manager communication)'):
             cluster.manager.action_restore().verify_result()
@@ -164,8 +165,9 @@ def test_manager_cmd_fail_when_cluster_off(test_api):
             verify_encryption_show(NA)
     with allure.step('check manager update/restore commands fail'):
         with allure.independent_step('update commands'):
-            with allure.independent_step('verify update manager fail'):
-                cluster.manager.action_update().verify_result(False)
+            for state in [ENABLED, DISABLED]:
+                with allure.independent_step(f'verify update manager fail: state {state}'):
+                    cluster.manager.action_update().verify_result(False)
             with allure.independent_step('verify update certificate fail'):
                 cluster.manager.certificate.action_update(cert.name).verify_result(False)
             with allure.independent_step('verify update ca_certificate fail'):

@@ -31,9 +31,9 @@ class UserCfgJsonFields:
 
 
 class UserCfgJsonValues:
-    CERTIFICATE = f'{NMX_CERTS_DIR}/nmx.csr'
-    PRIVATE_KEY = f'{NMX_CERTS_DIR}/nmx.key'
-    CA_CERTIFICATE = f'{NMX_CACERTS_DIR}/ca_nmx.crt'
+    CERTIFICATE = NMX_CERTS_DIR + '/{filename}.crt'  # f'{NMX_CERTS_DIR}/nmx.csr'
+    PRIVATE_KEY = NMX_CERTS_DIR + '/{filename}.key'  # f'{NMX_CERTS_DIR}/nmx.key'
+    CA_CERTIFICATE = NMX_CACERTS_DIR + '/{filename}.crt'  # f'{NMX_CACERTS_DIR}/ca_nmx.crt'
 
 
 class FieldsInShowOf:
