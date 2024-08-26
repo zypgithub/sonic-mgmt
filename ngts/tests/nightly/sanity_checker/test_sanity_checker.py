@@ -96,8 +96,13 @@ def test_cpld_version_check(topology_obj, engines, platform_params, cli_objects)
                 with allure.step(f'Restore CPLD to {latest_cpld_ver}'):
                     logger.info(f"Restore CPLD to the expected one:{latest_cpld_ver}")
                     SonicSecureBootHelper.restore_cpld(cli_objects, engines, topology_obj, platform_params, defined_cpld)
-                with allure.step(f"Check if the cpld version is updated to {latest_cpld_ver}"):
+                with allure.step("disconnect dut"):
                     engines.dut.disconnect()
+                with allure.step(f" After power cycle, check containers and interfaces are up"):
+                    dut_topology_obj = topology_obj.players['dut']['cli']
+                    ports_list = topology_obj.players_all_ports[dut_topology_obj.dut_alias]
+                    dut_topology_obj.general.port_reload_reboot_checks(ports_list)
+                with allure.step(f"Check if the cpld version is updated to {latest_cpld_ver}"):
                     component_versions_dict = get_info_about_current_components_version_dict(engines.dut)
                     current_cpld_ver = component_versions_dict[defined_cpld]
                     assert current_cpld_ver == latest_cpld_ver, \
