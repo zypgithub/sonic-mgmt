@@ -6,7 +6,7 @@ Defines the methods and fixtures which will be used by pytest for only canonical
 
 """
 import re
-
+import json
 import pytest
 import os
 import yaml
@@ -16,6 +16,7 @@ from dotted_dict import DottedDict
 from deepdiff import DeepDiff
 from ngts.constants.constants import PytestConst, PlatformTypesConstants
 from ngts.helpers import json_file_helper
+from ngts.helpers.config_db_utils import save_config_db_json
 from ngts.tests.nightly.conftest import convert_speed_format_to_m_speed
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
 
@@ -344,3 +345,131 @@ def toggle_rsyslog_configurations(dut_engine, configurations, target, state):
     cmd_show_config = f'{cmd_prefix} cat /etc/rsyslog.conf'
     dut_engine.run_cmd(cmd_show_config)
     dut_engine.run_cmd(cmd_restart_rsyslogd)
+
+
+@pytest.fixture(scope="module", autouse=True)
+def config_check(engines, cli_objects, topology_obj, request, sonic_version):
+    """
+    Check if the running config (from redis db) is modified after the test case running.
+    If so, we will reload the running config after test case running.
+    """
+    dut_engine = engines.dut
+    dut_hostname = cli_objects.dut.chassis.get_hostname()
+
+    module_name = request.node.name
+
+    dut_data = {}
+
+    logger.info("Collecting running config before test on {}".format(dut_hostname))
+
+    dut_data["pre_running_config"] = json.loads(dut_engine.run_cmd("sonic-cfggen -d --print-data"))
+
+    yield dut_data
+
+    logger.info("Collecting running config after test on {}".format(dut_hostname))
+    dut_data["cur_running_config"] = json.loads(dut_engine.run_cmd("sonic-cfggen -d --print-data"))
+
+    pre_only_config = {}
+    cur_only_config = {}
+    inconsistent_config = {}
+
+    # Ignore the following keys in the comparison as they are expected and are not considered as stale configurations.
+    exclude_config_table_names = {"LOGGER"}
+
+    pre_running_config = dut_data["pre_running_config"]
+    cur_running_config = dut_data["cur_running_config"]
+    pre_running_config_keys = set(pre_running_config.keys())
+    cur_running_config_keys = set(cur_running_config.keys())
+
+    # Check if there are extra keys in pre running config
+    pre_config_extra_keys = list(pre_running_config_keys - cur_running_config_keys - exclude_config_table_names)
+    for key in pre_config_extra_keys:
+        pre_only_config.update({key: pre_running_config[key]})
+
+    # Check if there are extra keys in cur running config
+    cur_config_extra_keys = list(cur_running_config_keys - pre_running_config_keys - exclude_config_table_names)
+    for key in cur_config_extra_keys:
+        cur_only_config.update({key: cur_running_config[key]})
+
+    # Get common keys in pre running config and cur running config
+    common_config_keys = list(pre_running_config_keys & cur_running_config_keys - exclude_config_table_names)
+
+    # Check if the running config is modified after module running
+    for key in common_config_keys:
+        # TODO: remove these code when solve the problem of "FLEX_COUNTER_DELAY_STATUS"
+        if key == "FLEX_COUNTER_TABLE":
+            for sub_key, sub_value in list(pre_running_config[key].items()):
+                try:
+                    pre_value = pre_running_config[key][sub_key]
+                    cur_value = cur_running_config[key][sub_key]
+                    if pre_value["FLEX_COUNTER_STATUS"] != cur_value["FLEX_COUNTER_STATUS"]:
+                        inconsistent_config.update(
+                            {
+                                key: {
+                                    "pre_value": pre_running_config[key],
+                                    "cur_value": cur_running_config[key]
+                                }
+                            }
+                        )
+                except KeyError:
+                    inconsistent_config.update(
+                        {
+                            key: {
+                                "pre_value": pre_running_config[key],
+                                "cur_value": cur_running_config[key]
+                            }
+                        }
+                    )
+        elif not compare_running_config(pre_running_config[key], cur_running_config[key]):
+            inconsistent_config.update(
+                {
+                    key: {
+                        "pre_value": pre_running_config[key],
+                        "cur_value": cur_running_config[key]
+                    }
+                }
+            )
+
+    if pre_only_config or cur_only_config or inconsistent_config:
+        check_result = {
+            "config_db_check": {
+                "pass": False,
+                "pre_only_config": pre_only_config,
+                "cur_only_config": cur_only_config,
+                "inconsistent_config": inconsistent_config
+            }
+        }
+
+        logger.warning(f"Config check failed for {module_name}, "
+                       f"diff summary: {DeepDiff(pre_running_config, cur_running_config)}\n "
+                       f"full results: {check_result}")
+
+        logger.info(f"DUT contains stale configurations after running {module_name}, reloading DUT to configurations "
+                    f"before the test")
+        save_config_db_json(dut_engine, dut_data["pre_running_config"])
+        cli_objects.dut.general.reload_flow(topology_obj=topology_obj, reload_force=True)
+    else:
+        logger.info("Config check passed for {}".format(module_name))
+
+
+def compare_running_config(pre_running_config, cur_running_config):
+    if not isinstance(pre_running_config, type(cur_running_config)):
+        return False
+    if pre_running_config == cur_running_config:
+        return True
+    else:
+        if isinstance(pre_running_config, dict):
+            if set(pre_running_config.keys()) != set(cur_running_config.keys()):
+                return False
+            for key in pre_running_config.keys():
+                if not compare_running_config(pre_running_config[key], cur_running_config[key]):
+                    return False
+            return True
+        # We only have string in list in running config now, so we can ignore the order of the list.
+        elif isinstance(pre_running_config, list):
+            if set(pre_running_config) != set(cur_running_config):
+                return False
+            else:
+                return True
+        else:
+            return False
