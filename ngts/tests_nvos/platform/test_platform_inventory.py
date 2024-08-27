@@ -86,6 +86,10 @@ class InventorySwitchTest(InventoryItemBaseTest):
     ITEM_TYPE = 'switch'
 
 
+class InventoryBmcTest(InventoryItemBaseTest):
+    ITEM_TYPE = 'bmc'
+
+
 @pytest.mark.platform
 @pytest.mark.cumulus
 @pytest.mark.nvos_ci
