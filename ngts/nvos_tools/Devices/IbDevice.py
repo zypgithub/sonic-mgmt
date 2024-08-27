@@ -1157,6 +1157,8 @@ class JulietScaleoutSwitch(JulietSwitch):
         self.all_fae_nvl5_ports_list = self.all_nvl5_ports_list + self.nvl5_fnm_ports
         self.nvl5_port = ['sw1p1s1']
         self.nvl5_port_speed = '400G'
+        self.fnm_link_speed = '100G'
+        self.fnm_fae_link_speed = '100G'
         self.nvl5_port_type = 'nvl'
         # will be updated
 
@@ -1281,6 +1283,15 @@ class JulietAriel(JulietTTMSwitch):
             "asic-model": self.asic_type,
         })
 
+        self.nvl5_access_ports_list = ['acp1', 'acp2', 'acp3', 'acp4', 'acp5', 'acp6',
+                                       'acp7', 'acp8', 'acp9', 'acp10', 'acp11', 'acp12', 'acp13', 'acp14',
+                                       'acp15', 'acp16', 'acp17', 'acp18', 'acp19', 'acp20',
+                                       'acp21', 'acp22', 'acp23', 'acp24', 'acp25', 'acp26',
+                                       'acp27', 'acp28', 'acp29', 'acp30', 'acp31', 'acp32',
+                                       'acp33', 'acp34', 'acp35', 'acp36']
+
+        self.all_nvl5_ports_list = self.nvl5_access_ports_list + self.nvl5_trunk_ports_list + self.network_ports
+
     def _init_platform_lists(self):
         super()._init_platform_lists()
         self.platform_inventory_switch_values.update({"model": "692-9K36F-A5MV-JS0"})
@@ -1329,6 +1340,8 @@ class JulietNonScaleoutSwitch(JulietScaleoutSwitch):
         self.all_fae_nvl5_ports_list = self.all_nvl5_ports_list + self.nvl5_fnm_ports
         self.nvl5_port = ['sw1p1s1']
         self.nvl5_port_speed = '400G'
+        self.fnm_link_speed = '100G'
+        self.fnm_fae_link_speed = '100G'
         self.nvl5_port_type = 'nvl'
         # will be updated
         self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(

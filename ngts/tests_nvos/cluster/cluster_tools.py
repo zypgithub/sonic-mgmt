@@ -69,7 +69,7 @@ class ClusterTools:
             return ResultObj(result=True)
 
     @staticmethod
-    def start_cluster(cluster, output_format):
+    def start_cluster(cluster, output_format=OutputFormat.json):
         with allure.step("Start cluster"):
             output = OutputParsingTool.parse_show_output_to_dict(
                 cluster.show(output_format=output_format),
