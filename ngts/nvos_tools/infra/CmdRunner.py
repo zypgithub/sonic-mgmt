@@ -26,6 +26,19 @@ class CmdRunner:
             for process in self._live_processes:
                 self.kill_cmd_process(process)
 
+    def run_cmd(self, cmd: str) -> str:
+        """
+        run a given command
+            - wait till command is done
+            - asserts that there's no error
+        @param cmd: the command to run
+        @return: the output of the command
+        """
+        out, err, _ = self.run_cmd_in_process(cmd)
+        self._log(f'verify command had no errors in err channel')
+        assert not err, f'command failed with error in err channel.\ncmd: "{cmd}"\nerr:\n{err}'
+        return out.strip()
+
     def run_cmd_in_process(self, cmd: str, keep_process_alive: bool = False, wait_till_done: bool = True, cmd_timeout=None) -> Tuple[str, str, subprocess.Popen]:
         """
         run a given command in a process

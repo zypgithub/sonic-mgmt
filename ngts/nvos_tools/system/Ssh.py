@@ -10,6 +10,7 @@ logger = logging.getLogger()
 class Ssh(BaseComponent):
     def __init__(self, parent_obj=None):
         super().__init__(parent=parent_obj, path='/ssh')
+        self.authorized_key = AuthorizedKey(self)
 
 
 class AuthorizedKey(BaseComponent):
