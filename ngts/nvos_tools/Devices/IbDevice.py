@@ -1281,10 +1281,9 @@ class JulietAriel(JulietTTMSwitch):
             "asic-model": self.asic_type,
         })
 
-
-def _init_platform_lists(self):
-    super()._init_platform_lists()
-    self.platform_inventory_switch_values.update({"model": "692-9K36F-A5MV-JS0"})
+    def _init_platform_lists(self):
+        super()._init_platform_lists()
+        self.platform_inventory_switch_values.update({"model": "692-9K36F-A5MV-JS0"})
 
 
 # -------------------------- JulietNonScaleoutSwitch Switch ----------------------------
