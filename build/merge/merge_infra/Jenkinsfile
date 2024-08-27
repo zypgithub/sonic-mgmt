@@ -1,0 +1,67 @@
+import jenkins.model.*
+
+pipeline {
+    agent none
+    environment {
+        MAIN_NODE = 'SONIC_LITE'
+        GITHUB_USER = ''
+        GITHUB_PASSWORD = ''
+        GERRIT_USER = ''
+        GERRIT_HTTP_TOKEN = ''
+    }
+    stages {
+        stage('Main') {
+            agent { label "${MAIN_NODE}" }
+            steps {
+                script {
+
+                    github_creds = com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials(com.cloudbees.plugins.credentials.common.StandardUsernameCredentials.class,
+		             Jenkins.instance, null, null ).find{it.id == "627018d2-decf-41c7-9a92-f7ae30139673"}
+                    gerrit_creds =com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials(com.cloudbees.plugins.credentials.common.StandardUsernameCredentials.class,
+		            Jenkins.instance, null, null ).find{it.id == "gerrit_git-nbu-sw_https_credentials"}
+
+                    if (github_creds != null) {
+                        env.GITHUB_USER = github_creds.username
+                        env.GITHUB_PASSWORD = github_creds.password
+                    } else {
+                        error("Credential with Github not found.")
+                    }
+
+                    if (gerrit_creds != null) {
+                        env.GERRIT_USER = gerrit_creds.username
+                        env.GERRIT_HTTP_TOKEN = gerrit_creds.password
+                    } else {
+                        error("Credential with Gerrit not found.")
+                    }
+
+                    def startDate = params.START_DATE ?: (new Date() - 10).format('yyyy-MM-dd', TimeZone.getTimeZone('UTC'))
+                    def endDate = params.END_DATE ?: new Date().format('yyyy-MM-dd', TimeZone.getTimeZone('UTC'))
+
+                    echo "Start Date: ${startDate}"
+                    echo "End Date: ${endDate}"
+
+
+                    def recipientsList = params.RECIPIENTS.split(',').collect { it.trim() }
+                    def ignorePrsList = params.IGNORE_PRS.split(',').collect { it.trim() }
+
+
+                    sh 'cp  /.autodirect/sw_regression/system/SONIC/MARS/tarballs/jenkins_auto_merge_tool.db.1.tgz ./'
+                    sh 'tar -xzvf jenkins_auto_merge_tool.db.1.tgz sonic-mgmt/'
+
+                    sh 'ls -l'
+
+                    echo "Running......"
+
+                    withEnv([
+                        "PYTHONPATH=sonic-mgmt/"
+                    ]) {
+                        sh """
+                            python3  sonic-mgmt/build/merge/merge_infra/merge_entry.py  --branch=${BRANCH} --recipients="${recipientsList.join(' ')}"  --start_date=${startDate} --end_date=${endDate}  --ignore_prs="${ignorePrsList.join(' ')}"
+                        """
+                    }
+
+                }
+            }
+        }
+    }
+}

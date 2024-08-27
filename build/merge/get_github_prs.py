@@ -9,6 +9,7 @@ TEAM_MEMBERS = ['nhe-NV', 'ppikh', "JibinBao", "roysr-nv", "AntonHryshchuk", "ih
 
 logger = logging.getLogger()
 
+
 class GitHubApi:
     """
     This class allows user to search github prs
@@ -87,5 +88,3 @@ if __name__ == "__main__":
     github_api.get_pr_open_from_nvidia_verification_team()
     print(f"\n----------------------------PR closed since {last_merge_date} ---------------------------")
     github_api.get_pr_merged_after_last_merge(last_merge_date)
-
-

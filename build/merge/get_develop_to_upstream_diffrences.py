@@ -9,7 +9,7 @@ import datetime
 
 def get_all_different_file_name_list(expected_diff_file_name_list):
     git_diff_command = 'git --no-pager diff  --name-status develop..upstream/master | egrep "^M"'
-    rc, git_diff_output= subprocess.getstatusoutput(git_diff_command)
+    rc, git_diff_output = subprocess.getstatusoutput(git_diff_command)
     git_diff_output_file_list = git_diff_output.split('\n')
 
     if rc != 0:
