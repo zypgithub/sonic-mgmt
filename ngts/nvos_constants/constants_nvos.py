@@ -1140,6 +1140,8 @@ class OperationTimeConsts:
                   ActionConsts.POWER_CYCLE: 360,
                   'juliet-power-cycle': 415
                   }
+    THRESHOLDS['start stop cluster app stressed resources'] = THRESHOLDS['start stop cluster app'] * 1.1
+    THRESHOLDS['start stop cluster stressed resources'] = THRESHOLDS['start stop cluster'] * 1.1
 
 
 class StatsConsts:

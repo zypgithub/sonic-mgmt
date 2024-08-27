@@ -142,8 +142,8 @@ def test_cluster_app_start_stop_under_stressed_resources(engines, devices, test_
             # Loop until the timeout is reached
             while time.time() - start_time < timeout:
                 ClusterTools.start_cluster(cluster, output_format)
-                result_obj, duration = OperationTime.save_duration('start stop cluster app', '', test_name, ClusterTools.stop_start_app, cluster, engines, devices)
-                OperationTime.verify_operation_time(duration, 'start stop cluster app').verify_result()
+                result_obj, duration = OperationTime.save_duration('start stop cluster app stressed resources', '', test_name, ClusterTools.stop_start_app, cluster, engines, devices)
+                OperationTime.verify_operation_time(duration, 'start stop cluster app stressed resources').verify_result()
 
     finally:
         with allure.step("Reset cluster state"):

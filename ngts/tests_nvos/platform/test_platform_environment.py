@@ -93,7 +93,7 @@ def test_show_platform_environment_fan(engines, devices, test_api, output_format
             if output.get(fan).get("state") == "absent":
                 _test_absent_fan(fan, output_format, devices.dut.platform_environment_absent_fan_values, output, platform)
                 continue
-        _test_specific_fan(fan, output_format, devices.dut.platform_environment_fan_values, output, platform)
+            _test_specific_fan(fan, output_format, devices.dut.platform_environment_fan_values, output, platform)
 
 
 def _test_absent_fan(fan, output_format, expected, output, platform):
@@ -297,7 +297,9 @@ def test_show_platform_environment_temperature(engines, devices, test_api):
 
     verify_sensor_group_by_tolerance(output, PlatformConsts.ENV_CPU)
     verify_sensor_group_by_tolerance(output, PlatformConsts.FW_ASIC)
-    verify_sensor_group_by_tolerance(output, PlatformConsts.ENV_PSU.upper())
+    with allure.step('Check is Juliet Device'):
+        if not isinstance(TestToolkit.devices.dut, JulietSwitch):
+            verify_sensor_group_by_tolerance(output, PlatformConsts.ENV_PSU.upper())
 
 
 @pytest.mark.platform
