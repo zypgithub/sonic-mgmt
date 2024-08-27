@@ -1,19 +1,20 @@
 import logging
-import time
-import pytest
 import random
+import time
 
+import pytest
+
+from ngts.nvos_constants.constants_nvos import ApiType
+from ngts.nvos_constants.constants_nvos import FansConsts
+from ngts.nvos_constants.constants_nvos import OutputFormat
+from ngts.nvos_constants.constants_nvos import PlatformConsts, HealthConsts, ActionConsts, SystemConsts
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
-from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.system.System import System
-from ngts.nvos_tools.infra.Tools import Tools
-from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.nvos_constants.constants_nvos import PlatformConsts, HealthConsts, ActionConsts, SystemConsts
-from ngts.nvos_constants.constants_nvos import OutputFormat
-from ngts.nvos_constants.constants_nvos import FansConsts
-from ngts.nvos_constants.constants_nvos import ApiType
+from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
 
@@ -172,14 +173,11 @@ def test_set_platform_environment_led(engines, devices, test_api):
 
     with allure.step("Negative set off to FAN or PSU"):
         logging.info("Negative set off to FAN or PSU")
-        should_succeed = True
         for led, led_prop in output.items():
             if led == PlatformConsts.ENV_UID:
                 continue
-            if TestToolkit.tested_api != "OpenApi":
-                should_succeed = False
             platform.environment.led.action(action='turn-{type}'.format(type=PlatformConsts.ENV_LED_TURN_OFF),
-                                            suffix=led).verify_result(should_succeed)
+                                            suffix=led).verify_result(False)
 
     with allure.step("Check that all leds are green and UID off by default"):
         logging.info("Check that all leds are green and UID off by default")

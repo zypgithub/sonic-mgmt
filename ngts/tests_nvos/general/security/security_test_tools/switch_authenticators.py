@@ -4,7 +4,7 @@ import time
 import pexpect
 
 from infra.tools.general_constants.constants import DefaultConnectionValues
-from ngts.tests_nvos.general.security.constants import SSN_OPTIONS
+from ngts.nvos_tools.infra.SshCmdBuilder import SshCmdBuilder
 
 MAX_TIMEOUT = 360
 PEXPECT_DELAY = 2
@@ -108,7 +108,8 @@ class Authenticator:
 class SshAuthenticator(Authenticator):
     def __init__(self, username, password, ip, port=22):
         super().__init__(username, password, ip, port)
-        self.ssn_command = f'ssh {SSN_OPTIONS} -o ConnectTimeout={MAX_TIMEOUT} {self.username}@{self.ip}'
+        self.ssn_command = SshCmdBuilder(username, ip, port).set_ssn().set_num_password_prompts(10).build()
+        # self.ssn_command = f'ssh {SSN_OPTIONS} -o ConnectTimeout={MAX_TIMEOUT} {self.username}@{self.ip}'
         self.ssh_session_already_started = False
         self.start_session()
 

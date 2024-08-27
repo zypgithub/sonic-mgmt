@@ -1,5 +1,6 @@
 import pytest
 
+from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from infra.tools.linux_tools.linux_tools import scp_file
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.tests_nvos.general.security.constants import MAX_TEST_TIMEOUT
@@ -732,6 +733,7 @@ def test_ldap_filter_performance(test_api, engines, request, topology_obj):
 
     def get_ssh_and_command_execution_duration(engine: ProxySshEngine, resource_obj: BaseComponent, set_param_name: str,
                                                set_param_val, description: str = '') -> float:
+        engine.disconnect()
         start_time = time.time()
         resource_obj.set(set_param_name, set_param_val, apply=True, dut_engine=engine).verify_result()
         end_time = time.time()
@@ -741,11 +743,10 @@ def test_ldap_filter_performance(test_api, engines, request, topology_obj):
         return duration
 
     with allure.step('With filters - Connect with LDAP user and make operation'):
-        ldap_user_engine = ProxySshEngine(device_type=engines.dut.device_type,
-                                          ip=engines.dut.ip,
+        ldap_user_engine = LinuxSshEngine(ip=engines.dut.ip,
                                           username=test_user.username,
                                           password=test_user.password)
-        pwh_obj = System().security.password_hardening
+        pwh_obj = System(force_api=ApiType.NVUE).security.password_hardening
         duration_with_filters = get_ssh_and_command_execution_duration(ldap_user_engine, pwh_obj, PwhConsts.LEN_MIN, 19,
                                                                        'with filters')
 

@@ -87,7 +87,7 @@ class BaseComponent:
             dut_engine = TestToolkit.engines.dut
         with allure.step('Execute set for {resource_path}'.format(resource_path=self.get_resource_path())):
             if op_param_name:
-                if TestToolkit.tested_api == ApiType.OPENAPI:
+                if TestToolkit.tested_api == ApiType.OPENAPI and self._api_to_use != ApiType.NVUE:
                     if isinstance(op_param_value, str):
                         op_param_value = op_param_value.replace('"', '')
                     value = {op_param_name: op_param_value}
