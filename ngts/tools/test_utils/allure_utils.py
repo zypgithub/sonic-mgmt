@@ -92,5 +92,10 @@ def _step(step_msg, independent=False):
             raise
 
 
-def attach(title: str, msg: str, attachment_type=orig_allure.attachment_type.TEXT):
-    orig_allure.attach(msg, title, attachment_type)
+def attach(title: str, msg: str = None, attachment_type=orig_allure.attachment_type.TEXT):
+    if msg is None:
+        logging.info(title)
+        msg = title
+    else:
+        logging.info(f"{title}: {msg}")
+    orig_allure.attach(str(msg), str(title), attachment_type)

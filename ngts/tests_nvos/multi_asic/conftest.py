@@ -11,6 +11,5 @@ logger = logging.getLogger()
 @pytest.fixture
 def random_asic() -> int:
     ret = RandomizationTool.select_random_asics().get_returned_value()[0]
-    with allure.step(f"Test will be performed on randomly-chosen ASIC{ret}"):  # show chosen ASIC in allure
-        pass
+    allure.attach(f"Random chosen ASIC: {ret}")
     return ret

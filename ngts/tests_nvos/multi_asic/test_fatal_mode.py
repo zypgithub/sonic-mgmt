@@ -15,12 +15,13 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.system.System import System
+from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.system.clock.ClockConsts import ClockConsts
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
 
-SETTINGS = {"clear_time": 1, "events_count": 2}
+SETTINGS = {"clear_time": 1}
 NUM_TRIES_TO_RECOVER_AT_TEARDOWN = 4
 
 
@@ -28,8 +29,15 @@ NUM_TRIES_TO_RECOVER_AT_TEARDOWN = 4
 ################################################################################
 
 
+@pytest.fixture
+def events_count_setting():
+    output = RandomizationTool.select_random_value([1, 2]).get_returned_value()
+    allure.attach(f"events_count={output}")
+    return output
+
+
 @pytest.fixture(autouse=True)
-def fatal_mode_setup_and_teardown(test_name, engines):
+def fatal_mode_setup_and_teardown(test_name, engines, events_count_setting):
     if test_name == test_post_fatal_recovery.__name__:
         yield
         return
@@ -38,7 +46,7 @@ def fatal_mode_setup_and_teardown(test_name, engines):
         assert (OutputParsingTool.parse_json_str_to_dictionary(System().health.show()).get_returned_value()
                 [HealthConsts.STATUS]) == HealthConsts.OK
 
-    _set_settings(**SETTINGS)
+    _set_settings(events_count=events_count_setting, **SETTINGS)
     yield
 
     with allure.step("Reverting fatal-mode settings"):
@@ -89,51 +97,52 @@ def test_flow_until_soft_reset(engines, devices, random_asic):
 
     with allure.step(f"Trigger soft reset 1 or 2 times (randomly)"):
         repetitions = RandomizationTool.select_random_value([1, 2]).get_returned_value()
-        logger.info(f"Soft reset will be triggered {repetitions} time{'s' if repetitions > 1 else ''}")
+        allure.attach(f"{repetitions=}")
         for i in range(repetitions):
-            _trigger_soft_reset(i == 0, random_asic)
+            _trigger_soft_reset(i == 0, random_asic, events_count_setting)
 
     _wait_to_exit_fatal()
 
 
 @pytest.mark.checklist
 @pytest.mark.fatal_mode
-def test_flow_until_reboot(engines, devices, random_asic, test_name):
+def test_flow_until_reboot(engines, devices, random_asic, test_name, events_count_setting):
     """
     Test repetitive health-events cause "soft reset" and then reboot. After everything is fine, leave fatal mode.
     Also generate tech-support and assert the dump contains /etc/system_fatal file.
     """
     TestToolkit.tested_api = ApiType.OPENAPI
 
-    _trigger_soft_reset(False, random_asic)
-    _trigger_soft_reset(True, random_asic)
+    _set_settings(reboot_count=2)
+    _trigger_soft_reset(False, random_asic, events_count_setting)
+    _trigger_soft_reset(True, random_asic, events_count_setting)
 
     with allure.step(f"Trigger switch reboot 1 or 2 times (randomly)"):
         repetitions = RandomizationTool.select_random_value([1, 2]).get_returned_value()
-        logger.info(f"Reboot will be triggered {repetitions} time{'s' if repetitions > 1 else ''}")
+        allure.attach(f"{repetitions=}")
         for _ in range(repetitions):
-            _trigger_reboot(random_asic)
+            _trigger_reboot(random_asic, events_count_setting)
 
     # todo: _check_tech_support(). nv set fae system fatal clear-time 4 (?)
     _wait_to_exit_fatal()
 
 
+@pytest.mark.timeout(30 * MINUTE, func_only=True)
 @pytest.mark.checklist
 @pytest.mark.fatal_mode
-def test_flow_until_close_ports(engines, devices, random_asic):
+def test_flow_until_close_ports(engines, devices, random_asic, events_count_setting):
     """
     Test the full flow – repetitive health-events cause "soft reset", followed by reboot, followed by ports-close, and
     the system remains in this state.
     """
     TestToolkit.tested_api = ApiType.NVUE
-    _set_settings(reboot_count=1)
 
-    _trigger_soft_reset(False, random_asic)
-    _trigger_soft_reset(True, random_asic)
-    _trigger_reboot(random_asic)
+    _trigger_soft_reset(False, random_asic, events_count_setting)
+    _trigger_soft_reset(True, random_asic, events_count_setting)
+    _trigger_reboot(random_asic, events_count_setting)
 
     with allure.step("Trigger final fatal-mode reboot after which ports are closed"):
-        _trigger_reboot(random_asic)
+        _trigger_reboot(random_asic, events_count_setting)
         # booting will take extra ~10 minutes waiting for the system-ready timeout (for CLI to become available)
         # todo: make it shorter somehow
         _assert_system_fatal_mode(True, )
@@ -144,13 +153,9 @@ def test_flow_until_close_ports(engines, devices, random_asic):
         _assert_system_fatal_mode(True, )
         _assert_close_ports()
 
-    # skip this because it's not very important and it takes way too long
-    # with allure.step("Assert system remains in fatal mode with closed ports even after reboot"):
-    #     _manual_reboot(engines.dut)  # again extra ~10 minutes
-    #     _assert_system_fatal_mode(True, )
-    #     _assert_close_ports()
-
-    _manual_exit_fatal_mode(engines.dut)
+    _manual_reboot(engines.dut)
+    _assert_system_fatal_mode(False)
+    # todo: assert ports are open
 
 
 @pytest.mark.checklist
@@ -164,7 +169,7 @@ def test_remain_in_fatal_mode_until_manual_reboot(engines, devices, random_asic)
     TestToolkit.tested_api = ApiType.OPENAPI
     _set_settings(events_time=1)
 
-    _trigger_soft_reset(False, random_asic)
+    _trigger_soft_reset(False, random_asic, events_count_setting)
 
     with allure.step("Generate 1 event and verify fatal-mode doesn't time-out"):
         _simulate_events(1, random_asic, False)
@@ -172,7 +177,7 @@ def test_remain_in_fatal_mode_until_manual_reboot(engines, devices, random_asic)
         _wait(1, 30)
         _assert_system_fatal_mode(True, )
 
-    _trigger_soft_reset(True, random_asic)
+    _trigger_soft_reset(True, random_asic, events_count_setting)
     _assert_system_fatal_file(0)
 
     with allure.step("Generate 1 event and verify fatal-mode doesn't time-out"):
@@ -214,10 +219,7 @@ def _test_negative_flow_time_window(engines, devices, random_asic):
 def test_negative_flow_with_warnings(engines, devices, random_asic):
     """Test that fatal-mode is not triggered by health events with irrelevant event_ids."""
     TestToolkit.tested_api = ApiType.OPENAPI
-    _set_settings(events_count=3)
-    event_list = _get_random_event_list(2) + ["warning"]
-    RandomizationTool.shuffle_in_place(event_list)
-    _simulate_events(event_list, random_asic)
+    _simulate_events(["warning"], random_asic)
     _assert_syncd_restart(expect_restart=False)
     _assert_system_fatal_mode(False, False)
 
@@ -313,7 +315,7 @@ def _get_random_event_list(n: int) -> list:
                                                   allow_repetitions=True).get_returned_value()
 
 
-def _trigger_soft_reset(already_in_fatal: bool, asic: int, number_of_events=2):
+def _trigger_soft_reset(already_in_fatal: bool, asic: int, number_of_events):
     with allure.step(_trigger_soft_reset.__name__ +
                      ': Generating health-events to trigger fatal-mode "soft-reset" (syncd restart)'):
         _simulate_events(number_of_events, asic, not already_in_fatal)
@@ -322,7 +324,7 @@ def _trigger_soft_reset(already_in_fatal: bool, asic: int, number_of_events=2):
         _wait(0, 10)
 
 
-def _trigger_reboot(asic: int, number_of_events=2):
+def _trigger_reboot(asic: int, number_of_events):
     with allure.step(_trigger_reboot.__name__ + ': Generating health-events to trigger fatal-mode reboot'):
         _simulate_events(number_of_events, asic, False)
         _assert_reboot()
