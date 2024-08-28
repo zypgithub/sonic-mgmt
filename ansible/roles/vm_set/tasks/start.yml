@@ -143,18 +143,8 @@
       stat: path={{ root_path }}/images/{{ vsonic_image_filename }}
       register: sonic_img_stat
 
-    - name: Download vsonic image
-      get_url: url="{{ vm_images_url }}/{{ sonic_image_filename }}" dest="{{ root_path }}/images/{{ sonic_image_filename }}"
-      environment: "{{ proxy_env | default({}) }}"
-      when: not img_stat.stat.exists
-
-    - name: Check SONiC image one more time after download
-      stat: path={{ root_path }}/images/{{ sonic_image_filename }}
-      register: img_stat
-
-    - name: Fail if there are no SONiC image and skip image downloading is active
-      fail: msg="Please put {{ sonic_image_filename }} to {{ root_path }}/images"
-      when: not img_stat.stat.exists and skip_image_downloading
+    - name: Download SONiC image if no local file exists
+      block:
 
       - name: Fail if skip_vsonic_image_downloading is true
         fail:
