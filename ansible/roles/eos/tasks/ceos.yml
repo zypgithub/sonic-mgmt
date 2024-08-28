@@ -22,6 +22,7 @@
 
 - include_vars: group_vars/vm_host/ceos.yml
 - include_tasks: ceos_config.yml
+- include_vars: group_vars/vm_host/ceos.yml
 
 - name: Create cEOS container
   become: yes
