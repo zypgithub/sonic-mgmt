@@ -93,7 +93,7 @@ def test_gnmi_auth_after_remove_local_user(engines, local_adminuser):
         System().aaa.user.user_id[local_adminuser.username].unset(apply=True).verify_result()
 
     verify_gnmi_client(TestFlowType.BAD_FLOW, engines.dut.ip, GnmiConsts.GNMI_DEFAULT_PORT, local_adminuser.username,
-                       local_adminuser.password, True, GnmicErr.AUTH_FAIL)
+                       local_adminuser.password, True, GnmicErr.AUTH_FAIL, client_cmd_time=20)
 
 
 @pytest.mark.system
