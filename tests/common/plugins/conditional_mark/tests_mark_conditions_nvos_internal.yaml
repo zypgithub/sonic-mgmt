@@ -508,4 +508,8 @@ tests_nvos/multi_asic/test_interface_ipoib.py::test_interface_ipoib_mapping_basi
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3975478"
     conditions:
       - https://redmine.mellanox.com/issues/3975478
+
+tests_nvos/checklist/test_cpld_upgrade::test_cpld_upgrade:
+  skip:
+    reason: "Until we get updated CPLD versions"
 ########################## NVOS IGNORE END ##########################
