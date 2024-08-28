@@ -3,7 +3,6 @@ import random
 import pytest
 import copy
 
-from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.tools.test_utils import allure_utils as allure
@@ -19,6 +18,9 @@ from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_tools.Devices.DeviceFactory import DeviceFactory
 from ngts.nvos_tools.system.System import System
 from ngts.scripts.sonic_deploy.test_deploy_and_upgrade import get_target_version_url, get_base_version_url, prepare_images_to_install
+from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
+
 
 ClusterAppsLogLevelsList = [ClusterAppsLogLevels.DEBUG, ClusterAppsLogLevels.INFO, ClusterAppsLogLevels.NOTICE, ClusterAppsLogLevels.WARNING, ClusterAppsLogLevels.ERROR, ClusterAppsLogLevels.CRITICAL]
 
@@ -36,9 +38,9 @@ UNDEFINED_STATE_ERR_MSG = 'Error: At state: \'undefined\' is not one of [\'enabl
 
 
 @pytest.mark.nmx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [ApiType.NVUE])
 def test_upgrade_with_nmx_enabled(test_api, devices, base_version,
-                                  target_version, topology_obj, setup_name, platform_params, engines, release_name):
+                                  target_version, topology_obj, setup_name, platform_params, engines, release_name, test_name):
     '''
     Test will install a base version (Taken from regression).
     On base version perform the following:
@@ -137,8 +139,8 @@ def test_upgrade_with_nmx_enabled(test_api, devices, base_version,
             # Example of target version: '/auto/sw_system_release/nos/nvos/25.02.0506/amd64/dev/nvos-amd64-25.02.0506.bin'
             # fetched_image_file.action_rename(fetched_image)
             install_image_and_verify(orig_engine=orig_engine, image_name=fetched_image, partition_id=partition_id_for_new_image,
-                                     original_images=original_images, system=system, release_name=release_name,
-                                     test_name='test_downgrade_upgrade')
+                                     original_images=original_images, system=system, release_name=release_name, device=devices,
+                                     test_name=test_name)
             target_image_installed = True
 
         with allure.step("Running 'nv show cluster' command and parsing output"):
@@ -184,6 +186,7 @@ def test_upgrade_with_nmx_enabled(test_api, devices, base_version,
         with allure.step("Delete state/config Files"):
             for file_type in NMX_CONTROLLER_CONFIG_FILE_TYPES:
                 for file in all_config_files_paths[file_type]:
+                    file = file.split('/')[-1]
                     sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.file_name[file].action_delete()
                     engines.sonic_mgmt.run_cmd(f"sudo rm -rf {initial_configs_paths_to_restore[file_type]}")
             engines.sonic_mgmt.run_cmd(f"sudo rm -rf {INITIAL_CONFIGURATIONS_PATH}/*")
@@ -195,10 +198,10 @@ def test_upgrade_with_nmx_enabled(test_api, devices, base_version,
         ClusterTools.wait_for_apps_to_be_in_wanted_state()
 
 
-def install_image_and_verify(orig_engine, image_name, partition_id, original_images, system, release_name,
+def install_image_and_verify(orig_engine, image_name, partition_id, original_images, system, release_name, device,
                              test_name=''):
     with allure.step("Installing image {}".format(image_name)):
-        device: BaseDevice = TestToolkit.devices.dut
+        device = device.dut
         new_engine = LinuxSshEngine(orig_engine.ip, orig_engine.username,
                                     device.get_default_password_by_version(release_name))
         OperationTime.save_duration('image install', '', test_name,

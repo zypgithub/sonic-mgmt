@@ -96,7 +96,7 @@ def test_cluster_app_log_level(engines, devices, test_api):
 
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_cluster_app_log_level_under_stress(engines, devices, test_api):
+def test_cluster_app_log_level_under_stress(engines, devices, test_api, test_name):
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
 
