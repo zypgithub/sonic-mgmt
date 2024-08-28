@@ -23,6 +23,7 @@ from ngts.nvos_constants.constants_nvos import NvosConst
 from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
 from ngts.nvos_tools.Devices.DeviceFactory import DeviceFactory
 from ngts.nvos_tools.Devices.EthDevice import EthSwitch
+from ngts.nvos_tools.Devices.IbDevice import CrocodileSwitch
 from ngts.nvos_tools.cli_coverage.nvue_cli_coverage import NVUECliCoverage
 from ngts.nvos_tools.ib.opensm.OpenSmTool import OpenSmTool
 from ngts.nvos_tools.infra.CmdRunner import CmdRunner
@@ -192,12 +193,13 @@ def tst_all_pwh_confs(request):
 
 
 @pytest.fixture
-def start_sm(engines, traffic_available):
+def start_sm(engines, devices, traffic_available):
     """
     Starts OpenSM
     """
     if traffic_available:
-        RegressionConfigurations.configure_ports_to_legacy(engine=engines.dut, apply=True, throw_exception=False)
+        if isinstance(devices.dut, CrocodileSwitch):
+            RegressionConfigurations.configure_ports_to_legacy(engine=engines.dut, apply=True, throw_exception=False)
         result = OpenSmTool.start_open_sm(engines)
         if not result.result:
             logging.warning("Failed to start openSM")
