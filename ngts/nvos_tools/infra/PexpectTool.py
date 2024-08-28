@@ -1,4 +1,5 @@
 import logging
+from typing import Tuple
 
 import pexpect
 
@@ -23,7 +24,7 @@ class PexpectTool:
         self.child = pexpect.spawn(cmd)
         self.child.delaybeforesend = DefaultConnectionValues.PEXPECT_DELAYBEFORESEND
 
-    def expect(self, expect_msg, error_message='', raise_exception_for_timeout: bool = True, timeout=None):
+    def expect(self, expect_msg, error_message='', raise_exception_for_timeout: bool = True, timeout=None) -> int:
         err_msg = error_message if error_message else self.expect_error_msg
         if isinstance(expect_msg, list):
             logging.info(f'Expect: {expect_msg}')
@@ -47,6 +48,12 @@ class PexpectTool:
                 return PexpectTool.TIMEOUT
 
         return res_index
+
+    def expect_and_get_output(self, expect_msg, error_message='', raise_exception_for_timeout: bool = True, timeout=None) -> Tuple[int, str]:
+        res_index = self.expect(expect_msg, error_message, raise_exception_for_timeout, timeout)
+        if res_index == PexpectTool.TIMEOUT:
+            return res_index, 'TIMEOUT'
+        return res_index, self.last_output
 
     def send(self, send_str):
         print_to_log = "\\r" if send_str == "\r" else send_str
