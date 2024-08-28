@@ -93,7 +93,7 @@ def test_gnmi_auth_after_remove_local_user(engines, local_adminuser):
         System().aaa.user.user_id[local_adminuser.username].unset(apply=True).verify_result()
 
     verify_gnmi_client(TestFlowType.BAD_FLOW, engines.dut.ip, GnmiConsts.GNMI_DEFAULT_PORT, local_adminuser.username,
-                       local_adminuser.password, True, GnmicErr.AUTH_FAIL)
+                       local_adminuser.password, True, GnmicErr.AUTH_FAIL, client_cmd_time=20)
 
 
 @pytest.mark.system
@@ -181,7 +181,8 @@ def test_gnmi_auth_existing_streamed_session(engines, local_adminuser):
         out, err = client.close_session_and_get_out_and_err(session)
         verify_msg_not_in_out_or_err(GnmicErr.AUTH_FAIL, out, err)
         for new_description in new_descriptions:
-            verify_msg_in_out_or_err(new_description, out)
+            with allure.independent_step(f'check that "new_description" was streamed'):
+                verify_msg_in_out_or_err(new_description, out)
 
 
 @pytest.mark.system
