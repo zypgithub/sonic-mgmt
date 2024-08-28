@@ -31,6 +31,9 @@ class ClockConsts:
     CMD_SHOW_CLOCK_TIMEZONES = "show clock timezones"
     CMD_CONFIG_CLOCK_TIMEZONE = "config clock timezone"
     CMD_CONFIG_CLOCK_DATE = "config clock date"
+    CMD_NTP_STOP = 'service ntp stop'
+    CMD_NTP_START = 'service ntp start'
+    CMD_NTPDATE = 'ntpdate'
 
     # expected outputs
     OUTPUT_CMD_SUCCESS = ''
