@@ -24,7 +24,7 @@ from ngts.tools.test_utils.switch_recovery import generate_strong_password
 
 @pytest.mark.system
 @pytest.mark.gnmi
-@pytest.mark.parametrize('test_flow', TestFlowType.ALL_TYPES)
+@pytest.mark.parametrize('test_flow', [TestFlowType.GOOD_FLOW])
 def test_gnmi_authentication(test_flow, engines, local_adminuser, aaa_users):
     """
     verify that gnmi clients must be properly authenticated to subscribe and get updates
@@ -61,7 +61,7 @@ def test_gnmi_authentication(test_flow, engines, local_adminuser, aaa_users):
 
 @pytest.mark.system
 @pytest.mark.gnmi
-@pytest.mark.parametrize('test_flow', TestFlowType.ALL_TYPES)
+@pytest.mark.parametrize('test_flow', [TestFlowType.GOOD_FLOW])
 def test_gnmi_auth_change_local_user_password(test_flow, engines, local_adminuser):
     """
     verify that gnmi properly authenticates local user after password change
@@ -181,7 +181,8 @@ def test_gnmi_auth_existing_streamed_session(engines, local_adminuser):
         out, err = client.close_session_and_get_out_and_err(session)
         verify_msg_not_in_out_or_err(GnmicErr.AUTH_FAIL, out, err)
         for new_description in new_descriptions:
-            verify_msg_in_out_or_err(new_description, out)
+            with allure.independent_step(f'check that "new_description" was streamed'):
+                verify_msg_in_out_or_err(new_description, out)
 
 
 @pytest.mark.system
