@@ -76,15 +76,6 @@ def get_supported_hash_algorithms(request):
     return supported_hash_algorithm_list
 
 
-@pytest.fixture(scope="module")
-def get_balance_range_for_ingress_port_field(request):
-    asic_type = get_asic_type(request)
-    if asic_type in 'mellanox':
-        return balancing_range_in_port
-    else:
-        return balancing_range
-
-
 @pytest.fixture(scope="module", autouse=True)
 def skip_vs_setups(duthost):
     """ Fixture to skip the test on vs setups. """
@@ -670,7 +661,7 @@ def get_vlan_intf_mac(duthost):
 
 
 def generate_test_params(duthost, tbinfo, mg_facts, hash_field, ipver, inner_ipver, encap_type, uplink_interfaces,
-                         downlink_interfaces, ecmp_hash, lag_hash, is_l2_test=False, balancing_range=balancing_range):
+                         downlink_interfaces, ecmp_hash, lag_hash, is_l2_test=False):
     """
     Generate ptf test parameters.
     Args:
@@ -685,7 +676,6 @@ def generate_test_params(duthost, tbinfo, mg_facts, hash_field, ipver, inner_ipv
         lag_hash: if lag hash is tested
         encap_type: the encapsulation type when testing inner fields
         is_l2_test: if L2 traffic is should be used in test
-        balancing_range: hash result deviation threshold
     """
     src_ip_range, dst_ip_range, inner_src_ip_range, inner_dst_ip_range = get_ip_range(ipver, inner_ipver)
     # Get the ptf src and dst ports
@@ -716,6 +706,8 @@ def generate_test_params(duthost, tbinfo, mg_facts, hash_field, ipver, inner_ipv
         ptf_params['encap_type'] = encap_type
         if encap_type == 'vxlan':
             ptf_params['vxlan_port'] = random.choice(vxlan_port_list)
+    if ecmp_hash and lag_hash and hash_field == "IN_PORT" and duthost.facts['asic_type'] == "mellanox":
+        ptf_params['balancing_range'] = balancing_range_in_port
     return ptf_params
 
 
