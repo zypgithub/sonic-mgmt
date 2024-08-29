@@ -29,7 +29,10 @@ class PortRequirements:
     port_requirements = None
 
     def __init__(self):
-        self.port_requirements = self.default_port_requirements
+        self.port_requirements = self.default_port_requirements.copy()
+
+    def __str__(self):
+        return self.__class__.__name__ + "=" + str({k: v for k, v in self.port_requirements.items() if v})
 
     def set_port_name(self, name):
         self.port_requirements[IbInterfaceConsts.NAME] = name
@@ -64,6 +67,9 @@ class Port(BaseComponent):
         self.name_in_redis = name_in_redis
         self.interface = Interface(self, name)
         self.acl = Acl(self)
+
+    def __str__(self):
+        return f"<{self.__class__.__name__} {self.name}>"
 
     @staticmethod
     def get_list_of_active_ports(port_type=IbInterfaceConsts.IB_PORT_TYPE):
