@@ -35,9 +35,6 @@ class Configurations:
 
     post_install_commands = {"10.7.144.153": ['nv set acl ACL_MGMT_INBOUND_CP_DEFAULT rule 120 match ip recent-list hit-count 3000',
                                               'nv config apply'],
-                             "10.7.148.112": ['nv set fae system fatal reboot-state disabled',
-                                              'nv config apply',
-                                              'nv config save'],
                              }
 
     devices_to_configure_ndr_ports = ndr_ports.keys()
