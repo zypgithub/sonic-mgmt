@@ -77,6 +77,8 @@ class BaseDevice(ABC):
         self.ib_ports_num = 0
         self.mst_dev_name = ""
         self.constants = None
+        self.split_ports_supported = False
+        self.profile_change_supported = False
         self.voltage_sensors = []
 
     def _init_fan_list(self):

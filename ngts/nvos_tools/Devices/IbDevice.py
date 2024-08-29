@@ -409,6 +409,8 @@ class GorillaSwitch(IbSwitch):
         IbSwitch._init_constants(self)
         self.core_count = 4
         self.asic_type = NvosConst.QTM2
+        self.split_ports_supported = True
+        self.profile_change_supported = True
         self.platform_file_path = MultiPlanarConsts.PLATFORM_FILE_FULL_PATH.format("x86_64-mlnx_mqm9700-r0")
         self.show_platform_output.update({
             "product-name": "MQM9700",
@@ -592,6 +594,7 @@ class CrocodileSwitch(IbSwitch):
         super()._init_constants()
         self.ib_ports_num = 64
         self.core_count = 4
+        self.split_ports_supported = True
         self.asic_type = NvosConst.QTM3
         self.default_port = 'swA1p1'
         self.platform_file_path = MultiPlanarConsts.PLATFORM_FILE_FULL_PATH.format("x86_64-nvidia_qm3400-r0")
@@ -611,6 +614,7 @@ class CrocodileSwitch(IbSwitch):
                                 'PMIC-7-CEX-VDD-Out-1', 'PSU-1-12V-Out', 'PSU-2-12V-Out', 'PSU-3-12V-Out',
                                 'PSU-4-12V-Out']
         self.stats_fan_header_num_of_lines = 23
+        self.system_profile_default_values = ['enabled', '1792', 'enabled', 'disabled', '1']
         self.stats_power_header_num_of_lines = 17
         self.stats_temperature_header_num_of_lines = 69
         self.previous_cpld_version = BaseSwitch.CpldImageConsts(

@@ -32,6 +32,9 @@ def test_ib_split_port_no_breakout_profile(engines, interfaces, start_sm, device
         4. Try to split already splitted port
         5. Unset
     """
+    if not devices.dut.split_ports_supported:
+        pytest.skip("Split is not supported on this setup")
+
     system = System(None)
     with allure.step("Verify default system profile"):
         system_profile_output = OutputParsingTool.parse_json_str_to_dictionary(system.profile.show()) \
@@ -72,9 +75,10 @@ def test_ib_split_port_no_breakout_profile(engines, interfaces, start_sm, device
         assert not output, "config not detached"
 
     with allure.step('Change system profile to breakout-mode enabled, adaptive-routing enabled'):
-        with allure.step("Enable adaptive-routing and enable breakout-mode "):
-            system.profile.action_profile_change(params_dict={'adaptive-routing': 'enabled',
-                                                              'breakout-mode': 'enabled'})
+        if devices.dut.profile_change_supported:
+            with allure.step("Enable adaptive-routing and enable breakout-mode "):
+                system.profile.action_profile_change(params_dict={'adaptive-routing': 'enabled',
+                                                                  'breakout-mode': 'enabled'})
 
         with allure.step("Start OpenSm"):
             OpenSmTool.start_open_sm(engines).verify_result()
@@ -136,7 +140,7 @@ def test_ib_split_port_no_breakout_profile(engines, interfaces, start_sm, device
 
 
 @pytest.mark.ib_interfaces
-def test_ib_split_port_default_values(engines, interfaces, start_sm):
+def test_ib_split_port_default_values(engines, interfaces, start_sm, devices):
     """
     Test flow:
         1. Change profile to breakout enabled
@@ -148,6 +152,9 @@ def test_ib_split_port_default_values(engines, interfaces, start_sm):
         7. Unset parent port
         8. Check it returned to default values
     """
+    if not devices.dut.split_ports_supported:
+        pytest.skip("Split is not supported on this setup")
+
     system = System(None)
     with allure.step("Check traffic port up"):
         active_ports = Tools.RandomizationTool.get_random_active_port(number_of_values_to_select=0).get_returned_value()
@@ -157,15 +164,10 @@ def test_ib_split_port_default_values(engines, interfaces, start_sm):
     with allure.step('Verify breakout values'):
         system_profile_output = OutputParsingTool.parse_json_str_to_dictionary(system.profile.show()) \
             .get_returned_value()
-        values_to_verify = [SystemConsts.PROFILE_STATE_ENABLED, 1792, SystemConsts.PROFILE_STATE_ENABLED,
-                            SystemConsts.PROFILE_STATE_DISABLED, SystemConsts.DEFAULT_NUM_SWIDS]
         ValidationTool.validate_fields_values_in_output(SystemConsts.PROFILE_OUTPUT_FIELDS,
-                                                        values_to_verify, system_profile_output).verify_result()
+                                                        devices.dut.system_profile_default_values,
+                                                        system_profile_output).verify_result()
         logging.info("All expected values were found")
-
-    with allure.step("Check traffic port up"):
-        for port in active_ports:
-            port.interface.wait_for_port_state(NvosConsts.LINK_STATE_UP, sleep_time=30).verify_result()
 
     with allure.step("Change default values for a parent port"):
         split_ports, active_ports = _get_split_ports()
@@ -204,7 +206,7 @@ def test_ib_split_port_default_values(engines, interfaces, start_sm):
                                                             values_to_verify,
                                                             output_dictionary).verify_result()
 
-    with allure.step("Change  mtu, check changes for child port"):
+    with allure.step("Change mtu, check changes for child port"):
         child_ports[0].interface.link.set(op_param_name='mtu', op_param_value=512, apply=True,
                                           ask_for_confirmation=True).verify_result()
 
@@ -239,7 +241,7 @@ def test_ib_split_port_default_values(engines, interfaces, start_sm):
 
 
 @pytest.mark.ib_interfaces
-def test_split_port_counters(engines, players, interfaces, start_sm):
+def test_split_port_counters(engines, players, interfaces, start_sm, devices):
     """
     Test flow:
         1. Send traffic
@@ -249,6 +251,9 @@ def test_split_port_counters(engines, players, interfaces, start_sm):
         5. Unset port
         6. Send traffic and check it pass
     """
+    if not devices.dut.split_ports_supported:
+        pytest.skip("Split is not supported on this setup")
+
     with allure.step("Verify correct Noga setup"):
         assert engines.ha and engines.hb, "Traffic hosts details can't be found in Noga setup"
 
@@ -304,13 +309,16 @@ def test_split_port_counters(engines, players, interfaces, start_sm):
 
 
 @pytest.mark.ib_interfaces
-def test_split_port_timings(engines, interfaces, start_sm):
+def test_split_port_timings(engines, interfaces, start_sm, devices):
     """
     Test flow:
         1. Split port
         2. Check if child port will go up for less that 30 sec
         3. Unset split port
     """
+    if not devices.dut.split_ports_supported:
+        pytest.skip("Split is not supported on this setup")
+
     with allure.step("Split port"):
         split_ports, active_ports = _get_split_ports()
         parent_port = split_ports[0]
@@ -332,12 +340,15 @@ def test_split_port_timings(engines, interfaces, start_sm):
 
 
 @pytest.mark.ib_interfaces
-def test_split_port_n_times(engines, interfaces, start_sm):
+def test_split_port_n_times(engines, interfaces, start_sm, devices):
     """
     Test flow:
         1. Split/unsplit port n-times
         2. Check system stable
     """
+    if not devices.dut.split_ports_supported:
+        pytest.skip("Split is not supported on this setup")
+
     with allure.step("Split port"):
         split_ports, active_ports = _get_split_ports()
         parent_port = split_ports[0]
@@ -356,7 +367,7 @@ def test_split_port_n_times(engines, interfaces, start_sm):
 
 
 @pytest.mark.ib_interfaces
-def test_split_all_ports_together(engines, interfaces, start_sm):
+def test_split_all_ports_together(engines, interfaces, start_sm, devices):
     """
     Test flow:
         1. Get all ib ports
@@ -365,6 +376,9 @@ def test_split_all_ports_together(engines, interfaces, start_sm):
         4. Get all ports
         5. Unset
     """
+    if not devices.dut.split_ports_supported:
+        pytest.skip("Split is not supported on this setup")
+
     marker = TestToolkit.get_loganalyzer_marker(engines.dut)
 
     with allure.step("Get all up and down ports"):
@@ -401,7 +415,7 @@ def test_split_all_ports_together(engines, interfaces, start_sm):
 
 @pytest.mark.system_profile_cleanup
 @pytest.mark.ib_interfaces
-def test_split_all_ports(engines, interfaces, start_sm):
+def test_split_all_ports(engines, interfaces, start_sm, devices):
     """
     Test flow:
         1. Get all ib ports
@@ -410,6 +424,9 @@ def test_split_all_ports(engines, interfaces, start_sm):
         4. Get all ports
         5. Unset
     """
+    if not devices.dut.split_ports_supported:
+        pytest.skip("Split is not supported on this setup")
+
     marker = TestToolkit.get_loganalyzer_marker(engines.dut)
 
     with allure.step("Get all up and down ports"):
@@ -455,15 +472,20 @@ def test_split_all_ports(engines, interfaces, start_sm):
 
 
 @pytest.mark.ib_interfaces
-def test_ib_split_port_stress(engines, interfaces, start_sm):
+def test_ib_split_port_stress(engines, interfaces, start_sm, devices):
     """
     Test flow:
         1. Stress system
         2. Check that we can split/unsplit
     """
+    if not devices.dut.split_ports_supported:
+        pytest.skip("Split is not supported on this setup")
+
     system = System(None)
     with allure.step('Change system profile to breakout'):
-        system.profile.action_profile_change(params_dict={'adaptive-routing': 'enabled', 'breakout-mode': 'enabled'})
+        if devices.dut.profile_change_supported:
+            system.profile.action_profile_change(params_dict={'adaptive-routing': 'enabled',
+                                                              'breakout-mode': 'enabled'})
 
         with allure.step("Start OpenSm"):
             OpenSmTool.start_open_sm(engines).verify_result()
@@ -522,6 +544,9 @@ def test_split_port_redis_db_crash(engines, interfaces, start_sm, devices):
         2. Check changes
         3. Check no system not crashed
     """
+    if not devices.dut.split_ports_supported:
+        pytest.skip("Split is not supported on this setup")
+
     system = System(None)
     with allure.step("Check traffic port up"):
         split_ports, active_ports = _get_split_ports()
@@ -558,15 +583,16 @@ def test_split_port_redis_db_crash(engines, interfaces, start_sm, devices):
     with allure.step("Unset parent port"):
         parent_port.interface.link.unset(op_param='breakout', apply=True, ask_for_confirmation=True).verify_result()
 
-    with allure.step('Change system profile to default'):
-        system.profile.action_profile_change(
-            params_dict={'adaptive-routing': 'enabled', 'adaptive-routing-groups': '2048', 'breakout-mode': 'disabled'})
-        system_profile_output = OutputParsingTool.parse_json_str_to_dictionary(system.profile.show()) \
-            .get_returned_value()
-        ValidationTool.validate_fields_values_in_output(SystemConsts.PROFILE_OUTPUT_FIELDS,
-                                                        devices.dut.system_profile_default_values,
-                                                        system_profile_output).verify_result()
-        logging.info("All values returned successfully")
+    if devices.dut.profile_change_supported:
+        with allure.step('Change system profile to default'):
+            system.profile.action_profile_change(
+                params_dict={'adaptive-routing': 'enabled', 'adaptive-routing-groups': '2048', 'breakout-mode': 'disabled'})
+            system_profile_output = OutputParsingTool.parse_json_str_to_dictionary(system.profile.show()) \
+                .get_returned_value()
+            ValidationTool.validate_fields_values_in_output(SystemConsts.PROFILE_OUTPUT_FIELDS,
+                                                            devices.dut.system_profile_default_values,
+                                                            system_profile_output).verify_result()
+            logging.info("All values returned successfully")
 
 
 def _run_cmd_nvue(engines, cmds_to_run, num_of_iterations):

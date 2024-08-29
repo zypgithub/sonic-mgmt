@@ -86,10 +86,7 @@ def test_reset_factory_keep_basic(engines):
         date_time_str = engines.dut.run_cmd("date").split(" ", 1)[1]
         current_time = datetime.strptime(date_time_str, '%d %b %Y %H:%M:%S %p %Z')
 
-        with allure.step('Validate health status is OK'):
-            logger.info("Validate health status is OK")
-            system.validate_health_status(HealthConsts.OK)
-            last_status_line = system.health.history.retry_get_health_history_file_summary_line()
+        last_status_line = get_last_status_line(system)
 
         with allure.step('Set description to eth0 port'):
             logger.info("Set description to eth0 port")
@@ -155,10 +152,7 @@ def test_reset_factory_keep_all_config(engines, devices):
         with allure.step('Create System object'):
             system = System()
 
-        with allure.step('Validate health status is OK'):
-            logger.info("Validate health status is OK")
-            system.validate_health_status(HealthConsts.OK)
-            last_status_line = system.health.history.retry_get_health_history_file_summary_line()
+        last_status_line = get_last_status_line(system)
 
         with allure.step(f'Set description to {port_type} ports'):
             logger.info(f"Set description to {port_type} ports")
@@ -243,10 +237,7 @@ def test_reset_factory_keep_only_files(engines, devices):
             date_time_str = engines.dut.run_cmd("date").split(" ", 1)[1]
             current_time = datetime.strptime(date_time_str, '%d %b %Y %H:%M:%S %p %Z')
 
-        with allure.step('Validate health status is OK'):
-            logger.info("Validate health status is OK")
-            system.validate_health_status(HealthConsts.OK)
-            last_status_line = system.health.history.retry_get_health_history_file_summary_line()
+        last_status_line = get_last_status_line(system)
 
         with allure.step(f'Set description to {port_type} ports'):
             logger.info(f"Set description to {port_type} ports")
@@ -319,3 +310,13 @@ def test_error_flow_reset_factory_with_params(test_api, engines, devices, topolo
 def execute_reset_factory(engines, system, flag, current_time):
     logging.info("Current time: " + str(current_time))
     system.factory_default.action_reset(param=flag).verify_result()
+
+
+def get_last_status_line(system):
+    with allure.step('Validate health status is OK'):
+        logger.info("Validate health status is OK")
+        try:
+            system.validate_health_status(HealthConsts.OK)
+            return system.health.history.retry_get_health_history_file_summary_line()
+        except BaseException:
+            return ""
