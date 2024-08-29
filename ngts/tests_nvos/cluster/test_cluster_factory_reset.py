@@ -374,7 +374,7 @@ def reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, s
             output = sdn.state.app.app_name[NMX_CONTROLLER].type.file_type[file_type].action_generate_sdn()
             output = OutputParsingTool.parse_show_output_to_dict(sdn.state.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=output_format),
                                                                  output_format=output_format).get_returned_value()
-            all_state_files_paths[file_type].extend([item['path'] for item in output.values()])
+            all_state_files_paths[file_type] = [item['path'] for item in output.values()]
 
     with allure.step("Install config file"):
         for file_type in NMX_CONTROLLER_CONFIG_FILE_TYPES:
@@ -384,7 +384,7 @@ def reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, s
             installed_file = ClusterTools.get_generated_file_name(output.returned_value, 'config')
             output = OutputParsingTool.parse_show_output_to_dict(sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=output_format),
                                                                  output_format=output_format).get_returned_value()
-            all_config_files_paths[file_type].extend([item['path'] for item in output.values()])
+            all_config_files_paths[file_type] = [item['path'] for item in output.values()]
             current_installed_config_path = output[installed_file]['path']
             current_config_content = engines.dut.run_cmd("sudo cat {}".format(current_installed_config_path))
             expected_config_content = engines.sonic_mgmt.run_cmd("sudo cat {}".format(path_to_config[file_type]))
@@ -440,11 +440,13 @@ def post_factory_reset_security_checks():
 def delete_all_sdn_fetched_generated_files(sdn, all_config_files_paths, all_state_files_paths):
     with allure.step("Delete state/config Files"):
         for file_type in NMX_CONTROLLER_CONFIG_FILE_TYPES:
-            for file in all_config_files_paths[file_type]:
-                file = file.split('/')[-1]
-                sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.file_name[file].action_delete()
+            if all_config_files_paths[file_type]:
+                for file in all_config_files_paths[file_type]:
+                    file = file.split('/')[-1]
+                    sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.file_name[file].action_delete()
             engines.sonic_mgmt.run_cmd(f"sudo rm -rf {initial_configs_paths_to_restore[file_type]}")
         for file_type in NMX_CONTROLLER_STATE_FILE_TYPES:
-            for file in all_state_files_paths[file_type]:
-                file = file.split('/')[-1]
-                sdn.state.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.file_name[file].action_delete()
+            if all_state_files_paths[file_type]:
+                for file in all_state_files_paths[file_type]:
+                    file = file.split('/')[-1]
+                    sdn.state.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.file_name[file].action_delete()

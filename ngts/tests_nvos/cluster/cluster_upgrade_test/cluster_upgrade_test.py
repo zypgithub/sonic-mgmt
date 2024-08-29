@@ -185,11 +185,12 @@ def test_upgrade_with_nmx_enabled(test_api, devices, base_version,
 
         with allure.step("Delete state/config Files"):
             for file_type in NMX_CONTROLLER_CONFIG_FILE_TYPES:
-                for file in all_config_files_paths[file_type]:
-                    file = file.split('/')[-1]
-                    sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.file_name[file].action_delete()
-                    engines.sonic_mgmt.run_cmd(f"sudo rm -rf {initial_configs_paths_to_restore[file_type]}")
-            engines.sonic_mgmt.run_cmd(f"sudo rm -rf {INITIAL_CONFIGURATIONS_PATH}/*")
+                if all_config_files_paths[file_type]:
+                    for file in all_config_files_paths[file_type]:
+                        file = file.split('/')[-1]
+                        sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.file_name[file].action_delete()
+                        engines.sonic_mgmt.run_cmd(f"sudo rm -rf {initial_configs_paths_to_restore[file_type]}")
+                engines.sonic_mgmt.run_cmd(f"sudo rm -rf {INITIAL_CONFIGURATIONS_PATH}/*")
 
         with allure.step("Restore log level"):
             cluster.apps.apps_name[app].loglevel.action_restore_cluster()
