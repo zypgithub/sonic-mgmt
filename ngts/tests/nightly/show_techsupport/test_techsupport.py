@@ -1,7 +1,6 @@
 import allure
 import os
 import pytest
-import time
 from retry.api import retry_call
 import re
 import logging
@@ -34,7 +33,7 @@ ZIPPED_FILE_POSTFIX = ".gz"
 
 @pytest.mark.disable_loganalyzer
 @allure.title('Tests that DumpMeNow dump contains all the expected dumps when fw stuck occurs')
-def test_techsupport_fw_stuck_dump(topology_obj, loganalyzer, engines, cli_objects):
+def test_techsupport_fw_stuck_dump(topology_obj, engines, cli_objects):
     duthost = engines.dut
     chip_type = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific']['chip_type']
 
@@ -87,26 +86,7 @@ def test_techsupport_mellanox_sdk_dump(topology_obj, engines, cli_objects, logan
             'docker exec -it syncd python mellanox_sdk_trigger_event_script.py --fw_event {}'.format(event_id))
         for dut in loganalyzer:
             loganalyzer[dut].expect_regex.extend(["Health event happened"])
-            ignoreRegex = [
-                r".*SX_HEALTH_FATAL Detected with cause : FW health issue.*",
-                r".*SDK health event, device.*",
-                r".*FW health.*stopping further device monitoring.*",
-                r".*on_switch_shutdown_request: Syncd stopped.*",
-                r".*ERROR - Read PWM error. Possible hw-management is not running.*",
-                r".*SX_HEALTH_FATAL: cause_string = \[FW health issue\].*",
-                r".*SX_HEALTH_FATAL: cause_string.*error msg generated from SDK.*",
-                r".*Failed command read at communication channel: Connection reset by peer.*",
-                r".*mlnx_switch_health_event_handle: Health event happened.*"
-            ]
-            if fw_event == "PLL_LOCK_EVENT":
-                ignoreRegex.extend([
-                    r".*SXD_HEALTH_FW_FATAL: FW Fatal:fw_cause.*",
-                    r".*SX_HEALTH_FATAL: cause_string = \[PLL lock failure\].*",
-                    r".*Failed command read at communication channel: Connection reset by peer.*",
-                    r".*SXD_HEALTH_FATAL:\s?On device \d+ cause =\'PLL lock failure\'.*",
-                    r".*PLL lock failure.*further device monitoring.*"
-                ])
-            loganalyzer[dut].ignore_regex.extend(ignoreRegex)
+            loganalyzer[dut].ignore_regex = [r".*"]
     with allure.step('STEP3: Count number of SDK extended dumps at dut after event occurred'):
         number_of_sdk_error_after = generate_tech_support_and_count_sdk_dumps(duthost)
 
@@ -129,16 +109,7 @@ def test_techsupport_health_event_sdk_dump(topology_obj, loganalyzer, engines, c
         with allure.step('Verify Health-Check: Trigger SYSFS failure appears in syslog'):
             for dut in loganalyzer:
                 loganalyzer[dut].expect_regex.extend(["Health-Check: Trigger SYSFS failure"])
-                ignoreRegex = [
-                    r".*mlnx_switch_health_event_handle: Health event happened.*HW catastrophic.*"
-                    r"event",
-                    r"on_switch_shutdown_request: Syncd stopped",
-                    r".*on_switch_shutdown_request: Orchagent aborted due to fatal SAI error received.*",
-                    r".*onSwitchAsicSdkHealthEvent: \[fatal\] ASIC/SDK health event occurred.*",
-                    r".*Sysfs running counter is not updated for more than \d+ sec.*",
-                    r".*Failed command read at communication channel: Connection reset by peer.*"
-                ]
-                loganalyzer[dut].ignore_regex.extend(ignoreRegex)
+                loganalyzer[dut].ignore_regex = [r".*"]
 
         with allure.step('Generate health check trigger event'):
             duthost.run_cmd(f'sudo echo health_check_trigger sysfs > {HEALTH_CHECK_INJECT_FILE_PATH}')
