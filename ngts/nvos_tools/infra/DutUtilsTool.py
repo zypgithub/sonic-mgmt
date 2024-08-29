@@ -45,21 +45,14 @@ class DutUtilsTool:
             if 'aborted' in output.lower() or 'aborting' in output.lower():
                 return ResultObj(result=False, info=output)
 
-            with allure.step('Waiting for switch shutdown after reload command'):
-                check_port_status_till_alive(False, engine.ip, engine.ssh_port)
-                engine.disconnect()
-
+            res_obj = DutUtilsTool.wait_on_system_reboot(engine, recovery_engine, None, should_wait_till_system_ready,
+                                                         device, False)
             if not should_wait_till_system_ready:
                 time.sleep(40)
-                return ResultObj(result=True, info="system is not ready yet")
+                return res_obj
 
-            with allure.step('Waiting for switch to be ready'):
-                check_port_status_till_alive(True, engine.ip, engine.ssh_port)
-                recovery_engine = recovery_engine if recovery_engine else engine
-                result_obj = device.wait_for_os_to_become_functional(recovery_engine, find_prompt_delay=find_prompt_delay)
-
-        result_obj.returned_value = output
-        return result_obj
+        res_obj.returned_value = output
+        return res_obj
 
     @staticmethod
     def check_ssh_for_authentication_error(engine, device):
@@ -90,20 +83,39 @@ class DutUtilsTool:
             return ResultObj(result=True, info="Reconnected After Running {}".format(command))
 
     @staticmethod
-    def wait_on_system_reboot(engine, recovery_engine=None, wait_time_before_reboot=120):
+    def wait_on_system_reboot(engine, recovery_engine=None, wait_time_before_reboot=120, wait_till_system_ready=True,
+                              device=None, verify_final_result=True):
         """
         Call this after an operation that should trigger a reboot. Will wait on the switch until it's functional.
         :param wait_time_before_reboot: How many seconds to wait for the switch to go down. If this time elapsed and
             the ports are still alive, we assume the switch did not start reboot at all and raise AssertionError.
         """
-        with allure.step("Waiting for system to reboot and become available"):
-            with allure.step("Waiting for switch shutdown after reload command"):
+        with allure.step("Waiting for switch shutdown after reload command"):
+            if wait_time_before_reboot is not None:
                 check_port_status_till_alive(False, engine.ip, engine.ssh_port,
                                              tries=wait_time_before_reboot / 2)  # divide by 2 because 2 delay=2 seconds
-                engine.disconnect()
+            else:
+                check_port_status_till_alive(False, engine.ip, engine.ssh_port)
+            engine.disconnect()
+            if not wait_till_system_ready:
+                return ResultObj(result=True, info="system is not ready yet")
+
+        with allure.step("Waiting for system to reboot and become available"):
+            dut_engine: LinuxSshEngine = recovery_engine or engine
             with allure.step("Waiting for switch to be ready"):
-                check_port_status_till_alive(True, engine.ip, engine.ssh_port)
-                DutUtilsTool.wait_for_nvos_to_become_functional(recovery_engine or engine).verify_result()
+                with allure.step('wait for switch reachable/ping'):
+                    check_port_status_till_alive(True, dut_engine.ip, dut_engine.ssh_port)
+                with allure.step('wait for ssh'):
+                    dut_engine.run_cmd('echo "SSH OK"')
+                with allure.step('wait for os to be functional'):
+                    if device:
+                        result_obj = device.wait_for_os_to_become_functional(dut_engine)
+                    else:
+                        result_obj = DutUtilsTool.wait_for_nvos_to_become_functional(dut_engine)
+                    if verify_final_result:
+                        result_obj.verify_result()
+                    else:
+                        return result_obj
 
     @staticmethod
     def wait_for_nvos_to_become_functional(engine, find_prompt_tries=60, find_prompt_delay=10):
@@ -111,15 +123,20 @@ class DutUtilsTool:
             with allure.step('wait for the system table to exist'):
                 wait_for_system_table_to_exist(engine)
 
-            output = DatabaseTool.sonic_db_cli_hgetall(engine=engine, asic="",
-                                                       db_name=DatabaseConst.STATE_DB_NAME,
-                                                       table_name='\"SYSTEM_READY|SYSTEM_STATE\"')
-            if SystemConsts.STATUS_DOWN in output:
-                return ResultObj(result=False, info="THE SYSTEM IS NOT OK", issue_type=IssueType.PossibleBug)
+            output = ''
+            try:
+                with allure.step('check system state in redis'):
+                    output = DatabaseTool.sonic_db_cli_hgetall(engine=engine, asic="",
+                                                               db_name=DatabaseConst.STATE_DB_NAME,
+                                                               table_name='\"SYSTEM_READY|SYSTEM_STATE\"')
+                    assert SystemConsts.STATUS_DOWN not in output and '(empty array)' not in output
+            except AssertionError:
+                if SystemConsts.STATUS_DOWN in output:
+                    return ResultObj(result=False, info="THE SYSTEM IS NOT OK", issue_type=IssueType.PossibleBug)
 
-            if '(empty array)' in output:
-                return ResultObj(result=False, info="SYSTEM_READY|SYSTEM_STATE TABLE IS MISSED",
-                                 issue_type=IssueType.PossibleBug)
+                if '(empty array)' in output:
+                    return ResultObj(result=False, info="SYSTEM_READY|SYSTEM_STATE TABLE IS MISSED",
+                                     issue_type=IssueType.PossibleBug)
 
             with allure.step('wait until the CLI is up'):
                 wait_until_cli_is_up(engine)
@@ -166,7 +183,8 @@ class DutUtilsTool:
 
     @staticmethod
     def get_engine_interface_name(engine, topology) -> str:
-        dut_setup_specific_attributes: Dict[str, str] = topology.players['dut']['attributes'].noga_query_data['attributes']['Specific']
+        dut_setup_specific_attributes: Dict[str, str] = \
+            topology.players['dut']['attributes'].noga_query_data['attributes']['Specific']
         setup_mgmt_ips = [dut_setup_specific_attributes['ip_address'], dut_setup_specific_attributes['ip_address_2']]
         interface = ''
         for index, mgmt_ip in enumerate(setup_mgmt_ips):
@@ -217,8 +235,7 @@ def _ping_device(ip_add):
 
 @retry(Exception, tries=80, delay=15)
 def wait_for_system_table_to_exist(engine):
-    output = DatabaseTool.sonic_db_cli_hgetall(engine=engine, asic="",
-                                               db_name=DatabaseConst.STATE_DB_NAME,
+    output = DatabaseTool.sonic_db_cli_hgetall(engine=engine, asic="", db_name=DatabaseConst.STATE_DB_NAME,
                                                table_name='\"SYSTEM_READY|SYSTEM_STATE\"')
     if '(empty array)' in output:
         logger.info('Waiting to SYSTEM_STATUS table to be available')
@@ -250,13 +267,8 @@ def wait_for_specific_regex_in_logs(engine, regex, timeout=70):
     :param timeout
     :return:
     """
-    device = {
-        'device_type': engine.device_type,
-        'host': engine.ip,
-        'username': engine.username,
-        'password': engine.password,
-        'timeout': timeout
-    }
+    device = {'device_type': engine.device_type, 'host': engine.ip, 'username': engine.username,
+              'password': engine.password, 'timeout': timeout}
     with allure.step(f"wait for {timeout} seconds to see '{regex}' in logs"):
         connection = ConnectHandler(**device)
         connection.send_command('nv show system log follow', expect_string=regex)
