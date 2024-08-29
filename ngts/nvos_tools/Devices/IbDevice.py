@@ -81,7 +81,7 @@ class IbSwitch(BaseSwitch):
 
     def _init_ib_speeds(self):
         self.invalid_ib_speeds = {'qdr': '40G'}
-        self.supported_ib_speeds = {'hdr': '200G', 'edr': '100G', 'fdr': '56G', 'sdr': '10G', 'ndr': '400G'}
+        self.supported_ib_speeds = ('hdr', 'edr', 'fdr', 'sdr', 'ndr')
 
     def _init_eth0_speeds(self):
         self.supported_eth0_speeds = ['100M', '1G']
@@ -579,6 +579,10 @@ class BlackMambaSwitch(IbSwitch):
     def _init_eth0_speeds(self):
         super()._init_eth0_speeds()
         self.supported_eth0_speeds += ['10M']
+
+    def _init_ib_speeds(self):
+        super()._init_ib_speeds()
+        self.supported_ib_speeds = ("sdr", "hdr", "ndr", "xdr")
 
     def _relevant_config_filename_by_version(self, version: str) -> str:
         return 'nvos_config_xdr.yml'

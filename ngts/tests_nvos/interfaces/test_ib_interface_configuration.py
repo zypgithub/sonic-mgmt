@@ -377,7 +377,7 @@ def verify_speed_values(devices, selected_port):
     speed = current_link_dict[IbInterfaceConsts.LINK_SPEED]
     ib_speed = current_link_dict[IbInterfaceConsts.LINK_IB_SPEED]
     lanes = current_link_dict[IbInterfaceConsts.LINK_LANES]
-    ib_speed_val = devices.dut.supported_ib_speeds[ib_speed].replace("G", "")
+    ib_speed_val = IbInterfaceConsts.SPEED_LIST[ib_speed].replace("G", "")
     ib_speed_val = round_string_number_with_positivity_check(ib_speed_val, "ib_speed_val")
     lanes_val = lanes.replace("X", "")
     lanes_val = round_string_number_with_positivity_check(lanes_val, "lanes_val")
