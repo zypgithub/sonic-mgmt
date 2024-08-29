@@ -202,6 +202,17 @@ def get_port_alias_to_name_map(hwsku, asic_name=None):
                 alias = "etp%d" % (i / 4 + 1) + ("a" if i % 4 == 0 else "b")
                 # print alias, "Ethernet%d" % i
                 port_alias_to_name_map[alias] = "Ethernet%d" % i
+
+        elif hwsku in ["Mellanox-SN4600C-D24C52"]:
+            all_ports = [x for x in range(1, 65)]
+            s100G_ports = [x for x in range(1, 9)]
+            s100G_ports += [x for x in range(13, 27)]
+            s100G_ports += [x for x in range(29, 45)]
+            s100G_ports += [x for x in range(49, 61)]
+            s100G_ports += [x for x in range(63, 65)]
+
+            port_alias_to_name_map = _port_alias_to_name_map_50G(all_ports, s100G_ports)
+
         elif hwsku in ["ACS-MSN3800", "ACS-MSN4600C"]:
             for i in range(1, 65):
                 port_alias_to_name_map["etp%d" % i] = "Ethernet%d" % ((i - 1) * 4)

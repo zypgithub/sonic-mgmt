@@ -84,7 +84,7 @@ class SonicInstallationSteps:
         run_background_process_on_host(threads_dict, 'add_topology', add_topo_cmd, timeout=3600, exec_path=ansible_path)
         if not is_bf_topo(sonic_topo) and not is_dualtor_topo(sonic_topo) and "mtvr-hippo-03" != dut_name and\
                 "mtvr-hippo-02" != dut_name and 'bobcat' not in dut_name and "r-moose-01" != dut_name and \
-                "mtvr-moose-04" != dut_name:
+                "mtvr-moose-04" != dut_name and 'r-tigon-04' != dut_name:
             gen_mg_cmd = get_generate_minigraph_cmd(setup_info, dut_name, sonic_topo, port_number)
             run_background_process_on_host(threads_dict, 'generate_minigraph', gen_mg_cmd, timeout=300,
                                            exec_path=ansible_path)
@@ -446,6 +446,12 @@ class SonicInstallationSteps:
         if "bobcat" in setup_name:
             hwskus = ['ACS-SN4280', 'Mellanox-SN4280-O28']
             need_gen_mingraph = True
+        if "r-tigon-04" in setup_name:
+            hwskus = ['Mellanox-SN4600C-D24C52']
+            need_gen_mingraph = True
+
+        if platform_params["hwsku"] not in hwskus:
+            hwskus = []
 
         for hwsku in hwskus:
             if os.path.exists(f'{sonic_mgmt_hwsku_path}/{hwsku}'):

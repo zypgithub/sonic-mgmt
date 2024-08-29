@@ -85,7 +85,7 @@
     },
     "r-tigon-04_setup": {
         "default_hwsku": "Mellanox-SN4600C-C64",
-        "support_hwsku": ["Mellanox-SN4600C-C64"]
+        "support_hwsku": ["Mellanox-SN4600C-C64", "Mellanox-SN4600C-D24C52"]
     },
     "r-tigon-11_setup": {
         "default_hwsku": "Mellanox-SN4600C-C64",
