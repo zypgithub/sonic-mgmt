@@ -75,6 +75,10 @@
         "default_hwsku": "Mellanox-SN2700-D40C8S8",
         "support_hwsku": ["Mellanox-SN2700-D40C8S8"]
     },
+    "sonic-dual-tor-tigon": {
+        "default_hwsku": "Mellanox-SN4600C-C64",
+        "support_hwsku": ["Mellanox-SN4600C-C64"]
+    },
     "sonic-dual-tor-tigon-01": {
         "default_hwsku": "Mellanox-SN4600C-C64",
         "support_hwsku": ["Mellanox-SN4600C-C64"]
