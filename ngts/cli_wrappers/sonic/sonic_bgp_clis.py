@@ -64,13 +64,14 @@ class SonicBgpCli(BgpCliCommon):
         """
         if not show_bgp_summary_output:
             show_bgp_summary_output = self.show_ip_bgp_summary()
+        output_key = "Neighbhor" if "Neighbhor" in show_bgp_summary_output else "Neighbor"
         bgp_summary_dict = generic_sonic_output_parser(show_bgp_summary_output,
                                                        headers_ofset=8,
                                                        len_ofset=9,
                                                        data_ofset_from_start=10,
                                                        data_ofset_from_end=-2,
                                                        column_ofset=2,
-                                                       output_key='Neighbor')
+                                                       output_key=output_key)
         return bgp_summary_dict
 
     def show_ip_bgp_network(self, network=None):
