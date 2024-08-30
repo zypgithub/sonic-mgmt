@@ -17,11 +17,12 @@ class Files(BaseComponent):
         super().__init__(parent=parent_obj, path='/files')
         self.file_name: Dict[str, File] = DefaultDict(lambda file_name: File(self, filename=file_name))
 
-    def show_log_files(self, log_type='', param='', exit_cmd='', dut_engine=None):
+    def show_log_files(self, log_type='', param='', exit_cmd='', expected_str='', dut_engine=None):
         engine = dut_engine if dut_engine else TestToolkit.engines.dut
         with allure.step('Execute show for log file'):
-            return SendCommandTool.execute_command(self._cli_wrapper.show_log, engine, log_type, param,
-                                                   exit_cmd).get_returned_value()
+            return SendCommandTool.execute_command_expected_str(self._cli_wrapper.show_log,
+                                                                expected_str, TestToolkit.engines.dut, log_type,
+                                                                param, exit_cmd).get_returned_value()
 
     def get_files(self, dut_engine=None):
         with allure.step("Get files"):
