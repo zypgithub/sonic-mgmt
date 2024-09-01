@@ -509,7 +509,7 @@ tests_nvos/multi_asic/test_interface_ipoib.py::test_interface_ipoib_mapping_basi
     conditions:
       - https://redmine.mellanox.com/issues/3975478
 
-tests_nvos/checklist/test_cpld_upgrade::test_cpld_upgrade:
+tests_nvos/checklist/test_cpld_upgrade.py::test_cpld_upgrade:
   skip:
     reason: "Until we get updated CPLD versions"
 ########################## NVOS IGNORE END ##########################
