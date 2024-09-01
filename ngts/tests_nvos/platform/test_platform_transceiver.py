@@ -141,8 +141,10 @@ def test_transceiver_status_with_reboot(engines, devices, test_api, asic_conf_di
         _verify_link_state_down(ports)
         _verify_transceiver_status(platform, transceiver_id=module_under_test, expected_module_status='Removed')
 
-        with allure.step("Reboot the system"):
+        sleep_time_seconds = 60
+        with allure.step(f"Reboot the system and sleep {sleep_time_seconds} seconds"):
             system.reboot.action_reboot(engine=engines.dut, device=devices.dut)
+            time.sleep(sleep_time_seconds)
 
         _verify_transceiver_status(platform, transceiver_id=module_under_test, expected_module_status='Inserted')
 
