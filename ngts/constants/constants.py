@@ -1490,6 +1490,7 @@ class BugHandlerConst:
     TIMESTAMP_FORMATS = ["%b %d %H:%M:%S", "%Y %b %d %H:%M:%S", "%Y-%m-%dT%H:%M:%S"]
     TIMESTAMP_LENGTH = [len(datetime.now().strftime(format)) for format in TIMESTAMP_FORMATS]
     LOG_ERRORS_FILE_ROOT_ITEM = "log_errors"
+    TAR_FILE_SIZE_RM_LIMIT = 102400000
 
 
 class SerialLoggerConst:
