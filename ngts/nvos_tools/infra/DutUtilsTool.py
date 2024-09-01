@@ -84,7 +84,7 @@ class DutUtilsTool:
 
     @staticmethod
     def wait_on_system_reboot(engine, recovery_engine=None, wait_time_before_reboot=120, wait_till_system_ready=True,
-                              device=None, verify_final_result=True):
+                              device=None, verify_final_result=True, wait_for_nvos=True):
         """
         Call this after an operation that should trigger a reboot. Will wait on the switch until it's functional.
         :param wait_time_before_reboot: How many seconds to wait for the switch to go down. If this time elapsed and
@@ -107,6 +107,8 @@ class DutUtilsTool:
                     check_port_status_till_alive(True, dut_engine.ip, dut_engine.ssh_port)
                 with allure.step('wait for ssh'):
                     dut_engine.run_cmd('echo "SSH OK"')
+                if not wait_for_nvos:
+                    return ResultObj(result=True, info="rebooted, ssh up, but system is not ready yet")
                 with allure.step('wait for os to be functional'):
                     if device:
                         result_obj = device.wait_for_os_to_become_functional(dut_engine)

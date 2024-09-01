@@ -20,4 +20,4 @@ def bmc_factory_reset(bmc_session: BmcSshEngine, dut_engine: LinuxSshEngine, top
     with allure.step('power cycle the switch - run remote reboot'):
         NvueGeneralCli(dut_engine).remote_reboot(topology_obj)
     with allure.step('wait for switch to be ready again'):
-        DutUtilsTool.wait_on_system_reboot(dut_engine, wait_for_nvos=False)
+        DutUtilsTool.wait_on_system_reboot(dut_engine, wait_for_nvos=False).verify_result()

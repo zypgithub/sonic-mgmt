@@ -59,7 +59,7 @@ class BmcSshEngine:
                                 f'ssh bmc using user: {self.bmc_username} , password: {self.bmc_another_password}')):
                             self._session = self._start_new_bmc_ssh_session(self.bmc_another_password)
                     else:
-                        raise e
+                        raise
         except Exception as e:
             exc = e
             raise
