@@ -2,6 +2,7 @@ import logging
 import random
 import pytest
 import copy
+import time
 
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
@@ -132,15 +133,22 @@ def test_upgrade_with_nmx_enabled(test_api, devices, base_version,
                     assert current_config_content == expected_config_content, f"Config file was not loaded properly. Expected content {expected_config_content}, Actual content: {current_config_content}"
                     assert current_config_content != initial_config_contents[file_type], f"Current content has not changed, still same as in init state. init: {initial_config_contents[file_type]}, \ncurrent{current_config_content}"
 
+        TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
+
         with allure.step("Performing upgrade:"):
             orig_engine: LinuxSshEngine = TestToolkit.engines.dut
-            original_images, _, original_image_partition, partition_id_for_new_image, fetched_image = \
-                get_image_data_and_fetch_base_image(system, target_version)
-            # Example of target version: '/auto/sw_system_release/nos/nvos/25.02.0506/amd64/dev/nvos-amd64-25.02.0506.bin'
-            # fetched_image_file.action_rename(fetched_image)
-            install_image_and_verify(orig_engine=orig_engine, image_name=fetched_image, partition_id=partition_id_for_new_image,
-                                     original_images=original_images, system=system, release_name=release_name, device=devices,
-                                     test_name=test_name)
+            new_engine = LinuxSshEngine(orig_engine.ip, orig_engine.username,
+                                        devices.dut.get_default_password_by_version(release_name))
+            bin_filename = target_version.split('/')[-1]
+            system = System()
+            sonic_mgmt_engine = topology_obj.players['sonic-mgmt']['engine']
+            scp_host_creds = f'{sonic_mgmt_engine.username}:{sonic_mgmt_engine.password}@{sonic_mgmt_engine.ip}'
+            NvosInstallationSteps.upgrade_to_target_version(bin_filename, cli_obj.engine, cli_obj.device, scp_host_creds,
+                                                            system,
+                                                            target_version)
+
+            with allure.step('replace dut engine'):
+                TestToolkit.engines.dut = new_engine  # if install succeeded, need to replace dut engine
             target_image_installed = True
 
         with allure.step("Running 'nv show cluster' command and parsing output"):

@@ -20,11 +20,11 @@ NMX_TELEMETRY = 'nmx-telemetry'
 TELEMETRY_SERVICES = ['nmx-connector', 'ib-telemetry']
 CONTROLLER_SERVICES = ['nmxc-sdn', 'nmxc-fib', 'redis']
 INITIAL_EXPECTED_APPS = [NMX_CONTROLLER, NMX_TELEMETRY]
-NMX_CONTROLLER_CONFIG_FILE_TYPES = ['fm_config', 'sm_config']   # Todo - add rdm_config once bug is fixed [NVOS - Design] Bug SW #4047277: [Functional] [NMX -Juliet] | Cannot generate SDN rdm_config config file | Assignee: Oren Reiss | Status: Assigned
+NMX_CONTROLLER_CONFIG_FILE_TYPES = ['fm_config', 'sm_config', 'rdm_config', 'chassis_mapping']
 NMX_CONTROLLER_STATE_FILE_TYPES = ['conn_info', 'sm_dump', 'topology']
 ClusterAppsLogLevelsList = [ClusterAppsLogLevels.DEBUG, ClusterAppsLogLevels.INFO, ClusterAppsLogLevels.NOTICE, ClusterAppsLogLevels.WARNING, ClusterAppsLogLevels.ERROR, ClusterAppsLogLevels.CRITICAL]
 NMX_LOG_MESSAGES_TAGS = ['nmxc-sm', 'nmxc-fm', 'nmxc-fib', 'nmxc-gw_api', 'nmxc-rest', 'nmxc-config_daemon']
-WAIT_FOR_APPS_RUNNING = 30  # Should be reduced to ~7 once bug is fixed [NVOS - Design] Bug SW #4010133: [Non-Functional ] [NMX] | No immediate NVOS reflection for showing running apps after being started/stopped | Assignee: Chris Yang | Status: Assigned
+WAIT_FOR_APPS_RUNNING = 10
 NMXC_CONN = 'nmxc-conn'
 NMXC_CONN_STATE_PER_CLUSTER_STATE = {NvosConst.ENABLED: 'up', NvosConst.DISABLED: 'down'}
 
