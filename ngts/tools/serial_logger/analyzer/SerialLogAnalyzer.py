@@ -12,6 +12,7 @@ from contextlib import contextmanager
 from typing import List, Dict, Tuple
 
 from ngts.constants.constants import SerialLoggerConst
+from ngts.nvos_tools.infra.ExceptionTool import log_traceback
 from ..serial_log_script import get_session_serial_log_path, get_session_serial_logs_dir_path, SerialLogFileReader
 # noinspection PyUnresolvedReferences
 from tests.common.plugins.loganalyzer.loganalyzer import LogAnalyzer
@@ -136,13 +137,18 @@ class SerialLogAnalyzer:
         if dut_host is NotImplemented:  # meaning we're in SONIC
             logging.info(DUTHOSTS_MISSING_MESSAGE)
         elif dut_host is None:
-            raise Exception("Can't run bug-handler because duthost object doesn't exist, probably due to a network "
-                            "error. This could also happen when running the test locally (not in MARS).")
+            logging.error("Can't run bug-handler because duthost object doesn't exist, probably due to a network "
+                          "error. This could also happen when running the test locally (not in MARS).")
         else:
             logging.info("Starting bug-handler")
             if only_check:
                 logging.info("Bug-handler will not open bugs, but will print to the log any found bugs.")
-            log_analyzer_bug_handler(dut_host, self._request, self._temp_dir_path, only_check, is_serial_log=True)
+            # Currently serial LA runs only for deploy & upgrade. If it fails the entire regression is canceled;
+            # the try-except is here to avoid it.
+            try:
+                log_analyzer_bug_handler(dut_host, self._request, self._temp_dir_path, only_check, is_serial_log=True)
+            except Exception:
+                log_traceback()
 
     def _stage_start_string(self, stage_name: str) -> str:
         return SerialLoggerConst.START_STAGE.format(test=self.test_name, stage=stage_name)
