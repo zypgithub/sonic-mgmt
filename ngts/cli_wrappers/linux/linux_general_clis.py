@@ -27,7 +27,7 @@ class LinuxGeneralCli(GeneralCliCommon):
         try:
             if not sonic_installer:
                 cmd = f'sudo bfb-install -b {image_path} -r rshim{rshim_num}'
-                pattern = "Installation finished"
+                pattern = r"Installation finished|DPU is ready"
             else:
                 cmd = f'sudo sonic-bfb-installer.sh -b {image_path} -r rshim{rshim_num}'
                 pattern = "Installation Successful"
