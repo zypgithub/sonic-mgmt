@@ -173,8 +173,14 @@ def do_traffic_validation(interfaces, routes_validation_list, players, ip_versio
 )
 def test_adding_routes(cli_objects, engines, platform_params, interfaces, players, ip_version, static_routes, request):
     static_routes = request.getfixturevalue(static_routes)
-
     new_routes_count = len(static_routes)
+    platform = platform_params.platform
+    sync_route_timing = get_sync_route_timing(ip_version, platform, ADD, new_routes_count)
+
+    if sync_route_timing is None:
+        pytest.skip(f'Missing timings DB info. Please update {TIMINGS_DB_FILE} in test directory with feature '
+                    f'disabled results.')
+
     # creates a list of 1k randomly chosen routes to run traffic validation
     routes_validation_list = [static_routes[0], static_routes[-1]] + random.sample(static_routes, 998)
     initial_routes_count = get_routes_count(engines.dut, ip_version)
@@ -199,15 +205,8 @@ def test_adding_routes(cli_objects, engines, platform_params, interfaces, player
 
             timings.append(execution_time)
 
-    platform = platform_params.platform
-    sync_route_timing = get_sync_route_timing(ip_version, platform, ADD, new_routes_count)
     average_execution_time = round(sum(timings) / NUMBER_OF_MEASUREMENTS, 2)
-
     set_expected_execution_time(ip_version, platform, ADD, new_routes_count, average_execution_time)
-
-    if sync_route_timing is None:
-        pytest.skip(f'Missing timings DB info. Please update {TIMINGS_DB_FILE} in test directory with feature '
-                    f'disabled results.')
 
     logger.info(f'Timing for adding {new_routes_count} routes: sync={sync_route_timing}, '
                 f'async={average_execution_time}')
@@ -229,8 +228,14 @@ def test_adding_routes(cli_objects, engines, platform_params, interfaces, player
 def test_removing_routes(cli_objects, engines, platform_params, interfaces, players, ip_version, static_routes,
                          request):
     static_routes = request.getfixturevalue(static_routes)
-
     new_routes_count = len(static_routes)
+    platform = platform_params.platform
+    sync_route_timing = get_sync_route_timing(ip_version, platform, REMOVE, new_routes_count)
+
+    if sync_route_timing is None:
+        pytest.skip(f'Missing timings DB info. Please update {TIMINGS_DB_FILE} in test directory with feature '
+                    f'disabled results.')
+
     routes_validation_list = [static_routes[0], static_routes[-1]] + random.sample(static_routes, 998)
     initial_routes_count = get_routes_count(engines.dut, ip_version)
     timings = []
@@ -253,15 +258,8 @@ def test_removing_routes(cli_objects, engines, platform_params, interfaces, play
                 do_traffic_validation(interfaces, routes_validation_list, players, ip_version, cli_objects, 0)
             timings.append(execution_time)
 
-    platform = platform_params.platform
-    sync_route_timing = get_sync_route_timing(ip_version, platform, REMOVE, new_routes_count)
     average_execution_time = round(sum(timings) / NUMBER_OF_MEASUREMENTS, 2)
-
     set_expected_execution_time(ip_version, platform, REMOVE, new_routes_count, average_execution_time)
-
-    if sync_route_timing is None:
-        pytest.skip(f'Missing timings DB info. Please update {TIMINGS_DB_FILE} in test directory with feature '
-                    f'disabled results.')
 
     logger.info(f'Timing for removing {new_routes_count} routes: sync={sync_route_timing}, '
                 f'async={average_execution_time}')
