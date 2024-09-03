@@ -27,6 +27,9 @@ class EthSwitch(BaseSwitch):
     def init_documents_consts(self):
         super().init_documents_consts()
 
+    def verify_sed_password(self, tpm_tool, sed_default_password=""):
+        pass  # This should be ignored on eth switches, overrides method from base switch
+
     def get_voltage_sensors(self, dut_engine=None):
         return self.voltage_sensors
 

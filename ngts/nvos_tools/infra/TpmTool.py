@@ -7,6 +7,8 @@ from ngts.tools.test_utils import allure_utils as allure
 
 PATH_NO_EXIST_ERR = 'No such file or directory'
 CMD_NOT_FOUND_ERR = 'command not found'
+PRIMARY_SED_TPM_BANK = '0x81010001'
+SECONDARY_SED_TPM_BANK = '0x81010002'
 
 
 class TpmTool:
@@ -86,7 +88,32 @@ class TpmTool:
         with allure.step('get bmc admin password from tpm'):
             return self.get_tpm_cipher()[:11] + 'A!'
 
+    def get_sed_password_primary_bank(self):
+        return self._get_sed_password(PRIMARY_SED_TPM_BANK)
+
+    def get_sed_password_secondary_bank(self):
+        return self._get_sed_password(SECONDARY_SED_TPM_BANK)
+
+    def set_sed_password_primary_bank(self, new_password: str):
+        return self._store_sed_password(PRIMARY_SED_TPM_BANK, new_password)
+
+    def set_sed_password_secondary_bank(self, new_password: str):
+        return self._store_sed_password(SECONDARY_SED_TPM_BANK, new_password)
+
     """ Helper methods """
+
+    def _get_sed_password(self, tpm_bank_context: str):
+        with allure.step('get sed password from tpm'):
+            return self.engine.run_cmd(f"sudo tpm2_unseal -c '{tpm_bank_context}'")
+
+    def _store_sed_password(self, tpm_bank_context: str, sed_password: str):
+        with allure.step('store sed password in tpm bank'):
+            self.engine.run_cmd(f'sudo tpm2_evictcontrol -C o -c "{tpm_bank_context}" > /dev/null 2>&1')
+            self.engine.run_cmd('sudo tpm2_createprimary -C o --key-algorithm=rsa --key-context=prim.ctx > /dev/null 2>&1')
+            self.engine.run_cmd(f'echo "{sed_password}" | sudo tpm2_create -g sha256 -u seal.pub -r seal.priv -C prim.ctx -i - > /dev/null 2>&1')
+            self.engine.run_cmd('sudo tpm2_load -C prim.ctx -u seal.pub -r seal.priv -n seal.name -c seal.ctx')
+            self.engine.run_cmd(f'sudo tpm2_evictcontrol -C o -c seal.ctx "{tpm_bank_context}"')
+            self.engine.run_cmd('sudo rm -f seal.* prim.ctx')
 
     def _is_sys_tpm_dir_exists(self) -> bool:
         with allure.step('check if system tpm directory exists'):
