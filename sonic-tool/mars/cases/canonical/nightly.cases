@@ -396,7 +396,7 @@
         <value> yes </value>
       </condition>
     </ignore>
-    <name> FDB </name>
+    <name> FDB weekend </name>
     <info> </info>
     <cmd>
       <params>
@@ -413,7 +413,7 @@
         <value> no </value>
       </condition>
     </ignore>
-    <name> FDB weekend</name>
+    <name> FDB </name>
     <info> </info>
     <cmd>
       <params>
