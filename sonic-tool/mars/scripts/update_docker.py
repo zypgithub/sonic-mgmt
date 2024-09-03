@@ -204,25 +204,24 @@ def create_and_start_container(conn, image_name, image_tag, container_name, mac_
     logger.info("Try to remove existing docker container anyway")
     conn.run("docker rm -f {CONTAINER_NAME}".format(CONTAINER_NAME=container_name), warn=True)
 
-    global failed_in_creating_container
-    failed_in_creating_container = False
-
     @retry(exceptions=AssertionError, tries=10, delay=60)
     def _create_container():
         conn.run(cmd, warn=True)
         logger.info("Created container, wait a few seconds for it to start")
         time.sleep(5)
         logger.info("Check whether the container is started successfully.")
-        container_state = json.loads(conn.run("docker inspect --format '{{json .State}}' %s" % container_name)
-                                     .stdout.strip())
+        try:
+            container_state = json.loads(conn.run("docker inspect --format '{{json .State}}' %s" % container_name)
+                                         .stdout.strip())
+        except UnexpectedExit as err:
+            logger.error(err)
+            assert False, "Failed to inspect the docker status."
 
         if not container_state["Running"]:
             logger.error("The created container is not started, try to restart it")
             if not start_container(conn, container_name, max_retries=1):
                 logger.error("Restart container failed. "
                              "Remove the container and delay 60s before recreating.")
-                global failed_in_creating_container
-                failed_in_creating_container = True
                 conn.run("docker rm -f {CONTAINER_NAME}".format(CONTAINER_NAME=container_name), warn=True)
                 assert False, "Failed to create the container."
 
