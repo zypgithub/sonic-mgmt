@@ -65,6 +65,11 @@ class TestNewTc:
 
         logger.info(f"The sensors tested are: {tested_sensors}")
 
+        # For IM enabled setup, 'module' and 'asic' sensor test are need be skipped as it created by kernel sysfs and
+        # from user space we don't have permission to write it
+        if tested_sensors[0] in ['module', 'asic'] and self.cli_objects.dut.im.is_im_enabled():
+            pytest.skip(f"Skip mock temperature for sensor {tested_sensors} as it is not supported in IM enabled setup")
+
         def mock_temp_and_check(file_path, temperature):
             mock_sensor.mock_temperature(file_path, temperature)
             verify_pwd_and_rpm_are_expected_value(mock_sensor, tc_config_dict, sensor_type, temperature)
