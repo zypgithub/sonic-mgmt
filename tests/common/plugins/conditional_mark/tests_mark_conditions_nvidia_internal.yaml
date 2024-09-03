@@ -842,10 +842,6 @@ platform_tests/test_sensors.py::test_sensors:
     - "https://redmine.mellanox.com/issues/3556737 and 'simx' in platform"
     - "https://redmine.mellanox.com/issues/3816778 and 'r-anaconda-15' in testbed"
     - "https://redmine.mellanox.com/issues/3925256 and 'sn4600' in platform"
-  xfail:
-    reason: "The sensor test fails on mtvr-moose-05 due to a pmbus current alarm, probably a hw issue"
-    conditions:
-      - "https://redmine.mellanox.com/issues/4056163 and 'mtvr-moose-05' in testbed"
 
 qos/test_qos_sai_dual_tor.py:
   skip:
