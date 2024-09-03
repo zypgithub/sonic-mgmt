@@ -1,6 +1,6 @@
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tests_nvos.general.security.certificate.constants import TestCert
-from ngts.tests_nvos.general.security.nmx_cert.constants import EncryptionMode
+from ngts.tests_nvos.general.security.nmx_cert.constants import EncryptionMode, DEFAULT_NMX_C_MGMT_PORT
 
 
 class Printable:
@@ -50,7 +50,7 @@ class GrpcConfig:
 CONFIG = GrpcConfig(
     server=GrpcServerConfig(
         address='nvos-dut',
-        port=50051,
+        port=DEFAULT_NMX_C_MGMT_PORT,
         tls_mode=EncryptionMode.TLS,
         cert=TestCert.cert_valid_1,
         cacert=TestCert.cert_valid_2,
@@ -61,7 +61,7 @@ CONFIG = GrpcConfig(
         tls_mode=EncryptionMode.TLS,
         cert=TestCert.cert_valid_2,
         cacert=TestCert.cert_valid_1,
-        num_requests=10,
+        num_requests=3,
         delay_between_requests=1
     )
 )

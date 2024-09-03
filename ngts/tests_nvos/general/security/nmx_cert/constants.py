@@ -9,7 +9,7 @@ CERTIFICATE = 'certificate'
 CA_CERTIFICATE = 'ca-certificate'
 ENCRYPTION = 'encryption'
 
-DEFAULT_NMX_C_MGMT_PORT = 51000
+DEFAULT_NMX_C_MGMT_PORT = 9370
 
 USR_CFG_JSON_PATH = '/etc/cluster_infra/conf/user_config.json'
 USR_CFG_JSON = USR_CFG_JSON_PATH.split('/')[-1]

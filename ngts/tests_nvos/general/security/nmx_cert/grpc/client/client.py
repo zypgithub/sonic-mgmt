@@ -4,8 +4,10 @@ import grpc
 
 import ngts.tests_nvos.general.security.nmx_cert.grpc.proto.nmx_m_nmx_c_pb2 as pb
 import ngts.tests_nvos.general.security.nmx_cert.grpc.proto.nmx_m_nmx_c_pb2_grpc as pb_grpc
-from ngts.tests_nvos.general.security.nmx_cert.constants import EncryptionMode
-from ngts.tests_nvos.general.security.nmx_cert.grpc.config import CONFIG, GrpcConfig
+from ngts.tests_nvos.general.security.certificate.constants import TestCert
+from ngts.tests_nvos.general.security.helpers import remove_etc_host_mapping_to_dn, add_etc_host_mapping_to_dn
+from ngts.tests_nvos.general.security.nmx_cert.constants import EncryptionMode, DEFAULT_NMX_C_MGMT_PORT
+from ngts.tests_nvos.general.security.nmx_cert.grpc.config import CONFIG, GrpcConfig, GrpcServerConfig, GrpcClientConfig
 from ngts.tests_nvos.general.security.nmx_cert.grpc.utils.logs import standalone_logger
 
 
@@ -85,5 +87,41 @@ def run_grpc_client_app(config: GrpcConfig, logger=None) -> str:
     return ClientApp(config, logger).run()
 
 
+def main(config, remote_host_addr='127.0.0.1'):
+    remove_etc_host_mapping_to_dn(config.server.address)
+    add_etc_host_mapping_to_dn(config.server.address, remote_host_addr)
+
+    run_grpc_client_app(config)
+
+
+def local_main():
+    main(CONFIG)
+
+
+def main_with_switch():
+    switch_ip = '10.7.148.128'  # TODO: set this to the desired switch ip
+    config = GrpcConfig(
+        server=GrpcServerConfig(
+            address='nvos-dut',
+            port=DEFAULT_NMX_C_MGMT_PORT,
+            tls_mode=EncryptionMode.TLS,
+            cert=TestCert.cert_valid_1,
+            cacert=TestCert.cert_valid_2,
+            max_workers=10
+        ),
+        client=GrpcClientConfig(
+            address='nvos-dut',
+            tls_mode=EncryptionMode.MTLS,
+            cert=TestCert.cert_valid_2,
+            cacert=TestCert.cert_valid_1,
+            num_requests=3,
+            delay_between_requests=1
+        )
+    )
+
+    main(config, switch_ip)
+
+
 if __name__ == '__main__':
-    run_grpc_client_app(CONFIG)
+    # local_main()
+    main_with_switch()
