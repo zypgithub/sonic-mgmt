@@ -450,11 +450,12 @@ class SonicInstallationSteps:
         for hwsku in hwskus:
             if os.path.exists(f'{sonic_mgmt_hwsku_path}/{hwsku}'):
                 logger.warning(f"The hwsku {hwsku} already exist in the sonic mgmt docker, no need to copy")
-            execute_script(f'sshpass -p "{sonic_password}" scp -o "StrictHostKeyChecking no"'
-                           f' -r {sonic_user}@{dut_name}:{dut_platform_path}/{hwsku} '
-                           f'{sonic_mgmt_hwsku_path}', ansible_path)
+            else:
+                execute_script(f'sshpass -p "{sonic_password}" scp -o "StrictHostKeyChecking no"'
+                               f' -r {sonic_user}@{dut_name}:{dut_platform_path}/{hwsku} '
+                               f'{sonic_mgmt_hwsku_path}', ansible_path)
 
-            logger.info(f"Copied the hwsku {hwsku} to sonic-mgmt")
+                logger.info(f"Copied the hwsku {hwsku} to sonic-mgmt")
 
         if "hippo" in setup_name:
             SonicInstallationSteps.remove_redundant_service_port(dut_platform_path, platform_params['hwsku'],
