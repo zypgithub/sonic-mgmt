@@ -1,5 +1,6 @@
 import logging
 import os
+import signal
 import subprocess
 from typing import Tuple, List
 
@@ -22,7 +23,7 @@ class CmdRunner:
         if self._kill_live_processes_on_delete:
             self._log('close live processes')
             for process in self._live_processes:
-                self.kill_cmd_process(process)
+                self.kill_cmd_process(process, kill_only=True)
 
     def run_cmd(self, cmd: str) -> str:
         """
@@ -68,13 +69,17 @@ class CmdRunner:
         output, err = self.kill_cmd_process(process, cmd_timeout or self._default_timeout)
         return output, err, None
 
-    def kill_cmd_process(self, process: subprocess.Popen, delay=0) -> Tuple[str, str]:
+    def kill_cmd_process(self, process: subprocess.Popen, delay=0, kill_only: bool = False) -> Tuple[str, str]:
         """
         kill a given process, after a given delay
         @param process: given process to kill
         @param delay: number of seconds to wait before killing the process
         @return: output, err of the command process
+        @param kill_only: if True, just kill the process, and don't get its output
         """
+        if kill_only:
+            process.kill()
+            return '', ''
 
         self._log(f'wait for process done or kill it by {delay} seconds')
         try:
@@ -82,7 +87,7 @@ class CmdRunner:
             self._log('process finished normally')
         except subprocess.TimeoutExpired:
             self._log(f'{delay} seconds passed - kill the process')
-            process.kill()
+            os.killpg(os.getpgid(process.pid), signal.SIGTERM)
         return self.wait_for_cmd_process(process)
 
     def wait_for_cmd_process(self, process: subprocess.Popen) -> Tuple[str, str]:

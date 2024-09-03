@@ -15,8 +15,12 @@ from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.certificate.constants import TestCert
 from ngts.tests_nvos.general.security.conftest import local_adminuser
 from ngts.tests_nvos.system.gnmi.constants import CERTIFICATE, DEFAULT_CERTIFICATE, GnmicErr, MAX_GNMI_CONNECTIVITY_TIME
-from ngts.tests_nvos.system.gnmi.helpers import verify_gnmi_client, \
-    get_timestamp_of_first_gnmi_response
+from ngts.tests_nvos.system.gnmi.helpers import verify_gnmi_client, get_timestamp_of_first_gnmi_response
+
+
+@pytest.fixture(scope='module', autouse=True)
+def import_test_certs(import_required_test_certs):
+    pass
 
 
 # @pytest.mark.system
@@ -151,13 +155,11 @@ def test_gnmi_cert_set_cert(test_flow, local_adminuser):
         System().gnmi_server.set(CERTIFICATE, cert.name, apply=True).verify_result()
     with allure.step(
             f'run client without skip-verify flag, using right CA crt - expect {"success" if test_flow == TestFlowType.GOOD_FLOW else "fail"}'):
-        verify_gnmi_client(test_flow, cert.dn or cert.ip, GnmiConsts.GNMI_DEFAULT_PORT,
-                           local_adminuser.username,
+        verify_gnmi_client(test_flow, cert.dn or cert.ip, GnmiConsts.GNMI_DEFAULT_PORT, local_adminuser.username,
                            local_adminuser.password, False, GnmicErr.CERT_VERIFY_FAIL, cacert=cert.cacert)
     with allure.step('run client with skip-verify flag - expect success'):
         verify_gnmi_client(TestFlowType.GOOD_FLOW, cert.dn or cert.ip, GnmiConsts.GNMI_DEFAULT_PORT,
-                           local_adminuser.username,
-                           local_adminuser.password, True, GnmicErr.CERT_VERIFY_FAIL)
+                           local_adminuser.username, local_adminuser.password, True, GnmicErr.CERT_VERIFY_FAIL)
 
 
 @pytest.mark.system
