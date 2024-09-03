@@ -1,4 +1,6 @@
 import random
+import re
+
 import pytest
 
 from ngts.nvos_constants.constants_nvos import ApiType, ClusterConsts, OutputFormat, ActionConsts
@@ -33,22 +35,26 @@ def enable_cluster_and_stop_apps():
 
 
 @pytest.fixture()
-def install_default_if_needed(devices):
+def install_apps_if_needed(devices):
     cluster = Cluster()
     fae = Fae()
     output = cluster.apps.show()
+    flag = True
     if not output:
         for app in ClusterConsts.INITIAL_EXPECTED_APPS:
-            default_path = devices.dut.nmx_cluster_apps_versions.default_path[app]
-            default_version = devices.dut.nmx_cluster_apps_versions.default_version_names[app]
+            default_path = devices.dut.nmx_cluster_apps_versions.new_path[app]
+            default_version = devices.dut.nmx_cluster_apps_versions.new_version_names[app]
             filename = fetch_and_verify_package(fae, app, default_path)
             uninstall_install_and_verify_package(fae, app, filename, default_version)
+            flag = False
+
+    return flag
 
 
 @pytest.mark.fae
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', random.sample(ApiType.ALL_TYPES, 1))
-def test_nmx_package_good_flow(devices, engines, test_api, install_default_if_needed):
+def test_nmx_package_good_flow(devices, engines, test_api, install_apps_if_needed):
     """
     Test the good flow of NMX package management.
 
@@ -70,22 +76,40 @@ def test_nmx_package_good_flow(devices, engines, test_api, install_default_if_ne
     apps = ClusterConsts.INITIAL_EXPECTED_APPS
 
     try:
-        for app in apps:
-            default_version = devices.dut.nmx_cluster_apps_versions.default_version_names[app]
-            new_version = devices.dut.nmx_cluster_apps_versions.new_version_names[app]
-            new_path = devices.dut.nmx_cluster_apps_versions.new_path[app]
+        if install_apps_if_needed:
+            for app in apps:
+                new_version = devices.dut.nmx_cluster_apps_versions.new_version_names[app]
+                new_path = devices.dut.nmx_cluster_apps_versions.new_path[app]
 
-            # Will be added in future
-            # ClusterTools.verify_app_version(fae.cluster, app, default_version)
-            nmx_package_flow(app, new_path, new_version)
+                nmx_package_flow(app, new_path, new_version)
 
     finally:
         with allure.step(f'cleanup - returning to default versions'):
+            fae = Fae()
+            cluster = Cluster()
+            engines.dut.run_cmd(f'sudo cp {ClusterConsts.INITIAL_APPS_PATH}* {ClusterConsts.INFRA_PACKAGES_PATH}')
             for app in apps:
-                default_path = devices.dut.nmx_cluster_apps_versions.default_path[app]
-                default_version = devices.dut.nmx_cluster_apps_versions.default_version_names[app]
+                filename, default_version = get_data_from_path(engines, ClusterConsts.INITIAL_APPS_PATH, app)
+                uninstall_install_and_verify_package(fae, app, filename, default_version, cluster)
+                verify_start_stop(cluster, app)
+                delete_package_file(fae, filename)
 
-                nmx_package_flow(app, default_path, default_version)
+
+def get_data_from_path(engines, path, app):
+    with allure.step(f'Get default version for {app}'):
+        pattern = r'_(\d+\.\d+\.\d+)'
+        if app == ClusterConsts.NMX_CONTROLLER:
+            prefix = ClusterConsts.NMX_CONTROLLER_PREFIX
+        elif app == ClusterConsts.NMX_TELEMETRY:
+            prefix = ClusterConsts.NMX_TELEMETRY_PREFIX
+        else:
+            raise Exception(f'{app} needs to be configured')
+
+        file = engines.dut.run_cmd(f"ls {path} | grep {prefix}")
+        # Search for the version pattern in the filename
+        match = re.search(pattern, file)
+
+        return file, match.group(1)
 
 
 def fetch_and_verify_package(fae, app, path):

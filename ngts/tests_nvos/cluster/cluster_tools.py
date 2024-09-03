@@ -233,7 +233,7 @@ class ClusterTools:
         with allure.step("Running 'nv show cluster apps running' command and verifying output"):
             output = OutputParsingTool.parse_show_output_to_dict(cluster.apps.show()).get_returned_value()
             ValidationTool.verify_field_value_exist_in_output_dict(output, app)
-            assert output[app][ClusterConsts.APP_VERSION] == expected_version, \
+            assert expected_version in output[app][ClusterConsts.APP_VERSION], \
                 f"Expected {app} version: {expected_version}. Actual version: {output[app][ClusterConsts.APP_VERSION]}"
 
     @staticmethod
@@ -305,14 +305,6 @@ class ClusterTools:
             assert any(level in line for level in expected_log_levels_upper), f"Line in logs is {line}, which does not contain any of the expected log levels {expected_log_levels_upper}"
 
         TestToolkit.tested_api = test_api
-
-    @staticmethod
-    def verify_app_version(cluster, app, expected_version):
-        with allure.step("Running 'nv show cluster apps running' command and verifying output"):
-            output = OutputParsingTool.parse_show_output_to_dict(cluster.apps.show()).get_returned_value()
-            ValidationTool.verify_field_value_exist_in_output_dict(output, app).verify_result()
-            assert output[app][ClusterConsts.APP_VERSION] == expected_version, \
-                f"Expected {app} version: {expected_version}. Actual version: {output[app][ClusterConsts.APP_VERSION]}"
 
     @staticmethod
     def wait_for_apps_to_be_in_wanted_state():

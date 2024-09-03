@@ -1049,9 +1049,13 @@ class ClusterConsts:
     APP_NAME = 'app-name'
     NMX_CONTROLLER = 'nmx-controller'
     NMX_TELEMETRY = 'nmx-telemetry'
+    NMX_CONTROLLER_PREFIX = 'nmx-c'
+    NMX_TELEMETRY_PREFIX = 'nmx-t'
     TELEMETRY_SERVICES = ['nmx-connector', 'ib-telemetry']
     CONTROLLER_SERVICES = ['nmxc-sdn', 'nmxc-fib', 'redis']
     INITIAL_EXPECTED_APPS = [NMX_CONTROLLER, NMX_TELEMETRY]
+    INITIAL_APPS_PATH = '/usr/local/cluster_pkgfiles/'
+    INFRA_PACKAGES_PATH = '/host/cluster_infra/packages/'
 
 
 class SyslogSeverityLevels:
