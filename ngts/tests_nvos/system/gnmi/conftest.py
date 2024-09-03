@@ -76,8 +76,8 @@ def restore_gnmi_cert(engines):
         System().gnmi_server.enable_gnmi_server(True)
 
 
-@pytest.fixture(scope='module', autouse=True)
-def import_test_certs(scp_player):
+@pytest.fixture(scope='module')
+def import_required_test_certs(scp_player):
     system = System()
     test_certs = [TestCert.cert_valid_1, TestCert.cert_ca_mismatch, TestCert.cert_valid_2]
 

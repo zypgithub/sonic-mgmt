@@ -181,7 +181,7 @@ def test_gnmi_auth_existing_streamed_session(engines, local_adminuser):
         out, err = client.close_session_and_get_out_and_err(session)
         verify_msg_not_in_out_or_err(GnmicErr.AUTH_FAIL, out, err)
         for new_description in new_descriptions:
-            with allure.independent_step(f'check that "new_description" was streamed'):
+            with allure.independent_step(f'check that "{new_description}" was streamed'):
                 verify_msg_in_out_or_err(new_description, out)
 
 
@@ -211,4 +211,5 @@ def test_gnmi_auth_failing_clients_ddos(engines, local_adminuser):
         out, err = client.gnmic_capabilities(skip_cert_verify=True, wait_till_done=True)
     with allure.step('expect success'):
         for err_msg in GnmicErr.ALL_ERRS:
-            verify_msg_not_in_out_or_err(err_msg, out, err)
+            with allure.independent_step(f'verify no error msg: "{err_msg}"'):
+                verify_msg_not_in_out_or_err(err_msg, out, err)
