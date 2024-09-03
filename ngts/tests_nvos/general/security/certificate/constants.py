@@ -67,6 +67,18 @@ class TestCert:
         cacert=f'{TEST_CERTS}/ca2/ca.crt'
     )
 
+    cert_valid_3 = CertInfo(
+        name='valid-cert-3',
+        info='valid certificate for test - from ca3',
+        private=f'{TEST_CERTS}/cert-from-ca3/service.key',
+        public=f'{TEST_CERTS}/cert-from-ca3/service.pem',
+        p12_bundle=f'{TEST_CERTS}/cert-from-ca3/service.p12',
+        p12_password='secret',
+        dn='nvos-dut',
+        ip=None,
+        cacert=f'{TEST_CERTS}/ca3/ca.crt'
+    )
+
     cert_private_public_mismatch = CertInfo(
         name='cert-private-public-mismatch',
         info="invalid certificate for test - public and private don't match",

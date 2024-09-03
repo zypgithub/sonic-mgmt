@@ -1,16 +1,13 @@
 import logging
-from typing import Union, Dict, List
+from typing import Union, Dict
 
 import ngts.tools.test_utils.allure_utils as allure
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from infra.tools.linux_tools.linux_tools import scp_file
-from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.nmx.Cluster import Cluster
-from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tests_nvos.general.security.certificate.helpers import get_path_of_imported_cert_private_file, \
     get_path_of_imported_cert_public_file, get_path_of_imported_cacert_public_file
@@ -19,41 +16,6 @@ from ngts.tests_nvos.general.security.nmx_cert.constants import FieldsInShowOf, 
     FILE_SHOULD_NOT_EXIST, STATE
 from ngts.tests_nvos.general.security.nmx_cert.grpc.client.client import run_grpc_client_app
 from ngts.tests_nvos.general.security.nmx_cert.grpc.config import GrpcConfig, GrpcServerConfig, GrpcClientConfig
-from ngts.tools.test_utils.nvos_general_utils import generate_scp_uri_using_player
-
-
-def import_certificates(scp_player: LinuxSshEngine, dut_engine: LinuxSshEngine, certs: List[CertInfo],
-                        ca: bool = False):
-    security_obj = System(force_api=ApiType.NVUE).security
-    cert_obj = security_obj.ca_certificate if ca else security_obj.certificate
-
-    with allure.step(f'import test {"ca" if ca else ""}certs'):
-        current_certs = OutputParsingTool.parse_json_str_to_dictionary(cert_obj.show()).get_returned_value()
-        for cert in certs:
-            name = cert.cacert_name if ca else cert.name
-            if name not in current_certs:
-                with allure.step(f'import {"ca" if ca else ""}cert {name}'):
-                    if ca:
-                        with allure.step('scp cacert data into switch'):
-                            scp_file(dut_engine, cert.cacert, '/tmp/')
-                        with allure.step('import cacert data'):
-                            cert_obj.cert_id[name].action_import(
-                                data=f'"$(cat /tmp/{cert.cacert_filename})"').verify_result()
-                    else:
-                        with allure.step(f'import cert {cert.name}'):
-                            cert_obj.cert_id[cert.name].action_import(
-                                uri_bundle=generate_scp_uri_using_player(scp_player, cert.p12_bundle),
-                                passphrase=cert.p12_password).verify_result()
-
-
-def delete_certificates(ca: bool = False):
-    security_obj = System().security
-    cert_obj = security_obj.ca_certificate if ca else security_obj.certificate
-    with allure.step(f'delete {"ca" if ca else ""}certs from the system'):
-        current_certs = OutputParsingTool.parse_json_str_to_dictionary(cert_obj.show()).get_returned_value()
-        for cert_name in current_certs:
-            with allure.step(f'delete {"ca" if ca else ""}cert {cert_name}'):
-                cert_obj.cert_id[cert_name].action_delete().verify_result()
 
 
 def verify_component_show(component: BaseComponent, required_fields,
