@@ -29,9 +29,11 @@ class PortRequirements:
                                  IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE: "",
                                  IbInterfaceConsts.TYPE: ""}
     port_requirements = None
+    interface_type = ''
 
-    def __init__(self):
+    def __init__(self, interface_type=''):
         self.port_requirements = self.default_port_requirements
+        self.interface_type = interface_type  # Port type refers to "internal/external/fnm ports"
 
     def set_port_name(self, name):
         self.port_requirements[IbInterfaceConsts.NAME] = name
@@ -68,12 +70,12 @@ class Port(BaseComponent):
         self.acl = Acl(self)
 
     @staticmethod
-    def get_list_of_active_ports(port_type=IbInterfaceConsts.IB_PORT_TYPE):
+    def get_list_of_active_ports(port_type=IbInterfaceConsts.IB_PORT_TYPE, interface_type=''):
         """
         Return a list of ports which are connected to a traffic server
         """
         with allure.step('Get a list of ports which state is up'):
-            port_requirements_object = PortRequirements()
+            port_requirements_object = PortRequirements(interface_type)
             port_requirements_object.set_port_state(NvosConsts.LINK_STATE_UP)
             port_requirements_object.set_port_type(port_type)
             port_requirements_object.set_port_logical_state("Active")
@@ -102,11 +104,14 @@ class Port(BaseComponent):
             if not port_requirements_object or not port_requirements_object.port_requirements:
                 logging.info("get_list_of_ports - port_requirements not provided. Selecting all ports.")
                 for port_name in output_dictionary.keys():
-                    port_list.append(Port(port_name, "", ""))
+                    if port_requirements_object.interface_type in port_name:
+                        port_list.append(Port(port_name, "", ""))
                 return port_list
 
             for port_name, port_details in output_dictionary.items():
                 select_port = True
+                if port_requirements_object.interface_type not in port_name:
+                    select_port = False
 
                 for field_name, port_requirements_list in port_requirements_object.port_requirements.items():
 

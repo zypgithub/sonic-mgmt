@@ -409,6 +409,12 @@ tests_nvos/platform/test_platform_environment.py::test_show_platform_environment
     conditions:
       - "'juliet' in testbed"
 
+tests_nvos/interfaces/test_ib_interface_state.py::test_ib_interface_state:
+  skip:
+    reason: "Testcase skipped on Juliet systems, Tested in another NVL5 interfaces dedicated test"
+    conditions:
+      - "'juliet' in testbed"
+
 tests_nvos/fae/test_nmx_package.py:
   skip:
     reason: "Testcase skipped on non Juliet systems, Juliet feature only"

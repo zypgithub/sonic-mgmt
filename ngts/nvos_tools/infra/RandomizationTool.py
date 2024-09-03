@@ -27,7 +27,7 @@ class RandomizationTool:
 
     @staticmethod
     def select_random_port(dut_engine=None, requested_ports_state=NvosConsts.LINK_STATE_UP,
-                           requested_ports_logical_state=None, requested_ports_type=None):
+                           requested_ports_logical_state=None, requested_ports_type=None, interface_type=''):
         """
         Select and return a random port
         :param requested_ports_state: required port state
@@ -45,7 +45,7 @@ class RandomizationTool:
                                                            requested_ports_state=requested_ports_state,
                                                            requested_ports_type=requested_ports_type,
                                                            requested_ports_logical_state=requested_ports_logical_state,
-                                                           num_of_ports_to_select=1)
+                                                           num_of_ports_to_select=1, interface_type=interface_type)
         if result_obj.result:
             result_obj.returned_value = result_obj.returned_value[0]
         return result_obj
@@ -54,7 +54,7 @@ class RandomizationTool:
     def select_random_ports(requested_ports_state=NvosConsts.LINK_STATE_UP,
                             requested_ports_type=None,
                             requested_ports_logical_state=None,
-                            num_of_ports_to_select=1, port_requirements_object=None, dut_engine=None, dut_device=None):
+                            num_of_ports_to_select=1, port_requirements_object=None, dut_engine=None, dut_device=None, interface_type=''):
         """
         Select and return list of random ports
         if num_of_ports_to_select is 0, all relevant ports will be selected
@@ -99,7 +99,7 @@ class RandomizationTool:
 
             logging.info("Update port requirements object")
             if not port_requirements_object:
-                port_requirements_object = PortRequirements()
+                port_requirements_object = PortRequirements(interface_type=interface_type)
             port_requirements_object.set_port_state(requested_ports_state)
             port_requirements_object.set_port_type(requested_ports_type)
             port_requirements_object.set_port_logical_state(requested_ports_logical_state)
@@ -132,18 +132,18 @@ class RandomizationTool:
             return result_obj
 
     @staticmethod
-    def get_random_active_port(number_of_values_to_select=1, port_type=IbInterfaceConsts.IB_PORT_TYPE):
-        list_of_ports = Port.get_list_of_active_ports(port_type)
+    def get_random_active_port(number_of_values_to_select=1, port_type=IbInterfaceConsts.IB_PORT_TYPE, interface_type=''):
+        list_of_ports = Port.get_list_of_active_ports(port_type, interface_type)
         if number_of_values_to_select == 0:
             return ResultObj(True, "", list_of_ports)
         return RandomizationTool.select_random_values(list_of_ports, None, number_of_values_to_select)
 
     @staticmethod
-    def get_random_traffic_port(engine: Optional[ProxySshEngine] = None, data_rate="ndr") -> ResultObj:
+    def get_random_traffic_port(engine: Optional[ProxySshEngine] = None, data_rate="ndr", interface_type='') -> ResultObj:
         engine = engine or TestToolkit.engines.dut
         list_of_ports = Configurations.ports_by_rate[data_rate].get(engine.ip)
         if not list_of_ports:
-            list_of_ports = Port.get_list_of_active_ports()
+            list_of_ports = Port.get_list_of_active_ports(interface_type=interface_type)
             list_of_ports = list(port for port in list_of_ports if
                                  port.name.startswith("sw1p") or port.name.startswith("sw2p") or
                                  port.name.startswith("swA1p") or port.name.startswith("swA2p"))
