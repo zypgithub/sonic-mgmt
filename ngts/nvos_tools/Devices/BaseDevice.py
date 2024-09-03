@@ -12,6 +12,7 @@ from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceCon
 from ngts.nvos_tools.infra.DatabaseTool import DatabaseTool
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.infra.ValidationTool import ExpectedString
+from ngts.tests_nvos.general.security.constants import SecurityConsts
 from ngts.tools.test_utils.nvos_general_utils import get_version_info
 
 logger = logging.getLogger()
@@ -283,6 +284,12 @@ class BaseSwitch(BaseDevice):
 
     def init_documents_consts(self):
         super().init_documents_consts()
+
+    # Gorilla and Eth override it as they don't support it
+    @abstractmethod
+    def verify_sed_password(self, tpm_tool, sed_default_password=SecurityConsts.SED_DEFAULT_PASSWORD):
+        password_from_tpm = tpm_tool.get_sed_password_primary_bank()
+        assert password_from_tpm == sed_default_password, f"Pass from tpm should be default SED pass"
 
     def _init_available_databases(self):
         super()._init_available_databases()

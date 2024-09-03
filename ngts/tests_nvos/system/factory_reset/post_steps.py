@@ -2,9 +2,10 @@ import pytest
 
 from ngts.nvos_constants.constants_nvos import LinkDetectionConsts
 from ngts.nvos_constants.constants_nvos import OutputFormat
-from ngts.nvos_tools.Devices.IbDevice import CrocodileSwitch
+from ngts.nvos_tools.Devices.IbDevice import CrocodileSwitch, GorillaSwitch
 from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.nvos_tools.infra.TpmTool import TpmTool
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
 from ngts.tests_nvos.general.security.nmx_cert.test_nmx_cert import factory_reset_nmx_cert_checker
@@ -27,6 +28,9 @@ def factory_reset_no_params_post_steps(apply_and_save_port, engines, just_apply_
         validate_port_description(engines.dut, not_apply_port, "")
     with allure.step('pre factory reset security checks'):
         post_factory_reset_security_checks()
+    with allure.step('Verify SED has default password'):
+        tpm_tool = TpmTool(engines.dut)
+        TestToolkit.devices.dut.verify_sed_password(tpm_tool)
     with allure.step('Check is Juliet Device'):
         if not isinstance(TestToolkit.devices.dut, JulietSwitch):
             pytest.skip("It's not a Juliet Switch. Skipping NMX configuration")
