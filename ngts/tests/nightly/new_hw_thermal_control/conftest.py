@@ -41,7 +41,7 @@ def recover_tc_service(skipping_new_hw_tc_tests, engines, cli_objects):
     yield
     if cli_objects.dut.general.stat(TC_CONST.SUSPEND_FILE)["exists"]:
         logger.warning("suspend file is not cleanup, please check the reason")
-        engines.dut.run_cmd(f'sudo rm {TC_CONST.TC_CONFIG_FILE}')
+        engines.dut.run_cmd(f'sudo rm {TC_CONST.SUSPEND_FILE}')
     if not cli_objects.dut.hw_mgmt.is_thermal_control_running():
         logger.warning("tc is not running, please check the reason")
         cli_objects.dut.hw_mgmt.start_thermal_control()
