@@ -27,8 +27,8 @@ class Configurations:
 
     xdr_ports = {"10.7.145.61": ['swA8p1', 'swB2p1', 'swB8p1'],
                  "10.7.145.62": ['swA8p1', 'swB2p1', 'swB8p1'],
-                 "10.7.148.112": ['sw5p1', 'sw5p2', 'sw6p1', 'sw6p2', 'sw53p1', 'sw53p2', 'sw67p1', 'sw67p2', 'sw69p1', 'sw69p2'],
-                 "10.7.148.113": ['sw5p1', 'sw5p2', 'sw6p1', 'sw6p2', 'sw53p1', 'sw53p2', 'sw67p1', 'sw67p2', 'sw69p1', 'sw69p2'],
+                 "10.7.148.112": ['sw38p1', 'sw53p1'],
+                 "10.7.148.113": ['sw38p1', 'sw53p1'],
                  }
 
     ports_by_rate = {"ndr": ndr_ports, "xdr": xdr_ports}
