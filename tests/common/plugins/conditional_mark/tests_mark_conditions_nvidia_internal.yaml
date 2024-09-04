@@ -420,9 +420,11 @@ tests/nightly/route/test_async_route.py::test_removing_routes[ipv6-static_routes
 ########################## NVIDIA INTERNAL COMMUNITY IGNORE START ##########################
 clock/test_clock.py:
   skip:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4052988"
+    reason: "Testcase ignored due to RM issue 4052988 or 4056053"
+    conditions_logical_operator: or
     conditions:
     - "https://redmine.mellanox.com/issues/4052988"
+    - "https://redmine.mellanox.com/issues/4056053"
 
 sflow/test_sflow.py:
   skip:
