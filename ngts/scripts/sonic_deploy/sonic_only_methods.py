@@ -403,7 +403,7 @@ class SonicInstallationSteps:
     def post_installation_steps(topology_obj, sonic_topo, recover_by_reboot, setup_name, platform_params,
                                 apply_base_config, target_version, is_shutdown_bgp, reboot_after_install,
                                 deploy_only_target, fw_pkg_path, reboot, additional_apps, setup_info,
-                                is_performance, chip_type, deploy_dpu=False):
+                                is_performance, chip_type, deploy_dpu=False, xml_rpc=True):
         """
         Post-installation steps
         :param topology_obj: topology object
@@ -558,9 +558,10 @@ class SonicInstallationSteps:
             topology_obj.players[dut['dut_alias']]['engine'].disconnect()
 
         if not is_community(sonic_topo) and not is_performance:
-            # deploy the xmlrpc, the traffic may loss right after the xml rpc server is started
-            topology_obj.players['ha']['engine'].start_xml_rcp_server()
-            topology_obj.players['hb']['engine'].start_xml_rcp_server()
+            if xml_rpc:
+                # deploy the xmlrpc, the traffic may loss right after the xml rpc server is started
+                topology_obj.players['ha']['engine'].start_xml_rcp_server()
+                topology_obj.players['hb']['engine'].start_xml_rcp_server()
 
             # Only check port status at canonical setup, there is an ansible counterpart for community setup
             for dut in setup_info['duts']:
