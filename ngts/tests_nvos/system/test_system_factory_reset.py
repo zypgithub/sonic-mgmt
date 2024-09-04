@@ -1,3 +1,5 @@
+import random
+
 import pytest
 
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
@@ -17,7 +19,8 @@ from ngts.tools.test_utils import allure_utils as allure
 @pytest.mark.system
 @pytest.mark.checklist
 @pytest.mark.reset_factory
-def test_reset_factory_without_params(engines, devices, topology_obj, platform_params):
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
+def test_reset_factory_without_params(engines, devices, topology_obj, platform_params, test_api):
     """
     Validate reset factory without params cleanup done as expected
 
@@ -34,8 +37,9 @@ def test_reset_factory_without_params(engines, devices, topology_obj, platform_p
                 6.1.	Run several show commands
                 6.2.    Run set command & apply
     """
-    current_time = get_current_time(engines)
+    TestToolkit.tested_api = test_api
     system = System()
+    current_time = get_current_time(engines)
     username = ''
     try:
         with allure.step('pre factory reset steps'):
@@ -61,7 +65,8 @@ def test_reset_factory_without_params(engines, devices, topology_obj, platform_p
 @pytest.mark.system
 @pytest.mark.checklist
 @pytest.mark.reset_factory
-def test_reset_factory_keep_basic(engines):
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
+def test_reset_factory_keep_basic(engines, devices, test_api):
     """
     Validate reset factory with keep basic param cleanup done as expected
 
@@ -82,9 +87,9 @@ def test_reset_factory_keep_basic(engines):
         with allure.step('Create System object'):
             system = System()
 
+        TestToolkit.tested_api = test_api
         # pre-init current time
-        date_time_str = engines.dut.run_cmd("date").split(" ", 1)[1]
-        current_time = datetime.strptime(date_time_str, '%d %b %Y %H:%M:%S %p %Z')
+        current_time = get_current_time(engines)
 
         last_status_line = get_last_status_line(system)
 
@@ -130,7 +135,8 @@ def test_reset_factory_keep_basic(engines):
 @pytest.mark.system
 @pytest.mark.checklist
 @pytest.mark.reset_factory
-def test_reset_factory_keep_all_config(engines, devices):
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
+def test_reset_factory_keep_all_config(engines, devices, test_api):
     """
     Validate reset factory with keep all config param cleanup done as expected
 
@@ -148,6 +154,7 @@ def test_reset_factory_keep_all_config(engines, devices):
                 6.2.    Run set command & apply
     """
     try:
+        TestToolkit.tested_api = test_api
         port_type = devices.dut.switch_type.lower()
         with allure.step('Create System object'):
             system = System()
@@ -213,7 +220,8 @@ def test_reset_factory_keep_all_config(engines, devices):
 @pytest.mark.system
 @pytest.mark.checklist
 @pytest.mark.reset_factory
-def test_reset_factory_keep_only_files(engines, devices):
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
+def test_reset_factory_keep_only_files(engines, devices, test_api):
     """
     Validate reset factory with keep only files param cleanup done as expected
 
@@ -231,11 +239,11 @@ def test_reset_factory_keep_only_files(engines, devices):
                 6.2.    Run set command & apply
     """
     try:
+        TestToolkit.tested_api = test_api
         port_type = devices.dut.switch_type.lower()
         with allure.step('Create System object'):
             system = System()
-            date_time_str = engines.dut.run_cmd("date").split(" ", 1)[1]
-            current_time = datetime.strptime(date_time_str, '%d %b %Y %H:%M:%S %p %Z')
+            current_time = get_current_time(engines)
 
         last_status_line = get_last_status_line(system)
 

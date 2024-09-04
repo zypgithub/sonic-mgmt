@@ -216,7 +216,7 @@ class NvueSystemCli(NvueBaseCli):
 
     @staticmethod
     @check_output
-    def show_health_report(engine, param='', exit_cmd=''):
+    def show_health_report(engine, resource_path, param='', exit_cmd=''):  # resource_path is needed for OpenAPI
         cmd = "nv show system health history {param}".format(param=param)
         logging.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
         return engine.run_cmd_after_cmd([cmd, exit_cmd])

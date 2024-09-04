@@ -318,5 +318,5 @@ def verify_the_setup_is_functional(system, engines, had_sm_before_test=True, dut
 
 def get_current_time(engines):
     date_time_str = engines.dut.run_cmd("date").split(" ", 1)[1]
-    current_time = datetime.strptime(date_time_str, '%d %b %Y %H:%M:%S %p %Z')
+    current_time = datetime.strptime(date_time_str, '%d %b %Y %I:%M:%S %p %Z')
     return current_time

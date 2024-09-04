@@ -2,9 +2,11 @@ import logging
 
 from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.cli_wrappers.openapi.openapi_base_clis import OpenApiBaseCli
-from ngts.nvos_constants.constants_nvos import ActionType, SystemConsts
+from ngts.nvos_constants.constants_nvos import ActionType, SystemConsts, OpenApiReqType
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from .openapi_command_builder import OpenApiCommandHelper
+from ...nvos_tools.infra.LinuxCmdBuilderTool import LinuxCmdBuilderTool
+from ...nvos_tools.infra.OutputParsingTool import OutputParsingTool
 
 logger = logging.getLogger()
 
@@ -154,10 +156,18 @@ class OpenApiSystemCli(OpenApiBaseCli):
     @staticmethod
     def action_reset(engine, device, comp, param):
         logging.info("Running action: reset system {} on dut using OpenApi".format(comp))
+        if 'keep' in param:  # OpenApi has keep as parameter, so should remove it from string 4 chars + space.
+            param = param[len('keep') + 1:]
 
-        assert not param, "params are not supported yet"
-
-        params = {}
+        params = \
+            {
+                "state": "start",
+                "parameters": {
+                    "force": True,
+                }
+            }
+        if param:
+            params["parameters"]["keep"] = param
 
         return OpenApiCommandHelper.execute_action(ActionType.RESET, engine.engine.username, engine.engine.password,
                                                    engine.ip, "/system/{}".format(comp), params)
@@ -213,6 +223,17 @@ class OpenApiSystemCli(OpenApiBaseCli):
 
         return OpenApiCommandHelper.execute_action(ActionType.CHANGE, engine.engine.username, engine.engine.password,
                                                    engine.ip, resource_path, params)
+
+    @staticmethod
+    def show_health_report(engine, resource_path, param='', exit_cmd=""):
+        logging.info("Running GET method on dut using openApi for {}".format(param))
+        response = OpenApiCommandHelper.execute_script(engine.engine.username, engine.engine.password,
+                                                       OpenApiReqType.GET, engine.ip, resource_path, param)
+        res = OutputParsingTool.parse_json_str_to_dictionary(response).get_returned_value()
+        if (files := res.get('files')) and (health_history := files.get('health_history')) and (path := health_history.get('path')):
+            res = engine.run_cmd(f'cat "{path}"')
+            return res
+        return ""
 
     @staticmethod
     def show_file(engine, file='', exit_cmd=''):
