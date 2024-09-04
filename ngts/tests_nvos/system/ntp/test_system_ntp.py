@@ -70,6 +70,7 @@ def test_configure_ntp_server(test_api):
             system.ntp.set(op_param_name=NtpConsts.LISTEN, op_param_value=NtpConsts.Listen.ETH0.value).verify_result()
             system.ntp.set(op_param_name=NtpConsts.VRF, op_param_value=NtpConsts.Vrf.DEFAULT.value,
                            apply=True).verify_result()
+            time.sleep(NtpConsts.CONFIG_TIME)
 
         with allure.step("Validate show system ntp commands output"):
             logging.info("Validate show system ntp commands output")
@@ -143,6 +144,7 @@ def test_configure_ntp_server(test_api):
                 system.ntp.servers.show(server_name)).get_returned_value()
             ValidationTool.compare_dictionary_content(
                 server_list, NtpConsts.SERVER_NONE_DEFAULT_VALUES_DICT).verify_result()
+            time.sleep(NtpConsts.CONFIG_TIME)
 
         with allure.step("Validate show system ntp output"):
             logging.info("Validate show system ntp output")
@@ -234,6 +236,7 @@ def test_configure_ntp_server(test_api):
             system.ntp.set(op_param_name=NtpConsts.STATE, op_param_value=NtpConsts.State.DISABLED.value).verify_result()
             system.ntp.set(op_param_name=NtpConsts.DHCP, op_param_value=NtpConsts.Dhcp.DISABLED.value,
                            apply=True).verify_result()
+            time.sleep(NtpConsts.CONFIG_TIME)
 
         with allure.step("Validate show system ntp commands output"):
             logging.info("Validate show system ntp commands output")
