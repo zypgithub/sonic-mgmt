@@ -1,7 +1,6 @@
 from typing import List
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from infra.tools.linux_tools.linux_tools import scp_file
 from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.system.System import System
@@ -47,11 +46,13 @@ def import_certificates(scp_player: LinuxSshEngine, dut_engine: LinuxSshEngine, 
             if name not in current_certs:
                 with allure.step(f'import {"ca" if ca else ""}cert {name}'):
                     if ca:
-                        with allure.step('scp cacert data into switch'):
-                            scp_file(dut_engine, cert.cacert, '/tmp/')
-                        with allure.step('import cacert data'):
-                            cert_obj.cert_id[name].action_import(
-                                data=f'"$(cat /tmp/{cert.cacert_filename})"').verify_result()
+                        with allure.step('import cacert'):
+                            cert_obj.cert_id[name].action_import(uri=generate_scp_uri_using_player(scp_player, cert.cacert)).verify_result()
+                        # with allure.step('scp cacert data into switch'):
+                        #     scp_file(dut_engine, cert.cacert, '/tmp/')
+                        # with allure.step('import cacert data'):
+                        #     cert_obj.cert_id[name].action_import(
+                        #         data=f'"$(cat /tmp/{cert.cacert_filename})"').verify_result()
                     else:
                         with allure.step(f'import cert {cert.name}'):
                             cert_obj.cert_id[cert.name].action_import(
@@ -62,10 +63,11 @@ def import_certificates(scp_player: LinuxSshEngine, dut_engine: LinuxSshEngine, 
 def delete_certificates(ca: bool = False):
     security_obj = System().security
     cert_obj = security_obj.ca_certificate if ca else security_obj.certificate
-    with allure.step(f'delete {"ca" if ca else ""}certs from the system'):
+    ca_str = "ca" if ca else ""
+    with allure.step(f'delete {ca_str}certs from the system'):
         current_certs = OutputParsingTool.parse_json_str_to_dictionary(cert_obj.show()).get_returned_value()
         for cert_name in current_certs:
-            with allure.step(f'delete {"ca" if ca else ""}cert {cert_name}'):
+            with allure.step(f'delete {ca_str}cert {cert_name}'):
                 cert_obj.cert_id[cert_name].action_delete().verify_result()
 
 
