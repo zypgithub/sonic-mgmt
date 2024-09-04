@@ -51,7 +51,7 @@ class SecureBootConsts:
     ONIE_NOS_INSTALL_CMD = 'onie-nos-install'
     INSTALL_SUCCESS_PATTERN = 'Installed.*base image.*successfully'
 
-    NBU_NFS_PREFIX = 'http://nbu-mtr-nfs.nvidia.com'
+    NBU_NFS_PREFIX = 'http://fit69.mtl.labs.mlnx'
 
     NVOS_INSTALL_TIME_MINUTES = 5
     NVOS_INSTALL_TIMEOUT = NVOS_INSTALL_TIME_MINUTES * 60

@@ -16,7 +16,7 @@ def pytest_addoption(parser):
     """
     parser.addoption('--onyx_image_url', action='store', required=False, default=None,
                      help='Provide onyx image url if upgrade of fanout needed,'
-                          ' Example  http://nbu-mtr-nfs.nvidia.com/mswg/release/sx_mlnx_os/lastrc_3_9_3000/X86_64/image-X86_64-3.9.3004-002.img')
+                          ' Example  http://fit69.mtl.labs.mlnx/mswg/release/sx_mlnx_os/lastrc_3_9_3000/X86_64/image-X86_64-3.9.3004-002.img')
 
 
 @pytest.fixture(scope="module")

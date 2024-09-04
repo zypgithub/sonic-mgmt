@@ -49,7 +49,7 @@
 
         <custom_tarball_name> SONIC_CANONICAL-sonic-mgmt_develop.db.1.tgz </custom_tarball_name>
 
-        <pfcwd_dockers_url> http://nbu-mtr-nfs.nvidia.com/auto/sw_system_project/sonic/docker/ </pfcwd_dockers_url>
+        <pfcwd_dockers_url> http://fit69.mtl.labs.mlnx/auto/sw_system_project/sonic/docker/ </pfcwd_dockers_url>
         <skip_weekend_cases> yes </skip_weekend_cases>
 
         <skip_deploy_upgrade_step> no </skip_deploy_upgrade_step>

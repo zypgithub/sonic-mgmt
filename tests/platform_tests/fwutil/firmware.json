@@ -1,7 +1,7 @@
 {
 	"images":{
-        "master.351-dee765552_Internal": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/sonic/master.351-dee765552_Internal/Mellanox/sonic-mellanox.bin",
-		"master.355-392899682_Internal": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/sonic/master.355-392899682_Internal/Mellanox/sonic-mellanox.bin"
+        "master.351-dee765552_Internal": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/sonic/master.351-dee765552_Internal/Mellanox/sonic-mellanox.bin",
+		"master.355-392899682_Internal": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/sonic/master.355-392899682_Internal/Mellanox/sonic-mellanox.bin"
     },
 	"chassis": {
 		"MSN2010": {
@@ -9,26 +9,26 @@
 				"BIOS": [
 					{
 						"force_reboot": true,
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_release/sw_system/sx_mlnx_bios/AtomRangeley/0ACIF007_02.02.x02/Release_9600/0ACIF007.rom",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_release/sw_system/sx_mlnx_bios/AtomRangeley/0ACIF007_02.02.x02/Release_9600/0ACIF007.rom",
 						"version": "0ACIF007_02.02.002_9600",
 						"reboot": ["cold"]
 					},
 					{
 						"force_reboot": true,
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_release/sw_system/sx_mlnx_bios/AtomRangeley/0ACIF007_02.01.x01/Release/0ACIF007.rom",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_release/sw_system/sx_mlnx_bios/AtomRangeley/0ACIF007_02.01.x01/Release/0ACIF007.rom",
 						"version": "0ACIF007_02.01.001",
 						"reboot": ["cold"]
 					}
 				],
 				"ONIE": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0011/9600/onie-updater-x86_64-mlnx_x86-r0",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0011/9600/onie-updater-x86_64-mlnx_x86-r0",
 						"force_reboot": true,
 						"version": "2023.11-5.3.0011-9600",
 						"reboot": ["cold"]
 					},
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0010/9600/onie-updater-x86_64-mlnx_x86-r0",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0010/9600/onie-updater-x86_64-mlnx_x86-r0",
 						"force_reboot": true,
 						"version": "2022.08-5.3.0010-9600",
 						"reboot": ["cold"]
@@ -41,26 +41,26 @@
 				"BIOS": [
 					{
 						"force_reboot": true,
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_release/sw_system/sx_mlnx_bios/AtomRangeley/0ACIF007_02.02.x02/Release_9600/0ACIF007.rom",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_release/sw_system/sx_mlnx_bios/AtomRangeley/0ACIF007_02.02.x02/Release_9600/0ACIF007.rom",
 						"version": "0ACIF007_02.02.002_9600",
 						"reboot": ["cold"]
 					},
 					{
 						"force_reboot": true,
-						"firmware":"http://nbu-mtr-nfs.nvidia.com//auto/sw_release/sw_system/sx_mlnx_bios/AtomRangeley/0ACIF007_02.01.x01/Release/0ACIF007.rom",
+						"firmware":"http://fit69.mtl.labs.mlnx//auto/sw_release/sw_system/sx_mlnx_bios/AtomRangeley/0ACIF007_02.01.x01/Release/0ACIF007.rom",
 						"version": "0ACIF007_02.01.001",
 						"reboot": ["cold"]
 					}
 				],
 				"ONIE": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0011/9600/onie-updater-x86_64-mlnx_x86-r0",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0011/9600/onie-updater-x86_64-mlnx_x86-r0",
 						"force_reboot": true,
 						"version": "2023.11-5.3.0011-9600",
 						"reboot": ["cold"]
 					},
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0010/9600/onie-updater-x86_64-mlnx_x86-r0",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0010/9600/onie-updater-x86_64-mlnx_x86-r0",
 						"force_reboot": true,
 						"version": "2022.08-5.3.0010-9600",
 						"reboot": ["cold"]
@@ -68,12 +68,12 @@
 				],
 				"CPLD2": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN2100/FUI000027/FUI000027.mpfa",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN2100/FUI000027/FUI000027.mpfa",
 						"version": "CPLD000075_REV0600",
 						"reboot": ["power off","cold"]
 					},
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN2100/FUI000003/FUI000003.mpfa",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN2100/FUI000003/FUI000003.mpfa",
 						"version": "CPLD000075_REV0500",
 						"reboot": ["power off","cold"]
 					}
@@ -85,13 +85,13 @@
             "component":{
 				"ONIE": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_os/onie_release/sn2201/2021.08-nvidia_sn2201_v1.1/115200/onie-updater-x86_64-nvidia_sn2201-r0",
+						"firmware": "http://fit69.mtl.labs.mlnx/auto/sw_system_release/sx_mlnx_os/onie_release/sn2201/2021.08-nvidia_sn2201_v1.1/115200/onie-updater-x86_64-nvidia_sn2201-r0",
 						"force_reboot": true,
 						"version": "2021.08-nvidia_sn2201_v1.1-115200",
 						"reboot": ["cold"]
 					},
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/sx_mlnx_os/onie_release/sn2201/2021.08-nvidia_sn2201_v1.1/115200/onie-updater-x86_64-nvidia_sn2201-r0",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/sx_mlnx_os/onie_release/sn2201/2021.08-nvidia_sn2201_v1.1/115200/onie-updater-x86_64-nvidia_sn2201-r0",
 						"force_reboot": true,
 						"version": "2021.08-nvidia_sn2201_v1.1-115200",
 						"reboot": ["cold"]
@@ -99,14 +99,14 @@
 				],
 				"CPLD1": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN2201/FUI_CPLD000299_REV07/FUI_CPLD000300_REV03.mpfa",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN2201/FUI_CPLD000299_REV07/FUI_CPLD000300_REV03.mpfa",
 						"version": "CPLD000299_REV0700",
 						"reboot": ["power off","cold"]
 					}
 				],
 				"CPLD2": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN2201/FUI_CPLD000299_REV07/FUI_CPLD000300_REV03.mpfa",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN2201/FUI_CPLD000299_REV07/FUI_CPLD000300_REV03.mpfa",
 						"version": "CPLD000300_REV0300",
 						"reboot": ["power off","cold"]
 					}
@@ -118,26 +118,26 @@
 				"BIOS": [
 					{
 						"force_reboot": true,
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_release/sw_system/sx_mlnx_bios/IvyBridge/0ABZS017_02.02.x04/Release_9600/0ABZS017.rom",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_release/sw_system/sx_mlnx_bios/IvyBridge/0ABZS017_02.02.x04/Release_9600/0ABZS017.rom",
 						"version": "0ABZS017_02.02.004_9600",
 						"reboot": ["cold"]
 					},
 					{
 						"force_reboot": true,
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_release/sw_system/sx_mlnx_bios/IvyBridge/0ABZS017_02.02.x03/Release_9600/0ABZS017.rom",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_release/sw_system/sx_mlnx_bios/IvyBridge/0ABZS017_02.02.x03/Release_9600/0ABZS017.rom",
 						"version": "0ABZS017_02.02.003_9600",
 						"reboot": ["cold"]
 					}
 				],
 				"ONIE": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0011/9600/onie-updater-x86_64-mlnx_x86-r0",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0011/9600/onie-updater-x86_64-mlnx_x86-r0",
 						"force_reboot": true,
 						"version": "2023.11-5.3.0011-9600",
 						"reboot": ["cold"]
 					},
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0010/9600/onie-updater-x86_64-mlnx_x86-r0",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0010/9600/onie-updater-x86_64-mlnx_x86-r0",
 						"force_reboot": true,
 						"version": "2022.08-5.3.0010-9600",
 						"reboot": ["cold"]
@@ -145,12 +145,12 @@
 				],
 				"CPLD1": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN2410/FUI000192/FUI000192.mpfa",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN2410/FUI000192/FUI000192.mpfa",
 						"version": "CPLD000085_REV1900",
 						"reboot": ["power off","cold"]
 					},
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN2410/FUI000077/FUI000077.mpfa",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN2410/FUI000077/FUI000077.mpfa",
 						"version": "CPLD000085_REV1700",
 						"reboot": ["power off","cold"]
 					}
@@ -162,26 +162,26 @@
 				"BIOS": [
 					{
 						"force_reboot": true,
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_release/sw_system/sx_mlnx_bios/IvyBridge/0ABZS017_02.02.x04/Release_9600/0ABZS017.rom",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_release/sw_system/sx_mlnx_bios/IvyBridge/0ABZS017_02.02.x04/Release_9600/0ABZS017.rom",
 						"version": "0ABZS017_02.02.004_9600",
 						"reboot": ["cold"]
 					},
 					{
 						"force_reboot": true,
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_release/sw_system/sx_mlnx_bios/IvyBridge/0ABZS017_02.02.x03/Release_9600/0ABZS017.rom",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_release/sw_system/sx_mlnx_bios/IvyBridge/0ABZS017_02.02.x03/Release_9600/0ABZS017.rom",
 						"version": "0ABZS017_02.02.003_9600",
 						"reboot": ["cold"]
 					}
 				],
 				"ONIE": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0011/9600/onie-updater-x86_64-mlnx_x86-r0",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0011/9600/onie-updater-x86_64-mlnx_x86-r0",
 						"force_reboot": true,
 						"version": "2023.11-5.3.0011-9600",
 						"reboot": ["cold"]
 					},
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0010/9600/onie-updater-x86_64-mlnx_x86-r0",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0010/9600/onie-updater-x86_64-mlnx_x86-r0",
 						"force_reboot": true,
 						"version": "2022.08-5.3.0010-9600",
 						"reboot": ["cold"]
@@ -189,12 +189,12 @@
 				],
 				"CPLD1": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN2700/FUI000193/FUI000193.mpfa",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN2700/FUI000193/FUI000193.mpfa",
 						"version": "CPLD000085_REV2000",
 						"reboot": ["power off","cold"]
 					},
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN2700/FUI000076/FUI000076.mpfa",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN2700/FUI000076/FUI000076.mpfa",
 						"version": "CPLD000085_REV1700",
 						"reboot": ["power off","cold"]
 					}
@@ -207,20 +207,20 @@
 				"BIOS": [
 					{
 						"force_reboot": true,
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_release/sw_system/sx_mlnx_bios/Broadwell/0ACLH004_02.02.x10/Release_9600/0ACLH004.rom",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_release/sw_system/sx_mlnx_bios/Broadwell/0ACLH004_02.02.x10/Release_9600/0ACLH004.rom",
 						"version": "0ACLH004_02.02.010_9600",
 						"reboot": ["cold"]
 					}
 				],
 				"ONIE": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0011/9600/onie-updater-x86_64-mlnx_x86-r0",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0011/9600/onie-updater-x86_64-mlnx_x86-r0",
 						"force_reboot": true,
 						"version": "2023.11-5.3.0011-9600",
 						"reboot": ["cold"]
 					},
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0010/9600/onie-updater-x86_64-mlnx_x86-r0",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0010/9600/onie-updater-x86_64-mlnx_x86-r0",
 						"force_reboot": true,
 						"version": "2022.08-5.3.0010-9600",
 						"reboot": ["cold"]
@@ -228,7 +228,7 @@
 				],
 				"CPLD1": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN2700/FUI000222/FUI000222.mpfa",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN2700/FUI000222/FUI000222.mpfa",
 						"version": "CPLD000120_REV1300",
 						"reboot": ["power off","cold"]
 					}
@@ -240,26 +240,26 @@
 				"BIOS": [
 					{
 						"force_reboot": true,
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_release/sw_system/sx_mlnx_bios/Broadwell/0ACLH004_02.02.x10/Release_9600/0ACLH004.rom",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_release/sw_system/sx_mlnx_bios/Broadwell/0ACLH004_02.02.x10/Release_9600/0ACLH004.rom",
 						"version": "0ACLH004_02.02.010_9600",
 						"reboot": ["cold"]
 					},
 					{
 						"force_reboot": true,
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_release/sw_system/sx_mlnx_bios/Broadwell/0ACLH004_02.02.x09/Release_9600/0ACLH004.rom",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_release/sw_system/sx_mlnx_bios/Broadwell/0ACLH004_02.02.x09/Release_9600/0ACLH004.rom",
 						"version": "0ACLH004_02.02.009_9600",
 						"reboot": ["cold"]
 					}
 				],
 				"ONIE": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0011/9600/onie-updater-x86_64-mlnx_x86-r0",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0011/9600/onie-updater-x86_64-mlnx_x86-r0",
 						"force_reboot": true,
 						"version": "2023.11-5.3.0011-9600",
 						"reboot": ["cold"]
 					},
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0010/9600/onie-updater-x86_64-mlnx_x86-r0",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0010/9600/onie-updater-x86_64-mlnx_x86-r0",
 						"force_reboot": true,
 						"version": "2022.08-5.3.0010-9600",
 						"reboot": ["cold"]
@@ -267,12 +267,12 @@
 				],
 				"CPLD2": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN3420/FUI000168/FUI000168.mpfa",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN3420/FUI000168/FUI000168.mpfa",
 						"version": "CPLD000198_REV0500",
 						"reboot": ["power off","cold"]
 					},
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN3420/FUI000159/FUI000159.mpfa",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN3420/FUI000159/FUI000159.mpfa",
 						"version": "CPLD000198_REV0400",
 						"reboot": ["power off","cold"]
 					}
@@ -285,26 +285,26 @@
 				"BIOS": [
 					{
 						"force_reboot": true,
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_release/sw_system/sx_mlnx_bios/Broadwell/0ACLH004_02.02.x10/Release_9600/0ACLH004.rom",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_release/sw_system/sx_mlnx_bios/Broadwell/0ACLH004_02.02.x10/Release_9600/0ACLH004.rom",
 						"version": "0ACLH004_02.02.010_9600",
 						"reboot": ["cold"]
 					},
 					{
 						"force_reboot": true,
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_release/sw_system/sx_mlnx_bios/Broadwell/0ACLH004_02.02.x09/Release_9600/0ACLH004.rom",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_release/sw_system/sx_mlnx_bios/Broadwell/0ACLH004_02.02.x09/Release_9600/0ACLH004.rom",
 						"version": "0ACLH004_02.02.009_9600",
 						"reboot": ["cold"]
 					}
 				],
 				"ONIE": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0011/9600/onie-updater-x86_64-mlnx_x86-r0",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0011/9600/onie-updater-x86_64-mlnx_x86-r0",
 						"force_reboot": true,
 						"version": "2023.11-5.3.0011-9600",
 						"reboot": ["cold"]
 					},
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0010/9600/onie-updater-x86_64-mlnx_x86-r0",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0010/9600/onie-updater-x86_64-mlnx_x86-r0",
 						"force_reboot": true,
 						"version": "2022.08-5.3.0010-9600",
 						"reboot": ["cold"]
@@ -312,12 +312,12 @@
 				],
 				"CPLD2": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN3700C/FUI000214/FUI000214.mpfa",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN3700C/FUI000214/FUI000214.mpfa",
 						"version": "CPLD000162_REV1000",
 						"reboot": ["power off","cold"]
 					},
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN3700C/FUI000191/FUI000191.mpfa",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN3700C/FUI000191/FUI000191.mpfa",
 						"version": "CPLD000310_REV0200",
 						"reboot": ["power off","cold"]
 					}
@@ -329,26 +329,26 @@
 				"BIOS": [
 					{
 						"force_reboot": true,
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_release/sw_system/sx_mlnx_bios/Broadwell/0ACLH004_02.02.x10/Release_9600/0ACLH004.rom",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_release/sw_system/sx_mlnx_bios/Broadwell/0ACLH004_02.02.x10/Release_9600/0ACLH004.rom",
 						"version": "0ACLH004_02.02.010_9600",
 						"reboot": ["cold"]
 					},
 					{
 						"force_reboot": true,
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_release/sw_system/sx_mlnx_bios/Broadwell/0ACLH004_02.02.x09/Release_9600/0ACLH004.rom",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_release/sw_system/sx_mlnx_bios/Broadwell/0ACLH004_02.02.x09/Release_9600/0ACLH004.rom",
 						"version": "0ACLH004_02.02.009_9600",
 						"reboot": ["cold"]
 					}
 				],
 				"ONIE": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0011/9600/onie-updater-x86_64-mlnx_x86-r0",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0011/9600/onie-updater-x86_64-mlnx_x86-r0",
 						"force_reboot": true,
 						"version": "2023.11-5.3.0011-9600",
 						"reboot": ["cold"]
 					},
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0010/9600/onie-updater-x86_64-mlnx_x86-r0",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0010/9600/onie-updater-x86_64-mlnx_x86-r0",
 						"force_reboot": true,
 						"version": "2022.08-5.3.0010-9600",
 						"reboot": ["cold"]
@@ -356,12 +356,12 @@
 				],
 				"CPLD2": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN3700/FUI000214/FUI000214.mpfa",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN3700/FUI000214/FUI000214.mpfa",
 						"version": "CPLD000162_REV1000",
 						"reboot": ["power off","cold"]
 					},
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN3700/FUI000191/FUI000191.mpfa",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN3700/FUI000191/FUI000191.mpfa",
 						"version": "CPLD000310_REV0200",
 						"reboot": ["power off","cold"]
 					}
@@ -374,26 +374,26 @@
 				"BIOS": [
 					{
 						"force_reboot": true,
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_release/sw_system/sx_mlnx_bios/Broadwell/0ACLH004_02.02.x10/Release_9600/0ACLH004.rom",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_release/sw_system/sx_mlnx_bios/Broadwell/0ACLH004_02.02.x10/Release_9600/0ACLH004.rom",
 						"version": "0ACLH004_02.02.010_9600",
 						"reboot": ["cold"]
 					},
 					{
 						"force_reboot": true,
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_release/sw_system/sx_mlnx_bios/Broadwell/0ACLH004_02.02.x09/Release_9600/0ACLH004.rom",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_release/sw_system/sx_mlnx_bios/Broadwell/0ACLH004_02.02.x09/Release_9600/0ACLH004.rom",
 						"version": "0ACLH004_02.02.009_9600",
 						"reboot": ["cold"]
 					}
 				],
 				"ONIE": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0011/9600/onie-updater-x86_64-mlnx_x86-r0",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0011/9600/onie-updater-x86_64-mlnx_x86-r0",
 						"force_reboot": true,
 						"version": "2023.11-5.3.0011-9600",
 						"reboot": ["cold"]
 					},
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0010/9600/onie-updater-x86_64-mlnx_x86-r0",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0010/9600/onie-updater-x86_64-mlnx_x86-r0",
 						"force_reboot": true,
 						"version": "2022.08-5.3.0010-9600",
 						"reboot": ["cold"]
@@ -401,12 +401,12 @@
 				],
 				"CPLD2": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN3800/FUI000160/FUI000160.mpfa",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN3800/FUI000160/FUI000160.mpfa",
 						"version": "CPLD000165_REV0600",
 						"reboot": ["power off","cold"]
 					},
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN3800/FUI000064/FUI000064.mpfa",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN3800/FUI000064/FUI000064.mpfa",
 						"version": "CPLD000165_REV0200",
 						"reboot": ["power off","cold"]
 					}
@@ -419,20 +419,20 @@
 				"BIOS": [
 					{
 						"force_reboot": true,
-						"firmware": "https://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_bios/SnowyOwl/0ACTV_00.00.016/Release_9600/0ACTV.rom",
+						"firmware": "https://fit69.mtl.labs.mlnx/auto/sw_system_release/sx_mlnx_bios/SnowyOwl/0ACTV_00.00.016/Release_9600/0ACTV.rom",
 						"version": "0ACTV_00.00.016_9600",
 						"reboot": ["cold"]
 					},
 					{
 						"force_reboot": true,
-						"firmware": "https://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_bios/SnowyOwl/0ACTV_00.00.x07_rc5/Release_9600/0ACTV.rom",
+						"firmware": "https://fit69.mtl.labs.mlnx/auto/sw_system_release/sx_mlnx_bios/SnowyOwl/0ACTV_00.00.x07_rc5/Release_9600/0ACTV.rom",
 						"version": "0ACTV_0.00.007",
 						"reboot": ["cold"]
 					}
 				],
 				"ONIE": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0012/9600/onie-updater-x86_64-mlnx_x86-r0",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0012/9600/onie-updater-x86_64-mlnx_x86-r0",
 						"force_reboot": true,
 						"version": "2023.11-5.3.0012-9600",
 						"reboot": ["cold"]
@@ -440,24 +440,24 @@
 				],
 				"CPLD2": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4280/FUI000307/FUI000307.mpfa",
+						"firmware": "http://fit69.mtl.labs.mlnx/auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4280/FUI000307/FUI000307.mpfa",
 						"version": "CPLD060387_REV0104",
 						"reboot": ["power off", "cold"]
 					},
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4280/FUI000295/FUI000295.mpfa",
+						"firmware": "http://fit69.mtl.labs.mlnx/auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4280/FUI000295/FUI000295.mpfa",
 						"version": "CPLD000387_REV0103",
 						"reboot": ["power off", "cold"]
 					}
 				],
 				"DPU1_FPGA": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4280/ISP000472/ISP000472.mpfa",
+						"firmware": "http://fit69.mtl.labs.mlnx/auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4280/ISP000472/ISP000472.mpfa",
 						"version": "FPGA000375_REV0006",
 						"reboot": ["power off", "cold"]
 					},
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4280/ISP000005/ISP000005.mpfa",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4280/ISP000005/ISP000005.mpfa",
 						"version": "FPGA000375_REV0005",
 						"reboot": ["power off", "cold"]
 					}
@@ -469,26 +469,26 @@
 				"BIOS": [
 					{
 						"force_reboot": true,
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_release/sw_system/sx_mlnx_bios/Broadwell/0ACLH004_02.02.x10/Release_9600/0ACLH004.rom",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_release/sw_system/sx_mlnx_bios/Broadwell/0ACLH004_02.02.x10/Release_9600/0ACLH004.rom",
 						"version": "0ACLH004_02.02.010_9600",
 						"reboot": ["cold"]
 					},
 					{
 						"force_reboot": true,
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_release/sw_system/sx_mlnx_bios/Broadwell/0ACLH004_02.02.x09/Release_9600/0ACLH004.rom",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_release/sw_system/sx_mlnx_bios/Broadwell/0ACLH004_02.02.x09/Release_9600/0ACLH004.rom",
 						"version": "0ACLH004_02.02.009_9600",
 						"reboot": ["cold"]
 					}
 				],
 				"ONIE": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0011/9600/onie-updater-x86_64-mlnx_x86-r0",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0011/9600/onie-updater-x86_64-mlnx_x86-r0",
 						"force_reboot": true,
 						"version": "2023.11-5.3.0011-9600",
 						"reboot": ["cold"]
 					},
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0010/9600/onie-updater-x86_64-mlnx_x86-r0",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0010/9600/onie-updater-x86_64-mlnx_x86-r0",
 						"force_reboot": true,
 						"version": "2022.08-5.3.0010-9600",
 						"reboot": ["cold"]
@@ -496,12 +496,12 @@
 				],
 				"CPLD2": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4410/FUI000156/FUI000156.mpfa",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4410/FUI000156/FUI000156.mpfa",
 						"version": "CPLD000254_REV0600",
 						"reboot": ["power off","cold"]
 					},
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4410/FUI000120/FUI000120.mpfa",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4410/FUI000120/FUI000120.mpfa",
 						"version": "CPLD000254_REV0500",
 						"reboot": ["power off","cold"]
 					}
@@ -514,26 +514,26 @@
 				"BIOS": [
 					{
 						"force_reboot": true,
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_release/sw_system/sx_mlnx_bios/Broadwell/0ACLH004_02.02.x10/Release_9600/0ACLH004.rom",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_release/sw_system/sx_mlnx_bios/Broadwell/0ACLH004_02.02.x10/Release_9600/0ACLH004.rom",
 						"version": "0ACLH004_02.02.010_9600",
 						"reboot": ["cold"]
 					},
 					{
 						"force_reboot": true,
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_release/sw_system/sx_mlnx_bios/Broadwell/0ACLH004_02.02.x09/Release_9600/0ACLH004.rom",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_release/sw_system/sx_mlnx_bios/Broadwell/0ACLH004_02.02.x09/Release_9600/0ACLH004.rom",
 						"version": "0ACLH004_02.02.009_9600",
 						"reboot": ["cold"]
 					}
 				],
 				"ONIE": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0011/9600/onie-updater-x86_64-mlnx_x86-r0",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0011/9600/onie-updater-x86_64-mlnx_x86-r0",
 						"force_reboot": true,
 						"version": "2023.11-5.3.0011-9600",
 						"reboot": ["cold"]
 					},
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0010/9600/onie-updater-x86_64-mlnx_x86-r0",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0010/9600/onie-updater-x86_64-mlnx_x86-r0",
 						"force_reboot": true,
 						"version": "2022.08-5.3.0010-9600",
 						"reboot": ["cold"]
@@ -541,12 +541,12 @@
 				],
 				"CPLD2": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4600C/FUI000154/FUI000154.mpfa",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4600C/FUI000154/FUI000154.mpfa",
 						"version": "CPLD000296_REV0300",
 						"reboot": ["power off","cold"]
 					},
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4600C/FUI000103/FUI000103.mpfa",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4600C/FUI000103/FUI000103.mpfa",
 						"version": "CPLD000208_REV0200",
 						"reboot": ["power off","cold"]
 					}
@@ -559,26 +559,26 @@
 				"BIOS": [
 					{
 						"force_reboot": true,
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_release/sw_system/sx_mlnx_bios/Broadwell/0ACLH004_02.02.x10/Release_9600/0ACLH004.rom",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_release/sw_system/sx_mlnx_bios/Broadwell/0ACLH004_02.02.x10/Release_9600/0ACLH004.rom",
 						"version": "0ACLH004_02.02.010_9600",
 						"reboot": ["cold"]
 					},
 					{
 						"force_reboot": true,
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_release/sw_system/sx_mlnx_bios/Broadwell/0ACLH004_02.02.x09/Release_9600/0ACLH004.rom",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_release/sw_system/sx_mlnx_bios/Broadwell/0ACLH004_02.02.x09/Release_9600/0ACLH004.rom",
 						"version": "0ACLH004_02.02.009_9600",
 						"reboot": ["cold"]
 					}
 				],
 				"ONIE": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0011/9600/onie-updater-x86_64-mlnx_x86-r0",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0011/9600/onie-updater-x86_64-mlnx_x86-r0",
 						"force_reboot": true,
 						"version": "2023.11-5.3.0011-9600",
 						"reboot": ["cold"]
 					},
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0010/9600/onie-updater-x86_64-mlnx_x86-r0",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0010/9600/onie-updater-x86_64-mlnx_x86-r0",
 						"force_reboot": true,
 						"version": "2022.08-5.3.0010-9600",
 						"reboot": ["cold"]
@@ -586,12 +586,12 @@
 				],
 				"CPLD2": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4600/FUI000157/FUI000157.mpfa",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4600/FUI000157/FUI000157.mpfa",
 						"version": "CPLD000208_REV0700",
 						"reboot": ["power off","cold"]
 					},
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4600/FUI000128/FUI000128.mpfa",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4600/FUI000128/FUI000128.mpfa",
 						"version": "CPLD000208_REV0600",
 						"reboot": ["power off","cold"]
 					}
@@ -604,26 +604,26 @@
 				"BIOS": [
 					{
 						"force_reboot": true,
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_release/sw_system/sx_mlnx_bios/Broadwell/0ACLH004_02.02.x10/Release_9600/0ACLH004.rom",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_release/sw_system/sx_mlnx_bios/Broadwell/0ACLH004_02.02.x10/Release_9600/0ACLH004.rom",
 						"version": "0ACLH004_02.02.010_9600",
 						"reboot": ["cold"]
 					},
 					{
 						"force_reboot": true,
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_release/sw_system/sx_mlnx_bios/Broadwell/0ACLH004_02.02.x09/Release_9600/0ACLH004.rom",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_release/sw_system/sx_mlnx_bios/Broadwell/0ACLH004_02.02.x09/Release_9600/0ACLH004.rom",
 						"version": "0ACLH004_02.02.009_9600",
 						"reboot": ["cold"]
 					}
 				],
 				"ONIE": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0011/9600/onie-updater-x86_64-mlnx_x86-r0",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0011/9600/onie-updater-x86_64-mlnx_x86-r0",
 						"force_reboot": true,
 						"version": "2023.11-5.3.0011-9600",
 						"reboot": ["cold"]
 					},
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0010/9600/onie-updater-x86_64-mlnx_x86-r0",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0010/9600/onie-updater-x86_64-mlnx_x86-r0",
 						"force_reboot": true,
 						"version": "2022.08-5.3.0010-9600",
 						"reboot": ["cold"]
@@ -631,12 +631,12 @@
 				],
 				"CPLD2": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4700/FUI000155/FUI000155.mpfa",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4700/FUI000155/FUI000155.mpfa",
 						"version": "CPLD000254_REV0600",
 						"reboot": ["power off","cold"]
 					},
 					{
-						"firmware":  "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4700/FUI000123/FUI000123.mpfa",
+						"firmware":  "http://fit69.mtl.labs.mlnx//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4700/FUI000123/FUI000123.mpfa",
 						"version": "CPLD000254_REV0500",
 						"reboot": ["power off","cold"]
 					}
@@ -648,13 +648,13 @@
 			"component":{
 				"ONIE": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0011/115200/onie-updater-x86_64-mlnx_x86-r0",
+						"firmware": "http://fit69.mtl.labs.mlnx/auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0011/115200/onie-updater-x86_64-mlnx_x86-r0",
 						"force_reboot": true,
 						"version": "2023.11-5.3.0011-115200",
 						"reboot": ["cold"]
 					},
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0010/115200/onie-updater-x86_64-mlnx_x86-r0",
+						"firmware": "http://fit69.mtl.labs.mlnx/auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0010/115200/onie-updater-x86_64-mlnx_x86-r0",
 						"force_reboot": true,
 						"version": "2022.08-5.3.0010-115200",
 						"reboot": ["cold"]
@@ -667,14 +667,14 @@
 				"BIOS": [
 					{
 						"force_reboot": true,
-						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_bios/CoffeeLake/0ACQF_06.01.x05_rc1/Release/0ACQF.cab",
+						"firmware": "http://fit69.mtl.labs.mlnx/auto/sw_system_release/sx_mlnx_bios/CoffeeLake/0ACQF_06.01.x05_rc1/Release/0ACQF.cab",
 						"version": "0ACQF_06.01.005",
 						"reboot": ["cold"]
 					}
 				],
 				"ONIE": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0011-dev/115200/onie-updater-x86_64-mlnx_x86-r0",
+						"firmware": "http://fit69.mtl.labs.mlnx/auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0011-dev/115200/onie-updater-x86_64-mlnx_x86-r0",
 						"force_reboot": true,
 						"version": "2023.11-5.3.0011-dev-115200-dev",
 						"reboot": ["cold"]
@@ -682,12 +682,12 @@
 				],
 				"CPLD2": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/hw_cpld/Approved_CPLDs/SN5400/FUI000312/FUI000312.mpfa",
+						"firmware": "http://fit69.mtl.labs.mlnx/auto/sw_system_release/hw_cpld/Approved_CPLDs/SN5400/FUI000312/FUI000312.mpfa",
 						"version": "CPLD000352_REV0500",
 						"reboot": ["power off", "cold"]
 					},
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/hw_cpld/Approved_CPLDs/SN5400/FUI000271/FUI000271.mpfa",
+						"firmware": "http://fit69.mtl.labs.mlnx/auto/sw_system_release/hw_cpld/Approved_CPLDs/SN5400/FUI000271/FUI000271.mpfa",
 						"version": "CPLD000352_REV0200",
 						"reboot": ["power off", "cold"]
 					}
@@ -699,20 +699,20 @@
 				"BIOS": [
 					{
 						"force_reboot": true,
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/sx_mlnx_bios/CoffeeLake/0ACQF_06.01.x05_rc1/Release/0ACQF.cab",
+						"firmware": "http://fit69.mtl.labs.mlnx/auto/sw_system_release/sx_mlnx_bios/CoffeeLake/0ACQF_06.01.x05_rc1/Release/0ACQF.cab",
 						"version": "0ACQF_06.01.005",
 						"reboot": ["cold"]
 					},
 					{
 						"force_reboot": true,
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/sx_mlnx_bios/CoffeeLake/0ACQF_06.01.x03_rc1/Release/0ACQF.cab",
+						"firmware": "http://fit69.mtl.labs.mlnx/auto/sw_system_release/sx_mlnx_bios/CoffeeLake/0ACQF_06.01.x03_rc1/Release/0ACQF.cab",
 						"version": "0ACQF_06.01.003",
 						"reboot": ["cold"]
 					}
 				],
 				"ONIE": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0010-dev/115200/onie-updater-x86_64-mlnx_x86-r0",
+						"firmware": "http://fit69.mtl.labs.mlnx/auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0010-dev/115200/onie-updater-x86_64-mlnx_x86-r0",
 						"force_reboot": true,
 						"version": "2022.08-5.3.0010-dev-115200-dev",
 						"reboot": ["cold"]
@@ -720,12 +720,12 @@
 				],
 				"CPLD2": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN5600/FUI000289/FUI000289.mpfa",
+						"firmware": "http://fit69.mtl.labs.mlnx/auto/sw_system_release/hw_cpld/Approved_CPLDs/SN5600/FUI000289/FUI000289.mpfa",
 						"version": "CPLD000330_REV0804",
 						"reboot": ["power off", "cold"]
 					},
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN5600/FUI060239/FUI060239.mpfa",
+						"firmware": "http://fit69.mtl.labs.mlnx/auto/sw_system_release/hw_cpld/Approved_CPLDs/SN5600/FUI060239/FUI060239.mpfa",
 						"version": "CPLD060330_REV0700",
 						"reboot": ["power off", "cold"]
 					}
@@ -738,7 +738,7 @@
 			"component": {
 				"CPLD1": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4600C/FUI000186/FUI000186.mpfa",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4600C/FUI000186/FUI000186.mpfa",
 						"version": "CPLD000120_REV1200",
 						"reboot": [
 							"power off",
@@ -746,7 +746,7 @@
 						]
 					},
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4600C/FUI000154/FUI000154.mpfa",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4600C/FUI000154/FUI000154.mpfa",
 						"version": "CPLD000120_REV0900",
 						"reboot": [
 							"power off",
@@ -760,7 +760,7 @@
 			"component": {
 				"CPLD2": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN3700C/FUI000191/FUI000191.mpfa",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN3700C/FUI000191/FUI000191.mpfa",
 						"version": "CPLD000310_REV0200",
 						"reboot": ["power off","cold"]
 					}
@@ -771,7 +771,7 @@
 			"component": {
 				"ONIE": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0010/115200/onie-updater-x86_64-mlnx_x86-r0",
+						"firmware": "http://fit69.mtl.labs.mlnx/auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0010/115200/onie-updater-x86_64-mlnx_x86-r0",
 						"force_reboot": true,
 						"version": "2022.08-5.3.0010-115200",
 						"reboot": [
@@ -781,7 +781,7 @@
 				],
 				"CPLD2": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN5600/FUI000240/FUI000240.mpfa",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN5600/FUI000240/FUI000240.mpfa",
 						"version": "CPLD000330_REV0700",
 						"reboot": [
 							"power off",
@@ -789,7 +789,7 @@
 						]
 					},
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN5600/FUI000229/FUI000229.mpfa",
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN5600/FUI000229/FUI000229.mpfa",
 						"version": "CPLD000330_REV0600",
 						"reboot": [
 							"power off",
@@ -804,14 +804,14 @@
 				"BIOS": [
 					{
 						"force_reboot": true,
-						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_bios/CoffeeLake/0ACQF_06.01.x05_rc1/Release/0ACQF.cab",
+						"firmware": "http://fit69.mtl.labs.mlnx/auto/sw_system_release/sx_mlnx_bios/CoffeeLake/0ACQF_06.01.x05_rc1/Release/0ACQF.cab",
 						"version": "0ACQF_06.01.005",
 						"reboot": ["cold"]
 					}
 				],
 				"ONIE": [
 					{
-                        "firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0011/115200/onie-updater-x86_64-mlnx_x86-r0",
+                        "firmware": "http://fit69.mtl.labs.mlnx/auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0011/115200/onie-updater-x86_64-mlnx_x86-r0",
 						"force_reboot": true,
                         "version": "2023.11-5.3.0011-115200",
 						"reboot": ["cold"]
@@ -819,7 +819,7 @@
 				],
 				"CPLD2": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/hw_cpld/Approved_CPLDs/SN5400/FUI000313/FUI000313.mpfa",
+						"firmware": "http://fit69.mtl.labs.mlnx/auto/sw_system_release/hw_cpld/Approved_CPLDs/SN5400/FUI000313/FUI000313.mpfa",
 						"version": "CPLD000352_REV0500",
 						"reboot": ["power off", "cold"]
 					}
@@ -833,24 +833,24 @@
             "component": {
                 "BIOS": [
                     {
-                        "firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_bios/CoffeeLake/0ACQF_06.01.x04_rc5/Release/0ACQF.cab",
+                        "firmware": "http://fit69.mtl.labs.mlnx/auto/sw_system_release/sx_mlnx_bios/CoffeeLake/0ACQF_06.01.x04_rc5/Release/0ACQF.cab",
                         "version": "0ACQF_06.01.004",
                         "type": "dev"
                     },
                     {
-                        "firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_bios/CoffeeLake/0ACQF_06.01.x04_rc5/Release/0ACQF.cab",
+                        "firmware": "http://fit69.mtl.labs.mlnx/auto/sw_system_release/sx_mlnx_bios/CoffeeLake/0ACQF_06.01.x04_rc5/Release/0ACQF.cab",
                         "version": "0ACQF_06.01.004",
                         "type": "prod"
                     }
                 ],
                 "ONIE": [
                     {
-                        "firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0011-dev/115200/onie-updater-x86_64-mlnx_x86-r0",
+                        "firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0011-dev/115200/onie-updater-x86_64-mlnx_x86-r0",
                         "version": "2023.11-5.3.0011-dev-115200-dev",
                         "type": "dev"
                     },
                     {
-                        "firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0011/115200/onie-updater-x86_64-mlnx_x86-r0",
+                        "firmware": "http://fit69.mtl.labs.mlnx/auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0011/115200/onie-updater-x86_64-mlnx_x86-r0",
                         "version": "2023.11-5.3.0011-115200",
                         "type": "prod"
                     }
@@ -861,24 +861,24 @@
             "component":{
                 "ONIE":[
                     {
-                            "firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0010/115200/onie-updater-x86_64-mlnx_x86-r0",
+                            "firmware": "http://fit69.mtl.labs.mlnx/auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0010/115200/onie-updater-x86_64-mlnx_x86-r0",
                             "version": "2022.08-5.3.0010-115200",
 							"type": "prod"
                     },
 					{
-                            "firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0010-dev/115200/onie-updater-x86_64-mlnx_x86-r0",
+                            "firmware": "http://fit69.mtl.labs.mlnx/auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0010-dev/115200/onie-updater-x86_64-mlnx_x86-r0",
                             "version": "2022.08-5.3.0010-115200",
 							"type": "dev"
                     }
 				],
                 "BIOS": [
                     {
-                            "firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_bios/CoffeeLake/0ACQF_05.02.x02/Release/0ACQF.cab",
+                            "firmware": "http://fit69.mtl.labs.mlnx/auto/sw_system_release/sx_mlnx_bios/CoffeeLake/0ACQF_05.02.x02/Release/0ACQF.cab",
                             "version": "0ACQF_05.02.x02",
 							"type": "dev"
                     },
 					{
-                            "firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_bios/CoffeeLake/0ACQF_05.02.x02/Release/0ACQF.cab",
+                            "firmware": "http://fit69.mtl.labs.mlnx/auto/sw_system_release/sx_mlnx_bios/CoffeeLake/0ACQF_05.02.x02/Release/0ACQF.cab",
                             "version": "0ACQF_05.02.x02",
 							"type": "prod"
                     }

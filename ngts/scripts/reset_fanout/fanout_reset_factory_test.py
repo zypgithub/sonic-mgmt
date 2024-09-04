@@ -48,7 +48,7 @@ def install_image_on_fanout(dut_engine, onyx_img_url):
 def _prepare_image_name(onyx_img_url):
     """
     From onyx image url returns image name
-    :param onyx_img_url: url, Example: http://nbu-mtr-nfs.nvidia.com/mswg/release/sx_mlnx_os/lastrc_3_9_3000/X86_64/image-X86_64-3.9.3004-002.img
+    :param onyx_img_url: url, Example: http://fit69.mtl.labs.mlnx/mswg/release/sx_mlnx_os/lastrc_3_9_3000/X86_64/image-X86_64-3.9.3004-002.img
     :return: image-X86_64-3.9.3004-002.img
     """
     image_name_index = -1
