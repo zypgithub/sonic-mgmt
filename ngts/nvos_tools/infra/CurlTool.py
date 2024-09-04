@@ -1,24 +1,24 @@
 import logging
 import os
-import signal
 import subprocess
-import time
 from typing import Tuple, List
 
 import ngts.tools.test_utils.allure_utils as allure
 from ngts.nvos_constants.constants_nvos import SystemConsts
+from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 
 
 class CurlTool:
     def __init__(self, server_host: str, username: str, password: str,
                  server_port: str = SystemConsts.EXTERNAL_API_PORT_DEFAULT, cacert='',
-                 verify_tools_installed: bool = False):
+                 verify_tools_installed: bool = False, client_cert: CertInfo = None):
 
         self.server_host = server_host
         self.server_port = server_port
         self.username = username
         self.password = password
         self.cacert = cacert
+        self.client_cert: CertInfo = client_cert
 
         if verify_tools_installed:
             with allure.step('verify curl installed on player'):
@@ -26,29 +26,41 @@ class CurlTool:
 
         self._live_processes: List[subprocess.Popen] = []
 
-    def request(self, username: str = '', password: str = '', skip_cert_verify: bool = True, cacert='', path: str = '', request_type='') -> Tuple[str, str]:
+    def request(self, username: str = '', password: str = '', skip_cert_verify: bool = True, cacert='', path: str = '', request_type='', client_cert: CertInfo = None, resolve_dn: str = '') -> Tuple[str, str]:
         out, err, _ = self._run_rest_op(request_type, skip_cert_verify, cacert, username,
-                                        password, path)
+                                        password, path, client_cert, resolve_dn)
         return out, err
 
     def _run_rest_op(self, rest_op: str, is_insecure: bool, cacert: str, username: str = '',
-                     password: str = '', path: str = '') -> Tuple[
+                     password: str = '', path: str = '', client_cert: CertInfo = None, resolve_dn: str = '') -> Tuple[
             str, str, subprocess.Popen]:
+        curl_cmd = self._compose_curl_cmd(cacert, client_cert, is_insecure, password, path, resolve_dn, rest_op,
+                                          username)
+        with allure.step('run curl command in process'):
+            return self._run_cmd_in_process(curl_cmd)
+
+    def _compose_curl_cmd(self, cacert, client_cert, is_insecure, password, path, resolve_dn, rest_op, username):
         with allure.step('compose the curl command'):
             username = username or self.username
             password = password or self.password
+            host = self.server_host
 
             if is_insecure:
-                cert_flag = '-insecure'
+                cert_flag = '--insecure'
             else:
                 cacert_to_use = cacert or self.cacert
                 assert cacert_to_use, 'cacert path was not specified'
                 cert_flag = f'--cacert {cacert_to_use}'
+                client_cert_to_use = client_cert or self.client_cert
+                if client_cert_to_use:
+                    cert_flag += f' --key {client_cert_to_use.private} --cert {client_cert_to_use.public}'
+                if resolve_dn:
+                    cert_flag += f' --resolve {resolve_dn}:{self.server_port}:{self.server_host}'
+                    host = resolve_dn
 
             curl_cmd = (f"curl {cert_flag} --user {username}:{password} "
-                        f"--request {rest_op} 'https://{self.server_host}:{self.server_port}{path}'")
-        with allure.step('run curl command in process'):
-            return self._run_cmd_in_process(curl_cmd)
+                        f"--request {rest_op} 'https://{host}:{self.server_port}{path}'")
+        return curl_cmd
 
     def _verify_curl_installed(self):
         cmd = 'curl -version'

@@ -4,6 +4,9 @@ import pytest
 
 from ngts.tests_nvos.general.security.centralized_tests.factory_reset.constants import FactoryResetType, \
     FACTORY_RESET_TYPE_TO_ACTION_PARAM
+from ngts.tests_nvos.general.security.test_api_server_security.test_api_mtls import \
+    api_mtls_factory_reset_no_params_check, \
+    api_mtls_factory_reset_keep_all_config_check, api_mtls_factory_reset_keep_only_files_check
 from ngts.tests_nvos.general.security.tpm_attestation.helpers import tpm_attestation_factory_reset_no_params_check
 from ngts.tests_nvos.system.factory_reset.helpers import *
 from ngts.tests_nvos.system.factory_reset.helpers import get_current_time
@@ -16,15 +19,19 @@ from ngts.tools.test_utils import allure_utils as allure
 NO_PARAMS_CHECKERS: Dict[str, Generator[None, None, None]] = {
     'TPM attestation': tpm_attestation_factory_reset_no_params_check(),
     'GNMI cert': gnmi_cert_factory_reset_no_params_check(),
+    'API mTLS': api_mtls_factory_reset_no_params_check(),
 }
 
 KEEP_BASIC_CHECKERS: Dict[str, Generator[None, None, None]] = {
+    'API mTLS': api_mtls_factory_reset_no_params_check(),
 }
 
 KEEP_ALL_CONFIG_CHECKERS: Dict[str, Generator[None, None, None]] = {
+    'API mTLS': api_mtls_factory_reset_keep_all_config_check(),
 }
 
 KEEP_ONLY_FILES_CHECKERS: Dict[str, Generator[None, None, None]] = {
+    'API mTLS': api_mtls_factory_reset_keep_only_files_check(),
 }
 
 FACTORY_RESET_TYPE_TO_CHECKER_FUNCTIONS: Dict[str, Dict[str, Generator[None, None, None]]] = {

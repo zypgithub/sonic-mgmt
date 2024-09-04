@@ -1,35 +1,36 @@
 import logging
 import time
+
 from retry import retry
-from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
-from ngts.nvos_tools.infra.BaseComponent import BaseComponent
-from ngts.nvos_constants.constants_nvos import ApiType, SystemConsts, HealthConsts, ActionConsts
+
 from ngts.cli_wrappers.nvue.nvue_system_clis import NvueSystemCli
 from ngts.cli_wrappers.openapi.openapi_system_clis import OpenApiSystemCli
-from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
-from ngts.nvos_tools.system.Lldp import Lldp
-from ngts.nvos_tools.system.Security import Security
-from ngts.nvos_tools.system.Syslog import Syslog
-from ngts.nvos_tools.system.Ntp import Ntp
-from ngts.nvos_tools.system.Ztp import Ztp
-from ngts.nvos_tools.system.Stats import Stats
-from ngts.nvos_tools.system.Image import Image
-from ngts.nvos_tools.system.Reboot import Reboot
-from ngts.nvos_tools.system.Profile import Profile
-from ngts.nvos_tools.system.Config import Config
-from ngts.nvos_tools.system.Log import Log
-from ngts.nvos_tools.system.Debug_log import DebugLog
-from ngts.nvos_tools.system.SnmpServer import SnmpServer
-from ngts.nvos_tools.system.Techsupport import TechSupport
-from ngts.nvos_tools.system.Aaa import Aaa
-from ngts.nvos_tools.system.Health import Health
-from ngts.nvos_tools.system.Gnmi_server import Gnmi_server
-from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
-from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.nvos_constants.constants_nvos import ApiType, SystemConsts, HealthConsts
 from ngts.nvos_constants.constants_nvos import OutputFormat
+from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
+from ngts.nvos_tools.infra.BaseComponent import BaseComponent
+from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
+from ngts.nvos_tools.system.Aaa import Aaa
+from ngts.nvos_tools.system.Config import Config
+from ngts.nvos_tools.system.Debug_log import DebugLog
+from ngts.nvos_tools.system.Gnmi_server import Gnmi_server
+from ngts.nvos_tools.system.Health import Health
+from ngts.nvos_tools.system.Image import Image
+from ngts.nvos_tools.system.Lldp import Lldp
+from ngts.nvos_tools.system.Log import Log
+from ngts.nvos_tools.system.Ntp import Ntp
+from ngts.nvos_tools.system.Profile import Profile
+from ngts.nvos_tools.system.Reboot import Reboot
+from ngts.nvos_tools.system.Security import Security
+from ngts.nvos_tools.system.SnmpServer import SnmpServer
+from ngts.nvos_tools.system.Stats import Stats
+from ngts.nvos_tools.system.Syslog import Syslog
+from ngts.nvos_tools.system.Techsupport import TechSupport
+from ngts.nvos_tools.system.Ztp import Ztp
 from ngts.tools.test_utils import allure_utils as allure
-from ngts.nvos_tools.system.Certificate import Certificate
 
 logger = logging.getLogger()
 
@@ -181,3 +182,4 @@ class WebServerAPI(BaseComponent):
 class Api(BaseComponent):
     def __init__(self, parent_obj=None):
         BaseComponent.__init__(self, parent=parent_obj, path='/api')
+        self.mtls = BaseComponent(self, path='/mtls')
