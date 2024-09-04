@@ -2,9 +2,12 @@ import logging
 import pytest
 import time
 
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_constants.constants_nvos import ApiType
+from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 
 log = logging.getLogger()
 
@@ -198,3 +201,32 @@ def check_shutdown_state(engines, start_boot_id):
             return 2
 
     return 0
+
+
+@pytest.mark.cumulus_only
+@pytest.mark.cumulus
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_platform_port_amount(engines, devices, test_api):
+    """
+    Validates the actual number of ports is equal to the expected number of ports
+    defined in the HW specification for the platform. This test is specific to
+    Cumulus Linux.
+    Test flow:
+       1. nv show platform interface
+       2. Parse output to dict
+       3. Count the number of ports excluding breakout ports
+       4. Validate the actual number of ports is equal to the expected number of ports
+    """
+    TestToolkit.tested_api = test_api
+
+    output_dictionary = OutputParsingTool.parse_show_all_interfaces_output_to_dictionary(
+        Port.show_interface()).get_returned_value()
+
+    # dont count breakout ports
+    breakout_ports = {'s1', 's2', 's3'}
+    port_amount = 0
+    for key in output_dictionary:
+        if not any(ele in key for ele in breakout_ports) and key.startswith("swp"):
+            port_amount += 1
+    assert port_amount == devices.dut.get_ib_ports_num(), f'Found {port_amount} ports, expected {devices.dut.get_ib_ports_num()}'
+    logging.info(f'Found expected amount of ports {port_amount}')
