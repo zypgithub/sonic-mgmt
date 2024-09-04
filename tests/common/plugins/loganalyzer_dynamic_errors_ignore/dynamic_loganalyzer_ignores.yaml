@@ -3133,6 +3133,8 @@
     - '.* ERR kernel: \[.*\] Fails to access .* module eeprom, status: -16.*'
     - '.* ERR pmon#xcvrd:.*Failed to get SFP type, index=\d+, error=\[Errno \d+\] Device or resource busy.*'
     - '.*ERR swss#orchagent: :- on_switch_shutdown_request: Syncd stopped.*'
+    - '.* ERR swss#orchagent: :- wait: SELECT operation result: TIMEOUT on object_type_get_availability_response.*'
+    - '.* ERR swss#orchagent: :- wait: failed to get response for object_type_get_availability_response.*'
     - '.*mlnx_switch_health_event_handle: Health event happened.*HW catastrophic.*'
   Conditions:
     - Affected_test_cases:
@@ -3140,6 +3142,7 @@
       - tests/nightly/app_extension/test_app_extension_basic.py::test_app_techsupport_integration
       - show_techsupport/test_auto_techsupport.py::TestAutoTechSupport::test_sanity
       - qos/test_buffer.py::test_port_admin_down
+      - fdb/test_fdb_mac_move.py
 
 - Errors_list:
     - ".*ERR sonic-ztp\\[\\d+\\]: Exception \\[Expecting ',' delimiter: line \\d+ column \\d+ \\(char \\d+\\)] encountered while verifying '\\/etc\\/sonic\\/config_db\\.json'.*"
