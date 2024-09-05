@@ -20,9 +20,9 @@ tests/simx/test_simx_custom_base_mac.py:
 
 tests/nightly/rocev2_acl_counter:
   skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3820604"
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4051905"
     conditions:
-      - "https://redmine.mellanox.com/issues/3820604 and 'simx' in platform "
+      - "https://redmine.mellanox.com/issues/4051905 and 'sn564' in platform"
 
 tests/nightly/crm/test_crm.py::test_crm_acl:
   skip:
