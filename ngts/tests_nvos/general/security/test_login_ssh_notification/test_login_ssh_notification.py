@@ -110,6 +110,7 @@ def change_username_password(engines, username, curr_password, new_password):
 def validate_ssh_login_notifications_default_fields(engines, login_source_ip_address, username, password, capability,
                                                     check_password_change_msg=False,
                                                     check_role_change_msg=False,
+                                                    already_login_failed=0,
                                                     expected_login_record_period=None,
                                                     last_successful_login=None):
     '''
@@ -136,23 +137,26 @@ def validate_ssh_login_notifications_default_fields(engines, login_source_ip_add
     :param expected_login_record_period: if not None, will validate same value as the notification value
     :param last_successful_login: datetime object of the time since last successful login
     '''
-    random_number_of_connection_fails = random.randint(5, 15)
-    with allure.step("Fail {} times connecting to device".format(random_number_of_connection_fails)):
-        logger.info("Attempting {} wrong password attempts".format(random_number_of_connection_fails))
-        authenticator = SshAuthenticator(username, password, engines.dut.ip)
-        for index in range(random_number_of_connection_fails):
-            logger.info(f'Attempt number {index + 1}')
-            authenticator.attempt_login_failure()
-            # try:
-            #     connection = create_ssh_login_engine(engines.dut.ip, username)
-            #     connection.expect(DefaultConnectionValues.PASSWORD_REGEX)
-            #     random_password = RandomizationTool.get_random_string(random.randint(Consts.PASSWORD_MIN_LEN,
-            #                                                                          Consts.PASSWORD_MAX_LEN))
-            #     logger.info("Iteration {} - connecting using random password: {}".format(index, random_password))
-            #     connection.sendline(random_password)
-            #     connection.expect(["Permission denied", "permission denied"])
-            # finally:
-            #     connection.close()
+    if not already_login_failed:
+        random_number_of_connection_fails = random.randint(5, 15)
+        with allure.step("Fail {} times connecting to device".format(random_number_of_connection_fails)):
+            logger.info("Attempting {} wrong password attempts".format(random_number_of_connection_fails))
+            authenticator = SshAuthenticator(username, password, engines.dut.ip)
+            for index in range(random_number_of_connection_fails):
+                logger.info(f'Attempt number {index + 1}')
+                authenticator.attempt_login_failure()
+                # try:
+                #     connection = create_ssh_login_engine(engines.dut.ip, username)
+                #     connection.expect(DefaultConnectionValues.PASSWORD_REGEX)
+                #     random_password = RandomizationTool.get_random_string(random.randint(Consts.PASSWORD_MIN_LEN,
+                #                                                                          Consts.PASSWORD_MAX_LEN))
+                #     logger.info("Iteration {} - connecting using random password: {}".format(index, random_password))
+                #     connection.sendline(random_password)
+                #     connection.expect(["Permission denied", "permission denied"])
+                # finally:
+                #     connection.close()
+    else:
+        random_number_of_connection_fails = already_login_failed
 
     with allure.step("Connect for the second time to switch and store details"):
         second_login_notification_message = parse_ssh_login_notification(engines.dut.ip, username,
@@ -398,3 +402,51 @@ def test_login_ssh_notification_performance(engines, login_source_ip_addresses, 
         assert login_time_sec <= Consts.MAX_LOGIN_TIME, \
             "Took too long to login to switch using ssh, max threshold: {}," \
             "actual: {}".format(Consts.MAX_LOGIN_TIME, login_time_sec)
+
+
+@pytest.mark.login_ssh_notification
+@pytest.mark.checklist
+@pytest.mark.cumulus
+def test_ssh_login_notifications_diff_user_notification(engines, login_source_ip_address):
+    '''
+    @summary: in this test case we want to validate login failure of one user is not displayed on another user
+    '''
+
+    with allure.step("Creating a new username"):
+        system = System(force_api=ApiType.NVUE)
+        user_name, password = system.aaa.user.set_new_user(apply=True)
+        logging.info(f"User created: \nusername: {user_name} \npassword: {password}\ncapability: {SystemConsts.ROLE_CONFIGURATOR}")
+
+    with allure.step("Connecting to switch with cumulus user before validation to clear all failed messages"):
+        _, _, _ = SshAuthenticator(engines.dut.username, engines.dut.password, engines.dut.ip).attempt_login_success(return_output=True)
+
+    with allure.step("Connecting to switch with newly created user to collect the login timestamp"):
+        logger.info("Connecting to switch with newly created user to collect the login timestamp")
+        successful_login_time = ClockTools.get_datetime_object_from_show_system_output(system.show())
+        SshAuthenticator(user_name, password, engines.dut.ip).attempt_login_success()
+
+    random_number_of_connection_fails = random.randint(5, 7)
+    with allure.step("Fail {} times connecting to device with newly created user".format(random_number_of_connection_fails)):
+        authenticator = SshAuthenticator(user_name, password, engines.dut.ip)
+        for index in range(random_number_of_connection_fails):
+            logger.info(f'Attempt number {index + 1}')
+            authenticator.attempt_login_failure()
+
+    with allure.step("Connecting to switch with cumulus user to store details"):
+        second_login_notification_message = parse_ssh_login_notification(engines.dut.ip, engines.dut.username,
+                                                                         engines.dut.password)
+    logger.info(second_login_notification_message)
+    with allure.step("Validating failed attempts is not in the non failed/cumulus user login logs"):
+        assert second_login_notification_message[Consts.NUMBER_OF_UNSUCCESSFUL_ATTEMPTS_SINCE_LAST_LOGIN] is None, \
+            "Number of failed connections is not the same, \n" \
+            "Expected : {} \n" \
+            "Actually : {}".format("None",
+                                   second_login_notification_message[Consts.NUMBER_OF_UNSUCCESSFUL_ATTEMPTS_SINCE_LAST_LOGIN])
+
+    with allure.step("Connecting to switch and check the failure message with the newly created user"):
+        validate_ssh_login_notifications_default_fields(engines, login_source_ip_address,
+                                                        username=user_name,
+                                                        password=password,
+                                                        already_login_failed=random_number_of_connection_fails,
+                                                        capability=Consts.ADMIN_CAPABITILY,
+                                                        last_successful_login=successful_login_time)
