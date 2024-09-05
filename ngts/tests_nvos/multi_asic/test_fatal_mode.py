@@ -89,7 +89,7 @@ def test_post_fatal_recovery(engines):
 
 @pytest.mark.checklist
 @pytest.mark.fatal_mode
-def test_flow_until_soft_reset(engines, devices, random_asic):
+def test_flow_until_soft_reset(engines, devices, random_asic, events_count_setting):
     """
     Test that health-events trigger fatal mode properly, and that the system leaves fatal mode when everything is fine.
     """
@@ -160,7 +160,7 @@ def test_flow_until_close_ports(engines, devices, random_asic, events_count_sett
 
 @pytest.mark.checklist
 @pytest.mark.fatal_mode
-def test_remain_in_fatal_mode_until_manual_reboot(engines, devices, random_asic):
+def test_remain_in_fatal_mode_until_manual_reboot(engines, devices, random_asic, events_count_setting):
     """
     If after reboot or soft-reset there's a single health-event within n minutes, test that the system remains in
     fatal mode "forever" (no timeout) and does not restart the reboot-counter. After the user performs a manual
