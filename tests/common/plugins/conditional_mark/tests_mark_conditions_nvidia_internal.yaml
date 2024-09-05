@@ -11,6 +11,7 @@ scripts/test_verify_secure_boot_enabled.py:
       - "'sn2' in platform"
       - "'sn3' in platform"
       - "'sn4' in platform"
+      - "https://redmine.mellanox.com/issues/4059303 and 'sn5' in platform"
 
 tests/simx/test_simx_custom_base_mac.py:
   skip:
