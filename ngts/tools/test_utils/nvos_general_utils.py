@@ -80,7 +80,7 @@ def set_base_configurations(dut_engine, timezone=LinuxConsts.JERUSALEM_TIMEZONE,
 
         if apply:
             logging.info('Apply configurations')
-            NvueGeneralCli.apply_config(engine=dut_engine, option='-y')
+            NvueGeneralCli.apply_config(engine=dut_engine, option='--assume-yes')
 
         if save_conf:
             logging.info('Save configurations')

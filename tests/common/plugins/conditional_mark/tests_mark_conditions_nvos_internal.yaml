@@ -6,12 +6,6 @@ tests_nvos/general/security/test_ssh_config/test_ssh_config::test_ssh_config_goo
     conditions:
       - https://redmine.mellanox.com/issues/4040069
 
-tests_nvos/general/security/nmx_cert/test_nmx_cert.py::test_delete_cert_fail_when_is_used:
-  skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3995421"
-    conditions:
-      - https://redmine.mellanox.com/issues/3995421
-
 tests_nvos/general/security/tpm_attestation/test_tpm_attestation.py:
   skip:
     reason: "Testcase skipped on gorilla systems - feature is pruned on gorilla"
@@ -24,12 +18,6 @@ tests_nvos/system/gnmi/test_gnmi_cert.py::test_gnmi_cert_cli_when_gnmi_disabled:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4001833"
     conditions:
       - https://redmine.mellanox.com/issues/4001833
-
-tests_nvos/general/security/bmc_erot_attestation/test_bmc_erot_attestation.py:
-  skip:
-    reason: "BMC ERoT Attestation tests should run only on Juliet"
-    conditions:
-      - "'juliet' not in testbed"
 
 tests_nvos/system/gnmi/test_gnmi_cert.py::test_gnmi_delete_cert_in_use_by_gnmi:
   skip:
@@ -142,13 +130,11 @@ tests_nvos/system/test_system_factory_reset.py:
       - "'marlin' in testbed"
       - https://redmine.mellanox.com/issues/3484447
 
-tests_nvos/interfaces/test_eth0_interface_dhcp.py::test_interface_eth0_speed_duplex_autoneg:
+tests_nvos/interfaces/test_eth0_interface_dhcp.py::test_interface_eth0_description:
   skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4041979"
-    conditions_logical_operator: and
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3527752"
     conditions:
-      - "'juliet' in testbed"
-      - https://redmine.mellanox.com/issues/4041979
+      - https://redmine.mellanox.com/issues/3527752
 
 tests_nvos/system/test_system_profile_change.py::test_system_profile_redis_db_crash:
   skip:
@@ -391,42 +377,6 @@ tests_nvos/platform/test_platform_firmware.py::test_show_platform_firmware:
       - "'gorilla' not in testbed and 'juliet' not in testbed"
       - https://redmine.mellanox.com/issues/3956092
 
-tests_nvos/fae/test_debug_token.py:
-  skip:
-    reason: "Testcase skipped on non Juliet systems, Juliet feature only"
-    conditions:
-      - "'juliet' not in testbed"
-
-tests_nvos/platform/test_platform_environment.py::test_show_platform_environment_psu:
-  skip:
-    reason: "Testcase skipped on Juliet systems, Juliet Does not have PSU"
-    conditions:
-      - "'juliet' in testbed"
-
-tests_nvos/interfaces/test_ib_interface_state.py::test_ib_interface_state:
-  skip:
-    reason: "Testcase skipped on Juliet systems, Tested in another NVL5 interfaces dedicated test"
-    conditions:
-      - "'juliet' in testbed"
-
-tests_nvos/fae/test_nmx_package.py:
-  skip:
-    reason: "Testcase skipped on non Juliet systems, Juliet feature only"
-    conditions:
-      - "'juliet' not in testbed"
-
-tests_nvos/system/test_system_juliet_power_button.py::test_system_juliet_power_button:
-  skip:
-    reason: "Testcase skipped on non Juliet systems"
-    conditions:
-      - "'juliet' not in testbed"
-
-tests_nvos/interfaces/test_ib_show_interface.py::test_ib_show_interface_all_state_up:
-  skip:
-    reason: "Testcase skipped on Juliet systems, ability is not implemented in Juliet"
-    conditions:
-      - "'juliet' in testbed"
-
 tests_nvos/platform/test_platform.py::test_show_platform_chassis_location:
   skip:
     reason: "Testcase skipped on non Juliet systems, Juliet feature only (as a part of Uberon)"
@@ -562,11 +512,4 @@ tests_nvos/multi_asic/test_interface_ipoib.py::test_interface_ipoib_mapping_basi
 tests_nvos/checklist/test_cpld_upgrade.py::test_cpld_upgrade:
   skip:
     reason: "Until we get updated CPLD versions"
-
-tests_nvos/system/test_techsupport_feature.py::test_techsupport_bmc_badflow:
-  skip:
-    reason: "Testcase skipped on non Juliet systems, only Juliet has BMC"
-    conditions:
-      - "'juliet' not in testbed"
-
 ########################## NVOS IGNORE END ##########################

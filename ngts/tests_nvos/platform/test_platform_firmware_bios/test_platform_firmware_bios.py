@@ -1,4 +1,5 @@
 import random
+
 import pytest
 
 from ngts.nvos_constants.constants_nvos import ApiType, NvosConst
@@ -105,7 +106,7 @@ def test_bios_auto_update_enabled(devices, engines, test_api, original_version, 
             install_bios(devices, fae, devices.dut.previous_bios_version_name)
             platform.firmware.bios.set(op_param_name=PlatformConsts.FW_AUTO_UPDATE,
                                        op_param_value=NvosConst.ENABLED, apply=True).verify_result()
-        TestToolkit.GeneralApi[test_api].save_config(engine=engines.dut)
+            TestToolkit.GeneralApi[test_api].save_config(engine=engines.dut)
         verify_bios_version(devices, platform)
 
         install_image_and_verify(orig_engine=orig_engine, image_name=fetched_image_curr, system=system,

@@ -9,15 +9,11 @@ import logging
 import allure
 import math
 import pathlib
-from datetime import datetime, timedelta
-from pathlib import Path
-from typing import List
 
-import allure
-import yaml
-from jinja2 import Environment, FileSystemLoader
 from retry.api import retry
-
+from pathlib import Path
+from jinja2 import Environment, FileSystemLoader
+from datetime import datetime, timedelta
 from ngts.constants.constants import BugHandlerConst, InfraConst
 from ngts.nvos_constants.constants_nvos import SystemConsts
 

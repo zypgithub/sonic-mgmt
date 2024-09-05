@@ -30,20 +30,14 @@ class FileType(BaseComponent):
 
         self.files = Files(self)
 
-    def action_generate_sdn(self, dut_engine=None) -> ResultObj:
+    def action_generate_control_plane(self, dut_engine=None) -> ResultObj:
         with allure.step(f'Execute action generate for {self.get_resource_path()}'):
             engine = dut_engine if dut_engine else TestToolkit.engines.dut
             return SendCommandTool.execute_command(self._cli_wrapper.action_generate, engine,
                                                    self.get_resource_path())
 
-    def action_fetch_sdn(self, url, dut_engine=None) -> ResultObj:
+    def action_fetch_control_plane(self, url, dut_engine=None) -> ResultObj:
         with allure.step(f'Execute action fetch for {self.get_resource_path()}'):
             engine = dut_engine if dut_engine else TestToolkit.engines.dut
             return SendCommandTool.execute_command(self._cli_wrapper.action_fetch, engine,
                                                    self.get_resource_path(), url)
-
-    def action_install_sdn(self, file, dut_engine=None) -> ResultObj:
-        with allure.step(f'Execute action install for {self.get_resource_path()}'):
-            engine = dut_engine if dut_engine else TestToolkit.engines.dut
-            return SendCommandTool.execute_command(self._cli_wrapper.action_install, engine,
-                                                   self.get_resource_path(), file)

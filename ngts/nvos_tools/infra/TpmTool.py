@@ -58,9 +58,7 @@ class TpmTool:
     def is_tpm_lockout_counter_cleared(self) -> Tuple[bool, str]:
         expected_counter_hex = '0x0'
         with allure.step(f'check if tpm lockout counter is cleared: {expected_counter_hex}'):
-            actual_counter_hex = \
-                self.engine.run_cmd('sudo tpm2 getcap properties-variable | grep TPM2_PT_LOCKOUT_COUNTER:').split(':')[
-                    1].strip()
+            actual_counter_hex = self.engine.run_cmd('sudo tpm2 getcap properties-variable | grep TPM2_PT_LOCKOUT_COUNTER:').split(':')[1].strip()
             return actual_counter_hex == expected_counter_hex, actual_counter_hex
 
     def clear_tpm_lockout_counter(self):
@@ -71,20 +69,6 @@ class TpmTool:
         with allure.step('check if system tpm directory exists'):
             out = self.engine.run_cmd('sudo ls /host/tpm')
             return out != '' and PATH_NO_EXIST_ERR not in out
-
-    def get_tpm_cipher(self):
-        with allure.step('get tpm cipher'):
-            salt = "1300NVOS-BMC-USER-Const"
-            file_name = "kdfconst.bin"
-            self.engine.run_cmd(f'echo {salt} | xxd -r -p > {file_name}')
-            return \
-                (self.engine.run_cmd(
-                    f'sudo tpm2_createprimary -C o -G aes256cfb -u {file_name} | grep symcipher:')).split(
-                    ':')[1].strip()
-
-    def get_bmc_admin_password_from_tpm(self):
-        with allure.step('get bmc admin password from tpm'):
-            return self.get_tpm_cipher()[:11] + 'A!'
 
     """ Helper methods """
 

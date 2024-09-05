@@ -77,8 +77,7 @@ def factory_reset_tpm_check(engines=None):
     tpm_tool = TpmTool(engines.dut)
     system = System()
     with allure.step('check if setup is ready for TPM attestation related checks'):
-        dut_hostname = engines.dut.run_cmd('hostname')
-        is_tpm_ready = any(dut_name in dut_hostname for dut_name in ['croc-61', 'juliet']) and tpm_tool.is_tpm_attestation_ready()
+        is_tpm_ready = 'croc-61' in engines.dut.run_cmd('hostname') and tpm_tool.is_tpm_attestation_ready()
     if is_tpm_ready:
         with allure.step('pre factory reset - generate tpm quote'):
             system.security.tpm.action_generate_quote(VALID_PCRS_PARAM, VALID_NONCE_PARAM).verify_result()

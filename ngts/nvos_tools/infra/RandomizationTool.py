@@ -1,35 +1,28 @@
-import datetime as dt
 import logging
-import random
 import string
-from datetime import timedelta, datetime
 from random import randint
 from typing import MutableSequence, Optional
-
-import allure
 
 from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
 from .RegressionConfigurations import Configurations
 from .ResultObj import ResultObj
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts, IbInterfaceConsts
-from ngts.nvos_constants.constants_nvos import SystemConsts, PlatformConsts, ApiType
+from ngts.nvos_constants.constants_nvos import SystemConsts, PlatformConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port, PortRequirements
-from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts, IbInterfaceConsts
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from .RegressionConfigurations import Configurations
+import random
+from ngts.tools.test_utils import allure_utils as allure
+import datetime as dt
+from datetime import timedelta, datetime
 
 logger = logging.getLogger()
-
-
-def random_api():
-    return random.choice(ApiType.ALL_TYPES)
 
 
 class RandomizationTool:
 
     @staticmethod
     def select_random_port(dut_engine=None, requested_ports_state=NvosConsts.LINK_STATE_UP,
-                           requested_ports_logical_state=None, requested_ports_type=None, interface_type=''):
+                           requested_ports_logical_state=None, requested_ports_type="ib"):
         """
         Select and return a random port
         :param requested_ports_state: required port state
@@ -40,23 +33,20 @@ class RandomizationTool:
         if not dut_engine:
             dut_engine = TestToolkit.engines.dut
 
-        if not requested_ports_type:
-            requested_ports_type = (TestToolkit.devices.dut.switch_type or IbInterfaceConsts.IB_PORT_TYPE).lower()
-
         result_obj = RandomizationTool.select_random_ports(dut_engine=dut_engine,
                                                            requested_ports_state=requested_ports_state,
                                                            requested_ports_type=requested_ports_type,
                                                            requested_ports_logical_state=requested_ports_logical_state,
-                                                           num_of_ports_to_select=1, interface_type=interface_type)
+                                                           num_of_ports_to_select=1)
         if result_obj.result:
             result_obj.returned_value = result_obj.returned_value[0]
         return result_obj
 
     @staticmethod
     def select_random_ports(requested_ports_state=NvosConsts.LINK_STATE_UP,
-                            requested_ports_type=None,
+                            requested_ports_type=IbInterfaceConsts.IB_PORT_TYPE,
                             requested_ports_logical_state=None,
-                            num_of_ports_to_select=1, port_requirements_object=None, dut_engine=None, dut_device=None, interface_type=''):
+                            num_of_ports_to_select=1, port_requirements_object=None, dut_engine=None):
         """
         Select and return list of random ports
         if num_of_ports_to_select is 0, all relevant ports will be selected
@@ -69,17 +59,10 @@ class RandomizationTool:
         """
         with allure.step('Choose {num_of_ports_to_select} random ports with provided requirements'.format(
                 num_of_ports_to_select=num_of_ports_to_select)):
+
             if not dut_engine:
                 logging.info('Using engine object which updated in TestToolkit')
                 dut_engine = TestToolkit.engines.dut
-
-            if not requested_ports_type:
-                if not dut_device and TestToolkit.devices:
-                    dut_device = getattr(TestToolkit.devices, 'dut', None)
-                if dut_device:
-                    requested_ports_type = dut_device.switch_type.lower()
-                else:
-                    requested_ports_type = IbInterfaceConsts.IB_PORT_TYPE.lower()
 
             result_obj = ResultObj(False, "")
 
@@ -89,19 +72,14 @@ class RandomizationTool:
                 return result_obj
 
             logging.info("Verify the provided port state is legal (up/down only)")
-            if requested_ports_state:
-                if isinstance(requested_ports_state, list):
-                    arg_is_valid = not any(s not in NvosConsts.LINK_STATE_ALL_TYPES for s in requested_ports_state)
-                else:
-                    arg_is_valid = requested_ports_state in NvosConsts.LINK_STATE_ALL_TYPES
-                if not arg_is_valid:
-                    result_obj.info = (f'Provided an invalid port state argument.\nactual: {requested_ports_state}\n'
-                                       f'expected: {NvosConsts.LINK_STATE_ALL_TYPES}')
-                    return result_obj
+            if requested_ports_state and requested_ports_state != NvosConsts.LINK_STATE_UP and \
+                    requested_ports_state != NvosConsts.LINK_STATE_DOWN:
+                result_obj.info = "Provided an invalid port state"
+                return result_obj
 
             logging.info("Update port requirements object")
             if not port_requirements_object:
-                port_requirements_object = PortRequirements(interface_type=interface_type)
+                port_requirements_object = PortRequirements()
             port_requirements_object.set_port_state(requested_ports_state)
             port_requirements_object.set_port_type(requested_ports_type)
             port_requirements_object.set_port_logical_state(requested_ports_logical_state)
@@ -135,14 +113,14 @@ class RandomizationTool:
         return result_obj
 
     @staticmethod
-    def get_random_active_port(number_of_values_to_select=1, port_type=IbInterfaceConsts.IB_PORT_TYPE, interface_type=''):
-        list_of_ports = Port.get_list_of_active_ports(port_type, interface_type)
+    def get_random_active_port(number_of_values_to_select=1, port_type=IbInterfaceConsts.IB_PORT_TYPE):
+        list_of_ports = Port.get_list_of_active_ports(port_type)
         if number_of_values_to_select == 0:
             return ResultObj(True, "", list_of_ports)
         return RandomizationTool.select_random_values(list_of_ports, None, number_of_values_to_select)
 
     @staticmethod
-    def get_random_traffic_port(engine: Optional[ProxySshEngine] = None, data_rate="ndr", interface_type='') -> ResultObj:
+    def get_random_traffic_port(engine: Optional[ProxySshEngine] = None, data_rate="ndr") -> ResultObj:
         engine = engine or TestToolkit.engines.dut
         str_list_of_ports = Configurations.ports_by_rate[data_rate].get(engine.ip)
         list_of_ports = []
@@ -184,7 +162,7 @@ class RandomizationTool:
         :return: list of random selected values
         """
         with allure.step('Select random values from provided list of values'):
-            list_of_values = list(list_of_values)
+            list_of_values = list_of_values.copy()
             forbidden_values = None if forbidden_values is None else forbidden_values.copy()
 
             result_obj = ResultObj(False, "")

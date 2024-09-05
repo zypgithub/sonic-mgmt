@@ -28,4 +28,4 @@ class AppName(BaseComponent):
     def __init__(self, parent, app_name):
         super().__init__(parent=parent, path=f'/{app_name}')
         self.loglevel = Loglevel(self)
-        self.type = Type(self)
+        self.type = Type()

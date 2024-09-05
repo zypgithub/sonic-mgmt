@@ -17,18 +17,12 @@ class PexpectTool:
         self.last_output = ''
 
     def __del__(self):
-        self.close()
+        self.child.close()
 
     def spawn(self, cmd):
         logging.info(f'Spawn: {cmd}')
         self.child = pexpect.spawn(cmd)
         self.child.delaybeforesend = DefaultConnectionValues.PEXPECT_DELAYBEFORESEND
-
-    def close(self):
-        if self.child is not None:
-            logging.info('close pexpect spawned process')
-            self.child.close()
-            self.child = None
 
     def expect(self, expect_msg, error_message='', raise_exception_for_timeout: bool = True, timeout=None) -> int:
         err_msg = error_message if error_message else self.expect_error_msg

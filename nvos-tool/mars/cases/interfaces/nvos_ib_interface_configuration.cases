@@ -14,9 +14,9 @@
       <tags>ALL</tags>
       <ignore>
         <condition>
-        <key>dut_type</key>
+        <key>dut_hwsku</key>
         <op> in </op>
-        <value>[juliet]</value>
+        <value>[N5110_LD - JulietScaleout, N5100_LD - JulietNonScaleout, N5110_LD - JulietTTM]</value>
         </condition>
       </ignore>
     </Case>

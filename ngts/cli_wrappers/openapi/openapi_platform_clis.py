@@ -44,15 +44,3 @@ class OpenApiPlatformCli(OpenApiBaseCli):
         DutUtilsTool.wait_for_nvos_to_become_functional(engine).verify_result()
 
         return result
-
-    @staticmethod
-    def action_generate(engine, resource_path, file_name=''):
-        logging.info("Running action: 'generate' on dut using OpenApi")
-        params = \
-            {
-                "state": "start",
-            }
-        if file_name:
-            params["parameters"] = {'new-name': file_name}
-        return OpenApiCommandHelper.execute_action(ActionType.GENERATE, engine.engine.username, engine.engine.password,
-                                                   engine.ip, resource_path, params)

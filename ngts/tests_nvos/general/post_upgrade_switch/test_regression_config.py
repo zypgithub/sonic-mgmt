@@ -1,7 +1,6 @@
 import logging
-
-from ngts.nvos_tools.infra.RegressionConfigurations import Configurations
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.nvos_tools.infra.RegressionConfigurations import Configurations
 
 logger = logging.getLogger()
 

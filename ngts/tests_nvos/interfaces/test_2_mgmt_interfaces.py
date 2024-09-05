@@ -185,8 +185,9 @@ def skip_if_engines_does_not_exist_in_setup(required_engines_list, engines):
 def wait_for_hostname_changed(system, dhcp_hostname):
     with allure.step("Waiting for system hostname changed to {}".format(dhcp_hostname)):
         system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
-        assert dhcp_hostname in system_output[SystemConsts.HOSTNAME], \
-            "hostname {0} wasn't changed to {1}".format(system_output[SystemConsts.HOSTNAME], dhcp_hostname)
+        assert dhcp_hostname in system_output[SystemConsts.HOSTNAME], (f"Expected hostname '{dhcp_hostname}', \n"
+                                                                       f"actual="
+                                                                       f"'{system_output[SystemConsts.HOSTNAME]}'")
 
 
 def _wait_for_snmp_is_running(system, state='yes', tries=5, timeout=2):

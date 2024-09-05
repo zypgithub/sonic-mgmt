@@ -47,38 +47,4 @@
             </params>
         </cmd>
     </case>
-
-    <case>
-        <name> cluster control plane </name>
-        <info></info>
-        <tout> 10800 </tout>
-        <cmd>
-            <params>
-                <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/cluster/test_cluster_sdn.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900  \'"</static_args>
-            </params>
-        </cmd>
-    </case>
-
-    <case>
-        <name> cluster partition </name>
-        <info></info>
-        <tout> 10800 </tout>
-        <cmd>
-            <params>
-                <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/cluster/test_cluster_partition.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>
-            </params>
-        </cmd>
-    </case>
-
-    <case>
-        <name> cluster - NMX Package </name>
-        <info> </info>
-        <tout> 10800 </tout>
-        <cmd>
-            <params>
-                <static_args>  --setup_name [[conf:extra_info.setup_name]]  --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/fae/test_nmx_package.py --raw_options "\' --rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results  --showlocals  [[conf:extra_info.additional_options]]  --timeout 900    \'"</static_args>
-            </params>
-        </cmd>
-    </case>
-
 </CASEDEF>

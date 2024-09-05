@@ -12,7 +12,6 @@ class InternalNvosConsts:
 class NvosConsts:
     LINK_STATE_UP = "up"
     LINK_STATE_DOWN = "down"
-    LINK_STATE_ALL_TYPES = [LINK_STATE_UP, LINK_STATE_DOWN]
     LINK_LOG_STATE_ACTIVE = 'Active'
     LINK_LOG_STATE_INITIALIZE = 'Initialize'
 

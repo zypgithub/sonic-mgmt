@@ -138,20 +138,6 @@ class OpenApiSystemCli(OpenApiBaseCli):
                                                    engine.ip, resource_path, params)
 
     @staticmethod
-    def action_generate_spdm_measurements(engine, resource_path, nonce=None):
-        logging.info("Running action: 'generate' on dut using OpenApi")
-        parameters = {}
-        if nonce is not None:
-            parameters['nonce'] = nonce
-        params = \
-            {
-                "state": "start",
-                "parameters": parameters
-            }
-        return OpenApiCommandHelper.execute_action(ActionType.GENERATE, engine.engine.username, engine.engine.password,
-                                                   engine.ip, resource_path, params)
-
-    @staticmethod
     def action_upload_tpm_file(engine, resource_path, file_name, remote_url):
         logging.info("Running action: 'upload' on dut using OpenApi")
         params = \

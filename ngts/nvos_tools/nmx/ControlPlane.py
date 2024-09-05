@@ -7,15 +7,13 @@ from ngts.nvos_tools.infra.BaseComponent import BaseComponent
 from ngts.nvos_tools.nmx.App import App
 from ngts.nvos_tools.nmx.Config import Config
 from ngts.nvos_tools.nmx.State import State
-from ngts.nvos_tools.nmx.Partition import Partition
 logger = logging.getLogger()
 
 
-class Sdn(BaseComponent):
+class ControlPlane(BaseComponent):
     def __init__(self, parent_obj=None):
         super().__init__(parent=parent_obj,
                          api={ApiType.NVUE: NvueClusterCli, ApiType.OPENAPI: OpenApiClusterCli},
-                         path='/sdn')
+                         path='/control-plane')
         self.config = Config(self)
         self.state = State(self)
-        self.partition = Partition(self)

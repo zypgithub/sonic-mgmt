@@ -4,9 +4,7 @@ from dotted_dict import DottedDict
 
 from ngts.nvos_tools.Devices.EthDevice import AnacondaSwitch, Mlx2410Switch, Mlx4600Switch, Mlx4700Switch
 from ngts.nvos_tools.Devices.IbDevice import GorillaSwitch, \
-    MarlinSwitch, GorillaSwitchBF3, CrocodileSwitch, BlackMambaSwitch, CrocodileSimxSwitch, JulietScaleoutSwitch, JulietTTMSwitch, JulietNonScaleoutSwitch, JulietAriel
-from ngts.nvos_tools.Devices.EthDevice import AnacondaSwitch, Mlx2410Switch, Mlx4600Switch, Mlx4700Switch
-from dotted_dict import DottedDict
+    MarlinSwitch, GorillaSwitchBF3, CrocodileSwitch, BlackMambaSwitch, CrocodileSimxSwitch, JulietScaleoutSwitch
 
 logger = logging.getLogger()
 
@@ -31,10 +29,7 @@ class DeviceFactory:
             'Mellanox SN4700': Mlx4700Switch,
             'Mellanox SN4600': Mlx4600Switch,
             'Mellanox 2410': Mlx2410Switch,
-            'N5110_LD - JulietScaleout': JulietScaleoutSwitch,
-            'N5110_LD - JulietTTM': JulietTTMSwitch,
-            'N5100_LD - JulietNonScaleout': JulietNonScaleoutSwitch,
-            'N5112_LD - JulietAriel': JulietAriel
+            'N5110_LD - JulietScaleout': JulietScaleoutSwitch
         }
 
     @staticmethod

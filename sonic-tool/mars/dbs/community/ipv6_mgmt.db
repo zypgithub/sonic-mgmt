@@ -4,21 +4,17 @@
         <!-- parameters passed to setup steps commands-->
         <default_params_type> basic_setup_step_params </default_params_type>
         <DB>
-            <info> Security </info>
-            <owner> Azmy Ali </owner>
-            <group> Azmy Ali </group>
+            <info> ipv6 mtmt </info>
+            <owner> SONiC </owner>
+            <group> SONiC </group>
 
             <!-- OPTIONAL TAGS -->
             <tags>  </tags>
 
             <!-- pre db commands - executed once before DB run -->
-            <!-- copy remote tests -->
             <pre>
             </pre>
-
-            <!-- post db commands - executed once after DB run -->
-            <post>
-            </post>
+            <post></post>
         </DB>
         <Test>
             <!--Must reset any dynamic ignore tags created by other tests-->
@@ -44,9 +40,9 @@
                         <ep_targets> SONIC_MGMT </ep_targets>
                     </players_selection>
                     <name> run_on_stm </name>
-                    <tout> 900 </tout>
+                    <tout> 600 </tout>
                     <params>
-                        <exec> PYTHONPATH=/devts/ /ngts_venv/bin/pytest /root/mars/workspace/sonic-mgmt/ngts/scripts/store_techsupport_on_not_success.py  --setup_name=[[conf:extra_info.setup_name]]  --timeout 600  --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --tech_support_duration=7200  --session_id=[[run_time:session_id]]  --rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini     --log-level=INFO --clean-alluredir --alluredir=/tmp/allure-results</exec>
+                        <exec> PYTHONPATH=/devts/ /ngts_venv/bin/pytest /root/mars/workspace/sonic-mgmt/ngts/scripts/store_techsupport_on_not_success.py  --sonic-topo=[[conf:extra_info.topology]]  --setup_name=[[conf:extra_info.setup_name]] --tech_support_duration=7200  --session_id=[[run_time:session_id]]  --rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini     --log-level=INFO --clean-alluredir --alluredir=/tmp/allure-results</exec>
                     </params>
                 </cmd>
             </on_not_success>
@@ -54,7 +50,7 @@
     </global>
 
     <test>
-        <cases> sonic-mgmt/nvos-tool/mars/security/nvos_system_security.cases </cases>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/mgmt_ipv6.cases </cases>
     </test>
 
 </DBDEF>

@@ -28,7 +28,3 @@ class CertInfo:
     @property
     def cacert_filename(self) -> str:
         return None if not self.cacert else self.cacert.split('/')[-1]
-
-    @property
-    def cacert_name(self) -> str:
-        return f'cacert-of-{self.name}'

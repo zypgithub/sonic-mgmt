@@ -2,7 +2,6 @@ import time
 
 import pytest
 
-from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import *
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit

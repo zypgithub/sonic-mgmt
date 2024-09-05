@@ -11,6 +11,7 @@ scripts/test_verify_secure_boot_enabled.py:
       - "'sn2' in platform"
       - "'sn3' in platform"
       - "'sn4' in platform"
+      - "https://redmine.mellanox.com/issues/4059303 and 'sn5' in platform"
 
 tests/simx/test_simx_custom_base_mac.py:
   skip:
@@ -420,9 +421,11 @@ tests/nightly/route/test_async_route.py::test_removing_routes[ipv6-static_routes
 ########################## NVIDIA INTERNAL COMMUNITY IGNORE START ##########################
 clock/test_clock.py:
   skip:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4052988"
+    reason: "Testcase ignored due to RM issue 4052988 or 4056053"
+    conditions_logical_operator: or
     conditions:
     - "https://redmine.mellanox.com/issues/4052988"
+    - "https://redmine.mellanox.com/issues/4056053"
 
 sflow/test_sflow.py:
   skip:
@@ -1358,6 +1361,24 @@ ip/link_local/test_link_local_ip.py::TestLinkLocalIPacket::test_link_local_dst_i
     reason: "Skip due to TC issue RM 3899758 for affected setups"
     conditions:
     - "https://redmine.mellanox.com/issues/3899758 and ('bobcat' in testbed or 'r-leopard-70' in testbed or 'r-tigon-04' in testbed)"
+
+ip/test_mgmt_ipv6_only.py::test_ro_user_ipv6_only:
+  skip:
+    reason: "Skip at r-lionfish-13 as docker-ptf not starting at canonical setup"
+    conditions:
+      - "'r-lionfish-13' in testbed"
+
+ip/test_mgmt_ipv6_only.py::test_rw_user_ipv6_only:
+  skip:
+    reason: "Skip at r-lionfish-13 as docker-ptf not starting at canonical setup"
+    conditions:
+      - "'r-lionfish-13' in testbed"
+
+ip/test_mgmt_ipv6_only.py::test_telemetry_output_ipv6_only:
+  skip:
+    reason: "Skip at r-lionfish-13 as docker-ptf not starting at canonical setup"
+    conditions:
+      - "'r-lionfish-13' in testbed"
 
 pfcwd/test_pfcwd_timer_accuracy.py:
   skip:

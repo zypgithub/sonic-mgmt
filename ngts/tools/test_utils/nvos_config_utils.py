@@ -85,7 +85,7 @@ def clear_conf(dut_engine, markers=None, set_base_config_function=set_base_confi
             if diff_config:
                 active_port = None
                 if NvosConst.INTERFACE in diff_config.keys():
-                    result = RandomizationTool.select_random_ports(num_of_ports_to_select=1, dut_engine=dut_engine, dut_device=device)
+                    result = RandomizationTool.select_random_ports(num_of_ports_to_select=1, dut_engine=dut_engine)
                     if result.result:
                         active_port = result.returned_value[-1]
                     NvueBaseCli.unset(dut_engine, NvosConst.INTERFACE)

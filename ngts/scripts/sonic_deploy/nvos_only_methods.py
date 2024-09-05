@@ -134,7 +134,7 @@ class NvosInstallationSteps:
             NvosInstallationSteps.verify_config_after_upgrade(config_file_path, dut_engine)
 
         with allure.step('Clear tested configuration for the tests'):
-            clear_conf(dut_engine=dut_engine, dut_device=dut_device)
+            clear_conf(dut_engine)
 
         with allure.step('Clear fetched files for the tests'):
             system = System()

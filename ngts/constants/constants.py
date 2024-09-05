@@ -52,7 +52,6 @@ class SonicConst:
     SONIC_CONFIG_FOLDER = '/etc/sonic/'
     PORT_CONFIG_INI = 'port_config.ini'
     CONFIG_DB_JSON = 'config_db.json'
-    CONFIG_DB_GNMI_JSON = 'config_db_gnmi.json'
     EXTENDED_CONFIG_DB_PATH = "extended_config_db.json"
     CONFIG_DB_JSON_PATH = SONIC_CONFIG_FOLDER + CONFIG_DB_JSON
     PLATFORM_JSON_PATH = "/usr/share/sonic/device/{PLATFORM}/platform.json"
