@@ -661,6 +661,8 @@ class SystemConsts:
     DUMMY_IMAGE_PATH = "/tmp/"
 
     SYSTEM_LAST_EVENT = 'last'
+    CONTACT = "contact"
+    LOCATION = "location"
 
 
 class DocumentsConsts:

@@ -25,17 +25,23 @@ def test_save_reboot(engines, devices):
         Test flow:
             1. run nv set system hostname <new_hostname> with apply
             2. Run 'nv set fae fast-recovery state disabled' and apply config
-            3. run nv config save
-            4. run nv set interface eth0 description <new_description> with apply
-            5. Run 'nv set fae fast-recovery trigger credit-watchdog event warning' and apply config
-            6. run nv action reboot system
-            7. run nv show system after reload
-            8. verify hostname is new_hostname
-            9. Verify fae fast-recovery state is Disabled
-            10. Run nv show interface eth0
-            11. Verify the applied description value is ''
-            12. Verify fae fast-recovery trigger event for trigger-id is Error
-            13. cleanup - run nv unset system hostname & reboot
+            3. Run 'nv system contact "contact_info_1"' and apply config
+            4. Run 'nv system location "location_info_1"' and apply config
+            5. run nv config save
+            6. Run 'nv system contact "contact_info_2"' and apply config
+            7. Run 'nv system location "location_info_2"' and apply config
+            8. run nv set interface eth0 description <new_description> with apply
+            9. Run 'nv set fae fast-recovery trigger credit-watchdog event warning' and apply config
+            10. run nv action reboot system
+            11. run nv show system after reload
+            12. verify hostname is new_hostname
+            13. Verify fae fast-recovery state is Disabled
+            14. Run nv show interface eth0
+            15. Verify the applied description value is ''
+            16. Verify that applied system contact is "contact_info_1"
+            17. Verify that applied system location is "location_info_1"
+            18. Verify fae fast-recovery trigger event for trigger-id is Error
+            19. cleanup - run nv unset system hostname & reboot
     """
     fae = Fae()
 
@@ -65,6 +71,14 @@ def test_save_reboot(engines, devices):
             output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show('last 1')).get_returned_value()
             event_time = output[str(list(output.keys())[0])]["time-created"]
 
+        with allure.step('Run set system contact contact_info_1 command and apply config'):
+            system.set(op_param_name=SystemConsts.CONTACT, op_param_value="contact_info_1", apply=True,
+                       dut_engine=engines.dut).verify_result()
+
+        with allure.step('Run set system location location_info_1 command and apply config'):
+            system.set(op_param_name=SystemConsts.LOCATION, op_param_value="location_info_1", apply=True,
+                       dut_engine=engines.dut).verify_result()
+
         with allure.step('set hostname to be {hostname} - with apply'.format(hostname=new_hostname_value)):
             system.set(SystemConsts.HOSTNAME, new_hostname_value, apply=True, ask_for_confirmation=True)
             TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
@@ -83,6 +97,14 @@ def test_save_reboot(engines, devices):
                 fae.fast_recovery.trigger.set(trigger_id + ' ' + FastRecoveryConsts.TRIGGER_EVENT,
                                               FastRecoveryConsts.SEVERITY_WARNING, apply=True,
                                               dut_engine=engines.dut).verify_result()'''
+
+            with allure.step('Run set system contact contact_info_2 command and apply config'):
+                system.set(op_param_name=SystemConsts.CONTACT, op_param_value="contact_info_2", apply=True,
+                           dut_engine=engines.dut).verify_result()
+
+            with allure.step('Run set system location location_info_2 command and apply config'):
+                system.set(op_param_name=SystemConsts.LOCATION, op_param_value="location_info_2", apply=True,
+                           dut_engine=engines.dut).verify_result()
 
             with allure.step('Run nv action reboot system'):
                 system.reboot.action_reboot()
@@ -114,6 +136,14 @@ def test_save_reboot(engines, devices):
                 assert IbInterfaceConsts.DESCRIPTION not in output_dictionary.keys() or \
                     output_dictionary[IbInterfaceConsts.DESCRIPTION] != new_eth0_description, \
                     "Description should not be saved after reboot"
+
+            with allure.step('Verify system contact is set to contact_info_1'):
+                ValidationTool.verify_field_value_in_output(system_output, SystemConsts.CONTACT, "contact_info_1").\
+                    verify_result()
+
+            with allure.step('Verify system location is set to location_info_1'):
+                ValidationTool.verify_field_value_in_output(system_output, SystemConsts.LOCATION, "location_info_1").\
+                    verify_result()
 
         finally:
             with allure.step('Cleanup - set hostname to be {hostname} - with apply'.format(hostname=old_hostname)):
