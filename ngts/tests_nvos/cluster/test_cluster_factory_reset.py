@@ -98,6 +98,7 @@ def test_cluster_default_factory_reset(engines, devices, test_api):
             verify_the_setup_is_functional(system, engines, had_sm_before_test=False, dut=devices.dut)
 
         if not sdn_files_deleted:
+            ClusterTools.start_cluster(cluster, OutputFormat.json)
             delete_all_sdn_fetched_generated_files(sdn, all_config_files_paths, all_state_files_paths)
 
 
@@ -124,7 +125,7 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name)
             username = add_verification_data(engines.dut, system)
         reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, system, sdn, all_state_files_paths, all_config_files_paths, output_format, initial_config_contents)
 
-        with allure.step("Run reset factory without params"):
+        with allure.step("Run reset factory keep basic param"):
             execute_reset_factory(engines, system, devices.dut.reset_factory, "keep basic", current_time)
             ClusterTools.wait_for_apps_to_be_in_wanted_state()
 
@@ -159,6 +160,7 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name)
             verify_the_setup_is_functional(system, engines, had_sm_before_test=False, dut=devices.dut)
 
         if not sdn_files_deleted:
+            ClusterTools.start_cluster(cluster, OutputFormat.json)
             delete_all_sdn_fetched_generated_files(sdn, all_config_files_paths, all_state_files_paths)
 
 
@@ -184,7 +186,7 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name):
             username = add_verification_data(engines.dut, system)
         reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, system, sdn, all_state_files_paths, all_config_files_paths, output_format, initial_config_contents)
 
-        with allure.step("Run reset factory without params"):
+        with allure.step("Run reset factory with keep only-files param"):
             execute_reset_factory(engines, system, devices.dut.reset_factory, "keep only-files", current_time)
             ClusterTools.wait_for_apps_to_be_in_wanted_state()
 
@@ -219,6 +221,7 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name):
             verify_the_setup_is_functional(system, engines, had_sm_before_test=False, dut=devices.dut)
 
         if not sdn_files_deleted:
+            ClusterTools.start_cluster(cluster, OutputFormat.json)
             delete_all_sdn_fetched_generated_files(sdn, all_config_files_paths, all_state_files_paths)
 
 
@@ -248,7 +251,7 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
 
         TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
 
-        with allure.step("Run reset factory without params"):
+        with allure.step("Run reset factory with keep all-config param"):
             execute_reset_factory(engines, system, devices.dut.reset_factory, "keep all-config", current_time)
             ClusterTools.wait_for_apps_to_be_in_wanted_state()
 
@@ -285,6 +288,7 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
             verify_the_setup_is_functional(system, engines, had_sm_before_test=False, dut=devices.dut)
 
         if not sdn_files_deleted:
+            ClusterTools.start_cluster(cluster, OutputFormat.json)
             delete_all_sdn_fetched_generated_files(sdn, all_config_files_paths, all_state_files_paths)
 
 
