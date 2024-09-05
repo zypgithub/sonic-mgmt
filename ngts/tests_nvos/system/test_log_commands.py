@@ -120,11 +120,7 @@ def test_show_log_files(engines):
 
     with allure.step("Run nv show system log files command follow to view system logs"):
         logging.info("Run nv show system log files command follow to view system logs")
-        show_log_files_output = system.log.files.show_log_files(param='files syslog', exit_cmd='q')
-
-    with allure.step('Verify updated “system/image” in the logs as expected'):
-        logging.info('Verify updated “system/image” in the logs as expected')
-        ValidationTool.verify_expected_output(show_log_files_output, 'system/image').verify_result()
+        system.log.files.show_log_files(param='files syslog', expected_str='system/image', exit_cmd='q')
 
 
 @pytest.mark.system
@@ -855,7 +851,4 @@ def test_delete_log_files(engines):
         system.image.show()
 
     with allure.step("Run nv show system log command follow to view system logs"):
-        show_output = system.log.show_log(exit_cmd='q')
-
-    with allure.step('Verify updated “system/image” in the logs as expected'):
-        ValidationTool.verify_expected_output(show_output, 'system/image').verify_result()
+        system.log.show_log(exit_cmd='q', expected_str='system/image')

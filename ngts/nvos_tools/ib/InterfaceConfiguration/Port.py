@@ -1,16 +1,18 @@
-from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
-from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_constants.constants_nvos import OutputFormat
-from ngts.nvos_tools.infra.BaseComponent import BaseComponent
-from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+import logging
+
+import allure
+from retry import retry
+
 from ngts.cli_wrappers.nvue.nvue_ib_interface_clis import NvueIbInterfaceCli
 from ngts.cli_wrappers.openapi.openapi_ib_interface_clis import OpenApiIbInterfaceCli
 from ngts.nvos_constants.constants_nvos import ApiType
-from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
+from ngts.nvos_constants.constants_nvos import OutputFormat
 from ngts.nvos_tools.acl.acl import Acl
-import allure
-import logging
-from retry import retry
+from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
+from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
+from ngts.nvos_tools.infra.BaseComponent import BaseComponent
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 
 logger = logging.getLogger()
 
@@ -27,9 +29,11 @@ class PortRequirements:
                                  IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE: "",
                                  IbInterfaceConsts.TYPE: ""}
     port_requirements = None
+    interface_type = ''
 
-    def __init__(self):
+    def __init__(self, interface_type=''):
         self.port_requirements = self.default_port_requirements.copy()
+        self.interface_type = interface_type  # Port type refers to "internal/external/fnm ports"
 
     def __str__(self):
         return self.__class__.__name__ + "=" + str({k: v for k, v in self.port_requirements.items() if v})
@@ -72,12 +76,12 @@ class Port(BaseComponent):
         return f"<{self.__class__.__name__} {self.name}>"
 
     @staticmethod
-    def get_list_of_active_ports(port_type=IbInterfaceConsts.IB_PORT_TYPE):
+    def get_list_of_active_ports(port_type=IbInterfaceConsts.IB_PORT_TYPE, interface_type=''):
         """
         Return a list of ports which are connected to a traffic server
         """
         with allure.step('Get a list of ports which state is up'):
-            port_requirements_object = PortRequirements()
+            port_requirements_object = PortRequirements(interface_type)
             port_requirements_object.set_port_state(NvosConsts.LINK_STATE_UP)
             port_requirements_object.set_port_type(port_type)
             port_requirements_object.set_port_logical_state("Active")
@@ -106,11 +110,14 @@ class Port(BaseComponent):
             if not port_requirements_object or not port_requirements_object.port_requirements:
                 logging.info("get_list_of_ports - port_requirements not provided. Selecting all ports.")
                 for port_name in output_dictionary.keys():
-                    port_list.append(Port(port_name, "", ""))
+                    if port_requirements_object.interface_type in port_name:
+                        port_list.append(Port(port_name, "", ""))
                 return port_list
 
             for port_name, port_details in output_dictionary.items():
                 select_port = True
+                if port_requirements_object.interface_type not in port_name:
+                    select_port = False
 
                 for field_name, port_requirements_list in port_requirements_object.port_requirements.items():
 
@@ -118,8 +125,11 @@ class Port(BaseComponent):
                        port_requirements_list != port_name:
                         select_port = False
                         break
-                    elif port_requirements_list and field_name in port_details.keys() and \
-                            port_details[field_name] != port_requirements_list:
+                    elif field_name == IbInterfaceConsts.LINK_STATE and isinstance(port_requirements_list, list):
+                        if not any(port_details[field_name] == expected_state for expected_state in port_requirements_list):
+                            select_port = False
+                            break
+                    elif port_requirements_list and field_name in port_details.keys() and port_details[field_name] != port_requirements_list:
                         select_port = False
                         break
 

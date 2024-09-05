@@ -1,6 +1,7 @@
 import logging
 
 from ngts.cli_wrappers.nvue.nvue_base_clis import NvueBaseCli, check_output
+from ngts.nvos_constants.constants_nvos import ActionType
 
 logger = logging.getLogger()
 
@@ -21,3 +22,8 @@ class NvuePlatformCli(NvueBaseCli):
         :param resource_path: unused
         """
         return NvuePlatformCli.action_install(engine=engine, device=device, fae_command=True, args='firmware bios files {}'.format(bios_image_path), expect_reboot=True, force=True)
+
+    @staticmethod
+    @check_output
+    def action_generate(engine, resource_path, name=""):
+        return NvuePlatformCli.action(engine, action_type=ActionType.GENERATE.replace('@', ''), resource_path=resource_path, param_value=name)

@@ -36,7 +36,8 @@ def test_platform_environment_bmc_leakage(engines, devices):
             system = System()
 
         with allure.step("Validate system health is OK"):
-            system.validate_health_status(OK)
+            if not is_redmine_issue_active([4015156])[0]:
+                system.validate_health_status(OK)
 
         with allure.step("Verify default fields and values"):
             leakage_output = OutputParsingTool.parse_json_str_to_dictionary(platform.environment.leakage.show()) \
@@ -92,7 +93,8 @@ def test_platform_environment_bmc_leakage(engines, devices):
 
     finally:
         _link_back_sysfs_files(engines, PlatformConsts.LEAKAGE_DEFAULT_OUTPUT_FIELDS)
-        system.validate_health_status(OK)
+        if not is_redmine_issue_active([4015156])[0]:
+            system.validate_health_status(OK)
         leakage_output = OutputParsingTool.parse_json_str_to_dictionary(platform.environment.leakage.show()) \
             .get_returned_value()
         ValidationTool.validate_fields_values_in_output(PlatformConsts.LEAKAGE_DEFAULT_OUTPUT_FIELDS,

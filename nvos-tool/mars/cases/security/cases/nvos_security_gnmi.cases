@@ -3,7 +3,7 @@
   <global>
     <Test>
       <group> NVOS </group>
-      <name> NVOS GNMI Security </name>
+      <name> NVOS - GNMI Security </name>
       <info> </info>
       <owner> Alon N. </owner>
     </Test>

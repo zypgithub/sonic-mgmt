@@ -114,22 +114,65 @@
     </cmd>
     <ignore>
       <condition>
-        <key>dut_type</key>
+        <key>dut_hwsku</key>
         <op> in </op>
-        <value>[gorilla]</value>
+        <value>[MQM9700 - Gorilla, N5110_LD - JulietScaleout, N5112_LD - JulietAriel, N5110_LD - JulietTTM, N5100_LD - JulietNonScaleout]</value>
       </condition>
     </ignore>
   </case>
 
   <case>
-    <name> BMC FW upgrade </name>
+    <name> BMC Leakage sensor </name>
     <info> </info>
     <tout> 10800 </tout>
     <cmd>
       <params>
-          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/checklist/test_bmc_install.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir  --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/platform/test_platform_environment_leakage.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir  --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>
       </params>
     </cmd>
+    <ignore>
+      <condition>
+        <key>dut_type</key>
+        <op> not in </op>
+        <value>[juliet]</value>
+      </condition>
+    </ignore>
+  </case>
+
+  <case>
+    <name> Test read EEPROM information </name>
+    <info> </info>
+    <tout> 10800 </tout>
+    <cmd>
+      <params>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/fae/test_read_eeprom.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir  --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>
+      </params>
+    </cmd>
+    <ignore>
+      <condition>
+        <key>dut_type</key>
+        <op> not in </op>
+        <value>[juliet]</value>
+      </condition>
+    </ignore>
+  </case>
+
+   <case>
+    <name> NVOS - Debug Token </name>
+    <info> </info>
+    <tout> 10800 </tout>
+    <cmd>
+      <params>
+          <static_args>  --setup_name [[conf:extra_info.setup_name]]  --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/fae/test_debug_token.py --raw_options "\' --rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results  --showlocals  [[conf:extra_info.additional_options]]  --timeout 900    \'"</static_args>
+      </params>
+    </cmd>
+    <ignore>
+      <condition>
+        <key>dut_type</key>
+        <op> not in </op>
+        <value>[juliet]</value>
+      </condition>
+    </ignore>
   </case>
 
 </CASEDEF>

@@ -6,7 +6,9 @@ import time
 from typing import Tuple, List
 
 import ngts.tools.test_utils.allure_utils as allure
+from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_constants.constants_nvos import SystemConsts
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 
 
 class CurlTool:
@@ -49,6 +51,22 @@ class CurlTool:
                         f"--request {rest_op} 'https://{self.server_host}:{self.server_port}{path}'")
         with allure.step('run curl command in process'):
             return self._run_cmd_in_process(curl_cmd)
+
+    def graceful_restart_bmc(self):
+        return self.run_redfish_command(rest_op='POST', data='{"ResetType": "GracefulRestart"}',
+                                        path='/Managers/BMC_0/Actions/Manager.Reset')
+
+    def run_redfish_command(self, rest_op: str, data: str = '', username: str = '',
+                            password: str = '', path: str = ''):
+        dut_engine: LinuxSshEngine = TestToolkit.engines.dut
+        with allure.step('compose the curl command'):
+            username = username or self.username
+            password = password or self.password
+
+        if data:
+            data = f'-d \'{data}\''
+        curl_cmd = f"curl -k -u {username}:{password} -H 'Content-Type:application/json' -X {rest_op} {data} https://{self.server_host}/redfish/v1{path}"
+        return dut_engine.run_cmd(curl_cmd)
 
     def _verify_curl_installed(self):
         cmd = 'curl -version'

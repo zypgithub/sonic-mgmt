@@ -12,6 +12,13 @@
       <wrapper> [[run_time:db_tests_path]]/sonic-mgmt/sonic-tool/mars/scripts/canonical_mars_pytest_runner.py </wrapper>
       <tout> 10800 </tout>
       <tags>ALL</tags>
+      <ignore>
+        <condition>
+          <key>dut_type</key>
+          <op> in </op>
+          <value>[juliet]</value>
+        </condition>
+      </ignore>
     </Case>
   </global>
 
@@ -57,6 +64,13 @@
           <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/checklist/test_bmc_install.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --clean-alluredir  --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.loganalyzer_options]]  \'"</static_args>
       </params>
     </cmd>
+    <ignore>
+      <condition>
+        <key>dut_type</key>
+        <op> not in </op>
+        <value>[juliet]</value>
+      </condition>
+    </ignore>
   </case>
 
    <case>
@@ -66,6 +80,17 @@
      <cmd>
        <params>
            <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/checklist/test_fpga_install.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --clean-alluredir  --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.loganalyzer_options]]  \'"</static_args>
+       </params>
+     </cmd>
+   </case>
+
+   <case>
+     <name> test erot firmware upgrade </name>
+     <info> </info>
+     <tout> 10800 </tout>
+     <cmd>
+       <params>
+           <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/checklist/erot_fw_upgrade/test_erot_upgrade.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --clean-alluredir  --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.loganalyzer_options]]  \'"</static_args>
        </params>
      </cmd>
    </case>

@@ -25,9 +25,9 @@
     </cmd>
     <ignore>
         <condition>
-            <key>dut_hwsku</key>
+            <key>dut_type</key>
             <op> in </op>
-            <value>[N5110_LD - JulietScaleout, N5100_LD - JulietNonScaleout, N5110_LD - JulietTTM]</value>
+            <value>[juliet]</value>
         </condition>
     </ignore>
   </case>
