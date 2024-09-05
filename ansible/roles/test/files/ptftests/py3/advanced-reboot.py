@@ -1477,19 +1477,17 @@ class ReloadTest(BaseTest):
 
         self.log("Rebooting remote side")
         if self.reboot_type != 'service-warm-restart' and self.test_params['other_vendor_flag'] is False:
-            if '202205_5' in self.installed_sonic_version:  # TODO remove when RM issue 4004637 is solved
-                reboot_command = self.reboot_type
-            else:
-                # Check to see if the warm-reboot script knows about the retry count feature
-                stdout, stderr, return_code = self.dut_connection.execCommand(
-                    "sudo " + self.reboot_type + " -h", timeout=5)
-                if "retry count" in stdout:
-                    if self.test_params['neighbor_type'] == "sonic":
-                        reboot_command = self.reboot_type + " -N"
-                    else:
-                        reboot_command = self.reboot_type + " -n"
+            # Check to see if the warm-reboot script knows about the retry count feature
+            stdout, stderr, return_code = self.dut_connection.execCommand(
+                "sudo " + self.reboot_type + " -h", timeout=5)
+            # 202205 image doesn't support retry count feature despite the fact it is present in the cli output
+            if "retry count" in stdout and '202205' not in self.installed_sonic_version:
+                if self.test_params['neighbor_type'] == "sonic":
+                    reboot_command = self.reboot_type + " -N"
                 else:
-                    reboot_command = self.reboot_type
+                    reboot_command = self.reboot_type + " -n"
+            else:
+                reboot_command = self.reboot_type
 
             # create an empty log file to capture output of reboot command
             reboot_log_file = "/host/{}.log".format(reboot_command.replace(' ', ''))
