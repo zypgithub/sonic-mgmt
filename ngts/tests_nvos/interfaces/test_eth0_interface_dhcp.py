@@ -18,7 +18,7 @@ logger = logging.getLogger()
 
 @pytest.mark.eth0
 @pytest.mark.system
-def test_interface_eth0_enable_disable(engines, topology_obj):
+def test_interface_eth0_enable_disable(engines, topology_obj, serial_engine):
     """
     Connect via serial port, verify eth0 enable by default, can be disabled and enable it back
 
@@ -29,8 +29,8 @@ def test_interface_eth0_enable_disable(engines, topology_obj):
     4. Unset it back and verify
     """
 
-    mgmt_port = MgmtPort('eth0')
-    serial_engine = topology_obj.players['dut_serial']['engine']
+    mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
+    mgmt_port = MgmtPort(mgmt_port_name)
     with allure.step('Run show command on mgmt port and verify that each field has an appropriate value'):
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
             mgmt_port.interface.link.show()).get_returned_value()
@@ -78,6 +78,7 @@ def test_interface_eth0_enable_disable(engines, topology_obj):
                                                           expected_value=NvosConsts.LINK_STATE_UP).verify_result()
 
 
+@pytest.mark.cumulus
 @pytest.mark.eth0
 @pytest.mark.system
 @pytest.mark.simx
@@ -132,7 +133,7 @@ def test_interface_eth0_speed_duplex_autoneg(engines, devices):
 
     with allure.step('Set all supported speeds with all supported duplex'):
         list_supported_speeds = devices.dut.supported_eth0_speeds
-        list_supported_duplex = ["half", "full"]
+        list_supported_duplex = devices.dut.supported_eth0_duplex
         for speed in list_supported_speeds:
             # Only allow full and half duplex if the speed is "10M" or "100M"
             if speed in ["10M", "100M"]:
@@ -198,6 +199,7 @@ def test_interface_eth0_speed_duplex_autoneg(engines, devices):
                                                           expected_value="1G")
 
 
+@pytest.mark.cumulus
 @pytest.mark.eth0
 @pytest.mark.system
 @pytest.mark.simx
@@ -243,6 +245,7 @@ def test_interface_eth0_mtu(engines, topology_obj):
         wait_for_mtu_changed(mgmt_port, 1500)
 
 
+@pytest.mark.cumulus
 @pytest.mark.eth0
 @pytest.mark.system
 @pytest.mark.simx
@@ -294,6 +297,7 @@ def test_interface_eth0_description(engines):
             "Expected not to have description field after unset command, but we still have this field."
 
 
+@pytest.mark.cumulus
 @pytest.mark.eth0
 @pytest.mark.system
 def test_interface_eth0_ip_address(engines, topology_obj, serial_engine):
@@ -378,6 +382,7 @@ def test_interface_eth0_show_dhcp(engines):
             logging.info("All expected fields were found")
 
 
+@pytest.mark.cumulus
 @pytest.mark.eth0
 @pytest.mark.system
 @pytest.mark.simx
@@ -499,6 +504,7 @@ def test_interface_eth0_dhcp_hostname(engines, topology_obj, serial_engine):
         wait_for_hostname_changed(system, dhcp_hostname)
 
 
+@pytest.mark.cumulus
 @pytest.mark.eth0
 @pytest.mark.system
 @pytest.mark.simx
@@ -542,6 +548,7 @@ def test_mgmt_interface_default(engines, topology_obj):
         Tools.ValidationTool.verify_field_exist_in_json_output(output_dictionary, field_to_check).verify_result()
 
 
+@pytest.mark.cumulus
 @pytest.mark.eth0
 @pytest.mark.system
 @pytest.mark.simx

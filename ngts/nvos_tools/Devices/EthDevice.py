@@ -26,6 +26,8 @@ class EthSwitch(BaseSwitch):
         self.switch_type = CumulusConsts.ETH_SWITCH_TYPE
         self.init_documents_consts()
         self.init_cli_coverage_prop("cumulus")
+        self._init_eth0_speeds()
+        self._init_eth0_duplex()
 
     def init_documents_consts(self):
         super().init_documents_consts()
@@ -88,6 +90,12 @@ class EthSwitch(BaseSwitch):
 
     def get_mgmt_ports(self) -> List[str]:
         return self.mgmt_ports
+
+    def _init_eth0_speeds(self):
+        self.supported_eth0_speeds = ['10M', '100M', '1G']
+
+    def _init_eth0_duplex(self):
+        self.supported_eth0_duplex = ['full']
 
     def _init_fan_list(self):
         self.fan_list = ["FAN1/1", "FAN1/2", "FAN2/1", "FAN2/2", "FAN3/1", "FAN3/2", "FAN4/1", "FAN4/2",

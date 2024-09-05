@@ -35,6 +35,7 @@ class IbSwitch(BaseSwitch):
         self.prev_default_password = os.environ["NVU_SWITCH_PASSWORD"]
         self._init_ib_speeds()
         self._init_eth0_speeds()
+        self._init_eth0_duplex()
         self.init_documents_consts()
         self.init_cli_coverage_prop("nvos")
         self._init_interface_lists()
@@ -85,6 +86,9 @@ class IbSwitch(BaseSwitch):
 
     def _init_eth0_speeds(self):
         self.supported_eth0_speeds = ['100M', '1G']
+
+    def _init_eth0_duplex(self):
+        self.supported_eth0_duplex = ['half', 'full']
 
     def _init_fan_list(self):
         self.fan_list = ["FAN1/1", "FAN1/2", "FAN2/1", "FAN2/2", "FAN3/1", "FAN3/2", "FAN4/1", "FAN4/2",

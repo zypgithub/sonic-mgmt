@@ -165,8 +165,12 @@ class OutputParsingTool:
 
         """
         with allure.step('Create a dictionary according to provided JSON output of "show interface link" command'):
-            if '2004l' in output_json:
-                output_json = ''.join(output_json.split('\n')[1:])
+
+            output_json = output_json.replace('\\r', '\r').replace('\\n', '\n')
+            start_pos = output_json.find('{')
+            end_pos = output_json.rfind('}') + 1
+            if start_pos >= 0 and end_pos > start_pos:
+                output_json = output_json[start_pos:end_pos]
 
             output_dictionary = json.loads(output_json)
 
@@ -195,8 +199,13 @@ class OutputParsingTool:
 
         """
         with allure.step('Create a dictionary according to provided JSON output of "show interface pluggable" command'):
-            if '2004l' in output_json:
-                output_json = ''.join(output_json.split('\n')[1:])
+
+            output_json = output_json.replace('\\r', '\r').replace('\\n', '\n')
+            start_pos = output_json.find('{')
+            end_pos = output_json.rfind('}') + 1
+            if start_pos >= 0 and end_pos > start_pos:
+                output_json = output_json[start_pos:end_pos]
+
             output_dictionary = json.loads(output_json)
             return ResultObj(True, "", output_dictionary)
 
