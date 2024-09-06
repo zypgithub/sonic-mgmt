@@ -588,3 +588,4 @@ mlx-2410b-01-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_
 mlx-4600a1-05-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,mlx-4600a1-05,Mellanox MTR testbed
 mlx-4700a1-07-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,mlx-4700a1-07,Mellanox MTR testbed
 mlx-4600ca1-02-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,mlx-4600ca1-02,Mellanox MTR testbed
+mlx-5600-22-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,mlx-5600-22,Mellanox MTR testbed

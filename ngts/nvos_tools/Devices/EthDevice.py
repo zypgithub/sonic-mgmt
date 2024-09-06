@@ -322,3 +322,39 @@ class Mlx4600CSwitch(EthSwitch):
 
     def _init_fan_list(self):
         self.fan_list = ["FAN1/1", "FAN2/1", "FAN3/1"]
+
+# -------------------------- Mlx5600 Switch -----------------------------
+
+
+class Mlx5600Switch(EthSwitch):
+    def __init__(self):
+        super().__init__(asic_amount=1)
+
+    def _init_constants(self):
+        super()._init_constants()
+        self.core_count = 12
+        self.ib_ports_num = 65
+        self.asic_type = 'Spectrum-4'
+        self.constants.firmware.append(PlatformConsts.FW_SPECTRUM4)
+        self.show_platform_output.update({
+            "product-name": "SN5600",
+            "asic-model": self.asic_type
+        })
+
+    def _init_temperature(self):
+        super()._init_temperature()
+        self.temperature_sensors = ["Asic-Temp-Sensor", "CPU-Core-Sensor-0", "CPU-Core-Sensor-1",
+                                    "CPU-Core-Sensor-2", "CPU-Core-Sensor-3", "CPU-Core-Sensor-4",
+                                    "CPU-Core-Sensor-5", "CPU-Package-Sensor", "Main-Board-Ambient-Sensor",
+                                    "PSU1-Temp-Sensor", "PSU2-Temp-Sensor", "Port-Ambient-Sensor"]
+
+        self.voltage_sensors = ["ADAPTER", "IBC-1-13V5-RAIL-OUT", "IBC-1-PWR-CONV-54V-RAIL-IN1",
+                                "IBC-2-13V5-RAIL-OUT", "IBC-2-PWR-CONV-54V-RAIL-IN1", "IBC-3-13V5-RAIL-OUT",
+                                "IBC-3-PWR-CONV-54V-RAIL-IN1", "IBC-4-13V5-RAIL-OUT", "IBC-4-PWR-CONV-54V-RAIL-IN1",
+                                "PMIC-1-PSU-13V5-RAIL-IN1", "PMIC-2-PSU-13V5-RAIL-IN1", "PMIC-3-PSU-13V5-RAIL-IN1",
+                                "PMIC-4-PSU-13V5-RAIL-IN1", "PMIC-5-PSU-13V5-RAIL-IN1", "PMIC-6-PSU-13V5-RAIL-IN1",
+                                "PMIC-7-PSU-13V5-RAIL-IN1", "PMIC-8-PSU-13V5-RAIL-IN1", "PMIC-9-PSU-13V5-RAIL-IN1",
+                                "PMIC-10-HVDD_T03-1V2-RAIL-OUT1", "PMIC-10-HVDD_T47-1V2-RAIL-OUT2", "PMIC-10-PSU-13V5-RAIL-IN1",
+                                "PMIC-11-PSU-13V5-RAIL-IN1", "PMIC-12-PSU-13V5-RAIL-VIN", "PSU-1L-54V-RAIL-OUT",
+                                "PSU-1L-220V-RAIL-IN"]
+        self.fan_list = ["FAN1/1", "FAN1/2", "FAN2/1", "FAN2/2", "FAN3/1", "FAN3/2", "FAN4/1", "FAN4/2"]

@@ -745,6 +745,7 @@ class PlatformConsts:
     FW_SPECTRUM1 = "Spectrum"
     FW_SPECTRUM2 = "Spectrum-2"
     FW_SPECTRUM3 = "Spectrum-3"
+    FW_SPECTRUM4 = "Spectrum-4"
     FW_FIELDS = [FW_ACTUAL, FW_PART_NUMBER, FW_AUTO_UPDATE, FW_SOURCE]
     HARDWARE_TRANCEIVER_DIAGNOSTIC_STATUS = "diagnostics-status"
     HARDWARE_TRANCEIVER_NOT_EXIST = "Non present module"
