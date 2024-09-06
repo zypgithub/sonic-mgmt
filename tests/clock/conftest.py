@@ -43,11 +43,10 @@ def restore_time(duthosts, ntp_server):
     @summary: fixture to restore time after test (using ntp)
     """
     logging.info('Check NTP server reachability')
-    duthost = duthosts[0]
-    command_output = duthost.shell(f'{ClockConsts.CMD_NTPDATE} -q {ntp_server}', module_ignore_errors=True)
-    exit_code = command_output["rc"]
-    if exit_code != 0:
-        pytest.skip(f'Unreachable NTP server {ntp_server}')
+    try:
+        ClockUtils.run_cmd(duthosts, f'{ClockConsts.CMD_NTPDATE} -q {ntp_server}', raise_err=True)
+    except Exception as e:
+        pytest.skip(f'Unreachable NTP server {ntp_server}: {str(e)}')
 
     logging.info('Check if there is ntp configured before test')
     show_ntp_output = ClockUtils.run_cmd(duthosts, ClockConsts.CMD_SHOW_NTP)

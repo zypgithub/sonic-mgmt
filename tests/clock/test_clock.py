@@ -63,7 +63,7 @@ class ClockConsts:
 
 class ClockUtils:
     @staticmethod
-    def run_cmd(duthosts, cmd, param=''):
+    def run_cmd(duthosts, cmd, param='', raise_err=False):
         """
         @summary:
             Run a given command and return its output.
@@ -84,6 +84,8 @@ class ClockUtils:
                 err = cmd_err.results["stderr"]
                 cmd_output = output if output else err
                 logging.info(f'Command Error!\nError message: "{cmd_output}"')
+                if raise_err:
+                    raise Exception(cmd_output)
 
             cmd_output = str(cmd_output)
             logging.info(f'Output: {cmd_output}')
