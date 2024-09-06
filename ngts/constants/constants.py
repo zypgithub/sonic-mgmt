@@ -90,6 +90,7 @@ class SonicConst:
     NVIDIA_LAB_DNS_SEARCH = 'mtr.labs.mlnx labs.mlnx mlnx lab.mtl.com mtl.com'
     NVIDIA_AIR_DNS_FIRST = '8.8.8.8'
     NVIDIA_AIR_DNS_SECOND = '192.168.200.1'
+    NTP_SERVERS = ['10.7.77.134', '10.245.1.123', '10.211.0.124']
     MIN_SHAPER_RATE_BPS = 25000000
     MAX_SHAPER_RATE_BPS = 0
 
