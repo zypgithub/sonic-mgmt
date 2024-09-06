@@ -90,8 +90,9 @@ class TestFec(TestAutoFecBase):
             dut_host_conf = self.check_all_speeds_with_fec_on_host_ports(ip_conf, cleanup_list)
 
         tested_ports = list(dut_host_conf.keys())
-        if sw_control_ports and is_redmine_issue_active([3886748]):
-            tested_ports = [port for port in tested_ports if port not in sw_control_ports]
+        aoc_cables = self.cli_objects.dut.im.sw_controlled_aoc_cables(sw_control_ports)
+        if aoc_cables:
+            tested_ports = [port for port in tested_ports if port not in aoc_cables]
 
         reboot_reload_random(self.topology_obj, self.engines.dut, self.cli_objects.dut, tested_ports,
                              cleanup_list, simx=self.is_simx)

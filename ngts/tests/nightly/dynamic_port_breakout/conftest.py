@@ -9,6 +9,7 @@ from ngts.tests.conftest import get_dut_loopbacks
 from ngts.helpers.breakout_helpers import get_dut_breakout_modes
 from ngts.helpers.interface_helpers import get_speed_in_G_format
 from ngts.cli_util.verify_cli_show_cmd import verify_show_cmd
+from infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 """
 
@@ -40,14 +41,16 @@ def cli_object(topology_obj):
     return topology_obj.players['dut']['cli']
 
 
-@pytest.fixture(autouse=True, scope='session')
-def ports_breakout_modes(dut_engine, cli_object, sw_control_ports):
-    return get_dut_breakout_modes(dut_engine, cli_object, sw_control_ports)
+def ports_breakout_modes(dut_engine, cli_object, sw_control_ports, is_sw_control_feature_enabled, cli_objects):
+    if is_sw_control_feature_enabled and is_redmine_issue_active([3891669]):
+        pytest.skip(f"Skipping test when SW control feature enabled and RM 3891669 is active")
+    aoc_cables = cli_objects.dut.im.sw_controlled_aoc_cables(sw_control_ports)
+    return get_dut_breakout_modes(dut_engine, cli_object, aoc_cables)
 
 
-@pytest.fixture(autouse=True, scope='session')
-def tested_modes_lb_conf(topology_obj, ports_breakout_modes, sw_control_ports):
-    return get_random_lb_breakout_conf(topology_obj, ports_breakout_modes, sw_control_ports)
+def tested_modes_lb_conf(topology_obj, ports_breakout_modes, cli_objects, sw_control_ports):
+    aoc_cables = cli_objects.dut.im.sw_controlled_aoc_cables(sw_control_ports)
+    return get_random_lb_breakout_conf(topology_obj, ports_breakout_modes, aoc_cables)
 
 
 @pytest.fixture(scope='session', autouse=True)

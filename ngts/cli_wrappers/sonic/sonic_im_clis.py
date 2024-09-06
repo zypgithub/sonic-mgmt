@@ -192,6 +192,18 @@ class SonicImClis:
                 aoc_list.append(cable)
         return aoc_list
 
+    def sw_controlled_aoc_cables(self, sw_control_dict):
+        """
+        @summary: This method is checking if aoc cables present at setup
+        @param: topology_obj: topology_obj fixture
+        @return: list of aoc cables if any or None
+        """
+        if sw_control_dict:
+            if sw_control_dict.get('aoc_cables'):
+                return sw_control_dict.get('aoc_cables')
+        else:
+            return None
+
     def enable_im(self, topology_obj, platform_params, chip_type, enable_im=True, is_community=False):
         """
         @summary: This method is for enable IM feature at DUT

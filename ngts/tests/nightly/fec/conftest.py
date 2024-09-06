@@ -55,8 +55,9 @@ def fec_capability_for_dut_ports(topology_obj, engines, cli_objects, interfaces,
     ports = get_tested_lb_dict_tested_ports(tested_lb_dict)
     ports += get_tested_lb_dict_tested_ports(tested_lb_dict_for_bug_2705016_flow)
     ports += [interfaces.dut_ha_1, interfaces.dut_ha_2, interfaces.dut_hb_1, interfaces.dut_hb_2]
-    if sw_control_ports and is_redmine_issue_active([3886748]):
-        ports = [port for port in ports if port not in sw_control_ports]
+    aoc_cables = cli_objects.dut.im.sw_controlled_aoc_cables(sw_control_ports)
+    if aoc_cables:
+        ports = [port for port in ports if port not in aoc_cables]
     for port in ports:
         supported_fec_mode = cli_objects.dut.interface.get_interface_supported_fec_modes(port)
         if supported_fec_mode:
@@ -66,23 +67,25 @@ def fec_capability_for_dut_ports(topology_obj, engines, cli_objects, interfaces,
 
 
 @pytest.fixture(autouse=True, scope='session')
-def tested_lb_dict(topology_obj, split_mode_supported_speeds, sw_control_ports):
+def tested_lb_dict(topology_obj, split_mode_supported_speeds, cli_objects, sw_control_ports):
     """
     :param topology_obj: topology object fixture
-    :param split_mode_supported_speeds: fixture, dictionary with available breakout options
+    :param split_mode_supported_speeds: dictionary with available breakout options
+    :param cli_objects: cli_objects fixture
     :param sw_control_ports: sw_control_ports fixture
     :return: a dictionary of loopback list for each split mode on the dut
     {1: [('Ethernet52', 'Ethernet56')],
     2: [('Ethernet12', 'Ethernet16')],
     4: [('Ethernet20', 'Ethernet24')]}
     """
-    dut_lbs = dut_split_lbs_no_sw_control(topology_obj, sw_control_ports, split_mode=1)
+    aoc_cables = cli_objects.dut.im.sw_controlled_aoc_cables(sw_control_ports)
+    dut_lbs = dut_split_lbs_no_sw_control(topology_obj, aoc_cables, split_mode=1)
     if len(dut_lbs) < 3:
         pytest.skip(
             f'Test expected at least 3 loopback ports, but found next ports only: {dut_lbs}')
     lb_list_in_split_mode_1 = random.sample(dut_lbs, k=3)
-    split_2_lb = dut_split_lbs_no_sw_control(topology_obj, sw_control_ports, split_mode=2)
-    split_4_lb = dut_split_lbs_no_sw_control(topology_obj, sw_control_ports, split_mode=4)
+    split_2_lb = dut_split_lbs_no_sw_control(topology_obj, aoc_cables, split_mode=2)
+    split_4_lb = dut_split_lbs_no_sw_control(topology_obj, aoc_cables, split_mode=4)
 
     tested_lb_dict = {
         1: {
@@ -102,21 +105,23 @@ def tested_lb_dict(topology_obj, split_mode_supported_speeds, sw_control_ports):
 
 
 @pytest.fixture(autouse=True, scope='session')
-def tested_lb_dict_for_bug_2705016_flow(topology_obj, split_mode_supported_speeds, sw_control_ports):
+def tested_lb_dict_for_bug_2705016_flow(topology_obj, split_mode_supported_speeds, cli_objects, sw_control_ports):
     """
     :param topology_obj: topology object fixture
-    :param split_mode_supported_speeds: fixture, dictionary with available breakout options
+    :param split_mode_supported_speeds: dictionary with available breakout options
+    :param cli_objects: cli_objects fixture
     :param sw_control_ports: sw_control_ports fixture
     :return: a dictionary of loopback list for each split mode on the dut
     {1: [('Ethernet52', 'Ethernet56')],
     2: [('Ethernet12', 'Ethernet16')],
     4: [('Ethernet20', 'Ethernet24')]}
     """
+    aoc_cables = cli_objects.dut.im.sw_controlled_aoc_cables(sw_control_ports)
     modes_checked_in_bug_2705016_flow = [SonicConst.FEC_RS_MODE, SonicConst.FEC_NONE_MODE]
-    dut_lbs = dut_split_lbs_no_sw_control(topology_obj, sw_control_ports, split_mode=1)
+    dut_lbs = dut_split_lbs_no_sw_control(topology_obj, aoc_cables, split_mode=1)
     lb_list_in_split_mode_1 = random.sample(dut_lbs, k=4)
-    split_2_lb = dut_split_lbs_no_sw_control(topology_obj, sw_control_ports, split_mode=2)
-    split_4_lb = dut_split_lbs_no_sw_control(topology_obj, sw_control_ports, split_mode=4)
+    split_2_lb = dut_split_lbs_no_sw_control(topology_obj, aoc_cables, split_mode=2)
+    split_4_lb = dut_split_lbs_no_sw_control(topology_obj, aoc_cables, split_mode=4)
 
     tested_lb_dict = {
         1: {
@@ -195,7 +200,7 @@ def tested_dut_to_host_conn(topology_obj, engines, interfaces, cli_objects):
 def dut_ports_default_mlxlink_configuration(is_simx, platform_params, chip_type, engines, cli_objects, interfaces,
                                             tested_lb_dict, fec_modes_speed_support,
                                             tested_lb_dict_for_bug_2705016_flow, pci_conf, dut_ports_number_dict,
-                                            sw_control_ports):
+                                            sw_control_ports, is_sw_control_feature_enabled):
     """
     on simx setups this information can not be taken from mlxlink cmd because this command is not supported on simx
     (There is no FW), so instead the dict will be default info generated by get_basic_fec_mode_dict function.
@@ -204,14 +209,18 @@ def dut_ports_default_mlxlink_configuration(is_simx, platform_params, chip_type,
     { "Ethernet0" : { "FEC": "rs" ,"Type": "CR4" }, ...}
     """
     logger.info("Getting port basic fec configuration")
+
+    if is_sw_control_feature_enabled and is_redmine_issue_active([3891669]):
+        pytest.skip(f"Skipping test when SW control feature enabled and RM 3891669 is active")
+    aoc_cables = cli_objects.dut.im.sw_controlled_aoc_cables(sw_control_ports)
     if is_simx:
         dut_ports_basic_mlxlink_dict = get_basic_fec_mode_dict(cli_objects, fec_modes_speed_support)
     else:
         dut_ports_basic_mlxlink_dict = get_dut_ports_basic_mlxlink_dict(cli_objects, interfaces,
                                                                         tested_lb_dict,
                                                                         tested_lb_dict_for_bug_2705016_flow,
-                                                                        pci_conf, dut_ports_number_dict,
-                                                                        sw_control_ports)
+                                                                        pci_conf, dut_ports_number_dict, aoc_cables)
+
     return dut_ports_basic_mlxlink_dict
 
 

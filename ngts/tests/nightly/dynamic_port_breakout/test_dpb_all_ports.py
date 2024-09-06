@@ -35,7 +35,7 @@ class TestDPBOnAllPorts:
         self.dut_ports_interconnects = dut_ports_interconnects
         self.split_mode_supported_speeds = split_mode_supported_speeds
         self.dut_ports_default_speeds_configuration = dut_ports_default_speeds_configuration
-        self.sw_control_ports = sw_control_ports
+        self.sw_control_ports = self.cli_object.im.sw_controlled_aoc_cables(sw_control_ports)
 
     @allure.title('Dynamic Port Breakout on all ports')
     def test_dpb_on_all_ports(self, cleanup_list):

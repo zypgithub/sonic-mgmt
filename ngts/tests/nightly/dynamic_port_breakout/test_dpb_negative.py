@@ -22,7 +22,7 @@ class TestDPBNegative:
         self.ports_breakout_modes = ports_breakout_modes
         self.dut_ports_default_speeds_configuration = dut_ports_default_speeds_configuration
         self.tested_modes_lb_conf = tested_modes_lb_conf
-        self.sw_control_ports = sw_control_ports
+        self.sw_control_ports = self.cli_object.im.sw_controlled_aoc_cables(sw_control_ports)
 
     @allure.title('Dynamic Port Breakout negative test: breakout on unbreakable port')
     def test_breakout_unbreakable_ports(self):

@@ -165,13 +165,15 @@ def test_rpc_check_and_set_topology(topology_obj, engines, cli_objects, current_
         if cli_objects.dut.im.is_im_enabled():
             port_supporting_im = cli_objects.dut.im.get_ports_supporting_im(
                 cli_objects.dut.im.dut_ports_number_dict(topology_obj, is_community=True))
-            if port_supporting_im.get('aoc_cables'):
-                with allure.step('Disable autoneg on active optical cables ports supporting IM'):
-                    cli_objects.dut.im.disable_autoneg_on_ports_supporting_im(port_supporting_im.get('aoc_cables'))
-            if port_supporting_im.get(['passive_copper_cables']):
-                with allure.step('Enable autoneg on copper ports if SW controlled'):
-                    cli_objects.dut.im.enable_autoneg_on_passive_copper(port_supporting_im.
-                                                                        get(['passive_copper_cables']))
+            if port_supporting_im:
+                aoc_cables = cli_objects.dut.im.sw_controlled_aoc_cables(port_supporting_im)
+                if aoc_cables:
+                    with allure.step('Disable autoneg on AOC ports if SW controlled'):
+                        cli_objects.dut.im.disable_autoneg_on_ports_supporting_im(aoc_cables)
+                copper_cables = port_supporting_im.get('passive_copper_cables')
+                if copper_cables:
+                    with allure.step('Enable autoneg on copper cable ports if SW controlled'):
+                        cli_objects.dut.im.enable_autoneg_on_passive_copper(copper_cables)
 
     with allure.step("Post upgrade checks"):
         cmd = "ansible-playbook -i inventory --limit {SWITCH} post_upgrade_check.yml " \
