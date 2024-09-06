@@ -148,7 +148,8 @@ class TestNewTc:
             with MockSensors(self.dut_engine, self.cli_objects) as mock_sensor:
                 if sensor_err_type.startswith("psu_err") and SENSOR_DATA["psu"]["total_number"] < 2:
                     pytest.skip("Only one psu, skipping this test")
-                sensor_err_file, expected_pwm, mock_value = get_sensor_err_test_data(sensor_err_type, mock_sensor, tc_config_dict)
+                sensor_err_file, expected_pwm, mock_value = get_sensor_err_test_data(
+                    sensor_err_type, mock_sensor, tc_config_dict, self.cli_objects.dut.im.is_im_enabled())
                 sensor_read_error_type = None
                 if "sensor_read_error" == sensor_err_file:
                     sensor_read_error_type = random.choice(SENSOR_ERR_TEST_DATA["sensor_read_error"])
