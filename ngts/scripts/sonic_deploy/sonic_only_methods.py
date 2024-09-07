@@ -450,12 +450,11 @@ class SonicInstallationSteps:
             hwskus = ['Mellanox-SN4600C-D24C52']
             need_gen_mingraph = True
 
-        if platform_params["hwsku"] not in hwskus:
-            hwskus = []
-
         for hwsku in hwskus:
             if os.path.exists(f'{sonic_mgmt_hwsku_path}/{hwsku}'):
                 logger.warning(f"The hwsku {hwsku} already exist in the sonic mgmt docker, no need to copy")
+            elif "No such file or directory" in dut_engine.run_cmd(f"ls -l {dut_platform_path}/{hwsku}"):
+                logger.warning(f"The hwsku {hwsku} not exist in the DUT, no need to copy")
             else:
                 execute_script(f'sshpass -p "{sonic_password}" scp -o "StrictHostKeyChecking no"'
                                f' -r {sonic_user}@{dut_name}:{dut_platform_path}/{hwsku} '
