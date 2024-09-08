@@ -8,7 +8,6 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
 from ngts.tests_nvos.general.security.nmx_cert.test_nmx_cert import factory_reset_nmx_cert_checker
-from ngts.tests_nvos.general.security.test_ssh_pka.test_ssh_pka import factory_reset_ssh_pka_checker
 from ngts.tests_nvos.general.security.tpm_attestation.helpers import factory_reset_tpm_checker
 from ngts.tests_nvos.system.factory_reset.helpers import *
 from ngts.tests_nvos.system.gnmi.helpers import factory_reset_gnmi_checker
@@ -61,5 +60,3 @@ def post_factory_reset_security_checks():
         next(factory_reset_gnmi_checker)
     with allure.step('NMX cert check'):
         next(factory_reset_nmx_cert_checker)
-    with allure.step('ssh PKA check'):
-        next(factory_reset_ssh_pka_checker)

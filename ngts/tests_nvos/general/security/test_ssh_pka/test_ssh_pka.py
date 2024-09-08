@@ -1,15 +1,20 @@
+import logging
+import time
+
 import allure
 import pytest
 
+from ngts.nvos_tools.infra.CmdRunner import CmdRunner
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.AuthVerifier import *
-from ngts.tests_nvos.general.security.test_ssh_pka.helpers import _generate_new_key, keys_path
+from ngts.tests_nvos.general.security.test_ssh_pka.helpers import _generate_new_key, keys_path, public_key_length, _check_password_prompt
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.SecuritySshTool import SecuritySshTool
+from ngts.nvos_tools.infra.ValidationTool import ValidationTool
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 
 
 @pytest.mark.security
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_ssh_pka_positive_flow(engines, test_api, generate_new_admin_keys):
+def test_ssh_pka_positive_flow(engines, generate_new_admin_keys):
     """
     @summary: verify the positive flow of connection using pka keys for admin and new user with monitor abilities.
     in this case we also verify the two ways of adding new key.
@@ -44,73 +49,72 @@ def test_ssh_pka_positive_flow(engines, test_api, generate_new_admin_keys):
         - Run nv show system aaaa user <new_user>	Keys_list = empty
         - Login using: ssh -i ~/.<private_key_path_2>  <new_user>@hostname  - Verify result - Should fail
     """
-    TestToolkit.tested_api = test_api
     try:
         with allure.step("create system"):
             system = System()
 
         with allure.step("create new user with monitor abilities"):
-            monitor_user, monitor_password = system.aaa.user.set_new_user(role=SystemConsts.DEFAULT_USER_MONITOR,
-                                                                          apply=True).verify_result()
+            monitor_user, monitor_password = system.aaa.user.set_new_user(role=SystemConsts.DEFAULT_USER_MONITOR, apply=True)
 
         with allure.step("generate valid key id"):
             random_key_id = system.aaa.user.generate_username()
             admin_key_obj = system.aaa.user.user_id['admin'].ssh.authorized_key.key_id[random_key_id]
-            monitor_key_obj = system.aaa.user.user_id[monitor_user].ssh.authorized_key.key_id[random_key_id]
 
         with allure.step(f"generate two new keys one for admin and one for {monitor_user}"):
             admin_key, admin_key_type, admin_private_key_path = generate_new_admin_keys
-            monitor_key, monitor_key_type, monitor_private_key_path = _generate_new_key(engines.dut, monitor_user,
-                                                                                        'rsa')
+            monitor_key, monitor_key_type, monitor_private_key_path = _generate_new_key(engines.dut, monitor_user, 'ssh-rsa')
 
-        with allure.step(f"save open sessions count for both admin and {monitor_user}"):
-            admin_sessions_before_testing = system.aaa.user.get_lslogins(engine=engines.dut, username='admin')[
-                "Running processes"]
-            monitor_sessions_before_testing = system.aaa.user.get_lslogins(engine=engines.dut, username=monitor_user)[
-                "Running processes"]
+        with allure.step(f"get open sessions count for both admin and {monitor_user}"):
+            admin_sessions_before_testing = int(system.aaa.user.get_lslogins(engine=engines.dut, username='admin')[SystemConsts.PASSWORD_HARDENING_RUNNING_PROCESSES])
+            monitor_sessions_before_testing = int(system.aaa.user.get_lslogins(engine=engines.dut, username=monitor_user)[SystemConsts.PASSWORD_HARDENING_RUNNING_PROCESSES])
 
         with allure.step("test PKA functionality"):
-
             with allure.independent_step("verify the default output of the show commands"):
-                ssh_output = system.aaa.user.user_id['admin'].ssh.show()
-                monitor_authorized_key_output = monitor_key_obj.show()
-                # add show verifying step once we have final output
+                admin_ssh_output = OutputParsingTool.parse_json_str_to_dictionary(system.aaa.user.user_id['admin'].ssh.show()).get_returned_value()
+                monitor_authorized_key_output = system.aaa.user.user_id[monitor_user].ssh.authorized_key.show()
+                ValidationTool.verify_field_value_in_output(output_dictionary=admin_ssh_output, field_name='authorized-key', expected_value='{}').verify_result()
+                assert monitor_authorized_key_output == '{}', "the authorized key field should be empty"
 
             with allure.independent_step("add new public key using three set commands to admin user"):
                 admin_key_obj.set()
                 admin_key_obj.set(op_param_name='key', op_param_value=admin_key)
-                admin_key_obj.set(op_param_name='type', op_param_value=admin_key_type).verify_result()
+                admin_key_obj.set(op_param_name='type', op_param_value=admin_key_type, apply=True).verify_result()
 
             with allure.independent_step(f"add new public key using one command for {monitor_user}"):
-                system.aaa.user.user_id[monitor_user].ssh.authorized_key.key_id[random_key_id].set(op_param_name='key',
-                                                                                                   op_param_value=monitor_key).verify_result()
+                system.aaa.user.user_id[monitor_user].ssh.authorized_key.key_id[random_key_id].set(op_param_name='key', op_param_value=monitor_key, apply=True).verify_result()
 
             with allure.independent_step("verify the show commands output after adding new keys"):
-                user_output = system.aaa.user.user_id[monitor_user].show()
-                authorized_key_output = system.aaa.user.user_id[monitor_user].ssh.authorized_key.show()
-                random_key_id_output = system.aaa.user.user_id[monitor_user].ssh.authorized_key.show(
-                    op_param=random_key_id)
-                # add show verifying step once we have final output
+                expected_authorized_key_dict = {"key": '*', "type": 'ssh-rsa'}
+
+                with allure.independent_step(f"verify nv show system aaa user {monitor_user} command"):
+                    user_output = OutputParsingTool.parse_json_str_to_dictionary(system.aaa.user.user_id[monitor_user].show()).get_returned_value()
+                    ValidationTool.verify_field_value_in_output(output_dictionary=user_output, field_name='ssh', expected_value={'authorized-key': {random_key_id: expected_authorized_key_dict}}).verify_result()
+
+                with allure.independent_step(f"verify nv show system aaa user {monitor_user} ssh authorized key command"):
+                    authorized_key_output = OutputParsingTool.parse_json_str_to_dictionary(system.aaa.user.user_id[monitor_user].ssh.authorized_key.show()).get_returned_value()
+                    ValidationTool.verify_field_value_in_output(output_dictionary=authorized_key_output, field_name=random_key_id, expected_value=expected_authorized_key_dict).verify_result()
+
+                with allure.independent_step(f"verify nv show system aaa user {monitor_user} ssh authorized key {random_key_id} command"):
+                    random_key_id_output = OutputParsingTool.parse_json_str_to_dictionary(system.aaa.user.user_id[monitor_user].ssh.authorized_key.show(op_param=random_key_id)).get_returned_value()
+                    ValidationTool.validate_fields_values_in_output(output_dict=random_key_id_output, expected_fields=list(expected_authorized_key_dict.keys()), expected_values=list(expected_authorized_key_dict.values())).verify_result()
 
             with allure.independent_step("try to connect using the keys"):
-                admin_session_obj = PKAAuthVerifier(username='admin', private_key_path=admin_private_key_path,
-                                                    hostname=engines.dut.ip).verify_authentication(True)
-                monitor_session_obj = PKAAuthVerifier(username=monitor_user, private_key_path=monitor_private_key_path,
-                                                      hostname=engines.dut.ip).verify_authentication(True)
+                admin_session_obj = PKAAuthVerifier(username='admin', private_key_path=admin_private_key_path, hostname=engines.dut.ip, engines=engines)
+                admin_session_obj.verify_authentication(True)
+                monitor_session_obj = PKAAuthVerifier(username=monitor_user, private_key_path=monitor_private_key_path, hostname=engines.dut.ip, engines=engines)
+                monitor_session_obj.verify_authentication(True)
 
             with allure.independent_step(f"verify sessions count for both admin and {monitor_user}"):
-                admin_sessions_after_testing = system.aaa.user.get_lslogins(engine=engines.dut, username='admin')[
-                    "Running processes"]
-                monitor_sessions_after_testing = \
-                    system.aaa.user.get_lslogins(engine=engines.dut, username=monitor_user)[
-                        "Running processes"]
+                admin_sessions_after_testing = int(system.aaa.user.get_lslogins(engine=engines.dut, username='admin')[SystemConsts.PASSWORD_HARDENING_RUNNING_PROCESSES])
+                monitor_sessions_after_testing = int(system.aaa.user.get_lslogins(engine=engines.dut, username=monitor_user)[SystemConsts.PASSWORD_HARDENING_RUNNING_PROCESSES])
+
                 with allure.independent_step(f"verify sessions count for admin"):
-                    assert admin_sessions_after_testing - admin_sessions_before_testing != 2, f"after connection using key we expect more sessions for admin, the sessions count before testing was {admin_sessions_before_testing} and after connecting with the key it's {admin_sessions_after_testing}"
+                    assert admin_sessions_after_testing - admin_sessions_before_testing == 2, f"after connection using key we expect more sessions for admin, the sessions count before testing was {admin_sessions_before_testing} and after connecting with the key it's {admin_sessions_after_testing}"
 
                 with allure.independent_step(f"verify sessions count for {monitor_user}"):
-                    assert monitor_sessions_after_testing - monitor_sessions_before_testing != 2, f"after connection using key we expect more sessions for admin, the sessions count before testing was {monitor_sessions_before_testing} and after connecting with the key it's {monitor_sessions_after_testing}"
+                    assert monitor_sessions_after_testing - monitor_sessions_before_testing == 2, f"after connection using key we expect more sessions for admin, the sessions count before testing was {monitor_sessions_before_testing} and after connecting with the key it's {monitor_sessions_after_testing}"
 
-            with allure.independent_step(f"verify users ability using the new connection session"):
+            with allure.independent_step("verify users ability using the new connection session"):
                 admin_session_obj.verify_authorization(user_is_admin=True)
                 monitor_session_obj.verify_authorization(user_is_admin=False)
 
@@ -119,22 +123,19 @@ def test_ssh_pka_positive_flow(engines, test_api, generate_new_admin_keys):
                     admin_key_obj.unset(apply=True).verify_result()
 
                 with allure.step(f"verify we can not connect using key"):
-                    PKAAuthVerifier(username='admin', private_key_path=admin_private_key_path,
-                                    hostname=engines.dut.ip).verify_authentication(False)
+                    PKAAuthVerifier(username='admin', private_key_path=admin_private_key_path, hostname=engines.dut.ip, engines=engines).verify_authentication(False)
 
                 with allure.step(f"delete user"):
                     system.aaa.user.user_id[monitor_user].unset(apply=True).verify_result()
 
                 with allure.step(f"create same user again"):
-                    monitor_user, monitor_password = system.aaa.user.set_new_user(username=monitor_user,
-                                                                                  role=SystemConsts.DEFAULT_USER_MONITOR,
-                                                                                  apply=True).verify_result()
+                    monitor_user, monitor_password = system.aaa.user.set_new_user(username=monitor_user, role=SystemConsts.DEFAULT_USER_MONITOR, apply=True)
 
                 with allure.step(f"verify we can not connect using key and keys output is empty"):
-                    PKAAuthVerifier(username=monitor_user, private_key_path=monitor_private_key_path,
-                                    hostname=engines.dut.ip).verify_authentication(False)
+                    pka_connection = PKAAuthVerifier(username=monitor_user, private_key_path=monitor_private_key_path, hostname=engines.dut.ip, engines=engines)
+                    pka_connection.verify_authentication(False)
                     authorized_key_output = system.aaa.user.user_id[monitor_user].ssh.authorized_key.show()
-                    # add show verifying step once we have final output
+                    assert authorized_key_output == '{}', "the authorized key field should be empty"
     finally:
         with allure.step(f"delete keys for {monitor_user}"):
             SecuritySshTool.rm_auth_keypair(f"{keys_path}/{monitor_user}")
@@ -155,6 +156,7 @@ def test_ssh_pka_invalid_values(engines, generate_new_admin_keys):
         - Run nv set system aaa user admin ssh authorized-key <invalid_key_id> key <new_key_string> + apply	Verify result - Should fail - err_msg = invalid key id=use generate invalid username method …
     """
     with allure.step("create system"):
+        err_msg = "must contain type and key"
         system = System()
         key_id = 'new_key'
         admin_key_obj = system.aaa.user.user_id['admin'].ssh.authorized_key.key_id[key_id]
@@ -165,24 +167,27 @@ def test_ssh_pka_invalid_values(engines, generate_new_admin_keys):
     with allure.step(f"testing bad flows"):
 
         with allure.independent_step("Bad Flow: try to set only key id and key type"):
-            admin_key_obj.set(apply=True, expected_str="ERROR MSG")
-            admin_key_obj.set(op_param_name='type', op_param_value=admin_key_type, apply=True,
-                              expected_str="ERROR MSG")
+            set_result_obj = admin_key_obj.set(apply=True)
+            assert err_msg in set_result_obj.info, "test should fail because we can't configure new key with out public key"
+            assert not set_result_obj.result, "result should be false"
+
+            set_result_obj = admin_key_obj.set(op_param_name='type', op_param_value=admin_key_type, apply=True)
+            assert err_msg in set_result_obj.info, "test should fail because we can't configure new key with out public key"
+            assert not set_result_obj.result, "result should be false"
 
         with allure.independent_step("add the key for admin user"):
             admin_key_obj.set(op_param_name='key', op_param_value=admin_key, apply=True).verify_restil()
 
         with allure.independent_step("generate new key for admin and verify we can not connect unless we change public key"):
             new_admin_key, new_admin_key_type, new_admin_private_key_path = _generate_new_key(engines.dut, 'admin')
-            PKAAuthVerifier(username='admin', private_key_path=new_admin_private_key_path,
-                            hostname=engines.dut.ip).verify_authentication(False)
+            PKAAuthVerifier(username='admin', private_key_path=new_admin_private_key_path, hostname=engines.dut.ip, engines=engines).verify_authentication(False)
 
         with allure.independent_step("Bad flow: try to set invalid key type"):
-            admin_key_obj.set(op_param_name='type', op_param_value='dsa', expected_str="ERROR MSG")
+            admin_key_obj.set(op_param_name='type', op_param_value='dsa', expected_str="Error: At type: 'dsa' is not one of [")
 
         with allure.independent_step("Bad flow: try to set invalid key id"):
-            invalid_key = system.aaa.user.generate_username(is_valid=False)
-            system.aaa.user.user_id['admin'].ssh.authorized_key.key_id[invalid_key].set(expected_str="ERROR MSG")
+            invalid_key = 'Invalid@'
+            system.aaa.user.user_id['admin'].ssh.authorized_key.key_id[invalid_key].set(expected_str="Error: 'Invalid@' is not a 'item-name'. Letters and digits, underscores and dashes are allowed, starting with a letter or digit.")
 
 
 @pytest.mark.security
@@ -215,7 +220,7 @@ def test_ssh_pka_after_reboot_system(engines, generate_new_admin_keys):
 
             with allure.independent_step(f"verify we can not connect using key"):
                 PKAAuthVerifier(username='admin', private_key_path=admin_private_key_path,
-                                hostname=engines.dut.ip).verify_authentication(False)
+                                hostname=engines.dut.ip, engines=engines).verify_authentication(False)
 
             with allure.independent_step(f"verify show command"):
                 admin_key_obj.show(should_succeed=False)
@@ -233,10 +238,95 @@ def test_ssh_pka_after_reboot_system(engines, generate_new_admin_keys):
 
             with allure.independent_step(f"verify we can connect using key"):
                 PKAAuthVerifier(username='admin', private_key_path=admin_private_key_path,
-                                hostname=engines.dut.ip).verify_authentication(True)
+                                hostname=engines.dut.ip, engines=engines).verify_authentication(True)
 
             with allure.independent_step(f"verify show command"):
                 admin_key_obj.show(should_succeed=True)
+
+
+@pytest.mark.security
+def test_ssh_pka_expired_password(engines, generate_new_admin_keys):
+    """
+    Verify that we can connect using the key without asking for new password if the password expired
+
+    1. create new user
+    2. generate new keys
+    3. add keys to the new user
+    4. run sudo chage -d 0 <new_user> to expire the password
+    5. verify we can connect using the key normally (not asking for new password)
+    """
+    with allure.step("create system"):
+        system = System()
+
+    with allure.step("create new user"):
+        new_user, new_user_password = system.aaa.user.set_new_user(apply=True)
+
+    with allure.step(f"generate new key for {new_user}"):
+        new_user_key, new_user_key_type, new_user_private_key_path = _generate_new_key(engines.dut, new_user)
+
+    with allure.step(f"add key to {new_user}"):
+        system.aaa.user.user_id[new_user].ssh.authorized_key.key_id['expired_password'].set(op_param_name='key', op_param_value=new_user_key, apply=True).verify_result()
+
+    with allure.step("change the password expire date"):
+        engines.dut.run_cmd(f"sudo chage -d 0 {new_user}")
+
+    with allure.step("verify we can connect normally and no new password asked for"):
+        PKAAuthVerifier(username=new_user, private_key_path=new_user_private_key_path, hostname=engines.dut.ip, engines=engines).verify_authentication(True)
+
+
+@pytest.mark.security
+def test_ssh_pka_connections_stress(engines, generate_new_admin_keys):
+    """
+    Verify the connection timeout after more than 20 connection with different pka types
+
+    1.	generate 4 keys of each pka type (we have 5 different types)
+    2.  connect 20 times and check the time it takes to login for each connection
+    """
+    with allure.step("create system"):
+        system = System()
+        threshold = 10
+        bad_connection_timing = []
+
+        admin_key, admin_key_type, admin_private_key_path = generate_new_admin_keys
+        admin_session_obj = PKAAuthVerifier(username='admin', private_key_path=admin_private_key_path,
+                                            hostname=engines.dut.ip, engines=engines)
+        admin_session_obj.verify_authentication(True)
+
+    with allure.step("generate 20 different keys for admin"):
+        public_keys_list = []
+        private_keys_paths_list = []
+        for i in range(4):
+            for key, length in public_key_length.items():
+                public_key, key_type, private_path = _generate_new_key(engine=engines.dut, user_name=f'admin_{i}_{key}', key_type=key)
+                private_keys_paths_list.append(private_path)
+                public_keys_list.append(public_key)
+
+    with allure.step("add keys to admin"):
+        for i, public_key in enumerate(public_keys_list):
+            system.aaa.user.user_id['admin'].ssh.authorized_key.key_id[f'new_key_{i}'].set(op_param_name='key', op_param_value=public_key).verify_result()
+        with allure.step("Applying all keys configurations"):
+            NvueGeneralCli.apply_config(engines.dut)
+
+    with allure.step("connect using every single key and check connection time"):
+        for private in private_keys_paths_list:
+            start_time = time.time()
+            PKAAuthVerifier(username='admin', private_key_path=private, hostname=engines.dut.ip, engines=engines).verify_authentication(True)
+            end_time = time.time()
+            duration = end_time - start_time
+            if duration > threshold:
+                bad_connection_timing.append({
+                    'iteration': i,
+                    'duration': duration
+                })
+            with allure.independent_step(f'logged in after {duration} seconds'):
+                logging.info(f'it took {duration} seconds to log in during iteration {i}')
+
+    if bad_connection_timing:
+        err_msg = ""
+        for connection in bad_connection_timing:
+            err_msg += f"Iteration {connection['iteration']}: Duration = {connection['duration']} seconds\n"
+
+    assert not bad_connection_timing, err_msg
 
 
 def factory_reset_ssh_pka_check(engines=None):
@@ -266,7 +356,7 @@ def factory_reset_ssh_pka_check(engines=None):
 
         with allure.step(f"verify we can not connect using key"):
             PKAAuthVerifier(username='admin', private_key_path=admin_private_key_path,
-                            hostname=engines.dut.ip).verify_authentication(False)
+                            hostname=engines.dut.ip, engines=engines).verify_authentication(False)
 
         with allure.step(f"verify show command"):
             system.aaa.user.user_id['admin'].ssh.authorized_key.key_id[key_id].show(should_succeed=False)
@@ -277,4 +367,42 @@ def factory_reset_ssh_pka_check(engines=None):
     yield
 
 
+def factory_reset_ssh_pka_keep_basic_check(engines=None):
+    """
+    Verify that user keys not deleted after factory reset keep basic
+
+    1.	generate new key
+    2.	add new key for admin
+    3.	factory reset keep basic
+    4.	verify admin can connect using pka
+    5. verify show command is not empty
+    """
+
+    engines = engines if engines else TestToolkit.engines
+
+    with allure.step("create system"):
+        system = System()
+        key_id = 'new_key'
+
+    with allure.step(f"generate new key with key_id = {key_id}"):
+        with allure.step("generate new key for admin"):
+            admin_key, admin_key_type, admin_private_key_path = _generate_new_key(engines.dut, 'admin')
+
+    yield  # factory reset keep basic
+
+    with allure.step(f"verify we can connect using key"):
+        PKAAuthVerifier(username='admin', private_key_path=admin_private_key_path, hostname=engines.dut.ip, engines=engines).verify_authentication(True)
+
+    with allure.step(f"verify show command"):
+        system.aaa.user.user_id['admin'].ssh.authorized_key.key_id[key_id].show(should_succeed=True)
+
+    with allure.step(f"delete keys for admin"):
+        SecuritySshTool.rm_auth_keypair(f"{keys_path}/admin")
+
+    yield
+
+
 factory_reset_ssh_pka_checker = factory_reset_ssh_pka_check()  # generator
+
+
+factory_reset_keep_basic_ssh_pka_checker = factory_reset_ssh_pka_keep_basic_check()

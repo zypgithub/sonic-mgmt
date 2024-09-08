@@ -191,7 +191,7 @@ class PKAAuthVerifier(AuthVerifier):
         self.hostname = hostname
 
     def _authenticate(self, expect_success):
-        with allure.step('For SSH - run empty command on engine to trigger authentication'):
+        with allure.step(f'SSH PKA authentication - {expect_success}'):
             logging.info(f'Create PKA engine for user: {self.username}')
             ssh_pka_connection_cmd = f'ssh -i {self.private_key_path} {self.username}@{self.hostname}'
             self.engine = PexpectTool(spawn_cmd=ssh_pka_connection_cmd)
@@ -199,11 +199,14 @@ class PKAAuthVerifier(AuthVerifier):
             self.engine.expect('.*')
 
     def verify_authorization(self, user_is_admin):
-        expected_msg = "" if user_is_admin else "Error: No permission to execute this command"
+        expected_msg = '.*' if user_is_admin else "Error: No permission to execute this command"
         try:
             with allure.step(f'Run show command. Expect success: True'):
+                ssh_pka_connection_cmd = f'ssh -i {self.private_key_path} {self.username}@{self.hostname}'
+                self.engine = PexpectTool(spawn_cmd=ssh_pka_connection_cmd)
+                self.engine.expect(DefaultConnectionValues.DEFAULT_PROMPTS, error_message='Expected login success, but failed')
                 self.engine.sendline('nv show system')
-                self.engine.expect('?')
+                self.engine.expect(f'{self.username}@.*~')
             with allure.step(f'Run set command. Expect success: {user_is_admin}'):
                 self.engine.sendline('nv set system message pre-login NVOS TESTS')
                 self.engine.expect(expected_msg)
