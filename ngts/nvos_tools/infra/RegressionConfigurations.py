@@ -15,8 +15,8 @@ logger = logging.getLogger()
 class Configurations:
     ndr_ports = {"10.7.148.94": ['swA1p1', 'swA2p1'],
                  "10.7.148.95": ['swA1p1', 'swA2p1'],
-                 "10.7.145.61": ['swA1p1', 'swB5p1'],
-                 "10.7.145.62": ['swA1p1', 'swB5p1'],
+                 "10.7.145.61": ['swA1p1', 'swA14p1'],
+                 "10.7.145.62": ['swA1p1', 'swA14p1'],
                  "10.7.148.80": ['swB7p1', 'swB7p2', 'swB8p1', 'swB8p2'],
                  "10.7.148.81": ['swB7p1', 'swB7p2', 'swB8p1', 'swB8p2'],
                  "10.7.148.88": ['swA1p1', 'swA2p1'],
@@ -25,8 +25,8 @@ class Configurations:
                  "10.7.148.113": ['sw16p1', 'sw16p2', 'sw38p1', 'sw38p2'],
                  }
 
-    xdr_ports = {"10.7.145.61": ['swA8p1', 'swB2p1', 'swB8p1'],
-                 "10.7.145.62": ['swA8p1', 'swB2p1', 'swB8p1'],
+    xdr_ports = {"10.7.145.61": ['swA8p1', 'swB10p1', 'swB2p1', 'swB8p1'],
+                 "10.7.145.62": ['swA8p1', 'swB10p1', 'swB2p1', 'swB8p1'],
                  "10.7.148.112": ['sw38p1', 'sw53p1'],
                  "10.7.148.113": ['sw38p1', 'sw53p1'],
                  }
