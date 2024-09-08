@@ -69,7 +69,10 @@ class Port(BaseComponent):
         self.acl = Acl(self)
 
     def __str__(self):
-        return f"<{self.__class__.__name__} {self.name}>"
+        return f"{self.__class__.__name__}('{self.name}')"
+
+    def __repr__(self):
+        return str(self)
 
     @staticmethod
     def get_list_of_active_ports(port_type=IbInterfaceConsts.IB_PORT_TYPE):

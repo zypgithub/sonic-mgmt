@@ -120,8 +120,9 @@ class RandomizationTool:
         return RandomizationTool.select_random_values(list_of_ports, None, number_of_values_to_select)
 
     @staticmethod
-    def get_random_traffic_port(engine: Optional[ProxySshEngine] = None, data_rate="ndr") -> ResultObj:
+    def get_random_traffic_port(engine: Optional[ProxySshEngine] = None, data_rate=None) -> ResultObj:
         engine = engine or TestToolkit.engines.dut
+        data_rate = data_rate or TestToolkit.devices.dut.supported_ib_speeds[-1]
         str_list_of_ports = Configurations.ports_by_rate[data_rate].get(engine.ip)
         list_of_ports = []
         if str_list_of_ports:
