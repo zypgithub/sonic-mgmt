@@ -607,7 +607,7 @@ class ConfigConsts:
 class PlatformConsts:
     PLATFORM_FW = "firmware"
     FW_PATH = "/auto/sw_system_project/MLNX_OS_INFRA/mlnx_os2/sx_mlnx_fw/"
-    XDR_FW_PATH = "/auto/mswg/release/sx_mlnx_fw/QTM3/rel-35_2014_0974/dev/"
+    XDR_FW_PATH = "/auto/mswg/release/sx_mlnx_fw/QTM3/rel-35_2014_1452/dev/"
     PLATFORM_ENVIRONMENT = "environment"
     PLATFORM_HW = "hardware"
     PLATFORM_SW = "software"
@@ -785,7 +785,7 @@ class ImageConsts:
     SWID = 'swid'
     FW_ASIC = 'ASIC'
     FW_STABLE_VERSION = 'rel-31_2010_4100-004-EVB.mfa'
-    XDR_FW_STABLE_VERSION = 'rel-35_2014_0974.mfa'
+    XDR_FW_STABLE_VERSION = 'rel-35_2014_1452.mfa'
     SCP_PATH = 'scp://{}:{}@{}'.format(NvosConst.ROOT_USER, NvosConst.ROOT_PASSWORD,
                                        'fit70')
     SCP_PATH_SERVER = 'scp://{username}:{password}@{ip}{path}'
