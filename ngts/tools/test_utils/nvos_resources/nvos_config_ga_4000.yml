@@ -55,6 +55,8 @@
           mon:
             password: $y$j9T$CuAnwwjJMXYIBFVuJ7KN51$nPz./46jyFVBzuySd02vaS/DriCgfiC2PrdCKLKH.o2
             role: monitor
+          admin:
+            password: $y$j9T$Uay927sQ.WFouaJb1uHpd/$Vn58Jt3rx4TElcI7KUYbtA/qQtK/qKM2qWy9J9wanF3
       message:
         post-login: yoavpost
         pre-login: yoavpre123
