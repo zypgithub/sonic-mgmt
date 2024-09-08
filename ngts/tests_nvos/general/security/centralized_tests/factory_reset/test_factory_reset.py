@@ -12,16 +12,6 @@ from ngts.tests_nvos.system.factory_reset.helpers import get_current_time
 from ngts.tests_nvos.system.test_system_factory_reset import execute_reset_factory
 from ngts.tools.test_utils import allure_utils as allure
 
-
-def do_factory_reset(devices, engines, system, flag):
-    with allure.step('get current time'):
-        current_time = get_current_time(engines)
-    with allure.step('do factory reset'):
-        execute_reset_factory(engines, system, devices.dut.reset_factory, flag, current_time)
-    with allure.step('update timezone'):
-        update_timezone(system)
-
-
 # generators to feature checkers
 
 NO_PARAMS_CHECKERS: Dict[str, Generator[None, None, None]] = {
@@ -79,3 +69,12 @@ def test_reset_factory(factory_reset_type, engines, devices, topology_obj, platf
 
     finally:
         pass
+
+
+def do_factory_reset(devices, engines, system, flag):
+    with allure.step('get current time'):
+        current_time = get_current_time(engines)
+    with allure.step('do factory reset'):
+        execute_reset_factory(engines, system, devices.dut.reset_factory, flag, current_time)
+    with allure.step('update timezone'):
+        update_timezone(system)

@@ -353,3 +353,41 @@ def api_mtls_factory_reset_keep_all_config_check():
     cleanup_steps()
 
     yield  # to prevent StopIteration on the 2nd next() call
+
+
+def api_mtls_upgrade_check():
+    """
+    Verify that ca/certificates kept after upgrade
+
+    1. bind cert & cacert
+    2. save
+    3. Upgrade
+    4. Verify updated values in show kept
+    5. Verify mtls connection
+    """
+    setup_steps()
+
+    dut: LinuxSshEngine = TestToolkit.engines.dut
+    system = System()
+    server_cert: CertInfo = random.choice(TEST_CERTS)
+    server_ca: CertInfo = RandomizationTool.select_random_value(TEST_CERTS, [server_cert]).get_returned_value()
+
+    with allure.step(f'set some cert: {server_cert.name}'):
+        system.api.set(CERTIFICATE, server_cert.name).verify_result()
+    with allure.step(f'set ca: {server_ca.cacert_name}'):
+        system.api.mtls.set(CA_CERTIFICATE, server_ca.cacert_name, apply=True).verify_result()
+    with allure.step('save config'):
+        NvueGeneralCli.save_config(dut)
+
+    yield  # upgrade
+
+    with allure.step('verify mtls after this factory reset'):
+        with allure.independent_step('verify mtls is configured in show'):
+            verify_api_ca_configuration(server_ca.cacert_name)
+        with allure.independent_step('verify mtls only connection'):
+            verify_api_connection(TestFlowType.ALL_TYPES, dut, UserInfo(dut.username, dut.password, 'admin'), True,
+                                  server_cert, server_ca)
+
+    cleanup_steps()
+
+    yield  # to prevent StopIteration on the 2nd next() call
