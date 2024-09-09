@@ -645,6 +645,13 @@ drop_packets/test_wjh.py::test_dst_ip_link_local:
     conditions:
       - "'Mellanox' in hwsku"
 
+drop_packets/test_wjh.py::test_l1_agg_fanout_port_down:
+  skip:
+    reason: "https://redmine.mellanox.com/issues/4048046"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4048046"
+      - "'leopard' in testbed or 'moose' in testbed or 'bobcat' in testbed"
+
 platform_tests/fwutil/test_fwutil.py:
   skip:
     reason: "Testcase ignored due to branch 202106"
