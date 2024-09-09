@@ -21,7 +21,7 @@ TELEMETRY_SERVICES = ['nmx-connector', 'ib-telemetry']
 CONTROLLER_SERVICES = ['nmxc-sdn', 'nmxc-fib', 'redis']
 INITIAL_EXPECTED_APPS = [NMX_CONTROLLER, NMX_TELEMETRY]
 NMX_CONTROLLER_CONFIG_FILE_TYPES = ['fm_config', 'sm_config', 'rdm_config', 'chassis_mapping']
-NMX_CONTROLLER_STATE_FILE_TYPES = ['conn_info', 'sm_dump', 'topology']
+NMX_CONTROLLER_STATE_FILE_TYPES = ['sm_dump', 'topology']
 ClusterAppsLogLevelsList = [ClusterAppsLogLevels.DEBUG, ClusterAppsLogLevels.INFO, ClusterAppsLogLevels.NOTICE, ClusterAppsLogLevels.WARNING, ClusterAppsLogLevels.ERROR, ClusterAppsLogLevels.CRITICAL]
 NMX_LOG_MESSAGES_TAGS = ['nmxc-sm', 'nmxc-fm', 'nmxc-fib', 'nmxc-gw_api', 'nmxc-rest', 'nmxc-config_daemon']
 WAIT_FOR_APPS_RUNNING = 15
@@ -110,7 +110,7 @@ class ClusterTools:
             ClusterTools.start_cluster(cluster, output_format)
 
     @staticmethod
-    def stop_cluster(cluster, output_format):
+    def stop_cluster(cluster, output_format=OutputFormat.json):
         with allure.step("Stop cluster"):
             output = OutputParsingTool.parse_show_output_to_dict(
                 cluster.show(output_format=output_format),
@@ -289,8 +289,11 @@ class ClusterTools:
             assert output['log-level'] == log_level, f"Expected log level: {log_level}, Actual log-level {output['log-level']}"
 
     @staticmethod
-    def verify_log_messages_log_level(log_level, system, test_api):
+    def verify_log_messages_log_level(log_level, system, test_api, cluster):
+        ClusterTools().stop_cluster(cluster)
+        ClusterTools().start_cluster(cluster)
         TestToolkit.tested_api = 'NVUE'
+        lines_checked = 0
         # Get the index of the current log level
         current_level_index = ClusterAppsLogLevelsList.index(log_level)
 
@@ -300,9 +303,13 @@ class ClusterTools:
         # Convert expected log levels to uppercase
         expected_log_levels_upper = [level.upper() for level in expected_log_levels]
 
-        show_output = system.log.show_log(param=f"| grep -E \"{'|'.join(NMX_LOG_MESSAGES_TAGS)}\"", exit_cmd='q').split('\n')[1:]
+        show_output = system.log.show_log(param=f"| grep -E \"{'|'.join(NMX_LOG_MESSAGES_TAGS)}\"").split('\n')[1:]
         for line in show_output:
-            assert any(level in line for level in expected_log_levels_upper), f"Line in logs is {line}, which does not contain any of the expected log levels {expected_log_levels_upper}"
+            if ":~$" in line:  # Symbolizes start of prompt line, no need to check.
+                continue
+            lines_checked = lines_checked + 1
+            assert any(level in line for level in expected_log_levels_upper), f"Line in logs is {repr(line)}, which does not contain any of the expected log levels {expected_log_levels_upper}"
+        assert lines_checked > 0, "No lines were checked. No log message related to nmx "
 
         TestToolkit.tested_api = test_api
 
