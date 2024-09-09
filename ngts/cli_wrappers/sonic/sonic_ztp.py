@@ -1,4 +1,5 @@
 import logging
+from retry.api import retry_call
 
 logger = logging.getLogger()
 
@@ -49,4 +50,12 @@ class SonicZtpCliDefault:
         This method disable ZTP on the sonic switch
         :return: command output
         """
-        return self.engine.run_cmd('sudo config ztp disable -y')
+        res = self.engine.run_cmd('sudo config ztp disable -y')
+
+        # await for ztp status to be changed
+        retry_call(
+            lambda: 'inactive' in self.engine.run_cmd('systemctl is-active ztp'),
+            tries=5, delay=30, logger=logger
+        )
+
+        return res
