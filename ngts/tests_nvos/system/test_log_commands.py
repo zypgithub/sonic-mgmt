@@ -76,11 +76,7 @@ def test_show_log_continues(engines):
 
     with allure.step("Run nv show system log command --view follow to view system logs"):
         logging.info("Run nv show system log command --view follow to view system logs")
-        show_output = system.log.show_log(param='--view follow', exit_cmd='\x03')
-
-    with allure.step('Verify updated “system/image” in the logs as expected'):
-        logging.info('Verify updated “system/image” in the logs as expected')
-        ValidationTool.verify_expected_output(show_output, 'system/image').verify_result()
+        system.log.show_log(param='--view follow', expected_str='system/image', exit_cmd='\x03')
 
 
 @pytest.mark.system
@@ -181,11 +177,7 @@ def test_show_debug_log_continues(engines):
 
     with allure.step("Run nv show system log command --view follow to view system logs"):
         logging.info("Run nv show system log command --view follow to view system logs")
-        show_output = system.debug_log.show_log(log_type='debug-', param='--view follow', exit_cmd='\x03')
-
-    with allure.step('Verify updated “debug_log” in the logs as expected'):
-        logging.info('Verify updated “debug_log” in the logs as expected')
-        ValidationTool.verify_expected_output(show_output, 'debug_log').verify_result()
+        system.debug_log.show_log(log_type='debug-', expected_str='debug_log', param='--view follow', exit_cmd='\x03')
 
 
 @pytest.mark.system

@@ -675,7 +675,7 @@ class PlatformConsts:
     LEAK_STATUS_LEAK = '0'
     LEAK_STATUS_OK = '1'
     LEAKAGE_FILES_FOLDER = '/var/run/hw-management/system/'
-    LEAKAGE_FILES_SYSFS_FOLDER = '/sys/devices/platform/mlxplat/mlxreg-io/hwmon/hwmon3/'
+    LEAKAGE_FILES_SYSFS_FOLDER = '/sys/devices/platform/mlxplat/mlxreg-io/hwmon/'
     LEAKAGE_DEFAULT_OUTPUT_FIELDS = [LEAKAGE1, LEAKAGE2, LEAKAGE3, LEAKAGE4, LEAKAGE5, LEAKAGE6]
     LEAKAGE_DEFAULT_OUTPUT_VALUES = [{'state': 'ok'}]
     LEAKAGE_ALL_SENSOR_NOT_OK = [{'state': 'leak'}]
