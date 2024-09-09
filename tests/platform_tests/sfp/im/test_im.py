@@ -1,12 +1,11 @@
 import pytest
 import logging
-import random
 
 from tests.platform_tests.sfp.im.helpers import *
-from tests.common.config_reload import config_reload
 from tests.platform_tests.sfp.util import get_sfp_type, get_dev_conn, read_eeprom_by_page_and_byte,\
     write_eeprom_by_page_and_byte, DICT_WRITABLE_BYTE_FOR_PAGE_0
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
+from tests.common.platform.transceiver_utils import get_passive_cable_port_list
 
 cmd_interface_transceiver = "show interface transceiver eeprom"
 cmd_sfputil_eeprom = "sudo sfputil show eeprom"
@@ -103,6 +102,8 @@ class TestIndependentModuleFunctional:
 
         portmap, dev_conn = get_dev_conn(self.duthost, conn_graph_facts, enum_frontend_asic_index)
         sfp_type_im_port_dict = {}
+        with allure.step("get passive port list"):
+            passive_cable_port_list = get_passive_cable_port_list(self.duthost)
 
         with allure.step(f"Get sfp type by reading the first byte of 0 page in eeprom"):
             for intf in dev_conn:
@@ -115,30 +116,35 @@ class TestIndependentModuleFunctional:
         original_port_to_eeprom_dict = {}
         try:
             with allure.step(f"Verify Writing eeprom for {self.im_port_list}"):
+                sfp_type_not_support_write_on_passive_cable = ["cmis"]
                 for intf in self.im_port_list:
                     page = 0
                     offset = DICT_WRITABLE_BYTE_FOR_PAGE_0[sfp_type_im_port_dict[intf]]
                     data = "15"
+                    sfp_type = sfp_type_im_port_dict[intf]
 
                     original_eeprom = read_eeprom_by_page_and_byte(self.duthost, intf, sfp_type, page, offset)
                     original_port_to_eeprom_dict.update({intf: [offset, original_eeprom]})
 
-                    with allure.step(f"Verify writing writable byte {offset} for port {intf} with data {data} "):
+                    if intf in passive_cable_port_list and sfp_type in sfp_type_not_support_write_on_passive_cable:
+                        logger.info(f"Skip test write function for cmis passive cable port :{intf}")
+                    else:
+                        with allure.step(f"Verify writing writable byte {offset} for port {intf} with data {data} "):
 
-                        output_write_eeprom = write_eeprom_by_page_and_byte(
-                            self.duthost, intf, sfp_type, data, page, offset)
-                        assert not output_write_eeprom, \
-                            f"Failed to write eeprom for {intf}. output is: {output_write_eeprom}"
+                            output_write_eeprom = write_eeprom_by_page_and_byte(
+                                self.duthost, intf, sfp_type, data, page, offset)
+                            assert not output_write_eeprom, \
+                                f"Failed to write eeprom for {intf}. output is: {output_write_eeprom}"
 
-                        output_write_eeprom = write_eeprom_by_page_and_byte(
-                            self.duthost, intf, sfp_type, data, page, offset, is_verify=True)
-                        assert not output_write_eeprom, \
-                            f"Failed to write eeprom for {intf} with verify option. output is {output_write_eeprom}"
+                            output_write_eeprom = write_eeprom_by_page_and_byte(
+                                self.duthost, intf, sfp_type, data, page, offset, is_verify=True)
+                            assert not output_write_eeprom, \
+                                f"Failed to write eeprom for {intf} with verify option. output is {output_write_eeprom}"
 
-                        output_read_eeprom = read_eeprom_by_page_and_byte(self.duthost, intf, sfp_type, page, offset)
+                            output_read_eeprom = read_eeprom_by_page_and_byte(self.duthost, intf, sfp_type, page, offset)
 
-                        assert output_read_eeprom == data, \
-                            "write data {data} doesn't match the read data {output_read_eeprom}"
+                            assert output_read_eeprom == data, \
+                                "write data {data} doesn't match the read data {output_read_eeprom}"
 
                     read_only_byte = 20
                     with allure.step(
@@ -154,6 +160,10 @@ class TestIndependentModuleFunctional:
             raise AssertionError(err)
         finally:
             for intf, offset_data_info in original_port_to_eeprom_dict.items():
+                sfp_type = sfp_type_im_port_dict[intf]
+                if intf in passive_cable_port_list and sfp_type in ["cmis"]:
+                    logger.info(f"Skip recover eeprom for {intf} due to it is cmis passive port")
+                    continue
                 with allure.step(f"Recover original eeprom for {intf} with {offset_data_info}"):
                     write_eeprom_by_page_and_byte(
                         self.duthost, intf, sfp_type, offset_data_info[1], page, offset_data_info[0])

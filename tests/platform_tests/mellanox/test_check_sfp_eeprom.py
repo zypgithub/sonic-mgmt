@@ -2,8 +2,9 @@ import pytest
 import allure
 
 from tests.common.fixtures.conn_graph_facts import conn_graph_facts  # noqa F401
-from .util import parse_sfp_eeprom_infos, check_sfp_eeprom_info, is_support_dom, get_pci_cr0_path, get_pciconf0_path
+from .util import check_sfp_eeprom_info, is_support_dom, get_pci_cr0_path, get_pciconf0_path
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from tests.common.platform.transceiver_utils import parse_sfp_eeprom_infos
 
 pytestmark = [
     pytest.mark.asic('mellanox', 'nvidia-bluefield'),
