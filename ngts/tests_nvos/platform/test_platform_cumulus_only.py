@@ -291,63 +291,140 @@ def test_platform_fan_speed_change(engines, devices, test_api, output_format):
         engines.dut.run_cmd(f'sudo bash -c "echo {fake_temperature} > /var/run/hw-management/thermal/port_amb_fake_temp"')
         engines.dut.run_cmd(f'sudo bash -c "echo {fake_temperature} > /var/run/hw-management/thermal/fan_amb_fake_temp"')
         engines.dut.run_cmd('sudo unlink /var/run/hw-management/thermal/fan_amb')
-        engines.dut.run_cmd('sudo ln -s /var/run/hw-management/thermal/fan_amb_fake_temp /var/run/hw-management/thermal/fan_amb')
         engines.dut.run_cmd('sudo unlink /var/run/hw-management/thermal/port_amb')
+        engines.dut.run_cmd('sudo ln -s /var/run/hw-management/thermal/fan_amb_fake_temp /var/run/hw-management/thermal/fan_amb')
         engines.dut.run_cmd('sudo ln -s /var/run/hw-management/thermal/port_amb_fake_temp /var/run/hw-management/thermal/port_amb')
 
     with allure.step("Check Fan Speed Increased"):
-        elapsed = 0
+        max_wait_time = 60  # seconds
+        sleep_interval = 2  # seconds
+        start_time = time.time()
         for fan in devices.dut.fan_list:
-            while elapsed < 60:
+            passed = False
+            target_speed = int(fan_db[fan]['speed'] + fan_db[fan]['variance'])
+
+            while time.time() - start_time < max_wait_time:
                 fan_output = OutputParsingTool.parse_show_output_to_dict(
                     platform.environment.fan.show(fan, output_format=output_format),
-                    output_format=output_format).get_returned_value()
-                new_speed = int(fan_output['current-speed'])
-                if fan_db[fan]['speed'] + fan_db[fan]['variance'] > new_speed:
-                    passed = False
-                    log.info(f'{fan} original speed = {fan_db[fan]["speed"]}, speed: {new_speed}. The difference is {new_speed - fan_db[fan]["speed"]}')
-                else:
-                    log.info(f"{fan} fan speed is greater than 10 percent of its original value. New speed is {new_speed}, the old speed was {fan_db[fan]['speed']}")
+                    output_format=output_format
+                ).get_returned_value()
+
+                current_speed = int(fan_output['current-speed'])
+                if current_speed > target_speed:
+                    log.info(f"{fan} fan speed has increased. New speed is {current_speed}, the original speed was {fan_db[fan]['speed']}")
                     passed = True
                     break
-                elapsed = elapsed + 1
-                time.sleep(2)
+
+                time.sleep(sleep_interval)
 
             if not passed:
+                # Set fake temperature back to real temperature
                 engines.dut.run_cmd('sudo unlink /var/run/hw-management/thermal/fan_amb')
                 engines.dut.run_cmd('sudo unlink /var/run/hw-management/thermal/port_amb')
                 engines.dut.run_cmd(f'sudo ln -s {fan_amb} /var/run/hw-management/thermal/fan_amb')
                 engines.dut.run_cmd(f'sudo ln -s {port_amb} /var/run/hw-management/thermal/port_amb')
-                # engines.dut.run_cmd('sudo ln -s %s /var/run/hw-management/thermal/fan_amb' % fan_amb)
-                # engines.dut.run_cmd('sudo ln -s %s /var/run/hw-management/thermal/port_amb' % port_amb)
-                log.info(f"{fan} fan new speed is {new_speed}, the old speed was {fan_db[fan]['speed']}")
+                log.info(f"{fan} fan new speed is {current_speed}, the original speed was {fan_db[fan]['speed']} target speed was {target_speed}")
                 assert False, 'Fan speed did not increase after the temperature changed'
 
     with allure.step("Check Fan Speed Decreased"):
+        # Set fake temperature back to real temperature
         engines.dut.run_cmd('sudo unlink /var/run/hw-management/thermal/fan_amb')
         engines.dut.run_cmd('sudo unlink /var/run/hw-management/thermal/port_amb')
-        # engines.dut.run_cmd('sudo ln -s %s /var/run/hw-management/thermal/fan_amb' % fan_amb)
-        # engines.dut.run_cmd('sudo ln -s %s /var/run/hw-management/thermal/port_amb' % port_amb)
         engines.dut.run_cmd(f'sudo ln -s {fan_amb} /var/run/hw-management/thermal/fan_amb')
         engines.dut.run_cmd(f'sudo ln -s {port_amb} /var/run/hw-management/thermal/port_amb')
 
-        elapsed = 0
+        max_wait_time = 60  # seconds
+        sleep_interval = 2  # seconds
+        start_time = time.time()
         for fan in devices.dut.fan_list:
-            while elapsed < 60:
+            passed = False
+            target_speed = int(fan_db[fan]['speed'] + fan_db[fan]['variance'])
+
+            while time.time() - start_time < max_wait_time:
                 fan_output = OutputParsingTool.parse_show_output_to_dict(
                     platform.environment.fan.show(fan, output_format=output_format),
-                    output_format=output_format).get_returned_value()
-                new_speed = int(fan_output['current-speed'])
-                if fan_db[fan]['speed'] + fan_db[fan]['variance'] <= new_speed:
-                    passed = False
-                    log.info(f'{fan} original speed = {fan_db[fan]["speed"]}, speed: {new_speed}. The difference is {new_speed - fan_db[fan]["speed"]}')
-                else:
-                    log.info(f"{fan} fan speed is less than its original value + 10 percent. New speed is {new_speed}, the old speed was {fan_db[fan]['speed']}")
+                    output_format=output_format
+                ).get_returned_value()
+
+                current_speed = int(fan_output['current-speed'])
+                if current_speed <= target_speed:
+                    log.info(f"{fan} fan speed has decreased. New speed is {current_speed}, the original speed was {fan_db[fan]['speed']}")
                     passed = True
                     break
-                elapsed = elapsed + 1
-                time.sleep(2)
+
+                time.sleep(sleep_interval)
 
             if not passed:
-                log.info(f"{fan} fan new speed is {new_speed}, the old speed was {saved_db[fan]['speed']}")
+                log.info(f"{fan} fan new speed is {current_speed}, the original speed was {target_speed} target speed was {target_speed}")
                 assert False, 'Fan speed did not decrease after the temperature changed'
+
+
+@pytest.mark.cumulus_only
+@pytest.mark.cumulus
+@pytest.mark.parametrize('test_api', [ApiType.NVUE])
+def test_platform_fan_speed_restart_switchd(engines, devices, test_api, output_format):
+    """
+        Name: Fan Speed Restart Switchd
+        ===============================================
+        Description:
+
+        This test ensures that the fan speed goes back to target speed (original speed plus variance)
+        Steps:
+        ===============================================
+        1. Read current fan speed
+        2. Restart switchd.services
+        4. Poll fans and verify speed returns to target speed within 800 seconds
+
+    """
+
+    TestToolkit.tested_api = test_api
+
+    with allure.step("Create Platform object"):
+        platform = Platform()
+
+    with allure.step("Capture Original Fan Speed"):
+        fan_db = {}
+        raw_output = platform.environment.fan.show(output_format=output_format)
+        field_names = OutputParsingTool.parse_show_output_to_field_names(
+            raw_output, output_format=output_format, field_name_dict=devices.dut.fan_prop_auto).get_returned_value()
+        ValidationTool.validate_set_equal(field_names, devices.dut.platform_environment_fan_values.keys()
+                                          ).verify_result()
+        fan_dict = OutputParsingTool.parse_show_output_to_dict(
+            raw_output, output_format=output_format, field_name_dict=devices.dut.fan_prop_auto).get_returned_value()
+        actual_fan_list = fan_dict.keys()
+        ValidationTool.validate_set_equal(actual_fan_list, devices.dut.fan_list + devices.dut.psu_fan_list
+                                          ).verify_result()
+        for fan in devices.dut.fan_list:
+            fan_db[fan] = {}
+            fan_db[fan]['speed'] = int(fan_dict[fan]['current-speed'])
+            fan_db[fan]['variance'] = int(fan_dict[fan]['current-speed']) * .15
+            log.info(f'{fan}: Speed: {fan_db[fan]["speed"]} Variance: {fan_db[fan]["variance"]}')
+
+    with allure.step("Restart watchdog"):
+        engines.dut.run_cmd("sudo systemctl reset-failed switchd")
+        engines.dut.run_cmd("sudo systemctl restart switchd")
+
+    with allure.step("Check Fan Speeds Return to Normal"):
+        max_wait_time = 800  # seconds
+        sleep_interval = 5  # seconds
+        start_time = time.time()
+        for fan in devices.dut.fan_list:
+            passed = False
+            target_speed = int(fan_db[fan]['speed'] + fan_db[fan]['variance'])
+            while time.time() - start_time < max_wait_time:
+                fan_output = OutputParsingTool.parse_show_output_to_dict(
+                    platform.environment.fan.show(fan, output_format=output_format),
+                    output_format=output_format
+                ).get_returned_value()
+
+                current_speed = int(fan_output['current-speed'])
+                if current_speed <= target_speed:
+                    log.info(f'{fan} target speed = {target_speed}, current speed: {current_speed}. The difference is {current_speed - target_speed}')
+                    passed = True
+                    break
+
+                time.sleep(sleep_interval)
+
+            if not passed:
+                log.info(f'Fan speed {current_speed} is not within the original speed + variance: {target_speed}')
+                assert False, f'Fan speed did not return to normal for {fan} after switch restart'
