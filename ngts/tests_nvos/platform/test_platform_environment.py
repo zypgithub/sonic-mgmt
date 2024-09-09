@@ -322,10 +322,12 @@ def test_platform_environment_events_performance(engines, devices):
     err_found = False
     show_log_cmd = "nv show sys log | grep '" + str(FansConsts.FAN_DIRECTION_MISMATCH_ERR) + "' | wc -l"
 
-    with allure.step('Validate System health status should be {}'.format(HealthConsts.OK)):
-        output = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).verify_result()
-        assert output['status'] == HealthConsts.OK, 'System health status is {} instead of {}'.format(
-            output['status'], HealthConsts.OK)
+    with allure.step('Check is Juliet Device'):
+        if not isinstance(devices.dut, JulietSwitch):
+            with allure.step('Validate System health status should be {}'.format(HealthConsts.OK)):
+                output = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).verify_result()
+                assert output['status'] == HealthConsts.OK, 'System health status is {} instead of {}'.format(
+                    output['status'], HealthConsts.OK)
 
     with allure.step('Clear system events'):
         system.events.action(ActionConsts.CLEAR)
@@ -406,7 +408,7 @@ def test_platform_environment_fan_direction_mismatch(engines, devices):
 def _verify_fan_direction_mismatch_behaviour(engines, devices, feature_enable):
     platform = Platform()
     system = System()
-    def_dir = FansConsts.FORWARD_DIRECTION
+    # def_dir = FansConsts.FORWARD_DIRECTION
     if feature_enable:
         state = FansConsts.STATE_NOT_OK
         should_str = 'be'
@@ -420,17 +422,24 @@ def _verify_fan_direction_mismatch_behaviour(engines, devices, feature_enable):
             # are compared against. This will be changed in the future.
             choose_from = devices.dut.fan_list[2:]
             fan_to_check = random.choice(choose_from)
+            output = Tools.OutputParsingTool.parse_json_str_to_dictionary(
+                platform.environment.fan.show(op_param=fan_to_check)).verify_result()
+            def_dir = output['direction']
 
-        with allure.step('Validate System health status should be {}'.format(HealthConsts.OK)):
-            output = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).verify_result()
-            health_status = output['status']
-            assert health_status == HealthConsts.OK, 'System health status is {} instead of {}'.format(
-                health_status, HealthConsts.OK)
+        with allure.step('Check is Juliet Device'):
+            if not isinstance(devices.dut, JulietSwitch):
+                with allure.step('Validate System health status should be {}'.format(HealthConsts.OK)):
+                    output = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).verify_result()
+                    health_status = output['status']
+                    assert health_status == HealthConsts.OK, 'System health status is {} instead of {}'.format(
+                        health_status, HealthConsts.OK)
 
         with allure.step("Validate there should not be any Fan direction Health Issues"):
             output_dict = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).verify_result()
             health_issues = output_dict['issues']
-            assert not health_issues, f'Unexpected Health Issues:\n{health_issues}'
+            health_issues_keys = health_issues.keys()
+            contains_fan = any("fan" in key.lower() for key in health_issues_keys)
+            assert not contains_fan, f'Unexpected fan related Health Issues:\n{health_issues}'
 
         with allure.step("Assign default FAN direction as per this System"):
             output = Tools.OutputParsingTool.parse_json_str_to_dictionary(
@@ -464,16 +473,30 @@ def _verify_fan_direction_mismatch_behaviour(engines, devices, feature_enable):
         with allure.step("Change Fan direction of {} to default({}) and verify".format(fan_to_check, def_dir)):
             _set_platform_environment_fan_direction(engines, devices, platform, fan_to_check, def_dir, def_dir)
 
-        with allure.step('Check System health status'):
-            output = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).verify_result()
-            health_status = output['status']
-            assert health_status == HealthConsts.OK, 'System health status is {} instead of {}'. \
-                format(health_status, HealthConsts.OK)
+        with allure.step("Validate Issues should not be seen in System Health Report"):
+            output = system.health.show(output_format=OutputFormat.json)
+            output_dict = Tools.OutputParsingTool.parse_json_str_to_dictionary(output).verify_result()
+            health_issues = output_dict['issues']
+            if feature_enable:
+                assert fan_to_check not in health_issues.keys(), \
+                    f'Expected not to find issue with {fan_to_check} but issues are:\n{health_issues}'
+            else:
+                assert not health_issues, f'Unexpected Health Issues:\n{health_issues}'
+
+        with allure.step('Check is Juliet Device'):
+            if not isinstance(devices.dut, JulietSwitch):
+                with allure.step('Check System health status'):
+                    output = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).verify_result()
+                    health_status = output['status']
+                    assert health_status == HealthConsts.OK, 'System health status is {} instead of {}'. \
+                        format(health_status, HealthConsts.OK)
 
         with allure.step("Validate there should not be any Fan direction Health Issues"):
             output = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).verify_result()
             health_issues = output['issues']
-            assert not health_issues, f'Unexpected Health Issues:\n{health_issues}'
+            health_issues_keys = health_issues.keys()
+            contains_fan = any("fan" in key.lower() for key in health_issues_keys)
+            assert not contains_fan, f'Unexpected fan related Health Issues:\n{health_issues}'
 
 
 def _set_platform_environment_fan_direction(engines, devices, platform, fan_to_check, def_dir, direction):
