@@ -299,9 +299,10 @@ class ClusterTools:
 
         # Define the expected log levels based on the current log level
         expected_log_levels = ClusterAppsLogLevelsList[current_level_index:]
-
+        unexpected_log_levels = ClusterAppsLogLevelsList[0:current_level_index]
         # Convert expected log levels to uppercase
         expected_log_levels_upper = [level.upper() for level in expected_log_levels]
+        unexpected_log_levels = [level.upper() for level in unexpected_log_levels]
 
         show_output = system.log.show_log(param=f"| grep -E \"{'|'.join(NMX_LOG_MESSAGES_TAGS)}\"").split('\n')[1:]
         for line in show_output:
@@ -309,6 +310,7 @@ class ClusterTools:
                 continue
             lines_checked = lines_checked + 1
             assert any(level in line for level in expected_log_levels_upper), f"Line in logs is {repr(line)}, which does not contain any of the expected log levels {expected_log_levels_upper}"
+            assert all(level not in line for level in unexpected_log_levels), f"Line in logs is {repr(line)}, which does contains an unexpected log levels {unexpected_log_levels}"
         assert lines_checked > 0, "No lines were checked. No log message related to nmx "
 
         TestToolkit.tested_api = test_api
