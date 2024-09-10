@@ -16,7 +16,6 @@ server_ip = "10.237.22.60"
 
 
 class NvueGeneralCli(SonicGeneralCliDefault):
-
     """
     This class is for general cli commands for NVOS only
     Most of the methods are inherited from SonicGeneralCli
@@ -61,7 +60,8 @@ class NvueGeneralCli(SonicGeneralCliDefault):
         :return: True/False
         """
         image_supports = True
-        logger.info(f"dut: {dut_name} {'supports' if image_supports else 'does not support'} version: {base_version_url}")
+        logger.info(
+            f"dut: {dut_name} {'supports' if image_supports else 'does not support'} version: {base_version_url}")
         return image_supports
 
     def _verify_dockers_are_up(self, dockers_list):
@@ -124,7 +124,7 @@ class NvueGeneralCli(SonicGeneralCliDefault):
             found_pattern_index = self._onie_nos_install_image(serial_engine, image_url,
                                                                self.device.install_success_patterns +
                                                                [NvosConst.INSTALL_WGET_ERROR])
-            if found_pattern_index == len(self.device.install_success_patterns):    # wget error
+            if found_pattern_index == len(self.device.install_success_patterns):  # wget error
                 logger.info('Failed for wget error. wait and retry')
                 time.sleep(20)
                 wget_error = True
@@ -141,12 +141,13 @@ class NvueGeneralCli(SonicGeneralCliDefault):
 
         logger.info(f'*** Image {image_path} successfully installed ***')
 
-    def install_nos_using_onie_in_serial(self, nos_image: str, ssh_engine, topology_obj):
+    def install_nos_using_onie_in_serial(self, nos_image: str, ssh_engine, topology_obj,
+                                         serial_engine: PexpectSerialEngine = None):
         with allure.step("Get image path and url"):
             image_path, image_url = self._get_image_path_and_url(nos_image)
 
-        with allure.step('Create serial connection'):
-            serial_engine = self.enter_serial_connection_context(topology_obj)
+        with allure.step('Get serial connection'):
+            serial_engine = serial_engine or self.enter_serial_connection_context(topology_obj)
 
         with allure.step(f'Install image {image_url} using {NvosConst.ONIE_NOS_INSTALL_CMD}'):
             self._install_image_on_onie(serial_engine, ssh_engine, image_path, image_url)
@@ -172,19 +173,22 @@ class NvueGeneralCli(SonicGeneralCliDefault):
         self.deploy_onie(image_path, in_onie, fw_pkg_path, platform_params, topology_obj)
 
     def install_image_onie(self, engine, image_path, platform_params, topology_obj):
+        with allure.step('Create serial connection'):
+            serial_engine = self.enter_serial_connection_context(topology_obj)
         with allure.step('Install image onie - NVOS'):
             # SonicOnieCli(dut_ip, dut_ssh_port).install_image(image_path=image_path, platform_params=platform_params,
             #                                                  topology_obj=topology_obj)
-            self.install_nos_using_onie_in_serial(image_path, engine, topology_obj)
-
+            self.install_nos_using_onie_in_serial(image_path, engine, topology_obj, serial_engine)
         with allure.step("Complete installation"):
-            self._wait_nos_to_become_functional(engine, topology_obj)
+            self._wait_nos_to_become_functional(engine, topology_obj, serial_engine)
 
-    def _wait_nos_to_become_functional(self, engine, topology_obj=""):
+    def _wait_nos_to_become_functional(self, engine, topology_obj, serial_engine: PexpectSerialEngine = None):
         with allure.step('Ping switch until shutting down'):
             ping_till_alive(should_be_alive=False, destination_host=engine.ip)
         with allure.step('Ping switch until back alive'):
             ping_till_alive(should_be_alive=True, destination_host=engine.ip)
+        with allure.step('wait for System is ready in serial'):
+            DutUtilsTool.wait_for_system_ready_in_serial(topology_obj, serial_engine, self.device.system_is_ready_wait_timeout)
         with allure.step('Wait until switch is up'):
             engine.disconnect()  # force engines.dut to reconnect
             DutUtilsTool.wait_for_nvos_to_become_functional(engine=engine)
@@ -371,8 +375,6 @@ class NvueGeneralCli(SonicGeneralCliDefault):
             self.remote_reboot(topology_obj)
 
         with allure.step('wait for NVOS/ONIE grub menu'):
-            logger.info("Enter ONIE install mode")
-            logger.info("Wait for NVOS/ONIE grub menu")
             # Set timeout based on the active status of Redmine issue #4028150
             to = 360 if is_redmine_issue_active([4028150])[0] else 240
             onie_grub_menu_pattern = '\\*ONIE: Install OS'
@@ -386,7 +388,8 @@ class NvueGeneralCli(SonicGeneralCliDefault):
                     with allure.step('hit Enter till no error message'):
                         while respond >= len(grub_menu_patterns):
                             logger.info('Hit Enter on secure boot error message')
-                            output, respond = serial_engine.run_cmd("\r", expected_value=all_patterns, timeout=to, send_without_enter=True)
+                            output, respond = serial_engine.run_cmd("\r", expected_value=all_patterns, timeout=to,
+                                                                    send_without_enter=True)
                             time.sleep(1)
 
             elif respond == 0:
@@ -428,7 +431,8 @@ class NvueGeneralCli(SonicGeneralCliDefault):
         if respond == 0:
             with allure.step('System is secured. Login to ONIE with credentials'):
                 logger.info(f'Send line: "{DefaultConnectionValues.ONIE_USERNAME}"')
-                output, respond = serial_engine.run_cmd(DefaultConnectionValues.ONIE_USERNAME, '[Pp]assword:', timeout=10)
+                output, respond = serial_engine.run_cmd(DefaultConnectionValues.ONIE_USERNAME, '[Pp]assword:',
+                                                        timeout=10)
                 logger.info(output)
                 logger.info(f'Send line: "{DefaultConnectionValues.ONIE_PASSWORD}"')
                 output, respond = serial_engine.run_cmd(DefaultConnectionValues.ONIE_PASSWORD, 'ONIE:~ #', timeout=20)

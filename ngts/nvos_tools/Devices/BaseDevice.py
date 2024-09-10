@@ -81,6 +81,7 @@ class BaseDevice(ABC):
         self.voltage_sensors = []
         self.has_nmx = False
         self.supported_commands = []
+        self.system_is_ready_wait_timeout = 300
 
     def _init_fan_list(self):
         self.fan_list = []

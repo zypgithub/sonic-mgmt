@@ -100,19 +100,20 @@ class File(BaseComponent):
         return self._action_file_install(False, expected_str, force, dut_engine)
 
     def action_file_install_with_reboot(self, expected_str="", force=True, engine=None, device=None,
-                                        recovery_engine=None) -> ResultObj:
-        return self._action_file_install(True, expected_str, force, engine, device, recovery_engine)
+                                        recovery_engine=None, topology_obj=None) -> ResultObj:
+        return self._action_file_install(True, expected_str, force, engine, device, recovery_engine, topology_obj)
 
     def _action_file_install(self, with_reboot: bool, expected_str="", force=True, dut_engine=None, device=None,
-                             recovery_engine=None) -> ResultObj:
+                             recovery_engine=None, topology_obj=None) -> ResultObj:
         engine = dut_engine if dut_engine else TestToolkit.engines.dut
         device = device if device else TestToolkit.devices.dut
+        topology_obj = topology_obj or TestToolkit.topology_obj
         resource_path = self.get_resource_path()
         with allure.step(f"Install file: {resource_path}"):
             return SendCommandTool.execute_command_expected_str(
                 self._cli_wrapper.action, expected_str,
                 engine, device, action_type='install', resource_path=resource_path, param_name='force' if force else '',
-                expect_reboot=with_reboot, recovery_engine=recovery_engine)
+                expect_reboot=with_reboot, recovery_engine=recovery_engine, topology_obj=topology_obj)
 
     def rename_and_verify(self, new_name, expected_str="", dut_engine=None):
         original_name = self.file_name

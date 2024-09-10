@@ -98,6 +98,7 @@ def engines(topology_obj, devices):
         engines_data.sonic_mgmt = topology_obj.players['sonic-mgmt']['engine']
 
     TestToolkit.update_engines(engines_data)
+    TestToolkit.update_topology_obj(topology_obj)
     return engines_data
 
 
