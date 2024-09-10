@@ -40,11 +40,11 @@ def run_step(name) {
           }
           script_params.add(parsed_params)
           script_params_str = script_params.join(' ')
-          pythonpath = "PYTHONPATH=/devts:/root/mars/workspace/sonic-mgmt/"
+          pythonpath = "PYTHONPATH=/root/mars/workspace/sonic-mgmt/:/devts/"
           python_int = "/ngts_venv/bin/python"
           script_cmd = "${pythonpath} ${python_int} ${script_path} ${script_params_str}"
           echo "script_cmd ${script_cmd}"
-          docker_cmd = "sudo docker exec --env-file /tmp/${container_name}_env_file.sh ${container_name} bash -c \"${script_cmd}\""
+          docker_cmd = "sudo docker exec --env-file /tmp/${container_name}_env_file.sh ${container_name} bash -c \"cd /root/ && ${script_cmd}\""
           echo "docker_cmd ${docker_cmd}"
           NGCITools().ciTools.run_sh("${docker_cmd}")
           echo "Copy build table from docker"
