@@ -625,7 +625,7 @@ def test_nmx_cert_reboot_case(engines):
             run_manager_client_hello_request(encryption_mode, cert, cert, cert, cert).verify_result(True)
 
 
-def factory_reset_nmx_cert_check():
+def nmx_cert_factory_reset_no_params_check():
     """
     Verify that certificates and encryption mode cleared to default after factory reset
 
@@ -636,37 +636,37 @@ def factory_reset_nmx_cert_check():
     """
     dut_device: BaseDevice = TestToolkit.devices.dut
     should_check_nmx: bool = dut_device.has_nmx
+    scp_player = get_scp_player(TestToolkit.engines)
+    cert = TestCert.cert_valid_1
+    manager = Cluster().manager
+    clear_manager_config()
+    encryption_mode = random.choice([EncryptionMode.TLS, EncryptionMode.MTLS])
 
     if should_check_nmx:
-        scp_player = get_scp_player(TestToolkit.engines)
-        cert = TestCert.cert_valid_1
-        manager = Cluster().manager
-        clear_manager_config()
-        encryption_mode = random.choice([EncryptionMode.TLS, EncryptionMode.MTLS])
+        with allure.step('enable cluster and clear manager config'):
+            clear_manager_config()
         with allure.step('Import and load cert & cacert'):
             import_test_certs(scp_player, TestToolkit.engines.dut, [cert])
             manager.certificate.action_update(cert.name).verify_result()
             manager.ca_certificate.action_update(cert.cacert_name).verify_result()
         with allure.step('Update encryption mode'):
             manager.encryption.action_update(encryption_mode).verify_result()
-    else:
-        with allure.step('Not checking NMX on this dut device'):
-            pass
 
-    yield  # factory reset
+    yield  # do factory reset
 
     if should_check_nmx:
-        with allure.step('Verify values in show restored to defaults '):
-            verify_manager_show(expect_cert=Defaults.CERT, expect_cacert=Defaults.CACERT,
-                                expect_encryption=Defaults.ENCRYPTION)
-            verify_cert_show(expect_cert_id=Defaults.CERT)
-            verify_cacert_show(expect_cert_id=Defaults.CACERT)
-            verify_encryption_show(expect_mode=Defaults.ENCRYPTION)
-    else:
-        with allure.step('Not checking NMX on this dut device'):
-            pass
+        with allure.step('Verify values in show restored to defaults'):
+            with allure.independent_step('verify manager show'):
+                verify_manager_show(expect_cert=Defaults.CERT, expect_cacert=Defaults.CACERT,
+                                    expect_encryption=Defaults.ENCRYPTION)
+            with allure.independent_step('verify cert show'):
+                verify_cert_show(expect_cert_id=Defaults.CERT)
+            with allure.independent_step('verify cacert show'):
+                verify_cacert_show(expect_cert_id=Defaults.CACERT)
+            with allure.independent_step('verify encryption show'):
+                verify_encryption_show(expect_mode=Defaults.ENCRYPTION)
 
     yield  # to prevent StopIteration on the 2nd next() call
 
 
-factory_reset_nmx_cert_checker = factory_reset_nmx_cert_check()  # generator
+factory_reset_nmx_cert_checker = nmx_cert_factory_reset_no_params_check()  # generator

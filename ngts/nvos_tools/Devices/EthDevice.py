@@ -1,11 +1,11 @@
 import logging
 import os
 
-from ngts.nvos_constants.constants_nvos import NvosConst, FansConsts, PlatformConsts, CumulusConsts, DiskConsts
+from ngts.nvos_constants.constants_nvos import NvosConst, FansConsts, PlatformConsts, CumulusConsts
 from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
-from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts
 from ngts.nvos_tools.infra.ValidationTool import ExpectedString
+from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts
 
 logger = logging.getLogger()
 
@@ -62,6 +62,7 @@ class EthSwitch(BaseSwitch):
 
         self.disk_partition_capacity_limit = 70  # Percent value
         self.disk_minimum_free_space = 5.5  # Gig
+        self.supports_tpm_testing = False
 
     def ib_ports_num(self):
         return 0

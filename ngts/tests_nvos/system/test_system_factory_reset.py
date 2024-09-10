@@ -330,6 +330,7 @@ def test_error_flow_reset_factory_with_params(test_api, engines, devices, topolo
         # system.factory_default.action_reset(param="only-config").verify_result(should_succeed=False)
 
 
-def execute_reset_factory(engines, system, operation, flag, current_time):
+def execute_reset_factory(engines, system, operation, flag, current_time, topology_obj=None):
     logging.info("Current time: " + str(current_time))
-    system.factory_default.action_reset(operation=operation, param=flag).verify_result()
+    topology_obj = topology_obj or (TestToolkit.topology_obj if TestToolkit else None)
+    system.factory_default.action_reset(operation=operation, param=flag, topology_obj=topology_obj).verify_result()

@@ -114,7 +114,7 @@ class FactoryDefault(BaseComponent):
     def unset(self, op_param=""):
         raise Exception("unset is not implemented for system/factory-default")
 
-    def action_reset(self, engine=None, device=None, operation='reset factory', param=""):
+    def action_reset(self, engine=None, device=None, operation='reset factory', param="", topology_obj=None):
         with allure.step("Execute factory reset {}".format(param)):
             logging.info("Execute factory reset {}".format(param))
             if not engine:
@@ -127,7 +127,7 @@ class FactoryDefault(BaseComponent):
             start_time = time.time()
 
             res_obj = SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].action_reset,
-                                                      engine, device, "factory-default", param)
+                                                      engine, device, "factory-default", param, topology_obj)
             end_time = time.time()
             duration = end_time - start_time
 

@@ -11,7 +11,7 @@ from ngts.tests_nvos.system.gnmi.helpers import get_scp_player
 from ngts.tools.test_utils import allure_utils as allure
 
 UPGRADE_CHECKERS: Dict[str, Generator[None, None, None]] = {
-    'api mTLS': api_mtls_upgrade_check(),
+    'API mTLS': api_mtls_upgrade_check(),
 }
 
 
@@ -21,10 +21,13 @@ def test_downgrade_upgrade(base_version_realpath, target_version_realpath, devic
     """
     Validate upgrade scenario
     """
-    system = System()
 
     checkers = UPGRADE_CHECKERS
+    if not checkers:
+        pytest.skip('test skipped: no checkers registered for this test')
     logging.info(f'checkers names for upgrade: {list(checkers.keys())}')
+
+    system = System()
 
     target_version_name = target_version_realpath.split("/")[-1]
 
