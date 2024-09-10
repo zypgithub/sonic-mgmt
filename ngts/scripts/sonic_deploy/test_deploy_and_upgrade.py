@@ -337,7 +337,10 @@ def get_info_from_topology(topology_obj, workspace_path, include_smartswitch_dpu
                             'dut_alias': dut_alias, 'switch_type': switch_type, 'dut_ip': dut_ip}
                 if 'dut-dpu' in dut_alias and not include_smartswitch_dpu:
                     continue
-                setup_info['duts'].append(dut_info)
+                if dut_info['dut_alias'] == "dut":
+                    setup_info['duts'].insert(0, dut_info)
+                else:
+                    setup_info['duts'].append(dut_info)
             elif host == 'hypervisor':
                 hypervisor_name = topology_obj.players[host]['attributes'].noga_query_data['attributes']['Common'][
                     'Name']
