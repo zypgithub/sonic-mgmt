@@ -80,6 +80,7 @@ class BaseDevice(ABC):
         self.split_ports_supported = False
         self.profile_change_supported = False
         self.voltage_sensors = []
+        self.system_is_ready_wait_timeout = 300
 
     def _init_fan_list(self):
         self.fan_list = []

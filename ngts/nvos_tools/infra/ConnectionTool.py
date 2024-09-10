@@ -1,15 +1,16 @@
 import logging
+import subprocess
+
+from netmiko.ssh_exception import NetmikoAuthenticationException
+from retry import retry
+
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from ngts.nvos_constants.constants_nvos import SystemConsts, NvosConst
+from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
+from infra.tools.general_constants.constants import DefaultConnectionValues
+from ngts.nvos_constants.constants_nvos import SystemConsts
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ResultObj import ResultObj
-from netmiko.ssh_exception import NetmikoAuthenticationException
-from infra.tools.general_constants.constants import DefaultConnectionValues
-from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
 from ngts.tools.test_utils import allure_utils as allure
-import pexpect
-import subprocess
-from retry import retry
 
 logger = logging.getLogger()
 
@@ -53,7 +54,7 @@ class ConnectionTool:
             return ResultObj(running_processes, "", "connected to {number}".format(number=running_processes))
 
     @staticmethod
-    def create_serial_engine(topology_obj, ip=None, username=None, password=None):
+    def create_serial_engine(topology_obj, ip=None, username=None, password=None, enter_serial_context=False):
         """
         @summary: Create and return a pexpect serial engine
         """
@@ -73,6 +74,8 @@ class ConnectionTool:
                                                 password=password,
                                                 rcon_command=extended_rcon_command,
                                                 timeout=30)
+            if enter_serial_context:
+                serial_engine.create_serial_engine(False)
             return serial_engine
 
     @staticmethod

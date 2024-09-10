@@ -11,6 +11,7 @@ from netmiko import ConnectHandler
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from .ResultObj import ResultObj, IssueType
 import subprocess
+from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
 from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from retry.api import retry_call, retry
 from ngts.nvos_constants.constants_nvos import SystemConsts, DatabaseConst, NvosConst
@@ -25,7 +26,7 @@ class DutUtilsTool:
 
     @staticmethod
     def reload(engine, device, command, find_prompt_tries=80, find_prompt_delay=2, should_wait_till_system_ready=True,
-               confirm=False, recovery_engine=None):
+               confirm=False, recovery_engine=None, topology_obj=None):
         """
 
         :param should_wait_till_system_ready: if True then we will wait till the system is ready, if false then we only will wait till we can re-connect to the system
@@ -41,12 +42,13 @@ class DutUtilsTool:
         with allure.step('Reload the system with {} command, and wait till system is ready'.format(command)):
             list_commands = [command, 'y'] if confirm else [command]
             output = device.reload_device(engine, list_commands)
+            logger.info(output)
 
             if 'aborted' in output.lower() or 'aborting' in output.lower():
                 return ResultObj(result=False, info=output)
 
             res_obj = DutUtilsTool.wait_on_system_reboot(engine, recovery_engine, None, should_wait_till_system_ready,
-                                                         device, False)
+                                                         device, False, True, topology_obj)
             if not should_wait_till_system_ready:
                 time.sleep(40)
                 return res_obj
@@ -84,7 +86,7 @@ class DutUtilsTool:
 
     @staticmethod
     def wait_on_system_reboot(engine, recovery_engine=None, wait_time_before_reboot=120, wait_till_system_ready=True,
-                              device=None, verify_final_result=True):
+                              device=None, verify_final_result=True, wait_for_nvos=True, topology_obj=None):
         """
         Call this after an operation that should trigger a reboot. Will wait on the switch until it's functional.
         :param wait_time_before_reboot: How many seconds to wait for the switch to go down. If this time elapsed and
@@ -105,8 +107,13 @@ class DutUtilsTool:
             with allure.step("Waiting for switch to be ready"):
                 with allure.step('wait for switch reachable/ping'):
                     check_port_status_till_alive(True, dut_engine.ip, dut_engine.ssh_port)
+                if topology_obj:
+                    with allure.step('wait for System is ready in serial'):
+                        DutUtilsTool.wait_for_system_ready_in_serial(topology_obj)
                 with allure.step('wait for ssh'):
                     dut_engine.run_cmd('echo "SSH OK"')
+                if not wait_for_nvos:
+                    return ResultObj(result=True, info="rebooted, ssh up, but system is not ready yet")
                 with allure.step('wait for os to be functional'):
                     if device:
                         result_obj = device.wait_for_os_to_become_functional(dut_engine)
@@ -116,6 +123,14 @@ class DutUtilsTool:
                         result_obj.verify_result()
                     else:
                         return result_obj
+
+    @staticmethod
+    def wait_for_system_ready_in_serial(topology_obj, serial_engine: PexpectSerialEngine = None, wait_timeout=300):
+        system_ready_pattern = 'System is ready'
+        with allure.step('get serial engine'):
+            serial_engine: PexpectSerialEngine = serial_engine or ConnectionTool.create_serial_engine(topology_obj, enter_serial_context=True)
+        with allure.step(f'wait for "{system_ready_pattern}". timeout: {wait_timeout}'):
+            serial_engine.run_cmd('', system_ready_pattern, timeout=wait_timeout, send_without_enter=True)
 
     @staticmethod
     def wait_for_nvos_to_become_functional(engine, find_prompt_tries=60, find_prompt_delay=10):
@@ -186,10 +201,11 @@ class DutUtilsTool:
         dut_setup_specific_attributes: Dict[str, str] = \
             topology.players['dut']['attributes'].noga_query_data['attributes']['Specific']
         setup_mgmt_ips = [dut_setup_specific_attributes['ip_address'], dut_setup_specific_attributes['ip_address_2']]
+        interface = ''
         for index, mgmt_ip in enumerate(setup_mgmt_ips):
             if mgmt_ip == engine.ip:
                 interface = 'eth' + str(index)
-        logger.info(f"engine {interface=}")
+        logger.info(f"engine interface name {interface}")
         return interface
 
     @staticmethod
