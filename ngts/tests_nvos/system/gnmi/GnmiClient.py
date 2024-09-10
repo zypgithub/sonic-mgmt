@@ -40,7 +40,7 @@ class GnmiClient:
         if not gnmic_installed:
             for i in range(3):
                 with allure.step(f'attempt {i + 1}: install gnmic on player'):
-                    self.cmd_runner.run_cmd_in_process("bash -c \"$(curl -sL https://get-gnmic.openconfig.net)\"")
+                    self.cmd_runner.run_cmd_in_process('bash -c "$(curl -sL https://get-gnmic.openconfig.net)" -- -v 0.38.2')
                 with allure.step('verify gnmic is installed'):
                     gnmic_installed = _gnmic_is_installed()
                     if gnmic_installed:
