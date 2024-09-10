@@ -78,8 +78,8 @@ def test_nmx_package_good_flow(devices, engines, test_api, install_apps_if_neede
     try:
         if install_apps_if_needed:
             for app in apps:
-                new_version = devices.dut.nmx_cluster_apps_versions.new_version_names[app]
-                new_path = devices.dut.nmx_cluster_apps_versions.new_path[app]
+                new_version = devices.dut.nmx_cluster_apps_versions.burn_version_names[app]
+                new_path = devices.dut.nmx_cluster_apps_versions.burn_path[app]
 
                 nmx_package_flow(app, new_path, new_version)
 
@@ -190,8 +190,8 @@ def test_nmx_package_bad_flow(devices, engines, test_name, test_api):
     fae = Fae(None)
     nmx_package = fae.cluster.package
     app_to_test = random.choice(ClusterConsts.INITIAL_EXPECTED_APPS)
-    default_version = devices.dut.nmx_cluster_apps_versions.default_version_names[app_to_test]
-    new_path = devices.dut.nmx_cluster_apps_versions.default_path[app_to_test]
+    default_version = devices.dut.nmx_cluster_apps_versions.burn_version_names[app_to_test]
+    new_path = devices.dut.nmx_cluster_apps_versions.burn_path[app_to_test]
     filename = new_path.split('/')[-1]
     non_exist_app = RandomizationTool.get_random_string(8)
 

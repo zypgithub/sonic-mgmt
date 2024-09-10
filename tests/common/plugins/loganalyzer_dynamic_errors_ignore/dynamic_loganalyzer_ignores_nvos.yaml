@@ -1704,6 +1704,13 @@
 
 # NVOS
 - Errors_list:
+    - '.*ERR clusterd\[\d+\]: gRPC client error.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests_nvos/fae/test_nmx_package.py
+
+# NVOS
+- Errors_list:
     - '.*ERR dhclient\[\d+\]: dhclient.c:\d+: Failed to send \d+ byte long packet over fallback interface.*'
   Conditions:
     - Affected_test_cases:
@@ -1777,4 +1784,6 @@
       - tests_nvos/infra/init_flow/init_flow/test_ports_are_up.py
       Redmine:
         - 4038479
+
+
 # --------------------------------------------------

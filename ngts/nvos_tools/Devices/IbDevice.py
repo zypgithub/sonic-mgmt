@@ -918,7 +918,7 @@ class NvLinkSwitch(IbSwitch):
 class JulietSwitch(NvLinkSwitch):
     FaeImagesTestConsts = namedtuple('FaeImagesTestConsts', ('current_image_version', 'alternate_image_version'))
     NmxClusterAppsConsts = namedtuple('NmxClusterAppsConsts',
-                                      ('new_path', 'new_version_names'))
+                                      ('burn_path', 'burn_version_names'))
     BiosImagesTestConsts = namedtuple('BiosImagesTestConsts', ('current_version', 'alternate_version'))
 
     def __init__(self, asic_amount):
@@ -983,13 +983,13 @@ class JulietSwitch(NvLinkSwitch):
                            'cec1736-ecfw-01.03.0216.0000-n04-dev-initial.fwpkg': '01.03.0216.0000_n04'})
 
         self.nmx_cluster_apps_versions = self.NmxClusterAppsConsts(
-            new_path={
-                ClusterConsts.NMX_CONTROLLER: "/auto/sw/release/NMX/NMX-controller/package/0.6.0/nmx-c-nvlink_0.6.0_2024-07-04_17-33.tar.gz",
-                ClusterConsts.NMX_TELEMETRY: "/auto/sw/release/NMX/NMX-telemetry/nmx-telemetry_0.4.4_2024-07-08.tgz"
+            burn_path={
+                ClusterConsts.NMX_CONTROLLER: "/auto/sw/release/NMX/NMX-controller/package/0.6.0/nmx-c-nvlink_0.6.0_2024-08-27_17-17.tar.gz",
+                ClusterConsts.NMX_TELEMETRY: "/auto/sw/release/NMX/NMX-telemetry/nmx-telemetry_0.6.2_2024-08-20.tgz"
             },
-            new_version_names={
+            burn_version_names={
                 ClusterConsts.NMX_CONTROLLER: "0.6.0",
-                ClusterConsts.NMX_TELEMETRY: "0.4.4"
+                ClusterConsts.NMX_TELEMETRY: "0.6.2"
             }
         )
         self.supported_commands.extend([ActionConsts.POWER_CYCLE])
