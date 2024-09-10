@@ -179,11 +179,11 @@ def test_interface_link_diagnostics_functional(engines, start_sm, devices):
     selected_up_ports = Tools.RandomizationTool.select_random_ports(requested_ports_state=NvosConsts.LINK_STATE_UP,
                                                                     requested_ports_type=devices.dut.switch_type.lower(),
                                                                     num_of_ports_to_select=0).get_returned_value()
-    ports_connected = []
     with allure.step('Get ports connected to each others'):
-        for port in selected_up_ports:
-            if port.name == 'sw15p1' or port.name == 'sw16p1':
-                ports_connected.append(port)
+        # Need to provide some good way to find loopback ports. Is it ibnetdiscover?
+        check_list = ['sw15p1', 'sw16p1', 'swA15p1', 'swA16p1']
+        ports_connected = [port for port in selected_up_ports if port.name in check_list]
+        assert ports_connected, 'Connected in loopback ports not found'
 
     with allure.step('Check default code and status, should be the same'):
         first_port_status = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
