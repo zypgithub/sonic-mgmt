@@ -28,18 +28,14 @@ class CumulusInstallationSteps:
         assert target_version, 'Argument "target_version" must be provided for installing Cumulus'
 
     @staticmethod
-    def post_installation_steps(topology_obj, setup_info):
+    def post_installation_steps(setup_info):
         """
         Post-installation steps for NVOS NOS
             Update /etc/sudoers file to permit NOPASSWD for sudo
         """
-        cli_obj: NvueGeneralCli = setup_info['duts'][0]['cli_obj']
-        dut_device = cli_obj.device
-        devices = DeviceFactory.create_devices_object(topology_obj)
-        serial_engine = ConnectionTool.create_serial_connection(topology_obj, devices)
-        logging.info("Updating /etc/sudoers file to permit NOPASSWD for sudo")
-        serial_engine.serial_engine.sendline("sudo sed -i --follow-symlinks 's/%sudo.*ALL=(ALL:ALL) ALL/%sudo ALL=(ALL:ALL) NOPASSWD: ALL/' /etc/sudoers")
-        serial_engine.serial_engine.expect("password for cumulus:", timeout=15)
-        serial_engine.serial_engine.sendline(dut_device.default_password)
-        serial_engine.serial_engine.expect("$", timeout=15)
-        logging.info("Updated /etc/sudoers file to permit NOPASSWD for sudo")
+        cl_password = os.getenv("CUMULUS_SWITCH_PASSWORD")
+        for dut in setup_info['duts']:
+            logging.info("Updating /etc/sudoers file to permit NOPASSWD for sudo")
+            dut['engine'].run_cmd_set(["sudo sed -i --follow-symlinks 's/%sudo.*all=(all:all) all/%sudo all=(all:all) nopasswd: all/' /etc/sudoers",
+                                       cl_password], patterns_list=["password_for_cumulus"])
+            logging.info("Updated /etc/sudoers file to permit NOPASSWD for sudo")

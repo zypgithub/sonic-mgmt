@@ -24,6 +24,7 @@ from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
 from ngts.cli_wrappers.sonic.sonic_cli import SonicCli, SonicCliStub
 from ngts.cli_wrappers.sonic.sonic_general_clis import SonicGeneralCliDefault
 from ngts.constants.constants import PytestConst, NvosCliTypes, DebugKernelConsts, SerialLoggerConst
+from ngts.constants.constants import PytestConst, NvosCliTypes, DebugKernelConsts, PlayersAliases, CliType
 from ngts.helpers.general_helper import get_all_setups, get_dut_cli_obj_from_topo_obj
 from ngts.helpers.sonic_branch_helper import get_sonic_branch, update_branch_in_topology, update_sanitizer_in_topology, \
     get_sonic_image
@@ -137,6 +138,10 @@ def pytest_addoption(parser):
                           'when it is "no", it will only run weekend test cases, '
                           'when it is other value, it will run both daily and weekend test cases,'
                           'user need to define which is daily and weekend test case')
+    parser.addoption('--target_cli_type', dest="target_cli_type", required=False, action='store',
+                     default=False,
+                     help='On Performance deploy, this parameter will override the cli type defined in Noga,'
+                          ' and will set the relevant cli')
     parser.addoption(SerialLoggerConst.CMD_LINE_KEY, action='store', required=False,
                      choices=SerialLoggerConst.CMD_LINE_VALUES, default=SerialLoggerConst.MODE_OFF,
                      help='Action for serial log handler. Options: off (no serial logging), store (without analyzing), '
@@ -266,7 +271,8 @@ def topology_obj(setup_name, request):
     :param request: pytest builtin
     """
     logger.debug('Creating topology object')
-    topology = get_topology_by_setup_name_and_aliases(setup_name, slow_cli=False)
+    cli_type = target_cli_type(request)
+    topology = get_topology_by_setup_name_and_aliases(setup_name, slow_cli=False, override_type=cli_type)
     # Update CLI classes according to the current SONiC branch
     branch = request.session.config.cache.get(PytestConst.CUSTOM_TEST_SKIP_BRANCH_NAME, None)
     update_branch_in_topology(topology, branch)
@@ -285,6 +291,15 @@ def topology_obj(setup_name, request):
     logger.debug('Cleaning-up the topology object')
     for player_name, player_attributes in topology.players.items():
         player_attributes['engine'].disconnect()
+
+
+def target_cli_type(request):
+    """
+    Override cli type parameter in  Noga  to support different cli types on same switch
+    """
+    if request.config.getoption('--target_cli_type'):
+        cli_type = request.config.getoption('--target_cli_type')
+        return cli_type
 
 
 def update_default_password(dut, request):

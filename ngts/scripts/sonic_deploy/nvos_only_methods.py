@@ -207,7 +207,7 @@ class NvosInstallationSteps:
 
     @staticmethod
     def deploy_image(cli, topology_obj, setup_name, platform_params, base_image_url, deploy_type,
-                     apply_base_config, reboot_after_install, fw_pkg_path, target_image_url=''):
+                     apply_base_config, reboot_after_install, fw_pkg_path, target_image_url='', dut_alias=None):
         """
         This method will deploy NVOS image on the dut.
         :param topology_obj: topology object
@@ -218,6 +218,7 @@ class NvosInstallationSteps:
         :param apply_base_config: apply_base_config
         :param reboot_after_install: reboot_after_install
         :param cli: NVUE cli object
+        :param dut_alias: dut_alias
         :return: raise assertion error in case of script failure
         """
         with allure.step('Decide which version to install'):
@@ -235,4 +236,5 @@ class NvosInstallationSteps:
             cli.deploy_image(topology_obj=topology_obj, image_path=image_to_install_in_onie_url,
                              apply_base_config=apply_base_config, setup_name=setup_name,
                              platform_params=platform_params, deploy_type=deploy_type,
-                             reboot_after_install=reboot_after_install, fw_pkg_path=fw_pkg_path, set_timezone=None)
+                             reboot_after_install=reboot_after_install, fw_pkg_path=fw_pkg_path, set_timezone=None,
+                             dut_alias=dut_alias)

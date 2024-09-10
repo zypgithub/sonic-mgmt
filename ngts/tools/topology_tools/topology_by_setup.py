@@ -2,8 +2,8 @@ from infra.tools.topology_tools.topology_setup_utils import get_topology_by_setu
 from ngts.constants.constants import PlayersAliases
 
 
-def get_topology_by_setup_name_and_aliases(setup_name, slow_cli):
-    topology = get_topology_by_setup_name(setup_name, slow_cli)
+def get_topology_by_setup_name_and_aliases(setup_name, slow_cli, override_type=False):
+    topology = get_topology_by_setup_name(setup_name, slow_cli, override_type)
 
     return update_dut_alias(topology)
 

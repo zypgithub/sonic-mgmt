@@ -260,6 +260,7 @@ class NvosConst:
     INSTALL_BOOT_PATTERN = "boot:"
     INSTALL_CUMULUS_SUCCESS_PATTERN = '.* login:'
     NVOS_INSTALL_TIMEOUT = 6 * 60  # 6 minutes
+    GRUB_TIMEOUT = 60
 
     COVERAGE_PATH = "/var/lib/python/coverage"
     MAX_COVERAGE_PATH_CAPACITY_PERCENTAGE = 70

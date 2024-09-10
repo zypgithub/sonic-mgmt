@@ -8,7 +8,8 @@ from ngts.cli_wrappers.nvue.cumulus.cumulus_general_cli import CumulusGeneralCli
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.cli_wrappers.sonic.sonic_cli import SonicCli
 from ngts.cli_wrappers.sonic.sonic_general_clis import SonicGeneralCliDefault
-from ngts.constants.constants import SonicConst
+from ngts.cli_wrappers.dvs.dvs_general_cli import DvsGeneralCli
+from ngts.constants.constants import SonicConst, PerfConsts
 from ngts.nvos_constants.constants_nvos import NvosConst
 from ngts.nvos_tools.Devices.DeviceFactory import DeviceFactory
 
@@ -57,6 +58,8 @@ def get_cli_obj(topology_obj, cli_type, switch_type, engine, host, dut_alias) ->
             cli_obj = CumulusGeneralCli(engine, device)
         else:
             cli_obj = NvueGeneralCli(engine, device)
+    elif cli_type == PerfConsts.DVS_CLI_TYPE:
+        cli_obj = DvsGeneralCli(engine, dut_alias)
     else:
         cli_obj = SonicCli(topology_obj, dut_alias=dut_alias).general
 

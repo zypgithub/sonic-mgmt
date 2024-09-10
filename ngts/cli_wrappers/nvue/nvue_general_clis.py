@@ -1,3 +1,4 @@
+
 from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
 from infra.tools.general_constants.constants import DefaultConnectionValues
 from infra.tools.linux_tools.linux_tools import scp_file
@@ -56,7 +57,7 @@ class NvueGeneralCli(SonicGeneralCliDefault):
         out = self.device.show_setup_versions(self.engine)
         return out
 
-    def is_dut_supports_image(self, base_version_url, dut_name) -> bool:
+    def is_dut_supports_image(self, base_version_url, dut_name, cli_type) -> bool:
         """
         This method checks whether the given base version url is supported for the given dut , or not
         :return: True/False
@@ -143,20 +144,20 @@ class NvueGeneralCli(SonicGeneralCliDefault):
 
         logger.info(f'*** Image {image_path} successfully installed ***')
 
-    def install_nos_using_onie_in_serial(self, nos_image: str, ssh_engine, topology_obj,
+    def install_nos_using_onie_in_serial(self, nos_image: str, ssh_engine, topology_obj, dut_alias,
                                          serial_engine: PexpectSerialEngine = None):
         with allure.step("Get image path and url"):
             image_path, image_url = self._get_image_path_and_url(nos_image)
 
         with allure.step('Get serial connection'):
-            serial_engine = serial_engine or self.enter_serial_connection_context(topology_obj)
+            serial_engine = serial_engine or self.enter_serial_connection_context(topology_obj, dut_alias)
 
         with allure.step(f'Install image {image_url} using {NvosConst.ONIE_NOS_INSTALL_CMD}'):
             self._install_image_on_onie(serial_engine, ssh_engine, image_path, image_url)
 
-    def deploy_onie(self, image_path, in_onie, fw_pkg_path, platform_params, topology_obj):
+    def deploy_onie(self, image_path, in_onie, fw_pkg_path, platform_params, topology_obj, dut_alias='dut'):
         assert in_onie, 'NVOS install failed - not in ONIE'
-        self.install_image_onie(self.engine, image_path, platform_params, topology_obj)
+        self.install_image_onie(self.engine, image_path, platform_params, topology_obj, dut_alias)
 
     def install_image_via_onie(self, topology_obj, image_path):
         self.deploy_image(topology_obj, image_path, None, None, None, 'onie', None, None, None)
@@ -165,27 +166,23 @@ class NvueGeneralCli(SonicGeneralCliDefault):
                      platform_params=None, deploy_type='sonic', reboot_after_install=None, fw_pkg_path=None,
                      set_timezone='Israel', disable_ztp=False, configure_dns=False, destination_hwsku=None,
                      setup_info=None, dut_alias=None, deploy_fanout_threads=None):
-        if image_path.startswith('http'):
-            image_path = '/auto/' + image_path.split('/auto/')[1]
-
         with allure.step('Preparing switch for installation'):
             logger.info("Begin: Preparing switch for installation ")
-            in_onie = self.prepare_for_installation(topology_obj)
+            in_onie = self.prepare_for_installation(topology_obj, dut_alias)
             logger.info("End: Preparing switch for installation ")
 
-        self.deploy_onie(image_path, in_onie, fw_pkg_path, platform_params, topology_obj)
+        self.deploy_onie(image_path, in_onie, fw_pkg_path, platform_params, topology_obj, dut_alias)
 
-    def install_image_onie(self, engine, image_path, platform_params, topology_obj):
+    def install_image_onie(self, engine, image_path, platform_params, topology_obj, dut_alias='dut'):
         with allure.step('Create serial connection'):
-            serial_engine = self.enter_serial_connection_context(topology_obj)
+            serial_engine = self.enter_serial_connection_context(topology_obj, dut_alias)
         with allure.step('Install image onie - NVOS'):
-            # SonicOnieCli(dut_ip, dut_ssh_port).install_image(image_path=image_path, platform_params=platform_params,
-            #                                                  topology_obj=topology_obj)
-            self.install_nos_using_onie_in_serial(image_path, engine, topology_obj, serial_engine)
-        with allure.step("Complete installation"):
-            self._wait_nos_to_become_functional(engine, topology_obj, serial_engine)
+            self.install_nos_using_onie_in_serial(image_path, engine, topology_obj, dut_alias, serial_engine)
 
-    def _wait_nos_to_become_functional(self, engine, topology_obj, serial_engine: PexpectSerialEngine = None):
+        with allure.step("Complete installation"):
+            self._wait_nos_to_become_functional(engine, topology_obj, dut_alias, serial_engine)
+
+    def _wait_nos_to_become_functional(self, engine, topology_obj="", dut_alias=None, serial_engine: PexpectSerialEngine = None):
         with allure.step('Ping switch until shutting down'):
             ping_till_alive(should_be_alive=False, destination_host=engine.ip)
         with allure.step('Ping switch until back alive'):
@@ -343,12 +340,14 @@ class NvueGeneralCli(SonicGeneralCliDefault):
             NvueGeneralCli.verify_dockers_are_up()
             DutUtilsTool.wait_for_nvos_to_become_functional(engine).verify_result()
 
-    def remote_reboot(self, topology_obj):
+    def remote_reboot_nvue(self, topology_obj, dut_alias='dut'):
         '''
         @summary: perform remote reboot from the physical server using the noga remote reboot command,
         usually the command should be like this: '/auto/mswg/utils/bin/rreboot <ip|hostname>'
         '''
-        cmd = topology_obj.players['dut_serial']['attributes'].noga_query_data['attributes']['Specific'][
+        # TODO align the remote reboot of NVOS with the general remote reboot function in general_clis_common
+        alias_serial = dut_alias + '_serial'
+        cmd = topology_obj.players[alias_serial]['attributes'].noga_query_data['attributes']['Specific'][
             'remote_reboot']
         assert cmd, "Reboot command is empty"
 
@@ -368,12 +367,13 @@ class NvueGeneralCli(SonicGeneralCliDefault):
             server_ip = TopologyConsts.site_server_ip[TopologyConsts.MTL]  # default
         return server_ip
 
-    def enter_serial_connection_context(self, topology_obj):
+    def enter_serial_connection_context(self, topology_obj, dut_alias='dut'):
         '''
         @summary: in this function we will execute the rcon command and return the serial engine
         :return: serial connection engine
         '''
-        att = topology_obj.players['dut_serial']['attributes'].noga_query_data['attributes']
+        serial_alias = dut_alias + "_serial"
+        att = topology_obj.players[serial_alias]['attributes'].noga_query_data['attributes']
         # add connection options to pass connection problems
         extended_rcon_command = att['Specific']['serial_conn_cmd'].split(' ')
         extended_rcon_command.insert(1, DefaultConnectionValues.BASIC_SSH_CONNECTION_OPTIONS)
@@ -387,7 +387,7 @@ class NvueGeneralCli(SonicGeneralCliDefault):
         serial_engine.create_serial_engine(login_to_switch=False)
         return serial_engine
 
-    def enter_onie_install_mode(self, topology_obj):
+    def enter_onie_install_mode(self, topology_obj, dut_alias):
         '''
         @summary: in this function we want to enter install mode,
         we are doing so by the following step:
@@ -398,13 +398,10 @@ class NvueGeneralCli(SonicGeneralCliDefault):
                 b. if the ONIE grub menu appears just do nothing (the install entry will be marked and after 5 secs it
                 will enter the install mode)
         '''
-
-        with allure.step("Initializing serial connection to device"):
-            serial_engine = self.enter_serial_connection_context(topology_obj)
-
-        with allure.step('Executing remote reboot'):
-            self.remote_reboot(topology_obj)
-
+        logger.info("Initializing serial connection to device")
+        serial_engine = self.enter_serial_connection_context(topology_obj, dut_alias)
+        logger.info('Executing remote reboot')
+        self.remote_reboot_nvue(topology_obj, dut_alias)
         with allure.step('wait for NVOS/ONIE grub menu'):
             # Set timeout based on the active status of Redmine issue #4028150
             to = 360 if is_bug_active(4028150) else 240
@@ -471,14 +468,14 @@ class NvueGeneralCli(SonicGeneralCliDefault):
                 output, respond = serial_engine.run_cmd('\r', '.*', timeout=10, send_without_enter=True)
                 logger.info(output)
 
-    def prepare_for_installation(self, topology_obj):
+    def prepare_for_installation(self, topology_obj, dut_alias='dut'):
         '''
         @summary: in this function we will enter onie install mode using remote reboot
         '''
         with allure.step('Prepare for installation: enter ONIE'):
             switch_in_onie = False
             try:
-                self.enter_onie(topology_obj)
+                self.enter_onie(topology_obj, dut_alias)
                 switch_in_onie = True
             except Exception as err:
                 logger.info("Got an exception: {}".format(str(err)))
@@ -492,10 +489,10 @@ class NvueGeneralCli(SonicGeneralCliDefault):
         serial_engine.run_cmd('\r', ['Please press Enter to activate this console', 'ONIE:/\\s+'], timeout=60)
 
     @retry(Exception, tries=3, delay=5)
-    def enter_onie(self, topology_obj):
-        self.enter_onie_install_mode(topology_obj)
+    def enter_onie(self, topology_obj, dut_alias):
+        self.enter_onie_install_mode(topology_obj, dut_alias)
 
-    def confirm_in_onie_install_mode(self, topology_obj):
+    def confirm_in_onie_install_mode(self, topology_obj, dut_alias='dut'):
         pass
 
     @staticmethod

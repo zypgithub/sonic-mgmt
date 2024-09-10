@@ -7,7 +7,7 @@ from retry.api import retry_call
 
 from infra.tools.connection_tools.onie_engine import OnieEngine
 from infra.tools.general_constants.constants import SonicNvidiaAirConstants
-from ngts.constants.constants import InfraConst, PlatformTypesConstants
+from ngts.constants.constants import InfraConst, PlatformTypesConstants, PerfConsts
 from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.helpers.json_file_helper import extract_fw_data
 from ngts.helpers.run_process_on_host import run_process_on_host
@@ -162,7 +162,7 @@ class SonicOnieCli:
             f'Sleeping {InfraConst.SLEEP_AFTER_RRBOOT} seconds after switch reply to ping to handle ssh session')
         time.sleep(InfraConst.SLEEP_AFTER_RRBOOT)
 
-    def install_image(self, image_path, platform_params, topology_obj, timeout=60, num_retry=10):
+    def install_image(self, image_path, timeout=60, num_retry=10):
         self.confirm_onie_boot_mode_install()
 
         # restore engine after reboot

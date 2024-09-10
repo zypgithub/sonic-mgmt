@@ -107,8 +107,13 @@ class CliType:
     NVUE = 'NVUE'
     SONIC = 'Sonic'
     SHELL = 'SHELL'
+    DVS = 'DVS'
     MLNX_OS = 'MLNX_OS'
     SKYNET = 'skynet'
+    SONIC_SWITCH_TYPE = 'MLNX_SWITCH'
+    CUMULUS_SWITCH_TYPE = "CUMULUS_SWITCH"
+    DVS_SWITCH_TYPE = "DVS_SWITCH"
+    NOS_TO_TYPE_DICT = {SONIC: SONIC_SWITCH_TYPE, NVUE: CUMULUS_SWITCH_TYPE, DVS: DVS_SWITCH_TYPE}
 
 
 class FanoutConfigFile:
@@ -1579,6 +1584,7 @@ class PerfConsts:
     CONFIG_FILES_DIR = os.path.join(BugHandlerConst.NGTS_PATH, 'tests/performance/config_files')
     LEFT_TG_ALIAS = "left_tg"
     RIGHT_TG_ALIAS = "right_tg"
+    TG_ALIAS_LIST = [LEFT_TG_ALIAS, RIGHT_TG_ALIAS]
     AR_PERF_CONFIG_FOLDER = 'config_files'
     CUSTOM_IBM_PROFILE_JSON = 'ibm_profile.json'
     IBM_CUSTOM_PROFILE_NAME = 'ibm_profile'
@@ -1606,6 +1612,28 @@ class PerfConsts:
     R_IP_NEIGH = "20.20.20.20"
     PERF_SUPPORTED_REBOOT_TYPES = ['reboot', 'config reload -y']
     SLEEP_TIME_BEFORE_SAMPLE = 15
+    SONIC_GA_IMAGE = "/auto/sw_system_release/sonic/202311/202311/dev/sonic-mellanox.bin"
+    CL_GA_IMAGE = "/auto/sw_system_project/NVOS_INFRA/cumulus_images/GA/5.10/cumulus-linux-mlx-amd64.bin.devsigned"
+    DVS_GA_IMAGE = ("/auto/sw/release/sw_system/sx_mlnx_evb/dvs-os-sonic_4.7.1920_DEV_x86-64-0/dvs-os-sonic"
+                    "_4.7.1920_DEV_LK6.1.38_x86-64_installer.bin")
+    CL_GRUB_PATH = 'boot'
+    SONIC_DVS_GRUB_PATH = 'host'
+    GRUB_PATH_DICT = {"SONiC": SONIC_DVS_GRUB_PATH, "Cumulus": CL_GRUB_PATH, "DVS": SONIC_DVS_GRUB_PATH}
+    SDK_VERSION_PATH = "/auto/sw_system_release/sx_sdk_eth/"
+    FW_VERSION_FILE = "FW.txt"
+    USED_SITE = "MTL"
+    SDK_INSTALL_PATH = "/auto/mswg/projects/sx_mlnx_os/sx_fit_regression/libs/scripts/install_sdk_wrapper.py"
+    CLEAN_SWITCH_PATH = "/auto/mswg/projects/sx_mlnx_os/sx_fit_regression/libs/scripts/sx_sdk_clean_logs.py"
+    FW_BURN_PATH = "/auto/mswg/projects/sx_mlnx_os/sx_fit_regression/libs/scripts/sdk_fw_burn.py"
+    DVS_CLI_TYPE = "DVS"
+    DVS_WELCOME_MESSAGE = "Welcome to the NVIDIA Switch Development System"
+
+
+class SSHConsts:
+    SONIC_CREDS = {"username": os.getenv("SONIC_SWITCH_USER"), "password": os.getenv("SONIC_SWITCH_PASSWORD")}
+    CL_CREDS = {"username": os.getenv("CUMULUS_SWITCH_USER"), "password": os.getenv("CUMULUS_SWITCH_PASSWORD")}
+    DVS_CREDS = {"username": os.getenv("DVS_ROOT_USER"), "password": os.getenv("DVS_ROOT_PASSWORD")}
+    SSH_CREDS_DICT = {"SONiC": SONIC_CREDS, "Cumulus": CL_CREDS, "DVS": DVS_CREDS}
 
 
 class DoroceConsts:

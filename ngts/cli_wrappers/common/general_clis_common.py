@@ -1,9 +1,25 @@
 import logging
 import json
 import re
+import os
+import time
+import allure
+import netmiko
+
 from ngts.cli_wrappers.interfaces.interface_general_clis import GeneralCliInterface
+from ngts.cli_wrappers.sonic.sonic_onie_clis import SonicOnieCli
+from ngts.constants.constants import InfraConst, SSHConsts, PerfConsts
+from ngts.helpers.run_process_on_host import run_process_on_host
+from ngts.helpers.secure_boot_helper import SecureBootHelper
+
+from infra.tools.topology_tools.nogaq import get_noga_entire_resource_data
+from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
+from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+
 
 logger = logging.getLogger()
+
+DUMMY_COMMAND = 'echo dummy_command'
 
 
 class GeneralCliCommon(GeneralCliInterface):
@@ -11,8 +27,10 @@ class GeneralCliCommon(GeneralCliInterface):
     This class hosts methods which are implemented identically for Linux and SONiC
     """
 
-    def __init__(self, engine):
+    def __init__(self, engine, cli_obj=None, dut_alias=None):
         self.engine = engine
+        self.cli_obj = cli_obj
+        self.dut_alias = dut_alias
 
     def start_service(self, service):
         output = self.engine.run_cmd('sudo service {} start'.format(service), validate=True)
@@ -218,3 +236,286 @@ class GeneralCliCommon(GeneralCliInterface):
         if not file_status['exists']:
             raise Exception(f'{file_path} not exist')
         return self.engine.run_cmd(f"cat {file_path}")
+
+    def get_performance_ports_list(self, topology_obj):
+        """
+        Method returns ports list of traffic generator from performance setup, which connected to DUT
+        :return: TG ports list
+        """
+        ports_list = []
+        switch_name = topology_obj.players[self.cli_obj.dut_alias]['attributes'].noga_query_data['attributes']['Common']['Name']
+        noga_entire_data = get_noga_entire_resource_data(resource_name=switch_name)
+        for resource in noga_entire_data:
+            if 'etp' in resource['name'] and switch_name not in resource['connected with']:
+                ports_list.append(resource['if'])
+        return ports_list
+
+    def check_dut_is_alive(self):
+        ip = self.engine.ip
+        port = self.engine.ssh_port
+        dut_is_alive = True
+        try:
+            logger.info('Checking whether device is alive')
+            check_port_status_till_alive(should_be_alive=True, destination_host=ip, destination_port=port, tries=2)
+            logger.info('Device is alive')
+        except Exception:
+            logger.info('Device is not alive')
+            dut_is_alive = False
+
+        return dut_is_alive
+
+    def prepare_for_installation(self, topology_obj, dut_alias='dut'):
+        switch_in_onie = False
+        if self.check_dut_is_alive() and not self.check_if_in_dvs():
+            try:
+                SonicOnieCli(self.engine.ip, self.engine.ssh_port).confirm_onie_boot_mode_install()
+                switch_in_onie = True
+            except Exception as err:
+                logger.warning(f'DUT is not in ONIE. \n Got error: {err}')
+                # it can cover the following scenarios
+                # 1. user/password doesn't match the default one
+                # 2. ping and ssh switch are ok, but cannot login into it
+                if self.switch_dut_to_onie_by_remote_reboot(topology_obj, dut_alias):
+                    switch_in_onie = True
+        else:
+            if self.switch_dut_to_onie_by_remote_reboot(topology_obj, dut_alias):
+                switch_in_onie = True
+            elif self.switch_dut_to_onie_by_serial_on_dut_stuck_on_selecting_os_page(topology_obj, dut_alias):
+                switch_in_onie = True
+            elif self.switch_dut_from_sonic_to_onie_by_serial_on_dut_is_not_alive(topology_obj, dut_alias):
+                switch_in_onie = True
+        return switch_in_onie
+
+    def boot_into_onie_by_serial_on_remote_reboot(self, topology_obj, dut_alias='dut'):
+        serial_engine = SecureBootHelper.get_serial_engine_instance(topology_obj, dut_alias)
+        serial_engine.create_serial_engine(login_to_switch=False)
+        arrow_down_key = "\x1b[B"
+        arrow_up_key = "\x1b[A"
+        enter_key = '\r'
+
+        logger.info("Wait for GNU GRUB  version")
+        output, respond = serial_engine.run_cmd(
+            '', ['GRUB loading.', 'GNU GRUB  version'], timeout=240, send_without_enter=True)
+        logger.info(f"GNU GRUB  version is ready.\n output:{output} \n respond:{respond}")
+
+        logger.info("Select ONIE by pressing arrow down")
+        # press the arrow up several times to ensure the item is selected
+        for i in range(3):
+            logger.info("Sending one arrow down")
+            serial_engine.run_cmd(arrow_down_key, expected_value='.*', send_without_enter=True)
+            time.sleep(0.5)
+        logger.info("Onie option selected")
+
+        logger.info("Pressing Enter to enter ONIE grub menu")
+        serial_engine.run_cmd(enter_key, expected_value='.*', timeout=30, send_without_enter=True)
+
+        logger.info("Select 'ONIE: Install OS' by entering arrow up")
+        # press the arrow up several times to ensure the item is selected
+        for i in range(2):
+            logger.info("Sending one arrow up")
+            serial_engine.run_cmd(arrow_up_key, expected_value='.*', send_without_enter=True)
+            time.sleep(0.5)
+
+        logger.info("Pressing Enter to enter ONIE: Install OS")
+        serial_engine.run_cmd('\r', expected_value='.*', timeout=30, send_without_enter=True)
+
+    def switch_dut_to_onie_by_remote_reboot(self, topology_obj, dut_alias='dut'):
+        with allure.step('Do remote reboot because dut is not alive'):
+            try:
+                logger.info("Do remote reboot ...")
+                self.remote_reboot(topology_obj, dut_alias=dut_alias, boot_into_onie=True)
+            except Exception as err:
+                logger.info(f"remote reboot err:{err}")
+
+        with allure.step('Check dut is in onie or not after remote reboot'):
+            return self.check_dut_in_onie_install_status()
+
+    def is_dummy_command_succeed(self):
+        try:
+            self.engine.run_cmd(DUMMY_COMMAND, validate=True)
+            logger.info('login with credentials username: {} ,password:{} succeed!'.
+                        format(self.engine.username, self.engine.password))
+            return True
+        except netmiko.ssh_exception.NetmikoAuthenticationException:
+            logger.info('login with credentials username: {} ,password:{} did not succeed!'.
+                        format(self.engine.username, self.engine.password))
+            return False
+
+    def remote_reboot(self, topology_obj, dut_alias='dut', boot_into_onie=False):
+        ip = self.engine.ip
+        port = self.engine.ssh_port
+        logger.info('Executing remote reboot')
+        cmd = topology_obj.players[dut_alias]['attributes'].noga_query_data['attributes']['Specific'][
+            'remote_reboot']
+        _, _, rc = run_process_on_host(cmd)
+        if rc == InfraConst.RC_SUCCESS:
+            if boot_into_onie:
+                self.boot_into_onie_by_serial_on_remote_reboot(topology_obj, dut_alias)
+            check_port_status_till_alive(should_be_alive=True, destination_host=ip, destination_port=port)
+        else:
+            raise Exception('Remote reboot rc is other then 0')
+
+    def switch_dut_to_onie_by_serial_on_dut_stuck_on_selecting_os_page(self, topology_obj, dut_alias='dut'):
+        """
+        This function is to switch dut to onie by serial,
+        when dut is stuck on the page of select os and losing ssh connection
+        """
+        with allure.step('Create serial engine without login to switch'):
+            try:
+                serial_engine = SecureBootHelper.get_serial_engine_instance(topology_obj, dut_alias)
+                serial_engine.create_serial_engine(login_to_switch=False)
+            except Exception as err:
+                logger.error(f"Create serial engine error: {err}")
+        with allure.step('switch dut to onie by serial'):
+            try:
+                time_out = 10
+                wait_serial_take_effect = 2
+                cmd_enter = "\n"
+                cmd_press_esc = "\33"
+
+                # before selecting onie, press esc and enter key to make sure the page is in the os selected page
+                logger.info("Press esc ")
+                serial_engine.run_cmd(cmd_press_esc, expected_value=" ", timeout=time_out)
+                time.sleep(wait_serial_take_effect)
+                logger.info("Press enter")
+                serial_engine.run_cmd(cmd_enter, expected_value=" ", timeout=time_out)
+                time.sleep(wait_serial_take_effect)
+
+                logger.info("Select the last item: ONIE")
+                cmd_last_one = "\03"
+                serial_engine.run_cmd(cmd_last_one, expected_value="ONIE", timeout=time_out)
+                time.sleep(wait_serial_take_effect)
+
+                logger.info("Boot into ONIE by pressing enter")
+                serial_engine.run_cmd(cmd_enter, expected_value=" ", timeout=time_out)
+                time.sleep(wait_serial_take_effect)
+
+                logger.info("Boot into ONIE install by pressing enter")
+                serial_engine.run_cmd(cmd_enter, expected_value=" ", timeout=time_out)
+                time.sleep(wait_serial_take_effect)
+                logger.info("DUT is switched to onie by serial")
+
+            except Exception as err:
+                logger.error(f"Switching dut to onie by serial failed. {err}")
+
+        with allure.step('Check dut is in onie or not after switching it from stuck page to onie by serial'):
+            return self.check_dut_in_onie_install_status()
+
+    def switch_dut_from_sonic_to_onie_by_serial_on_dut_is_not_alive(self, topology_obj, dut_alias='dut'):
+        """
+        This function is to switch dut from sonic into onie by serial, when dut is losing ssh connection
+        """
+        with allure.step('Create serial engine'):
+            try:
+                serial_engine = SecureBootHelper.get_serial_engine_instance(topology_obj, dut_alias)
+                serial_engine.create_serial_engine()
+            except Exception as err:
+                logger.error(f"Create serial engine with login switch error: {err}")
+        with allure.step('Switch dut from sonic to onie by serial'):
+            try:
+                time_out = 10
+                logger.info("Set next_entry=ONIE in grub")
+                cmd_set_next_entry = "sudo grub-editenv /host/grub/grubenv set next_entry=ONIE"
+                serial_engine.run_cmd(cmd_set_next_entry, timeout=time_out)
+
+                logger.info("Do reboot ")
+                cmd_reboot = "sudo reboot"
+                serial_engine.run_cmd(cmd_reboot, expected_value=" ", timeout=time_out)
+                logger.info("DUT is switched to onie by serial")
+            except Exception as err:
+                logger.error(f"Switching dut to onie by serial failed. {err}")
+
+        with allure.step('Check dut is in onie or not after switching it from sonic to onie by serial'):
+            return self.check_dut_in_onie_install_status(tries=30)
+
+    def check_dut_in_onie_install_status(self, tries=20):
+        switch_in_onie = False
+        with allure.step('Check dut is in onie or not '):
+            try:
+                logger.info('Checking whether device is alive')
+                check_port_status_till_alive(should_be_alive=True, destination_host=self.engine.ip,
+                                             destination_port=self.engine.ssh_port,
+                                             tries=tries)
+            except Exception as err:
+                logger.error(f"Dut is not alive. {err}")
+        with allure.step("Check dut is in onie install status"):
+            try:
+                logger.info('Checking dut is in onie install status')
+                SonicOnieCli(self.engine.ip, self.engine.ssh_port).confirm_onie_boot_mode_install()
+                switch_in_onie = True
+            except Exception as err:
+                logger.error(f"Dut is not in onie. {err}")
+
+        logger.info(f"Dut onie status is {switch_in_onie}")
+        return switch_in_onie
+
+    @staticmethod
+    def install_image_onie(engine, image_path):
+        sonic_cli_ssh_connect_timeout = 10
+        dut_ip = engine.ip
+        dut_ssh_port = engine.ssh_port
+
+        with allure.step('Installing image by "onie-nos-install"'):
+            SonicOnieCli(dut_ip, dut_ssh_port).install_image(image_path=image_path)
+
+        with allure.step('Waiting for switch shutdown after reload command'):
+            logger.info('Waiting for switch shutdown after reload command')
+            check_port_status_till_alive(False, dut_ip, dut_ssh_port)
+
+        with allure.step('Waiting for switch bring-up after reload'):
+            logger.info('Waiting for switch bring-up after reload')
+            check_port_status_till_alive(True, dut_ip, dut_ssh_port)
+
+        with allure.step('Waiting for CLI bring-up after reload'):
+            logger.info('Waiting for CLI bring-up after reload')
+            time.sleep(sonic_cli_ssh_connect_timeout)
+
+    @staticmethod
+    def is_performance_setup(str_with_setup_name):
+        return 'performance' in str_with_setup_name
+
+    def execute_command_in_docker(self, docker, command):
+        return self.engine.run_cmd('docker exec -i {} {}'.format(docker, command))
+
+    def copy_to_docker(self, docker, src_path_on_host, dst_path_in_docker):
+        return self.engine.run_cmd('docker cp {} {}:{}'.format(src_path_on_host, docker, dst_path_in_docker))
+
+    def copy_from_docker(self, docker, dst_path_on_host, src_path_in_docker):
+        return self.engine.run_cmd('sudo docker cp {}:{} {}'.format(docker, src_path_in_docker, dst_path_on_host))
+
+    def remove_from_docker(self, docker, src_path_in_docker):
+        return self.engine.run_cmd('sudo docker exec {} rm -rf {}'.format(docker, src_path_in_docker))
+
+    def check_if_in_dvs(self):
+        try:
+            engine = LinuxSshEngine(self.engine.ip, username=SSHConsts.DVS_CREDS['username'],
+                                    password=SSHConsts.DVS_CREDS['password'])
+            output = engine.run_cmd("cat /etc/motd")
+            if PerfConsts.DVS_WELCOME_MESSAGE in output:
+                return True
+            return False
+        except Exception:
+            return False
+
+    def prepare_onie_reboot_script_on_dut(self):
+        onie_reboot_script = 'onie_reboot.sh'
+        onie_reboot_script_path = f'/tmp/{onie_reboot_script}'
+        onie_reboot_script_local_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                                     f'../../scripts/sonic_deploy/{onie_reboot_script}')
+        self.engine.run_cmd('sudo rm -rf /tmp/*')
+        self.engine.copy_file(source_file=onie_reboot_script_local_path, file_system='/tmp',
+                              dest_file=onie_reboot_script)
+        self.engine.run_cmd(f'chmod 777 {onie_reboot_script_path}', validate=True)
+        return onie_reboot_script_path
+
+    def reboot_by_onie_reboot_script(self, onie_reboot_script_path, mode):
+        logger.info(f"Reboot to ONIE with boot-mode {mode}")
+        with allure.step(f"Reboot to ONIE with boot-mode {mode}"):
+            self.engine.reload([f'{onie_reboot_script_path} {mode}'], wait_after_ping=300, ssh_after_reload=False)
+
+    def uninstall_os_flow(self, current_os):
+        if current_os == "Cumulus":
+            self.engine.reload("sudo onie-select -k -f && sudo reboot", wait_after_ping=900, ssh_after_reload=False)
+        else:
+            onie_reboot_script_path = self.prepare_onie_reboot_script_on_dut()
+            self.reboot_by_onie_reboot_script(onie_reboot_script_path, 'uninstall')

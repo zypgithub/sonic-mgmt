@@ -6,19 +6,20 @@ from multiprocessing.pool import ThreadPool
 from http.server import HTTPServer
 import json
 from ngts.scripts.sonic_deploy.image_http_request_handler import ImageHTTPRequestHandler
-from ngts.constants.constants import MarsConstants
+from ngts.constants.constants import MarsConstants, PerfConsts
 from ngts.tools.test_utils.nvos_general_utils import get_real_file_path
 
 logger = logging.getLogger()
 
 
-def get_real_paths(base_version, target_version):
+def get_real_paths(base_version, target_version, cli_type):
     base_version = get_real_file_path(base_version) if base_version else ''
-    target_version = get_real_file_path(target_version) if target_version else ''
+    if cli_type != PerfConsts.DVS_CLI_TYPE:
+        target_version = get_real_file_path(target_version) if target_version else ''
     return base_version, target_version
 
 
-def prepare_images(base_version, target_version, serve_file):
+def prepare_images(base_version, target_version, serve_file, cli_type=None):
     """
     Method which starts HTTP server if need and share image via HTTP
     """
@@ -28,17 +29,20 @@ def prepare_images(base_version, target_version, serve_file):
         serve_files_over_http(base_version, target_version, image_urls)
     else:
         if base_version:
-            set_image_path(base_version, "base_version", image_urls)
+            set_image_path(base_version, "base_version", image_urls, cli_type)
         if target_version:
-            set_image_path(target_version, "target_version", image_urls)
+            set_image_path(target_version, "target_version", image_urls, cli_type)
 
     for image_role in image_urls:
         logger.info('Image {image_role} URL is: {image}'.format(image_role=image_role, image=image_urls[image_role]))
     return image_urls
 
 
-def set_image_path(image_path, image_key, image_dict):
-    if is_url(image_path):
+def set_image_path(image_path, image_key, image_dict, cli_type=None):
+    if cli_type == PerfConsts.DVS_CLI_TYPE:
+        # on DVS the target image is the sdk version name, and not a path to bin
+        path = image_path
+    elif is_url(image_path):
         path = image_path
     else:
         verify_file_exists(image_path)

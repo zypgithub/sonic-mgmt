@@ -17,7 +17,6 @@ from infra.tools.general_constants.constants import DefaultTestServerCred
 from infra.tools.general_constants.constants import SonicSimxConstants, SonicHostsConstants
 from infra.tools.nvidia_air_tools.air import get_dhcp_ips_dict
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
-from infra.tools.topology_tools.nogaq import get_noga_entire_resource_data
 from infra.tools.utilities.onie_sonic_clis import SonicOnieCli as SonicOnieCliDevts
 from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.cli_util.cli_constants import SonicConstant
@@ -35,8 +34,7 @@ from ngts.helpers.breakout_helpers import get_port_current_breakout_mode, get_al
 from ngts.helpers.config_db_utils import save_config_db_json
 from ngts.helpers.interface_helpers import get_dut_default_ports_list
 from ngts.helpers.run_process_on_host import run_background_process_on_host
-from ngts.helpers.run_process_on_host import run_process_on_host
-from ngts.helpers.secure_boot_helper import SecureBootHelper
+
 from ngts.helpers.sonic_branch_helper import get_sonic_branch
 from ngts.scripts.check_and_store_sanitizer_dump import check_sanitizer_and_store_dump
 from ngts.tests.nightly.app_extension.app_extension_helper import get_installed_mellanox_extensions
@@ -72,29 +70,30 @@ class SonicGeneralCliDefault(GeneralCliCommon):
     """
 
     def __init__(self, engine, cli_obj, dut_alias):
-        self.engine = engine
-        self.cli_obj = cli_obj
-        self.dut_alias = dut_alias
         self.backup_logs_stored = False
+        super().__init__(engine, cli_obj, dut_alias)
         self._is_simx_moose = None
         self._is_simx_bison = None
 
     def show_setup_versions(self):
         return ''
 
-    def is_dut_supports_image(self, base_version_url, dut_name) -> bool:
+    def is_dut_supports_image(self, base_version_url, dut_name, cli_type) -> bool:
         """
         This method checks whether the given base version url is supported for the given dut , or not
         :return: True/False
         """
         image_supports = True
         # production devices support only prod versions of ONIE and SONiC
-        if dut_name in SonicDeployConstants.PRODUCTION_DUTS and "prod" not in base_version_url:
+        if (dut_name in SonicDeployConstants.PRODUCTION_DUTS and "prod" not in base_version_url and
+                cli_type == CliType.SONIC):
             image_supports = False
         # when executed deploy of production image, skip the flow on not production devices
-        if dut_name not in SonicDeployConstants.PRODUCTION_DUTS and 'prod' in base_version_url:
+        if (dut_name not in SonicDeployConstants.PRODUCTION_DUTS and 'prod' in base_version_url and
+                cli_type == CliType.SONIC):
             image_supports = False
-        logger.info(f"dut: {dut_name} {'supports' if image_supports else 'does not support'} version: {base_version_url}")
+        logger.info(
+            f"dut: {dut_name} {'supports' if image_supports else 'does not support'} version: {base_version_url}")
         return image_supports
 
     def show_feature_status(self):
@@ -143,13 +142,9 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                                      validate=True)
         return output
 
-    def get_image_sonic_version(self, only_branch=True):
+    def get_image_sonic_version(self):
         output = self.engine.run_cmd('sudo show boot')
-        if only_branch:
-            pattern = r"Current:\s*SONiC-OS-([\d|\w|\-]*)\..*"
-        else:
-            pattern = r"Current:\s*(SONiC-OS-[\d|\w|\-]*\..*)"
-        current_image = re.search(pattern, output, re.IGNORECASE).group(1)
+        current_image = re.search(r"Current:\s*SONiC-OS-([\d|\w|\-]*)\..*", output, re.IGNORECASE).group(1)
         return current_image
 
     def set_default_image(self, image_binary, delimiter='-'):
@@ -244,20 +239,6 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         # in perf setup, expected ports in up state are left_tg: (Ethernet0::252, 4), right_tg: (Ethernet256::508, 4)
         if self.cli_obj.dut_alias in [PerfConsts.LEFT_TG_ALIAS, PerfConsts.RIGHT_TG_ALIAS]:
             ports_list = self.get_performance_ports_list(topology_obj)
-        return ports_list
-
-    def get_performance_ports_list(self, topology_obj):
-        """
-        Method returns ports list of traffic generator from performance setup, which connected to DUT
-        :return: TG ports list
-        """
-        ports_list = []
-        switch_name = \
-            topology_obj.players[self.cli_obj.dut_alias]['attributes'].noga_query_data['attributes']['Common']['Name']
-        noga_entire_data = get_noga_entire_resource_data(resource_name=switch_name)
-        for resource in noga_entire_data:
-            if 'etp' in resource['name'] and switch_name not in resource['connected with']:
-                ports_list.append(resource['if'])
         return ports_list
 
     def port_reload_reboot_checks(self, ports_list):
@@ -364,7 +345,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
     def verify_processes_of_dockers(self, docker_list, hwsku):
         """
         Verifying the processes of dockers are in RUNNING state
-        :param dockers_list: list of dockers to check
+        :param docker_list: list of dockers to check
         :return: None, raise error in case of unexpected result
         """
         success = True
@@ -399,16 +380,16 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             output = self.engine.run_cmd('sudo generate_dump -s \"-{} seconds\"'.format(duration), validate=True)
             return output.splitlines()[-1]
 
-    def do_installation(self, topology_obj, image_path, deploy_type, fw_pkg_path, platform_params):
+    def do_installation(self, topology_obj, image_path, deploy_type, fw_pkg_path, platform_params, dut_alias='dut'):
         if deploy_type == 'onie':
             if 'simx' in platform_params.platform:
                 in_onie = True
             else:
                 with allure.step('Preparing switch for installation'):
                     logger.info("Begin: Preparing switch for installation ")
-                    in_onie = self.prepare_for_installation(topology_obj)
+                    in_onie = self.prepare_for_installation(topology_obj, dut_alias)
                     logger.info("End: Preparing switch for installation ")
-            self.deploy_onie(image_path, in_onie, fw_pkg_path, platform_params, topology_obj)
+            self.deploy_onie(image_path, in_onie, fw_pkg_path, platform_params, topology_obj, dut_alias)
 
         if deploy_type == 'sonic':
             self.deploy_sonic(image_path)
@@ -425,39 +406,35 @@ class SonicGeneralCliDefault(GeneralCliCommon):
     def deploy_image(self, topology_obj, image_path, apply_base_config=False, setup_name=None,
                      platform_params=None, deploy_type='sonic', reboot_after_install=None, fw_pkg_path=None,
                      set_timezone='Israel', disable_ztp=False, configure_dns=False, destination_hwsku=None,
-                     setup_info=None, dut_alias=None, deploy_fanout_threads=None,
-                     docker_list=None, fanout_target_version=None):
+                     setup_info=None, dut_alias=None, deploy_fanout_threads=None, docker_list=None,
+                     fanout_target_version=None):
+
         if image_path.startswith('http'):
             image_path = '/auto/' + image_path.split('/auto/')[1]
 
-        deploy_fanout = False
-        if setup_info and dut_alias:
-            deploy_fanout = self.is_fanout_deploy_needed(setup_name)
-
-        if deploy_fanout:
-            self.deploy_fanout(topology_obj, destination_hwsku, platform_params, setup_info, dut_alias,
-                               deploy_fanout_threads, fanout_target_version=fanout_target_version)
+        if setup_info and dut_alias and self.is_fanout_deploy_needed(setup_name):
+            self.deploy_fanout(topology_obj, destination_hwsku, setup_info, dut_alias, deploy_fanout_threads)
 
         try:
             with allure.step("Trying to install sonic image"):
-                self.do_installation(topology_obj, image_path, deploy_type, fw_pkg_path, platform_params)
+                self.do_installation(topology_obj, image_path, deploy_type, fw_pkg_path, platform_params, dut_alias)
         except OnieInstallationError:
             with allure.step("Caught exception OnieInstallationError during install. Perform reboot and trying again"):
                 logger.error('Caught exception OnieInstallationError during install. Perform reboot and trying again')
                 self.engine.disconnect()
-                self.remote_reboot(topology_obj)
+                self.remote_reboot(topology_obj, dut_alias)
                 logger.info('Sleeping %s seconds to handle ssh flapping' % InfraConst.SLEEP_AFTER_RRBOOT)
                 time.sleep(InfraConst.SLEEP_AFTER_RRBOOT)
-                self.do_installation(topology_obj, image_path, deploy_type, fw_pkg_path, platform_params)
+                self.do_installation(topology_obj, image_path, deploy_type, fw_pkg_path, platform_params, dut_alias)
 
         # Break if it's installing the Bobcat DPUs
         if deploy_type == 'bfb' and 'sn4280' in platform_params.platform:
             return
 
         with allure.step('Verify dockers are up'):
-            self.verify_dockers_are_up(docker_list)
+            self.verify_dockers_are_up()
 
-        if deploy_fanout:
+        if setup_info and dut_alias and self.is_fanout_deploy_needed(setup_name):
             self.disable_ipv6_sonic_fanout(topology_obj, dut_alias)
 
         if reboot_after_install:
@@ -645,7 +622,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                                     password=BluefieldConstants.BMC_PASS)
         return LinuxGeneralCli(bmc_engine)
 
-    def deploy_onie(self, image_path, in_onie, fw_pkg_path, platform_params, topology_obj):
+    def deploy_onie(self, image_path, in_onie, fw_pkg_path, platform_params, topology_obj, dut_alias='dut'):
         if not in_onie:
             onie_reboot_script_path = self.prepare_onie_reboot_script_on_dut()
             if self.required_onie_upgrade(fw_pkg_path, platform_params):
@@ -657,12 +634,12 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             self.update_simx_platform_type(platform_params)
         else:
             SonicOnieCli(self.engine.ip, self.engine.ssh_port, fw_pkg_path, platform_params).update_onie()
-            self.confirm_in_onie_install_mode(topology_obj)
+            self.confirm_in_onie_install_mode(topology_obj, dut_alias)
 
-        self.install_image_onie(self.engine, image_path, platform_params, topology_obj)
+        self.install_image_onie(self.engine, image_path)
 
-    def confirm_in_onie_install_mode(self, topology_obj):
-        in_onie = self.prepare_for_installation(topology_obj)
+    def confirm_in_onie_install_mode(self, topology_obj, dut_alias='dut'):
+        in_onie = self.prepare_for_installation(topology_obj, dut_alias)
         logger.info(f"Onie status:{in_onie}, after preparing installation")
         if not in_onie:
             onie_reboot_script_path = self.prepare_onie_reboot_script_on_dut()
@@ -676,76 +653,10 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         board_name = SonicSimxConstants.PLATFORM_TO_MACHINE_NAME_DICT[platform_params.platform]
         SonicOnieCliDevts(self.engine.ip, board_name, logger, self.engine.ssh_port).update_onie()
 
-    def prepare_onie_reboot_script_on_dut(self):
-        onie_reboot_script = 'onie_reboot.sh'
-        onie_reboot_script_path = f'/tmp/{onie_reboot_script}'
-        onie_reboot_script_local_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                                     f'../../scripts/sonic_deploy/{onie_reboot_script}')
-        self.engine.run_cmd('sudo rm -rf /tmp/*')
-        self.engine.copy_file(source_file=onie_reboot_script_local_path, file_system='/tmp',
-                              dest_file=onie_reboot_script)
-        self.engine.run_cmd(f'chmod 777 {onie_reboot_script_path}', validate=True)
-        return onie_reboot_script_path
-
     def required_onie_upgrade(self, fw_pkg_path, platform_params):
         platform_syseeprom_output = SonicChassisCli(self.engine).show_platform_syseeprom()
         latest_onie_version, _ = get_latest_onie_version(fw_pkg_path, platform_params)
         return latest_onie_version not in platform_syseeprom_output
-
-    def reboot_by_onie_reboot_script(self, onie_reboot_script_path, mode):
-        logger.info(f"Reboot to ONIE with boot-mode {mode}")
-        with allure.step(f"Reboot to ONIE with boot-mode {mode}"):
-            self.engine.reload([f'{onie_reboot_script_path} {mode}'], wait_after_ping=25, ssh_after_reload=False)
-
-    @staticmethod
-    def install_image_onie(engine, image_path, platform_params, topology_obj):
-        sonic_cli_ssh_connect_timeout = 10
-        dut_ip = engine.ip
-        dut_ssh_port = engine.ssh_port
-
-        with allure.step('Installing image by "onie-nos-install"'):
-            SonicOnieCli(dut_ip, dut_ssh_port).install_image(image_path=image_path, platform_params=platform_params,
-                                                             topology_obj=topology_obj)
-
-        with allure.step('Waiting for switch shutdown after reload command'):
-            logger.info('Waiting for switch shutdown after reload command')
-            check_port_status_till_alive(False, dut_ip, dut_ssh_port)
-
-        with allure.step('Waiting for switch bring-up after reload'):
-            logger.info('Waiting for switch bring-up after reload')
-            check_port_status_till_alive(True, dut_ip, dut_ssh_port)
-
-        with allure.step('Waiting for CLI bring-up after reload'):
-            logger.info('Waiting for CLI bring-up after reload')
-            time.sleep(sonic_cli_ssh_connect_timeout)
-
-    def check_dut_is_alive(self):
-        ip = self.engine.ip
-        port = self.engine.ssh_port
-        dut_is_alive = True
-        try:
-            logger.info('Checking whether device is alive')
-            check_port_status_till_alive(should_be_alive=True, destination_host=ip, destination_port=port, tries=2)
-            logger.info('Device is alive')
-        except Exception:
-            logger.info('Device is not alive')
-            dut_is_alive = False
-
-        return dut_is_alive
-
-    def remote_reboot(self, topology_obj, boot_into_onie=False):
-        ip = self.engine.ip
-        port = self.engine.ssh_port
-        logger.info('Executing remote reboot')
-        cmd = topology_obj.players[self.dut_alias]['attributes'].noga_query_data['attributes']['Specific'][
-            'remote_reboot']
-        _, _, rc = run_process_on_host(cmd)
-        if rc == InfraConst.RC_SUCCESS:
-            if boot_into_onie:
-                self.boot_into_onie_by_serial_on_remote_reboot(topology_obj)
-            check_port_status_till_alive(should_be_alive=True, destination_host=ip, destination_port=port)
-        else:
-            raise Exception('Remote reboot rc is other then 0')
 
     def is_onyx_deploy_needed(self, onyx_engine, onyx_name, onyx_config_path):
         """
@@ -772,117 +683,39 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             return False
         return True
 
-    def deploy_fanout_image(self, topology_obj, image_path, platform_params=None, set_timezone='Israel'):
-        deploy_type = "onie"
-        disable_ztp = True
-        fw_pkg_path = None
-
-        if image_path.startswith('http'):
-            image_path = '/auto/' + image_path.split('/auto/')[1]
-
-        try:
-            with allure.step("Trying to install sonic image"):
-                self.do_installation(topology_obj, image_path, deploy_type, fw_pkg_path, platform_params)
-        except OnieInstallationError:
-            with allure.step("Caught exception OnieInstallationError during install. Perform reboot and trying again"):
-                logger.error('Caught exception OnieInstallationError during install. Perform reboot and trying again')
-                self.engine.disconnect()
-                self.remote_reboot(topology_obj)
-                logger.info('Sleeping %s seconds to handle ssh flapping' % InfraConst.SLEEP_AFTER_RRBOOT)
-                time.sleep(InfraConst.SLEEP_AFTER_RRBOOT)
-                self.do_installation(topology_obj, image_path, deploy_type, fw_pkg_path, platform_params)
-
-        with allure.step('Verify dockers are up'):
-            self.verify_dockers_are_up(dockers_list=SonicConst.DOCKERS_FANOUT)
-
-        if set_timezone:
-            with allure.step("Set dut NTP timezone to {} time.".format(set_timezone)):
-                self.engine.disconnect()
-                self.engine.run_cmd('sudo timedatectl set-timezone {}'.format(set_timezone), validate=True)
-
-        with allure.step("Init telemetry keys"):
-            self.init_telemetry_keys()
-
-        self.engine.disconnect()
-
-        self.disable_ztp(disable_ztp)
-
-    def deploy_sonic_fanout(self, topology_obj, target_version, setup_info, threads_dict, platform_params, fanout_name):
-        if target_version:
-            # Check if is needed to install image on fanout.
-            cli_version = self.get_image_sonic_version(only_branch=False)
-
-            match = re.search(r'sonic/([\w.-]+)/dev', target_version)
-
-            install_image = False
-
-            if match:
-                target_version_name = match.group(1)
-                if target_version_name != cli_version and target_version_name not in cli_version:
-                    logger.info(f"Target version is {target_version_name}, but current fanout version is {cli_version}")
-                    install_image = True
-                logger.info(f"Current fanout version is {cli_version}")
-            else:
-                install_image = True
-                logger.warning(f"No version name find in `fanout_target_version`({str(target_version)}), use this image forcefully.")
-
-            if install_image:
-                with allure.step("Upgrade fanout version on fanout."):
-                    self.deploy_fanout_image(topology_obj, target_version, platform_params)
-
-        logger.info('Deploy SONiC fanout switch')
-        ansible_cmd = f"ansible-playbook -i lab fanout.yml -l {fanout_name}"
-        logger.info(f"Running CMD: {ansible_cmd}")
-        run_background_process_on_host(threads_dict, 'deploy_sonic_fanout', ansible_cmd, timeout=600,
-                                       exec_path=setup_info['ansible_path'])
-
-    def deploy_onyx_fanout(self, base_path, setup_info, destination_hwsku, fanout_engine, fanout_name):
-        fanout_config_path = os.path.join(base_path,
-                                          f"../../../ansible/files/hwsku_vars/{setup_info['setup_name']}/"
-                                          f"{destination_hwsku}/{FanoutConfigFile.ONYX}")
-        if self.is_onyx_deploy_needed(fanout_engine, fanout_name, fanout_config_path):
-            logger.info(f"Copy fanout configuration file to ONYX fanout switch {fanout_name}")
-            fanout_engine.copy_file(source_file=fanout_config_path, dest_file=FanoutConfigFile.ONYX,
-                                    file_system=FanoutConfigFile.ONYX_CONFIG_PATH, overwrite_file=True,
-                                    verify_file=False)
-            logger.info(f"Load fanout config file {FanoutConfigFile.ONYX}")
-            fanout_engine.run_cmd(f"configuration switch-to {FanoutConfigFile.ONYX} no-reboot")
-            fanout_engine.run_cmd("reload")
-
-    def deploy_fanout(self, topology_obj, destination_hwsku, platform_params, setup_info, dut_alias, threads_dict,
-                      fanout_target_version=None):
+    def deploy_fanout(self, topology_obj, destination_hwsku, setup_info, dut_alias, threads_dict):
         """
         Copy the specific configuration file to fanout switch and load it
         """
-
-        fanout_engine_type, fanout_name, fanout = self.get_fanout(topology_obj, dut_alias)
-
-        if fanout:
-            base_path = os.path.dirname(os.path.realpath(__file__))
-
-            if fanout_engine_type == CliType.SONIC:
-                fanout.deploy_sonic_fanout(topology_obj, fanout_target_version, setup_info, threads_dict, platform_params, fanout_name)
-            else:
-                self.deploy_onyx_fanout(base_path, setup_info, destination_hwsku, fanout, fanout_name)
-
-    def get_fanout(self, topology_obj, dut_alias):
         fanout_alias = 'fanout'
         if dut_alias == 'dut-b':
             fanout_alias = 'fanout-b'
-
         if topology_obj.players.get(fanout_alias):
+            fanout_engine = topology_obj.players[fanout_alias]['engine']
+            base_path = os.path.dirname(os.path.realpath(__file__))
             fanout_engine_type = topology_obj.players[fanout_alias]['attributes'].noga_query_data['attributes'][
                 'Topology Conn.']['CLI_TYPE']
             fanout_name = topology_obj.players[fanout_alias]['attributes'].noga_query_data['attributes'][
                 'Common']['Name']
 
             if fanout_engine_type == CliType.SONIC:
-                fanout = topology_obj.players[fanout_alias]['cli']
-                fanout = fanout.general
+                logger.info('Deploy SONiC fanout switch')
+                ansible_cmd = f"ansible-playbook -i lab fanout.yml -l {fanout_name}"
+                logger.info(f"Running CMD: {ansible_cmd}")
+                run_background_process_on_host(threads_dict, 'deploy_sonic_fanout', ansible_cmd, timeout=600,
+                                               exec_path=setup_info['ansible_path'])
             else:
-                fanout = topology_obj.players[fanout_alias]['engine']
-            return fanout_engine_type, fanout_name, fanout
-        return None, None, None
+                fanout_config_path = os.path.join(base_path,
+                                                  f"../../../ansible/files/hwsku_vars/{setup_info['setup_name']}/"
+                                                  f"{destination_hwsku}/{FanoutConfigFile.ONYX}")
+                if self.is_onyx_deploy_needed(fanout_engine, fanout_name, fanout_config_path):
+                    logger.info(f"Copy fanout configuration file to ONYX fanout switch {fanout_name}")
+                    fanout_engine.copy_file(source_file=fanout_config_path, dest_file=FanoutConfigFile.ONYX,
+                                            file_system=FanoutConfigFile.ONYX_CONFIG_PATH, overwrite_file=True,
+                                            verify_file=False)
+                    logger.info(f"Load fanout config file {FanoutConfigFile.ONYX}")
+                    fanout_engine.run_cmd(f"configuration switch-to {FanoutConfigFile.ONYX} no-reboot")
+                    fanout_engine.run_cmd("reload")
 
     def disable_ipv6_sonic_fanout(self, topology_obj, dut_alias=None):
         """
@@ -900,68 +733,6 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                     fanout_engine = topology_obj.players.get(fanout_alias)['engine']
                     fanout_engine.run_cmd('sudo sysctl -p')
 
-    def boot_into_onie_by_serial_on_remote_reboot(self, topology_obj):
-        if self.dut_alias == "fanout":
-            # Get fanout serial
-            serial_engine = SecureBootHelper.get_serial_engine_instance(topology_obj, alias="fanout_serial")
-        elif self.dut_alias == "fanout-b":
-            serial_engine = SecureBootHelper.get_serial_engine_instance(topology_obj, alias="fanout-b_serial")
-        else:
-            serial_engine = SecureBootHelper.get_serial_engine_instance(topology_obj)
-
-        serial_engine.create_serial_engine(login_to_switch=False)
-        arrow_down_key = "\x1b[B"
-        arrow_up_key = "\x1b[A"
-        enter_key = '\r'
-
-        logger.info("Wait for GNU GRUB  version")
-        output, respond = serial_engine.run_cmd(
-            '', ['GRUB loading.', 'GNU GRUB  version'], timeout=240, send_without_enter=True)
-        logger.info(f"GNU GRUB  version is ready.\n output:{output} \n respond:{respond}")
-
-        logger.info("Select ONIE by pressing arrow down")
-        # press the arrow up several times to ensure the item is selected
-        for i in range(3):
-            logger.info("Sending one arrow down")
-            serial_engine.run_cmd(arrow_down_key, expected_value='.*', send_without_enter=True)
-            time.sleep(0.5)
-        logger.info("Onie option selected")
-
-        logger.info("Pressing Enter to enter ONIE grub menu")
-        serial_engine.run_cmd(enter_key, expected_value='.*', timeout=30, send_without_enter=True)
-
-        logger.info("Select 'ONIE: Install OS' by entering arrow up")
-        # press the arrow up several times to ensure the item is selected
-        for i in range(2):
-            logger.info("Sending one arrow up")
-            serial_engine.run_cmd(arrow_up_key, expected_value='.*', send_without_enter=True)
-            time.sleep(0.5)
-
-        logger.info("Pressing Enter to enter ONIE: Install OS")
-        serial_engine.run_cmd('\r', expected_value='.*', timeout=30, send_without_enter=True)
-
-    def prepare_for_installation(self, topology_obj):
-        switch_in_onie = False
-        if self.check_dut_is_alive():
-            try:
-                SonicOnieCli(self.engine.ip, self.engine.ssh_port).confirm_onie_boot_mode_install()
-                switch_in_onie = True
-            except Exception as err:
-                logger.warning(f'DUT is not in ONIE. \n Got error: {err}')
-                # it can cover the following scenarios
-                # 1. user/password doesn't match the default one
-                # 2. ping and ssh switch are ok, but cannot login into it
-                if self.switch_dut_to_onie_by_remote_reboot(topology_obj):
-                    switch_in_onie = True
-        else:
-            if self.switch_dut_to_onie_by_remote_reboot(topology_obj):
-                switch_in_onie = True
-            elif self.switch_dut_to_onie_by_serial_on_dut_stuck_on_selecting_os_page(topology_obj):
-                switch_in_onie = True
-            elif self.switch_dut_from_sonic_to_onie_by_serial_on_dut_is_not_alive(topology_obj):
-                switch_in_onie = True
-        return switch_in_onie
-
     def switch_dut_to_onie_due_to_unmatched_password(self):
         switch_in_onie = False
         with allure.step("Try other password because default password doesn't work"):
@@ -974,111 +745,6 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                 SonicOnieCli(self.engine.ip, self.engine.ssh_port).confirm_onie_boot_mode_install()
                 switch_in_onie = True
             return switch_in_onie
-
-    def switch_dut_to_onie_by_remote_reboot(self, topology_obj):
-        with allure.step('Do remote reboot because dut is not alive'):
-            try:
-                logger.info("Do remote reboot ...")
-                self.remote_reboot(topology_obj, boot_into_onie=True)
-            except Exception as err:
-                logger.info(f"remote reboot err:{err}")
-
-        with allure.step('Check dut is in onie or not after remote reboot'):
-            return self.check_dut_in_onie_install_status()
-
-    def switch_dut_to_onie_by_serial_on_dut_stuck_on_selecting_os_page(self, topology_obj):
-        """
-        This function is to switch dut to onie by serial,
-        when dut is stuck on the page of select os and losing ssh connection
-        """
-        with allure.step('Create serial engine without login to switch'):
-            try:
-                serial_engine = SecureBootHelper.get_serial_engine_instance(topology_obj)
-                serial_engine.create_serial_engine(login_to_switch=False)
-            except Exception as err:
-                logger.error(f"Create serial engine error: {err}")
-        with allure.step('switch dut to onie by serial'):
-            try:
-                time_out = 10
-                wait_serial_take_effect = 2
-                cmd_enter = "\n"
-                cmd_press_esc = "\33"
-
-                # before selecting onie, press esc and enter key to make sure the page is in the os selected page
-                logger.info("Press esc ")
-                serial_engine.run_cmd(cmd_press_esc, expected_value=" ", timeout=time_out)
-                time.sleep(wait_serial_take_effect)
-                logger.info("Press enter")
-                serial_engine.run_cmd(cmd_enter, expected_value=" ", timeout=time_out)
-                time.sleep(wait_serial_take_effect)
-
-                logger.info("Select the last item: ONIE")
-                cmd_last_one = "\03"
-                serial_engine.run_cmd(cmd_last_one, expected_value="ONIE", timeout=time_out)
-                time.sleep(wait_serial_take_effect)
-
-                logger.info("Boot into ONIE by pressing enter")
-                serial_engine.run_cmd(cmd_enter, expected_value=" ", timeout=time_out)
-                time.sleep(wait_serial_take_effect)
-
-                logger.info("Boot into ONIE install by pressing enter")
-                serial_engine.run_cmd(cmd_enter, expected_value=" ", timeout=time_out)
-                time.sleep(wait_serial_take_effect)
-                logger.info("DUT is switched to onie by serial")
-
-            except Exception as err:
-                logger.error(f"Switching dut to onie by serial failed. {err}")
-
-        with allure.step('Check dut is in onie or not after switching it from stuck page to onie by serial'):
-            return self.check_dut_in_onie_install_status()
-
-    def switch_dut_from_sonic_to_onie_by_serial_on_dut_is_not_alive(self, topology_obj):
-        """
-        This function is to switch dut from sonic into onie by serial, when dut is losing ssh connection
-        """
-        with allure.step('Create serial engine'):
-            try:
-                serial_engine = SecureBootHelper.get_serial_engine_instance(topology_obj)
-                serial_engine.create_serial_engine()
-            except Exception as err:
-                logger.error(f"Create serial engine with login switch error: {err}")
-        with allure.step('Switch dut from sonic to onie by serial'):
-            try:
-                time_out = 10
-                logger.info("Set next_entry=ONIE in grub")
-                cmd_set_next_entry = "sudo grub-editenv /host/grub/grubenv set next_entry=ONIE"
-                serial_engine.run_cmd(cmd_set_next_entry, timeout=time_out)
-
-                logger.info("Do reboot ")
-                cmd_reboot = "sudo reboot"
-                serial_engine.run_cmd(cmd_reboot, expected_value=" ", timeout=time_out)
-                logger.info("DUT is switched to onie by serial")
-            except Exception as err:
-                logger.error(f"Switching dut to onie by serial failed. {err}")
-
-        with allure.step('Check dut is in onie or not after switching it from sonic to onie by serial'):
-            return self.check_dut_in_onie_install_status(tries=30)
-
-    def check_dut_in_onie_install_status(self, tries=20):
-        switch_in_onie = False
-        with allure.step('Check dut is in onie or not '):
-            try:
-                logger.info('Checking whether device is alive')
-                check_port_status_till_alive(should_be_alive=True, destination_host=self.engine.ip,
-                                             destination_port=self.engine.ssh_port,
-                                             tries=tries)
-            except Exception as err:
-                logger.error(f"Dut is not alive. {err}")
-        with allure.step("Check dut is in onie install status"):
-            try:
-                logger.info('Checking dut is in onie install status')
-                SonicOnieCli(self.engine.ip, self.engine.ssh_port).confirm_onie_boot_mode_install()
-                switch_in_onie = True
-            except Exception as err:
-                logger.error(f"Dut is not in onie. {err}")
-
-        logger.info(f"Dut onie status is {switch_in_onie}")
-        return switch_in_onie
 
     def disable_ztp(self, disable_ztp=False):
         if disable_ztp:
@@ -1136,10 +802,6 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         with allure.step("Enable INFO logging on swss"):
             self.enable_info_logging_on_docker(docker_name='swss')
 
-        with allure.step("Configure ntp servers"):
-            for ntp_server in SonicConst.NTP_SERVERS:
-                self.add_ntp_server(ntp_server)
-
         if configure_dns:
             with allure.step('Apply DNS servers configuration'):
                 self.cli_obj.ip.apply_dns_servers_into_resolv_conf(
@@ -1160,19 +822,13 @@ class SonicGeneralCliDefault(GeneralCliCommon):
 
         self.upload_config_db_file(topology_obj, setup_name, hwsku, platform, shared_path)
 
-        with allure.step("Disable autoneg on AOC cables and enable for passive copper"):
+        with allure.step("Disable autoneg on SW control ports if SW control feature enabled"):
             if self.cli_obj.im.is_im_enabled():
                 port_supporting_im = self.cli_obj.im.get_ports_supporting_im(
                     self.cli_obj.im.dut_ports_number_dict(topology_obj))
                 if port_supporting_im:
-                    aoc_cables = self.cli_obj.im.sw_controlled_aoc_cables(port_supporting_im)
-                    if aoc_cables:
-                        with allure.step('Disable autoneg on AOC ports if SW controlled'):
-                            self.cli_obj.im.disable_autoneg_on_ports_supporting_im(aoc_cables)
-                    copper_cables = port_supporting_im.get('passive_copper_cables')
-                    if copper_cables:
-                        with allure.step('Enable autoneg on copper cable ports if SW controlled'):
-                            self.cli_obj.im.enable_autoneg_on_passive_copper(copper_cables)
+                    with allure.step('Disable autoneg on ports supporting IM'):
+                        self.cli_obj.im.disable_autoneg_on_ports_supporting_im(port_supporting_im)
 
         if is_redmine_issue_active([3858467]) and platform == 'x86_64-mlnx_msn4700-r0':
             self.reboot_reload_flow(r_type=SonicConst.CONFIG_RELOAD_CMD, topology_obj=topology_obj, reload_force=True)
@@ -1203,6 +859,8 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                               dest_file=SonicConst.CONFIG_DB_JSON, file_system='/tmp/',
                               overwrite_file=True, verify_file=False)
         self.engine.run_cmd(f'sudo mv /tmp/{SonicConst.CONFIG_DB_JSON} {SonicConst.CONFIG_DB_JSON_PATH}')
+        if self.is_performance_setup(setup_name):
+            self.reload_configuration(force=True)
 
     def update_sai_xml_file(self, platform, hwsku, global_flag=False, local_flags=False):
         switch_sai_xml_path = f'/usr/share/sonic/device/{platform}/{hwsku}'
@@ -1447,10 +1105,6 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                 return True
         return False
 
-    @staticmethod
-    def is_performance_setup(str_with_setup_name):
-        return 'performance' in str_with_setup_name
-
     def is_default_hwsku(self, hwsku, setup_name):
         is_default_hwsku = True
         if self.is_performance_setup(setup_name) and hwsku == PerformanceSetupConstants.HWSKU:
@@ -1585,18 +1239,6 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                    tries=24,
                    delay=10,
                    logger=logger)
-
-    def execute_command_in_docker(self, docker, command):
-        return self.engine.run_cmd('docker exec -i {} {}'.format(docker, command))
-
-    def copy_to_docker(self, docker, src_path_on_host, dst_path_in_docker):
-        return self.engine.run_cmd('docker cp {} {}:{}'.format(src_path_on_host, docker, dst_path_in_docker))
-
-    def copy_from_docker(self, docker, dst_path_on_host, src_path_in_docker):
-        return self.engine.run_cmd('sudo docker cp {}:{} {}'.format(docker, src_path_in_docker, dst_path_on_host))
-
-    def remove_from_docker(self, docker, src_path_in_docker):
-        return self.engine.run_cmd('sudo docker exec {} rm -rf {}'.format(docker, src_path_in_docker))
 
     def get_warm_reboot_status(self):
         return self.engine.run_cmd('systemctl is-active warmboot-finalizer')
@@ -1774,17 +1416,6 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                            delay=10,
                            logger=logger)
 
-    def is_dummy_command_succeed(self):
-        try:
-            self.engine.run_cmd(DUMMY_COMMAND, validate=True)
-            logger.info('login with credentials username: {} ,password:{} succeed!'.
-                        format(self.engine.username, self.engine.password))
-            return True
-        except netmiko.ssh_exception.NetmikoAuthenticationException:
-            logger.info('login with credentials username: {} ,password:{} did not succeed!'.
-                        format(self.engine.username, self.engine.password))
-            return False
-
     def if_other_credentials_used_set_boot_order_onie(self):
         engine = self.get_sonic_engine_try_different_passwords()
         if engine:
@@ -1956,12 +1587,9 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         dut_engine.run_cmd(command)
         get_health_event_config(dut_engine)
 
-    def add_ntp_server(self, server_ip):
-        """
-        This method add a ntp server on the dut
-        :return: command output
-        """
-        return self.engine.run_cmd(f'sudo config ntp add {server_ip}')
+    def change_default_grub_timeout(self, timeout):
+        cmd = "sudo sed -i 's/set timeout=5/set timeout={}/' /host/grub/grub.cfg".format(timeout)
+        self.engine.run_cmd(cmd)
 
 
 class SonicGeneralCli202012(SonicGeneralCliDefault):

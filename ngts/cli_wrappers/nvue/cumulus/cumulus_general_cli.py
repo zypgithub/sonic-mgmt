@@ -47,7 +47,9 @@ class CumulusGeneralCli(NvueGeneralCli):
         except BaseException:
             logging.info(f"{NvosConst.INSTALL_BOOT_PATTERN} was not found - will continue")
 
-    def _wait_nos_to_become_functional(self, engine, topology_obj, serial_engine):
+    def _wait_nos_to_become_functional(self, engine, topology_obj="", dut_alias=None, serial_engine=None):
+        serial_engine = self.enter_serial_connection_context(topology_obj, dut_alias)
+
         with allure.step('Set default password'):
             logging.info(f"Login using default user {self.device.default_username}")
             _, index = serial_engine.run_cmd(self.device.default_username, ["Password:"], timeout=5)

@@ -56,7 +56,10 @@ class DeviceFactory:
     def create_device(device_name):
         try:
             if device_name not in DeviceFactory.device_type_dict.keys():
-                device_name = device_name[0:7]
+                if "5600" in device_name:
+                    device_name = 'Mellanox SN5600'
+                else:
+                    device_name = device_name[0:7]
             instance_type = DeviceFactory.device_type_dict[device_name]
             instance = instance_type()
             logger.info('Received switch type {device_name}, created Device instance {instance_type}'.format(
