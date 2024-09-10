@@ -75,7 +75,7 @@ def _parse_args():
     parser.add_argument("--deploy_fanout", help="Specify whether to do fanout deployment. Default is 'no'",
                         choices=["no", "yes"], dest="deploy_fanout", default="no")
     parser.add_argument("--onyx_image_url", help="Specify Onyx image url for the fanout switch deployment"
-                                                 " Example: http://fit69.mtl.labs.mlnx/mswg/release/sx_mlnx_os/lastrc_3_9_3000/X86_64/image-X86_64-3.9.3004-002.img",
+                                                 " Example: http://nbu-mtr-nfs.nvidia.com/mswg/release/sx_mlnx_os/lastrc_3_9_3000/X86_64/image-X86_64-3.9.3004-002.img",
                         dest="onyx_image_url", default=None)
     parser.add_argument("--wjh-deb-url", help="Specify url to WJH debian package",
                         dest="wjh_deb_url", default="")

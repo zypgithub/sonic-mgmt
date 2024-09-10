@@ -63,7 +63,7 @@ def pytest_addoption(parser):
                      choices=["no", "yes"], action="store", default="no")
     logger.info('Parsing onyx_image_url')
     parser.addoption("--onyx_image_url", help="Specify Onyx image url for the fanout switch deployment"
-                                              " Example: http://fit69.mtl.labs.mlnx/mswg/release/sx_mlnx_os/lastrc_3_9_3000/X86_64/image-X86_64-3.9.3004-002.img",
+                                              " Example: http://nbu-mtr-nfs.nvidia.com/mswg/release/sx_mlnx_os/lastrc_3_9_3000/X86_64/image-X86_64-3.9.3004-002.img",
                      action="store", default=None)
     logger.info('Parsing port-number')
     parser.addoption("--port-number", action="store", default="",
