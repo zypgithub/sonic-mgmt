@@ -1,5 +1,4 @@
 #!/auto/app/Python-3.6.2/bin/python
-from ngts.constants.constants import MarsConstants
 import sys
 import argparse
 import logging
@@ -10,8 +9,9 @@ import time
 import pdb
 path = os.path.abspath(__file__)
 sonic_mgmt_path = path.split('/ngts/')[0]
-sys.path.append(sonic_mgmt_path)
 
+sys.path.append(sonic_mgmt_path)
+from ngts.constants.constants import MarsConstants
 logger = logging.getLogger()
 
 
