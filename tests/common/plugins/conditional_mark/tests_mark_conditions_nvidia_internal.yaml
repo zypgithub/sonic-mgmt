@@ -586,6 +586,12 @@ platform_tests/test_cpu_memory_usage.py:
       - "'simx' in platform"
       - "https://redmine.mellanox.com/issues/3811231 and 'r-alligator-04' in testbed"
 
+golden_config_infra/test_config_reload_with_rendered_golden_config.py:
+  skip:
+    reason: "Testcase ignored ue to RM issue: https://redmine.mellanox.com/issues/3955664"
+    conditions:
+      - "https://redmine.mellanox.com/issues/3955664 and ('leopard' in testbed or 'moose' in testbed)"
+
 platform_tests/cli/test_show_platform.py::test_show_platform_psustatus:
   skip:
     reason: "Testcase ignored due to platform nvda_bf or due to RM issue: https://redmine.mellanox.com/issues/3852184 on leopard"
