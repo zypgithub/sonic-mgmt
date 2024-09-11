@@ -108,7 +108,10 @@ class DutUtilsTool:
                     check_port_status_till_alive(True, dut_engine.ip, dut_engine.ssh_port)
                 if topology_obj:
                     with allure.step('wait for System is ready in serial'):
-                        DutUtilsTool.wait_for_system_ready_in_serial(topology_obj)
+                        if device:
+                            DutUtilsTool.wait_for_system_ready_in_serial(topology_obj, wait_timeout=device.system_is_ready_wait_timeout)
+                        else:
+                            DutUtilsTool.wait_for_system_ready_in_serial(topology_obj)
                 with allure.step('wait for ssh'):
                     dut_engine.run_cmd('echo "SSH OK"')
                 if not wait_for_nvos:
