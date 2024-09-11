@@ -55,7 +55,7 @@
           "name": "Exec upload script on docker",
           "module": "ngts/scripts/upload_regression_results_to_msft/build/run_upload_script.groovy",
           "category": "exec upload script on docker",
-          "container": "dind:DIND",
+          "node": "fit150-r2d2",
           "parameters": {
               "sonic_version": "${sonic_version}",
               "command": "${command}",
