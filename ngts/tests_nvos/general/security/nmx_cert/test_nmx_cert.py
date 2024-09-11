@@ -10,7 +10,8 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.certificate.constants import TestCert
-from ngts.tests_nvos.general.security.nmx_cert.conftest import clear_manager_config, import_test_certs
+from ngts.tests_nvos.general.security.certificate.helpers import import_test_certs
+from ngts.tests_nvos.general.security.nmx_cert.conftest import clear_manager_config
 from ngts.tests_nvos.general.security.nmx_cert.constants import Defaults, EncryptionMode, ENABLED, DISABLED, \
     UserCfgJsonFields, FILE_SHOULD_NOT_EXIST, NA, STATE, UserCfgJsonValues
 from ngts.tests_nvos.general.security.nmx_cert.helpers import verify_manager_show, verify_cert_show, verify_cacert_show, \

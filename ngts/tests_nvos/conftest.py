@@ -602,3 +602,13 @@ def target_version_realpath(target_version):
         target_version_path = cmd_runner.run_cmd(f'realpath {target_version}')
         logging.info(f'target version path: {target_version_path}')
     return target_version_path
+
+
+@pytest.fixture(scope='session')
+def base_version_realpath(base_version):
+    assert base_version is not None, "No base image is specified"
+    cmd_runner = CmdRunner()
+    with allure.step('get real full path of target version'):
+        base_version_path = cmd_runner.run_cmd(f'realpath {base_version}')
+        logging.info(f'base version path: {base_version_path}')
+    return base_version_path

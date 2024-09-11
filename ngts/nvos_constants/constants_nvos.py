@@ -191,6 +191,12 @@ class TestFlowType:
     ALL_TYPES = [GOOD_FLOW, BAD_FLOW]
 
 
+class RebootTestFlowType:
+    WITH_SAVE = 'save'
+    NO_SAVE = 'no-save'
+    ALL_TYPES = [WITH_SAVE, NO_SAVE]
+
+
 class OutputFormat:
     auto = 'auto'
     json = 'json'

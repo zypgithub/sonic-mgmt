@@ -146,6 +146,8 @@ def clear_conf(dut_engine, markers=None, set_base_config_function=set_base_confi
     finally:
         with allure.step("Detach config"):
             NvueGeneralCli.detach_config(dut_engine)
+        with allure.step("Save cleared config"):
+            NvueGeneralCli.save_config(dut_engine)
 
 
 def clear_system_profile_config(dut_engine=None):
