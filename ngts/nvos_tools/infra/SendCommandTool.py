@@ -6,7 +6,7 @@ invalid_cmd_str = ['invalid date', 'Invalid config', 'Error', 'command not found
                    'internal error', 'Valid range is', 'Invalid file', 'suggested new filename is not in a bin format',
                    'Only UID LED allowed', "You don't have the permission to access the requested resource",
                    'Cannot create local user', "is not a ", "is not one of", 'File not found', 'unsuccessful',
-                   'Uncaught exception', 'failed', 'first uninstall old package', 'failed to uninstall', 'action_error',
+                   'Uncaught exception', 'first uninstall old package', 'failed to uninstall', 'action_error',
                    'Method Not Allowed', 'Unknown app name', 'Failed to install']
 
 timeout_cmd_str = ['Timeout while waiting for client response']
