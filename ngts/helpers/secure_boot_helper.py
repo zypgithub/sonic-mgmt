@@ -580,24 +580,10 @@ class SonicSecureBootHelper(SecureBootHelper):
         Get the expected latest CPLD url and version defined in firmware.json
         """
         with allure.step(f'Getting list of versions for {cpld} from firmware.json'):
-            cplds_list = []
-            for cpld_data in cpld_component_data:
-                cplds_list.append(cpld_data['version'])
+            url = cpld_component_data[0]['firmware']
+            latest_cpld_version = cpld_component_data[0]['version']
+            logger.info(f"Latest CPLD version: {latest_cpld_version}, url: {url}")
 
-        with allure.step(f'Getting latest version for: {cpld} from firmware.json'):
-            result_dict = {}
-            for cpld in cplds_list:
-                cpld_main_version = int(cpld.split('_')[0].strip('CPLD'))
-                cpld_minor_version = int(cpld.split('_')[1].strip('REV'))
-                cpld_int_value = cpld_main_version + cpld_minor_version
-                result_dict[cpld_int_value] = cpld
-            latest_cpld_version_int = sorted(result_dict, reverse=True)[0]
-            latest_cpld_version = result_dict[latest_cpld_version_int]
-
-        with allure.step(f"Get the latest CPLD url"):
-            for cpld_item in cpld_component_data:
-                if cpld_item['version'] == latest_cpld_version:
-                    url = cpld_item['firmware']
         return url, latest_cpld_version
 
     @staticmethod
