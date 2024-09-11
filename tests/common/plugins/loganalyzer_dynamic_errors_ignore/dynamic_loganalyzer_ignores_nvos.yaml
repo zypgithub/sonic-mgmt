@@ -580,6 +580,7 @@
     - Affected_test_cases:
         - tests_nvos/system/syslog/test_system_syslog.py::test_rsyslog_configurations
         - tests_nvos/system/syslog/test_system_syslog.py::test_rsyslog_configurations_openapi
+        - tests_nvos/system/syslog/test_system_syslog.py::test_rsyslog_multiple_servers_configuration
 
 # NVOS
 - Errors_list:
