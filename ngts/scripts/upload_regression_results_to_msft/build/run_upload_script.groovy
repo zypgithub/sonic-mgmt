@@ -48,7 +48,7 @@ def run_step(name) {
           echo "docker_cmd ${docker_cmd}"
           NGCITools().ciTools.run_sh("${docker_cmd}")
           echo "Copy build table from docker"
-          currentDir = NGCITools().ciTools.run_sh("sudo pwd")
+          currentDir = NGCITools().ciTools.run_sh_return_output("sudo pwd")
           echo "currentDir ${currentDir}"
           path = "${currentDir}/${build_table_name}"
           NGCITools().ciTools.run_sh("sudo docker cp ${container_name}:${script_dir}${build_table_name} ${path}")
