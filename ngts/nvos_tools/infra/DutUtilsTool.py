@@ -106,7 +106,7 @@ class DutUtilsTool:
             with allure.step("Waiting for switch to be ready"):
                 with allure.step('wait for switch reachable/ping'):
                     check_port_status_till_alive(True, dut_engine.ip, dut_engine.ssh_port)
-                if topology_obj:
+                if wait_for_nvos and topology_obj:
                     with allure.step('wait for System is ready in serial'):
                         if device:
                             DutUtilsTool.wait_for_system_ready_in_serial(topology_obj, wait_timeout=device.system_is_ready_wait_timeout)

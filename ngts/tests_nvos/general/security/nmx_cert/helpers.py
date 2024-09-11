@@ -14,7 +14,7 @@ from ngts.tests_nvos.general.security.certificate.helpers import get_path_of_imp
 from ngts.tests_nvos.general.security.nmx_cert.constants import FieldsInShowOf, CERTIFICATE, CA_CERTIFICATE, ENCRYPTION, \
     DEFAULT_NMX_C_MGMT_PORT, USR_CFG_JSON, USR_CFG_JSON_PATH, NMX_CERTS_DIR, FILE_NOT_EXIST_ERR, NMX_CACERTS_DIR, \
     FILE_SHOULD_NOT_EXIST, STATE
-from ngts.tests_nvos.general.security.nmx_cert.grpc.client.client import run_grpc_client_app
+from ngts.tests_nvos.general.security.nmx_cert.grpc.client.client import run_grpc_client
 from ngts.tests_nvos.general.security.nmx_cert.grpc.config import GrpcConfig, GrpcServerConfig, GrpcClientConfig
 
 
@@ -51,48 +51,26 @@ def verify_encryption_show(expect_mode=None):
     verify_component_show(Cluster().manager.encryption, FieldsInShowOf.ENCRYPTION, {ENCRYPTION: expect_mode})
 
 
-def send_grpc_request_to_nmx_c(tls_mode: str, server_cert: CertInfo, client_cert: CertInfo, server_cacert: CertInfo,
-                               client_cacert: CertInfo, num_requests: int = 1,
-                               delay_between_requests: int = 1) -> ResultObj:
+def run_manager_client_hello_request(client_tls_mode: str, server_cert: CertInfo, server_ca: CertInfo,
+                                     client_cert: CertInfo, client_ca: CertInfo,
+                                     num_requests: int = 1, delay_between_requests: int = 1) -> ResultObj:
     result = ResultObj(result=True, info='client successfully communicated with nmx-c', returned_value=True)
 
     with allure.step('create config for grpc client'):
-        client_config = GrpcConfig(
+        config = GrpcConfig(
             server=GrpcServerConfig(address=server_cert.dn or server_cert.ip, port=DEFAULT_NMX_C_MGMT_PORT,
-                                    tls_mode=tls_mode, cert=server_cert, cacert=server_cacert),
-            client=GrpcClientConfig(address=client_cert.dn or client_cert.ip, tls_mode=tls_mode, cert=client_cert,
-                                    cacert=client_cacert, num_requests=num_requests, delay_between_requests=delay_between_requests))
-
-    with allure.step('run grpc client'):
-        try:
-            responses = run_grpc_client_app(client_config, logging)
-            result.returned_value = responses
-        except Exception as e:
-            result = ResultObj(result=False, info=f'client failed:\n{e}', returned_value=None)
+                                    tls_mode=client_tls_mode, cert=server_cert, cacert=server_ca),
+            client=GrpcClientConfig(address=client_cert.dn or client_cert.ip, tls_mode=client_tls_mode, cert=client_cert,
+                                    cacert=client_ca, num_requests=num_requests,
+                                    delay_between_requests=delay_between_requests))
+    try:
+        with allure.step('run client hello request'):
+            responses = run_grpc_client(config, TestToolkit.engines.dut.ip, logging)
+        result.returned_value = responses
+    except Exception as e:
+        result = ResultObj(result=False, info=f'client failed:\n{e}', returned_value=None)
 
     return result
-
-
-def verify_client_connection(test_is_good_flow: bool, expectations: Union[bool, Dict[str, bool]], nmx_c_cert: CertInfo,
-                             client_cert: CertInfo, nmx_c_cacert: CertInfo, client_cacert: CertInfo):
-    def _run_client_and_verify():
-        with allure.step('Run client request to nmx-c'):  # TODO: check encryption works?
-            res: ResultObj = send_grpc_request_to_nmx_c(encryption_mode, nmx_c_cert, client_cert, nmx_c_cacert,
-                                                        client_cacert)
-        with allure.step(f'Expect {"success" if test_is_good_flow else "fail"}'):
-            res.verify_result(test_is_good_flow)
-
-    if isinstance(expectations, bool):
-        if expectations == test_is_good_flow:
-            _run_client_and_verify()
-        return
-
-    for encryption_mode, expect_success in expectations.items():
-        with allure.step(f'test with encryption mode: {encryption_mode} - expect success: {test_is_good_flow}'):
-            if expect_success == test_is_good_flow:
-                with allure.step(f'Update manager encryption mode: {encryption_mode}'):
-                    Cluster().manager.encryption.action_update(encryption_mode).verify_result()
-                _run_client_and_verify()
 
 
 def get_user_config_json_file_content(dut_engine: LinuxSshEngine):

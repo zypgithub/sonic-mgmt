@@ -87,15 +87,15 @@ def run_grpc_client_app(config: GrpcConfig, logger=None) -> str:
     return ClientApp(config, logger).run()
 
 
-def main(config, remote_host_addr='127.0.0.1'):
+def run_grpc_client(config, remote_host_addr='127.0.0.1', logger=None):
     remove_etc_host_mapping_to_dn(config.server.address)
     add_etc_host_mapping_to_dn(config.server.address, remote_host_addr)
 
-    run_grpc_client_app(config)
+    return run_grpc_client_app(config, logger)
 
 
 def local_main():
-    main(CONFIG)
+    run_grpc_client(CONFIG)
 
 
 def main_with_switch():
@@ -119,7 +119,7 @@ def main_with_switch():
         )
     )
 
-    main(config, switch_ip)
+    run_grpc_client(config, switch_ip)
 
 
 if __name__ == '__main__':
