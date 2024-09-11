@@ -12,13 +12,6 @@
     "SECRETS_YAML_SONIC=ngts/scripts/upload_regression_results_to_msft/build/sonic_secret_template.yaml"
   ],
   "timeout": "1",
-  "agentConfig": [
-    {
-      "type": "pod",
-      "libraryResource": "com/nvidia/blossom/agentTemplates/nbu-sws-dind.yaml",
-      "label": "DIND"
-    }
-  ],
   "phases": [
     {
       "phase_1": [
@@ -26,7 +19,7 @@
           "name": "Clone",
           "module": "com.mellanox.jenkins.generic_modules.Checkout",
           "category": "Clone sonic-mgmt repo",
-          "container": "dind:DIND",
+          "node": "fit150-r2d2",
           "parameters": {
             "GIT_REPOSITORY": "ssh://git-nbu-sw.nvidia.com:12024/switchx/sonic/sonic-mgmt",
             "BRANCH_NAME": "develop",
@@ -41,7 +34,7 @@
           "name": "Get ngts version",
           "module": "ngts/scripts/upload_regression_results_to_msft/build/set_ngts_version.groovy",
           "category": "Get ngts version",
-          "container": "dind:DIND",
+          "node": "fit150-r2d2",
           "parameters": {},
           "skip": false,
           "on_failure": "stop"
@@ -50,7 +43,7 @@
           "name": "Run sonic mgmt ngts docker",
           "module": "ngts/scripts/upload_regression_results_to_msft/build/start_sonic_mgmt_ngts_docker.groovy",
           "category": "Run sonic mgmt ngts docker",
-          "container": "dind:DIND",
+          "node": "fit150-r2d2",
           "parameters": {
               "ngts_version": "${NGTS_VERSION}",
               "container_name": "sonic-mgmt-${USER}"
