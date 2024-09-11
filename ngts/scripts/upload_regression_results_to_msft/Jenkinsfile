@@ -5,7 +5,7 @@ pipeline {
         buildDiscarder logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '30', numToKeepStr: '150')
     }
     environment {
-        GENERIC_CI_GIT_BRANCH = '5.0'
+        GENERIC_CI_GIT_BRANCH = '5.0.4-15'
         MAIN_NODE = 'SONIC_MGMT_LITE'
         JSON_FILE = 'ngts/scripts/upload_regression_results_to_msft/build/build_config.json'
     }
