@@ -294,7 +294,7 @@ def handle_file_size_exceedance(tar_file_path):
         "The sysdump can be obtained by:\n"
     )
     parts = tar_file_path.split('/')
-    compressed_tar_full_path = '/'.join(parts[:-2]) + '/' + f"{parts[-3]}.tar.gz"
+    compressed_tar_full_path = '/'.join(parts[:-2]) + '/' + f"{parts[-3]}.tgz"
     txt_file_path = './' + parts[-1].replace('.tar.gz', '.txt')
     with open(txt_file_path, 'w') as file:
         file.write(f"{additional_text} tar -xzvf {compressed_tar_full_path} '{parts[-2]}/{parts[-1]}'")
