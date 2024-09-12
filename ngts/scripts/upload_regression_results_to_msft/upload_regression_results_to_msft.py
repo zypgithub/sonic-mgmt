@@ -451,10 +451,10 @@ class ReleaseResultsUploader:
         self.copy_xml_results_to_result_folder()
         self.create_final_results_table()
         assert not self.redmine_bugs, f"The following Redmine issues were found in results: {self.redmine_bugs}, " \
-                                      f"export is aborted"
-        # self.export_results()
+            f"export is aborted"
+        self.export_results()
         sessions_ids = list(self.sessions_testbed_properties.keys())
-        # self.save_sessions_for_image(sessions_ids)
+        self.save_sessions_for_image(sessions_ids)
         self.compose_export_results_mail(self.exported_results_excel_table_path)
 
     def compare_results(self):
@@ -485,10 +485,10 @@ class ReleaseResultsUploader:
         sessions = ','.join(sessions_ids_as_str)
         community_dbs = ','.join(self.get_community_dbs_list())
         query = f"SELECT session_id, local_key_id, database_name, test_name, case_name, case_result, case_url " \
-                f"FROM NBU_ENG_WH.MARS_SONIC_CASES_RESULTS " \
-                f"WHERE session_id IN ({sessions}) AND " \
-                f"((database_name = \'pretest.db\' AND case_name = \'pretest\') OR " \
-                f"database_name IN ({community_dbs}))"
+            f"FROM NBU_ENG_WH.MARS_SONIC_CASES_RESULTS " \
+            f"WHERE session_id IN ({sessions}) AND " \
+            f"((database_name = \'pretest.db\' AND case_name = \'pretest\') OR " \
+            f"database_name IN ({community_dbs}))"
         mars_cases_df = OracleDb().select_into_df(query)
         mars_local_key_ids = set(mars_cases_df["LOCAL_KEY_ID"].tolist())
         junit_xml_local_key_ids = set(df["mars_key_id"].tolist())
@@ -545,9 +545,9 @@ class ReleaseResultsUploader:
             logger.info(f"Query sessions for {group}")
 
             remote_cmd = f"python {ResultUploaderConst.QUERY_SESSIONS_SCRIPT}" \
-                         f" --action query --description query_sessions " \
-                         f"--lts_info version:SONiC.{self.sonic_version}" \
-                         f" --group {group} --last_days {self.last_days}"
+                f" --action query --description query_sessions " \
+                f"--lts_info version:SONiC.{self.sonic_version}" \
+                f" --group {group} --last_days {self.last_days}"
 
             logger.info("CMD: %s" % remote_cmd)
             output = stm_engine.run_cmd(remote_cmd, validate=False)
@@ -557,8 +557,8 @@ class ReleaseResultsUploader:
                 if any([re.search(regex, started_by) for regex in self.started_by_regexes]):
                     sessions_list.append(session)
         assert sessions_list, f"No sessions were collected for {self.sonic_version} " \
-                              f"in the last {self.last_days} days with " \
-                              f"started_by regex which match {self.started_by_regexes}"
+            f"in the last {self.last_days} days with " \
+            f"started_by regex which match {self.started_by_regexes}"
         return sessions_list
 
     def update_sessions_testbed_properties(self, sessions):
@@ -869,18 +869,18 @@ class ReleaseResultsUploader:
         report_id_dirs.remove(self.result_folder)
         for report_id_dir in report_id_dirs:
             export_results_command = f'python3 {uploader_script_path} -c "test_result" ' \
-                                     f'{report_id_dir} {ResultUploaderConst.DATABASE_NAME}'
+                f'{report_id_dir} {ResultUploaderConst.DATABASE_NAME}'
             logger.info(f"CMD: {export_results_command}")
             if self.sonic_mgmt_ip:
                 logger.info(f"User provided sonic-mgmt IP: {self.sonic_mgmt_ip}")
                 sonic_mgmt_engine = LinuxSshEngine(ip=self.sonic_mgmt_ip,
                                                    username=sonic_mgmt_user,
                                                    password=sonic_mgmt_password)
-                # output = sonic_mgmt_engine.run_cmd(export_results_command, validate=False)
+                output = sonic_mgmt_engine.run_cmd(export_results_command, validate=False)
             else:
                 logger.info(f"User didn't provided sonic-mgmt IP, "
                             f"assumption is that script is already running from sonic-mgmt docker")
-                # output = os.system(export_results_command)
+                output = os.system(export_results_command)
             logger.info(f"CMD output: {output}")
             # TODO: add output validation
 
@@ -889,8 +889,8 @@ class ReleaseResultsUploader:
         str_sessions_ids = [str(session_id) for session_id in sessions_ids]
         sessions_list = ",".join(str_sessions_ids)
         remote_cmd = f"python {ResultUploaderConst.SAVE_SESSIONS_SCRIPT}" \
-                     f" --action save --description {self.sonic_version}_msft_uploaded_sessions" \
-                     f" --sessions_id {sessions_list}"
+            f" --action save --description {self.sonic_version}_msft_uploaded_sessions" \
+            f" --sessions_id {sessions_list}"
         logger.info("CMD: %s" % remote_cmd)
         output = stm_engine.run_cmd(remote_cmd, validate=False)
         for session_id in sessions_ids:
@@ -909,7 +909,7 @@ class ReleaseResultsUploader:
             else:
                 setups_not_found.append(host)
         assert not setups_not_found, f"No setup name was found for the following hosts {setups_not_found}, " \
-                                     f"please review setups list"
+            f"please review setups list"
         return setups_in_results
 
     @staticmethod
