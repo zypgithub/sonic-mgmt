@@ -335,17 +335,21 @@ class NvueGeneralCli(SonicGeneralCliDefault):
             'remote_reboot']
         assert cmd, "Reboot command is empty"
 
-        setup_site = topology_obj.players['dut_serial']['attributes'].noga_query_data['attributes']['Common']['Site']
-        if setup_site and setup_site in TopologyConsts.site_server_ip.keys():
-            server_ip = TopologyConsts.site_server_ip[setup_site]
-        else:
-            server_ip = TopologyConsts.site_server_ip[TopologyConsts.MTL]   # default
+        server_ip = self.get_site_server_ip(topology_obj)
 
         # cmd = SshPassCmdBuilder(os.getenv("TEST_SERVER_USER"), os.getenv("TEST_SERVER_PASSWORD"), server_ip, cmd_to_execute=cmd).set_ssn().build()
         # CmdRunner().run_cmd_in_process(cmd)
         ssh_conn = LinuxSshEngine(ip=server_ip, username=os.getenv("TEST_SERVER_USER"),
                                   password=os.getenv("TEST_SERVER_PASSWORD"))
         ssh_conn.run_cmd(cmd)
+
+    def get_site_server_ip(self, topology_obj):
+        setup_site = topology_obj.players['dut_serial']['attributes'].noga_query_data['attributes']['Common']['Site']
+        if setup_site and setup_site in TopologyConsts.site_server_ip.keys():
+            server_ip = TopologyConsts.site_server_ip[setup_site]
+        else:
+            server_ip = TopologyConsts.site_server_ip[TopologyConsts.MTL]  # default
+        return server_ip
 
     def enter_serial_connection_context(self, topology_obj):
         '''

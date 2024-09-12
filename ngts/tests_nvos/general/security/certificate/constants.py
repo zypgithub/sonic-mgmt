@@ -6,6 +6,12 @@ CERT_MGMT_CERTS = '/auto/sw_system_project/NVOS_INFRA/security/verification/cert
 TEST_CERTS = '/auto/sw_system_project/NVOS_INFRA/security/verification/certs/test_certs'
 GET_SYSTEM_VERSION_PATH = '/nvue_v1/system/version'
 
+DUT_IMPORTED_CERTS_DIR = '/etc/nvue/certificates'
+DUT_IMPORTED_CERTS_PRIVATE_DIR = f'{DUT_IMPORTED_CERTS_DIR}/private'
+DUT_IMPORTED_CERTS_PUBLIC_DIR = f'{DUT_IMPORTED_CERTS_DIR}/public'
+
+DUT_IMPORTED_CACERTS_DIR = '/etc/ssl/certs'
+
 
 class CertMsgs:
     SSL_CERTIFICATE_PROBLEM = 'SSL certificate problem'
@@ -59,6 +65,18 @@ class TestCert:
         dn='nvos-dut',
         ip=None,
         cacert=f'{TEST_CERTS}/ca2/ca.crt'
+    )
+
+    cert_valid_3 = CertInfo(
+        name='valid-cert-3',
+        info='valid certificate for test - from ca3',
+        private=f'{TEST_CERTS}/cert-from-ca3/service.key',
+        public=f'{TEST_CERTS}/cert-from-ca3/service.pem',
+        p12_bundle=f'{TEST_CERTS}/cert-from-ca3/service.p12',
+        p12_password='secret',
+        dn='nvos-dut',
+        ip=None,
+        cacert=f'{TEST_CERTS}/ca3/ca.crt'
     )
 
     cert_private_public_mismatch = CertInfo(

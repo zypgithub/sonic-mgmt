@@ -24,7 +24,7 @@ from ngts.tools.test_utils.switch_recovery import generate_strong_password
 
 @pytest.mark.system
 @pytest.mark.gnmi
-@pytest.mark.parametrize('test_flow', [TestFlowType.GOOD_FLOW])
+@pytest.mark.parametrize('test_flow', TestFlowType.ALL_TYPES)
 def test_gnmi_authentication(test_flow, engines, local_adminuser, aaa_users):
     """
     verify that gnmi clients must be properly authenticated to subscribe and get updates
@@ -61,7 +61,7 @@ def test_gnmi_authentication(test_flow, engines, local_adminuser, aaa_users):
 
 @pytest.mark.system
 @pytest.mark.gnmi
-@pytest.mark.parametrize('test_flow', [TestFlowType.GOOD_FLOW])
+@pytest.mark.parametrize('test_flow', TestFlowType.ALL_TYPES)
 def test_gnmi_auth_change_local_user_password(test_flow, engines, local_adminuser):
     """
     verify that gnmi properly authenticates local user after password change

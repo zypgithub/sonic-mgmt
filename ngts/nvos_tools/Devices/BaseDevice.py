@@ -82,6 +82,7 @@ class BaseDevice(ABC):
         self.profile_change_supported = False
         self.voltage_sensors = []
         self.system_is_ready_wait_timeout = 5 * MINUTE
+        self.supports_tpm_testing = True
 
     def _init_fan_list(self):
         self.fan_list = []

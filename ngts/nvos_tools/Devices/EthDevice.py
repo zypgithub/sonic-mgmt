@@ -3,11 +3,11 @@ import os
 from typing import List
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from ngts.nvos_constants.constants_nvos import NvosConst, FansConsts, PlatformConsts, CumulusConsts, DiskConsts
+from ngts.nvos_constants.constants_nvos import NvosConst, FansConsts, PlatformConsts, CumulusConsts
 from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
-from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts
 from ngts.nvos_tools.infra.ValidationTool import ExpectedString
+from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts
 
 logger = logging.getLogger()
 
@@ -81,6 +81,7 @@ class EthSwitch(BaseSwitch):
         self.disk_partition_capacity_limit = 70  # Percent value
         self.disk_minimum_free_space = 5.5  # Gig
         self.ib_ports_num = 32
+        self.supports_tpm_testing = False
 
     def wait_for_os_to_become_functional(self, engine, find_prompt_tries=60, find_prompt_delay=10):
         return DutUtilsTool.wait_for_cumulus_to_become_functional(engine)

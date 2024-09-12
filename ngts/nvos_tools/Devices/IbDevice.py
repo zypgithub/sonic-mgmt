@@ -442,6 +442,7 @@ class GorillaSwitch(IbSwitch):
         self.stats_fan_header_num_of_lines = 25
         self.stats_power_header_num_of_lines = 13
         self.stats_temperature_header_num_of_lines = 53
+        self.supports_tpm_testing = False
 
     def get_mgmt_ports(self) -> List[str]:
         return self.mgmt_ports

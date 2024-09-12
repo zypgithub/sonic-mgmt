@@ -6,7 +6,8 @@ import pytest
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from infra.tools.general_constants.constants import DefaultTestServerCred
-from ngts.cli_wrappers.nvue.nvue_general_clis import server_ip
+from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
+from ngts.conftest import topology_obj
 from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
@@ -486,7 +487,7 @@ def test_auth_restrictions_auth_success_clears_user(test_api, engines, test_user
 @pytest.mark.simx
 @pytest.mark.security
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_auth_restrictions_ssh_and_openapi_counting(test_api, engines, test_user):
+def test_auth_restrictions_ssh_and_openapi_counting(test_api, engines, test_user, devices, topology_obj):
     """
     @summary: Verify that both authentication through ssh and through openapi request are both count as auth attempts.
 
@@ -514,6 +515,7 @@ def test_auth_restrictions_ssh_and_openapi_counting(test_api, engines, test_user
         password = test_user[AaaConsts.PASSWORD]
         openapi_request = "curl -k --user {}:{} --request GET 'https://{}/nvue_v1/system/version'"
         good_request = openapi_request.format(user, password, ip)
+        server_ip = NvueGeneralCli(engines.dut, devices.dut).get_site_server_ip(topology_obj)
         request_engine = LinuxSshEngine(server_ip, DefaultTestServerCred.DEFAULT_USERNAME,
                                         DefaultTestServerCred.DEFAULT_PASS)
         out = request_engine.run_cmd(good_request)

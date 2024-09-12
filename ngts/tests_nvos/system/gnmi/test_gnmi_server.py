@@ -1,10 +1,11 @@
 import logging
 import os
 import random
+import re
 import signal
 import time
-import re
 from multiprocessing import Process
+
 import pytest
 
 import ngts.tools.test_utils.allure_utils as allure
@@ -12,10 +13,10 @@ from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.constants.constants import GnmiConsts
 from ngts.nvos_constants.constants_nvos import NvosConst, DatabaseConst, ApiType, ActionConsts, SystemConsts
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
+from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.system.System import System
-from ngts.nvos_tools.infra.Fae import Fae
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
 from ngts.tests_nvos.system.gnmi.constants import GnmiMode, MAX_GNMI_SUBSCRIBERS, GnmicErr
 from ngts.tests_nvos.system.gnmi.helpers import gnmi_basic_flow, validate_gnmi_is_running_and_stream_updates, \
@@ -126,7 +127,7 @@ def test_simulate_gnmi_server_failure(test_api, engines):
         with allure.step('Simulate gnmi server failure'):
             Tools.DatabaseTool.sonic_db_cli_hset(engines.dut, '', DatabaseConst.CONFIG_DB_NAME, "FEATURE|gnmi-server",
                                                  "auto_restart", "disabled")
-            engines.dut.run_cmd("sudo systemctl stop gnmi-server")
+            engines.dut.run_cmd("docker stop gnmi-server")
             validate_show_gnmi(gnmi_server_obj, engines, gnmi_state=GnmiConsts.GNMI_STATE_ENABLED,
                                gnmi_is_running=GnmiConsts.GNMI_IS_NOT_RUNNING)
             sleep_time_for_health_issue = 6
@@ -139,7 +140,7 @@ def test_simulate_gnmi_server_failure(test_api, engines):
         with allure.step('re-enable gnmi server'):
             Tools.DatabaseTool.sonic_db_cli_hset(engines.dut, '', DatabaseConst.CONFIG_DB_NAME, "FEATURE|gnmi-server",
                                                  "auto_restart", "enabled")
-            engines.dut.run_cmd("sudo systemctl start gnmi-server")
+            engines.dut.run_cmd("docker start gnmi-server")
             gnmi_server_obj.disable_gnmi_server()
             gnmi_server_obj.enable_gnmi_server()
             logger.info("sleep 90 sec until validate stream updates")
