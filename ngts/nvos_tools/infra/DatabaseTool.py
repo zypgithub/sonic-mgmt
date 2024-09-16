@@ -25,7 +25,7 @@ class DatabaseTool:
     @staticmethod
     def sonic_db_cli_hget(engine, asic, db_name, db_config, param):
         asic = f"-n {asic} " if asic else ""
-        cmd = f'sonic-db-cli {asic}{db_name} hget {db_config} {param}'
+        cmd = f'sonic-db-cli {asic}{db_name} hget "{db_config}" "{param}"'
         logging.info(f'Running {cmd}')
         return engine.run_cmd(cmd)
 

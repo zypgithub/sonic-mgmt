@@ -42,7 +42,7 @@ def test_snmp_default_values_fields(engines):
     with allure.step("Enable snmp"):
         HostMethods.start_snmp_server(engine=engines.dut, state=NvosConst.ENABLED, readonly_community='qwerty12',
                                       listening_address='all')
-        _wait_for_snmp_is_running(system)
+        HostMethods.wait_for_snmp_is_running(system)
 
     with allure.step('Verify fields and values after snmp enabled'):
         listening_address_output = OutputParsingTool.parse_json_str_to_dictionary(
@@ -103,7 +103,7 @@ def test_snmp_default_values_fields(engines):
         system.snmp_server.unset('system-location').verify_result()
         system.snmp_server.unset('auto-refresh-interval').verify_result()
         NvueGeneralCli.apply_config(engines.dut)
-        _wait_for_snmp_is_running(system, 'no')
+        HostMethods.wait_for_snmp_is_running(system, 'no')
 
         with allure.step('Verify values changed to default after unset'):
             system_snmp_output = OutputParsingTool.parse_json_str_to_dictionary(system.snmp_server.show())\
@@ -323,19 +323,6 @@ def test_system_snmp_load_test(engines, topology_obj):
 
     with allure.step("SNMP unset"):
         system.snmp_server.unset(apply=True).verify_result()
-
-
-def _wait_for_snmp_is_running(system, state='yes', tries=5, timeout=2):
-    for _ in range(tries):
-        system_snmp_output = OutputParsingTool.parse_json_str_to_dictionary(system.snmp_server.show()) \
-            .get_returned_value()
-        if state in system_snmp_output[SystemConsts.SNMP_IS_RUNNING]:
-            break
-        elif state not in system_snmp_output[SystemConsts.SNMP_IS_RUNNING]:
-            time.sleep(timeout)
-            continue
-        else:
-            assert 'SNMP not in {} is-running state'.format(state)
 
 
 def skip_if_engines_does_not_exist_in_setup(required_engines_list, engines):

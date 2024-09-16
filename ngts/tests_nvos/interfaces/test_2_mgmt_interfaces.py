@@ -78,7 +78,7 @@ def test_2_mgmt_snmp(engines, topology_obj):
     with allure.step("Enable snmp"):
         HostMethods.start_snmp_server(engine=engines.dut, state=NvosConst.ENABLED, readonly_community='qwerty12',
                                       listening_address='all')
-        _wait_for_snmp_is_running(system)
+        HostMethods.wait_for_snmp_is_running(system)
 
     with allure.step('Verify fields and values after snmp enabled'):
         listening_address_output = OutputParsingTool.parse_json_str_to_dictionary(
@@ -92,7 +92,7 @@ def test_2_mgmt_snmp(engines, topology_obj):
 
     with allure.step("Unset snmp"):
         system.snmp_server.unset(apply=True).verify_result()
-        _wait_for_snmp_is_running(system, 'no')
+        HostMethods.wait_for_snmp_is_running(system, 'no')
 
 
 @pytest.mark.ib
@@ -188,19 +188,6 @@ def wait_for_hostname_changed(system, dhcp_hostname):
         assert dhcp_hostname in system_output[SystemConsts.HOSTNAME], (f"Expected hostname '{dhcp_hostname}', \n"
                                                                        f"actual="
                                                                        f"'{system_output[SystemConsts.HOSTNAME]}'")
-
-
-def _wait_for_snmp_is_running(system, state='yes', tries=5, timeout=2):
-    for _ in range(tries):
-        system_snmp_output = OutputParsingTool.parse_json_str_to_dictionary(system.snmp_server.show()) \
-            .get_returned_value()
-        if state in system_snmp_output[SystemConsts.SNMP_IS_RUNNING]:
-            break
-        elif state not in system_snmp_output[SystemConsts.SNMP_IS_RUNNING]:
-            time.sleep(timeout)
-            continue
-        else:
-            assert 'SNMP not in {} is-running state'.format(state)
 
 
 def get_rule_packets(mgmt_port, acl_id, rule_id=None, rule_direction=AclConsts.INBOUND):

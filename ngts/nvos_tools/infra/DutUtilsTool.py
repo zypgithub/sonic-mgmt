@@ -22,6 +22,7 @@ logger = logging.getLogger()
 
 
 class DutUtilsTool:
+    invalid_output_list = ['aborted', 'aborting', 'error']
 
     @staticmethod
     def reload(engine, device, command, find_prompt_tries=80, find_prompt_delay=2, should_wait_till_system_ready=True,
@@ -43,7 +44,7 @@ class DutUtilsTool:
             output = device.reload_device(engine, list_commands)
             logger.info(output)
 
-            if 'aborted' in output.lower() or 'aborting' in output.lower():
+            if any(sub in output.lower() for sub in DutUtilsTool.invalid_output_list):
                 return ResultObj(result=False, info=output)
 
             res_obj = DutUtilsTool.wait_on_system_reboot(engine, recovery_engine, None, should_wait_till_system_ready,

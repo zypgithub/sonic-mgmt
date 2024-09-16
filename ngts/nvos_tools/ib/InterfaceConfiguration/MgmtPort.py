@@ -32,3 +32,9 @@ class MgmtPort(BaseComponent):
                 SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].show_interface,
                                                 TestToolkit.engines.dut,
                                                 self.name).get_returned_value()).get_returned_value()
+
+    def get_port_ip_addresses(self, dut_engine):
+        with allure.step(f"Get mgmt port {self.name} ip addresses"):
+            ip_addresses_show = list(OutputParsingTool.parse_json_str_to_dictionary(
+                self.interface.ip.address.show(dut_engine=dut_engine)).get_returned_value())
+        return ip_addresses_show[0].split("/")[0]

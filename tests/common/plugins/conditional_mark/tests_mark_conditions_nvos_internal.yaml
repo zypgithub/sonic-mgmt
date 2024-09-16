@@ -206,10 +206,6 @@ tests_nvos/interfaces/multi_planar/test_multi_planar_sym_mgr_and_aport.py::test_
     conditions:
       - https://redmine.mellanox.com/issues/3599251
 
-tests_nvos/interfaces/multi_planar/test_multi_planar_sym_mgr_and_aport.py::test_aggregated_port_physical_and_logical_state_machines:
-  skip:
-    reason: "Testcase skipped due to inability to force update of DB values"
-
 tests_nvos/ib/test_set_unset_sm_state.py::test_set_unset_sm_state_many_times:
   skip:
     reason: "Testcase skipped on marlin systems due to RM issue: https://redmine.mellanox.com/issues/3649754"
@@ -271,10 +267,6 @@ tests_nvos/interfaces/split_aggregated_port/test_split_aggregated_port.py::test_
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3795718"
     conditions:
       - https://redmine.mellanox.com/issues/3795718
-
-tests_nvos/system/test_system_ptp.py:
-  skip:
-    reason: "Decided to disable for now"
 
 tests_nvos/system/test_system_image.py::test_install_multiple_images:
   skip:

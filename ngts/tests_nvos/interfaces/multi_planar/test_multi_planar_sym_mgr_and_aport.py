@@ -376,77 +376,77 @@ def test_aggregated_port_mismatch_between_planes(engines, devices, test_api):
             set_mp_config_to_default()
 
 
-@pytest.mark.interface
-@pytest.mark.multiplanar
-@pytest.mark.simx_xdr
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_aggregated_port_physical_and_logical_state_machines(engines, devices, test_api):
-    """
-    validate Aport Physical state and Logical state aggregation according to the following rule priorities:
-    State Type  | Rule Priority | Logic                                                                    |APort State
-    --------------------------------------------------------------------------------------------------------------
-                | 0             | Any underlying plane port is disabled                                    | Disabled
-    Physical    | 1             | Any underlying plane port is in Sleep state                              | Sleep
-                | 2             | Any underlying plane port is in Polling state                            | Polling
-                | 3             | Any underlying plane port are in LinkUp state                            | LinkUp
-    --------------------------------------------------------------------------------------------------------------
-                | 0             | At least on underlying plane port is in Down state                       | Down
-    Logical     | 1             | Any ul plane port is in Init state AND no ul plane port is in Down state | Init
-                | 2             | Any ul plane p is in Armed state AND no ul pp is in Down OR Init state   | Armed
-                | 3             | All underlying plane ports are in Active state                           | Active
-    --------------------------------------------------------------------------------------------------------------
-
-    Test flow:
-    1. Validate physical state in all plane port combinations:
-        a.	plane1: disabled, plane2: disabled
-        b.	plane1: disabled, plane2: sleep
-        c.	plane1: disabled, plane2: polling
-        d.	plane1: disabled, plane2: linkup
-        e.	plane1: sleep   , plane2: sleep
-        f.	plane1: sleep   , plane2: polling
-        g.	plane1: sleep   , plane2: linkup
-        h.	plane1: polling , plane2: polling
-        i.	plane1: polling , plane2: linkup
-        j.	plane1: linkup  , plane2: linkup
-
-    2. Validate logical state in all plane port combinations:
-        a.	plane1: down  , plane2: down
-        b.	plane1: down  , plane2: init
-        c.	plane1: down  , plane2: armed
-        d.	plane1: down  , plane2: active
-        e.	plane1: init  , plane2: init
-        f.	plane1: init  , plane2: armed
-        g.	plane1: init  , plane2: active
-        h.	plane1: armed , plane2: armed
-        i.	plane1: armed , plane2: active
-        j.	plane1: active, plane2: active
-    """
-
-    TestToolkit.tested_api = test_api
-    engine = engines.dut
-
-    try:
-        with allure.step("Select a random aggregated port (connected in loop back to another port)"):
-            # selected_fae_aggregated_port = Fae(port_name=RandomizationTool.select_random_port(
-            #     requested_ports_logical_state=IbInterfaceConsts.LINK_LOGICAL_PORT_STATE_ACTIVE).
-            #                                     get_returned_value().name)
-            selected_fae_aggregated_port = Fae(port_name='swA8p1')
-
-        with allure.step("Validate physical state aggregation - all combinations"):
-            for combine in MultiPlanarConsts.PHYSICAL_STATE_AGG_TABLE:
-                validate_state_aggregation(engine, devices, selected_fae_aggregated_port,
-                                           MultiPlanarConsts.PHYSICAL_STATE_PARAM,
-                                           combine['p1'], combine['p2'], combine['exp'])
-
-        with allure.step("Validate logical state aggregation - all combinations"):
-            for combine in MultiPlanarConsts.LOGICAL_STATE_AGG_TABLE:
-                validate_state_aggregation(engine, devices, selected_fae_aggregated_port,
-                                           MultiPlanarConsts.LOGICAL_STATE_PARAM,
-                                           combine['p1'], combine['p2'], combine['exp'])
-
-    finally:
-        with allure.step("set config to default"):
-            set_mp_config_to_default()
+# @pytest.mark.interface
+# @pytest.mark.multiplanar
+# @pytest.mark.simx_xdr
+# @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+# def test_aggregated_port_physical_and_logical_state_machines(engines, devices, test_api):
+#     """
+#     validate Aport Physical state and Logical state aggregation according to the following rule priorities:
+#     State Type  | Rule Priority | Logic                                                                    |APort State
+#     --------------------------------------------------------------------------------------------------------------
+#                 | 0             | Any underlying plane port is disabled                                    | Disabled
+#     Physical    | 1             | Any underlying plane port is in Sleep state                              | Sleep
+#                 | 2             | Any underlying plane port is in Polling state                            | Polling
+#                 | 3             | Any underlying plane port are in LinkUp state                            | LinkUp
+#     --------------------------------------------------------------------------------------------------------------
+#                 | 0             | At least on underlying plane port is in Down state                       | Down
+#     Logical     | 1             | Any ul plane port is in Init state AND no ul plane port is in Down state | Init
+#                 | 2             | Any ul plane p is in Armed state AND no ul pp is in Down OR Init state   | Armed
+#                 | 3             | All underlying plane ports are in Active state                           | Active
+#     --------------------------------------------------------------------------------------------------------------
+#
+#     Test flow:
+#     1. Validate physical state in all plane port combinations:
+#         a.	plane1: disabled, plane2: disabled
+#         b.	plane1: disabled, plane2: sleep
+#         c.	plane1: disabled, plane2: polling
+#         d.	plane1: disabled, plane2: linkup
+#         e.	plane1: sleep   , plane2: sleep
+#         f.	plane1: sleep   , plane2: polling
+#         g.	plane1: sleep   , plane2: linkup
+#         h.	plane1: polling , plane2: polling
+#         i.	plane1: polling , plane2: linkup
+#         j.	plane1: linkup  , plane2: linkup
+#
+#     2. Validate logical state in all plane port combinations:
+#         a.	plane1: down  , plane2: down
+#         b.	plane1: down  , plane2: init
+#         c.	plane1: down  , plane2: armed
+#         d.	plane1: down  , plane2: active
+#         e.	plane1: init  , plane2: init
+#         f.	plane1: init  , plane2: armed
+#         g.	plane1: init  , plane2: active
+#         h.	plane1: armed , plane2: armed
+#         i.	plane1: armed , plane2: active
+#         j.	plane1: active, plane2: active
+#     """
+#
+#     TestToolkit.tested_api = test_api
+#     engine = engines.dut
+#
+#     try:
+#         with allure.step("Select a random aggregated port (connected in loop back to another port)"):
+#             # selected_fae_aggregated_port = Fae(port_name=RandomizationTool.select_random_port(
+#             #     requested_ports_logical_state=IbInterfaceConsts.LINK_LOGICAL_PORT_STATE_ACTIVE).
+#             #                                     get_returned_value().name)
+#             selected_fae_aggregated_port = Fae(port_name='swA8p1')
+#
+#         with allure.step("Validate physical state aggregation - all combinations"):
+#             for combine in MultiPlanarConsts.PHYSICAL_STATE_AGG_TABLE:
+#                 validate_state_aggregation(engine, devices, selected_fae_aggregated_port,
+#                                            MultiPlanarConsts.PHYSICAL_STATE_PARAM,
+#                                            combine['p1'], combine['p2'], combine['exp'])
+#
+#         with allure.step("Validate logical state aggregation - all combinations"):
+#             for combine in MultiPlanarConsts.LOGICAL_STATE_AGG_TABLE:
+#                 validate_state_aggregation(engine, devices, selected_fae_aggregated_port,
+#                                            MultiPlanarConsts.LOGICAL_STATE_PARAM,
+#                                            combine['p1'], combine['p2'], combine['exp'])
+#
+#     finally:
+#         with allure.step("set config to default"):
+#             set_mp_config_to_default()
 
 
 @pytest.mark.interface

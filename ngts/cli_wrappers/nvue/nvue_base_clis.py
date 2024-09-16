@@ -76,14 +76,14 @@ class NvueBaseCli:
 
     @staticmethod
     def action(engine, device=None, action_type='', resource_path='', suffix="", param_name="", param_value="",
-               output_format=None, expect_reboot=False, recovery_engine=None, topology_obj=None):
+               output_format=None, expect_reboot=False, recovery_engine=None, topology_obj=None, should_succeed=True):
         return NvueBaseCli.nvue_action(engine, device, action_type, resource_path, suffix, param_name, param_value,
-                                       output_format, expect_reboot, recovery_engine, topology_obj)
+                                       output_format, expect_reboot, recovery_engine, topology_obj, should_succeed)
 
     @staticmethod
     @check_output
     def nvue_action(engine, device, action_type, resource_path, suffix, param_name, param_value, output_format,
-                    expect_reboot, recovery_engine, topology_obj=None):
+                    expect_reboot, recovery_engine, topology_obj=None, should_succeed=True):
         """See documentation of BaseComponent.action"""
         if not action_type:
             raise ValueError("action_type must be non-empty")
@@ -97,8 +97,9 @@ class NvueBaseCli:
         command = ' '.join(command.split())  # delete double-spaces
         logger.info(f"Running command: {command}")
         if expect_reboot:
-            return DutUtilsTool.reload(engine=engine, device=device, command=command, confirm=(param_name != "force"),
-                                       recovery_engine=recovery_engine, topology_obj=topology_obj).verify_result()
+            return DutUtilsTool.reload(
+                engine=engine, device=device, command=command, confirm=(param_name != "force"),
+                recovery_engine=recovery_engine, topology_obj=topology_obj).verify_result(should_succeed)
         else:
             return engine.run_cmd(command)
 

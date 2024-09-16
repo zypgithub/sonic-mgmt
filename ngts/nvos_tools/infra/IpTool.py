@@ -5,7 +5,7 @@ from typing import List
 
 import allure
 
-from ngts.nvos_constants.constants_nvos import IpConsts
+from ngts.nvos_constants.constants_nvos import IbConsts, IpConsts
 from ngts.nvos_tools.infra.CmdRunner import CmdRunner
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 
@@ -124,7 +124,7 @@ class IpTool:
         result_obj = ResultObj(True, "")
 
         with allure.step("find card to host - e.g. mlx5_8"):
-            card = host_obj.run_cmd(IpConsts.IB_DEV_2_NET_DEV).split()
+            card = host_obj.run_cmd(IbConsts.IB_DEV_2_NET_DEV).split()
             hca = card[0]
             port_state = card[-1].strip('()')
 

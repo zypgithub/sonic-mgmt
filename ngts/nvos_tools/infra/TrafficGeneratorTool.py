@@ -1,7 +1,8 @@
 import logging
 import subprocess
-import threading
-from ngts.nvos_constants.constants_nvos import NvosConst, SystemConsts
+import time
+
+from ngts.nvos_constants.constants_nvos import IbConsts, NvosConst, SystemConsts
 from ngts.nvos_tools.hypervisor.VerifyServerFunctionality import verify_server_is_functional
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import InternalNvosConsts
 from ngts.nvos_tools.ib.opensm.OpenSmTool import OpenSmTool
@@ -107,3 +108,83 @@ class TrafficGeneratorTool:
         else:
             logger.info(f'Could not bring-up traffic containers, {NvosConst.HOST_HA} and {NvosConst.HOST_HB} '
                         f'were not found in engines')
+
+    @staticmethod
+    def start_ping_multiple_ips(host, ip_list):
+        with allure.step('Start pinging multiple ip addresses'):
+            for ip in ip_list:
+                host.run_cmd(f'ping {ip} &')
+
+    @staticmethod
+    def stop_ping_multiple_ips(host):
+        with allure.step('Stop pinging jobs and verify no packet loss'):
+            running_jobs = host.run_cmd('jobs -l').split('[')
+            assert "Running" in running_jobs, 'No running jobs found'
+
+            for job in running_jobs:
+                if "Running" in job:
+                    job_id = job.split(' ')[1]
+                    ping_output = host.run_cmd(f'kill -SIGINT {job_id}')
+                    assert "0% packet loss" in ping_output, f'{ping_output}'
+
+    @staticmethod
+    def start_traffic_between_2_hosts(host_a, host_b, traffic_duration, server_output, client_output):
+        with allure.step('start send traffic from Host A to Host B'):
+            ha_device = host_a.run_cmd(IbConsts.IB_DEV_2_NET_DEV).split()[0]
+            hb_device = host_b.run_cmd(IbConsts.IB_DEV_2_NET_DEV).split()[0]
+            host_a.run_cmd(IbConsts.IB_SEND_LAT_SERVER.format(traffic_duration=traffic_duration, ib_device=ha_device,
+                                                              server_output=server_output))
+            host_b.run_cmd(IbConsts.IB_SEND_LAT_CLIENT.format(traffic_duration=traffic_duration, server_ip=host_a.ip,
+                                                              ib_device=hb_device, client_output=client_output))
+        # return traffic start time
+        return time.time()
+
+    @staticmethod
+    def stop_traffic_between_2_hosts(host_a, host_b, traffic_start_time, traffic_timeout, server_output, client_output):
+        with allure.step('Verify traffic results from Host A to Host B'):
+            with allure.step('Wait for traffic send completion'):
+                while True:
+                    job_server = host_a.run_cmd(IbConsts.GET_JOB_IB)
+                    job_client = host_b.run_cmd(IbConsts.GET_JOB_IB)
+                    time_diff = time.time() - traffic_start_time
+                    if not (job_server or job_client) or (time_diff > traffic_timeout):
+                        break
+
+            with allure.step('Get traffic client and server results'):
+                server_output = host_a.run_cmd('cat ' + server_output)
+                client_output = host_b.run_cmd('cat ' + client_output)
+
+            with allure.step('Delete output files'):
+                host_a.run_cmd('rm -f ' + server_output)
+                host_b.run_cmd('rm -f ' + client_output)
+
+            with allure.step('Verify traffic results'):
+                assert client_output and ('error' not in client_output) and ('loss' not in client_output), \
+                    f'server output failed: {client_output}'
+                assert server_output and ('error' not in server_output) and ('loss' not in server_output), \
+                    f'server output failed: {server_output}'
+
+            with allure.step('Get number of packets transmitted'):
+                num_of_packets = server_output.split("packet")[0]  # TODO: Update command
+
+        return num_of_packets
+
+    @staticmethod
+    def start_ibping_between_2_hosts(host_a, host_b):
+        with allure.step('start ibping from Host A to Host B'):
+            host_a_lid = host_a.run_cmd(IbConsts.BASE_LID).split()[-1]
+            host_a.run_cmd('ibping -S &')
+            host_b.run_cmd(f'ibping -L {host_a_lid} &')
+
+    @staticmethod
+    def stop_ibping_between_2_hosts(host_a, host_b):
+        with allure.step('Stop pinging from Host A to Host B and verify results'):
+            job_server = host_a.run_cmd('jobs -l').split(' ')[1]
+            job_sender = host_b.run_cmd('jobs -l').split(' ')[1]
+
+            ping_output = host_b.run_cmd(f'kill -SIGINT {job_sender}')
+            num_of_packets = ping_output.split(" ")[0]
+            host_a.run_cmd(f'kill -SIGINT {job_server}')
+            assert "0% packet loss" in ping_output, f'{ping_output}'
+
+        return num_of_packets

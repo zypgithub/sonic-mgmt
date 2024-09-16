@@ -77,6 +77,7 @@ class NvosConst:
     ENABLED = 'enabled'
     DISABLED = 'disabled'
     NOT_AVAILABLE = 'N/A'
+    ALL = 'all'
 
     DOCKERS_LIST = ['pmon', 'syncd-ibv0', 'swss-ibv0', 'database']
     DOCKER_PER_ASIC_LIST = ['syncd-ibv0', 'swss-ibv0', 'database']
@@ -676,7 +677,7 @@ class IpConsts:
     ARP_TIMEOUT = "arp-timeout"
     AUTOCONF = "autoconf"
     PYTHON_PATH = '/auto/app/Python-3.8.8/bin/python3.8'
-    IB_DEV_2_NET_DEV = 'ibdev2netdev'
+    IP_LINK_SET_INTERFACE = 'sudo ip link set {interface} {state}'
     MAD_TEMPLATE = 'sudo {python_path} {nvmad_path}/nvmad.py --lid {lid} --mad MAD.GMP.VS.SwitchNetworkInfo --Ca {card} --modifier {modifier}'
     IPV4_PREFIX = 'MAD.GMP.VS.SwitchNetworkInfo.IPv4[0].ipv4'
     IPV4_NETMASK_PREFIX = 'MAD.GMP.VS.SwitchNetworkInfo.IPv4[0].netmask'
@@ -888,6 +889,14 @@ class IbConsts:
                                      'ibdiagnet2.debug', 'ibdiagnet2.net_dump_ext']
     IBDIAGNET_EXPECTED_MESSAGE = 'ibdiagnet output files were archived into ibdiagnet2_output.tgz'
     IB_INTERFACE_NAME_REGEX = "([a-zA-Z]+)(\d+)(p\d+)"  # noqa: E402
+    IB_DEV_2_NET_DEV = 'ibdev2netdev'
+    BASE_LID = 'ibstat | grep "Base lid"'
+    MAX_NUM_OF_BYTES = '8388608'
+    IB_SEND_LAT_SERVER = ('ib_send_lat -F -s ' + MAX_NUM_OF_BYTES + ' -D ' +
+                          '{traffic_duration}' + ' -d {ib_device} > ' + '{server_output}' + ' &')
+    IB_SEND_LAT_CLIENT = ('ib_send_lat -F -s ' + MAX_NUM_OF_BYTES + ' -D ' +
+                          '{traffic_duration}' + ' {server_ip} -d {ib_device} > ' + '{client_output}' + ' &')
+    GET_JOB_IB = 'jobs -l'
 
 
 class ImageConsts:
@@ -1590,3 +1599,50 @@ class PtpConsts:
         EGR_CORRECTION_MSG_TYPE: REG_NA_VALUE
     }
     PTP_TABLE_TC = '\"PTP_TABLE|tc\"'
+
+
+class IssuConsts:
+    class IssuStatus(Enum):
+        NO_ISSU = 'no_issu'
+        IN_PROGRESS = 'in_progress'
+        FAILED = 'failed'
+        DONE = 'done'
+
+    ISSU_STATUS = 'issu-status'
+    ISSU = 'issu'
+    ISSU_SKIP_SM = 'issu skip-sm'
+    ISSU_NO_REBOOT = 'reboot no issu'
+    ISSU_INVALID_FLAG = 'issu skip-invalid'
+    DB_REQUEST_ISSU = 'WARM_RESTART_TABLE|request-issu'
+    DB_STATUS = 'status'
+    OPENSM_RESPONSE_CLEAR = ''
+    OPENSM_RESPONSE_NO = 'no'
+    OPENSM_RESPONSE_YES = 'yes'
+    OPENSM_RESPONSE_REQUESTING = 'requesting'
+    OPENSM_RESPONSE_ABORT = 'abort'
+    # DB_OPENSM_TIMEOUT = 'TBD'  # Currently not needed (constant 60 secs)
+    OLD_IMAGE = "/auto/sw_system_release/nos/nvos/25.02.1930-007/amd64/dev/nvos-amd64-25.02.1930-007.bin"
+    LOG_MSG_REACH_TO = "reach timeout..."  # TODO [L.A] update message once receiving 1st drop
+    LOG_MSG_LIST = [LOG_MSG_REACH_TO]  # TODO [L.A] add all log error messages
+    PYTHON_PATH = 'PYTHONPATH=/ngts_venv/ /ngts_venv/bin/python'
+    PING_SERVER_SCRIPT = '/sonic-mgmt/ngts/tests_nvos/system/ping_server.py'
+    CONTAINER_BU_TEMPLATE = '{python_path} {ping_server_script}'
+    SERVER_SCRIPT = PYTHON_PATH + PING_SERVER_SCRIPT
+    OPENSM_RESPONSE_TIMEOUT = '60'  # [sec]
+    TRAFFIC_DURATION = '120'  # [sec]
+    TRAFFIC_TIMEOUT = int(TRAFFIC_DURATION) + 10  # [sec]
+    SERVER_OUTPUT = 'server_output.txt'
+    CLIENT_OUTPUT = 'client_output.txt'
+    ERROR_CONFIG_MUST_BE_SAVED = ('Error: Action failed with the following issue:\n'
+                                  '  Configuration must be saved before performing ISSU')
+    ERROR_SYSTEM_MUST_BE_REBOOTED = ('Error: Action failed with the following issue:\n'
+                                     '  System must be rebooted during ISSU')
+    ERROR_OPENSM_NO_PERMISSION = ('Error: Action failed with the following issue:\n'
+                                  '  No permission from OpenSM')  # TODO: update message
+    ERROR_OPENSM_REACH_TIMEOUT = ('Error: Action failed with the following issue:\n'
+                                  '  Failed to install the image {image_version}.\n'
+                                  'No permission to perform ISSU from the SM')
+    ERROR_DOWNGRADE_NOT_ALLOWED = ('Error: Action failed with the following issue:\n'
+                                   '  Downgrade image is not allowed')  # TODO: update message
+    ERROR_ANY_ERROR = 'Error: Action failed with the following issue:'
+    SNMP_READ_ONLY_COMMUNITY = 'qwerty12'

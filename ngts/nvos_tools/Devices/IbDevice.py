@@ -437,7 +437,7 @@ class GorillaSwitch(IbSwitch):
             }
         )
         self.stats_fan_header_num_of_lines = 25
-        self.stats_power_header_num_of_lines = 13
+        self.stats_cpu_header_num_of_lines = 10
         self.stats_temperature_header_num_of_lines = 53
         self.supports_tpm_testing = False
 
@@ -530,7 +530,7 @@ class BlackMambaSwitch(IbSwitch):
         ]
 
         self.stats_fan_header_num_of_lines = 17
-        self.stats_power_header_num_of_lines = 25
+        self.stats_cpu_header_num_of_lines = 12
         self.stats_temperature_header_num_of_lines = 104
         self.fnm_link_speed = '800G'
 
@@ -620,7 +620,7 @@ class CrocodileSwitch(IbSwitch):
                                 'PSU-4-12V-Out']
         self.stats_fan_header_num_of_lines = 23
         self.system_profile_default_values = ['enabled', '1792', 'enabled', 'disabled', '1']
-        self.stats_power_header_num_of_lines = 17
+        self.stats_cpu_header_num_of_lines = 12
         self.stats_temperature_header_num_of_lines = 69
         self.previous_cpld_version = BaseSwitch.CpldImageConsts(
             burn_image_path="/auto/sw_system_project/NVOS_INFRA/verification_files/cpld_fw/OLD/FUI000273_BURN_CROCODILE_CPLD000232_REV0802_CPLD000357_REV0103_CPLD000358_REV0203_CPLD000359_REV0100.vme",
@@ -898,9 +898,10 @@ class JulietScaleoutSwitch(JulietSwitch):
                 "CPLD4": "CPLD000372_REV0002"
             }
         )
-        # self.stats_fan_header_num_of_lines = 25
-        # self.stats_power_header_num_of_lines = 13
-        # self.stats_temperature_header_num_of_lines = 53
+        self.stats_fan_header_num_of_lines = 21
+        self.stats_cpu_header_num_of_lines = 10
+        self.stats_temperature_header_num_of_lines = 48
+
         # Port 1-36 is from asic1/ Port 37-72 is from asic2
         self.nvl5_access_ports_list = ['acp1', 'acp2', 'acp3', 'acp4', 'acp5', 'acp6',
                                        'acp7', 'acp8', 'acp9', 'acp10', 'acp11', 'acp12', 'acp13', 'acp14',
