@@ -254,12 +254,6 @@ tests_nvos/interfaces/multi_planar/test_multi_planar_sym_mgr_and_aport.py::test_
     conditions:
       - https://redmine.mellanox.com/issues/3795750
 
-tests_nvos/interfaces/multi_planar/test_multi_planar_sym_mgr_and_aport.py::test_aggregated_port_configuration:
-  skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3795718"
-    conditions:
-      - https://redmine.mellanox.com/issues/3795718
-
 tests_nvos/interfaces/multi_planar/test_multi_planar_sym_mgr_and_aport.py::test_symmetry_manager_log_and_tech_support:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3795718"
@@ -512,4 +506,37 @@ tests_nvos/multi_asic/test_interface_ipoib.py::test_interface_ipoib_mapping_basi
 tests_nvos/checklist/test_cpld_upgrade.py::test_cpld_upgrade:
   skip:
     reason: "Until we get updated CPLD versions"
+
+tests_nvos/interfaces/test_ib0_interface_state.py::test_ib0_interface_state:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4077016"
+    conditions:
+      - https://redmine.mellanox.com/issues/4077016
+
+tests_nvos/interfaces/test_ib0_interface_state.py::test_ib0_interface_state_unset:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4077016"
+    conditions:
+      - https://redmine.mellanox.com/issues/4077016
+
+tests_nvos/multi_asic/test_interface_ipoib.py::test_interface_ipoib_ping_functionality:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4077016"
+    conditions:
+      - https://redmine.mellanox.com/issues/4077016
+
+tests_nvos/interfaces/multi_planar/test_multi_planar_sym_mgr_and_aport.py::test_aggregated_port_configuration:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4073255"
+    conditions:
+      - "'mamba' in testbed"
+      - https://redmine.mellanox.com/issues/4073255
+
+tests_nvos/interfaces/test_ib_interface_configuration.py::test_ib_interface_speed:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4073255"
+    conditions:
+      - "'mamba' in testbed"
+      - https://redmine.mellanox.com/issues/4073255
+
 ########################## NVOS IGNORE END ##########################
