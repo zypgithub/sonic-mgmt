@@ -1276,7 +1276,13 @@ class JulietAriel(JulietTTMSwitch):
                                        'acp15', 'acp16', 'acp17', 'acp18', 'acp19', 'acp20',
                                        'acp21', 'acp22', 'acp23', 'acp24', 'acp25', 'acp26',
                                        'acp27', 'acp28', 'acp29', 'acp30', 'acp31', 'acp32',
-                                       'acp33', 'acp34', 'acp35', 'acp36']
+                                       'acp33', 'acp34', 'acp35', 'acp36', 'acp37', 'acp38', 'acp39', 'acp40',
+                                       'acp41', 'acp42', 'acp43', 'acp44', 'acp45', 'acp46',
+                                       'acp47', 'acp48', 'acp49', 'acp50', 'acp51', 'acp52',
+                                       'acp53', 'acp54', 'acp55', 'acp56', 'acp57', 'acp58',
+                                       'acp59', 'acp60', 'acp61', 'acp62', 'acp63', 'acp64',
+                                       'acp65', 'acp66', 'acp67', 'acp68', 'acp69', 'acp70',
+                                       'acp71', 'acp72']
 
         self.all_nvl5_ports_list = self.nvl5_access_ports_list + self.nvl5_trunk_ports_list + self.network_ports
 

@@ -1,7 +1,9 @@
 import logging
 import time
 import re
+import inspect
 from collections import namedtuple
+from functools import wraps
 
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.infra.ResultObj import ResultObj
@@ -12,6 +14,7 @@ from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 
 logger = logging.getLogger()
 
@@ -181,19 +184,22 @@ class ClusterTools:
 
     @staticmethod
     def verify_interface_up(devices):
-        port_type = devices.dut.switch_type.lower()
-        selected_port = Tools.RandomizationTool.select_random_port(requested_ports_logical_state=NvosConsts.LINK_LOG_STATE_ACTIVE).get_returned_value()
-        output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
-            selected_port.interface.link.show()).get_returned_value()
-        Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
-                                                          field_name=IbInterfaceConsts.LINK_STATE,
-                                                          expected_value=NvosConsts.LINK_STATE_UP).verify_result()
-        Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
-                                                          field_name=IbInterfaceConsts.LINK_LOGICAL_PORT_STATE,
-                                                          expected_value=IbInterfaceConsts.LINK_LOGICAL_PORT_STATE_ACTIVE).verify_result()
-        Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
-                                                          field_name=IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE,
-                                                          expected_value=IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE_LINK_UP).verify_result()
+        for interface_type in ['sw', 'fnm']:
+            if devices.dut.nvl5_trunk_ports_list == [] and interface_type == 'sw':
+                continue
+            port_type = 'fnm' if interface_type == 'fnm' else ''
+            selected_port = Tools.RandomizationTool.select_random_port(requested_ports_logical_state=NvosConsts.LINK_LOG_STATE_ACTIVE, requested_ports_type=port_type, interface_type=interface_type).get_returned_value()
+            output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
+                selected_port.interface.link.show()).get_returned_value()
+            Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
+                                                              field_name=IbInterfaceConsts.LINK_STATE,
+                                                              expected_value=NvosConsts.LINK_STATE_UP).verify_result()
+            Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
+                                                              field_name=IbInterfaceConsts.LINK_LOGICAL_PORT_STATE,
+                                                              expected_value=IbInterfaceConsts.LINK_LOGICAL_PORT_STATE_ACTIVE).verify_result()
+            Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
+                                                              field_name=IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE,
+                                                              expected_value=IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE_LINK_UP).verify_result()
 
     # @staticmethod
     # def verify_interface_down(devices, selected_port):
@@ -335,3 +341,71 @@ class ClusterTools:
                 files = OutputParsingTool.parse_show_output_to_dict(sdn.state.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=OutputFormat.json),
                                                                     output_format=OutputFormat.json).get_returned_value()
                 assert not files, f"Expected to get empty output, but instead received {output}"
+
+
+def disabled_access_ports(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        # Access a specific named argument, 'test_api', if it exists
+        sig = inspect.signature(func)
+        # Bind the arguments to the signature
+        bound_args = sig.bind(*args, **kwargs)
+        bound_args.apply_defaults()
+        # Access 'devices' from bound arguments
+        devices = bound_args.arguments.get('devices', None)
+        engines = bound_args.arguments.get('engines', None)
+        has_access_ports = True
+        try:
+            TestToolkit.tested_api = 'NVUE'
+            if not hasattr(devices.dut, 'nvl5_access_ports_list'):
+                has_access_ports = False
+            if has_access_ports:
+                port_name = summarize_ports(devices.dut.nvl5_access_ports_list)
+                selected_port = Port(port_name, "", "")
+                port_state = NvosConsts.LINK_STATE_DOWN
+                selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True).verify_result()
+                TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
+            # Execute the test function
+            return func(*args, **kwargs)
+        finally:
+            if has_access_ports:
+                port_name = summarize_ports(devices.dut.nvl5_access_ports_list)
+                selected_port = Port(port_name, "", "")
+                port_state = NvosConsts.LINK_STATE_UP
+                selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True).verify_result()
+                TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
+    return wrapper
+
+
+def summarize_ports(ports_list):
+    if not ports_list:
+        return ''
+
+    # Extract the prefix and numbers from the port names
+    pattern = re.compile(r'([^\d]+)(\d+)')
+    prefixes = set()
+    numbers = []
+
+    for port in ports_list:
+        match = pattern.match(port)
+        if match:
+            prefix, num = match.groups()
+            prefixes.add(prefix)
+            numbers.append(int(num))
+        else:
+            raise ValueError(f"Port name '{port}' does not match expected pattern.")
+
+    if len(prefixes) > 1:
+        raise ValueError(f"Multiple prefixes found: {prefixes}")
+
+    prefix = prefixes.pop()
+    min_num = min(numbers)
+    max_num = max(numbers)
+
+    # Check if numbers are consecutive
+    expected_numbers = set(range(min_num, max_num + 1))
+    if set(numbers) != expected_numbers:
+        # If not consecutive, return the list as is
+        return ','.join(ports_list)
+
+    return f'{prefix}{min_num}-{max_num}'

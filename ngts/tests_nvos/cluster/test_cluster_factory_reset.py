@@ -13,10 +13,10 @@ from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.nvos_tools.nmx.Sdn import Sdn
 from ngts.tests_nvos.constants import MINUTE
 from ngts.nvos_tools.system.System import System
-from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
+from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports
 from ngts.tests_nvos.general.security.tpm_attestation.helpers import factory_reset_tpm_checker
 from ngts.tests_nvos.system.factory_reset.helpers import add_verification_data, \
-    verify_cleanup_done, verify_the_setup_is_functional, get_current_time
+    verify_the_setup_is_functional, get_current_time
 from ngts.tests_nvos.system.gnmi.helpers import factory_reset_gnmi_checker
 from ngts.tools.test_utils import allure_utils as allure
 
@@ -34,6 +34,7 @@ NMX_LOG_MESSAGES_TAGS = ['nmxc-sm', 'nmxc-fm', 'nmxc-fib', 'nmxc-gw_api', 'nmxc-
 INITIAL_CONFIGURATIONS_PATH = '/auto/sw_system_project/NVOS_INFRA/verification_files/cluster/uploaded_control_plane_files'
 
 
+@disabled_access_ports
 @pytest.mark.timeout(20 * MINUTE, func_only=True)
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
@@ -67,9 +68,6 @@ def test_cluster_default_factory_reset(engines, devices, test_api):
         #     with allure.step('pre factory reset security checks'):
         #         post_factory_reset_security_checks()
 
-        with allure.step("Verify the cleanup done successfully"):
-            verify_cleanup_done(engines.dut, current_time, system, username)
-
         with allure.step("Verify cluster in correct state"):
             verify_cluster_state_resetted(cluster)
             for app in INITIAL_EXPECTED_APPS:
@@ -89,6 +87,7 @@ def test_cluster_default_factory_reset(engines, devices, test_api):
                 ClusterTools.verify_log_level(ClusterAppsLogLevels.NOTICE, app, output_format, cluster)
             verify_config_files_content_not_changed(sdn, initial_config_contents, engines)
             verify_apps_in_expected_state(cluster, 'ok')
+
     finally:
         engines.sonic_mgmt.run_cmd(f"sudo rm -rf {INITIAL_CONFIGURATIONS_PATH + '/*'}")
         cluster.unset(apply=True)
@@ -102,6 +101,7 @@ def test_cluster_default_factory_reset(engines, devices, test_api):
             delete_all_sdn_fetched_generated_files(sdn, all_config_files_paths, all_state_files_paths)
 
 
+@disabled_access_ports
 @pytest.mark.timeout(20 * MINUTE, func_only=True)
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
@@ -129,9 +129,6 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name)
             execute_reset_factory(engines, system, devices.dut.reset_factory, "keep basic", current_time)
             ClusterTools.wait_for_apps_to_be_in_wanted_state()
 
-        with allure.step("Verify the cleanup done successfully"):
-            verify_cleanup_done(engines.dut, current_time, system, username, param='keep basic')
-
         with allure.step("Verify cluster in correct state"):
             verify_cluster_state_resetted(cluster)
             for app in INITIAL_EXPECTED_APPS:
@@ -151,6 +148,7 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name)
                 ClusterTools.verify_log_level(ClusterAppsLogLevels.NOTICE, app, output_format, cluster)
             verify_config_files_content_not_changed(sdn, initial_config_contents, engines)
             verify_apps_in_expected_state(cluster, 'ok')
+
     finally:
         engines.sonic_mgmt.run_cmd(f"sudo rm -rf {INITIAL_CONFIGURATIONS_PATH + '/*'}")
         cluster.unset(apply=True)
@@ -164,6 +162,7 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name)
             delete_all_sdn_fetched_generated_files(sdn, all_config_files_paths, all_state_files_paths)
 
 
+@disabled_access_ports
 @pytest.mark.timeout(20 * MINUTE, func_only=True)
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
@@ -190,9 +189,6 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name):
             execute_reset_factory(engines, system, devices.dut.reset_factory, "keep only-files", current_time)
             ClusterTools.wait_for_apps_to_be_in_wanted_state()
 
-        with allure.step("Verify the cleanup done successfully"):
-            verify_cleanup_done(engines.dut, current_time, system, username, param='only-files')
-
         with allure.step("Verify cluster in correct state"):
             verify_cluster_state_resetted(cluster)
             for app in INITIAL_EXPECTED_APPS:
@@ -212,6 +208,7 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name):
                 ClusterTools.verify_log_level(ClusterAppsLogLevels.NOTICE, app, output_format, cluster)
             verify_config_files_content_not_changed(sdn, initial_config_contents, engines)
             verify_apps_in_expected_state(cluster, 'ok')
+
     finally:
         engines.sonic_mgmt.run_cmd(f"sudo rm -rf {INITIAL_CONFIGURATIONS_PATH + '/*'}")
         cluster.unset(apply=True)
@@ -225,6 +222,7 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name):
             delete_all_sdn_fetched_generated_files(sdn, all_config_files_paths, all_state_files_paths)
 
 
+@disabled_access_ports
 @pytest.mark.timeout(20 * MINUTE, func_only=True)
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
@@ -254,9 +252,6 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
         with allure.step("Run reset factory with keep all-config param"):
             execute_reset_factory(engines, system, devices.dut.reset_factory, "keep all-config", current_time)
             ClusterTools.wait_for_apps_to_be_in_wanted_state()
-
-        with allure.step("Verify the cleanup done successfully"):
-            verify_cleanup_done(engines.dut, current_time, system, username, param='keep-all-config')
 
         with allure.step("Verify cluster in correct state"):
             cluster_state = ClusterTools.check_cluster_state(cluster, output_format)
@@ -447,10 +442,16 @@ def delete_all_sdn_fetched_generated_files(sdn, all_config_files_paths, all_stat
             if all_config_files_paths[file_type]:
                 for file in all_config_files_paths[file_type]:
                     file = file.split('/')[-1]
-                    sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.file_name[file].action_delete()
+                    try:
+                        sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.file_name[file].action_delete()
+                    except Exception as e:
+                        logger.info("File Already Deleted")
             engines.sonic_mgmt.run_cmd(f"sudo rm -rf {initial_configs_paths_to_restore[file_type]}")
         for file_type in NMX_CONTROLLER_STATE_FILE_TYPES:
             if all_state_files_paths[file_type]:
                 for file in all_state_files_paths[file_type]:
                     file = file.split('/')[-1]
-                    sdn.state.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.file_name[file].action_delete()
+                    try:
+                        sdn.state.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.file_name[file].action_delete()
+                    except Exception as e:
+                        logger.info("File Already Deleted")

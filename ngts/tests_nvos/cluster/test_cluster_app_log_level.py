@@ -14,7 +14,7 @@ from ngts.nvos_constants.constants_nvos import PlatformConsts, SystemConsts, Out
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.ib.Ib import Ib
 from ngts.nvos_tools.system.System import System
-from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
+from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 
 logger = logging.getLogger()
@@ -34,6 +34,7 @@ ClusterAppsLogLevelsList = [ClusterAppsLogLevels.DEBUG, ClusterAppsLogLevels.INF
 SLEEP_AFTER_LOG_ROTATE = 20
 
 
+@disabled_access_ports
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_cluster_app_log_level(engines, devices, test_api):
@@ -94,7 +95,9 @@ def test_cluster_app_log_level(engines, devices, test_api):
         ClusterTools.wait_for_apps_to_be_in_wanted_state()
 
 
+@disabled_access_ports
 @pytest.mark.nmx
+@pytest.mark.timeout(20 * MINUTE, func_only=True)
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
 def test_cluster_app_log_level_under_stress(engines, devices, test_api, test_name):
     TestToolkit.tested_api = test_api

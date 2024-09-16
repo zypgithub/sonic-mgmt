@@ -12,7 +12,7 @@ from ngts.nvos_tools.nmx.Sdn import Sdn
 from ngts.nvos_constants.constants_nvos import PlatformConsts, SystemConsts, OutputFormat, ApiType, IbConsts, NvosConst, ClusterAppsLogLevels, ImageConsts
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.ib.Ib import Ib
-from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
+from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports
 from ngts.scripts.sonic_deploy.nvos_only_methods import NvosInstallationSteps
 from ngts.scripts.sonic_deploy.image_preparetion_methods import get_real_paths, prepare_images
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
@@ -38,6 +38,7 @@ UNDEFINED_STATE = 'undefined'
 UNDEFINED_STATE_ERR_MSG = 'Error: At state: \'undefined\' is not one of [\'enabled\', \'disabled\']'
 
 
+@disabled_access_ports
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
 def test_upgrade_with_nmx_enabled(test_api, devices, base_version,
@@ -145,7 +146,7 @@ def test_upgrade_with_nmx_enabled(test_api, devices, base_version,
             scp_host_creds = f'{sonic_mgmt_engine.username}:{sonic_mgmt_engine.password}@{sonic_mgmt_engine.ip}'
             NvosInstallationSteps.upgrade_to_target_version(bin_filename, cli_obj.engine, cli_obj.device, scp_host_creds,
                                                             system,
-                                                            target_version)
+                                                            target_version, topology_obj)
 
             with allure.step('replace dut engine'):
                 TestToolkit.engines.dut = new_engine  # if install succeeded, need to replace dut engine
