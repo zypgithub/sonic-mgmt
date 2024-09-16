@@ -17,6 +17,7 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.system.System import System
+from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.general.security.conftest import create_ssh_login_engine
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_general_utils import check_partitions_capacity
@@ -83,6 +84,7 @@ def test_show_system_image(original_version):
 @pytest.mark.simx
 @pytest.mark.image
 @pytest.mark.system
+@pytest.mark.timeout(25 * MINUTE, func_only=True)
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_downgrade_upgrade(release_name, test_api, original_version, devices):
     """
