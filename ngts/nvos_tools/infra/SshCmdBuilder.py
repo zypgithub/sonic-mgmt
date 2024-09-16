@@ -90,11 +90,14 @@ class SshCmdBuilder:
 class SshPassCmdBuilder(SshCmdBuilder):
     SSH_CMD_TEMPLATE = "sshpass -p '{pw}' " + SshCmdBuilder.SSH_CMD_TEMPLATE
 
-    def __init__(self, user: str, password: str, host: str, port=22):
+    def __init__(self, user: str, password: str, host: str, port=22, cmd_to_execute: str = ''):
         super().__init__(user, host, port)
         self.password = password
+        self.cmd_to_execute = cmd_to_execute
 
     def build(self) -> str:
         self.options.strip()
-        return SshPassCmdBuilder.SSH_CMD_TEMPLATE.format(pw=self.password, opts=self.options, port=self.port,
-                                                         usr=self.user, host=self.host).strip()
+        cmd = SshPassCmdBuilder.SSH_CMD_TEMPLATE.format(pw=self.password, opts=self.options, port=self.port,
+                                                        usr=self.user,
+                                                        host=self.host).strip() + f" '{self.cmd_to_execute}'"
+        return cmd.strip()

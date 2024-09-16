@@ -12,6 +12,7 @@ from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceCon
 from ngts.nvos_tools.infra.DatabaseTool import DatabaseTool
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.infra.ValidationTool import ExpectedString
+from ngts.tests_nvos.constants import MINUTE
 from ngts.tools.test_utils.nvos_general_utils import get_version_info
 
 logger = logging.getLogger()
@@ -81,7 +82,7 @@ class BaseDevice(ABC):
         self.voltage_sensors = []
         self.has_nmx = False
         self.supported_commands = []
-        self.system_is_ready_wait_timeout = 300
+        self.system_is_ready_wait_timeout = 5 * MINUTE
 
     def _init_fan_list(self):
         self.fan_list = []
