@@ -576,8 +576,8 @@ class BlackMambaSwitch(IbSwitch):
             self.interface_list +
             [f'{p}pl{pl + 1}' for p in ib_ports for pl in range(self.asic_amount)] +  # e.g. sw7p1 - sw7p4
             [f'fnma{pl + 1}p{i + 1}' for i in range(3) for pl in range(self.asic_amount)])  # fnma1p1 - fnma4p3
-        self.interface_active_internal_fnm_ports = [port for port in self.interface_fae_list
-                                                    if port.startswith('fnm') and not port.endswith('p3')]
+        self.interface_active_internal_fnm_ports = {port for port in self.interface_fae_list
+                                                    if port.startswith('fnm') and not port.endswith('p3')} - {'fnm1'}
         # because other internal fnm ports are unused currently
 
     def _init_eth0_speeds(self):

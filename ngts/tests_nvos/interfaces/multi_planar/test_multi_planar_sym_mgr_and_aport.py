@@ -93,9 +93,11 @@ def test_fae_interface_commands(engines, devices, test_api, start_sm):
                 verify_result()
 
             with allure.step(f"Validate all internal fnm ports are {NvosConsts.LINK_STATE_UP}"):
-                for fnm_internal_port in devices.dut.interface_active_internal_fnm_ports:
-                    assert output_dictionary[fnm_internal_port][IbInterfaceConsts.LINK_STATE] == NvosConsts.LINK_STATE_UP, \
-                        f"{fnm_internal_port} is not {NvosConsts.LINK_STATE_UP}"
+                down_internal_fnm_ports = {port: output_dictionary[port][IbInterfaceConsts.LINK_STATE]
+                                           for port in devices.dut.interface_active_internal_fnm_ports
+                                           if output_dictionary[port][IbInterfaceConsts.LINK_STATE] !=
+                                           NvosConsts.LINK_STATE_UP}
+                assert not down_internal_fnm_ports
 
         with allure.independent_step("Validate all multi planar fields exist in show fae interface <port>"):
             output_fae_port = OutputParsingTool.parse_show_interface_output_to_dictionary(
