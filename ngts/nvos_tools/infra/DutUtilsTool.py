@@ -1,23 +1,22 @@
-from typing import Dict
-
 import logging
 import socket
+import subprocess
 import time
+from typing import Dict
 from typing import List
 
-from paramiko.ssh_exception import AuthenticationException
 from netmiko import ConnectHandler
+from paramiko.ssh_exception import AuthenticationException
+from retry.api import retry_call, retry
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from .ResultObj import ResultObj, IssueType
-import subprocess
 from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
 from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
-from retry.api import retry_call, retry
 from ngts.nvos_constants.constants_nvos import SystemConsts, DatabaseConst, NvosConst
-from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.nvos_tools.infra.DatabaseTool import DatabaseTool
+from ngts.tools.test_utils import allure_utils as allure
+from .ResultObj import ResultObj, IssueType
 
 logger = logging.getLogger()
 
@@ -107,7 +106,7 @@ class DutUtilsTool:
             with allure.step("Waiting for switch to be ready"):
                 with allure.step('wait for switch reachable/ping'):
                     check_port_status_till_alive(True, dut_engine.ip, dut_engine.ssh_port)
-                if topology_obj:
+                if wait_for_nvos and topology_obj:
                     with allure.step('wait for System is ready in serial'):
                         if device:
                             DutUtilsTool.wait_for_system_ready_in_serial(topology_obj, wait_timeout=device.system_is_ready_wait_timeout)

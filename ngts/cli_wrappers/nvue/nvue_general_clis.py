@@ -8,6 +8,7 @@ from ngts.constants.constants import InfraConst
 from ngts.constants.constants import MarsConstants
 from ngts.nvos_constants.constants_nvos import NvosConst, ActionConsts, SystemConsts, ConfState, TopologyConsts
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
+from ngts.nvos_tools.infra.GrubMenuTool import GrubMenuTool
 from ngts.tests_nvos.general.security.test_secure_boot.constants import SecureBootConsts
 from ngts.tools.test_utils import allure_utils as allure
 
@@ -340,6 +341,8 @@ class NvueGeneralCli(SonicGeneralCliDefault):
         else:
             server_ip = TopologyConsts.site_server_ip[TopologyConsts.MTL]   # default
 
+        # cmd = SshPassCmdBuilder(os.getenv("TEST_SERVER_USER"), os.getenv("TEST_SERVER_PASSWORD"), server_ip, cmd_to_execute=cmd).set_ssn().build()
+        # CmdRunner().run_cmd_in_process(cmd)
         ssh_conn = LinuxSshEngine(ip=server_ip, username=os.getenv("TEST_SERVER_USER"),
                                   password=os.getenv("TEST_SERVER_PASSWORD"))
         ssh_conn.run_cmd(cmd)
@@ -384,8 +387,8 @@ class NvueGeneralCli(SonicGeneralCliDefault):
         with allure.step('wait for NVOS/ONIE grub menu'):
             # Set timeout based on the active status of Redmine issue #4028150
             to = 360 if is_redmine_issue_active([4028150])[0] else 240
-            onie_grub_menu_pattern = '\\*ONIE: Install OS'
-            grub_menu_patterns = ['ONIE\\s+', onie_grub_menu_pattern]
+            onie_install_os = 'ONIE: Install OS'
+            grub_menu_patterns = ['ONIE\\s+', onie_install_os]
             all_patterns = grub_menu_patterns + SecureBootConsts.INVALID_SIGNATURE
             output, respond = serial_engine.run_cmd('', all_patterns, timeout=to, send_without_enter=True)
 
@@ -401,11 +404,7 @@ class NvueGeneralCli(SonicGeneralCliDefault):
 
             elif respond == 0:
                 with allure.step("System in NVOS grub menu, entering ONIE grub menu"):
-                    for i in range(2):
-                        logger.info("Sending one arrow down")
-                        serial_engine.run_cmd("\x1b[B", expected_value='.*', send_without_enter=True)
-                        time.sleep(0.3)
-                    logger.info("Onie option selected")
+                    GrubMenuTool.select_grub_menu_item(serial_engine, 'ONIE')
 
                     logger.info("Pressing Enter to enter ONIE grub menu")
                     _, respond = serial_engine.run_cmd('\r',
@@ -416,14 +415,10 @@ class NvueGeneralCli(SonicGeneralCliDefault):
 
                     if respond != 2:
                         with allure.step("MLNX-OS system. Enter 'YES' and wait till in ONIE grub menu"):
-                            serial_engine.run_cmd('YES', onie_grub_menu_pattern, timeout=420)
+                            serial_engine.run_cmd('YES', onie_install_os, timeout=420)
 
-            with allure.step('in ONIE grub menu: Go up to onie install mode'):
-                with allure.step("Send up arrows for case default mode is Rescue"):
-                    for i in range(5):
-                        logger.info("Sending one arrow up")
-                        serial_engine.run_cmd("\x1b[A", expected_value='.*', send_without_enter=True)
-                        time.sleep(0.3)
+        with allure.step('in ONIE grub menu: Go to onie install mode'):
+            GrubMenuTool.select_grub_menu_item(serial_engine, onie_install_os)
 
         with allure.step("Waiting for onie prompt"):
             self.wait_for_onie_prompt(serial_engine)

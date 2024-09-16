@@ -16,6 +16,7 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.infra.ValidationTool import ExpectedString
+from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts
 from ngts.tools.test_utils.nvos_general_utils import get_version_info
 
@@ -810,7 +811,7 @@ class JulietSwitch(NvLinkSwitch):
 
     def _init_constants(self):
         super()._init_constants()
-        self.system_is_ready_wait_timeout = 600
+        self.system_is_ready_wait_timeout = 20 * MINUTE
         self.bmc_image_info = self.FaeImagesTestConsts(current_image_version='bmc_1.pkg', alternate_image_version='bmc_2.pkg')
         self.fpga_image_info = self.FaeImagesTestConsts(current_image_version='fpga_1.pkg', alternate_image_version='fpga_2.pkg')
         self.current_bios_version_name = "0ACTV_00.00.x07_rc5"
