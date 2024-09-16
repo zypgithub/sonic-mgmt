@@ -495,6 +495,12 @@ tests_nvos/general/config_commands/test_config_fetch:
     conditions:
       - https://redmine.mellanox.com/issues/3955660
 
+tests_nvos/fae/test_debug_token:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4047538"
+    conditions:
+      - https://redmine.mellanox.com/issues/4047538
+
 tests_nvos/system/test_system_factory_reset.py::test_reset_factory_without_params:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3958670"

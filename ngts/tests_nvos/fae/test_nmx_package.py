@@ -190,7 +190,7 @@ def test_nmx_package_bad_flow(devices, engines, test_name, test_api):
     fae = Fae(None)
     nmx_package = fae.cluster.package
     app_to_test = random.choice(ClusterConsts.INITIAL_EXPECTED_APPS)
-    default_version = devices.dut.nmx_cluster_apps_versions.burn_version_names[app_to_test]
+    _, default_version = get_data_from_path(engines, ClusterConsts.INITIAL_APPS_PATH, app_to_test)
     new_path = devices.dut.nmx_cluster_apps_versions.burn_path[app_to_test]
     filename = new_path.split('/')[-1]
     non_exist_app = RandomizationTool.get_random_string(8)

@@ -5964,6 +5964,19 @@
     - c-anaconda-02
   comment: Mellanox MTBC testbed
 
+- conf-name: juliet-146-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+    - juliet-146
+  comment: Mellanox MTR testbed
+
 - conf-name: juliet-121-ptf-any
   group-name: vm-t1
   topo: ptf-any
@@ -5988,19 +6001,6 @@
   vm_base: VM0000
   dut:
     - juliet-128
-  comment: Mellanox MTR testbed
-
-- conf-name: juliet-146-ptf-any
-  group-name: vm-t1
-  topo: ptf-any
-  ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-dummy
-  ptf_ip: 1.1.1.1/16
-  ptf_ipv6:
-  server: server_54
-  vm_base: VM0000
-  dut:
-    - juliet-146
   comment: Mellanox MTR testbed
 
 - conf-name: juliet-142-ptf-any
