@@ -539,4 +539,11 @@ tests_nvos/interfaces/test_ib_interface_configuration.py::test_ib_interface_spee
       - "'mamba' in testbed"
       - https://redmine.mellanox.com/issues/4073255
 
+tests_nvos/interfaces/test_ib_interface_configuration.py::test_ib_interface_vls:
+  skip:
+    reason: "#4077966 [Functional] [black mamba] [ib] [xdr] | if we set op-vls to VL0-VL3 link goes down and never goes back up, even after resetting op-vls"
+    conditions:
+      - "'mamba' in testbed"
+      - https://redmine.mellanox.com/issues/4077966
+
 ########################## NVOS IGNORE END ##########################

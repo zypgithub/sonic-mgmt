@@ -1,4 +1,6 @@
 import logging
+from time import sleep
+
 from ngts.tools.test_utils import allure_utils as allure
 import pytest
 from retry import retry
@@ -64,6 +66,7 @@ def test_ib_interface_mtu(engines, players, interfaces, start_sm, test_api):
     with allure.step("Set mtu '{}' for port '{}".format(selected_mtu_value, selected_port.name)):
         selected_port.interface.link.set(op_param_name='mtu', op_param_value=selected_mtu_value,
                                          apply=True, ask_for_confirmation=True).verify_result()
+        sleep(2)
 
         with allure.step("Verify the mtu value updated to: {}".format(selected_mtu_value)):
             wait_for_port_to_become_active(selected_port)
