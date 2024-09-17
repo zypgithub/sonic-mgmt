@@ -1738,4 +1738,18 @@
   Conditions:
     - Affected_test_cases:
       - tests_nvos/system/test_system_ssd_cleanup.py::test_ssd_cleanup_positive_flow
+
+# NVOS
+- Errors_list:
+    - '.*orchagent: :- getPortOperSpeed: Port .* operational speed is 0.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests_nvos/
+
+# NVOS
+- Errors_list:
+    - '.*ERR countermgrd: port .* not found in port_missing_cntr.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests_nvos/infra/init_flow/init_flow.py
 # --------------------------------------------------
