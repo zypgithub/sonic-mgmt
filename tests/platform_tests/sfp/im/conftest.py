@@ -1,7 +1,7 @@
 import pytest
 
 from tests.common.utilities import skip_release
-from tests.platform_tests.sfp.im.helpers import im_supported, im_ms_sku, MS_HWSKUS
+from tests.platform_tests.sfp.im.helpers import im_supported, im_ms_sku, PLATFORM_GENERATION
 
 
 @pytest.fixture(autouse=True, scope="module")
@@ -30,4 +30,4 @@ def check_ms_sku(duthost):
     @param: duthost: duthost fixture
     """
     if not im_ms_sku(duthost):
-        pytest.skip(f"Independent module feature supported only at Microsoft SKU {MS_HWSKUS}")
+        pytest.skip(f"Independent module feature supported only at Microsoft SKU {PLATFORM_GENERATION}")

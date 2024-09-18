@@ -69,7 +69,7 @@ class SonicImClis:
         """
         parse_platform_summary = self.chassis_cli.parse_platform_summary()
         hwsku = parse_platform_summary["HwSKU"]
-        return hwsku in IndependentModuleConst.MS_HWSKU
+        return any(item in hwsku for item in IndependentModuleConst.PLATFORM_GENERATION)
 
     def get_ports_supporting_im(self, dut_ports_number_dict):
         """
@@ -219,7 +219,7 @@ class SonicImClis:
             with allure.step('Check if SPC3 or higher and is Microsoft SKU applied at system'):
                 if self.is_system_supports_im() and self.is_ms_hwsku():
                     with allure.step('Check if setup having cables that supports IM'):
-                        if platform_params.host_name in IndependentModuleConst.DUTS_SUPPORTING_IM:
+                        if "simx" not in platform_params.host_name:
                             with allure.step('Check if SONiC branch supports IM'):
                                 if sonic_branch not in skip_for_release:
                                     with allure.step('Check if IM enabled by default, if not - enable it'):
