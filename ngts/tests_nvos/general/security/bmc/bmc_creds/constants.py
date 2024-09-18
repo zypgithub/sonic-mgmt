@@ -14,6 +14,7 @@ CURL_AUTHORIZATION_ERR_MSGS = ['Authorization Error', 'authorization error', 'In
 class BmcCliCmd:
     factory_reset = 'fw_setenv openbmconce factory-reset'
     check_factory_reset_flag = 'fw_printenv'
+    enable_mctp_pcie_ctrl_service = 'systemctl enable mctp-pcie-ctrl ; systemctl start mctp-pcie-ctrl'
 
 
 class BmcUserInfo:
