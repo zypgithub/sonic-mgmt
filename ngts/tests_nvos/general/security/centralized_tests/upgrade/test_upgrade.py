@@ -5,6 +5,7 @@ import pytest
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import ImageConsts
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.tests_nvos.general.security.test_api_server_security.test_api_mtls import api_mtls_upgrade_check
 from ngts.tests_nvos.system.factory_reset.helpers import *
 from ngts.tests_nvos.system.gnmi.helpers import get_scp_player
@@ -29,11 +30,9 @@ def test_downgrade_upgrade(base_version_realpath, target_version_realpath, devic
 
     system = System()
 
+    is_cur_version_as_expected(system, target_version_realpath).verify_result()
+
     target_version_name = target_version_realpath.split("/")[-1]
-
-    assert is_cur_version_as_expected(system,
-                                      target_version_realpath), f'cur running version is not as given target version: {target_version_name}'
-
     need_recovery = False
 
     try:
@@ -61,7 +60,7 @@ def test_downgrade_upgrade(base_version_realpath, target_version_realpath, devic
     finally:
         with allure.step('upgrade test cleanup'):
             if need_recovery:
-                if is_cur_version_as_expected(system, target_version_realpath):
+                if is_cur_version_as_expected(system, target_version_realpath).result:
                     with allure.step('uninstall base version'):
                         system.image.action_uninstall('force')
                 else:
@@ -72,12 +71,13 @@ def test_downgrade_upgrade(base_version_realpath, target_version_realpath, devic
                 system.image.files.delete_all_existing_files()
 
 
-def is_cur_version_as_expected(system: System, expected_version: str) -> bool:
+def is_cur_version_as_expected(system: System, expected_version: str) -> ResultObj:
     expected_version = expected_version.split('/')[-1].replace('.bin', '').replace('arm64-', '').replace('amd64-', '')
     out = OutputParsingTool.parse_json_str_to_dictionary(system.version.show()).get_returned_value()
     cur_version = out['image']
     with allure.step(f'check if {expected_version} (orig) == {cur_version} (cur)'):
-        return expected_version == cur_version
+        res = expected_version == cur_version
+        return ResultObj(res, f'cur version is {"" if res else "not "}as expected.\nexpected: {expected_version}\nactual: {cur_version}')
 
 
 def fetch_install_img(system: System, img_path: str, engines):

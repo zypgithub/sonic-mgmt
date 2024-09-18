@@ -2,7 +2,6 @@ import pytest
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from infra.tools.linux_tools.linux_tools import scp_file
-from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.tests_nvos.general.security.constants import MAX_TEST_TIMEOUT
 from ngts.tests_nvos.general.security.password_hardening.PwhConsts import PwhConsts
 from ngts.tests_nvos.general.security.security_test_tools.generic_remote_aaa_testing.generic_remote_aaa_testing import *
@@ -330,7 +329,8 @@ def test_cert_verify(test_flow, test_api, engines, devices, backup_and_restore_c
                 update_active_aaa_server(item,
                                          ldap_server_info if encryption_mode == LdapEncryptionModes.NONE else None)
                 engine = engines.dut if not item.active_remote_admin_engine else item.active_remote_admin_engine
-                DutUtilsTool.wait_for_nvos_to_become_functional(engine, find_prompt_delay=5)
+                wait_for_ldap_nvued_restart_workaround(item, engine)
+                # DutUtilsTool.wait_for_nvos_to_become_functional(engine, find_prompt_delay=5)
 
             if encryption_mode != LdapEncryptionModes.NONE:
                 with allure.step(f'Verify auth with LDAP user when there is no CA cert in the switch- expect fail'):
@@ -340,8 +340,9 @@ def test_cert_verify(test_flow, test_api, engines, devices, backup_and_restore_c
                 with allure.step('Add the server certificate to the switch'):
                     add_ldap_server_certificate_to_switch(engine)
                     update_active_aaa_server(item, ldap_server_info)
-                    DutUtilsTool.wait_for_nvos_to_become_functional(item.active_remote_admin_engine,
-                                                                    find_prompt_delay=5)
+                    wait_for_ldap_nvued_restart_workaround(item, item.active_remote_admin_engine)
+                    # DutUtilsTool.wait_for_nvos_to_become_functional(item.active_remote_admin_engine,
+                    #                                                 find_prompt_delay=5)
 
             with allure.step(f'Verify auth with LDAP user when there is CA cert in the switch - expect success'):
                 verify_auth(test_flow, engines, topology_obj, good_flow_users=[user_to_validate],
