@@ -29,7 +29,7 @@ def test_deploy_sonic_image(topology_obj, setup_name, sonic_topo, platform_param
     :param is_performance: is_performance fixture, True in case when setup is performance
     :return: raise assertion error in case of script failure
     """
-    setup_info = get_info_from_topology(topology_obj, workspace_path, include_smartswitch_dpu=False)
+    setup_info = get_info_from_topology(topology_obj, workspace_path)
     for dut in setup_info['duts']:
         try:
             # when bgp is up, dut can not access the external IP such as nbu-mtr-nfs.nvidia.com. So shutdown bgp

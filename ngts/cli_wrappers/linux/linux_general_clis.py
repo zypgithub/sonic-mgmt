@@ -14,7 +14,7 @@ class LinuxGeneralCli(GeneralCliCommon):
     def __init__(self, engine):
         self.engine = engine
 
-    def install_bfb_image(self, image_path, rshim_num, sonic_installer=False):
+    def install_bfb_image(self, image_path, rshim_num):
         """
         Installation of BFB image on Bluefield from Server
         To use this method, the class must be created with hypervisor engine
@@ -25,12 +25,8 @@ class LinuxGeneralCli(GeneralCliCommon):
         if image_path.endswith('.bin'):
             image_path = image_path.replace('.bin', '.bfb')
         try:
-            if not sonic_installer:
-                cmd = f'sudo bfb-install -b {image_path} -r rshim{rshim_num}'
-                pattern = r"Installation finished|DPU is ready"
-            else:
-                cmd = f'sudo sonic-bfb-installer.sh -b {image_path} -r rshim{rshim_num}'
-                pattern = "Installation Successful"
+            cmd = f'sudo bfb-install -b {image_path} -r rshim{rshim_num}'
+            pattern = r"Installation finished|DPU is ready"
             logger.info(f'Install sonic BFB image: {image_path},  on Server: {self.engine.ip},  RSHIM: {rshim_num}')
             logger.info(f'Executing command on hypervisor: {cmd}')
             output = self.engine.run_cmd_set([cmd], tries_after_run_cmd=75, patterns_list=[pattern])

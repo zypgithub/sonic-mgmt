@@ -1249,7 +1249,7 @@ class MarsConstants:
 class PlayersAliases:
     Aliases_list = ['sl']
     SL = 'sl'
-    duts_list = ['dut', 'dut-b', 'dut-dpu-1', 'dut-dpu-2', 'dut-dpu-3', 'dut-dpu-4', 'left_tg', 'right_tg']
+    duts_list = ['dut', 'dut-b', 'left_tg', 'right_tg']
 
 
 class NvosCliTypes:

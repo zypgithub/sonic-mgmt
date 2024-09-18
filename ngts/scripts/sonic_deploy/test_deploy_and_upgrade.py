@@ -1,3 +1,5 @@
+import re
+
 import concurrent.futures
 import copy
 import logging
@@ -110,15 +112,6 @@ def test_deploy_and_upgrade(topology_obj, is_simx, is_performance, base_version,
             if not additional_apps:
                 additional_apps = wjh_deb_url
 
-            switch_or_standalone_dpu_duts = []
-            smart_switch_dpu_duts = []
-            for dut in setup_info['duts']:
-                if 'dut-dpu' not in dut['dut_alias']:
-                    switch_or_standalone_dpu_duts.append(dut)
-                elif base_version_dpu:
-                    smart_switch_dpu_duts.append(dut)
-            # Remove the smart switch DPUs from the setup_info for we do not want to run the pre and post steps on them
-            setup_info['duts'] = switch_or_standalone_dpu_duts
         with allure.step('pre installation steps'):
             pre_install_threads = {}
             pre_installation_steps(
@@ -129,18 +122,7 @@ def test_deploy_and_upgrade(topology_obj, is_simx, is_performance, base_version,
             install_threads = []
             executor = concurrent.futures.ThreadPoolExecutor()
 
-            if smart_switch_dpu_duts:
-                logger.info("Start: copy topology obj dpu")
-                player_dut = topology_obj.players['dut']
-                # Deepcopy with the dut cli object sometimes fails due to
-                # "TypeError: cannot pickle '_thread.lock' object",
-                # don't copy it since it will be replaced eventually
-                topology_obj.players['dut'] = None
-                topology_obj_dpu = copy.deepcopy(topology_obj)
-                topology_obj.players['dut'] = player_dut
-                logger.info("End: copy topology obj dpu")
-
-            for dut in switch_or_standalone_dpu_duts:
+            for dut in setup_info['duts']:
                 cli_obj = dut['cli_obj']
                 related_base_version_url, related_target_version = get_related_image_to_switch(base_version_url,
                                                                                                target_version_url, dut)
@@ -171,38 +153,28 @@ def test_deploy_and_upgrade(topology_obj, is_simx, is_performance, base_version,
             wait_until_deploy_background_process(install_threads, timeout=1500)
 
             if "bobcat" in setup_name and base_version_dpu:
-                with allure.step('Power cycle the switch if any of the DPUs is shutdown'):
-                    dpu_ready = topology_obj.players['dut']['engine'].run_cmd(
-                        "dpuctl dpu-status | awk '{print $2}'")
-                    if "False" in dpu_ready:
+                if "DARK_MODE=true" in topology_obj.players['dut']['engine'].run_cmd("cat /etc/mlnx/dpu.conf"):
+                    with allure.step('Disable dark mode and power cycle'):
+                        topology_obj.players['dut']['engine'].run_cmd(
+                            'sudo sh -c "echo DARK_MODE=false > /etc/mlnx/dpu.conf"')
+                        time.sleep(5)
                         cli_obj.remote_reboot(topology_obj)
                         cli_obj.verify_dockers_are_up()
+                        dpu_ready = topology_obj.players['dut']['engine'].run_cmd(
+                            "dpuctl dpu-status | awk '{print $2}'")
+                        assert "False" not in dpu_ready, "Not all DPUs are ready."
 
                 with allure.step('Copying image to switch dut'):
                     dpu_image_url = MarsConstants.HTTP_SERVER_NBU_NFS + base_version_dpu
                     dest_file = "/tmp/" + base_version_dpu.split('/')[-1]
                     topology_obj.players['dut']['engine'].run_cmd(
                         f"sudo curl {dpu_image_url} --output {dest_file}")
-                base_version_dpu = dest_file
 
-            for dut in smart_switch_dpu_duts:
-                with allure.step('Install image on DPU: {}'.format(dut['dut_name'])):
+                with allure.step('Install BFB image on all DPUs'):
                     # Disconnect ssh connection, prevent "Socket is closed" in case when pre step took more than 15 min
-                    topology_obj.players[dut['dut_alias']]['engine'].disconnect()
-                    platform_params_dpu = copy.copy(platform_params)
-                    topology_obj_dpu.players['dut'] = topology_obj_dpu.players[dut['dut_alias']]
-                    if "bobcat" in setup_name:
-                        topology_obj_dpu.players['hyper'] = topology_obj.players['dut']
-                    topology_obj_dpu.players['hyper']['engine'].disconnect()
-                    platform_params_dpu['hwsku'] = get_platform_info(topology_obj_dpu)['hwsku']
-                    logger.info(f"Starting to install image on DPU {dut['dut_name']}")
-                    deploy_image(topology_obj=topology_obj_dpu, setup_name=setup_name,
-                                 image_url=base_version_dpu, platform_params=platform_params,
-                                 deploy_type='bfb', apply_base_config=False,
-                                 reboot_after_install=reboot_after_install,
-                                 is_shutdown_bgp=is_shutdown_bgp, fw_pkg_path='',
-                                 cli_type=dut['cli_obj'], target_image_url='',
-                                 serial_log_analyzers=serial_log_analyzers, dut_ip=dut['dut_ip'])
+                    output = topology_obj.players['dut']['engine'].run_cmd(
+                        f"sudo sonic-bfb-installer.sh -r all -b {dest_file} -v")
+                    assert re.search("Installation Successful", output), "Failed to install bfb image on all DPUs."
 
         with allure.step('verify pre installation processes are done'):
             logger.info("Wait until pre-installation background process done")
@@ -376,12 +348,11 @@ def wait_until_deploy_background_process(install_threads, timeout=1200):
                 logger.error(f"The installation on {dut_name} failed to complete in {timeout}s.")
 
 
-def get_info_from_topology(topology_obj, workspace_path, include_smartswitch_dpu=True):
+def get_info_from_topology(topology_obj, workspace_path):
     """
     Creates a class which contains setup info
     :param topology_obj: topology object
     :param workspace_path: workspace_path argument
-    :param include_smartswitch_dpu: controls whether collect the entries of SmartSwitch DPUs
     :return: SetupInfo object
     """
     ansible_path = os.path.join(workspace_path, "sonic-mgmt/ansible/")
@@ -395,8 +366,6 @@ def get_info_from_topology(topology_obj, workspace_path, include_smartswitch_dpu
                 cli_obj = get_cli_obj(topology_obj, cli_type, switch_type, engine, host, dut_alias)
                 dut_info = {'dut_name': dut_name, 'cli_type': cli_type, 'engine': engine, 'cli_obj': cli_obj,
                             'dut_alias': dut_alias, 'switch_type': switch_type, 'dut_ip': dut_ip}
-                if 'dut-dpu' in dut_alias and not include_smartswitch_dpu:
-                    continue
                 if dut_info['dut_alias'] == "dut":
                     setup_info['duts'].insert(0, dut_info)
                 else:
