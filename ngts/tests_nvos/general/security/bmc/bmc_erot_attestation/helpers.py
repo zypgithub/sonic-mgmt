@@ -12,11 +12,11 @@ from ngts.nvos_tools.infra.TpmTool import TpmTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.system.Spdm import SpdmComponent, SPDMComponents, COMPONENT_TO_SPDM_OBJ_FIELD, SpdmComponentFields
 from ngts.nvos_tools.system.System import System
-from ngts.tests_nvos.general.security.bmc_erot_attestation.client_verification.CertChainTool import CertChainTool
-from ngts.tests_nvos.general.security.bmc_erot_attestation.client_verification.spdm_verify import \
+from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.client_verification.CertChainTool import CertChainTool
+from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.client_verification.spdm_verify import \
     run_spdm_measurements_verification
-from ngts.tests_nvos.general.security.bmc_erot_attestation.client_verification.utils import CLIENT_VERIFICATION_DIR
-from ngts.tests_nvos.general.security.bmc_erot_attestation.constants import VALID_NONCE_LEN, SpdmConsts, NOT_EMPTY
+from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.client_verification.utils import CLIENT_VERIFICATION_DIR
+from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.constants import VALID_NONCE_LEN, SpdmConsts, NOT_EMPTY
 from ngts.tests_nvos.general.security.helpers import add_issue_if, assert_no_issues
 from ngts.tools.test_utils import allure_utils as allure
 

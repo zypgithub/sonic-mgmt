@@ -6,8 +6,8 @@ from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_tools.infra.BmcSshEngine import BmcSshEngine
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.TpmTool import TpmTool
-from ngts.tests_nvos.general.security.bmc.constants import BmcUsers, CURL_AUTHORIZATION_ERR_MSGS
-from ngts.tests_nvos.general.security.bmc.helpers import bmc_factory_reset
+from ngts.tests_nvos.general.security.bmc.bmc_creds.constants import BmcUsers, CURL_AUTHORIZATION_ERR_MSGS
+from ngts.tests_nvos.general.security.bmc.bmc_creds.helpers import bmc_factory_reset
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()

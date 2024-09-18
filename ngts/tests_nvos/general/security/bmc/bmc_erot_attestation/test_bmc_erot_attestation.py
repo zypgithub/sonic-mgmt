@@ -13,9 +13,9 @@ from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.system.Spdm import SpdmComponentFields
 from ngts.nvos_tools.system.System import System
-from ngts.tests_nvos.general.security.bmc_erot_attestation.client_verification.utils import CLIENT_VERIFICATION_DIR
-from ngts.tests_nvos.general.security.bmc_erot_attestation.constants import VALID_NONCE_LEN, SpdmConsts, NOT_EMPTY
-from ngts.tests_nvos.general.security.bmc_erot_attestation.helpers import get_component_obj, randomize_hex_str, \
+from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.client_verification.utils import CLIENT_VERIFICATION_DIR
+from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.constants import VALID_NONCE_LEN, SpdmConsts, NOT_EMPTY
+from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.helpers import get_component_obj, randomize_hex_str, \
     randomize_non_hex_str, verify_component_outputs, run_client_verification, \
     run_client_measurements_verification_usecanse
 from ngts.tests_nvos.general.security.helpers import add_issue_if, assert_no_issues

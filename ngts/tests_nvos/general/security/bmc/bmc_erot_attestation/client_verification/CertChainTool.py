@@ -6,7 +6,7 @@ from cryptography import x509
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric import ec
 
-from ngts.tests_nvos.general.security.bmc_erot_attestation.client_verification.utils import printtt, \
+from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.client_verification.utils import printtt, \
     CLIENT_VERIFICATION_DIR
 
 CERT_START = "-----BEGIN CERTIFICATE-----"

@@ -5,7 +5,7 @@ import pytest
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.system.Spdm import SpdmComponentFields
 from ngts.nvos_tools.system.System import System
-from ngts.tests_nvos.general.security.bmc_erot_attestation.constants import SpdmConsts, NA
+from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.constants import SpdmConsts, NA
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.switch_recovery import recover_dut_with_remote_reboot
 

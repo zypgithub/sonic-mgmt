@@ -6,8 +6,9 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from cryptography.x509 import load_pem_x509_certificate
 
-from ngts.tests_nvos.general.security.bmc_erot_attestation.client_verification.spdm_measurements import SPDMMeasurements
-from ngts.tests_nvos.general.security.bmc_erot_attestation.client_verification.utils import printtt, \
+from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.client_verification.spdm_measurements import \
+    SPDMMeasurements
+from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.client_verification.utils import printtt, \
     CLIENT_VERIFICATION_DIR
 
 CLIENT_VERIFICATION_ERR = 'client verification failed'

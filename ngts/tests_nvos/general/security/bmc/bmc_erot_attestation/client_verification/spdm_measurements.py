@@ -22,7 +22,7 @@ from pathlib import Path
 
 import cbor2
 
-from ngts.tests_nvos.general.security.bmc_erot_attestation.client_verification.utils import printtt
+from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.client_verification.utils import printtt
 
 
 def printt(msg):
