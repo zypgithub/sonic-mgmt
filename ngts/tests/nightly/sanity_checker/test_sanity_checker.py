@@ -93,20 +93,28 @@ def test_cpld_version_check(topology_obj, engines, platform_params, cli_objects)
             _, latest_cpld_ver = SonicSecureBootHelper.get_latest_expected_cpld(cpld_component_data, defined_cpld)
             current_cpld_ver = component_versions_dict[defined_cpld]
             if current_cpld_ver != latest_cpld_ver:
-                with allure.step(f'Restore CPLD to {latest_cpld_ver}'):
-                    logger.info(f"Restore CPLD to the expected one:{latest_cpld_ver}")
-                    SonicSecureBootHelper.restore_cpld(cli_objects, engines, topology_obj, platform_params, defined_cpld)
-                with allure.step("disconnect dut"):
-                    engines.dut.disconnect()
-                with allure.step(f" After power cycle, check containers and interfaces are up"):
-                    dut_topology_obj = topology_obj.players['dut']['cli']
-                    ports_list = topology_obj.players_all_ports[dut_topology_obj.dut_alias]
-                    dut_topology_obj.general.port_reload_reboot_checks(ports_list)
-                with allure.step(f"Check if the cpld version is updated to {latest_cpld_ver}"):
-                    component_versions_dict = get_info_about_current_components_version_dict(engines.dut)
-                    current_cpld_ver = component_versions_dict[defined_cpld]
-                    assert current_cpld_ver == latest_cpld_ver, \
-                        f'Current {defined_cpld} version: {current_cpld_ver} is not latest: {latest_cpld_ver}'
+                dut_topology_obj = topology_obj.players['dut']['cli']
+                try:
+                    with allure.step(f'Shutdown bpg all'):
+                        dut_topology_obj.bgp.shutdown_bgp_all()
+                    with allure.step(f'Restore CPLD to {latest_cpld_ver}'):
+                        logger.info(f"Restore CPLD to the expected one:{latest_cpld_ver}")
+                        SonicSecureBootHelper.restore_cpld(cli_objects, engines, topology_obj, platform_params, defined_cpld)
+                    with allure.step("disconnect dut"):
+                        engines.dut.disconnect()
+                    with allure.step(f" After power cycle, check containers and interfaces are up"):
+                        dut_topology_obj.general.verify_dockers_are_up()
+                        check_port_oper_up_on_admin_up(dut_topology_obj)
+
+                    with allure.step(f"Check if the cpld version is updated to {latest_cpld_ver}"):
+                        component_versions_dict = get_info_about_current_components_version_dict(engines.dut)
+                        current_cpld_ver = component_versions_dict[defined_cpld]
+                        assert current_cpld_ver == latest_cpld_ver, \
+                            f'Current {defined_cpld} version: {current_cpld_ver} is not latest: {latest_cpld_ver}'
+                except Exception as err:
+                    logger.info(f"Fail to restore cpld \n. {err}")
+                    with allure.step(f'Start bpg all'):
+                        dut_topology_obj.startup_bgp_all()
 
 
 @pytest.mark.sanity_checker_ci
@@ -321,3 +329,13 @@ def check_lldp_info_dut_to_fanout(dut_engine, map_dut_oper_up_interface_and_fano
 
     for dut_interface, fanout_interface in map_dut_oper_up_interface_and_fanout_interface.items():
         _look_up_matched_lldp_info(dut_interface, fanout_interface)
+
+
+@retry(Exception, tries=15, delay=5)
+def check_port_oper_up_on_admin_up(dut_topology_obj):
+    logger.info("Check the oper status is up when the corresponding admin status is up")
+    with allure.step(f'check ports are up'):
+        port_status = dut_topology_obj.interface.parse_interfaces_status()
+        for port, status in port_status.items():
+            if status["Admin"] == "up":
+                assert status["Oper"] == 'up', f"{port} is not up"
