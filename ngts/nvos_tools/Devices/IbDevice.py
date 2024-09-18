@@ -606,7 +606,6 @@ class CrocodileSwitch(IbSwitch):
         self.core_count = 4
         self.split_ports_supported = True
         self.asic_type = NvosConst.QTM3
-        self.default_port = 'swA1p1'
         self.platform_file_path = MultiPlanarConsts.PLATFORM_FILE_FULL_PATH.format("x86_64-nvidia_qm3400-r0")
         self.show_platform_output.update({
             "product-name": "QM3400",
@@ -762,6 +761,7 @@ class CrocodileSwitch(IbSwitch):
         super()._init_interface_lists()
         self.mgmt_ports = ['eth0', 'eth1']
         self.interface_active_internal_fnm_ports = ['fnma0p1', 'fnma1p1']
+        self.default_port = 'swA1p1'
 
 
 # -------------------------- Crocodile Simx Switch ----------------------------
