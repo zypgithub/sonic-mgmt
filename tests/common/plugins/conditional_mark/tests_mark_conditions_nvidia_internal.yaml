@@ -267,6 +267,12 @@ tests/push_build_tests/general/doroce/test_doroce.py:
       - "'simx' in platform"
       - "'sn2' in platform or 'msn2700a1' in platform"
 
+tests/push_build_tests/general/doroce/test_doroce.py::test_doroce[lossy_double_ipool]:
+  xfail:
+    reason: "Testcase is expected to fail sometimes due to RM issue: https://redmine.mellanox.com/issues/4037241"
+    conditions:
+      - https://redmine.mellanox.com/issues/4037241
+
 tests/nightly/rj45/test_rj45.py:
   skip:
     reason: "Testcase is only for alligator"
