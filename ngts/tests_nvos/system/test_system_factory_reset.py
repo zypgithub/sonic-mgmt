@@ -47,7 +47,7 @@ def test_reset_factory_without_params(engines, devices, topology_obj, platform_p
                 username = factory_reset_no_params_pre_steps(engines, platform_params, system, devices)
 
         with allure.step("Run reset factory without params"):
-            execute_reset_factory(engines, system, "", current_time)
+            execute_reset_factory(engines, system, devices.dut.reset_factory, "", current_time)
 
         with allure.step('post factory reset steps'):
             factory_reset_no_params_post_steps(apply_and_save_port, engines, just_apply_port, last_status_line,
@@ -112,7 +112,7 @@ def test_reset_factory_keep_basic(engines, devices, test_api):
             current_time = get_current_time(engines)
 
         with allure.step("Run reset factory with keep basic param"):
-            execute_reset_factory(engines, system, "keep basic", current_time)
+            execute_reset_factory(engines, system, devices.dut.reset_factory, "keep basic", current_time)
 
     finally:
         update_timezone(system)
@@ -195,7 +195,7 @@ def test_reset_factory_keep_all_config(engines, devices, test_api):
             current_time = get_current_time(engines)
 
         with allure.step("Run reset factory with keep all-config param"):
-            execute_reset_factory(engines, system, "keep all-config", current_time)
+            execute_reset_factory(engines, system, devices.dut.reset_factory, "keep all-config", current_time)
 
         update_timezone(system)
 
@@ -281,7 +281,7 @@ def test_reset_factory_keep_only_files(engines, devices, test_api):
             current_time = get_current_time(engines)
 
         with allure.step("Run reset factory without params"):
-            execute_reset_factory(engines, system, "keep only-files", current_time)
+            execute_reset_factory(engines, system, devices.dut.reset_factory, "keep only-files", current_time)
 
         update_timezone(system)
 
@@ -315,9 +315,10 @@ def test_error_flow_reset_factory_with_params(test_api, engines, devices, topolo
         # system.factory_default.action_reset(param="only-config").verify_result(should_succeed=False)
 
 
-def execute_reset_factory(engines, system, flag, current_time):
+def execute_reset_factory(engines, system, operation, flag, current_time, topology_obj=None):
     logging.info("Current time: " + str(current_time))
-    system.factory_default.action_reset(param=flag).verify_result()
+    topology_obj = topology_obj or (TestToolkit.topology_obj if TestToolkit else None)
+    system.factory_default.action_reset(operation=operation, param=flag, topology_obj=topology_obj).verify_result()
 
 
 def get_last_status_line(system):

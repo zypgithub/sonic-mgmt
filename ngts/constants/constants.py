@@ -1,7 +1,6 @@
 import copy
 import os
 from datetime import datetime
-from enum import Enum
 
 
 class PytestConst:
@@ -1530,7 +1529,7 @@ class GnmiConsts:
     GNMI_IS_NOT_RUNNING = 'no'
     GNMI_VERSION_FIELD = 'version'
     GNMI_DEFAULT_PORT = '9339'
-    SLEEP_TIME_FOR_UPDATE = 35
+    SLEEP_TIME_FOR_UPDATE = 40
     REDIS_CMD_KEY = 'redis_cmd'
     XPATH_KEY = 'xpath_gnmi_cmd'
     COMPARISON_KEY = 'comparison_dict'

@@ -241,38 +241,41 @@ def test_password_hardening_set_invalid_input(engines, system):
         orig_pwh_conf = OutputParsingTool.parse_json_str_to_dictionary(pwh_obj.show()).get_returned_value()
         logging.info('Current (orig) password hardening configuration:\n{}'.format(orig_pwh_conf))
 
-    for setting in PwhConsts.FIELDS:
-        with allure.step('Select invalid values for setting "{}"'.format(setting)):
+    with allure.step('check errors for setting invalid values to all fields'):
+        for setting in PwhConsts.FIELDS:
+            with allure.independent_step(f'check invalid values for field "{setting}"'):
 
-            # invalid values: 1.empty value; 2.just a random string; 3.another value which is not in valid values list
-            invalid_values_to_test = PwhTools.generate_invalid_field_inputs(setting)
+                # invalid values: 1.empty value; 2.just a random string; 3.another value which is not in valid values list
+                invalid_values_to_test = PwhTools.generate_invalid_field_inputs(setting)
 
-            for invalid_value in invalid_values_to_test:
-                logging.info('Invalid value for setting "{}" - "{}")'.format(setting, invalid_value))
+                for invalid_value in invalid_values_to_test:
+                    with allure.independent_step(f'invalid value: "{invalid_value}"'):
+                        logging.info('Invalid value for setting "{}" - "{}")'.format(setting, invalid_value))
 
-                with allure.step('Try to set password hardening setting "{}" to "{}"'.format(setting, invalid_value)):
-                    res_obj = pwh_obj.set(setting, invalid_value, apply=False)
+                        with allure.step('Try to set password hardening setting "{}" to "{}"'.format(setting, invalid_value)):
+                            res_obj = pwh_obj.set(setting, invalid_value, apply=False)
 
-                with allure.step('Verify error'):
-                    if invalid_value == '':
-                        expected_err = PwhConsts.ERR_INCOMPLETE_SET_CMD
-                    elif PwhConsts.VALID_VALUES[setting] == [PwhConsts.ENABLED, PwhConsts.DISABLED]:
-                        expected_err = PwhConsts.ERR_INVALID_SET_ENABLE_DISABLED
-                    elif setting in PwhConsts.MIN.keys():  # setting is numeric
-                        if re.match(PwhConsts.REGEX_NUMERIC, str(invalid_value)):  # value is numeric but not in range
-                            if int(invalid_value) < PwhConsts.MIN[setting]:
-                                expected_err = PwhConsts.ERR_VALUE_LESS_THAN_MIN.format(setting, invalid_value, PwhConsts.MIN[setting])
+                        with allure.independent_step('Verify error'):
+                            if invalid_value == '':
+                                expected_err = PwhConsts.ERR_INCOMPLETE_SET_CMD
+                            elif PwhConsts.VALID_VALUES[setting] == [PwhConsts.ENABLED, PwhConsts.DISABLED]:
+                                expected_err = PwhConsts.ERR_INVALID_SET_ENABLE_DISABLED
+                            elif setting in PwhConsts.MIN.keys():  # setting is numeric
+                                if re.match(PwhConsts.REGEX_NUMERIC, str(invalid_value)):  # value is numeric but not in range
+                                    expected_err = PwhConsts.ERR_RANGE.format(PwhConsts.MIN[setting], PwhConsts.MAX[setting])
+                                    # if int(invalid_value) < PwhConsts.MIN[setting]:
+                                    #     expected_err = PwhConsts.ERR_VALUE_LESS_THAN_MIN.format(setting, invalid_value, PwhConsts.MIN[setting])
+                                    # else:
+                                    #     expected_err = PwhConsts.ERR_VALUE_GREATER_THAN_MAX.format(setting, invalid_value, PwhConsts.MAX[setting])
+                                else:
+                                    expected_err = PwhConsts.ERR_INTEGER_EXPECTED.format(invalid_value)  # value is not numeric
                             else:
-                                expected_err = PwhConsts.ERR_VALUE_GREATER_THAN_MAX.format(setting, invalid_value, PwhConsts.MAX[setting])
-                        else:
-                            expected_err = PwhConsts.ERR_INTEGER_EXPECTED.format(setting, invalid_value)  # value is not numeric
-                    else:
-                        expected_err = PwhConsts.ERR_INVALID_SET_CMD
-                    PwhTools.verify_error(res_obj=res_obj, error_should_contain=expected_err)
+                                expected_err = PwhConsts.ERR_INVALID_SET_CMD
+                            PwhTools.verify_error(res_obj=res_obj, error_should_contain=expected_err)
 
-                with allure.step('Verify setting "{}" is still "{}" in show output'
-                                 .format(setting, orig_pwh_conf[setting])):
-                    PwhTools.verify_pwh_setting_value_in_show(pwh_obj, setting, orig_pwh_conf[setting])
+                        with allure.independent_step('Verify setting "{}" is still "{}" in show output'
+                                                     .format(setting, orig_pwh_conf[setting])):
+                            PwhTools.verify_pwh_setting_value_in_show(pwh_obj, setting, orig_pwh_conf[setting])
 
     with allure.step('Verify the constraint expiration-warning must be less or equal to expiration'):
 
