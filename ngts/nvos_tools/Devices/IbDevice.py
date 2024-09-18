@@ -555,8 +555,7 @@ class BlackMambaSwitch(IbSwitch):
 
     def _init_temperature(self):
         super()._init_temperature()
-        self.temperature_sensors += ["ASIC1", "ASIC2", "ASIC3", "ASIC4", "PSU-7-Temp", "SODIMM-2-Temp"]
-        self.temperature_sensors.remove("ASIC")
+        self.temperature_sensors += ["ASIC2", "ASIC3", "ASIC4", "PSU-7-Temp", "SODIMM-2-Temp"]
         self.temperature_sensors.remove("PSU-1-Temp")
 
     def _init_platform_lists(self):
@@ -738,8 +737,7 @@ class CrocodileSwitch(IbSwitch):
 
     def _init_temperature(self):
         super()._init_temperature()
-        self.temperature_sensors += ["ASIC1", "ASIC2", "PSU-3-Temp", "PSU-4-Temp", "PMIC-2-Temp", "PMIC-7-Temp"]
-        self.temperature_sensors.remove("ASIC")
+        self.temperature_sensors += ["ASIC2", "PSU-3-Temp", "PSU-4-Temp", "PMIC-2-Temp", "PMIC-7-Temp"]
 
     def _init_eth0_speeds(self):
         super()._init_eth0_speeds()

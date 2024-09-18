@@ -1752,4 +1752,38 @@
   Conditions:
     - Affected_test_cases:
       - tests_nvos/infra/init_flow/init_flow.py
+
+# NVOS
+- Errors_list:
+    - '.*WARNING pmon#xcvrd: Failed to read from file \/sys\/module\/sx_core\/asic\d\/module1\/module_info.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests_nvos/
+      Redmine:
+        - 4056072
+
+# NVOS
+- Errors_list:
+    - '.*ERR countermgrd: port Infiniband\d+ not found in port_missing_cntr.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests_nvos/interface
+      Redmine:
+        - 3992094
+
+# NVOS
+- Errors_list:
+    - '.*ERR nvued:   ERROR: native.py:\d+ Failed to read guid directory.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests_nvos/
+
+# NVOS
+- Errors_list:
+    - '.*WARNING pmon#thermalctld: Failed to read from file \/sys\/module\/sx_core\/asic\d\/module\d\/module_latched_flag_info.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests_nvos/system
+      Redmine:
+        - 4066029
 # --------------------------------------------------

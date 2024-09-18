@@ -375,7 +375,7 @@ class BaseSwitch(BaseDevice):
 
     def _init_temperature(self):
         super()._init_temperature()
-        self.temperature_sensors = ["ASIC", "Ambient-Fan-Side-Temp", "Ambient-Port-Side-Temp",
+        self.temperature_sensors = ["ASIC1", "Ambient-Fan-Side-Temp", "Ambient-Port-Side-Temp",
                                     "CPU-Core-0-Temp", "CPU-Core-1-Temp", "CPU-Pack-Temp",
                                     "PSU-1-Temp", "Drive-Temp", "PMIC-3-Temp", "PMIC-4-Temp",
                                     "PMIC-5-Temp", "PMIC-1-Temp", "PMIC-6-Temp"]
