@@ -845,6 +845,8 @@ class ReleaseResultsUploader:
                     os.mkdir(hwsku_topo_folder)
                 filename = os.path.basename(xml_path)
                 new_file_name = f"test_{session}_{filename}"
+                if new_file_name.endswith('.updated'):
+                    new_file_name = new_file_name.rstrip('.updated')
                 new_file_path = os.path.join(hwsku_topo_folder, new_file_name)
                 shutil.copyfile(xml_path, new_file_path)
                 copied_xmls.add(xml_path)

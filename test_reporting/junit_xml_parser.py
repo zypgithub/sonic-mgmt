@@ -38,6 +38,8 @@ import defusedxml.ElementTree as ET
 
 
 TEST_REPORT_CLIENT_VERSION = (1, 1, 0)
+REPORT_LIST = list()
+REPORT_LIST.append("Script Name, Total, Pass, Fail, Skip, Error, XFail, Time")
 
 MAXIMUM_XML_SIZE = 20e7  # 20MB
 MAXIMUM_SUMMARY_SIZE = 1024  # 1MB
@@ -728,6 +730,17 @@ python3 junit_xml_parser.py tests/files/sample_tr.xml
             output_file.write(output)
     else:
         print(output)
+
+    tstamp = datetime.now().strftime("%d-%b-%Y-%H:%M:%S.%f")
+
+    if args.output_file:
+        csv_file = open('report_{}_{}.csv'.format(args.output_file.split('.')[0], tstamp), "w+")
+    else:
+        csv_file = open('report_{}.csv'.format(tstamp), "w+")
+
+    for test in REPORT_LIST:
+        csv_file.write(test+'\n')
+    csv_file.close()
 
 
 if __name__ == "__main__":
