@@ -68,7 +68,6 @@ def test_platform_environment_bmc_leakage(engines, devices):
 
             with allure.step("Validate system health"):
                 system.validate_health_status(NOT_OK)
-                history_line = system.health.history.search_line(line_to_search=random_selected_leakage)
                 ValidationTool.compare_values(leakage_output[random_selected_leakage]['state'],
                                               PlatformConsts.LEAKAGE_STATUS_LEAK).verify_result()
                 health_output = OutputParsingTool.parse_json_str_to_dictionary(system.health.show())\
@@ -76,6 +75,7 @@ def test_platform_environment_bmc_leakage(engines, devices):
                 if not is_redmine_issue_active([3896626])[0]:
                     ValidationTool.compare_values(health_output[HealthConsts.STATUS_LED],
                                                   HealthConsts.LED_NOT_OK_STATUS).verify_result()
+                history_line = system.health.history.search_line(line_to_search=random_selected_leakage)
                 assert random_selected_leakage in history_line, 'Cant find leakage in health history'
 
             with allure.step("Return leakage status to default"):
