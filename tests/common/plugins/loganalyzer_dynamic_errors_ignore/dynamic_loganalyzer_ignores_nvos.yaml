@@ -1761,7 +1761,6 @@
     - Affected_test_cases:
       - tests_nvos/
       Redmine:
-        - 4056072
         - 4066029
 
 # NVOS
