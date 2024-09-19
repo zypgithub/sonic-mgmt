@@ -5,7 +5,7 @@ import string
 
 from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
 from infra.tools.general_constants.constants import DefaultConnectionValues
-from infra.tools.linux_tools.linux_tools import LinuxSshEngine, scp_file
+from infra.tools.linux_tools.linux_tools import LinuxSshEngine
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.cli_wrappers.openapi.openapi_command_builder import OpenApiRequest
 from ngts.nvos_constants.constants_nvos import ApiType, SystemConsts
@@ -13,6 +13,7 @@ from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.security_test_tools.constants import AuthConsts, AuthMedium
+from ngts.tests_nvos.helpers.scp_helpers import run_scp
 from ngts.tools.test_utils import allure_utils as allure
 
 
@@ -125,10 +126,10 @@ class ScpAuthVerifier(AuthVerifier):
     def __verify_scp(self, src_path, dst_path, download_from_remote, expect_success, check_result_in_caller_func=False):
         scp_success = True
         try:
-            scp_file(player=self.engine,
-                     src_path=src_path,
-                     dst_path=dst_path,
-                     download_from_remote=download_from_remote)
+            run_scp(player=self.engine,
+                    src_path=src_path,
+                    dst_path=dst_path,
+                    download_from_remote=download_from_remote)
             logging.info('SCP success')
 
             if download_from_remote:

@@ -12,7 +12,6 @@ class RemoteAaaResource(BaseComponent):
         BaseComponent.__init__(self, parent=parent_obj,
                                api={ApiType.NVUE: NvueSystemCli, ApiType.OPENAPI: OpenApiSystemCli}, path=resource_name)
         self.hostname = Hostname(self)
-        self.accounting = BaseComponent(self, path='/accounting')
 
     def enable(self, failthrough=False, apply=False, engine=None, verify_res=True):
         remote_aaa_type = self._resource_path.replace('/', '')

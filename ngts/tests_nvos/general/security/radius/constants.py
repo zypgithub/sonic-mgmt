@@ -1,0 +1,144 @@
+from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts, AddressingType
+from ngts.tests_nvos.general.security.security_test_tools.tool_classes.RemoteAaaServerInfo import RadiusServerInfo
+from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
+
+
+class RadiusConsts:
+    TIME_TILL_RADIUS_CONF_TAKES_PLACE = 3
+
+    AUTH_TYPES = [AaaConsts.PAP, AaaConsts.CHAP, AaaConsts.MSCHAPV2]
+
+    VALID_VALUES = {
+        AaaConsts.HOSTNAME: str,
+        AaaConsts.TIMEOUT: list(range(1, 61)),
+        AaaConsts.AUTH_TYPE: AUTH_TYPES,
+        AaaConsts.SECRET: str,
+        AaaConsts.PORT: list(range(AaaConsts.MIN_PORT, AaaConsts.MAX_PORT + 1)),
+        AaaConsts.RETRANSMIT: list(range(11)),
+        AaaConsts.STATISTICS: [AaaConsts.DISABLED, AaaConsts.ENABLED],
+        AaaConsts.PRIORITY: list(range(1, 9))
+    }
+
+    DEFAULT_RADIUS_CONF = {
+        AaaConsts.AUTH_TYPE: AaaConsts.MSCHAPV2,
+        AaaConsts.HOSTNAME: {},
+        AaaConsts.PORT: 1812,
+        AaaConsts.SECRET: '*',
+        AaaConsts.RETRANSMIT: 0,
+        AaaConsts.STATISTICS: AaaConsts.DISABLED,
+        AaaConsts.TIMEOUT: 3,
+    }
+
+    DEFAULTS = {
+        AaaConsts.TIMEOUT: 3,
+        AaaConsts.AUTH_TYPE: AaaConsts.MSCHAPV2,
+        AaaConsts.PORT: 1812,
+        AaaConsts.RETRANSMIT: 0,
+        AaaConsts.STATISTICS: AaaConsts.DISABLED,
+        AaaConsts.PRIORITY: 1
+    }
+
+    FIELD_IS_NUMERIC = {
+        AaaConsts.HOSTNAME: False,
+        AaaConsts.TIMEOUT: True,
+        AaaConsts.AUTH_TYPE: False,
+        AaaConsts.SECRET: False,
+        AaaConsts.PORT: True,
+        AaaConsts.RETRANSMIT: True,
+        AaaConsts.STATISTICS: False,
+        AaaConsts.PRIORITY: True
+    }
+
+
+class RadiusPhysicalServer:
+    USERS = [
+        UserInfo(
+            username='pradadm1',
+            password='pradadm1',
+            role=AaaConsts.ADMIN
+        ),
+        UserInfo(
+            username='pradmon1',
+            password='pradmon1',
+            role=AaaConsts.MONITOR
+        ),
+        UserInfo(
+            username='pradadm2',
+            password='pradadm2',
+            role=AaaConsts.ADMIN
+        ),
+        UserInfo(
+            username='pradmon2',
+            password='pradmon2',
+            role=AaaConsts.MONITOR
+        ),
+        # UserInfo(
+        #     username='admin',
+        #     password='adminadmin',
+        #     role=AaaConsts.ADMIN
+        # ),
+        # UserInfo(
+        #     username='testing',
+        #     password='testing',
+        #     role=AaaConsts.MONITOR
+        # )
+    ]
+
+    SERVER_IPV4 = RadiusServerInfo(
+        hostname=AaaConsts.PHYSICAL_AAA_SERVER_IPV4_ADDR,
+        priority=1,
+        secret='testing-radius',
+        port=1812,
+        timeout=5,
+        # retransmit=0,
+        auth_type=AaaConsts.PAP,
+        users=USERS,
+        ipv4_addr=AaaConsts.PHYSICAL_AAA_SERVER_IPV4_ADDR,
+    )
+    # SERVER_IPV6 = SERVER_IPV4.copy()
+    # SERVER_IPV6.hostname = AaaConsts.PHYSICAL_AAA_SERVER_IPV6_ADDR
+    # SERVER_DN = SERVER_IPV4.copy()
+    # SERVER_DN.hostname = AaaConsts.PHYSICAL_AAA_SERVER_DN
+
+    SERVER_BY_ADDRESSING_TYPE = {
+        AddressingType.IPV4: SERVER_IPV4,
+        # AddressingType.IPV6: SERVER_IPV6,
+        # AddressingType.DN: SERVER_DN
+    }
+
+
+class RadiusVmServer:
+    USERS = [
+        UserInfo(
+            username='rad1adm1',
+            password='rad1adm1',
+            role=AaaConsts.ADMIN
+        ),
+        UserInfo(
+            username='rad1mon1',
+            password='rad1mon1',
+            role=AaaConsts.MONITOR
+        ),
+    ]
+
+    SERVER_IPV4 = RadiusServerInfo(
+        hostname=AaaConsts.VM_AAA_SERVER_IPV4_ADDR,
+        priority=1,
+        secret='testing123',
+        port=1812,
+        timeout=5,
+        # retransmit=0,
+        auth_type=AaaConsts.PAP,
+        users=USERS,
+        ipv4_addr=AaaConsts.VM_AAA_SERVER_IPV4_ADDR,
+    )
+    SERVER_IPV6 = SERVER_IPV4.copy()
+    SERVER_IPV6.hostname = AaaConsts.VM_AAA_SERVER_IPV6_ADDR
+    SERVER_DN = SERVER_IPV4.copy()
+    SERVER_DN.hostname = AaaConsts.VM_AAA_SERVER_DN
+
+    SERVER_BY_ADDRESSING_TYPE = {
+        AddressingType.IPV4: SERVER_IPV4,
+        AddressingType.IPV6: SERVER_IPV6,
+        AddressingType.DN: SERVER_DN
+    }

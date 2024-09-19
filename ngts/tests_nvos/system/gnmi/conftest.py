@@ -11,13 +11,13 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.certificate.constants import TestCert
 from ngts.tests_nvos.general.security.conftest import cleanup_after_aaa
+from ngts.tests_nvos.general.security.radius.constants import RadiusVmServer
 from ngts.tests_nvos.general.security.security_test_tools.constants import AddressingType, AuthConsts, AaaConsts
 from ngts.tests_nvos.general.security.security_test_tools.generic_remote_aaa_testing.constants import RemoteAaaType
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.RemoteAaaServerInfo import RemoteAaaServerInfo
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
 from ngts.tests_nvos.general.security.tacacs.constants import TacacsDockerServer0
 from ngts.tests_nvos.general.security.test_aaa_ldap.ldap_servers_info import LdapServersP3
-from ngts.tests_nvos.general.security.test_aaa_radius.constants import RadiusVmServer
 from ngts.tests_nvos.system.gnmi.constants import ETC_HOSTS, GNMI_TEST_CERT, DUT_MOUNT_GNMI_CERT_DIR
 from ngts.tests_nvos.system.gnmi.helpers import get_scp_player, verify_gnmi_client_tools_installed
 from ngts.tools.test_utils.nvos_general_utils import generate_scp_uri_using_player
