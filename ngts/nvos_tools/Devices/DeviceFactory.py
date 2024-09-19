@@ -2,7 +2,10 @@ import logging
 
 from dotted_dict import DottedDict
 
-from ngts.nvos_tools.Devices.EthDevice import AnacondaSwitch, Mlx2410Switch, Mlx4600Switch, Mlx4600CSwitch, Mlx4700Switch, Mlx5600Switch
+from ngts.nvos_tools.Devices.EthDevice import Mlx2410Switch, Mlx4600Switch, Mlx4600cSwitch, Mlx4700Switch, Mlx5600Switch, \
+    Mlx5400Switch, Mlx4410Switch, Mlx3750sxSwitch, Mlx3700csSwitch, Mlx3700cSwitch, Mlx3420Switch, Mlx2700Switch, Mlx2201Switch, Mlx2100Switch, \
+    Mlx2010Switch, Mlx3700Switch
+
 from ngts.nvos_tools.Devices.IbDevice import GorillaSwitch, \
     MarlinSwitch, GorillaSwitchBF3, CrocodileSwitch, BlackMambaSwitch, CrocodileSimxSwitch, JulietScaleoutSwitch
 
@@ -17,8 +20,8 @@ class DeviceFactory:
             'MQM9700': GorillaSwitch,
             'MQM9520 - marlin': MarlinSwitch,
             'MQM9520': MarlinSwitch,
-            'MSN3700': AnacondaSwitch,
-            'MSN3700 - Anaconda': AnacondaSwitch,
+            'MSN3700': Mlx3700Switch,
+            'MSN3700 - Anaconda': Mlx3700Switch,
             'Q3200-RA-Crocodile Sunbird': CrocodileSwitch,
             'QM3400': CrocodileSwitch,
             'QM3400 - Crocodile': CrocodileSwitch,
@@ -26,11 +29,22 @@ class DeviceFactory:
             'QM8790 - Black Mamba': BlackMambaSwitch,
             'QM3000 - Black Mamba': BlackMambaSwitch,
             'Q3400-RA Black Mamba': BlackMambaSwitch,
+            'Mellanox SN5600': Mlx5600Switch,
+            'Mellanox SN5400': Mlx5400Switch,
             'Mellanox SN4700': Mlx4700Switch,
             'Mellanox SN4600': Mlx4600Switch,
-            'Mellanox SN4600C': Mlx4600CSwitch,
+            'Mellanox SN4600c': Mlx4600cSwitch,
+            'Mellanox SN4410': Mlx4410Switch,
+            'Mellanox SN3750sx': Mlx3750sxSwitch,
+            'Mellanox SN3700': Mlx3700Switch,
+            'Mellanox SN3700cs': Mlx3700csSwitch,
+            'Mellanox SN3700c': Mlx3700cSwitch,
+            'Mellanox SN3420': Mlx3420Switch,
+            'Mellanox 2700': Mlx2700Switch,
             'Mellanox 2410': Mlx2410Switch,
-            'Mellanox SN5600': Mlx5600Switch,
+            'Mellanox 2201': Mlx2201Switch,
+            'Mellanox 2100': Mlx2100Switch,
+            'Mellanox 2010': Mlx2010Switch,
             'N5110_LD - JulietScaleout': JulietScaleoutSwitch
         }
 

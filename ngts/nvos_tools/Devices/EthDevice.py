@@ -175,8 +175,8 @@ class EthSwitch(BaseSwitch):
         super()._init_dockers()
 
 
-# -------------------------- Anaconda Switch ----------------------------
-class AnacondaSwitch(EthSwitch):
+# -------------------------- Mlx3700 Anaconda Switch ----------------------------
+class Mlx3700Switch(EthSwitch):
     def __init__(self):
         super().__init__(asic_amount=1)
 
@@ -216,7 +216,7 @@ class Mlx2410Switch(EthSwitch):
         super()._init_constants()
         self.core_count = 2
         self.ib_ports_num = 56
-        self.asic_type = 'Spectrum-1'
+        self.asic_type = 'Spectrum'
         self.constants.firmware.append(PlatformConsts.FW_SPECTRUM1)
 
         self.show_platform_output.update({
@@ -227,13 +227,17 @@ class Mlx2410Switch(EthSwitch):
         self.voltage_sensors = ["VIN", "VOUT1", "VOUT2"]
 
     def _init_temperature(self):
-        self.temperature_sensors = ["Asic-Temp-Sensor", "CPU-Package-Sensor", "Main-Board-Ambient-Sensor",
-                                    "CPU-Core-Sensor-0", "CPU-Core-Sensor-1",
+        self.temperature_sensors = ["Asic-Temp-Sensor", "CPU-Core-Sensor-0",
+                                    "CPU-Core-Sensor-1",
+                                    "CPU-Package-Sensor", "Main-Board-Ambient-Sensor",
                                     "PSU1-Temp-Sensor", "PSU2-Temp-Sensor",
                                     "Port-Ambient-Sensor"]
 
     def _init_fan_list(self):
         self.fan_list = ["FAN1/1", "FAN1/2", "FAN2/1", "FAN2/2", "FAN3/1", "FAN3/2", "FAN4/1", "FAN4/2"]
+
+    def _init_led_list(self):
+        self.led_list = ["FAN1", "FAN2", "FAN3", "FAN4", "PSU", "SYSTEM"]
 
 # -------------------------- Mlx4600 Switch -----------------------------
 
@@ -254,42 +258,34 @@ class Mlx4600Switch(EthSwitch):
             "asic-model": self.asic_type
         })
 
-        self.voltage_sensors = ["PMIC-1-PSU-12V-RAIL-IN", "PMIC-2-PSU-12V-RAIL-IN",
-                                "PMIC-2-ASIC-1.2V_MAIN-RAIL-OUT2", "PMIC-2-ASIC-1.8V_MAIN-RAIL-OUT1",
+        self.voltage_sensors = ["PMIC-1-PSU-12V-RAIL-IN", "PMIC-2-ASIC-1.2V_MAIN-RAIL-OUT2",
+                                "PMIC-2-ASIC-1.8V_MAIN-RAIL-OUT1", "PMIC-2-PSU-12V-RAIL-IN",
                                 "PMIC-3-ASIC-1.8V_T0_3-RAIL-OUT2", "PMIC-3-COMEX-1.05V-RAIL-OUT",
                                 "PMIC-3-PSU-12V-RAIL-IN", "PMIC-3-PSU-12V-RAIL-IN1",
-                                "PMIC-5-ASIC-1.2V_T0_3-RAIL-OUT1", "PMIC-5-ASIC-1.2V_T4_7-RAIL-OUT2",
-                                "PMIC-5-PSU-12V-RAIL-IN", "PMIC-6-COMEX-1.8V-RAIL-OUT1",
-                                "PMIC-6-PSU-12V-RAIL-IN1", "PMIC-6-PSU-12V-RAIL-IN2",
-                                "PMIC-7-COMEX-1.2V-RAIL-OUT", "PMIC-7-PSU-12V-RAIL-IN1",
-                                "PMIC-7-PSU-12V-RAIL-IN2", "PSU-1R-12V-RAIL-OUT",
-                                "PSU-1R-220V-RAIL-IN"]
+                                "PMIC-5-ASIC-1.2V_T0_3-RAIL-OUT1",
+                                "PMIC-5-ASIC-1.2V_T4_7-RAIL-OUT2", "PMIC-5-PSU-12V-RAIL-IN",
+                                "PMIC-6-COMEX-1.8V-RAIL-OUT1", "PMIC-6-PSU-12V-RAIL-IN1",
+                                "PMIC-6-PSU-12V-RAIL-IN2", "PMIC-7-COMEX-1.2V-RAIL-OUT",
+                                "PMIC-7-PSU-12V-RAIL-IN1", "PMIC-7-PSU-12V-RAIL-IN2",
+                                "PSU-1L-12V-RAIL-OUT", "PSU-1L-220V-RAIL-IN"]
+
+    def _init_temperature(self):
+        self.temperature_sensors = ["Asic-Temp-Sensor", "CPU-Core-Sensor-0", "CPU-Core-Sensor-1",
+                                    "CPU-Core-Sensor-2", "CPU-Core-Sensor-3",
+                                    "CPU-Package-Sensor", "Main-Board-Ambient-Sensor",
+                                    "PSU1-Temp-Sensor", "PSU2-Temp-Sensor",
+                                    "Port-Ambient-Sensor"]
 
     def _init_fan_list(self):
         self.fan_list = ["FAN1/1", "FAN2/1", "FAN3/1"]
 
-# -------------------------- Mlx4700 Switch -----------------------------
-
-
-class Mlx4700Switch(EthSwitch):
-    def __init__(self):
-        super().__init__(asic_amount=1)
-
-    def _init_constants(self):
-        super()._init_constants()
-        self.core_count = 8
-        self.asic_type = 'Spectrum-3'
-        self.constants.firmware.append(PlatformConsts.FW_SPECTRUM3)
-
-        self.show_platform_output.update({
-            "product-name": "MSN4700",
-            "asic-model": self.asic_type
-        })
-
+    def _init_led_list(self):
+        self.led_list = ["FAN1", "FAN2", "FAN3", "PSU", "SYSTEM"]
 
 # -------------------------- Mlx4600C Switch -----------------------------
 
-class Mlx4600CSwitch(EthSwitch):
+
+class Mlx4600cSwitch(EthSwitch):
     def __init__(self):
         super().__init__(asic_amount=1)
 
@@ -309,20 +305,49 @@ class Mlx4600CSwitch(EthSwitch):
                                 "PMIC-2-ASIC-1.8V_MAIN-RAIL-OUT1", "PMIC-2-PSU-12V-RAIL-IN1",
                                 "PMIC-2-PSU-12V-RAIL-IN2", "PMIC-3-ASIC-1.8V_T0_1-RAIL-OUT2",
                                 "PMIC-3-PSU-12V-RAIL-IN1", "PMIC-3-PSU-12V-RAIL-IN2",
-                                "PMIC-4-ASIC-1.8V_T2_3-RAIL-OUT2", "PMIC-4-PSU-12V-RAIL-IN1",
-                                "PMIC-4-PSU-12V-RAIL-IN2", "PMIC-5-ASIC-1.8V_T4_5-RAIL-OUT2",
-                                "PMIC-5-PSU-12V-RAIL-IN1", "PMIC-5-PSU-12V-RAIL-IN2",
-                                "PMIC-6-ASIC-1.8V_T6_7-RAIL-OUT2", "PMIC-6-PSU-12V-RAIL-IN1",
-                                "PMIC-6-PSU-12V-RAIL-IN2", "PMIC-7-ASIC-1.2V_T0_3-RAIL-OUT1",
-                                "PMIC-7-ASIC-1.2V_T4_7-RAIL-OUT2", "PMIC-7-PSU-12V-RAIL-IN1",
-                                "PMIC-7-PSU-12V-RAIL-IN2", "PMIC-8-COMEX-1.8V-RAIL-OUT1",
-                                "PMIC-8-PSU-12V-RAIL-IN1", "PMIC-8-PSU-12V-RAIL-IN2",
-                                "PMIC-9-COMEX-1.2V-RAIL-OUT", "PMIC-9-PSU-12V-RAIL-IN1",
-                                "PMIC-9-PSU-12V-RAIL-IN2", "PSU-1R-12V-RAIL-OUT",
-                                "PSU-1R-220V-RAIL-IN"]
+                                "PMIC-4-ASIC-1.8V_T2_3-RAIL-OUT2",
+                                "PMIC-4-PSU-12V-RAIL-IN1", "PMIC-4-PSU-12V-RAIL-IN2",
+                                "PMIC-5-ASIC-1.8V_T4_5-RAIL-OUT2", "PMIC-5-PSU-12V-RAIL-IN1",
+                                "PMIC-5-PSU-12V-RAIL-IN2", "PMIC-6-ASIC-1.8V_T6_7-RAIL-OUT2",
+                                "PMIC-6-PSU-12V-RAIL-IN1", "PMIC-6-PSU-12V-RAIL-IN2",
+                                "PMIC-7-ASIC-1.2V_T0_3-RAIL-OUT1", "PMIC-7-ASIC-1.2V_T4_7-RAIL-OUT2",
+                                "PMIC-7-PSU-12V-RAIL-IN1", "PMIC-7-PSU-12V-RAIL-IN2",
+                                "PMIC-8-COMEX-1.8V-RAIL-OUT", "PMIC-8-PSU-12V-RAIL-IN1",
+                                "PMIC-8-PSU-12V-RAIL-IN2", "PMIC-9-COMEX-1.2V-RAIL-OUT",
+                                "PMIC-9-PSU-12V-RAIL-IN1", "PMIC-9-PSU-12V-RAIL-IN2",
+                                "PSU-2R-12V-RAIL-OUT", "PSU-2R-220V-RAIL-IN"]
+
+    def _init_temperature(self):
+        self.temperature_sensors = ["Asic-Temp-Sensor", "CPU-Core-Sensor-0", "CPU-Core-Sensor-1",
+                                    "CPU-Core-Sensor-2", "CPU-Core-Sensor-3",
+                                    "CPU-Package-Sensor", "Main-Board-Ambient-Sensor",
+                                    "PSU1-Temp-Sensor", "PSU2-Temp-Sensor",
+                                    "Port-Ambient-Sensor"]
 
     def _init_fan_list(self):
         self.fan_list = ["FAN1/1", "FAN2/1", "FAN3/1"]
+
+    def _init_led_list(self):
+        self.led_list = ["FAN1", "FAN2", "FAN3", "PSU", "SYSTEM"]
+
+
+# -------------------------- Mlx4700 Switch -----------------------------
+
+
+class Mlx4700Switch(EthSwitch):
+    def __init__(self):
+        super().__init__(asic_amount=1)
+
+    def _init_constants(self):
+        super()._init_constants()
+        self.core_count = 8
+        self.asic_type = 'Spectrum-3'
+        self.constants.firmware.append(PlatformConsts.FW_SPECTRUM3)
+
+        self.show_platform_output.update({
+            "product-name": "MSN4700",
+            "asic-model": self.asic_type
+        })
 
 # -------------------------- Mlx5600 Switch -----------------------------
 
@@ -341,14 +366,6 @@ class Mlx5600Switch(EthSwitch):
             "product-name": "SN5600",
             "asic-model": self.asic_type
         })
-
-    def _init_temperature(self):
-        super()._init_temperature()
-        self.temperature_sensors = ["Asic-Temp-Sensor", "CPU-Core-Sensor-0", "CPU-Core-Sensor-1",
-                                    "CPU-Core-Sensor-2", "CPU-Core-Sensor-3", "CPU-Core-Sensor-4",
-                                    "CPU-Core-Sensor-5", "CPU-Package-Sensor", "Main-Board-Ambient-Sensor",
-                                    "PSU1-Temp-Sensor", "PSU2-Temp-Sensor", "Port-Ambient-Sensor"]
-
         self.voltage_sensors = ["ADAPTER", "IBC-1-13V5-RAIL-OUT", "IBC-1-PWR-CONV-54V-RAIL-IN1",
                                 "IBC-2-13V5-RAIL-OUT", "IBC-2-PWR-CONV-54V-RAIL-IN1", "IBC-3-13V5-RAIL-OUT",
                                 "IBC-3-PWR-CONV-54V-RAIL-IN1", "IBC-4-13V5-RAIL-OUT", "IBC-4-PWR-CONV-54V-RAIL-IN1",
@@ -358,4 +375,368 @@ class Mlx5600Switch(EthSwitch):
                                 "PMIC-10-HVDD_T03-1V2-RAIL-OUT1", "PMIC-10-HVDD_T47-1V2-RAIL-OUT2", "PMIC-10-PSU-13V5-RAIL-IN1",
                                 "PMIC-11-PSU-13V5-RAIL-IN1", "PMIC-12-PSU-13V5-RAIL-VIN", "PSU-1L-54V-RAIL-OUT",
                                 "PSU-1L-220V-RAIL-IN"]
+
+    def _init_temperature(self):
+        super()._init_temperature()
+        self.temperature_sensors = ["Asic-Temp-Sensor", "CPU-Core-Sensor-0", "CPU-Core-Sensor-1",
+                                    "CPU-Core-Sensor-2", "CPU-Core-Sensor-3", "CPU-Core-Sensor-4",
+                                    "CPU-Core-Sensor-5", "CPU-Package-Sensor", "Main-Board-Ambient-Sensor",
+                                    "PSU1-Temp-Sensor", "PSU2-Temp-Sensor", "Port-Ambient-Sensor"]
+
+    def _init_fan_list(self):
         self.fan_list = ["FAN1/1", "FAN1/2", "FAN2/1", "FAN2/2", "FAN3/1", "FAN3/2", "FAN4/1", "FAN4/2"]
+
+    def _init_led_list(self):
+        self.led_list = ["FAN1", "FAN2", "FAN3", "FAN4", "PSU", "SYSTEM"]
+
+    def _init_led_list(self):
+        self.led_list = ["FAN1", "FAN2", "FAN3", "FAN4", "PSU", "SYSTEM"]
+
+
+# -------------------------- Mlx5400 Switch -----------------------------
+
+
+class Mlx5400Switch(EthSwitch):
+    def __init__(self):
+        super().__init__(asic_amount=1)
+
+    def _init_constants(self):
+        super()._init_constants()
+        self.core_count = 12
+        self.ib_ports_num = 66
+        self.asic_type = 'Spectrum-4'
+        self.constants.firmware.append(PlatformConsts.FW_SPECTRUM4)
+        self.show_platform_output.update({
+            "product-name": "SN5400",
+            "asic-model": self.asic_type
+        })
+        self.voltage_sensors = ["ADAPTER", "IBC-1-13V5-RAIL-OUT", "IBC-1-PWR-CONV-54V-RAIL-IN1",
+                                "IBC-2-13V5-RAIL-OUT", "IBC-2-PWR-CONV-54V-RAIL-IN1", "IBC-3-13V5-RAIL-OUT",
+                                "IBC-3-PWR-CONV-54V-RAIL-IN1", "IBC-4-13V5-RAIL-OUT", "IBC-4-PWR-CONV-54V-RAIL-IN1",
+                                "PMIC-1-PSU-13V5-RAIL-IN1", "PMIC-2-PSU-13V5-RAIL-IN1", "PMIC-3-PSU-13V5-RAIL-IN1",
+                                "PMIC-4-PSU-13V5-RAIL-IN1", "PMIC-5-PSU-13V5-RAIL-IN1", "PMIC-6-PSU-13V5-RAIL-IN1",
+                                "PMIC-7-PSU-13V5-RAIL-IN1", "PMIC-8-PSU-13V5-RAIL-IN1", "PMIC-9-PSU-13V5-RAIL-IN1",
+                                "PMIC-10-HVDD_T03-1V2-RAIL-OUT1", "PMIC-10-HVDD_T47-1V2-RAIL-OUT2", "PMIC-10-PSU-13V5-RAIL-IN1",
+                                "PMIC-11-PSU-13V5-RAIL-IN1", "PMIC-12-PSU-13V5-RAIL-VIN", "PSU-1L-54V-RAIL-OUT",
+                                "PSU-1L-220V-RAIL-IN"]
+
+    def _init_temperature(self):
+        super()._init_temperature()
+        self.temperature_sensors = ["Asic-Temp-Sensor", "CPU-Core-Sensor-0", "CPU-Core-Sensor-1",
+                                    "CPU-Core-Sensor-2", "CPU-Core-Sensor-3", "CPU-Core-Sensor-4",
+                                    "CPU-Core-Sensor-5", "CPU-Package-Sensor", "Main-Board-Ambient-Sensor",
+                                    "PSU1-Temp-Sensor", "PSU2-Temp-Sensor", "Port-Ambient-Sensor"]
+
+    def _init_fan_list(self):
+        self.fan_list = ["FAN1/1", "FAN1/2", "FAN2/1", "FAN2/2", "FAN3/1", "FAN3/2", "FAN4/1", "FAN4/2"]
+
+    def _init_led_list(self):
+        self.led_list = ["FAN1", "FAN2", "FAN3", "FAN4", "PSU", "SYSTEM"]
+
+
+# -------------------------- Mlx410 Switch -----------------------------
+
+
+class Mlx4410Switch(EthSwitch):
+    def __init__(self):
+        super().__init__(asic_amount=1)
+
+    def _init_constants(self):
+        super()._init_constants()
+        self.core_count = 8
+        self.ib_ports_num = 32
+        self.asic_type = 'Spectrum-3'
+        self.constants.firmware.append(PlatformConsts.FW_SPECTRUM3)
+
+        self.show_platform_output.update({
+            "product-name": "MSN4410",
+            "asic-model": self.asic_type
+        })
+
+
+# -------------------------- Mlx3750sx Switch -----------------------------
+
+
+class Mlx3750sxSwitch(EthSwitch):
+    def __init__(self):
+        super().__init__(asic_amount=1)
+
+    def _init_constants(self):
+        super()._init_constants()
+        self.core_count = 8
+        self.ib_ports_num = 32
+        self.asic_type = 'Spectrum-2'
+        self.constants.firmware.append(PlatformConsts.FW_SPECTRUM2)
+
+        self.show_platform_output.update({
+            "product-name": "MSN3750sx",
+            "asic-model": self.asic_type
+        })
+
+        self.voltage_sensors = ["ADAPTER", "PMIC-1-ASIC-1.2V-RAIL-OUT",
+                                "PMIC-1-PSU-12V-RAIL-IN", "PMIC-2-ASIC-1.8V-RAIL-OUT",
+                                "PMIC-2-ASIC-3.3V-RAIL-OUT", "PMIC-2-PSU-12V-RAIL-IN",
+                                "PMIC-6-PSU-12V-RAIL-VIN", "PSU-2-12V-RAIL-OUT",
+                                "PSU-2-220V-RAIL-IN"]
+
+    def _init_temperature(self):
+        self.temperature_sensors = ["Asic-Temp-Sensor", "CPU-Package-Sensor", "Main-Board-Ambient-Sensor",
+                                    "CPU-Core-Sensor-0", "CPU-Core-Sensor-1",
+                                    "PSU1-Temp-Sensor", "PSU2-Temp-Sensor",
+                                    "Port-Ambient-Sensor"]
+
+
+# -------------------------- Mlx3700cs Switch -----------------------------
+
+
+class Mlx3700csSwitch(EthSwitch):
+    def __init__(self):
+        super().__init__(asic_amount=1)
+
+    def _init_constants(self):
+        super()._init_constants()
+        self.core_count = 8
+        self.ib_ports_num = 32
+        self.asic_type = 'Spectrum-2'
+        self.constants.firmware.append(PlatformConsts.FW_SPECTRUM2)
+
+        self.show_platform_output.update({
+            "product-name": "MSN3700cs",
+            "asic-model": self.asic_type
+        })
+
+        self.voltage_sensors = ["ADAPTER", "PMIC-1-ASIC-0.8V-VCORE-RAIL-OUT",
+                                "PMIC-1-PSU-12V-RAIL-IN1", "PMIC-2-ASIC-3.3V-RAIL-OUT",
+                                "PMIC-2-PSU-12V-RAIL-IN1", "PMIC-2-PSU-12V-RAIL-IN2",
+                                "PSU-2-12V-RAIL-OUT", "PSU-2-220V-RAIL-IN", "VIN"]
+
+    def _init_temperature(self):
+        self.temperature_sensors = ["Asic-Temp-Sensor", "CPU-Core-Sensor-0",
+                                    "CPU-Core-Sensor-1", "CPU-Package-Sensor",
+                                    "Main-Board-Ambient-Sensor", "PSU1-Temp-Sensor",
+                                    "PSU2-Temp-Sensor", "Port-Ambient-Sensor"]
+
+    def _init_fan_list(self):
+        self.fan_list = ["FAN1/1", "FAN1/2", "FAN2/1", "FAN2/2", "FAN3/1", "FAN3/2", "FAN4/1", "FAN4/2"]
+
+    def _init_led_list(self):
+        self.led_list = ["FAN1", "FAN2", "FAN3", "FAN4", "PSU", "SYSTEM"]
+
+
+# -------------------------- Mlx3700c Switch -----------------------------
+
+
+class Mlx3700cSwitch(EthSwitch):
+    def __init__(self):
+        super().__init__(asic_amount=1)
+
+    def _init_constants(self):
+        super()._init_constants()
+        self.core_count = 8
+        self.ib_ports_num = 32
+        self.asic_type = 'Spectrum-2'
+        self.constants.firmware.append(PlatformConsts.FW_SPECTRUM2)
+
+        self.show_platform_output.update({
+            "product-name": "MSN3700c",
+            "asic-model": self.asic_type
+        })
+
+        self.voltage_sensors = ["ADAPTER", "PMIC-1-ASIC-0.8V-VCORE-RAIL-OUT",
+                                "PMIC-1-PSU-12V-RAIL-IN1", "PMIC-2-ASIC-3.3V-RAIL-OUT",
+                                "PMIC-2-PSU-12V-RAIL-IN1", "PMIC-2-PSU-12V-RAIL-IN2",
+                                "PSU-2-12V-RAIL-OUT", "PSU-2-220V-RAIL-IN", "VIN"]
+
+    def _init_temperature(self):
+        self.temperature_sensors = ["PMIC-1-ASIC-0.8V-VCORE-RAIL-OUT", "PMIC-1-PSU-12V-RAIL-IN1",
+                                    "PMIC-2-ASIC-3.3V-RAIL-OUT", "PMIC-2-PSU-12V-RAIL-IN1",
+                                    "PMIC-2-PSU-12V-RAIL-IN2", "PMIC-3-COMEX-1.8V-RAIL-OUT",
+                                    "PMIC-3-PSU-12V-RAIL-IN1", "PMIC-3-PSU-12V-RAIL-IN2",
+                                    "PMIC-4-COMEX-1.2V-RAIL-OUT", "PMIC-4-PSU-12V-RAIL-IN1",
+                                    "PMIC-4-PSU-12V-RAIL-IN2", "PSU-2-12V-RAIL-OUT",
+                                    "PSU-2-220V-RAIL-IN"]
+
+    def _init_fan_list(self):
+        self.fan_list = ["FAN1/1", "FAN1/2", "FAN2/1", "FAN2/2", "FAN3/1", "FAN3/2", "FAN4/1", "FAN4/2"]
+
+    def _init_led_list(self):
+        self.led_list = ["FAN1", "FAN2", "FAN3", "FAN4", "PSU", "SYSTEM"]
+
+
+# -------------------------- Mlx3420 Switch -----------------------------
+
+
+class Mlx3420Switch(EthSwitch):
+    def __init__(self):
+        super().__init__(asic_amount=1)
+
+    def _init_constants(self):
+        super()._init_constants()
+        self.core_count = 4
+        self.ib_ports_num = 60
+        self.asic_type = 'Spectrum-2'
+        self.constants.firmware.append(PlatformConsts.FW_SPECTRUM2)
+
+        self.show_platform_output.update({
+            "product-name": "MSN3420",
+            "asic-model": self.asic_type
+        })
+
+        self.voltage_sensors = ["PMIC-3-COMEX-1.8V-RAIL-OUT", "PMIC-3-PSU-12V-RAIL-IN1",
+                                "PMIC-3-PSU-12V-RAIL-IN2", "PMIC-4-COMEX-1.8V-RAIL-OUT",
+                                "PMIC-4-PSU-12V-RAIL-IN1", "PMIC-4-PSU-12V-RAIL-IN2",
+                                "PSU-2-12V-RAIL-OUT", "PSU-2-220V-RAIL-IN",
+                                "VIN1", "VIN2", "VOUT1", "VOUT2"]
+
+    def _init_temperature(self):
+        self.temperature_sensors = ["Asic-Temp-Sensor", "CPU-Core-Sensor-0",
+                                    "CPU-Core-Sensor-1", "CPU-Package-Sensor",
+                                    "Main-Board-Ambient-Sensor", "PSU1-Temp-Sensor",
+                                    "PSU2-Temp-Sensor", "Port-Ambient-Sensor"]
+
+    def _init_fan_list(self):
+        self.fan_list = ["FAN1/1", "FAN1/2", "FAN2/1", "FAN2/2", "FAN3/1", "FAN3/2", "FAN4/1", "FAN4/2", "FAN5/1", "FAN5/2"]
+
+    def _init_led_list(self):
+        self.led_list = ["FAN1", "FAN2", "FAN3", "FAN4", "FAN5", "PSU", "SYSTEM"]
+
+
+# -------------------------- Mlx2700 Switch -----------------------------
+
+
+class Mlx2700Switch(EthSwitch):
+    def __init__(self):
+        super().__init__(asic_amount=1)
+
+    def _init_constants(self):
+        super()._init_constants()
+        self.core_count = 2
+        self.ib_ports_num = 32
+        self.asic_type = 'Spectrum'
+        self.constants.firmware.append(PlatformConsts.FW_SPECTRUM)
+
+        self.show_platform_output.update({
+            "product-name": "MSN2700",
+            "asic-model": self.asic_type
+        })
+
+        self.voltage_sensors = ["VIN", "VOUT1", "VOUT2"]
+
+    def _init_temperature(self):
+        self.temperature_sensors = ["Asic-Temp-Sensor", "CPU-Core-Sensor-0",
+                                    "CPU-Core-Sensor-1", "CPU-Package-Sensor",
+                                    "Main-Board-Ambient-Sensor", "PSU1-Temp-Sensor",
+                                    "PSU2-Temp-Sensor", "Port-Ambient-Sensor"]
+
+    def _init_fan_list(self):
+        self.fan_list = ["FAN1/1", "FAN1/2", "FAN2/1", "FAN2/2", "FAN3/1", "FAN3/2", "FAN4/1", "FAN4/2"]
+
+    def _init_led_list(self):
+        self.led_list = ["FAN1", "FAN2", "FAN3", "FAN4", "PSU", "SYSTEM"]
+
+
+# -------------------------- Mlx2201 Switch -----------------------------
+
+
+class Mlx2201Switch(EthSwitch):
+    def __init__(self):
+        super().__init__(asic_amount=1)
+
+    def _init_constants(self):
+        super()._init_constants()
+        self.core_count = 2
+        self.ib_ports_num = 32
+        self.asic_type = 'Spectrum'
+        self.constants.firmware.append(PlatformConsts.FW_SPECTRUM)
+
+        self.show_platform_output.update({
+            "product-name": "SN2201",
+            "asic-model": self.asic_type
+        })
+
+        self.voltage_sensors = ["MONITOR-CPU-BOARD-P2V5_VPP", "MONITOR-CPU-BOARD-V1P05",
+                                "MONITOR-CPU-BOARD-V1P8", "MONITOR-CPU-BOARD-V1P24",
+                                "MONITOR-CPU-BOARD-V3P3", "MONITOR-CPU-BOARD-VR_VCCRAM_1V15",
+                                "MONITOR-CPU-BOARD-VR_VCC_1V15", "MONITOR-CPU-BOARD-VR_VDDQ_1V20",
+                                "PSU-2-12V-RAILOUT", "PSU-2-220V-RAILIN",
+                                "VR-IC-PSU-12V-RAI"]
+
+    def _init_temperature(self):
+        self.temperature_sensors = ["Asic-Temp-Sensor", "CPU-Core-Sensor-0",
+                                    "CPU-Core-Sensor-1", "CPU-Package-Sensor",
+                                    "Main-Board-Ambient-Sensor", "PSU1-Temp-Sensor",
+                                    "PSU2-Temp-Sensor", "Port-Ambient-Sensor"]
+
+    def _init_fan_list(self):
+        self.fan_list = ["FAN1/1", "FAN2/1", "FAN3/1", "FAN4/1"]
+
+    def _init_led_list(self):
+        self.led_list = ["FAN1", "FAN2", "FAN3", "FAN4", "PSU", "SYSTEM"]
+
+
+# -------------------------- Mlx2100 Switch -----------------------------
+
+
+class Mlx2100Switch(EthSwitch):
+    def __init__(self):
+        super().__init__(asic_amount=1)
+
+    def _init_constants(self):
+        super()._init_constants()
+        self.core_count = 4
+        self.ib_ports_num = 16
+        self.asic_type = 'Spectrum'
+        self.constants.firmware.append(PlatformConsts.FW_SPECTRUM1)
+
+        self.show_platform_output.update({
+            "product-name": "MSN2100",
+            "asic-model": self.asic_type
+        })
+
+        self.voltage_sensors = ["VIN", "VOUT1", "VOUT2"]
+
+    def _init_temperature(self):
+        self.temperature_sensors = ["Asic-Temp-Sensor", "Main-Board-Ambient-Sensor",
+                                    "Port-Ambient-Sensor", "CPU-Core-Sensor-0",
+                                    "CPU-Core-Sensor-1", "CPU-Core-Sensor-2",
+                                    "CPU-Core-Sensor-3"]
+
+    def _init_fan_list(self):
+        self.fan_list = ["FAN1/1", "FAN1/2", "FAN2/1", "FAN2/2"]
+
+    def _init_led_list(self):
+        self.led_list = ["FAN1", "PSU1", "PSU2", "SYSTEM"]
+
+
+# -------------------------- Mlx2010 Switch -----------------------------
+
+
+class Mlx2010Switch(EthSwitch):
+    def __init__(self):
+        super().__init__(asic_amount=1)
+
+    def _init_constants(self):
+        super()._init_constants()
+        self.core_count = 4
+        self.ib_ports_num = 22
+        self.asic_type = 'Spectrum'
+        self.constants.firmware.append(PlatformConsts.FW_SPECTRUM1)
+
+        self.show_platform_output.update({
+            "product-name": "MSN2010",
+            "asic-model": self.asic_type
+        })
+
+        self.voltage_sensors = ["VIN", "VOUT1", "VOUT2"]
+
+    def _init_temperature(self):
+        self.temperature_sensors = ["Asic-Temp-Sensor", "Main-Board-Ambient-Sensor",
+                                    "Port-Ambient-Sensor", "CPU-Core-Sensor-0",
+                                    "CPU-Core-Sensor-1", "CPU-Core-Sensor-2",
+                                    "CPU-Core-Sensor-3"]
+
+    def _init_fan_list(self):
+        self.fan_list = ["FAN1/1", "FAN1/1", "FAN3/1", "FAN4/1"]
+
+    def _init_led_list(self):
+        self.led_list = ["FAN1", "PSU1", "PSU2", "SYSTEM"]
