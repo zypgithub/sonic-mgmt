@@ -130,7 +130,7 @@ def push_gate_configuration(topology_obj, cli_objects, engines, interfaces, plat
 
         # Install app here in order to test migrating app from base image to target image
         if shared_params.app_ext_is_app_ext_supported:
-            if is_redmine_issue_active([3883023]):
+            if is_redmine_issue_active([3883023])[0]:
                 with allure.step('Apply DNS servers configuration'):
                     apply_dns_servers_resolve_conf(engines.dut)
             with allure.step("Install app {}".format(app_name)):

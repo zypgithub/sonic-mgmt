@@ -42,7 +42,7 @@ def cli_object(topology_obj):
 
 
 def ports_breakout_modes(dut_engine, cli_object, sw_control_ports, is_sw_control_feature_enabled, cli_objects):
-    if is_sw_control_feature_enabled and is_redmine_issue_active([3891669]):
+    if is_sw_control_feature_enabled and is_redmine_issue_active([3891669])[0]:
         pytest.skip(f"Skipping test when SW control feature enabled and RM 3891669 is active")
     aoc_cables = cli_objects.dut.im.sw_controlled_aoc_cables(sw_control_ports)
     return get_dut_breakout_modes(dut_engine, cli_object, aoc_cables)

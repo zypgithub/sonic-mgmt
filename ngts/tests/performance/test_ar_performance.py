@@ -35,7 +35,7 @@ class TestArPerformance:
         self.random_dut_ports = random.sample(self.dut_tx_ports, 2)
         self.tg_ports_num = len(self.tx_ports_left_tg) if len(self.tx_ports_right_tg) == len(
             self.tx_ports_right_tg) else None
-        if is_redmine_issue_active([3677516]):
+        if is_redmine_issue_active([3677516])[0]:
             # TODO: WA due to a community bug in which AR configuration isn't applied if syncd starts before doai docker
             self.ar_helper.config_save_reload(cli_objects, topology_obj)
 

@@ -82,7 +82,7 @@ class TestCpuRamHddUsage:
         :param partition_usage: dictionary with partition name and expected usage: {'partition': '/', 'max_usage': 6000}
         """
         if partition_usage['partition'] == '/var/log/':
-            if is_redmine_issue_active([3454585]):
+            if is_redmine_issue_active([3454585])[0]:
                 partition_usage['max_usage'] = 1000
             platform_hwsku = platform_params.hwsku
             if re.search('SN5', platform_hwsku):

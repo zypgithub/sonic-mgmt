@@ -859,7 +859,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             with allure.step("Apply qos and dynamic buffer config"):
                 self.cli_obj.qos.reload_qos()
                 self.verify_dockers_are_up(dockers_list=['swss'])
-                if is_redmine_issue_active([3589124]):
+                if is_redmine_issue_active([3589124])[0]:
                     time.sleep(120)
                 self.cli_obj.qos.stop_buffermgrd()
                 self.cli_obj.qos.start_buffermgrd()

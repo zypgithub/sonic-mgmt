@@ -134,7 +134,7 @@ class TestDPBOnAllPorts:
         splittable_ports_connected_as_lb = \
             self.get_splittable_ports_connected_as_lb(splittable_ports_list, splittable_ports_connected_to_hosts)
 
-        if is_redmine_issue_active([3669739]):
+        if is_redmine_issue_active([3669739])[0]:
             self.cli_object.interface.disable_interfaces(splittable_ports_connected_as_lb)
 
         breakout_ports_conf_for_all_tested_ports.update(

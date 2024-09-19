@@ -289,7 +289,7 @@ def check_all_dumps_file_exsits(topology_obj, engine, chip_type):
     # Check SDK dump:
     assert 'sai_sdk_dump.txt' in output_fw_dump, 'Missing SDK dump'
     # Check mlxtrace dump:
-    if not (is_redmine_issue_active([3587386]) and chip_type == "SPC4"):
+    if not (is_redmine_issue_active([3587386])[0] and chip_type == "SPC4"):
         if sonic_branch in branch_with_old_sdk:
             assert '_pci_cr0_mlxtrace.trc' in output_fw_dump, 'Missing mlxtrace'
         else:

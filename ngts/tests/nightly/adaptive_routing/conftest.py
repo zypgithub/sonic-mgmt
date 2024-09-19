@@ -258,7 +258,7 @@ def get_reboot_type(platform_params, is_simx):
     supported_reboot_reload_list = get_supported_reboot_reload_types_list(platform_params.platform)
 
     # TODO- remove WA after bug is solved
-    if "warm-reboot" in supported_reboot_reload_list and is_redmine_issue_active([3821130]):
+    if "warm-reboot" in supported_reboot_reload_list and is_redmine_issue_active([3821130])[0]:
         supported_reboot_reload_list.remove("warm-reboot")
 
     reboot_type = random.choice(supported_reboot_reload_list)
