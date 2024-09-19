@@ -25,16 +25,17 @@ def init_parser():
 
 
 def get_platform_filter_param(params):
-    platform_options = ["2010", "2100", "2410", "2700", "3420", "3700", "3800", "4410", "4600", "4600C", "4700", "5600"]
+    platform_options = ["2010", "2100", "2410", "2700", "3420", "3700", "3800",
+                        "4280", "4410", "4600", "4600C", "4700", "5400", "5600"]
     start_idx = 1 if params[0] == "," else 0
     end_idx = -1 if params[-1] == "," else None
     updated_params = params[start_idx:end_idx] if end_idx is not None else params[start_idx:]
-    platform_filter_param = updated_params.split(',')[-13:]
+    platform_filter_param = updated_params.split(',')[-15:]
     if platform_filter_param[0] == "false":
         new_params = params.replace(",".join(platform_filter_param), "false,")
     else:
         platform_filter_list = []
-        for index in range(1, 13):
+        for index in range(1, 15):
             if platform_filter_param[index] == "true":
                 platform_filter_list.append(platform_options[index - 1])
         platform_filter_string = " ".join(platform_filter_list)
