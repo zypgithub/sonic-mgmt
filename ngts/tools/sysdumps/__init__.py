@@ -1,13 +1,15 @@
-import pytest
-import logging
-import os
-import allure
-import math
 import json
-from ngts.constants.constants import PytestConst
-from ngts.tools.allure_report.allure_report_attacher import collect_stored_cmds_then_attach_to_allure_report, clean_stored_cmds_with_fixture_scope_list
-from ngts.scripts.store_techsupport_on_not_success import dump_simx_data
+import logging
+import math
+import os
 
+import allure
+import pytest
+
+from ngts.constants.constants import PytestConst
+from ngts.scripts.store_techsupport_on_not_success import dump_simx_data
+from ngts.tools.allure_report.allure_report_attacher import collect_stored_cmds_then_attach_to_allure_report, \
+    clean_stored_cmds_with_fixture_scope_list
 
 logger = logging.getLogger()
 
@@ -57,6 +59,8 @@ def generate_and_copy_nvos_dump(topology_obj, dut_engine, dumps_folder, item):
         return
 
     with allure.step("Generating NVOS tech-support"):
+        logging.info("disconnect dut engine")
+        dut_engine.disconnect()
         logging.info("Generating tech-support")
         dut_engine.run_cmd('nv action generate system tech-support', validate=True)
         output = dut_engine.run_cmd('nv show system tech-support files -o json', validate=True)
