@@ -154,6 +154,38 @@
   inv_name: lab
   comment: 4600C Active-Standby Dual-TOR testbed
 
+- conf-name: sonic-dual-tor-tigon-01-dualtor-aa
+  group-name: vm-t1
+  topo: dualtor-aa
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-mtvr-tigon-02
+  ptf_ip: 10.245.36.3/20
+  ptf_ipv6:
+  ptf_extra_mgmt_ip:
+  netns_mgmt_ip: 10.245.36.70/20
+  server: server_76
+  vm_base: VM4101
+  dut:
+    - mtvr-tigon-02
+    - mtvr-tigon-04
+  comment: 4600C Active-Active Dual-TOR testbed
+
+- conf-name: sonic-dual-tor-tigon-01-dualtor-aa-64
+  group-name: vm-t1
+  topo: dualtor-aa-64
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-mtvr-tigon-02
+  ptf_ip: 10.245.36.3/20
+  ptf_ipv6:
+  ptf_extra_mgmt_ip:
+  netns_mgmt_ip: 10.245.36.70/20
+  server: server_76
+  vm_base: VM4101
+  dut:
+    - mtvr-tigon-02
+    - mtvr-tigon-04
+  comment: 4600C Active-Active Dual-TOR testbed
+
 - conf-name: sonic-dual-tor-leopard
   group-name: vm-t1
   topo: dualtor
