@@ -1,8 +1,13 @@
 import logging
+from typing import List
+
 import pytest
 import re
 import random
 
+from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from ngts.nvos_tools.Devices.IbDevice import CrocodileSwitch
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port, PortRequirements
 from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
@@ -10,14 +15,16 @@ from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.nvos_tools.system.System import System
-from ngts.nvos_constants.constants_nvos import SystemConsts, ApiType, IbConsts
-from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
+from ngts.nvos_constants.constants_nvos import ApiType, IbConsts
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
 
+MAX_COUNTERS_AFTER_CLEAR = 15000
 
+
+# todo openapi - need to implement OpenApiIbInterfaceCli.clear_stats
 @pytest.mark.ib_interfaces
 def test_ib_clear_counters(engines, players, interfaces, start_sm, fae_param=""):
     """
@@ -36,6 +43,7 @@ def test_ib_clear_counters(engines, players, interfaces, start_sm, fae_param="")
     _clear_counters_test_flow(engines, players, interfaces, False, fae_param)
 
 
+# todo openapi - need to implement OpenApiIbInterfaceCli.clear_stats
 @pytest.mark.ib_interfaces
 def test_clear_all_counters(engines, players, interfaces, start_sm, fae_param=""):
     """
@@ -47,6 +55,7 @@ def test_clear_all_counters(engines, players, interfaces, start_sm, fae_param=""
 
 
 @pytest.mark.ib_interfaces
+# todo openapi - need to implement OpenApiIbInterfaceCli.clear_stats
 def test_range_clear_counters_negative(engines, players, interfaces, start_sm, fae_param=""):
     """
     verify all these commands fail with the right error message.
@@ -87,7 +96,8 @@ def test_range_clear_counters_negative(engines, players, interfaces, start_sm, f
 
 
 @pytest.mark.ib_interfaces
-def test_range_clear_counters_positive(engines, players, interfaces, start_sm, fae_param=""):
+# todo openapi - need to implement OpenApiIbInterfaceCli.clear_stats
+def test_range_clear_counters_positive(engines, devices, players, interfaces, start_sm, fae_param=""):
     """
     verify all these commands fail with the right error message.
         0. get linked ports
@@ -105,10 +115,8 @@ def test_range_clear_counters_positive(engines, players, interfaces, start_sm, f
         interface = Interface(parent_obj=None)
 
     with allure.step("Get a random active port"):
-        selected_ports = Tools.RandomizationTool.get_random_traffic_port().get_returned_value()
-
-    with allure.step("Get all IB ports sorted list"):
-        sorted_list = interface.get_sorted_interfaces_list()
+        selected_port, = Tools.RandomizationTool.get_random_traffic_port().get_returned_value()
+        selected_port_number = int(re.findall(r'\d+', selected_port.name)[0])
 
     file_name, user_name, ssh_connection = create_new_user(engines.dut)
 
@@ -116,57 +124,54 @@ def test_range_clear_counters_positive(engines, players, interfaces, start_sm, f
         Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, True).verify_result()
 
     with allure.step("Get 4 random numbers - to define ranges"):
-        randoms = list(random.sample(range(2, len(sorted_list) - 1), 4))
-        random.shuffle(randoms)
-        with allure.step("define ranges"):
-            reg = IbConsts.IB_INTERFACE_NAME_REGEX
-            first_range_last_point = re.match(reg, sorted_list[randoms[0]]).group(2)
-            second_range_first_point = re.match(reg, sorted_list[randoms[1]]).group(1) + re.match(reg, sorted_list[
-                randoms[1]]).group(2)
-            second_range_last_point = re.match(reg, sorted_list[randoms[2]]).group(2)
-            random_port = sorted_list[randoms[3]]
+        if isinstance(devices.dut, CrocodileSwitch):
+            pytest.skip("Test needs to be adapted to crocodile port names")  # todo
+        else:
+            # Select two non-intersecting ranges and one additional random port, e.g. 12-19, 22 and 30-72.
+            # The active port selected previously will be in the second range or be the lone port.
+            randoms = random.sample(
+                list({x + 1 for x in range(1, devices.dut.ib_ports_num // 2 + 1)} - {selected_port_number}), 4)
+            randoms = sorted(randoms + [selected_port_number])
+            if selected_port_number in randoms[:2]:
+                (first_range_first_point, first_range_last_point, random_port, second_range_first_point,
+                 second_range_last_point) = randoms
+            else:
+                (random_port, second_range_first_point, second_range_last_point, first_range_first_point,
+                 first_range_last_point) = randoms
+            p_number = random.randint(1, 2)
+            random_port = f'sw{random_port}p{p_number}'
 
     with allure.step("Run clear counters using range for p1 or p2 only"):
         with allure.step('Run clear counter command'):
-            p_number = random.randint(1, 2)
             interface.action_clear_counter_for_interface(engine=ssh_connection,
-                                                         interface_name='{first}-{last}p{p_number}-{p_number}, {random_port}'.format(
+                                                         interface_name='sw{first}-{last}p{p_number}-{p_number},{random_port}'.format(
                                                              p_number=p_number, first=second_range_first_point,
-                                                             last=second_range_last_point, random_port=random_port))
+                                                             last=second_range_last_point, random_port=random_port)
+                                                         ).verify_result()
 
-        with allure.step('verify that a clear file is added to each port'):
-            all_files = ssh_connection.run_cmd('ls {}'.format(file_name)).split()
-            missing_ports = [port for port in sorted_list[randoms[1]:randoms[2]] if port not in all_files]
-            msg = "\n".join("{} is missing".format(port) for port in missing_ports)
-            assert msg != "", msg
+        verify_files_created(ssh_connection, file_name,
+                             get_port_range(second_range_first_point, second_range_last_point, p_number) + [random_port])
 
         with allure.step('verify show command output'):
             with allure.step('Check selected port counters'):
-                for port in selected_ports:
-                    check_port_counters(port, False, ssh_connection).verify_result()
-                for port in selected_ports:
-                    check_port_counters(port, False, engines.dut).verify_result()
+                check_port_counters(selected_port, False, ssh_connection).verify_result()
+                check_port_counters(selected_port, False, engines.dut).verify_result()
 
     with allure.step("Run clear counters using range and multiple ports and verify results"):
 
         with allure.step('Run clear counter command'):
             interface.action_clear_counter_for_interface(engine=ssh_connection,
-                                                         interface_name='{first}-{last}p1-2, {random_port}'.format(
-                                                             first=selected_ports[0].name, last=first_range_last_point,
-                                                             random_port=random_port))
+                                                         interface_name='sw{first}-{last}p1-2,{random_port}'.format(
+                                                             first=first_range_first_point, last=first_range_last_point,
+                                                             random_port=random_port)).verify_result()
 
-        with allure.step('verify that a clear file is added to each port'):
-            all_files = ssh_connection.run_cmd('ls {}'.format(file_name)).split()
-            missing_ports = [port for port in sorted_list[:randoms[0]] if port not in all_files]
-            msg = "\n".join("{} is missing".format(port) for port in missing_ports)
-            assert msg != "", msg
+        verify_files_created(ssh_connection, file_name,
+                             get_port_range(first_range_first_point, first_range_last_point) + [random_port])
 
         with allure.step('verify show command output'):
             with allure.step('Check selected port counters'):
-                for port in selected_ports:
-                    check_port_counters(port, True, ssh_connection).verify_result()
-                for port in selected_ports:
-                    check_port_counters(port, False, engines.dut).verify_result()
+                check_port_counters(selected_port, True, ssh_connection).verify_result()
+                check_port_counters(selected_port, False, engines.dut).verify_result()
 
 
 def _clear_counters_test_flow(engines, players, interfaces, all_counters=False, fae_param=""):
@@ -256,8 +261,8 @@ def check_port_counters(selected_port, should_be_zero, ssh_engine):
     counters += link_stats_dict[IbInterfaceConsts.LINK_STATS_OUT_ERRORS]
     counters += link_stats_dict[IbInterfaceConsts.LINK_STATS_OUT_PKTS]
     counters += link_stats_dict[IbInterfaceConsts.LINK_STATS_OUT_WAIT]
-    return ResultObj((should_be_zero and counters < IbInterfaceConsts.MAX_COUNTERS_AFTER_CLEAR) or
-                     (counters > IbInterfaceConsts.MAX_COUNTERS_AFTER_CLEAR and not should_be_zero), "")
+    return ResultObj((should_be_zero and counters < MAX_COUNTERS_AFTER_CLEAR) or
+                     (counters > MAX_COUNTERS_AFTER_CLEAR and not should_be_zero), "")
 
 
 def get_port_obj(port_name):
@@ -302,16 +307,20 @@ def create_new_user(engine):
     return file_name, user_name, ssh_connection
 
 
-# ------------ Open API tests -----------------
+def get_port_range(first: int, last: int, p1_2=0) -> List[str]:
+    """
+    (2, 4) --> ['sw2p1', 'sw2p2', 'sw3p1', 'sw3p2', 'sw4p1', 'sw4p2']
+    (2, 4, p1_2=2) --> ['sw2p2', 'sw3p2', 'sw4p2']
+    """
+    return [f'sw{x}p{p}' for x in range(first, last + 1) for p in ([p1_2] if p1_2 else [1, 2])]
 
-'''@pytest.mark.openapi
-@pytest.mark.ib_interfaces
-def test_clear_all_counters_openapi(engines, players, interfaces, start_sm):
-    TestToolkit.tested_api = ApiType.OPENAPI
-    test_clear_all_counters(engines, players, interfaces, start_sm)
 
-
-@pytest.mark.openapi
-def test_ib_clear_counters_openapi(engines, players, interfaces, start_sm):
-    TestToolkit.tested_api = ApiType.OPENAPI
-    test_ib_clear_counters(engines, players, interfaces, start_sm)'''
+def verify_files_created(ssh_connection: LinuxSshEngine, directory: str, ports: List[str]):
+    if is_redmine_issue_active([4079803]):
+        logger.error("Won't check files due to https://redmine.mellanox.com/issues/4079803")
+    else:
+        with allure.step('verify that a clear file is added to each port'):
+            all_files = ssh_connection.run_cmd('ls {}'.format(directory)).split()
+            missing_ports = [port for port in ports if port not in all_files]
+            msg = "\n".join("{} is missing".format(port) for port in missing_ports)
+            assert not missing_ports, msg

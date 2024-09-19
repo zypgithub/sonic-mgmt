@@ -342,9 +342,6 @@ class IbSwitch(BaseSwitch):
                                f"/usr/share/nginx/html/system_documents/open_source_licenses/"
                                f"{self.documents_files[DocumentsConsts.TYPE_OPEN_SOURCE_LICENSES]}"}
 
-    def get_ib_ports_num(self):
-        return self.ib_ports_num
-
     def _init_temperature(self):
         super()._init_temperature()
         self.temperature_sensors += ["CPU-Core-2-Temp", "CPU-Core-3-Temp", "PCH-Temp", "PSU-2-Temp", "SODIMM-1-Temp"]
@@ -506,7 +503,7 @@ class BlackMambaSwitch(IbSwitch):
     def _init_constants(self):
         self.asic_amount = 4
         super()._init_constants()
-        self.ib_ports_num = 72
+        self.ib_ports_num = 2 * 72
         self.core_count = 4
         self.asic_type = NvosConst.QTM3
         self.platform_file_path = MultiPlanarConsts.PLATFORM_FILE_FULL_PATH.format("x86_64-mlnx_qm8790-r0")
