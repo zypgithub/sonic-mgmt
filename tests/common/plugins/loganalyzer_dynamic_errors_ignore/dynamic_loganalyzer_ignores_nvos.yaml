@@ -1755,12 +1755,14 @@
 
 # NVOS
 - Errors_list:
-    - '.*WARNING pmon#xcvrd: Failed to read from file \/sys\/module\/sx_core\/asic\d\/module1\/module_info.*'
+    - '.*WARNING pmon#xcvrd: Failed to read from file \/sys\/module\/sx_core\/asic\d\/module\d\/.*'
+    - '.*WARNING pmon#thermalctld: Failed to read from file \/sys\/module\/sx_core\/asic\d\/module\d\/module_latched_flag_info.*'
   Conditions:
     - Affected_test_cases:
       - tests_nvos/
       Redmine:
         - 4056072
+        - 4066029
 
 # NVOS
 - Errors_list:
@@ -1773,17 +1775,9 @@
 
 # NVOS
 - Errors_list:
-    - '.*ERR nvued:   ERROR: native.py:\d+ Failed to read guid directory.*'
+    - '.*ERROR: native.py:\d+ Failed to read guid directory.*'
+    - '.*ERROR: native.py:\d+ Failed to get port mapping table.*'
   Conditions:
     - Affected_test_cases:
       - tests_nvos/
-
-# NVOS
-- Errors_list:
-    - '.*WARNING pmon#thermalctld: Failed to read from file \/sys\/module\/sx_core\/asic\d\/module\d\/module_latched_flag_info.*'
-  Conditions:
-    - Affected_test_cases:
-      - tests_nvos/system
-      Redmine:
-        - 4066029
 # --------------------------------------------------
