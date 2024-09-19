@@ -1,10 +1,9 @@
 import re
+
 from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.system.RemoteAaaResource import RemoteAaaResource
-from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts, AuthConsts
-from ngts.tests_nvos.general.security.security_test_tools.generic_remote_aaa_testing.constants import RemoteAaaType
 
 
 class Ldap(RemoteAaaResource):
@@ -14,14 +13,6 @@ class Ldap(RemoteAaaResource):
         self.ssl = BaseComponent(self, path='/ssl')
         self.filter = LdapFilter(self)
         self.map = LdapMap(self)
-
-    def enable(self, failthrough=False, apply=False, engine=None, verify_res=False):
-        authentication: BaseComponent = self.parent_obj.authentication
-        authentication.set(AuthConsts.ORDER, f'{RemoteAaaType.LDAP},{AuthConsts.LOCAL}', dut_engine=engine).verify_result()
-        failthrough_val = AaaConsts.ENABLED if failthrough else AaaConsts.DISABLED
-        res = authentication.set(AuthConsts.FAILTHROUGH, failthrough_val, apply=apply, dut_engine=engine)
-        if verify_res:
-            res.verify_result()
 
 
 class LdapFilter(BaseComponent):

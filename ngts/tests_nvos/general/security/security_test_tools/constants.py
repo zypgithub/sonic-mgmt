@@ -20,6 +20,7 @@ class AaaConsts:
     PORT = 'port'
     RETRANSMIT = 'retransmit'
     PRIORITY = 'priority'
+    STATISTICS = 'statistics'
 
     IPV4 = 'ipv4'
     IPV6 = 'ipv6'
