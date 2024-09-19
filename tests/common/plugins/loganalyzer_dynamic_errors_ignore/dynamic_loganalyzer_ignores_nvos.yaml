@@ -1779,4 +1779,13 @@
   Conditions:
     - Affected_test_cases:
       - tests_nvos/
+
+# NVOS
+- Errors_list:
+    - '.*ERROR: apply_config.py:\d+ Failed to verify ports oper status.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests_nvos/
+      Redmine:
+        - 4081933  
 # --------------------------------------------------
