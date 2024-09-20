@@ -25,6 +25,12 @@ tests/nightly/rocev2_acl_counter:
     conditions:
       - "https://redmine.mellanox.com/issues/4051905 and 'sn564' in platform"
 
+tests/nightly/route/test_async_route.py:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4041761"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4041761 and 'sn564' in platform"
+
 tests/nightly/crm/test_crm.py::test_crm_acl:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3841291"
