@@ -1446,7 +1446,7 @@ class ResultUploaderConst:
                                 "mars_orch_sw-mars-orch@Friday_Community_Regression"]
     HOST_INTERNAL_NAMES_LIST = ["boxer", "bulldog", "spider", "panther",
                                 "lionfish", "anaconda", "tigris", "ocelot",
-                                "liger", "tigon", "leopard", "moose"]
+                                "liger", "tigon", "leopard", "moose", "hippo", "bobcat"]
 
 
 class BugHandlerConst:
