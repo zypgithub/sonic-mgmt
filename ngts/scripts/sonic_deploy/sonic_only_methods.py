@@ -534,7 +534,7 @@ class SonicInstallationSteps:
                                                   is_shutdown_bgp=is_shutdown_bgp, ansible_path=ansible_path,
                                                   reboot_after_install=reboot_after_install,
                                                   deploy_only_target=deploy_only_target, fw_pkg_path=fw_pkg_path,
-                                                  cli=dut['cli_obj'])
+                                                  cli=dut['cli_obj'], chip_type=chip_type)
 
         for dut in setup_info['duts']:
             SonicInstallationSteps.reboot_validation_sonic(dut_name=dut['dut_name'], sonic_topo=sonic_topo,
@@ -663,7 +663,7 @@ class SonicInstallationSteps:
     @staticmethod
     def upgrade_switch(topology_obj, dut_name, setup_name, platform_params, sonic_topo, deploy_type,
                        apply_base_config, target_version, is_shutdown_bgp, ansible_path,
-                       reboot_after_install, deploy_only_target, fw_pkg_path, cli):
+                       reboot_after_install, deploy_only_target, fw_pkg_path, cli, chip_type):
         """
         Upgrade switch to the target version
         :param topology_obj: topology object
@@ -680,6 +680,7 @@ class SonicInstallationSteps:
         :param deploy_only_target: bool value
         :param fw_pkg_path: path to FW pkg
         :param cli: cli - SonicCli / NvueCli
+        :param chip_type: chip_type - chip generation installed at platform
         """
         if target_version and not deploy_only_target:
             with allure.step("Upgrade switch to the target version"):
@@ -690,6 +691,11 @@ class SonicInstallationSteps:
                                                     apply_base_config=apply_base_config,
                                                     reboot_after_install=reboot_after_install,
                                                     is_shutdown_bgp=is_shutdown_bgp, fw_pkg_path=fw_pkg_path, cli=cli)
+
+                cli.cli_obj.im.enable_im(topology_obj=topology_obj, platform_params=platform_params,
+                                         chip_type=chip_type, enable_im=True,
+                                         is_community=is_community(sonic_topo))
+
                 if is_community(sonic_topo):
                     SonicInstallationSteps.post_install_check(ansible_path=ansible_path, dut_name=dut_name,
                                                               sonic_topo=sonic_topo)
