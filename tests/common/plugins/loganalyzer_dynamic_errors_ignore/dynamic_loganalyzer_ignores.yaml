@@ -357,7 +357,7 @@
       - tests/nightly/lag/test_lag.py
 
 - Errors_list:
-    - '.* ERR teamd#tlm_teamd: :- get_dump: Can''t get dump for LAG ''PortChannel\d+''.*'
+    - '.*ERR.*teamd#tlm_teamd: :- get_dump: Can.*t get dump for LAG .*PortChannel.*'
   Conditions:
     - Affected_test_cases:
       - tests/nightly/lag/test_lag.py
@@ -4243,3 +4243,14 @@
   Conditions:
     - Platform:
       - simx
+
+# Ignore below errors statically due to bug of https://redmine.mellanox.com/issues/3992097
+# There is no functional issue, it is safe to ignore it
+- Errors_list:
+    - '.* ERR.*bgp#bgpd.*:.* INTERFACE_STATE: Cannot find IF .* in VRF.*'
+    - '.* ERR.*lldp#lldp-syncd \[lldp_syncd\] ERROR: Failed to parse lldp age.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests/nightly/lag/test_lag.py::test_lag_min_links
+      - tests/nightly/lag/test_lag.py::test_lag_members_scale
+      - tests/nightly/lag/test_lag.py::test_port_cannot_be_added_to_lag
