@@ -82,7 +82,7 @@ def test_interface_eth0_enable_disable(engines, topology_obj, serial_engine):
 @pytest.mark.eth0
 @pytest.mark.system
 @pytest.mark.simx
-def test_interface_eth0_speed_duplex_autoneg(engines, devices):
+def test_interface_eth0_speed_duplex_autoneg(engines, devices, topology_obj):
     """
     Verify speed, duplex, autoneg configuration parameters can be changed
 
@@ -97,7 +97,8 @@ def test_interface_eth0_speed_duplex_autoneg(engines, devices):
         8. Unset speed, validate changes
     """
 
-    mgmt_port = MgmtPort('eth0')
+    mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
+    mgmt_port = MgmtPort(mgmt_port_name)
     with allure.step('Run show command on mgmt port and verify default values'):
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
             mgmt_port.interface.link.show()).get_returned_value()
@@ -215,7 +216,8 @@ def test_interface_eth0_mtu(engines, topology_obj):
     4. Unset mtu, check default value
     """
 
-    mgmt_port = MgmtPort('eth0')
+    mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
+    mgmt_port = MgmtPort(mgmt_port_name)
     with allure.step('Run show command on mgmt port and verify default values'):
         wait_for_mtu_changed(mgmt_port, 1500)
 
@@ -249,7 +251,7 @@ def test_interface_eth0_mtu(engines, topology_obj):
 @pytest.mark.eth0
 @pytest.mark.system
 @pytest.mark.simx
-def test_interface_eth0_description(engines):
+def test_interface_eth0_description(engines, topology_obj):
     """
     Verify default description on mgmt interface, configure, check changes,
 
@@ -259,7 +261,8 @@ def test_interface_eth0_description(engines):
     3. Negative testing
     4. Unset description, check default value
     """
-    mgmt_port = MgmtPort('eth0')
+    mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
+    mgmt_port = MgmtPort(mgmt_port_name)
     with allure.step('Run show command on mgmt port and verify default description'):
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_output_to_dictionary(
             mgmt_port.interface.show()).get_returned_value()
@@ -268,7 +271,7 @@ def test_interface_eth0_description(engines):
             "Expected not to have description field after unset command, but we still have this field."
 
     with allure.step('Set description with spaces on mgmt port'):
-        mgmt_port.interface.set(op_param_name='description', op_param_value='"eth0 description"',
+        mgmt_port.interface.set(op_param_name='description', op_param_value='"{0} description"'.format(mgmt_port_name),
                                 apply=True).verify_result()
         NvueGeneralCli.detach_config(TestToolkit.engines.dut)
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_output_to_dictionary(
@@ -276,7 +279,7 @@ def test_interface_eth0_description(engines):
 
         Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
                                                           field_name=IbInterfaceConsts.DESCRIPTION,
-                                                          expected_value='eth0 description')
+                                                          expected_value='{0} description'.format(mgmt_port_name))
 
     with allure.step('Set possible description on mgmt port'):
         mgmt_port.interface.set(op_param_name='description', op_param_value='"nvosdescription"',
@@ -311,7 +314,8 @@ def test_interface_eth0_ip_address(engines, topology_obj, serial_engine):
     4. Configure static ip for this switch, check it by show command, ping
     5. Unset ipv4, dhcp, validate in show command and ping
     """
-    mgmt_port = MgmtPort('eth0')
+    mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
+    mgmt_port = MgmtPort(mgmt_port_name)
     switch_ip = engines.dut.ip
     with allure.step('Run show command on mgmt port and verify default description'):
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
@@ -319,13 +323,13 @@ def test_interface_eth0_ip_address(engines, topology_obj, serial_engine):
 
         validate_interface_ip_address(switch_ip, output_dictionary, True)
 
-    with allure.step('Negative validation for eth0 ip'):
+    with allure.step('Negative validation for {0} ip'.format(mgmt_port_name)):
         res = mgmt_port.interface.ip.address.set(op_param_name='aa', apply=False, ask_for_confirmation=True)
         assert not res.result or "is not a" in res.returned_value, \
             "The operation succeeded while it is expected to fail"
 
     with allure.step('Disable dhcp, check mgmt port unreachable'):
-        serial_engine.serial_engine.sendline("nv set interface eth0 ip dhcp-client state disabled")
+        serial_engine.serial_engine.sendline("nv set interface {} ip dhcp-client state disabled".format(mgmt_port_name))
         serial_engine.serial_engine.sendline("nv config apply")
         serial_engine.serial_engine.expect("Are you sure?", timeout=120)
         serial_engine.serial_engine.sendline("y")
@@ -336,7 +340,7 @@ def test_interface_eth0_ip_address(engines, topology_obj, serial_engine):
 
     with allure.step('Select random ipv4 and set it'):
         ip_address = Tools.IpTool.select_random_ipv4_address().verify_result()
-        serial_engine.serial_engine.sendline("nv set interface eth0 ip address {}".format(ip_address))
+        serial_engine.serial_engine.sendline("nv set interface {0} ip address {1}".format(mgmt_port_name, ip_address))
         serial_engine.serial_engine.sendline("nv config apply")
         serial_engine.serial_engine.expect("Are you sure?", timeout=120)
         serial_engine.serial_engine.sendline("y")
@@ -344,11 +348,11 @@ def test_interface_eth0_ip_address(engines, topology_obj, serial_engine):
 
         logger.info('Check port status, should be down')
         check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port)
-        serial_engine.serial_engine.sendline("nv show interface eth0")
+        serial_engine.serial_engine.sendline("nv show interface {0}".format(mgmt_port_name))
         serial_engine.serial_engine.expect(ip_address, timeout=120)
 
     with allure.step('Unset ipv4 and dhcp and check port reachable'):
-        serial_engine.serial_engine.sendline("nv unset interface eth0")
+        serial_engine.serial_engine.sendline("nv unset interface {0}".format(mgmt_port_name))
         serial_engine.serial_engine.sendline("nv config apply")
         serial_engine.serial_engine.expect("Are you sure?", timeout=120)
         serial_engine.serial_engine.sendline("y")
@@ -356,22 +360,23 @@ def test_interface_eth0_ip_address(engines, topology_obj, serial_engine):
 
         logger.info('Check port status, should be up')
         check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port)
-        serial_engine.serial_engine.sendline("nv show interface eth0")
+        serial_engine.serial_engine.sendline("nv show interface {0}".format(mgmt_port_name))
         serial_engine.serial_engine.expect(switch_ip, timeout=120)
 
 
 @pytest.mark.eth0
 @pytest.mark.system
 @pytest.mark.simx
-def test_interface_eth0_show_dhcp(engines):
+def test_interface_eth0_show_dhcp(engines, topology_obj):
     """
     Verify all default fields in nv show interface eth0 ip ipv4 dhcp-client and ipv6 dhcp-client
 
     flow:
-    1. Check all fields are exist in  in nv show interface eth0 ip ipv4 dhcp-client
+    1. Check all fields are exist in nv show interface eth0 ip ipv4 dhcp-client
     2. Check all fields exist in nv show interface eth0 ip ipv6 dhcp-client
     """
-    mgmt_port = MgmtPort('eth0')
+    mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
+    mgmt_port = MgmtPort(mgmt_port_name)
     with allure.step('Run show command on mgmt port and verify default description'):
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
             mgmt_port.interface.ip.show()).get_returned_value()

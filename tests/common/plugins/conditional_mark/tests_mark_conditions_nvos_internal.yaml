@@ -262,11 +262,9 @@ tests_nvos/interfaces/multi_planar/test_multi_planar_sym_mgr_and_aport.py::test_
     conditions:
       - https://redmine.mellanox.com/issues/3795718
 
-tests_nvos/interfaces/split_aggregated_port/test_split_aggregated_port.py::test_interface_aggregated_port_split:
+tests_nvos/system/test_system_ptp.py:
   skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3795718"
-    conditions:
-      - https://redmine.mellanox.com/issues/3795718
+    reason: "Decided to disable for now"
 
 tests_nvos/system/test_system_image.py::test_install_multiple_images:
   skip:

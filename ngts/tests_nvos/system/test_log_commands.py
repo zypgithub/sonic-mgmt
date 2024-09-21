@@ -76,11 +76,7 @@ def test_show_log_continues(engines):
 
     with allure.step("Run nv show system log command --view follow to view system logs"):
         logging.info("Run nv show system log command --view follow to view system logs")
-        show_output = system.log.show_log(param='--view follow', exit_cmd='\x03')
-
-    with allure.step('Verify updated “system/image” in the logs as expected'):
-        logging.info('Verify updated “system/image” in the logs as expected')
-        ValidationTool.verify_expected_output(show_output, 'system/image').verify_result()
+        system.log.show_log(param='--view follow', expected_str='system/image', exit_cmd='\x03')
 
 
 @pytest.mark.system
@@ -120,11 +116,7 @@ def test_show_log_files(engines):
 
     with allure.step("Run nv show system log files command follow to view system logs"):
         logging.info("Run nv show system log files command follow to view system logs")
-        show_log_files_output = system.log.files.show_log_files(param='files syslog', exit_cmd='q')
-
-    with allure.step('Verify updated “system/image” in the logs as expected'):
-        logging.info('Verify updated “system/image” in the logs as expected')
-        ValidationTool.verify_expected_output(show_log_files_output, 'system/image').verify_result()
+        system.log.files.show_log_files(param='files syslog', expected_str='system/image', exit_cmd='q')
 
 
 @pytest.mark.system
@@ -185,11 +177,7 @@ def test_show_debug_log_continues(engines):
 
     with allure.step("Run nv show system log command --view follow to view system logs"):
         logging.info("Run nv show system log command --view follow to view system logs")
-        show_output = system.debug_log.show_log(log_type='debug-', param='--view follow', exit_cmd='\x03')
-
-    with allure.step('Verify updated “debug_log” in the logs as expected'):
-        logging.info('Verify updated “debug_log” in the logs as expected')
-        ValidationTool.verify_expected_output(show_output, 'debug_log').verify_result()
+        system.debug_log.show_log(log_type='debug-', expected_str='debug_log', param='--view follow', exit_cmd='\x03')
 
 
 @pytest.mark.system
@@ -557,7 +545,7 @@ def _log_files_set_unset_log_rotation_max_number(engines, system_log_obj, log_na
         default_max_number = output_dictionary['max-number']
         system_log_obj.rotation.set('max-number', '0.001').verify_result(False)
         result_obj = system_log_obj.rotation.set('max-number', '9999999')
-        assert not result_obj.result and 'is greater than the maximum' in result_obj.info, "Set of invalid max-number should fail"
+        assert not result_obj.result and 'Valid range is 0 - 999999' in result_obj.info, "Set of invalid max-number should fail"
 
     with allure.step("Validate set max-number 5"):
         logging.info("Validate set max-number 5")
@@ -855,7 +843,4 @@ def test_delete_log_files(engines):
         system.image.show()
 
     with allure.step("Run nv show system log command follow to view system logs"):
-        show_output = system.log.show_log(exit_cmd='q')
-
-    with allure.step('Verify updated “system/image” in the logs as expected'):
-        ValidationTool.verify_expected_output(show_output, 'system/image').verify_result()
+        system.log.show_log(exit_cmd='q', expected_str='system/image')
