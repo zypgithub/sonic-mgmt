@@ -74,8 +74,8 @@ def test_transceiver_status_unplug(engines, devices, test_api, asic_conf_dict):
 
     with allure.step(f"Get module with state {desired_state}"):
         module_under_test = _get_module_with_status(platform, PlatformConsts.INSERTED)
-        mst_dev_name = _get_mst_dev_name(engines, module_under_test, asic_conf_dict)
         ports = _get_ports_for_module(module_under_test)
+        mst_dev_name = _get_mst_dev_name(engines, ports, asic_conf_dict)
         assert module_under_test, f"No module with state {desired_state} found"
         module_index = int(
             ''.join(c for c in module_under_test if c.isdigit())) - 1  # module start from 0, while sw from 1
@@ -92,10 +92,12 @@ def test_transceiver_status_unplug(engines, devices, test_api, asic_conf_dict):
         _verify_transceiver_status(platform, transceiver_id=module_under_test, expected_module_status='Inserted')
 
 
-def _get_mst_dev_name(engines, module_name, asic_conf_dict):
-    with allure.step(f"Find correct mst_dev_name for {module_name}"):
+def _get_mst_dev_name(engines, ports, asic_conf_dict):
+    assert ports, "No ports were found"
+    with allure.step(f"Find correct mst_dev_name for port"):
+        port_name = ports[0].name
         output_fae_port = OutputParsingTool.parse_show_interface_output_to_dictionary(
-            Fae(port_name=f"{module_name}p1").port.interface.show()).get_returned_value()
+            Fae(port_name=port_name).port.interface.show()).get_returned_value()
         asic_number = output_fae_port.get(IbInterfaceConsts.PRIMARY_ASIC, "0")
         assert asic_number is not None, "primary-asic is None"
         asic_dev_id_number = _get_asic_dev_id_number(asic_number)
@@ -128,8 +130,8 @@ def test_transceiver_status_with_reboot(engines, devices, test_api, asic_conf_di
     desired_state = NvosConsts.LINK_STATE_UP
     with allure.step(f"Get module with state {desired_state}"):
         module_under_test = _get_module_with_status(platform, PlatformConsts.INSERTED)
-        mst_dev_name = _get_mst_dev_name(engines, module_under_test, asic_conf_dict)
         ports = _get_ports_for_module(module_under_test)
+        mst_dev_name = _get_mst_dev_name(engines, ports, asic_conf_dict)
         assert module_under_test, f"No module with state {desired_state} found"
         module_index = int(
             ''.join(c for c in module_under_test if c.isdigit())) - 1  # module start from 0, while sw from 1
