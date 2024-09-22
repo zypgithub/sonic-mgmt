@@ -1450,6 +1450,24 @@ r-anaconda-24
 mtvr-q3400-06-ptf-any
 mtvr-q3400-06
 
+mtvr-q3400-05-ptf-any
+mtvr-q3400-05
+
+mtvr-q3400-04-ptf-any
+mtvr-q3400-04
+
+mtvr-croc-19-ptf-any
+mtvr-croc-19
+
+mtvr-croc-50-ptf-any
+mtvr-croc-50
+
+mlx-4600ca1-02-ptf-any
+mlx-4600ca1-02
+
+mlx-5600-22-ptf-any
+mlx-5600-22
+
 [leaf_topo_1:vars]
 podset_number=200
 

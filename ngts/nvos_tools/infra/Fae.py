@@ -141,6 +141,7 @@ class FaeSystem(BaseComponent):
     def __init__(self, parent_obj=None):
         super().__init__(parent=parent_obj, path='/system')
         self.events = BaseComponent(self, path='/events')
+        self.mgmt_unsolicited = BaseComponent(self, path='/mgmt-unsolicited')
         self.fatal = BaseComponent(self, path='/fatal')
         self.fatal.monitor = BaseComponent(self.fatal, path='/monitor')
 

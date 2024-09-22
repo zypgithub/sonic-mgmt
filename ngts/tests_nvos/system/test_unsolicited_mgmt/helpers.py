@@ -1,0 +1,86 @@
+import logging
+import random
+import time
+
+from ngts.tools.test_utils import allure_utils as allure
+from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
+from ngts.nvos_tools.infra.DutUtilsTool import wait_for_specific_regex_in_logs
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
+
+link_logs = "eth0: link becomes ready"
+
+
+def config_management_interface_verify_logs(engine, mgmt_interface, state, expected_logs):
+    """
+
+    :param engine:
+    :param mgmt_interface:
+    :param state:
+    :param expected_logs:
+    :return:
+    """
+    mgmt_port = MgmtPort(mgmt_interface)
+
+    with allure.step(f"config {mgmt_interface} state to {state}"):
+        mgmt_port.interface.link.state.set(state, apply=True, ask_for_confirmation=True).verify_result()
+
+    wait_for_specific_regex_in_logs(engine, link_logs, timeout=20)
+    with allure.step("check cable connection note in the logs"):
+        logs_output = engine.run_cmd(f'tail -n 400 /var/log/syslog | grep "{expected_logs}"')
+        assert logs_output, f"Error: Expected logs not found. {expected_logs}"
+
+
+def replace_two_ip_addresses(engine):
+    """
+
+    :return:
+    """
+    eth0_port = MgmtPort('eth0')
+    eth1_port = MgmtPort('eth1')
+
+    with allure.step("replace eth0 ip with eth1 ip"):
+        with allure.step("get current ip addresses for both mgmt ports"):
+            eth0_gateway = next(iter(OutputParsingTool.parse_json_str_to_dictionary(eth0_port.interface.ip.gateway.show()).verify_result()))
+            eth0_ip = next(iter(OutputParsingTool.parse_json_str_to_dictionary(eth0_port.interface.ip.address.show()).verify_result()))
+            eth1_ip = next(iter(OutputParsingTool.parse_json_str_to_dictionary(eth1_port.interface.ip.address.show()).verify_result()))
+
+        with allure.step("set and apply the replacement ips"):
+            eth0_port.interface.ip.address.unset(op_param=eth0_ip)
+            eth1_port.interface.ip.address.set(op_param_name=eth0_ip)
+            eth1_port.interface.ip.address.unset(op_param=eth1_ip)
+            eth0_port.interface.ip.address.set(op_param_name=eth1_ip)
+            eth0_port.interface.ip.gateway.set(op_param_name=eth0_gateway)
+            eth1_port.interface.ip.gateway.set(op_param_name=eth0_gateway)
+
+            NvueGeneralCli.apply_config(engine, ask_for_confirmation=True)
+
+    return eth0_gateway, eth0_ip, eth1_ip
+
+
+def swap_ips_and_verify_logs_and_packets(engine, expected_messages, is_enabled):
+    """
+
+    :return:
+    """
+    expected_packet_msg = "ARP, Request who-has"
+    eth0_gateway, eth0_ip, eth1_ip = replace_two_ip_addresses(engine)
+
+    expected_msg1 = expected_messages[0].format(eth0_ip.split('/')[0]) if is_enabled else expected_messages[0]
+    expected_msg2 = expected_messages[1].format(eth1_ip.split('/')[0]) if is_enabled else expected_messages[1]
+
+    try:
+        with allure.step('Verify packets have {} been sent'.format('' if is_enabled else 'not')):
+            with allure.independent_step('check in logs'):
+                wait_for_specific_regex_in_logs(engine, link_logs, timeout=20)
+                time.sleep(5)
+                logs_output = engine.run_cmd(f'tail -n 100 /var/log/syslog')
+                assert expected_msg1 in logs_output, f"Error: the expected logs {expected_msg1} is missing"
+                assert expected_msg2 in logs_output, f"Error: the expected logs {expected_msg2} is missing"
+
+            with allure.independent_step('check tcpdump output'):
+                output = engine.run_cmd('sudo tcpdump -i eth0 arp')
+                assert (expected_packet_msg in output) == is_enabled, f"Assertion failed for expected packet msg: {expected_packet_msg}, output: {output}, param: {is_enabled}"
+
+    finally:
+        replace_two_ip_addresses(engine)
