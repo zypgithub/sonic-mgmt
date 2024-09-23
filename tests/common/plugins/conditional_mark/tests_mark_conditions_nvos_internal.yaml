@@ -536,4 +536,10 @@ tests_nvos/interfaces/test_ib_interface_configuration.py::test_ib_interface_vls:
       - "'mamba' in testbed"
       - https://redmine.mellanox.com/issues/4077966
 
+tests_nvos/interfaces/test_interface_link_transceiver_diagnostics.py::test_interface_link_diagnostics_basic_invalid_ports:
+  skip:
+    reason: "[Obsolete Zone [ Deleted Items]] Bug SW #3556295: [Non-Functional ] [link-diagnostics] | Wrong error message in nv show interface"
+    conditions:
+      - https://redmine.mellanox.com/issues/3556295
+
 ########################## NVOS IGNORE END ##########################
