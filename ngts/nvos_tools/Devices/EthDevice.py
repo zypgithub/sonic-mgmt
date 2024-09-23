@@ -613,7 +613,7 @@ class Mlx2700Switch(EthSwitch):
         self.core_count = 2
         self.ib_ports_num = 32
         self.asic_type = 'Spectrum'
-        self.constants.firmware.append(PlatformConsts.FW_SPECTRUM)
+        self.constants.firmware.append(PlatformConsts.FW_SPECTRUM1)
 
         self.show_platform_output.update({
             "product-name": "MSN2700",
@@ -647,7 +647,7 @@ class Mlx2201Switch(EthSwitch):
         self.core_count = 2
         self.ib_ports_num = 32
         self.asic_type = 'Spectrum'
-        self.constants.firmware.append(PlatformConsts.FW_SPECTRUM)
+        self.constants.firmware.append(PlatformConsts.FW_SPECTRUM1)
 
         self.show_platform_output.update({
             "product-name": "SN2201",
