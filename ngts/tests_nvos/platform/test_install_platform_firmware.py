@@ -81,7 +81,7 @@ def get_version_and_file_name(asic_type: str) -> Tuple[str, str]:
     if asic_type == NvosConst.QTM2:
         return "31_2014_0902-024", "fw-QTM2-rel-31_2014_0902-024.mfa"
     elif asic_type == NvosConst.QTM3:
-        return "35_2014_1100", "fw-QTM3-rel-35_2014_1100.mfa"
+        return "35.2014.1100", "fw-QTM3-rel-35_2014_1100.mfa"
     else:
         raise NotImplementedError()
 

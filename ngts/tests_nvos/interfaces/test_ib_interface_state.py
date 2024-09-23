@@ -2,11 +2,14 @@ import logging
 
 import pytest
 
-from ngts.nvos_constants.constants_nvos import ApiType
+from ngts.nvos_constants.constants_nvos import ApiType, ActionConsts
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
+from ngts.nvos_tools.infra.Fae import Fae
+from ngts.nvos_tools.infra.IbInterfaceTool import IbInterfaceTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.Tools import Tools
+from ngts.nvos_tools.system.System import System
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
@@ -130,3 +133,57 @@ def test_ib_interface_state_unset(engines, test_api):
     Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
                                                       field_name=IbInterfaceConsts.LINK_STATE,
                                                       expected_value=NvosConsts.LINK_STATE_UP).verify_result()
+
+
+@pytest.mark.ib_interfaces
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_ib_interface_state_up_once(engines, devices, test_api, asic_conf_dict):
+
+    with allure.step('set up system objects'):
+        TestToolkit.tested_api = test_api
+        selected_port = Tools.RandomizationTool.select_random_port().get_returned_value()
+        port_name = selected_port.name
+        TestToolkit.update_tested_ports([selected_port])
+        fae = Fae(port_name=port_name)
+        system = System()
+
+    IbInterfaceTool.switch_port_connection_mode(port_name, IbInterfaceConsts.NDR)
+
+    with allure.step(f'run nv action update fae interface {port_name} link state up-once and apply'):
+        fae.interface.link.state.action(ActionConsts.UPDATE, param_name=IbInterfaceConsts.INTERFACE_STATE, param_value=IbInterfaceConsts.UP_ONCE).verify_result()
+
+    with allure.step('verify state is up after up-once'):
+        output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
+            selected_port.interface.link.show()).get_returned_value()
+
+        verify_port_state(output_dictionary, NvosConsts.LINK_STATE_UP)
+
+    with allure.step('verify state is down after port toggle failure'):
+
+        mst_dev_name = IbInterfaceTool.get_mst_dev_name(engines=engines, asic_conf_dict=asic_conf_dict, port_name=port_name)
+        module_index = int(
+            ''.join(c for c in port_name[:-2] if c.isdigit())) - 1  # module start from 0, while sw from 1
+    try:
+        with allure.step('verify state is down after unplug event'):
+            IbInterfaceTool.simulate_unplug_module_event(engines.dut, devices.dut, module_index, mst_dev_name, 2)
+            selected_port.interface.wait_for_port_state(NvosConsts.LINK_STATE_DOWN).verify_result()
+
+        with allure.step('verify state is down after plugin event'):
+            IbInterfaceTool.simulate_plugin_module_event(engines.dut, devices.dut, module_index, mst_dev_name, 40)
+            # in future will verify 'down by port failure' instead of just 'down'
+            output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
+                selected_port.interface.link.show()).get_returned_value()
+
+            verify_port_state(output_dictionary, NvosConsts.LINK_STATE_DOWN)
+
+    finally:
+        with allure.step('verify state is up after reboot'):
+            system.reboot.action_reboot()
+            selected_port.interface.wait_for_port_state(NvosConsts.LINK_STATE_UP).verify_result()
+
+
+def verify_port_state(output_dictionary, expected_state):
+    with allure.step(f'verify state is {expected_state} after port toggle failure'):
+        Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
+                                                          field_name=IbInterfaceConsts.LINK_STATE,
+                                                          expected_value=expected_state).verify_result()

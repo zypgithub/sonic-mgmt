@@ -377,6 +377,7 @@ class ActionConsts:
     RENAME = 'rename'
     RESET = 'reset'
     RESUME = 'resume'
+    UPDATE = 'update'
 
 
 class SystemConsts:

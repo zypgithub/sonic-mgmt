@@ -3,12 +3,10 @@ import time
 
 import pytest
 
-from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port, PortRequirements
-from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts, IbInterfaceConsts
-from ngts.nvos_tools.infra.Fae import Fae
-from ngts.nvos_tools.infra.LinuxCmdBuilderTool import LinuxCmdBuilderTool
+from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
+from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_tools.infra.RegisterTool import RegisterTool
+from ngts.nvos_tools.infra.IbInterfaceTool import IbInterfaceTool
 from ngts.nvos_tools.system.System import System
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.platform.Platform import Platform
@@ -74,7 +72,7 @@ def test_transceiver_status_unplug(engines, devices, test_api, asic_conf_dict):
 
     with allure.step(f"Get module with state {desired_state}"):
         module_under_test = _get_module_with_status(platform, PlatformConsts.INSERTED)
-        mst_dev_name = _get_mst_dev_name(engines, module_under_test, asic_conf_dict)
+        mst_dev_name = IbInterfaceTool.get_mst_dev_name(engines=engines, module_name=module_under_test, asic_conf_dict=asic_conf_dict)
         ports = _get_ports_for_module(module_under_test)
         assert module_under_test, f"No module with state {desired_state} found"
         module_index = int(
@@ -82,27 +80,14 @@ def test_transceiver_status_unplug(engines, devices, test_api, asic_conf_dict):
 
     try:
         _verify_transceiver_status(platform, transceiver_id=module_under_test, expected_module_status='Inserted')
-        _simulate_unplug_event(engines.dut, devices.dut, module_index, mst_dev_name)
+        IbInterfaceTool.simulate_unplug_module_event(engines.dut, devices.dut, module_index, mst_dev_name, 2)
         _verify_link_state_down(ports)
         _verify_transceiver_status(platform, transceiver_id=module_under_test, expected_module_status='Removed')
 
     finally:
-        _simulate_plugin_event(engines.dut, devices.dut, module_index, mst_dev_name)
+        IbInterfaceTool.simulate_plugin_module_event(engines.dut, devices.dut, module_index, mst_dev_name, 40)
         _verify_link_state_up(ports)
         _verify_transceiver_status(platform, transceiver_id=module_under_test, expected_module_status='Inserted')
-
-
-def _get_mst_dev_name(engines, module_name, asic_conf_dict):
-    with allure.step(f"Find correct mst_dev_name for {module_name}"):
-        output_fae_port = OutputParsingTool.parse_show_interface_output_to_dictionary(
-            Fae(port_name=f"{module_name}p1").port.interface.show()).get_returned_value()
-        asic_number = output_fae_port.get(IbInterfaceConsts.PRIMARY_ASIC, "0")
-        assert asic_number is not None, "primary-asic is None"
-        asic_dev_id_number = _get_asic_dev_id_number(asic_number)
-        asic_mapping_number = asic_conf_dict[asic_dev_id_number]
-        cmd = LinuxCmdBuilderTool("sudo mst status -v").grep("pciconf").grep(f"{asic_mapping_number}").awk_print("2").build()
-        mst_dev_name = engines.dut.run_cmd(cmd)
-        return mst_dev_name
 
 
 @pytest.mark.platform
@@ -128,7 +113,7 @@ def test_transceiver_status_with_reboot(engines, devices, test_api, asic_conf_di
     desired_state = NvosConsts.LINK_STATE_UP
     with allure.step(f"Get module with state {desired_state}"):
         module_under_test = _get_module_with_status(platform, PlatformConsts.INSERTED)
-        mst_dev_name = _get_mst_dev_name(engines, module_under_test, asic_conf_dict)
+        mst_dev_name = IbInterfaceTool.get_mst_dev_name(engines=engines, module_name=module_under_test, asic_conf_dict=asic_conf_dict)
         ports = _get_ports_for_module(module_under_test)
         assert module_under_test, f"No module with state {desired_state} found"
         module_index = int(
@@ -137,7 +122,7 @@ def test_transceiver_status_with_reboot(engines, devices, test_api, asic_conf_di
     try:
         _verify_transceiver_status(platform, transceiver_id=module_under_test, expected_module_status='Inserted')
 
-        _simulate_unplug_event(engines.dut, devices.dut, module_index, mst_dev_name)
+        IbInterfaceTool.simulate_unplug_module_event(engines.dut, devices.dut, module_index, mst_dev_name, 2)
         _verify_link_state_down(ports)
         _verify_transceiver_status(platform, transceiver_id=module_under_test, expected_module_status='Removed')
 
@@ -149,7 +134,7 @@ def test_transceiver_status_with_reboot(engines, devices, test_api, asic_conf_di
         _verify_transceiver_status(platform, transceiver_id=module_under_test, expected_module_status='Inserted')
 
     finally:
-        _simulate_plugin_event(engines.dut, devices.dut, module_index, mst_dev_name)
+        IbInterfaceTool.simulate_plugin_module_event(engines.dut, devices.dut, module_index, mst_dev_name, 40)
         _verify_link_state_up(ports)
         _verify_transceiver_status(platform, transceiver_id=module_under_test, expected_module_status='Inserted')
 
@@ -210,22 +195,6 @@ def _verify_link_state_down(down_ports):
                 assert False, "Link state is empty should be up or down"
             if NvosConsts.LINK_STATE_DOWN not in link_state:
                 assert False, "The link state is up for removed transceiver"
-
-
-def _simulate_plugin_event(engine, device, module_index, mst_dev_name):
-    with allure.step(f"Simulate plugin event for module {module_index}"):
-        admin_status = "1"  # The code to simulate plug event
-        RegisterTool.update_pmaos_register(engine, device, mst_dev_name=mst_dev_name,
-                                           admin_status=admin_status, module_index=module_index)
-        time.sleep(40)
-
-
-def _simulate_unplug_event(engine, device, module_index, mst_dev_name):
-    with allure.step(f"Simulate unplug event for module {module_index}"):
-        admin_status = "0xe"  # The code to simulate unplug event
-        RegisterTool.update_pmaos_register(engine, device, mst_dev_name=mst_dev_name,
-                                           admin_status=admin_status, module_index=module_index)
-        time.sleep(2)
 
 
 def _get_module_with_status(platform, status):

@@ -1,4 +1,5 @@
 import random
+import time
 
 import pytest
 
@@ -17,7 +18,7 @@ logger = logging.getLogger()
 @pytest.mark.bios
 @pytest.mark.system
 @pytest.mark.parametrize('test_api', random.sample(ApiType.ALL_TYPES, 1))
-def test_bios_auto_update_disabled(devices, engines, test_api, original_version):
+def test_bios_auto_update_disabled(devices, engines, topology_obj, test_api, original_version):
     """
     Test flow:
         1. fetch current and previous BIOS versions
@@ -44,7 +45,7 @@ def test_bios_auto_update_disabled(devices, engines, test_api, original_version)
         install_bios(devices, fae, devices.dut.previous_bios_version_name)
         verify_bios_version(devices, platform)
 
-        system.reboot.action_reboot()
+        system.reboot.action_reboot(topology_obj=topology_obj)
 
         verify_bios_version(devices, platform)
 
@@ -63,7 +64,7 @@ def test_bios_auto_update_disabled(devices, engines, test_api, original_version)
 @pytest.mark.bios
 @pytest.mark.system
 @pytest.mark.parametrize('test_api', random.sample(ApiType.ALL_TYPES, 1))
-def test_bios_auto_update_enabled(devices, engines, test_api, original_version):
+def test_bios_auto_update_enabled(devices, engines, topology_obj, test_api, original_version):
     """
     Test flow:
         1. fetch current and previous BIOS versions
@@ -89,8 +90,8 @@ def test_bios_auto_update_enabled(devices, engines, test_api, original_version):
         platform.firmware.bios.set(op_param_name=PlatformConsts.FW_AUTO_UPDATE,
                                    op_param_value=NvosConst.ENABLED, apply=True).verify_result()
         TestToolkit.GeneralApi[test_api].save_config(engine=engines.dut)
-    verify_bios_version(devices, platform)
 
-    system.reboot.action_reboot()
+    verify_bios_version(devices, platform)
+    system.reboot.action_reboot(topology_obj=topology_obj)
 
     verify_bios_version(devices, platform, True)
