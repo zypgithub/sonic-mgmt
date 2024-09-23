@@ -419,14 +419,14 @@
 				"BIOS": [
 					{
 						"force_reboot": true,
-						"firmware": "https://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_bios/SnowyOwl/0ACTV_00.00.016/Release_9600/0ACTV.rom",
-						"version": "0ACTV_00.00.016_9600",
+						"firmware": "https://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_bios/SnowyOwl/0ACTV_00.00.019/Release_9600/0ACTV.rom",
+						"version": "0ACTV_00.00.019_9600",
 						"reboot": ["cold"]
 					},
 					{
 						"force_reboot": true,
-						"firmware": "https://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_bios/SnowyOwl/0ACTV_00.00.x07_rc5/Release_9600/0ACTV.rom",
-						"version": "0ACTV_0.00.007",
+						"firmware": "https://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_bios/SnowyOwl/0ACTV_00.00.016/Release_9600/0ACTV.rom",
+						"version": "0ACTV_00.00.016_9600",
 						"reboot": ["cold"]
 					}
 				],
