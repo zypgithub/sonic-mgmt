@@ -112,4 +112,7 @@
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/system/nvos_system_ztp.cases </cases>
 	</test>
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/system/nvos_system_dns.cases </cases>
+	</test>
 </DBDEF>

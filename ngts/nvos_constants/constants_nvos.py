@@ -547,6 +547,13 @@ class SystemConsts:
 
     SYSTEM_LAST_EVENT = 'last'
 
+    DNS_SERVER = 'server'
+    DNS_SERVER_IPV4 = "8.8.8.8"
+    DNS_SERVER_IPV6 = "2001:4860:4860::8888"
+    DNS_SERVER_LIST = [DNS_SERVER_IPV4, DNS_SERVER_IPV6]
+    # list of all api types
+    DNS_SERVER_IDS = {"ipv4": DNS_SERVER_IPV4, "ipv6": DNS_SERVER_IPV6}
+
 
 class DocumentsConsts:
     MIN_FILES_SIZE = 30000

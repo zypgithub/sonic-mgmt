@@ -51,7 +51,7 @@ def test_save_reboot(engines, devices):
                                   FastRecoveryConsts.STATE_DISABLED, apply=True, dut_engine=engines.dut)'''
 
         with allure.step('Set system events table-size to 600 and validate'):
-            fae.system.events.set(op_param_name='table-size', op_param_value=600, apply=True, dut_engine=engines.dut).\
+            fae.system.events.set(op_param_name='table-size', op_param_value=600, apply=True, dut_engine=engines.dut). \
                 verify_result()
             output = OutputParsingTool.parse_json_str_to_dictionary(fae.system.events.show()).get_returned_value()
             ValidationTool.verify_field_value_in_output(output, SystemConsts.EVENTS_TABLE_SIZE, '600').verify_result()
@@ -65,9 +65,25 @@ def test_save_reboot(engines, devices):
             output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show('last 1')).get_returned_value()
             event_time = output[str(list(output.keys())[0])]["time-created"]
 
+        with allure.step('Run set system contact contact_info_1 command and apply config'):
+            system.set(op_param_name=SystemConsts.CONTACT, op_param_value="contact_info_1", apply=True,
+                       dut_engine=engines.dut).verify_result()
+
+        with allure.step('Run set system location location_info_1 command and apply config'):
+            system.set(op_param_name=SystemConsts.LOCATION, op_param_value="location_info_1", apply=True,
+                       dut_engine=engines.dut).verify_result()
+
+        with allure.step('Run set system dns server ipv4 command and apply config'):
+            system.dns.set(op_param_name=SystemConsts.DNS_SERVER, op_param_value=SystemConsts.DNS_SERVER_IDS["ipv4"],
+                           apply=True, dut_engine=engines.dut).verify_result()
+
         with allure.step('set hostname to be {hostname} - with apply'.format(hostname=new_hostname_value)):
             system.set(SystemConsts.HOSTNAME, new_hostname_value, apply=True, ask_for_confirmation=True)
             TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
+
+        with allure.step('Run set system dns server ipv6 command and apply config'):
+            system.dns.set(op_param_name=SystemConsts.DNS_SERVER, op_param_value=SystemConsts.DNS_SERVER_IDS["ipv6"],
+                           apply=True, dut_engine=engines.dut).verify_result()
 
         try:
             eth0_port = MgmtPort('eth0')
@@ -94,7 +110,7 @@ def test_save_reboot(engines, devices):
 
             with allure.step('Verify that system events table-size config was saved'):
                 output = OutputParsingTool.parse_json_str_to_dictionary(fae.system.events.show()).get_returned_value()
-                ValidationTool.verify_field_value_in_output(output, SystemConsts.EVENTS_TABLE_SIZE, '600').\
+                ValidationTool.verify_field_value_in_output(output, SystemConsts.EVENTS_TABLE_SIZE, '600'). \
                     verify_result()
 
             with allure.step('Verify that the system event before the reboot is present post reboot as well'):
@@ -108,6 +124,20 @@ def test_save_reboot(engines, devices):
                 ValidationTool.verify_field_value_in_output(fast_recovery_output, FastRecoveryConsts.STATE,
                                                             FastRecoveryConsts.STATE_DISABLED).verify_result()'''
 
+            with allure.step('Verify DNS server ipv4, configured before save, is in show system dns server output'):
+                dns_output = OutputParsingTool.parse_json_str_to_dictionary(system.dns.show(SystemConsts.DNS_SERVER)). \
+                    get_returned_value()
+                assert SystemConsts.DNS_SERVER_IDS["ipv4"] in dns_output, \
+                    "The configured DNS server {} is not present in show system dns". \
+                    format(SystemConsts.DNS_SERVER_IDS["ipv4"])
+
+            with allure.step('Verify DNS server ipv6, configured after save, is not in show system dns server output'):
+                dns_output = OutputParsingTool.parse_json_str_to_dictionary(system.dns.show(SystemConsts.DNS_SERVER)). \
+                    get_returned_value()
+                assert SystemConsts.DNS_SERVER_IDS["ipv6"] not in dns_output, \
+                    "The configured DNS server {} is unexpectedly present in show system dns".\
+                    format(SystemConsts.DNS_SERVER_IDS["ipv6"])
+
             with allure.step('verify the eth0 description was not saved after reboot'):
                 output_dictionary = OutputParsingTool.parse_show_interface_output_to_dictionary(
                     eth0_port.interface.show()).get_returned_value()
@@ -115,7 +145,18 @@ def test_save_reboot(engines, devices):
                     output_dictionary[IbInterfaceConsts.DESCRIPTION] != new_eth0_description, \
                     "Description should not be saved after reboot"
 
+            with allure.step('Verify system contact is set to contact_info_1'):
+                ValidationTool.verify_field_value_in_output(system_output, SystemConsts.CONTACT, "contact_info_1"). \
+                    verify_result()
+
+            with allure.step('Verify system location is set to location_info_1'):
+                ValidationTool.verify_field_value_in_output(system_output, SystemConsts.LOCATION, "location_info_1"). \
+                    verify_result()
+
         finally:
+            with allure.step('Cleanup - Run unset system DNS server and apply config'):
+                system.dns.unset(SystemConsts.DNS_SERVER, apply=True, dut_engine=engines.dut).verify_result()
+
             with allure.step('Cleanup - set hostname to be {hostname} - with apply'.format(hostname=old_hostname)):
                 system.unset(SystemConsts.HOSTNAME, apply=True, ask_for_confirmation=True)
                 TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
@@ -127,8 +168,7 @@ def test_save_reboot(engines, devices):
 @pytest.mark.simx
 @pytest.mark.general
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_general_auto_save(engines, test_api):
-
+def test_general_auto_save(engines, devices, test_api):
     system = System()
     eth0_port = MgmtPort('eth0')
     TestToolkit.tested_api = test_api
@@ -137,16 +177,19 @@ def test_general_auto_save(engines, test_api):
     try:
         with allure.step('verify auto-save state is disabled'):
             output = OutputParsingTool.parse_json_str_to_dictionary(system.config.auto_save.show()).verify_result()
-            assert SystemConsts.AUTO_SAVE_STATE_DISABLED == output[SystemConsts.AUTO_SAVE_STATE], "state should be disabled"
+            assert SystemConsts.AUTO_SAVE_STATE_DISABLED == output[
+                SystemConsts.AUTO_SAVE_STATE], "state should be disabled"
 
         with allure.step('set auto-save state to enabled'):
             system.config.auto_save.set(op_param_name=SystemConsts.AUTO_SAVE_STATE,
                                         op_param_value=SystemConsts.AUTO_SAVE_STATE_ENABLED).verify_result()
 
-        with allure.step('set eth0 description to be {description} - with apply'.format(description=new_eth0_description)):
+        with allure.step(
+                'set eth0 description to be {description} - with apply'.format(description=new_eth0_description)):
             eth0_port.interface.set(NvosConst.DESCRIPTION, new_eth0_description, apply=True).verify_result()
 
-        assert new_eth0_description in TestToolkit.GeneralApi[test_api].show_config(engine=engines.dut, revision='startup'), \
+        assert new_eth0_description in TestToolkit.GeneralApi[test_api].show_config(engine=engines.dut,
+                                                                                    revision='startup'), \
             "Expected to have new description field after set command, but we do not have it."
 
     finally:
@@ -159,6 +202,7 @@ def test_general_auto_save(engines, test_api):
 
         with allure.step('verify auto-save state is disabled'):
             output = OutputParsingTool.parse_json_str_to_dictionary(system.config.auto_save.show()).verify_result()
-            assert SystemConsts.AUTO_SAVE_STATE_DISABLED == output[SystemConsts.AUTO_SAVE_STATE], "state should be disabled"
+            assert SystemConsts.AUTO_SAVE_STATE_DISABLED == output[
+                SystemConsts.AUTO_SAVE_STATE], "state should be disabled"
 
             TestToolkit.GeneralApi[test_api].save_config(engine=engines.dut)

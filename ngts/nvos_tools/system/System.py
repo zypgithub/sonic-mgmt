@@ -58,6 +58,7 @@ class System(BaseComponent):
         self.message = BaseComponent(self, path='/message')
         self.version = BaseComponent(self, path='/version')
         self.events = BaseComponent(self, path='/events')
+        self.dns = BaseComponent(self, path='/dns')
         self.reboot = Reboot(self)
         self.factory_default = FactoryDefault(self)
         self.profile = Profile(self)

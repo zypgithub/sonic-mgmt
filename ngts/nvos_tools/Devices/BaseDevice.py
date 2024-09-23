@@ -280,7 +280,8 @@ class BaseSwitch(BaseDevice):
     __metaclass__ = ABCMeta
 
     Constants = namedtuple('Constants', ['system', 'dump_files', 'sdk_dump_files', 'firmware', 'log_dump_files',
-                                         'stats_dump_files', 'hw_mgmt_files', 'cluster_files', 'bmc_dump_files', 'erots'])
+                                         'stats_dump_files', 'hw_mgmt_files', 'etc_files', 'cluster_files',
+                                         'bmc_dump_files', 'erots'])
     CpldImageConsts = namedtuple('CpldImageConsts', ('burn_image_path', 'refresh_image_path', 'version_names'))
     SsdImageConsts = namedtuple('SsdImageConsts', ('file', 'current_version', 'alternate_version'))
 
@@ -337,6 +338,7 @@ class BaseSwitch(BaseDevice):
         stats_dump_files = ["cpu.csv.gz", "disk.csv.gz", "fan.csv.gz", "power.csv.gz",
                             "mgmt-interface.csv.gz", "temperature.csv.gz", "voltage.csv.gz"]
         hw_mgmt_files = ['hw-mgmt-dump.tar.gz']
+        etc_files = ["resolv.conf"]
 
         bmc_dump_files = None
         cluster_files = None
@@ -345,7 +347,8 @@ class BaseSwitch(BaseDevice):
                     PlatformConsts.FW_CPLD + '1', PlatformConsts.FW_CPLD + '2', PlatformConsts.FW_CPLD + '3']
         erots = []
         self.constants = BaseSwitch.Constants(system_dic, dump_files, sdk_dump_files, firmware, log_dump_files,
-                                              stats_dump_files, hw_mgmt_files, cluster_files, bmc_dump_files, erots)
+                                              stats_dump_files, hw_mgmt_files, etc_files, cluster_files,
+                                              bmc_dump_files, erots)
 
         self.current_bios_version_name = ""
         self.current_bios_version_path = ""
