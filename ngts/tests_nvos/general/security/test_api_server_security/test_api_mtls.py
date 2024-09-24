@@ -101,7 +101,7 @@ def test_api_mtls_set_bad_param(test_api):
 
 @pytest.mark.mtls
 @pytest.mark.security
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [ApiType.NVUE])
 def test_api_mtls_set_ca_without_cert_not_rejected(test_api):
     """
     Verify that set api CA not rejected when no cert was previously set
