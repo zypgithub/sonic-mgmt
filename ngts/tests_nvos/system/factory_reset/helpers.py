@@ -207,6 +207,12 @@ def verify_cleanup_done(engine, current_time, system, username, param=''):
             if output and "No such file or directory" not in output:
                 errors += "\n/etc/sonic was not cleared"
 
+    with allure.step("Verify /etc/sonic content was cleared"):
+        if param != KEEP_ONLY_FILES:
+            output = engine.run_cmd("ls /host/tpm/oIAK.cert")
+            if output and "No such file or directory" not in output:
+                errors += "\n/host/tpm/oIAK.cert was not cleared"
+
     with allure.step("Verify /host/warmboot content was deleted"):
         if param != KEEP_ONLY_FILES:
             output = engine.run_cmd("ls /host/warmboot")

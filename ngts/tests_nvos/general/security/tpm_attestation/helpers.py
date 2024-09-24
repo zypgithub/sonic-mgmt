@@ -25,6 +25,10 @@ def get_scp_url(remote_engine, dst_filename):
     return REMOTE_SCP_URL.format(remote_engine.username, remote_engine.password, remote_engine.ip, dst_filename)
 
 
+def get_oiak_cert(remote_engine, dst_filename):
+    return remote_engine.run_cmd(f'cat {dst_filename}')
+
+
 def get_file_creation_time(engine: LinuxSshEngine, file_path: str) -> str:
     ls_output = engine.run_cmd(f'ls -l {file_path}')
     return ' '.join(ls_output.split()[5:8])

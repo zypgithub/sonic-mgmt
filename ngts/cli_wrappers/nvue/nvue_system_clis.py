@@ -89,6 +89,20 @@ class NvueSystemCli(NvueBaseCli):
 
     @staticmethod
     @check_output
+    def action_import_tpm_oiak(engine, resource_path, data='', remote_url=''):
+        path = resource_path.replace('/', ' ').strip()
+        cmd = f'nv action import {path}'
+        if data:
+            cmd += f' data {data}'
+            return engine.run_cmd(cmd)
+        if remote_url:
+            cmd += f' remote-url {remote_url}'
+        cmd = ' '.join(cmd.split())
+        logging.info(f"Running '{cmd}' on dut using NVUE")
+        return engine.run_cmd(cmd)
+
+    @staticmethod
+    @check_output
     def action_reboot(engine, device, resource_path, op_param="", should_wait_till_system_ready=True, recovery_engine=None, topology_obj=None):
         """
         Rebooting the switch

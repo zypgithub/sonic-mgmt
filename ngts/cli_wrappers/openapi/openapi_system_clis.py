@@ -139,6 +139,19 @@ class OpenApiSystemCli(OpenApiBaseCli):
                                                    engine.ip, resource_path, params)
 
     @staticmethod
+    def action_import_tpm_oiak(engine, resource_path, data='', remote_url=''):
+        logging.info(f'Run action import on: {resource_path} using OpenApi')
+        parameters = {'data': data, 'remote_url': remote_url}
+        parameters = {param: val for param, val in parameters.items() if val}
+        params = \
+            {
+                "state": "start",
+                "parameters": parameters
+            }
+        return OpenApiCommandHelper.execute_action(ActionType.IMPORT, engine.engine.username, engine.engine.password,
+                                                   engine.ip, resource_path, params)
+
+    @staticmethod
     def action_upload_tpm_file(engine, resource_path, file_name, remote_url):
         logging.info("Running action: 'upload' on dut using OpenApi")
         params = \
