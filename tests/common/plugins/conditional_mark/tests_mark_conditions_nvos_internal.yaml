@@ -550,8 +550,8 @@ tests_nvos/interfaces/test_ib_interface_configuration.py::test_ib_interface_vls:
 
 tests_nvos/interfaces/test_interface_link_transceiver_diagnostics.py::test_interface_link_diagnostics_basic_invalid_ports:
   skip:
-    reason: "[Obsolete Zone [ Deleted Items]] Bug SW #3556295: [Non-Functional ] [link-diagnostics] | Wrong error message in nv show interface"
+    reason: "[NVUE_Core - Design] Bug SW #4001790: [NVUE-CORE] Pruned properties are present in error message"
     conditions:
-      - https://redmine.mellanox.com/issues/3556295
+      - https://redmine.mellanox.com/issues/4001790
 
 ########################## NVOS IGNORE END ##########################
