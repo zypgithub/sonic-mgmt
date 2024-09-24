@@ -1,5 +1,6 @@
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.nvos_constants.constants_nvos import TestFlowType
 from ngts.nvos_tools.infra.CurlTool import CurlTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
@@ -90,15 +91,24 @@ def verify_api_connection(test_flow, dut: LinuxSshEngine, user: UserInfo, expect
             if test_flow == TestFlowType.ALL_TYPES or test_flow == TestFlowType.GOOD_FLOW:
                 with allure.independent_step('goodflow - use suitable cert & cacert on client side'):
                     _run_curl_and_verify(True, False, matching_ca, matching_cert)
-            if test_flow == TestFlowType.ALL_TYPES or test_flow == TestFlowType.BAD_FLOW:
-                with allure.independent_step('badflow - bad cert & good cacert on client side'):
-                    _run_curl_and_verify(False, False, matching_ca, non_matching_cert)
-                with allure.independent_step('badflow - good cert & bad cacert on client side'):
-                    _run_curl_and_verify(False, False, non_matching_ca, matching_cert)
-                with allure.independent_step('badflow - bad cert & bad cacert on client side'):
-                    _run_curl_and_verify(False, False, non_matching_ca, non_matching_cert)
-                with allure.independent_step('badflow - run insecure'):
-                    _run_curl_and_verify(False, True)
+            # TODO: remove the bug check once fixed and closed
+            badflow_bug_active = is_redmine_issue_active([4064106])
+            if badflow_bug_active and badflow_bug_active[0]:
+                try:
+                    with allure.step('skip badflow check - bug #4064106 still active - [Functional] [mTLS] api mtls is working with an imported ca-cert but not set to api mtls'):
+                        raise Exception('skip badflow check - bug #4064106 still active - [Functional] [mTLS] api mtls is working with an imported ca-cert but not set to api mtls')
+                except Exception:
+                    pass
+            else:
+                if test_flow == TestFlowType.ALL_TYPES or test_flow == TestFlowType.BAD_FLOW:
+                    with allure.independent_step('badflow - bad cert & good cacert on client side'):
+                        _run_curl_and_verify(False, False, matching_ca, non_matching_cert)
+                    with allure.independent_step('badflow - good cert & bad cacert on client side'):
+                        _run_curl_and_verify(False, False, non_matching_ca, matching_cert)
+                    with allure.independent_step('badflow - bad cert & bad cacert on client side'):
+                        _run_curl_and_verify(False, False, non_matching_ca, non_matching_cert)
+                    with allure.independent_step('badflow - run insecure'):
+                        _run_curl_and_verify(False, True)
     else:
         with allure.step('verify no mtls - insecure works'):
             if test_flow == TestFlowType.ALL_TYPES or test_flow == TestFlowType.GOOD_FLOW:

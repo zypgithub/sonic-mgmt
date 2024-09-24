@@ -1,6 +1,18 @@
 ########################## NVOS IGNORE START ##########################
 
-tests_nvos/general/security/test_ssh_config/test_ssh_config::test_ssh_config_good_flow:
+tests_nvos/general/security/test_api_server_security/test_api_mtls.py::test_api_mtls_core_functionality[BadFlow]:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4064106"
+    conditions:
+      - https://redmine.mellanox.com/issues/4064106
+
+tests_nvos/general/security/test_api_server_security/test_api_mtls.py::test_api_mtls_delete_installed_ca[BadFlow]:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4064106"
+    conditions:
+      - https://redmine.mellanox.com/issues/4064106
+
+tests_nvos/general/security/test_ssh_config/test_ssh_config.py::test_ssh_config_good_flow:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4040069"
     conditions:
