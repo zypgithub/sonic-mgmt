@@ -5,7 +5,6 @@ from ngts.cli_wrappers.openapi.openapi_base_clis import OpenApiBaseCli
 from ngts.nvos_constants.constants_nvos import ActionType, SystemConsts, OpenApiReqType
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from .openapi_command_builder import OpenApiCommandHelper
-from ...nvos_tools.infra.LinuxCmdBuilderTool import LinuxCmdBuilderTool
 from ...nvos_tools.infra.OutputParsingTool import OutputParsingTool
 
 logger = logging.getLogger()
@@ -154,7 +153,7 @@ class OpenApiSystemCli(OpenApiBaseCli):
                                                    engine.ip, resource_path, params)
 
     @staticmethod
-    def action_reset(engine, device, comp, param):
+    def action_reset(engine, device, comp, param, topology_obj=None):
         logging.info("Running action: reset system {} on dut using OpenApi".format(comp))
         if 'keep' in param:  # OpenApi has keep as parameter, so should remove it from string 4 chars + space.
             param = param[len('keep') + 1:]

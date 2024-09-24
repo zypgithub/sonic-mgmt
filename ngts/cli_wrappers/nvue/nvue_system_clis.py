@@ -208,11 +208,11 @@ class NvueSystemCli(NvueBaseCli):
 
     @staticmethod
     @check_output
-    def action_reset(engine, device, comp, param):
+    def action_reset(engine, device, comp, param, topology_obj=None):
         cmd = "nv action reset system {comp} {params}".format(comp=comp, params=param)
         cmd = " ".join(cmd.split())
         logging.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
-        return DutUtilsTool.reload(engine=engine, device=device, command=cmd, confirm=True).verify_result()
+        return DutUtilsTool.reload(engine=engine, device=device, command=cmd, confirm=True, topology_obj=topology_obj).verify_result()
 
     @staticmethod
     @check_output
