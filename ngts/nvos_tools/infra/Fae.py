@@ -83,11 +83,11 @@ class FaeFirmware(BaseComponent):
         self.bmc = FaePlatformComponent(self, 'bmc')  # TODO: Fix after bug closed https://redmine.mellanox.com/issues/3955495
         self.fpga = FaePlatformComponent(self, 'FPGA')
 
-    def install_bios_firmware(self, bios_image_path, device):
+    def install_bios_firmware(self, bios_image_path, device, topology_obj=None):
         with allure.step("installing bios firmware from {action_type}".format(action_type=bios_image_path)):
             return SendCommandTool.execute_command(
                 self.api_obj[TestToolkit.tested_api].action_install_fae_bios_firmware,
-                TestToolkit.engines.dut, bios_image_path, self.get_resource_path(), device)
+                TestToolkit.engines.dut, bios_image_path, self.get_resource_path(), device, topology_obj)
 
 
 class FaeBiosComponent(BaseComponent):

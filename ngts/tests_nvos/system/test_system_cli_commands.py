@@ -126,12 +126,12 @@ def test_set_inactivity_timeout(engines, devices, topology_obj):
 
     with allure.step("Change inactivity timeout for ssh and serial and validate"):
         logger.info("Change inactivity timeout for ssh and serial and validate")
-        system.ssh_server.set(SystemConsts.SSH_CONFIG_INACTIV_TIMEOUT, '1', apply=True,
+        system.ssh_server.set(SystemConsts.SSH_CONFIG_INACTIVE_TIMEOUT, '1', apply=True,
                               ask_for_confirmation=True).verify_result()
         system.serial_console.set(SystemConsts.SERIAL_CONSOLE_INACTIV_TIMEOUT, '1', apply=True,
                                   ask_for_confirmation=True).verify_result()
         ssh_output = OutputParsingTool.parse_json_str_to_dictionary(system.ssh_server.show()).get_returned_value()
-        ValidationTool.verify_field_value_in_output(ssh_output, SystemConsts.SSH_CONFIG_INACTIV_TIMEOUT, '1') \
+        ValidationTool.verify_field_value_in_output(ssh_output, SystemConsts.SSH_CONFIG_INACTIVE_TIMEOUT, '1') \
             .verify_result()
         serial_output = OutputParsingTool.parse_json_str_to_dictionary(system.serial_console.show()) \
             .get_returned_value()
@@ -170,7 +170,7 @@ def test_set_inactivity_timeout(engines, devices, topology_obj):
             system.ssh_server.unset(apply=True, ask_for_confirmation=True).verify_result()
             system.serial_console.unset(apply=True, ask_for_confirmation=True).verify_result()
             ssh_output = OutputParsingTool.parse_json_str_to_dictionary(system.ssh_server.show()).get_returned_value()
-            ValidationTool.verify_field_value_in_output(ssh_output, SystemConsts.SSH_CONFIG_INACTIV_TIMEOUT, '15')\
+            ValidationTool.verify_field_value_in_output(ssh_output, SystemConsts.SSH_CONFIG_INACTIVE_TIMEOUT, '15')\
                 .verify_result()
             serial_output = OutputParsingTool.parse_json_str_to_dictionary(system.serial_console.show()) \
                 .get_returned_value()

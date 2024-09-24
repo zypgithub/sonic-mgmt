@@ -15,7 +15,7 @@ class OpenApiPlatformCli(OpenApiBaseCli):
         self.cli_name = "Platform"
 
     @staticmethod
-    def action_install_fae_bios_firmware(engine, bios_image_path, resource_path='', device=None):
+    def action_install_fae_bios_firmware(engine, bios_image_path, resource_path='', device=None, topology_obj=None):
         """
         Method to install BIOS firmware using rest api
         :param engine: the engine to use

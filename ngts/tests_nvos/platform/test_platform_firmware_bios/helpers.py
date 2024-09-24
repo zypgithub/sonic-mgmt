@@ -36,7 +36,7 @@ def get_bios_version(platform) -> str:
         return fw_output[PlatformConsts.FW_BIOS][PlatformConsts.FW_ACTUAL]
 
 
-def install_bios(devices, fae, version_name):
+def install_bios(devices, fae, version_name, topology_obj):
     if version_name == devices.dut.previous_bios_version_name:
         path = devices.dut.previous_bios_version_path
     else:
@@ -46,7 +46,7 @@ def install_bios(devices, fae, version_name):
 
     with allure.step('installing Bios image {}'.format(version_name)):
         fae.platform.firmware.install_bios_firmware(bios_image_path=devices.dut.get_bios_file_name(),
-                                                    device=devices.dut)
+                                                    device=devices.dut, topology_obj=topology_obj)
 
 
 def install_image_and_verify(image_name, system):

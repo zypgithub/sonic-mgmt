@@ -42,7 +42,7 @@ def test_bios_auto_update_disabled(devices, engines, topology_obj, test_api, ori
         verify_bios_auto_update_value(platform, NvosConst.DISABLED)
         TestToolkit.GeneralApi[test_api].save_config(engine=engines.dut)
 
-        install_bios(devices, fae, devices.dut.previous_bios_version_name)
+        install_bios(devices, fae, devices.dut.previous_bios_version_name, topology_obj)
         verify_bios_version(devices, platform)
 
         system.reboot.action_reboot(topology_obj=topology_obj)
@@ -86,7 +86,7 @@ def test_bios_auto_update_enabled(devices, engines, topology_obj, test_api, orig
                                    op_param_value=NvosConst.DISABLED, apply=True).verify_result()
         TestToolkit.GeneralApi[test_api].save_config(engine=engines.dut)
         verify_bios_auto_update_value(platform, NvosConst.DISABLED)
-        install_bios(devices, fae, devices.dut.previous_bios_version_name)
+        install_bios(devices, fae, devices.dut.previous_bios_version_name, topology_obj)
         platform.firmware.bios.set(op_param_name=PlatformConsts.FW_AUTO_UPDATE,
                                    op_param_value=NvosConst.ENABLED, apply=True).verify_result()
         TestToolkit.GeneralApi[test_api].save_config(engine=engines.dut)
