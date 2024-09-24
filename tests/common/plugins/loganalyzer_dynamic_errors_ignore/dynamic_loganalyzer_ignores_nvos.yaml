@@ -1751,7 +1751,7 @@
     - '.*ERR countermgrd: port .* not found in port_missing_cntr.*'
   Conditions:
     - Affected_test_cases:
-      - tests_nvos/infra/init_flow/init_flow.py
+      - tests_nvos/infra/init_flow
 
 # NVOS
 - Errors_list:
