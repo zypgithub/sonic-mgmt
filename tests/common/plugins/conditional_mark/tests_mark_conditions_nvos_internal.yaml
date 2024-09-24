@@ -554,4 +554,18 @@ tests_nvos/interfaces/test_interface_link_transceiver_diagnostics.py::test_inter
     conditions:
       - https://redmine.mellanox.com/issues/4001790
 
+tests_nvos/platform/test_platform_transceiver.py::test_transceiver_status_unplug:
+  skip:
+    reason: "[NVOS - Design] Bug SW #4034283: [Non-Functional ] [interface] | Sometimes ports don't show primary asic under fae command"
+    conditions:
+      - "'mamba' in testbed"
+      - https://redmine.mellanox.com/issues/4034283
+
+tests_nvos/platform/test_platform_transceiver.py::test_transceiver_status_with_reboot:
+  skip:
+    reason: "[NVOS - Design] Bug SW #4034283: [Non-Functional ] [interface] | Sometimes ports don't show primary asic under fae command"
+    conditions:
+      - "'mamba' in testbed"
+      - https://redmine.mellanox.com/issues/4034283
+
 ########################## NVOS IGNORE END ##########################
