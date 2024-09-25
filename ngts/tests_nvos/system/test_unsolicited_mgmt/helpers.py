@@ -1,5 +1,5 @@
 import logging
-import random
+import re
 import time
 
 from ngts.tools.test_utils import allure_utils as allure
@@ -25,7 +25,7 @@ def config_management_interface_verify_logs(engine, mgmt_interface, state, expec
     with allure.step(f"config {mgmt_interface} state to {state}"):
         mgmt_port.interface.link.state.set(state, apply=True, ask_for_confirmation=True).verify_result()
 
-    wait_for_specific_regex_in_logs(engine, link_logs, timeout=20)
+    time.sleep(20)
     with allure.step("check cable connection note in the logs"):
         logs_output = engine.run_cmd(f'tail -n 400 /var/log/syslog | grep "{expected_logs}"')
         assert logs_output, f"Error: Expected logs not found. {expected_logs}"
@@ -46,8 +46,6 @@ def replace_two_ip_addresses(engine):
             eth1_ip = next(iter(OutputParsingTool.parse_json_str_to_dictionary(eth1_port.interface.ip.address.show()).verify_result()))
 
         with allure.step("set and apply the replacement ips"):
-            eth0_port.interface.ip.dhcp_client.set(op_param_name='state', op_param_value='disabled')
-            eth1_port.interface.ip.dhcp_client.set(op_param_name='state', op_param_value='disabled')
             eth0_port.interface.ip.address.unset(op_param=eth0_ip)
             eth1_port.interface.ip.address.set(op_param_name=eth0_ip)
             eth1_port.interface.ip.address.unset(op_param=eth1_ip)
@@ -65,24 +63,24 @@ def swap_ips_and_verify_logs_and_packets(engine, expected_messages, is_enabled):
 
     :return:
     """
-    expected_packet_msg = "ARP, Request who-has"
+    expected_packet_msg = r"ARP, Request who-has.*\(Broadcast\) .*"
     eth0_gateway, eth0_ip, eth1_ip = replace_two_ip_addresses(engine)
 
-    expected_msg1 = expected_messages[0].format(eth0_ip.split('/')[0]) if is_enabled else expected_messages[0]
-    expected_msg2 = expected_messages[1].format(eth1_ip.split('/')[0]) if is_enabled else expected_messages[1]
+    expected_msg1 = expected_messages[0].format(eth1_ip.split('/')[0]) if is_enabled else expected_messages[0]
+    expected_msg2 = expected_messages[1].format(eth0_ip.split('/')[0]) if is_enabled else expected_messages[1]
 
     try:
         with allure.step('Verify packets have {} been sent'.format('' if is_enabled else 'not')):
             with allure.independent_step('check in logs'):
-                wait_for_specific_regex_in_logs(engine, link_logs, timeout=20)
-                time.sleep(7)
-                logs_output = engine.run_cmd(f'tail -n 500 /var/log/syslog')
+                time.sleep(10)
+                logs_output = engine.run_cmd(f'tail -n 400 /var/log/syslog')
                 assert expected_msg1 in logs_output, f"Error: the expected logs {expected_msg1} is missing"
                 assert expected_msg2 in logs_output, f"Error: the expected logs {expected_msg2} is missing"
 
             with allure.independent_step('check tcpdump output'):
                 output = engine.run_cmd('sudo timeout 30 tcpdump -i eth0 arp')
-                assert (expected_packet_msg in output) == is_enabled, f"Assertion failed for expected packet msg: {expected_packet_msg}, output: {output}, param: {is_enabled}"
+                matches = re.findall(expected_packet_msg, output)
+                assert bool(matches) == is_enabled, f"Assertion failed for expected packet msg: ARP, Request who-has ... (Broadcast)\n, output: {output}\n, param: {is_enabled}"
 
     finally:
         replace_two_ip_addresses(engine)
