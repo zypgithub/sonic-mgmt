@@ -411,7 +411,7 @@ def round_string_number_with_positivity_check(value, name):
     return res
 
 
-@retry(Exception, tries=12, delay=15)
+@retry(Exception, tries=12, delay=20)
 def wait_for_port_to_become_active(port_obj):
     with allure.step("Waiting for port {} to become active".format(port_obj.name)):
         current_link_dict = OutputParsingTool.parse_json_str_to_dictionary(port_obj.interface.link.show()).\

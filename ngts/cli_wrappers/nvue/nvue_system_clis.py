@@ -212,7 +212,8 @@ class NvueSystemCli(NvueBaseCli):
         cmd = "nv action reset system {comp} {params}".format(comp=comp, params=param)
         cmd = " ".join(cmd.split())
         logging.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
-        return DutUtilsTool.reload(engine=engine, device=device, command=cmd, confirm=True, topology_obj=topology_obj).verify_result()
+        return DutUtilsTool.reload(engine=engine, device=device, command=cmd, confirm=True,
+                                   topology_obj=topology_obj).verify_result()
 
     @staticmethod
     @check_output
@@ -247,7 +248,8 @@ class NvueSystemCli(NvueBaseCli):
 
     @staticmethod
     @check_output
-    def action_import_certificate(engine, resource_path, data='', passphrase='', uri_bundle='', uri_private_key='', uri_public_key=''):
+    def action_import_certificate(engine, resource_path, data='', passphrase='', uri_bundle='', uri_private_key='',
+                                  uri_public_key=''):
         path = resource_path.replace('/', ' ').strip()
         params = {'data': data, 'passphrase': passphrase, 'uri-bundle': uri_bundle, 'uri-private-key': uri_private_key,
                   'uri-public-key': uri_public_key}

@@ -113,9 +113,9 @@ class DutUtilsTool:
                             DutUtilsTool.wait_for_system_ready_in_serial(topology_obj, wait_timeout=device.system_is_ready_wait_timeout)
                         else:
                             DutUtilsTool.wait_for_system_ready_in_serial(topology_obj)
-                with allure.step('wait for ssh'):
-                    dut_engine.run_cmd('echo "SSH OK"')
                 if not wait_for_nvos:
+                    with allure.step('wait for ssh'):
+                        dut_engine.run_cmd('echo "SSH OK"')
                     return ResultObj(result=True, info="rebooted, ssh up, but system is not ready yet")
                 with allure.step('wait for os to be functional'):
                     if device:
