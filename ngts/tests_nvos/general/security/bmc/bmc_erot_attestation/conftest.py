@@ -1,4 +1,5 @@
 import logging
+import time
 
 import pytest
 
@@ -35,6 +36,7 @@ def clear_measurements(topology_obj, engines):
     global already_remote_rebooted
     if not already_remote_rebooted:
         with allure.step('do power cycle (remote reboot) do the system to clear components expect_measurements'):
+            time.sleep(5)
             recover_dut_with_remote_reboot(topology_obj, engines, False, 150)
             already_remote_rebooted = True
     else:

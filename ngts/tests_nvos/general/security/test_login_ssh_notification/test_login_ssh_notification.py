@@ -107,9 +107,10 @@ def change_username_password(engines, username, curr_password, new_password):
         time.sleep(Consts.PASSWORD_UPDATE_WAIT_TIME)
 
 
-def validate_ssh_login_notifications_default_fields(engines, login_source_ip_address, username, password, capability,
+def validate_ssh_login_notifications_default_fields(engines, login_source_ip_addresses, username, password, capability,
                                                     check_password_change_msg=False,
                                                     check_role_change_msg=False,
+                                                    already_login_failed=0,
                                                     expected_login_record_period=None,
                                                     last_successful_login=None):
     '''
@@ -127,7 +128,7 @@ def validate_ssh_login_notifications_default_fields(engines, login_source_ip_add
             'number_of_successful_connections_in_the_last_record_period'
         ]
     :param engines: fixture containing all engines
-    :param login_source_ip_address: ip address initiating the ssh connection in the test
+    :param login_source_ip_addresses: ip address initiating the ssh connection in the test
     :param username: username to connect with to switch
     :param password: the password for username
     :param capability: the username capability, could be one of [admin, monitor]
@@ -136,23 +137,26 @@ def validate_ssh_login_notifications_default_fields(engines, login_source_ip_add
     :param expected_login_record_period: if not None, will validate same value as the notification value
     :param last_successful_login: datetime object of the time since last successful login
     '''
-    random_number_of_connection_fails = random.randint(5, 15)
-    with allure.step("Fail {} times connecting to device".format(random_number_of_connection_fails)):
-        logger.info("Attempting {} wrong password attempts".format(random_number_of_connection_fails))
-        authenticator = SshAuthenticator(username, password, engines.dut.ip)
-        for index in range(random_number_of_connection_fails):
-            logger.info(f'Attempt number {index + 1}')
-            authenticator.attempt_login_failure()
-            # try:
-            #     connection = create_ssh_login_engine(engines.dut.ip, username)
-            #     connection.expect(DefaultConnectionValues.PASSWORD_REGEX)
-            #     random_password = RandomizationTool.get_random_string(random.randint(Consts.PASSWORD_MIN_LEN,
-            #                                                                          Consts.PASSWORD_MAX_LEN))
-            #     logger.info("Iteration {} - connecting using random password: {}".format(index, random_password))
-            #     connection.sendline(random_password)
-            #     connection.expect(["Permission denied", "permission denied"])
-            # finally:
-            #     connection.close()
+    if not already_login_failed:
+        random_number_of_connection_fails = random.randint(5, 15)
+        with allure.step("Fail {} times connecting to device".format(random_number_of_connection_fails)):
+            logger.info("Attempting {} wrong password attempts".format(random_number_of_connection_fails))
+            authenticator = SshAuthenticator(username, password, engines.dut.ip)
+            for index in range(random_number_of_connection_fails):
+                logger.info(f'Attempt number {index + 1}')
+                authenticator.attempt_login_failure()
+                # try:
+                #     connection = create_ssh_login_engine(engines.dut.ip, username)
+                #     connection.expect(DefaultConnectionValues.PASSWORD_REGEX)
+                #     random_password = RandomizationTool.get_random_string(random.randint(Consts.PASSWORD_MIN_LEN,
+                #                                                                          Consts.PASSWORD_MAX_LEN))
+                #     logger.info("Iteration {} - connecting using random password: {}".format(index, random_password))
+                #     connection.sendline(random_password)
+                #     connection.expect(["Permission denied", "permission denied"])
+                # finally:
+                #     connection.close()
+    else:
+        random_number_of_connection_fails = already_login_failed
 
     with allure.step("Connect for the second time to switch and store details"):
         second_login_notification_message = parse_ssh_login_notification(engines.dut.ip, username,
@@ -181,14 +185,14 @@ def validate_ssh_login_notifications_default_fields(engines, login_source_ip_add
 
     with allure.step("Validating IP address is same as this test IP address"):
         with allure.step("Validating successful IP address"):
-            assert second_login_notification_message[Consts.LAST_SUCCESSFUL_LOGIN_IP] in login_source_ip_address, \
+            assert second_login_notification_message[Consts.LAST_SUCCESSFUL_LOGIN_IP] in login_source_ip_addresses, \
                 f"Not same login IP Address, \n" \
-                f"Expected: {login_source_ip_address} \n" \
+                f"Expected: {login_source_ip_addresses} \n" \
                 f"Actual: {second_login_notification_message[Consts.LAST_SUCCESSFUL_LOGIN_IP]}"
         with allure.step("Validating unsuccessful IP address"):
-            assert second_login_notification_message[Consts.LAST_UNSUCCESSFUL_LOGIN_IP] in login_source_ip_address, \
+            assert second_login_notification_message[Consts.LAST_UNSUCCESSFUL_LOGIN_IP] in login_source_ip_addresses, \
                 f"Not same unsuccessful login IP Address\n" \
-                f"Expected: {login_source_ip_address} \n" \
+                f"Expected: {login_source_ip_addresses} \n" \
                 f"Actual: {second_login_notification_message[Consts.LAST_UNSUCCESSFUL_LOGIN_IP]}"
 
     with allure.step("Validating password or capability changes"):

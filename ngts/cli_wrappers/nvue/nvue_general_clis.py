@@ -10,6 +10,7 @@ from ngts.nvos_constants.constants_nvos import NvosConst, ActionConsts, SystemCo
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.GrubMenuTool import GrubMenuTool
 from ngts.tests_nvos.general.security.test_secure_boot.constants import SecureBootConsts
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
@@ -379,7 +380,7 @@ class NvueGeneralCli(SonicGeneralCliDefault):
 
         with allure.step('wait for NVOS/ONIE grub menu'):
             # Set timeout based on the active status of Redmine issue #4028150
-            to = 360 if is_redmine_issue_active([4028150])[0] else 240
+            to = 360 if is_bug_active(4028150) else 240
             onie_install_os = 'ONIE: Install OS'
             grub_menu_patterns = ['ONIE\\s+', onie_install_os]
             all_patterns = grub_menu_patterns + SecureBootConsts.INVALID_SIGNATURE

@@ -15,4 +15,4 @@ def run_scp(player: LinuxSshEngine, src_path, dst_path, download_from_remote=Fal
         scp_cmd += f'{src_path} {player.username}@{player.ip}:{dst_path}'
 
     local_engine = CmdRunner('Local Player')
-    local_engine.run_cmd(scp_cmd)
+    local_engine.run_cmd(scp_cmd, r"Warning: Permanently added.*to the list of known hosts")
