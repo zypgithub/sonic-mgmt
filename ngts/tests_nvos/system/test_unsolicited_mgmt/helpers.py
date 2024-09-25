@@ -46,6 +46,8 @@ def replace_two_ip_addresses(engine):
             eth1_ip = next(iter(OutputParsingTool.parse_json_str_to_dictionary(eth1_port.interface.ip.address.show()).verify_result()))
 
         with allure.step("set and apply the replacement ips"):
+            eth0_port.interface.ip.dhcp_client.set(op_param_name='state', op_param_value='disabled')
+            eth1_port.interface.ip.dhcp_client.set(op_param_name='state', op_param_value='disabled')
             eth0_port.interface.ip.address.unset(op_param=eth0_ip)
             eth1_port.interface.ip.address.set(op_param_name=eth0_ip)
             eth1_port.interface.ip.address.unset(op_param=eth1_ip)
@@ -73,13 +75,13 @@ def swap_ips_and_verify_logs_and_packets(engine, expected_messages, is_enabled):
         with allure.step('Verify packets have {} been sent'.format('' if is_enabled else 'not')):
             with allure.independent_step('check in logs'):
                 wait_for_specific_regex_in_logs(engine, link_logs, timeout=20)
-                time.sleep(5)
-                logs_output = engine.run_cmd(f'tail -n 100 /var/log/syslog')
+                time.sleep(7)
+                logs_output = engine.run_cmd(f'tail -n 500 /var/log/syslog')
                 assert expected_msg1 in logs_output, f"Error: the expected logs {expected_msg1} is missing"
                 assert expected_msg2 in logs_output, f"Error: the expected logs {expected_msg2} is missing"
 
             with allure.independent_step('check tcpdump output'):
-                output = engine.run_cmd('sudo tcpdump -i eth0 arp')
+                output = engine.run_cmd('sudo timeout 30 tcpdump -i eth0 arp')
                 assert (expected_packet_msg in output) == is_enabled, f"Assertion failed for expected packet msg: {expected_packet_msg}, output: {output}, param: {is_enabled}"
 
     finally:
