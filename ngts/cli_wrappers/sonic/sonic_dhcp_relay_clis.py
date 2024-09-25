@@ -180,11 +180,8 @@ class SonicDhcpRelayCliMaster(SonicDhcpRelayCliDefault):
         if dhcpv6_servers:
             self.engine.run_cmd(f'sudo sonic-db-cli CONFIG_DB HSET "DHCP_RELAY|{vlan_iface}" '
                                 f'"dhcpv6_servers@" "{dhcpv6_servers}"')
-            self.engine.run_cmd(f'sudo sonic-db-cli CONFIG_DB HSET "VLAN|{vlan_iface}" '
-                                f'"dhcpv6_servers@" "{dhcpv6_servers}"')
         else:
             self.engine.run_cmd(f'sudo sonic-db-cli CONFIG_DB DEL "DHCP_RELAY|{vlan_iface}"')
-            self.engine.run_cmd(f'sudo sonic-db-cli CONFIG_DB HDEL "VLAN|{vlan_iface}" "dhcpv6_servers@"')
 
         self.engine.run_cmd('sudo config save -y')
         self.engine.run_cmd('sudo service dhcp_relay restart')

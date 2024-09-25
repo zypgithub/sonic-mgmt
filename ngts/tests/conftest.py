@@ -440,14 +440,15 @@ def config_check(engines, cli_objects, topology_obj, request, sonic_version):
             }
         }
 
-        logger.warning(f"Config check failed for {module_name}, "
-                       f"diff summary: {DeepDiff(pre_running_config, cur_running_config)}\n "
-                       f"full results: {check_result}")
-
+        config_check_error_message = (f"Config check failed for {module_name}, "
+                                      f"diff summary: {DeepDiff(pre_running_config, cur_running_config)}\n "
+                                      f"full results: {check_result}")
+        logger.warning(config_check_error_message)
         logger.info(f"DUT contains stale configurations after running {module_name}, reloading DUT to configurations "
                     f"before the test")
         save_config_db_json(dut_engine, dut_data["pre_running_config"])
         cli_objects.dut.general.reload_flow(topology_obj=topology_obj, reload_force=True)
+        raise Exception(config_check_error_message)
     else:
         logger.info("Config check passed for {}".format(module_name))
 

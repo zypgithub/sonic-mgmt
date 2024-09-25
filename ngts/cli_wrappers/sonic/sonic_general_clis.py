@@ -822,14 +822,6 @@ class SonicGeneralCliDefault(GeneralCliCommon):
 
         self.upload_config_db_file(topology_obj, setup_name, hwsku, platform, shared_path)
 
-        with allure.step("Disable autoneg on SW control ports if SW control feature enabled"):
-            if self.cli_obj.im.is_im_enabled():
-                port_supporting_im = self.cli_obj.im.get_ports_supporting_im(
-                    self.cli_obj.im.dut_ports_number_dict(topology_obj))
-                if port_supporting_im:
-                    with allure.step('Disable autoneg on ports supporting IM'):
-                        self.cli_obj.im.disable_autoneg_on_ports_supporting_im(port_supporting_im)
-
         if is_redmine_issue_active([3858467]) and platform == 'x86_64-mlnx_msn4700-r0':
             self.reboot_reload_flow(r_type=SonicConst.CONFIG_RELOAD_CMD, topology_obj=topology_obj, reload_force=True)
         else:
@@ -940,7 +932,8 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         if branch not in ['202205', '202211', '202305']:
             self.remove_syslog_telemetry_entry(setup_name, config_db_file_name)
         self.update_config_db_simx_setup_metadata_mac(setup_name, config_db_file_name)
-
+        self.disable_auto_neg_on_aoc_ports(setup_name, config_db_file_name, topology_obj)
+        self.restore_container_autorestart(setup_name, config_db_file_name)
         return config_db_file_name
 
     def update_config_db_simx_setup_metadata_mac(self, setup_name, config_db_json_file_name):
@@ -1049,6 +1042,35 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         if syslog_config_key in config_db_json:
             if "telemetry" in config_db_json[syslog_config_key]:
                 config_db_json[syslog_config_key].pop("telemetry")
+        return self.create_extended_config_db_file(setup_name, config_db_json, file_name=config_db_json_file_name)
+
+    def disable_auto_neg_on_aoc_ports(self, setup_name, config_db_json_file_name, topology_obj):
+        config_db_json = self.get_config_db_json_obj(setup_name, config_db_json_file_name=config_db_json_file_name)
+        with allure.step("Disable autoneg on AOC cables"):
+            if self.cli_obj.im.is_im_enabled():
+                port_supporting_im = self.cli_obj.im.get_ports_supporting_im(
+                    self.cli_obj.im.dut_ports_number_dict(topology_obj))
+                if port_supporting_im:
+                    aoc_cables = self.cli_obj.im.sw_controlled_aoc_cables(port_supporting_im)
+                    if aoc_cables:
+                        with allure.step('Disable autoneg on AOC ports if SW controlled'):
+                            port_key = "PORT"
+                            if port_key in config_db_json:
+                                for cable in aoc_cables:
+                                    if cable in config_db_json[port_key]:
+                                        config_db_json[port_key][cable]["autoneg"] = "off"
+        return self.create_extended_config_db_file(setup_name, config_db_json, file_name=config_db_json_file_name)
+
+    def restore_container_autorestart(self, setup_name, config_db_json_file_name):
+        config_db_json = self.get_config_db_json_obj(setup_name, config_db_json_file_name=config_db_json_file_name)
+        with allure.step("Restoring container autorestart"):
+            feature_key = "FEATURE"
+            if feature_key in config_db_json:
+                feature_status_dict = self.show_and_parse_feature_status()
+                for feature in feature_status_dict:
+                    if feature in config_db_json[feature_key]:
+                        auto_restart_state = feature_status_dict[feature]["AutoRestart"]
+                        config_db_json[feature_key][feature]["auto_restart"] = auto_restart_state
         return self.create_extended_config_db_file(setup_name, config_db_json, file_name=config_db_json_file_name)
 
     def update_config_db_metadata_mgmt_ip(self, setup_name, ip, file_name=SonicConst.CONFIG_DB_JSON):
@@ -1590,6 +1612,32 @@ class SonicGeneralCliDefault(GeneralCliCommon):
     def change_default_grub_timeout(self, timeout):
         cmd = "sudo sed -i 's/set timeout=5/set timeout={}/' /host/grub/grub.cfg".format(timeout)
         self.engine.run_cmd(cmd)
+
+    def delete_redis_table(self, table_name):
+        """
+        This method deletes the redis table from redis db
+        :param table_name: name of table to delete
+        """
+        table_keys = self.engine.run_cmd(f'sudo sonic-db-cli CONFIG_DB keys "{table_name}|*"').split("\n")
+        self.delete_redis_key_from_table(table_keys)
+
+    def delete_redis_key_from_table(self, table_keys):
+        """
+        This method deletes a list of redis keys from a redis table in the redis db
+        :param table_keys: list of table_keys to delete
+        """
+        for key in table_keys:
+            self.engine.run_cmd(f'sudo sonic-db-cli CONFIG_DB DEL "{key}"')
+
+    def delete_redis_sub_keys_from_table(self, changed_keys_mapping):
+        """
+        This method deletes from each key in the mapping, the list of redis sub-keys specified
+        :param changed_keys_mapping: A dictionary mapping between keys in the redis (i.e. SFLOW|global for 'global' key
+        of 'SFLOW' table) to sub-keys for deletion (i.e. sub_key 'polling_interval' of 'SFLOW|global')
+        """
+        for key, sub_keys in changed_keys_mapping.items():
+            for sub_key in sub_keys:
+                self.engine.run_cmd(f'sudo sonic-db-cli CONFIG_DB HDEL "{key}" "{sub_key}"')
 
 
 class SonicGeneralCli202012(SonicGeneralCliDefault):

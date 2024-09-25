@@ -13,6 +13,25 @@ SAMPLE_RATE_LIST = [SflowConsts.SAMPLE_RATE_2, SflowConsts.SAMPLE_RATE_3]
 COLLECTOR_WARNING_CONTENT = "Only 2 collectors can be configured, please delete one"
 
 
+@pytest.fixture(scope='function', autouse=True)
+def sflow_config_cleanup(engines, cli_objects, interfaces):
+    """
+    Pytest fixture used to clean-up extra configurations of sflow done in the test
+    :param engines: engines fixture
+    :param cli_objects: cli_objects fixture
+    :param interfaces: interfaces fixture
+    """
+    yield
+    cli_obj = cli_objects.dut
+    redis_changed_keys_dict = dict()
+    used_interfaces = [interfaces.dut_ha_1, interfaces.dut_ha_2]
+    for interface in used_interfaces:
+        intf_redis_key = SflowConsts.SFLOW_SESSION_IFACE_KEY_FORMAT.format(iface_name=interface)
+        redis_changed_keys_dict[intf_redis_key] = [SflowConsts.SAMPLE_RATE_REDIS_SUBKEY]
+    redis_changed_keys_dict[SflowConsts.SFLOW_GLOBAL_REDIS_KEY] = [SflowConsts.POLLING_INTERVAL_REDIS_SUBKEY]
+    cli_obj.general.delete_redis_sub_keys_from_table(redis_changed_keys_dict)
+
+
 @pytest.mark.build
 @pytest.mark.physical_coverage
 @pytest.mark.push_gate

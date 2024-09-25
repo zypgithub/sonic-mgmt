@@ -18,6 +18,7 @@ from ngts.config_templates.frr_config_template import FrrConfigTemplate
 from ngts.config_templates.doroce_config_template import DoroceConfigTemplate
 from ngts.constants.constants import SonicConst
 from ngts.constants.constants import SflowConsts
+from ngts.helpers import sflow_helper
 from ngts.tests.nightly.app_extension.app_extension_helper import APP_INFO, app_cleanup
 from ngts.constants.constants import P4SamplingEntryConsts
 from ngts.scripts.install_app_extension.install_app_extensions import install_all_supported_app_extensions
@@ -25,7 +26,6 @@ from ngts.conftest import update_topology_with_cli_class
 import ngts.helpers.acl_helper as acl_helper
 from ngts.helpers.acl_helper import ACLConstants
 from ngts.helpers.sonic_branch_helper import update_branch_in_topology, update_sanitizer_in_topology
-from ngts.helpers.sflow_helper import kill_sflowtool_process, remove_tmp_sample_file
 from ngts.helpers.vxlan_helper import clean_frr_vrf_config
 from ngts.helpers.rocev2_acl_counter_helper import copy_apply_rocev2_acl_config, remove_rocev2_acl_rule_and_talbe, \
     is_support_rocev2_acl_counter_feature
@@ -289,6 +289,7 @@ def push_gate_configuration(topology_obj, cli_objects, engines, interfaces, plat
         IpConfigTemplate.configuration(topology_obj, ip_config_dict)
         RouteConfigTemplate.configuration(topology_obj, static_route_config_dict)
         DoroceConfigTemplate.configuration(topology_obj, platform_params.platform)
+        sflow_helper.basic_sflow_config(cli_objects, interfaces)
         acl_helper.add_acl_table(cli_objects.dut, acl_table_config_list)
         acl_helper.add_acl_rules(engines.dut, cli_objects.dut, acl_table_config_list)
         if is_support_rocev2_acl_counter_feature(cli_objects, is_simx, base_sonic_branch):
@@ -345,6 +346,7 @@ def push_gate_configuration(topology_obj, cli_objects, engines, interfaces, plat
                     else:
                         install_all_supported_app_extensions(cli_objects.dut, app_extension_dict_path, platform_params,
                                                              'ptf-any', platform_params["host_name"])
+        randomly_enable_sflow_wjh(cli_objects)
 
     if run_test_only or full_flow_run:
         yield
@@ -380,6 +382,7 @@ def push_gate_configuration(topology_obj, cli_objects, engines, interfaces, plat
         VlanConfigTemplate.cleanup(topology_obj, vlan_config_dict)
         LagLacpConfigTemplate.cleanup(topology_obj, lag_lacp_config_dict)
         InterfaceConfigTemplate.cleanup(topology_obj, interfaces_config_dict)
+        sflow_helper.basic_sflow_cleanup(engines, cli_objects, interfaces)
         DoroceConfigTemplate.cleanup(topology_obj, platform_params.platform)
         if shared_params.app_ext_is_app_ext_supported:
             app_cleanup(engines.dut, cli_objects.dut, app_name)
@@ -452,49 +455,6 @@ def acl_table_config_list(engines, interfaces):
     yield acl_table_config_list
 
 
-@pytest.fixture(scope='package', autouse=True)
-def basic_sflow_configuration_for_function(engines, cli_objects, interfaces, push_gate_configuration):
-    """
-    Pytest fixture used to configure basic sflow configuration for test function
-    :param engines: engines fixture
-    :param cli_objects: cli_objects fixture
-    :param interfaces: interfaces fixture
-    """
-    cli_obj = cli_objects.dut
-    with allure.step(f"Start feature {SflowConsts.SFLOW_FEATURE_NAME}"):
-        cli_obj.sflow.enable_sflow_feature()
-        time.sleep(2)
-    with allure.step(f"Enable {SflowConsts.SFLOW_FEATURE_NAME} globally"):
-        cli_obj.sflow.enable_sflow()
-    with allure.step(f"Add collector {SflowConsts.COLLECTOR_0} with udp port {SflowConsts.DEFAULT_UDP}"):
-        cli_obj.sflow.add_collector(SflowConsts.COLLECTOR_0, SflowConsts.COLLECTOR_0_IP)
-    with allure.step("Disable all sflow interface"):
-        cli_obj.sflow.disable_all_sflow_interface()
-    with allure.step(f"Enable sflow interface {interfaces.dut_ha_1}"):
-        cli_obj.sflow.enable_sflow_interface(interfaces.dut_ha_1)
-    with allure.step(f"Enable sflow interface {interfaces.dut_ha_2}"):
-        cli_obj.sflow.enable_sflow_interface(interfaces.dut_ha_2)
-
-    yield
-
-    with allure.step(f"Delete collector {SflowConsts.COLLECTOR_0}"):
-        cli_obj.sflow.del_collector(SflowConsts.COLLECTOR_0)
-    with allure.step("Delete agent id"):
-        cli_obj.sflow.del_agent_id()
-    with allure.step(f"Disable sflow interface {interfaces.dut_ha_1}"):
-        cli_obj.sflow.disable_sflow_interface(interfaces.dut_ha_1)
-    with allure.step(f"Disable sflow interface {interfaces.dut_ha_2}"):
-        cli_obj.sflow.disable_sflow_interface(interfaces.dut_ha_2)
-    with allure.step(f"Disable {SflowConsts.SFLOW_FEATURE_NAME} globally"):
-        cli_obj.sflow.disable_sflow()
-    with allure.step("Kill all sflowtool process"):
-        kill_sflowtool_process(engines)
-    with allure.step(f"Stop feature {SflowConsts.SFLOW_FEATURE_NAME}"):
-        cli_obj.sflow.disable_sflow_feature()
-    with allure.step("Remove sflowtool sample files"):
-        remove_tmp_sample_file(engines)
-
-
 def check_feature_enabled(cli_objects, feature):
     """
     This function is used to check the feature installed status
@@ -505,8 +465,7 @@ def check_feature_enabled(cli_objects, feature):
     return status, msg
 
 
-@pytest.fixture(scope='package', autouse=True)
-def randomly_enable_sflow_wjh(cli_objects, basic_sflow_configuration_for_function):
+def randomly_enable_sflow_wjh(cli_objects):
     """
     Pytest fixture which is used to disable feature sflow and wjh then enable them randomly
     """

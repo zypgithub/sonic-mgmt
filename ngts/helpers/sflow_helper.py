@@ -1,4 +1,5 @@
 import logging
+import allure
 import re
 import time
 from datetime import datetime
@@ -37,10 +38,12 @@ def verify_sflow_configuration(cli_obj, status, **kwargs):
     assert re.search(fr"sFlow Admin State:\s+{status}", result), f"Sflow Admin State is not {status}"
     if 'polling_interval' in kwargs:
         logger.info(f"Verify sflow polling interval is {kwargs['polling_interval']}")
-        assert re.search(fr"sFlow Polling Interval:\s+{kwargs['polling_interval']}", result), f"Sflow Polling Interval is not {kwargs['polling_interval']}"
+        assert re.search(fr"sFlow Polling Interval:\s+{kwargs['polling_interval']}",
+                         result), f"Sflow Polling Interval is not {kwargs['polling_interval']}"
     if 'agent_id' in kwargs:
         logger.info(f"Verify sflow agent id is {kwargs['agent_id']}")
-        assert re.search(fr"sFlow AgentID:\s+{kwargs['agent_id']}", result), f"Sflow Agent Id is not {kwargs['agent_id']}"
+        assert re.search(fr"sFlow AgentID:\s+{kwargs['agent_id']}",
+                         result), f"Sflow Agent Id is not {kwargs['agent_id']}"
     if 'collector' in kwargs:
         collector = kwargs['collector']
         if len(collector) is None:
@@ -48,10 +51,15 @@ def verify_sflow_configuration(cli_obj, status, **kwargs):
             assert re.search("0 Collectors configured", result), " Expected 0 collectors , but collectors are present"
         else:
             logger.info(fr"Verify {len(collector)} sflow collector configured")
-            assert re.search(f"{len(collector)} Collectors configured:", result), f"Number of Sflow collectors should be {len(collector)}"
+            assert re.search(f"{len(collector)} Collectors configured:",
+                             result), f"Number of Sflow collectors should be {len(collector)}"
             for col in collector:
-                e1 = re.search(fr"Name:\s+{SflowConsts.COLLECTOR[col]['name']}\s+IP addr:\s{SflowConsts.COLLECTOR[col]['ip']}\s+UDP port:\s{SflowConsts.COLLECTOR[col]['port']}", result)
-                e2 = re.search(fr"Name:\s+{SflowConsts.COLLECTOR[col]['name']}\s+IP addr:\s{SflowConsts.COLLECTOR[col]['ipv6']}\s+UDP port:\s{SflowConsts.COLLECTOR[col]['port']}", result)
+                e1 = re.search(
+                    fr"Name:\s+{SflowConsts.COLLECTOR[col]['name']}\s+IP addr:\s{SflowConsts.COLLECTOR[col]['ip']}\s+UDP port:\s{SflowConsts.COLLECTOR[col]['port']}",
+                    result)
+                e2 = re.search(
+                    fr"Name:\s+{SflowConsts.COLLECTOR[col]['name']}\s+IP addr:\s{SflowConsts.COLLECTOR[col]['ipv6']}\s+UDP port:\s{SflowConsts.COLLECTOR[col]['port']}",
+                    result)
                 assert (e1 or e2), f"col {col} is not properly Configured"
 
 
@@ -65,7 +73,8 @@ def verify_sflow_interface_configuration(cli_obj, interface_name, status, sample
     """
     logger.info(f"Verify sflow interface {interface_name} status")
     show_sflow_intf = cli_obj.sflow.show_sflow_interface()
-    assert re.search(fr"{interface_name}\s+\|\s+{status}\s+\|\s+{sample_rate}", show_sflow_intf), f"Interface {interface_name} is not properly configured"
+    assert re.search(fr"{interface_name}\s+\|\s+{status}\s+\|\s+{sample_rate}",
+                     show_sflow_intf), f"Interface {interface_name} is not properly configured"
 
 
 def get_agent_id_from_hsflowd(engines):
@@ -94,7 +103,8 @@ def verify_sflow_sample_agent_id(engines, collector, agent_id_addr):
     sflowtool_pid = start_sflowtool_process(engines, collector)
     while count < 10:
         time.sleep(1)
-        result = hb_engine.run_cmd(f"grep -ia {agent_id_addr} {SflowConsts.COLLECTOR[collector]['sample_file']} | wc -l")
+        result = hb_engine.run_cmd(
+            f"grep -ia {agent_id_addr} {SflowConsts.COLLECTOR[collector]['sample_file']} | wc -l")
         if int(result) > 0:
             break
         count += 1
@@ -117,7 +127,8 @@ def start_sflowtool_process(engines, collector):
     hb_engine = engines.hb
 
     logger.info("Start sflowtool")
-    result = hb_engine.run_cmd(f"{SflowConsts.SFLOW_TOOL_PRETTY + str(SflowConsts.COLLECTOR[collector]['port'])} > {SflowConsts.COLLECTOR[collector]['sample_file']} &")
+    result = hb_engine.run_cmd(
+        f"{SflowConsts.SFLOW_TOOL_PRETTY + str(SflowConsts.COLLECTOR[collector]['port'])} > {SflowConsts.COLLECTOR[collector]['sample_file']} &")
     sflowtool_pid = result.split()[-1]
     return sflowtool_pid
 
@@ -147,6 +158,56 @@ def remove_tmp_sample_file(engines):
     hb_engine.run_cmd(f"rm -rf {SflowConsts.COLLECTOR[SflowConsts.COLLECTOR_0]['sample_file']}")
     logger.info(f"Remove {SflowConsts.COLLECTOR[SflowConsts.COLLECTOR_1]['sample_file']}")
     hb_engine.run_cmd(f"rm -rf {SflowConsts.COLLECTOR[SflowConsts.COLLECTOR_1]['sample_file']}")
+
+
+def basic_sflow_config(cli_objects, interfaces):
+    """
+    Pytest fixture used to configure basic sflow configuration for test function
+    :param cli_objects: cli_objects fixture
+    :param interfaces: interfaces fixture
+    """
+    cli_obj = cli_objects.dut
+    with allure.step(f"Applying sflow configuration"):
+        with allure.step(f"Start feature {SflowConsts.SFLOW_FEATURE_NAME}"):
+            cli_obj.sflow.enable_sflow_feature()
+            time.sleep(2)
+        with allure.step(f"Enable {SflowConsts.SFLOW_FEATURE_NAME} globally"):
+            cli_obj.sflow.enable_sflow()
+        with allure.step(f"Add collector {SflowConsts.COLLECTOR_0} with udp port {SflowConsts.DEFAULT_UDP}"):
+            cli_obj.sflow.add_collector(SflowConsts.COLLECTOR_0, SflowConsts.COLLECTOR_0_IP)
+        with allure.step("Disable all sflow interface"):
+            cli_obj.sflow.disable_all_sflow_interface()
+        with allure.step(f"Enable sflow interface {interfaces.dut_ha_1}"):
+            cli_obj.sflow.enable_sflow_interface(interfaces.dut_ha_1)
+        with allure.step(f"Enable sflow interface {interfaces.dut_ha_2}"):
+            cli_obj.sflow.enable_sflow_interface(interfaces.dut_ha_2)
+
+
+def basic_sflow_cleanup(engines, cli_objects, interfaces):
+    """
+    Pytest fixture used to clean-up the basic sflow configuration from basic_sflow_config
+    :param engines: engines fixture
+    :param cli_objects: cli_objects fixture
+    :param interfaces: interfaces fixture
+    """
+    cli_obj = cli_objects.dut
+    with allure.step(f"Performing sflow configuration cleanup"):
+        with allure.step(f"Delete collector {SflowConsts.COLLECTOR_0}"):
+            cli_obj.sflow.del_collector(SflowConsts.COLLECTOR_0)
+        with allure.step("Delete agent id"):
+            cli_obj.sflow.del_agent_id()
+        with allure.step(f"Disable sflow interface {interfaces.dut_ha_1}"):
+            cli_obj.sflow.disable_sflow_interface(interfaces.dut_ha_1)
+        with allure.step(f"Disable sflow interface {interfaces.dut_ha_2}"):
+            cli_obj.sflow.disable_sflow_interface(interfaces.dut_ha_2)
+        with allure.step(f"Disable {SflowConsts.SFLOW_FEATURE_NAME} globally"):
+            cli_obj.sflow.disable_sflow()
+        with allure.step("Kill all sflowtool process"):
+            kill_sflowtool_process(engines)
+        with allure.step(f"Stop feature {SflowConsts.SFLOW_FEATURE_NAME}"):
+            cli_obj.sflow.disable_sflow_feature()
+        with allure.step("Remove sflowtool sample files"):
+            remove_tmp_sample_file(engines)
 
 
 def analyze_sample(sample_file, interface_name=None, loopback=False):
@@ -524,9 +585,11 @@ def analyze_time_stamp(time_stamp_list, polling_interval, sample_file):
     deviation_1 = abs(delta_t1 - polling_interval)
     deviation_2 = abs(delta_t2 - polling_interval)
     if deviation_1 > SflowConsts.POLLING_INTERVAL_DEVIATION_TOLERANCE:
-        logger.warning(f"There is a big deviation: {deviation_1} seconds, greater than {SflowConsts.POLLING_INTERVAL_DEVIATION_TOLERANCE}")
+        logger.warning(
+            f"There is a big deviation: {deviation_1} seconds, greater than {SflowConsts.POLLING_INTERVAL_DEVIATION_TOLERANCE}")
     if deviation_2 > SflowConsts.POLLING_INTERVAL_DEVIATION_TOLERANCE:
-        logger.warning(f"There is a big deviation: {deviation_2} seconds, greater than {SflowConsts.POLLING_INTERVAL_DEVIATION_TOLERANCE}")
+        logger.warning(
+            f"There is a big deviation: {deviation_2} seconds, greater than {SflowConsts.POLLING_INTERVAL_DEVIATION_TOLERANCE}")
 
 
 def copy_sample_file_to_ngts_docker(engines, sample_file):
@@ -537,7 +600,8 @@ def copy_sample_file_to_ngts_docker(engines, sample_file):
     """
     hb_engine = engines.hb
     logger.info(f"Start copying {sample_file} from hb to ngts docker")
-    hb_engine.copy_file(source_file=sample_file, dest_file=sample_file, file_system='/', direction="get", overwrite_file=True, verify_file=False)
+    hb_engine.copy_file(source_file=sample_file, dest_file=sample_file, file_system='/', direction="get",
+                        overwrite_file=True, verify_file=False)
 
 
 def get_random_port(topology_obj):
@@ -572,13 +636,15 @@ def verify_sflow_sample_polling_interval(engines, topology_obj, collector, polli
     if polling_interval == 0:
         logger.info(f"Collect {SflowConsts.POLLING_INTF_0_WAIT_TIME} seconds when polling interval is set to 0")
         time.sleep(SflowConsts.POLLING_INTF_0_WAIT_TIME)
-        result = hb_engine.run_cmd(f"grep -ia '\"{random_port}\"' {SflowConsts.COLLECTOR[collector]['sample_file']} | wc -l")
+        result = hb_engine.run_cmd(
+            f"grep -ia '\"{random_port}\"' {SflowConsts.COLLECTOR[collector]['sample_file']} | wc -l")
         assert int(result) == 0, f"Sflow samples are received at polling interval 0"
         kill_sflowtool_process(engines, sflowtool_pid)
         return
     # polling_interval * 5 is for reboot test, polling_interval * 4 is enough for normal test case
     while count < polling_interval * 5:
-        result = hb_engine.run_cmd(f"grep -ia '\"{random_port}\"' {SflowConsts.COLLECTOR[collector]['sample_file']} | wc -l")
+        result = hb_engine.run_cmd(
+            f"grep -ia '\"{random_port}\"' {SflowConsts.COLLECTOR[collector]['sample_file']} | wc -l")
         # 3 captured samples are enough for calculate time stamp
         if int(result) >= 3:
             break
@@ -591,7 +657,8 @@ def verify_sflow_sample_polling_interval(engines, topology_obj, collector, polli
     analyze_time_stamp(time_stamp_list, polling_interval, SflowConsts.COLLECTOR[collector]['sample_file'])
 
 
-def send_traffic(engines, interfaces, topology_obj, source_iface_mac, dest_iface_mac, loopback=False, src_iface_name=None):
+def send_traffic(engines, interfaces, topology_obj, source_iface_mac, dest_iface_mac, loopback=False,
+                 src_iface_name=None):
     """
     This method is used to send traffic
     :param interfaces: interface fixture
@@ -659,7 +726,8 @@ def handle_and_send_scapy_python_script(engines, random_pkt, src_iface_name):
 
 
 @retry(Exception, tries=5, delay=5)
-def verify_flow_sample_received(engines, interfaces, topology_obj, collector, sample_rate, source_iface_mac, dest_iface_mac, sample_exist=True, loopback=False, src_iface_name=None):
+def verify_flow_sample_received(engines, interfaces, topology_obj, collector, sample_rate, source_iface_mac,
+                                dest_iface_mac, sample_exist=True, loopback=False, src_iface_name=None):
     """
     This method is used to verify flow sample in the sample file
     :param engines: engines fixture
@@ -677,7 +745,8 @@ def verify_flow_sample_received(engines, interfaces, topology_obj, collector, sa
     hb_engine = engines.hb
 
     sflowtool_pid = start_sflowtool_process(engines, collector)
-    send_traffic(engines, interfaces, topology_obj, source_iface_mac, dest_iface_mac, loopback=loopback, src_iface_name=src_iface_name)
+    send_traffic(engines, interfaces, topology_obj, source_iface_mac, dest_iface_mac, loopback=loopback,
+                 src_iface_name=src_iface_name)
 
     # 500 ms is for three main processes
     # 1. Sflow docker collect, process and send  sflow samples
@@ -694,14 +763,16 @@ def verify_flow_sample_received(engines, interfaces, topology_obj, collector, sa
         _, flow_sample_count = analyze_sample(SflowConsts.COLLECTOR[collector]['sample_file'], loopback=loopback)
         count = SflowConsts.SEND_PACKET_NUM // sample_rate
         logger.info("##-------------------------------##")
-        logger.info(f"There should be at least {count}, at most {count+1} flow samples due to the sflow random sample algorithm")
+        logger.info(
+            f"There should be at least {count}, at most {count + 1} flow samples due to the sflow random sample algorithm")
         logger.info(f"{flow_sample_count} flow sample received in {SflowConsts.COLLECTOR[collector]['sample_file']}")
         logger.info("##-------------------------------##")
 
         assert count <= flow_sample_count <= count + 1, f"Received {flow_sample_count} flow samples which is not in correct range!"
     else:
         logger.info("Start analyzing flow samples")
-        flow_sample_count = hb_engine.run_cmd(f"grep FLOWSAMPLE {SflowConsts.COLLECTOR[collector]['sample_file']} | wc -l")
+        flow_sample_count = hb_engine.run_cmd(
+            f"grep FLOWSAMPLE {SflowConsts.COLLECTOR[collector]['sample_file']} | wc -l")
         logger.info("##-------------------------------##")
         logger.info(f"There should be 0 flow samples")
         logger.info(f"{flow_sample_count} flow sample received in {SflowConsts.COLLECTOR[collector]['sample_file']}")
