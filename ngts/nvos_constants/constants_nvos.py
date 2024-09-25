@@ -681,7 +681,7 @@ class IpConsts:
     MAX_IPV6_GROUP_VALUE = 65535
     ARP_TIMEOUT = "arp-timeout"
     AUTOCONF = "autoconf"
-    PYTHON_PATH = '/auto/app/Python-3.8.8/bin/python3.8'
+    PYTHON_PATH = '/auto/app/Python-2.7.9/bin/python2.7'
     IP_LINK_SET_INTERFACE = 'sudo ip link set {interface} {state}'
     MAD_TEMPLATE = 'sudo {python_path} {nvmad_path}/nvmad.py --lid {lid} --mad MAD.GMP.VS.SwitchNetworkInfo --Ca {card} --modifier {modifier}'
     IPV4_PREFIX = 'MAD.GMP.VS.SwitchNetworkInfo.IPv4[0].ipv4'
