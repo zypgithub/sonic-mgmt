@@ -82,6 +82,9 @@
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_gnmi.cases </cases>
 	</test>
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_ssh_pka.cases </cases>
+	</test>
     <test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_centralized_flows.cases </cases>
     </test>
