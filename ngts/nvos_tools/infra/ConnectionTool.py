@@ -91,13 +91,13 @@ class ConnectionTool:
             try:
                 logger.info('Try login with given credentials')
                 serial_engine = ConnectionTool.create_serial_engine(topology_obj, ip, username, password)
-                serial_engine.create_serial_engine(disconnect_existing_login=force_new_login, wait_for_hot_key=device.switch_type != 'ETH')
+                serial_engine.create_serial_engine(disconnect_existing_login=force_new_login)
             except Exception as e:
                 logger.info('Could not login. Try login with default NVOS credentials')
                 serial_engine = ConnectionTool.create_serial_engine(topology_obj, ip,
                                                                     username=device.default_username,
                                                                     password=device.default_password)
-                serial_engine.create_serial_engine(disconnect_existing_login=force_new_login, wait_for_hot_key=device.switch_type != 'ETH')
+                serial_engine.create_serial_engine(disconnect_existing_login=force_new_login)
             return serial_engine
 
     @staticmethod

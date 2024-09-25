@@ -118,7 +118,7 @@ class NvueBaseCli:
         :param args: arguments to the example above
         :param expect_reboot: if True, will expect the machine to reload as result of the command, and reconnect engines
         :param force: if True, will add "force" argument to the command
-        :param topology_obj: if exists, waits for 'System is ready"
+        :param topology_obj: if exists, waits for 'System is ready'
         """
         cmd = "nv action install {fae} platform {args} {force}".format(fae="fae" if fae_command else '', args=args, force="force" if force else '')
         logging.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
