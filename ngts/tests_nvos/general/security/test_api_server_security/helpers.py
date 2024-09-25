@@ -1,6 +1,5 @@
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.nvos_constants.constants_nvos import TestFlowType
 from ngts.nvos_tools.infra.CurlTool import CurlTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
@@ -12,6 +11,7 @@ from ngts.tests_nvos.general.security.certificate.helpers import import_test_cer
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
 from ngts.tests_nvos.general.security.test_api_server_security.constants import API_INSTALLED, INSTALLED, TEST_CERTS, \
     ApiConsts, CA_CERTIFICATE
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tests_nvos.system.gnmi.helpers import get_scp_player
 from ngts.tools.test_utils import allure_utils as allure
 
@@ -91,9 +91,7 @@ def verify_api_connection(test_flow, dut: LinuxSshEngine, user: UserInfo, expect
             if test_flow == TestFlowType.ALL_TYPES or test_flow == TestFlowType.GOOD_FLOW:
                 with allure.independent_step('goodflow - use suitable cert & cacert on client side'):
                     _run_curl_and_verify(True, False, matching_ca, matching_cert)
-            # TODO: remove the bug check once fixed and closed
-            badflow_bug_active = is_redmine_issue_active([4064106])
-            if badflow_bug_active and badflow_bug_active[0]:
+            if is_bug_active(4064106):  # TODO: remove the bug check once fixed and closed
                 try:
                     with allure.step('skip badflow check - bug #4064106 still active - [Functional] [mTLS] api mtls is working with an imported ca-cert but not set to api mtls'):
                         raise Exception('skip badflow check - bug #4064106 still active - [Functional] [mTLS] api mtls is working with an imported ca-cert but not set to api mtls')

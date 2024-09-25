@@ -11,6 +11,7 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.system.System import System
+from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
 from ngts.tests_nvos.general.security.test_api_server_security.constants import ApiConsts, TEST_CERTS, CERTIFICATE
@@ -185,6 +186,7 @@ def test_api_mtls_delete_installed_ca(test_flow, engines, local_adminuser, impor
         verify_api_connection(test_flow, engines.dut, local_adminuser, True, server_cert, server_ca)
 
 
+@pytest.mark.timeout(20 * MINUTE, func_only=True)
 @pytest.mark.mtls
 @pytest.mark.security
 @pytest.mark.parametrize('reboot_flow', RebootTestFlowType.ALL_TYPES)

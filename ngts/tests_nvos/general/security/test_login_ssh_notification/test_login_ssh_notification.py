@@ -107,7 +107,7 @@ def change_username_password(engines, username, curr_password, new_password):
         time.sleep(Consts.PASSWORD_UPDATE_WAIT_TIME)
 
 
-def validate_ssh_login_notifications_default_fields(engines, login_source_ip_address, username, password, capability,
+def validate_ssh_login_notifications_default_fields(engines, login_source_ip_addresses, username, password, capability,
                                                     check_password_change_msg=False,
                                                     check_role_change_msg=False,
                                                     already_login_failed=0,
@@ -128,7 +128,7 @@ def validate_ssh_login_notifications_default_fields(engines, login_source_ip_add
             'number_of_successful_connections_in_the_last_record_period'
         ]
     :param engines: fixture containing all engines
-    :param login_source_ip_address: ip address initiating the ssh connection in the test
+    :param login_source_ip_addresses: ip address initiating the ssh connection in the test
     :param username: username to connect with to switch
     :param password: the password for username
     :param capability: the username capability, could be one of [admin, monitor]
@@ -185,14 +185,14 @@ def validate_ssh_login_notifications_default_fields(engines, login_source_ip_add
 
     with allure.step("Validating IP address is same as this test IP address"):
         with allure.step("Validating successful IP address"):
-            assert second_login_notification_message[Consts.LAST_SUCCESSFUL_LOGIN_IP] in login_source_ip_address, \
+            assert second_login_notification_message[Consts.LAST_SUCCESSFUL_LOGIN_IP] in login_source_ip_addresses, \
                 f"Not same login IP Address, \n" \
-                f"Expected: {login_source_ip_address} \n" \
+                f"Expected: {login_source_ip_addresses} \n" \
                 f"Actual: {second_login_notification_message[Consts.LAST_SUCCESSFUL_LOGIN_IP]}"
         with allure.step("Validating unsuccessful IP address"):
-            assert second_login_notification_message[Consts.LAST_UNSUCCESSFUL_LOGIN_IP] in login_source_ip_address, \
+            assert second_login_notification_message[Consts.LAST_UNSUCCESSFUL_LOGIN_IP] in login_source_ip_addresses, \
                 f"Not same unsuccessful login IP Address\n" \
-                f"Expected: {login_source_ip_address} \n" \
+                f"Expected: {login_source_ip_addresses} \n" \
                 f"Actual: {second_login_notification_message[Consts.LAST_UNSUCCESSFUL_LOGIN_IP]}"
 
     with allure.step("Validating password or capability changes"):
@@ -407,7 +407,7 @@ def test_login_ssh_notification_performance(engines, login_source_ip_addresses, 
 @pytest.mark.login_ssh_notification
 @pytest.mark.checklist
 @pytest.mark.cumulus
-def test_ssh_login_notifications_diff_user_notification(engines, login_source_ip_address):
+def test_ssh_login_notifications_diff_user_notification(engines, login_source_ip_addresses):
     '''
     @summary: in this test case we want to validate login failure of one user is not displayed on another user
     '''
@@ -444,7 +444,7 @@ def test_ssh_login_notifications_diff_user_notification(engines, login_source_ip
                                    second_login_notification_message[Consts.NUMBER_OF_UNSUCCESSFUL_ATTEMPTS_SINCE_LAST_LOGIN])
 
     with allure.step("Connecting to switch and check the failure message with the newly created user"):
-        validate_ssh_login_notifications_default_fields(engines, login_source_ip_address,
+        validate_ssh_login_notifications_default_fields(engines, login_source_ip_addresses,
                                                         username=user_name,
                                                         password=password,
                                                         already_login_failed=random_number_of_connection_fails,

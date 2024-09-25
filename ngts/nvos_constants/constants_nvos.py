@@ -1,6 +1,8 @@
 import os
 from enum import Enum
 
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
+
 
 class DatabaseConst:
     APPL_DB_NAME = "APPL_DB"
@@ -1236,7 +1238,7 @@ class OperationTimeConsts:
     TEST_NAME_COL = 'test_name'
     SESSION_ID_COL = 'session_id'
     DATE_COL = 'date'
-    THRESHOLDS = {'reboot': 180,
+    THRESHOLDS = {'reboot': 250 if is_bug_active(4074566) else 180,     # TODO: revert once bug closed
                   'julietscaleout_reboot': 500,  # Currently there is a bug on this. Time needs to be decreased once fixed.
                   'julietscaleout reset factory': 550,  # Currently there is a bug on this. Time needs to be decreased once fixed.
                   'reset factory': 500,
