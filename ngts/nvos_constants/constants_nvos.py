@@ -294,6 +294,8 @@ class SystemConsts:
     DATE_TIME = 'date-time'
     VERSION = 'version'
     SECURITY = 'security'
+    CONTACT = 'contact'
+    LOCATION = 'location'
     TECHSUPPORT_FILES_PATH = '/host/dump/'
     TECHSUPPORT_EMPTY_FILES_TO_IGNORE = ['queue.counters_2', 'queue.counters_1.0', 'swapon',
                                          'queue.counters_1', 'queue.counters_2.0', 'queue.counters_1.1', 'queue.counters_2.1']
@@ -473,23 +475,20 @@ class SystemConsts:
     EXTERNAL_API_CONN_WRITING = 'writing'
 
     ZTP_SERVICE = 'service'
-    ZTP_STATE = 'state'
     ZTP_STATUS = 'status'
     ZTP_CONFIG_SAVE = 'config-save'
-    ZTP_OUTPUT_FIELDS = [ZTP_SERVICE, ZTP_STATE, ZTP_STATUS, ZTP_CONFIG_SAVE]
-    ZTP_DEFAULT_SERVICE = 'active-discovery'
-    ZTP_DEFAULT_STATE = 'enabled'
-    ZTP_DEFAULT_STATUS = 'not-started'
+    ZTP_OUTPUT_FIELDS = [ZTP_SERVICE, ZTP_STATUS, ZTP_CONFIG_SAVE]
+    ZTP_DEFAULT_SERVICE = 'enabled'
+    ZTP_DEFAULT_STATUS = 'discovering'
     ZTP_DEFAULT_CONFIG_SAVE = 'disabled'
-    ZTP_DEFAULT_VALUES = [ZTP_DEFAULT_SERVICE, ZTP_DEFAULT_STATE, ZTP_DEFAULT_STATUS, ZTP_DEFAULT_CONFIG_SAVE]
-    ZTP_CONFIG_SAVE_SERVICE = 'inactive'
-    ZTP_CONFIG_SAVE_STATE = 'disabled'
-    ZTP_CONFIG_SAVE_STATUS = 'not-started'
+    ZTP_DEFAULT_VALUES = [ZTP_DEFAULT_SERVICE, ZTP_DEFAULT_STATUS, ZTP_DEFAULT_CONFIG_SAVE]
+    ZTP_CONFIG_SAVE_SERVICE = 'disabled'
+    ZTP_CONFIG_SAVE_STATUS = 'aborted'
     ZTP_CONFIG_SAVE = 'disabled'
     ZTP_STATUS_ENABLED = 'enabled'
-    ZTP_AFTER_CONFIG_SAVE_VALUES = [ZTP_CONFIG_SAVE_SERVICE, ZTP_CONFIG_SAVE_STATE, ZTP_CONFIG_SAVE_STATUS,
+    ZTP_AFTER_CONFIG_SAVE_VALUES = [ZTP_CONFIG_SAVE_SERVICE, ZTP_CONFIG_SAVE_STATUS,
                                     ZTP_CONFIG_SAVE]
-    ZTP_CONFIG_SAVE_VALUES = [ZTP_CONFIG_SAVE_SERVICE, ZTP_CONFIG_SAVE_STATE, ZTP_CONFIG_SAVE_STATUS,
+    ZTP_CONFIG_SAVE_VALUES = [ZTP_CONFIG_SAVE_SERVICE, ZTP_CONFIG_SAVE_STATUS,
                               ZTP_STATUS_ENABLED]
     ZTP_DEFAULT_LOG_FILE = '/var/log/ztp.log'
     DUMMY_JSON = 'dummy.json'
@@ -506,8 +505,8 @@ class SystemConsts:
     CONNECTIVITY_IPV4_IPV6 = 'ping_ipv4_ipv6.json'
     NEGATIVE_CONNECTIVITY = 'negative_connectivity.json'
     COMPLEX = 'complex.json'
-    ZTP_STATUS_IN_PROGRESS = 'in-progress'
-    ZTP_STATUS_SUCESS = 'success'
+    ZTP_STATUS_RUNNING = 'running'
+    ZTP_STATUS_SUCCESS = 'success'
     ZTP_STATUS_FAILED = 'failed'
     HTTP_SERVER = 'http://nbu-nfs.mellanox.com'
     VERIFICATION_ZTP_PATH = '/auto/sw_system_project/NVOS_INFRA/ztp/'
