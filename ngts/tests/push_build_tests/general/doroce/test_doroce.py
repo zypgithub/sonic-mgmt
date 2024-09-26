@@ -72,25 +72,7 @@ def check_feature_status(cli_objects):
 
 
 @pytest.fixture(scope='module', autouse=True)
-def pre_configuration_for_doroce(cli_objects, interfaces, check_feature_status):
-    """
-    This fixture is to config the a small shaper value on the egress port to create the buffer congestion.
-    """
-    port_scheduler = "port_scheduler"
-    with allure.step("Config the shaper of the port"):
-        cli_objects.dut.interface.config_port_scheduler(port_scheduler, SonicConst.MIN_SHAPER_RATE_BPS)
-        cli_objects.dut.interface.config_port_qos_map(interfaces.dut_ha_2, port_scheduler)
-
-    yield
-
-    with allure.step("delete configured qos map and port scheduler"):
-        cli_objects.dut.interface.del_port_qos_map(interfaces.dut_ha_2, port_scheduler)
-        cli_objects.dut.interface.del_port_scheduler(port_scheduler)
-
-
-@pytest.fixture(scope='module', autouse=True)
-def check_no_roce_configuration(cli_objects, interfaces, players, is_simx, platform_params,
-                                pre_configuration_for_doroce):
+def check_no_roce_configuration(cli_objects, interfaces, players, is_simx, platform_params):
     is_doroce_enabled = cli_objects.dut.doroce.is_doroce_configuration_enabled()
     if is_doroce_enabled:
         cli_objects.dut.doroce.disable_doroce()
