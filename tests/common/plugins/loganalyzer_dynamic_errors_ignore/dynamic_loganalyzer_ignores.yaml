@@ -1814,6 +1814,27 @@
     - tests/nightly/lag/test_lag.py::test_lag_members_scale
     - tests/nightly/lag/test_lag.py::test_port_cannot_be_added_to_lag
 
+# Ignore errors based on analysis of RM issue 3979306/3979309/3979153
+- Errors_list:
+  - '.* ERR systemctl.*: Job for radv\.service canceled.*'
+  - '.* ERR systemctl.*: Job for pmon\.service canceled.*'
+  - '.* ERR systemctl.*: Job for syncd\.service canceled.*'
+  - '.* ERR systemctl.*: Job for dhcp_relay\.service canceled.*'
+  - '.* ERR syncd#.*: \[SAI_INTERFACE_QUERY.*\.ERR\] .*SAI API .* is out of range.*'
+  - '.* ERR swss#orchagent: :- isPathTracingSupported: Failed to get a list of supported switch capabilities. Error.*'
+  Conditions:
+  - Affected_test_cases:
+    - tests/nightly/show_techsupport/test_techsupport.py
+
+# Ignore errors based on analysis of RM issue 4004774
+- Errors_list:
+  - '.* ERR systemd.*:.* Failed to start syncd.service.*'
+  - '.* ERR systemctl.*: Job for syncd\.service failed because the control process exited with error code.*'
+  - '.* ERR systemctl.*: See \"systemctl status syncd\.service\" and \"journalctl -xeu syncd\.service\" for details.*'
+  Conditions:
+  - Affected_test_cases:
+    - tests/nightly/logging/test_log_analyzer_errors_during_deploy_sonic.py
+
 - Errors_list:
   - '.*ERR systemd\[\d+\]: Failed to start rsyslog.service - System Logging Service.*'
   - '.*ERR systemctl\[\d+\]: Job for rsyslog.service failed because the control process exited with error code.*'
