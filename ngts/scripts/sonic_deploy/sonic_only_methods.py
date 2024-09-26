@@ -553,12 +553,6 @@ class SonicInstallationSteps:
                         f'sudo sonic-cfggen -j /tmp/{config_file_name} --write-to-db', validate=True)
                     general_cli_obj.save_configuration()
 
-            # Enable IM
-            for dut in setup_info['duts']:
-                cli = dut['cli_obj']
-                cli.cli_obj.im.enable_im(topology_obj=topology_obj, platform_params=platform_params,
-                                         chip_type=chip_type, enable_im=True, is_community=True)
-
             for dut in setup_info['duts']:
                 SonicInstallationSteps.post_install_check_sonic(sonic_topo=sonic_topo, dut_name=dut['dut_name'],
                                                                 ansible_path=ansible_path)
@@ -723,9 +717,9 @@ class SonicInstallationSteps:
                                                     reboot_after_install=reboot_after_install,
                                                     is_shutdown_bgp=is_shutdown_bgp, fw_pkg_path=fw_pkg_path, cli=cli)
 
-                cli.cli_obj.im.enable_im(topology_obj=topology_obj, platform_params=platform_params,
-                                         chip_type=chip_type, enable_im=True,
-                                         is_community=is_community(sonic_topo))
+                if not is_community(sonic_topo):
+                    cli.cli_obj.im.enable_im(topology_obj=topology_obj, platform_params=platform_params,
+                                             chip_type=chip_type, enable_im=True)
 
                 if is_community(sonic_topo):
                     SonicInstallationSteps.post_install_check(ansible_path=ansible_path, dut_name=dut_name,

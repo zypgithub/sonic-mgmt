@@ -299,6 +299,7 @@ class LabGraph(object):
             band_width = link["BandWidth"]
             vlan_ID = link["VlanID"]
             vlan_mode = link["VlanMode"]
+            auto_neg = link.get("AutoNeg")
 
             if start_device not in links:
                 links[start_device] = {}
@@ -314,11 +315,16 @@ class LabGraph(object):
                 "peerport": end_port,
                 "speed": band_width,
             }
+
             links[end_device][end_port] = {
                 "peerdevice": start_device,
                 "peerport": start_port,
                 "speed": band_width,
             }
+
+            if auto_neg:
+                links[start_device][start_port].update({"auto_neg": auto_neg})
+                links[end_device][end_port].update({"auto_neg": auto_neg})
 
             port_vlans[start_device][start_port] = {
                 "mode": vlan_mode,
