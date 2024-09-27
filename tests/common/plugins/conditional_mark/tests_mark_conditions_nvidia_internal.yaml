@@ -1363,12 +1363,6 @@ syslog/test_syslog_source_ip.py::test_syslog_config_work_after_reboot:
     conditions:
       - "https://redmine.mellanox.com/issues/3981121 and ('r-bobcat' in testbed)"
 
-system_health/test_system_health.py::test_service_checker:
-  skip:
-    reason: "Testcase skipped due to RM issue:https://redmine.mellanox.com/issues/3948768"
-    conditions:
-      - "https://redmine.mellanox.com/issues/3948768 and 'sn4280' in platform "
-
 system_health/test_system_health.py::test_device_checker:
   skip:
     reason: "Test fails on r-bobcat-01 due to bad psu"
@@ -1550,12 +1544,6 @@ platform_tests/mellanox/test_reboot_cause.py:
     reason: "bobcat driver doesn't support reset_from_asic and reset_reload_bios"
     conditions:
     - "'sn4280' in platform"
-
-memory_checker/test_memory_checker.py:
-  skip:
-    reason: "Skip due to bug of https://redmine.mellanox.com/issues/3948768"
-    conditions:
-    - "https://redmine.mellanox.com/issues/3948768 and 'sn4280' in platform "
 
 platform_tests/api/test_sfp.py::TestSfpApi::test_get_transceiver_bulk_status:
   skip:
