@@ -554,7 +554,7 @@ class AdvancedReboot:
         server = self.tbinfo["server"]
         inv_files = get_inventory_files(self.request)
         server_port = get_group_visible_vars(inv_files, server).get('external_port')
-        tcpdump_path = f"/tmp/server_port_tcpdump_{self.request.node.name}"
+        tcpdump_path = f"/tmp/{self.tbinfo['conf-name']}_server_port_tcpdump_{self.request.node.name}"
         if self.vmhost.shell(f"ls {tcpdump_path}", module_ignore_errors=True)['rc'] != 0:
             self.vmhost.shell(f"mkdir {tcpdump_path}")
         for rebootOper in self.rebootData['sadList']:
@@ -618,7 +618,8 @@ class AdvancedReboot:
             failed_list = [(testcase, failures) for testcase, failures in list(test_results.items())
                            if len(failures) != 0]
             if len(failed_list) == 0:
-                self.vmhost.shell("rm -rf /tmp/server_port_tcpdump*", module_ignore_errors=True)
+                self.vmhost.shell(
+                    f"rm -rf /tmp/{self.tbinfo['conf-name']}_server_port_tcpdump*", module_ignore_errors=True)
         pytest_assert(len(failed_list) == 0, "Advanced-reboot failure. Failed test: {}, "
                                              "failure summary:\n{}".format(self.request.node.name, failed_list))
         return result
