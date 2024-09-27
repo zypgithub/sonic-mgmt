@@ -78,7 +78,12 @@ class SonicImClis:
         """
         ports_with_im_support = []
         ports_numbers_to_check = []
+        parse_platform_summary = self.chassis_cli.parse_platform_summary()
+        platfrom = parse_platform_summary["Platform"]
+        internal_ports = ['Ethernet224', 'Ethernet232', 'Ethernet240', 'Ethernet248']
         for index, port_name in enumerate(dut_ports_number_dict):
+            if '4280' in platfrom and port_name in internal_ports:
+                continue
             ports_numbers_to_check.append(str(int(dut_ports_number_dict[port_name]) - 1))
         if ports_numbers_to_check:
             ports_numbers_to_check = ",".join(ports_numbers_to_check)
@@ -86,6 +91,8 @@ class SonicImClis:
             output = self.engine.run_cmd(cmd)
             split_output = output.splitlines()
             for index, port_name in enumerate(dut_ports_number_dict):
+                if '4280' in platfrom and port_name in internal_ports:
+                    continue
                 if int(split_output[index]) == 1:
                     ports_with_im_support.append(port_name)
         active_optical_cables = self.get_active_optic_cables(ports_with_im_support)
