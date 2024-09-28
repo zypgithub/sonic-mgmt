@@ -121,6 +121,7 @@ def test_watchdog_bad_kill(engines, test_api):
     with allure.step("Get boot id before shutting down watchdog."):
         cmd = "cat /proc/sys/kernel/random/boot_id"
         start_boot_id = engines.dut.run_cmd(cmd)
+        log.info(f"Boot ID before killing watchdog - {start_boot_id}")
 
     # Kill watchdog
     with allure.step("Killing the watchdog process INCORRECTLY."):
@@ -133,6 +134,7 @@ def test_watchdog_bad_kill(engines, test_api):
             % ((watchdog_timeout * 6) + 5)
         )
         time.sleep((watchdog_timeout * 6) + 5)
+        engines.dut.disconnect()
 
         try:
             code = check_shutdown_state(engines, start_boot_id)
@@ -183,27 +185,15 @@ def check_shutdown_state(engines, start_boot_id):
     Returns 1 for a system that did not shutdown
     Returns 2 for a system that shutdown but also restarted
     """
+    cmd = "cat /proc/sys/kernel/random/boot_id"
+    new_boot_id = engines.dut.run_cmd(cmd)
 
-    # Get the time right now
-    current_time = time.time()
-
-    # Give it a maximum of 100 seconds before assuming the correct behavior
-    while (time.time() - current_time) < 100:
-        try:
-            # If this works, test failed
-            cmd = "cat /proc/sys/kernel/random/boot_id"
-            new_boot_id = engines.dut.run_cmd(cmd)
-        except Exception:
-            continue
-
-        if new_boot_id == start_boot_id:
-            # This means the DUT never actually shutdown
-            return 1
-        else:
-            # This means that the DUT rebooted
-            return 2
-
-    return 0
+    if new_boot_id == start_boot_id:
+        # This means the DUT never actually shutdown
+        return 1
+    else:
+        # This means that the DUT rebooted
+        return 2
 
 
 @pytest.mark.cumulus_only
