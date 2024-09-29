@@ -74,8 +74,10 @@ def test_transceiver_status_unplug(engines, devices, test_api, asic_conf_dict):
 
     with allure.step(f"Get module with state {desired_state}"):
         module_under_test = _get_module_with_status(platform, PlatformConsts.INSERTED)
-        mst_dev_name = IbInterfaceTool.get_mst_dev_name(engines=engines, module_name=module_under_test, asic_conf_dict=asic_conf_dict)
         ports = _get_ports_for_module(module_under_test)
+        assert ports, "Should be at least one port for module"
+        mst_dev_name = IbInterfaceTool.get_mst_dev_name(engines=engines, module_name=module_under_test,
+                                                        asic_conf_dict=asic_conf_dict, port_name=ports[0].name)
         assert module_under_test, f"No module with state {desired_state} found"
         module_index = int(
             ''.join(c for c in module_under_test if c.isdigit())) - 1  # module start from 0, while sw from 1
@@ -115,8 +117,10 @@ def test_transceiver_status_with_reboot(engines, devices, test_api, asic_conf_di
     desired_state = NvosConsts.LINK_STATE_UP
     with allure.step(f"Get module with state {desired_state}"):
         module_under_test = _get_module_with_status(platform, PlatformConsts.INSERTED)
-        mst_dev_name = IbInterfaceTool.get_mst_dev_name(engines=engines, module_name=module_under_test, asic_conf_dict=asic_conf_dict)
         ports = _get_ports_for_module(module_under_test)
+        assert ports, "Should be at least one port for module"
+        mst_dev_name = IbInterfaceTool.get_mst_dev_name(engines=engines, module_name=module_under_test,
+                                                        asic_conf_dict=asic_conf_dict, port_name=ports[0].name)
         assert module_under_test, f"No module with state {desired_state} found"
         module_index = int(
             ''.join(c for c in module_under_test if c.isdigit())) - 1  # module start from 0, while sw from 1
@@ -214,7 +218,3 @@ def _get_ports_for_module(module_name):
         ports = Port.get_list_of_ports()
         ports_for_module = [port for port in ports if f"{module_name}p" in port.name]
         return ports_for_module
-
-
-def _get_asic_dev_id_number(asic_number):
-    return f"DEV_ID_ASIC_{asic_number}"
