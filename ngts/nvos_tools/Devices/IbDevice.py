@@ -1033,6 +1033,14 @@ class JulietSwitch(NvLinkSwitch):
                     "SerialNumber": ExpectedString.number_and_string(""), "State": "Enabled"}
         }
 
+    def _init_temperature(self):
+        super()._init_temperature()
+        self.temperature_sensors = [
+            'ASIC1', 'ASIC2', 'Ambient-MNG-Temp', 'CPU-Pack-Temp', 'Drive-Temp', 'HSC-VinDC-Temp', 'PDB-Conv-1-Temp',
+            'PDB-Conv-2-Temp', 'PDB-Conv-3-Temp', 'PDB-Conv-4-Temp', 'PMIC-1-Temp', 'PMIC-2-Temp', 'PMIC-3-Temp',
+            'PMIC-4-Temp', 'PMIC-5-Temp', 'PMIC-6-Temp', 'PMIC-7-Temp', 'PMIC-8-Temp', 'SODIMM-1-Temp',
+            'SWB-ASIC1-PCB-Temp', 'SWB-ASIC2-PCB-Temp']
+
     def get_available_erot_names(self, setup_name: str) -> List[str]:
         available_erots_per_juliet_number: Dict[str, List[str]] = {
             '68': [SPDMComponents.BMC],
@@ -1154,14 +1162,6 @@ class JulietScaleoutSwitch(JulietSwitch):
         self.fnm_fae_link_speed = '100G'
         self.nvl5_port_type = 'nvl'
         # will be updated
-
-    def _init_temperature(self):
-        super()._init_temperature()
-        self.temperature_sensors = [
-            'ASIC1', 'ASIC2', 'Ambient-Fan-Side-Temp', 'CPU-Pack-Temp', 'Drive-Temp', 'HSC-VinDC-Temp', 'PDB-Conv-1-Temp',
-            'PDB-Conv-2-Temp', 'PDB-Conv-3-Temp', 'PDB-Conv-4-Temp', 'PMIC-1-Temp', 'PMIC-2-Temp', 'PMIC-3-Temp',
-            'PMIC-4-Temp', 'PMIC-5-Temp', 'PMIC-6-Temp', 'PMIC-7-Temp', 'PMIC-8-Temp', 'SODIMM-1-Temp',
-            'SWB-ASIC1-PCB-Temp', 'SWB-ASIC2-PCB-Temp']
 
     def _init_fan_list(self):
         super()._init_fan_list()
