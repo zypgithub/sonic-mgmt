@@ -681,7 +681,7 @@ def post_issu_installation_steps(engines, devices, target_version, traffic_start
             with allure.step('Verify snmp status'):
                 system_snmp_output = OutputParsingTool.parse_json_str_to_dictionary(system.snmp_server.show())\
                     .get_returned_value()
-                ValidationTool.validate_fields_values_in_output([SystemConsts.SNMP_IS_RUNNING], ['yes'],
+                ValidationTool.validate_fields_values_in_output([SystemConsts.SNMP_STATE], [SystemConsts.SNMP_ENABLED_STATE],
                                                                 system_snmp_output).verify_result()
             # TODO: verify gnmi, rsyslog, and AAA processes.
 

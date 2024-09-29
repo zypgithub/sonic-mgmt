@@ -92,7 +92,7 @@ def test_2_mgmt_snmp(engines, topology_obj):
 
     with allure.step("Unset snmp"):
         system.snmp_server.unset(apply=True).verify_result()
-        HostMethods.wait_for_snmp_is_running(system, 'no')
+        HostMethods.wait_for_snmp_is_running(system, SystemConsts.SNMP_DEFAULT_STATE)
 
 
 @pytest.mark.ib

@@ -47,14 +47,14 @@ class HostMethods:
         logging.info("Snmp enabled successfully")
 
     @staticmethod
-    def wait_for_snmp_is_running(system, state='yes', tries=5, timeout=2):
+    def wait_for_snmp_is_running(system, state=SystemConsts.SNMP_ENABLED_STATE, tries=5, timeout=2):
         for _ in range(tries):
             system_snmp_output = OutputParsingTool.parse_json_str_to_dictionary(system.snmp_server.show()) \
                 .get_returned_value()
-            if state in system_snmp_output[SystemConsts.SNMP_IS_RUNNING]:
+            if state in system_snmp_output[SystemConsts.SNMP_STATE]:
                 break
-            elif state not in system_snmp_output[SystemConsts.SNMP_IS_RUNNING]:
+            elif state not in system_snmp_output[SystemConsts.SNMP_STATE]:
                 time.sleep(timeout)
                 continue
             else:
-                assert 'SNMP not in {} is-running state'.format(state)
+                assert 'SNMP is not in {} state'.format(state)
