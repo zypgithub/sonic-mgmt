@@ -1,5 +1,4 @@
 from ngts.tests_nvos.general.security.certificate.constants import TestCert
-from ngts.tests_nvos.general.security.nmx_cert.constants import CA_CERTIFICATE
 
 MTLS = 'mtls'
 INSTALLED = 'installed'

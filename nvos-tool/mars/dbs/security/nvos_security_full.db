@@ -52,6 +52,9 @@
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_authentication_restrictions.cases </cases>
 	</test>
+    <test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_api.cases </cases>
+    </test>
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_ldap.cases </cases>
 	</test>

@@ -5,11 +5,11 @@ from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.nvos_constants.constants_nvos import LinkDetectionConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
+from ngts.nvos_tools.infra.Fae import Fae
+from ngts.nvos_tools.infra.LinuxCmdBuilderTool import LinuxCmdBuilderTool
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RegisterTool import RegisterTool
 from ngts.tools.test_utils import allure_utils as allure
-from ngts.nvos_tools.infra.Fae import Fae
-from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_tools.infra.LinuxCmdBuilderTool import LinuxCmdBuilderTool
 
 logger = logging.getLogger()
 
@@ -52,7 +52,7 @@ class IbInterfaceTool:
         fae = Fae(port_name=port_name)
         if is_redmine_issue_active([4034283]):
             # in future needs to handle xdr ports too
-            IbInterfaceTool.switch_port_connection_mode(fae_port_name, IbInterfaceConsts.NDR)
+            IbInterfaceTool.switch_port_connection_mode(port_name, IbInterfaceConsts.NDR)
 
         with allure.step(f"Find correct mst_dev_name for {module_name or port_name}"):
             output_fae_port = OutputParsingTool.parse_show_interface_output_to_dictionary(

@@ -1,16 +1,18 @@
-from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
-from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_constants.constants_nvos import OutputFormat
-from ngts.nvos_tools.infra.BaseComponent import BaseComponent
-from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+import logging
+
+import allure
+from retry import retry
+
 from ngts.cli_wrappers.nvue.nvue_ib_interface_clis import NvueIbInterfaceCli
 from ngts.cli_wrappers.openapi.openapi_ib_interface_clis import OpenApiIbInterfaceCli
 from ngts.nvos_constants.constants_nvos import ApiType
-from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
+from ngts.nvos_constants.constants_nvos import OutputFormat
 from ngts.nvos_tools.acl.acl import Acl
-import allure
-import logging
-from retry import retry
+from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
+from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
+from ngts.nvos_tools.infra.BaseComponent import BaseComponent
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 
 logger = logging.getLogger()
 
@@ -111,7 +113,10 @@ class Port(BaseComponent):
             if not port_requirements_object or not port_requirements_object.port_requirements:
                 logging.info("get_list_of_ports - port_requirements not provided. Selecting all ports.")
                 for port_name in output_dictionary.keys():
-                    if port_requirements_object.interface_type in port_name:
+                    if port_requirements_object is not None:
+                        if port_requirements_object.interface_type in port_name:
+                            port_list.append(Port(port_name, "", ""))
+                    else:
                         port_list.append(Port(port_name, "", ""))
                 return port_list
 

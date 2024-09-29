@@ -1,15 +1,12 @@
-import pytest
-
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import OutputFormat
+from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports
 from ngts.tests_nvos.system.factory_reset.helpers import *
-from ngts.tests_nvos.system.gnmi.helpers import factory_reset_gnmi_checker
 from ngts.tools.test_utils import allure_utils as allure
-from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
-from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 
 
 @disabled_access_ports
@@ -44,7 +41,9 @@ def factory_reset_no_params_pre_steps(engines, platform_params, system, devices)
 
     with allure.step('Check is Juliet Device'):
         if not isinstance(devices.dut, JulietSwitch):
-            pytest.skip("It's not a Juliet Switch. Skipping NMX configuration")
+            # pytest.skip("It's not a Juliet Switch. Skipping NMX configuration")
+            init_cluster_status = None
+            pass    # TODO: use Devices OM to do this!
         else:
             with allure.step("Config A reverse cluster state than configured"):
                 cluster = Cluster()

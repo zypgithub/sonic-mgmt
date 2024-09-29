@@ -2,7 +2,7 @@ import json
 import logging
 import os
 import random
-from typing import List, Tuple
+from typing import Tuple
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_constants.constants_nvos import TestFlowType
@@ -17,7 +17,6 @@ from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.client_verificati
     run_spdm_measurements_verification
 from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.client_verification.utils import CLIENT_VERIFICATION_DIR
 from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.constants import VALID_NONCE_LEN, SpdmConsts, NOT_EMPTY
-from ngts.tests_nvos.general.security.helpers import add_issue_if, assert_no_issues
 from ngts.tools.test_utils import allure_utils as allure
 
 
@@ -80,51 +79,49 @@ def verify_component_outputs(component_name: str, component_obj: SpdmComponent, 
 
 
 def verify_component_values_na(component_name: str, cert_out, measurements_out):
-    issues: List[str] = []
-
-    for field, expected_value in SpdmConsts.Component.Certificates.na_values.items():
-        add_issue_if(cert_out[field] != expected_value, issues,
-                     f'certificate field "{field}" not as expected.\nexpected: {expected_value}\nactual: {cert_out[field]}')
-    for field, expected_value in SpdmConsts.Component.Measurements.na_values.items():
-        add_issue_if(measurements_out[field] != expected_value, issues,
-                     f'measurements field "{field}" not as expected.\nexpected: {expected_value}\nactual: {measurements_out[field]}')
-    with allure.step('assert no issues in the checks'):
-        assert_no_issues(component_name, issues, 'some values are not NA')
+    with allure.step(f'verify component "{component_name}" values are NA'):
+        with allure.independent_step('check certificate fields'):
+            for field, expected_value in SpdmConsts.Component.Certificates.na_values.items():
+                with allure.independent_step(f'verify field "{field}" = {expected_value}'):
+                    assert cert_out[
+                        field] == expected_value, f'certificate field "{field}" not as expected.\nexpected: {expected_value}\nactual: {cert_out[field]}'
+        with allure.independent_step('check measurements fields'):
+            for field, expected_value in SpdmConsts.Component.Measurements.na_values.items():
+                with allure.independent_step(f'verify field "{field}" = {expected_value}'):
+                    assert measurements_out[
+                        field] == expected_value, f'measurements field "{field}" not as expected.\nexpected: {expected_value}\nactual: {measurements_out[field]}'
 
 
 def verify_component_values(component_name: str, expect_cert, expect_measurements, cert_out, measurements_out):
-    issues: List[str] = []
-
-    if expect_cert:
-        with allure.step('check certificate value'):
-            add_issue_if(cert_out[SpdmConsts.Component.Certificates.CERT_STRING] != expect_cert, issues,
-                         f'certificate field "{SpdmConsts.Component.Certificates.CERT_STRING}" is not as expected.\n'
-                         f'expected: {expect_cert}\nactual: {cert_out[SpdmConsts.Component.Certificates.CERT_STRING]}')
-    else:
-        with allure.step('check certificate is not empty'):
-            add_issue_if(cert_out[SpdmConsts.Component.Certificates.CERT_STRING] == '', issues,
-                         f'certificate field "{SpdmConsts.Component.Certificates.CERT_STRING}" is unexpectedly empty')
-
-    if expect_measurements:
-        if expect_measurements is NOT_EMPTY:
-            with allure.step('check measurements value is not empty'):
-                add_issue_if(measurements_out[SpdmConsts.Component.Measurements.SIGNED_MEASUREMENTS] == '', issues,
-                             f'measurements field "{SpdmConsts.Component.Measurements.SIGNED_MEASUREMENTS}" is unexpectedly empty')
+    with ((allure.step(f'check component "{component_name}: values'))):
+        if expect_cert:
+            with allure.independent_step('check certificate value'):
+                assert cert_out[SpdmConsts.Component.Certificates.CERT_STRING] == expect_cert, (
+                    f'certificate field "{SpdmConsts.Component.Certificates.CERT_STRING}" is not as expected.\n'
+                    f'expected: {expect_cert}\nactual: {cert_out[SpdmConsts.Component.Certificates.CERT_STRING]}')
         else:
-            with allure.step('check measurements value'):
-                add_issue_if(
-                    measurements_out[SpdmConsts.Component.Measurements.SIGNED_MEASUREMENTS] != expect_measurements,
-                    issues,
-                    f'measurements field "{SpdmConsts.Component.Measurements.SIGNED_MEASUREMENTS}" is not as expected.\n'
-                    f'expected: {expect_measurements}\nactual: {measurements_out[SpdmConsts.Component.Measurements.SIGNED_MEASUREMENTS]}')
-    else:
-        with allure.step('verify measurements initial values'):
-            for field, expected_value in SpdmConsts.Component.Measurements.initial_values.items():
-                add_issue_if(measurements_out[field] != expected_value, issues,
-                             f'measurements field "{field}" not as expected.\nexpected: {expected_value}\nactual: {measurements_out[field]}')
+            with allure.independent_step('check certificate is not empty'):
+                assert cert_out[
+                    SpdmConsts.Component.Certificates.CERT_STRING] != '', f'certificate field "{SpdmConsts.Component.Certificates.CERT_STRING}" is unexpectedly empty'
 
-    with allure.step('assert no issues in the checks'):
-        assert_no_issues(component_name, issues, 'some outputs are not as expected')
+        if expect_measurements:
+            if expect_measurements is NOT_EMPTY:
+                with allure.independent_step('check measurements value is not empty'):
+                    assert measurements_out[
+                        SpdmConsts.Component.Measurements.SIGNED_MEASUREMENTS] != '', f'measurements field "{SpdmConsts.Component.Measurements.SIGNED_MEASUREMENTS}" is unexpectedly empty'
+            else:
+                with allure.independent_step('check measurements value'):
+                    assert measurements_out[
+                        SpdmConsts.Component.Measurements.SIGNED_MEASUREMENTS] == expect_measurements, (
+                        f'measurements field "{SpdmConsts.Component.Measurements.SIGNED_MEASUREMENTS}" is not as expected.\n'
+                        f'expected: {expect_measurements}\n'
+                        f'actual: {measurements_out[SpdmConsts.Component.Measurements.SIGNED_MEASUREMENTS]}')
+        else:
+            with allure.independent_step('verify measurements initial values'):
+                for field, expected_value in SpdmConsts.Component.Measurements.initial_values.items():
+                    with allure.independent_step(f'verify field "{field}" = {expected_value}'):
+                        assert measurements_out[
+                            field] == expected_value, f'measurements field "{field}" not as expected.\nexpected: {expected_value}\nactual: {measurements_out[field]}'
 
 
 def verify_cert_data_same_as_directly_from_bmc(erot_name: str, nv_cert: dict):

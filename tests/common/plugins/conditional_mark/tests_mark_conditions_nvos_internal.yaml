@@ -37,9 +37,15 @@ tests_nvos/system/gnmi/test_gnmi_cert.py::test_gnmi_cert_cli_when_gnmi_disabled:
     conditions:
       - https://redmine.mellanox.com/issues/4001833
 
-tests_nvos/general/security/bmc/bmc_erot_attestation/test_bmc_erot_attestation.py:
+tests_nvos/general/security/nmx_cert:
   skip:
-    reason: "BMC ERoT Attestation tests should run only on Juliet"
+    reason: "NMX tests should run only on Juliet"
+    conditions:
+      - "'juliet' not in testbed"
+
+tests_nvos/general/security/bmc:
+  skip:
+    reason: "BMC tests should run only on Juliet"
     conditions:
       - "'juliet' not in testbed"
 

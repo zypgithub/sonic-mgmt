@@ -14,7 +14,6 @@ from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
-server_ip = "10.237.22.60"  # "10.237.116.60"
 
 
 class NvueGeneralCli(SonicGeneralCliDefault):

@@ -110,8 +110,8 @@ class NvueBaseCli:
         return NvueBaseCli.nvue_action_install(engine, device, fae_command, args, expect_reboot, force, topology_obj)
 
     @staticmethod
-    def action_uninstall(engine, device, fae_command=False, args='', expect_reboot=False, force=False):
-        return NvueBaseCli.nvue_action_uninstall(engine, device, fae_command, args, expect_reboot, force)
+    def action_uninstall(engine, device, fae_command=False, args='', expect_reboot=False, force=False, topology_obj=None):
+        return NvueBaseCli.nvue_action_uninstall(engine, device, fae_command, args, expect_reboot, force, topology_obj)
 
     @staticmethod
     @check_output
@@ -135,7 +135,7 @@ class NvueBaseCli:
 
     @staticmethod
     @check_output
-    def nvue_action_uninstall(engine, device, fae_command, args, expect_reboot, force):
+    def nvue_action_uninstall(engine, device, fae_command, args, expect_reboot, force, topology_obj):
         """
         Method to runs nv action uninstall <fae> platform <args> <force>
         :param engine: the engine to use
@@ -148,6 +148,6 @@ class NvueBaseCli:
         cmd = "nv action uninstall {fae} platform {args} {force}".format(fae="fae" if fae_command else '', args=args, force="force" if force else '')
         logging.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
         if expect_reboot:
-            return DutUtilsTool.reload(engine=engine, device=device, command=cmd, confirm=True).verify_result()
+            return DutUtilsTool.reload(engine=engine, device=device, command=cmd, confirm=True, topology_obj=topology_obj).verify_result()
         else:
             return engine.run_cmd(cmd)

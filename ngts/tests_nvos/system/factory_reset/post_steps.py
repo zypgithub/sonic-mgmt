@@ -1,5 +1,3 @@
-import pytest
-
 from ngts.nvos_constants.constants_nvos import LinkDetectionConsts
 from ngts.nvos_constants.constants_nvos import OutputFormat
 from ngts.nvos_tools.Devices.IbDevice import CrocodileSwitch
@@ -25,7 +23,8 @@ def factory_reset_no_params_post_steps(apply_and_save_port, engines, just_apply_
         validate_port_description(engines.dut, not_apply_port, "")
     with allure.step('Check is Juliet Device'):
         if not isinstance(TestToolkit.devices.dut, JulietSwitch):
-            pytest.skip("It's not a Juliet Switch. Skipping NMX configuration")
+            # pytest.skip("It's not a Juliet Switch. Skipping NMX configuration")
+            pass    # TODO: use Devices OM to do this!
         else:
             with allure.step("Make sure cluster initial state restored"):
                 cluster = Cluster()

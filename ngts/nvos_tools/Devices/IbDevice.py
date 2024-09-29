@@ -17,8 +17,8 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.infra.ValidationTool import ExpectedString
-from ngts.tests_nvos.constants import MINUTE
 from ngts.nvos_tools.system.Spdm import SPDMComponents
+from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts
 from ngts.tools.test_utils.nvos_general_utils import get_version_info
 
@@ -95,9 +95,6 @@ class IbSwitch(BaseSwitch):
 
     def _init_eth0_duplex(self):
         self.supported_eth0_duplex = ['half', 'full']
-
-    def _init_eth0_speeds(self):
-        self.supported_eth0_speeds = ['100M', '1G']
 
     def _init_fan_list(self):
         self.fan_list = ["FAN1/1", "FAN1/2", "FAN2/1", "FAN2/2", "FAN3/1", "FAN3/2", "FAN4/1", "FAN4/2",
