@@ -81,6 +81,16 @@ class NvueSystemCli(NvueBaseCli):
 
     @staticmethod
     @check_output
+    def action_generate_spdm_measurements(engine, resource_path, nonce=None):
+        path = resource_path.replace('/', ' ').strip()
+        cmd = f'nv action generate {path}'
+        if nonce is not None:
+            cmd += f' nonce {nonce}'
+        logging.info(f"Running '{cmd}' on dut using NVUE")
+        return engine.run_cmd(cmd)
+
+    @staticmethod
+    @check_output
     def action_upload_tpm_file(engine, resource_path, file_name, remote_url):
         path = resource_path.replace('/', ' ').strip()
         cmd = f'nv action upload {path} {file_name} {remote_url}'

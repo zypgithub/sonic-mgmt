@@ -4,6 +4,7 @@ import pytest
 
 from ngts.tests_nvos.general.security.centralized_tests.factory_reset.constants import FactoryResetType, \
     FACTORY_RESET_TYPE_TO_ACTION_PARAM
+from ngts.tests_nvos.general.security.nmx_cert.test_nmx_cert import nmx_cert_factory_reset_no_params_check
 from ngts.tests_nvos.general.security.test_api_server_security.test_api_mtls import \
     api_mtls_factory_reset_no_params_check, \
     api_mtls_factory_reset_keep_all_config_check, api_mtls_factory_reset_keep_only_files_check
@@ -19,6 +20,7 @@ from ngts.tools.test_utils import allure_utils as allure
 NO_PARAMS_CHECKERS: Dict[str, Generator[None, None, None]] = {
     'TPM attestation': tpm_attestation_factory_reset_no_params_check(),
     'GNMI cert': gnmi_cert_factory_reset_no_params_check(),
+    'NMX cert': nmx_cert_factory_reset_no_params_check(),
     'API mTLS': api_mtls_factory_reset_no_params_check(),
 }
 

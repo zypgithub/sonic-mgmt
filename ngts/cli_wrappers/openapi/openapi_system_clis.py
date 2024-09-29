@@ -139,6 +139,20 @@ class OpenApiSystemCli(OpenApiBaseCli):
                                                    engine.ip, resource_path, params)
 
     @staticmethod
+    def action_generate_spdm_measurements(engine, resource_path, nonce=None):
+        logging.info("Running action: 'generate' on dut using OpenApi")
+        parameters = {}
+        if nonce is not None:
+            parameters['nonce'] = nonce
+        params = \
+            {
+                "state": "start",
+                "parameters": parameters
+            }
+        return OpenApiCommandHelper.execute_action(ActionType.GENERATE, engine.engine.username, engine.engine.password,
+                                                   engine.ip, resource_path, params)
+
+    @staticmethod
     def action_import_tpm_oiak(engine, resource_path, data='', remote_url=''):
         logging.info(f'Run action import on: {resource_path} using OpenApi')
         parameters = {'data': data, 'remote_url': remote_url}
@@ -195,7 +209,7 @@ class OpenApiSystemCli(OpenApiBaseCli):
                                                    engine.ip, "/system/log", params)
 
     @staticmethod
-    def action_reboot(engine, device, resource_path, op_param="", should_wait_till_system_ready=True, recovery_engine=None, topology_id=None):
+    def action_reboot(engine, device, resource_path, op_param="", should_wait_till_system_ready=True, recovery_engine=None):
         logging.info("Running action: rotate system log on dut using OpenApi")
         parameters_dict = {}
         if "force" in op_param:

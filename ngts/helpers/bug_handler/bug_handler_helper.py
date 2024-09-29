@@ -1,8 +1,6 @@
 import os
 import re
 import subprocess
-from typing import List
-
 import yaml
 import json
 import logging
@@ -12,6 +10,7 @@ import pathlib
 
 from retry.api import retry
 from pathlib import Path
+from typing import List
 from jinja2 import Environment, FileSystemLoader
 from datetime import datetime, timedelta
 from ngts.constants.constants import BugHandlerConst, InfraConst

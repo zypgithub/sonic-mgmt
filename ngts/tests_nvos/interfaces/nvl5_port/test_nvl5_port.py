@@ -3,6 +3,7 @@ import logging
 
 from ngts.nvos_constants.constants_nvos import ApiType, MultiPlanarConsts, NvosConst
 from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
+from ngts.nvos_tools.Devices.IbDevice import JulietNonScaleoutSwitch
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.ib.opensm.OpenSmTool import OpenSmTool
 from ngts.nvos_tools.infra.Fae import Fae
@@ -13,6 +14,11 @@ from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 # from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts [TBD]
 from ngts.tools.test_utils.allure_utils import step as allure_step
+from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
+from ngts.nvos_tools.infra.Tools import Tools
+from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports
+from ngts.nvos_tools.nmx.Cluster import Cluster
+from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 
 logger = logging.getLogger()
 
@@ -34,6 +40,10 @@ def test_show_nvl5_interface_commands(engines, devices, test_api):
     """
 
     TestToolkit.tested_api = test_api
+    dut_device = devices.dut
+    # cluster = Cluster()
+    # ClusterTools.start_cluster(cluster)
+    # ClusterTools.wait_for_apps_to_be_in_wanted_state()
 
     with allure_step("Select nvl5 port"):
         port_name = RandomizationTool.select_random_value(devices.dut.nvl5_access_ports_list + devices.dut.nvl5_trunk_ports_list).get_returned_value()
@@ -57,6 +67,40 @@ def test_show_nvl5_interface_commands(engines, devices, test_api):
         ValidationTool.validate_all_values_exists_in_list(MultiPlanarConsts.MULTI_PLANAR_KEYS, fae_port_keys). \
             verify_result()
         ValidationTool.compare_values(output_fae_port['type'], devices.dut.nvl5_port_type).verify_result()
+
+    with allure_step('Check is JulietNonScaleoutSwitch Device'):
+        if not isinstance(dut_device, JulietNonScaleoutSwitch):
+            with allure_step("Verify switch port speed"):
+                if devices.dut.nvl5_trunk_ports_list != []:
+                    selected_port = Tools.RandomizationTool.select_random_port(requested_ports_logical_state=NvosConsts.LINK_LOG_STATE_INITIALIZE, interface_type='sw').get_returned_value()
+                    output_dictionary = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
+                        selected_port.interface.link.show()).get_returned_value()
+                    assert output_dictionary[IbInterfaceConsts.LINK_SPEED] == dut_device.nvl5_port_speed, \
+                        f"port speed should be {dut_device.nvl5_port_speed} instead of" \
+                        f"{output_dictionary[IbInterfaceConsts.LINK_SPEED]}"
+
+    with allure_step("Verify access ports speed"):
+        selected_port = Tools.RandomizationTool.select_random_port(requested_ports_logical_state=NvosConsts.LINK_LOG_STATE_INITIALIZE, interface_type='acp').get_returned_value()
+        output_dictionary = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
+            selected_port.interface.link.show()).get_returned_value()
+        assert output_dictionary[IbInterfaceConsts.LINK_SPEED] == dut_device.nvl5_port_speed, \
+            f"port speed should be {dut_device.nvl5_port_speed} instead of" \
+            f"{output_dictionary[IbInterfaceConsts.LINK_SPEED]}"
+
+    with allure_step("Verify fnm port speed"):
+        output_dictionary = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
+            fnm_port.interface.link.show()).get_returned_value()
+        assert output_dictionary[IbInterfaceConsts.LINK_SPEED] == dut_device.fnm_link_speed, \
+            f"port speed should be {dut_device.fnm_link_speed} instead of" \
+            f"{output_dictionary[IbInterfaceConsts.LINK_SPEED]}"
+
+    with allure_step("Verify fae fnm port speed"):
+        output_dictionary = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
+            fnm_fae_port.interface.link.show()).get_returned_value()
+        assert output_dictionary[IbInterfaceConsts.LINK_SPEED] == dut_device.fnm_fae_link_speed, \
+            f"port speed should be {dut_device.fnm_fae_link_speed} instead of" \
+            f"{output_dictionary[IbInterfaceConsts.LINK_SPEED]}"
+
         # ValidationTool.compare_values(output_fae_port['link']['speed'], devices.dut.nvl5_port_speed).verify_result()
         # [TBD] will work only on real system,  when system arrived, bug 3730650
 
@@ -84,6 +128,61 @@ def test_show_nvl5_interface_commands(engines, devices, test_api):
         #     assert (output_dictionary[IbInterfaceConsts.LINK_STATS_IN_PKTS] ==
         #             output_dictionary[IbInterfaceConsts.LINK_STATS_OUT_PKTS]) == 0
         # [TBD] will work only on real system,  when system arrived, bug 3730650
+
+    # finally:
+        # cluster.unset(apply=True)
+        # ClusterTools.wait_for_apps_to_be_in_wanted_state()
+
+
+@pytest.mark.interface
+def test_toggle_interface_state(test_name):
+    """
+    Configure port interface state and verify the configuration applied successfully
+    Relevant cli commands:
+    -	nv set interface <name> link state up/down
+    -	nv show interface <name>
+
+    flow:
+    1. Select a random port (state of which is up)
+    2. Set selected port state to ‘down’
+    3. Verify the configuration applied by running “show” command
+    4. Set selected port state to ‘up’
+    5. Wait until the port is up
+    6. Verify the configuration applied by running “show” command
+    """
+    # cluster = Cluster()
+    # ClusterTools.start_cluster(cluster)
+    # ClusterTools.wait_for_apps_to_be_in_wanted_state()
+    port_init_state_restored = True
+    try:
+        for interface_type in ['sw', 'acp', 'fnm']:
+            if devices.dut.nvl5_trunk_ports_list == [] and interface_type == 'sw':
+                continue
+            port_type = 'fnm' if interface_type == 'fnm' else ''
+            selected_port = Tools.RandomizationTool.select_random_port(requested_ports_logical_state=NvosConsts.LINK_LOG_STATE_INITIALIZE, requested_ports_type=port_type, interface_type=interface_type).get_returned_value()
+        TestToolkit.update_tested_ports([selected_port])
+        toggle_port_state(selected_port, NvosConsts.LINK_STATE_DOWN, test_name)
+        port_init_state_restored = False
+        output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
+            selected_port.interface.link.show()).get_returned_value()
+
+        Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
+                                                          field_name=IbInterfaceConsts.LINK_STATE,
+                                                          expected_value=NvosConsts.LINK_STATE_DOWN).verify_result()
+
+        toggle_port_state(selected_port, NvosConsts.LINK_STATE_UP, test_name)
+        port_init_state_restored = True
+        output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
+            selected_port.interface.link.show()).get_returned_value()
+
+        Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
+                                                          field_name=IbInterfaceConsts.LINK_STATE,
+                                                          expected_value=NvosConsts.LINK_STATE_UP).verify_result()
+    finally:
+        if not port_init_state_restored:
+            toggle_port_state(selected_port, NvosConsts.LINK_STATE_UP, test_name)
+        # cluster.unset(apply=True)
+        # ClusterTools.wait_for_apps_to_be_in_wanted_state()
 
 
 @pytest.mark.interface
@@ -164,3 +263,13 @@ def show_interface_and_validate(engines, devices, ports_list, command=''):
         .get_returned_value()
     output_keys = list(output_dictionary.keys())
     ValidationTool.compare_values(output_keys.sort(), ports_list.sort()).verify_result()
+
+
+def toggle_port_state(selected_port, port_state, test_name=''):
+    selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True).verify_result()
+    with allure.step("Wait till port {} is {}".format(selected_port, port_state)):
+        res_obj, duration = OperationTime.save_duration('port goes {}'.format(port_state), '', test_name,
+                                                        selected_port.interface.wait_for_port_state, port_state,
+                                                        sleep_time=0.2)
+        res_obj.verify_result()
+        OperationTime.verify_operation_time(duration, 'port goes {}'.format(port_state)).verify_result()

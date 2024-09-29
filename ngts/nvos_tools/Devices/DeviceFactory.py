@@ -7,7 +7,8 @@ from ngts.nvos_tools.Devices.EthDevice import Mlx2410Switch, Mlx4600Switch, Mlx4
     Mlx2010Switch, Mlx3700Switch
 
 from ngts.nvos_tools.Devices.IbDevice import GorillaSwitch, \
-    MarlinSwitch, GorillaSwitchBF3, CrocodileSwitch, BlackMambaSwitch, CrocodileSimxSwitch, JulietScaleoutSwitch
+    MarlinSwitch, GorillaSwitchBF3, CrocodileSwitch, BlackMambaSwitch, CrocodileSimxSwitch, JulietScaleoutSwitch, JulietTTMSwitch, JulietNonScaleoutSwitch, JulietAriel
+
 
 logger = logging.getLogger()
 
@@ -45,7 +46,10 @@ class DeviceFactory:
             'Mellanox 2201': Mlx2201Switch,
             'Mellanox 2100': Mlx2100Switch,
             'Mellanox 2010': Mlx2010Switch,
-            'N5110_LD - JulietScaleout': JulietScaleoutSwitch
+            'N5110_LD - JulietScaleout': JulietScaleoutSwitch,
+            'N5110_LD - JulietTTM': JulietTTMSwitch,
+            'N5100_LD - JulietNonScaleout': JulietNonScaleoutSwitch,
+            'N5112_LD - JulietAriel': JulietAriel
         }
 
     @staticmethod

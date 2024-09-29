@@ -116,7 +116,7 @@ def test_show_log_files(engines):
 
     with allure.step("Run nv show system log files command follow to view system logs"):
         logging.info("Run nv show system log files command follow to view system logs")
-        system.log.files.show_log_files(param='files syslog', exit_cmd='q')
+        system.log.files.show_log_files(param='files syslog', expected_str='system/image', exit_cmd='q')
 
 
 @pytest.mark.system
@@ -177,7 +177,7 @@ def test_show_debug_log_continues(engines):
 
     with allure.step("Run nv show system log command --view follow to view system logs"):
         logging.info("Run nv show system log command --view follow to view system logs")
-        system.debug_log.show_log(log_type='debug-', param='--view follow', exit_cmd='\x03')
+        system.debug_log.show_log(log_type='debug-', expected_str='debug_log', param='--view follow', exit_cmd='\x03')
 
 
 @pytest.mark.system

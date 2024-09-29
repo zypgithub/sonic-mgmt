@@ -2,9 +2,10 @@ import logging
 from ngts.tools.test_utils import allure_utils as allure
 import pytest
 
+from ngts.nvos_constants.constants_nvos import ApiType, NvosConst
 from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
-from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts, IbInterfaceConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
+from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts, IbInterfaceConsts
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.Tools import Tools
@@ -12,6 +13,7 @@ from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_constants.constants_nvos import ApiType, NvosConst
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.ResultObj import ResultObj
+from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
 
@@ -38,9 +40,11 @@ def test_ib_show_interface(engines, devices, test_api):
 
     with allure.step('Run show command on selected port and verify that each field has an appropriate '
                      'value according to the state of the port'):
-        output_dictionary = Tools.OutputParsingTool.parse_show_interface_output_to_dictionary(
-            selected_port.interface.show()).get_returned_value()
-        validate_one_port_show_output(output_dictionary, devices.dut.switch_type.lower(), devices.dut.asic_type == NvosConst.QTM3)
+        with allure.step('run show interface'):
+            output_dictionary = Tools.OutputParsingTool.parse_show_interface_output_to_dictionary(
+                selected_port.interface.show()).get_returned_value()
+        with allure.step('validate fields values'):
+            validate_one_port_show_output(output_dictionary, devices.dut.switch_type.lower(), devices.dut.asic_type == NvosConst.QTM3)
 
     '''with allure.step(f'Check interface primary ASIC for port {selected_port.name}'):
         fae = Fae(port_name=selected_port.name)
@@ -314,6 +318,8 @@ def validate_link_fields(output_dictionary, switch_type, port_up=True):
                           # IbInterfaceConsts.LINK_SPEED,
                           # IbInterfaceConsts.LINK_IB_SPEED,
                           IbInterfaceConsts.LINK_OPERATIONAL_VLS]
+        if switch_type == "ib":
+            field_to_check.insert(2, IbInterfaceConsts.LINK_IB_SUBNET)  # Insert at the desired position
 
         if output_dictionary[IbInterfaceConsts.LINK_CONNECTION_MODE] == IbInterfaceConsts.XDR and \
            output_dictionary[IbInterfaceConsts.LINK_LOGICAL_PORT_STATE] == IbInterfaceConsts.LINK_LOGICAL_PORT_STATE_ACTIVE:

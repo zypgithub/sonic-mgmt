@@ -49,9 +49,7 @@ class IbInterfaceTool:
 
     @staticmethod
     def get_mst_dev_name(engines, asic_conf_dict, module_name=None, port_name=None):
-        fae_port_name = f"{module_name}p1" if module_name else port_name
-        fae = Fae(port_name=fae_port_name)
-
+        fae = Fae(port_name=port_name)
         if is_redmine_issue_active([4034283]):
             # in future needs to handle xdr ports too
             IbInterfaceTool.switch_port_connection_mode(fae_port_name, IbInterfaceConsts.NDR)

@@ -97,15 +97,21 @@ class NvueBaseCli:
         command = ' '.join(command.split())  # delete double-spaces
         logger.info(f"Running command: {command}")
         if expect_reboot:
-            return DutUtilsTool.reload(
-                engine=engine, device=device, command=command, confirm=(param_name != "force"),
-                recovery_engine=recovery_engine, topology_obj=topology_obj).verify_result(should_succeed)
+            confirm = not ("force" in param_name)
+            return DutUtilsTool.reload(engine=engine, device=device, command=command, confirm=confirm,
+                                       recovery_engine=recovery_engine, topology_obj=topology_obj).verify_result()
         else:
-            return engine.run_cmd(command)
+            output = engine.run_cmd(command)
+            logger.info(output)
+            return output
 
     @staticmethod
     def action_install(engine, device, fae_command=False, args='', expect_reboot=False, force=False, topology_obj=None):
         return NvueBaseCli.nvue_action_install(engine, device, fae_command, args, expect_reboot, force, topology_obj)
+
+    @staticmethod
+    def action_uninstall(engine, device, fae_command=False, args='', expect_reboot=False, force=False):
+        return NvueBaseCli.nvue_action_uninstall(engine, device, fae_command, args, expect_reboot, force)
 
     @staticmethod
     @check_output
@@ -124,5 +130,24 @@ class NvueBaseCli:
         logging.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
         if expect_reboot:
             return DutUtilsTool.reload(engine=engine, device=device, command=cmd, confirm=True, topology_obj=topology_obj).verify_result()
+        else:
+            return engine.run_cmd(cmd)
+
+    @staticmethod
+    @check_output
+    def nvue_action_uninstall(engine, device, fae_command, args, expect_reboot, force):
+        """
+        Method to runs nv action uninstall <fae> platform <args> <force>
+        :param engine: the engine to use
+        :param device: Noga device info
+        :param fae_command: if True, will add fae argument to the command
+        :param args: arguments to the example above
+        :param expect_reboot: if True, will expect the machine to reload as result of the command, and reconnect engines
+        :param force: if True, will add "force" argument to the command
+        """
+        cmd = "nv action uninstall {fae} platform {args} {force}".format(fae="fae" if fae_command else '', args=args, force="force" if force else '')
+        logging.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
+        if expect_reboot:
+            return DutUtilsTool.reload(engine=engine, device=device, command=cmd, confirm=True).verify_result()
         else:
             return engine.run_cmd(cmd)

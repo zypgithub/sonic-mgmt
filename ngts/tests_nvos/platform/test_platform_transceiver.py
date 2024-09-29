@@ -3,8 +3,10 @@ import time
 
 import pytest
 
-from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
-from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
+from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port, PortRequirements
+from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts, IbInterfaceConsts
+from ngts.nvos_tools.infra.Fae import Fae
+from ngts.nvos_tools.infra.LinuxCmdBuilderTool import LinuxCmdBuilderTool
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.IbInterfaceTool import IbInterfaceTool
 from ngts.nvos_tools.system.System import System

@@ -157,10 +157,11 @@ def test_save_reboot(engines, devices):
 @pytest.mark.simx
 @pytest.mark.general
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_general_auto_save(engines, devices, test_api):
+def test_general_auto_save(engines, test_api):
 
     system = System()
     eth0_port = MgmtPort('eth0')
+    TestToolkit.tested_api = test_api
     new_eth0_description = 'TestingAutoSave'
 
     try:

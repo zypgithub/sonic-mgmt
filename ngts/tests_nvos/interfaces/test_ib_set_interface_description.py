@@ -1,11 +1,13 @@
 import logging
-from ngts.tools.test_utils import allure_utils as allure
+
 import pytest
 
-from ngts.nvos_tools.infra.Tools import Tools
-from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.nvos_constants.constants_nvos import NvosConst
+from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.nvos_tools.infra.Tools import Tools
+from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
 
@@ -32,7 +34,7 @@ def test_ib_set_interface_description(engines):
     """
     DESCRIPTION_EMPTY = ""
     DESCRIPTION_ABCD = "abcd"
-    selected_port = Tools.RandomizationTool.select_random_port().get_returned_value()
+    selected_port = Tools.RandomizationTool.select_random_port(requested_ports_state=NvosConsts.LINK_STATE_ALL_TYPES).get_returned_value()
     selected_port.update_output_dictionary()
 
     TestToolkit.update_tested_ports([selected_port])

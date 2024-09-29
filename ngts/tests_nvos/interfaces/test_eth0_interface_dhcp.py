@@ -31,6 +31,7 @@ def test_interface_eth0_enable_disable(engines, topology_obj, serial_engine):
 
     mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
     mgmt_port = MgmtPort(mgmt_port_name)
+    serial_engine = topology_obj.players['dut_serial']['engine']
     with allure.step('Run show command on mgmt port and verify that each field has an appropriate value'):
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
             mgmt_port.interface.link.show()).get_returned_value()

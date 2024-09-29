@@ -25,9 +25,9 @@
     </cmd>
     <ignore>
       <condition>
-        <key>dut_type</key>
+        <key>dut_hwsku</key>
         <op> in </op>
-        <value>[gorilla]</value>
+        <value>[N5110_LD - JulietScaleout, N5100_LD - JulietNonScaleout, N5110_LD - JulietTTM, N5112_LD - JulietAriel, MQM9700 - Gorilla]</value>
       </condition>
     </ignore>
   </case>
@@ -42,9 +42,9 @@
     </cmd>
     <ignore>
       <condition>
-        <key>dut_hwsku</key>
+        <key>dut_type</key>
         <op> in </op>
-        <value>[N5110_LD - JulietScaleout]</value>
+        <value>[juliet]</value>
       </condition>
     </ignore>
   </case>
@@ -59,9 +59,9 @@
     </cmd>
     <ignore>
       <condition>
-        <key>dut_hwsku</key>
+        <key>dut_type</key>
         <op> in </op>
-        <value>[N5110_LD - JulietScaleout]</value>
+        <value>[juliet]</value>
       </condition>
     </ignore>
   </case>

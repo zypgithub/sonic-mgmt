@@ -360,6 +360,8 @@ class ActionType:
     ENABLE = '@enable'
     DISABLE = '@disable'
     IMPORT = '@import'
+    CREATE = '@create'
+    POWER_CYCLE = '@power-cycle'
 
 
 class ActionConsts:
@@ -380,6 +382,7 @@ class ActionConsts:
     RESET = 'reset'
     RESUME = 'resume'
     UPDATE = 'update'
+    POWER_CYCLE = 'power-cycle'
 
 
 class SystemConsts:
@@ -657,6 +660,7 @@ class SystemConsts:
     REBOOT_RESPONSE_MESSAGES = (
         "Performing reboot",
         "Disconnecting from NVOS, system is offline during reboot",
+        "System will power cycle in a few seconds"
     )
 
     LOCALHOST = "127.0.0.1"
@@ -784,6 +788,7 @@ class PlatformConsts:
     ENV_TEMP_CURR_PROP = "current"
     ENV_TEMP_STATE_PROP = "state"
     ENV_TEMP_STATE_OK = 'ok'
+    ENV_TEMP_STATE_FAILED = 'failed'
     HW_COMP_SWITCH = "SWITCH"
     TRANSCEIVER_STATUS = "status"
     TRANSCEIVER_ERROR_STATUS = "error-status"
@@ -793,20 +798,27 @@ class PlatformConsts:
     ENV_TEMP_MAX = 90  # [Celsius]
     VOLTAGE_FILES_PATH = '/var/run/hw-management/ui/voltage'
     LEAKAGE1 = 'LEAKAGE-1'
-    LEAKAGE1_ROPE = 'LEAKAGE-1-ROPE'
     LEAKAGE2 = 'LEAKAGE-2'
-    LEAKAGE2_ROPE = 'LEAKAGE-2-ROPE'
     LEAKAGE3 = 'LEAKAGE-3'
     LEAKAGE4 = 'LEAKAGE-4'
+    LEAKAGE5 = 'LEAKAGE-5'
+    LEAKAGE6 = 'LEAKAGE-6'
     LEAKAGE_STATUS_OK = 'ok'
     LEAKAGE_STATUS_LEAK = 'leak'
     LEAK_STATUS_LEAK = '0'
     LEAK_STATUS_OK = '1'
     LEAKAGE_FILES_FOLDER = '/var/run/hw-management/system/'
-    LEAKAGE_FILES_SYSFS_FOLDER = '/sys/devices/platform/mlxplat/mlxreg-io/hwmon/hwmon3/'
-    LEAKAGE_DEFAULT_OUTPUT_FIELDS = [LEAKAGE1, LEAKAGE1_ROPE, LEAKAGE2, LEAKAGE2_ROPE, LEAKAGE3, LEAKAGE4]
+    LEAKAGE_FILES_SYSFS_FOLDER = '/sys/devices/platform/mlxplat/mlxreg-io/hwmon/'
+    LEAKAGE_DEFAULT_OUTPUT_FIELDS = [LEAKAGE1, LEAKAGE2, LEAKAGE3, LEAKAGE4, LEAKAGE5, LEAKAGE6]
     LEAKAGE_DEFAULT_OUTPUT_VALUES = [{'state': 'ok'}]
     LEAKAGE_ALL_SENSOR_NOT_OK = [{'state': 'leak'}]
+    BMC_FIRMWARE_INVENTORY_LINK = '/UpdateService/FirmwareInventory'
+    BMC_FIRMWARE_BMC_LINK = 'MGX_FW_BMC_0'
+    BMC_FIRMWARE_EROT_LINK = 'MGX_FW_ERoT_BMC_0'
+    BMC_INVENTORY_PATTERN = r'/redfish/v1/UpdateService/FirmwareInventory/([^"]+)'
+    BMC_COMPONENT_VERSION_PATTERN = r'"Version":\s*"([^"]+)"'
+    BMC_LOGIN = 'admin'
+    BMC_INTERNAL_IP = '10.0.1.1'
 
     PSU_STATE = 'state'
     PS_REDUNDANCY_POLICY = 'policy'
@@ -836,6 +848,7 @@ class PlatformConsts:
     INV_STATE = 'state'
     INV_OK = 'ok'
     ASIC_CONF_FILE_PATH = "/usr/share/sonic/device/{}/asic.conf"
+    INV_FAILED = 'failed'
 
 
 class FansConsts:
@@ -847,8 +860,10 @@ class FansConsts:
     STATE_OK = 'ok'
     STATE_NOT_OK = 'Not OK'
     STATE_ABSENT = 'absent'
-    FAN_DIRECTION_MISMATCH_ERR = "direction exhaust is not aligned"
+    FAN_DIRECTION_MISMATCH_ERR = "is not aligned with fan1 direction"
     FAN_DIRECTION_MISMATCH_ERR_CROC = "direction intake is not aligned"
+    FAN_STATUS_LED = "FAN_STATUS"
+    FAN_FAULT_FILE = "/var/run/hw-management/thermal/fan{}_fault"
 
 
 class IbConsts:
@@ -914,7 +929,7 @@ class ImageConsts:
     SWID = 'swid'
     FW_ASIC = 'ASIC'
     FW_STABLE_VERSION = 'rel-31_2010_4100-004-EVB.mfa'
-    XDR_FW_STABLE_VERSION = 'rel-35_2014_1116'
+    XDR_FW_STABLE_VERSION = 'rel-35_2014_1452.mfa'
     SCP_PATH = 'scp://{}:{}@{}'.format(NvosConst.ROOT_USER, NvosConst.ROOT_PASSWORD,
                                        'fit70')
     SCP_PATH_SERVER = 'scp://{username}:{password}@{ip}{path}'
@@ -1167,10 +1182,24 @@ class SyslogConsts:
 class ClusterAppsLogLevels:
     CRITICAL = 'critical'
     ERROR = 'error'
-    WARNING = 'warning'
+    WARNING = 'warn'
     NOTICE = 'notice'
     INFO = 'info'
     DEBUG = 'debug'
+
+
+class ClusterConsts:
+    APP_VERSION = 'app-ver'
+    APP_NAME = 'app-name'
+    NMX_CONTROLLER = 'nmx-controller'
+    NMX_TELEMETRY = 'nmx-telemetry'
+    NMX_CONTROLLER_PREFIX = 'nmx-c'
+    NMX_TELEMETRY_PREFIX = 'nmx-t'
+    TELEMETRY_SERVICES = ['nmx-connector', 'ib-telemetry']
+    CONTROLLER_SERVICES = ['nmxc-sdn', 'nmxc-fib', 'redis']
+    INITIAL_EXPECTED_APPS = [NMX_CONTROLLER, NMX_TELEMETRY]
+    INITIAL_APPS_PATH = '/usr/local/cluster_pkgfiles/'
+    INFRA_PACKAGES_PATH = '/host/cluster_infra/packages/'
 
 
 class SyslogSeverityLevels:
@@ -1238,8 +1267,8 @@ class OperationTimeConsts:
     TEST_NAME_COL = 'test_name'
     SESSION_ID_COL = 'session_id'
     DATE_COL = 'date'
-    THRESHOLDS = {'reboot': 250 if is_bug_active(4074566) else 180,     # TODO: revert once bug closed
-                  'julietscaleout_reboot': 500,  # Currently there is a bug on this. Time needs to be decreased once fixed.
+    THRESHOLDS = {'reboot': 250 if is_bug_active(4074566) else 220,     # TODO: revert once bug closed
+                  'julietscaleout_reboot': 505,  # Currently there is a bug on this. Time needs to be decreased once fixed.
                   'julietscaleout reset factory': 550,  # Currently there is a bug on this. Time needs to be decreased once fixed.
                   'reset factory': 500,
                   'install user FW': 450,
@@ -1251,7 +1280,16 @@ class OperationTimeConsts:
                   'set hostname': 12,
                   'generate tech-support': 75,
                   'julietscaleout generate_tech_support': 100,
-                  'start stop cluster app': 50}
+                  'start stop cluster app': 170,
+                  'start stop cluster': 125,
+                  'cluster update log level': 5,
+                  'install bmc': 900,
+                  'install fpga': 900,
+                  ActionConsts.POWER_CYCLE: 360,
+                  'juliet-power-cycle': 445
+                  }
+    THRESHOLDS['start stop cluster app stressed resources'] = THRESHOLDS['start stop cluster app'] * 1.1
+    THRESHOLDS['start stop cluster stressed resources'] = THRESHOLDS['start stop cluster'] * 1.1
 
 
 class StatsConsts:
@@ -1292,6 +1330,7 @@ class StatsConsts:
     LOG_MSG_ERROR_DB = "..."  # TODO: Update message (parameter not found in redis DB)...
 
     INVALID_CATEGORY_NAME = 'invalid_category_name'
+    ALL_CATEGORIES = 'all'
     INVALID_STATE = 'invalid_state'
     INVALID_INTERVAL_LOW = 0
     INVALID_INTERVAL_HIGH = 1441
@@ -1507,6 +1546,7 @@ class BiosConsts:
     DEFAULT_BIOS_PASSWORD = "admin"
     INVALID_PASSWORD_PROMPT = "Invalid Password"
     CREATE_NEW_PASSWORD = "Create New Password"
+    NVLINK_CREATE_NEW_PASSWORD = "Create New Administrator Password"
     ENTER_CURRENT_PASSWORD = "Enter Current Password"
     NVLINK_ENTER_CURRENT_PASSWORD = "Enter Current Administrator Password"
     CLEAR_OLD_PASSWORD = "Clear Old Password"

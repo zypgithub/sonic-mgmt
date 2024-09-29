@@ -31,7 +31,7 @@
                     <name> on_failures_post_checker </name>
                     <tout> 900 </tout>
                     <params>
-                        <exec> PYTHONPATH=/devts/ /ngts_venv/bin/pytest /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/general/post_checker/test_post_checker.py  --setup_name=[[conf:extra_info.setup_name]]  --timeout 600  --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --session_id=[[run_time:session_id]]  --rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini     --log-level=INFO --clean-alluredir --alluredir=/tmp/allure-results</exec>
+                        <exec> PYTHONPATH=/devts/ /ngts_venv/bin/pytest /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/general/post_checker/test_post_checker.py  --setup_name=[[conf:extra_info.setup_name]]  --timeout 600 --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --session_id=[[run_time:session_id]]  --rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini     --log-level=INFO --clean-alluredir --alluredir=/tmp/allure-results</exec>
                     </params>
                 </cmd>
             </on_not_success>
@@ -68,6 +68,9 @@
 		<cases> sonic-mgmt/nvos-tool/mars/cases/system/nvos_system_ntp.cases </cases>
     </test>
 	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/system/nvos_system_snmp.cases </cases>
+	</test>
+	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/system/nvos_system_fw_dump_me.cases </cases>
 	</test>
 	<test>
@@ -89,6 +92,9 @@
 		<cases> sonic-mgmt/nvos-tool/mars/cases/security/nvos_system_certificate_mgmt.cases </cases>
 	</test>
 	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/system/nvos_system_ptp.cases </cases>
+    </test>
+	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/system/nvos_system_events.cases </cases>
 	</test>
 	<test>
@@ -101,6 +107,9 @@
 		<cases> sonic-mgmt/nvos-tool/mars/cases/platform/nvos_transceiver_upgrade.cases </cases>
 	</test>
 	<test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/system/nvos_system_mgmt_unsolicited.cases </cases>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/system/nvos_system_power_button.cases </cases>
+	</test>
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/system/nvos_system_ztp.cases </cases>
 	</test>
 </DBDEF>

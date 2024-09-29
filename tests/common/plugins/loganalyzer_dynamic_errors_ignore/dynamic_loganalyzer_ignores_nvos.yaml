@@ -1574,6 +1574,7 @@
     - '.*ERR health-statsd#health_history: FAN\d\/\d: direction intake is not aligned with fan1 direction exhaust.*'
   Conditions:
     - Affected_test_cases:
+      - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm.py::TestNewTc::test_sensor_errors[fan_err_direction]
       - tests_nvos/platform/test_platform_environment.py::test_platform_environment_fan_direction_mismatch
 
 # NVOS
@@ -1671,6 +1672,53 @@
     - Affected_test_cases:
       - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm.py::TestNewTc::test_sensor_errors[fan_err_direction]
 
+# NVOS
+- Errors_list:
+    - '.*suspended \(module .*builtin:omfwd.*\), next retry is.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests_nvos/system/syslog/test_system_syslog.py
+
+# NVOS
+- Errors_list:
+    - '.*WARNING systemd-udevd\[\d+\]: veth.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests_nvos/
+      Redmine:
+        - 3959307
+
+# NVOS
+- Errors_list:
+    - '.*WARNING pmon#thermalctld: Fan fault warning: fan.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests_nvos/system/test_system_health.py::test_simulate_health_problem_with_hw_simulator
+
+# NVOS
+- Errors_list:
+    - '.*WARNING kernel: \[.*\] mst_pci: loading out-of-tree module taints kernel.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests_nvos/system/test_system_reboot.py
+      Redmine:
+        - 3760310
+
+# NVOS
+- Errors_list:
+    - '.*ERR clusterd\[\d+\]: gRPC client error.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests_nvos/fae/test_nmx_package.py
+
+# NVOS
+- Errors_list:
+    - '.*ERR dhclient\[\d+\]: dhclient.c:\d+: Failed to send \d+ byte long packet over fallback interface.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests_nvos/
+      Redmine:
+        - 3951338
 # In the test case test_temperature_sweep, it has an action to remove the sensors files,
 # when pmon try to read the file psu file "/var/run/hw-management/thermal/sensor_file",
 # following error msg will be logged to syslog, it is not an real issue, so it is safe to ignore these err msg
@@ -1787,5 +1835,17 @@
     - Affected_test_cases:
       - tests_nvos/
       Redmine:
-        - 4081933  
+        - 4081933
+
+# NVOS
+- Errors_list:
+    - '.*ERR health-statsd#health_history: Containers: is not Status ok.*'
+    - '.*ERR health-statsd#health_history: Summary: Not OK.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests_nvos/infra/init_flow/init_flow/test_ports_are_up.py
+      Redmine:
+        - 4038479
+
+
 # --------------------------------------------------

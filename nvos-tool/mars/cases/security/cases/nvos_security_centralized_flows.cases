@@ -36,7 +36,7 @@
           <static_args> --setup_name [[conf:extra_info.setup_name]]
           --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/general/security/centralized_tests/upgrade/test_upgrade.py
           --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini
-          --target_version=[[conf:extra_info.target_version]] --base_version=[[conf:extra_info.downgrade_version]]
+          --target_version=[[conf:extra_info.target_version]] --base_version=[[conf:extra_info.downgrade_version]]`
           --release_name=[[conf:extra_info.release_name]] --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]]
           --clean-alluredir  --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>
       </params>
