@@ -104,7 +104,10 @@ class Port(BaseComponent):
             if not port_requirements_object or not port_requirements_object.port_requirements:
                 logging.info("get_list_of_ports - port_requirements not provided. Selecting all ports.")
                 for port_name in output_dictionary.keys():
-                    if port_requirements_object.interface_type in port_name:
+                    if port_requirements_object is not None:
+                        if port_requirements_object.interface_type in port_name:
+                            port_list.append(Port(port_name, "", ""))
+                    else:
                         port_list.append(Port(port_name, "", ""))
                 return port_list
 
