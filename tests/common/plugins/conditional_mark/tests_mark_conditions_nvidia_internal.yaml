@@ -710,6 +710,35 @@ platform_tests/fwutil/test_fwutil.py::test_fwutil_update_bad_config[ONIE-/root/m
     conditions:
     - "https://redmine.mellanox.com/issues/3829488 and 'sn5' in platform"
 
+platform_tests/fwutil/test_fwutil.py::test_fwutil_install_file[CPLD-/root/mars/workspace/sonic-mgmt/tests/platform_tests/fwutil/firmware.json]:
+  skip:
+    reason: "Test case ignored on SPC4 due to RM issue: https://redmine.mellanox.com/issues/4081079"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4081079 and 'sn5' in platform"
+
+platform_tests/fwutil/test_fwutil.py::test_fwutil_install_bad_name[CPLD-/root/mars/workspace/sonic-mgmt/tests/platform_tests/fwutil/firmware.json]:
+  skip:
+    reason: "Test case ignored on SPC4 due to RM issue: https://redmine.mellanox.com/issues/4081079"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4081079 and 'sn5' in platform"
+
+platform_tests/fwutil/test_fwutil.py::test_fwutil_install_bad_path[CPLD-/root/mars/workspace/sonic-mgmt/tests/platform_tests/fwutil/firmware.json]:
+  skip:
+    reason: "Test case ignored on SPC4 due to RM issue: https://redmine.mellanox.com/issues/4081079"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4081079 and 'sn5' in platform"
+
+platform_tests/fwutil/test_fwutil.py::test_fwutil_update_current[CPLD-/root/mars/workspace/sonic-mgmt/tests/platform_tests/fwutil/firmware.json]:
+  skip:
+    reason: "Test case ignored on SPC4 due to RM issue: https://redmine.mellanox.com/issues/4081079"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4081079 and 'sn5' in platform"
+
+platform_tests/fwutil/test_fwutil.py::test_fwutil_update_bad_config[CPLD-/root/mars/workspace/sonic-mgmt/tests/platform_tests/fwutil/firmware.json]:
+  skip:
+    reason: "Test case ignored on SPC4 due to RM issue: https://redmine.mellanox.com/issues/4081079"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4081079 and 'sn5' in platform"
 
 platform_tests/fwutil/test_fwutil.py::test_fwutil_install_file:
   skip:
