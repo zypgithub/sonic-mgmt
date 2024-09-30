@@ -848,7 +848,7 @@ def test_system_stats_big_files(engines, devices, test_api):
             engine.run_cmd(cmd='rm -f {}'.format(file_path))
 
         with allure.step("Replace internal file with file without header"):
-            file_name = 'power.csv'
+            file_name = 'cpu.csv'
             file_path = StatsConsts.NO_HEADER_FILE_PATH + file_name
             player_engine.upload_file_using_scp(dest_username=devices.dut.default_username,
                                                 dest_password=devices.dut.default_password,
@@ -864,9 +864,9 @@ def test_system_stats_big_files(engines, devices, test_api):
             time.sleep(StatsConsts.SLEEP_15_SECONDS)
 
         with allure.step("Validate creating new category file when header is corrupted"):
-            validate_number_of_lines_in_external_file(engines, system, 'power',
-                                                      devices.dut.stats_power_header_num_of_lines,
-                                                      devices.dut.stats_power_header_num_of_lines + 3)
+            validate_number_of_lines_in_external_file(engines, system, 'cpu',
+                                                      devices.dut.stats_cpu_header_num_of_lines,
+                                                      devices.dut.stats_cpu_header_num_of_lines + 3)
 
         with allure.step("Delete uploaded file"):
             engine.run_cmd(cmd='rm -f {}'.format(file_path))

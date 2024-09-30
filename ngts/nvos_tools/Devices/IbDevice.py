@@ -451,7 +451,7 @@ class GorillaSwitch(IbSwitch):
             }
         )
         self.stats_fan_header_num_of_lines = 25
-        self.stats_power_header_num_of_lines = 13
+        self.stats_cpu_header_num_of_lines = 10
         self.stats_temperature_header_num_of_lines = 53
         self.supports_tpm_testing = False
 
@@ -549,7 +549,7 @@ class BlackMambaSwitch(IbSwitch):
                                 "PSU-6+12V+Vol+Out", "PSU-7+12V+Vol+Out", "PSU-8+12V+Vol+Out"]
 
         self.stats_fan_header_num_of_lines = 17
-        self.stats_power_header_num_of_lines = 25
+        self.stats_cpu_header_num_of_lines = 12
         self.stats_temperature_header_num_of_lines = 104
         self.fnm_link_speed = '800G'
         self.interface_list = ['eth0', 'eth1', 'fnm1', 'ib0', 'lo', 'sw10p1', 'sw10p2', 'sw11p1', 'sw11p2', 'sw12p1',
@@ -754,6 +754,7 @@ class CrocodileSwitch(IbSwitch):
                                 'PMIC-7-CEX-VDD-Out-1', 'PSU-1-12V-Out', 'PSU-2-12V-Out', 'PSU-3-12V-Out',
                                 'PSU-4-12V-Out']
         self.stats_fan_header_num_of_lines = 23
+        self.stats_cpu_header_num_of_lines = 12
         self.stats_power_header_num_of_lines = 17
         self.stats_temperature_header_num_of_lines = 69
         self.previous_cpld_version = BaseSwitch.CpldImageConsts(
@@ -1116,9 +1117,10 @@ class JulietScaleoutSwitch(JulietSwitch):
                 "CPLD4": "CPLD000372_REV0003"
             }
         )
-        # self.stats_fan_header_num_of_lines = 25
-        # self.stats_power_header_num_of_lines = 13
-        # self.stats_temperature_header_num_of_lines = 53
+        self.stats_fan_header_num_of_lines = 21
+        self.stats_cpu_header_num_of_lines = 10
+        self.stats_temperature_header_num_of_lines = 48
+
         # Port 1-36 is from asic1/ Port 37-72 is from asic2
         self.nvl5_access_ports_list = ['acp1', 'acp2', 'acp3', 'acp4', 'acp5', 'acp6',
                                        'acp7', 'acp8', 'acp9', 'acp10', 'acp11', 'acp12', 'acp13', 'acp14',
