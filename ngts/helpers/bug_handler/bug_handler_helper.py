@@ -15,6 +15,7 @@ from jinja2 import Environment, FileSystemLoader
 from datetime import datetime, timedelta
 from ngts.constants.constants import BugHandlerConst, InfraConst
 from ngts.nvos_constants.constants_nvos import SystemConsts
+from infra.tools.redmine.redmine_api import get_issue_fixed_in_version_value, get_issues_status
 
 
 logger = logging.getLogger()
@@ -250,13 +251,30 @@ def run_err_msg_bug_handler_tool(conf_path, redmine_project, branch, yaml_parsed
     update_only = not bug_handler_action["create"] and bug_handler_action["update"]
     update_only_mode = '--update_only' if update_only else ''
 
-    bug_handler_cmd = f"env LOG_FORMAT_JSON=1 {bug_handler_path} --cfg {conf_path} --project {redmine_project} " \
-        f"--user {user} --branch {branch} --debug_level 2 " \
-        f"--parsed_data '{yaml_parsed_file}' {no_action} {update_only_mode}"
+    action_mode = ""
+    if bug_handler_params.get("cli_type", '') == "Sonic":
 
-    logger.info(f"Running Bug Handler CMD: {bug_handler_cmd}")
-    bug_handler_output = subprocess.run(bug_handler_cmd, shell=True, capture_output=True).stdout
-    bug_handler_file_result = json.loads(bug_handler_output)
+        bug_handler_file_result = run_bug_handler_with_no_action(
+            conf_path, redmine_project, branch, yaml_parsed_file, user, bug_handler_path)
+
+        action_mode = get_action_based_on_no_action_results(
+            bug_handler_file_result, branch, bug_handler_params, bug_handler_no_action)
+
+        if action_mode == "no action":
+            logger.info("To not fail case and attach file, need update the following 3 parameters")
+            bug_handler_file_result["action"] = BugHandlerConst.BUG_HANDLER_DECISION_UPDATE
+            bug_handler_file_result["status"] = "done"
+            bug_handler_no_action = True
+
+    if action_mode != "no action" or bug_handler_params.get("cli_type", '') != "Sonic":
+        bug_handler_cmd = f"env LOG_FORMAT_JSON=1 {bug_handler_path} --cfg {conf_path} --project {redmine_project} " \
+            f"--user {user} --branch {branch} --debug_level 2 " \
+            f"--parsed_data '{yaml_parsed_file}' {no_action} {update_only_mode}"
+
+        logger.info(f"Running Bug Handler CMD: {bug_handler_cmd}")
+        bug_handler_output = subprocess.run(bug_handler_cmd, shell=True, capture_output=True).stdout
+        logger.info(bug_handler_output)
+        bug_handler_file_result = json.loads(bug_handler_output)
 
     if is_attachment_needed(bug_handler_file_result, update_only, bug_handler_no_action, yaml_parsed_file):
         ticket_id = get_ticket_id(bug_handler_file_result)
@@ -300,6 +318,80 @@ def handle_file_size_exceedance(tar_file_path):
         file.write(f"{additional_text} tar -xzvf {compressed_tar_full_path} '{parts[-2]}/{parts[-1]}'")
 
     return txt_file_path
+
+
+def run_bug_handler_with_no_action(conf_path, redmine_project, branch, yaml_parsed_file, user, bug_handler_path):
+
+    bug_handler_cmd = f"env LOG_FORMAT_JSON=1 {bug_handler_path} --cfg {conf_path} --project {redmine_project} " \
+        f"--user {user} --branch {branch} --debug_level 2 " \
+        f"--parsed_data '{yaml_parsed_file}' --no_action "
+
+    logger.info(f"Running Bug Handler CMD: {bug_handler_cmd}")
+    bug_handler_output = subprocess.run(bug_handler_cmd, shell=True, capture_output=True).stdout
+    bug_handler_file_result = json.loads(bug_handler_output)
+
+    logger.info(f"No action bug_handler_file_result:{bug_handler_file_result}")
+    return bug_handler_file_result
+
+
+def get_action_based_on_no_action_results(bug_handler_file_result, branch, bug_handler_params, bug_handler_no_action):
+
+    action_mode = "create or update_only"
+
+    # When the bug need to be updated, and the ticket is closed status,
+    # Running bug handler tool again to reopen ticket will depend on that if the current includes the fix or not,
+    # Otherwise, we will run bug handler tool as the original action mode
+    if bug_handler_file_result["action"] == BugHandlerConst.BUG_HANDLER_DECISION_UPDATE:
+        cur_version = bug_handler_params["duthost"].os_version
+        ticket_id = get_ticket_id(bug_handler_file_result)
+        ticket_status = get_issues_status([ticket_id])[str(ticket_id)]
+
+        if ticket_status == "Closed":
+            # When the script for getting fixed image is ready for RC image,
+            # the two following line code should be removed
+            if "_RC" in cur_version:
+                logger.info("Non internal image without RC. "
+                            f"Next, run bug handler with {action_mode} to reopen the ticket")
+            else:
+                fixed_in_version = get_issue_fixed_in_version_value(ticket_id)
+                if branch in fixed_in_version:
+                    if is_current_ver_newer_or_equal_than_fixed_ver(branch, cur_version, fixed_in_version):
+                        logger.info("The current version includes the bug fix."
+                                    f"Next, run bug handler with {action_mode} to reopen the ticket")
+                    else:
+                        logger.info("The current version doesn't include the bug fix. "
+                                    "Not run bug handler again. So, the ticket will not be reopened")
+                        action_mode = "no action"
+                else:
+                    logger.info("Bug is closed, but the current image not include bug fix. Not run bug handler again")
+                    action_mode = "no action"
+
+    logger.info(f"get_action_mode :{action_mode} \n. bug_handler_file_result: {bug_handler_file_result}")
+    return action_mode
+
+
+def get_version_nubmer(branch, version):
+    pattern_version_number_value = f".*{branch}(_RC|).(?P<ver_number>\\d+)-\\w+_(Internal|Public).*"
+    res = re.match(pattern_version_number_value, version)
+    ver_nubmer = 0
+    if res:
+        ver_nubmer = res.groupdict()["ver_number"]
+    logger.info(f"version of {version} number is :{ver_nubmer}")
+    return int(ver_nubmer)
+
+
+def is_current_ver_newer_or_equal_than_fixed_ver(branch, cur_version, fixed_in_version):
+    version_split_symbol = ", "
+
+    for version in fixed_in_version.split(version_split_symbol):
+        fixed_ver_nubmer = get_version_nubmer(branch, version)
+        if fixed_ver_nubmer:
+            break
+    cur_version_number = get_version_nubmer(branch, cur_version)
+
+    logger.info(f"fixed version number:{fixed_ver_nubmer}, current version is :{cur_version_number}")
+
+    return cur_version_number >= fixed_ver_nubmer
 
 
 def is_attachment_needed(bug_handler_file_result, update_only, bug_handler_no_action, yaml_parsed_file):
