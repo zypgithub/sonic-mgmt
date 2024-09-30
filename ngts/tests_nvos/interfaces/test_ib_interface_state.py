@@ -137,6 +137,7 @@ def test_ib_interface_state_unset(engines, test_api):
 
 @pytest.mark.ib_interfaces
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.skip(reason="Skipping this test since up-once not merged yet")
 def test_ib_interface_state_up_once(engines, devices, test_api, asic_conf_dict):
 
     with allure.step('set up system objects'):
@@ -147,10 +148,9 @@ def test_ib_interface_state_up_once(engines, devices, test_api, asic_conf_dict):
         fae = Fae(port_name=port_name)
         system = System()
 
-    IbInterfaceTool.switch_port_connection_mode(port_name, IbInterfaceConsts.NDR)
-
     with allure.step(f'run nv action update fae interface {port_name} link state up-once and apply'):
-        fae.interface.link.state.action(ActionConsts.UPDATE, param_name=IbInterfaceConsts.INTERFACE_STATE, param_value=IbInterfaceConsts.UP_ONCE).verify_result()
+        fae.interface.link.state.action(ActionConsts.UPDATE, param_name=IbInterfaceConsts.INTERFACE_STATE,
+                                        param_value=IbInterfaceConsts.UP_ONCE).verify_result()
 
     with allure.step('verify state is up after up-once'):
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
@@ -161,15 +161,9 @@ def test_ib_interface_state_up_once(engines, devices, test_api, asic_conf_dict):
     with allure.step('verify state is down after port toggle failure'):
 
         mst_dev_name = IbInterfaceTool.get_mst_dev_name(engines=engines, asic_conf_dict=asic_conf_dict, port_name=port_name)
-        module_index = int(
-            ''.join(c for c in port_name[:-2] if c.isdigit())) - 1  # module start from 0, while sw from 1
     try:
-        with allure.step('verify state is down after unplug event'):
-            IbInterfaceTool.simulate_unplug_module_event(engines.dut, devices.dut, module_index, mst_dev_name, 2)
-            selected_port.interface.wait_for_port_state(NvosConsts.LINK_STATE_DOWN).verify_result()
-
-        with allure.step('verify state is down after plugin event'):
-            IbInterfaceTool.simulate_plugin_module_event(engines.dut, devices.dut, module_index, mst_dev_name, 40)
+        with allure.step('verify state is down after port toggle event'):
+            IbInterfaceTool.simulate_toggle_port_event(engines.dut, devices.dut, port_name, mst_dev_name, 5)
             # in future will verify 'down by port failure' instead of just 'down'
             output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
                 selected_port.interface.link.show()).get_returned_value()

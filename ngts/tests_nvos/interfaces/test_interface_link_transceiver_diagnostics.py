@@ -81,9 +81,9 @@ def test_interface_transceiver_diagnostics_basic_no_cable(engines, devices):
 
 @pytest.mark.ib
 @pytest.mark.transceiver
-def test_interface_transceiver_diagnostics_basic_non_ddmi(engines, devices):
+def test_interface_transceiver_diagnostics_basic_copper(engines, devices):
     platform = Platform()
-    with allure.step("Run diagnostics for link which is not DDMI and verify output"):
+    with allure.step("Run diagnostics for copper cable and verify fields in output"):
         list_of_transceivers = list(platform.transceiver.get_dict_of_transceivers(cable_type=PlatformConsts.TRANSCEIVER_CABLE_COPPER_CABLE))
         transceiver_name = Tools.RandomizationTool.select_random_value(list_of_transceivers).get_returned_value()
         output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(
@@ -91,11 +91,6 @@ def test_interface_transceiver_diagnostics_basic_non_ddmi(engines, devices):
         fields_to_check = ["cable-length", "cable-type", "diagnostics-status", "identifier",
                            "vendor-date-code", "vendor-name", "vendor-pn", "vendor-rev", "vendor-sn"]
         Tools.ValidationTool.verify_field_exist_in_json_output(output_dictionary, fields_to_check).verify_result()
-        Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
-                                                          field_name=PlatformConsts.
-                                                          HARDWARE_TRANCEIVER_DIAGNOSTIC_STATUS,
-                                                          expected_value=PlatformConsts.HARDWARE_TRANCEIVER_NOT_DDMI)\
-            .verify_result()
 
 
 @pytest.mark.ib

@@ -514,6 +514,7 @@ class BlackMambaSwitch(IbSwitch):
     def _init_constants(self):
         self.asic_amount = 4
         super()._init_constants()
+        self.system_is_ready_wait_timeout = 10 * MINUTE
         self.ib_ports_num = 2 * 72
         self.core_count = 4
         self.asic_type = NvosConst.QTM3

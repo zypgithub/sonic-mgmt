@@ -174,6 +174,7 @@ def test_system_image_upload(engines, release_name, test_api, original_version, 
 @pytest.mark.image
 @pytest.mark.system
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.timeout(25 * MINUTE, func_only=True)
 def test_image_uninstall(release_name, test_api, original_version, test_name, devices, base_version):
     """
      Will check the uninstall commands
@@ -186,7 +187,8 @@ def test_image_uninstall(release_name, test_api, original_version, test_name, de
     5. Validate that uninstall will success
     """
     TestToolkit.tested_api = test_api
-    image_uninstall_test(release_name, original_version, devices, uninstall_force="", test_name=test_name, base_version=base_version)
+    image_uninstall_test(release_name, original_version, devices, uninstall_force="", test_name=test_name,
+                         base_version=base_version)
 
 
 @pytest.mark.checklist
