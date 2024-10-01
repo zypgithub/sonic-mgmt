@@ -136,7 +136,7 @@ def skip_loganalyzer_bug_handler(duthost, request):
             logger.warning(f"Skip the loganalyzer bug handler for branch: {log_analyzer_handler_info['branch']}")
             return True
 
-        bug_handler_actions = get_bug_handler_actions(request, log_analyzer_handler_info)
+        bug_handler_actions = get_bug_handler_actions(request)
         if not is_log_analyzer_bug_handler_enabled(bug_handler_actions):
             logger.warning("Skip the loganalyzer bug handler since it is not enabled")
             return True
@@ -160,7 +160,7 @@ def log_analyzer_bug_handler(duthost, request, log_errors_dir_path=None, only_ch
     test_id = request.node.nodeid
     test_rm_issues = set()
     log_analyzer_handler_info = get_log_analyzer_handler_info(duthost)
-    bug_handler_actions = get_bug_handler_actions(request, log_analyzer_handler_info, only_check)
+    bug_handler_actions = get_bug_handler_actions(request, only_check)
 
     if "allure_server_project_id" in request.config.option:
         allure_project = request.config.getoption('--allure_server_project_id')
@@ -283,7 +283,7 @@ def get_low_layer_components(duthost):
     return comps
 
 
-def get_bug_handler_actions(request, log_analyzer_handler_info, only_check=False):
+def get_bug_handler_actions(request, only_check=False):
     """
     Get the bug handler actions, the return is a dictionary with 3 keys, "create", "update" and "only_check".
     If only_check=True then bugs will not be created or updated.
@@ -333,22 +333,11 @@ def get_bug_handler_actions(request, log_analyzer_handler_info, only_check=False
         bug_handler_actions['create'] = project_bug_create_map.get(project, False)
         bug_handler_actions['update'] = project_bug_update_map.get(project, False)
         bug_handler_actions['only_check'] = project_bug_only_check_map.get(project, True)
-        _update_bug_handler_actions_for_private_image(project, log_analyzer_handler_info, bug_handler_actions)
         _update_bug_handler_actions(request, bug_handler_actions)
         logger.info(f"The bug handler actions for the {project} is: {bug_handler_actions}")
 
     return bug_handler_actions
 
-
-def _update_bug_handler_actions_for_private_image(project, log_analyzer_handler_info, bug_handler_actions):
-    if project != "regression":
-        return
-    branch = log_analyzer_handler_info["branch"]
-    is_private_branch = False if re.match("^[0-9]{6,6}$", branch) else True
-    if is_private_branch:
-        bug_handler_actions['create'] = False
-        bug_handler_actions['update'] = False
-        bug_handler_actions['only_check'] = True
 
 def _update_bug_handler_actions(request, bug_handler_actions):
     """
