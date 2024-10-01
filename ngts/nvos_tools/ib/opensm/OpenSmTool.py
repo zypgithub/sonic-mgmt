@@ -11,7 +11,7 @@ from retry import retry
 
 logger = logging.getLogger()
 
-OPEN_SM_PATH = "/labhome/juliav/workspace/sm_regression/sources/SM_MASTER/usr/sbin/opensm"
+OPEN_SM_PATH = "opensm"
 
 
 class OpenSmTool:
