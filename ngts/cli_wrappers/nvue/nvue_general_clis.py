@@ -9,6 +9,7 @@ from ngts.constants.constants import MarsConstants
 from ngts.nvos_constants.constants_nvos import NvosConst, ActionConsts, SystemConsts, ConfState, TopologyConsts
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.GrubMenuTool import GrubMenuTool
+from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.tests_nvos.general.security.test_secure_boot.constants import SecureBootConsts
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tools.test_utils import allure_utils as allure
@@ -238,7 +239,22 @@ class NvueGeneralCli(SonicGeneralCliDefault):
 
     @staticmethod
     def apply_config(engine, ask_for_confirmation=False, option='', validate_apply_message='', rev_id="",
-                     skip_no_config_diff_err=True):
+                     skip_no_config_diff_err=True, verify_execution=False):
+        """
+        Apply configuration
+        :param option: could be [-y, --assume-yes, --assume-no, --confirm-yes, --confirm-no, --confirm-status]
+        :param engine: ssh engine object
+        :param ask_for_confirmation: True or False
+        """
+        if verify_execution:
+            SendCommandTool.execute_command(NvueGeneralCli._apply_config, engine, ask_for_confirmation, option,
+                                            validate_apply_message, rev_id, skip_no_config_diff_err).verify_result()
+        else:
+            return NvueGeneralCli._apply_config(engine, ask_for_confirmation, option, validate_apply_message, rev_id, skip_no_config_diff_err)
+
+    @staticmethod
+    def _apply_config(engine, ask_for_confirmation=False, option='', validate_apply_message='', rev_id="",
+                      skip_no_config_diff_err=True):
         """
         Apply configuration
         :param option: could be [-y, --assume-yes, --assume-no, --confirm-yes, --confirm-no, --confirm-status]

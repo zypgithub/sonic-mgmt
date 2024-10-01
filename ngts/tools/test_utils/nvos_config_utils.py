@@ -137,7 +137,7 @@ def clear_conf(dut_engine, markers=None, set_base_config_function=set_base_confi
                     set_base_config_function(dut_engine=dut_engine, apply=False)
 
                 with allure.step("Apply configurations"):
-                    NvueGeneralCli.apply_config(dut_engine, option='-y')
+                    NvueGeneralCli.apply_config(dut_engine, option='-y', verify_execution=True)
 
                 if should_wait_for_nvued_after_apply:
                     DutUtilsTool.wait_for_nvos_to_become_functional(dut_engine).verify_result()

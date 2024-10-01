@@ -11,12 +11,12 @@ from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.constants.constants import LinuxConsts
 from ngts.nvos_constants.constants_nvos import ApiType, DiskConsts
+from ngts.nvos_constants.constants_nvos import NvosConst, SystemConsts
 from ngts.nvos_tools.infra.DiskTool import DiskTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.RegressionConfigurations import RegressionConfigurations
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.authentication_restrictions.constants import RestrictionsConsts
-from ngts.nvos_constants.constants_nvos import NvosConst, SystemConsts
 from ngts.tests_nvos.system.clock.ClockConsts import ClockConsts
 from ngts.tools.test_utils import allure_utils as allure
 
@@ -80,7 +80,7 @@ def set_base_configurations(dut_engine, timezone=LinuxConsts.JERUSALEM_TIMEZONE,
 
         if apply:
             logging.info('Apply configurations')
-            NvueGeneralCli.apply_config(engine=dut_engine, option='-y')
+            NvueGeneralCli.apply_config(engine=dut_engine, option='-y', verify_execution=True)
 
         if save_conf:
             logging.info('Save configurations')
