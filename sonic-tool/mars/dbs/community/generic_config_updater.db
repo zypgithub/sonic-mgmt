@@ -54,4 +54,8 @@
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/generic_config_updater.cases </cases>
     </test>
 
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/golden_config_infra.cases </cases>
+    </test>
+
 </DBDEF>

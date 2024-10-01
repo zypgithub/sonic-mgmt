@@ -1,0 +1,18 @@
+[sonic_latest]
+r-tigon-11         ansible_host=10.210.25.10 ansible_hostv6="fe80::e42:a1ff:fe60:65d8" sonic_version=v2 hwsku="Mellanox-SN4600C-C64" iface_speed=100000 mgmt_subnet_mask_length=22 vm_base=VM1601
+
+[sonic:children]
+sonic_latest
+
+[ptf]
+ptf-r-tigon-11   ansible_host=10.213.14.62 ansible_ssh_user=root ansible_ssh_pass=root
+
+[lab:children]
+sonic
+fanout
+
+[lab:vars]
+mgmt_subnet_mask_length="24"
+
+[fanout]
+r-tigon-30          ansible_host=10.210.24.81 os=sonic

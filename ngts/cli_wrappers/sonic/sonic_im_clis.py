@@ -6,6 +6,7 @@ import os
 from ngts.helpers.interface_helpers import get_alias_number
 from ngts.helpers.sonic_branch_helper import get_sonic_branch
 from ngts.constants.constants import InfraConst, IndependentModuleConst, SonicConst
+from ngts.cli_util.cli_parsers import parse_show_interfaces_transceiver_eeprom
 
 logger = logging.getLogger()
 
@@ -23,7 +24,7 @@ class SonicImClis:
         @summary: This method is for check if system supports IM
         @return: True in case system is SPC3 or higher
         """
-        if self.general_cli.is_spc1(self.cli_obj) or self.general_cli.is_spc2(self.cli_obj):
+        if self.general_cli.is_spc1() or self.general_cli.is_spc2():
             return False
         else:
             return True
@@ -68,12 +69,12 @@ class SonicImClis:
         """
         parse_platform_summary = self.chassis_cli.parse_platform_summary()
         hwsku = parse_platform_summary["HwSKU"]
-        return hwsku in IndependentModuleConst.MS_HWSKU
+        return any(item in hwsku for item in IndependentModuleConst.PLATFORM_GENERATION)
 
     def get_ports_supporting_im(self, dut_ports_number_dict):
         """
         @summary: This method is for get DUT ports supporting IM
-        @return: list of IM ports supported
+        @return: dict with AOC cables, Passive Copper cables and all cables which are under SW control
         """
         ports_with_im_support = []
         ports_numbers_to_check = []
@@ -87,8 +88,15 @@ class SonicImClis:
             for index, port_name in enumerate(dut_ports_number_dict):
                 if int(split_output[index]) == 1:
                     ports_with_im_support.append(port_name)
-        logger.info(f'Ports supporting IM are {ports_with_im_support}')
-        return ports_with_im_support
+        active_optical_cables = self.get_active_optic_cables(ports_with_im_support)
+        passive_copper_cables = list(filter(lambda x: x not in active_optical_cables, ports_with_im_support))
+        logger.info(f'Ports supporting IM are {ports_with_im_support}'
+                    f'\n DUT active optical cables plug in at ports {active_optical_cables}. \n Passive coppers plug in'
+                    f' at ports {passive_copper_cables}')
+
+        return {'aoc_cables': active_optical_cables,
+                'passive_copper_cables': passive_copper_cables,
+                'all_cables': ports_with_im_support}
 
     def disable_autoneg_on_ports_supporting_im(self, port_supporting_im):
         """
@@ -97,6 +105,15 @@ class SonicImClis:
         logger.info(f'Disabling autoneg for ports {port_supporting_im}')
         for port in port_supporting_im:
             self.interface_cli.config_auto_negotiation_mode(port, "disabled")
+        self.general_cli.save_configuration()
+
+    def enable_autoneg_on_passive_copper(self, port_supporting_im):
+        """
+        @summary: This method is for disable auto negotiation at ports supporting IM
+        """
+        logger.info(f'Enabling autoneg for ports {port_supporting_im}')
+        for port in port_supporting_im:
+            self.interface_cli.config_auto_negotiation_mode(port, "enabled")
         self.general_cli.save_configuration()
 
     def enable_cmis_mgr_in_pmon_file(self, platform_params):
@@ -165,6 +182,28 @@ class SonicImClis:
                 self.engine.run_cmd("sudo cp /tmp/config_db.json /etc/sonic/config_db.json")
                 self.general_cli.reload_configuration(force=True)
 
+    def get_active_optic_cables(self, sw_control_cable_list):
+        sfputil_eeprom_output = self.engine.run_cmd('sudo sfputil show eeprom', validate=True)
+        parsed_eeprom_info_dict = parse_show_interfaces_transceiver_eeprom(sfputil_eeprom_output)
+        aoc_list = []
+        for cable in sw_control_cable_list:
+            vendor_pn = parsed_eeprom_info_dict[cable].get('Vendor PN', '').strip()
+            if vendor_pn in IndependentModuleConst.AOC_VENDOR_PN:
+                aoc_list.append(cable)
+        return aoc_list
+
+    def sw_controlled_aoc_cables(self, sw_control_dict):
+        """
+        @summary: This method is checking if aoc cables present at setup
+        @param: topology_obj: topology_obj fixture
+        @return: list of aoc cables if any or None
+        """
+        if sw_control_dict:
+            if sw_control_dict.get('aoc_cables'):
+                return sw_control_dict.get('aoc_cables')
+        else:
+            return None
+
     def enable_im(self, topology_obj, platform_params, chip_type, enable_im=True, is_community=False):
         """
         @summary: This method is for enable IM feature at DUT
@@ -180,7 +219,7 @@ class SonicImClis:
             with allure.step('Check if SPC3 or higher and is Microsoft SKU applied at system'):
                 if self.is_system_supports_im() and self.is_ms_hwsku():
                     with allure.step('Check if setup having cables that supports IM'):
-                        if platform_params.host_name in IndependentModuleConst.DUTS_SUPPORTING_IM:
+                        if "simx" not in platform_params.host_name:
                             with allure.step('Check if SONiC branch supports IM'):
                                 if sonic_branch not in skip_for_release:
                                     with allure.step('Check if IM enabled by default, if not - enable it'):
@@ -189,18 +228,23 @@ class SonicImClis:
                                         with allure.step('Get all ports supporting IM'):
                                             if self.is_im_enabled():
                                                 self.general_cli.verify_dockers_are_up()
-                                                port_supporting_im = \
+                                                ports_supporting_im = \
                                                     self.get_ports_supporting_im(
                                                         self.dut_ports_number_dict(topology_obj, is_community))
-                                                if port_supporting_im:
+                                                if ports_supporting_im.get('all_cables'):
                                                     with allure.step('Enable Independent Module feature at system:'
                                                                      ' Upload files, skip cmis_mgr, disable auto'
                                                                      ' neg at ports supporting IM'):
                                                         logger.info(f'Configure IM at DUT')
                                                         self.upload_cmis_files(platform_params, chip_type)
                                                         self.enable_cmis_mgr_in_pmon_file(platform_params)
-                                                        self.disable_autoneg_on_ports_supporting_im(
-                                                            port_supporting_im)
+                                                        if ports_supporting_im.get('aoc_cables'):
+                                                            self.disable_autoneg_on_ports_supporting_im(
+                                                                ports_supporting_im['aoc_cables'])
                                                         if is_community:
                                                             self.update_port_lanes_in_config_db(platform_params,
-                                                                                                port_supporting_im)
+                                                                                                ports_supporting_im[
+                                                                                                    'all_cables'])
+                                                            if ports_supporting_im.get('passive_copper_cables'):
+                                                                self.enable_autoneg_on_passive_copper(
+                                                                    ports_supporting_im['passive_copper_cables'], )

@@ -120,7 +120,7 @@ class SonicCli:
     @property
     def interface(self):
         if self._interface is None:
-            self._interface = SonicInterfaceCli(engine=self.engine)
+            self._interface = SonicInterfaceCli(engine=self.engine, cli_obj=self)
         return self._interface
 
     @property
@@ -145,7 +145,7 @@ class SonicCli:
     def general(self):
         if self._general is None:
             self._general = SonicGeneralCli(branch=self.branch, engine=self.engine, cli_obj=self,
-                                            host_alias=self.dut_alias)
+                                            dut_alias=self.dut_alias)
         return self._general
 
     @property
@@ -253,7 +253,7 @@ class SonicCli:
     @property
     def doroce(self):
         if self._doroce is None:
-            self._doroce = SonicDoroceCli(engine=self.engine)
+            self._doroce = SonicDoroceCli(engine=self.engine, cli_obj=self)
         return self._doroce
 
     @property

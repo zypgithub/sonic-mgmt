@@ -1,5 +1,8 @@
 import logging
+import time
 
+from ngts.nvos_constants.constants_nvos import SystemConsts
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.tools.test_utils.allure_utils import step as allure_step
 from ngts.nvos_tools.system.System import System
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
@@ -42,3 +45,16 @@ class HostMethods:
         system.snmp_server.set('listening-address', listening_address).verify_result()
         NvueGeneralCli.apply_config(engine)
         logging.info("Snmp enabled successfully")
+
+    @staticmethod
+    def wait_for_snmp_is_running(system, state=SystemConsts.SNMP_ENABLED_STATE, tries=5, timeout=2):
+        for _ in range(tries):
+            system_snmp_output = OutputParsingTool.parse_json_str_to_dictionary(system.snmp_server.show()) \
+                .get_returned_value()
+            if state in system_snmp_output[SystemConsts.SNMP_STATE]:
+                break
+            elif state not in system_snmp_output[SystemConsts.SNMP_STATE]:
+                time.sleep(timeout)
+                continue
+            else:
+                assert 'SNMP is not in {} state'.format(state)

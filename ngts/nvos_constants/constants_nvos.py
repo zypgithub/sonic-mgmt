@@ -1,6 +1,8 @@
 import os
 from enum import Enum
 
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
+
 
 class DatabaseConst:
     APPL_DB_NAME = "APPL_DB"
@@ -63,7 +65,7 @@ class NvosConst:
     IB_SWITCH_TYPE = "IB"
     QTM2 = "Quantum2"
     QTM3 = "Quantum3"
-    NVL5 = 'NVLink-5 switch'
+    NVL5 = "NVLink-5 switch"
     DESCRIPTION = 'description'
     PORT_STATUS_UP = 'up'
     PORT_STATUS_DOWN = 'down'
@@ -77,6 +79,7 @@ class NvosConst:
     ENABLED = 'enabled'
     DISABLED = 'disabled'
     NOT_AVAILABLE = 'N/A'
+    ALL = 'all'
 
     DOCKERS_LIST = ['pmon', 'syncd-ibv0', 'swss-ibv0', 'database']
     DOCKER_PER_ASIC_LIST = ['syncd-ibv0', 'swss-ibv0', 'database']
@@ -122,6 +125,8 @@ class NvosConst:
     SYSTEM_AAA_USER_ADMIN = 'admin'
     SYSTEM_AAA_USER_MONITOR = 'monitor'
     SYSTEM_AAA_USER_CUMULUS = 'cumulus'
+    SYSTEM_AAA_CLASS = 'class'
+    SYSTEM_AAA_ROLE = 'role'
 
     DEFAULT_CONFIG = {"system": {
         "aaa": {
@@ -145,6 +150,109 @@ class NvosConst:
         "timezone": "Asia/Jerusalem"
     }
     }
+    DEFAULT_NVOS_IFACE_CONFIG = {
+        "eth0": {
+            "acl": {
+                "ACL_MGMT_INBOUND_CP_DEFAULT": {
+                    "inbound": {
+                        "control-plane": {}
+                    }
+                },
+                "ACL_MGMT_INBOUND_CP_DEFAULT_IPV6": {
+                    "inbound": {
+                        "control-plane": {}
+                    }
+                },
+                "ACL_MGMT_INBOUND_DEFAULT": {
+                    "inbound": {}
+                },
+                "ACL_MGMT_INBOUND_DEFAULT_IPV6": {
+                    "inbound": {}
+                },
+                "ACL_MGMT_OUTBOUND_CP_DEFAULT": {
+                    "outbound": {
+                        "control-plane": {}
+                    }
+                },
+                "ACL_MGMT_OUTBOUND_CP_DEFAULT_IPV6": {
+                    "outbound": {
+                        "control-plane": {}
+                    }
+                }
+            },
+            "type": "eth"
+        },
+        "lo": {
+            "acl": {
+                "ACL_LOOPBACK_INBOUND_CP_DEFAULT": {
+                    "inbound": {
+                        "control-plane": {}
+                    }
+                },
+                "ACL_LOOPBACK_INBOUND_CP_DEFAULT_IPV6": {
+                    "inbound": {
+                        "control-plane": {}
+                    }
+                }
+            },
+            "type": "loopback"
+        }
+    }
+
+    DEFAULT_CL_CONFIG = {
+        "system": {
+            "wjh": {
+                "channel": {
+                    "forwarding": {
+                        "trigger": {
+                            "l2": {},
+                            "l3": {},
+                            "tunnel": {}
+                        }
+                    },
+                },
+                "enable": "on"
+            },
+            "timezone": "Etc/UTC",
+            "hostname": "cumulus",
+            "reboot": {
+                "mode": "cold"
+            },
+            "api": {
+                "state": "enabled"
+            },
+            "control-plane": {
+                "acl": {
+                    "acl-default-dos": {
+                        "inbound": {}
+                    },
+                    "acl-default-whitelist": {
+                        "inbound": {}
+                    }
+                }
+            },
+            "config": {
+                "auto-save": {
+                    "state": "enabled"
+                }
+            },
+            "ssh-server": {
+                "state": "enabled"
+            }
+        }
+    }
+
+    DEFAULT_CL_IFACE_CONFIG = {
+        "eth0": {
+            "ip": {
+                "address": {
+                    "dhcp": {}
+                },
+                "vrf": "mgmt"
+            },
+            "type": "eth"
+        }
+    }
 
     ONIE_NOS_INSTALL_CMD = 'onie-nos-install'
     INSTALL_SUCCESS_PATTERN = 'Installed.*base image.*successfully'
@@ -159,6 +267,15 @@ class NvosConst:
     NO_CONFIG_DIFF_APPLY_MSG = "config apply executed with no config diff"
     DECLINED_APPLY_MSG = 'Declined apply after warnings'
     Y_COMMAND_NOT_FOUND = 'y: command not found'
+
+
+class TopologyConsts:
+    MTL = "MTL"
+    MTVR = "MTVR"
+    CL = "CL"
+    site_server_ip = {MTL: "10.237.22.60",
+                      MTVR: "10.237.22.60",
+                      CL: "10.188.20.9"}
 
 
 class CertificateFiles:
@@ -189,6 +306,12 @@ class TestFlowType:
     GOOD_FLOW = 'GoodFlow'
     BAD_FLOW = 'BadFlow'
     ALL_TYPES = [GOOD_FLOW, BAD_FLOW]
+
+
+class RebootTestFlowType:
+    WITH_SAVE = 'save'
+    NO_SAVE = 'no-save'
+    ALL_TYPES = [WITH_SAVE, NO_SAVE]
 
 
 class OutputFormat:
@@ -258,6 +381,7 @@ class ActionConsts:
     RENAME = 'rename'
     RESET = 'reset'
     RESUME = 'resume'
+    UPDATE = 'update'
     POWER_CYCLE = 'power-cycle'
 
 
@@ -287,8 +411,10 @@ class SystemConsts:
     VERSION = 'version'
     SECURITY = 'security'
     TECHSUPPORT_FILES_PATH = '/host/dump/'
-    TECHSUPPORT_EMPTY_FILES_TO_IGNORE = ['queue.counters_2', 'queue.counters_1.0', 'swapon',
-                                         'queue.counters_1', 'queue.counters_2.0', 'queue.counters_1.1', 'queue.counters_2.1']
+    TECHSUPPORT_EMPTY_FILES_TO_IGNORE = ['queue.counters_2', 'queue.counters_1.0', 'swapon', 'queue.counters_1',
+                                         'queue.counters_2.0', 'queue.counters_1.1', 'queue.counters_2.1',
+                                         'queue.counters_1.3', 'queue.counters_1.2', 'queue.counters_2.3',
+                                         'queue.counters_2.2']
     PATH_KEY = 'path'
     LATEST_KEY = 'latest'
 
@@ -328,30 +454,29 @@ class SystemConsts:
                                      PROFILE_STATE_DISABLED, PROFILE_STATE_DISABLED, DEFAULT_NUM_SWIDS]
 
     SNMP_REFRESH_INTERVAL = 'auto-refresh-interval'
-    SNMP_IS_RUNNING = 'is-running'
     SNMP_LISTENING_ADDRESS = 'listening-address'
     SNMP_READONLY_COMMUNITY = 'readonly-community'
     SNMP_STATE = 'state'
     SNMP_SYSTEM_CONTACT = 'system-contact'
     SNMP_SYSTEM_LOCATION = 'system-location'
-    SNMP_OUTPUT_FIELDS = [SNMP_IS_RUNNING, SNMP_LISTENING_ADDRESS, SNMP_READONLY_COMMUNITY, SNMP_STATE]
+    SNMP_OUTPUT_FIELDS = [SNMP_LISTENING_ADDRESS, SNMP_READONLY_COMMUNITY, SNMP_STATE]
     SNMP_DEFAULT_STATE = 'disabled'
+    SNMP_ENABLED_STATE = 'enabled'
     SNMP_DEFAULT_REFRESH_INTERVAL = 60
-    SNMP_DEFAULT_IS_RUNNING = 'no'
     SNMP_DEFAULT_LISTENING_ADDRESS = {}
     SNMP_DEFAULT_READONLY_COMMUNITY = {}
-    SNMP_DEFAULT_VALUES = [SNMP_DEFAULT_IS_RUNNING, SNMP_DEFAULT_LISTENING_ADDRESS,
+    SNMP_DEFAULT_VALUES = [SNMP_DEFAULT_LISTENING_ADDRESS,
                            SNMP_DEFAULT_READONLY_COMMUNITY, SNMP_DEFAULT_STATE]
 
     SSH_CONFIG_AUTH_RETRIES = 'authentication-retries'
-    SSH_CONFIG_INACTIV_TIMEOUT = 'inactivity-timeout'
+    SSH_CONFIG_INACTIVE_TIMEOUT = 'inactive-timeout'
     SSH_CONFIG_LOGIN_TIMEOUT = 'login-timeout'
     SSH_CONFIG_MAX_SESSIONS = 'max-sessions'
-    SSH_CONFIG_PORTS = 'ports'
-    SSH_CONFIG_OUTPUT_FIELDS = [SSH_CONFIG_AUTH_RETRIES, SSH_CONFIG_INACTIV_TIMEOUT, SSH_CONFIG_LOGIN_TIMEOUT,
-                                SSH_CONFIG_MAX_SESSIONS, SSH_CONFIG_PORTS]
+    SSH_CONFIG_PORT = 'port'
+    SSH_CONFIG_OUTPUT_FIELDS = [SSH_CONFIG_AUTH_RETRIES, SSH_CONFIG_INACTIVE_TIMEOUT, SSH_CONFIG_LOGIN_TIMEOUT,
+                                SSH_CONFIG_MAX_SESSIONS, SSH_CONFIG_PORT]
     SSH_CONFIG_DEFAULT_AUTH_RETRY = '6'
-    SSH_CONFIG_DEFAULT_INACTIV_TIMEOUT = '15'
+    SSH_CONFIG_DEFAULT_INACTIVE_TIMEOUT = '15'
     SSH_CONFIG_DEFAULT_LOGIN_TIMEOUT = '120'
     SSH_CONFIG_DEFAULT_MAX_SESSION = '100'
     SSH_CONFIG_DEFAULT_PORTS = '22'
@@ -359,7 +484,7 @@ class SystemConsts:
     SSH_CONFIG_MAX_MAX_SESSION = 100
     SSH_CONFIG_MIN_INACTIV_TIMEOUT = 0
     SSH_CONFIG_MAX_INACTIV_TIMEOUT = 35000
-    SSH_CONFIG_DEFAULT_VALUES = [SSH_CONFIG_DEFAULT_AUTH_RETRY, SSH_CONFIG_DEFAULT_INACTIV_TIMEOUT,
+    SSH_CONFIG_DEFAULT_VALUES = [SSH_CONFIG_DEFAULT_AUTH_RETRY, SSH_CONFIG_DEFAULT_INACTIVE_TIMEOUT,
                                  SSH_CONFIG_DEFAULT_LOGIN_TIMEOUT, SSH_CONFIG_DEFAULT_MAX_SESSION,
                                  SSH_CONFIG_DEFAULT_PORTS]
 
@@ -537,7 +662,13 @@ class SystemConsts:
         "System will power cycle in a few seconds"
     )
 
+    LOCALHOST = "127.0.0.1"
+    DUMMY_IMAGE = "dummy.bin"
+    DUMMY_IMAGE_PATH = "/tmp/"
+
     SYSTEM_LAST_EVENT = 'last'
+    CONTACT = "contact"
+    LOCATION = "location"
 
 
 class DocumentsConsts:
@@ -553,8 +684,8 @@ class IpConsts:
     MAX_IPV6_GROUP_VALUE = 65535
     ARP_TIMEOUT = "arp-timeout"
     AUTOCONF = "autoconf"
-    PYTHON_PATH = '/auto/app/Python-3.8.8/bin/python3.8'
-    IB_DEV_2_NET_DEV = 'ibdev2netdev'
+    PYTHON_PATH = '/auto/app/Python-2.7.9/bin/python2.7'
+    IP_LINK_SET_INTERFACE = 'sudo ip link set {interface} {state}'
     MAD_TEMPLATE = 'sudo {python_path} {nvmad_path}/nvmad.py --lid {lid} --mad MAD.GMP.VS.SwitchNetworkInfo --Ca {card} --modifier {modifier}'
     IPV4_PREFIX = 'MAD.GMP.VS.SwitchNetworkInfo.IPv4[0].ipv4'
     IPV4_NETMASK_PREFIX = 'MAD.GMP.VS.SwitchNetworkInfo.IPv4[0].netmask'
@@ -607,7 +738,7 @@ class ConfigConsts:
 class PlatformConsts:
     PLATFORM_FW = "firmware"
     FW_PATH = "/auto/sw_system_project/MLNX_OS_INFRA/mlnx_os2/sx_mlnx_fw/"
-    XDR_FW_PATH = "/auto/mswg/release/sx_mlnx_fw/QTM3/rel-35_2014_0974/dev/"
+    XDR_FW_PATH = "/auto/mswg/release/sx_mlnx_fw/{asic}/{version}/dev/"
     PLATFORM_ENVIRONMENT = "environment"
     PLATFORM_HW = "hardware"
     PLATFORM_SW = "software"
@@ -626,9 +757,10 @@ class PlatformConsts:
     FW_SOURCE = "fw-source"
     FW_SOURCE_DEFAULT = "default"
     FW_SOURCE_CUSTOM = "custom"
-    FW_SPECTRUM1 = "1-Spectrum"
-    FW_SPECTRUM2 = "1-Spectrum2"
-    FW_SPECTRUM3 = "1-Spectrum3"
+    FW_SPECTRUM1 = "Spectrum"
+    FW_SPECTRUM2 = "Spectrum-2"
+    FW_SPECTRUM3 = "Spectrum-3"
+    FW_SPECTRUM4 = "Spectrum-4"
     FW_FIELDS = [FW_ACTUAL, FW_PART_NUMBER, FW_AUTO_UPDATE, FW_SOURCE]
     HARDWARE_TRANCEIVER_DIAGNOSTIC_STATUS = "diagnostics-status"
     HARDWARE_TRANCEIVER_NOT_EXIST = "Non present module"
@@ -675,7 +807,7 @@ class PlatformConsts:
     LEAK_STATUS_LEAK = '0'
     LEAK_STATUS_OK = '1'
     LEAKAGE_FILES_FOLDER = '/var/run/hw-management/system/'
-    LEAKAGE_FILES_SYSFS_FOLDER = '/sys/devices/platform/mlxplat/mlxreg-io/hwmon/hwmon3/'
+    LEAKAGE_FILES_SYSFS_FOLDER = '/sys/devices/platform/mlxplat/mlxreg-io/hwmon/'
     LEAKAGE_DEFAULT_OUTPUT_FIELDS = [LEAKAGE1, LEAKAGE2, LEAKAGE3, LEAKAGE4, LEAKAGE5, LEAKAGE6]
     LEAKAGE_DEFAULT_OUTPUT_VALUES = [{'state': 'ok'}]
     LEAKAGE_ALL_SENSOR_NOT_OK = [{'state': 'leak'}]
@@ -710,10 +842,12 @@ class PlatformConsts:
                                         CHASSIS_LOCATION_SLOT_ID: '0',
                                         CHASSIS_LOCATION_CHAS_ID: 'N/A',
                                         CHASSIS_LOCATION_TOPO_ID: 'Loopback'}
+    EROTS_LIST = ['ERoT_BMC_0', 'ERoT_CPU_0', 'ERoT_FPGA_0', 'ERoT_NVSwitch_0', 'ERoT_NVSwitch_1']
 
     INV_STATE = 'state'
     INV_OK = 'ok'
     ASIC_CONF_FILE_PATH = "/usr/share/sonic/device/{}/asic.conf"
+    INV_FAILED = 'failed'
 
 
 class FansConsts:
@@ -753,8 +887,9 @@ class IbConsts:
     SIGNAL_DEGRADE = "signal-degrade"
     DEVICE_ASIC_PREFIX = 'ASIC'
     SWID = "SWID"
-    IPOIB_INT0 = "ib0"
-    IPOIB_INT1 = "ib1"
+    IPOIB_INT = "ib{}"
+    IPOIB_INT0 = IPOIB_INT.format(0)
+    IPOIB_INT1 = IPOIB_INT.format(1)
     DEVICE_SYSTEM = 'SYSTEM'
     DEVICE_ASIC_LIST = ['guid', 'lid', 'subnet', 'type']
     DEVICE_SYSTEM_LIST = ['guid']
@@ -773,6 +908,14 @@ class IbConsts:
                                      'ibdiagnet2.debug', 'ibdiagnet2.net_dump_ext']
     IBDIAGNET_EXPECTED_MESSAGE = 'ibdiagnet output files were archived into ibdiagnet2_output.tgz'
     IB_INTERFACE_NAME_REGEX = "([a-zA-Z]+)(\d+)(p\d+)"  # noqa: E402
+    IB_DEV_2_NET_DEV = 'ibdev2netdev'
+    BASE_LID = 'ibstat | grep "Base lid"'
+    MAX_NUM_OF_BYTES = '8388608'
+    IB_SEND_LAT_SERVER = ('ib_send_lat -F -s ' + MAX_NUM_OF_BYTES + ' -D ' +
+                          '{traffic_duration}' + ' -d {ib_device} > ' + '{server_output}' + ' &')
+    IB_SEND_LAT_CLIENT = ('ib_send_lat -F -s ' + MAX_NUM_OF_BYTES + ' -D ' +
+                          '{traffic_duration}' + ' {server_ip} -d {ib_device} > ' + '{client_output}' + ' &')
+    GET_JOB_IB = 'jobs -l'
 
 
 class ImageConsts:
@@ -785,7 +928,7 @@ class ImageConsts:
     SWID = 'swid'
     FW_ASIC = 'ASIC'
     FW_STABLE_VERSION = 'rel-31_2010_4100-004-EVB.mfa'
-    XDR_FW_STABLE_VERSION = 'rel-35_2014_0974.mfa'
+    XDR_FW_STABLE_VERSION = 'rel-35_2014_1452.mfa'
     SCP_PATH = 'scp://{}:{}@{}'.format(NvosConst.ROOT_USER, NvosConst.ROOT_PASSWORD,
                                        'fit70')
     SCP_PATH_SERVER = 'scp://{username}:{password}@{ip}{path}'
@@ -1123,10 +1266,10 @@ class OperationTimeConsts:
     TEST_NAME_COL = 'test_name'
     SESSION_ID_COL = 'session_id'
     DATE_COL = 'date'
-    THRESHOLDS = {'reboot': 220,
+    THRESHOLDS = {'reboot': 250 if is_bug_active(4074566) else 220,     # TODO: revert once bug closed
                   'julietscaleout_reboot': 505,  # Currently there is a bug on this. Time needs to be decreased once fixed.
                   'julietscaleout reset factory': 550,  # Currently there is a bug on this. Time needs to be decreased once fixed.
-                  'reset factory': 260,
+                  'reset factory': 500,
                   'install user FW': 450,
                   'install default fw': 360,
                   'port goes up': 30,
@@ -1375,6 +1518,7 @@ class UfmMadConsts:
     MST_DEV_NAME = '/dev/mst/mt54002_pciconf0'
     IBSNI_REGISTER = 'IBSNI'
     PMAOS_REGISTER = 'PMAOS'
+    PREI_REGISTER = 'PREI'
     NVMAD_PATH = '/auto/sw_system_project/MLNX_OS_INFRA/mad_repository'
     LID = 1
     MAD_NO_IPV4 = '0.0.0.0'
@@ -1500,3 +1644,50 @@ class PtpConsts:
         EGR_CORRECTION_MSG_TYPE: REG_NA_VALUE
     }
     PTP_TABLE_TC = '\"PTP_TABLE|tc\"'
+
+
+class IssuConsts:
+    class IssuStatus(Enum):
+        NO_ISSU = 'no_issu'
+        IN_PROGRESS = 'in_progress'
+        FAILED = 'failed'
+        DONE = 'done'
+
+    ISSU_STATUS = 'issu-status'
+    ISSU = 'issu'
+    ISSU_SKIP_SM = 'issu skip-sm'
+    ISSU_NO_REBOOT = 'reboot no issu'
+    ISSU_INVALID_FLAG = 'issu skip-invalid'
+    DB_REQUEST_ISSU = 'WARM_RESTART_TABLE|request-issu'
+    DB_STATUS = 'status'
+    OPENSM_RESPONSE_CLEAR = ''
+    OPENSM_RESPONSE_NO = 'no'
+    OPENSM_RESPONSE_YES = 'yes'
+    OPENSM_RESPONSE_REQUESTING = 'requesting'
+    OPENSM_RESPONSE_ABORT = 'abort'
+    # DB_OPENSM_TIMEOUT = 'TBD'  # Currently not needed (constant 60 secs)
+    OLD_IMAGE = "/auto/sw_system_release/nos/nvos/25.02.1930-007/amd64/dev/nvos-amd64-25.02.1930-007.bin"
+    LOG_MSG_REACH_TO = "reach timeout..."  # TODO [L.A] update message once receiving 1st drop
+    LOG_MSG_LIST = [LOG_MSG_REACH_TO]  # TODO [L.A] add all log error messages
+    PYTHON_PATH = 'PYTHONPATH=/ngts_venv/ /ngts_venv/bin/python'
+    PING_SERVER_SCRIPT = '/sonic-mgmt/ngts/tests_nvos/system/ping_server.py'
+    CONTAINER_BU_TEMPLATE = '{python_path} {ping_server_script}'
+    SERVER_SCRIPT = PYTHON_PATH + PING_SERVER_SCRIPT
+    OPENSM_RESPONSE_TIMEOUT = '60'  # [sec]
+    TRAFFIC_DURATION = '120'  # [sec]
+    TRAFFIC_TIMEOUT = int(TRAFFIC_DURATION) + 10  # [sec]
+    SERVER_OUTPUT = 'server_output.txt'
+    CLIENT_OUTPUT = 'client_output.txt'
+    ERROR_CONFIG_MUST_BE_SAVED = ('Error: Action failed with the following issue:\n'
+                                  '  Configuration must be saved before performing ISSU')
+    ERROR_SYSTEM_MUST_BE_REBOOTED = ('Error: Action failed with the following issue:\n'
+                                     '  System must be rebooted during ISSU')
+    ERROR_OPENSM_NO_PERMISSION = ('Error: Action failed with the following issue:\n'
+                                  '  No permission from OpenSM')  # TODO: update message
+    ERROR_OPENSM_REACH_TIMEOUT = ('Error: Action failed with the following issue:\n'
+                                  '  Failed to install the image {image_version}.\n'
+                                  'No permission to perform ISSU from the SM')
+    ERROR_DOWNGRADE_NOT_ALLOWED = ('Error: Action failed with the following issue:\n'
+                                   '  Downgrade image is not allowed')  # TODO: update message
+    ERROR_ANY_ERROR = 'Error: Action failed with the following issue:'
+    SNMP_READ_ONLY_COMMUNITY = 'qwerty12'

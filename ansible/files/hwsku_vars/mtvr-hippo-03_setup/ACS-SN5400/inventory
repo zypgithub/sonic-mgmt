@@ -1,0 +1,46 @@
+[sonic_latest]
+# MTR testbed mtvr-hippo-03 topologies
+mtvr-hippo-03  ansible_host=10.245.20.245 sonic_version=v2  sonic_hwsku=ACS-SN5400 iface_speed=200000 serial_console="ssh -l rcon:7038 10.245.2.4" ptf_host=ptf-mtvr-hippo-03 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-245-2-13,pdu-10-245-2-35"
+mtvr-hippo-03-t0  ansible_host=10.245.20.245 sonic_version=v2  sonic_hwsku=ACS-SN5400 iface_speed=200000 serial_console="ssh -l rcon:7038 10.245.2.4" ptf_host=ptf-mtvr-hippo-03 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-245-2-13,pdu-10-245-2-35"
+mtvr-hippo-03-t0-64  ansible_host=10.245.20.245 sonic_version=v2  sonic_hwsku=ACS-SN5400 iface_speed=200000 serial_console="ssh -l rcon:7038 10.245.2.4" ptf_host=ptf-mtvr-hippo-03 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-245-2-13,pdu-10-245-2-35"
+mtvr-hippo-03-t1  ansible_host=10.245.20.245 sonic_version=v2  sonic_hwsku=ACS-SN5400 iface_speed=200000 serial_console="ssh -l rcon:7038 10.245.2.4" ptf_host=ptf-mtvr-hippo-03 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-245-2-13,pdu-10-245-2-35"
+mtvr-hippo-03-t1-lag  ansible_host=10.245.20.245 sonic_version=v2  sonic_hwsku=ACS-SN5400 iface_speed=200000 serial_console="ssh -l rcon:7038 10.245.2.4" ptf_host=ptf-mtvr-hippo-03 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-245-2-13,pdu-10-245-2-35"
+mtvr-hippo-03-ptf32  ansible_host=10.245.20.245 sonic_version=v2  sonic_hwsku=ACS-SN5400 iface_speed=200000 serial_console="ssh -l rcon:7038 10.245.2.4" ptf_host=ptf-mtvr-hippo-03 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-245-2-13,pdu-10-245-2-35"
+mtvr-hippo-03-ptf-any  ansible_host=10.245.20.245 sonic_version=v2  sonic_hwsku=ACS-SN5400 iface_speed=200000 serial_console="ssh -l rcon:7038 10.245.2.4" ptf_host=ptf-mtvr-hippo-03 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-245-2-13,pdu-10-245-2-35"
+
+mtvr-leopard-04 ansible_host=mtvr-leopard-04 ansible_ssh_user="{{ lookup('env','SONIC_SWITCH_USER') }}" ansible_ssh_pass="{{ lookup('env','SONIC_SWITCH_PASSWORD') }}" os=sonic
+
+[sonic:children]
+sonic_latest
+
+[leaf_topo_1]
+# MTR mtvr-hippo-03 topologies
+mtvr-hippo-03
+mtvr-hippo-03-t0
+mtvr-hippo-03-t0-64
+mtvr-hippo-03-t1
+mtvr-hippo-03-t1-lag
+mtvr-hippo-03-ptf32
+mtvr-hippo-03-ptf-any
+
+[leaf_topo_1:vars]
+podset_number=200
+
+[lab]
+# MTR mtvr-hippo-03 topologies
+mtvr-hippo-03
+mtvr-hippo-03-t0
+mtvr-hippo-03-t0-64
+mtvr-hippo-03-t1
+mtvr-hippo-03-t1-lag
+mtvr-hippo-03-ptf32
+mtvr-hippo-03-ptf-any
+
+[ptf]
+# mtvr-hippo-03 PTF host
+ptf-mtvr-hippo-03 ansible_host=10.245.34.122 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+10.245.34.122 ansible_host=10.245.34.122 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+
+[pdu]
+pdu-10-245-2-13 ansible_host=10.208.2.13 protocol=snmp
+pdu-10-245-2-35 ansible_host=10.208.2.35 protocol=snmp

@@ -21,12 +21,12 @@ from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tests_nvos.general.security.certificate.constants import TestCert
+from ngts.tests_nvos.general.security.certificate.helpers import import_test_certs
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
 from ngts.tests_nvos.system.gnmi.constants import CERTIFICATE, DEFAULT_CERTIFICATE, GnmicErr
 from ngts.tests_nvos.system.gnmi.constants import DUT_GNMI_CERTS_DIR, DOCKER_CERTS_DIR, GnmiMode, GrpcMsg, \
     SERVER_REFLECTION_SUBSCRIBE_RESPONSE
-from ngts.tools.test_utils.nvos_general_utils import generate_scp_uri_using_player
 
 logger = logging.getLogger()
 
@@ -200,7 +200,7 @@ def create_gnmi_and_redis_cmd_dict(redis_cmd_db_num, redis_cmd_table, redis_cmd_
 
 def get_infiniband_name_from_port_name(engine, port_name):
     output = Tools.DatabaseTool.sonic_db_cli_hget(engine=engine, asic="", db_name=DatabaseConst.APPL_DB_NAME,
-                                                  db_config=f"\"ALIAS_PORT_MAP:{port_name}\"", param="name")
+                                                  db_config=f"ALIAS_PORT_MAP:{port_name}", param="name")
     # output = engine.run_cmd(f"redis-cli -n 0 HGET \"ALIAS_PORT_MAP:{port_name}\" \"name\"")
     infiniband_name = output.replace("\"", "")
     return infiniband_name
@@ -316,7 +316,7 @@ def validate_redis_cli_and_gnmi_commands_results(engines, devices, gnmi_list, al
         gnmi_client_output = re.sub(r'(\\["\\n]+|\s+)', '', gnmi_client_output.split(":")[-1])
         redis_output = Tools.DatabaseTool.sonic_db_cli_hget(engine=engines.dut, asic="",
                                                             db_name=command[GnmiConsts.REDIS_CMD_DB_NAME],
-                                                            db_config=f"\"{command[GnmiConsts.REDIS_CMD_TABLE_NAME]}\"",
+                                                            db_config=f"{command[GnmiConsts.REDIS_CMD_TABLE_NAME]}",
                                                             param=command[GnmiConsts.REDIS_CMD_PARAM])
         if ',' in redis_output:
             redis_output = str(sorted(redis_output.split(',')))
@@ -457,38 +457,38 @@ def verify_gnmi_client_tools_installed():
         player.verify_grpcurl_installation()
 
 
-def factory_reset_gnmi_check():
+def gnmi_cert_factory_reset_no_params_check():
     engines = TestToolkit.engines
     cert = TestCert.cert_valid_1
     system = System()
     scp_engine = get_scp_player(engines)
     dut_engine = engines.dut
-    with allure.step('pre factory reset GNMI steps'):
-        with allure.step('verify player has gnmi client tools'):
-            verify_gnmi_client_tools_installed()
-        with allure.step(f'import and load certificate "{cert.name}" to gnmi'):
-            with allure.step(f'import cert {cert.name}'):
-                system.security.certificate.cert_id[cert.name].action_import(
-                    uri_bundle=generate_scp_uri_using_player(scp_engine, cert.p12_bundle),
-                    passphrase=cert.p12_password).verify_result()
-            with allure.step(f'set certificate "{cert.name}" to gnmi'):
-                system.gnmi_server.set(CERTIFICATE, cert.name, apply=True).verify_result()
-    yield
-    with allure.step('post factory reset GNMI steps'):
-        with allure.step(f'verify default gnmi certificate'):
+
+    with allure.step('verify player has gnmi client tools'):
+        verify_gnmi_client_tools_installed()
+    with allure.step(f'import cert {cert.name}'):
+        import_test_certs(scp_engine, TestToolkit.engines.dut, [cert])
+    with allure.step(f'set certificate "{cert.name}" to gnmi'):
+        system.gnmi_server.set(CERTIFICATE, cert.name, apply=True).verify_result()
+
+    yield   # do factory reset
+
+    with allure.step('verify no GNMI certificate'):
+        with allure.independent_step(f'verify default gnmi certificate'):
             out = OutputParsingTool.parse_json_str_to_dictionary(system.gnmi_server.show()).get_returned_value()
             assert out[CERTIFICATE] == DEFAULT_CERTIFICATE, (
                 f'value of field "{CERTIFICATE}" not as expected (default)\n'
                 f'expected (default): {DEFAULT_CERTIFICATE}\n'
                 f'actual: {out[CERTIFICATE]}')
-        with allure.step('verify client cannot request using the certificate'):
+        with allure.independent_step('verify client cannot request using the certificate'):
             verify_gnmi_client(TestFlowType.BAD_FLOW, cert.ip or cert.dn, GnmiConsts.GNMI_DEFAULT_PORT,
                                dut_engine.username, dut_engine.password, False, GnmicErr.CERT_VERIFY_FAIL,
                                cacert=cert.cacert)
+
     yield  # to prevent StopIteration on the 2nd next() call
 
 
-factory_reset_gnmi_checker = factory_reset_gnmi_check()  # generator
+factory_reset_gnmi_checker = gnmi_cert_factory_reset_no_params_check()  # generator
 
 
 def get_timestamp_of_first_gnmi_response(user: UserInfo, cert: CertInfo):

@@ -1,0 +1,18 @@
+[sonic_latest]
+r-anaconda-81      ansible_host=10.210.24.109 ansible_hostv6="fe80::268a:7ff:feb5:8280" sonic_version=v2 hwsku="ACS-MSN3700" iface_speed=100000 mgmt_subnet_mask_length=22 vm_base=VM0301
+
+[sonic:children]
+sonic_latest
+
+[ptf]
+ptf-r-anaconda-81    ansible_host=10.213.86.93 ansible_ssh_user=root ansible_ssh_pass=root
+
+[lab:children]
+sonic
+fanout
+
+[lab:vars]
+mgmt_subnet_mask_length="24"
+
+[fanout]
+arc-switch1039      ansible_host=10.210.25.47 os=mellanox

@@ -6,6 +6,8 @@ import argparse
 import logging
 import time
 
+from retry.api import retry_call
+
 path = os.path.abspath(__file__)
 sonic_mgmt_path = path.split('/ngts/')[0]
 sys.path.append(sonic_mgmt_path)
@@ -63,7 +65,8 @@ def export_json_to_mars_db(session_id, mars_key_id, cli_type):
     if os.path.exists(json_file_path):
         if is_mars_session_still_running(session_id):
             logger.info('Exporting json data at file: {} to MARS SQL DB'.format(json_file_path))
-            write_json_into_mars_db(json_file_path, cli_type)
+            retry_call(write_json_into_mars_db, fargs=[json_file_path, cli_type],
+                       tries=5, delay=15, logger=logger)
             logger.info("Data was exported successfully!")
     else:
         logger.warning("Json file: {} doesn't exist - No data was exported".format(json_file_path))

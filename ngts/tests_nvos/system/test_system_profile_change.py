@@ -59,6 +59,9 @@ def test_system_profile_negative(engines, devices):
         1. Testing all negative scenarios for action
         2. Verify no changes
     """
+    if not devices.dut.profile_change_supported:
+        pytest.skip("Profile change is not supported on this setup")
+
     system = System(None)
     with allure.step('Negative testing'):
         action_command = 'nv action change system profile'
@@ -106,9 +109,11 @@ def test_system_profile_adaptive_routing(engines, players, interfaces, start_sm,
     with allure.step('Change adaptive-routing-groups, check changes and traffic'):
         with allure.step("Change adaptive-routing-groups to possible value"):
             positive_group_value = random.randrange(128, 4096, 128)
-            system.profile.action_profile_change(params_dict={'adaptive-routing': 'enabled',
-                                                              'adaptive-routing-groups': positive_group_value,
-                                                              'breakout-mode': 'disabled'})
+
+            params = {'adaptive-routing': 'enabled', 'adaptive-routing-groups': positive_group_value}
+            if devices.dut.split_ports_supported:
+                params['breakout-mode'] = 'disabled'
+            system.profile.action_profile_change(params_dict=params)
 
         with allure.step("Start OpenSm"):
             OpenSmTool.start_open_sm(engines).verify_result()

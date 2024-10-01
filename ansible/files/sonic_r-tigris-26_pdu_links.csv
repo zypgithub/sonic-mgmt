@@ -1,5 +1,0 @@
-StartDevice,StartPort,EndDevice,EndPort,EndFeed
-pdu-10-208-0-18,1.14,r-tigris-26,PSU1,
-pdu-10-208-0-18,1.15,r-tigris-26,PSU2,
-pdu-10-208-0-18,1.19,r-tigris-27,PSU1,
-pdu-10-208-0-18,1.20,r-tigris-27,PSU2,

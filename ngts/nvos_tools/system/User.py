@@ -11,6 +11,7 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from infra.tools.connection_tools.utils import generate_strong_password
+from ngts.nvos_tools.system.Ssh import *
 
 logger = logging.getLogger()
 
@@ -82,6 +83,7 @@ class UserId(BaseComponent):
     def __init__(self, parent, user_id):
         super().__init__(parent=parent, path=f'/{user_id}')
         self.username = user_id
+        self.ssh = Ssh(self)
 
     def action_disconnect(self, engine=None):
         engine = engine if engine else TestToolkit.engines.dut
@@ -94,4 +96,4 @@ class UserId(BaseComponent):
         with allure.step(f'verify that field {field} of user "{self.username}" is "{expected_value}"'):
             output = OutputParsingTool.parse_json_str_to_dictionary(self.show(dut_engine=show_cmd_engine)).verify_result()
             assert output[field] == expected_value, f"Actual {field} of user {self.username} is {output[field]}. " \
-                                                    f"Expected: {expected_value}"
+                f"Expected: {expected_value}"

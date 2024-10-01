@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 import signal
 import subprocess
 from typing import Tuple, List
@@ -25,17 +26,24 @@ class CmdRunner:
             for process in self._live_processes:
                 self.kill_cmd_process(process, kill_only=True)
 
-    def run_cmd(self, cmd: str) -> str:
+    def run_cmd(self, cmd: str, allowed_err: str = '') -> str:
         """
         run a given command
             - wait till command is done
             - asserts that there's no error
         @param cmd: the command to run
+        @param allowed_err: regex pattern to allow in err channel of the running command.
+            if specified, and if regex pattern matches the err channel (exists in), then ignore the error.
         @return: the output of the command
         """
         out, err, _ = self.run_cmd_in_process(cmd)
+
         self._log(f'verify command had no errors in err channel')
-        assert not err, f'command failed with error in err channel.\ncmd: "{cmd}"\nerr:\n{err}'
+        cmd_ok = not err
+        if allowed_err:
+            cmd_ok = cmd_ok or bool(re.search(allowed_err, err))
+        assert cmd_ok, f'command failed with error in err channel.\ncmd: "{cmd}"\nerr:\n{err}'
+
         return out.strip()
 
     def run_cmd_in_process(self, cmd: str, keep_process_alive: bool = False, wait_till_done: bool = True, cmd_timeout=None) -> Tuple[str, str, subprocess.Popen]:

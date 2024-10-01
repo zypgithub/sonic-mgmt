@@ -77,7 +77,6 @@ def test_show_ztp_command(engines, devices, serial_engine):
     finally:
         system.ztp.action_abort_ztp()
         engines.dut.run_cmd('sudo rm -f /host/ztp/ztp_data_local.json')
-        system.ztp.action_run_ztp()
 
 
 @pytest.mark.ztp
@@ -95,6 +94,9 @@ def test_ztp_json(engines, devices):
     system = System(None)
 
     try:
+        with allure.step("Run nv action run system ztp"):
+            system.ztp.action_run_ztp()
+
         _wait_until_ztp_values_fields_changed(system, SystemConsts.ZTP_OUTPUT_FIELDS, SystemConsts.ZTP_DEFAULT_VALUES)
 
         with allure.step("Download dummy json file"):
@@ -163,7 +165,6 @@ def test_ztp_json(engines, devices):
     finally:
         system.ztp.action_abort_ztp()
         engines.dut.run_cmd('sudo rm -f /host/ztp/ztp_data_local.json')
-        system.ztp.action_run_ztp()
 
 
 @pytest.mark.ztp
@@ -179,6 +180,9 @@ def test_ztp_image(engines, devices):
     system = System(None)
 
     try:
+        with allure.step("Run nv action run system ztp"):
+            system.ztp.action_run_ztp()
+
         _wait_until_ztp_values_fields_changed(system, SystemConsts.ZTP_OUTPUT_FIELDS, SystemConsts.ZTP_DEFAULT_VALUES)
 
         with allure.step("Download image json file"):
@@ -206,7 +210,6 @@ def test_ztp_image(engines, devices):
     finally:
         system.ztp.action_abort_ztp()
         engines.dut.run_cmd('sudo rm -f /host/ztp/ztp_data_local.json')
-        system.ztp.action_run_ztp()
 
 
 @pytest.mark.ztp
@@ -229,6 +232,9 @@ def test_ztp_startup_file_commands_list(engines, devices):
     TestToolkit.update_tested_ports([selected_port])
 
     try:
+        with allure.step("Run nv action run system ztp"):
+            system.ztp.action_run_ztp()
+
         _wait_until_ztp_values_fields_changed(system, SystemConsts.ZTP_OUTPUT_FIELDS, SystemConsts.ZTP_DEFAULT_VALUES)
 
         with allure.step("Download json file with wrong ip"):
@@ -305,7 +311,6 @@ def test_ztp_startup_file_commands_list(engines, devices):
     finally:
         system.ztp.action_abort_ztp()
         engines.dut.run_cmd('sudo rm -f /host/ztp/ztp_data_local.json')
-        system.ztp.action_run_ztp()
 
 
 @pytest.mark.ztp
@@ -320,6 +325,9 @@ def test_ztp_connectivity_check(engines, devices):
     system = System(None)
 
     try:
+        with allure.step("Run nv action run system ztp"):
+            system.ztp.action_run_ztp()
+
         _wait_until_ztp_values_fields_changed(system, SystemConsts.ZTP_OUTPUT_FIELDS, SystemConsts.ZTP_DEFAULT_VALUES)
 
         with allure.step("Download ping ipv4 and ipv6 json file"):
@@ -351,7 +359,6 @@ def test_ztp_connectivity_check(engines, devices):
     finally:
         system.ztp.action_abort_ztp()
         engines.dut.run_cmd('sudo rm -f /host/ztp/ztp_data_local.json')
-        system.ztp.action_run_ztp()
 
 
 @pytest.mark.ztp
@@ -366,6 +373,9 @@ def test_ztp_json_complex(engines, devices):
     system = System(None)
 
     try:
+        with allure.step("Run nv action run system ztp"):
+            system.ztp.action_run_ztp()
+
         _wait_until_ztp_values_fields_changed(system, SystemConsts.ZTP_OUTPUT_FIELDS, SystemConsts.ZTP_DEFAULT_VALUES)
 
         with allure.step("Download complex json file"):

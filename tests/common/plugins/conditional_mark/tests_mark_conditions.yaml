@@ -140,9 +140,9 @@ bgp/test_bgp_speaker.py:
 
 bgp/test_bgp_suppress_fib.py:
   skip:
-    reason: "Not supported before release 202405."
+    reason: "Not supported before release 202411."
     conditions:
-      - "release in ['201811', '201911', '202012', '202205', '202211', '202305', '202311']"
+      - "release in ['201811', '201911', '202012', '202205', '202211', '202305', '202311', '202405']"
 
 bgp/test_bgpmon.py:
   skip:
@@ -161,11 +161,17 @@ bgp/test_traffic_shift.py::test_load_minigraph_with_traffic_shift_away:
 #######################################
 #####            cacl             #####
 #######################################
+cacl/test_cacl_application.py:
+  skip:
+    reason: "Skip test_cacl_application temporarily due to known issue"
+    conditions:
+      - https://github.com/sonic-net/sonic-mgmt/issues/13805
+
 cacl/test_cacl_application.py::test_cacl_application_dualtor:
   skip:
     reason: "test_cacl_application_dualtor is only supported on dualtor topology"
     conditions:
-      - "topo_name not in ['dualtor', 'dualtor-56', 'dualtor-64', 'dualtor-120']"
+      - "topo_name not in ['dualtor', 'dualtor-56', 'dualtor-64', 'dualtor-64-breakout', 'dualtor-120']"
 
 cacl/test_cacl_application.py::test_cacl_application_nondualtor:
   skip:
@@ -679,6 +685,16 @@ generic_config_updater/test_pg_headroom_update.py:
     reason: "Unsupported topology."
     conditions:
       - "topo_type in ['m0', 'mx']"
+
+#######################################
+#####     golden_config_infra     #####
+#######################################
+golden_config_infra/test_config_reload_with_rendered_golden_config.py:
+  skip:
+    reason: 'Skipping test on mellanox platform due to bug of https://github.com/sonic-net/sonic-mgmt/issues/14327'
+    conditions:
+      - "asic_type in ['mellanox']"
+      - https://github.com/sonic-net/sonic-mgmt/issues/14327
 
 #######################################
 #####           hash              #####
@@ -1566,7 +1582,7 @@ vlan/test_vlan.py::test_vlan_tc7_tagged_qinq_switch_on_outer_tag:
   skip:
     reason: "Unsupported platform."
     conditions:
-      - "asic_type not in ['mellanox', 'barefoot']"
+      - "asic_type not in ['mellanox', 'barefoot', 'cisco-8000']"
 
 vlan/test_vlan_ping.py:
   skip:

@@ -6,17 +6,17 @@ from ngts.cli_wrappers.nvue.nvue_system_clis import NvueSystemCli
 from ngts.cli_wrappers.sonic.sonic_general_clis import *
 from ngts.constants.constants import InfraConst
 from ngts.constants.constants import MarsConstants
-from ngts.nvos_constants.constants_nvos import NvosConst, ActionConsts, SystemConsts, ConfState
+from ngts.nvos_constants.constants_nvos import NvosConst, ActionConsts, SystemConsts, ConfState, TopologyConsts
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
+from ngts.nvos_tools.infra.GrubMenuTool import GrubMenuTool
 from ngts.tests_nvos.general.security.test_secure_boot.constants import SecureBootConsts
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
-server_ip = "10.237.22.60"
 
 
 class NvueGeneralCli(SonicGeneralCliDefault):
-
     """
     This class is for general cli commands for NVOS only
     Most of the methods are inherited from SonicGeneralCli
@@ -61,7 +61,8 @@ class NvueGeneralCli(SonicGeneralCliDefault):
         :return: True/False
         """
         image_supports = True
-        logger.info(f"dut: {dut_name} {'supports' if image_supports else 'does not support'} version: {base_version_url}")
+        logger.info(
+            f"dut: {dut_name} {'supports' if image_supports else 'does not support'} version: {base_version_url}")
         return image_supports
 
     def _verify_dockers_are_up(self, dockers_list):
@@ -124,7 +125,7 @@ class NvueGeneralCli(SonicGeneralCliDefault):
             found_pattern_index = self._onie_nos_install_image(serial_engine, image_url,
                                                                self.device.install_success_patterns +
                                                                [NvosConst.INSTALL_WGET_ERROR])
-            if found_pattern_index == len(self.device.install_success_patterns):    # wget error
+            if found_pattern_index == len(self.device.install_success_patterns):  # wget error
                 logger.info('Failed for wget error. wait and retry')
                 time.sleep(20)
                 wget_error = True
@@ -141,12 +142,13 @@ class NvueGeneralCli(SonicGeneralCliDefault):
 
         logger.info(f'*** Image {image_path} successfully installed ***')
 
-    def install_nos_using_onie_in_serial(self, nos_image: str, ssh_engine, topology_obj):
+    def install_nos_using_onie_in_serial(self, nos_image: str, ssh_engine, topology_obj,
+                                         serial_engine: PexpectSerialEngine = None):
         with allure.step("Get image path and url"):
             image_path, image_url = self._get_image_path_and_url(nos_image)
 
-        with allure.step('Create serial connection'):
-            serial_engine = self.enter_serial_connection_context(topology_obj)
+        with allure.step('Get serial connection'):
+            serial_engine = serial_engine or self.enter_serial_connection_context(topology_obj)
 
         with allure.step(f'Install image {image_url} using {NvosConst.ONIE_NOS_INSTALL_CMD}'):
             self._install_image_on_onie(serial_engine, ssh_engine, image_path, image_url)
@@ -160,7 +162,8 @@ class NvueGeneralCli(SonicGeneralCliDefault):
 
     def deploy_image(self, topology_obj, image_path, apply_base_config=False, setup_name=None,
                      platform_params=None, deploy_type='sonic', reboot_after_install=None, fw_pkg_path=None,
-                     set_timezone='Israel', disable_ztp=False, configure_dns=False):
+                     set_timezone='Israel', disable_ztp=False, configure_dns=False, destination_hwsku=None,
+                     setup_info=None, dut_alias=None, deploy_fanout_threads=None):
         if image_path.startswith('http'):
             image_path = '/auto/' + image_path.split('/auto/')[1]
 
@@ -172,19 +175,22 @@ class NvueGeneralCli(SonicGeneralCliDefault):
         self.deploy_onie(image_path, in_onie, fw_pkg_path, platform_params, topology_obj)
 
     def install_image_onie(self, engine, image_path, platform_params, topology_obj):
+        with allure.step('Create serial connection'):
+            serial_engine = self.enter_serial_connection_context(topology_obj)
         with allure.step('Install image onie - NVOS'):
             # SonicOnieCli(dut_ip, dut_ssh_port).install_image(image_path=image_path, platform_params=platform_params,
             #                                                  topology_obj=topology_obj)
-            self.install_nos_using_onie_in_serial(image_path, engine, topology_obj)
-
+            self.install_nos_using_onie_in_serial(image_path, engine, topology_obj, serial_engine)
         with allure.step("Complete installation"):
-            self._wait_nos_to_become_functional(engine, topology_obj)
+            self._wait_nos_to_become_functional(engine, topology_obj, serial_engine)
 
-    def _wait_nos_to_become_functional(self, engine, topology_obj=""):
+    def _wait_nos_to_become_functional(self, engine, topology_obj, serial_engine: PexpectSerialEngine = None):
         with allure.step('Ping switch until shutting down'):
             ping_till_alive(should_be_alive=False, destination_host=engine.ip)
         with allure.step('Ping switch until back alive'):
             ping_till_alive(should_be_alive=True, destination_host=engine.ip)
+        with allure.step('wait for System is ready in serial'):
+            DutUtilsTool.wait_for_system_ready_in_serial(topology_obj, serial_engine, self.device.system_is_ready_wait_timeout)
         with allure.step('Wait until switch is up'):
             engine.disconnect()  # force engines.dut to reconnect
             DutUtilsTool.wait_for_nvos_to_become_functional(engine=engine)
@@ -329,9 +335,22 @@ class NvueGeneralCli(SonicGeneralCliDefault):
         cmd = topology_obj.players['dut_serial']['attributes'].noga_query_data['attributes']['Specific'][
             'remote_reboot']
         assert cmd, "Reboot command is empty"
+
+        server_ip = self.get_site_server_ip(topology_obj)
+
+        # cmd = SshPassCmdBuilder(os.getenv("TEST_SERVER_USER"), os.getenv("TEST_SERVER_PASSWORD"), server_ip, cmd_to_execute=cmd).set_ssn().build()
+        # CmdRunner().run_cmd_in_process(cmd)
         ssh_conn = LinuxSshEngine(ip=server_ip, username=os.getenv("TEST_SERVER_USER"),
                                   password=os.getenv("TEST_SERVER_PASSWORD"))
         ssh_conn.run_cmd(cmd)
+
+    def get_site_server_ip(self, topology_obj):
+        setup_site = topology_obj.players['dut_serial']['attributes'].noga_query_data['attributes']['Common']['Site']
+        if setup_site and setup_site in TopologyConsts.site_server_ip.keys():
+            server_ip = TopologyConsts.site_server_ip[setup_site]
+        else:
+            server_ip = TopologyConsts.site_server_ip[TopologyConsts.MTL]  # default
+        return server_ip
 
     def enter_serial_connection_context(self, topology_obj):
         '''
@@ -371,12 +390,10 @@ class NvueGeneralCli(SonicGeneralCliDefault):
             self.remote_reboot(topology_obj)
 
         with allure.step('wait for NVOS/ONIE grub menu'):
-            logger.info("Enter ONIE install mode")
-            logger.info("Wait for NVOS/ONIE grub menu")
             # Set timeout based on the active status of Redmine issue #4028150
-            to = 360 if is_redmine_issue_active([4028150])[0] else 240
-            onie_grub_menu_pattern = '\\*ONIE: Install OS'
-            grub_menu_patterns = ['ONIE\\s+', onie_grub_menu_pattern]
+            to = 360 if is_bug_active(4028150) else 240
+            onie_install_os = 'ONIE: Install OS'
+            grub_menu_patterns = ['ONIE\\s+', onie_install_os]
             all_patterns = grub_menu_patterns + SecureBootConsts.INVALID_SIGNATURE
             output, respond = serial_engine.run_cmd('', all_patterns, timeout=to, send_without_enter=True)
 
@@ -386,16 +403,13 @@ class NvueGeneralCli(SonicGeneralCliDefault):
                     with allure.step('hit Enter till no error message'):
                         while respond >= len(grub_menu_patterns):
                             logger.info('Hit Enter on secure boot error message')
-                            output, respond = serial_engine.run_cmd("\r", expected_value=all_patterns, timeout=to, send_without_enter=True)
+                            output, respond = serial_engine.run_cmd("\r", expected_value=all_patterns, timeout=to,
+                                                                    send_without_enter=True)
                             time.sleep(1)
 
             elif respond == 0:
                 with allure.step("System in NVOS grub menu, entering ONIE grub menu"):
-                    for i in range(2):
-                        logger.info("Sending one arrow down")
-                        serial_engine.run_cmd("\x1b[B", expected_value='.*', send_without_enter=True)
-                        time.sleep(0.3)
-                    logger.info("Onie option selected")
+                    GrubMenuTool.select_grub_menu_item(serial_engine, 'ONIE')
 
                     logger.info("Pressing Enter to enter ONIE grub menu")
                     _, respond = serial_engine.run_cmd('\r',
@@ -406,14 +420,10 @@ class NvueGeneralCli(SonicGeneralCliDefault):
 
                     if respond != 2:
                         with allure.step("MLNX-OS system. Enter 'YES' and wait till in ONIE grub menu"):
-                            serial_engine.run_cmd('YES', onie_grub_menu_pattern, timeout=420)
+                            serial_engine.run_cmd('YES', onie_install_os, timeout=420)
 
-            with allure.step('in ONIE grub menu: Go up to onie install mode'):
-                with allure.step("Send up arrows for case default mode is Rescue"):
-                    for i in range(5):
-                        logger.info("Sending one arrow up")
-                        serial_engine.run_cmd("\x1b[A", expected_value='.*', send_without_enter=True)
-                        time.sleep(0.3)
+        with allure.step('in ONIE grub menu: Go to onie install mode'):
+            GrubMenuTool.select_grub_menu_item(serial_engine, onie_install_os)
 
         with allure.step("Waiting for onie prompt"):
             self.wait_for_onie_prompt(serial_engine)
@@ -428,7 +438,8 @@ class NvueGeneralCli(SonicGeneralCliDefault):
         if respond == 0:
             with allure.step('System is secured. Login to ONIE with credentials'):
                 logger.info(f'Send line: "{DefaultConnectionValues.ONIE_USERNAME}"')
-                output, respond = serial_engine.run_cmd(DefaultConnectionValues.ONIE_USERNAME, '[Pp]assword:', timeout=10)
+                output, respond = serial_engine.run_cmd(DefaultConnectionValues.ONIE_USERNAME, '[Pp]assword:',
+                                                        timeout=10)
                 logger.info(output)
                 logger.info(f'Send line: "{DefaultConnectionValues.ONIE_PASSWORD}"')
                 output, respond = serial_engine.run_cmd(DefaultConnectionValues.ONIE_PASSWORD, 'ONIE:~ #', timeout=20)

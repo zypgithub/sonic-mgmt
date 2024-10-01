@@ -15,13 +15,14 @@ class TestDPBNegative:
     @pytest.fixture(autouse=True)
     def setup(self, topology_obj, engines,
               cli_objects, ports_breakout_modes,
-              dut_ports_default_speeds_configuration, tested_modes_lb_conf):
+              dut_ports_default_speeds_configuration, tested_modes_lb_conf, sw_control_ports):
         self.topology_obj = topology_obj
         self.dut_engine = engines.dut
         self.cli_object = cli_objects.dut
         self.ports_breakout_modes = ports_breakout_modes
         self.dut_ports_default_speeds_configuration = dut_ports_default_speeds_configuration
         self.tested_modes_lb_conf = tested_modes_lb_conf
+        self.sw_control_ports = self.cli_object.im.sw_controlled_aoc_cables(sw_control_ports)
 
     @allure.title('Dynamic Port Breakout negative test: breakout on unbreakable port')
     def test_breakout_unbreakable_ports(self):
@@ -31,7 +32,7 @@ class TestDPBNegative:
         """
         try:
             breakout_mode, lb = random.choice(list(self.tested_modes_lb_conf.items()))
-            unsplittable_ports_list = self.get_unsplittable_ports_list()
+            unsplittable_ports_list = self.get_unsplittable_ports_list(self.sw_control_ports)
             if len(unsplittable_ports_list) == 0:
                 pytest.skip("Setup has no unsplittable ports to test breakout on - test is ignored")
             unsplittable_port = [random.choice(unsplittable_ports_list)]
@@ -50,8 +51,11 @@ class TestDPBNegative:
         """
         try:
             breakout_mode, lb = random.choice(list(self.tested_modes_lb_conf.items()))
-            mutual_breakout_modes = get_mutual_breakout_modes(self.ports_breakout_modes, lb)
-            unsupported_breakout_mode = random.choice(list(all_breakout_options.difference(set(mutual_breakout_modes))))
+            mutual_breakout_modes = set(get_mutual_breakout_modes(self.ports_breakout_modes, lb))
+            for port in lb:
+                curr_breakout_mode = self.cli_object.interface.get_interface_current_breakout_mode(port)
+                mutual_breakout_modes.add(curr_breakout_mode)
+            unsupported_breakout_mode = random.choice(list(all_breakout_options.difference(mutual_breakout_modes)))
             with allure.step(f'Verify unsupported breakout mode {unsupported_breakout_mode} '
                              f'on ports {lb} fails as expected'):
                 self.verify_negative_breakout_configuration(lb, unsupported_breakout_mode)
@@ -112,12 +116,15 @@ class TestDPBNegative:
             post_breakout_speed_conf = self.cli_object.interface.get_interfaces_speed(ports_list)
         compare_actual_and_expected_speeds(pre_breakout_speed_conf, post_breakout_speed_conf)
 
-    def get_unsplittable_ports_list(self):
+    def get_unsplittable_ports_list(self, ports_to_exclude=None):
         """
+        :param ports_to_exclude: list of ports to be excluded from dpb test case
         :return: a list of ports on dut which doesn't support any breakout mode
         """
         unsplittable_ports = []
         for port_alias, port_name in self.topology_obj.ports.items():
+            if ports_to_exclude and port_name in ports_to_exclude:
+                continue
             if port_alias.startswith("dut") and "splt" not in port_alias and \
                     not is_splittable(self.ports_breakout_modes, port_name):
                 unsplittable_ports.append(port_name)

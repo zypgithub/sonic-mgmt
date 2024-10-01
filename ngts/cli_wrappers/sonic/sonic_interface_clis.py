@@ -8,14 +8,16 @@ from ngts.cli_wrappers.common.interface_clis_common import InterfaceCliCommon
 from ngts.cli_wrappers.sonic.sonic_general_clis import SonicGeneralCliDefault
 from ngts.cli_util.cli_parsers import generic_sonic_output_parser, parse_show_interfaces_transceiver_eeprom
 from ngts.constants.constants import AutonegCommandConstants, SonicConst
+from infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 logger = logging.getLogger()
 
 
 class SonicInterfaceCli(InterfaceCliCommon):
 
-    def __init__(self, engine):
+    def __init__(self, engine, cli_obj):
         self.engine = engine
+        self.cli_obj = cli_obj
 
     def add_interface(self, interface, iface_type):
         raise NotImplementedError
@@ -296,8 +298,9 @@ class SonicInterfaceCli(InterfaceCliCommon):
 
     def get_tries_num(self):
         tries_num = 32
-        is_simx_moose = SonicGeneralCliDefault.is_simx_moose(self.engine)
-        if is_simx_moose:
+        if is_redmine_issue_active([4027501]) and self.cli_obj.general.is_simx_bison():
+            tries_num = 120
+        elif self.cli_obj.general.is_simx_moose():
             #  Adding extra minute for simx SPC4 due to scale limitations
             tries_num = 44
         return tries_num
@@ -437,6 +440,17 @@ class SonicInterfaceCli(InterfaceCliCommon):
             matched_added_ports_json_string = re.search(regex, breakout_cmd_output, re.IGNORECASE).group(2)
             created_breakout_ports = json.loads(matched_added_ports_json_string)
         return created_breakout_ports
+
+    def get_interface_current_breakout_mode(self, interface):
+        """
+        return current breakout mode on the interface
+        :param interface: i.e, Ethernet0
+        :return: breakout mode, i.e, 1x400G[200G,100G,50G,40G,25G,10G,1G]
+        """
+        output = self.engine.run_cmd(f"show interfaces breakout current-mode {interface}")
+        breakout_pattern = r"(\dx\d+G\[[\d*G,]*\]|\dx\d+G|\dx\d+\[[\d+,]*\])"
+        breakout_mode = re.search(breakout_pattern, output).group(1)
+        return breakout_mode
 
     def config_auto_negotiation_mode(self, interface, mode):
         """

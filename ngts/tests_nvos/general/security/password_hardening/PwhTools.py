@@ -276,10 +276,10 @@ class PwhTools:
         with allure.step('Verify that op failed with error that contains "{}"'.format(error_should_contain)):
             logging.info('Expected substring: {}\nResult: {}\nInfo: {}\n Returned value: {}'
                          .format(error_should_contain, res_obj.result, res_obj.info, res_obj.returned_value))
+            actual_message = res_obj.info if not res_obj.result else res_obj.returned_value
             err_msg = 'Error: operation message is not as expected.\n' \
                       '\tExpected substring: "{}"' \
-                      '\tActual ResultObject: "{}"\n'.format(error_should_contain, res_obj)
-            actual_message = res_obj.info if not res_obj.result else res_obj.returned_value
+                      '\tActual ResultObject message: "{}"\n'.format(error_should_contain, actual_message)
             ValidationTool.verify_substring_in_output(output=actual_message, substring=error_should_contain,
                                                       err_message_in_case_of_failure=err_msg, should_be_found=True)
 

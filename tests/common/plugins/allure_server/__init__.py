@@ -13,6 +13,7 @@ import socket
 from retry import retry
 from requests.packages import urllib3
 from tests.common.helpers.constants import RANDOM_SEED
+from ngts.constants.constants import FILE_INCLUDE_FAILED_SANITY_CHECKER_CASE
 
 urllib3.disable_warnings()
 
@@ -128,16 +129,29 @@ def get_setup_session_info(session):
     pytest_run_cmd_args = session.config.cache.get(PYTEST_RUN_CMD, None)
     host_executor_ip = get_test_executor_host_ip_address()
 
-    result = {
-        "Dut_host": ", ".join(dut_hosts),
-        "Version": ", ".join(version_list),
-        "Platform": ", ".join(platform_list),
-        "HwSKU": ", ".join(hwsku_list),
-        "Executor_IP": host_executor_ip,
-        "PyTest_args": pytest_run_cmd_args,
-        "ASIC": ",".join(asic_list),
-        "Random_seed": random_seed,
-    }
+    failed_sanity_check_cases = get_failed_sanity_check_cases()
+    result = {}
+    if failed_sanity_check_cases:
+        result.update(
+            {
+                "Failed_sanity_check_cases":
+                    f"Be careful!!! the following Sanity checker cases fail: {failed_sanity_check_cases}. "
+                    f"It might affect the test"
+            }
+        )
+
+    result.update(
+        {
+            "Dut_host": ", ".join(dut_hosts),
+            "Version": ", ".join(version_list),
+            "Platform": ", ".join(platform_list),
+            "HwSKU": ", ".join(hwsku_list),
+            "Executor_IP": host_executor_ip,
+            "PyTest_args": pytest_run_cmd_args,
+            "ASIC": ",".join(asic_list),
+            "Random_seed": random_seed,
+        }
+    )
 
     return result
 
@@ -232,6 +246,10 @@ def get_pytest_run_cmd(request, get_current_test_run_cmd=False):
                 specific_arg_value = arg.split(specific_arg)[1]
                 pytest_cmd_line_args[pytest_cmd_line_args.index(arg)] = '{}"{}"'.format(specific_arg,
                                                                                         specific_arg_value)
+        for specific_arg in ['-k']:
+            if specific_arg == arg:
+                specific_arg_value = pytest_cmd_line_args[pytest_cmd_line_args.index(arg) + 1]
+                pytest_cmd_line_args[pytest_cmd_line_args.index(arg)+1] = f'"{specific_arg_value}"'
 
         if get_current_test_run_cmd:
             # If need pytest run command for specific test only - then building args with path to test case
@@ -260,6 +278,15 @@ def get_pytest_run_cmd(request, get_current_test_run_cmd=False):
     cmd = ' '.join(pytest_cmd_line_args)
 
     return cmd
+
+
+def get_failed_sanity_check_cases():
+    failed_cases = None
+    if os.path.exists(FILE_INCLUDE_FAILED_SANITY_CHECKER_CASE):
+        with open(FILE_INCLUDE_FAILED_SANITY_CHECKER_CASE) as f:
+            failed_cases = f.read()
+            logger.info(f"sanity check failed cases:{failed_cases}")
+    return failed_cases
 
 
 class AllureServer:

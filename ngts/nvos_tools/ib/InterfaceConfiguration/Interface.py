@@ -102,7 +102,8 @@ class Interface(BaseComponent):
 
             if not engine:
                 engine = TestToolkit.engines.dut
-            result_obj = SendCommandTool.execute_command(self.port_obj._cli_wrapper.action_clear_counters, engine, self.mgmt_path, fae_param)
+            cli_wrapper = self.port_obj._cli_wrapper if self.port_obj else self._cli_wrapper
+            result_obj = SendCommandTool.execute_command(cli_wrapper.action_clear_counters, engine, self.mgmt_path, fae_param)
 
             return result_obj
 
@@ -110,8 +111,10 @@ class Interface(BaseComponent):
         with allure.step("Clear counters for interface {}".format(interface_name)):
             if not engine:
                 engine = TestToolkit.engines.dut
-            result_obj = SendCommandTool.execute_command(self.port_obj._cli_wrapper.clear_stats, engine,
-                                                         self.mgmt_path, interface_name, fae_param)
+            cli_wrapper = self.port_obj._cli_wrapper if self.port_obj else self._cli_wrapper
+            result_obj = SendCommandTool.execute_command_expected_str(
+                cli_wrapper.clear_stats, "Cleared counters successfully", engine, interface_name, fae_param)
+            # The expected_str is only necessary for overcoming https://redmine.mellanox.com/issues/4079803
             return result_obj
 
     def get_sorted_interfaces_list(self):

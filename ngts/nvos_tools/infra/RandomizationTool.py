@@ -108,7 +108,7 @@ class RandomizationTool:
             all_relevant_ports = Port.get_list_of_ports(dut_engine, port_requirements_object)
 
             if len(all_relevant_ports) == 0:
-                result_obj.info = "Ports with provided parameters were not found"
+                result_obj.info = f"Ports with provided parameters were not found: {port_requirements_object}"
                 return result_obj
 
             if num_of_ports_to_select == 0:
@@ -116,8 +116,8 @@ class RandomizationTool:
                 num_of_ports_to_select = len(all_relevant_ports)
 
             if len(all_relevant_ports) < num_of_ports_to_select:
-                result_obj.info = "There are only {len} relevant ports but requested to select {req_port} ports".format(
-                                  len=len(all_relevant_ports), req_port=all_relevant_ports)
+                result_obj.info = (f"There are only {len(all_relevant_ports)} relevant ports but requested to select " +
+                                   f"{num_of_ports_to_select} ports. {port_requirements_object}")
                 return result_obj
 
             result_obj.returned_value = []
@@ -129,7 +129,8 @@ class RandomizationTool:
                     all_relevant_ports.remove(selected_port)
 
             result_obj.result = True
-            return result_obj
+        allure.attach("Selected items", str(result_obj.returned_value))
+        return result_obj
 
     @staticmethod
     def get_random_active_port(number_of_values_to_select=1, port_type=IbInterfaceConsts.IB_PORT_TYPE, interface_type=''):
@@ -139,14 +140,20 @@ class RandomizationTool:
         return RandomizationTool.select_random_values(list_of_ports, None, number_of_values_to_select)
 
     @staticmethod
-    def get_random_traffic_port(engine: Optional[ProxySshEngine] = None, data_rate="ndr", interface_type='') -> ResultObj:
+    def get_random_traffic_port(engine: Optional[ProxySshEngine] = None, data_rate=None, interface_type='') -> ResultObj:
         engine = engine or TestToolkit.engines.dut
-        list_of_ports = Configurations.ports_by_rate[data_rate].get(engine.ip)
-        if not list_of_ports:
+        data_rate = data_rate or TestToolkit.devices.dut.supported_ib_speeds[-1]
+        str_list_of_ports = Configurations.ports_by_rate[data_rate].get(engine.ip)
+        list_of_ports = []
+        if str_list_of_ports:
+            for port_name in str_list_of_ports:
+                list_of_ports.append(Port(port_name, "", ""))
+        else:
             list_of_ports = Port.get_list_of_active_ports(interface_type=interface_type)
             list_of_ports = list(port for port in list_of_ports if
                                  port.name.startswith("sw1p") or port.name.startswith("sw2p") or
                                  port.name.startswith("swA1p") or port.name.startswith("swA2p"))
+
         return RandomizationTool.select_random_values(list_of_ports, None, 1)
 
     @staticmethod
@@ -176,7 +183,7 @@ class RandomizationTool:
         :return: list of random selected values
         """
         with allure.step('Select random values from provided list of values'):
-            list_of_values = list(list_of_values)
+            list_of_values = list_of_values.copy()
             forbidden_values = None if forbidden_values is None else forbidden_values.copy()
 
             result_obj = ResultObj(False, "")
@@ -216,7 +223,8 @@ class RandomizationTool:
                     list_of_values_to_select_from.remove(selected_value)
 
             result_obj.result = True
-            return result_obj
+        allure.attach("Selected items", str(result_obj.returned_value))
+        return result_obj
 
     @staticmethod
     def random_list(count, sum):
@@ -229,6 +237,7 @@ class RandomizationTool:
         arr = [0] * count
         for i in range(sum):
             arr[randint(0, sum) % count] += 1
+        allure.attach("Selected items", str(arr))
         return arr
 
     @staticmethod
@@ -250,7 +259,7 @@ class RandomizationTool:
             All date-time values (parameters and returned value) are strings in the format 'YYYY-MM-DD hh:mm:ss'
         @param min_datetime: minimum date-time value
         @param max_datetime: maximal date-time value
-        @param forbidden_datetime: list of date-time values (strings) that should not be picked
+        @param forbidden_datetimes: list of date-time values (strings) that should not be picked
         @return: ResultObj object containing a random date-time between min and max
         """
         with allure.step("Select date-time from given range of date-times"):
@@ -271,7 +280,8 @@ class RandomizationTool:
                 random_dt_obj = min_dt_obj + random_delta_timedelta_obj
                 random_datetime = random_dt_obj.strftime("%Y-%m-%d %H:%M:%S")
 
-            return ResultObj(True, "Picked random date-time success", random_datetime)
+        allure.attach(str(random_datetime))
+        return ResultObj(True, "Picked random date-time success", random_datetime)
 
     @staticmethod
     def select_random_time(forbidden_time_values=[]):
@@ -341,7 +351,9 @@ class RandomizationTool:
             if len(transceivers_list) < number_of_transceiver_to_select:
                 return ResultObj(False, "Failed to select {} {} transceivers. Only {} were found".format(number_of_transceiver_to_select, expected_value, len(transceivers_list)))
 
-            return ResultObj(True, "picked transceivers success", random.sample(transceivers_list, number_of_transceiver_to_select))
+        output = random.sample(transceivers_list, number_of_transceiver_to_select)
+        allure.attach("Selected transceivers", str(output))
+        return ResultObj(True, "picked transceivers success", output)
 
     @staticmethod
     def select_random_asics(dut_device=None, forbidden_values=None, how_many=1) -> ResultObj:
@@ -352,3 +364,4 @@ class RandomizationTool:
     @staticmethod
     def shuffle_in_place(items: MutableSequence) -> None:
         random.shuffle(items)
+        allure.attach("Shuffle result", str(items))

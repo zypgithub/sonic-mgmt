@@ -1,0 +1,6 @@
+Hostname,ManagementIp,HwSku,Type,Protocol,Os
+arc-switch1025,10.210.25.45/22,Mellanox-SN2700,DevSonic,,sonic
+arc-switch1035,10.210.25.46/22,MLNX-OS,FanoutLeaf,,
+arc-host121,10.213.84.180,TestServ,Server,,
+pdu-10-208-0-24,10.208.0.24,Sentry,CDU,snmp,
+rcon-sws-3-8,10.208.0.47,,ConsoleServer,ssh,sonic

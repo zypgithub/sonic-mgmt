@@ -10,7 +10,8 @@ logger = logging.getLogger()
 
 
 @pytest.mark.ib
-def test_ib0_interface_state(engines, start_sm):
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_ib0_interface_state(engines, start_sm, test_api):
     """
     Configure ib0 interface state and verify the configuration applied successfully
     Relevant cli commands:
@@ -23,6 +24,8 @@ def test_ib0_interface_state(engines, start_sm):
     3. Set ib0 port state to ‘up’
     4. Verify the configuration applied by running “show” command
     """
+    TestToolkit.tested_api = test_api
+
     ib0_port = MgmtPort('ib0')
     ib0_port.interface.link.state.set(op_param_name=NvosConsts.LINK_STATE_DOWN, apply=True,
                                       ask_for_confirmation=True).verify_result()
@@ -46,7 +49,8 @@ def test_ib0_interface_state(engines, start_sm):
 
 
 @pytest.mark.ib
-def test_ib0_interface_state_invalid(engines):
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_ib0_interface_state_invalid(engines, test_api):
     """
     Configure port interface state using an invalid value
     Relevant cli commands:
@@ -57,6 +61,8 @@ def test_ib0_interface_state_invalid(engines):
     1. Set ib0 port state to invalid value -> should fail
     2. Verify the value remain original by running “show” command
     """
+    TestToolkit.tested_api = test_api
+
     with allure.step("Create MgmtPort class and check current ib0 state"):
         ib0_port = MgmtPort('ib0')
         current_state = ib0_port.interface.link.state.show()
@@ -78,7 +84,8 @@ def test_ib0_interface_state_invalid(engines):
 
 
 @pytest.mark.ib
-def test_ib0_interface_state_unset(engines, start_sm):
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_ib0_interface_state_unset(engines, start_sm, test_api):
     """
     Configure port interface state using an invalid value
     Relevant cli commands:
@@ -91,6 +98,8 @@ def test_ib0_interface_state_unset(engines, start_sm):
     2. Unset ib0 port state
     3. Verify the value remain original by running “show” command
     """
+    TestToolkit.tested_api = test_api
+
     ib0_port = MgmtPort('ib0')
     ib0_port.interface.link.state.set(op_param_name=NvosConsts.LINK_STATE_DOWN, apply=True,
                                       ask_for_confirmation=True).verify_result()
@@ -103,26 +112,3 @@ def test_ib0_interface_state_unset(engines, start_sm):
     Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
                                                       field_name=IbInterfaceConsts.LINK_STATE,
                                                       expected_value=NvosConsts.LINK_STATE_UP).verify_result()
-
-
-# ------------ Open API tests -----------------
-
-@pytest.mark.openapi
-@pytest.mark.ib
-def test_ib0_interface_state_openapi(engines, start_sm):
-    TestToolkit.tested_api = ApiType.OPENAPI
-    test_ib0_interface_state(engines, start_sm)
-
-
-@pytest.mark.openapi
-@pytest.mark.ib
-def test_ib0_interface_state_invalid_openapi(engines):
-    TestToolkit.tested_api = ApiType.OPENAPI
-    test_ib0_interface_state_invalid(engines)
-
-
-@pytest.mark.openapi
-@pytest.mark.ib
-def test_ib0_interface_state_unset_openapi(engines, start_sm):
-    TestToolkit.tested_api = ApiType.OPENAPI
-    test_ib0_interface_state_unset(engines, start_sm)

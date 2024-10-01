@@ -266,7 +266,7 @@ def test_lldp_max_values(engines, devices):
 @pytest.mark.lldp
 @pytest.mark.system
 @pytest.mark.interface
-def test_lldp_additional_ipv6(engines, devices, topology_obj):
+def test_lldp_additional_ipv6(engines, devices, serial_engine):
     """
     Check that correct lldp frames sent all IpV6 addresses.
     1. Verify lldp is running.
@@ -275,7 +275,6 @@ def test_lldp_additional_ipv6(engines, devices, topology_obj):
     """
     system = System()
     engine = engines.dut
-    serial_engine = topology_obj.players['dut_serial']['engine']
     _verify_lldp_running(system.lldp, engine=engine)
 
     for interface_name in devices.dut.get_mgmt_ports():
@@ -302,15 +301,13 @@ def test_lldp_additional_ipv6(engines, devices, topology_obj):
 @pytest.mark.lldp
 @pytest.mark.system
 @pytest.mark.interface
-def test_lldp_interface_flapping(engines, devices, topology_obj):
+def test_lldp_interface_flapping(engines, devices, serial_engine):
     """
     Check that correct lldp frames are sent after interface flapping
     1. Verify lldp is running.
     2. Do interface flapping for each of mgmt ports.
     3. Verify lldp frames are sent and valid.
     """
-    serial_engine = topology_obj.players['dut_serial']['engine']
-
     system = System()
     lldp = system.lldp
     _verify_lldp_running(lldp, engine=engines.dut)
@@ -344,7 +341,7 @@ def test_lldp_interface_flapping(engines, devices, topology_obj):
 @pytest.mark.lldp
 @pytest.mark.system
 @pytest.mark.interface
-def test_lldp_disable_dhcp(engines, devices, topology_obj):
+def test_lldp_disable_dhcp(engines, devices, serial_engine):
     """
     Check that correct lldp sends mac address if dhcp is disabled.
     1. Verify lldp is running.
@@ -353,7 +350,6 @@ def test_lldp_disable_dhcp(engines, devices, topology_obj):
     4. Verify lldp frames contain mac address.
     """
     system = System()
-    serial_engine = topology_obj.players['dut_serial']['engine']
     _verify_lldp_running(system.lldp, engine=serial_engine)
 
     for interface_name in devices.dut.get_mgmt_ports():

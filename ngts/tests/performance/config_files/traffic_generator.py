@@ -28,26 +28,37 @@ def get_route_from_tg_type(tg_type):
 def get_ids_from_tg_type(tg_type):
     if tg_type == "left_tg":
         start_id = 256
-        end_id = 508
     elif tg_type == "right_tg":
         start_id = 0
-        end_id = 252
     else:
         raise AssertionError(f"Wrong traffic generator type was provided - {tg_type} is invalid traffic generator")
 
-    return start_id, end_id
+    return start_id
+
+
+def get_jump(packets_num):
+    if packets_num == 64:
+        jump = 4
+    elif packets_num == 128:
+        jump = 2
+    else:
+        return AssertionError(f"Ports number should be 64 or 128, but got {packets_num}")
+    return jump
 
 
 def main():
     parser = argparse.ArgumentParser(description='Packet generator script')
     parser.add_argument('-s', '--size', type=int, help='Packet size', required=True)
-    parser.add_argument('-n', '--number', type=int, help='Number of Packets', required=True)
+    parser.add_argument('-n', '--packets_num', type=int, help='Number of Packets', required=True)
     parser.add_argument('-m', '--destination_mac', type=str, help='Destination MAC address', required=True)
     parser.add_argument('-g', '--traffic_generator_type', type=str, help='IP of the route on DUT', required=True)
+    parser.add_argument('-p', '--ports_num', type=int, help='Number of ports on the traffic generator',
+                        required=True)
     args = parser.parse_args()
     PACKET_SIZE = args.size
-    PACKETS_PER_PORT = args.number
+    PACKETS_PER_PORT = args.packets_num
     TG_TYPE = args.traffic_generator_type
+    PORTS_NUM = args.ports_num
     ipSrc = scapy.RandIP("1.1.1.1/24")
     ethDstMac = args.destination_mac
     ethSrcMac = "94:6d:ae:ab:00:a2"
@@ -62,8 +73,10 @@ def main():
     p = SetPacketSize(p, PACKET_SIZE)
 
     route_ip = get_route_from_tg_type(TG_TYPE)
-    start_id, end_id = get_ids_from_tg_type(TG_TYPE)
+    start_id = get_ids_from_tg_type(TG_TYPE)
     i = start_id
+    jump = get_jump(PORTS_NUM)
+    end_id = i + PORTS_NUM * jump - 1
     while i <= end_id:
         ipDst = scapy.RandIP(route_ip)
         p[IP].dst = ipDst
@@ -71,7 +84,7 @@ def main():
         del p[IP].chksum
         del p[UDP].chksum
         sendp(p, iface=interface, verbose=False, count=PACKETS_PER_PORT)
-        i += 4
+        i += jump
 
 
 if __name__ == '__main__':

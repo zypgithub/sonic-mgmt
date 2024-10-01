@@ -48,13 +48,18 @@ def manipulate_nvos_system_file_signature(chain_of_trust_node: str, dut_engine: 
         system_file_switch_path = get_system_chain_of_trust_node_file_switch_path(chain_of_trust_node, serial_engine)
         filename = os.path.split(system_file_switch_path)[1]
         system_file_local_path = f'{SecureBootConsts.LOCAL_SECURE_BOOT_DIR}/{filename}'
-        logging.info(f'Download using scp:\nSwitch (src) path: {system_file_switch_path}\nLocal (dst) path: {system_file_local_path}')
-        scp_file(
-            player=dut_engine,
-            src_path=system_file_switch_path,
-            dst_path=system_file_local_path,
-            download_from_remote=True
-        )
+        system_file_switch_tmp_path = f'{SecureBootConsts.TMP_FOLDER}/{filename}'
+        with allure.step('Copy system file to tmp dir on switch and make it readable for sudoers'):
+            logging.info(f'Copy system file to tmp dir on switch:\nSwitch (src) path: {system_file_switch_path}\nSwitch (dst) path: {system_file_switch_tmp_path}')
+            serial_engine.run_cmd(f'sudo cp -f {system_file_switch_path} {system_file_switch_tmp_path}')
+            serial_engine.run_cmd(f'sudo chown admin {system_file_switch_tmp_path}')
+        with allure.step(f'Download using scp:\nSwitch (src) path: {system_file_switch_path}\nLocal (dst) path: {system_file_local_path}'):
+            scp_file(
+                player=dut_engine,
+                src_path=system_file_switch_tmp_path,
+                dst_path=system_file_local_path,
+                download_from_remote=True
+            )
 
     with allure.step(f'Manipulate content in the end of {chain_of_trust_node} file'):
         rand_str = RandomizationTool.get_random_string(6)
@@ -71,7 +76,6 @@ def manipulate_nvos_system_file_signature(chain_of_trust_node: str, dut_engine: 
 
     with allure.step(f'Update {chain_of_trust_node} file on the switch'):
         with allure.step(f'Upload new {chain_of_trust_node} file to the switch'):
-            system_file_switch_tmp_path = f'{SecureBootConsts.TMP_FOLDER}/{filename}'
             logging.info(f'Upload using scp:\nLocal (src) path: {system_file_local_path}\nSwitch (dst) path: {system_file_switch_tmp_path}')
             scp_file(
                 player=dut_engine,

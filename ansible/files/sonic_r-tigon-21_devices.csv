@@ -1,6 +1,0 @@
-Hostname,ManagementIp,HwSku,Type,Protocol,Os
-r-tigon-21,10.210.24.193/22,Mellanox-SN4600C-C64,DevSonic,,sonic
-r-tigon-22,10.210.24.194/22,Mellanox-SN4600C-C64,FanoutLeaf,,sonic
-r-r640-13,10.215.20.120,TestServ,Server,,
-pdu-10-208-2-11,10.208.2.11,Emerson,Pdu,snmp,
-rcon-sws-3-5,10.208.0.44,,ConsoleServer,ssh,sonic

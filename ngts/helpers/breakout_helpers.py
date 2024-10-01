@@ -127,7 +127,7 @@ def get_split_mode_supported_breakout_modes(breakout_modes):
     return split_mode_supported_breakout_modes
 
 
-def get_dut_breakout_modes(dut_engine, cli_object):
+def get_dut_breakout_modes(dut_engine, cli_object, ports_to_exclude=None):
     """
     parsing platform breakout options and config_db.json breakout configuration.
     :return: a dictionary with available breakout options on all dut ports
@@ -150,7 +150,7 @@ def get_dut_breakout_modes(dut_engine, cli_object):
     """
     platform_json = json_file_helper.get_platform_json(dut_engine, cli_object)
     config_db_json = json_file_helper.get_config_db(dut_engine)
-    breakout_modes_by_ports = parse_platform_json(platform_json, config_db_json, cli_object)
+    breakout_modes_by_ports = parse_platform_json(platform_json, config_db_json, cli_object, ports_to_exclude)
     # TODO: Currently SONiC doesn't support 8x breakout in DPB, remove this when 8x breakout is supported
     for _, breakout_data in breakout_modes_by_ports.items():
         breakout_modes = breakout_data['breakout_modes']
@@ -254,12 +254,13 @@ def get_breakout_modes(cli_object, port_name, port_dict, parsed_port_dict):
     return filter_breakout_modes(port_dict[SonicConstant.BREAKOUT_MODES].keys(), converted_cable_speeds)
 
 
-def parse_platform_json(platform_json_obj, config_db_json, cli_object):
+def parse_platform_json(platform_json_obj, config_db_json, cli_object, ports_to_exclude=None):
     """
     parsing platform breakout options and config_db.json breakout configuration.
     :param platform_json_obj: a json object of platform.json file
     :param config_db_json: a json object of config_db.json file
     :param cli_object: cli_object
+    :param ports_to_exclude: list of ports to be excluded from dpb test case
     :return: a dictionary with available breakout options on all dut ports
     i.e,
        { 'Ethernet0' :{'index': ['1', '1', '1', '1'],
@@ -279,6 +280,8 @@ def parse_platform_json(platform_json_obj, config_db_json, cli_object):
     """
     ports_breakout_info = {}
     for port_name, port_dict in platform_json_obj["interfaces"].items():
+        if ports_to_exclude and port_name in ports_to_exclude:
+            continue
         parsed_port_dict = dict()
         parsed_port_dict[SonicConstant.INDEX] = port_dict[SonicConstant.INDEX].split(",")
         parsed_port_dict[SonicConstant.LANES] = port_dict[SonicConstant.LANES].split(",")

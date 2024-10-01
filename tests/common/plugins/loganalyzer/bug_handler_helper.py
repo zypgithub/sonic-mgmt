@@ -10,7 +10,7 @@ import pathlib
 from retry.api import retry
 
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
-from ngts.constants.constants import BugHandlerConst, InfraConst, NvosCliTypes
+from ngts.constants.constants import BugHandlerConst, InfraConst, NvosCliTypes, FILE_INCLUDE_FAILED_SANITY_CHECKER_CASE
 from ngts.nvos_constants.constants_nvos import SystemConsts
 
 from ngts.helpers.bug_handler.bug_handler_helper import create_session_tmp_folder, clear_files, bug_handler_wrapper_err_msg, \
@@ -112,6 +112,9 @@ def skip_loganalyzer_bug_handler(duthost, request):
     log_errors_dir_path = Path(BugHandlerConst.LOG_ERRORS_DIR_PATH.format(hostname=hostname))
 
     def _skip_loganalyzer_bug_handler(duthost, request):
+        if Path(FILE_INCLUDE_FAILED_SANITY_CHECKER_CASE).exists():
+            logger.info("Skip bug handler due to sanity checker fail")
+            return True
         if not request:
             logger.warning("Skip the loganalyzer bug handler, To run the it, "
                            "'request' is needed when create LogAnalyzer")
@@ -133,7 +136,7 @@ def skip_loganalyzer_bug_handler(duthost, request):
             logger.warning(f"Skip the loganalyzer bug handler for branch: {log_analyzer_handler_info['branch']}")
             return True
 
-        bug_handler_actions = get_bug_handler_actions(request)
+        bug_handler_actions = get_bug_handler_actions(request, log_analyzer_handler_info)
         if not is_log_analyzer_bug_handler_enabled(bug_handler_actions):
             logger.warning("Skip the loganalyzer bug handler since it is not enabled")
             return True
@@ -155,9 +158,9 @@ def log_analyzer_bug_handler(duthost, request, log_errors_dir_path=None, only_ch
     test_name = re.sub(r'[\\/\'"<>|]', '_', request.node.name)
     la_rm_issues = request.session.config.cache.get(BugHandlerConst.LA_RM_ISSUES_DICT, dict())
     test_id = request.node.nodeid
-    test_rm_issues = []
+    test_rm_issues = set()
     log_analyzer_handler_info = get_log_analyzer_handler_info(duthost)
-    bug_handler_actions = get_bug_handler_actions(request, only_check)
+    bug_handler_actions = get_bug_handler_actions(request, log_analyzer_handler_info, only_check)
 
     if "allure_server_project_id" in request.config.option:
         allure_project = request.config.getoption('--allure_server_project_id')
@@ -183,6 +186,10 @@ def log_analyzer_bug_handler(duthost, request, log_errors_dir_path=None, only_ch
                         'detected_in_version': log_analyzer_handler_info['version'],
                         'setup_name': setup_name,
                         'report_url': allure_report_url}
+
+    if "components" in log_analyzer_handler_info:
+        bug_handler_dict["components"] = log_analyzer_handler_info["components"]
+
     log_analyzer_res, la_error_messages = handle_log_analyzer_errors(log_analyzer_handler_info['cli_type'],
                                                   log_analyzer_handler_info['branch'], test_name, duthost,
                                                   bug_handler_dict, setup_name, bug_handler_actions,
@@ -196,7 +203,7 @@ def log_analyzer_bug_handler(duthost, request, log_errors_dir_path=None, only_ch
             err_logs = err_with_no_action[BugHandlerConst.LA_ERROR]
             if bug_id:
                 error_msg += f"Relative bug is #{bug_id} detected for the err logs: {err_logs} \n"
-                test_rm_issues.append(bug_id)
+                test_rm_issues.add(bug_id)
             else:
                 error_msg += f"No relative bug detected for the err logs: {err_logs} \n"
 
@@ -211,18 +218,18 @@ def log_analyzer_bug_handler(duthost, request, log_errors_dir_path=None, only_ch
         error_msg += f"There are {len(created_bug_items)} new Log Analyzer bugs Created: \n"
         for index, (bug_id, bug_title) in enumerate(created_bug_items.items(), start=1):
             error_msg += f"{index}) {REDMINE_ISSUES_URL+str(bug_id)}:  {bug_title}\n"
-            test_rm_issues.append(bug_id)
+            test_rm_issues.add(bug_id)
     elif log_analyzer_res[BugHandlerConst.BUG_HANDLER_DECISION_UPDATE]:
         created_bug_items = log_analyzer_res[BugHandlerConst.BUG_HANDLER_DECISION_UPDATE]
         for index, (bug_id, bug_title) in enumerate(created_bug_items.items(), start=1):
-            test_rm_issues.append(bug_id)
+            test_rm_issues.add(bug_id)
     if log_analyzer_res[BugHandlerConst.BUG_HANDLER_FAILURE]:
         la_error_messages = f"{BugHandlerConst.BUG_HANDLER_FAILURE_EXCEPTION}, due to the following:" \
                             f"{json.dumps(log_analyzer_res[BugHandlerConst.BUG_HANDLER_FAILURE], indent=2)}"
         error_msg = error_msg + la_error_messages
 
     if error_msg:
-        la_rm_issues[test_id] = (test_rm_issues, la_error_messages)
+        la_rm_issues[test_id] = (list(test_rm_issues), la_error_messages)
         request.session.config.cache.set(BugHandlerConst.LA_RM_ISSUES_DICT, la_rm_issues)
         raise Exception(error_msg)
 
@@ -262,11 +269,21 @@ def get_log_analyzer_handler_info(duthost):
     log_analyzer_handler_info['cli_type'] = cli_type
     log_analyzer_handler_info['branch'] = get_sonic_branch(duthost, cli_type)
     log_analyzer_handler_info['version'] = duthost.os_version
-
+    if cli_type == "Sonic":
+        log_analyzer_handler_info['components'] = get_low_layer_components(duthost)
     return log_analyzer_handler_info
 
 
-def get_bug_handler_actions(request, only_check=False):
+def get_low_layer_components(duthost):
+    components = duthost.show_and_parse("get_component_versions.py", module_ignore_errors=True)
+    comps = ""
+    for component in components:
+        comps += f"{component['component']}: {component['actual']} \n"
+
+    return comps
+
+
+def get_bug_handler_actions(request, log_analyzer_handler_info, only_check=False):
     """
     Get the bug handler actions, the return is a dictionary with 3 keys, "create", "update" and "only_check".
     If only_check=True then bugs will not be created or updated.
@@ -316,11 +333,22 @@ def get_bug_handler_actions(request, only_check=False):
         bug_handler_actions['create'] = project_bug_create_map.get(project, False)
         bug_handler_actions['update'] = project_bug_update_map.get(project, False)
         bug_handler_actions['only_check'] = project_bug_only_check_map.get(project, True)
+        _update_bug_handler_actions_for_private_image(project, log_analyzer_handler_info, bug_handler_actions)
         _update_bug_handler_actions(request, bug_handler_actions)
         logger.info(f"The bug handler actions for the {project} is: {bug_handler_actions}")
 
     return bug_handler_actions
 
+
+def _update_bug_handler_actions_for_private_image(project, log_analyzer_handler_info, bug_handler_actions):
+    if project != "regression":
+        return
+    branch = log_analyzer_handler_info["branch"]
+    is_private_branch = False if re.match("^[0-9]{6,6}$", branch) else True
+    if is_private_branch:
+        bug_handler_actions['create'] = False
+        bug_handler_actions['update'] = False
+        bug_handler_actions['only_check'] = True
 
 def _update_bug_handler_actions(request, bug_handler_actions):
     """

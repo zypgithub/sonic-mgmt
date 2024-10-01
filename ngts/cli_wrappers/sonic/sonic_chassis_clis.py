@@ -1,5 +1,10 @@
 import re
+import logging
+import json
 from ngts.cli_wrappers.common.chassis_clis_common import ChassisCliCommon
+from ngts.cli_util.cli_parsers import generic_sonic_output_parser
+
+logger = logging.getLogger()
 
 
 class SonicChassisCli(ChassisCliCommon):
@@ -56,3 +61,74 @@ class SonicChassisCli(ChassisCliCommon):
             split_line = line.split(": ")
             platform_summary_dict.update({split_line[0]: split_line[1]})
         return platform_summary_dict
+
+    def show_platform_fan(self):
+        """
+        This method execute command "show platform fan" on dut
+        :return: the cmd output
+        """
+        fan_status = self.engine.run_cmd("show platform fan")
+
+        fan_status_table_dict = generic_sonic_output_parser(fan_status,
+                                                            headers_ofset=0,
+                                                            len_ofset=1,
+                                                            data_ofset_from_start=2,
+                                                            data_ofset_from_end=-0,
+                                                            column_ofset=2,
+                                                            output_key='FAN')
+
+        logger.info(f"fan status:{fan_status_table_dict}")
+        return fan_status_table_dict
+
+    def show_platform_psu_status(self):
+        """
+        This method execute command "show platform psustatus" on dut
+        :return: the cmd output
+        """
+        psu_status = self.engine.run_cmd("show platform psustatus")
+        psu_status_table_dict = generic_sonic_output_parser(psu_status,
+                                                            headers_ofset=0,
+                                                            len_ofset=1,
+                                                            data_ofset_from_start=2,
+                                                            data_ofset_from_end=-0,
+                                                            column_ofset=2,
+                                                            output_key='PSU')
+
+        logger.info(f"psu status:{psu_status_table_dict}")
+        return psu_status_table_dict
+
+    def get_platform_hwsku(self):
+        """
+        This method execute command "show platform summary" and return the dut hwsku
+        :return: the dut hwsku
+        """
+        output = self.show_platform_summary()
+        hwsku_pattern = r"HwSKU:\s*(.*)"
+
+        res = re.search(hwsku_pattern, output, re.IGNORECASE)
+        if res:
+            hwsku = res.group(1)
+            logger.info(f"hwsku is {hwsku}")
+            return hwsku
+        else:
+            raise Exception("Could not get hwsku for switch {}".format(self.engine.ip))
+
+    def get_platform_json_data(self):
+        """
+        This method is to get the platform json data from the file of /usr/share/sonic/device/{platform}/platform.json
+        :return: the platform json data
+        """
+        full_path_platform_json_in_dut = f"/usr/share/sonic/device/{self.get_platform()}/platform.json"
+        dest_path = "/tmp/platform.json"
+        logger.info(f"fetch platform.json from dut:{full_path_platform_json_in_dut}")
+        self.engine.copy_file(source_file=full_path_platform_json_in_dut,
+                              dest_file=dest_path,
+                              file_system='/',
+                              overwrite_file=True,
+                              direction="get",
+                              verify_file=False)
+
+        with open(f"{dest_path}", "r") as f:
+            platform_json_dict = json.load(f)
+        logger.info(f"platform json dict:\n {platform_json_dict}")
+        return platform_json_dict

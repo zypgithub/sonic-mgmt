@@ -151,11 +151,13 @@ class LdapServerInfo(RemoteAaaServerInfo):
 
 
 class RadiusServerInfo(RemoteAaaServerInfo):
-    def __init__(self, hostname, priority, secret, port, timeout, auth_type, users: List[UserInfo], ipv4_addr: str = '',
+    def __init__(self, hostname, priority, secret, port, timeout, auth_type, users: List[UserInfo], retransmit=0, statistics=AaaConsts.DISABLED, ipv4_addr: str = '',
                  docker_name: str = ''):
         super().__init__(hostname, priority, secret, port, users, ipv4_addr, docker_name)
         self.timeout = timeout
         self.auth_type = auth_type
+        self.retransmit = retransmit
+        self.statistics = statistics
 
     def configure(self, engines, set_explicit_priority=False, apply=False, dut_engine=None):
         conf_to_set = {

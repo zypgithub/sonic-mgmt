@@ -3,7 +3,6 @@ import random
 from abc import ABC
 
 import pytest
-
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.tools.test_utils import allure_utils as allure
@@ -21,7 +20,8 @@ class InventoryItemBaseTest(ABC):
 
     @classmethod
     def skip_if_needed(cls, devices):
-        return
+        if not devices.dut.platform_inventory_items_dict.get(cls.ITEM_TYPE):
+            pytest.skip(f"Skipping test because DUT has no {cls.ITEM_TYPE}")
 
     @classmethod
     def choose_item(cls, engines, devices, test_api) -> str:
@@ -57,11 +57,6 @@ class InventoryItemBaseTest(ABC):
 
 class InventoryPsuTest(InventoryItemBaseTest):
     ITEM_TYPE = 'psu'
-
-    @classmethod
-    def skip_if_needed(cls, devices):
-        if not devices.dut.psu_list:
-            pytest.skip("Skipping test because DUT has no PSUs")
 
     @classmethod
     def choose_item(cls, engines, devices, test_api) -> str:

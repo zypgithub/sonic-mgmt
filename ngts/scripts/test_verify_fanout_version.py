@@ -3,7 +3,7 @@ import pytest
 from ngts.constants.constants import CliType
 
 EXPECTED_MLNX_VERSION = "3.10.4206"
-EXPECTED_SONIC_VERSION = "202311_RC.36-b4a12122b_Internal"
+EXPECTED_SONIC_VERSION_LIST = ["202311_RC.101-7a2264a36_Internal", "202405_RC.15-1b6cdc9ce_Internal"]
 
 logger = logging.getLogger()
 
@@ -21,7 +21,13 @@ def test_verify_fanout_version(topology_obj):
     if fanout_engine_type == CliType.SONIC:
         logger.info("This is a SONiC fanout switch")
         current_version = fanout_engine.run_cmd('show version')
-        assert EXPECTED_SONIC_VERSION in current_version
+        is_version_expected = False
+        for expected_version in EXPECTED_SONIC_VERSION_LIST:
+            if expected_version in current_version:
+                is_version_expected = True
+                break
+        assert is_version_expected, \
+            f"Sonic fanout version is not one of the expected version: {EXPECTED_SONIC_VERSION_LIST}"
     else:
         logger.info("This is an ONYX fanout switch")
         current_version = fanout_engine.run_cmd('show version concise')

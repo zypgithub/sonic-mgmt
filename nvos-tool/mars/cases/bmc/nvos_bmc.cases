@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CASEDEF>
+    <global>
+        <Test>
+            <group> NVOS </group>
+            <name> BMC </name>
+            <info></info>
+            <owner> Aleksander Romashin </owner>
+        </Test>
+        <Case>
+            <tags> BMC tests nvos </tags>
+            <wrapper> [[run_time:db_tests_path]]/sonic-mgmt/sonic-tool/mars/scripts/canonical_mars_pytest_runner.py </wrapper>
+            <tout> 10800 </tout>
+            <tags>ALL</tags>
+        </Case>
+    </global>
+
+    <case>
+        <name> bmc serial output </name>
+        <info></info>
+        <tout> 10800 </tout>
+        <cmd>
+            <params>
+                <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/system/test_system_bmc_serial_output.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>
+            </params>
+        </cmd>
+    </case>
+
+    <case>
+        <name> platform firmware bmc component </name>
+        <info></info>
+        <tout> 10800 </tout>
+        <cmd>
+            <params>
+                <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/platform/test_platform_firmware_bmc_component.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>
+            </params>
+        </cmd>
+    </case>
+
+    <case>
+        <name> bmc erot attestation </name>
+        <info></info>
+        <tout> 10800 </tout>
+        <cmd>
+            <params>
+                <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/general/security/bmc/bmc_erot_attestation/test_bmc_erot_attestation.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>
+            </params>
+        </cmd>
+    </case>
+
+    <case>
+        <name> bmc credentials </name>
+        <info></info>
+        <tout> 10800 </tout>
+        <cmd>
+            <params>
+                <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/general/security/bmc/bmc_creds/test_bmc_creds.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900  \'"</static_args>
+            </params>
+        </cmd>
+    </case>
+
+    <case>
+        <name> platform environment leakage </name>
+        <info></info>
+        <tout> 10800 </tout>
+        <cmd>
+            <params>
+                <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/platform/test_platform_environment_leakage.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>
+            </params>
+        </cmd>
+    </case>
+
+    <case>
+        <name> read eeprom </name>
+        <info> </info>
+        <tout> 10800 </tout>
+        <cmd>
+            <params>
+                <static_args>  --setup_name [[conf:extra_info.setup_name]]  --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/fae/test_read_eeprom.py --raw_options "\' --rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results  --showlocals  [[conf:extra_info.additional_options]]  --timeout 900    \'"</static_args>
+            </params>
+        </cmd>
+    </case>
+
+    <case>
+        <name> system power cycle </name>
+        <info> </info>
+        <tout> 10800 </tout>
+        <cmd>
+            <params>
+                <static_args>  --setup_name [[conf:extra_info.setup_name]]  --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/system/test_system_power_cycle.py --raw_options "\' --rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results  --showlocals  [[conf:extra_info.additional_options]]  --timeout 900    \'"</static_args>
+            </params>
+        </cmd>
+    </case>
+
+    <case>
+      <name> Test recovery from BMC reset </name>
+      <info> </info>
+      <tout> 10800 </tout>
+      <cmd>
+        <params>
+            <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/platform/test_recover_from_bmc_reset.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir  --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>
+        </params>
+      </cmd>
+      <ignore>
+        <condition>
+          <key>dut_type</key>
+          <op> not in </op>
+          <value>[juliet]</value>
+        </condition>
+      </ignore>
+    </case>
+
+</CASEDEF>

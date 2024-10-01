@@ -1,0 +1,178 @@
+{
+    "r-r740-03-bf3-sonic-01_setup": {
+        "default_hwsku": "Nvidia-9009d3b600CVAA-C1",
+        "support_hwsku": ["Nvidia-9009d3b600CVAA-C1"]
+    },
+    "r-r740-05-bf3-sonic-01_setup": {
+        "default_hwsku": "Nvidia-9009d3b600CVAA",
+        "support_hwsku": ["Nvidia-9009d3b600CVAA"]
+    },
+    "r-r740-07-bf3-sonic-01_setup": {
+        "default_hwsku": "Nvidia-9009d3b600CVAA-C1",
+        "support_hwsku": ["Nvidia-9009d3b600CVAA-C1"]
+    },
+    "r-r740-08-bf3-sonic-01_setup": {
+        "default_hwsku": "Nvidia-9009d3b600CVAA-C1",
+        "support_hwsku": ["Nvidia-9009d3b600CVAA-C1"]
+    },
+    "CI_sonic_BF3_1": {
+        "default_hwsku": "Nvidia-9009d3b600CVAA-C1",
+        "support_hwsku": ["Nvidia-9009d3b600CVAA-C1"]
+    },
+    "r-bobcat-01_setup": {
+        "default_hwsku": "Mellanox-SN4280-O28",
+        "support_hwsku": ["Mellanox-SN4280-O28"]
+    },
+    "r-bobcat-03_setup": {
+        "default_hwsku": "Mellanox-SN4280-O28",
+        "support_hwsku": ["Mellanox-SN4280-O28"]
+    },
+    "CI_sonic_COMMUNITY_SPC": {
+        "default_hwsku": "ACS-MSN3700",
+        "support_hwsku": ["ACS-MSN3700"]
+    },
+    "mts-sonic-dut_setup": {
+        "default_hwsku": "ACS-MSN2700",
+        "support_hwsku": ["ACS-MSN2700"]
+    },
+    "r-panther-01_setup": {
+        "default_hwsku": "Mellanox-SN2700-A1-D48C8",
+        "support_hwsku": ["Mellanox-SN2700-A1-D48C8"]
+    },
+    "r-panther-02_setup": {
+        "default_hwsku": "Mellanox-SN2700-A1",
+        "support_hwsku": ["Mellanox-SN2700-A1", "Mellanox-SN2700-A1-D48C8"]
+    },
+    "r-panther-23_setup": {
+        "default_hwsku": "Mellanox-SN2700-D40C8S8",
+        "support_hwsku": ["Mellanox-SN2700-D40C8S8"]
+    },
+    "r-panther-40_setup": {
+        "default_hwsku": "Mellanox-SN2700-A1-D48C8",
+        "support_hwsku": ["Mellanox-SN2700-A1-D48C8"]
+    },
+    "r-panther-42_setup": {
+        "default_hwsku": "Mellanox-SN2700-A1",
+        "support_hwsku": ["Mellanox-SN2700-A1"]
+    },
+    "r-panther-45_setup": {
+        "default_hwsku": "Mellanox-SN2700",
+        "support_hwsku": ["Mellanox-SN2700"]
+    },
+    "r-panther-47_setup": {
+        "default_hwsku": "Mellanox-SN2700",
+        "support_hwsku": ["Mellanox-SN2700"]
+    },
+    "r-panther-48_setup": {
+        "default_hwsku": "Mellanox-SN2700-D40C8S8",
+        "support_hwsku": ["Mellanox-SN2700-D40C8S8"]
+    },
+    "mtvr-panther-02_setup": {
+        "default_hwsku": "Mellanox-SN2700",
+        "support_hwsku": ["Mellanox-SN2700"]
+    },
+    "mtvr-panther-03_setup": {
+        "default_hwsku": "Mellanox-SN2700-D40C8S8",
+        "support_hwsku": ["Mellanox-SN2700-D40C8S8"]
+    },
+    "sonic-dual-tor-tigon": {
+        "default_hwsku": "Mellanox-SN4600C-C64",
+        "support_hwsku": ["Mellanox-SN4600C-C64"]
+    },
+    "sonic-dual-tor-tigon-01": {
+        "default_hwsku": "Mellanox-SN4600C-C64",
+        "support_hwsku": ["Mellanox-SN4600C-C64"]
+    },
+    "r-tigon-04_setup": {
+        "default_hwsku": "Mellanox-SN4600C-C64",
+        "support_hwsku": ["Mellanox-SN4600C-C64", "Mellanox-SN4600C-D24C52"]
+    },
+    "r-tigon-11_setup": {
+        "default_hwsku": "Mellanox-SN4600C-C64",
+        "support_hwsku": ["Mellanox-SN4600C-C64"]
+    },
+    "r-tigon-20_setup": {
+        "default_hwsku": "Mellanox-SN4600C-C64",
+        "support_hwsku": ["Mellanox-SN4600C-C64"]
+    },
+    "r-tigon-21_setup": {
+        "default_hwsku": "Mellanox-SN4600C-C64",
+        "support_hwsku": ["Mellanox-SN4600C-C64"]
+    },
+    "mtvr-tigon-05_setup": {
+        "default_hwsku": "Mellanox-SN4600C-C64",
+        "support_hwsku": ["Mellanox-SN4600C-C64"]
+    },
+    "mtvr-tigon-07_setup": {
+        "default_hwsku": "Mellanox-SN4600C-C64",
+        "support_hwsku": ["Mellanox-SN4600C-C64"]
+    },
+    "r-tigris-04_setup": {
+        "default_hwsku": "Mellanox-SN3800-D112C8",
+        "support_hwsku": ["Mellanox-SN3800-D112C8"]
+    },
+    "r-tigris-13_setup": {
+        "default_hwsku": "Mellanox-SN3800-D112C8",
+        "support_hwsku": ["Mellanox-SN3800-D112C8"]
+    },
+    "r-tigris-25_setup": {
+        "default_hwsku": "Mellanox-SN3800-D112C8",
+        "support_hwsku": ["Mellanox-SN3800-D112C8"]
+    },
+    "r-tigris-26_setup": {
+        "default_hwsku": "Mellanox-SN3800-D112C8",
+        "support_hwsku": ["Mellanox-SN3800-D112C8"]
+    },
+    "arc-switch1004_setup": {
+        "default_hwsku": "Mellanox-SN2700-D40C8S8",
+        "support_hwsku": ["Mellanox-SN2700-D40C8S8"]
+    },
+    "arc-switch1025_setup": {
+        "default_hwsku": "Mellanox-SN2700",
+        "support_hwsku": ["Mellanox-SN2700"]
+    },
+    "mtbc-sonic-01-2410_setup": {
+        "default_hwsku": "ACS-MSN2410",
+        "support_hwsku": ["ACS-MSN2410"]
+    },
+    "mtbc-sonic-03-2700_setup": {
+        "default_hwsku": "Mellanox-SN2700",
+        "support_hwsku": ["Mellanox-SN2700"]
+    },
+    "mtvr-hippo-02_setup": {
+        "default_hwsku": "ACS-SN5400",
+        "support_hwsku": ["ACS-SN5400"]
+    },
+    "mtvr-hippo-03_setup": {
+        "default_hwsku": "ACS-SN5400",
+        "support_hwsku": ["ACS-SN5400"]
+    },
+    "r-moose-01_setup": {
+        "default_hwsku": "Mellanox-SN5600-V256",
+        "support_hwsku": ["ACS-SN5600", "Mellanox-SN5600-V256"]
+    },
+    "mtvr-moose-04_setup": {
+        "default_hwsku": "Mellanox-SN5600-V256",
+        "support_hwsku": ["ACS-SN5600", "Mellanox-SN5600-V256"]
+    },
+    "r-leopard-01_setup": {
+        "default_hwsku": "Mellanox-SN4700-O8C48",
+        "support_hwsku": ["Mellanox-SN4700-O8C48", "Mellanox-SN4700-O32"]
+    },
+    "r-leopard-58_setup": {
+        "default_hwsku": "Mellanox-SN4700-O8C48",
+        "support_hwsku": ["Mellanox-SN4700-O8C48", "Mellanox-SN4700-O32"]
+    },
+    "r-leopard-70_setup": {
+        "default_hwsku": "Mellanox-SN4700-O8V48",
+        "support_hwsku": ["Mellanox-SN4700-O8V48"]
+    },
+    "r-leopard-72_setup": {
+        "default_hwsku": "Mellanox-SN4700-O8V48",
+        "support_hwsku": ["Mellanox-SN4700-O8V48"]
+    },
+    "mtvr-leopard-01_setup": {
+        "default_hwsku": "Mellanox-SN4700-O28",
+        "support_hwsku": ["Mellanox-SN4700-O28"]
+    }
+}

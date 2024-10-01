@@ -7,6 +7,7 @@ from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RegressionConfigurations import RegressionConfigurations
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.nvos_tools.ib.opensm.OpenSmTool import OpenSmTool
 from ngts.tools.test_utils.nvos_general_utils import check_partitions_capacity
 
 logger = logging.getLogger()
@@ -64,12 +65,14 @@ def test_existence_of_tables_in_databases(engines, devices):
 
 
 @pytest.mark.init_flow
-@pytest.mark.nvos_ci
 def test_ports_are_up(engines, devices):
     """
     Verifying the NVOS ports are up
     :return: None, raise error in case one or more ports are down
     """
+    result = OpenSmTool.start_open_sm(engines)
+    assert result.result, "Failed to start openSM"
+
     RegressionConfigurations.configure_ports_to_legacy(engine=engines.dut, apply=True, throw_exception=True,
                                                        wait_till_port_up=True)
     with allure.step("Validate all ports status is up"):

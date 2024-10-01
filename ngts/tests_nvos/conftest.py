@@ -23,6 +23,7 @@ from ngts.nvos_constants.constants_nvos import NvosConst
 from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
 from ngts.nvos_tools.Devices.DeviceFactory import DeviceFactory
 from ngts.nvos_tools.Devices.EthDevice import EthSwitch
+from ngts.nvos_tools.Devices.IbDevice import CrocodileSwitch
 from ngts.nvos_tools.cli_coverage.nvue_cli_coverage import NVUECliCoverage
 from ngts.nvos_tools.ib.opensm.OpenSmTool import OpenSmTool
 from ngts.nvos_tools.infra.CmdRunner import CmdRunner
@@ -38,7 +39,7 @@ from ngts.nvos_tools.system.System import System
 from ngts.scripts.code_coverage.code_coverage_consts import NvosConsts
 from ngts.scripts.code_coverage.test_code_coverage import extract_python_coverage_for_nvos
 from ngts.tools.test_utils import allure_utils as allure
-from ngts.tools.test_utils.nvos_config_utils import clear_conf
+from ngts.tools.test_utils.nvos_config_utils import clear_conf, clear_cl_conf
 from ngts.tools.test_utils.nvos_general_utils import wait_for_ldap_nvued_restart_workaround, set_base_configurations, \
     set_base_configurations_cl
 
@@ -98,6 +99,7 @@ def engines(topology_obj, devices):
         engines_data.sonic_mgmt = topology_obj.players['sonic-mgmt']['engine']
 
     TestToolkit.update_engines(engines_data)
+    TestToolkit.update_topology_obj(topology_obj)
     return engines_data
 
 
@@ -192,12 +194,13 @@ def tst_all_pwh_confs(request):
 
 
 @pytest.fixture
-def start_sm(engines, traffic_available):
+def start_sm(engines, devices, traffic_available):
     """
     Starts OpenSM
     """
     if traffic_available:
-        RegressionConfigurations.configure_ports_to_legacy(engine=engines.dut, apply=True, throw_exception=False)
+        if isinstance(devices.dut, CrocodileSwitch):
+            RegressionConfigurations.configure_ports_to_legacy(engine=engines.dut, apply=True, throw_exception=False)
         result = OpenSmTool.start_open_sm(engines)
         if not result.result:
             logging.warning("Failed to start openSM")
@@ -338,18 +341,13 @@ def clear_security_config(item):
 
 
 def clear_config(markers=None):
-    with allure.step("Clear config"):
-        if isinstance(TestToolkit.devices.dut, EthSwitch):
-            clear_switch_config(markers, set_base_config_function=set_base_configurations_cl)
-        else:
-            clear_switch_config(markers, set_base_config_function=set_base_configurations)
-
-
-def clear_switch_config(markers=None, set_base_config_function=None):
     logging.info("Clear config")
     try:
         TestToolkit.update_apis(ApiType.NVUE)
-        clear_conf(TestToolkit.engines.dut, markers, set_base_config_function)
+        if isinstance(TestToolkit.devices.dut, EthSwitch):
+            clear_cl_conf(TestToolkit.engines.dut, markers, set_base_configurations_cl, TestToolkit.devices.dut)
+        else:
+            clear_conf(TestToolkit.engines.dut, markers, set_base_configurations, TestToolkit.devices.dut)
     except Exception as err:
         logging.warning("Failed to clear config:" + str(err))
     finally:
@@ -601,3 +599,13 @@ def target_version_realpath(target_version):
         target_version_path = cmd_runner.run_cmd(f'realpath {target_version}')
         logging.info(f'target version path: {target_version_path}')
     return target_version_path
+
+
+@pytest.fixture(scope='session')
+def base_version_realpath(base_version):
+    assert base_version is not None, "No base image is specified"
+    cmd_runner = CmdRunner()
+    with allure.step('get real full path of target version'):
+        base_version_path = cmd_runner.run_cmd(f'realpath {base_version}')
+        logging.info(f'base version path: {base_version_path}')
+    return base_version_path

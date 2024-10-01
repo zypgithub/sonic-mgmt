@@ -1,4 +1,0 @@
-StartDevice,StartPort,EndDevice,EndPort,EndFeed
-pdu-10-75-68-211,22,c-panther-01,PSU1,
-pdu-10-75-68-211,21,c-panther-02,PSU1,
-pdu-10-75-68-210,1.5,c-panther-02,PSU2,

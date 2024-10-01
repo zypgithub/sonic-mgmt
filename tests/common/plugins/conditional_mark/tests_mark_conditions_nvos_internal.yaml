@@ -1,6 +1,18 @@
 ########################## NVOS IGNORE START ##########################
 
-tests_nvos/general/security/test_ssh_config/test_ssh_config::test_ssh_config_good_flow:
+tests_nvos/general/security/test_api_server_security/test_api_mtls.py::test_api_mtls_core_functionality[BadFlow]:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4064106"
+    conditions:
+      - https://redmine.mellanox.com/issues/4064106
+
+tests_nvos/general/security/test_api_server_security/test_api_mtls.py::test_api_mtls_delete_installed_ca[BadFlow]:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4064106"
+    conditions:
+      - https://redmine.mellanox.com/issues/4064106
+
+tests_nvos/general/security/test_ssh_config/test_ssh_config.py::test_ssh_config_good_flow:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4040069"
     conditions:
@@ -25,9 +37,15 @@ tests_nvos/system/gnmi/test_gnmi_cert.py::test_gnmi_cert_cli_when_gnmi_disabled:
     conditions:
       - https://redmine.mellanox.com/issues/4001833
 
-tests_nvos/general/security/bmc_erot_attestation/test_bmc_erot_attestation.py:
+tests_nvos/general/security/nmx_cert:
   skip:
-    reason: "BMC ERoT Attestation tests should run only on Juliet"
+    reason: "NMX tests should run only on Juliet"
+    conditions:
+      - "'juliet' not in testbed"
+
+tests_nvos/general/security/bmc:
+  skip:
+    reason: "BMC tests should run only on Juliet"
     conditions:
       - "'juliet' not in testbed"
 
@@ -141,7 +159,7 @@ tests_nvos/system/test_system_factory_reset.py:
     conditions:
       - "'marlin' in testbed"
       - https://redmine.mellanox.com/issues/3484447
-      
+
 tests_nvos/interfaces/test_eth0_interface_dhcp.py::test_interface_eth0_speed_duplex_autoneg:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4041979"
@@ -220,10 +238,6 @@ tests_nvos/interfaces/multi_planar/test_multi_planar_sym_mgr_and_aport.py::test_
     conditions:
       - https://redmine.mellanox.com/issues/3599251
 
-tests_nvos/interfaces/multi_planar/test_multi_planar_sym_mgr_and_aport.py::test_aggregated_port_physical_and_logical_state_machines:
-  skip:
-    reason: "Testcase skipped due to inability to force update of DB values"
-
 tests_nvos/ib/test_set_unset_sm_state.py::test_set_unset_sm_state_many_times:
   skip:
     reason: "Testcase skipped on marlin systems due to RM issue: https://redmine.mellanox.com/issues/3649754"
@@ -234,9 +248,9 @@ tests_nvos/ib/test_set_unset_sm_state.py::test_set_unset_sm_state_many_times:
 
 tests_nvos/interfaces/split_fnm_port/test_split_fnm_port.py::test_interface_fnm_port_split:
   skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3854671"
+    reason: "Testcase skipped on non gorilla systems"
     conditions:
-      - https://redmine.mellanox.com/issues/3854671
+      - "'gorilla' not in testbed"
 
 tests_nvos/ib/test_ibdiagnet.py:
   skip:
@@ -245,12 +259,6 @@ tests_nvos/ib/test_ibdiagnet.py:
       - "'marlin' in testbed"
 
 tests_nvos/interfaces/multi_planar/test_multi_planar_sym_mgr_and_aport.py::test_verify_sm_commands_not_exist:
-  skip:
-    reason: "Should run only on xdr Black Mamba system"
-    conditions:
-      - "'gorilla' in testbed"
-
-tests_nvos/interfaces/multi_planar/test_multi_planar_sym_mgr_and_aport.py::test_verify_breakout_commands_not_exist:
   skip:
     reason: "Should run only on xdr Black Mamba system"
     conditions:
@@ -274,12 +282,6 @@ tests_nvos/interfaces/multi_planar/test_multi_planar_sym_mgr_and_aport.py::test_
     conditions:
       - https://redmine.mellanox.com/issues/3795750
 
-tests_nvos/interfaces/multi_planar/test_multi_planar_sym_mgr_and_aport.py::test_aggregated_port_configuration:
-  skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3795718"
-    conditions:
-      - https://redmine.mellanox.com/issues/3795718
-
 tests_nvos/interfaces/multi_planar/test_multi_planar_sym_mgr_and_aport.py::test_symmetry_manager_log_and_tech_support:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3795718"
@@ -287,12 +289,6 @@ tests_nvos/interfaces/multi_planar/test_multi_planar_sym_mgr_and_aport.py::test_
       - https://redmine.mellanox.com/issues/3795718
 
 tests_nvos/interfaces/multi_planar/test_multi_planar_sym_mgr_and_aport.py::test_symmetry_manager_performance:
-  skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3795718"
-    conditions:
-      - https://redmine.mellanox.com/issues/3795718
-
-tests_nvos/interfaces/split_aggregated_port/test_split_aggregated_port.py::test_interface_aggregated_port_split:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3795718"
     conditions:
@@ -495,6 +491,12 @@ tests_nvos/general/config_commands/test_config_fetch:
     conditions:
       - https://redmine.mellanox.com/issues/3955660
 
+tests_nvos/fae/test_debug_token:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4047538"
+    conditions:
+      - https://redmine.mellanox.com/issues/4047538
+
 tests_nvos/system/test_system_factory_reset.py::test_reset_factory_without_params:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3958670"
@@ -550,6 +552,83 @@ tests_nvos/platform/test_platform_environment.py::test_platform_environment_fan_
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3978721"
     conditions:
       - https://redmine.mellanox.com/issues/3978721
+
+tests_nvos/interfaces/multi_planar/test_multi_planar_sym_mgr_and_aport.py::test_verify_breakout_commands_not_exist:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4039460"
+    conditions_logical_operator: or
+    conditions:
+      - "'gorilla' in testbed"
+      - https://redmine.mellanox.com/issues/4039460
+
+tests_nvos/multi_asic/test_interface_ipoib.py::test_interface_ipoib_mapping_basic_functionality:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3975478"
+    conditions:
+      - https://redmine.mellanox.com/issues/3975478
+
+tests_nvos/checklist/test_cpld_upgrade.py::test_cpld_upgrade:
+  skip:
+    reason: "Until we get updated CPLD versions"
+
+tests_nvos/interfaces/test_ib0_interface_state.py::test_ib0_interface_state:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4077016"
+    conditions:
+      - https://redmine.mellanox.com/issues/4077016
+
+tests_nvos/interfaces/test_ib0_interface_state.py::test_ib0_interface_state_unset:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4077016"
+    conditions:
+      - https://redmine.mellanox.com/issues/4077016
+
+tests_nvos/multi_asic/test_interface_ipoib.py::test_interface_ipoib_ping_functionality:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4077016"
+    conditions:
+      - https://redmine.mellanox.com/issues/4077016
+
+tests_nvos/interfaces/multi_planar/test_multi_planar_sym_mgr_and_aport.py::test_aggregated_port_configuration:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4073255"
+    conditions:
+      - "'mamba' in testbed"
+      - https://redmine.mellanox.com/issues/4073255
+
+tests_nvos/interfaces/test_ib_interface_configuration.py::test_ib_interface_speed:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4073255"
+    conditions:
+      - "'mamba' in testbed"
+      - https://redmine.mellanox.com/issues/4073255
+
+tests_nvos/interfaces/test_ib_interface_configuration.py::test_ib_interface_vls:
+  skip:
+    reason: "#4077966 [Functional] [black mamba] [ib] [xdr] | if we set op-vls to VL0-VL3 link goes down and never goes back up, even after resetting op-vls"
+    conditions:
+      - "'mamba' in testbed"
+      - https://redmine.mellanox.com/issues/4077966
+
+tests_nvos/interfaces/test_interface_link_transceiver_diagnostics.py::test_interface_link_diagnostics_basic_invalid_ports:
+  skip:
+    reason: "[NVUE_Core - Design] Bug SW #4001790: [NVUE-CORE] Pruned properties are present in error message"
+    conditions:
+      - https://redmine.mellanox.com/issues/4001790
+
+tests_nvos/platform/test_platform_transceiver.py::test_transceiver_status_unplug:
+  skip:
+    reason: "[NVOS - Design] Bug SW #4034283: [Non-Functional ] [interface] | Sometimes ports don't show primary asic under fae command"
+    conditions:
+      - "'mamba' in testbed"
+      - https://redmine.mellanox.com/issues/4034283
+
+tests_nvos/platform/test_platform_transceiver.py::test_transceiver_status_with_reboot:
+  skip:
+    reason: "[NVOS - Design] Bug SW #4034283: [Non-Functional ] [interface] | Sometimes ports don't show primary asic under fae command"
+    conditions:
+      - "'mamba' in testbed"
+      - https://redmine.mellanox.com/issues/4034283
 
 
 tests_nvos/system/test_techsupport_feature.py::test_techsupport_bmc_badflow:

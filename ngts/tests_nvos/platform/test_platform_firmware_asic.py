@@ -1,4 +1,5 @@
 import logging
+import os
 import string
 from typing import Tuple
 
@@ -108,10 +109,11 @@ def test_platform_firmware_image_rename(engines, devices, topology_obj):
     _, fetched_image_name, _ = get_image_data_and_fetch_random_image_files(platform, dut, topology_obj)
     fetched_image_file = platform.firmware.asic.files.file_name[fetched_image_name]
     with allure.step("Rename image without mfa ending"):
-        if dut.asic_type == NvosConst.QTM3 or dut.asic_type == NvosConst.NVL5:
-            platform.firmware.asic.action_fetch(f"{PlatformConsts.XDR_FW_PATH}/{fetched_image_name}").verify_result()
-        else:
-            platform.firmware.asic.action_fetch(f"{PlatformConsts.FW_PATH}/{fetched_image_name}").verify_result()
+        base_path = (PlatformConsts.XDR_FW_PATH.format(asic="QTM3", version=ImageConsts.XDR_FW_STABLE_VERSION)
+                     if dut.asic_type in (NvosConst.QTM3, NvosConst.NVL5)
+                     else PlatformConsts.FW_PATH)
+        logger.info(f"{base_path=}")
+        platform.firmware.asic.action_fetch(os.path.join(base_path, fetched_image_name)).verify_result()
 
     with allure.step("Rename image and verify"):
         new_name = RandomizationTool.get_random_string(20, ascii_letters=string.ascii_letters + string.digits)
@@ -237,13 +239,13 @@ def get_image_data_and_fetch_random_image_files(platform, dut, topology_obj, ima
                                                 ) -> Tuple[str, str, str]:
     original_image, default_firmware = get_image_data(platform, dut)
 
-    with ((allure.step("Get {} available image files".format(images_amount_to_fetch)))):
+    with allure.step(f"Get {images_amount_to_fetch} available image files"):
         asic_type = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific'][
             'chip_type']
         if "QTM3" in default_firmware:
-            image_to_fetch = '{}fw-{}-'.format(PlatformConsts.XDR_FW_PATH, asic_type) + \
-                ImageConsts.XDR_FW_STABLE_VERSION
-            image_name = 'fw-{}-'.format(asic_type) + ImageConsts.XDR_FW_STABLE_VERSION
+            directory = PlatformConsts.XDR_FW_PATH.format(asic=asic_type, version=ImageConsts.XDR_FW_STABLE_VERSION)
+            image_name = f'fw-{asic_type}-{ImageConsts.XDR_FW_STABLE_VERSION}.mfa'
+            image_to_fetch = os.path.join(directory, image_name)
         else:
             image_to_fetch = '{}fw-{}-'.format(PlatformConsts.FW_PATH, asic_type) + ImageConsts.FW_STABLE_VERSION
             image_name = 'fw-{}-'.format(asic_type) + ImageConsts.FW_STABLE_VERSION

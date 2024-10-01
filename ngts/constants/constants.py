@@ -1,7 +1,6 @@
 import copy
 import os
 from datetime import datetime
-from enum import Enum
 
 
 class PytestConst:
@@ -40,6 +39,9 @@ class SonicConst:
     DOCKERS_LIST_BF = ['swss', 'syncd', 'bgp', 'pmon', 'lldp', 'gnmi', 'eventd', 'database']
     DOCKERS_LIST_TOR = DOCKERS_LIST
     DOCKERS_LIST_LEAF = ['swss', 'syncd', 'bgp', 'teamd', 'pmon', 'lldp', 'radv', 'eventd', 'database', 'snmp']
+
+    DOCKERS_FANOUT = ['swss', 'gnmi', 'syncd', 'pmon', 'eventd', 'database', 'snmp']
+
     DAEMONS_DICT = {'swss': [], 'syncd': [], 'bgp': [],
                     'teamd': [], 'pmon': [], 'lldp': [], 'dhcp_relay': []}
     DAEMONS_DICT_BF = {'swss': [],
@@ -52,7 +54,6 @@ class SonicConst:
     SONIC_CONFIG_FOLDER = '/etc/sonic/'
     PORT_CONFIG_INI = 'port_config.ini'
     CONFIG_DB_JSON = 'config_db.json'
-    CONFIG_DB_GNMI_JSON = 'config_db_gnmi.json'
     EXTENDED_CONFIG_DB_PATH = "extended_config_db.json"
     CONFIG_DB_JSON_PATH = SONIC_CONFIG_FOLDER + CONFIG_DB_JSON
     PLATFORM_JSON_PATH = "/usr/share/sonic/device/{PLATFORM}/platform.json"
@@ -91,13 +92,15 @@ class SonicConst:
     NVIDIA_LAB_DNS_SEARCH = 'mtr.labs.mlnx labs.mlnx mlnx lab.mtl.com mtl.com'
     NVIDIA_AIR_DNS_FIRST = '8.8.8.8'
     NVIDIA_AIR_DNS_SECOND = '192.168.200.1'
+    NTP_SERVERS = ['10.7.77.134', '10.245.1.123', '10.211.0.124']
     MIN_SHAPER_RATE_BPS = 25000000
     MAX_SHAPER_RATE_BPS = 0
 
     CONFIG_RELOAD_CMD = 'config reload -y'
     SONIC_CANONICAL_NOGA_GROUP = "SONiC_Canonical"
     SONIC_COMMUNITY_NOGA_GROUP = "SONiC_Community"
-    SONIC_NOGA_GROUPS = [SONIC_CANONICAL_NOGA_GROUP, SONIC_COMMUNITY_NOGA_GROUP]
+    SONIC_DPU_NOGA_GROUP = "SONiC_DPU"
+    SONIC_NOGA_GROUPS = [SONIC_CANONICAL_NOGA_GROUP, SONIC_COMMUNITY_NOGA_GROUP, SONIC_DPU_NOGA_GROUP]
 
 
 class CliType:
@@ -106,6 +109,14 @@ class CliType:
     SHELL = 'SHELL'
     MLNX_OS = 'MLNX_OS'
     SKYNET = 'skynet'
+
+
+class FanoutConfigFile:
+    SONIC = 'config_db.json'
+    SONIC_CONFIG_PATH = '/etc/sonic/'
+    ONYX = 'initial'
+    ONYX_CONFIG_PATH = '/config/db/'
+    TEMP_PATH = '/tmp/'
 
 
 class DbConstants:
@@ -183,6 +194,9 @@ class ConfigDbJsonConst:
     PORT = 'PORT'
     ALIAS = 'alias'
     FEATURE = 'FEATURE'
+    AUTO_TECHSUPPORT_FEATURE = 'AUTO_TECHSUPPORT_FEATURE'
+    TELEMETRY = 'telemetry'
+    GNMI = 'gnmi'
     LLDP = 'lldp'
     STATUS = 'status'
     STATE = 'state'
@@ -224,6 +238,7 @@ class AutonegCommandConstants:
     FEC_ADMIN = "FEC Admin"
     WIDTH = "Width"
     CABLE_SPEED = "Supported Cable Speed"
+    PART_NUMBER = "Vendor Part Number"
     REGEX_PARSE_EXPRESSION_FOR_MLXLINK = {
         ADMIN: (r"State\s*:\s*(\w*)", "Active", "up", "down", None),
         OPER: (r"Physical state\s*:\s*(.*)", "LinkUp|ENABLE", "up", "down", None),
@@ -233,7 +248,8 @@ class AutonegCommandConstants:
         AUTONEG_MODE: (r"Auto Negotiation\s*:\s*(\w*\s*-*\s*\d*\w_*\d*X*|ON)",
                        r"FORCE\s+-\s+\d+\w_*\d*X*|ON", "enabled", "disabled", "Force"),
         CABLE_SPEED: (r"Supported Cable Speed (?:\(Ext.\))?\s+:\s+0x[0-9a-z]+\s+\(([\w.,]+)\)",
-                      None, None, None, None)
+                      None, None, None, None),
+        PART_NUMBER: (r"Vendor Part Number\s*:\s*(\S+)", None, None, None, None)
     }
     PAM4_MIN_LANE_SPEED_MB = 50000
 
@@ -915,6 +931,8 @@ class FecConstants:
     }
     COPPER_TYPE_PREFIX = 'CR'
     OPTIC_TYPE_PREFIX = 'SR'
+    # Dictionary mapping between part numbers to speeds they do not support
+    CABLE_PART_NUMBER_UNSUPPORTED_SPEEDS = {'MFS1S00-V003E': '10G'}
 
 
 FEC_MODES_TO_ETHTOOL = {
@@ -1076,7 +1094,7 @@ class CounterpollConstants:
     COUNTERPOLL_RESTORE = 'sudo counterpoll {} {}'
     COUNTERPOLL_INTERVAL_STR = 'sudo counterpoll {} interval {}'
     COUNTERPOLL_QUEST = 'sudo counterpoll --help'
-    EXCLUDE_COUNTER_SUB_COMMAND = ['show', 'config-db', "flowcnt-trap", "flowcnt-route", "tunnel"]
+    EXCLUDE_COUNTER_SUB_COMMAND = ['show', 'config-db', "flowcnt-trap", "flowcnt-route", "tunnel", "delay"]
     INTERVAL = 'Interval (in ms)'
     TYPE = 'Type'
     STATUS = 'Status'
@@ -1197,8 +1215,10 @@ class MarsConstants:
     VER_SDK_PATH = "/opt/ver_sdk"
     EXTRA_PACKAGE_PATH_LIST = ["/usr/lib64/python2.7/site-packages"]
 
-    TOPO_ARRAY = ("t0-56-po2vlan", "t0", "t1-lag", "t1-28-lag", "ptf32",
-                  "t0-64", "t1-64-lag", "t0-56", "t0-56-o8v48", "t0-120", "t1-56-lag", "t0-28")
+    TOPO_ARRAY = ("t0-56-po2vlan", "t0", "t1-lag", "t1-28-lag", "t1-32-lag", "ptf32", "t0-64", "t0-64-256",
+                  "t1-64-lag", "t0-56", "t0-56-o8v48", "t0-120", "t0-256", "t1-56-lag",
+                  "t0-28", "dualtor", "dualtor-64", "dualtor-aa")
+
     TOPO_ARRAY_DUALTOR = ("dualtor", "dualtor-64", "dualtor-aa")
     REBOOT_TYPES = {
         "reboot": "reboot",
@@ -1247,6 +1267,13 @@ class BluefieldConstants:
                              "Nvidia-9009d3b600SVAA-C1",
                              "Nvidia-9009d3b600SVAA-C2"]
     BLUEFIELD_PORTS_LIST = ['Ethernet0', 'Ethernet4']
+    DPU_SETUP_LIST = [
+        "r-r740-03-bf3-sonic-01_setup",
+        "r-r740-05-bf3-sonic-01_setup",
+        "r-r740-07-bf3-sonic-01_setup",
+        "r-r740-08-bf3-sonic-01_setup",
+        "CI_sonic_BF3_1",
+    ]
 
 
 class PerformanceSetupConstants:
@@ -1255,6 +1282,8 @@ class PerformanceSetupConstants:
 
 class SonicDeployConstants:
     UN_SUPPORT_BRANCH_MAP = {"r-alligator-04": ["201911", "202012"]}
+    DEFAULT_HWSKU_FILE_PATH = 'ansible/files/hwsku_vars/default_hwsku.json'
+    PRODUCTION_DUTS = ['mtvr-moose-01', 'mtvr-hippo-05']
 
 
 class RebootTestConstants:
@@ -1417,7 +1446,7 @@ class ResultUploaderConst:
                                 "mars_orch_sw-mars-orch@Friday_Community_Regression"]
     HOST_INTERNAL_NAMES_LIST = ["boxer", "bulldog", "spider", "panther",
                                 "lionfish", "anaconda", "tigris", "ocelot",
-                                "liger", "tigon", "leopard", "moose"]
+                                "liger", "tigon", "leopard", "moose", "hippo", "bobcat"]
 
 
 class BugHandlerConst:
@@ -1465,6 +1494,7 @@ class BugHandlerConst:
     TIMESTAMP_FORMATS = ["%b %d %H:%M:%S", "%Y %b %d %H:%M:%S", "%Y-%m-%dT%H:%M:%S"]
     TIMESTAMP_LENGTH = [len(datetime.now().strftime(format)) for format in TIMESTAMP_FORMATS]
     LOG_ERRORS_FILE_ROOT_ITEM = "log_errors"
+    TAR_FILE_SIZE_RM_LIMIT = 102400000
 
 
 class SerialLoggerConst:
@@ -1500,7 +1530,7 @@ class GnmiConsts:
     GNMI_IS_NOT_RUNNING = 'no'
     GNMI_VERSION_FIELD = 'version'
     GNMI_DEFAULT_PORT = '9339'
-    SLEEP_TIME_FOR_UPDATE = 35
+    SLEEP_TIME_FOR_UPDATE = 40
     REDIS_CMD_KEY = 'redis_cmd'
     XPATH_KEY = 'xpath_gnmi_cmd'
     COMPARISON_KEY = 'comparison_dict'
@@ -1541,9 +1571,8 @@ class IndependentModuleConst:
     MEDIA_SETTINGS_FILE_NAME = "media_settings.json"
     OPTICS_SI_SETTINGS_FILE_NAME = "optics_si_settings.json"
     IM_INTERFACE_SETTINGS_FILE_PATH = "/usr/share/sonic/device/{PLATFORM}"
-    MS_HWSKU = ['Mellanox-SN4700-O8C48', 'Mellanox-SN4700-O8V48', 'ACS-SN5600', 'ACS-MSN4700']
-    DUTS_SUPPORTING_IM = ['r-leopard-32', 'r-leopard-41', 'r-leopard-56', 'r-leopard-01', 'r-leopard-58',
-                          'r-leopard-70', 'r-leopard-72', 'r-moose-01', 'r-moose-02', 'mtvr-moose-04']
+    PLATFORM_GENERATION = ['4280', '4700', '5600']
+    AOC_VENDOR_PN = ['MMS1V00-WM', 'MMS4X00-NS', 'MFA7U10-H003', 'MMA4Z00-NS']
 
 
 class PerfConsts:
@@ -1568,12 +1597,6 @@ class PerfConsts:
     TG_TX_UTIL_TH = 95
     DUT_TX_UTIL_TH_DICT = {1500: 64, 2000: 80, 4000: 92, 8000: 93}
     DUT_TX_UTIL_W_IBM_TH_DICT = {1500: 64, 2000: 80, 4000: 96, 8000: 95}
-    EXPECTED_EGRESS_PORTS = 64
-    EXPECTED_MLOOP_PORTS = 64
-    EXPECTED_AR_PORTS = 128
-    EXPECTED_PORTS_BY_TYPE = {"egress": EXPECTED_EGRESS_PORTS,
-                              "mloop": EXPECTED_MLOOP_PORTS,
-                              "ar": EXPECTED_AR_PORTS}
     VALUE_INDEX = 0
     TIMESTAMP_INDEX = 1
     LOG_PORT_LEFT_TG = 0x10001
@@ -1585,4 +1608,64 @@ class PerfConsts:
     SLEEP_TIME_BEFORE_SAMPLE = 15
 
 
-SETUPS_WITH_NON_DEFAULT_PTF = ['r-panther-40', 'r-panther-42', 'r-bobcat-01']
+class DoroceConsts:
+    BUFFER_CONFIGURATIONS_DICT = {'lossless_double_ipool': ['egress_lossless_pool',
+                                                            'egress_lossy_pool',
+                                                            'ingress_lossless_pool',
+                                                            'ingress_lossy_pool'],
+                                  'lossless_single_ipool': ['egress_lossless_pool',
+                                                            'egress_lossy_pool',
+                                                            'ingress_lossless_pool'],
+                                  'lossy_double_ipool': ['egress_lossy_pool',
+                                                         'ingress_lossy_pool',
+                                                         'roce_reserved_egress_pool',
+                                                         'roce_reserved_ingress_pool']
+                                  }
+    ROCE_POOLS = 'roce_pools'
+    NON_ROCE_POOLS = 'non_roce_pools'
+    PERCENTAGE_POOLS_DICT = {'lossless_double_ipool': {ROCE_POOLS: ['ingress_lossless_pool'],
+                                                       NON_ROCE_POOLS: ['ingress_lossy_pool',
+                                                                        'egress_lossy_pool']},
+                             'lossy_double_ipool': {ROCE_POOLS: ['roce_reserved_egress_pool',
+                                                                 'roce_reserved_ingress_pool'],
+                                                    NON_ROCE_POOLS: ['ingress_lossy_pool',
+                                                                     'egress_lossy_pool']}}
+    BUFFER_CONFIGURATIONS = list(BUFFER_CONFIGURATIONS_DICT.keys())
+    ROCE_PG = 'PG3'
+    NO_ROCE_PG = 'PG0'
+    WATERMARK_THRESHOLD = '1000'
+    ALLOWED_PERCENTAGE_DEVIATION = 2
+
+
+SETUPS_WITH_NON_DEFAULT_PTF = ['r-panther-40_setup', 'r-panther-42_setup', 'r-bobcat-01', 'mtvr-tigon-04_setup',
+                               'mtvr-tigon-07_setup', 'r-panther-45_setup', 'mtvr-hippo-02_setup', 'r-panther-48_setup',
+                               'mtvr-panther-03_setup']
+FILE_INCLUDE_FAILED_SANITY_CHECKER_CASE = "/tmp/file_include_failed_sanity_checker_case.txt"
+
+
+class WJHConsts:
+    BUFFER_TABLE_SEPARATOR = "Buffer Info"
+    ACL_TABLE_SEPARATOR = "Rules Info"
+    RAW_PACKET_COUNT = 1
+    AGG_PACKET_COUNT = 50
+    AGGREGATE_FLAG = "--aggregate"
+    WJH_POLL_CMD_PREFIX = "show what-just-happened poll"
+    FORWARDING = "forwarding"
+    BUFFER = "buffer"
+    LAYER_1 = "layer-1"
+    ACL = "acl"
+    TCP_PROTO = 'tcp'
+    UDP_PROTO = 'udp'
+    IP_PROTO = 'ip'
+    RAW_CHANNEL = 'raw'
+    AGG_CHANNEL = 'aggregate'
+    RAW_TABLE = 'raw'
+    RAW_ACL_TABLE = 'raw_acl_buffer_info'
+    AGG_TABLE = 'agg'
+    AGG_ACL_TABLE = 'agg_acl_buffer_info'
+    TESTED_SRC_MAC = '00:11:22:33:44:55'
+    TESTED_SRC_IP = '40.0.0.6'
+    TESTED_DST_IP = '40.0.0.7'
+    NA = 'N/A'
+    TCP_IPV4_PACKET_FORMAT = 'Ether(src="{SRC_MAC}", dst="{DST_MAC}")/IP(src="{SRC_IP}", dst="{DST_IP}")/TCP()'
+    TCP_IPV6_PACKET_FORMAT = 'Ether(src="{SRC_MAC}", dst="{DST_MAC}")/IPv6(src="{SRC_IP}", dst="{DST_IP}")/TCP()'

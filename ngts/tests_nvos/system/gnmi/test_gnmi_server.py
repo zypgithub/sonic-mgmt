@@ -1,10 +1,11 @@
 import logging
 import os
 import random
+import re
 import signal
 import time
-import re
 from multiprocessing import Process
+
 import pytest
 
 import ngts.tools.test_utils.allure_utils as allure
@@ -12,10 +13,10 @@ from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.constants.constants import GnmiConsts
 from ngts.nvos_constants.constants_nvos import NvosConst, DatabaseConst, ApiType, ActionConsts, SystemConsts
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
+from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.system.System import System
-from ngts.nvos_tools.infra.Fae import Fae
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
 from ngts.tests_nvos.system.gnmi.constants import GnmiMode, MAX_GNMI_SUBSCRIBERS, GnmicErr
 from ngts.tests_nvos.system.gnmi.helpers import gnmi_basic_flow, validate_gnmi_is_running_and_stream_updates, \

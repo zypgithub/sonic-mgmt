@@ -80,7 +80,7 @@ BER_KEY_MAP = {
     BER_RAW_PHYSICAL_BER
 }
 
-MS_HWSKUS = ['Mellanox-SN4700-O8C48', 'Mellanox-SN4700-O8V48', 'ACS-SN5600', 'ACS-MSN4700']
+PLATFORM_GENERATION = ['4280', '4700', '5600']
 
 
 def enable_cmis_mgr_in_pmon_file(duthost):
@@ -335,4 +335,4 @@ def im_ms_sku(duthost):
     @param: duthost: duthost fixture
     @return: list of IM ports supported
     """
-    return duthost.facts['hwsku'] in MS_HWSKUS
+    return any(item in duthost.facts['hwsku'] for item in PLATFORM_GENERATION)

@@ -1,5 +1,5 @@
 import logging
-
+from ngts.tools.test_utils import allure_utils as allure
 import pytest
 
 from ngts.nvos_constants.constants_nvos import ApiType, NvosConst
@@ -10,6 +10,9 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
+from ngts.nvos_constants.constants_nvos import ApiType, NvosConst
+from ngts.nvos_tools.infra.Fae import Fae
+from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
@@ -155,8 +158,8 @@ def test_ib_show_interface_all_state_down(engines, devices):
     output_dictionary = Tools.OutputParsingTool.parse_show_interface_output_to_dictionary(
         selected_port.interface.show()).get_returned_value()
 
-    with allure.step('Run show command on selected port and verify each field has an appropriate value according to'
-                     ' the state of the port'):
+    with allure.step('Run show command on selected port and verify that each field has an appropriate '
+                     'value according to the state of the port'):
         validate_one_port_in_show_all_ports(output_dictionary, devices.dut.switch_type.lower(), False)
         link_physical_port_state = output_dictionary[IbInterfaceConsts.LINK][IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE]
         assert link_physical_port_state in [IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE_POLLING,

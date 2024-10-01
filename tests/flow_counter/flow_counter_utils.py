@@ -2,6 +2,7 @@ import allure
 import logging
 import pytest
 import random
+import time
 from tests.common.helpers.assertions import pytest_assert
 from tests.common.utilities import wait_until, check_skip_release
 
@@ -57,6 +58,7 @@ class RouteFlowCounterTestContext:
             return
 
         try:
+            time.sleep(self.interval / 1000)
             result, message = self.check_stats()
             pytest_assert(result, message)
         finally:

@@ -80,15 +80,24 @@ class OpenSmTool:
                 output = engines.ha.run_cmd(cmd)
                 return ResultObj(True, info=output)
         except BaseException as ex:
-            logging.error("Failed to start opensm")
+            logging.error("Failed to stop opensm")
             return False, 0
 
     @staticmethod
     def is_sm_running_on_server(engines):
         with allure.step("Check if OpenSM is running on a server"):
+            # check if open sm process is currently running
+            output = engines.ha.run_cmd(f"ps aux | grep opensm")
+            lines = [line for line in output.split('\n') if 'grep' not in line]
+
+            # check if port is up
             output = engines.ha.run_cmd("ibdev2netdev")
-            is_running = "(Up)" in output
+            is_up = "(Up)" in output
             port_name = output.split()[0]
+
+            # return OpenSM is running only if open sm process is running and port is up
+            is_running = bool(lines) and is_up
+
             return is_running, port_name
 
     @staticmethod

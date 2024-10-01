@@ -34,7 +34,7 @@ class History(BaseComponent):
         with allure.step('Execute nv show system health history {param} and exit cmd {exit_cmd}'.format(param=param,
                                                                                                         exit_cmd=exit_cmd)):
             return SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].show_health_report,
-                                                   TestToolkit.engines.dut, param, exit_cmd).get_returned_value()
+                                                   TestToolkit.engines.dut, self.get_resource_path(), param, exit_cmd).get_returned_value()
 
     def show_health_report_file(self, file=HealthConsts.HEALTH_FIRST_FILE, exit_cmd='q'):
         return self.show(param="files {}".format(file), exit_cmd=exit_cmd)
@@ -77,6 +77,6 @@ class History(BaseComponent):
             -1] != last_summary_line, "Didn't print new summary line after boot"
         assert "Monitoring service reboot, clearing issues history." in health_history_output, "expected a new summary line after boot, but it was missing"
 
-    @retry(Exception, tries=12, delay=30)
+    @retry(Exception, tries=12, delay=10)
     def retry_get_health_history_file_summary_line(self, summary_regex=HealthConsts.SUMMARY_REGEX_OK):
         return self.search_line(summary_regex)[-1]

@@ -54,10 +54,13 @@ class MultiPlanarTool:
     def select_random_aggregated_port(devices):
         with allure.step("Select a random aggregated port"):
             if isinstance(devices.dut, CrocodileSwitch):
-                return Fae(port_name='swA8p1')
+                port_name = 'swA10p1'
             else:
-                return Fae(port_name=RandomizationTool.select_random_port(
-                    requested_ports_logical_state=IbInterfaceConsts.LINK_LOGICAL_PORT_STATE_ACTIVE).get_returned_value())
+                port_name = RandomizationTool.select_random_port(
+                    requested_ports_logical_state=IbInterfaceConsts.LINK_LOGICAL_PORT_STATE_ACTIVE
+                ).get_returned_value().name
+        allure.attach(f"Selected port: {port_name}")
+        return Fae(port_name=port_name)
 
     @staticmethod
     def select_random_fnm_port(devices):
@@ -65,7 +68,8 @@ class MultiPlanarTool:
             fnm_port_name = RandomizationTool.select_random_value(devices.dut.fnm_port_list). \
                 get_returned_value()
             selected_fae_fnm_port = Fae(port_name=fnm_port_name)
-            return selected_fae_fnm_port
+        allure.attach(f"Selected port: {fnm_port_name}")
+        return selected_fae_fnm_port
 
     @staticmethod
     def select_random_plane_port(devices, fae_aggregated_port, num_of_planes):
@@ -73,7 +77,8 @@ class MultiPlanarTool:
             plane_num = str(random.randint(1, num_of_planes))
             plane_port_name = fae_aggregated_port.port.name + 'pl' + plane_num
             selected_fae_plane_port = Fae(port_name=plane_port_name)
-            return selected_fae_plane_port
+        allure.attach(f"Selected port: {plane_port_name}")
+        return selected_fae_plane_port
 
     @staticmethod
     @retry(Exception, tries=4, delay=2)

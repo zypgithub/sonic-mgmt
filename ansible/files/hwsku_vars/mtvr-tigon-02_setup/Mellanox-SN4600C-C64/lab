@@ -1,0 +1,21 @@
+[sonic_latest]
+mtvr-tigon-02      ansible_host=10.245.20.251 ansible_hostv6="fe80::966d:aeff:fe5a:7774" sonic_version=v2 hwsku="Mellanox-SN4600C-C64" iface_speed=100000 mgmt_subnet_mask_length=22 vm_base=VM4101
+mtvr-tigon-04      ansible_host=10.245.20.253 ansible_hostv6="fe80::ba3f:d2ff:fec4:98d4" sonic_version=v2 hwsku="Mellanox-SN4600C-C64" iface_speed=100000 mgmt_subnet_mask_length=22 vm_base=VM4201
+
+[sonic:children]
+sonic_latest
+
+[ptf]
+ptf-mtvr-tigon-02   ansible_host=10.245.36.3 ansible_ssh_user=root ansible_ssh_pass=root
+ptf-mtvr-tigon-04   ansible_host=10.245.36.37 ansible_ssh_user=root ansible_ssh_pass=root
+
+[lab:children]
+sonic
+fanout
+
+[lab:vars]
+mgmt_subnet_mask_length="24"
+
+[fanout]
+mtvr-tigon-01       ansible_host=10.245.20.249 os=sonic
+mtvr-tigon-03       ansible_host=10.245.20.252 os=sonic

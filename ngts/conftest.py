@@ -334,8 +334,16 @@ def update_topology_with_cli_class(topology, request=None):
             else:
                 player_info['cli'] = SonicCli(topology, dut_alias=player_key)
                 player_info.update({'stub_cli': SonicCliStub(topology)})
+
+        elif player_key == 'fanout' or player_key == 'fanout-b':
+            if player_info['attributes'].noga_query_data['attributes']['Topology Conn.']['CLI_TYPE'] == CliType.SONIC:
+                player_info['cli'] = SonicCli(topology, dut_alias=player_key)
+            else:
+                player_info['cli'] = LinuxCli(player_info['engine'])
+                player_info.update({'stub_cli': LinuxCliStub(player_info['engine'])})
+
         elif player_key == 'dut-b':
-            player_info['cli'] = SonicCli(topology, dut_alias='dut-b')
+            player_info['cli'] = SonicCli(topology, dut_alias=player_key)
 
         elif player_key == 'left_tg' or player_key == 'right_tg':
             player_info['cli'] = SonicCli(topology, dut_alias=player_key)
@@ -516,7 +524,7 @@ def platform_params(show_platform_summary, setup_name, topology_obj):
     platform_data = DottedDict()
     platform_data.platform = show_platform_summary['platform']
     platform_data.filtered_platform = re.search(
-        r"(msn\d{4}a\w?|msn\d{4}c|msn\d{4}|sn\d{4}|qm\d{4}|q\d{4}|mqm\d{4}|mbf.*c|900.*a|N5110_LD|N5100_LD|N5112_LD)",
+        r"(msn\d{4}a\w?|msn\d{4}c|msn\d{4}|sn\d{4}|qm\d{4}|q\d{4}|mqm\d{4}|mbf.*c|900.*a|bf.*dpu|N5110_LD|N5100_LD|N5112_LD)",
         show_platform_summary['platform'], re.IGNORECASE).group(1)
     platform_data.hwsku = show_platform_summary['hwsku']
     platform_data.setup_name = setup_name

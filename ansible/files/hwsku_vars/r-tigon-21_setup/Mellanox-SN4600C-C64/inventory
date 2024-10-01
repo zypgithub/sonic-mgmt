@@ -1,0 +1,60 @@
+[sonic_latest]
+# MTR testbed r-tigon-21 topologies
+r-tigon-21 ansible_host=10.210.24.193 sonic_version=v2 sonic_hwsku=Mellanox-SN4600C-C64 iface_speed=100000 fanout_switch=r-tigon-22 ptf_host=ptf-r-tigon-21 ptf_portmap="roles/test/files/mlnx/ptf-map/default_fp64_interface_to_front_map.ini" dut_mac="1C:34:DA:CF:56:00" pdu_host=pdu-10-208-2-11
+r-tigon-21-t0 ansible_host=10.210.24.193 sonic_version=v2 sonic_hwsku=Mellanox-SN4600C-C64 iface_speed=100000 fanout_switch=r-tigon-22 ptf_host=ptf-r-tigon-21 ptf_portmap="roles/test/files/mlnx/ptf-map/default_fp64_interface_to_front_map.ini" dut_mac="1C:34:DA:CF:56:00" pdu_host=pdu-10-208-2-11
+r-tigon-21-t0-16 ansible_host=10.210.24.193 sonic_version=v2 sonic_hwsku=Mellanox-SN4600C-C64 iface_speed=100000 fanout_switch=r-tigon-22 ptf_host=ptf-r-tigon-21 ptf_portmap="roles/test/files/mlnx/ptf-map/default_fp64_interface_to_front_map.ini" dut_mac="1C:34:DA:CF:56:00" pdu_host=pdu-10-208-2-11
+r-tigon-21-t0-52 ansible_host=10.210.24.193 sonic_version=v2 sonic_hwsku=Mellanox-SN4600C-C64 iface_speed=100000 fanout_switch=r-tigon-22 ptf_host=ptf-r-tigon-21 ptf_portmap="roles/test/files/mlnx/ptf-map/default_fp64_interface_to_front_map.ini" dut_mac="1C:34:DA:CF:56:00" pdu_host=pdu-10-208-2-11
+r-tigon-21-t0-56 ansible_host=10.210.24.193 sonic_version=v2 sonic_hwsku=Mellanox-SN4600C-C64 iface_speed=100000 fanout_switch=r-tigon-22 ptf_host=ptf-r-tigon-21 ptf_portmap="roles/test/files/mlnx/ptf-map/default_fp64_interface_to_front_map.ini" dut_mac="1C:34:DA:CF:56:00" pdu_host=pdu-10-208-2-11
+r-tigon-21-t0-64 ansible_host=10.210.24.193 sonic_version=v2 sonic_hwsku=Mellanox-SN4600C-C64 iface_speed=100000 fanout_switch=r-tigon-22 ptf_host=ptf-r-tigon-21 ptf_portmap="roles/test/files/mlnx/ptf-map/default_fp64_interface_to_front_map.ini" dut_mac="1C:34:DA:CF:56:00" pdu_host=pdu-10-208-2-11
+r-tigon-21-t1 ansible_host=10.210.24.193 sonic_version=v2 sonic_hwsku=Mellanox-SN4600C-C64 iface_speed=100000 fanout_switch=r-tigon-22 ptf_host=ptf-r-tigon-21 ptf_portmap="roles/test/files/mlnx/ptf-map/default_fp64_interface_to_front_map.ini" dut_mac="1C:34:DA:CF:56:00" pdu_host=pdu-10-208-2-11
+r-tigon-21-t1-lag ansible_host=10.210.24.193 sonic_version=v2 sonic_hwsku=Mellanox-SN4600C-C64 iface_speed=100000 fanout_switch=r-tigon-22 ptf_host=ptf-r-tigon-21 ptf_portmap="roles/test/files/mlnx/ptf-map/default_fp64_interface_to_front_map.ini" dut_mac="1C:34:DA:CF:56:00" pdu_host=pdu-10-208-2-11
+r-tigon-21-t1-64-lag ansible_host=10.210.24.193 sonic_version=v2 sonic_hwsku=Mellanox-SN4600C-C64 iface_speed=100000 fanout_switch=r-tigon-22 ptf_host=ptf-r-tigon-21 ptf_portmap="roles/test/files/mlnx/ptf-map/default_fp64_interface_to_front_map.ini" dut_mac="1C:34:DA:CF:56:00" pdu_host=pdu-10-208-2-11
+r-tigon-21-ptf32 ansible_host=10.210.24.193 sonic_version=v2 sonic_hwsku=Mellanox-SN4600C-C64 iface_speed=100000 fanout_switch=r-tigon-22 ptf_host=ptf-r-tigon-21 ptf_portmap="roles/test/files/mlnx/ptf-map/default_fp32_interface_to_front_map.ini" dut_mac="1C:34:DA:CF:56:00" pdu_host=pdu-10-208-2-11
+r-tigon-21-ptf64 ansible_host=10.210.24.193 sonic_version=v2 sonic_hwsku=Mellanox-SN4600C-C64 iface_speed=100000 fanout_switch=r-tigon-22 ptf_host=ptf-r-tigon-21 ptf_portmap="roles/test/files/mlnx/ptf-map/default_fp64_interface_to_front_map.ini" dut_mac="1C:34:DA:CF:56:00" pdu_host=pdu-10-208-2-11
+r-tigon-21-ptf-any ansible_host=10.210.24.193 sonic_version=v2 sonic_hwsku=Mellanox-SN4600C-C64 iface_speed=100000 fanout_switch=r-tigon-22 ptf_host=ptf-r-tigon-21 ptf_portmap="roles/test/files/mlnx/ptf-map/default_fp64_interface_to_front_map.ini" dut_mac="1C:34:DA:CF:56:00" pdu_host=pdu-10-208-2-11
+
+r-tigon-22 ansible_host=r-tigon-22 ansible_ssh_user="{{ lookup('env','SONIC_SWITCH_USER') }}" ansible_ssh_pass="{{ lookup('env','SONIC_SWITCH_PASSWORD') }}" os=sonic
+
+[sonic:children]
+sonic_latest
+
+[leaf_topo_1]
+# MTR r-tigon-21 topologies
+r-tigon-21
+r-tigon-21-t0
+r-tigon-21-t0-16
+r-tigon-21-t0-52
+r-tigon-21-t0-56
+r-tigon-21-t0-64
+r-tigon-21-t1
+r-tigon-21-t1-lag
+r-tigon-21-t1-64-lag
+r-tigon-21-ptf32
+r-tigon-21-ptf64
+r-tigon-21-ptf-any
+
+[leaf_topo_1:vars]
+podset_number=200
+
+[lab]
+# MTR r-tigon-21 topologies
+r-tigon-21
+r-tigon-21-t0
+r-tigon-21-t0-16
+r-tigon-21-t0-52
+r-tigon-21-t0-56
+r-tigon-21-t0-64
+r-tigon-21-t1
+r-tigon-21-t1-lag
+r-tigon-21-t1-64-lag
+r-tigon-21-ptf32
+r-tigon-21-ptf64
+r-tigon-21-ptf-any
+
+[ptf]
+# MTR r-tigon-21 PTF host
+ptf-r-tigon-21 ansible_host=10.215.20.122 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+10.215.20.122 ansible_host=10.215.20.122 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+
+[pdu]
+pdu-10-208-2-11 ansible_host=10.208.2.11 protocol=snmp

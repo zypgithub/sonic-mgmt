@@ -1,0 +1,42 @@
+[sonic_latest]
+# MTR testbed r-anaconda-81 topologies
+r-anaconda-81 ansible_host=10.210.24.109  sonic_version=v2  sonic_hwsku=ACS-MSN3700 iface_speed=100000 serial_console="ssh -l rcon:7020 10.224.2.81" ptf_host=ptf-r-anaconda-81 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=1C:34:DA:2D:4D:00 serial=MT2101X09711 model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0', '0x29': u'2023.11-5.3.0011-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00', '0xfe': u'0xBAA0639F', '0x2b': u'Mellanox', '0x2a': u'254'}"
+r-anaconda-81-t1  ansible_host=10.210.24.109  sonic_version=v2  sonic_hwsku=ACS-MSN3700 iface_speed=100000 serial_console="ssh -l rcon:7020 10.224.2.81" ptf_host=ptf-r-anaconda-81 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=1C:34:DA:2D:4D:00 serial=MT2101X09711 model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0', '0x29': u'2023.11-5.3.0011-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00', '0xfe': u'0xBAA0639F', '0x2b': u'Mellanox', '0x2a': u'254'}"
+r-anaconda-81-t1-lag  ansible_host=10.210.24.109  sonic_version=v2  sonic_hwsku=ACS-MSN3700 iface_speed=100000 serial_console="ssh -l rcon:7020 10.224.2.81" ptf_host=ptf-r-anaconda-81 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=1C:34:DA:2D:4D:00 serial=MT2101X09711 model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0', '0x29': u'2023.11-5.3.0011-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00', '0xfe': u'0xBAA0639F', '0x2b': u'Mellanox', '0x2a': u'254'}"
+r-anaconda-81-t0  ansible_host=10.210.24.109  sonic_version=v2  sonic_hwsku=ACS-MSN3700 iface_speed=100000 serial_console="ssh -l rcon:7020 10.224.2.81" ptf_host=ptf-r-anaconda-81 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=1C:34:DA:2D:4D:00 serial=MT2101X09711 model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0', '0x29': u'2023.11-5.3.0011-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00', '0xfe': u'0xBAA0639F', '0x2b': u'Mellanox', '0x2a': u'254'}"
+r-anaconda-81-ptf32  ansible_host=10.210.24.109  sonic_version=v2  sonic_hwsku=ACS-MSN3700 iface_speed=100000 serial_console="ssh -l rcon:7020 10.224.2.81" ptf_host=ptf-r-anaconda-81 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=1C:34:DA:2D:4D:00 serial=MT2101X09711 model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0', '0x29': u'2023.11-5.3.0011-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00', '0xfe': u'0xBAA0639F', '0x2b': u'Mellanox', '0x2a': u'254'}"
+r-anaconda-81-ptf-any  ansible_host=10.210.24.109  sonic_version=v2  sonic_hwsku=ACS-MSN3700 iface_speed=100000 serial_console="ssh -l rcon:7020 10.224.2.81" ptf_host=ptf-r-anaconda-81 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=1C:34:DA:2D:4D:00 serial=MT2101X09711 model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0', '0x29': u'2023.11-5.3.0011-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00', '0xfe': u'0xBAA0639F', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
+arc-switch1039 ansible_host=arc-switch1039 ansible_ssh_user="{{ lookup('env','ONYX_SWITCH_USER') }}" ansible_ssh_pass="{{ lookup('env','ONYX_SWITCH_PASSWORD') }}" os=onyx
+
+[sonic:children]
+sonic_latest
+
+[leaf_topo_1]
+# MTR r-anaconda-81 topologies
+r-anaconda-81
+r-anaconda-81-t0
+r-anaconda-81-t1
+r-anaconda-81-t1-lag
+r-anaconda-81-ptf32
+r-anaconda-81-ptf-any
+
+[leaf_topo_1:vars]
+podset_number=200
+
+[lab]
+# MTR r-anaconda-81 topologies
+r-anaconda-81
+r-anaconda-81-t0
+r-anaconda-81-t1
+r-anaconda-81-t1-lag
+r-anaconda-81-ptf32
+r-anaconda-81-ptf-any
+
+[ptf]
+# MTR r-anaconda-81 PTF host
+ptf-r-anaconda-81 ansible_host=10.213.86.93 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+10.213.86.93 ansible_host=10.213.86.93 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+
+[pdu]
+pdu-10-208-0-24 ansible_host=10.208.0.24 protocol=snmp

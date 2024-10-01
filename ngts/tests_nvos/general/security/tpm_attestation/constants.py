@@ -3,6 +3,10 @@ TPM_DIR = '/host/tpm'
 AIK_FILENAME = 'IAK.crt'
 AIK_FILE_PATH = f'{TPM_DIR}/{AIK_FILENAME}'
 
+OAIK_FILENAME = 'oIAK.crt'
+OAIK_FILE_PATH = f'{TPM_DIR}/{OAIK_FILENAME}'
+OIAK_DUMMY_CERT_PATH = '/auto/sw_system_project/NVOS_INFRA/oiak/oiak.txt'
+
 AIK_PEM_FILENAME = AIK_FILENAME.replace('crt', 'pem')
 
 TPM_DIR_CONTENT_AFTER_INIT = {AIK_FILENAME, 'IAK.ctx', 'IAK.der', 'AIK.tmp'}

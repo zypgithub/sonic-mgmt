@@ -5,8 +5,10 @@ import pytest
 from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.tests_nvos.general.security.tpm_attestation.helpers import *
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 
 
+@pytest.mark.security
 @pytest.mark.tpm
 def test_only_aik_file_at_first(engines):
     """
@@ -18,6 +20,7 @@ def test_only_aik_file_at_first(engines):
     verify_only_aik_at_tpm_dir(engines)
 
 
+@pytest.mark.security
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 @pytest.mark.tpm
 def test_upload_bad_tpm_filename(test_api, engines, remote_engine):
@@ -36,6 +39,7 @@ def test_upload_bad_tpm_filename(test_api, engines, remote_engine):
         res.verify_result(False)
 
 
+@pytest.mark.security
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 @pytest.mark.tpm
 def test_upload_aik(test_api, engines, remote_engine):
@@ -54,6 +58,7 @@ def test_upload_aik(test_api, engines, remote_engine):
                                    remote_engine.password, f'{REMOTE_PATH}/{AIK_FILENAME}')
 
 
+@pytest.mark.security
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 @pytest.mark.tpm
 def test_upload_quote_before_generate(test_api, engines, remote_engine):
@@ -71,6 +76,7 @@ def test_upload_quote_before_generate(test_api, engines, remote_engine):
         res.verify_result(False)
 
 
+@pytest.mark.security
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 @pytest.mark.tpm
 def test_generate_quote_bad_param(test_api, engines):
@@ -109,6 +115,7 @@ def test_generate_quote_bad_param(test_api, engines):
         verify_only_aik_at_tpm_dir(engines)
 
 
+@pytest.mark.security
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 @pytest.mark.tpm
 def test_generate_quote(test_api, engines, devices):
@@ -136,6 +143,7 @@ def test_generate_quote(test_api, engines, devices):
         sanity_check_generated_quote(engines, VALID_NONCE_PARAM)
 
 
+@pytest.mark.security
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 @pytest.mark.tpm
 def test_upload_quote(test_api, engines, remote_engine):
@@ -158,6 +166,7 @@ def test_upload_quote(test_api, engines, remote_engine):
                                    remote_engine.password, f'{REMOTE_PATH}/{QUOTE_FILENAME}')
 
 
+@pytest.mark.security
 @pytest.mark.tpm
 def test_generate_quote_overrides_file(engines):
     """
@@ -180,6 +189,7 @@ def test_generate_quote_overrides_file(engines):
             content: {dummy_quote_content}'''
 
 
+@pytest.mark.security
 @pytest.mark.tpm
 def test_tpm_reboot_cases(engines, devices, save_local_timezone):
     """
@@ -225,6 +235,7 @@ def test_tpm_reboot_cases(engines, devices, save_local_timezone):
 
 # TODO: understand how to upgrade here
 @pytest.mark.skip(reason='Skipped until there is GA version with the feature')
+@pytest.mark.security
 @pytest.mark.tpm
 def test_tpm_upgrade_cases(engines, devices):
     """
@@ -245,3 +256,65 @@ def test_tpm_upgrade_cases(engines, devices):
     with allure.step('checks after upgrade'):
         with allure.step('verify quote file is removed'):
             verify_only_aik_at_tpm_dir(engines)
+
+
+@pytest.mark.security
+@pytest.mark.tpm
+def test_tpm_oiak(engines, devices, save_local_timezone):
+    """
+    Verify oIAK functionality
+
+     1. Check oIAK show by default on switch, should not exist
+     2. Import oIAK with incorrect public key and check it not applied
+     3. Import oIAK with correct public key and verify all fields in output
+     4. Generate quote and check oIAK certificate in
+     5. Remove oIAK certificate and check it removed
+    """
+    system = System()
+    dut = engines.dut
+    valid_algo = random.choice(list(SUPPORTED_ALGORITHMS))
+
+    with allure.step('Check oIAK by default, should not exist on switch'):
+        show_output = system.security.tpm.oaik.show()
+        output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(show_output).get_returned_value()
+        assert output_dictionary == {}
+
+    with allure.step('Import oIAK with incorrect public key'):
+        mismatch_public_key_cert = get_oiak_cert(engines.sonic_mgmt, OIAK_DUMMY_CERT_PATH)
+        response = system.security.tpm.oaik.action_import_tpm_oiak(dut_engine=dut, data=f'{mismatch_public_key_cert}')
+        assert 'Error: Public key mismatch' in response.info, "Switch accept certificate with mismatched public key"
+
+        with allure.step('Check oIAK with mismatched public key not accept'):
+            show_output = system.security.tpm.oaik.show()
+            output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(show_output).get_returned_value()
+            assert output_dictionary == {}
+
+    with allure.step('Import correct oIAK certificate'):
+        system.security.tpm.oaik.action_import_tpm_oiak(
+            dut_engine=dut, remote_url=f'scp://{dut.username}:{dut.password}@{dut.ip}{AIK_FILE_PATH}')
+
+        with allure.step('Verify fields in oIAK certificate'):
+            show_output = system.security.tpm.oaik.show()
+            output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(show_output).get_returned_value()
+            assert all(item in output_dictionary['plain'] for item in
+                       ["Certificate", "Data", "Serial Number", "Signature Algorithm",
+                        "Issuer"]), "Required items not found in output"
+
+    with allure.step(f'Generate quote with algo:{valid_algo} pcrs:{VALID_PCRS_PARAM} nonce:{VALID_NONCE_PARAM}'):
+        system.security.tpm.action_generate_quote(pcrs=VALID_PCRS_PARAM, nonce=VALID_NONCE_PARAM, algorithm=valid_algo).verify_result()
+        with allure.step('verify quote file generated'):
+            tpm_files = TpmTool(dut).get_files_in_tpm_dir()
+            assert QUOTE_FILENAME in tpm_files, \
+                f'''quote file "{QUOTE_FILENAME}" was not generated
+                tpm dir content: {tpm_files}'''
+        with allure.step('sanity check for generated file'):
+            sanity_check_generated_quote(engines, VALID_NONCE_PARAM)
+        with allure.step('sanity check for generated file'):
+            quote_content = TpmTool(engines.dut).get_quote_file_content()
+            assert 'oIAK' in quote_content, f'OIAK cert not exist in quote {quote_content}'
+
+    with allure.step('Remove oIAK certificate and check it not exist in output'):
+        dut.run_cmd(f"sudo rm {OAIK_FILE_PATH}")
+        show_output = system.security.tpm.oaik.show()
+        output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(show_output).get_returned_value()
+        assert output_dictionary == {}, f'OIAK output {output_dictionary} is not empty'

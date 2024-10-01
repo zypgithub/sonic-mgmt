@@ -1,19 +1,19 @@
 {
     "AR_PROFILE": {
-        "ibm_profile": {
-            "m": "0",
+       "ibm_profile": {
+            "but": "0",
+            "cth": "2000",
             "ctl": "400",
             "ctm": "800",
-            "cth": "2000",
-            "frt": "4",
-            "but": "0",
-            "sfe": "0",
-            "ste": "0",
-            "ef": "0",
             "ecs": "512",
-            "lutd": "true",
+            "ef": "false",
+            "frt": "4",
+            "ibm": "1",
             "lut": "70",
-            "ibm": "1"
+            "lutd": "true",
+            "m": "0",
+            "sfe": "false",
+            "ste": "false"
         }
     }
 }

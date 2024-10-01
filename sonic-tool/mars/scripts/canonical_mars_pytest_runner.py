@@ -43,6 +43,9 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
             if self.test_type == "yaml":
                 self.raw_options += " -m yaml"
 
+        if '--alluredir' not in self.raw_options:
+            self.raw_options += ' --alluredir="/tmp/allure-results" '
+
         allure_project = get_allure_project_id(self.setup_name, self.test_script)
         random_seed = int(time.time())
         if self.sonic_topo:

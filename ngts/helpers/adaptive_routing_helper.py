@@ -587,17 +587,19 @@ class ArHelper:
 
 class ArPerfHelper(ArHelper):
 
-    def __init__(self, engines):
+    def __init__(self, topology_obj, engines):
         self.engines = engines
+        self.topology_obj = topology_obj
         self.tg_engines = self.get_tg_engines(engines)
+        self.all_engines_ports = self.get_ports_by_type(topology_obj, engines)
 
-    def generate_traffic_from_node(self, engines, dest_mac, packet_size=4000):
+    def generate_traffic_from_node(self, engines, dest_mac, num_of_ports, packet_size=4000):
         num_of_packets = PerfConsts.PACKET_SIZE_TO_PACKET_NUM_DICT[packet_size]
         self.verify_traffic_generation_enabled(engines)
         logger.info(f'Generate traffic from left and right node with packet size {packet_size}')
         for engine in self.tg_engines:
             engines[engine].run_cmd(f'sudo python3 {PerfConsts.TRAFFIC_SENDER_SCRIPT_TG} -s {packet_size} '
-                                    f'-n {num_of_packets} -m {dest_mac} -g {engine}', validate=True)
+                                    f'-n {num_of_packets} -m {dest_mac} -g {engine} -p {num_of_ports}', validate=True)
 
     def get_tg_engines(self, engines):
         tg_engines = [engine for engine in engines if re.search("tg$", engine)]
@@ -606,10 +608,11 @@ class ArPerfHelper(ArHelper):
 
     def run_cmd_on_syncd(self, engine, script_name, python=False, additional_args=""):
         prefix = "/"
+        additional_args_str = " ".join(str(arg) for arg in additional_args)
         if python:
             prefix = "python3 "
         logger.info("Running command on syncd docker:")
-        engine.run_cmd("sudo docker exec -i syncd bash -c '{}{} {}'".format(prefix, script_name, additional_args),
+        engine.run_cmd("sudo docker exec -i syncd bash -c '{}{} {}'".format(prefix, script_name, additional_args_str),
                        validate=True)
 
     def copy_traffic_cmds_to_node(self, engine, engine_name):
@@ -632,14 +635,16 @@ class ArPerfHelper(ArHelper):
                          )
         engine.run_cmd(f'chmod +x {PerfConsts.IP_NEIGH_SCRIPT}')
 
-    def config_ip_neighbors_on_dut(self, dut_engine, topology_obj):
+    def config_ip_neighbors_on_dut(self, engines, topology_obj):
         mac_dict = {}
+        iterations_num = len(self.all_engines_ports['dut'])
+        dut_engine = engines.dut
         for engine in self.tg_engines:
             mac_dict[engine] = self.get_switch_mac(topology_obj, engine)
         logger.info("Config permanent ip neighbors on DUT")
         self.copy_ip_neighbor_cmds_to_dut(dut_engine)
         ip_neigh_cmd = " ".join([PerfConsts.IP_NEIGH_SCRIPT, mac_dict["left_tg"], mac_dict["right_tg"],
-                                 PerfConsts.L_IP_NEIGH, PerfConsts.R_IP_NEIGH])
+                                 PerfConsts.L_IP_NEIGH, PerfConsts.R_IP_NEIGH, str(iterations_num)])
         ip_neigh_cmd = "sudo ./" + ip_neigh_cmd
         dut_engine.run_cmd(ip_neigh_cmd, validate=True)
 
@@ -704,50 +709,41 @@ class ArPerfHelper(ArHelper):
             logger.info(f'Enable traffic generation on {engine}')
             engines[engine].run_cmd("redis-cli -n 4 hset 'SCHEDULER|scheduler.traffic' pir 0")
 
-    def get_ports_by_type(self, topology_obj):
+    def get_ports_by_type(self, topology_obj, engines):
         ports_dict = {}
-        for engine in self.tg_engines:
+        all_engines = [engine for engine in engines if re.search("tg$", engine) or re.search("dut$", engine)]
+        dut_switch_name = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Common']['Name']
+        for engine in all_engines:
             ports_dict[engine] = {}
             cli_object = topology_obj.players[engine]['cli']
-            tg_switch_name = topology_obj.players[engine]['attributes'].noga_query_data['attributes']['Common']['Name']
-            dut_switch_name = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Common']['Name']
             lldp_table_output = cli_object.lldp.parse_lldp_table_info()
-            mloop_ports_list = []
-            egress_ports_list = []
-            logger.debug(f'Define the type of port - MLOOP or egress,'
-                         f' by checking if it is connected to the DUT or to itself')
-            for port, port_info in lldp_table_output.items():
-                if port_info[0] == tg_switch_name:
-                    mloop_ports_list.append(port)
-                elif port_info[0] == dut_switch_name:
-                    egress_ports_list.append(port)
-            logger.debug('Check if the number of ports is as expected')
-            self.validate_number_of_ports(mloop_ports_list, 'mloop', engine)
-            self.validate_number_of_ports(mloop_ports_list, 'egress', engine)
-            ports_dict[engine]['mloop_ports'] = mloop_ports_list
-            ports_dict[engine]['egress_ports'] = egress_ports_list
+            if engine in self.tg_engines:
+                tg_switch_name = topology_obj.players[engine]['attributes'].noga_query_data['attributes']['Common']['Name']
+                mloop_ports_list = []
+                egress_ports_list = []
+                logger.debug(f'Define the type of port - MLOOP or egress,'
+                             f' by checking if it is connected to the DUT or to itself')
+                for port, port_info in lldp_table_output.items():
+                    if port_info[0] == tg_switch_name:
+                        mloop_ports_list.append(port)
+                    elif port_info[0] == dut_switch_name:
+                        egress_ports_list.append(port)
+                ports_dict[engine]['mloop_ports'] = mloop_ports_list
+                ports_dict[engine]['egress_ports'] = egress_ports_list
+            else:
+                dut_ports_list = []
+                for port, port_info in lldp_table_output.items():
+                    dut_ports_list.append(port)
+                ports_dict[engine] = dut_ports_list
 
         return ports_dict
 
-    def get_dut_ports(self, topology_obj):
-        ports_dict = topology_obj.ports
-        ports_list = list(ports_dict.values())
-        self.validate_number_of_ports(ports_list, 'ar', "dut")
-        return ports_list
-
-    def validate_number_of_ports(self, ports_list, port_type, device):
-        actual_length = len(ports_list)
-        expected_length = PerfConsts.EXPECTED_PORTS_BY_TYPE[port_type]
-        if actual_length != expected_length:
-            raise AssertionError(f'Ports number on {device} expected to be {expected_length},'
-                                 f' but got only {actual_length}')
-
-    def ensure_ar_perf_config_set(self, cli_objects, topology_obj):
+    def ensure_ar_perf_config_set(self, cli_objects, topology_obj, engines):
         logger.info('Check if AR is enabled, and enable AR if is not')
         self.ensure_ar_active(cli_objects)
         logger.info('Verify that all ports are configured with AR enabled')
         actual_ar_ports = sorted(self.get_ar_configuration(cli_objects)[ArConsts.AR_PORTS_GLOBAL])
-        expected_ar_ports = sorted(self.get_dut_ports(topology_obj))
+        expected_ar_ports = sorted(self.all_engines_ports['dut'])
         if actual_ar_ports != expected_ar_ports:
             non_ar_ports = list(set(expected_ar_ports) - set(actual_ar_ports))
             logger.info(f'Not all ports are configured with AR enabled, enabling AR on {non_ar_ports}')

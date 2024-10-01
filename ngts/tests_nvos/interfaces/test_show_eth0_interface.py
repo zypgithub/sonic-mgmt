@@ -57,6 +57,7 @@ def test_mgmt_show_interface_link(engines):
         verify_mac_address(IpTool.get_mac_address(engines.dut, mgmt_port.name), output_dictionary)
 
 
+@pytest.mark.cumulus
 @pytest.mark.ib
 @pytest.mark.simx
 @pytest.mark.skynet
@@ -76,6 +77,7 @@ def test_ib_show_interface_stats(engines):
         validate_stats_fields(output_dictionary)
 
 
+@pytest.mark.cumulus
 @pytest.mark.ib
 @pytest.mark.simx
 @pytest.mark.skynet
@@ -118,6 +120,7 @@ def check_dhcp(mgmt_port, ipv4=True):
             output_dict=output_dict).verify_result()
 
 
+@pytest.mark.cumulus
 @pytest.mark.ib
 @pytest.mark.simx
 @pytest.mark.skynet
@@ -223,6 +226,7 @@ def test_mgmt_show_interface_link_openapi(engines):
     test_mgmt_show_interface_link(engines)
 
 
+@pytest.mark.cumulus
 @pytest.mark.openapi
 @pytest.mark.ib
 @pytest.mark.simx
@@ -233,6 +237,7 @@ def test_ib_show_interface_stats_openapi(engines):
     test_ib_show_interface_stats(engines)
 
 
+@pytest.mark.cumulus
 @pytest.mark.openapi
 @pytest.mark.ib
 @pytest.mark.simx
@@ -242,6 +247,7 @@ def test_ib_show_interface_ip_openapi(engines):
     test_ib_show_interface_ip(engines)
 
 
+@pytest.mark.cumulus
 @pytest.mark.openapi
 @pytest.mark.ib
 @pytest.mark.simx

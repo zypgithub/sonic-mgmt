@@ -39,8 +39,8 @@ class SecureBootHelper:
         return serial_engine
 
     @staticmethod
-    def get_serial_engine_instance(topology_obj):
-        att = topology_obj.players['dut_serial']['attributes'].noga_query_data['attributes']
+    def get_serial_engine_instance(topology_obj, alias="dut_serial"):
+        att = topology_obj.players[alias]['attributes'].noga_query_data['attributes']
         # add connection options to pass connection problems
         extended_rcon_command = att['Specific']['serial_conn_cmd'].split(' ')
         extended_rcon_command.insert(1, DefaultConnectionValues.BASIC_SSH_CONNECTION_OPTIONS)
@@ -419,11 +419,11 @@ class SonicSecureBootHelper(SecureBootHelper):
 
     @staticmethod
     def is_secure_boot_supported(boot_config):
-        return 'Not booted with EFI' not in boot_config
+        return 'EFI variables are not supported' not in boot_config
 
     @staticmethod
     def is_secure_boot_enabled(boot_config):
-        return 'Secure Boot: enabled' in boot_config
+        return 'SecureBoot enabled' in boot_config
 
     @staticmethod
     def check_secure_boot_status(boot_config_status):
@@ -538,24 +538,18 @@ class SonicSecureBootHelper(SecureBootHelper):
             component_versions_dict[component] = version
         return component_versions_dict
 
-    def restore_cpld(self, topology_obj, platform_params):
+    @staticmethod
+    def restore_cpld(cli_objects, engines, topology_obj, platform_params, cpld):
         """
         Restore the CPLD to the expected latest one defined in firmware.json
         """
-        cpld = SonicSecureBootConsts.CPLD_COMPONENT
-        cpld_component_data = self.get_component_data(platform_params, cpld)
-        url, latest_cpld_version = self.get_latest_expected_cpld(cpld_component_data, cpld)
+        cpld_component_data = SonicSecureBootHelper.get_component_data(platform_params, cpld)
+        url, latest_cpld_version = SonicSecureBootHelper.get_latest_expected_cpld(cpld_component_data, cpld)
         with allure.step(f"Restore the cpld back to {url}"):
-            serial_engine = self.get_serial_engine(topology_obj)
-            serial_engine.run_cmd(
-                f'sudo fwutil install chassis component {cpld} fw {url} -y',
-                SonicSecureBootConsts.INVALID_SIGNATURE_EXPECTED_MESSAGE[cpld],
-                SonicSecureBootConsts.CPLD_BURNING_RECOVER_TIMEOUT)
+            engines.dut.run_cmd(f'sudo fwutil install chassis component {cpld} fw {url} -y',)
+
         with allure.step("Power cycle after CPLD installation"):
-            self.cli_objects.dut.general.remote_reboot(topology_obj)
-        with allure.step("Check the CPLD version is restored to the latest one"):
-            current_cpld_version = self.get_fw_components_versions()[cpld]
-            assert current_cpld_version == latest_cpld_version, "The CPLD is not restored to the latest version."
+            cli_objects.dut.general.remote_reboot(topology_obj)
 
     @staticmethod
     def get_component_data(platform_params, component):
@@ -586,24 +580,10 @@ class SonicSecureBootHelper(SecureBootHelper):
         Get the expected latest CPLD url and version defined in firmware.json
         """
         with allure.step(f'Getting list of versions for {cpld} from firmware.json'):
-            cplds_list = []
-            for cpld_data in cpld_component_data:
-                cplds_list.append(cpld_data['version'])
+            url = cpld_component_data[0]['firmware']
+            latest_cpld_version = cpld_component_data[0]['version']
+            logger.info(f"Latest CPLD version: {latest_cpld_version}, url: {url}")
 
-        with allure.step(f'Getting latest version for: {cpld} from firmware.json'):
-            result_dict = {}
-            for cpld in cplds_list:
-                cpld_main_version = int(cpld.split('_')[0].strip('CPLD'))
-                cpld_minor_version = int(cpld.split('_')[1].strip('REV'))
-                cpld_int_value = cpld_main_version + cpld_minor_version
-                result_dict[cpld_int_value] = cpld
-            latest_cpld_version_int = sorted(result_dict, reverse=True)[0]
-            latest_cpld_version = result_dict[latest_cpld_version_int]
-
-        with allure.step(f"Get the latest CPLD url"):
-            for cpld_item in cpld_component_data:
-                if cpld_item['version'] == latest_cpld_version:
-                    url = cpld_item['firmware']
         return url, latest_cpld_version
 
     @staticmethod

@@ -189,14 +189,14 @@ def get_physical_port_indices(duthost, logical_intfs=None):
 
 
 def get_dpu_npu_ports_from_hwsku(duthost):
+    dpu_npu_port_list = []
     platform, hwsku = duthost.facts["platform"], duthost.facts["hwsku"]
     hwsku_file = f'/usr/share/sonic/device/{platform}/{hwsku}/hwsku.json'
-    get_hwsku_content = f"cat {hwsku_file}"
-    hwsku_content = duthost.shell(get_hwsku_content)["stdout"]
-
+    if duthost.shell(f"ls {hwsku_file}", module_ignore_errors=True)['rc'] != 0:
+        return dpu_npu_port_list
+    hwsku_content = duthost.shell(f"cat {hwsku_file}")["stdout"]
     hwsku_dict = json.loads(hwsku_content)
     dpu_npu_role_value = "Dpc"
-    dpu_npu_port_list = []
 
     for intf, intf_config in hwsku_dict.get("interfaces").items():
         if intf_config.get("role") == dpu_npu_role_value:

@@ -17,7 +17,7 @@ master:
     snmpd: 20
     zebra: 85
     bgpd: 75
-    bgpcfgd: 35
+    bgpcfgd: 70
     bgpmon: 20
     fpmsyncd: 7
     orchagent: 45
@@ -40,7 +40,7 @@ master:
     gnmi-native: 10
     dhcprelayd: 10
     rsyslogd: 10
-    pcied: 10
+    pcied: 15
     psud: 10
     syseepromd: 10
     thermalctld: 10
@@ -70,7 +70,7 @@ master:
     snmpd: 20
     zebra: 85
     bgpd: 75
-    bgpcfgd: 35
+    bgpcfgd: 70
     bgpmon: 20
     fpmsyncd: 7
     orchagent: 45
@@ -93,7 +93,7 @@ master:
     gnmi-native: 10
     dhcprelayd: 10
     rsyslogd: 10
-    pcied: 10
+    pcied: 15
     psud: 10
     syseepromd: 10
     thermalctld: 10
@@ -123,7 +123,7 @@ master:
     snmpd: 20
     zebra: 85
     bgpd: 65
-    bgpcfgd: 35
+    bgpcfgd: 70
     bgpmon: 20
     fpmsyncd: 7
     orchagent: 55
@@ -146,7 +146,7 @@ master:
     gnmi-native: 10
     dhcprelayd: 10
     rsyslogd: 10
-    pcied: 10
+    pcied: 15
     psud: 10
     syseepromd: 10
     thermalctld: 10
@@ -176,7 +176,7 @@ master:
     snmpd: 20
     zebra: 85
     bgpd: 75
-    bgpcfgd: 35
+    bgpcfgd: 70
     bgpmon: 20
     fpmsyncd: 7
     orchagent: 55
@@ -199,7 +199,7 @@ master:
     gnmi-native: 10
     dhcprelayd: 10
     rsyslogd: 10
-    pcied: 10
+    pcied: 15
     psud: 10
     syseepromd: 10
     thermalctld: 10
@@ -229,7 +229,7 @@ master:
     snmpd: 20
     zebra: 85
     bgpd: 75
-    bgpcfgd: 35
+    bgpcfgd: 70
     bgpmon: 20
     fpmsyncd: 7
     orchagent: 55
@@ -252,7 +252,7 @@ master:
     gnmi-native: 10
     dhcprelayd: 10
     rsyslogd: 10
-    pcied: 10
+    pcied: 15
     psud: 10
     syseepromd: 10
     thermalctld: 10
@@ -282,7 +282,7 @@ master:
     snmpd: 20
     zebra: 85
     bgpd: 75
-    bgpcfgd: 35
+    bgpcfgd: 70
     bgpmon: 20
     fpmsyncd: 7
     orchagent: 55
@@ -305,7 +305,7 @@ master:
     gnmi-native: 10
     dhcprelayd: 10
     rsyslogd: 10
-    pcied: 10
+    pcied: 15
     psud: 10
     syseepromd: 10
     thermalctld: 10
@@ -336,7 +336,7 @@ master:
     snmpd: 20
     zebra: 85
     bgpd: 75
-    bgpcfgd: 35
+    bgpcfgd: 70
     bgpmon: 20
     fpmsyncd: 7
     orchagent: 55
@@ -359,7 +359,7 @@ master:
     gnmi-native: 10
     dhcprelayd: 10
     rsyslogd: 10
-    pcied: 10
+    pcied: 15
     psud: 10
     syseepromd: 10
     thermalctld: 10
@@ -389,7 +389,7 @@ master:
     snmpd: 20
     zebra: 85
     bgpd: 75
-    bgpcfgd: 35
+    bgpcfgd: 70
     bgpmon: 20
     fpmsyncd: 7
     orchagent: 55
@@ -412,7 +412,7 @@ master:
     gnmi-native: 10
     dhcprelayd: 10
     rsyslogd: 10
-    pcied: 10
+    pcied: 15
     psud: 10
     syseepromd: 10
     thermalctld: 10
@@ -442,7 +442,7 @@ master:
     snmpd: 20
     zebra: 85
     bgpd: 75
-    bgpcfgd: 35
+    bgpcfgd: 70
     bgpmon: 20
     fpmsyncd: 7
     orchagent: 55
@@ -465,7 +465,7 @@ master:
     gnmi-native: 10
     dhcprelayd: 10
     rsyslogd: 10
-    pcied: 10
+    pcied: 15
     psud: 10
     syseepromd: 10
     thermalctld: 10
@@ -495,7 +495,7 @@ master:
     snmpd: 20
     zebra: 85
     bgpd: 75
-    bgpcfgd: 35
+    bgpcfgd: 70
     bgpmon: 20
     fpmsyncd: 7
     orchagent: 55
@@ -518,7 +518,7 @@ master:
     gnmi-native: 10
     dhcprelayd: 10
     rsyslogd: 10
-    pcied: 10
+    pcied: 15
     psud: 10
     syseepromd: 10
     thermalctld: 10
@@ -549,7 +549,7 @@ master:
     snmpd: 20
     zebra: 85
     bgpd: 75
-    bgpcfgd: 35
+    bgpcfgd: 70
     bgpmon: 20
     fpmsyncd: 7
     orchagent: 55
@@ -571,7 +571,7 @@ master:
     snmpd: 20
     zebra: 85
     bgpd: 75
-    bgpcfgd: 35
+    bgpcfgd: 70
     bgpmon: 20
     fpmsyncd: 7
     orchagent: 65
@@ -594,7 +594,7 @@ master:
     gnmi-native: 10
     dhcprelayd: 10
     rsyslogd: 10
-    pcied: 10
+    pcied: 15
     psud: 10
     syseepromd: 10
     thermalctld: 10
@@ -624,7 +624,7 @@ master:
     snmpd: 20
     zebra: 85
     bgpd: 75
-    bgpcfgd: 35
+    bgpcfgd: 70
     bgpmon: 20
     fpmsyncd: 7
     orchagent: 55
@@ -647,7 +647,7 @@ master:
     gnmi-native: 10
     dhcprelayd: 10
     rsyslogd: 10
-    pcied: 10
+    pcied: 15
     psud: 10
     syseepromd: 10
     thermalctld: 10
@@ -677,7 +677,7 @@ master:
     snmpd: 20
     zebra: 85
     bgpd: 75
-    bgpcfgd: 35
+    bgpcfgd: 70
     bgpmon: 20
     fpmsyncd: 7
     orchagent: 55
@@ -700,7 +700,7 @@ master:
     gnmi-native: 10
     dhcprelayd: 10
     rsyslogd: 10
-    pcied: 10
+    pcied: 15
     psud: 10
     syseepromd: 10
     thermalctld: 10
@@ -730,7 +730,7 @@ master:
     snmpd: 20
     zebra: 85
     bgpd: 75
-    bgpcfgd: 35
+    bgpcfgd: 70
     bgpmon: 20
     fpmsyncd: 7
     orchagent: 55
@@ -753,7 +753,7 @@ master:
     gnmi-native: 10
     dhcprelayd: 10
     rsyslogd: 10
-    pcied: 10
+    pcied: 15
     psud: 10
     syseepromd: 10
     thermalctld: 10
@@ -784,7 +784,7 @@ master:
     snmpd: 20
     zebra: 85
     bgpd: 50
-    bgpcfgd: 35
+    bgpcfgd: 70
     bgpmon: 20
     fpmsyncd: 7
     orchagent: 50
@@ -807,7 +807,7 @@ master:
     gnmi-native: 10
     dhcprelayd: 10
     rsyslogd: 10
-    pcied: 10
+    pcied: 15
     psud: 10
     syseepromd: 10
     thermalctld: 10
@@ -837,7 +837,60 @@ master:
     snmpd: 20
     zebra: 85
     bgpd: 50
-    bgpcfgd: 35
+    bgpcfgd: 70
+    bgpmon: 20
+    fpmsyncd: 7
+    orchagent: 60
+    ntpd: 7
+    neighsyncd: 7
+    vlanmgrd: 7
+    intfmgrd: 7
+    portmgrd: 7
+    buffermgrd: 7
+    vrfmgrd: 7
+    nbrmgrd: 7
+    vxlanmgrd: 7
+    sensord: 10
+    snmp-subagent: 10
+    rest-server: 10
+    lldp-syncd: 10
+    lldpd: 10
+    lldpmgrd: 10
+    dialout: 10
+    gnmi-native: 10
+    dhcprelayd: 10
+    rsyslogd: 10
+    pcied: 15
+    psud: 10
+    syseepromd: 10
+    thermalctld: 10
+    xcvrd: 10
+    teammgrd: 10
+    teamsyncd: 10
+    tlm_teamd: 10
+    staticd: 10
+    arp_update: 10
+    coppmgrd: 10
+    fdbsyncd: 10
+    portsyncd: 10
+    unnelmgrd: 10
+    eventd: 10
+    redis: 10
+    wjhd: 150
+    hostcfgd: 25
+    featured: 20
+    caclmgrd: 20
+    containerd: 100
+    healthd: 20
+  SN5640: # Bison
+    total: 5000
+    sx_sdk: 1500
+    syncd: 350
+    redis-server: 70
+    snmpd: 20
+    zebra: 85
+    bgpd: 50
+    bgpcfgd: 70
     bgpmon: 20
     fpmsyncd: 7
     orchagent: 60

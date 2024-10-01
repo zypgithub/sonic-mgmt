@@ -1,0 +1,18 @@
+[sonic_latest]
+r-tigris-04        ansible_host=10.210.25.93 ansible_hostv6="fe80::ba59:9fff:fe44:8c3c" sonic_version=v2 hwsku="Mellanox-SN3800-D112C8" iface_speed=50000 mgmt_subnet_mask_length=22 vm_base=VM1201
+
+[sonic:children]
+sonic_latest
+
+[ptf]
+ptf-r-tigris-04    ansible_host=10.213.104.5 ansible_ssh_user=root ansible_ssh_pass=root
+
+[lab:children]
+sonic
+fanout
+
+[lab:vars]
+mgmt_subnet_mask_length="24"
+
+[fanout]
+r-tigris-17         ansible_host=10.210.25.57 os=mellanox

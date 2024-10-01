@@ -29,3 +29,10 @@ class RegisterTool:
         set_params = f"ase=1,e=1,ee=1,admin_status={admin_status}"
         return RegisterTool.set_mst_register_value(engine, mst_dev_name, UfmMadConsts.PMAOS_REGISTER,
                                                    set_params, additional_params=indexes)
+
+    @staticmethod
+    def update_prei_register(engine, mst_dev_name, local_port):
+        indexes = f"-i local_port={local_port},plane_ind=0x0,lp_msb=0x0,pnat=0x0"
+        set_params = "error_type_admin=0x4,error_injection_time=10,time_res=1"
+        return RegisterTool.set_mst_register_value(engine, mst_dev_name, UfmMadConsts.PREI_REGISTER,
+                                                   set_params, additional_params=indexes)

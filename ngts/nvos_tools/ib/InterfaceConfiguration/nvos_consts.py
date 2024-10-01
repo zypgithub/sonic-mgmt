@@ -31,6 +31,8 @@ class IbInterfaceConsts:
     ARPTIMEOUT = "arp-timeout"
     AUTOCONFIG = "autoconf"
     DHCP_STATE = 'state'
+    INTERFACE_STATE = 'interface-state'
+    UP_ONCE = 'up-once'
     DHCP_SET_HOSTNAME = 'set-hostname'
     TYPE = "type"
     LINK = "link"
@@ -46,9 +48,12 @@ class IbInterfaceConsts:
     LINK_PHYSICAL_PORT_STATE_DISABLED = 'Disabled'
     LINK_PHYSICAL_PORT_STATE_POLLING = 'Polling'
     LINK_PHYSICAL_PORT_STATE_POLLING_XDR = 'PortConfigurationTraining'
+    LINK_ADMIN_STATUS = "admin-status"
+    LINK_OPER_STATUS = "oper-status"
     LINK_STATE = "state"
     LINK_CONNECTION_MODE = "connection-mode"
     XDR = "xdr"
+    NDR = "ndr"
     LINK_DIAGNOSTICS = "diagnostics"
     LINK_DIAGNOSTICS_UNPLUGGED_PORT = {'1024': {'status': 'Cable is unplugged'}}
     LINK_DIAGNOSTICS_CLOSED_BY_COMMAND_PORT = {'1': {'status': 'Closed by command'}}

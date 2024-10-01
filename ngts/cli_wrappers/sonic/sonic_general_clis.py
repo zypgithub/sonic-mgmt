@@ -26,18 +26,22 @@ from ngts.cli_wrappers.common.general_clis_common import GeneralCliCommon
 from ngts.cli_wrappers.linux.linux_general_clis import LinuxGeneralCli
 from ngts.cli_wrappers.sonic.sonic_chassis_clis import SonicChassisCli
 from ngts.cli_wrappers.sonic.sonic_onie_clis import SonicOnieCli, OnieInstallationError, get_latest_onie_version
+from ngts.constants.constants import CliType, FanoutConfigFile
 from ngts.constants.constants import SonicConst, InfraConst, ConfigDbJsonConst, PerformanceSetupConstants, \
     AppExtensionInstallationConstants, DefaultCredentialConstants, BluefieldConstants, \
-    PlatformTypesConstants, PerfConsts
+    PlatformTypesConstants, PerfConsts, SonicDeployConstants
 from ngts.helpers.breakout_helpers import get_port_current_breakout_mode, get_all_split_ports_parents, \
     get_split_mode_supported_breakout_modes, get_split_mode_supported_speeds, get_all_unsplit_ports
 from ngts.helpers.config_db_utils import save_config_db_json
 from ngts.helpers.interface_helpers import get_dut_default_ports_list
+from ngts.helpers.run_process_on_host import run_background_process_on_host
 from ngts.helpers.run_process_on_host import run_process_on_host
 from ngts.helpers.secure_boot_helper import SecureBootHelper
 from ngts.helpers.sonic_branch_helper import get_sonic_branch
 from ngts.scripts.check_and_store_sanitizer_dump import check_sanitizer_and_store_dump
 from ngts.tests.nightly.app_extension.app_extension_helper import get_installed_mellanox_extensions
+from ngts.tests.nightly.show_techsupport.constants import HealthEventConst
+from ngts.tests.nightly.show_techsupport.test_health_event import get_health_event_config
 from ngts.tools.infra import update_platform_info_files
 
 logger = logging.getLogger()
@@ -66,13 +70,14 @@ class SonicGeneralCliDefault(GeneralCliCommon):
     """
     This class is for general cli commands for sonic only
     """
-    _is_simx_moose = None
 
     def __init__(self, engine, cli_obj, dut_alias):
         self.engine = engine
         self.cli_obj = cli_obj
         self.dut_alias = dut_alias
         self.backup_logs_stored = False
+        self._is_simx_moose = None
+        self._is_simx_bison = None
 
     def show_setup_versions(self):
         return ''
@@ -83,11 +88,11 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         :return: True/False
         """
         image_supports = True
-        # device mtvr-moose-01 is production and supports only prod versions of ONIE and SONiC
-        if dut_name == 'mtvr-moose-01' and "prod" not in base_version_url:
+        # production devices support only prod versions of ONIE and SONiC
+        if dut_name in SonicDeployConstants.PRODUCTION_DUTS and "prod" not in base_version_url:
             image_supports = False
         # when executed deploy of production image, skip the flow on not production devices
-        if dut_name != 'mtvr-moose-01' and 'prod' in base_version_url:
+        if dut_name not in SonicDeployConstants.PRODUCTION_DUTS and 'prod' in base_version_url:
             image_supports = False
         logger.info(f"dut: {dut_name} {'supports' if image_supports else 'does not support'} version: {base_version_url}")
         return image_supports
@@ -138,9 +143,13 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                                      validate=True)
         return output
 
-    def get_image_sonic_version(self):
+    def get_image_sonic_version(self, only_branch=True):
         output = self.engine.run_cmd('sudo show boot')
-        current_image = re.search(r"Current:\s*SONiC-OS-([\d|\w|\-]*)\..*", output, re.IGNORECASE).group(1)
+        if only_branch:
+            pattern = r"Current:\s*SONiC-OS-([\d|\w|\-]*)\..*"
+        else:
+            pattern = r"Current:\s*(SONiC-OS-[\d|\w|\-]*\..*)"
+        current_image = re.search(pattern, output, re.IGNORECASE).group(1)
         return current_image
 
     def set_default_image(self, image_binary, delimiter='-'):
@@ -242,7 +251,8 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         :return: TG ports list
         """
         ports_list = []
-        switch_name = topology_obj.players[self.cli_obj.dut_alias]['attributes'].noga_query_data['attributes']['Common']['Name']
+        switch_name = \
+            topology_obj.players[self.cli_obj.dut_alias]['attributes'].noga_query_data['attributes']['Common']['Name']
         noga_entire_data = get_noga_entire_resource_data(resource_name=switch_name)
         for resource in noga_entire_data:
             if 'etp' in resource['name'] and switch_name not in resource['connected with']:
@@ -404,19 +414,28 @@ class SonicGeneralCliDefault(GeneralCliCommon):
 
         if deploy_type == 'bfb':
             change_to_one_port_hwsku = 'msn4' in platform_params.platform
-            validate = "sn4280" not in platform_params.platform
+            is_smartswitch = "sn4280" in platform_params.platform
             self.deploy_bfb(image_path, topology_obj,
-                            change_to_one_port_hwsku=change_to_one_port_hwsku, validate=validate)
+                            change_to_one_port_hwsku=change_to_one_port_hwsku, is_smartswitch=is_smartswitch)
 
         if deploy_type == 'pxe':
             self.deploy_pxe(image_path, topology_obj, platform_params['hwsku'])
 
     def deploy_image(self, topology_obj, image_path, apply_base_config=False, setup_name=None,
                      platform_params=None, deploy_type='sonic', reboot_after_install=None, fw_pkg_path=None,
-                     set_timezone='Israel', disable_ztp=False, configure_dns=False):
-
+                     set_timezone='Israel', disable_ztp=False, configure_dns=False, destination_hwsku=None,
+                     setup_info=None, dut_alias=None, deploy_fanout_threads=None,
+                     docker_list=None, fanout_target_version=None):
         if image_path.startswith('http'):
             image_path = '/auto/' + image_path.split('/auto/')[1]
+
+        deploy_fanout = False
+        if setup_info and dut_alias:
+            deploy_fanout = self.is_fanout_deploy_needed(setup_name)
+
+        if deploy_fanout:
+            self.deploy_fanout(topology_obj, destination_hwsku, platform_params, setup_info, dut_alias,
+                               deploy_fanout_threads, fanout_target_version=fanout_target_version)
 
         try:
             with allure.step("Trying to install sonic image"):
@@ -430,12 +449,15 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                 time.sleep(InfraConst.SLEEP_AFTER_RRBOOT)
                 self.do_installation(topology_obj, image_path, deploy_type, fw_pkg_path, platform_params)
 
-        with allure.step('Verify dockers are up'):
-            self.verify_dockers_are_up()
-
         # Break if it's installing the Bobcat DPUs
         if deploy_type == 'bfb' and 'sn4280' in platform_params.platform:
             return
+
+        with allure.step('Verify dockers are up'):
+            self.verify_dockers_are_up(docker_list)
+
+        if deploy_fanout:
+            self.disable_ipv6_sonic_fanout(topology_obj, dut_alias)
 
         if reboot_after_install:
             with allure.step("Validate dockers are up, reboot if any docker is not up"):
@@ -506,23 +528,21 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             with allure.step('Configure dhclient on simx dut'):
                 self.engine.run_cmd('sudo dhclient', validate=True)
 
-    def deploy_bfb(self, image_path, topology_obj, change_to_one_port_hwsku=False, validate=True):
+    def deploy_bfb(self, image_path, topology_obj, change_to_one_port_hwsku=False, is_smartswitch=True):
         rshim = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific'][
             'Parent_device_NIC_name']
         hyper_name = 'hyper' if 'hyper' in topology_obj.players else 'hypervisor'
         hyper_engine = topology_obj.players[hyper_name]['engine']
+        use_sonic_installer = False if not is_smartswitch else True
 
-        with allure.step('Check RSHIM service running(restart if required'):
-            if not LinuxGeneralCli(hyper_engine).systemctl_is_service_active(service='rshim'):
-                LinuxGeneralCli(hyper_engine).systemctl_restart(service='rshim')
-
-        with allure.step('Installing image by "bfb-install" on server'):
-            LinuxGeneralCli(hyper_engine).install_bfb_image(image_path=image_path, rshim_num=rshim)
+        with allure.step('Installing image by "bfb-install" on the switch/server'):
+            LinuxGeneralCli(hyper_engine).install_bfb_image(
+                image_path=image_path, rshim_num=rshim, sonic_installer=use_sonic_installer)
 
         # Broken engine after install. Disconnect it. In next run_cmd, it will connect back
         self.engine.disconnect()
 
-        if validate:
+        if not is_smartswitch:
             with allure.step('Waiting for switch bring-up after reload'):
                 logger.info('Waiting for switch bring-up after reload')
                 check_port_status_till_alive(True, self.engine.ip, self.engine.ssh_port)
@@ -726,8 +746,168 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         else:
             raise Exception('Remote reboot rc is other then 0')
 
+    def is_onyx_deploy_needed(self, onyx_engine, onyx_name, onyx_config_path):
+        """
+        Check if deploy is needed for onyx fanout switch
+        """
+        logger.info("Save configuration at ONYX fanout switch")
+        onyx_engine.run_cmd("configuration write")
+        logger.info(f"Get into ONYX shell of {onyx_name}")
+        dst_md5 = onyx_engine.run_cmd(f"md5sum {FanoutConfigFile.ONYX_CONFIG_PATH + FanoutConfigFile.ONYX}",
+                                      run_in_shell=True).strip().split()[0]
+        logger.info(f"Current MD5 value of configuration file at {onyx_name} is {dst_md5}")
+        src_md5 = os.popen(f"sudo md5sum {onyx_config_path}").read().strip().split()[0]
+        logger.info(f"Current MD5 value of configuration file at ngts docker is {src_md5}")
+
+        if dst_md5 and src_md5 == dst_md5:
+            logger.info("No need to deploy ONYX switch")
+            return False
+        logger.info("Shall deploy ONYX switch")
+        return True
+
+    def is_fanout_deploy_needed(self, setup_name):
+        # skip deploy fanout for DPU setup
+        if setup_name in BluefieldConstants.DPU_SETUP_LIST:
+            return False
+        return True
+
+    def deploy_fanout_image(self, topology_obj, image_path, platform_params=None, set_timezone='Israel'):
+        deploy_type = "onie"
+        disable_ztp = True
+        fw_pkg_path = None
+
+        if image_path.startswith('http'):
+            image_path = '/auto/' + image_path.split('/auto/')[1]
+
+        try:
+            with allure.step("Trying to install sonic image"):
+                self.do_installation(topology_obj, image_path, deploy_type, fw_pkg_path, platform_params)
+        except OnieInstallationError:
+            with allure.step("Caught exception OnieInstallationError during install. Perform reboot and trying again"):
+                logger.error('Caught exception OnieInstallationError during install. Perform reboot and trying again')
+                self.engine.disconnect()
+                self.remote_reboot(topology_obj)
+                logger.info('Sleeping %s seconds to handle ssh flapping' % InfraConst.SLEEP_AFTER_RRBOOT)
+                time.sleep(InfraConst.SLEEP_AFTER_RRBOOT)
+                self.do_installation(topology_obj, image_path, deploy_type, fw_pkg_path, platform_params)
+
+        with allure.step('Verify dockers are up'):
+            self.verify_dockers_are_up(dockers_list=SonicConst.DOCKERS_FANOUT)
+
+        if set_timezone:
+            with allure.step("Set dut NTP timezone to {} time.".format(set_timezone)):
+                self.engine.disconnect()
+                self.engine.run_cmd('sudo timedatectl set-timezone {}'.format(set_timezone), validate=True)
+
+        with allure.step("Init telemetry keys"):
+            self.init_telemetry_keys()
+
+        self.engine.disconnect()
+
+        self.disable_ztp(disable_ztp)
+
+    def deploy_sonic_fanout(self, topology_obj, target_version, setup_info, threads_dict, platform_params, fanout_name):
+        if target_version:
+            # Check if is needed to install image on fanout.
+            cli_version = self.get_image_sonic_version(only_branch=False)
+
+            match = re.search(r'sonic/([\w.-]+)/dev', target_version)
+
+            install_image = False
+
+            if match:
+                target_version_name = match.group(1)
+                if target_version_name != cli_version and target_version_name not in cli_version:
+                    logger.info(f"Target version is {target_version_name}, but current fanout version is {cli_version}")
+                    install_image = True
+                logger.info(f"Current fanout version is {cli_version}")
+            else:
+                install_image = True
+                logger.warning(f"No version name find in `fanout_target_version`({str(target_version)}), use this image forcefully.")
+
+            if install_image:
+                with allure.step("Upgrade fanout version on fanout."):
+                    self.deploy_fanout_image(topology_obj, target_version, platform_params)
+
+        logger.info('Deploy SONiC fanout switch')
+        ansible_cmd = f"ansible-playbook -i lab fanout.yml -l {fanout_name}"
+        logger.info(f"Running CMD: {ansible_cmd}")
+        run_background_process_on_host(threads_dict, 'deploy_sonic_fanout', ansible_cmd, timeout=600,
+                                       exec_path=setup_info['ansible_path'])
+
+    def deploy_onyx_fanout(self, base_path, setup_info, destination_hwsku, fanout_engine, fanout_name):
+        fanout_config_path = os.path.join(base_path,
+                                          f"../../../ansible/files/hwsku_vars/{setup_info['setup_name']}/"
+                                          f"{destination_hwsku}/{FanoutConfigFile.ONYX}")
+        if self.is_onyx_deploy_needed(fanout_engine, fanout_name, fanout_config_path):
+            logger.info(f"Copy fanout configuration file to ONYX fanout switch {fanout_name}")
+            fanout_engine.copy_file(source_file=fanout_config_path, dest_file=FanoutConfigFile.ONYX,
+                                    file_system=FanoutConfigFile.ONYX_CONFIG_PATH, overwrite_file=True,
+                                    verify_file=False)
+            logger.info(f"Load fanout config file {FanoutConfigFile.ONYX}")
+            fanout_engine.run_cmd(f"configuration switch-to {FanoutConfigFile.ONYX} no-reboot")
+            fanout_engine.run_cmd("reload")
+
+    def deploy_fanout(self, topology_obj, destination_hwsku, platform_params, setup_info, dut_alias, threads_dict,
+                      fanout_target_version=None):
+        """
+        Copy the specific configuration file to fanout switch and load it
+        """
+
+        fanout_engine_type, fanout_name, fanout = self.get_fanout(topology_obj, dut_alias)
+
+        if fanout:
+            base_path = os.path.dirname(os.path.realpath(__file__))
+
+            if fanout_engine_type == CliType.SONIC:
+                fanout.deploy_sonic_fanout(topology_obj, fanout_target_version, setup_info, threads_dict, platform_params, fanout_name)
+            else:
+                self.deploy_onyx_fanout(base_path, setup_info, destination_hwsku, fanout, fanout_name)
+
+    def get_fanout(self, topology_obj, dut_alias):
+        fanout_alias = 'fanout'
+        if dut_alias == 'dut-b':
+            fanout_alias = 'fanout-b'
+
+        if topology_obj.players.get(fanout_alias):
+            fanout_engine_type = topology_obj.players[fanout_alias]['attributes'].noga_query_data['attributes'][
+                'Topology Conn.']['CLI_TYPE']
+            fanout_name = topology_obj.players[fanout_alias]['attributes'].noga_query_data['attributes'][
+                'Common']['Name']
+
+            if fanout_engine_type == CliType.SONIC:
+                fanout = topology_obj.players[fanout_alias]['cli']
+                fanout = fanout.general
+            else:
+                fanout = topology_obj.players[fanout_alias]['engine']
+            return fanout_engine_type, fanout_name, fanout
+        return None, None, None
+
+    def disable_ipv6_sonic_fanout(self, topology_obj, dut_alias=None):
+        """
+        For sonic fanout, after fanout deployment or system reboot, it should disable ipv6 function to make sure
+        no icmpv6 packets generated
+        """
+        if topology_obj.players.get('fanout') or topology_obj.players.get('fanout-b'):
+            fanout_alias = 'fanout'
+            if dut_alias == 'dut-b':
+                fanout_alias = 'fanout-b'
+            if topology_obj.players.get(fanout_alias):
+                fanout_engine_type = topology_obj.players[fanout_alias]['attributes'].noga_query_data['attributes'][
+                    'Topology Conn.']['CLI_TYPE']
+                if fanout_engine_type == CliType.SONIC:
+                    fanout_engine = topology_obj.players.get(fanout_alias)['engine']
+                    fanout_engine.run_cmd('sudo sysctl -p')
+
     def boot_into_onie_by_serial_on_remote_reboot(self, topology_obj):
-        serial_engine = SecureBootHelper.get_serial_engine_instance(topology_obj)
+        if self.dut_alias == "fanout":
+            # Get fanout serial
+            serial_engine = SecureBootHelper.get_serial_engine_instance(topology_obj, alias="fanout_serial")
+        elif self.dut_alias == "fanout-b":
+            serial_engine = SecureBootHelper.get_serial_engine_instance(topology_obj, alias="fanout-b_serial")
+        else:
+            serial_engine = SecureBootHelper.get_serial_engine_instance(topology_obj)
+
         serial_engine.create_serial_engine(login_to_switch=False)
         arrow_down_key = "\x1b[B"
         arrow_up_key = "\x1b[A"
@@ -943,16 +1123,21 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                 self.reboot_reload_flow(r_type=SonicConst.CONFIG_RELOAD_CMD, topology_obj=topology_obj,
                                         reload_force=True)
 
-        with allure.step("Apply qos and dynamic buffer config"):
-            self.cli_obj.qos.reload_qos()
-            self.verify_dockers_are_up(dockers_list=['swss'])
-            if is_redmine_issue_active([3589124]):
-                time.sleep(120)
-            self.cli_obj.qos.stop_buffermgrd()
-            self.cli_obj.qos.start_buffermgrd()
+        if not self.is_performance_setup(setup_name):
+            with allure.step("Apply qos and dynamic buffer config"):
+                self.cli_obj.qos.reload_qos()
+                self.verify_dockers_are_up(dockers_list=['swss'])
+                if is_redmine_issue_active([3589124]):
+                    time.sleep(120)
+                self.cli_obj.qos.stop_buffermgrd()
+                self.cli_obj.qos.start_buffermgrd()
 
         with allure.step("Enable INFO logging on swss"):
             self.enable_info_logging_on_docker(docker_name='swss')
+
+        with allure.step("Configure ntp servers"):
+            for ntp_server in SonicConst.NTP_SERVERS:
+                self.add_ntp_server(ntp_server)
 
         if configure_dns:
             with allure.step('Apply DNS servers configuration'):
@@ -968,19 +1153,25 @@ class SonicGeneralCliDefault(GeneralCliCommon):
 
         if setup_name.startswith('air'):
             self.prepare_nvidia_air_basic_config_db_json(topology_obj, setup_name, hwsku, platform)
-        else:
+        elif not self.is_performance_setup(setup_name):
             # No need to modify port_config.ini for NvidiaAir setups - because ports split not supported yet
             self.upload_port_config_ini(platform, hwsku, shared_path)
 
         self.upload_config_db_file(topology_obj, setup_name, hwsku, platform, shared_path)
 
-        with allure.step("Disable autoneg on SW control ports if SW control feature enabled"):
+        with allure.step("Disable autoneg on AOC cables and enable for passive copper"):
             if self.cli_obj.im.is_im_enabled():
                 port_supporting_im = self.cli_obj.im.get_ports_supporting_im(
                     self.cli_obj.im.dut_ports_number_dict(topology_obj))
                 if port_supporting_im:
-                    with allure.step('Disable autoneg on ports supporting IM'):
-                        self.cli_obj.im.disable_autoneg_on_ports_supporting_im(port_supporting_im)
+                    aoc_cables = self.cli_obj.im.sw_controlled_aoc_cables(port_supporting_im)
+                    if aoc_cables:
+                        with allure.step('Disable autoneg on AOC ports if SW controlled'):
+                            self.cli_obj.im.disable_autoneg_on_ports_supporting_im(aoc_cables)
+                    copper_cables = port_supporting_im.get('passive_copper_cables')
+                    if copper_cables:
+                        with allure.step('Enable autoneg on copper cable ports if SW controlled'):
+                            self.cli_obj.im.enable_autoneg_on_passive_copper(copper_cables)
 
         if is_redmine_issue_active([3858467]) and platform == 'x86_64-mlnx_msn4700-r0':
             self.reboot_reload_flow(r_type=SonicConst.CONFIG_RELOAD_CMD, topology_obj=topology_obj, reload_force=True)
@@ -1011,36 +1202,6 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                               dest_file=SonicConst.CONFIG_DB_JSON, file_system='/tmp/',
                               overwrite_file=True, verify_file=False)
         self.engine.run_cmd(f'sudo mv /tmp/{SonicConst.CONFIG_DB_JSON} {SonicConst.CONFIG_DB_JSON_PATH}')
-
-    def remove_minigraph_ipv6_mgmt_interface(self):
-        logger.info("Remove IPv6 mgmt interface from minigraph.xml")
-        V6HostIP_line_number = self.engine.run_cmd("awk '/V6HostIP/ {print NR}' /etc/sonic/minigraph.xml")
-        if V6HostIP_line_number.isdecimal():
-            V6HostIP_line_number = int(V6HostIP_line_number)
-            start_line_number = V6HostIP_line_number - 1
-            end_line_number = V6HostIP_line_number + 6
-            self.engine.run_cmd(f"sudo sed -i '{start_line_number},{end_line_number}d' /etc/sonic/minigraph.xml")
-
-    def remove_snmp_ipv6_addr(self):
-        logger.info("Update SNMP config started")
-        config_db = self.cli_obj.general.get_config_db()
-        if 'SNMP_AGENT_ADDRESS_CONFIG' in config_db.keys():
-            logger.info("SNMP_AGENT_ADDRESS_CONFIG in config_db.keys")
-            snmp_config = config_db['SNMP_AGENT_ADDRESS_CONFIG']
-            ipv6_add_to_remove = re.search(r"(\w{4}::.+)", ",".join(snmp_config.keys())).group(1)
-            if ipv6_add_to_remove:
-                snmp_config.pop(ipv6_add_to_remove)
-                config_db['SNMP_AGENT_ADDRESS_CONFIG'] = snmp_config
-                with open('/tmp/config_db.json', 'w') as f:
-                    json.dump(config_db, f, indent=4)
-                os.chmod('/tmp/config_db.json', 0o777)
-                self.engine.copy_file(source_file='/tmp/config_db.json',
-                                      dest_file="config_db.json", file_system='/tmp/',
-                                      overwrite_file=True, verify_file=False)
-                self.engine.run_cmd("sudo cp /tmp/config_db.json /etc/sonic/config_db.json")
-                self.reload_configuration(force=True)
-                self.verify_dockers_are_up()
-                logger.info("Update SNMP config finished")
 
     def update_sai_xml_file(self, platform, hwsku, global_flag=False, local_flags=False):
         switch_sai_xml_path = f'/usr/share/sonic/device/{platform}/{hwsku}'
@@ -1098,18 +1259,17 @@ class SonicGeneralCliDefault(GeneralCliCommon):
     def get_updated_config_db(self, topology_obj, setup_name, hwsku, platform):
         branch = get_sonic_branch(topology_obj, self.cli_obj.dut_alias)
         config_file_prefix = self.get_config_file_prefix(setup_name)
+        if self.is_performance_setup(setup_name):
+            return f"{config_file_prefix}config_db.json"
         config_db_file_name = f"{self.get_image_sonic_version()}_{config_file_prefix}config_db.json"
-        if branch in ['202205', '202211', '202305']:
-            base_config_db_json_file_name = SonicConst.CONFIG_DB_JSON
-        else:
-            base_config_db_json_file_name = SonicConst.CONFIG_DB_GNMI_JSON
+        base_config_db_json_file_name = SonicConst.CONFIG_DB_JSON
         base_config_db_json_file_name = config_file_prefix + base_config_db_json_file_name
         base_config_db_json = self.get_config_db_json_obj(setup_name, base_config_db_json_file_name)
         self.create_extended_config_db_file(setup_name, base_config_db_json, file_name=config_db_file_name)
         self.update_config_db_metadata_router(setup_name, config_db_file_name)
         self.update_config_db_metadata_mgmt_port(setup_name, config_db_file_name)
         self.update_config_db_metadata_hwsku(setup_name, hwsku, config_db_file_name)
-        self.update_config_db_features(setup_name, hwsku, platform, config_db_file_name)
+        self.update_config_db_features(setup_name, hwsku, platform, config_db_file_name, branch)
         self.update_config_db_feature_config(setup_name, "database", "auto_restart", "always_enabled",
                                              config_db_file_name)
         default_mtu = "9100"
@@ -1135,17 +1295,27 @@ class SonicGeneralCliDefault(GeneralCliCommon):
 
             return self.create_extended_config_db_file(setup_name, config_db_json, file_name=config_db_json_file_name)
 
-    def update_config_db_features(self, setup_name, hwsku, platform, config_db_json_file_name):
+    def update_config_db_features(self, setup_name, hwsku, platform, config_db_json_file_name, branch):
         init_config_db_json = self.get_init_config_db_json_obj(hwsku, platform, setup_name)
         config_db_json = self.get_config_db_json_obj(setup_name, config_db_json_file_name=config_db_json_file_name)
         image_supported_features = init_config_db_json[ConfigDbJsonConst.FEATURE]
         current_features = config_db_json[ConfigDbJsonConst.FEATURE]
         for feature, feature_properties in image_supported_features.items():
             if feature not in current_features:
-                config_db_json[ConfigDbJsonConst.FEATURE][feature] = feature_properties
-            has_timer_value = config_db_json[ConfigDbJsonConst.FEATURE][feature].pop("has_timer", None)
+                current_features[feature] = feature_properties
+            has_timer_value = current_features[feature].pop("has_timer", None)
             if has_timer_value:
-                config_db_json[ConfigDbJsonConst.FEATURE][feature]["delayed"] = has_timer_value
+                current_features[feature]["delayed"] = has_timer_value
+        if branch not in ['202205', '202211', '202305']:
+            # since 202311 telemetry feature was replaced by gnmi, so we update config_db.json accordingly
+            telemetry_feature = current_features.pop(ConfigDbJsonConst.TELEMETRY, None)
+            if telemetry_feature and ConfigDbJsonConst.GNMI not in current_features:
+                current_features[ConfigDbJsonConst.GNMI] = telemetry_feature
+            auto_techsupport_features = config_db_json.get(ConfigDbJsonConst.AUTO_TECHSUPPORT_FEATURE)
+            if auto_techsupport_features:
+                telemetry_auto_techsupport_feature = auto_techsupport_features.pop(ConfigDbJsonConst.TELEMETRY, None)
+                if telemetry_auto_techsupport_feature and ConfigDbJsonConst.GNMI not in auto_techsupport_features:
+                    auto_techsupport_features[ConfigDbJsonConst.GNMI] = telemetry_auto_techsupport_feature
         return self.create_extended_config_db_file(setup_name, config_db_json, file_name=config_db_json_file_name)
 
     def update_config_db_metadata_router(self, setup_name, config_db_json_file_name):
@@ -1443,31 +1613,39 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         config = self.engine.run_cmd('sudo show runningconfiguration all', print_output=False)
         return json.loads(config)
 
-    def is_spc1(self, cli_object):
+    def is_spc1(self):
         """
         Function to check if the current DUT is SPC1
-        :param cli_object: cli_object
         """
-        platform = cli_object.chassis.get_platform()
         # if sn2 in platform, it's spc1. e.g. x86_64-mlnx_msn2700-r0
-        return 'sn2' in platform
+        return self.check_is_platform(['sn2'])
 
-    def is_spc2(self, cli_object):
+    def is_spc2(self):
         """
         Function to check if the current DUT is SPC2
-        :param cli_object: cli_object
         """
-        platform = cli_object.chassis.get_platform()
         # if sn3 in platform, it's spc1. e.g. x86_64-mlnx_msn3800-r0
-        return 'sn3' in platform
+        return self.check_is_platform(['sn3'])
 
-    @classmethod
-    def is_simx_moose(cls, engine):
+    def is_simx_moose(self):
+        if self._is_simx_moose is None:
+            self._is_simx_moose = self.check_is_platform(['sn5600', 'simx'])
+        return self._is_simx_moose
 
-        if cls._is_simx_moose is None:
-            platform = engine.run_cmd("show platform summary | grep Platform | awk '{print $2}'")
-            cls._is_simx_moose = all(condition in platform for condition in ('sn5', 'simx'))
-        return cls._is_simx_moose
+    def is_simx_bison(self):
+        if self._is_simx_bison is None:
+            self._is_simx_bison = self.check_is_platform(['sn5640', 'simx'])
+        return self._is_simx_bison
+
+    def check_is_platform(self, exp_condition_list, platform=None):
+        """
+        Checks if the platform as an expected condition list.
+        :param exp_condition_list: platform expected conditions. Example: ['sn5640', 'simx']
+        :param platform: system platform. Example: 'x86_64-nvidia_sn5640_simx-r0'
+        """
+        if platform is None:
+            platform = self.cli_obj.chassis.get_platform()
+        return all(condition in platform for condition in exp_condition_list)
 
     def show_version(self, validate=False):
         return self.engine.run_cmd('show version', validate=validate)
@@ -1693,12 +1871,12 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         logger.info(f'sai version:{sai_version}')
         return sai_version
 
-    def get_bootctl_status(self):
+    def get_secureboot_status(self):
         """
-        This method is to get the output of bootctl command
-        :return: bootctl output
+        This method is to get the output of command 'mokutil --sb-state'
+        :return: output
         """
-        return self.engine.run_cmd('bootctl', validate=True)
+        return self.engine.run_cmd('mokutil --sb-state')
 
     def is_async_route_enabled(self, async_route_param):
         """
@@ -1727,6 +1905,62 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             else:
                 self.engine.run_cmd(f'sed -i "/{async_routing_enabled}/d" {sai_profile_path}')
                 self.engine.run_cmd(f'echo "{async_routing_enabled}=1" >> {sai_profile_path}')
+
+    @staticmethod
+    def config_health_event(dut_engine, severity, category_list=HealthEventConst.CATEGORY_NONE,
+                            max_events=HealthEventConst.MAX_EVENTS_NUM_DEFAULT):
+        """
+        Config health event.
+
+        Parameters:
+        - severity (str): Required, supported values are "fatal", "warning", "notice".
+        - category_list (str): Optional, supported values are "none", "all", "software", "asic_hw", "cpu_hw", "firmware".
+        - max_events (int): Optional, supported values are greater than or equal to 0 integers.
+
+        Example command:
+        sudo config asic-sdk-health-event suppress fatal --category-list firmware,software --max-events 10
+        """
+
+        logger.info(
+            f"Config with parameter: severity={severity}, category_list={category_list}, max_events={max_events}")
+
+        # Check if the "severity" parameter is valid
+        valid_severities = ["fatal", "warning", "notice"]
+        if severity not in valid_severities:
+            raise ValueError(f"Invalid 'severity' parameter: {severity}. Expected one of {valid_severities}.")
+
+        # Ensure at least one of category-list or max-events is provided
+        if not category_list and not max_events:
+            raise ValueError("Invalid command. Please include at least a category-list or max-events parameter.")
+
+        command = f"sudo config asic-sdk-health-event suppress {severity}"
+
+        # Process the "category-list" parameter
+        if category_list is not None:
+            valid_categories = ["none", "all", "software", "asic_hw", "cpu_hw", "firmware"]
+            categories = category_list.split(',')
+            for category in categories:
+                if category not in valid_categories:
+                    raise ValueError(
+                        f"Invalid 'category-list' parameter: {category}. Expected one of {valid_categories}.")
+            command += f" --category-list {category_list}"
+
+        # Process the "max-events" parameter
+        if max_events is not None:
+            if not isinstance(max_events, int) or max_events < 0:
+                raise ValueError(f"Invalid 'max-events' parameter: {max_events}. Expected a non-negative integer.")
+            command += f" --max-events {max_events}"
+
+        logger.info(f"Health event config command is: {command}")
+        dut_engine.run_cmd(command)
+        get_health_event_config(dut_engine)
+
+    def add_ntp_server(self, server_ip):
+        """
+        This method add a ntp server on the dut
+        :return: command output
+        """
+        return self.engine.run_cmd(f'sudo config ntp add {server_ip}')
 
 
 class SonicGeneralCli202012(SonicGeneralCliDefault):

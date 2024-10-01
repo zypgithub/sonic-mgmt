@@ -124,7 +124,7 @@ class NvosInstallationSteps:
         with allure.step('Upgrade to target version'):
             NvosInstallationSteps.upgrade_to_target_version(bin_filename, dut_engine, dut_device, scp_host_creds,
                                                             system,
-                                                            target_version_path)
+                                                            target_version_path, topology_obj)
 
         with allure.step('Wait until switch is up'):
             dut_engine.disconnect()  # force engines.dut to reconnect
@@ -173,14 +173,17 @@ class NvosInstallationSteps:
                 dut_engine.run_cmd(f'echo "{err}" > {upgrade_status_file_path_dut}')
 
     @staticmethod
-    def upgrade_to_target_version(bin_filename, dut_engine, dut_device, scp_host_creds, system, target_version_path):
+    def upgrade_to_target_version(bin_filename, dut_engine, dut_device, scp_host_creds, system, target_version_path,
+                                  topology_obj, param_value=''):
         image_scp_url = f'scp://{scp_host_creds}{target_version_path}'
         system.image.action_fetch(url=image_scp_url, dut_engine=dut_engine)
         # use new default password for recovery after upgrade
         recovery_engine = LinuxSshEngine(dut_engine.ip, dut_engine.username,
                                          dut_device.get_default_password_by_version(target_version_path))
         system.image.files.file_name[bin_filename].action_file_install_with_reboot(engine=dut_engine, device=dut_device,
-                                                                                   recovery_engine=recovery_engine)
+                                                                                   recovery_engine=recovery_engine,
+                                                                                   topology_obj=topology_obj,
+                                                                                   param_value=param_value)
 
     @staticmethod
     def fetch_apply_save_config(config_filename, config_file_path, dut_engine, scp_host_creds, system):

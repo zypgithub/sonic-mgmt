@@ -1,0 +1,18 @@
+[sonic_latest]
+arc-switch1025     ansible_host=10.210.25.45 ansible_hostv6="fe80::526b:4bff:fecd:2e74" sonic_version=v2 hwsku="Mellanox-SN2700" iface_speed=100000  mgmt_subnet_mask_length=22 vm_base=VM0601
+
+[sonic:children]
+sonic_latest
+
+[ptf]
+ptf-1025    ansible_host=10.213.84.213 ansible_ssh_user=root ansible_ssh_pass=root
+
+[lab:children]
+sonic
+fanout
+
+[lab:vars]
+mgmt_subnet_mask_length="24"
+
+[fanout]
+arc-switch1035      ansible_host=10.210.25.46 os=mellanox

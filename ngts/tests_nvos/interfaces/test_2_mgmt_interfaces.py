@@ -78,7 +78,7 @@ def test_2_mgmt_snmp(engines, topology_obj):
     with allure.step("Enable snmp"):
         HostMethods.start_snmp_server(engine=engines.dut, state=NvosConst.ENABLED, readonly_community='qwerty12',
                                       listening_address='all')
-        _wait_for_snmp_is_running(system)
+        HostMethods.wait_for_snmp_is_running(system)
 
     with allure.step('Verify fields and values after snmp enabled'):
         listening_address_output = OutputParsingTool.parse_json_str_to_dictionary(
@@ -92,7 +92,7 @@ def test_2_mgmt_snmp(engines, topology_obj):
 
     with allure.step("Unset snmp"):
         system.snmp_server.unset(apply=True).verify_result()
-        _wait_for_snmp_is_running(system, 'no')
+        HostMethods.wait_for_snmp_is_running(system, SystemConsts.SNMP_DEFAULT_STATE)
 
 
 @pytest.mark.ib

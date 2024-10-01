@@ -20,7 +20,7 @@ from tests.common.utilities import InterruptableThread
 from tests.common.dualtor.data_plane_utils import get_peerhost
 from tests.common.dualtor.dual_tor_utils import show_muxcable_status
 from tests.common.fixtures.duthost_utils import check_bgp_router_id
-from tests.common.utilities import wait_until
+from tests.common.utilities import wait_until, get_group_visible_vars, get_inventory_files
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +40,7 @@ class AdvancedReboot:
     Test cases can trigger test start utilizing runRebootTestcase API.
     """
 
-    def __init__(self, request, duthosts, duthost, ptfhost, localhost, tbinfo, creds, **kwargs):
+    def __init__(self, request, duthosts, duthost, ptfhost, localhost, vmhost, tbinfo, creds, **kwargs):
         """
         Class constructor.
         @param request: pytest request object
@@ -85,6 +85,7 @@ class AdvancedReboot:
         self.duthost = duthost
         self.ptfhost = ptfhost
         self.localhost = localhost
+        self.vmhost = vmhost
         self.tbinfo = tbinfo
         self.creds = creds
         self.moduleIgnoreErrors = kwargs["allow_fail"] if "allow_fail" in kwargs else False
@@ -550,10 +551,23 @@ class AdvancedReboot:
         count = 0
         result = True
         test_results = dict()
+        server = self.tbinfo["server"]
+        inv_files = get_inventory_files(self.request)
+        server_port = get_group_visible_vars(inv_files, server).get('external_port')
+        tcpdump_path = f"/tmp/{self.tbinfo['conf-name']}_server_port_tcpdump_{self.request.node.name}"
+        if self.vmhost.shell(f"ls {tcpdump_path}", module_ignore_errors=True)['rc'] != 0:
+            self.vmhost.shell(f"mkdir {tcpdump_path}")
         for rebootOper in self.rebootData['sadList']:
             count += 1
             test_case_name = str(self.request.node.name) + str(rebootOper)
             test_results[test_case_name] = list()
+            # Start a tcpdump on the test_server-fanout port for debugging the ptf packet loss issue
+            tcpdump_file = f"{tcpdump_path}/{test_case_name}_{int(time.time())}.pcap"
+            tcpdump_filter = "tcp and tcp dst port 5000 and tcp src port 1234 and not icmp"
+            tcpdump_cmd = f"tcpdump -i {server_port} {tcpdump_filter} -w {tcpdump_file}"
+            self.vmhost.shell(tcpdump_cmd, module_async=True)
+            logging.info(f"Starting to dump test traffic on the server port "
+                         f"{server_port} for test case {test_case_name}: {tcpdump_file}")
             try:
                 if self.preboot_setup:
                     self.preboot_setup()
@@ -584,6 +598,8 @@ class AdvancedReboot:
                 logger.error("Exception caught while running advanced-reboot test on ptf: \n{}".format(traceback_msg))
                 test_results[test_case_name].append("Exception caught while running advanced-reboot test on ptf")
             finally:
+                # Stop the tcpdump
+                self.vmhost.shell(f"pkill tcpdump", module_ignore_errors=True)
                 # capture the test logs, and print all of them in case of failure, or a summary in case of success
                 log_dir = self.__fetchTestLogs(rebootOper)
                 self.print_test_logs_summary(log_dir)
@@ -601,6 +617,9 @@ class AdvancedReboot:
                 time.sleep(TIME_BETWEEN_SUCCESSIVE_TEST_OPER)
             failed_list = [(testcase, failures) for testcase, failures in list(test_results.items())
                            if len(failures) != 0]
+            if len(failed_list) == 0:
+                self.vmhost.shell(
+                    f"rm -rf /tmp/{self.tbinfo['conf-name']}_server_port_tcpdump*", module_ignore_errors=True)
         pytest_assert(len(failed_list) == 0, "Advanced-reboot failure. Failed test: {}, "
                                              "failure summary:\n{}".format(self.request.node.name, failed_list))
         return result
@@ -863,8 +882,8 @@ class AdvancedReboot:
 
 
 @pytest.fixture
-def get_advanced_reboot(request, duthosts, enum_rand_one_per_hwsku_frontend_hostname, ptfhost, localhost, tbinfo,
-                        creds):
+def get_advanced_reboot(request, duthosts, enum_rand_one_per_hwsku_frontend_hostname, ptfhost, localhost, vmhost,
+                        tbinfo, creds):
     """
     Pytest test fixture that provides access to AdvancedReboot test fixture
         @param request: pytest request object
@@ -881,7 +900,7 @@ def get_advanced_reboot(request, duthosts, enum_rand_one_per_hwsku_frontend_host
         API that returns instances of AdvancedReboot class
         """
         assert len(instances) == 0, "Only one instance of reboot data is allowed"
-        advancedReboot = AdvancedReboot(request, duthosts, duthost, ptfhost, localhost, tbinfo, creds, **kwargs)
+        advancedReboot = AdvancedReboot(request, duthosts, duthost, ptfhost, localhost, vmhost, tbinfo, creds, **kwargs)
         instances.append(advancedReboot)
         return advancedReboot
 

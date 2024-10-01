@@ -192,6 +192,7 @@ def test_show_system_reboot(test_api, engines, devices):
         assert reboot_output['reason'], "reason field is missing"
 
 
+@pytest.mark.cumulus
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
@@ -271,3 +272,139 @@ def test_show_system_cpu(test_api, engines, devices):
         utilization = output_dictionary[SystemConsts.CPU_UTILIZATION_KEY]
         assert SystemConsts.CPU_PERCENT_THRESH_MIN < utilization < SystemConsts.CPU_PERCENT_THRESH_MAX, \
             "utilization percentage is out of range"
+
+
+@pytest.mark.system
+@pytest.mark.simx
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_system_contact_set(test_api, engines):
+    """
+    Run show system message command and verify the required message
+        Test flow:
+            1. Run set system contact
+            2. Run system show
+            3. Validate system contact is as set in step 1
+            4. Run unset system contact
+            5. Run system show
+            6. Validate system contact is not present in system show
+    """
+    TestToolkit.tested_api = test_api
+    system = System()
+    try:
+        help_system_contact_location(engines, system, SystemConsts.CONTACT)
+
+    finally:
+        clear_system_contact_and_location(system)
+
+
+@pytest.mark.system
+@pytest.mark.simx
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_system_location_set(test_api, engines):
+    """
+    Run show system message command and verify the required message
+        Test flow:
+            1. Run set system location
+            2. Run system show
+            3. Validate system location is as set in step 1
+            4. Run unset system location
+            5. Run system show
+            6. Validate system location is not present in system show
+    """
+    TestToolkit.tested_api = test_api
+    system = System()
+    try:
+        help_system_contact_location(engines, system, SystemConsts.LOCATION)
+
+    finally:
+        clear_system_contact_and_location(system)
+
+
+@pytest.mark.system
+@pytest.mark.simx
+def test_factory_reset_for_system_contact_location(engines):
+    """
+    Run factory reset system command and verify the system contact and location fields are removed from system show
+        Test flow:
+            1. Run 'nv set system contact <args>>'
+            2. Run 'nv set system location <args>>'
+            4. Run 'nv show system' and verify system contact and location are set
+            5. Run system factory reset
+            6. Run 'nv show system' and verify systems contact and location fields are removed
+    """
+    system = System()
+
+    try:
+        with allure.step('Run set system contact command and apply config'):
+            system.set(op_param_name=SystemConsts.CONTACT, op_param_value="contact_info", apply=True,
+                       dut_engine=engines.dut).verify_result()
+
+        with allure.step('Verify system contact is set'):
+            system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
+            ValidationTool.verify_field_value_in_output(system_output, SystemConsts.CONTACT, "contact_info").\
+                verify_result()
+
+        with allure.step('Run set system location command and apply config'):
+            system.set(op_param_name=SystemConsts.LOCATION, op_param_value="location_info", apply=True,
+                       dut_engine=engines.dut).verify_result()
+
+        with allure.step('Verify system location is set'):
+            system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
+            ValidationTool.verify_field_value_in_output(system_output, SystemConsts.LOCATION, "location_info").\
+                verify_result()
+
+        with allure.step("Run reset factory with keep basic param"):
+            system.factory_default.action_reset(param="keep basic").verify_result()
+
+        with allure.step('Validate system contact is back to default (Null)'):
+            system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
+            assert system_output[SystemConsts.CONTACT] is None, "System contact in system show is {} instead of Null".\
+                format(system_output[SystemConsts.CONTACT])
+
+        with allure.step('Validate system location is back to default (Null)'):
+            assert system_output[SystemConsts.LOCATION] is None, "System location in system show is {} instead of" \
+                                                                 "Null".format(system_output[SystemConsts.LOCATION])
+
+    finally:
+        clear_system_contact_and_location(system)
+
+
+def clear_system_contact_and_location(system):
+
+    with allure.step('Unset the system contact'):
+        system.unset(SystemConsts.CONTACT, apply=True).verify_result()
+
+    with allure.step('Unset the system location'):
+        system.unset(SystemConsts.LOCATION, apply=True).verify_result()
+
+    with allure.step('Validate system contact is back to default (Null)'):
+        system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
+        assert system_output[SystemConsts.CONTACT] is None, "System contact in system show is {} instead of Null". \
+            format(system_output[SystemConsts.CONTACT])
+
+    with allure.step('Validate system location is back to default (Null)'):
+        system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
+        assert system_output[SystemConsts.LOCATION] is None, "System location in system show is {} instead of Null". \
+            format(system_output[SystemConsts.LOCATION])
+
+
+def help_system_contact_location(engines, system, field_name):
+    with allure.step('Set system {} command and verify that contact is updated'.format(field_name)):
+        with allure.step('Set new system {}'.format(field_name)):
+            field_info = field_name + "info"
+            system.set(op_param_name=field_name, op_param_value=field_info, apply=True,
+                       dut_engine=engines.dut).verify_result()
+
+        with allure.step('Run show system and validate system {}'.format(field_name)):
+            system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
+            ValidationTool.verify_field_value_in_output(system_output, field_name, field_info).\
+                verify_result()
+
+    with allure.step('Unset system {} command and verify that {} field is Null'.format(field_name, field_name)):
+        with allure.step('Unset the system {}'.format(field_name)):
+            system.unset(field_name, apply=True).verify_result()
+
+        with allure.step('Validate system {} is back to default (Null)'.format(field_name)):
+            system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
+            assert system_output[field_name] is None, "System {} in system show is {} instead of Null".\
+                format(field_name, system_output[field_name])

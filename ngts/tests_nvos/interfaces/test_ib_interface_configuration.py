@@ -1,4 +1,6 @@
 import logging
+from time import sleep
+
 from ngts.tools.test_utils import allure_utils as allure
 import pytest
 from retry import retry
@@ -14,7 +16,8 @@ logger = logging.getLogger()
 
 
 @pytest.mark.ib_interfaces
-def test_ib_interface_mtu(engines, players, interfaces, start_sm):
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_ib_interface_mtu(engines, players, interfaces, start_sm, test_api):
     """
     Configure port mtu and verify the configuration applied successfully
     Relevant cli commands:
@@ -33,6 +36,8 @@ def test_ib_interface_mtu(engines, players, interfaces, start_sm):
         8.1 Restore the original mtu value
         8.2 Verify the mtu restored to original
     """
+    TestToolkit.tested_api = test_api
+
     with allure.step("Get a random active port"):
         selected_port = Tools.RandomizationTool.get_random_traffic_port().get_returned_value()[0]
 
@@ -61,6 +66,7 @@ def test_ib_interface_mtu(engines, players, interfaces, start_sm):
     with allure.step("Set mtu '{}' for port '{}".format(selected_mtu_value, selected_port.name)):
         selected_port.interface.link.set(op_param_name='mtu', op_param_value=selected_mtu_value,
                                          apply=True, ask_for_confirmation=True).verify_result()
+        sleep(2)
 
         with allure.step("Verify the mtu value updated to: {}".format(selected_mtu_value)):
             wait_for_port_to_become_active(selected_port)
@@ -91,7 +97,8 @@ def test_ib_interface_mtu(engines, players, interfaces, start_sm):
 
 @pytest.mark.ib_interfaces
 @pytest.mark.nvos_build
-def test_ib_interface_speed(engines, players, interfaces, devices, start_sm):
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_ib_interface_speed(engines, players, interfaces, devices, start_sm, test_api):
     """
     Configure interface speed and verify the configuration applied successfully
     Relevant cli commands:
@@ -111,6 +118,8 @@ def test_ib_interface_speed(engines, players, interfaces, devices, start_sm):
     9. Unset the ib-speed value -> should changed to default
     10.Send traffic -> Verify the traffic passes successfully
     """
+    TestToolkit.tested_api = test_api
+
     with allure.step("Get a random active port"):
         selected_port = Tools.RandomizationTool.get_random_traffic_port().get_returned_value()[0]
 
@@ -177,10 +186,13 @@ def test_ib_interface_speed(engines, players, interfaces, devices, start_sm):
 
 
 @pytest.mark.ib_interfaces
-def test_ib_interface_speed_invalid(engines, devices, start_sm):
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_ib_interface_speed_invalid(engines, devices, start_sm, test_api):
     """
     Try to set an invalid speed and make sure the config apply fails
     """
+    TestToolkit.tested_api = test_api
+
     with allure.step("Get a random active port"):
         selected_port = Tools.RandomizationTool.get_random_active_port().get_returned_value()[0]
 
@@ -207,7 +219,8 @@ def test_ib_interface_speed_invalid(engines, devices, start_sm):
 
 
 @pytest.mark.ib_interfaces
-def test_ib_interface_lanes(engines, players, interfaces, devices, start_sm):
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_ib_interface_lanes(engines, players, interfaces, devices, start_sm, test_api):
     """
     Configure port lanes and verify the configuration applied successfully
     Relevant cli commands:
@@ -226,6 +239,8 @@ def test_ib_interface_lanes(engines, players, interfaces, devices, start_sm):
         7.2 Verify the lanes restored to original
     8. Send traffic -> Verify the traffic passes successfully
     """
+    TestToolkit.tested_api = test_api
+
     with allure.step("Get a random active port"):
         selected_port = Tools.RandomizationTool.get_random_traffic_port().get_returned_value()[0]
 
@@ -297,7 +312,8 @@ def test_ib_interface_lanes(engines, players, interfaces, devices, start_sm):
 
 
 @pytest.mark.ib_interfaces
-def test_ib_interface_vls(engines, players, interfaces, start_sm):
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_ib_interface_vls(engines, players, interfaces, start_sm, test_api):
     """
     Configure port vls and verify the configuration applied successfully
     Relevant cli commands:
@@ -316,6 +332,8 @@ def test_ib_interface_vls(engines, players, interfaces, start_sm):
         7.2 Verify the op-vls restored to original
     8. Send traffic -> Verify the traffic passes successfully
     """
+    TestToolkit.tested_api = test_api
+
     with allure.step("Get a random active port"):
         selected_port = Tools.RandomizationTool.get_random_traffic_port().get_returned_value()[0]
 
@@ -377,7 +395,7 @@ def verify_speed_values(devices, selected_port):
     speed = current_link_dict[IbInterfaceConsts.LINK_SPEED]
     ib_speed = current_link_dict[IbInterfaceConsts.LINK_IB_SPEED]
     lanes = current_link_dict[IbInterfaceConsts.LINK_LANES]
-    ib_speed_val = devices.dut.supported_ib_speeds[ib_speed].replace("G", "")
+    ib_speed_val = IbInterfaceConsts.SPEED_LIST[ib_speed].replace("G", "")
     ib_speed_val = round_string_number_with_positivity_check(ib_speed_val, "ib_speed_val")
     lanes_val = lanes.replace("X", "")
     lanes_val = round_string_number_with_positivity_check(lanes_val, "lanes_val")
@@ -393,7 +411,7 @@ def round_string_number_with_positivity_check(value, name):
     return res
 
 
-@retry(Exception, tries=12, delay=15)
+@retry(Exception, tries=12, delay=20)
 def wait_for_port_to_become_active(port_obj):
     with allure.step("Waiting for port {} to become active".format(port_obj.name)):
         current_link_dict = OutputParsingTool.parse_json_str_to_dictionary(port_obj.interface.link.show()).\
@@ -402,33 +420,3 @@ def wait_for_port_to_become_active(port_obj):
         state = current_link_dict[IbInterfaceConsts.LINK_STATE]
         assert logical_state == "Active" and "up" in state.keys(), \
             "The logical state of interface {} is not 'Active'".format(port_obj.name)
-
-
-# ------------ Open API tests -----------------
-
-@pytest.mark.openapi
-@pytest.mark.ib_interfaces
-def test_ib_interface_speed_openapi(engines, players, interfaces, devices, start_sm):
-    TestToolkit.tested_api = ApiType.OPENAPI
-    test_ib_interface_speed(engines, players, interfaces, devices, start_sm)
-
-
-@pytest.mark.openapi
-@pytest.mark.ib_interfaces
-def test_ib_interface_mtu_openapi(engines, players, interfaces, start_sm):
-    TestToolkit.tested_api = ApiType.OPENAPI
-    test_ib_interface_mtu(engines, players, interfaces, start_sm)
-
-
-@pytest.mark.openapi
-@pytest.mark.ib_interfaces
-def test_ib_interface_lanes_openapi(engines, players, interfaces, devices, start_sm):
-    TestToolkit.tested_api = ApiType.OPENAPI
-    test_ib_interface_lanes(engines, players, interfaces, devices, start_sm)
-
-
-@pytest.mark.openapi
-@pytest.mark.ib_interfaces
-def test_ib_interface_vls_openapi(engines, players, interfaces, start_sm):
-    TestToolkit.tested_api = ApiType.OPENAPI
-    test_ib_interface_vls(engines, players, interfaces, start_sm)

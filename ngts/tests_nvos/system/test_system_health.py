@@ -1,8 +1,11 @@
 import logging
 import time
-from retry import retry
+from contextlib import contextmanager
 
-from ngts.nvos_tools.infra.FilesTool import EngineFile
+from retry import retry
+from typing import Dict
+
+from ngts.nvos_tools.infra.FilesTool import EngineFile, TempFileOnEngine
 from ngts.tools.test_utils import allure_utils as allure
 import pytest
 import random
@@ -24,9 +27,9 @@ logger = logging.getLogger()
 OK = HealthConsts.OK
 NOT_OK = HealthConsts.NOT_OK
 IGNORED = HealthConsts.IGNORED
-CHECKER_FILE = "/tmp/my_checker.py"
-USER_DEFINED_CHECKERS_LINE = "\"user_defined_checkers\": \\[{}\\]"
+USER_DEFINED_CHECKERS_KEY = 'user_defined_checkers'
 DEVICES_TO_IGNORE_LINE = "\"devices_to_ignore\": \\[{}\\]"
+SIMULATED_ISSUES = {"bad_device": "device is out of power"}
 
 
 @pytest.mark.system
@@ -130,7 +133,7 @@ def test_show_system_health(devices):
 
 @pytest.mark.system
 @pytest.mark.health
-def test_system_health_files(engines, devices):
+def test_system_health_files(engines):
     """
     Will validate the health files requirements:
         -	Tech-support will contain health files
@@ -138,13 +141,13 @@ def test_system_health_files(engines, devices):
         -	Delete health files
     """
 
-    system_health_files_test(engines, devices, check_rotation=False)
+    system_health_files_test(engines, check_rotation=False)
 
 
 @pytest.mark.system
 @pytest.mark.health
 @pytest.mark.checklist
-def test_system_health_files_with_rotation(engines, devices):
+def test_system_health_files_with_rotation(engines):
     """
     Will validate the health files requirements:
         -	file will be rotated after 10 MB
@@ -154,7 +157,7 @@ def test_system_health_files_with_rotation(engines, devices):
         -	Delete health files
     """
 
-    system_health_files_test(engines, devices, check_rotation=True)
+    system_health_files_test(engines, check_rotation=True)
 
 
 @pytest.mark.system
@@ -359,16 +362,14 @@ def test_simulate_health_problem_with_user_config_file(devices, engines):
     system.validate_health_status(OK)
 
     try:
-        health_issue_dict = simulate_health_issue_with_config_file_and_validate(system, engines.dut, devices.dut)
-        validate_health_fix_or_issue(system, health_issue_dict, date_time, False)
+        with simulate_health_issue_using_config_file(engines.dut):
+            validate_health_issues_exist(system, SIMULATED_ISSUES)
+            validate_health_fix_or_issue(system, SIMULATED_ISSUES, date_time, False)
 
     finally:
         date_time = ClockTools.get_datetime_object_from_show_system_output(system.show())
         time.sleep(1)
-        with allure.step("Fix the health issue - remove user config file"):
-            logger.info("Fix the health issue - remove user config file")
-            remove_user_config_file(engines.dut, devices.dut)
-            validate_health_fix_or_issue(system, health_issue_dict, date_time, True)
+        validate_health_fix_or_issue(system, SIMULATED_ISSUES, date_time, True)
 
 
 @pytest.mark.system
@@ -563,7 +564,7 @@ def retry_validate_health_fix_or_issue(system, health_issue_dict, search_since_d
     validate_health_fix_or_issue(system, health_issue_dict, search_since_datetime, is_fix, expected_in_monitor_list)
 
 
-def system_health_files_test(engines, devices, check_rotation=False):
+def system_health_files_test(engines, check_rotation=False):
     """
     Will validate the health files requirements:
     steps:
@@ -580,36 +581,34 @@ def system_health_files_test(engines, devices, check_rotation=False):
     system.validate_health_status(OK)
 
     try:
-        simulate_health_issue_with_config_file_and_validate(system, engines.dut, devices.dut)
+        with simulate_health_issue_using_config_file(engines.dut):
+            validate_health_issues_exist(system, SIMULATED_ISSUES)
 
-        if check_rotation:
-            with allure.step("First file rotation"):
-                logger.info("First file rotation")
-                cause_health_file_rotation_and_validate(engines.dut, system)
+            if check_rotation:
+                with allure.step("First file rotation"):
+                    logger.info("First file rotation")
+                    cause_health_file_rotation_and_validate(engines.dut, system)
 
-            with allure.step("Second file rotation"):
-                logger.info("Second file rotation")
-                cause_health_file_rotation_and_validate(engines.dut, system)
+                with allure.step("Second file rotation"):
+                    logger.info("Second file rotation")
+                    cause_health_file_rotation_and_validate(engines.dut, system)
 
-        health_files = list(OutputParsingTool.parse_json_str_to_dictionary(system.health.history.files.show()).get_returned_value().keys())
+            health_files = list(OutputParsingTool.parse_json_str_to_dictionary(system.health.history.files.show()).get_returned_value().keys())
 
-        with allure.step("Validate health files in tech support file"):
-            logger.info("Validate health files in tech support file")
-            validate_health_files_exist_in_techsupport(system, engines.dut, health_files)
+            with allure.step("Validate health files in tech support file"):
+                logger.info("Validate health files in tech support file")
+                validate_health_files_exist_in_techsupport(system, engines.dut, health_files)
 
-        with allure.step("Upload health files"):
-            logger.info("Upload health files")
-            validate_upload_health_files(engines, system, health_files)
+            with allure.step("Upload health files"):
+                logger.info("Upload health files")
+                validate_upload_health_files(engines, system, health_files)
 
-        with allure.step("Delete health files"):
-            logger.info("Delete health files")
-            validate_delete_health_files(system, health_files)
+            with allure.step("Delete health files"):
+                logger.info("Delete health files")
+                validate_delete_health_files(system, health_files)
 
     finally:
-        with allure.step("Remove user monitoring config file"):
-            logger.info("Remove user monitoring config file")
-            remove_user_config_file(engines.dut, devices.dut)
-            system.wait_until_health_status_change_to(OK)
+        system.wait_until_health_status_change_to(OK)
 
 
 def validate_delete_health_files(system, health_files=[HealthConsts.HEALTH_FIRST_FILE, HealthConsts.HEALTH_SECOND_FILE]):
@@ -679,36 +678,7 @@ def validate_health_files_exist_in_techsupport(system, engine, health_files=[Hea
             system.techsupport.action_delete(system.techsupport.file_name)
 
 
-def create_health_issue_with_user_config_file(engine, device):
-    """
-    create health issue with user monitor config file :
-    create a checker file like,
-    update the monitor config file filed with the file that we created. field: user_defined_checkers
-    example :
-        echo -e 'print("MyCategory") /n print("bad_device:device is out of power")' > /tmp/my_checker.py
-        sudo sed -i 's/"user_defined_checkers": \\[\\]/"user_defined_checkers": \\["python \\/tmp\\/my_checker.py"\\]/' \\/tmp\\/system_health_monitoring_config.json
-
-    """
-    with allure.step("create my_checker file"):
-        logger.info("create my_checker file")
-        create_my_checker_file_cmd = "echo -e 'print(\"MyCategory\") \nprint(\"bad_device:device is out of power\")' > {}".format(CHECKER_FILE)
-        engine.run_cmd(create_my_checker_file_cmd)
-
-    with allure.step("Update monitoring config file with my_checker file"):
-        logger.info("Update monitoring config file with my_checker file")
-        checker_file = CHECKER_FILE.replace("/", "\\/")
-        engine.run_cmd("sudo sed -i 's/{}/{}/' {}".format(
-            USER_DEFINED_CHECKERS_LINE.format(""),
-            USER_DEFINED_CHECKERS_LINE.format("\"python {}\"".format(checker_file)),
-            get_system_health_monitoring_config_file_path()))
-        return {"bad_device": "device is out of power"}
-
-
-def simulate_health_issue_with_config_file_and_validate(system, engine, device):
-    with allure.step("Simulate health problem with user config file"):
-        logger.info("Simulate health problem with user config file")
-        new_devices_dict = create_health_issue_with_user_config_file(engine, device)
-
+def validate_health_issues_exist(system, issues: Dict[str, str]):
     with allure.step("Validate health status has change and add the info of the new devices"):
         logger.info("Validate health status has change and add the info of the new devices")
         system.wait_until_health_status_change_to(NOT_OK)
@@ -717,19 +687,11 @@ def simulate_health_issue_with_config_file_and_validate(system, engine, device):
         detail_health_output = OutputParsingTool.parse_json_str_to_dictionary(
             Fae().health.show()).get_returned_value()
         verify_expected_health_status(detail_health_output, HealthConsts.STATUS, NOT_OK)
-        for device, issue in new_devices_dict.items():
+        for device, issue in issues.items():
             assert device in health_output[HealthConsts.ISSUES].keys()
             assert issue in health_output[HealthConsts.ISSUES][device].values()
             assert device in detail_health_output[HealthConsts.MONITOR_LIST].keys()
             assert issue in detail_health_output[HealthConsts.MONITOR_LIST][device].values()
-    return new_devices_dict
-
-
-def remove_user_config_file(engine, device):
-    engine.run_cmd("sudo sed -i 's/{}/{}/' {}".format(
-        USER_DEFINED_CHECKERS_LINE.format(".*"),
-        USER_DEFINED_CHECKERS_LINE.format(""),
-        get_system_health_monitoring_config_file_path()))
 
 
 def cause_health_file_rotation_and_validate(engine, system):
@@ -798,3 +760,24 @@ def validate_health_files_amount(num_of_expected_files, actual_health_files=None
         actual_health_files = OutputParsingTool.parse_json_str_to_dictionary(System().health.history.files.show()).get_returned_value()
     assert num_of_expected_files == len(actual_health_files), \
         "Unexpected num of health files.\n Expected: {}, actual files: {}".format(num_of_expected_files, actual_health_files)
+
+
+@contextmanager
+def simulate_health_issue_using_config_file(engine):
+    """
+    Creates a simple script and configures the switch (using the health-config file) to use it as an extra
+    health-checker. This will cause the switch to report the health issues configured in SIMULATED_ISSUES.
+    When the context exits the script is deleted and the configuration restored so the health issues are gone.
+    """
+    with TempFileOnEngine(engine, 'py') as checker_file:
+        checker_file.write('print("MyCategory")')
+        for device, issue in SIMULATED_ISSUES.items():
+            checker_file.write(f'print("{device}:{issue}")')
+
+        with EngineFile(engine, get_system_health_monitoring_config_file_path()) as config_file:
+            with allure.step("Update monitoring config file with my_checker file"):
+                config_dict = config_file.json_read()
+                config_dict[USER_DEFINED_CHECKERS_KEY].append(f'python {checker_file.path}')
+                config_file.json_overwrite(config_dict)
+
+            yield

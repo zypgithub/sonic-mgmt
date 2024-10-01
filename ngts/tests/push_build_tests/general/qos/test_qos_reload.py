@@ -62,6 +62,26 @@ def tested_ports(topology_obj):
     return tested_ports_list
 
 
+@pytest.fixture(scope='module', autouse=True)
+def disable_doroce(cli_objects):
+    """
+    Disable doroce before test in case when doroce enabled and enable back after test
+    :param cli_objects: cli_objects fixture
+    """
+    # TODO: this fixture is a WA for https://redmine.mellanox.com/issues/3984950
+    is_doroce_enabled = cli_objects.dut.doroce.is_doroce_configuration_enabled()
+
+    if is_doroce_enabled:
+        cli_objects.dut.doroce.disable_doroce()
+        cli_objects.dut.general.save_configuration()
+
+    yield
+
+    if is_doroce_enabled:
+        cli_objects.dut.doroce.config_doroce_lossless_double_ipool()
+        cli_objects.dut.general.save_configuration()
+
+
 @pytest.mark.build
 @pytest.mark.push_gate
 @pytest.mark.skip_skynet

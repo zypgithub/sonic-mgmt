@@ -45,7 +45,10 @@ def tested_lb_dict(topology_obj, split_mode_supported_speeds, ports_spec_complia
     split_mode = 1
     dut_lbs = list(filter(lambda lb: is_auto_neg_supported_lb(lb, ports_spec_compliance),
                           get_dut_loopbacks(topology_obj)))
-    tested_lb_dict[split_mode].append(get_dut_lb_with_max_capability(dut_lbs, split_mode_supported_speeds))
+    if dut_lbs:
+        tested_lb_dict[split_mode].append(get_dut_lb_with_max_capability(dut_lbs, split_mode_supported_speeds))
+    if not any(tested_lb_dict.values()):
+        pytest.skip('The DUT has no appropriate loopbacks to run the test with.')
     logger.info("Tests will run on the following ports :\n{}".format(tested_lb_dict))
     return tested_lb_dict
 

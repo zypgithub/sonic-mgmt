@@ -4,21 +4,22 @@ import logging
 import os
 import shutil
 import time
+import json
 
 import allure
 import pytest
 
 from ngts.cli_wrappers.nvue.cumulus.cumulus_general_cli import CumulusGeneralCli
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
+from ngts.constants.constants import PlayersAliases, SonicDeployConstants, MarsConstants, SerialLoggerConst
 from ngts.cli_wrappers.sonic.sonic_general_clis import SonicGeneralCliDefault
-from ngts.constants.constants import PlayersAliases, MarsConstants, SerialLoggerConst
 from ngts.helpers.general_helper import extract_host_details_from_topo_obj, get_cli_obj
 from ngts.helpers.run_process_on_host import wait_until_background_procs_done
 from ngts.nvos_tools.Devices.IbDevice import BlackMambaSwitch, CrocodileSwitch
 from ngts.scripts.sonic_deploy.cumulus_only_methods import CumulusInstallationSteps
 from ngts.scripts.sonic_deploy.image_preparetion_methods import get_real_paths, prepare_images
 from ngts.scripts.sonic_deploy.nvos_only_methods import NvosInstallationSteps
-from ngts.scripts.sonic_deploy.sonic_only_methods import SonicInstallationSteps
+from ngts.scripts.sonic_deploy.sonic_only_methods import SonicInstallationSteps, is_community
 from ngts.tools.infra import get_platform_info
 
 logger = logging.getLogger()
@@ -27,12 +28,11 @@ logger = logging.getLogger()
 @pytest.mark.disable_loganalyzer
 @allure.title('Deploy and upgrade image')
 def test_deploy_and_upgrade(topology_obj, is_simx, is_performance, base_version, base_version_dpu, target_version,
-                            serve_files,
-                            sonic_topo, neighbor_type, deploy_only_target, port_number, setup_name, platform_params,
-                            deploy_dpu,
-                            deploy_type, apply_base_config, reboot_after_install, is_shutdown_bgp,
-                            fw_pkg_path, recover_by_reboot, reboot, additional_apps, workspace_path, wjh_deb_url,
-                            verify_secure_boot, chip_type, show_setup_versions, serial_log_analyzers):
+                            serve_files, sonic_topo, neighbor_type, deploy_only_target, port_number, setup_name,
+                            platform_params, deploy_dpu, deploy_type, apply_base_config, reboot_after_install,
+                            is_shutdown_bgp, fw_pkg_path, recover_by_reboot, reboot, additional_apps, workspace_path,
+                            wjh_deb_url, verify_secure_boot, chip_type, destination_hwsku, show_setup_versions,
+                            serial_log_analyzers, fanout_target_version):
     """
         Deploy SONiC/NVOS testing topology and upgrade switch
 
@@ -86,6 +86,7 @@ def test_deploy_and_upgrade(topology_obj, is_simx, is_performance, base_version,
 
             setup_info = get_info_from_topology(topology_obj, workspace_path)
             setup_info['setup_name'] = setup_name
+            destination_hwsku = get_hwsku(sonic_topo, destination_hwsku, setup_name)
 
             with allure.step('prepare versions paths/urls'):
                 base_version, target_version = get_real_paths(base_version, target_version)
@@ -110,42 +111,59 @@ def test_deploy_and_upgrade(topology_obj, is_simx, is_performance, base_version,
                     smart_switch_dpu_duts.append(dut)
             # Remove the smart switch DPUs from the setup_info for we do not want to run the pre and post steps on them
             setup_info['duts'] = switch_or_standalone_dpu_duts
-
         with allure.step('pre installation steps'):
             pre_install_threads = {}
             pre_installation_steps(
                 sonic_topo, neighbor_type, base_version, target_version, setup_info, port_number, is_simx,
-                pre_install_threads)
+                pre_install_threads, destination_hwsku)
 
         with allure.step('installation'):
             install_threads = []
-            install_dpu_threads = []
             executor = concurrent.futures.ThreadPoolExecutor()
-            player_dut = topology_obj.players['dut']
+
+            if smart_switch_dpu_duts:
+                logger.info("Start: copy topology obj dpu")
+                player_dut = topology_obj.players['dut']
+                # Deepcopy with the dut cli object sometimes fails due to
+                # "TypeError: cannot pickle '_thread.lock' object",
+                # don't copy it since it will be replaced eventually
+                topology_obj.players['dut'] = None
+                topology_obj_dpu = copy.deepcopy(topology_obj)
+                topology_obj.players['dut'] = player_dut
+                logger.info("End: copy topology obj dpu")
+
             for dut in switch_or_standalone_dpu_duts:
                 cli_obj: SonicGeneralCliDefault = dut['cli_obj']
                 if not cli_obj.is_dut_supports_image(base_version_url, dut['dut_name']):
                     continue
+                related_base_version_url = get_related_image_to_switch(base_version_url, dut['dut_name'])
                 with allure.step('Install image on dut: {}'.format(dut['dut_name'])):
                     # Disconnect ssh connection, prevent "Socket is closed" in case when pre step took more than 15 min
                     topology_obj.players[dut['dut_alias']]['engine'].disconnect()
                     platform_params_copy = copy.deepcopy(platform_params)
                     install_threads.append((dut['dut_name'],
-                                            executor.submit(deploy_image, topology_obj=topology_obj,
-                                                            setup_name=setup_name,
-                                                            image_url=base_version_url,
-                                                            platform_params=platform_params_copy,
-                                                            deploy_type=deploy_type,
-                                                            apply_base_config=apply_base_config,
+                                            executor.submit(deploy_image, topology_obj=topology_obj, setup_name=setup_name,
+                                                            image_url=related_base_version_url, platform_params=platform_params_copy,
+                                                            deploy_type=deploy_type, apply_base_config=apply_base_config,
                                                             reboot_after_install=reboot_after_install,
                                                             is_shutdown_bgp=is_shutdown_bgp, fw_pkg_path=fw_pkg_path,
-                                                            cli_type=dut['cli_obj'],
-                                                            target_image_url=target_version_url,
+                                                            cli_type=dut['cli_obj'], target_image_url=target_version_url,
+                                                            destination_hwsku=destination_hwsku, setup_info=setup_info,
+                                                            dut_alias=dut['dut_alias'],
+                                                            fanout_deploy_threads=pre_install_threads,
                                                             serial_log_analyzers=serial_log_analyzers,
-                                                            dut_ip=dut['dut_ip'])))
+                                                            dut_ip=dut['dut_ip'],
+                                                            fanout_target_version=fanout_target_version)))
             wait_until_deploy_background_process(install_threads, timeout=1500)
 
             if "bobcat" in setup_name and base_version_dpu:
+                with allure.step('Power cycle the switch if any of the DPUs is shutdown'):
+                    dpu_ready = topology_obj.players['dut']['engine'].run_cmd(
+                        "dpuctl dpu-status | awk '{print $2}'")
+                    if "False" in dpu_ready:
+                        cli_obj.remote_reboot(topology_obj)
+                        cli_obj.verify_dockers_are_up()
+
                 with allure.step('Copying image to switch dut'):
                     dpu_image_url = MarsConstants.HTTP_SERVER_NBU_NFS + base_version_dpu
                     dest_file = "/tmp/" + base_version_dpu.split('/')[-1]
@@ -157,12 +175,6 @@ def test_deploy_and_upgrade(topology_obj, is_simx, is_performance, base_version,
                 with allure.step('Install image on DPU: {}'.format(dut['dut_name'])):
                     # Disconnect ssh connection, prevent "Socket is closed" in case when pre step took more than 15 min
                     topology_obj.players[dut['dut_alias']]['engine'].disconnect()
-                    # Deepcopy with the dut cli object sometimes fails due to
-                    # "TypeError: cannot pickle '_thread.lock' object",
-                    # don't copy it since it will be replaced eventually
-                    topology_obj.players['dut'] = None
-                    topology_obj_dpu = copy.deepcopy(topology_obj)
-                    topology_obj.players['dut'] = player_dut
                     platform_params_dpu = copy.copy(platform_params)
                     topology_obj_dpu.players['dut'] = topology_obj_dpu.players[dut['dut_alias']]
                     if "bobcat" in setup_name:
@@ -185,7 +197,7 @@ def test_deploy_and_upgrade(topology_obj, is_simx, is_performance, base_version,
             except AssertionError:
                 # Give it another try if the background processes in the pre-installation steps fail
                 pre_installation_steps(sonic_topo, neighbor_type, base_version, target_version, setup_info, port_number,
-                                       is_simx, pre_install_threads)
+                                       is_simx, pre_install_threads, destination_hwsku)
                 wait_until_background_procs_done(pre_install_threads)
             logger.info("Pre-installation background processes are done")
 
@@ -216,7 +228,7 @@ def test_deploy_and_upgrade(topology_obj, is_simx, is_performance, base_version,
 
 
 def pre_installation_steps(sonic_topo, neighbor_type, base_version, target_version, setup_info, port_number, is_simx,
-                           threads_dict):
+                           threads_dict, destination_hwsku):
     """
     Pre-installation steps
     :param sonic_topo: sonic_topo fixture
@@ -227,6 +239,7 @@ def pre_installation_steps(sonic_topo, neighbor_type, base_version, target_versi
     :param port_number: number of DUT ports
     :param is_simx: is_simx fixture, True in case when setup is SIMX
     :param threads_dict: dict, contain threads which will run in background
+    :param destination_hwsku: the destination hwsku value
     """
     cli_type = setup_info['duts'][0]['cli_obj']
     if isinstance(cli_type, CumulusGeneralCli):
@@ -234,9 +247,8 @@ def pre_installation_steps(sonic_topo, neighbor_type, base_version, target_versi
     elif isinstance(cli_type, NvueGeneralCli):
         NvosInstallationSteps.pre_installation_steps(setup_info, base_version, target_version)
     else:
-        SonicInstallationSteps.pre_installation_steps(sonic_topo, neighbor_type, base_version, target_version,
-                                                      setup_info, port_number,
-                                                      is_simx, threads_dict)
+        SonicInstallationSteps.pre_installation_steps(sonic_topo, neighbor_type, base_version, target_version, setup_info, port_number,
+                                                      is_simx, threads_dict, destination_hwsku)
 
 
 def post_installation_steps(topology_obj, sonic_topo, recover_by_reboot, deploy_dpu,
@@ -268,7 +280,7 @@ def post_installation_steps(topology_obj, sonic_topo, recover_by_reboot, deploy_
     """
     dut_cli_obj = setup_info['duts'][0]['cli_obj']
     if isinstance(dut_cli_obj, CumulusGeneralCli):
-        CumulusInstallationSteps.post_installation_steps()
+        CumulusInstallationSteps.post_installation_steps(topology_obj, setup_info)
     elif isinstance(dut_cli_obj, NvueGeneralCli):
         NvosInstallationSteps.post_installation_steps(topology_obj, workspace_path, setup_info,
                                                       serial_log_analyzers[dut_cli_obj.engine.ip], base_version,
@@ -279,6 +291,18 @@ def post_installation_steps(topology_obj, sonic_topo, recover_by_reboot, deploy_
                                                        is_shutdown_bgp, reboot_after_install, deploy_only_target,
                                                        fw_pkg_path, reboot, additional_apps, setup_info, is_performance,
                                                        chip_type, deploy_dpu)
+
+
+def get_related_image_to_switch(base_version, dut_name):
+    # production devices support only prod versions of ONIE and SONiC
+    if dut_name in SonicDeployConstants.PRODUCTION_DUTS:
+        prod_base_version = base_version.replace('/dev/', '/prod/')
+        if prod_base_version.startswith('http'):
+            prod_base_version = '/auto/' + prod_base_version.split('/auto/')[1]
+        assert os.path.exists(prod_base_version), (f"The required prod image path"
+                                                   f" doesn't exists. {prod_base_version}")
+        return prod_base_version
+    return base_version
 
 
 def wait_until_deploy_background_process(install_threads, timeout=1200):
@@ -300,7 +324,7 @@ def get_info_from_topology(topology_obj, workspace_path, include_smartswitch_dpu
     :return: SetupInfo object
     """
     ansible_path = os.path.join(workspace_path, "sonic-mgmt/ansible/")
-    setup_info = {'ansible_path': ansible_path, 'duts': []}
+    setup_info = {'ansible_path': ansible_path, 'duts': [], 'fanouts': []}
 
     with allure.step("Create setup_info object"):
         for host in topology_obj.players:
@@ -312,10 +336,12 @@ def get_info_from_topology(topology_obj, workspace_path, include_smartswitch_dpu
                             'dut_alias': dut_alias, 'switch_type': switch_type, 'dut_ip': dut_ip}
                 if 'dut-dpu' in dut_alias and not include_smartswitch_dpu:
                     continue
-                setup_info['duts'].append(dut_info)
+                if dut_info['dut_alias'] == "dut":
+                    setup_info['duts'].insert(0, dut_info)
+                else:
+                    setup_info['duts'].append(dut_info)
             elif host == 'hypervisor':
-                hypervisor_name = topology_obj.players[host]['attributes'].noga_query_data['attributes']['Common'][
-                    'Name']
+                hypervisor_name = topology_obj.players[host]['attributes'].noga_query_data['attributes']['Common']['Name']
                 hypervisor_ip = topology_obj.players[host]['attributes'].noga_query_data['attributes']['Specific']['ip']
                 hypervisor_info = {'hypervisor_name': hypervisor_name, 'hypervisor_ip': hypervisor_ip}
                 setup_info['hypervisor'] = hypervisor_info
@@ -363,7 +389,9 @@ def get_target_version_url(image_urls):
 
 def deploy_image(topology_obj, setup_name, platform_params, image_url, deploy_type,
                  apply_base_config, reboot_after_install, is_shutdown_bgp, fw_pkg_path, cli_type, target_image_url='',
-                 serial_log_analyzers=None, dut_ip=''):
+                 destination_hwsku=None, setup_info=None, dut_alias=None, fanout_deploy_threads=None,
+                 serial_log_analyzers=None, dut_ip='',
+                 fanout_target_version=None):
     """
     This method will deploy sonic image on the dut.
     :param topology_obj: topology object
@@ -376,6 +404,11 @@ def deploy_image(topology_obj, setup_name, platform_params, image_url, deploy_ty
     :param is_shutdown_bgp: shutdown bgp flag, True or False
     :param fw_pkg_path: fw_pkg_path
     :param cli_type: NVUE or SONIC cli object
+    :param destination_hwsku: the destination hwsku value
+    :param setup_info: setup information
+    :param dut_alias: dut alias, such as 'dut-b'
+    :param fanout_deploy_threads: dict, contain threads which will run in background
+    :param fanout_target_version: Path to fanout image. Only for SONiC.
     :return: raise assertion error in case of script failure
     """
     if isinstance(cli_type, NvueGeneralCli):
@@ -389,7 +422,39 @@ def deploy_image(topology_obj, setup_name, platform_params, image_url, deploy_ty
                                                deploy_type,
                                                apply_base_config, reboot_after_install, fw_pkg_path, target_image_url)
     else:
-        SonicInstallationSteps.deploy_image(cli_type, topology_obj, setup_name, platform_params, image_url,
-                                            deploy_type, apply_base_config, reboot_after_install, is_shutdown_bgp,
-                                            fw_pkg_path)
+        SonicInstallationSteps.deploy_image(cli=cli_type,
+                                            topology_obj=topology_obj,
+                                            setup_name=setup_name,
+                                            platform_params=platform_params,
+                                            image_url=image_url,
+                                            deploy_type=deploy_type,
+                                            apply_base_config=apply_base_config,
+                                            reboot_after_install=reboot_after_install,
+                                            is_shutdown_bgp=is_shutdown_bgp,
+                                            fw_pkg_path=fw_pkg_path,
+                                            destination_hwsku=destination_hwsku,
+                                            setup_info=setup_info,
+                                            dut_alias=dut_alias,
+                                            fanout_deploy_threads=fanout_deploy_threads,
+                                            fanout_target_version=fanout_target_version)
     time.sleep(30)
+
+
+def get_hwsku(sonic_topo, dest_hwsku, setup_name):
+    if is_community(sonic_topo):
+        base_path = os.path.dirname(os.path.realpath(__file__))
+        default_hwsku_file_path = os.path.join(base_path, f"../../../{SonicDeployConstants.DEFAULT_HWSKU_FILE_PATH}")
+        logger.info(f"Reading {SonicDeployConstants.DEFAULT_HWSKU_FILE_PATH}")
+        with open(default_hwsku_file_path, 'r') as hwsku_json:
+            hwsku_data = json.load(hwsku_json)
+        if dest_hwsku:
+            if dest_hwsku in hwsku_data[setup_name]['support_hwsku']:
+                return dest_hwsku
+            else:
+                raise Exception(f"Un supported hwsku provided: {dest_hwsku}, "
+                                f"the supported hwsku: {hwsku_data[setup_name]['support_hwsku']}")
+
+        else:
+            logger.warning(f"No hwsku assigned, will use the default value: "
+                           f"{hwsku_data[setup_name]['default_hwsku']}")
+            return hwsku_data[setup_name]['default_hwsku']

@@ -134,11 +134,11 @@ class FaeFirmware(BaseComponent):
         self.fpga = FaePlatformComponent(self, 'FPGA')
         self.erots: Dict[str, ErotComponent] = DefaultDict(lambda erot_name: ErotComponent(self, erot_name=erot_name))
 
-    def install_bios_firmware(self, bios_image_path, device):
+    def install_bios_firmware(self, bios_image_path, device, topology_obj=None):
         with allure.step("installing bios firmware from {action_type}".format(action_type=bios_image_path)):
             return SendCommandTool.execute_command(
                 self.api_obj[TestToolkit.tested_api].action_install_fae_bios_firmware,
-                TestToolkit.engines.dut, bios_image_path, self.get_resource_path(), device)
+                TestToolkit.engines.dut, bios_image_path, self.get_resource_path(), device, topology_obj)
 
     def create_erot_components(self, switch):
         """This method queries the switch for available ERoT components."""
@@ -199,6 +199,7 @@ class FaeSystem(BaseComponent):
     def __init__(self, parent_obj=None):
         super().__init__(parent=parent_obj, path='/system')
         self.events = BaseComponent(self, path='/events')
+        self.mgmt_unsolicited = BaseComponent(self, path='/mgmt-unsolicited')
         self.fatal = BaseComponent(self, path='/fatal')
         self.fatal.monitor = BaseComponent(self.fatal, path='/monitor')
         self.serial_console = BaseComponent(self, path='/serial-console')

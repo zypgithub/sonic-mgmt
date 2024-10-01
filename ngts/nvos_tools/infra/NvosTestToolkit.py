@@ -1,13 +1,15 @@
-from ngts.nvos_constants.constants_nvos import ApiType, NvosConst
-from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from ngts.cli_wrappers.openapi.openapi_general_clis import OpenApiGeneralCli
-from ngts.cli_wrappers.openapi.openapi_command_builder import OpenApiCommandHelper
 import logging
-import allure
-import re
-import pytest
 import math
+import re
 from datetime import datetime
+
+import allure
+import pytest
+
+from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
+from ngts.cli_wrappers.openapi.openapi_command_builder import OpenApiCommandHelper
+from ngts.cli_wrappers.openapi.openapi_general_clis import OpenApiGeneralCli
+from ngts.nvos_constants.constants_nvos import ApiType, NvosConst
 
 logger = logging.getLogger()
 
@@ -19,6 +21,7 @@ class TestToolkit:
     tested_api = ApiType.NVUE
     GeneralApi = {ApiType.NVUE: NvueGeneralCli, ApiType.OPENAPI: OpenApiGeneralCli}
     loganalyzer_duts = None
+    topology_obj = None
 
     @staticmethod
     def update_tested_ports(tested_ports):
@@ -29,6 +32,11 @@ class TestToolkit:
     @staticmethod
     def update_open_api_port(port_num):
         OpenApiCommandHelper.update_open_api_port(port_num)
+
+    @staticmethod
+    def update_topology_obj(topology_obj):
+        with allure.step("Update topology_obj in TestTookit"):
+            TestToolkit.topology_obj = topology_obj
 
     @staticmethod
     def update_engines(engines):

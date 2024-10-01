@@ -1,0 +1,18 @@
+[sonic_latest]
+mtvr-tigon-05      ansible_host=10.245.21.6 ansible_hostv6="fe80::bace:f6ff:fe01:c3a4" sonic_version=v2 hwsku="Mellanox-SN4600C-C64" iface_speed=100000 mgmt_subnet_mask_length=22 vm_base=VM4901
+
+[sonic:children]
+sonic_latest
+
+[ptf]
+ptf-mtvr-tigon-05   ansible_host=10.245.38.62 ansible_ssh_user=root ansible_ssh_pass=root
+
+[lab:children]
+sonic
+fanout
+
+[lab:vars]
+mgmt_subnet_mask_length="24"
+
+[fanout]
+mtvr-tigon-06       ansible_host=10.245.21.7 os=sonic

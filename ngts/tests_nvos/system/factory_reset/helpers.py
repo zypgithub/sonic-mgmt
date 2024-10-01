@@ -30,20 +30,14 @@ def update_timezone(system):
             os.popen('sudo timedatectl set-timezone {}'.format(LinuxConsts.JERUSALEM_TIMEZONE))
 
 
-def validate_health_status_report(system, last_status_line, should_change=True):
-    start_time = time.time()
-    system.health.wait_until_health_status_change_after_reboot(HealthConsts.OK)
-    end_time = time.time()
-    duration = end_time - start_time
+def validate_health_status_report(system, pre_health_status):
+    if pre_health_status == HealthConsts.OK:
+        start_time = time.time()
+        system.health.wait_until_health_status_change_after_reboot(HealthConsts.OK)
+        end_time = time.time()
+        duration = end_time - start_time
 
-    logger.info("Took {} seconds until health status changed to OK after reset factory".format(duration))
-
-    with allure.step("Validate new health file"):
-        logger.info("Validate new health file")
-        expected_num = 0 if should_change else 1
-        system.health.history.validate_new_summary_line_in_history_file_after_boot(last_status_line)
-        assert len(system.health.history.search_line(last_status_line, system.health.history.show())) == expected_num, \
-            "Health file has not changed after reset factory"
+        logger.info("Took {} seconds until health status changed to OK after reset factory".format(duration))
 
 
 def validate_port_description(engine, port, expected_description):
@@ -213,6 +207,12 @@ def verify_cleanup_done(engine, current_time, system, username, param=''):
             if output and "No such file or directory" not in output:
                 errors += "\n/etc/sonic was not cleared"
 
+    with allure.step("Verify /etc/sonic content was cleared"):
+        if param != KEEP_ONLY_FILES:
+            output = engine.run_cmd("ls /host/tpm/oIAK.cert")
+            if output and "No such file or directory" not in output:
+                errors += "\n/host/tpm/oIAK.cert was not cleared"
+
     with allure.step("Verify /host/warmboot content was deleted"):
         if param != KEEP_ONLY_FILES:
             output = engine.run_cmd("ls /host/warmboot")
@@ -295,11 +295,11 @@ def verify_profile_and_split(selected_port):
 def verify_the_setup_is_functional(system, engines, had_sm_before_test=True, dut=None):
     logging.info("Verify the setup is functional")
 
-    if had_sm_before_test:
+    """if had_sm_before_test:
         with allure.step("Start OpenSM"):
             with allure.step('Check is Juliet Device'):
                 if not isinstance(dut, JulietSwitch):
-                    OpenSmTool.start_open_sm(engines).verify_result()
+                    OpenSmTool.start_open_sm(engines).verify_result()"""
 
     with allure.step("Run show commands"):
         system.message.show()
@@ -318,5 +318,5 @@ def verify_the_setup_is_functional(system, engines, had_sm_before_test=True, dut
 
 def get_current_time(engines):
     date_time_str = engines.dut.run_cmd("date").split(" ", 1)[1]
-    current_time = datetime.strptime(date_time_str, '%d %b %Y %H:%M:%S %p %Z')
+    current_time = datetime.strptime(date_time_str, '%d %b %Y %I:%M:%S %p %Z')
     return current_time

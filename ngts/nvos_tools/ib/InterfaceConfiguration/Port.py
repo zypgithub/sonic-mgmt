@@ -32,8 +32,11 @@ class PortRequirements:
     interface_type = ''
 
     def __init__(self, interface_type=''):
-        self.port_requirements = self.default_port_requirements
+        self.port_requirements = self.default_port_requirements.copy()
         self.interface_type = interface_type  # Port type refers to "internal/external/fnm ports"
+
+    def __str__(self):
+        return self.__class__.__name__ + "=" + str({k: v for k, v in self.port_requirements.items() if v})
 
     def set_port_name(self, name):
         self.port_requirements[IbInterfaceConsts.NAME] = name
@@ -68,6 +71,12 @@ class Port(BaseComponent):
         self.name_in_redis = name_in_redis
         self.interface = Interface(self, name)
         self.acl = Acl(self)
+
+    def __str__(self):
+        return f"{self.__class__.__name__}('{self.name}')"
+
+    def __repr__(self):
+        return str(self)
 
     @staticmethod
     def get_list_of_active_ports(port_type=IbInterfaceConsts.IB_PORT_TYPE, interface_type=''):
@@ -104,7 +113,10 @@ class Port(BaseComponent):
             if not port_requirements_object or not port_requirements_object.port_requirements:
                 logging.info("get_list_of_ports - port_requirements not provided. Selecting all ports.")
                 for port_name in output_dictionary.keys():
-                    if port_requirements_object.interface_type in port_name:
+                    if port_requirements_object is not None:
+                        if port_requirements_object.interface_type in port_name:
+                            port_list.append(Port(port_name, "", ""))
+                    else:
                         port_list.append(Port(port_name, "", ""))
                 return port_list
 

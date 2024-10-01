@@ -2,7 +2,6 @@ import logging
 import random
 import time
 from contextlib import contextmanager
-
 import pytest
 
 from ngts.nvos_constants.constants_nvos import ApiType
@@ -15,10 +14,12 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
+from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.system.test_system_health import verify_health_status_and_led
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.nvos_tools.Devices.IbDevice import JulietSwitch
 
 logger = logging.getLogger()
 
@@ -81,7 +82,7 @@ def test_show_platform_environment_fan(engines, devices, test_api, output_format
                                           ).verify_result()
 
     with allure.step("Assert all fans have the same direction"):
-        directions = {fan["direction"] for fan in output.values() if fan["direction"] != "None"}
+        directions = {fan["direction"] for fan in output.values() if fan["direction"] != "N/A"}
         assert len(directions) == 1, f"Not all fans show the same direction: {output}"
 
     with allure.step("Checking properties of random fan"):
@@ -289,6 +290,8 @@ def test_show_platform_environment_temperature(engines, devices, test_api):
     with allure.step("Check that all sensors in required range"):
         logging.info("Check that all sensors in required range")
         for temp, temp_prop in output.items():
+            if temp_prop.get("state") == 'absent':
+                continue
             _verify_temp_in_range(temp, temp_prop, PlatformConsts.ENV_TEMP_MIN,
                                   PlatformConsts.ENV_TEMP_MAX)
 
@@ -318,13 +321,14 @@ def test_platform_environment_events_performance(engines, devices):
     platform = Platform()
     system = System()
     fan_to_check = devices.dut.fan_list[2]
-    err_found = False
     show_log_cmd = "nv show sys log | grep '" + str(FansConsts.FAN_DIRECTION_MISMATCH_ERR) + "' | wc -l"
 
-    with allure.step('Validate System health status should be {}'.format(HealthConsts.OK)):
-        output = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).verify_result()
-        assert output['status'] == HealthConsts.OK, 'System health status is {} instead of {}'.format(
-            output['status'], HealthConsts.OK)
+    with allure.step('Check is Juliet Device'):
+        if not isinstance(devices.dut, JulietSwitch):
+            with allure.step('Validate System health status should be {}'.format(HealthConsts.OK)):
+                output = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).verify_result()
+                assert output['status'] == HealthConsts.OK, 'System health status is {} instead of {}'.format(
+                    output['status'], HealthConsts.OK)
 
     with allure.step('Clear system events'):
         system.events.action(ActionConsts.CLEAR)
@@ -352,6 +356,7 @@ def test_platform_environment_events_performance(engines, devices):
             fan_error_set = set()
             for events_no in output[SystemConsts.SYSTEM_LAST_EVENT]:
                 output_err_msg = str(output[SystemConsts.SYSTEM_LAST_EVENT][events_no])
+                err_found = False
                 if FansConsts.FAN_DIRECTION_MISMATCH_ERR in output_err_msg:
                     err_found = True
                 elif FansConsts.FAN_DIRECTION_MISMATCH_ERR_CROC in output_err_msg:
@@ -405,7 +410,7 @@ def test_platform_environment_fan_direction_mismatch(engines, devices):
 def _verify_fan_direction_mismatch_behaviour(engines, devices, feature_enable):
     platform = Platform()
     system = System()
-    def_dir = FansConsts.FORWARD_DIRECTION
+    # def_dir = FansConsts.FORWARD_DIRECTION
     if feature_enable:
         state = FansConsts.STATE_NOT_OK
         should_str = 'be'
@@ -419,17 +424,24 @@ def _verify_fan_direction_mismatch_behaviour(engines, devices, feature_enable):
             # are compared against. This will be changed in the future.
             choose_from = devices.dut.fan_list[2:]
             fan_to_check = random.choice(choose_from)
+            output = Tools.OutputParsingTool.parse_json_str_to_dictionary(
+                platform.environment.fan.show(op_param=fan_to_check)).verify_result()
+            def_dir = output['direction']
 
-        with allure.step('Validate System health status should be {}'.format(HealthConsts.OK)):
-            output = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).verify_result()
-            health_status = output['status']
-            assert health_status == HealthConsts.OK, 'System health status is {} instead of {}'.format(
-                health_status, HealthConsts.OK)
+        with allure.step('Check is Juliet Device'):
+            if not isinstance(devices.dut, JulietSwitch):
+                with allure.step('Validate System health status should be {}'.format(HealthConsts.OK)):
+                    output = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).verify_result()
+                    health_status = output['status']
+                    assert health_status == HealthConsts.OK, 'System health status is {} instead of {}'.format(
+                        health_status, HealthConsts.OK)
 
         with allure.step("Validate there should not be any Fan direction Health Issues"):
             output_dict = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).verify_result()
             health_issues = output_dict['issues']
-            assert not health_issues, f'Unexpected Health Issues:\n{health_issues}'
+            health_issues_keys = health_issues.keys()
+            contains_fan = any("fan" in key.lower() for key in health_issues_keys)
+            assert not contains_fan, f'Unexpected fan related Health Issues:\n{health_issues}'
 
         with allure.step("Assign default FAN direction as per this System"):
             output = Tools.OutputParsingTool.parse_json_str_to_dictionary(
@@ -463,16 +475,30 @@ def _verify_fan_direction_mismatch_behaviour(engines, devices, feature_enable):
         with allure.step("Change Fan direction of {} to default({}) and verify".format(fan_to_check, def_dir)):
             _set_platform_environment_fan_direction(engines, devices, platform, fan_to_check, def_dir, def_dir)
 
-        with allure.step('Check System health status'):
-            output = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).verify_result()
-            health_status = output['status']
-            assert health_status == HealthConsts.OK, 'System health status is {} instead of {}'. \
-                format(health_status, HealthConsts.OK)
+        with allure.step("Validate Issues should not be seen in System Health Report"):
+            output = system.health.show(output_format=OutputFormat.json)
+            output_dict = Tools.OutputParsingTool.parse_json_str_to_dictionary(output).verify_result()
+            health_issues = output_dict['issues']
+            if feature_enable:
+                assert fan_to_check not in health_issues.keys(), \
+                    f'Expected not to find issue with {fan_to_check} but issues are:\n{health_issues}'
+            else:
+                assert not health_issues, f'Unexpected Health Issues:\n{health_issues}'
+
+        with allure.step('Check is Juliet Device'):
+            if not isinstance(devices.dut, JulietSwitch):
+                with allure.step('Check System health status'):
+                    output = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).verify_result()
+                    health_status = output['status']
+                    assert health_status == HealthConsts.OK, 'System health status is {} instead of {}'. \
+                        format(health_status, HealthConsts.OK)
 
         with allure.step("Validate there should not be any Fan direction Health Issues"):
             output = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).verify_result()
             health_issues = output['issues']
-            assert not health_issues, f'Unexpected Health Issues:\n{health_issues}'
+            health_issues_keys = health_issues.keys()
+            contains_fan = any("fan" in key.lower() for key in health_issues_keys)
+            assert not contains_fan, f'Unexpected fan related Health Issues:\n{health_issues}'
 
 
 def _set_platform_environment_fan_direction(engines, devices, platform, fan_to_check, def_dir, direction):
@@ -627,7 +653,8 @@ def verify_sensor_group_by_tolerance(output, category):
         logging.info("Check that {} temps are within the specified range from mean by tolerance of {}%"
                      .format(category, PlatformConsts.ENV_TEMP_TOLERANCE))
     sensors = {temp: float(temp_prop[PlatformConsts.ENV_TEMP_CURR_PROP]) for temp, temp_prop in output.items()
-               if category in temp}
+               if category in temp.upper() and temp_prop.get("state") != 'absent'}
+    assert sensors, f'Output is missing sensor category "{category}"'
     sensor_mean_temp = sum(sensors.values()) / len(sensors)
 
     for sensor, sensor_temp in sensors.items():

@@ -12,6 +12,7 @@ from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceCon
 from ngts.nvos_tools.infra.DatabaseTool import DatabaseTool
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.infra.ValidationTool import ExpectedString
+from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.general.security.constants import SecurityConsts
 from ngts.tools.test_utils.nvos_general_utils import get_version_info
 
@@ -79,9 +80,13 @@ class BaseDevice(ABC):
         self.ib_ports_num = 0
         self.mst_dev_name = ""
         self.constants = None
+        self.split_ports_supported = False
+        self.profile_change_supported = False
         self.voltage_sensors = []
         self.has_nmx = False
         self.supported_commands = []
+        self.system_is_ready_wait_timeout = 5 * MINUTE
+        self.supports_tpm_testing = True
 
     def _init_fan_list(self):
         self.fan_list = []
@@ -135,6 +140,9 @@ class BaseDevice(ABC):
 
     def get_mgmt_ports(self) -> List[str]:
         return None
+
+    def get_default_nvue_config(self, dut_engine=None):
+        return {}
 
     def get_default_password_by_version(self, version: str):
         return self.default_password

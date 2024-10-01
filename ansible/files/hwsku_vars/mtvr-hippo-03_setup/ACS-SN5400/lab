@@ -1,0 +1,18 @@
+[sonic_latest]
+mtvr-hippo-03      ansible_host=10.245.20.245 ansible_hostv6="fe80::5aa2:e1ff:feea:5e86" sonic_version=v2 hwsku="ACS-SN5400" iface_speed=200000 mgmt_subnet_mask_length=22 vm_base=VM3801
+
+[sonic:children]
+sonic_latest
+
+[ptf]
+ptf-mtvr-hippo-03 ansible_host=10.245.34.122 ansible_ssh_user=root ansible_ssh_pass=root
+
+[lab:children]
+sonic
+fanout
+
+[lab:vars]
+mgmt_subnet_mask_length="24"
+
+[fanout]
+mtvr-leopard-04     ansible_host=10.245.21.9 os=sonic

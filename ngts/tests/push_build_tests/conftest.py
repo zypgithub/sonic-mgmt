@@ -15,6 +15,7 @@ from ngts.config_templates.vrf_config_template import VrfConfigTemplate
 from ngts.config_templates.route_config_template import RouteConfigTemplate
 from ngts.config_templates.vxlan_config_template import VxlanConfigTemplate
 from ngts.config_templates.frr_config_template import FrrConfigTemplate
+from ngts.config_templates.doroce_config_template import DoroceConfigTemplate
 from ngts.constants.constants import SonicConst
 from ngts.constants.constants import SflowConsts
 from ngts.tests.nightly.app_extension.app_extension_helper import APP_INFO, app_cleanup
@@ -287,6 +288,7 @@ def push_gate_configuration(topology_obj, cli_objects, engines, interfaces, plat
         VlanConfigTemplate.configuration(topology_obj, vlan_config_dict)
         IpConfigTemplate.configuration(topology_obj, ip_config_dict)
         RouteConfigTemplate.configuration(topology_obj, static_route_config_dict)
+        DoroceConfigTemplate.configuration(topology_obj, platform_params.platform)
         acl_helper.add_acl_table(cli_objects.dut, acl_table_config_list)
         acl_helper.add_acl_rules(engines.dut, cli_objects.dut, acl_table_config_list)
         if is_support_rocev2_acl_counter_feature(cli_objects, is_simx, base_sonic_branch):
@@ -378,6 +380,7 @@ def push_gate_configuration(topology_obj, cli_objects, engines, interfaces, plat
         VlanConfigTemplate.cleanup(topology_obj, vlan_config_dict)
         LagLacpConfigTemplate.cleanup(topology_obj, lag_lacp_config_dict)
         InterfaceConfigTemplate.cleanup(topology_obj, interfaces_config_dict)
+        DoroceConfigTemplate.cleanup(topology_obj, platform_params.platform)
         if shared_params.app_ext_is_app_ext_supported:
             app_cleanup(engines.dut, cli_objects.dut, app_name)
         logger.info('Doing config save after cleanup')

@@ -99,7 +99,21 @@ class NvueSystemCli(NvueBaseCli):
 
     @staticmethod
     @check_output
-    def action_reboot(engine, device, resource_path, op_param="", should_wait_till_system_ready=True, recovery_engine=None):
+    def action_import_tpm_oiak(engine, resource_path, data='', remote_url=''):
+        path = resource_path.replace('/', ' ').strip()
+        cmd = f'nv action import {path}'
+        if data:
+            cmd += f' data {data}'
+            return engine.run_cmd(cmd)
+        if remote_url:
+            cmd += f' remote-url {remote_url}'
+        cmd = ' '.join(cmd.split())
+        logging.info(f"Running '{cmd}' on dut using NVUE")
+        return engine.run_cmd(cmd)
+
+    @staticmethod
+    @check_output
+    def action_reboot(engine, device, resource_path, op_param="", should_wait_till_system_ready=True, recovery_engine=None, topology_obj=None):
         """
         Rebooting the switch
         """
@@ -109,7 +123,7 @@ class NvueSystemCli(NvueBaseCli):
         logging.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
         return DutUtilsTool.reload(engine=engine, device=device, command=cmd,
                                    should_wait_till_system_ready=should_wait_till_system_ready,
-                                   confirm=True, recovery_engine=recovery_engine).verify_result()
+                                   confirm=True, recovery_engine=recovery_engine, topology_obj=topology_obj).verify_result()
 
     @staticmethod
     @check_output
@@ -218,15 +232,16 @@ class NvueSystemCli(NvueBaseCli):
 
     @staticmethod
     @check_output
-    def action_reset(engine, device, comp, param):
+    def action_reset(engine, device, comp, param, topology_obj=None):
         cmd = "nv action reset system {comp} {params}".format(comp=comp, params=param)
         cmd = " ".join(cmd.split())
         logging.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
-        return DutUtilsTool.reload(engine=engine, device=device, command=cmd, confirm=True).verify_result()
+        return DutUtilsTool.reload(engine=engine, device=device, command=cmd, confirm=True,
+                                   topology_obj=topology_obj).verify_result()
 
     @staticmethod
     @check_output
-    def show_health_report(engine, param='', exit_cmd=''):
+    def show_health_report(engine, resource_path, param='', exit_cmd=''):  # resource_path is needed for OpenAPI
         cmd = "nv show system health history {param}".format(param=param)
         logging.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
         return engine.run_cmd_after_cmd([cmd, exit_cmd])
@@ -257,7 +272,8 @@ class NvueSystemCli(NvueBaseCli):
 
     @staticmethod
     @check_output
-    def action_import_certificate(engine, resource_path, data='', passphrase='', uri_bundle='', uri_private_key='', uri_public_key=''):
+    def action_import_certificate(engine, resource_path, data='', passphrase='', uri_bundle='', uri_private_key='',
+                                  uri_public_key=''):
         path = resource_path.replace('/', ' ').strip()
         params = {'data': data, 'passphrase': passphrase, 'uri-bundle': uri_bundle, 'uri-private-key': uri_private_key,
                   'uri-public-key': uri_public_key}

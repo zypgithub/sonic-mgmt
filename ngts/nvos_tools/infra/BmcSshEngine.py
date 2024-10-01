@@ -10,6 +10,9 @@ BMC_SESSION_ERR = 'failure in ssh session with BMC'
 BMC_SELL_PROMPT_PATTERNS = ['.*@.*bmc.*#', '#']
 SHELL_PROMPT_PATTERNS = DefaultConnectionValues.DEFAULT_PROMPTS + ['#', r'\$']
 ENTER_PASSWORD_PATTERNS = ['[Pp]assword:']
+CHANGE_PASSWORD_PATTERNS = ['Enter.*old password:']
+
+BACKUP_PW = 'ABYX12#14artb'
 
 SSN_CMD = 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {usr}@{ip}'
 
@@ -44,28 +47,19 @@ class BmcSshEngine:
                 self.disconnect()
 
     def connect(self):
-        #   TODO: handle new password prompt ?
         #   TODO: handle: "There were too many logins for 'admin'." ?
-        exc: Exception = None
-        try:
-            with allure.step(self._msg('connect bmc session')):
+        with allure.step(self._msg('connect bmc session')):
+            passwords = [self.bmc_default_password, self.bmc_another_password, BACKUP_PW]
+            for pw in passwords:
                 try:
-                    with allure.step(self._msg(
-                            f'ssh bmc using user: {self.bmc_username} , password: {self.bmc_default_password}')):
-                        self._session = self._start_new_bmc_ssh_session(self.bmc_default_password)
-                except Exception as e:
-                    if self.bmc_another_password:
-                        with allure.step(self._msg(
-                                f'ssh bmc using user: {self.bmc_username} , password: {self.bmc_another_password}')):
-                            self._session = self._start_new_bmc_ssh_session(self.bmc_another_password)
-                    else:
+                    with allure.step(self._msg(f'ssh bmc using user: {self.bmc_username} , password: {pw}')):
+                        session = self._start_new_bmc_ssh_session(pw)
+                        self._session = session
+                        return
+                except Exception:
+                    if pw == passwords[-1]:
+                        self.disconnect()
                         raise
-        except Exception as e:
-            exc = e
-            raise
-        finally:
-            if exc is not None:
-                self.disconnect()
 
     def disconnect(self):
         if self._session is not None:
@@ -98,9 +92,33 @@ class BmcSshEngine:
             assert res < len(ENTER_PASSWORD_PATTERNS), f'{PEXPECT_SSH_ERR}: no password prompt'
         with allure.step(f'enter password: {password}'):
             nos_shell.sendline(password)
-            self._expect_shell_prompt(nos_shell)
+            password = self._handle_change_password_prompt(nos_shell, password)
+            # TODO: save the new password somehow?
             bmc_shell = nos_shell
         return bmc_shell
+
+    def _handle_change_password_prompt(self, session: PexpectTool, old_password: str) -> str:
+        expect = SHELL_PROMPT_PATTERNS + CHANGE_PASSWORD_PATTERNS
+        res = session.expect(SHELL_PROMPT_PATTERNS + CHANGE_PASSWORD_PATTERNS)
+        assert res < len(expect), f'{PEXPECT_SSH_ERR}: did not get expected prompt. expected: {expect}'
+        if res < len(SHELL_PROMPT_PATTERNS):
+            return old_password
+
+        session.sendline(old_password)
+        expect = ['Enter.*new password:']
+        res = session.expect(expect)
+        assert res < len(expect), f'{PEXPECT_SSH_ERR}: did not get expected prompt. expected: {expect}'
+
+        new_password = BACKUP_PW
+        session.sendline(new_password)
+        expect = ['Retype.*new password:']
+        res = session.expect(expect)
+        assert res < len(expect), f'{PEXPECT_SSH_ERR}: did not get expected prompt. expected: {expect}'
+
+        session.sendline(new_password)
+        self._expect_shell_prompt(session)
+
+        return new_password
 
     def _expect_shell_prompt(self, session: PexpectTool):
         res = session.expect(SHELL_PROMPT_PATTERNS)

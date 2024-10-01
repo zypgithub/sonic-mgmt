@@ -5,7 +5,7 @@ from retry import retry
 
 from ngts.cli_wrappers.nvue.nvue_system_clis import NvueSystemCli
 from ngts.cli_wrappers.openapi.openapi_system_clis import OpenApiSystemCli
-from ngts.nvos_constants.constants_nvos import ApiType, SystemConsts, HealthConsts, ActionConsts
+from ngts.nvos_constants.constants_nvos import ApiType, SystemConsts, HealthConsts
 from ngts.nvos_constants.constants_nvos import OutputFormat
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
@@ -73,16 +73,19 @@ class System(BaseComponent):
     def get_expected_fields(device, resource):
         return device.constants.system[resource]
 
-    def validate_health_status(self, expected_status):
+    def validate_health_status(self, expected_status, throw_exception=True):
         with allure.step("Validate health status with \"nv show system\" cmd"):
             logger.info("Validate health status with \"nv show system\" cmd")
             system_output = OutputParsingTool.parse_json_str_to_dictionary(self.show()).get_returned_value()
             if expected_status != system_output[SystemConsts.HEALTH_STATUS]:
                 health_output = OutputParsingTool.parse_json_str_to_dictionary(self.health.show()).get_returned_value()
                 health_issues_str = '\n'.join(f'{k}: {v}' for k, v in health_output[HealthConsts.ISSUES].items())
-                assert False, "Unexpected health status.\nExpected: {}, but got :{}," \
+                exception_str = "Unexpected health status.\nExpected: {}, but got :{}," \
                     " with the following health issues:\n{}".\
                     format(expected_status, health_output[HealthConsts.STATUS], health_issues_str)
+                logger.warning(exception_str)
+                if throw_exception:
+                    assert False, exception_str
 
     @retry(Exception, tries=3, delay=2)
     def wait_until_health_status_change_to(self, expected_status):
@@ -114,7 +117,7 @@ class FactoryDefault(BaseComponent):
     def unset(self, op_param=""):
         raise Exception("unset is not implemented for system/factory-default")
 
-    def action_reset(self, engine=None, device=None, operation='reset factory', param=""):
+    def action_reset(self, engine=None, device=None, operation='reset factory', param="", topology_obj=None):
         with allure.step("Execute factory reset {}".format(param)):
             logging.info("Execute factory reset {}".format(param))
             if not engine:
@@ -127,7 +130,7 @@ class FactoryDefault(BaseComponent):
             start_time = time.time()
 
             res_obj = SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].action_reset,
-                                                      engine, device, "factory-default", param)
+                                                      engine, device, "factory-default", param, topology_obj)
             end_time = time.time()
             duration = end_time - start_time
 
@@ -182,3 +185,4 @@ class WebServerAPI(BaseComponent):
 class Api(BaseComponent):
     def __init__(self, parent_obj=None):
         BaseComponent.__init__(self, parent=parent_obj, path='/api')
+        self.mtls = BaseComponent(self, path='/mtls')

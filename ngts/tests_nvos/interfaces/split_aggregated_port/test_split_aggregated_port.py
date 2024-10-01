@@ -48,7 +48,6 @@ def test_interface_aggregated_port_split(engines, devices, test_api, players, in
         #                               devices.dut.aggregated_port_planarized_ports).verify_result()
 
     with allure_step('Change system profile to breakout'):
-        system.profile.action_profile_change(params_dict={"adaptive-routing": "enabled", "breakout-mode": "enabled"})
         with allure_step('Verify changed values'):
             system_profile_output = OutputParsingTool.parse_json_str_to_dictionary(system.profile.show()) \
                 .get_returned_value()
@@ -130,8 +129,3 @@ def test_interface_aggregated_port_split(engines, devices, test_api, players, in
                 child_ports[0].interface.link.stats.show()).get_returned_value()
             assert output_dictionary[IbInterfaceConsts.LINK_STATS_IN_PKTS] == output_dictionary[
                 IbInterfaceConsts.LINK_STATS_OUT_PKTS]
-
-    with allure_step("Set config to default"):
-        child_ports[0].interface.link.unset(op_param='breakout', apply=True, ask_for_confirmation=True).\
-            verify_result()
-        system.profile.action_profile_change(params_dict={"adaptive-routing": "enabled", "breakout-mode": "disabled"})

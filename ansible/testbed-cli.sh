@@ -276,7 +276,7 @@ function add_topo
         echo "$topo" > $cache_files_path_value/${testbed_name%"-$topo"}
         chmod 666 $cache_files_path_value/${testbed_name%"-$topo"}
     else
-        echo "$topo", "$vm_type" > $cache_files_path_value/$dut
+        echo "$topo", "$vm_type", "$hwsku" > $cache_files_path_value/$dut
         chmod 666 $cache_files_path_value/$dut
     fi
   fi
@@ -726,7 +726,7 @@ vm_num=0
 msetnumber=1
 sonic_vm_dir=""
 
-while getopts "t:m:k:n:s:d:" OPTION; do
+while getopts "t:m:k:n:s:d:h:" OPTION; do
     case $OPTION in
     t)
         tbfile=$OPTARG
@@ -745,6 +745,9 @@ while getopts "t:m:k:n:s:d:" OPTION; do
         ;;
     d)
         sonic_vm_dir=$OPTARG
+        ;;
+    h)
+        hwsku=$OPTARG
         ;;
     *)
         usage

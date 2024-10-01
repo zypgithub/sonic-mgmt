@@ -76,14 +76,14 @@ class NvueBaseCli:
 
     @staticmethod
     def action(engine, device=None, action_type='', resource_path='', suffix="", param_name="", param_value="",
-               output_format=None, expect_reboot=False, recovery_engine=None):
+               output_format=None, expect_reboot=False, recovery_engine=None, topology_obj=None, should_succeed=True):
         return NvueBaseCli.nvue_action(engine, device, action_type, resource_path, suffix, param_name, param_value,
-                                       output_format, expect_reboot, recovery_engine)
+                                       output_format, expect_reboot, recovery_engine, topology_obj, should_succeed)
 
     @staticmethod
     @check_output
     def nvue_action(engine, device, action_type, resource_path, suffix, param_name, param_value, output_format,
-                    expect_reboot, recovery_engine):
+                    expect_reboot, recovery_engine, topology_obj=None, should_succeed=True):
         """See documentation of BaseComponent.action"""
         if not action_type:
             raise ValueError("action_type must be non-empty")
@@ -99,23 +99,23 @@ class NvueBaseCli:
         if expect_reboot:
             confirm = not ("force" in param_name)
             return DutUtilsTool.reload(engine=engine, device=device, command=command, confirm=confirm,
-                                       recovery_engine=recovery_engine).verify_result()
+                                       recovery_engine=recovery_engine, topology_obj=topology_obj).verify_result()
         else:
             output = engine.run_cmd(command)
             logger.info(output)
             return output
 
     @staticmethod
-    def action_install(engine, device, fae_command=False, args='', expect_reboot=False, force=False):
-        return NvueBaseCli.nvue_action_install(engine, device, fae_command, args, expect_reboot, force)
+    def action_install(engine, device, fae_command=False, args='', expect_reboot=False, force=False, topology_obj=None):
+        return NvueBaseCli.nvue_action_install(engine, device, fae_command, args, expect_reboot, force, topology_obj)
 
     @staticmethod
-    def action_uninstall(engine, device, fae_command=False, args='', expect_reboot=False, force=False):
-        return NvueBaseCli.nvue_action_uninstall(engine, device, fae_command, args, expect_reboot, force)
+    def action_uninstall(engine, device, fae_command=False, args='', expect_reboot=False, force=False, topology_obj=None):
+        return NvueBaseCli.nvue_action_uninstall(engine, device, fae_command, args, expect_reboot, force, topology_obj)
 
     @staticmethod
     @check_output
-    def nvue_action_install(engine, device, fae_command, args, expect_reboot, force):
+    def nvue_action_install(engine, device, fae_command, args, expect_reboot, force, topology_obj):
         """
         Method to runs nv action install <fae> platform <args> <force>
         :param engine: the engine to use
@@ -124,17 +124,18 @@ class NvueBaseCli:
         :param args: arguments to the example above
         :param expect_reboot: if True, will expect the machine to reload as result of the command, and reconnect engines
         :param force: if True, will add "force" argument to the command
+        :param topology_obj: if exists, waits for 'System is ready'
         """
         cmd = "nv action install {fae} platform {args} {force}".format(fae="fae" if fae_command else '', args=args, force="force" if force else '')
         logging.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
         if expect_reboot:
-            return DutUtilsTool.reload(engine=engine, device=device, command=cmd, confirm=True).verify_result()
+            return DutUtilsTool.reload(engine=engine, device=device, command=cmd, confirm=True, topology_obj=topology_obj).verify_result()
         else:
             return engine.run_cmd(cmd)
 
     @staticmethod
     @check_output
-    def nvue_action_uninstall(engine, device, fae_command, args, expect_reboot, force):
+    def nvue_action_uninstall(engine, device, fae_command, args, expect_reboot, force, topology_obj):
         """
         Method to runs nv action uninstall <fae> platform <args> <force>
         :param engine: the engine to use
@@ -147,6 +148,6 @@ class NvueBaseCli:
         cmd = "nv action uninstall {fae} platform {args} {force}".format(fae="fae" if fae_command else '', args=args, force="force" if force else '')
         logging.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
         if expect_reboot:
-            return DutUtilsTool.reload(engine=engine, device=device, command=cmd, confirm=True).verify_result()
+            return DutUtilsTool.reload(engine=engine, device=device, command=cmd, confirm=True, topology_obj=topology_obj).verify_result()
         else:
             return engine.run_cmd(cmd)

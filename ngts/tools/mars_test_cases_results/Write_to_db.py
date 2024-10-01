@@ -44,6 +44,7 @@ class MarsConnectDB(ConnectMSSQL):
                 insert_la_issue = r"INSERT INTO [dbo].[log_analyzer_redmine_issues]([mars_respond_id], " \
                                   r"[log_analyzer_redmine_issue]) VALUES (" + str(la_table_id) + ", " + \
                                   str(la_issue) + ")"
+                logger.info('Inserting: {} to MARS SQL LA Table'.format(insert_la_issue))
                 self.query_insert(insert_la_issue)
         except Exception as e:
             logger.error(e)

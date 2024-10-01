@@ -1,3 +1,4 @@
+import json
 import logging
 import re
 from datetime import datetime
@@ -43,6 +44,12 @@ class EngineFile:
             self.original_content = self.get_content()
             logger.info(self.original_content)
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.revert_to_original()
+
     def get_content(self) -> str:
         return self.engine.run_cmd("sudo cat " + self.file_path, print_output=False)
 
@@ -60,6 +67,12 @@ class EngineFile:
         self.engine.run_cmd(f"sudo sed -i 's/{pattern}/{new_text}/' {self.file_path}")
         logger.info(f"new content of {self.file_path}:\n" + self.get_content())
 
+    def json_read(self):
+        return json.loads(self.get_content())
+
+    def json_overwrite(self, data):
+        self.replace_whole_content(json.dumps(data, indent=4))
+
 
 class TempFileOnEngine:
     """
@@ -69,9 +82,9 @@ class TempFileOnEngine:
         f.write('xyz')
     """
 
-    def __init__(self, engine: ProxySshEngine):
+    def __init__(self, engine: ProxySshEngine, extension='test'):
         self.engine = engine
-        self.path = datetime.now().strftime("/tmp/%Y%m%d%H%M%S.test")
+        self.path = datetime.now().strftime("/tmp/%Y%m%d%H%M%S.") + extension
 
     def __enter__(self):
         with allure.step(f"Creating temp file: {self.path}"):
@@ -81,5 +94,7 @@ class TempFileOnEngine:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.engine.run_cmd(f"rm -f {self.path}")
 
-    def write(self, text: str, newline=True):
-        self.engine.run_cmd(f"echo {'' if newline else '-n '}'{text}' >> {self.path}")
+    def write(self, text: str, newline=True, backslash_escapes=False):
+        echo_args = '' if newline else ' -n'
+        echo_args += ' -e' if backslash_escapes else ''
+        self.engine.run_cmd(f"echo{echo_args} '{text}' >> {self.path}")

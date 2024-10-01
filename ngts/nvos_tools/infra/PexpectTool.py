@@ -17,7 +17,7 @@ class PexpectTool:
         self.last_output = ''
 
     def __del__(self):
-        self.close()
+        self.child.close()
 
     def spawn(self, cmd):
         logging.info(f'Spawn: {cmd}')

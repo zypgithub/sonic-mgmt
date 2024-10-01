@@ -4,7 +4,7 @@ import logging
 import random
 from retry.api import retry_call
 from ngts.tests.conftest import get_dut_loopbacks
-from ngts.constants.constants import AutonegCommandConstants, SonicConst
+from ngts.constants.constants import AutonegCommandConstants, SonicConst, FecConstants
 from ngts.helpers.interface_helpers import get_lb_mutual_speed
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.tests.nightly.auto_negotition.conftest import is_auto_neg_supported_port, ports_spec_compliance
@@ -55,8 +55,9 @@ def fec_capability_for_dut_ports(topology_obj, engines, cli_objects, interfaces,
     ports = get_tested_lb_dict_tested_ports(tested_lb_dict)
     ports += get_tested_lb_dict_tested_ports(tested_lb_dict_for_bug_2705016_flow)
     ports += [interfaces.dut_ha_1, interfaces.dut_ha_2, interfaces.dut_hb_1, interfaces.dut_hb_2]
-    if sw_control_ports and is_redmine_issue_active([3886748]):
-        ports = [port for port in ports if port not in sw_control_ports]
+    aoc_cables = cli_objects.dut.im.sw_controlled_aoc_cables(sw_control_ports)
+    if aoc_cables:
+        ports = [port for port in ports if port not in aoc_cables]
     for port in ports:
         supported_fec_mode = cli_objects.dut.interface.get_interface_supported_fec_modes(port)
         if supported_fec_mode:
@@ -66,21 +67,25 @@ def fec_capability_for_dut_ports(topology_obj, engines, cli_objects, interfaces,
 
 
 @pytest.fixture(autouse=True, scope='session')
-def tested_lb_dict(topology_obj, split_mode_supported_speeds):
+def tested_lb_dict(topology_obj, split_mode_supported_speeds, cli_objects, sw_control_ports):
     """
     :param topology_obj: topology object fixture
-    :param split_mode_supported_speeds: fixture, dictionary with available breakout options
+    :param split_mode_supported_speeds: dictionary with available breakout options
+    :param cli_objects: cli_objects fixture
+    :param sw_control_ports: sw_control_ports fixture
     :return: a dictionary of loopback list for each split mode on the dut
     {1: [('Ethernet52', 'Ethernet56')],
     2: [('Ethernet12', 'Ethernet16')],
     4: [('Ethernet20', 'Ethernet24')]}
     """
-    lb_ports = get_dut_loopbacks(topology_obj)
-    if len(lb_ports) < 3:
-        pytest.skip(f'Test expected at least 3 loopback ports, but found next ports only: {lb_ports}')
-    lb_list_in_split_mode_1 = random.sample(lb_ports, k=3)
-    split_2_lb = get_split_loopbacks_set(topology_obj, split_mode=2)
-    split_4_lb = get_split_loopbacks_set(topology_obj, split_mode=4)
+    aoc_cables = cli_objects.dut.im.sw_controlled_aoc_cables(sw_control_ports)
+    dut_lbs = dut_split_lbs_no_sw_control(topology_obj, aoc_cables, split_mode=1)
+    if len(dut_lbs) < 3:
+        pytest.skip(
+            f'Test expected at least 3 loopback ports, but found next ports only: {dut_lbs}')
+    lb_list_in_split_mode_1 = random.sample(dut_lbs, k=3)
+    split_2_lb = dut_split_lbs_no_sw_control(topology_obj, aoc_cables, split_mode=2)
+    split_4_lb = dut_split_lbs_no_sw_control(topology_obj, aoc_cables, split_mode=4)
 
     tested_lb_dict = {
         1: {
@@ -100,19 +105,23 @@ def tested_lb_dict(topology_obj, split_mode_supported_speeds):
 
 
 @pytest.fixture(autouse=True, scope='session')
-def tested_lb_dict_for_bug_2705016_flow(topology_obj, split_mode_supported_speeds):
+def tested_lb_dict_for_bug_2705016_flow(topology_obj, split_mode_supported_speeds, cli_objects, sw_control_ports):
     """
     :param topology_obj: topology object fixture
-    :param split_mode_supported_speeds: fixture, dictionary with available breakout options
+    :param split_mode_supported_speeds: dictionary with available breakout options
+    :param cli_objects: cli_objects fixture
+    :param sw_control_ports: sw_control_ports fixture
     :return: a dictionary of loopback list for each split mode on the dut
     {1: [('Ethernet52', 'Ethernet56')],
     2: [('Ethernet12', 'Ethernet16')],
     4: [('Ethernet20', 'Ethernet24')]}
     """
+    aoc_cables = cli_objects.dut.im.sw_controlled_aoc_cables(sw_control_ports)
     modes_checked_in_bug_2705016_flow = [SonicConst.FEC_RS_MODE, SonicConst.FEC_NONE_MODE]
-    lb_list_in_split_mode_1 = random.sample(get_dut_loopbacks(topology_obj), k=4)
-    split_2_lb = get_split_loopbacks_set(topology_obj, split_mode=2)
-    split_4_lb = get_split_loopbacks_set(topology_obj, split_mode=4)
+    dut_lbs = dut_split_lbs_no_sw_control(topology_obj, aoc_cables, split_mode=1)
+    lb_list_in_split_mode_1 = random.sample(dut_lbs, k=4)
+    split_2_lb = dut_split_lbs_no_sw_control(topology_obj, aoc_cables, split_mode=2)
+    split_4_lb = dut_split_lbs_no_sw_control(topology_obj, aoc_cables, split_mode=4)
 
     tested_lb_dict = {
         1: {
@@ -145,6 +154,23 @@ def get_split_loopbacks_set(topology_obj, split_mode):
     return split_lb
 
 
+def dut_split_lbs_no_sw_control(topology_obj, sw_control_ports, split_mode):
+    """
+    Return the dut-lbs for a given split.
+    Get set with loopbacks which have split by split_mode, for lbs that have no sw_control_ports
+    :param topology_obj: topology_obj fixture
+    :param sw_control_ports: sw_control_ports fixture
+    :param split_mode: split mode, could be 2, 4, 8
+    :return: example: ('Ethernet0', 'Ethernet1')
+    """
+    if split_mode == 1:
+        return split_1_dut_lbs_no_sw_control(topology_obj, sw_control_ports)
+    split_lb = get_split_loopbacks_set(topology_obj, split_mode)
+    if sw_control_ports and is_redmine_issue_active([3886748]):
+        split_lb = split_lb if not lb_has_sw_control_ports(split_lb, sw_control_ports) else ()
+    return split_lb
+
+
 @pytest.fixture(autouse=True, scope='session')
 def tested_dut_to_host_conn(topology_obj, engines, interfaces, cli_objects):
     tested_conn_dict = {
@@ -174,7 +200,7 @@ def tested_dut_to_host_conn(topology_obj, engines, interfaces, cli_objects):
 def dut_ports_default_mlxlink_configuration(is_simx, platform_params, chip_type, engines, cli_objects, interfaces,
                                             tested_lb_dict, fec_modes_speed_support,
                                             tested_lb_dict_for_bug_2705016_flow, pci_conf, dut_ports_number_dict,
-                                            sw_control_ports):
+                                            sw_control_ports, is_sw_control_feature_enabled):
     """
     on simx setups this information can not be taken from mlxlink cmd because this command is not supported on simx
     (There is no FW), so instead the dict will be default info generated by get_basic_fec_mode_dict function.
@@ -183,15 +209,30 @@ def dut_ports_default_mlxlink_configuration(is_simx, platform_params, chip_type,
     { "Ethernet0" : { "FEC": "rs" ,"Type": "CR4" }, ...}
     """
     logger.info("Getting port basic fec configuration")
+
+    if is_sw_control_feature_enabled and is_redmine_issue_active([3891669]):
+        pytest.skip(f"Skipping test when SW control feature enabled and RM 3891669 is active")
+    aoc_cables = cli_objects.dut.im.sw_controlled_aoc_cables(sw_control_ports)
     if is_simx:
         dut_ports_basic_mlxlink_dict = get_basic_fec_mode_dict(cli_objects, fec_modes_speed_support)
     else:
         dut_ports_basic_mlxlink_dict = get_dut_ports_basic_mlxlink_dict(cli_objects, interfaces,
                                                                         tested_lb_dict,
                                                                         tested_lb_dict_for_bug_2705016_flow,
-                                                                        pci_conf, dut_ports_number_dict,
-                                                                        sw_control_ports)
+                                                                        pci_conf, dut_ports_number_dict, aoc_cables)
+
     return dut_ports_basic_mlxlink_dict
+
+
+def supported_speed_for_part_number(cable_part_number, speed):
+    """
+    The function checks whether the speed gives is supported with the given part number of a cable
+    :param cable_part_number:  part number of a cable
+    :param speed:  a speed option for the cable
+    :return: A boolean stating whether the speed is supported with the given part number
+    """
+    return not (cable_part_number in FecConstants.CABLE_PART_NUMBER_UNSUPPORTED_SPEEDS and
+                speed in FecConstants.CABLE_PART_NUMBER_UNSUPPORTED_SPEEDS[cable_part_number])
 
 
 @pytest.fixture(autouse=True, scope='session')
@@ -210,6 +251,7 @@ def mlxlink_supported_speeds(dut_ports_default_mlxlink_configuration):
     for port, port_mlxlink_data in dut_ports_default_mlxlink_configuration.items():
         mlxlink_cable_fec_modes_speed_support[port] = dict()
         speed_options = port_mlxlink_data[AutonegCommandConstants.CABLE_SPEED]
+        cable_part_number = port_mlxlink_data[AutonegCommandConstants.PART_NUMBER]
         for speed in speed_options:
             match = mlxlink_split_mode_pattern.search(speed)
             if match:
@@ -220,8 +262,9 @@ def mlxlink_supported_speeds(dut_ports_default_mlxlink_configuration):
             else:  # Speed patterns like 50G without a split should be added to all interface_types
                 interface_types_matched = set(interface_type_per_split.values())
                 base_speed = speed
-            mlxlink_cable_fec_modes_speed_support[port].setdefault(base_speed, set()).update(
-                interface_types_matched)
+            if supported_speed_for_part_number(cable_part_number, base_speed):
+                mlxlink_cable_fec_modes_speed_support[port].setdefault(base_speed, set()).update(
+                    interface_types_matched)
     return mlxlink_cable_fec_modes_speed_support
 
 
@@ -245,7 +288,6 @@ def get_dut_ports_basic_mlxlink_dict(cli_objects, interfaces, tested_lb_dict,
 
     if sw_control_ports and is_redmine_issue_active([3886748]):
         ports = [port for port in ports if port not in sw_control_ports]
-
     for port in ports:
         port_number = dut_ports_number_dict[port]
         mlxlink_conf = retry_call(cli_objects.dut.interface.parse_port_mlxlink_status,
@@ -254,10 +296,12 @@ def get_dut_ports_basic_mlxlink_dict(cli_objects, interfaces, tested_lb_dict,
         port_fec_mode = mlxlink_conf[AutonegCommandConstants.FEC]
         port_width_mode = int(mlxlink_conf[AutonegCommandConstants.WIDTH])
         port_supported_speeds = mlxlink_conf[AutonegCommandConstants.CABLE_SPEED]
+        port_part_number = mlxlink_conf[AutonegCommandConstants.PART_NUMBER]
         dut_ports_basic_mlxlink_dict[port] = {
             AutonegCommandConstants.FEC: port_fec_mode,
             AutonegCommandConstants.TYPE: "CR{}".format(port_width_mode if port_width_mode > 1 else ""),
-            AutonegCommandConstants.CABLE_SPEED: port_supported_speeds
+            AutonegCommandConstants.CABLE_SPEED: port_supported_speeds,
+            AutonegCommandConstants.PART_NUMBER: port_part_number
         }
     logger.debug("port basic fec configuration: {}".format(dut_ports_basic_mlxlink_dict))
     return dut_ports_basic_mlxlink_dict
@@ -331,13 +375,15 @@ def get_basic_fec_mode_dict(cli_objects, fec_modes_speed_support):
     default_fec_mode = SonicConst.FEC_RS_MODE
     default_fec_mode_speed_support = fec_modes_speed_support[default_fec_mode]
     interface_type_index = 0
+    default_part_num = ""
     for port, port_split_mode in ports_split_mode_dict.items():
         port_speed = interfaces_status[port]['Speed']
         basic_fec_mode_dict[port] = {
             AutonegCommandConstants.FEC: default_fec_mode,
             AutonegCommandConstants.TYPE:
                 default_fec_mode_speed_support[port_split_mode][port_speed][interface_type_index],
-            AutonegCommandConstants.CABLE_SPEED: default_fec_mode_speed_support[port_split_mode]
+            AutonegCommandConstants.CABLE_SPEED: default_fec_mode_speed_support[port_split_mode],
+            AutonegCommandConstants.PART_NUMBER: default_part_num
         }
     return basic_fec_mode_dict
 
@@ -366,3 +412,26 @@ def ports_support_autoneg(topology_obj, ports_spec_compliance, is_simx):
         if is_auto_neg_supported_port(port, ports_spec_compliance, used_in_auto_neg_tests=False):
             ports_supporting_autoneg.add(port)
     return ports_supporting_autoneg
+
+
+def split_1_dut_lbs_no_sw_control(topology_obj, sw_control_ports):
+    """
+    The function returns the dut split_1 loop-backs, without lbs with sw_control_ports
+    :param: topology_obj: topology_obj fixture
+    :param: sw_control_ports: sw_control_ports fixture
+    :returns: A list of dut loop-backs, without sw_control_ports, i.e. [('Ethernet136', 'Ethernet144'), ...]
+    """
+    lb_ports = get_dut_loopbacks(topology_obj)
+    if sw_control_ports and is_redmine_issue_active([3886748]):
+        lb_ports = [lb for lb in lb_ports if not lb_has_sw_control_ports(lb, sw_control_ports)]
+    return lb_ports
+
+
+def lb_has_sw_control_ports(lb, sw_control_ports):
+    """
+    The function returns whether the lb has a sw_control port
+    :param: lb: a dut loop-back
+    :param: sw_control_ports: sw_control_ports fixture
+    :returns: A boolean stating whether the lb contain a sw_control port
+    """
+    return lb[0] in sw_control_ports or lb[1] in sw_control_ports

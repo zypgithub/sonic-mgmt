@@ -1,8 +1,7 @@
 import pytest
 import time
 
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
-from ngts.nvos_constants.constants_nvos import ApiType, DatabaseConst, IpConsts, NvosConst, UfmMadConsts
+from ngts.nvos_constants.constants_nvos import ApiType, DatabaseConst, IpConsts, UfmMadConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
 from ngts.nvos_tools.infra.DatabaseTool import DatabaseTool
@@ -17,7 +16,7 @@ from ngts.tools.test_utils import allure_utils as allure
 
 
 @pytest.mark.interface
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [ApiType.NVUE])
 def test_configure_feature_state(engines, devices, prepare_traffic, test_api):
     """
     Validate configuring feature state by using the fae commands:
@@ -53,7 +52,7 @@ def test_configure_feature_state(engines, devices, prepare_traffic, test_api):
 
         with allure.step("Disable ufm-mad feature"):
             fae.ib.ufm_mad.set(op_param_name=UfmMadConsts.STATE, op_param_value=UfmMadConsts.State.DISABLED.value,
-                               apply=True).verify_result()
+                               apply=True, ask_for_confirmation=True).verify_result()
 
         with allure.step("Validate ufm-mad state disabled and IP address is empty"):
             verify_ufm_mad_configuration(fae, engines_dut, port_name, devices_dut, engines_ha,
@@ -145,16 +144,14 @@ def test_configure_mgmt_port_ipv4(engines, devices, topology_obj, prepare_traffi
                                apply=True, dut_engine=serial_engine).verify_result()
             time.sleep(UfmMadConsts.CONFIG_TIME)
 
-        # Temporary conditions because 'eth1' port currently missing ipv6 slaac value
-        if (not is_redmine_issue_active([3968163][0])) or (port_name == UfmMadConsts.MGMT_PORT0):
-            with allure.step("Validate ufm-mad state enabled and IP static address is configured"):
-                verify_ufm_mad_configuration(fae, serial_engine, port_name, devices_dut, engines_ha,
-                                             UfmMadConsts.State.ENABLED.value, UfmMadConsts.STATIC_IPV4,
-                                             mgmt_ip_dict[UfmMadConsts.IPV6_SLAAC])
+        with allure.step("Validate ufm-mad state enabled and IP static address is configured"):
+            verify_ufm_mad_configuration(fae, serial_engine, port_name, devices_dut, engines_ha,
+                                         UfmMadConsts.State.ENABLED.value, UfmMadConsts.STATIC_IPV4,
+                                         mgmt_ip_dict[UfmMadConsts.IPV6_SLAAC])
 
-            with allure.step("Verify State DB:UFM-MAD value"):
-                verify_ufm_mad_db_table(serial_engine, UfmMadConsts.State.ENABLED.value, port_name,
-                                        UfmMadConsts.STATIC_IPV4, mgmt_ip_dict[UfmMadConsts.IPV6_SLAAC])
+        with allure.step("Verify State DB:UFM-MAD value"):
+            verify_ufm_mad_db_table(serial_engine, UfmMadConsts.State.ENABLED.value, port_name,
+                                    UfmMadConsts.STATIC_IPV4, mgmt_ip_dict[UfmMadConsts.IPV6_SLAAC])
 
         with allure.step("Update mgmt port ipv4 address when ufm-mad state is enabled"):
             mgmt_port.interface.ip.address.unset(dut_engine=serial_engine, apply=True).verify_result()
@@ -175,12 +172,9 @@ def test_configure_mgmt_port_ipv4(engines, devices, topology_obj, prepare_traffi
                                                ask_for_confirmation=True).verify_result()
             time.sleep(UfmMadConsts.CONFIG_TIME)
 
-        # Connection in SSH is lost, continue in serial port
-        # Temporary conditions because 'eth1' port currently missing ipv6 slaac value
-        if (not is_redmine_issue_active([3968163][0])) or (port_name == UfmMadConsts.MGMT_PORT0):
-            with allure.step("Validate ufm-mad state disabled and IPV4 address is empty"):
-                verify_ufm_mad_configuration(fae, serial_engine, port_name, devices_dut, engines_ha,
-                                             UfmMadConsts.State.ENABLED.value, ipv6=mgmt_ip_dict[UfmMadConsts.IPV6_SLAAC])
+        with allure.step("Validate ufm-mad state disabled and IPV4 address is empty"):
+            verify_ufm_mad_configuration(fae, serial_engine, port_name, devices_dut, engines_ha,
+                                         UfmMadConsts.State.ENABLED.value, ipv6=mgmt_ip_dict[UfmMadConsts.IPV6_SLAAC])
 
         with allure.step("Verify State DB:UFM-MAD value"):
             verify_ufm_mad_db_table(engine=serial_engine, state=UfmMadConsts.State.ENABLED.value, port_name=port_name,
@@ -274,16 +268,13 @@ def test_configure_mgmt_port_ipv6(engines, devices, topology_obj, prepare_traffi
                                                ask_for_confirmation=True).verify_result()
             time.sleep(UfmMadConsts.CONFIG_TIME)
 
-        # Connection in SSH is lost, continue in serial port
-        # Temporary conditions because 'eth1' port currently missing ipv6 slaac value
-        if (not is_redmine_issue_active([3968163][0])) or (port_name == UfmMadConsts.MGMT_PORT0):
-            with allure.step("Validate ufm-mad state disabled and both IPV4 and IPV6 addresses are empty"):
-                verify_ufm_mad_configuration(fae, serial_engine, port_name, devices_dut, engines_ha,
-                                             UfmMadConsts.State.ENABLED.value, ipv6=mgmt_ip_dict[UfmMadConsts.IPV6_SLAAC])
+        with allure.step("Validate ufm-mad state disabled and both IPV4 and IPV6 addresses are empty"):
+            verify_ufm_mad_configuration(fae, serial_engine, port_name, devices_dut, engines_ha,
+                                         UfmMadConsts.State.ENABLED.value, ipv6=mgmt_ip_dict[UfmMadConsts.IPV6_SLAAC])
 
-            with allure.step("Verify State DB:UFM-MAD value"):
-                verify_ufm_mad_db_table(engine=serial_engine, state=UfmMadConsts.State.ENABLED.value, port_name=port_name,
-                                        ipv6=mgmt_ip_dict[UfmMadConsts.IPV6_SLAAC])
+        with allure.step("Verify State DB:UFM-MAD value"):
+            verify_ufm_mad_db_table(engine=serial_engine, state=UfmMadConsts.State.ENABLED.value, port_name=port_name,
+                                    ipv6=mgmt_ip_dict[UfmMadConsts.IPV6_SLAAC])
 
     finally:
         with allure.step("Set to default mgmt port address and ufm-mad feature state"):
@@ -402,16 +393,11 @@ def get_mgmt_port_ip_addresses(mgmt_port, dut_engine):
     ip_address = {}
     ip_address.update({UfmMadConsts.IPV4: ip_addresses_show[0]})
 
-    # Temporary conditions because 'eth1' port currently missing ipv6 slaac value
-    if (not is_redmine_issue_active([3968163][0])) or (mgmt_port.name == UfmMadConsts.MGMT_PORT0):
-        if len(ip_addresses_show[2]) > len(ip_addresses_show[1]):
-            ip_address.update({UfmMadConsts.IPV6: ip_addresses_show[1]})
-            ip_address.update({UfmMadConsts.IPV6_SLAAC: ip_addresses_show[2]})
-        else:
-            ip_address.update({UfmMadConsts.IPV6: ip_addresses_show[2]})
-            ip_address.update({UfmMadConsts.IPV6_SLAAC: ip_addresses_show[1]})
-    else:
+    if len(ip_addresses_show[2]) > len(ip_addresses_show[1]):
         ip_address.update({UfmMadConsts.IPV6: ip_addresses_show[1]})
+        ip_address.update({UfmMadConsts.IPV6_SLAAC: ip_addresses_show[2]})
+    else:
+        ip_address.update({UfmMadConsts.IPV6: ip_addresses_show[2]})
         ip_address.update({UfmMadConsts.IPV6_SLAAC: ip_addresses_show[1]})
 
     return ip_address

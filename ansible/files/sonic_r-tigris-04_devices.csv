@@ -1,7 +1,0 @@
-Hostname,ManagementIp,HwSku,Type,Protocol,Os
-r-tigris-04,10.210.25.93/22,Mellanox-SN3800-D112C8,DevSonic,,sonic
-r-tigris-17,10.210.25.57/22,MLNX-OS,FanoutLeaf,,
-r-sonic-04,10.213.104.1,TestServ,Server,,
-pdu-10-208-0-182,10.208.0.182,Sentry,CDU,snmp,
-rcon-sws-2-3,10.208.0.79,,ConsoleServer,ssh,sonic
-rcon-sws-2-4,10.208.0.49,,ConsoleServer,ssh,sonic

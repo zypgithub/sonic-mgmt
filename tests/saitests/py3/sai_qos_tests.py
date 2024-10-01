@@ -2678,7 +2678,7 @@ class HdrmPoolSizeTest(sai_base_test.ThriftInterfaceDataPlane):
         self.src_port_macs = [self.dataplane.get_mac(
             0, ptid) for ptid in self.src_port_ids]
 
-        if self.testbed_type in ['dualtor', 'dualtor-56', 't0', 't0-64', 't0-116', 't0-120']:
+        if self.testbed_type in ['dualtor', 'dualtor-56', 't0', 't0-28', 't0-64', 't0-116', 't0-120']:
             # populate ARP
             # sender's MAC address is corresponding PTF port's MAC address
             # sender's IP address is caculated in tests/qos/qos_sai_base.py::QosSaiBase::__assignTestPortIps()
@@ -4760,7 +4760,7 @@ class QSharedWatermarkTest(sai_base_test.ThriftInterfaceDataPlane):
 
             if pkts_num_fill_min:
                 assert (q_wm_res[queue] == 0)
-            elif 'cisco-8000' in asic_type or "ACS-SN5600" in hwsku:
+            elif 'cisco-8000' in asic_type or "SN5600" in hwsku or "SN5400" in hwsku:
                 assert (q_wm_res[queue] <= (margin + 1) * cell_size)
             else:
                 if platform_asic and platform_asic == "broadcom-dnx":

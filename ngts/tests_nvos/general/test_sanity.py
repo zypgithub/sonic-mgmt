@@ -73,11 +73,11 @@ def test_ci_sanity(engines, topology_obj, devices):
             ValidationTool.verify_field_exist_in_json_output(json_output=output,
                                                              keys_to_search_for=expected_field).verify_result()
 
-    """with allure.step("Test Health"):
+    with allure.step("Test Health"):
         health_output = OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).get_returned_value()
         ValidationTool.validate_all_values_exists_in_list([HealthConsts.STATUS, HealthConsts.STATUS_LED],
                                                           health_output.keys()).verify_result()
-        system.validate_health_status(HealthConsts.OK)"""
+        system.validate_health_status(HealthConsts.OK)
 
     with allure.step("Show SNMP"):
         system_snmp_output = OutputParsingTool.parse_json_str_to_dictionary(system.snmp_server.show()) \

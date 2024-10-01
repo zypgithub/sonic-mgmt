@@ -1,0 +1,6 @@
+Hostname,ManagementIp,HwSku,Type,Protocol,Os
+r-anaconda-81,10.210.24.109/22,ACS-MSN3700,DevSonic,,sonic
+arc-switch1039,10.210.25.47/22,MLNX-OS,FanoutLeaf,,
+arc-host83,10.213.86.60,TestServ,Server,,
+pdu-10-208-0-24,10.208.0.24,Sentry,CDU,snmp,
+rcon-sws-3-8,10.208.0.47,,ConsoleServer,ssh,sonic

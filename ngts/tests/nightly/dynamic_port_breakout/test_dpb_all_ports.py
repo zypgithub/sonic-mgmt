@@ -22,7 +22,7 @@ class TestDPBOnAllPorts:
     @pytest.fixture(autouse=True)
     def setup(self, topology_obj, engines, interfaces,
               cli_objects, ports_breakout_modes, split_mode_supported_speeds,
-              dut_ports_default_speeds_configuration, dut_ports_interconnects):
+              dut_ports_default_speeds_configuration, dut_ports_interconnects, sw_control_ports):
         self.topology_obj = topology_obj
         self.interfaces = interfaces
         self.dut_engine = engines.dut
@@ -35,6 +35,7 @@ class TestDPBOnAllPorts:
         self.dut_ports_interconnects = dut_ports_interconnects
         self.split_mode_supported_speeds = split_mode_supported_speeds
         self.dut_ports_default_speeds_configuration = dut_ports_default_speeds_configuration
+        self.sw_control_ports = self.cli_object.im.sw_controlled_aoc_cables(sw_control_ports)
 
     @allure.title('Dynamic Port Breakout on all ports')
     def test_dpb_on_all_ports(self, cleanup_list):
@@ -45,8 +46,11 @@ class TestDPBOnAllPorts:
         :return: raise assertion error if expected output is not matched
         """
         try:
-            ports_list, max_breakout_mode = self.get_ports_with_max_breakout_mode()
-            with allure.step(f'Configure breakout mode: {max_breakout_mode} on all splittable ports'):
+            ports_list, max_breakout_mode = self.get_ports_with_max_breakout_mode(self.sw_control_ports)
+            if not ports_list:
+                pytest.skip(f'Skip TC as ports {self.sw_control_ports}, selected fot testing are SW control')
+            with allure.step(f'Configure breakout mode: {max_breakout_mode} on all splittable ports selected for'
+                             f' testing {ports_list}'):
                 logger.info(f'Configure breakout mode: {max_breakout_mode} on all splittable ports')
                 self.validate_split_all_splittable_ports(max_breakout_mode, ports_list, cleanup_list)
             with allure.step(f'Cleanup breakout configuration from all ports'):
@@ -65,16 +69,18 @@ class TestDPBOnAllPorts:
     def test_feature_with_dpb_on_all_ports(self, feature_test, setup_name):
         if not feature_test:
             pytest.skip("not provided parameter 'feature_test', skip the test")
-        ports_list, max_breakout_mode = self.get_ports_with_max_breakout_mode()
-        with allure.step(f'Configure breakout mode: {max_breakout_mode} on all splittable ports'):
+        ports_list, max_breakout_mode = self.get_ports_with_max_breakout_mode(self.sw_control_ports)
+        if not ports_list:
+            pytest.skip(f'Skip TC as ports {self.sw_control_ports}, selected fot testing are SW control')
+        with allure.step(f'Configure breakout mode: {max_breakout_mode} on all splittable ports {ports_list}'):
             logger.info(f'Configure breakout mode: {max_breakout_mode} on all splittable ports')
             self.validate_split_all_splittable_ports(max_breakout_mode, ports_list, None)
 
         cmd = f"{MarsConstants.NGTS_PATH_PYTEST} --setup_name={setup_name}" \
-              f" --rootdir={MarsConstants.SONIC_MGMT_DIR}/ngts" \
-              f" -c {MarsConstants.SONIC_MGMT_DIR}/ngts/pytest.ini --log-level=INFO" \
-              f" --clean-alluredir --alluredir=/tmp/allure-results" \
-              f" {MarsConstants.SONIC_MGMT_DIR}{feature_test} --dynamic_update_skip_reason"
+            f" --rootdir={MarsConstants.SONIC_MGMT_DIR}/ngts" \
+            f" -c {MarsConstants.SONIC_MGMT_DIR}/ngts/pytest.ini --log-level=INFO" \
+            f" --clean-alluredir --alluredir=/tmp/allure-results" \
+            f" {MarsConstants.SONIC_MGMT_DIR}{feature_test} --dynamic_update_skip_reason"
         logger.info("  ##########  Running feature test by cmd  ##########  :\n{}".format(cmd))
         std_out, std_err, rc = run_process_on_host(cmd, timeout=1800)
         generate_report(std_out, std_err)
@@ -85,18 +91,22 @@ class TestDPBOnAllPorts:
         if not re.search(test_executed_regex, output):
             pytest.skip("No feature test was executed, all skipped")
 
-    def get_ports_with_max_breakout_mode(self):
-        ports_list = self.get_splittable_ports_list()
+    def get_ports_with_max_breakout_mode(self, ports_to_exclude=None):
+        ports_list = self.get_splittable_ports_list(ports_to_exclude)
         breakout_modes = get_mutual_breakout_modes(self.ports_breakout_modes, ports_list)
         max_breakout_mode = self.get_max_breakout_mode(breakout_modes)
         return ports_list, max_breakout_mode
 
-    def get_splittable_ports_list(self):
+    def get_splittable_ports_list(self, ports_to_exclude=None):
         """
+        :param ports_to_exclude: list of ports to be excluded from dpb test case
         :return: a list of ports on dut which support split breakout mode,and aren't already split
         """
         splittable_ports = []
         for port_alias, port_name in self.topology_obj.ports.items():
+            if ports_to_exclude and port_name in ports_to_exclude:
+                logger.info(f'Skip port {port_name} for TC as it in {ports_to_exclude}')
+                continue
             if port_alias.startswith("dut") and "splt" not in port_alias and \
                     is_splittable(self.ports_breakout_modes, port_name):
                 splittable_ports.append(port_name)

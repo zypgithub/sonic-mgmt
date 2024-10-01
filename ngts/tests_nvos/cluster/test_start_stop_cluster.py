@@ -15,7 +15,7 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.ib.Ib import Ib
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.ResultObj import ResultObj
-from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
+from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports
 
 logger = logging.getLogger()
 NMX_CONTROLLER = 'nmx-controller'
@@ -30,6 +30,7 @@ CONTROLLER_SERVICES = ['nmxc-sdn', 'nmxc-fib', 'redis']
 INVALID_SHOW_EXPECTED_OUTPUT = 'Error: The requested item does not exist.'
 
 
+@disabled_access_ports
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_cluster_app_start_stop(engines, devices, test_api):
@@ -97,6 +98,7 @@ def test_cluster_app_start_stop(engines, devices, test_api):
             ClusterTools.wait_for_apps_to_be_in_wanted_state()
 
 
+@disabled_access_ports
 @pytest.mark.timeout(30 * MINUTE, func_only=True)
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
@@ -121,7 +123,9 @@ def test_stress_cluster_app_start_stop(engines, devices, test_api, test_name):
             ClusterTools.wait_for_apps_to_be_in_wanted_state()
 
 
+@disabled_access_ports
 @pytest.mark.nmx
+@pytest.mark.timeout(20 * MINUTE, func_only=True)
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
 def test_cluster_app_start_stop_under_stressed_resources(engines, devices, test_api, test_name):
     TestToolkit.tested_api = test_api

@@ -16,6 +16,7 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.RegressionConfigurations import RegressionConfigurations
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.authentication_restrictions.constants import RestrictionsConsts
+from ngts.nvos_constants.constants_nvos import NvosConst, SystemConsts
 from ngts.tests_nvos.system.clock.ClockConsts import ClockConsts
 from ngts.tools.test_utils import allure_utils as allure
 
@@ -37,6 +38,7 @@ def set_base_configurations_cl(dut_engine, timezone=LinuxConsts.ETC_UTC_TIMEZONE
         logging.info(f'Set switch timezone: {timezone}')
         system = System()
         system.set(ClockConsts.TIMEZONE, LinuxConsts.ETC_UTC_TIMEZONE, dut_engine=dut_engine).verify_result()
+        system.api.set(SystemConsts.STATE, NvosConst.ENABLED, dut_engine=dut_engine).verify_result()
 
         if apply:
             logging.info('Apply configurations')

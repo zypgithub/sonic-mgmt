@@ -410,7 +410,7 @@ class AnsibleLogAnalyzer:
         return ret_code
 
     def analyze_file(self, log_file_path, match_messages_regex, ignore_messages_regex, expect_messages_regex,
-                     maximum_log_length=None):
+                     maximum_log_length=None, require_marker=True):
         '''
         @summary: Analyze input file content for messages matching input regex
                   expressions. See line_matches() for details on matching criteria.
@@ -437,7 +437,7 @@ class AnsibleLogAnalyzer:
 
         # -- indicates whether log analyzer currently is in the log range between start
         # -- and end marker. see analyze_file method.
-        check_marker = self.require_marker_check(log_file_path)
+        check_marker = self.require_marker_check(log_file_path) and require_marker
         in_analysis_range = not check_marker
         stdin_as_input = self.is_filename_stdin(log_file_path)
         matching_lines = []
@@ -535,7 +535,7 @@ class AnsibleLogAnalyzer:
     # ---------------------------------------------------------------------
 
     def analyze_file_list(self, log_file_list, match_messages_regex, ignore_messages_regex, expect_messages_regex,
-                          maximum_log_length=None):
+                          maximum_log_length=None, require_marker=True):
         '''
         @summary: Analyze input files messages matching input regex expressions.
             See line_matches() for details on matching criteria.
@@ -563,7 +563,8 @@ class AnsibleLogAnalyzer:
                 continue
             match_strings, expect_strings = self.analyze_file(log_file, match_messages_regex, ignore_messages_regex,
                                                               expect_messages_regex,
-                                                              maximum_log_length=maximum_log_length)
+                                                              maximum_log_length=maximum_log_length,
+                                                              require_marker=require_marker)
 
             match_strings.reverse()
             expect_strings.reverse()

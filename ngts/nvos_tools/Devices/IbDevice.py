@@ -18,6 +18,7 @@ from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.infra.ValidationTool import ExpectedString
 from ngts.nvos_tools.system.Spdm import SPDMComponents
+from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts
 from ngts.tools.test_utils.nvos_general_utils import get_version_info
 
@@ -39,8 +40,10 @@ class IbSwitch(BaseSwitch):
         self.prev_default_password = os.environ["NVU_SWITCH_PASSWORD"]
         self._init_ib_speeds()
         self._init_eth0_speeds()
+        self._init_eth0_duplex()
         self.init_documents_consts()
         self.init_cli_coverage_prop("nvos")
+        self._init_interface_lists()
 
     def get_default_password_by_version(self, version: str):
         version_num, _ = get_version_info(version)
@@ -55,6 +58,11 @@ class IbSwitch(BaseSwitch):
     def get_voltage_sensors(self, dut_engine=None):
         return Tools.FilesTool.get_subfiles_list(engine=dut_engine, folder_path=PlatformConsts.VOLTAGE_FILES_PATH,
                                                  subfiles_pattern=PlatformConsts.VOLTAGE_FILES_PATTERN)
+
+    def get_default_nvue_config(self, dut_engine=None):
+        default_conf = NvosConst.DEFAULT_CONFIG
+        default_conf["interface"] = NvosConst.DEFAULT_NVOS_IFACE_CONFIG
+        return default_conf
 
     def show_setup_versions(self, dut_engine: LinuxSshEngine = None):
         outputs = {
@@ -80,10 +88,13 @@ class IbSwitch(BaseSwitch):
 
     def _init_ib_speeds(self):
         self.invalid_ib_speeds = {'qdr': '40G'}
-        self.supported_ib_speeds = {'hdr': '200G', 'edr': '100G', 'fdr': '56G', 'sdr': '10G', 'ndr': '400G'}
+        self.supported_ib_speeds = ('hdr', 'edr', 'fdr', 'sdr', 'ndr')
 
     def _init_eth0_speeds(self):
         self.supported_eth0_speeds = ['100M', '1G']
+
+    def _init_eth0_duplex(self):
+        self.supported_eth0_duplex = ['half', 'full']
 
     def _init_fan_list(self):
         self.fan_list = ["FAN1/1", "FAN1/2", "FAN2/1", "FAN2/2", "FAN3/1", "FAN3/2", "FAN4/1", "FAN4/2",
@@ -211,10 +222,9 @@ class IbSwitch(BaseSwitch):
         self.version_number_pattern = r'\d{2}\.\d{2}\.\d{4}'
         self.health_monitor_config_file_path = ""
         self.platform_file_path = ""
-        self.ib_ports_num = 64
         self.primary_asic = f"{IbConsts.DEVICE_ASIC_PREFIX}1"
         self.primary_swid = f"{IbConsts.SWID}0"
-        self.primary_ipoib_interface = IbConsts.IPOIB_INT0
+        self.primary_ipoib_interface = IbConsts.IPOIB_INT.format(self.asic_amount - 1)
         self.multi_asic_system = False
         self.login_pattern = NvosConst.INSTALL_SUCCESS_PATTERN
         self.install_patterns = {self.login_pattern: 0}
@@ -271,57 +281,9 @@ class IbSwitch(BaseSwitch):
             self.category_list[6]: self.category_default_dict
         }
 
-        self.plane_port_list = ['pl1', 'pl2']
-        self.default_aggregated_port = 'sw32p1'
-        self.default_loopback_ports = ['sw31p1', 'sw31p2']
-        self.loop_back_to_ports = {
-            'sw31p1': 'sw32p1pl1',
-            'sw31p2': 'sw32p1pl2'
-        }
-        self.default_port = 'sw1p1'
-        self.aggregated_port_list = ['sw1p1', 'sw2p1', 'sw32p1']  # total 3 ports
-        self.fnm_port_list = ['fnm1']
-        self.aggregated_split_port_list = ['sw10p1']
-        self.fnm_internal_port_list = ['fnma1p236']
-        self.fnm_external_port_list = ['fnm1']
-        self.fnm_external_child_port = 'fnm1s1'
-        self.child_aggregated_port = 'sw10p1s1'
-        self.num_of_plane_ports = 4
-        self.num_of_fnm_plane_ports = 2
-        self.fnm_plane_port_list = ['fnm1pl1', 'fnm1pl2']  # total 2 ports
-        self.network_ports = ['eth0', 'ib0', 'lo']  # total 3 ports
-        self.non_aggregated_port_list = ['sw10p1', 'sw10p2', 'sw11p1', 'sw11p2', 'sw12p1', 'sw12p2', 'sw13p1', 'sw13p2',
-                                         'sw14p1', 'sw14p2', 'sw15p1', 'sw15p2', 'sw16p1', 'sw16p2', 'sw17p1', 'sw17p2',
-                                         'sw18p1', 'sw18p2', 'sw19p1', 'sw19p2', 'sw20p1', 'sw20p2', 'sw21p1', 'sw21p2',
-                                         'sw22p1', 'sw22p2', 'sw23p1', 'sw23p2', 'sw24p1', 'sw24p2', 'sw25p1', 'sw25p2',
-                                         'sw26p1', 'sw26p2', 'sw27p1', 'sw27p2', 'sw28p1', 'sw28p2', 'sw29p1', 'sw29p2',
-                                         'sw30p1', 'sw3p1', 'sw3p2', 'sw4p1', 'sw4p2', 'sw5p1', 'sw5p2', 'sw6p1',
-                                         'sw6p2',
-                                         'sw7p1', 'sw7p2', 'sw8p1', 'sw8p2', 'sw9p1', 'sw9p2']  # total 55 ports
-        self.all_plane_port_list = ['sw1p1pl1', 'sw1p1pl2', 'sw2p1pl1', 'sw2p1pl2', 'sw32p1pl1', 'sw32p1pl2']
-        self.all_port_list = self.non_aggregated_port_list + self.aggregated_port_list + self.fnm_external_port_list
-        self.all_port_list += self.fnm_external_port_list + self.network_ports
-        self.fnm_link_speed = '400G'
-        # TODO, ADD MORE PORTS, WE WANT IT TO BE MORE REALISTIC. MAYBE WE CAN USE THE FULL LIST OF ALL PORTS FOR NVL5
-        self.fnm_port_type = 'fnm'
-        self.all_fae_port_list = self.all_port_list + self.all_plane_port_list + self.fnm_plane_port_list
         self.asic0 = 'asic0'
         self.asic1 = 'asic1'
         self.counters_db_name = 'COUNTERS_DB'
-        self.object_numbers = {  # TBD - update values
-            'sw1p1': {
-                'plane1': 'COUNTERS:oid:0x100000000001f',
-                'plane2': 'COUNTERS:oid:0x100000000001f'
-            },
-            'sw2p1': {
-                'plane1': 'COUNTERS:oid:0x100000000001f',
-                'plane2': 'COUNTERS:oid:0x100000000001f'
-            },
-            'sw32p1': {
-                'plane1': 'COUNTERS:oid:0x100000000001f',
-                'plane2': 'COUNTERS:oid:0x100000000001f'
-            }
-        }
 
         self.voltage_sensors = ["PMIC-1-12V-ASIC-VCORE-In-1", "PMIC-1-ASIC-VCORE-Out-1", "PMIC-2-12V-ASIC-HVDD-DVDD-In-1",
                                 "PMIC-2-ASIC-DVDD-WEST-Out-2", "PMIC-2-ASIC-HVDD-WEST-Out-1", "PMIC-3-12V-ASIC-HVDD-DVDD-In-1",
@@ -390,9 +352,6 @@ class IbSwitch(BaseSwitch):
                                f"/usr/share/nginx/html/system_documents/open_source_licenses/"
                                f"{self.documents_files[DocumentsConsts.TYPE_OPEN_SOURCE_LICENSES]}"}
 
-    def get_ib_ports_num(self):
-        return self.ib_ports_num
-
     def _init_temperature(self):
         super()._init_temperature()
         self.temperature_sensors += ["CPU-Core-2-Temp", "CPU-Core-3-Temp", "PCH-Temp", "PSU-2-Temp", "SODIMM-1-Temp"]
@@ -400,6 +359,44 @@ class IbSwitch(BaseSwitch):
     def _init_sensors_dict(self):
         self.sensors_dict = {"VOLTAGE": self.voltage_sensors,
                              "TEMPERATURE": self.temperature_sensors}
+
+    def _init_interface_lists(self):
+        self.ib_ports_num = 64
+        self.mgmt_ports = ['eth0']
+        self.plane_port_list = ['pl1', 'pl2']
+        self.default_aggregated_port = 'sw32p1'
+        self.default_loopback_ports = ['sw31p1', 'sw31p2']
+        self.loop_back_to_ports = {
+            'sw31p1': 'sw32p1pl1',
+            'sw31p2': 'sw32p1pl2'
+        }
+        self.default_port = 'sw1p1'
+        self.aggregated_port_list = ['sw1p1', 'sw2p1', 'sw32p1']  # total 3 ports
+        self.fnm_port_list = ['fnm1']
+        self.aggregated_split_port_list = ['sw10p1']
+        self.fnm_internal_port_list = ['fnma1p236']
+        self.fnm_external_port_list = ['fnm1']
+        self.fnm_external_child_port = 'fnm1s1'
+        self.child_aggregated_port = 'sw10p1s1'
+        self.num_of_plane_ports = 4
+        self.num_of_fnm_plane_ports = 2
+        self.network_ports = ['eth0', 'ib0', 'lo']  # total 3 ports
+        self.fnm_link_speed = '400G'
+        self.fnm_port_type = 'fnm'
+        self.object_numbers = {  # TBD - update values
+            'sw1p1': {
+                'plane1': 'COUNTERS:oid:0x100000000001f',
+                'plane2': 'COUNTERS:oid:0x100000000001f'
+            },
+            'sw2p1': {
+                'plane1': 'COUNTERS:oid:0x100000000001f',
+                'plane2': 'COUNTERS:oid:0x100000000001f'
+            },
+            'sw32p1': {
+                'plane1': 'COUNTERS:oid:0x100000000001f',
+                'plane2': 'COUNTERS:oid:0x100000000001f'
+            }
+        }
 
     def wait_for_os_to_become_functional(self, engine, find_prompt_tries=60, find_prompt_delay=10):
         return DutUtilsTool.wait_for_nvos_to_become_functional(engine)
@@ -422,8 +419,9 @@ class GorillaSwitch(IbSwitch):
     def _init_constants(self):
         IbSwitch._init_constants(self)
         self.core_count = 4
-        self.mgmt_ports = ['eth0']
         self.asic_type = NvosConst.QTM2
+        self.split_ports_supported = True
+        self.profile_change_supported = True
         self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
             "x86_64-mlnx_mqm9700-r0")
         self.platform_file_path = MultiPlanarConsts.PLATFORM_FILE_FULL_PATH.format("x86_64-mlnx_mqm9700-r0")
@@ -450,8 +448,9 @@ class GorillaSwitch(IbSwitch):
             }
         )
         self.stats_fan_header_num_of_lines = 25
-        self.stats_power_header_num_of_lines = 13
+        self.stats_cpu_header_num_of_lines = 10
         self.stats_temperature_header_num_of_lines = 53
+        self.supports_tpm_testing = False
 
     def get_mgmt_ports(self) -> List[str]:
         return self.mgmt_ports
@@ -498,7 +497,6 @@ class GorillaSwitchBF3(GorillaSwitch):
         super()._init_constants()
         self.constants.firmware.remove(PlatformConsts.FW_BIOS)
         self.ib_ports_num = 64
-        self.mgmt_ports = ['eth0']
         self.core_count = 16
         self.asic_type = NvosConst.QTM2
 
@@ -519,9 +517,9 @@ class BlackMambaSwitch(IbSwitch):
     def _init_constants(self):
         self.asic_amount = 4
         super()._init_constants()
-        self.ib_ports_num = 64
+        self.system_is_ready_wait_timeout = 10 * MINUTE
+        self.ib_ports_num = 2 * 72
         self.core_count = 4
-        self.mgmt_ports = ['eth0']  # 'eth1' disabled for now
         self.asic_type = NvosConst.QTM3
         self.platform_file_path = MultiPlanarConsts.PLATFORM_FILE_FULL_PATH.format("x86_64-mlnx_qm8790-r0")
         self.show_platform_output.update({
@@ -529,163 +527,27 @@ class BlackMambaSwitch(IbSwitch):
             "asic-model": self.asic_type,
         })
 
-        self.voltage_sensors = ["PMIC-1+12V_VDD_ASIC1+Vol+In+1", "PMIC-1+ASIC1_VDD+Vol+Out+1",
-                                "PMIC-2+12V_HVDD_DVDD_ASIC1+Vol+In+1", "PMIC-2+ASIC1_DVDD_PL0+Vol+Out+2",
-                                "PMIC-2+ASIC1_HVDD_PL0+Vol+Out+1", "PMIC-3+12V_HVDD_DVDD_ASIC1+Vol+In+1",
-                                "PMIC-3+ASIC1_DVDD_PL1+Vol+Out+2", "PMIC-3+ASIC1_HVDD_PL1+Vol+Out+1",
-                                "PMIC-4+12V_VDD_ASIC2+Vol+In+1", "PMIC-4+ASIC2_VDD+Vol+Out+1",
-                                "PMIC-5+12V_HVDD_DVDD_ASIC2+Vol+In+1", "PMIC-5+ASIC2_DVDD_PL0+Vol+Out+2",
-                                "PMIC-5+ASIC2_HVDD_PL0+Vol+Out+1", "PMIC-6+12V_HVDD_DVDD_ASIC2+Vol+In+1",
-                                "PMIC-6+ASIC2_DVDD_PL1+Vol+Out+2", "PMIC-6+ASIC2_HVDD_PL1+Vol+Out+1",
-                                "PMIC-7+12V_VDD_ASIC3+Vol+In+1", "PMIC-7+ASIC3_VDD+Vol+Out+1",
-                                "PMIC-8+12V_HVDD_DVDD_ASIC3+Vol+In+1", "PMIC-8+ASIC3_DVDD_PL0+Vol+Out+2",
-                                "PMIC-8+ASIC3_HVDD_PL0+Vol+Out+1", "PMIC-9+12V_HVDD_DVDD_ASIC3+Vol+In+1",
-                                "PMIC-9+ASIC3_DVDD_PL1+Vol+Out+2", "PMIC-9+ASIC3_HVDD_PL1+Vol+Out+1",
-                                "PMIC-10+12V_VDD_ASIC4+Vol+In+1", "PMIC-10+ASIC4_VDD+Vol+Out+1",
-                                "PMIC-11+12V_HVDD_DVDD_ASIC4+Vol+In+1", "PMIC-11+ASIC4_DVDD_PL0+Vol+Out+2",
-                                "PMIC-11+ASIC4_HVDD_PL0+Vol+Out+1", "PMIC-12+12V_HVDD_DVDD_ASIC4+Vol+In+1",
-                                "PMIC-12+ASIC4_DVDD_PL1+Vol+Out+2", "PMIC-12+ASIC4_HVDD_PL1+Vol+Out+1",
-                                "PMIC-13+12V_MAIN+Vol+In+1", "PMIC-13+CEX_VDD+Vol+Out+1", "PSU-1+12V+Vol+Out",
-                                "PSU-2+12V+Vol+Out", "PSU-3+12V+Vol+Out", "PSU-4+12V+Vol+Out", "PSU-5+12V+Vol+Out",
-                                "PSU-6+12V+Vol+Out", "PSU-7+12V+Vol+Out", "PSU-8+12V+Vol+Out"]
+        self.voltage_sensors = [
+            "PMIC-1-12V-VDD-ASIC1-In-1", "PMIC-1-ASIC1-VDD-Out-1", "PMIC-2-12V-HVDD-DVDD-ASIC1-In-1",
+            "PMIC-2-ASIC1-DVDD-PL0-Out-2", "PMIC-2-ASIC1-HVDD-PL0-Out-1", "PMIC-3-12V-HVDD-DVDD-ASIC1-In-1",
+            "PMIC-3-ASIC1-DVDD-PL1-Out-2", "PMIC-3-ASIC1-HVDD-PL1-Out-1", "PMIC-4-12V-VDD-ASIC2-In-1",
+            "PMIC-4-ASIC2-VDD-Out-1", "PMIC-5-12V-HVDD-DVDD-ASIC2-In-1", "PMIC-5-ASIC2-DVDD-PL0-Out-2",
+            "PMIC-5-ASIC2-HVDD-PL0-Out-1", "PMIC-6-12V-HVDD-DVDD-ASIC2-In-1", "PMIC-6-ASIC2-DVDD-PL1-Out-2",
+            "PMIC-6-ASIC2-HVDD-PL1-Out-1", "PMIC-7-12V-VDD-ASIC3-In-1", "PMIC-7-ASIC3-VDD-Out-1",
+            "PMIC-8-12V-HVDD-DVDD-ASIC3-In-1", "PMIC-8-ASIC3-DVDD-PL0-Out-2", "PMIC-8-ASIC3-HVDD-PL0-Out-1",
+            "PMIC-9-12V-HVDD-DVDD-ASIC3-In-1", "PMIC-9-ASIC3-DVDD-PL1-Out-2", "PMIC-9-ASIC3-HVDD-PL1-Out-1",
+            "PMIC-10-12V-VDD-ASIC4-In-1", "PMIC-10-ASIC4-VDD-Out-1", "PMIC-11-12V-HVDD-DVDD-ASIC4-In-1",
+            "PMIC-11-ASIC4-DVDD-PL0-Out-2", "PMIC-11-ASIC4-HVDD-PL0-Out-1", "PMIC-12-12V-HVDD-DVDD-ASIC4-In-1",
+            "PMIC-12-ASIC4-DVDD-PL1-Out-2", "PMIC-12-ASIC4-HVDD-PL1-Out-1", "PMIC-13-12V-MAIN-In-1",
+            "PMIC-13-CEX-VDD-Out-1",
+            "PSU-1-12V-Out", "PSU-2-12V-Out", "PSU-3-12V-Out", "PSU-4-12V-Out", "PSU-5-12V-Out", "PSU-6-12V-Out",
+            "PSU-7-12V-Out", "PSU-8-12V-Out",
+        ]
 
         self.stats_fan_header_num_of_lines = 17
-        self.stats_power_header_num_of_lines = 25
+        self.stats_cpu_header_num_of_lines = 12
         self.stats_temperature_header_num_of_lines = 104
         self.fnm_link_speed = '800G'
-        self.interface_list = ['eth0', 'eth1', 'fnm1', 'ib0', 'lo', 'sw10p1', 'sw10p2', 'sw11p1', 'sw11p2', 'sw12p1',
-                               'sw12p2', 'sw13p1', 'sw13p2', 'sw14p1', 'sw14p2', 'sw15p1', 'sw15p2', 'sw16p1', 'sw16p2',
-                               'sw17p1', 'sw17p2', 'sw18p1', 'sw18p2', 'sw19p1', 'sw19p2', 'sw1p1', 'sw1p2', 'sw20p1',
-                               'sw20p2', 'sw21p1', 'sw21p2', 'sw22p1', 'sw22p2', 'sw23p1', 'sw23p2', 'sw24p1', 'sw24p2',
-                               'sw25p1', 'sw25p2', 'sw26p1', 'sw26p2', 'sw27p1', 'sw27p2', 'sw28p1', 'sw28p2', 'sw29p1',
-                               'sw29p2', 'sw2p1', 'sw2p2', 'sw30p1', 'sw30p2', 'sw31p1', 'sw31p2', 'sw32p1', 'sw32p2',
-                               'sw33p1', 'sw33p2', 'sw34p1', 'sw34p2', 'sw35p1', 'sw35p2', 'sw36p1', 'sw36p2', 'sw37p1',
-                               'sw37p2', 'sw38p1', 'sw38p2', 'sw39p1', 'sw39p2', 'sw3p1', 'sw3p2', 'sw40p1', 'sw40p2',
-                               'sw41p1', 'sw41p2', 'sw42p1', 'sw42p2', 'sw43p1', 'sw43p2', 'sw44p1', 'sw44p2', 'sw45p1',
-                               'sw45p2', 'sw46p1', 'sw46p2', 'sw47p1', 'sw47p2', 'sw48p1', 'sw48p2', 'sw49p1', 'sw49p2',
-                               'sw4p1', 'sw4p2', 'sw50p1', 'sw50p2', 'sw51p1', 'sw51p2', 'sw52p1', 'sw52p2', 'sw53p1',
-                               'sw53p2', 'sw54p1', 'sw54p2', 'sw55p1', 'sw55p2', 'sw56p1', 'sw56p2', 'sw57p1', 'sw57p2',
-                               'sw58p1', 'sw58p2', 'sw59p1', 'sw59p2', 'sw5p1', 'sw5p2', 'sw60p1', 'sw60p2', 'sw61p1',
-                               'sw61p2', 'sw62p1', 'sw62p2', 'sw63p1', 'sw63p2', 'sw64p1', 'sw64p2', 'sw65p1', 'sw65p2',
-                               'sw66p1', 'sw66p2', 'sw67p1', 'sw67p2', 'sw68p1', 'sw68p2', 'sw69p1', 'sw69p2', 'sw6p1',
-                               'sw6p2', 'sw70p1', 'sw70p2', 'sw71p1', 'sw71p2', 'sw72p1', 'sw72p2', 'sw7p1', 'sw7p2',
-                               'sw8p1', 'sw8p2', 'sw9p1', 'sw9p2']
-        self.interface_fae_list = ['eth0', 'eth1', 'fnm1', 'fnm1pl1', 'fnm1pl2', 'fnm1pl3', 'fnm1pl4', 'fnma1p1',
-                                   'fnma1p2', 'fnma1p3', 'fnma2p1', 'fnma2p2', 'fnma2p3', 'fnma3p1', 'fnma3p2',
-                                   'fnma3p3', 'fnma4p1', 'fnma4p2', 'fnma4p3', 'ib0', 'lo', 'sw10p1', 'sw10p1pl1',
-                                   'sw10p1pl2', 'sw10p1pl3', 'sw10p1pl4', 'sw10p2', 'sw10p2pl1', 'sw10p2pl2',
-                                   'sw10p2pl3', 'sw10p2pl4', 'sw11p1', 'sw11p1pl1', 'sw11p1pl2', 'sw11p1pl3',
-                                   'sw11p1pl4', 'sw11p2', 'sw11p2pl1', 'sw11p2pl2', 'sw11p2pl3', 'sw11p2pl4', 'sw12p1',
-                                   'sw12p1pl1', 'sw12p1pl2', 'sw12p1pl3', 'sw12p1pl4', 'sw12p2', 'sw12p2pl1',
-                                   'sw12p2pl2', 'sw12p2pl3', 'sw12p2pl4', 'sw13p1', 'sw13p1pl1', 'sw13p1pl2',
-                                   'sw13p1pl3', 'sw13p1pl4', 'sw13p2', 'sw13p2pl1', 'sw13p2pl2', 'sw13p2pl3',
-                                   'sw13p2pl4', 'sw14p1', 'sw14p1pl1', 'sw14p1pl2', 'sw14p1pl3', 'sw14p1pl4', 'sw14p2',
-                                   'sw14p2pl1', 'sw14p2pl2', 'sw14p2pl3', 'sw14p2pl4', 'sw15p1', 'sw15p1pl1',
-                                   'sw15p1pl2', 'sw15p1pl3', 'sw15p1pl4', 'sw15p2', 'sw15p2pl1', 'sw15p2pl2',
-                                   'sw15p2pl3', 'sw15p2pl4', 'sw16p1', 'sw16p1pl1', 'sw16p1pl2', 'sw16p1pl3',
-                                   'sw16p1pl4', 'sw16p2', 'sw16p2pl1', 'sw16p2pl2', 'sw16p2pl3', 'sw16p2pl4', 'sw17p1',
-                                   'sw17p1pl1', 'sw17p1pl2', 'sw17p1pl3', 'sw17p1pl4', 'sw17p2', 'sw17p2pl1',
-                                   'sw17p2pl2', 'sw17p2pl3', 'sw17p2pl4', 'sw18p1', 'sw18p1pl1', 'sw18p1pl2',
-                                   'sw18p1pl3', 'sw18p1pl4', 'sw18p2', 'sw18p2pl1', 'sw18p2pl2', 'sw18p2pl3',
-                                   'sw18p2pl4', 'sw19p1', 'sw19p1pl1', 'sw19p1pl2', 'sw19p1pl3', 'sw19p1pl4', 'sw19p2',
-                                   'sw19p2pl1', 'sw19p2pl2', 'sw19p2pl3', 'sw19p2pl4', 'sw1p1', 'sw1p1pl1', 'sw1p1pl2',
-                                   'sw1p1pl3', 'sw1p1pl4', 'sw1p2', 'sw1p2pl1', 'sw1p2pl2', 'sw1p2pl3', 'sw1p2pl4',
-                                   'sw20p1', 'sw20p1pl1', 'sw20p1pl2', 'sw20p1pl3', 'sw20p1pl4', 'sw20p2', 'sw20p2pl1',
-                                   'sw20p2pl2', 'sw20p2pl3', 'sw20p2pl4', 'sw21p1', 'sw21p1pl1', 'sw21p1pl2',
-                                   'sw21p1pl3', 'sw21p1pl4', 'sw21p2', 'sw21p2pl1', 'sw21p2pl2', 'sw21p2pl3',
-                                   'sw21p2pl4', 'sw22p1', 'sw22p1pl1', 'sw22p1pl2', 'sw22p1pl3', 'sw22p1pl4', 'sw22p2',
-                                   'sw22p2pl1', 'sw22p2pl2', 'sw22p2pl3', 'sw22p2pl4', 'sw23p1', 'sw23p1pl1',
-                                   'sw23p1pl2', 'sw23p1pl3', 'sw23p1pl4', 'sw23p2', 'sw23p2pl1', 'sw23p2pl2',
-                                   'sw23p2pl3', 'sw23p2pl4', 'sw24p1', 'sw24p1pl1', 'sw24p1pl2', 'sw24p1pl3',
-                                   'sw24p1pl4', 'sw24p2', 'sw24p2pl1', 'sw24p2pl2', 'sw24p2pl3', 'sw24p2pl4', 'sw25p1',
-                                   'sw25p1pl1', 'sw25p1pl2', 'sw25p1pl3', 'sw25p1pl4', 'sw25p2', 'sw25p2pl1',
-                                   'sw25p2pl2', 'sw25p2pl3', 'sw25p2pl4', 'sw26p1', 'sw26p1pl1', 'sw26p1pl2',
-                                   'sw26p1pl3', 'sw26p1pl4', 'sw26p2', 'sw26p2pl1', 'sw26p2pl2', 'sw26p2pl3',
-                                   'sw26p2pl4', 'sw27p1', 'sw27p1pl1', 'sw27p1pl2', 'sw27p1pl3', 'sw27p1pl4', 'sw27p2',
-                                   'sw27p2pl1', 'sw27p2pl2', 'sw27p2pl3', 'sw27p2pl4', 'sw28p1', 'sw28p1pl1',
-                                   'sw28p1pl2', 'sw28p1pl3', 'sw28p1pl4', 'sw28p2', 'sw28p2pl1', 'sw28p2pl2',
-                                   'sw28p2pl3', 'sw28p2pl4', 'sw29p1', 'sw29p1pl1', 'sw29p1pl2', 'sw29p1pl3',
-                                   'sw29p1pl4', 'sw29p2', 'sw29p2pl1', 'sw29p2pl2', 'sw29p2pl3', 'sw29p2pl4', 'sw2p1',
-                                   'sw2p1pl1', 'sw2p1pl2', 'sw2p1pl3', 'sw2p1pl4', 'sw2p2', 'sw2p2pl1', 'sw2p2pl2',
-                                   'sw2p2pl3', 'sw2p2pl4', 'sw30p1', 'sw30p1pl1', 'sw30p1pl2', 'sw30p1pl3', 'sw30p1pl4',
-                                   'sw30p2', 'sw30p2pl1', 'sw30p2pl2', 'sw30p2pl3', 'sw30p2pl4', 'sw31p1', 'sw31p1pl1',
-                                   'sw31p1pl2', 'sw31p1pl3', 'sw31p1pl4', 'sw31p2', 'sw31p2pl1', 'sw31p2pl2',
-                                   'sw31p2pl3', 'sw31p2pl4', 'sw32p1', 'sw32p1pl1', 'sw32p1pl2', 'sw32p1pl3',
-                                   'sw32p1pl4', 'sw32p2', 'sw32p2pl1', 'sw32p2pl2', 'sw32p2pl3', 'sw32p2pl4', 'sw33p1',
-                                   'sw33p1pl1', 'sw33p1pl2', 'sw33p1pl3', 'sw33p1pl4', 'sw33p2', 'sw33p2pl1',
-                                   'sw33p2pl2', 'sw33p2pl3', 'sw33p2pl4', 'sw34p1', 'sw34p1pl1', 'sw34p1pl2',
-                                   'sw34p1pl3', 'sw34p1pl4', 'sw34p2', 'sw34p2pl1', 'sw34p2pl2', 'sw34p2pl3',
-                                   'sw34p2pl4', 'sw35p1', 'sw35p1pl1', 'sw35p1pl2', 'sw35p1pl3', 'sw35p1pl4', 'sw35p2',
-                                   'sw35p2pl1', 'sw35p2pl2', 'sw35p2pl3', 'sw35p2pl4', 'sw36p1', 'sw36p1pl1',
-                                   'sw36p1pl2', 'sw36p1pl3', 'sw36p1pl4', 'sw36p2', 'sw36p2pl1', 'sw36p2pl2',
-                                   'sw36p2pl3', 'sw36p2pl4', 'sw37p1', 'sw37p1pl1', 'sw37p1pl2', 'sw37p1pl3',
-                                   'sw37p1pl4', 'sw37p2', 'sw37p2pl1', 'sw37p2pl2', 'sw37p2pl3', 'sw37p2pl4', 'sw38p1',
-                                   'sw38p1pl1', 'sw38p1pl2', 'sw38p1pl3', 'sw38p1pl4', 'sw38p2', 'sw38p2pl1',
-                                   'sw38p2pl2', 'sw38p2pl3', 'sw38p2pl4', 'sw39p1', 'sw39p1pl1', 'sw39p1pl2',
-                                   'sw39p1pl3', 'sw39p1pl4', 'sw39p2', 'sw39p2pl1', 'sw39p2pl2', 'sw39p2pl3',
-                                   'sw39p2pl4', 'sw3p1', 'sw3p1pl1', 'sw3p1pl2', 'sw3p1pl3', 'sw3p1pl4', 'sw3p2',
-                                   'sw3p2pl1', 'sw3p2pl2', 'sw3p2pl3', 'sw3p2pl4', 'sw40p1', 'sw40p1pl1', 'sw40p1pl2',
-                                   'sw40p1pl3', 'sw40p1pl4', 'sw40p2', 'sw40p2pl1', 'sw40p2pl2', 'sw40p2pl3',
-                                   'sw40p2pl4', 'sw41p1', 'sw41p1pl1', 'sw41p1pl2', 'sw41p1pl3', 'sw41p1pl4', 'sw41p2',
-                                   'sw41p2pl1', 'sw41p2pl2', 'sw41p2pl3', 'sw41p2pl4', 'sw42p1', 'sw42p1pl1',
-                                   'sw42p1pl2', 'sw42p1pl3', 'sw42p1pl4', 'sw42p2', 'sw42p2pl1', 'sw42p2pl2',
-                                   'sw42p2pl3', 'sw42p2pl4', 'sw43p1', 'sw43p1pl1', 'sw43p1pl2', 'sw43p1pl3',
-                                   'sw43p1pl4', 'sw43p2', 'sw43p2pl1', 'sw43p2pl2', 'sw43p2pl3', 'sw43p2pl4', 'sw44p1',
-                                   'sw44p1pl1', 'sw44p1pl2', 'sw44p1pl3', 'sw44p1pl4', 'sw44p2', 'sw44p2pl1',
-                                   'sw44p2pl2', 'sw44p2pl3', 'sw44p2pl4', 'sw45p1', 'sw45p1pl1', 'sw45p1pl2',
-                                   'sw45p1pl3', 'sw45p1pl4', 'sw45p2', 'sw45p2pl1', 'sw45p2pl2', 'sw45p2pl3',
-                                   'sw45p2pl4', 'sw46p1', 'sw46p1pl1', 'sw46p1pl2', 'sw46p1pl3', 'sw46p1pl4', 'sw46p2',
-                                   'sw46p2pl1', 'sw46p2pl2', 'sw46p2pl3', 'sw46p2pl4', 'sw47p1', 'sw47p1pl1',
-                                   'sw47p1pl2', 'sw47p1pl3', 'sw47p1pl4', 'sw47p2', 'sw47p2pl1', 'sw47p2pl2',
-                                   'sw47p2pl3', 'sw47p2pl4', 'sw48p1', 'sw48p1pl1', 'sw48p1pl2', 'sw48p1pl3',
-                                   'sw48p1pl4', 'sw48p2', 'sw48p2pl1', 'sw48p2pl2', 'sw48p2pl3', 'sw48p2pl4', 'sw49p1',
-                                   'sw49p1pl1', 'sw49p1pl2', 'sw49p1pl3', 'sw49p1pl4', 'sw49p2', 'sw49p2pl1',
-                                   'sw49p2pl2', 'sw49p2pl3', 'sw49p2pl4', 'sw4p1', 'sw4p1pl1', 'sw4p1pl2', 'sw4p1pl3',
-                                   'sw4p1pl4', 'sw4p2', 'sw4p2pl1', 'sw4p2pl2', 'sw4p2pl3', 'sw4p2pl4', 'sw50p1',
-                                   'sw50p1pl1', 'sw50p1pl2', 'sw50p1pl3', 'sw50p1pl4', 'sw50p2', 'sw50p2pl1',
-                                   'sw50p2pl2', 'sw50p2pl3', 'sw50p2pl4', 'sw51p1', 'sw51p1pl1', 'sw51p1pl2',
-                                   'sw51p1pl3', 'sw51p1pl4', 'sw51p2', 'sw51p2pl1', 'sw51p2pl2', 'sw51p2pl3',
-                                   'sw51p2pl4', 'sw52p1', 'sw52p1pl1', 'sw52p1pl2', 'sw52p1pl3', 'sw52p1pl4', 'sw52p2',
-                                   'sw52p2pl1', 'sw52p2pl2', 'sw52p2pl3', 'sw52p2pl4', 'sw53p1', 'sw53p1pl1',
-                                   'sw53p1pl2', 'sw53p1pl3', 'sw53p1pl4', 'sw53p2', 'sw53p2pl1', 'sw53p2pl2',
-                                   'sw53p2pl3', 'sw53p2pl4', 'sw54p1', 'sw54p1pl1', 'sw54p1pl2', 'sw54p1pl3',
-                                   'sw54p1pl4', 'sw54p2', 'sw54p2pl1', 'sw54p2pl2', 'sw54p2pl3', 'sw54p2pl4', 'sw55p1',
-                                   'sw55p1pl1', 'sw55p1pl2', 'sw55p1pl3', 'sw55p1pl4', 'sw55p2', 'sw55p2pl1',
-                                   'sw55p2pl2', 'sw55p2pl3', 'sw55p2pl4', 'sw56p1', 'sw56p1pl1', 'sw56p1pl2',
-                                   'sw56p1pl3', 'sw56p1pl4', 'sw56p2', 'sw56p2pl1', 'sw56p2pl2', 'sw56p2pl3',
-                                   'sw56p2pl4', 'sw57p1', 'sw57p1pl1', 'sw57p1pl2', 'sw57p1pl3', 'sw57p1pl4', 'sw57p2',
-                                   'sw57p2pl1', 'sw57p2pl2', 'sw57p2pl3', 'sw57p2pl4', 'sw58p1', 'sw58p1pl1',
-                                   'sw58p1pl2', 'sw58p1pl3', 'sw58p1pl4', 'sw58p2', 'sw58p2pl1', 'sw58p2pl2',
-                                   'sw58p2pl3', 'sw58p2pl4', 'sw59p1', 'sw59p1pl1', 'sw59p1pl2', 'sw59p1pl3',
-                                   'sw59p1pl4', 'sw59p2', 'sw59p2pl1', 'sw59p2pl2', 'sw59p2pl3', 'sw59p2pl4', 'sw5p1',
-                                   'sw5p1pl1', 'sw5p1pl2', 'sw5p1pl3', 'sw5p1pl4', 'sw5p2', 'sw5p2pl1', 'sw5p2pl2',
-                                   'sw5p2pl3', 'sw5p2pl4', 'sw60p1', 'sw60p1pl1', 'sw60p1pl2', 'sw60p1pl3', 'sw60p1pl4',
-                                   'sw60p2', 'sw60p2pl1', 'sw60p2pl2', 'sw60p2pl3', 'sw60p2pl4', 'sw61p1', 'sw61p1pl1',
-                                   'sw61p1pl2', 'sw61p1pl3', 'sw61p1pl4', 'sw61p2', 'sw61p2pl1', 'sw61p2pl2',
-                                   'sw61p2pl3', 'sw61p2pl4', 'sw62p1', 'sw62p1pl1', 'sw62p1pl2', 'sw62p1pl3',
-                                   'sw62p1pl4', 'sw62p2', 'sw62p2pl1', 'sw62p2pl2', 'sw62p2pl3', 'sw62p2pl4', 'sw63p1',
-                                   'sw63p1pl1', 'sw63p1pl2', 'sw63p1pl3', 'sw63p1pl4', 'sw63p2', 'sw63p2pl1',
-                                   'sw63p2pl2', 'sw63p2pl3', 'sw63p2pl4', 'sw64p1', 'sw64p1pl1', 'sw64p1pl2',
-                                   'sw64p1pl3', 'sw64p1pl4', 'sw64p2', 'sw64p2pl1', 'sw64p2pl2', 'sw64p2pl3',
-                                   'sw64p2pl4', 'sw65p1', 'sw65p1pl1', 'sw65p1pl2', 'sw65p1pl3', 'sw65p1pl4', 'sw65p2',
-                                   'sw65p2pl1', 'sw65p2pl2', 'sw65p2pl3', 'sw65p2pl4', 'sw66p1', 'sw66p1pl1',
-                                   'sw66p1pl2', 'sw66p1pl3', 'sw66p1pl4', 'sw66p2', 'sw66p2pl1', 'sw66p2pl2',
-                                   'sw66p2pl3', 'sw66p2pl4', 'sw67p1', 'sw67p1pl1', 'sw67p1pl2', 'sw67p1pl3',
-                                   'sw67p1pl4', 'sw67p2', 'sw67p2pl1', 'sw67p2pl2', 'sw67p2pl3', 'sw67p2pl4', 'sw68p1',
-                                   'sw68p1pl1', 'sw68p1pl2', 'sw68p1pl3', 'sw68p1pl4', 'sw68p2', 'sw68p2pl1',
-                                   'sw68p2pl2', 'sw68p2pl3', 'sw68p2pl4', 'sw69p1', 'sw69p1pl1', 'sw69p1pl2',
-                                   'sw69p1pl3', 'sw69p1pl4', 'sw69p2', 'sw69p2pl1', 'sw69p2pl2', 'sw69p2pl3',
-                                   'sw69p2pl4', 'sw6p1', 'sw6p1pl1', 'sw6p1pl2', 'sw6p1pl3', 'sw6p1pl4', 'sw6p2',
-                                   'sw6p2pl1', 'sw6p2pl2', 'sw6p2pl3', 'sw6p2pl4', 'sw70p1', 'sw70p1pl1', 'sw70p1pl2',
-                                   'sw70p1pl3', 'sw70p1pl4', 'sw70p2', 'sw70p2pl1', 'sw70p2pl2', 'sw70p2pl3',
-                                   'sw70p2pl4', 'sw71p1', 'sw71p1pl1', 'sw71p1pl2', 'sw71p1pl3', 'sw71p1pl4', 'sw71p2',
-                                   'sw71p2pl1', 'sw71p2pl2', 'sw71p2pl3', 'sw71p2pl4', 'sw72p1', 'sw72p1pl1',
-                                   'sw72p1pl2', 'sw72p1pl3', 'sw72p1pl4', 'sw72p2', 'sw72p2pl1', 'sw72p2pl2',
-                                   'sw72p2pl3', 'sw72p2pl4', 'sw7p1', 'sw7p1pl1', 'sw7p1pl2', 'sw7p1pl3', 'sw7p1pl4',
-                                   'sw7p2', 'sw7p2pl1', 'sw7p2pl2', 'sw7p2pl3', 'sw7p2pl4', 'sw8p1', 'sw8p1pl1',
-                                   'sw8p1pl2', 'sw8p1pl3', 'sw8p1pl4', 'sw8p2', 'sw8p2pl1', 'sw8p2pl2', 'sw8p2pl3',
-                                   'sw8p2pl4', 'sw9p1', 'sw9p1pl1', 'sw9p1pl2', 'sw9p1pl3', 'sw9p1pl4', 'sw9p2',
-                                   'sw9p2pl1', 'sw9p2pl2', 'sw9p2pl3', 'sw9p2pl4']
 
     def get_mgmt_ports(self) -> List[str]:
         return self.mgmt_ports
@@ -717,9 +579,27 @@ class BlackMambaSwitch(IbSwitch):
         self.platform_inventory_switch_values.update({"hardware-version": None,
                                                       "model": None})
 
+    def _init_interface_lists(self):
+        super()._init_interface_lists()
+        self.mgmt_ports = ['eth0']  # 'eth1' disabled for now
+        ib_ports = self.fnm_external_port_list + [f'sw{a + 1}p{b}' for a in range(self.ib_ports_num) for b in (1, 2)]
+        # = ['fnm1', 'sw1p1', 'sw1p2', ..., 'sw72p1', 'sw72p2']
+        self.interface_list = self.network_ports + ib_ports + ['eth1']
+        self.interface_fae_list = (
+            self.interface_list +
+            [f'{p}pl{pl + 1}' for p in ib_ports for pl in range(self.asic_amount)] +  # e.g. sw7p1 - sw7p4
+            [f'fnma{pl + 1}p{i + 1}' for i in range(3) for pl in range(self.asic_amount)])  # fnma1p1 - fnma4p3
+        self.interface_active_internal_fnm_ports = {port for port in self.interface_fae_list
+                                                    if port.startswith('fnm') and not port.endswith('p3')} - {'fnm1'}
+        # because other internal fnm ports are unused currently
+
     def _init_eth0_speeds(self):
         super()._init_eth0_speeds()
         self.supported_eth0_speeds += ['10M']
+
+    def _init_ib_speeds(self):
+        super()._init_ib_speeds()
+        self.supported_ib_speeds = ("sdr", "hdr", "ndr", "xdr")
 
     def _relevant_config_filename_by_version(self, version: str) -> str:
         return 'nvos_config_xdr.yml'
@@ -735,9 +615,8 @@ class CrocodileSwitch(IbSwitch):
         super()._init_constants()
         self.ib_ports_num = 64
         self.core_count = 4
+        self.split_ports_supported = True
         self.asic_type = NvosConst.QTM3
-        self.default_port = 'swA1p1'
-        self.mgmt_ports = ['eth0', 'eth1']
         self.platform_file_path = MultiPlanarConsts.PLATFORM_FILE_FULL_PATH.format("x86_64-nvidia_qm3400-r0")
         self.show_platform_output.update({
             "product-name": "QM3400",
@@ -755,6 +634,8 @@ class CrocodileSwitch(IbSwitch):
                                 'PMIC-7-CEX-VDD-Out-1', 'PSU-1-12V-Out', 'PSU-2-12V-Out', 'PSU-3-12V-Out',
                                 'PSU-4-12V-Out']
         self.stats_fan_header_num_of_lines = 23
+        self.system_profile_default_values = ['enabled', '1792', 'enabled', 'disabled', '1']
+        self.stats_cpu_header_num_of_lines = 12
         self.stats_power_header_num_of_lines = 17
         self.stats_temperature_header_num_of_lines = 69
         self.previous_cpld_version = BaseSwitch.CpldImageConsts(
@@ -887,6 +768,12 @@ class CrocodileSwitch(IbSwitch):
         self.platform_inventory_switch_values.update({"hardware-version": None,
                                                       "model": None})
 
+    def _init_interface_lists(self):
+        super()._init_interface_lists()
+        self.mgmt_ports = ['eth0', 'eth1']
+        self.interface_active_internal_fnm_ports = ['fnma0p1', 'fnma1p1']
+        self.default_port = 'swA1p1'
+
 
 # -------------------------- Crocodile Simx Switch ----------------------------
 class CrocodileSimxSwitch(IbSwitch):
@@ -921,7 +808,7 @@ class NvLinkSwitch(IbSwitch):
 class JulietSwitch(NvLinkSwitch):
     FaeImagesTestConsts = namedtuple('FaeImagesTestConsts', ('current_image_version', 'alternate_image_version'))
     NmxClusterAppsConsts = namedtuple('NmxClusterAppsConsts',
-                                      ('new_path', 'new_version_names'))
+                                      ('burn_path', 'burn_version_names'))
     BiosImagesTestConsts = namedtuple('BiosImagesTestConsts', ('current_version', 'alternate_version'))
 
     def __init__(self, asic_amount):
@@ -945,6 +832,7 @@ class JulietSwitch(NvLinkSwitch):
 
     def _init_constants(self):
         super()._init_constants()
+        self.system_is_ready_wait_timeout = 20 * MINUTE
         self.category_list = ['temperature', 'cpu', 'disk', 'fan', 'mgmt-interface', 'voltage']
         self.category_disabled_dict = {
             self.category_list[0]: self.category_default_disabled_dict,
@@ -985,13 +873,13 @@ class JulietSwitch(NvLinkSwitch):
                            'cec1736-ecfw-01.03.0216.0000-n04-dev-initial.fwpkg': '01.03.0216.0000_n04'})
 
         self.nmx_cluster_apps_versions = self.NmxClusterAppsConsts(
-            new_path={
-                ClusterConsts.NMX_CONTROLLER: "/auto/sw/release/NMX/NMX-controller/package/0.6.0/nmx-c-nvlink_0.6.0_2024-07-04_17-33.tar.gz",
-                ClusterConsts.NMX_TELEMETRY: "/auto/sw/release/NMX/NMX-telemetry/nmx-telemetry_0.4.4_2024-07-08.tgz"
+            burn_path={
+                ClusterConsts.NMX_CONTROLLER: "/auto/sw/release/NMX/NMX-controller/package/0.6.0/nmx-c-nvlink_0.6.0_2024-08-27_17-17.tar.gz",
+                ClusterConsts.NMX_TELEMETRY: "/auto/sw/release/NMX/NMX-telemetry/nmx-telemetry_0.6.2_2024-08-20.tgz"
             },
-            new_version_names={
+            burn_version_names={
                 ClusterConsts.NMX_CONTROLLER: "0.6.0",
-                ClusterConsts.NMX_TELEMETRY: "0.4.4"
+                ClusterConsts.NMX_TELEMETRY: "0.6.2"
             }
         )
         self.supported_commands.extend([ActionConsts.POWER_CYCLE])
@@ -1022,7 +910,8 @@ class JulietSwitch(NvLinkSwitch):
         self.platform_inventory_items_dict.update({'bmc': [PlatformConsts.FW_BMC]})
         platform_inventory_bmc_values = {
             "hardware-version": NvosConst.NOT_AVAILABLE, "model": None,
-            "serial": None, "state": FansConsts.STATE_OK, "type": PlatformConsts.FW_BMC.lower()}
+            "serial": None, PlatformConsts.INV_STATE: FansConsts.STATE_OK,
+            "type": PlatformConsts.FW_BMC.lower()}
         self.platform_inventory_values.update({'bmc': platform_inventory_bmc_values})
 
     def _init_fae_lists(self):
@@ -1107,9 +996,10 @@ class JulietScaleoutSwitch(JulietSwitch):
                 "CPLD4": "CPLD000372_REV0003"
             }
         )
-        # self.stats_fan_header_num_of_lines = 25
-        # self.stats_power_header_num_of_lines = 13
-        # self.stats_temperature_header_num_of_lines = 53
+        self.stats_fan_header_num_of_lines = 21
+        self.stats_cpu_header_num_of_lines = 10
+        self.stats_temperature_header_num_of_lines = 48
+
         # Port 1-36 is from asic1/ Port 37-72 is from asic2
         self.nvl5_access_ports_list = ['acp1', 'acp2', 'acp3', 'acp4', 'acp5', 'acp6',
                                        'acp7', 'acp8', 'acp9', 'acp10', 'acp11', 'acp12', 'acp13', 'acp14',
@@ -1276,7 +1166,13 @@ class JulietAriel(JulietTTMSwitch):
                                        'acp15', 'acp16', 'acp17', 'acp18', 'acp19', 'acp20',
                                        'acp21', 'acp22', 'acp23', 'acp24', 'acp25', 'acp26',
                                        'acp27', 'acp28', 'acp29', 'acp30', 'acp31', 'acp32',
-                                       'acp33', 'acp34', 'acp35', 'acp36']
+                                       'acp33', 'acp34', 'acp35', 'acp36', 'acp37', 'acp38', 'acp39', 'acp40',
+                                       'acp41', 'acp42', 'acp43', 'acp44', 'acp45', 'acp46',
+                                       'acp47', 'acp48', 'acp49', 'acp50', 'acp51', 'acp52',
+                                       'acp53', 'acp54', 'acp55', 'acp56', 'acp57', 'acp58',
+                                       'acp59', 'acp60', 'acp61', 'acp62', 'acp63', 'acp64',
+                                       'acp65', 'acp66', 'acp67', 'acp68', 'acp69', 'acp70',
+                                       'acp71', 'acp72']
 
         self.all_nvl5_ports_list = self.nvl5_access_ports_list + self.nvl5_trunk_ports_list + self.network_ports
 

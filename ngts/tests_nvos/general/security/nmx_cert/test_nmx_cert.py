@@ -1,20 +1,26 @@
 import random
 import string
+import time
+from typing import List
 
 import pytest
 
 import ngts.tools.test_utils.allure_utils as allure
+from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import ApiType, TestFlowType
 from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.nmx.Cluster import Cluster
+from ngts.nvos_tools.nmx.Manager import Manager
 from ngts.nvos_tools.system.System import System
+from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tests_nvos.general.security.certificate.constants import TestCert
-from ngts.tests_nvos.general.security.nmx_cert.conftest import clear_manager_config, import_test_certs
+from ngts.tests_nvos.general.security.certificate.helpers import import_test_certs
+from ngts.tests_nvos.general.security.nmx_cert.conftest import clear_manager_config
 from ngts.tests_nvos.general.security.nmx_cert.constants import Defaults, EncryptionMode, ENABLED, DISABLED, \
     UserCfgJsonFields, FILE_SHOULD_NOT_EXIST, NA, STATE, UserCfgJsonValues
 from ngts.tests_nvos.general.security.nmx_cert.helpers import verify_manager_show, verify_cert_show, verify_cacert_show, \
-    verify_encryption_show, verify_client_connection, verify_static_checks
+    verify_encryption_show, verify_static_checks, run_manager_client_hello_request
 from ngts.tests_nvos.system.gnmi.conftest import scp_player, get_scp_player
 
 
@@ -34,7 +40,6 @@ def test_manager_cli(test_api):
     7.	Run update encryption (to all options)
     8.	Verify in show that related field updates accordingly
     """
-    # TODO: https://redmine.mellanox.com/issues/3993304
     TestToolkit.tested_api = test_api
     cluster = Cluster()
     cert = TestCert.cert_valid_1
@@ -82,7 +87,7 @@ def test_manager_cli(test_api):
             with allure.independent_step('verify encryption show'):
                 verify_encryption_show(expect_mode=Defaults.ENCRYPTION)
         with allure.independent_step(
-                'verify fields in json'):  # TODO: uncomment after bug close: https://redmine.mellanox.com/issues/3993304
+                'verify fields in json'):
             verify_static_checks({UserCfgJsonFields.ENCRYPTION: None})
     with allure.step('check values after restore ca/certificate'):
         with allure.step('Run restore ca/certificate'):
@@ -97,7 +102,6 @@ def test_manager_cli(test_api):
                 verify_cacert_show(expect_cert_id=Defaults.CACERT)
         with allure.independent_step('verify files and fields in json deleted'):
             verify_static_checks({UserCfgJsonFields.CERTIFICATE: None,
-                                  # TODO: uncomment after bug close: https://redmine.mellanox.com/issues/3993304
                                   UserCfgJsonFields.PRIVATE_KEY: None, UserCfgJsonFields.CA_CERTIFICATE: None}, FILE_SHOULD_NOT_EXIST,
                                  FILE_SHOULD_NOT_EXIST)
     with allure.step('check values after update manager'):
@@ -129,7 +133,6 @@ def test_manager_cli(test_api):
                 verify_encryption_show(NA)
         with allure.independent_step('verify files and fields in json deleted'):
             verify_static_checks({UserCfgJsonFields.CERTIFICATE: None,
-                                  # TODO: uncomment after bug close: https://redmine.mellanox.com/issues/3993304
                                   UserCfgJsonFields.PRIVATE_KEY: None, UserCfgJsonFields.CA_CERTIFICATE: None,
                                   UserCfgJsonFields.ENCRYPTION: None, UserCfgJsonFields.STATE: DISABLED}, FILE_SHOULD_NOT_EXIST,
                                  FILE_SHOULD_NOT_EXIST)
@@ -358,8 +361,7 @@ def test_restore_cert_when_in_encryption_mode(test_api):
 
 @pytest.mark.nmx
 @pytest.mark.security
-@pytest.mark.parametrize('test_flow', TestFlowType.ALL_TYPES)
-def test_connection_after_update_encryption(test_flow):
+def test_cluster_manager_connection():
     """
     Verify that client can communicate with nmx-c
         * run with all possible encryption modes
@@ -369,31 +371,96 @@ def test_connection_after_update_encryption(test_flow):
     3.	Run client request to nmx-c using matching cert & cacert of client side (– check encryption works?)
     4.	Expect success
     """
-    pytest.skip('currently skipping until getting image with NMX-C server')
+    cert1, cert2, cert3 = TestCert.cert_valid_1, TestCert.cert_valid_2, TestCert.cert_valid_3
+    disabled, tls, mtls = EncryptionMode.DISABLED, EncryptionMode.TLS, EncryptionMode.MTLS
 
-    test_is_good_flow = test_flow == TestFlowType.GOOD_FLOW
-    # test_is_good_flow = encryption_mode == EncryptionMode.MTLS
+    class Test:
+        cur_server_cert = None
+        cur_server_ca = None
+        cur_server_mode = None
 
-    manager = Cluster().manager
+        def __init__(self, name: str, server_cert: CertInfo, server_ca: CertInfo, server_mode: str, client_cert: CertInfo, client_ca: CertInfo, client_mode: str, expect_success: bool, skip_setup: bool = False):
+            self.name = name
+            self.server_cert = server_cert
+            self.server_ca = server_ca
+            self.server_mode = server_mode
+            self.client_cert = client_cert
+            self.client_ca = client_ca
+            self.client_mode = client_mode
+            self.expect_success = expect_success
+            self.skip_setup = skip_setup
 
-    nmx_c_cert = TestCert.cert_valid_1
-    client_cert = TestCert.cert_valid_2
+        def get_name(self) -> str:
+            return f'[{TestFlowType.GOOD_FLOW if self.expect_success else TestFlowType.BAD_FLOW}] {self.name}'
 
-    nmx_c_cacert = client_cert if test_is_good_flow else nmx_c_cert
-    client_cacert = nmx_c_cert if test_is_good_flow else client_cert
+        def setup(self, mngr: Manager, enable_mngr: bool = False):
+            if self.skip_setup:
+                return
+            if enable_mngr:
+                with allure.step('enable manager'):
+                    mngr.action_update(ENABLED).verify_result()
+            if self.server_cert.name != Test.cur_server_cert:
+                with allure.step(f'update server cert: {self.server_cert.name}'):
+                    mngr.certificate.action_update(self.server_cert.name).verify_result()
+                    Test.cur_server_cert = self.server_cert.name
+            if self.server_ca.cacert_name != Test.cur_server_ca:
+                with allure.step(f'update server CA: {self.server_ca.cacert_name}'):
+                    mngr.ca_certificate.action_update(self.server_ca.cacert_name).verify_result()
+                    Test.cur_server_ca = self.server_ca.cacert_name
+            if self.server_mode != Test.cur_server_mode:
+                with allure.step(f'update server encryption: {self.server_mode}'):
+                    mngr.encryption.action_update(self.server_mode).verify_result()
+                    Test.cur_server_mode = self.server_mode
 
-    with allure.step('load cert & cacert to nmx-c'):
-        manager.certificate.action_update(nmx_c_cert.name).verify_result()
-        manager.ca_certificate.action_update(nmx_c_cacert.cacert_name).verify_result()
-    with allure.step('verify connection using all encryption modes'):
-        verify_client_connection(test_is_good_flow, {mode: True for mode in EncryptionMode.ALL_MODES}, nmx_c_cert,
-                                 client_cert, nmx_c_cacert, client_cacert)
+        def run_client_and_verify(self):
+            run_manager_client_hello_request(self.client_mode, self.server_cert, self.server_ca, self.client_cert,
+                                             self.client_ca).verify_result(self.expect_success)
+
+    cases: List[Test] = [
+        # basic - mode mismatch
+        Test('server disabled client disabled', cert1, cert2, disabled, cert2, cert1, disabled, True, True),
+        Test('server disabled client tls', cert1, cert2, disabled, cert2, cert1, tls, False),
+        Test('server disabled client mtls', cert1, cert2, disabled, cert2, cert1, mtls, False),
+        Test('server tls client disabled', cert1, cert2, tls, cert2, cert1, disabled, False),
+        Test('server tls client tls', cert1, cert2, tls, cert2, cert1, tls, True),
+        Test('server tls client mtls', cert1, cert2, tls, cert2, cert1, mtls, True),
+        Test('server mtls client disabled', cert1, cert2, mtls, cert2, cert1, disabled, False),
+        Test('server mtls client tls', cert1, cert2, mtls, cert2, cert1, tls, False),
+        Test('server mtls client mtls', cert1, cert2, mtls, cert2, cert1, mtls, True),
+        # for the basic good flows - test with ca/cert mismatch
+        Test('server disabled client disabled - mismatch1', cert1, cert2, disabled, cert2, cert3, disabled, True),
+        Test('server disabled client disabled - mismatch2', cert1, cert2, disabled, cert3, cert1, disabled, True),
+        Test('server disabled client disabled - mismatch3', cert1, cert2, disabled, cert3, cert3, disabled, True),
+        Test('server tls client tls - mismatch1', cert1, cert2, tls, cert2, cert3, tls, False),
+        Test('server tls client tls - mismatch2', cert1, cert2, tls, cert3, cert1, tls, True),
+        Test('server tls client tls - mismatch3', cert1, cert2, tls, cert3, cert3, tls, False),
+        Test('server tls client mtls - mismatch1', cert1, cert2, tls, cert2, cert3, mtls, False),
+        Test('server tls client mtls - mismatch2', cert1, cert2, tls, cert3, cert1, mtls, True),
+        Test('server tls client mtls - mismatch3', cert1, cert2, tls, cert3, cert3, mtls, False),
+        Test('server mtls client mtls - mismatch1', cert1, cert2, mtls, cert2, cert3, mtls, False),
+        Test('server mtls client mtls - mismatch2', cert1, cert2, mtls, cert3, cert1, mtls, False),
+        Test('server mtls client mtls - mismatch3', cert1, cert2, mtls, cert3, cert3, mtls, False),
+    ]
+
+    with allure.step('enable cluster'):
+        cluster = Cluster()
+        cluster.set(STATE, ENABLED, apply=True).verify_result()
+    with allure.step('enable cluster manager'):
+        cluster.manager.action_update(ENABLED).verify_result()
+        time.sleep(2)
+
+    with allure.step('run all cases'):
+        for case in cases:
+            with allure.independent_step(case.get_name()):
+                with allure.step('set up'):
+                    case.setup(cluster.manager)
+                with allure.step(f'verify connection: {case.expect_success}'):
+                    case.run_client_and_verify()
 
 
 @pytest.mark.nmx
 @pytest.mark.security
-@pytest.mark.parametrize('test_flow', TestFlowType.ALL_TYPES)
-def test_connection_after_restore_encryption(test_flow):
+def test_connection_after_restore_encryption():
     """
     Verify that after encryption mode – client can connect only in None mode
 
@@ -401,78 +468,116 @@ def test_connection_after_restore_encryption(test_flow):
     2.	restore encryption
     3.	verify client can connect only with NONE
     """
-    pytest.skip('currently skipping until getting image with NMX-C server')
 
-    manager = Cluster().manager
-    nmx_c_cert = client_cert = nmx_c_cacert = client_cacert = TestCert.cert_valid_1
+    cert = TestCert.cert_valid_1
 
-    with allure.step('update cert & cacert & m/tls'):
-        manager.certificate.action_update(nmx_c_cert.name).verify_result()
-        manager.ca_certificate.action_update(nmx_c_cacert.cacert_name).verify_result()
+    with allure.step('enable cluster'):
+        cluster = Cluster()
+        cluster.set(STATE, ENABLED, apply=True).verify_result()
+    with allure.step('enable cluster manager'):
+        manager = cluster.manager
+        cluster.manager.action_update(ENABLED).verify_result()
+    with allure.step('update encryption'):
+        manager.certificate.action_update(cert.name).verify_result()
+        manager.ca_certificate.action_update(cert.cacert_name).verify_result()
         manager.encryption.action_update(random.choice([EncryptionMode.TLS, EncryptionMode.MTLS])).verify_result()
     with allure.step('restore encryption'):
         manager.encryption.action_restore().verify_result()
-    with allure.step('verify client can connect only with NONE'):
-        verify_client_connection(test_flow == TestFlowType.ALL_TYPES,
-                                 {mode: mode == EncryptionMode.DISABLED for mode in EncryptionMode.ALL_MODES},
-                                 nmx_c_cert, client_cert, nmx_c_cacert, client_cacert)
+    with allure.step('verify only non secured client request works'):
+        cases = {
+            EncryptionMode.DISABLED: True,
+            EncryptionMode.TLS: False,
+            EncryptionMode.MTLS: False,
+        }
+        time.sleep(2)
+        for client_mode, expect_success in cases.items():
+            with allure.independent_step(f'verify client connection: client mode: {client_mode}. expect success: {expect_success}'):
+                run_manager_client_hello_request(client_mode, cert, cert, cert, cert).verify_result(expect_success)
+
+
+def verify_no_client_connection(server_cert: CertInfo, server_ca: CertInfo):
+    for client_mode in EncryptionMode.ALL_MODES:
+        with allure.independent_step(f'verify client connection: client mode: {client_mode}. expect success: False'):
+            run_manager_client_hello_request(client_mode, server_cert, server_ca, server_ca, server_cert).verify_result(False)
 
 
 @pytest.mark.nmx
 @pytest.mark.security
-def test_no_connection_after_restore_manager():
+def test_no_connection_when_manager_state_disabled():
     """
-    Verify that after disabling cluster manager (restore) – client cannot connect at all
+    Verify that when cluster manager state disabled (restore/update disabled) – client cannot connect at all
 
     1.	update certs & encryption mode
-    2.	disable cluster manager     # TODO: can disable when everything is loaded? What happens then?
+    2.	disable cluster manager
     3.	verify client cannot connect at all
     """
-    pytest.skip('currently skipping until getting image with NMX-C server')
+    cert = TestCert.cert_valid_1
 
-    manager = Cluster().manager
-    nmx_c_cert = client_cert = nmx_c_cacert = client_cacert = TestCert.cert_valid_1
+    with allure.step('enable cluster'):
+        cluster = Cluster()
+        cluster.set(STATE, ENABLED, apply=True).verify_result()
 
-    with allure.step('update certs & encryption mode'):
-        manager.certificate.action_update(nmx_c_cert.name).verify_result()
-        manager.ca_certificate.action_update(nmx_c_cacert.cacert_name).verify_result()
-        manager.encryption.action_update(random.choice([EncryptionMode.TLS, EncryptionMode.MTLS])).verify_result()
-    with allure.step('disable cluster manager'):
+    with allure.step('enable cluster manager'):
+        manager = cluster.manager
+        manager.action_update(ENABLED).verify_result()
+
+    with allure.step('update encryption'):
+        manager.certificate.action_update(cert.name).verify_result()
+        manager.ca_certificate.action_update(cert.cacert_name).verify_result()
+        manager.encryption.action_update(random.choice(EncryptionMode.ALL_MODES)).verify_result()
+
+    with allure.step('disable manager (update to disabled)'):
+        manager.action_update(DISABLED).verify_result()
+        time.sleep(2)
+
+    with allure.step('verify cluster manager client cannot connect'):
+        verify_no_client_connection(cert, cert)
+
+    with allure.step('enable cluster manager'):
+        cluster.manager.action_update(ENABLED).verify_result()
+
+    with allure.step('disable manager (restore)'):
         manager.action_restore().verify_result()
-    with allure.step('verify client cannot connect at all'):
-        verify_client_connection(TestFlowType.BAD_FLOW, {mode: False for mode in EncryptionMode.ALL_MODES}, nmx_c_cert,
-                                 client_cert, nmx_c_cacert, client_cacert)
+        time.sleep(2)
+
+    with allure.step('verify cluster manager client cannot connect'):
+        verify_no_client_connection(cert, cert)
 
 
 @pytest.mark.nmx
 @pytest.mark.security
-def test_no_connection_after_restore_cluster():
+def test_no_connection_after_disable_cluster():
     """
     Verify that after disabling cluster (restore) – client cannot connect at all
 
     1.	update certs & encryption mode
-    2.	disable cluster     # TODO: can disable when everything is loaded? What happens then?
+    2.	disable cluster
     3.	verify client cannot connect at all
     """
-    pytest.skip('currently skipping until getting image with NMX-C server')
+    cert = TestCert.cert_valid_1
 
-    cluster = Cluster()
-    nmx_c_cert = client_cert = nmx_c_cacert = client_cacert = TestCert.cert_valid_1
+    with allure.step('enable cluster'):
+        cluster = Cluster()
+        cluster.set(STATE, ENABLED, apply=True).verify_result()
 
-    with allure.step('update certs & encryption mode'):
-        cluster.manager.certificate.action_update(nmx_c_cert.name).verify_result()
-        cluster.manager.ca_certificate.action_update(nmx_c_cacert.cacert_name).verify_result()
-        cluster.manager.encryption.action_update(
-            random.choice([EncryptionMode.TLS, EncryptionMode.MTLS])).verify_result()
+    with allure.step('enable cluster manager'):
+        manager = cluster.manager
+        manager.action_update(ENABLED).verify_result()
+
+    with allure.step('update encryption'):
+        manager.certificate.action_update(cert.name).verify_result()
+        manager.ca_certificate.action_update(cert.cacert_name).verify_result()
+        manager.encryption.action_update(random.choice(EncryptionMode.ALL_MODES)).verify_result()
+
     with allure.step('disable cluster'):
         cluster.set(STATE, DISABLED, apply=True).verify_result()
-    with allure.step('verify client cannot connect at all'):
-        verify_client_connection(TestFlowType.BAD_FLOW, {mode: False for mode in EncryptionMode.ALL_MODES}, nmx_c_cert,
-                                 client_cert, nmx_c_cacert, client_cacert)
+
+    with allure.step('verify cluster manager client cannot connect'):
+        verify_no_client_connection(cert, cert)
 
 
-@pytest.mark.system
-@pytest.mark.gnmi
+@pytest.mark.nmx
+@pytest.mark.security
 def test_nmx_cert_reboot_case(engines):
     """
     Verify that certificates and encryption mode are kept after reboot
@@ -481,30 +586,46 @@ def test_nmx_cert_reboot_case(engines):
     2.	Update encryption mode
     3.	Reboot
     4.	Verify updated values in show kept
+    5.  verify connection works with the configured mode
     """
     cluster = Cluster()
     manager = cluster.manager
     cert = TestCert.cert_valid_1
-    encryption_mode = random.choice([EncryptionMode.TLS, EncryptionMode.MTLS])
+    encryption_mode = random.choice(EncryptionMode.ALL_MODES)
+
+    with allure.step('enable cluster'):
+        cluster.set(STATE, ENABLED, apply=True).verify_result()
+
+    with allure.step('enable cluster manager'):
+        manager.action_update(ENABLED).verify_result()
+
     with allure.step('load cert & cacert'):
         manager.certificate.action_update(cert.name).verify_result()
         manager.ca_certificate.action_update(cert.cacert_name).verify_result()
     with allure.step('Update encryption mode'):
         manager.encryption.action_update(encryption_mode)
+
+    with allure.step('save config'):
+        NvueGeneralCli.save_config(engines.dut)
+
     with allure.step('reboot the system'):
         System().action('reboot', param_name='force', expect_reboot=True, output_format=None).verify_result()
         engines.dut.disconnect()
-    with allure.step('re-enable cluster after reboot'):
-        cluster.set(STATE, ENABLED, apply=True).verify_result()
+
     with allure.step('Verify updated values in show kept'):
-        verify_manager_show(expect_cert=cert.name, expect_cacert=cert.cacert_name, expect_encryption=encryption_mode)
-        verify_cert_show(expect_cert_id=cert.name)
-        verify_cacert_show(expect_cert_id=cert.cacert_name)
-        verify_encryption_show(
-            expect_mode=encryption_mode)  # TODO: should also perform communication check, or fields values enough?
+        with allure.independent_step('verify manager show'):
+            verify_manager_show(expect_cert=cert.name, expect_cacert=cert.cacert_name, expect_encryption=encryption_mode)
+        with allure.independent_step('verify cert show'):
+            verify_cert_show(expect_cert_id=cert.name)
+        with allure.independent_step('verify cacert show'):
+            verify_cacert_show(expect_cert_id=cert.cacert_name)
+        with allure.independent_step('verify encryption show'):
+            verify_encryption_show(expect_mode=encryption_mode)
+        with allure.independent_step(f'verify connection. mode: {encryption_mode}'):
+            run_manager_client_hello_request(encryption_mode, cert, cert, cert, cert).verify_result(True)
 
 
-def factory_reset_nmx_cert_check():
+def nmx_cert_factory_reset_no_params_check():
     """
     Verify that certificates and encryption mode cleared to default after factory reset
 
@@ -515,37 +636,37 @@ def factory_reset_nmx_cert_check():
     """
     dut_device: BaseDevice = TestToolkit.devices.dut
     should_check_nmx: bool = dut_device.has_nmx
+    scp_player = get_scp_player(TestToolkit.engines)
+    cert = TestCert.cert_valid_1
+    manager = Cluster().manager
+    clear_manager_config()
+    encryption_mode = random.choice([EncryptionMode.TLS, EncryptionMode.MTLS])
 
     if should_check_nmx:
-        scp_player = get_scp_player(TestToolkit.engines)
-        cert = TestCert.cert_valid_1
-        manager = Cluster().manager
-        clear_manager_config()
-        encryption_mode = random.choice([EncryptionMode.TLS, EncryptionMode.MTLS])
+        with allure.step('enable cluster and clear manager config'):
+            clear_manager_config()
         with allure.step('Import and load cert & cacert'):
             import_test_certs(scp_player, TestToolkit.engines.dut, [cert])
             manager.certificate.action_update(cert.name).verify_result()
             manager.ca_certificate.action_update(cert.cacert_name).verify_result()
         with allure.step('Update encryption mode'):
             manager.encryption.action_update(encryption_mode).verify_result()
-    else:
-        with allure.step('Not checking NMX on this dut device'):
-            pass
 
-    yield  # factory reset
+    yield  # do factory reset
 
     if should_check_nmx:
-        with allure.step('Verify values in show restored to defaults '):
-            verify_manager_show(expect_cert=Defaults.CERT, expect_cacert=Defaults.CACERT,
-                                expect_encryption=Defaults.ENCRYPTION)
-            verify_cert_show(expect_cert_id=Defaults.CERT)
-            verify_cacert_show(expect_cert_id=Defaults.CACERT)
-            verify_encryption_show(expect_mode=Defaults.ENCRYPTION)
-    else:
-        with allure.step('Not checking NMX on this dut device'):
-            pass
+        with allure.step('Verify values in show restored to defaults'):
+            with allure.independent_step('verify manager show'):
+                verify_manager_show(expect_cert=Defaults.CERT, expect_cacert=Defaults.CACERT,
+                                    expect_encryption=Defaults.ENCRYPTION)
+            with allure.independent_step('verify cert show'):
+                verify_cert_show(expect_cert_id=Defaults.CERT)
+            with allure.independent_step('verify cacert show'):
+                verify_cacert_show(expect_cert_id=Defaults.CACERT)
+            with allure.independent_step('verify encryption show'):
+                verify_encryption_show(expect_mode=Defaults.ENCRYPTION)
 
     yield  # to prevent StopIteration on the 2nd next() call
 
 
-factory_reset_nmx_cert_checker = factory_reset_nmx_cert_check()  # generator
+factory_reset_nmx_cert_checker = nmx_cert_factory_reset_no_params_check()  # generator

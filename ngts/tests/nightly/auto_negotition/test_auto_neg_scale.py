@@ -45,7 +45,7 @@ def tested_lb_all_dict(topology_obj, engines, interfaces, split_mode_supported_s
 
 class TestAutoNegScale(TestAutoNegBase):
 
-    def test_scale(self, cleanup_list, tested_lb_all_dict):
+    def test_scale(self, cleanup_list, tested_lb_all_dict, skip_if_rj45_cable):
         """
         The following test checks:
         1) configure the smallest speed, type on all interfaces

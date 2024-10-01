@@ -1,0 +1,63 @@
+[sonic_latest]
+# MTR testbed r-tigris-04 topologies
+r-tigris-04 ansible_host=10.210.25.93 sonic_version=v2 sonic_hwsku=Mellanox-SN3800-D112C8 iface_speed=50000 fanout_switch=r-tigris-17 ptf_host=ptf-r-tigris-04 ptf_portmap="roles/test/files/mlnx/ptf-map/r-tigris-04_interface_to_front_map.ini" pdu_host=pdu-10-208-0-182
+r-tigris-04-t0 ansible_host=10.210.25.93 sonic_version=v2 sonic_hwsku=Mellanox-SN3800-D112C8 iface_speed=50000 fanout_switch=r-tigris-17 ptf_host=ptf-r-tigris-04 ptf_portmap="roles/test/files/mlnx/ptf-map/r-tigris-04_interface_to_front_map.ini" dut_mac="b8:59:9f:a8:0b:00" pdu_host=pdu-10-208-0-182
+r-tigris-04-t0-16 ansible_host=10.210.25.93 sonic_version=v2 sonic_hwsku=Mellanox-SN3800-D112C8 iface_speed=50000 fanout_switch=r-tigris-17 ptf_host=ptf-r-tigris-04 ptf_portmap="roles/test/files/mlnx/ptf-map/r-tigris-04_interface_to_front_map.ini" dut_mac="b8:59:9f:a8:0b:00" pdu_host=pdu-10-208-0-182
+r-tigris-04-t0-52 ansible_host=10.210.25.93 sonic_version=v2 sonic_hwsku=Mellanox-SN3800-D112C8 iface_speed=50000 fanout_switch=r-tigris-17 ptf_host=ptf-r-tigris-04 ptf_portmap="roles/test/files/mlnx/ptf-map/r-tigris-04_interface_to_front_map.ini" dut_mac="b8:59:9f:a8:0b:00" pdu_host=pdu-10-208-0-182
+r-tigris-04-t0-56 ansible_host=10.210.25.93 sonic_version=v2 sonic_hwsku=Mellanox-SN3800-D112C8 iface_speed=50000 fanout_switch=r-tigris-17 ptf_host=ptf-r-tigris-04 ptf_portmap="roles/test/files/mlnx/ptf-map/r-tigris-04_interface_to_front_map.ini" dut_mac="b8:59:9f:a8:0b:00" pdu_host=pdu-10-208-0-182
+r-tigris-04-t0-64 ansible_host=10.210.25.93 sonic_version=v2 sonic_hwsku=Mellanox-SN3800-D112C8 iface_speed=50000 fanout_switch=r-tigris-17 ptf_host=ptf-r-tigris-04 ptf_portmap="roles/test/files/mlnx/ptf-map/r-tigris-04_interface_to_front_map.ini" dut_mac="b8:59:9f:a8:0b:00" pdu_host=pdu-10-208-0-182
+r-tigris-04-t0-120 ansible_host=10.210.25.93 sonic_version=v2 sonic_hwsku=Mellanox-SN3800-D112C8 iface_speed=50000 fanout_switch=r-tigris-17 ptf_host=ptf-r-tigris-04 ptf_portmap="roles/test/files/mlnx/ptf-map/r-tigris-04_interface_to_front_map.ini" dut_mac="b8:59:9f:a8:0b:00" pdu_host=pdu-10-208-0-182
+r-tigris-04-t1 ansible_host=10.210.25.93 sonic_version=v2 sonic_hwsku=Mellanox-SN3800-D112C8 iface_speed=50000 fanout_switch=r-tigris-17 ptf_host=ptf-r-tigris-04 ptf_portmap="roles/test/files/mlnx/ptf-map/r-tigris-04_interface_to_front_map.ini" dut_mac="b8:59:9f:a8:0b:00" pdu_host=pdu-10-208-0-182
+r-tigris-04-t1-lag ansible_host=10.210.25.93 sonic_version=v2 sonic_hwsku=Mellanox-SN3800-D112C8 iface_speed=50000 fanout_switch=r-tigris-17 ptf_host=ptf-r-tigris-04 ptf_portmap="roles/test/files/mlnx/ptf-map/r-tigris-04_interface_to_front_map.ini" dut_mac="b8:59:9f:a8:0b:00" pdu_host=pdu-10-208-0-182
+r-tigris-04-t1-64-lag ansible_host=10.210.25.93 sonic_version=v2 sonic_hwsku=Mellanox-SN3800-D112C8 iface_speed=50000 fanout_switch=r-tigris-17 ptf_host=ptf-r-tigris-04 ptf_portmap="roles/test/files/mlnx/ptf-map/r-tigris-04_interface_to_front_map.ini" dut_mac="b8:59:9f:a8:0b:00" pdu_host=pdu-10-208-0-182
+r-tigris-04-ptf32 ansible_host=10.210.25.93 sonic_version=v2 sonic_hwsku=Mellanox-SN3800-D112C8 iface_speed=50000 fanout_switch=r-tigris-17 ptf_host=ptf-r-tigris-04 ptf_portmap="roles/test/files/mlnx/ptf-map/r-tigris-04_interface_to_front_map.ini" dut_mac="b8:59:9f:a8:0b:00" pdu_host=pdu-10-208-0-182
+r-tigris-04-ptf64 ansible_host=10.210.25.93 sonic_version=v2 sonic_hwsku=Mellanox-SN3800-D112C8 iface_speed=50000 fanout_switch=r-tigris-17 ptf_host=ptf-r-tigris-04 ptf_portmap="roles/test/files/mlnx/ptf-map/r-tigris-04_interface_to_front_map.ini" dut_mac="b8:59:9f:a8:0b:00" pdu_host=pdu-10-208-0-182
+r-tigris-04-ptf-any ansible_host=10.210.25.93 sonic_version=v2 sonic_hwsku=Mellanox-SN3800-D112C8 iface_speed=50000 fanout_switch=r-tigris-17 ptf_host=ptf-r-tigris-04 ptf_portmap="roles/test/files/mlnx/ptf-map/r-tigris-04_interface_to_front_map.ini" dut_mac="b8:59:9f:a8:0b:00" pdu_host=pdu-10-208-0-182
+
+r-tigris-17 ansible_host=r-tigris-17 ansible_ssh_user="{{ lookup('env','ONYX_SWITCH_USER') }}" ansible_ssh_pass="{{ lookup('env','ONYX_SWITCH_PASSWORD') }}" os=onyx
+
+[sonic:children]
+sonic_latest
+
+[leaf_topo_1]
+# MTR r-tigris-04 topologies
+r-tigris-04
+r-tigris-04-t0
+r-tigris-04-t0-16
+r-tigris-04-t0-52
+r-tigris-04-t0-56
+r-tigris-04-t0-64
+r-tigris-04-t0-120
+r-tigris-04-t1
+r-tigris-04-t1-lag
+r-tigris-04-t1-64-lag
+r-tigris-04-ptf32
+r-tigris-04-ptf64
+r-tigris-04-ptf-any
+
+[leaf_topo_1:vars]
+podset_number=200
+
+[lab]
+# MTR r-tigris-04 topologies
+r-tigris-04
+r-tigris-04-t0
+r-tigris-04-t0-16
+r-tigris-04-t0-52
+r-tigris-04-t0-56
+r-tigris-04-t0-64
+r-tigris-04-t0-120
+r-tigris-04-t1
+r-tigris-04-t1-lag
+r-tigris-04-t1-64-lag
+r-tigris-04-ptf32
+r-tigris-04-ptf64
+r-tigris-04-ptf-any
+
+[ptf]
+# MTR r-tigris-04 PTF host
+ptf-r-tigris-04 ansible_host=10.213.104.5 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+10.213.104.5 ansible_host=10.213.104.5 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+
+[pdu]
+pdu-10-208-0-182 ansible_host=10.208.0.182 protocol=snmp

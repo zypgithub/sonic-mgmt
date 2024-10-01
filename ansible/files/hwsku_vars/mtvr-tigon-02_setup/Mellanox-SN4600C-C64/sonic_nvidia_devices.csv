@@ -1,0 +1,9 @@
+Hostname,ManagementIp,HwSku,Type,Protocol,Os
+mtvr-tigon-02,10.245.20.251/22,Mellanox-SN4600C-C64,DevSonic,,sonic
+mtvr-tigon-01,10.245.20.249/22,Mellanox-SN4600C-C64,FanoutLeaf,,sonic
+mtvr-tigon-04,10.245.20.253/22,Mellanox-SN4600C-C64,DevSonic,,sonic
+mtvr-tigon-03,10.245.20.252/22,Mellanox-SN4600C-C64,FanoutLeaf,,sonic
+mtvr-r740-06,10.245.36.1,TestServ,Server,,
+pdu-10-245-2-16,10.245.2.16,Vertiv,Pdu,snmp,
+pdu-10-245-2-40,10.245.2.40,Vertiv,Pdu,snmp,
+rcon-mtvr-rack-1-7,10.245.2.4,,ConsoleServer,ssh,sonic

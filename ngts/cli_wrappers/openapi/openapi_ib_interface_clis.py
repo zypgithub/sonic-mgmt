@@ -11,13 +11,14 @@ class OpenApiIbInterfaceCli(OpenApiBaseCli):
         self.cli_name = "interface"
 
     @staticmethod
-    def clear_stats(engine, port_name):
+    def clear_stats(engine, port_name, fae_param=""):
         """
         Clears the interface counters
         :param engine: ssh engine object
         :param port_name: the name of the port/ports
+        :param fae_param: optional - run the command with fae
         """
-        assert "Not implemented"
+        raise NotImplementedError()
 
     @staticmethod
     def show_interface(engine, port_name, interface_hierarchy="", fae_param="", output_format=OutputFormat.json):

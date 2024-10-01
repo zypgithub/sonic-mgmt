@@ -278,6 +278,7 @@ def test_crm_acl(env, cleanup):
 
 
 @pytest.mark.parametrize('ip_ver,start_ip', [('4', '2.2.2.0'), ('6', '2001::')], ids=['ipv4', 'ipv6'])
+@pytest.mark.parametrize('disable_rsyslog_ratelimit', ['swss'], indirect=True)
 @pytest.mark.disable_loganalyzer
 @allure.title('Test CRM thresholds')
 def test_crm_thresholds_neighbors(env, cleanup, map_res_to_thr, thresholds_cleanup,
@@ -304,6 +305,7 @@ def test_crm_thresholds_neighbors(env, cleanup, map_res_to_thr, thresholds_clean
 
 
 @pytest.mark.parametrize('ip_ver,start_ip', [('4', '2.2.2.0'), ('6', '2001::')], ids=['ipv4', 'ipv6'])
+@pytest.mark.parametrize('disable_rsyslog_ratelimit', ['swss'], indirect=True)
 @pytest.mark.disable_loganalyzer
 @allure.title('Test CRM thresholds nexthop')
 def test_crm_thresholds_nexthop(env, cleanup, map_res_to_thr, thresholds_cleanup,
@@ -349,6 +351,7 @@ def test_crm_thresholds_nexthop(env, cleanup, map_res_to_thr, thresholds_cleanup
                           )
 
 
+@pytest.mark.parametrize('disable_rsyslog_ratelimit', ['swss'], indirect=True)
 @pytest.mark.disable_loganalyzer
 @allure.title('Test CRM thresholds FDB')
 def test_crm_thresholds_fdb(env, cleanup, map_res_to_thr, thresholds_cleanup,
@@ -370,6 +373,7 @@ def test_crm_thresholds_fdb(env, cleanup, map_res_to_thr, thresholds_cleanup,
                           )
 
 
+@pytest.mark.parametrize('disable_rsyslog_ratelimit', ['swss'], indirect=True)
 @pytest.mark.disable_loganalyzer
 @allure.title('Test CRM thresholds ACL')
 def test_crm_thresholds_acl(env, cleanup, map_res_to_thr, thresholds_cleanup,

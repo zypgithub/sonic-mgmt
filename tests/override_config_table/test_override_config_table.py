@@ -5,13 +5,14 @@ from tests.common.utilities import skip_release
 from tests.common.utilities import update_pfcwd_default_state
 from tests.common.config_reload import config_reload
 from utilities import backup_config, restore_config, get_running_config,\
-    reload_minigraph_with_golden_config, file_exists_on_dut
+    reload_minigraph_with_golden_config, file_exists_on_dut, compare_dicts_ignore_list_order, \
+    NON_USER_CONFIG_TABLES
+
 
 GOLDEN_CONFIG = "/etc/sonic/golden_config_db.json"
 GOLDEN_CONFIG_BACKUP = "/etc/sonic/golden_config_db.json_before_override"
 CONFIG_DB = "/etc/sonic/config_db.json"
 CONFIG_DB_BACKUP = "/etc/sonic/config_db.json_before_override"
-NON_USER_CONFIG_TABLES = ["FLEX_COUNTER_TABLE"]
 
 pytestmark = [
     pytest.mark.topology('t0', 't1', 'any'),

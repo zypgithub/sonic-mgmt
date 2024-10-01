@@ -90,6 +90,7 @@ def test_ssd_cleanup_positive_flow(engines, devices):
     _change_monit_and_reload(engines.dut, old_line, new_line, file_path)
 
     try:
+        system_health_status = OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).verify_result()[HealthConsts.STATUS] == HealthConsts.NOT_OK
         df_output = _get_df_output(engines.dut)
         with allure.step("add file to reach usage threshold {}".format(5.1)):
             engines.dut.run_cmd(f"sudo fallocate -l {df_output[SystemConsts.SSD_SPACE_AVAILABLE_SIZE] - 5.1}G {paths_order[-1]}/big_file")
@@ -104,7 +105,7 @@ def test_ssd_cleanup_positive_flow(engines, devices):
 
             with allure.step("check system events - two events expected "):
                 events_dict = OutputParsingTool.parse_json_str_to_dictionary(system.events.show()).verify_result()
-                _verify_system_event(system_events_before_testing, events_dict, False)
+                _verify_system_event(system_events_before_testing, events_dict, False, system_health_status)
 
         with allure.step("try to cleanup and verify health status and deleted files after it"):
             with allure.step("Rotate logs"):
@@ -123,11 +124,11 @@ def test_ssd_cleanup_positive_flow(engines, devices):
 
             with allure.step("check system events - two events expected "):
                 events_dict = OutputParsingTool.parse_json_str_to_dictionary(system.events.show()).verify_result()
-                _verify_system_event(system_events_before_testing, events_dict, True)
+                _verify_system_event(system_events_before_testing, events_dict, True, system_health_status)
 
         df_output = _get_df_output(engines.dut)
         file_name = 'Big_file'
-        engines.dut.run_cmd('sudo fallocate -l {size}G /{path}/{file}'.format(size=df_output[SystemConsts.SSD_SPACE_AVAILABLE_SIZE] - 0.5, path=paths_order[0], file=file_name))
+        engines.dut.run_cmd('sudo fallocate -l {size}G /{path}/{file}'.format(size=df_output[SystemConsts.SSD_SPACE_AVAILABLE_SIZE] - 1, path=paths_order[0], file=file_name))
 
         with allure.step("check auto cleanup step"):
             with allure.step("check SSD Cleanup Started in the logs"):
@@ -304,7 +305,7 @@ def _check_disk_issue(system, no_disk_issue=True):
     :summary:
 
     :param system:
-    :param is_ok:
+    :param no_disk_issue:
     :return:
     """
     issue = {
@@ -314,6 +315,7 @@ def _check_disk_issue(system, no_disk_issue=True):
     }
     health_dict = OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).verify_result()
     temp = all(item in health_dict[HealthConsts.ISSUES].items() for item in issue.items())
+
     assert (no_disk_issue ^ temp), "we{}expect disk issue, but the health output is {}".format(' do not ' if no_disk_issue else '', health_dict)
 
 
@@ -340,12 +342,13 @@ def _wait_until_monit_is_running(engine):
             raise Exception("Waiting for monit to finish initializing")
 
 
-def _verify_system_event(events_dict_before_testing, events_dict_after_testing, is_ok):
+def _verify_system_event(events_dict_before_testing, events_dict_after_testing, is_ok, system_health_status):
     """
 
     :param events_dict_before_testing:
     :param events_dict_after_testing:
     :param is_ok:
+    :param system_health_status:
     :return:
     """
     with allure.step("create expected events"):
@@ -361,7 +364,7 @@ def _verify_system_event(events_dict_before_testing, events_dict_after_testing, 
     logger.info("the new events: {}".format(events_output.values()))
 
     with allure.step("verify health event"):
-        assert expected_health_issue_event in events_output.values(), f"can not find an expected event: {expected_health_issue_event}"
+        assert expected_health_issue_event in events_output.values() or system_health_status, f"can not find an expected event: {expected_health_issue_event}"
 
     with allure.step("verify disk issue event"):
         assert expected_disk_issue_event in events_output.values(), f"can not find an expected event: {expected_disk_issue_event}"

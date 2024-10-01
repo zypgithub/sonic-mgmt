@@ -1,0 +1,18 @@
+[sonic_latest]
+r-panther-23      ansible_host=10.210.25.147 ansible_hostv6="fe80::9a03:9bff:fe1b:9208" sonic_version=v2 hwsku="Mellanox-SN2700-D40C8S8" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM3901
+
+[sonic:children]
+sonic_latest
+
+[ptf]
+ptf-r-panther-23 ansible_host=10.215.34.182 ansible_ssh_user=root ansible_ssh_pass=root
+
+[lab:children]
+sonic
+fanout
+
+[lab:vars]
+mgmt_subnet_mask_length="24"
+
+[fanout]
+r-panther-44        ansible_host=10.210.24.129 os=mellanox

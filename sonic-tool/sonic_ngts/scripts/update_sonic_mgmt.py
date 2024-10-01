@@ -1,5 +1,5 @@
 import argparse
-import csv
+import yaml
 import os
 import logging
 import shutil
@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 class ConfFiles:
     def __init__(self, sonic_mgmt):
-        self.testbed_csv = "{sonic_mgmt}/ansible/testbed.csv".format(sonic_mgmt=sonic_mgmt)
+        self.testbed_yaml = "{sonic_mgmt}/ansible/testbed.yaml".format(sonic_mgmt=sonic_mgmt)
         self.lab = "{sonic_mgmt}/ansible/lab".format(sonic_mgmt=sonic_mgmt)
         self.inventory = "{sonic_mgmt}/ansible/inventory".format(sonic_mgmt=sonic_mgmt)
         self.minigraph_facts = "{sonic_mgmt}/ansible/library/minigraph_facts.py".format(sonic_mgmt=sonic_mgmt)
@@ -20,33 +20,44 @@ class ConfFiles:
         return object.__getattribute__(self, name)
 
 
-class TestbedCSV:
+class TestbedYAML:
     """
-    @summary: Class which adds entry to the 'testbed.csv' file
+    @summary: Class which adds entry to the 'testbed.yaml' file
     """
-    def __init__(self, csv_file):
-        self.testbed_csv = csv_file
+    def __init__(self, yaml_file):
+        self.testbed_yaml = yaml_file
 
     def entry_exists(self, dut_name):
         """
-        Ensure entry with specified DUT exists in 'ansible/testbed.csv' file
+        Ensure entry with specified DUT exists in 'ansible/testbed.yaml' file
         @param dut_name: DUT name
         """
-        with open(self.testbed_csv) as testbed_file:
-            csv_reader = csv.DictReader(testbed_file)
-            if any([dut_name in row["# conf-name"] for row in csv_reader]):
+        with open(self.testbed_yaml) as testbed_file:
+            testbed_configs = yaml.safe_load(testbed_file)
+            if any([dut_name in config.get('conf-name', '') for config in testbed_configs]):
                 return True
             else:
                 return False
 
     def add_testbed_entry(self, dut_name):
         """
-        Add new entry to the testbed.csv file
-        Entry example:
-        air_2700_1-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,air_2700_1,NvidiaAir testbed
+        Add new entry to the testbed.yaml file
         """
-        with open(self.testbed_csv, "a+") as testbed_file:
-            line = f"\n{dut_name}-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,{dut_name},NvidiaAir testbed\n"
+        with open(self.testbed_yaml, "a+") as testbed_file:
+            line = (
+                f"\n- conf-name: {dut_name}-ptf-any\n"
+                f"  group-name: vm-t1\n"
+                f"  topo: ptf-any\n"
+                f"  ptf_image_name: docker-ptf-mlnx\n"
+                f"  ptf: ptf-dummy\n"
+                f"  ptf_ip: 1.1.1.1/16\n"
+                f"  ptf_ipv6:\n"
+                f"  server: server_54\n"
+                f"  vm_base: VM0000\n"
+                f"  dut:\n"
+                f"     - {dut_name}\n"
+                f"  comment: NvidiaAir testbed"
+            )
             testbed_file.write(line)
 
 
@@ -166,7 +177,7 @@ if __name__ == "__main__":
     mgmt_repo = args.mgmt_repo
 
     conf_files = ConfFiles(mgmt_repo)
-    testbed_csv = TestbedCSV(conf_files.testbed_csv)
+    testbed_yaml = TestbedYAML(conf_files.testbed_yaml)
 
     lab = Lab(lab_path=conf_files.lab)
     inv = Inventory(conf_files.inventory)
@@ -176,19 +187,19 @@ if __name__ == "__main__":
     mg_facts.write_minigraph_facts()
     logger.info('minigraph_facts.py replaced by stub file')
 
-    if testbed_csv.entry_exists(dut_name=dut_name):
-        logger.warning(f"{conf_files.testbed_csv} - Entry for '{dut_name}' DUT already exists. Skip configuration.")
+    if testbed_yaml.entry_exists(dut_name=dut_name):
+        logger.warning(f"{conf_files.testbed_yaml} - Entry for '{dut_name}' DUT already exists. Skip configuration.")
     else:
         """
-        This logic used for add NvidiaAir dynamic setup data into ansible related files(inventory, lab, testbed.csv)
+        This logic used for add NvidiaAir dynamic setup data into ansible related files(inventory, lab, testbed.yaml)
         It will add short info about setup: name, ip, ssh_port - which used by LogAnalyzer and other community plugins
         """
         topology = get_topology_by_setup_name(setup_name=dut_name, slow_cli=False)
         ansible_host = topology.players['dut']['engine'].ip
         ansible_port = topology.players['dut']['engine'].ssh_port
 
-        # Update testbed.csv
-        testbed_csv.add_testbed_entry(dut_name)
+        # Update testbed.yaml
+        testbed_yaml.add_testbed_entry(dut_name)
 
         # Update ansible/lab
         lab.add_entry(dut_name=dut_name, ansible_host=ansible_host, ansible_port=ansible_port)

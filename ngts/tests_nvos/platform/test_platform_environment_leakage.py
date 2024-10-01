@@ -1,6 +1,7 @@
 import logging
 import pytest
 import random
+import re
 
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
@@ -35,6 +36,9 @@ def test_platform_environment_bmc_leakage(engines, devices):
             platform = Platform()
             system = System()
 
+        with allure.step("Get leakage folder name"):
+            leakage_folder_name = _get_leakage_folder_name(engines)
+
         with allure.step("Validate system health is OK"):
             if not is_redmine_issue_active([4015156])[0]:
                 system.validate_health_status(OK)
@@ -64,7 +68,6 @@ def test_platform_environment_bmc_leakage(engines, devices):
 
             with allure.step("Validate system health"):
                 system.validate_health_status(NOT_OK)
-                history_line = system.health.history.search_line(line_to_search=random_selected_leakage)
                 ValidationTool.compare_values(leakage_output[random_selected_leakage]['state'],
                                               PlatformConsts.LEAKAGE_STATUS_LEAK).verify_result()
                 health_output = OutputParsingTool.parse_json_str_to_dictionary(system.health.show())\
@@ -72,6 +75,7 @@ def test_platform_environment_bmc_leakage(engines, devices):
                 if not is_redmine_issue_active([3896626])[0]:
                     ValidationTool.compare_values(health_output[HealthConsts.STATUS_LED],
                                                   HealthConsts.LED_NOT_OK_STATUS).verify_result()
+                history_line = system.health.history.search_line(line_to_search=random_selected_leakage)
                 assert random_selected_leakage in history_line, 'Cant find leakage in health history'
 
             with allure.step("Return leakage status to default"):
@@ -92,7 +96,7 @@ def test_platform_environment_bmc_leakage(engines, devices):
                                                                 leakage_output).verify_result()
 
     finally:
-        _link_back_sysfs_files(engines, PlatformConsts.LEAKAGE_DEFAULT_OUTPUT_FIELDS)
+        _link_back_sysfs_files(engines, PlatformConsts.LEAKAGE_DEFAULT_OUTPUT_FIELDS, leakage_folder_name)
         if not is_redmine_issue_active([4015156])[0]:
             system.validate_health_status(OK)
         leakage_output = OutputParsingTool.parse_json_str_to_dictionary(platform.environment.leakage.show()) \
@@ -117,12 +121,18 @@ def rewrite_files(engines, name, leakage_status):
                                                                                  leakage_file, leakage_status))
 
 
-def _link_back_sysfs_files(engines, leakage):
+def _get_leakage_folder_name(engines):
+    ls_output = engines.dut.run_cmd("ls -la {}".format(PlatformConsts.LEAKAGE_FILES_FOLDER))
+    leakage_folder_name = re.search(r'hwmon/([^/]+)/leakage1', ls_output).group(1)
+    return leakage_folder_name
+
+
+def _link_back_sysfs_files(engines, leakage, leakage_folder_name):
     for name in leakage:
         leakage_file = convert_string(name)
         engines.dut.run_cmd("sudo sh -c 'rm {0}{1}'".format(PlatformConsts.LEAKAGE_FILES_FOLDER, leakage_file))
-        engines.dut.run_cmd("sudo sh -c 'ln -s {2}{1} {0}{1}'".format(PlatformConsts.LEAKAGE_FILES_FOLDER, leakage_file,
-                                                                      PlatformConsts.LEAKAGE_FILES_SYSFS_FOLDER))
+        engines.dut.run_cmd("sudo sh -c 'ln -s {2}{3}/{1} {0}{1}'".format(PlatformConsts.LEAKAGE_FILES_FOLDER,
+                                                                          leakage_file, PlatformConsts.LEAKAGE_FILES_SYSFS_FOLDER, leakage_folder_name))
 
 
 def convert_string(input_string):

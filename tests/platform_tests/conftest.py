@@ -17,13 +17,17 @@ from tests.platform_tests.sfp.im.helpers import im_supported, im_ms_sku, get_por
     check_im_sai_attribute_value
 from .args.counterpoll_cpu_usage_args import add_counterpoll_cpu_usage_args
 from .mellanox.mellanox_thermal_control_test_helper import suspend_hw_tc_service, resume_hw_tc_service
+from tests.common.platform.transceiver_utils import get_ports_with_flat_memory
 
 
 TEMPLATES_DIR = os.path.join(os.path.dirname(
     os.path.realpath(__file__)), "templates")
+
 FMT = "%b %d %H:%M:%S.%f"
+FMT_YEAR = "%Y %b %d %H:%M:%S.%f"
 FMT_SHORT = "%b %d %H:%M:%S"
 FMT_ALT = "%Y-%m-%dT%H:%M:%S.%f%z"
+
 LOGS_ON_TMPFS_PLATFORMS = [
     "x86_64-arista_7050_qx32",
     "x86_64-arista_7050_qx32s",
@@ -37,14 +41,13 @@ LOGS_ON_TMPFS_PLATFORMS = [
 
 
 def _parse_timestamp(timestamp):
-    try:
-        time = datetime.strptime(timestamp, FMT)
-    except ValueError:
+    for format in [FMT, FMT_YEAR, FMT_SHORT, FMT_ALT]:
         try:
-            time = datetime.strptime(timestamp, FMT_SHORT)
+            time = datetime.strptime(timestamp, format)
+            return time
         except ValueError:
-            time = datetime.strptime(timestamp, FMT_ALT)
-    return time
+            continue
+    raise ValueError("Unable to parse {} with any known format".format(timestamp))
 
 
 @pytest.fixture(autouse=True, scope="module")
@@ -798,3 +801,12 @@ def get_sw_control_ports(duthost, is_sw_control_feature_enabled, conn_graph_fact
 def skip_if_sw_control_feature_enabled(is_sw_control_feature_enabled):
     if is_sw_control_feature_enabled:
         pytest.skip("Do not supported if FW control feature enabled")
+
+
+@pytest.fixture(scope="module")
+def port_list_with_flat_memory(duthosts):
+    ports_with_flat_memory = {}
+    for dut in duthosts:
+        ports_with_flat_memory.update({dut.hostname: get_ports_with_flat_memory(dut)})
+    logging.info(f"port list with flat memory: {ports_with_flat_memory}")
+    return ports_with_flat_memory

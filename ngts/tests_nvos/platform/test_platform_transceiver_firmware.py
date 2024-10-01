@@ -6,6 +6,7 @@ import re
 from ngts.tools.test_utils import allure_utils as allure
 from retry import retry
 from ngts.nvos_constants.constants_nvos import DatabaseConst
+from ngts.tests_nvos.constants import MINUTE
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
@@ -17,6 +18,7 @@ from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceCon
 logger = logging.getLogger()
 
 
+@pytest.mark.timeout(5 * MINUTE, func_only=True)
 @pytest.mark.platform
 @pytest.mark.transceiver
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
@@ -41,6 +43,7 @@ def test_transceiver_database_tables(engines, devices, test_api):
             assert number_of_transceivers == len(tables_in_database), "Test Failed: we expected {} transceivers tables in STATE_DB but we found only {}".format(len(number_of_transceivers), len(tables_in_database))
 
 
+@pytest.mark.timeout(10 * MINUTE, func_only=True)
 @pytest.mark.platform
 @pytest.mark.transceiver
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
@@ -92,6 +95,7 @@ def test_reset_transceiver_firmware_positive(engines, test_api, start_sm):
             assert link_output_after_reset == link_output_before_reset, "at least ont field has been changed, output before reset = {} , output after reset = {}".format(link_output_before_reset, link_output_after_reset)
 
 
+@pytest.mark.timeout(10 * MINUTE, func_only=True)
 @pytest.mark.platform
 @pytest.mark.transceiver
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
@@ -161,6 +165,7 @@ def test_install_transceiver_firmware_positive(engines, devices, test_api, start
         _cleanup_step(engines.dut, engines['sonic_mgmt'], platform, random_transceiver, default_fw)
 
 
+@pytest.mark.timeout(10 * MINUTE, func_only=True)
 @pytest.mark.platform
 @pytest.mark.transceiver
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
@@ -212,6 +217,7 @@ def test_install_reset_transceiver_firmware_negative_flow(engines, test_api):
         _cleanup_step(engines.dut, engines['sonic_mgmt'], platform, random_transceiver, default_fw)
 
 
+@pytest.mark.timeout(5 * MINUTE, func_only=True)
 @pytest.mark.platform
 @pytest.mark.transceiver
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)

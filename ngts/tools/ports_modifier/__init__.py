@@ -39,7 +39,6 @@ def pytest_collection_modifyitems(session, config, items):
     sn5400   - 128
     sn5600   - 128
     """
-
     if len(items) == 1 and items[0].name == REBOOT_TEST_NAME and config.option.ports_number:
         minimum_ports_number = 4
         max_pors_num_per_platform = {PlatformTypesConstants.PLATFORM_PANTHER: 60,
@@ -59,6 +58,12 @@ def pytest_collection_modifyitems(session, config, items):
         dut_engine = topology.players['dut']['engine']
         cli_object = SonicCli(topology)
         platform = get_platform_info(topology)['platform']
+        if cli_object.im.is_im_enabled():
+            skip = pytest.mark.skip(reason=f'SW control feature enabled at {platform} and port breakout '
+                                    f'is not supported')
+            for item in items:
+                item.add_marker(skip)
+                return
         if platform not in max_pors_num_per_platform.keys():
             skip = pytest.mark.skip(reason=f'{platform} platform does not support split to maximum ports')
             for item in items:

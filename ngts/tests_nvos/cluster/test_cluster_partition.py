@@ -16,7 +16,7 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.ib.Ib import Ib
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.ResultObj import ResultObj
-from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
+from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports
 from ngts.tests_nvos.general.security.tpm_attestation.helpers import factory_reset_tpm_checker
 from ngts.tests_nvos.system.gnmi.helpers import factory_reset_gnmi_checker
 from ngts.tests_nvos.system.factory_reset.helpers import add_verification_data, \
@@ -35,6 +35,7 @@ CONFIDENTIAL_COMPUTE = [True, False]
 DEFAULT_PARTITION = 1
 
 
+@disabled_access_ports
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_cluster_partition(engines, devices, test_api):
@@ -185,6 +186,7 @@ def test_cluster_partition(engines, devices, test_api):
                     sdn.partition.partition_id[partition].action_delete_partition()
 
 
+@disabled_access_ports
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_cluster_partition_bad_flow(engines, devices, test_api):

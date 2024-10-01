@@ -45,6 +45,8 @@ DATE_PATTERN = rf"{DATE_PATTERN1}|{DATE_PATTERN2}|{DATE_PATTERN3}"
 HEX_NUM_PATTERN = r"0[xX][0-9a-fA-F]+|\b[0-9a-fA-F]*[0-9][0-9a-fA-F]*\b"
 DIGIT_PATTERN = r"\d+"
 QUOTE_PATTERN = r'"'
+PORT_NAME_PATTERN = r"\betp[1-9][0-9a-g]*\b"
+PORT_NAME_REPLACEMENT = "REDACTED_INTERFACE_NAME"
 
 REDACTED_SONIC_SETUP_NAME = "REDACTED_SONIC_SETUP_NAME"
 REDACTED_SONIC_SWITCH_NAME = "REDACTED_SONIC_SWITCH_NAME"
@@ -60,8 +62,8 @@ GENERALIZE_EXCEPTION_TUPLES = [(SONIC_SETUP_NAME_PATTERN, REDACTED_SONIC_SETUP_N
                                (SONIC_SWITCH_NAME_PATTERN, REDACTED_SONIC_SWITCH_NAME), (MAC_PATTERN, REDACTED_MAC),
                                (IPV4_PATTERN, REDACTED_IP), (IPV6_PATTERN, REDACTED_IP),
                                (BRACKETED_NUM_PATTERN, REDACTED_BRACKETED_NUM), (DATE_PATTERN, REDACTED_DATE),
-                               (HEX_NUM_PATTERN, HEX_NUM_REPLACEMENT), (DIGIT_PATTERN, DIGIT_REPLACEMENT),
-                               (QUOTE_PATTERN, ESCAPED_QUOTE_REPLACEMENT)]
+                               (PORT_NAME_PATTERN, PORT_NAME_REPLACEMENT), (HEX_NUM_PATTERN, HEX_NUM_REPLACEMENT),
+                               (DIGIT_PATTERN, DIGIT_REPLACEMENT), (QUOTE_PATTERN, ESCAPED_QUOTE_REPLACEMENT)]
 
 
 def pytest_addoption(parser):
@@ -137,7 +139,7 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config):
     mars_key_id = config.cache.get(MARS_KEY_ID, '')
     skynet = config.cache.get(SKYNET, None)
     la_redmine_issues = config.cache.get(BugHandlerConst.LA_RM_ISSUES_DICT, dict())
-    logger.debug(f"la_issues = {la_redmine_issues}")
+    logger.info(f"la_issues = {la_redmine_issues}")
     cli_type = SKYNET if skynet else config.cache.get('CLI_TYPE', CliType.SONIC)
     if valid_tests_data(session_id, mars_key_id):
         tests_results, tests_skipreason, tests_exceptions = parse_tests_results(terminalreporter)
@@ -165,6 +167,9 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config):
         logger.debug("Tests results to be exported to SQL DB: {}".format(json_obj))
         dump_json_to_file(json_obj, session_id, mars_key_id, cli_type)
         export_data(session_id, mars_key_id, cli_type)
+    # In skynet, we should reset the LA dict between runs as sonic-mgmt container isn't removed and cache stays the same
+    if skynet:
+        config.cache.set(BugHandlerConst.LA_RM_ISSUES_DICT, dict())
 
 
 def dump_json_to_file(json_obj, session_id, mars_key_id, cli_type):

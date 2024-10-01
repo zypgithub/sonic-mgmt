@@ -284,7 +284,9 @@ def verify_lldp_neighbor_info_for_port(port, lldp_neighbor_info, topo_hostname, 
     :param topo_neighbor_port_descr: port description in topology, enp5s0f1/ Ethernet84
     :return:  None, raise AssertionError in case of validation fails
     """
-    mac_in_lldp = lldp_neighbor_info['Chassis']['ChassisID']
+    port_id = lldp_neighbor_info['Port']['PortID']
+    chassis_id = lldp_neighbor_info['Chassis']['ChassisID']
+    mac_in_lldp = port_id if 'mac' in port_id else chassis_id
     hostname_in_lldp = lldp_neighbor_info['Chassis']['SysName']
     port_description_in_lldp = lldp_neighbor_info['Port']['PortDescr']
     logger.info("Neighbor of port {} according to LLDP is: RemoteDeviceName: {} RemoteDeviceID: {} RemotePortDescr: {}"
@@ -372,7 +374,7 @@ def verify_lldp_info_for_dut_host_ports(topology_obj):
             with allure.step('Checking peer MAC address via LLDP in interface {}'.format(dut_port)):
                 lldp_info = cli_object.lldp.parse_lldp_info_for_specific_interface(dut_port)
                 logger.info('Checking that peer device mac address in LLDP output')
-                assert host_port_mac in lldp_info['Chassis']['ChassisID'], \
+                assert host_port_mac in lldp_info['Port']['PortID'], \
                     '{} was not found in {}'.format(host_port_mac, lldp_info)
 
     except Exception as err:

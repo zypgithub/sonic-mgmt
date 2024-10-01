@@ -1,0 +1,45 @@
+[sonic_latest]
+# MTR testbed r-panther-47 topologies
+r-panther-47 ansible_host=10.210.24.37 sonic_version=v2 sonic_hwsku=Mellanox-SN2700 iface_speed=100000 fanout_switch=r-anaconda-69 serial_console="ssh -l rcon:7002 10.208.0.44" ptf_host=ptf-r-panther-47 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-2-11
+r-panther-47-t0 ansible_host=10.210.24.37 sonic_version=v2 sonic_hwsku=Mellanox-SN2700 iface_speed=100000 fanout_switch=r-anaconda-69 serial_console="ssh -l rcon:7002 10.208.0.44" ptf_host=ptf-r-panther-47 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-2-11
+r-panther-47-t0-56 ansible_host=10.210.24.37 sonic_version=v2 sonic_hwsku=Mellanox-SN2700 iface_speed=100000 fanout_switch=r-anaconda-69 serial_console="ssh -l rcon:7002 10.208.0.44" ptf_host=ptf-r-panther-47 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-2-11
+r-panther-47-t1 ansible_host=10.210.24.37 sonic_version=v2 sonic_hwsku=Mellanox-SN2700 iface_speed=100000 fanout_switch=r-anaconda-69 serial_console="ssh -l rcon:7002 10.208.0.44" ptf_host=ptf-r-panther-47 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-2-11
+r-panther-47-t1-lag ansible_host=10.210.24.37 sonic_version=v2 sonic_hwsku=Mellanox-SN2700 iface_speed=100000 fanout_switch=r-anaconda-69 serial_console="ssh -l rcon:7002 10.208.0.44" ptf_host=ptf-r-panther-47 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-2-11
+r-panther-47-ptf32 ansible_host=10.210.24.37 sonic_version=v2 sonic_hwsku=Mellanox-SN2700 iface_speed=100000 fanout_switch=r-anaconda-69 serial_console="ssh -l rcon:7002 10.208.0.44" ptf_host=ptf-r-panther-47 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-2-11
+r-panther-47-ptf-any ansible_host=10.210.24.37 sonic_version=v2 sonic_hwsku=Mellanox-SN2700 iface_speed=100000 fanout_switch=r-anaconda-69 serial_console="ssh -l rcon:7002 10.208.0.44" ptf_host=ptf-r-panther-47 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-2-11
+
+r-anaconda-69 ansible_host=r-anaconda-69 ansible_ssh_user="{{ lookup('env','ONYX_SWITCH_USER') }}" ansible_ssh_pass="{{ lookup('env','ONYX_SWITCH_PASSWORD') }}" os=onyx
+
+[sonic:children]
+sonic_latest
+
+[leaf_topo_1]
+# MTR r-panther-47 topologies
+r-panther-47
+r-panther-47-t0
+r-panther-47-t0-56
+r-panther-47-t1
+r-panther-47-t1-lag
+r-panther-47-ptf32
+r-panther-47-ptf-any
+
+[leaf_topo_1:vars]
+podset_number=200
+
+[lab]
+# MTR r-panther-47 topologies
+r-panther-47
+r-panther-47-t0
+r-panther-47-t0-56
+r-panther-47-t1
+r-panther-47-t1-lag
+r-panther-47-ptf32
+r-panther-47-ptf-any
+
+[ptf]
+# r-panther-47 PTF host
+ptf-r-panther-47 ansible_host=10.215.32.3 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+10.215.32.3 ansible_host=10.215.32.3 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+
+[pdu]
+pdu-10-208-2-11 ansible_host=10.208.2.11 protocol=snmp

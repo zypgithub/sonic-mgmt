@@ -2,7 +2,7 @@ import pytest
 
 from ngts.tests_nvos.general.security.constants import MAX_TEST_TIMEOUT
 from ngts.tests_nvos.general.security.security_test_tools.constants import AccountingConsts, \
-    AuthType, AaaConsts
+    AuthType
 from ngts.tests_nvos.general.security.security_test_tools.generic_remote_aaa_testing.generic_aaa_accounting_testing import *
 from ngts.tests_nvos.general.security.security_test_tools.generic_remote_aaa_testing.generic_remote_aaa_testing import *
 from ngts.tests_nvos.general.security.security_test_tools.resource_utils import configure_resource

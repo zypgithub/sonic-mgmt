@@ -1,0 +1,6 @@
+Hostname,ManagementIp,HwSku,Type,Protocol,Os
+r-panther-42,10.210.25.56/22,Mellanox-SN2700-A1,DevSonic,,sonic
+r-panther-43,10.210.25.55/22,MLNX-OS,FanoutLeaf,,
+r-r740-13,10.215.32.180,TestServ,Server,,
+pdu-10-208-0-191,10.208.0.191,Vertiv,Pdu,snmp,
+rcon-SWS-1-3,10.208.0.80,,ConsoleServer,ssh,sonic

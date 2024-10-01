@@ -1,6 +1,7 @@
 import logging
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.TpmTool import TpmTool
 from ngts.nvos_tools.system.System import System
@@ -22,6 +23,10 @@ def verify_only_aik_at_tpm_dir(engines):
 
 def get_scp_url(remote_engine, dst_filename):
     return REMOTE_SCP_URL.format(remote_engine.username, remote_engine.password, remote_engine.ip, dst_filename)
+
+
+def get_oiak_cert(remote_engine, dst_filename):
+    return remote_engine.run_cmd(f'cat {dst_filename}')
 
 
 def get_file_creation_time(engine: LinuxSshEngine, file_path: str) -> str:
@@ -72,25 +77,25 @@ def sanity_check_generated_quote(engines, nonce: str):
     assert TpmTool(engines.dut).is_check_quote_ok(nonce), 'check quote returned error'
 
 
-def factory_reset_tpm_check(engines=None):
-    engines = engines if engines else TestToolkit.engines
-    tpm_tool = TpmTool(engines.dut)
-    system = System()
-    with allure.step('check if setup is ready for TPM attestation related checks'):
-        dut_hostname = engines.dut.run_cmd('hostname')
-        is_tpm_ready = any(dut_name in dut_hostname for dut_name in ['croc-61', 'juliet']) and tpm_tool.is_tpm_attestation_ready()
-    if is_tpm_ready:
-        with allure.step('pre factory reset - generate tpm quote'):
-            system.security.tpm.action_generate_quote(VALID_PCRS_PARAM, VALID_NONCE_PARAM).verify_result()
+def tpm_attestation_factory_reset_no_params_check(engines=None):
+    engines = engines or TestToolkit.engines
+    dut_device: BaseDevice = TestToolkit.devices.dut
+
+    if dut_device.supports_tpm_testing:
+        with allure.step('generate tpm quote'):
+            System().security.tpm.action_generate_quote(VALID_PCRS_PARAM, VALID_NONCE_PARAM).verify_result()
     else:
-        logging.info('not performing TPM checks')
-    yield
-    if is_tpm_ready:
-        with allure.step('post factory reset - verify no tpm quote file'):
+        logging.info('dut device does not support TPM testing')
+
+    yield   # do factory reset
+
+    if dut_device.supports_tpm_testing:
+        with allure.step('verify no tpm quote file'):
             verify_only_aik_at_tpm_dir(engines)
     else:
-        logging.info('not performing TPM checks')
+        logging.info('dut device does not support TPM testing')
+
     yield    # to prevent StopIteration on the 2nd next() call
 
 
-factory_reset_tpm_checker = factory_reset_tpm_check()    # generator
+factory_reset_tpm_checker = tpm_attestation_factory_reset_no_params_check()  # generator

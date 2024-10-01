@@ -105,6 +105,7 @@
       - tests/push_build_tests/system/test_startup_time_degradation.py
       - tests/nightly/routing/test_routing.py::TestRouting::test_reboot
       - tests/nightly/adaptive_routing/test_adaptive_routing.py
+      - tests/performance/test_ar_performance.py
       # 2 tests below temporary added - they doing "config reload -y"
       - tests/push_build_tests/L3/dhcp_relay/test_dhcp6_relay.py::TestDHCP6Relay::test_dhcp6_relay_remove_dhcp_server
       - tests/push_build_tests/L3/dhcp_relay/test_dhcp6_relay.py::TestDHCP6Relay::test_dhcp6_relay_multiple_dhcp_servers
@@ -169,7 +170,8 @@
 
 # Ignore these errors on r-bobcat-01 due to a PSU hw issue
 - Errors_list:
-    - '.*r-bobcat-01.*pmon.*psu.*'
+    - '.*r-bobcat-01.*psu.*'
+    - '.*r-bobcat-01.*pmbus.*4-0059.*'
   Conditions:
     - Platform:
         sn4280
@@ -274,8 +276,8 @@
     - '.* ERR pmon#chassis_db_init: Fail to decode DMI /sys/firmware/dmi/entries/2-0/raw due to FileNotFoundError\(2, ''No such file or directory''\)'
     - '.* ERR watchdogutil: Failed to get watchdog module'
     - '.* ERR kernel: \[\s+\d+\.\d+\] /dev/sda3: Can''t open blockdev'
-    - '.* ERR healthd: Failed to read from file \/var\/run\/hw-management\/led\/led_status_capability - FileNotFoundError.*No such file or directory.*'
-    - '.* ERR healthd: Failed to write.*file \/var\/run\/hw-management\/led\/led_status_green - FileNotFoundError.*No such file or directory.*'
+    - '.* ERR healthd(\[\d+\])?: Failed to read from file \/var\/run\/hw-management\/led\/led_status_capability - FileNotFoundError.*No such file or directory.*'
+    - '.* ERR healthd(\[\d+\])?: Failed to write.*file \/var\/run\/hw-management\/led\/led_status_green - FileNotFoundError.*No such file or directory.*'
     - '.* ERR show: Fail to decode DMI /sys/firmware/dmi/entries/2-0/raw due to FileNotFoundError\(2, .*No such file or directory.*\)'
   Conditions:
     - Platform:
@@ -355,7 +357,7 @@
       - tests/nightly/lag/test_lag.py
 
 - Errors_list:
-    - '.* ERR teamd#tlm_teamd: :- get_dump: Can''t get dump for LAG ''PortChannel\d+''.*'
+    - '.*ERR.*teamd#tlm_teamd: :- get_dump: Can.*t get dump for LAG .*PortChannel.*'
   Conditions:
     - Affected_test_cases:
       - tests/nightly/lag/test_lag.py
@@ -795,14 +797,14 @@
       - simx
 
 - Errors_list:
-    - '.*ERR syncd#SDK: \[SAI_OBJECT.ERR\] mlnx_sai_object.c\[\d+\]- .* Bulk read event status is not OK.*'
-    - '.*ERR syncd#SDK: \[SAI_PORT.ERR\] mlnx_sai_port.c\[\d+\]- .* Failed to prepare bulk counter for port stats.'
-    - '.*ERR syncd#SDK.*collectPortCounters: Failed to get stats of port*'
+    - '.*ERR syncd#SDK: \[SAI_OBJECT.ERR\] \.\/src\/mlnx_sai_object.c\[\d+\]- mlnx_wait_for_bulk_read_event: Bulk read event status is not OK.*'
+    - '.*ERR syncd#SDK: \[SAI_PORT.ERR\] \.\/src\/mlnx_sai_port.c\[\d+\]- .* Failed to prepare bulk counter for port stats.'
+    - '.*ERR syncd#SDK: :- collectData: Failed to get stats of Port Counter.*'
   Conditions:
     - Redmine:
-      - 3154876
+      - 4021086
       Platform:
-        - simx
+        - sn5640_simx
 
 - Errors_list:
     - '.*ERR syncd#SDK: \[SAI_BUFFER.ERR\] mlnx_sai_buffer.c\[\d+\].*Failed to prepare bulk counter for pg occupancy stats.*'
@@ -2295,7 +2297,7 @@
 - Errors_list:
     - '.*ERR systemctl.*: Failed to start dhcp_relay\.service: Unit dhcp_relay\.service is masked.*'
     - '.*ERR ntpd.*: CONFIG: restrict nopeer ignored.*'
-    - '.*sonic ERR kernel:.*ima: impossible to appraise a kernel image without a file descriptor; try using kexec_file_load syscall.*'
+    - '.*ERR kernel:.*ima: impossible to appraise a kernel image without a file descriptor; try using kexec_file_load syscall.*'
     - '.*ERR kernel:.*x86\/cpu: SGX disabled by BIOS.*'
   Conditions:
     - Redmine:
@@ -2904,6 +2906,12 @@
       Platform:
         - sn4280
 
+- Errors_list:
+    - '.*ERR swss#orchagent: :- isPathTracingSupported: Failed to get a list of supported switch capabilities. Error.*'
+  Conditions:
+    - Redmine:
+      - 3992737
+
 
 # NVOS
 - Errors_list:
@@ -3132,6 +3140,8 @@
     - '.* ERR kernel: \[.*\] Fails to access .* module eeprom, status: -16.*'
     - '.* ERR pmon#xcvrd:.*Failed to get SFP type, index=\d+, error=\[Errno \d+\] Device or resource busy.*'
     - '.*ERR swss#orchagent: :- on_switch_shutdown_request: Syncd stopped.*'
+    - '.* ERR swss#orchagent: :- wait: SELECT operation result: TIMEOUT on object_type_get_availability_response.*'
+    - '.* ERR swss#orchagent: :- wait: failed to get response for object_type_get_availability_response.*'
     - '.*mlnx_switch_health_event_handle: Health event happened.*HW catastrophic.*'
   Conditions:
     - Affected_test_cases:
@@ -3139,6 +3149,7 @@
       - tests/nightly/app_extension/test_app_extension_basic.py::test_app_techsupport_integration
       - show_techsupport/test_auto_techsupport.py::TestAutoTechSupport::test_sanity
       - qos/test_buffer.py::test_port_admin_down
+      - fdb/test_fdb_mac_move.py
 
 - Errors_list:
     - ".*ERR sonic-ztp\\[\\d+\\]: Exception \\[Expecting ',' delimiter: line \\d+ column \\d+ \\(char \\d+\\)] encountered while verifying '\\/etc\\/sonic\\/config_db\\.json'.*"
@@ -3332,86 +3343,39 @@
     - Redmine:
         - 3916448
 
-# In the test case test_sensor_errors[psu_err_present], it has an action to remove the psu file,
-# when pmon try to read the file psu file "/var/run/hw-management/thermal/psu\d+_status",
-# following error msg will be logged to syslog, it is not an real issue, so it is safe to ignore these err msg
+# In the test case test_sensor_errors, it has an action to remove the psu/fan files,
+# when pmon try to read the those files, following error msg will be logged to syslog,
+#  it is not an real issue, so it is safe to ignore these err msg
 - Errors_list:
-    - '.*ERR pmon#psud: Failed to read from file \/var\/run\/hw-management\/thermal\/psu\d+_status - FileNotFoundError.*No such file or directory.*'
-    - '.*ERR pmon#psud: Failed to read from file \/var\/run\/hw-management\/thermal\/psu\d+_status - ValueError.*invalid literal for int.* with base.*'
-    - '.*ERR pmon#thermalctld: Failed to read from file \/var\/run\/hw-management\/thermal\/psu\d+_status - ValueError.*invalid literal for int.* with base.*'
-    - '.*ERR pmon#thermalctld: Failed to read from file \/var\/run\/hw-management\/thermal\/psu\d+_status - FileNotFoundError.*No such file or directory.*'
-    - '.*ERR health-statsd#health_history: PSU\d: is missing or not available.*'
-    - '.*ERR health-statsd#health_history: PSU\d\/FAN: is missing.*'
-  Conditions:
-    - Affected_test_cases:
-      - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm.py::TestNewTc::test_sensor_errors[psu_err_present]
-
-# In the test case test_sensor_errors[psu_err_direction], it has an action to remove the psu file,
-# when pmon try to read the file psu file "/var/run/hw-management/thermal/psu\d+_fan_dir",
-# following error msg will be logged to syslog, it is not an real issue, so it is safe to ignore these err msg
-- Errors_list:
-    - '.*ERR pmon#psud: Failed to read from file \/var\/run\/hw-management\/thermal\/psu\d+_fan_dir - FileNotFoundError.*No such file or directory.*'
-    - '.*ERR pmon#psud: Failed to read from file \/var\/run\/hw-management\/thermal\/psu\d+_fan_dir - ValueError.*invalid literal for int.* with base.*'
-    - '.*ERR pmon#thermalctld: Failed to read from file \/var\/run\/hw-management\/thermal\/psu\d+_fan_dir - ValueError.*invalid literal for int.* with base.*'
-    - '.*ERR pmon#thermalctld: Failed to read from file \/var\/run\/hw-management\/thermal\/psu\d+_fan_dir - FileNotFoundError.*No such file or directory.*'
+    - '.*ERR pmon#psud:.*\/var\/run\/hw-management\/thermal\/psu\d+_status.*'
+    - '.*ERR pmon#psud:.*\/var\/run\/hw-management\/thermal\/psu\d+_fan_dir.*'
+    - '.*ERR pmon#thermalctld:.*\/var\/run\/hw-management\/thermal\/psu\d+_status.*'
+    - '.*ERR pmon#thermalctld:.*\/var\/run\/hw-management\/thermal\/psu\d+_fan_dir.*'
+    - '.*ERR pmon#thermalctld:.*\/var\/run\/hw-management\/thermal\/fan\d+_status.*'
+    - '.*ERR pmon#thermalctld:.*\/var\/run\/hw-management\/thermal\/fan\d+_dir.*'
+    - '.*ERR pmon#thermalctld:.*\/var\/run\/hw-management\/thermal\/fan\d+_speed_get.*'
     - '.*ERR health-statsd#health_history: PSU\d: is missing or not available.*'
     - '.*ERR health-statsd#health_history: PSU\d\/FAN: is missing.*'
     - '.*ERR health-statsd#health_history: PSU\d\/FAN: direction exhaust is not aligned with fan1 direction intake.*'
-  Conditions:
-    - Affected_test_cases:
-      - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm.py::TestNewTc::test_sensor_errors[psu_err_direction]
-
-# In the test case test_sensor_errors[fan_err_present], it has an action to remove the fan status file,
-# when pmon try to read the file psu file "/var/run/hw-management/thermal/fan\d+_status",
-# following error msg will be logged to syslog, it is not an real issue, so it is safe to ignore these err msg
-- Errors_list:
-    - '.*ERR pmon#thermalctld: Failed to read from file \/var\/run\/hw-management\/thermal\/fan\d+_status - FileNotFoundError.*No such file or directory.*'
-    - '.*ERR pmon#thermalctld: Failed to read from file \/var\/run\/hw-management\/thermal\/fan\d+_status.*ValueError.*invalid literal for int.* with base.*'
-  Conditions:
-    - Affected_test_cases:
-      - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm.py::TestNewTc::test_sensor_errors[fan_err_present]
-
-# In the test case test_sensor_errors[fan_err_direction], it has an action to remove the fan status file,
-# when pmon try to read the file psu file "/var/run/hw-management/thermal/fan\d+_dir",
-# following error msg will be logged to syslog, it is not an real issue, so it is safe to ignore these err msg
-- Errors_list:
-    - '.*ERR pmon#thermalctld: Failed to read from file \/var\/run\/hw-management\/thermal\/fan\d+_dir  - FileNotFoundError.*No such file or directory.*'
-    - '.*ERR pmon#thermalctld: Failed to read from file \/var\/run\/hw-management\/thermal\/fan\d+_dir.*ValueError.*invalid literal for int.* with base.*'
     - '.*ERR health-statsd#health_history: FAN\d\/\d: direction intake is not aligned with fan1 direction exhaust.*'
   Conditions:
     - Affected_test_cases:
-      - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm.py::TestNewTc::test_sensor_errors[fan_err_direction]
+      - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm.py::TestNewTc::test_sensor_errors
 
 # In the test case test_temperature_sweep, it has an action to remove the sensors files,
 # when pmon try to read the file psu file "/var/run/hw-management/thermal/sensor_file",
 # following error msg will be logged to syslog, it is not an real issue, so it is safe to ignore these err msg
 - Errors_list:
-    - '.*ERR pmon#.*: Failed to read from file \/var\/run\/hw-management\/thermal\/.* - FileNotFoundError.*No such file or directory.*'
-    - '.*ERR pmon#.*: message repeated \d+ times:.* Failed to read from file \/var\/run\/hw-management\/thermal\/.* - FileNotFoundError.*No such file or directory.*'
-    - '.*ERR pmon#.*: Failed to read from file \/var\/run\/hw-management\/thermal\/.*ValueError.*invalid literal for int.*with base.*'
-    - '.*ERR pmon#.*: message repeated \d+ times:.*Failed to read from file \/var\/run\/hw-management\/thermal\/.*ValueError.*invalid literal for int.* with base.*'
+    - '.*ERR pmon#.*\/var\/run\/hw-management\/thermal\/.*'
   Conditions:
     - Affected_test_cases:
       - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm.py::TestNewTc::test_temperature_sweep
-
-# In the test case test_sensor_errors[fan_err_tacho], it has an action to remove the fan\d+_speed_get file,
-# when pmon try to read the file psu file "/var/run/hw-management/thermal/fan\d+_speed_get",
-# following error msg will be logged to syslog, it is not an real issue, so it is safe to ignore these err msg
-- Errors_list:
-    - '.*ERR pmon#thermalctld: Failed to read from file \/var\/run\/hw-management\/thermal\/fan\d+_speed_get - FileNotFoundError.*No such file or directory.*'
-    - '.*ERR pmon#thermalctld: Failed to read from file \/var\/run\/hw-management\/thermal\/fan\d+_speed_get - ValueError.*invalid literal for int.* with base.*'
-  Conditions:
-    - Affected_test_cases:
-      - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm.py::TestNewTc::test_sensor_errors[fan_err_tacho]
 
 # In the test case test_sensor_errors and test_sensor_blacklist, it has an action to remove the port_amb file,
 # when pmon try to read the file psu file "/var/run/hw-management/thermal/port_amb",
 # following error msg will be logged to syslog, it is not an real issue, so it is safe to ignore these err msg
 - Errors_list:
-    - '.*ERR pmon#psud.*: Failed to read from file \/var\/run\/hw-management\/thermal\/port_amb - ValueError.*invalid literal for int.*with base.*'
-    - '.*ERR pmon#psud: Failed to read from file \/var\/run\/hw-management\/thermal\/port_amb - FileNotFoundError.*No such file or directory.*'
-    - '.*ERR pmon#psud: message repeated \d+ times.*Failed to read from file \/var\/run\/hw-management\/thermal\/port_amb - ValueError.*invalid literal for int.* with base.*'
-    - '.*ERR pmon#psud: message repeated \d+ times:.*Failed to read from file \/var\/run\/hw-management\/thermal\/port_amb - FileNotFoundError.*No such file or directory.*'
+    - '.*ERR pmon#psud.*\/var\/run\/hw-management\/thermal\/port_amb.*'
   Conditions:
     - Affected_test_cases:
       - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm.py::TestNewTc::test_sensor_errors
@@ -4263,3 +4227,37 @@
   Conditions:
   - Affected_test_cases:
     - tests/nightly/logging/test_log_analyzer_errors_during_deploy_sonic.py
+
+- Errors_list:
+  - '.*ERR swss#orchagent: :- handleSchedulerTable: Object with name:port_scheduler not found.*'
+  - '.*ERR swss#orchagent: :- doTask: Failed to process invalid QOS task.*'
+  Conditions:
+  - Redmine:
+    - 4013836
+  - Affected_test_cases:
+    - tests/push_build_tests/general/doroce/test_doroce.py::test_doroce[lossless_double_ipool]
+
+# Ignore errors based on analysis of RM issue 3869675
+- Errors_list:
+  - '.*ERR syncd#SDK: \[SX_API_DBG.ERR\] .* halt irisc \d  halt_addr.*'
+  Conditions:
+  - Affected_test_cases:
+    - tests/nightly/show_techsupport/test_techsupport.py::test_techsupport_health_event_sdk_dump
+
+# Ignore errors based on analysis of RM issue 3944005
+- Errors_list:
+  - '.*ERR \(udev-worker\)\[\d+\]: could not read from ''\/sys\/module\/intel_cstate\/initstate'': No such device.*'
+  Conditions:
+    - Platform:
+      - simx
+
+# Ignore below errors statically due to bug of https://redmine.mellanox.com/issues/3992097
+# There is no functional issue, it is safe to ignore it
+- Errors_list:
+    - '.* ERR.*bgp#bgpd.*:.* INTERFACE_STATE: Cannot find IF .* in VRF.*'
+    - '.* ERR.*lldp#lldp-syncd \[lldp_syncd\] ERROR: Failed to parse lldp age.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests/nightly/lag/test_lag.py::test_lag_min_links
+      - tests/nightly/lag/test_lag.py::test_lag_members_scale
+      - tests/nightly/lag/test_lag.py::test_port_cannot_be_added_to_lag

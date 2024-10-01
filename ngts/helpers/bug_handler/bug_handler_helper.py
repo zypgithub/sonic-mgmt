@@ -1,21 +1,21 @@
-import json
-import logging
-import math
 import os
-import pathlib
 import re
 import subprocess
-from datetime import datetime, timedelta
+import yaml
+import json
+import logging
+import allure
+import math
+import pathlib
+
+from retry.api import retry
 from pathlib import Path
 from typing import List
-
-import allure
-import yaml
 from jinja2 import Environment, FileSystemLoader
-from retry.api import retry
-
+from datetime import datetime, timedelta
 from ngts.constants.constants import BugHandlerConst, InfraConst
 from ngts.nvos_constants.constants_nvos import SystemConsts
+
 
 logger = logging.getLogger()
 
@@ -256,22 +256,50 @@ def run_err_msg_bug_handler_tool(conf_path, redmine_project, branch, yaml_parsed
 
     logger.info(f"Running Bug Handler CMD: {bug_handler_cmd}")
     bug_handler_output = subprocess.run(bug_handler_cmd, shell=True, capture_output=True).stdout
-    logger.info(bug_handler_output)
     bug_handler_file_result = json.loads(bug_handler_output)
+
     if is_attachment_needed(bug_handler_file_result, update_only, bug_handler_no_action, yaml_parsed_file):
         ticket_id = get_ticket_id(bug_handler_file_result)
+        logger.info(f"the RM ticket id is: {ticket_id}")
         tar_file_path = get_tech_support_from_switch(bug_handler_params)
+
+        tar_file_path = handle_file_size_exceedance(tar_file_path)
 
         upload_script = BugHandlerConst.BUG_HANDLER_UPLOAD_ATTACHMENT_SCRIPT
         upload_cmd = f"env LOG_FORMAT_JSON=1 {upload_script} --bug_id {ticket_id}  --attachments {tar_file_path}"
-        logger.info(f"Running uploading attchment command: {upload_cmd}")
+        logger.info(f"Running uploading attachment command: {upload_cmd}")
         upload_attachment_output = subprocess.run(upload_cmd, shell=True, capture_output=True).stdout
         logger.info(upload_attachment_output)
+
         upload_attachment_result = json.loads(upload_attachment_output)
         if "error" in upload_attachment_result:
             logger.error(f"Failed to upload the file: {upload_attachment_result}")
         bug_handler_file_result["file_name"] = tar_file_path
     return bug_handler_file_result
+
+
+def handle_file_size_exceedance(tar_file_path):
+    logger.info("get the sysdump size")
+    tar_file_size = subprocess.run(f'stat -c%s {tar_file_path}', shell=True, capture_output=True).stdout
+    decoded_output = tar_file_size.decode('utf-8')
+    cleaned_output = decoded_output.strip()
+    tar_file_size = int(cleaned_output)
+
+    if tar_file_size < BugHandlerConst.TAR_FILE_SIZE_RM_LIMIT:
+        return tar_file_path
+
+    logger.info(f"the sysdump file size is {tar_file_size}, more than expected {BugHandlerConst.TAR_FILE_SIZE_RM_LIMIT}, create new txt file includes uploading error message and the system dump full path")
+    additional_text = (
+        f"Failed to upload the tar file because the size is more than {BugHandlerConst.TAR_FILE_SIZE_RM_LIMIT}.\n"
+        "The sysdump can be obtained by:\n"
+    )
+    parts = tar_file_path.split('/')
+    compressed_tar_full_path = '/'.join(parts[:-2]) + '/' + f"{parts[-3]}.tgz"
+    txt_file_path = './' + parts[-1].replace('.tar.gz', '.txt')
+    with open(txt_file_path, 'w') as file:
+        file.write(f"{additional_text} tar -xzvf {compressed_tar_full_path} '{parts[-2]}/{parts[-1]}'")
+
+    return txt_file_path
 
 
 def is_attachment_needed(bug_handler_file_result, update_only, bug_handler_no_action, yaml_parsed_file):
@@ -514,8 +542,6 @@ def error_to_regex(error_string):
                             into a regular expression
     @return: A SINGLE regular expression string
     """
-    if len(error_string) > BugHandlerConst.BUG_TITLE_LIMIT:
-        error_string = error_string[:BugHandlerConst.BUG_TITLE_LIMIT]
     # -- Escapes out of all the meta characters --#
     error_string = re.escape(error_string)
     error_string = error_string.replace("\\", "\\\\")
@@ -529,6 +555,10 @@ def error_to_regex(error_string):
     # -- Replaces a hex number with the hex regular expression
     error_string = re.sub(r"0x[0-9a-fA-F]+", r"0x[\\\\d+a-fA-F]+", error_string)
     error_string = re.sub(r"\b[0-9a-fA-F]{3,}\b", r"[\\\\d+a-fA-F]+", error_string)
+
+    # -- Replaces etp1, etp1a, etp7, etp7a to etp[0-9][a-g]
+    error_string = re.sub(r"etp[1-9][0-9a-g]*", r"etp[\\\\d+a-g]*", error_string)
+
     # -- Replaces any remaining digits with the digit regular expression
     error_string = re.sub(r"\d+", r"\\\\d+", error_string)
     error_string = re.sub(r'"', r'\"', error_string)
