@@ -129,7 +129,8 @@ class ScpAuthVerifier(AuthVerifier):
             scp_file(player=self.engine,
                      src_path=src_path,
                      dst_path=dst_path,
-                     download_from_remote=download_from_remote)
+                     download_from_remote=download_from_remote,
+                     print_output=True)
             logging.info('SCP success')
 
             if download_from_remote:
