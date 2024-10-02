@@ -1195,6 +1195,170 @@ nv-xh3000hse-03 ansible_host=nv-xh3000hse-03  sonic_version=v2  sonic_hwsku=Mell
 sug-2410a1-04-ptf-any ansible_host=sug-2410a1-04 sonic_version=v2  sonic_hwsku=Mellanox-SN            serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
 sug-2410a1-04 ansible_host=sug-2410a1-04  sonic_version=v2  sonic_hwsku=Mellanox-SN             serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
 
+# Cumulus testbed mlx-2010-03 topologies
+mlx-2010-03-ptf-any ansible_host=mlx-2010-03 sonic_version=v2  sonic_hwsku=Mellanox-SN            serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+mlx-2010-03 ansible_host=mlx-2010-03  sonic_version=v2  sonic_hwsku=Mellanox-SN             serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
+# Cumulus testbed mlx-2010a1-12 topologies
+mlx-2010a1-12-ptf-any ansible_host=mlx-2010a1-12 sonic_version=v2  sonic_hwsku=Mellanox-SN            serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+mlx-2010a1-12 ansible_host=mlx-2010a1-12  sonic_version=v2  sonic_hwsku=Mellanox-SN             serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
+# Cumulus testbed mlx-2100-04 topologies
+mlx-2100-04-ptf-any ansible_host=mlx-2100-04 sonic_version=v2  sonic_hwsku=Mellanox-SN            serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+mlx-2100-04 ansible_host=mlx-2100-04  sonic_version=v2  sonic_hwsku=Mellanox-SN             serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
+# Cumulus testbed mlx-2100-07 topologies
+mlx-2100-07-ptf-any ansible_host=mlx-2100-07 sonic_version=v2  sonic_hwsku=Mellanox-SN            serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+mlx-2100-07 ansible_host=mlx-2100-07  sonic_version=v2  sonic_hwsku=Mellanox-SN             serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
+# Cumulus testbed mlx-2100ba1-02 topologies
+mlx-2100ba1-02-ptf-any ansible_host=mlx-2100ba1-02 sonic_version=v2  sonic_hwsku=Mellanox-SN            serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+mlx-2100ba1-02 ansible_host=mlx-2100ba1-02  sonic_version=v2  sonic_hwsku=Mellanox-SN             serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
+# Cumulus testbed mlx-2410-05 topologies
+mlx-2410-05-ptf-any ansible_host=mlx-2410-05 sonic_version=v2  sonic_hwsku=Mellanox-SN            serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+mlx-2410-05 ansible_host=mlx-2410-05  sonic_version=v2  sonic_hwsku=Mellanox-SN             serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
+# Cumulus testbed mlx-2410a1-10 topologies
+mlx-2410a1-10-ptf-any ansible_host=mlx-2410a1-10 sonic_version=v2  sonic_hwsku=Mellanox-SN            serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+mlx-2410a1-10 ansible_host=mlx-2410a1-10  sonic_version=v2  sonic_hwsku=Mellanox-SN             serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
+# Cumulus testbed mlx-2700a1-07 topologies
+mlx-2700a1-07-ptf-any ansible_host=mlx-2700a1-07 sonic_version=v2  sonic_hwsku=Mellanox-SN            serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+mlx-2700a1-07 ansible_host=mlx-2700a1-07  sonic_version=v2  sonic_hwsku=Mellanox-SN             serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
+# Cumulus testbed mlx-3700-14 topologies
+mlx-3700-14-ptf-any ansible_host=mlx-3700-14 sonic_version=v2  sonic_hwsku=Mellanox-SN            serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+mlx-3700-14 ansible_host=mlx-3700-14  sonic_version=v2  sonic_hwsku=Mellanox-SN             serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
+# Cumulus testbed mlx-3700c-18 topologies
+mlx-3700c-18-ptf-any ansible_host=mlx-3700c-18 sonic_version=v2  sonic_hwsku=Mellanox-SN            serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+mlx-3700c-18 ansible_host=mlx-3700c-18  sonic_version=v2  sonic_hwsku=Mellanox-SN             serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
+# Cumulus testbed mlx-3700c-19 topologies
+mlx-3700c-19-ptf-any ansible_host=mlx-3700c-19 sonic_version=v2  sonic_hwsku=Mellanox-SN            serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+mlx-3700c-19 ansible_host=mlx-3700c-19  sonic_version=v2  sonic_hwsku=Mellanox-SN             serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
+# Cumulus testbed mlx-4410-06 topologies
+mlx-4410-06-ptf-any ansible_host=mlx-4410-06 sonic_version=v2  sonic_hwsku=Mellanox-SN            serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+mlx-4410-06 ansible_host=mlx-4410-06  sonic_version=v2  sonic_hwsku=Mellanox-SN             serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
+# Cumulus testbed mlx-4600-04 topologies
+mlx-4600-04-ptf-any ansible_host=mlx-4600-04 sonic_version=v2  sonic_hwsku=Mellanox-SN            serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+mlx-4600-04 ansible_host=mlx-4600-04  sonic_version=v2  sonic_hwsku=Mellanox-SN             serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
+# Cumulus testbed mlx-4700-04 topologies
+mlx-4700-04-ptf-any ansible_host=mlx-4700-04 sonic_version=v2  sonic_hwsku=Mellanox-SN            serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+mlx-4700-04 ansible_host=mlx-4700-04  sonic_version=v2  sonic_hwsku=Mellanox-SN             serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
+# Cumulus testbed mlx-4700-17 topologies
+mlx-4700-17-ptf-any ansible_host=mlx-4700-17 sonic_version=v2  sonic_hwsku=Mellanox-SN            serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+mlx-4700-17 ansible_host=mlx-4700-17  sonic_version=v2  sonic_hwsku=Mellanox-SN             serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
+# Cumulus testbed mlx-4700-18 topologies
+mlx-4700-18-ptf-any ansible_host=mlx-4700-18 sonic_version=v2  sonic_hwsku=Mellanox-SN            serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+mlx-4700-18 ansible_host=mlx-4700-18  sonic_version=v2  sonic_hwsku=Mellanox-SN             serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
+# Cumulus testbed mlx-4700a1-03 topologies
+mlx-4700a1-03-ptf-any ansible_host=mlx-4700a1-03 sonic_version=v2  sonic_hwsku=Mellanox-SN            serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+mlx-4700a1-03 ansible_host=mlx-4700a1-03  sonic_version=v2  sonic_hwsku=Mellanox-SN             serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
+# Cumulus testbed mlx-4700a1-08 topologies
+mlx-4700a1-08-ptf-any ansible_host=mlx-4700a1-08 sonic_version=v2  sonic_hwsku=Mellanox-SN            serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+mlx-4700a1-08 ansible_host=mlx-4700a1-08  sonic_version=v2  sonic_hwsku=Mellanox-SN             serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
+# Cumulus testbed mlx-4700a1-11 topologies
+mlx-4700a1-11-ptf-any ansible_host=mlx-4700a1-11 sonic_version=v2  sonic_hwsku=Mellanox-SN            serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+mlx-4700a1-11 ansible_host=mlx-4700a1-11  sonic_version=v2  sonic_hwsku=Mellanox-SN             serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
+# Cumulus testbed act-5812-13 topologies
+act-5812-13-ptf-any ansible_host=act-5812-13 sonic_version=v2  sonic_hwsku=Mellanox-SN            serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+act-5812-13 ansible_host=act-5812-13  sonic_version=v2  sonic_hwsku=Mellanox-SN             serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
+# Cumulus testbed nv-xh3000hse-02 topologies
+nv-xh3000hse-02-ptf-any ansible_host=nv-xh3000hse-02 sonic_version=v2  sonic_hwsku=Mellanox-SN            serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+nv-xh3000hse-02 ansible_host=nv-xh3000hse-02  sonic_version=v2  sonic_hwsku=Mellanox-SN             serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
+# Cumulus testbed mlx-2100-08 topologies
+mlx-2100-08-ptf-any ansible_host=mlx-2100-08 sonic_version=v2  sonic_hwsku=Mellanox-SN            serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+mlx-2100-08 ansible_host=mlx-2100-08  sonic_version=v2  sonic_hwsku=Mellanox-SN             serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
+# Cumulus testbed mlx-4600c-21 topologies
+mlx-4600c-21-ptf-any ansible_host=mlx-4600c-21 sonic_version=v2  sonic_hwsku=Mellanox-SN            serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+mlx-4600c-21 ansible_host=mlx-4600c-21  sonic_version=v2  sonic_hwsku=Mellanox-SN             serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
+# Cumulus testbed mlx-2700a1-25 topologies
+mlx-2700a1-25-ptf-any ansible_host=mlx-2700a1-25 sonic_version=v2  sonic_hwsku=Mellanox-SN            serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+mlx-2700a1-25 ansible_host=mlx-2700a1-25  sonic_version=v2  sonic_hwsku=Mellanox-SN             serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
+# Cumulus testbed mlx-4600c-22 topologies
+mlx-4600c-22-ptf-any ansible_host=mlx-4600c-22 sonic_version=v2  sonic_hwsku=Mellanox-SN            serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+mlx-4600c-22 ansible_host=mlx-4600c-22  sonic_version=v2  sonic_hwsku=Mellanox-SN             serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
+# Cumulus testbed mlx-4600ca1-03 topologies
+mlx-4600ca1-03-ptf-any ansible_host=mlx-4600ca1-03 sonic_version=v2  sonic_hwsku=Mellanox-SN            serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+mlx-4600ca1-03 ansible_host=mlx-4600ca1-03  sonic_version=v2  sonic_hwsku=Mellanox-SN             serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
+# Cumulus testbed mlx-3700-47 topologies
+mlx-3700-47-ptf-any ansible_host=mlx-3700-47 sonic_version=v2  sonic_hwsku=Mellanox-SN            serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+mlx-3700-47 ansible_host=mlx-3700-47  sonic_version=v2  sonic_hwsku=Mellanox-SN             serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
+# Cumulus testbed mlx-2201-05 topologies
+mlx-2201-05-ptf-any ansible_host=mlx-2201-05 sonic_version=v2  sonic_hwsku=Mellanox-SN            serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+mlx-2201-05 ansible_host=mlx-2201-05  sonic_version=v2  sonic_hwsku=Mellanox-SN             serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
+# Cumulus testbed mlx-3750-03 topologies
+mlx-3750-03-ptf-any ansible_host=mlx-3750-03 sonic_version=v2  sonic_hwsku=Mellanox-SN            serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+mlx-3750-03 ansible_host=mlx-3750-03  sonic_version=v2  sonic_hwsku=Mellanox-SN             serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
+# Cumulus testbed mlx-5600-02 topologies
+mlx-5600-02-ptf-any ansible_host=mlx-5600-02 sonic_version=v2  sonic_hwsku=Mellanox-SN            serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+mlx-5600-02 ansible_host=mlx-5600-02  sonic_version=v2  sonic_hwsku=Mellanox-SN             serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
+# Cumulus testbed mlx-5600-05 topologies
+mlx-5600-05-ptf-any ansible_host=mlx-5600-05 sonic_version=v2  sonic_hwsku=Mellanox-SN            serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+mlx-5600-05 ansible_host=mlx-5600-05  sonic_version=v2  sonic_hwsku=Mellanox-SN             serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
+# Cumulus testbed mlx-3700-57 topologies
+mlx-3700-57-ptf-any ansible_host=mlx-3700-57 sonic_version=v2  sonic_hwsku=Mellanox-SN            serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+mlx-3700-57 ansible_host=mlx-3700-57  sonic_version=v2  sonic_hwsku=Mellanox-SN             serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
+# Cumulus testbed mlx-3700-64 topologies
+mlx-3700-64-ptf-any ansible_host=mlx-3700-64 sonic_version=v2  sonic_hwsku=Mellanox-SN            serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+mlx-3700-64 ansible_host=mlx-3700-64  sonic_version=v2  sonic_hwsku=Mellanox-SN             serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
+# Cumulus testbed mlx-3700-67 topologies
+mlx-3700-67-ptf-any ansible_host=mlx-3700-67 sonic_version=v2  sonic_hwsku=Mellanox-SN            serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+mlx-3700-67 ansible_host=mlx-3700-67  sonic_version=v2  sonic_hwsku=Mellanox-SN             serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
+# Cumulus testbed mlx-3700-69 topologies
+mlx-3700-69-ptf-any ansible_host=mlx-3700-69 sonic_version=v2  sonic_hwsku=Mellanox-SN            serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+mlx-3700-69 ansible_host=mlx-3700-69  sonic_version=v2  sonic_hwsku=Mellanox-SN             serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
+# Cumulus testbed mlx-2700a1-42 topologies
+mlx-2700a1-42-ptf-any ansible_host=mlx-2700a1-42 sonic_version=v2  sonic_hwsku=Mellanox-SN            serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+mlx-2700a1-42 ansible_host=mlx-2700a1-42  sonic_version=v2  sonic_hwsku=Mellanox-SN             serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
+# Cumulus testbed mlx-2700a1-43 topologies
+mlx-2700a1-43-ptf-any ansible_host=mlx-2700a1-43 sonic_version=v2  sonic_hwsku=Mellanox-SN            serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+mlx-2700a1-43 ansible_host=mlx-2700a1-43  sonic_version=v2  sonic_hwsku=Mellanox-SN             serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
+# Cumulus testbed mlx-2700a1-44 topologies
+mlx-2700a1-44-ptf-any ansible_host=mlx-2700a1-44 sonic_version=v2  sonic_hwsku=Mellanox-SN            serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+mlx-2700a1-44 ansible_host=mlx-2700a1-44  sonic_version=v2  sonic_hwsku=Mellanox-SN             serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
+# Cumulus testbed mlx-2700a1-45 topologies
+mlx-2700a1-45-ptf-any ansible_host=mlx-2700a1-45 sonic_version=v2  sonic_hwsku=Mellanox-SN            serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+mlx-2700a1-45 ansible_host=mlx-2700a1-45  sonic_version=v2  sonic_hwsku=Mellanox-SN             serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
+# Cumulus testbed mlx-2700a1-46 topologies
+mlx-2700a1-46-ptf-any ansible_host=mlx-2700a1-46 sonic_version=v2  sonic_hwsku=Mellanox-SN            serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+mlx-2700a1-46 ansible_host=mlx-2700a1-46  sonic_version=v2  sonic_hwsku=Mellanox-SN             serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
+# Cumulus testbed mlx-2201m-01 topologies
+mlx-2201m-01-ptf-any ansible_host=mlx-2201m-01 sonic_version=v2  sonic_hwsku=Mellanox-SN            serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+mlx-2201m-01 ansible_host=mlx-2201m-01  sonic_version=v2  sonic_hwsku=Mellanox-SN             serial_console="telnet console-swr-b12 6018" ptf_host=ptf-dummy ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-24 base_mac=9c:63:c0:09:1f:d2 serial=MT2412XZ03RN model=MSN3700-VS2FO syseeprom_info="{'0x28': u'x86_64-mlnx_msn3700-r0',  '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MSN3700-VS2FO', '0x23': u'MT2101X09711', '0x21': u'MSN3700', '0x26': u'1', '0x24': u'1C:34:DA:2D:4D:00', '0x25': u'01/15/2021 04:50:00','0xfe': u'0xC32982B1', '0x2b': u'Mellanox', '0x2a': u'254'}"
+
 #  MTR community testbeds
 
 # MTR testbed arc-switch1038 topologies
@@ -2262,6 +2426,129 @@ nv-xh3000hse-03
 
 sug-2410a1-04-ptf-any
 sug-2410a1-04
+
+mlx-2010-03-ptf-any
+mlx-2010-03
+
+mlx-2010a1-12-ptf-any
+mlx-2010a1-12
+
+mlx-2100-04-ptf-any
+mlx-2100-04
+
+mlx-2100-07-ptf-any
+mlx-2100-07
+
+mlx-2100ba1-02-ptf-any
+mlx-2100ba1-02
+
+mlx-2410-05-ptf-any
+mlx-2410-05
+
+mlx-2410a1-10-ptf-any
+mlx-2410a1-10
+
+mlx-2700a1-07-ptf-any
+mlx-2700a1-07
+
+mlx-3700-14-ptf-any
+mlx-3700-14
+
+mlx-3700c-18-ptf-any
+mlx-3700c-18
+
+mlx-3700c-19-ptf-any
+mlx-3700c-19
+
+mlx-4410-06-ptf-any
+mlx-4410-06
+
+mlx-4600-04-ptf-any
+mlx-4600-04
+
+mlx-4700-04-ptf-any
+mlx-4700-04
+
+mlx-4700-17-ptf-any
+mlx-4700-17
+
+mlx-4700-18-ptf-any
+mlx-4700-18
+
+mlx-4700a1-03-ptf-any
+mlx-4700a1-03
+
+mlx-4700a1-08-ptf-any
+mlx-4700a1-08
+
+mlx-4700a1-11-ptf-any
+mlx-4700a1-11
+
+act-5812-13-ptf-any
+act-5812-13
+
+nv-xh3000hse-02-ptf-any
+nv-xh3000hse-02
+
+mlx-2100-08-ptf-any
+mlx-2100-08
+
+mlx-4600c-21-ptf-any
+mlx-4600c-21
+
+mlx-2700a1-25-ptf-any
+mlx-2700a1-25
+
+mlx-4600c-22-ptf-any
+mlx-4600c-22
+
+mlx-4600ca1-03-ptf-any
+mlx-4600ca1-03
+
+mlx-3700-47-ptf-any
+mlx-3700-47
+
+mlx-2201-05-ptf-any
+mlx-2201-05
+
+mlx-3750-03-ptf-any
+mlx-3750-03
+
+mlx-5600-02-ptf-any
+mlx-5600-02
+
+mlx-5600-05-ptf-any
+mlx-5600-05
+
+mlx-3700-57-ptf-any
+mlx-3700-57
+
+mlx-3700-64-ptf-any
+mlx-3700-64
+
+mlx-3700-67-ptf-any
+mlx-3700-67
+
+mlx-3700-69-ptf-any
+mlx-3700-69
+
+mlx-2700a1-42-ptf-any
+mlx-2700a1-42
+
+mlx-2700a1-43-ptf-any
+mlx-2700a1-43
+
+mlx-2700a1-44-ptf-any
+mlx-2700a1-44
+
+mlx-2700a1-45-ptf-any
+mlx-2700a1-45
+
+mlx-2700a1-46-ptf-any
+mlx-2700a1-46
+
+mlx-2201m-01-ptf-any
+mlx-2201m-01
 
 [leaf_topo_1:vars]
 podset_number=200

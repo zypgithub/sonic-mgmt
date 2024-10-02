@@ -8381,3 +8381,536 @@
   dut:
     - sug-2410a1-04
   comment: Mellanox MTR testbed
+
+- conf-name: mlx-2010-03-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_5
+  vm_base: VM0000
+  dut:
+    - mlx-2010-03
+  comment: Mellanox MTR testbed
+
+- conf-name: mlx-2010a1-12-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_5
+  vm_base: VM0000
+  dut:
+    - mlx-2010a1-12
+  comment: Mellanox MTR testbed
+
+- conf-name: mlx-2100-04-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_5
+  vm_base: VM0000
+  dut:
+    - mlx-2100-04
+  comment: Mellanox MTR testbed
+
+- conf-name: mlx-2100-07-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_5
+  vm_base: VM0000
+  dut:
+    - mlx-2100-07
+  comment: Mellanox MTR testbed
+
+- conf-name: mlx-2100ba1-02-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_5
+  vm_base: VM0000
+  dut:
+    - mlx-2100ba1-02
+  comment: Mellanox MTR testbed
+
+- conf-name: mlx-2410-05-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_5
+  vm_base: VM0000
+  dut:
+    - mlx-2410-05
+  comment: Mellanox MTR testbed
+
+- conf-name: mlx-2410a1-10-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_5
+  vm_base: VM0000
+  dut:
+    - mlx-2410a1-10
+  comment: Mellanox MTR testbed
+
+- conf-name: mlx-2700a1-07-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_5
+  vm_base: VM0000
+  dut:
+    - mlx-2700a1-07
+  comment: Mellanox MTR testbed
+
+- conf-name: mlx-3700-14-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_5
+  vm_base: VM0000
+  dut:
+    - mlx-3700-14
+  comment: Mellanox MTR testbed
+
+- conf-name: mlx-3700c-18-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_5
+  vm_base: VM0000
+  dut:
+    - mlx-3700c-18
+  comment: Mellanox MTR testbed
+
+- conf-name: mlx-3700c-19-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_5
+  vm_base: VM0000
+  dut:
+    - mlx-3700c-19
+  comment: Mellanox MTR testbed
+
+- conf-name: mlx-4410-06-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_5
+  vm_base: VM0000
+  dut:
+    - mlx-4410-06
+  comment: Mellanox MTR testbed
+
+- conf-name: mlx-4600-04-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_5
+  vm_base: VM0000
+  dut:
+    - mlx-4600-04
+  comment: Mellanox MTR testbed
+
+- conf-name: mlx-4700-04-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_5
+  vm_base: VM0000
+  dut:
+    - mlx-4700-04
+  comment: Mellanox MTR testbed
+
+- conf-name: mlx-4700-17-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_5
+  vm_base: VM0000
+  dut:
+    - mlx-4700-17
+  comment: Mellanox MTR testbed
+
+- conf-name: mlx-4700-18-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_5
+  vm_base: VM0000
+  dut:
+    - mlx-4700-18
+  comment: Mellanox MTR testbed
+
+- conf-name: mlx-4700a1-03-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_5
+  vm_base: VM0000
+  dut:
+    - mlx-4700a1-03
+  comment: Mellanox MTR testbed
+
+- conf-name: mlx-4700a1-08-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_5
+  vm_base: VM0000
+  dut:
+    - mlx-4700a1-08
+  comment: Mellanox MTR testbed
+
+- conf-name: mlx-4700a1-11-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_5
+  vm_base: VM0000
+  dut:
+    - mlx-4700a1-11
+  comment: Mellanox MTR testbed
+
+- conf-name: act-5812-13-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_5
+  vm_base: VM0000
+  dut:
+    - act-5812-13
+  comment: Mellanox MTR testbed
+
+- conf-name: nv-xh3000hse-02-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_5
+  vm_base: VM0000
+  dut:
+    - nv-xh3000hse-02
+  comment: Mellanox MTR testbed
+
+- conf-name: mlx-2100-08-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_5
+  vm_base: VM0000
+  dut:
+    - mlx-2100-08
+  comment: Mellanox MTR testbed
+
+- conf-name: mlx-4600c-21-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_5
+  vm_base: VM0000
+  dut:
+    - mlx-4600c-21
+  comment: Mellanox MTR testbed
+
+- conf-name: mlx-2700a1-25-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_5
+  vm_base: VM0000
+  dut:
+    - mlx-2700a1-25
+  comment: Mellanox MTR testbed
+
+- conf-name: mlx-4600c-22-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_5
+  vm_base: VM0000
+  dut:
+    - mlx-4600c-22
+  comment: Mellanox MTR testbed
+
+- conf-name: mlx-4600ca1-03-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_5
+  vm_base: VM0000
+  dut:
+    - mlx-4600ca1-03
+  comment: Mellanox MTR testbed
+
+- conf-name: mlx-3700-47-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_5
+  vm_base: VM0000
+  dut:
+    - mlx-3700-47
+  comment: Mellanox MTR testbed
+
+- conf-name: mlx-2201-05-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_5
+  vm_base: VM0000
+  dut:
+    - mlx-2201-05
+  comment: Mellanox MTR testbed
+
+- conf-name: mlx-3750-03-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_5
+  vm_base: VM0000
+  dut:
+    - mlx-3750-03
+  comment: Mellanox MTR testbed
+
+- conf-name: mlx-5600-02-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_5
+  vm_base: VM0000
+  dut:
+    - mlx-5600-02
+  comment: Mellanox MTR testbed
+
+- conf-name: mlx-5600-05-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_5
+  vm_base: VM0000
+  dut:
+    - mlx-5600-05
+  comment: Mellanox MTR testbed
+
+- conf-name: mlx-3700-57-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_5
+  vm_base: VM0000
+  dut:
+    - mlx-3700-57
+  comment: Mellanox MTR testbed
+
+- conf-name: mlx-3700-64-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_5
+  vm_base: VM0000
+  dut:
+    - mlx-3700-64
+  comment: Mellanox MTR testbed
+
+- conf-name: mlx-3700-67-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_5
+  vm_base: VM0000
+  dut:
+    - mlx-3700-67
+  comment: Mellanox MTR testbed
+
+- conf-name: mlx-3700-69-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_5
+  vm_base: VM0000
+  dut:
+    - mlx-3700-69
+  comment: Mellanox MTR testbed
+
+- conf-name: mlx-2700a1-42-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_5
+  vm_base: VM0000
+  dut:
+    - mlx-2700a1-42
+  comment: Mellanox MTR testbed
+
+- conf-name: mlx-2700a1-43-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_5
+  vm_base: VM0000
+  dut:
+    - mlx-2700a1-43
+  comment: Mellanox MTR testbed
+
+- conf-name: mlx-2700a1-44-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_5
+  vm_base: VM0000
+  dut:
+    - mlx-2700a1-44
+  comment: Mellanox MTR testbed
+
+- conf-name: mlx-2700a1-45-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_5
+  vm_base: VM0000
+  dut:
+    - mlx-2700a1-45
+  comment: Mellanox MTR testbed
+
+- conf-name: mlx-2700a1-46-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_5
+  vm_base: VM0000
+  dut:
+    - mlx-2700a1-46
+  comment: Mellanox MTR testbed
+
+- conf-name: mlx-2201m-01-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_5
+  vm_base: VM0000
+  dut:
+    - mlx-2201m-01
+  comment: Mellanox MTR testbed
