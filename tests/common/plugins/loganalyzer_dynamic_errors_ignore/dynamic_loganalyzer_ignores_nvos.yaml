@@ -510,6 +510,13 @@
     - Redmine:
       - 3434337
 
+# ignore this warning due to low level limitation
+- Errors_list:
+    - '.*WARNING kernel.*lm75.*supply vs not found, using dummy regulator.*'
+  Conditions:
+    - Redmine:
+      - 3605656
+
 - Errors_list:
     - '.* ERR syncd#SAI: \[SAI_OBJECT.ERR\] ./src/mlnx_sai_object.c\[\d+\]- sai_object_type_get_availability: Resource availability for object type \d+ is not implemented'
   Conditions:
