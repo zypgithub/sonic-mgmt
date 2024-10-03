@@ -229,6 +229,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         :return: None, raise error in case of unexpected result
         """
         ports_list = self.get_ports_list_reboot_reload_flow(ports_list, topology_obj)
+        self.disable_ztp(True)
         with allure.step('Reloading dut'):
             logger.info("Reloading dut")
             self.reload_configuration(reload_force)
