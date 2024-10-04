@@ -425,6 +425,8 @@ class SystemConsts:
     MIN_SYSTEM_DATETIME = MIN_SYSTEM_DATE + " 00:00:00"
     MAX_SYSTEM_DATETIME = MAX_SYSTEM_DATE + " 23:59:59"
 
+    NBU_NFS_SERVER = "https://nbu-mtr-nfs.nvidia.com"
+
     PRE_LOGIN_MESSAGE = 'pre-login'
     POST_LOGIN_MESSAGE = 'post-login'
     POST_LOGOUT_MESSAGE = 'post-logout'

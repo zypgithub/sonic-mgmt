@@ -507,6 +507,45 @@ def system_image_install_reject_with_prompt(engines, system, prompt_response, or
         child.close()
 
 
+@pytest.mark.checklist
+@pytest.mark.image
+@pytest.mark.system
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_fetch_image_via_http(release_name, test_name, test_api, devices):
+    """
+    Install system image test
+
+    1. Get the details of the image to be fetched based on release
+    2. Fetch the image using nv action fetch system image https<>
+    3. Verify the fetched image is shown in 'nv show system image files' output
+    4. Delete the images that has been fetched during the test
+    5. Verify the earlier fetched image does not appear in show command
+    """
+    TestToolkit.tested_api = test_api
+    system = System()
+    image_fetched = False
+
+    try:
+        with allure.step("Get the image details to be fetched"):
+            original_image = system.image.get_image_field_values()[ImageConsts.CURRENT_IMG]
+            image_to_fetch = get_images_to_fetch(release_name, original_image, 1)[0]
+
+        with allure.step("Fetch an image {}".format(SystemConsts.NBU_NFS_SERVER + image_to_fetch[1])):
+            system.image.action_fetch(SystemConsts.NBU_NFS_SERVER + image_to_fetch[1])
+            image_fetched = True
+
+        with allure.step("Verify fetched image is shown in the show command"):
+            system.image.files.verify_show_files_output(expected_files=[image_to_fetch[0]])
+
+    finally:
+        if image_fetched:
+            with allure.step("Delete the image that has been fetched during the test"):
+                system.image.files.delete_files([image_to_fetch[0]])
+
+        with allure.step("Verify earlier fetched image is not shown in the show command"):
+            system.image.files.verify_show_files_output(unexpected_files=[image_to_fetch[0]])
+
+
 def normalize_image_name(image_name):
     return image_name.replace("-amd64", "").replace(".bin", "")
 
