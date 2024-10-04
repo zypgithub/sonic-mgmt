@@ -1,4 +1,0 @@
-mgmt_bridge: br0
-mgmt_prefixlen: 20
-mgmt_gw: 10.245.34.120
-external_port: p1p2

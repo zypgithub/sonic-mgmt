@@ -5,7 +5,7 @@ mtvr-hippo-02      ansible_host=10.245.20.246 ansible_hostv6="fe80::5aa2:e1ff:fe
 sonic_latest
 
 [ptf]
-ptf-mtvr-hippo-02 ansible_host=10.245.34.182 ansible_ssh_user=root ansible_ssh_pass=root
+ptf-mtvr-hippo-02 ansible_host=10.245.42.62 ansible_ssh_user=root ansible_ssh_pass=root
 
 [lab:children]
 sonic

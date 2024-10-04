@@ -38,8 +38,8 @@ mtvr-hippo-02-ptf-any
 
 [ptf]
 # mtvr-hippo-02 PTF host
-ptf-mtvr-hippo-02 ansible_host=10.245.34.182 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
-10.245.34.182 ansible_host=10.245.34.182 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+ptf-mtvr-hippo-02 ansible_host=10.245.42.62 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+10.245.42.62 ansible_host=10.245.42.62 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
 
 [pdu]
 pdu-10-245-2-13 ansible_host=10.208.2.13 protocol=snmp

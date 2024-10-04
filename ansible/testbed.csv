@@ -335,12 +335,12 @@ mtvr-hippo-03-t1-lag,vm-t1,t1-lag,docker-ptf-mlnx,ptf-mtvr-hippo-03,10.245.34.12
 mtvr-hippo-03-ptf32,vm-t1,ptf32,docker-ptf-mlnx,ptf-mtvr-hippo-03,10.245.34.122/20,,server_73,VM3801,mtvr-hippo-03,Mellanox MTR testbed
 mtvr-hippo-03-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-mtvr-hippo-03,10.245.34.122/20,,server_73,VM3801,mtvr-hippo-03,Mellanox MTR testbed
 
-mtvr-hippo-02-t0,vm-t2,t0,docker-ptf-mlnx,ptf-mtvr-hippo-02,10.245.34.182/20,,server_81,VM4601,mtvr-hippo-02,Mellanox MTR testbed
-mtvr-hippo-02-t0-64,vm-t2,t0-64,docker-ptf-mlnx,ptf-mtvr-hippo-02,10.245.34.182/20,,server_81,VM4601,mtvr-hippo-02,Mellanox MTR testbed
-mtvr-hippo-02-t1,vm-t2,t1,docker-ptf-mlnx,ptf-mtvr-hippo-02,10.245.34.182/20,,server_81,VM4601,mtvr-hippo-02,Mellanox MTR testbed
-mtvr-hippo-02-t1-lag,vm-t2,t1-lag,docker-ptf-mlnx,ptf-mtvr-hippo-02,10.245.34.182/20,,server_81,VM4601,mtvr-hippo-02,Mellanox MTR testbed
-mtvr-hippo-02-ptf32,vm-t2,ptf32,docker-ptf-mlnx,ptf-mtvr-hippo-02,10.245.34.182/20,,server_81,VM4601,mtvr-hippo-02,Mellanox MTR testbed
-mtvr-hippo-02-ptf-any,vm-t2,ptf-any,docker-ptf-mlnx,ptf-mtvr-hippo-02,10.245.34.182/20,,server_81,VM4601,mtvr-hippo-02,Mellanox MTR testbed
+mtvr-hippo-02-t0,vm-t1,t0,docker-ptf-mlnx,ptf-mtvr-hippo-02,10.245.42.62/20,,server_81,VM4601,mtvr-hippo-02,Mellanox MTR testbed
+mtvr-hippo-02-t0-64,vm-t1,t0-64,docker-ptf-mlnx,ptf-mtvr-hippo-02,10.245.42.62/20,,server_81,VM4601,mtvr-hippo-02,Mellanox MTR testbed
+mtvr-hippo-02-t1,vm-t1,t1,docker-ptf-mlnx,ptf-mtvr-hippo-02,10.245.42.62/20,,server_81,VM4601,mtvr-hippo-02,Mellanox MTR testbed
+mtvr-hippo-02-t1-lag,vm-t1,t1-lag,docker-ptf-mlnx,ptf-mtvr-hippo-02,10.245.42.62/20,,server_81,VM4601,mtvr-hippo-02,Mellanox MTR testbed
+mtvr-hippo-02-ptf32,vm-t1,ptf32,docker-ptf-mlnx,ptf-mtvr-hippo-02,10.245.42.62/20,,server_81,VM4601,mtvr-hippo-02,Mellanox MTR testbed
+mtvr-hippo-02-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-mtvr-hippo-02,10.245.42.62/20,,server_81,VM4601,mtvr-hippo-02,Mellanox MTR testbed
 
 r-panther-47-t0,vm-t1,t0,docker-ptf-mlnx,ptf-r-panther-47,10.215.32.3/16,,server_80,VM4501,r-panther-47,Mellanox MTR testbed
 r-panther-47-t0-56,vm-t1,t0-56,docker-ptf-mlnx,ptf-r-panther-47,10.215.32.3/16,,server_80,VM4501,r-panther-47,Mellanox MTR testbed

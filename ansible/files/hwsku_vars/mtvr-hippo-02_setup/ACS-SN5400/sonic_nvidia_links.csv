@@ -31,4 +31,4 @@ mtvr-hippo-02,Ethernet224,mtvr-leopard-05,Ethernet224,200000,129,Access
 mtvr-hippo-02,Ethernet232,mtvr-leopard-05,Ethernet232,200000,130,Access
 mtvr-hippo-02,Ethernet240,mtvr-leopard-05,Ethernet240,200000,131,Access
 mtvr-hippo-02,Ethernet248,mtvr-leopard-05,Ethernet244,200000,132,Access
-mtvr-leopard-05,Ethernet248,mtvr-r740-05,p1p2,200000,101-132,Trunk
+mtvr-leopard-05,Ethernet248,mtvr-dl360-01,p4p1,200000,101-132,Trunk
