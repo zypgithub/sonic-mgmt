@@ -643,4 +643,12 @@ tests_nvos/system/test_techsupport_feature.py::test_techsupport_bmc_badflow:
     conditions:
       - "'juliet' not in testbed"
 
+tests_nvos/system/gnmi/test_gnmi_server.py::test_gnmi_mapping_table:
+  skip:
+    reason: "Netq version was updated and mapping chage. Skipping until further alignment."
+    
+tests_nvos/system/gnmi/test_gnmi_server.py::test_gnmi_platform_general_components:
+  skip:
+    reason: "Netq version was updated and mapping chage. Skipping until further alignment."
+
 ########################## NVOS IGNORE END ##########################
