@@ -657,4 +657,16 @@ tests_nvos/system/gnmi/test_gnmi_server.py::test_gnmi_platform_general_component
   skip:
     reason: "Netq version was updated and mapping chage. Skipping until further alignment."
 
+tests_nvos/multi_asic/test_fatal_mode.py::test_flow_until_reboot:
+  skip:
+    reason: "[NVOS - Design] Bug SW #4103939: [Functional] [fatal mode] | NVUE fatal-mode handling sometimes fails to trigger reboot"
+    conditions:
+      - https://redmine.mellanox.com/issues/4103939
+
+tests_nvos/multi_asic/test_fatal_mode.py::test_flow_until_close_ports:
+  skip:
+    reason: "[NVOS - Design] Bug SW #4103939: [Functional] [fatal mode] | NVUE fatal-mode handling sometimes fails to trigger reboot"
+    conditions:
+      - https://redmine.mellanox.com/issues/4103939
+
 ########################## NVOS IGNORE END ##########################
