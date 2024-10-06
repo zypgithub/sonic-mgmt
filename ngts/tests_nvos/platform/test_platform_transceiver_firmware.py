@@ -34,13 +34,15 @@ def test_transceiver_database_tables(engines, devices, test_api):
     with allure.step("Create platform object"):
         platform = Platform()
         transceivers_tables_name = "TRANSCEIVER_FIRMWARE_INFO"
-        transceivers_list = list(OutputParsingTool.parse_json_str_to_dictionary(platform.transceiver.show()).returned_value.keys())
-        number_of_transceivers = len(transceivers_list) * 2
+        transceivers_list = list(OutputParsingTool.parse_json_str_to_dictionary(platform.transceiver.show()).get_returned_value().keys())
+        number_of_transceivers = sum(2 if transceiver.startswith('sw') else 1 for transceiver in transceivers_list)  # swA3 -> swA3p1, swA3p2
         with allure.step("Validate for each transceiver out of {} transceivers we have the table in STATE_DB".format(number_of_transceivers)):
             tables_in_database = Tools.DatabaseTool.sonic_db_cli_get_keys(engine=engines.dut, asic="",
                                                                           db_name=DatabaseConst.STATE_DB_NAME,
                                                                           grep_str=transceivers_tables_name).splitlines()
-            assert number_of_transceivers == len(tables_in_database), "Test Failed: we expected {} transceivers tables in STATE_DB but we found only {}".format(len(number_of_transceivers), len(tables_in_database))
+            assert number_of_transceivers == len(tables_in_database), "Test Failed: we expected {} transceivers tables " \
+                                                                      "in STATE_DB but we found only {}".format(number_of_transceivers,
+                                                                                                                len(tables_in_database))
 
 
 @pytest.mark.timeout(10 * MINUTE, func_only=True)
@@ -88,7 +90,6 @@ def test_reset_transceiver_firmware_positive(engines, test_api, start_sm):
             _verify_expected_dict(output_after_reset, default_fw)
 
         with allure.step(f"verify all {random_port} link fields back to the same values"):
-            start_sm
             link_output_after_reset = OutputParsingTool.parse_json_str_to_dictionary(interface.link.show()).verify_result()
             link_output_before_reset = link_output_before_reset.pop('counters')
             link_output_after_reset = link_output_after_reset.pop('counters')

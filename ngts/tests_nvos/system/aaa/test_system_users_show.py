@@ -68,7 +68,7 @@ def test_show_role(engines):
     configurator_output = OutputParsingTool.parse_json_str_to_dictionary(system.aaa.role.show(SystemConsts.ROLE_CONFIGURATOR)).get_returned_value()
     viewer_output = OutputParsingTool.parse_json_str_to_dictionary(system.aaa.role.show(SystemConsts.ROLE_VIEWER)).get_returned_value()
 
-    labels = [SystemConsts.ROLE_PERMISSIONS]
+    labels = [SystemConsts.ROLE_GROUPS]
     configurator_values = [SystemConsts.ROLE_CONFIGURATOR_DEFAULT_GROUPS]
     viewer_values = [SystemConsts.ROLE_VIEWER_DEFAULT_GROUPS]
 
@@ -142,7 +142,7 @@ def verify_roles_default_values(roles_output):
         field_to_check = [SystemConsts.ROLE_CONFIGURATOR, SystemConsts.ROLE_VIEWER]
         ValidationTool.verify_field_exist_in_json_output(roles_output, field_to_check).verify_result()
 
-        labels = [SystemConsts.ROLE_PERMISSIONS]
+        labels = [SystemConsts.ROLE_GROUPS]
         configurator_values = [SystemConsts.ROLE_CONFIGURATOR_DEFAULT_GROUPS]
         viewer_values = [SystemConsts.ROLE_VIEWER_DEFAULT_GROUPS]
 

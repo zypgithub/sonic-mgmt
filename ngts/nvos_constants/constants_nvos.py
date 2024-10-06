@@ -484,8 +484,8 @@ class SystemConsts:
     SSH_CONFIG_DEFAULT_PORTS = '22'
     SSH_CONFIG_MIN_MAX_SESSION = 3
     SSH_CONFIG_MAX_MAX_SESSION = 100
-    SSH_CONFIG_MIN_INACTIV_TIMEOUT = 0
-    SSH_CONFIG_MAX_INACTIV_TIMEOUT = 35000
+    SSH_CONFIG_MIN_INACTIVE_TIMEOUT = 0
+    SSH_CONFIG_MAX_INACTIVE_TIMEOUT = 35000
     SSH_CONFIG_DEFAULT_VALUES = [SSH_CONFIG_DEFAULT_AUTH_RETRY, SSH_CONFIG_DEFAULT_INACTIVE_TIMEOUT,
                                  SSH_CONFIG_DEFAULT_LOGIN_TIMEOUT, SSH_CONFIG_DEFAULT_MAX_SESSION,
                                  SSH_CONFIG_DEFAULT_PORTS]
@@ -525,8 +525,8 @@ class SystemConsts:
     ROLE_VIEWER = 'monitor'
     ROLE_GROUPS = 'groups'
     ROLE_PERMISSIONS = 'permissions'
-    ROLE_CONFIGURATOR_DEFAULT_GROUPS = 'apply,set,show'
-    ROLE_VIEWER_DEFAULT_GROUPS = 'show'
+    ROLE_CONFIGURATOR_DEFAULT_GROUPS = 'nvapply,nvset,nvshow'
+    ROLE_VIEWER_DEFAULT_GROUPS = 'nvshow'
     USERNAME_MAX_LEN = 32
     USERNAME_PASSWORD_HARDENING_HISTORY_COUNT = 'history-cnt'
     USERNAME_PASSWORD_HARDENING_STATE = 'state'
@@ -740,7 +740,7 @@ class ConfigConsts:
 class PlatformConsts:
     PLATFORM_FW = "firmware"
     FW_PATH = "/auto/sw_system_project/MLNX_OS_INFRA/mlnx_os2/sx_mlnx_fw/"
-    XDR_FW_PATH = "/auto/mswg/release/sx_mlnx_fw/{asic}/{version}/dev/"
+    XDR_FW_PATH = "/auto/mswg/release/sx_mlnx_fw/{asic}/"
     PLATFORM_ENVIRONMENT = "environment"
     PLATFORM_HW = "hardware"
     PLATFORM_SW = "software"

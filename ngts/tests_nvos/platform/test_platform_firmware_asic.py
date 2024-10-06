@@ -109,7 +109,7 @@ def test_platform_firmware_image_rename(engines, devices, topology_obj):
     _, fetched_image_name, _ = get_image_data_and_fetch_random_image_files(platform, dut, topology_obj)
     fetched_image_file = platform.firmware.asic.files.file_name[fetched_image_name]
     with allure.step("Rename image without mfa ending"):
-        base_path = (PlatformConsts.XDR_FW_PATH.format(asic="QTM3", version=ImageConsts.XDR_FW_STABLE_VERSION)
+        base_path = (PlatformConsts.XDR_FW_PATH.format(asic="QTM3")
                      if dut.asic_type in (NvosConst.QTM3, NvosConst.NVL5)
                      else PlatformConsts.FW_PATH)
         logger.info(f"{base_path=}")
@@ -243,8 +243,8 @@ def get_image_data_and_fetch_random_image_files(platform, dut, topology_obj, ima
         asic_type = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific'][
             'chip_type']
         if "QTM3" in default_firmware:
-            directory = PlatformConsts.XDR_FW_PATH.format(asic=asic_type, version=ImageConsts.XDR_FW_STABLE_VERSION)
-            image_name = f'fw-{asic_type}-{ImageConsts.XDR_FW_STABLE_VERSION}.mfa'
+            directory = PlatformConsts.XDR_FW_PATH.format(asic=asic_type)
+            image_name = f'fw-{asic_type}-{ImageConsts.XDR_FW_STABLE_VERSION}'
             image_to_fetch = os.path.join(directory, image_name)
         else:
             image_to_fetch = '{}fw-{}-'.format(PlatformConsts.FW_PATH, asic_type) + ImageConsts.FW_STABLE_VERSION
