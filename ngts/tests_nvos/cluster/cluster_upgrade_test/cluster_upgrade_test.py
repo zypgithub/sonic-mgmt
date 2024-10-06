@@ -21,6 +21,7 @@ from ngts.nvos_tools.system.System import System
 from ngts.scripts.sonic_deploy.test_deploy_and_upgrade import get_target_version_url, get_base_version_url, prepare_images_to_install
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
+from ngts.tests_nvos.constants import MINUTE
 
 
 ClusterAppsLogLevelsList = [ClusterAppsLogLevels.DEBUG, ClusterAppsLogLevels.INFO, ClusterAppsLogLevels.NOTICE, ClusterAppsLogLevels.WARNING, ClusterAppsLogLevels.ERROR, ClusterAppsLogLevels.CRITICAL]
@@ -41,6 +42,7 @@ UNDEFINED_STATE_ERR_MSG = 'Error: At state: \'undefined\' is not one of [\'enabl
 @disabled_access_ports
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
+@pytest.mark.timeout(45 * MINUTE, func_only=True)
 def test_upgrade_with_nmx_enabled(test_api, devices, base_version,
                                   target_version, topology_obj, setup_name, platform_params, engines, release_name, test_name):
     '''

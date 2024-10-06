@@ -92,12 +92,10 @@ def test_reset_factory_keep_basic(engines, devices):
         date_time_str = engines.dut.run_cmd("date").split(" ", 1)[1]
         current_time = datetime.strptime(date_time_str, '%d %b %Y %H:%M:%S %p %Z')
 
-        with allure.step('Check is Juliet Device'):
-            if not isinstance(devices.dut, JulietSwitch):
-                with allure.step('Validate health status is OK'):
-                    logger.info("Validate health status is OK")
-                    system.validate_health_status(HealthConsts.OK)
-                    last_status_line = system.health.history.retry_get_health_history_file_summary_line()
+        with allure.step('Validate health status is OK'):
+            logger.info("Validate health status is OK")
+            system.validate_health_status(HealthConsts.OK)
+            last_status_line = system.health.history.retry_get_health_history_file_summary_line()
 
         with allure.step('Set description to eth0 port'):
             logger.info("Set description to eth0 port")
