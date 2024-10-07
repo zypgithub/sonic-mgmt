@@ -4,8 +4,9 @@ from typing import Tuple
 import pytest
 
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from ngts.nvos_constants.constants_nvos import NvosConst, PlatformConsts, HealthConsts
+from ngts.nvos_constants.constants_nvos import NvosConst, PlatformConsts
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
+from ngts.nvos_tools.infra.ContextManagers import check_health_baseline
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
@@ -45,36 +46,37 @@ def test_install_platform_firmware(engines, devices, test_name):
         installed_firmware = asic_dictionary[first_asic_name]["installed-firmware"]
         logging.info("Original actual installed firmware - " + installed_firmware)
         validate_all_asics_have_same_info()
-        system.validate_health_status(HealthConsts.OK)
 
-    try:
-        with allure.step("Install system firmware file - " + fw_file):
-            with allure.step("fetch firmware file to switch"):
-                player_engine = engines['sonic_mgmt']
-                scp_path = 'scp://{}:{}@{}'.format(player_engine.username, player_engine.password, player_engine.ip)
-                platform.firmware.asic.action_fetch(fw_file, base_url=scp_path).verify_result()
+    with check_health_baseline() as health_baseline:
+        try:
+            with allure.step("Install system firmware file - " + fw_file):
+                with allure.step("fetch firmware file to switch"):
+                    player_engine = engines['sonic_mgmt']
+                    scp_path = 'scp://{}:{}@{}'.format(player_engine.username, player_engine.password, player_engine.ip)
+                    platform.firmware.asic.action_fetch(fw_file, base_url=scp_path).verify_result()
 
-            with allure.step("Install firmware and verify"):
-                res_obj, duration = OperationTime.save_duration('install user FW', 'include reboot', test_name,
-                                                                install_new_user_fw, system, platform, fw_file_name, fae,
-                                                                new_fw_name, actual_firmware, engines, test_name)
-                OperationTime.verify_operation_time(duration, 'install user FW').verify_result()
+                with allure.step("Install firmware and verify"):
+                    res_obj, duration = OperationTime.save_duration('install user FW', 'include reboot', test_name,
+                                                                    install_new_user_fw, system, platform, fw_file_name, fae,
+                                                                    new_fw_name, actual_firmware, engines, test_name)
+
+                with allure.step('Verify the firmware installed successfully'):
+                    verify_firmware_with_platform_and_fae_cmd(platform, fae, new_fw_name, new_fw_name)
+                    validate_all_asics_have_same_info()
+                    health_baseline.compare()
+                    fw_has_changed = True
+
+                with allure.step('Verify operation time'):
+                    OperationTime.verify_operation_time(duration, 'install user FW').verify_result()
+
+        finally:
+            with allure.step("cleanup steps"):
+                OperationTime.save_duration('install default fw', 'include reboot', test_name, install_image_fw,
+                                            system, platform, engines, test_name, fw_has_changed)
 
             with allure.step('Verify the firmware installed successfully'):
-                verify_firmware_with_platform_and_fae_cmd(platform, fae, new_fw_name, new_fw_name)
+                verify_firmware_with_platform_and_fae_cmd(platform, fae, actual_firmware, actual_firmware)
                 validate_all_asics_have_same_info()
-                system.validate_health_status(HealthConsts.OK)
-                fw_has_changed = True
-
-    finally:
-        with allure.step("cleanup steps"):
-            OperationTime.save_duration('install default fw', 'include reboot', test_name, install_image_fw,
-                                        system, platform, engines, test_name, fw_has_changed)
-
-        with allure.step('Verify the firmware installed successfully'):
-            verify_firmware_with_platform_and_fae_cmd(platform, fae, actual_firmware, actual_firmware)
-            validate_all_asics_have_same_info()
-            system.validate_health_status(HealthConsts.OK)
 
 
 def get_version_and_file_name(asic_type: str) -> Tuple[str, str]:
