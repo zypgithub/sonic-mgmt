@@ -36,17 +36,18 @@ class OpenApiGeneralCli:
                                                    resource_path=resource_path, op_param_name="state", op_param_value="save")
 
     @staticmethod
-    def show_config(engine, revision='applied', output_type='json'):
+    def show_config(engine, revision='applied', output_type='json', param=''):
         """
         Save configuration
         :param engine: ssh engine object
         :param revision: applied / pending / startup
         :param output_type: json / str
+        :param param: --all/ ''
         """
         logging.info("Execute config show using OpenApi")
         resource_path = '/?rev={revision}&filled=False'.format(revision=revision)
         res = OpenApiCommandHelper.execute_script(engine.engine.username, engine.engine.password, 'GET', engine.ip,
-                                                  resource_path=resource_path)
+                                                  resource_path=resource_path, op_param_name=param)
 
         if output_type == 'json':
             return json.dumps(res)

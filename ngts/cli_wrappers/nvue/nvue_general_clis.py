@@ -208,10 +208,9 @@ class NvueGeneralCli(SonicGeneralCliDefault):
         return output
 
     @staticmethod
-    def show_config(engine, revision='applied', output_type='json'):
+    def show_config(engine, revision='applied', output_type='json', param=''):
         logging.info("Running 'nv config show' on dut")
-        output = engine.run_cmd('nv config show --rev {revision} --output {output_type}'.format(output_type=output_type,
-                                                                                                revision=revision))
+        output = engine.run_cmd('nv config show {param} --rev {revision} --output {output_type}'.format(output_type=output_type, revision=revision, param=param))
         return output
 
     @staticmethod

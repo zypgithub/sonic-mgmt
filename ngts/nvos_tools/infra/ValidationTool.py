@@ -287,11 +287,13 @@ class ValidationTool:
             return ResultObj(not info, info)
 
     @staticmethod
-    def compare_nested_dictionary_content(output_dictionary, sub_dictionary):
+    def compare_nested_dictionary_content(output_dictionary, sub_dictionary, keys_to_ignore=[]):
         with allure.step("Verify the sub nested dictionary can be found in the output"):
             info = ""
             output_dictionary_keys = output_dictionary.keys()
             for key, value in sub_dictionary.items():
+                if key in keys_to_ignore:
+                    break
                 if key not in output_dictionary_keys:
                     info += key + " can't be found in output dictionary\n"
                 else:
