@@ -294,7 +294,6 @@ class BaseSwitch(BaseDevice):
         super().init_documents_consts()
 
     # Gorilla and Eth override it as they don't support it
-    @abstractmethod
     def verify_sed_password(self, tpm_tool, sed_default_password=SecurityConsts.SED_DEFAULT_PASSWORD):
         password_from_tpm = tpm_tool.get_sed_password_primary_bank()
         assert password_from_tpm == sed_default_password, f"Pass from tpm should be default SED pass"
