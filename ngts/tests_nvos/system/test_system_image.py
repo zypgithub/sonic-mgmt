@@ -96,6 +96,9 @@ def test_downgrade_upgrade(release_name, test_api, original_version, devices, ba
     6. Uninstall image
     7. Delete the new image name , success
     """
+    if not base_version:
+        pytest.skip("Cannot run test because base_version parameter is missing from the setup file")
+
     TestToolkit.tested_api = test_api
     system = System()
 
@@ -186,6 +189,9 @@ def test_image_uninstall(release_name, test_api, original_version, test_name, de
     4. Set the original image to be booted next
     5. Validate that uninstall will success
     """
+    if not base_version:
+        pytest.skip("Cannot run test because base_version parameter is missing from the setup file")
+
     TestToolkit.tested_api = test_api
     image_uninstall_test(release_name, original_version, devices, uninstall_force="", test_name=test_name,
                          base_version=base_version)
@@ -206,6 +212,9 @@ def test_image_uninstall_force(release_name, original_version, test_name, device
     4. Set the original image to be booted next
     5. Validate that uninstall force will success
     """
+    if not base_version:
+        pytest.skip("Cannot run test because base_version parameter is missing from the setup file")
+
     image_uninstall_test(release_name, original_version, devices, uninstall_force="force", test_name=test_name, base_version=base_version)
 
 
@@ -364,6 +373,9 @@ def image_uninstall_test(release_name, original_version, devices, uninstall_forc
     4. Set the original image to be booted next
     5. Validate that uninstall [force] will success
     """
+    if not base_version:
+        pytest.skip("Cannot run test because base_version parameter is missing from the setup file")
+
     system = System()
 
     verify_current_version(original_version, system, devices.dut)
