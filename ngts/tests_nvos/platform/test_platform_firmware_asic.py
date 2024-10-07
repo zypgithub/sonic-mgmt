@@ -5,41 +5,39 @@ from typing import Tuple
 
 import pytest
 
-from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import ImageConsts, NvosConst
 from ngts.nvos_constants.constants_nvos import PlatformConsts
 from ngts.nvos_tools.infra.FWComponentsTool import FWComponentsTool
-from ngts.nvos_tools.infra.Fae import Fae
-from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.constants import MINUTE
+
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.platform.Platform import Platform
-from ngts.tests_nvos.platform.test_install_platform_firmware import get_asic_dict, get_version_and_file_name
+from ngts.tests_nvos.platform.test_install_platform_firmware import get_asic_dict
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
 
 
 @pytest.mark.checklist
-@pytest.mark.fae
-def test_show_fae_firmware(devices):
+@pytest.mark.platform
+def test_show_platform_firmware(devices):
     """
-    Show fae firmware test
+    Show platform firmware test
 
     Test flow:
-    1. Run show fae platform firmware
+    1. Run show platform firmware
     2. Make sure that all required fields exist for all ASICs
     """
-    fae = Fae()
+    platform = Platform()
 
-    with allure.step("Run show fae firmware asic"):
-        output_dictionary = get_asic_dict(fae)
+    with allure.step("Run show platform firmware asic"):
+        output_dictionary = get_asic_dict(platform)
 
     with allure.step("Validate asic amount"):
-        expected_asic_amount = len(devices.dut.device_list) - 1
+        expected_asic_amount = 1  # in show non-fae platform firmware we expect 1 ASIC
         assert len(output_dictionary) == expected_asic_amount, \
             "Unexpected num of ASIC\n Expected : {}\n but got {}".format(
                 expected_asic_amount, len(output_dictionary))
@@ -231,7 +229,7 @@ def set_auto_update(platform, value):
 
 def verify_asic_fields(asic_dictionary):
     with allure.step("Verify all expected asic fields are presented in the output"):
-        asic_fields = ["actual-firmware", "installed-firmware", "part-number", "auto-update", "fw-source"]
+        asic_fields = ["actual-firmware", "part-number", "auto-update", "fw-source"]
         for asic_name, asic_prop in asic_dictionary.items():
             ValidationTool.verify_field_exist_in_json_output(asic_prop, asic_fields).verify_result()
 

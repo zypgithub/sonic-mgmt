@@ -76,14 +76,14 @@ class NvueBaseCli:
 
     @staticmethod
     def action(engine, device=None, action_type='', resource_path='', suffix="", param_name="", param_value="",
-               output_format=None, expect_reboot=False, recovery_engine=None, topology_obj=None, should_succeed=True, system_is_ready_timeout=None, track_boot_intervals=False):
+               output_format=None, expect_reboot=False, recovery_engine=None, topology_obj=None, should_succeed=True, system_is_ready_timeout=None, track_boot_intervals=False, deny_reboot=False):
         return NvueBaseCli.nvue_action(engine, device, action_type, resource_path, suffix, param_name, param_value,
-                                       output_format, expect_reboot, recovery_engine, topology_obj, should_succeed, system_is_ready_timeout, track_boot_intervals)
+                                       output_format, expect_reboot, recovery_engine, topology_obj, should_succeed, system_is_ready_timeout, track_boot_intervals, deny_reboot)
 
     @staticmethod
     @check_output
     def nvue_action(engine, device, action_type, resource_path, suffix, param_name, param_value, output_format,
-                    expect_reboot, recovery_engine, topology_obj=None, should_succeed=True, system_is_ready_timeout=None, track_boot_intervals=False):
+                    expect_reboot, recovery_engine, topology_obj=None, should_succeed=True, system_is_ready_timeout=None, track_boot_intervals=False, deny_reboot=False):
         """See documentation of BaseComponent.action"""
         if not action_type:
             raise ValueError("action_type must be non-empty")
@@ -96,11 +96,14 @@ class NvueBaseCli:
             command += f" --output {output_format}"
         command = ' '.join(command.split())  # delete double-spaces
         logger.info(f"Running command: {command}")
+
         if expect_reboot:
             confirm = not ("force" in param_name)
             return (DutUtilsTool.reload(engine=engine, device=device, command=command, confirm=confirm,
-                                        recovery_engine=recovery_engine, topology_obj=topology_obj, system_is_ready_timeout=system_is_ready_timeout, track_boot_intervals=track_boot_intervals).
-                    verify_result(should_succeed=should_succeed))
+                                        recovery_engine=recovery_engine, topology_obj=topology_obj,
+                                        system_is_ready_timeout=system_is_ready_timeout,
+                                        track_boot_intervals=track_boot_intervals,
+                                        deny_reboot=deny_reboot).verify_result(should_succeed=should_succeed))
         else:
             output = engine.run_cmd(command)
             logger.info(output)

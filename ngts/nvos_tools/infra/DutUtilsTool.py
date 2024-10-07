@@ -28,9 +28,11 @@ class DutUtilsTool:
 
     @staticmethod
     def reload(engine, device, command, find_prompt_tries=80, find_prompt_delay=2, should_wait_till_system_ready=True,
-               confirm=False, recovery_engine=None, topology_obj=None, system_is_ready_timeout=None, track_boot_intervals=False):
+               confirm=False, recovery_engine=None, topology_obj=None, system_is_ready_timeout=None, track_boot_intervals=False, deny_reboot=False):
         """
 
+        :param topology_obj:
+        :param deny_reboot:
         :param should_wait_till_system_ready: if True then we will wait till the system is ready, if false then we only will wait till we can re-connect to the system
         :param engine:
         :param device:
@@ -41,10 +43,14 @@ class DutUtilsTool:
         :param recovery_engine: recover with other engine (optional)
         :return:
         """
-        with allure.step('Reload the system with {} command, and wait till system is ready'.format(command)):
-            list_commands = [command, 'y'] if confirm else [command]
-            output = device.reload_device(engine, list_commands)
-            logger.info(output)
+        res_obj = ResultObj(True)
+        output = ""
+        if deny_reboot:
+            with allure.step('Run {} command and deny reload'.format(command)):
+                list_commands = [command, 'N']
+                output = device.reload_device(engine, list_commands)
+                logger.info(output)
+                time.sleep(5)
 
             if any(sub in output.lower() for sub in DutUtilsTool.invalid_output_list):
                 return ResultObj(result=False, info=output)
@@ -55,8 +61,39 @@ class DutUtilsTool:
                 time.sleep(40)
                 return res_obj
 
+        else:
+            with allure.step('Reload the system with {} command, and wait till system is ready'.format(command)):
+                list_commands = [command, 'y'] if confirm else [command]
+                output = device.reload_device(engine, list_commands)
+                logger.info(output)
+
+                if 'aborted' in output.lower() or 'aborting' in output.lower():
+                    return ResultObj(result=False, info=output)
+
+                res_obj = DutUtilsTool.wait_on_system_reboot(engine, recovery_engine, None, should_wait_till_system_ready,
+                                                             device, False, True, topology_obj)
+                if not should_wait_till_system_ready:
+                    time.sleep(40)
+                    return res_obj
+
         res_obj.returned_value = output
         return res_obj
+
+    def reload_deny_reboot(engine, device, command, prompt='N'):
+        """
+        :param engine:
+        :param device:
+        :param command:
+        :param prompt: deny prompt character
+        :return:
+        """
+        with allure.step('Reload the system with {} command'.format(command)):
+            list_commands = [command, prompt]
+            output = device.reload_device(engine, list_commands)
+            logger.info(output)
+            time.sleep(5)
+
+        return ResultObj(result=True, returned_value=output)
 
     @staticmethod
     def check_ssh_for_authentication_error(engine, device):
