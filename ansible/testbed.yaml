@@ -6009,6 +6009,58 @@
     - r-bison-simx-03
   comment: Mellanox MTR testbed
 
+- conf-name: r-bison-simx-121-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+    - r-bison-simx-121
+  comment: Mellanox MTR testbed
+
+- conf-name: r-bison-simx-125-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+    - r-bison-simx-125
+  comment: Mellanox MTR testbed
+
+- conf-name: r-bison-simx-129-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+    - r-bison-simx-129
+  comment: Mellanox MTR testbed
+
+- conf-name: r-bison-simx-133-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+    - r-bison-simx-133
+  comment: Mellanox MTR testbed
+
 - conf-name: r-spider-05-ptf-any
   group-name: vm-t1
   topo: ptf-any

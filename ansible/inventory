@@ -94,6 +94,23 @@ r-bison-simx-250 ansible_host=r-bison-simx-250  sonic_version=v2  sonic_hwsku=AC
 r-bison-simx-03-ptf-any ansible_host=r-bison-simx-03  sonic_version=v2  sonic_hwsku=ACS-MSN5640             serial_console="telnet r-r6515-02 27000" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-
 r-bison-simx-03 ansible_host=r-bison-simx-03  sonic_version=v2  sonic_hwsku=ACS-MSN5640             serial_console="telnet r-r6515-02 27000" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-
 
+# MTR canonical testbed r-bison-simx-121 topologies
+r-bison-simx-121-ptf-any ansible_host=r-bison-simx-121  sonic_version=v2  sonic_hwsku=ACS-MSN5640             serial_console="telnet r-dl360-02 13000" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-
+r-bison-simx-121 ansible_host=r-bison-simx-121  sonic_version=v2  sonic_hwsku=ACS-MSN5640             serial_console="telnet r-dl360-02 13000" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-
+
+# MTR canonical testbed r-bison-simx-125 topologies
+r-bison-simx-125-ptf-any ansible_host=r-bison-simx-125  sonic_version=v2  sonic_hwsku=ACS-MSN5640             serial_console="telnet r-dl360-02 13001" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-
+r-bison-simx-125 ansible_host=r-bison-simx-125  sonic_version=v2  sonic_hwsku=ACS-MSN5640             serial_console="telnet r-dl360-02 13001" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-
+
+# MTR canonical testbed r-bison-simx-129 topologies
+r-bison-simx-129-ptf-any ansible_host=r-bison-simx-129  sonic_version=v2  sonic_hwsku=ACS-MSN5640             serial_console="telnet r-dl360-02 13002" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-
+r-bison-simx-129 ansible_host=r-bison-simx-129  sonic_version=v2  sonic_hwsku=ACS-MSN5640             serial_console="telnet r-dl360-02 13002" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-
+
+# MTR canonical testbed r-bison-simx-133 topologies
+r-bison-simx-133-ptf-any ansible_host=r-bison-simx-133  sonic_version=v2  sonic_hwsku=ACS-MSN5640             serial_console="telnet r-dl360-02 13003" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-
+r-bison-simx-133 ansible_host=r-bison-simx-133  sonic_version=v2  sonic_hwsku=ACS-MSN5640             serial_console="telnet r-dl360-02 13003" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-
+
+
 # MTR canonical testbed r-panther-simx-23 topologies
 r-panther-simx-23-ptf-any ansible_host=r-panther-simx-23  sonic_version=v2  sonic_hwsku=ACS-MSN2700             serial_console="telnet r-sonic-02 14000" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-
 r-panther-simx-23 ansible_host=r-panther-simx-23  sonic_version=v2  sonic_hwsku=ACS-MSN2700             serial_console="telnet r-sonic-02 14000" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-
@@ -1573,6 +1590,18 @@ r-bison-simx-250
 
 r-bison-simx-03-ptf-any
 r-bison-simx-03
+
+r-bison-simx-121-ptf-any
+r-bison-simx-121
+
+r-bison-simx-125-ptf-any
+r-bison-simx-125
+
+r-bison-simx-129-ptf-any
+r-bison-simx-129
+
+r-bison-simx-133-ptf-any
+r-bison-simx-133
 
 r-panther-simx-18-ptf-any
 r-panther-simx-18

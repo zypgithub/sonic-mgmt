@@ -84,6 +84,10 @@ r-moose-simx-242,10.215.65.242,ACS-MSN5600,DevSonic,,sonic
 r-moose-simx-246,10.215.65.246,ACS-MSN5600,DevSonic,,sonic
 r-bison-simx-250,10.215.65.250,ACS-MSN5640,DevSonic,,sonic
 r-bison-simx-03,10.215.66.3,ACS-MSN5640,DevSonic,,sonic
+r-bison-simx-121,10.215.40.121,ACS-MSN5640,DevSonic,,sonic
+r-bison-simx-125,10.215.40.125,ACS-MSN5640,DevSonic,,sonic
+r-bison-simx-129,10.215.40.129,ACS-MSN5640,DevSonic,,sonic
+r-bison-simx-133,10.215.40.133,ACS-MSN5640,DevSonic,,sonic
 r-moose-simx-26,10.215.14.26,ACS-MSN5600,DevSonic,,sonic
 r-moose-simx-30,10.215.14.30,ACS-MSN5600,DevSonic,,sonic
 r-moose-simx-34,10.215.14.34,ACS-MSN5600,DevSonic,,sonic
