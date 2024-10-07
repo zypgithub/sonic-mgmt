@@ -98,4 +98,4 @@ def tpm_attestation_factory_reset_no_params_check(engines=None):
     yield    # to prevent StopIteration on the 2nd next() call
 
 
-factory_reset_tpm_checker = tpm_attestation_factory_reset_no_params_check()    # generator
+factory_reset_tpm_checker = tpm_attestation_factory_reset_no_params_check()  # generator

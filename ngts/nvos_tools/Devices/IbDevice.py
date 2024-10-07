@@ -455,6 +455,9 @@ class GorillaSwitch(IbSwitch):
     def get_mgmt_ports(self) -> List[str]:
         return self.mgmt_ports
 
+    def verify_sed_password(self, tpm_tool, sed_default_password=""):
+        return  # This should be ignored on gorilla, overrides method from base switch
+
     def _init_fan_list(self):
         super()._init_fan_list()
         self.fan_list += ["FAN7/1", "FAN7/2"]
