@@ -132,18 +132,17 @@ def test_password_length_negative(engines, devices, sed_default_password):
     tpm_tool = TpmTool(switch)
     system = System()
     long_pass = generate_random_string_with_length(251, 502)
-    small_pass = generate_random_string_with_length(1, 7)
+    short_pass = generate_random_string_with_length(1, 7)
 
     _verify_tpm_banks_password(tpm_tool, sed_default_password)
 
-    with allure.step(f"Try to set SED password via nv action {long_pass}"):
-        # Should check for error the action itself
-        system.security.action_change_sed_password(long_pass)
+    with allure.step(f"Try to set long SED password via nv action {long_pass}"):
+        system.security.action_change_sed_password(long_pass).verify_result(should_succeed=False)
 
     _verify_tpm_banks_password(tpm_tool, sed_default_password)
 
-    with allure.step(f"Try to set SED password via nv action {small_pass}"):
-        system.security.action_change_sed_password(small_pass)
+    with allure.step(f"Try to set short SED password via nv action {short_pass}"):
+        system.security.action_change_sed_password(short_pass).verify_result(should_succeed=False)
 
     _verify_tpm_banks_password(tpm_tool, sed_default_password)
 

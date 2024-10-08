@@ -350,7 +350,7 @@ def test_lldp_disable_dhcp(engines, devices, serial_engine):
     4. Verify lldp frames contain mac address.
     """
     system = System()
-    _verify_lldp_running(system.lldp, engine=serial_engine)
+    _verify_lldp_running(system.lldp, engine=engines.dut)
 
     for interface_name in devices.dut.get_mgmt_ports():
         mgmt_interface = MgmtPort(name=interface_name)
