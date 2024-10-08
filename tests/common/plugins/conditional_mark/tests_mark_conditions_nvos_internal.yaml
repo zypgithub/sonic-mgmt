@@ -405,12 +405,6 @@ tests_nvos/platform/test_platform_firmware.py::test_show_platform_firmware:
       - "'gorilla' not in testbed and 'juliet' not in testbed"
       - https://redmine.mellanox.com/issues/3956092
 
-tests_nvos/fae/test_debug_token.py:
-  skip:
-    reason: "Testcase skipped on non Juliet systems, Juliet feature only"
-    conditions:
-      - "'juliet' not in testbed"
-
 tests_nvos/platform/test_platform_environment.py::test_show_platform_environment_psu:
   skip:
     reason: "Testcase skipped on Juliet systems, Juliet Does not have PSU"
@@ -459,7 +453,7 @@ tests_nvos/checklist/erot_fw_upgrade/test_erot_upgrade.py:
     conditions:
       - "'juliet' not in testbed"
 
-tests_nvos/checklist/test_bios_upgrade.py::test_bios_upgrade:
+tests_nvos/checklist/test_bios_upgrade.py::test_bios_manual_update:
   skip:
     reason: "Testcase skipped on non Juliet systems since they has 'auto-update' which changes the upgrade's flow"
     conditions:

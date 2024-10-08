@@ -43,5 +43,8 @@
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/platform/nvos_new_hw_thermal_control.cases </cases>
 	</test>
-
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/platform/nvos_platform_bmc.cases </cases>
+		<ignore><condition> <key>dut_type</key> <op> not in </op> <value>[juliet]</value> </condition></ignore>
+	</test>
 </DBDEF>
