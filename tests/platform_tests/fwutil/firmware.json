@@ -499,11 +499,6 @@
 						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4410/FUI000156/FUI000156.mpfa",
 						"version": "CPLD000254_REV0600",
 						"reboot": ["power off","cold"]
-					},
-					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4410/FUI000120/FUI000120.mpfa",
-						"version": "CPLD000254_REV0500",
-						"reboot": ["power off","cold"]
 					}
 				]
 
@@ -633,11 +628,6 @@
 					{
 						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4700/FUI000155/FUI000155.mpfa",
 						"version": "CPLD000254_REV0600",
-						"reboot": ["power off","cold"]
-					},
-					{
-						"firmware":  "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4700/FUI000123/FUI000123.mpfa",
-						"version": "CPLD000254_REV0500",
 						"reboot": ["power off","cold"]
 					}
 				]
