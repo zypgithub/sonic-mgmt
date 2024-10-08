@@ -1723,7 +1723,7 @@
     - '.*ERR clusterd\[\d+\]: gRPC client error.*'
   Conditions:
     - Affected_test_cases:
-      - tests_nvos/fae/test_nmx_package.py
+      - tests_nvos/cluster/test_nmx_package.py
 
 # NVOS
 - Errors_list:

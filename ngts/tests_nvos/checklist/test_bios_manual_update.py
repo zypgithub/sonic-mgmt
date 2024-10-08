@@ -25,7 +25,7 @@ def restore_bios(topology_obj):
 @pytest.mark.timeout(20 * MINUTE, func_only=True)
 @pytest.mark.bios
 @pytest.mark.parametrize('test_api', random.sample(ApiType.ALL_TYPES, 1))
-def test_bios_upgrade(engines, devices, topology_obj, test_api):
+def test_bios_manual_update(engines, devices, topology_obj, test_api):
     """
     Test flow:
         1. fetch alternate BIOS version
@@ -35,6 +35,12 @@ def test_bios_upgrade(engines, devices, topology_obj, test_api):
         5. install the current latest BIOS version (the one the machine begun the test with)
         6. power cycle
         7. validate BIOS version was changed in nv show platform firmware
+
+    Description:
+    This test is specifically for systems that do not have BIOS auto-update feature. It is pruned for such systems,
+    as the following test logic will not work if auto-update is enabled.
+    Currently, only Juliet systems are supported.
+
     """
 
     TestToolkit.tested_api = test_api

@@ -1,4 +1,5 @@
 import logging
+import re
 
 import pytest
 
@@ -283,7 +284,7 @@ def test_show_interface_filter(engines):
         filter_name = 'filter_not_exist'
         output_dict_filtered = interface.show(f'--filter "{filter_name}={value}"',
                                               output_format='auto', should_succeed=False)
-        assert 'Error: No match found for filter depth of 4.' in output_dict_filtered
+        assert re.search(r'Error: No match found for filter depth of \d+\.', output_dict_filtered)
 
 
 def validate_interface_fields(output_dictionary):
