@@ -226,6 +226,7 @@ class IbSwitch(BaseSwitch):
         self.primary_swid = f"{IbConsts.SWID}0"
         self.primary_ipoib_interface = IbConsts.IPOIB_INT.format(self.asic_amount - 1)
         self.multi_asic_system = False
+        self.multi_planar = False
         self.login_pattern = NvosConst.INSTALL_SUCCESS_PATTERN
         self.install_patterns = {self.login_pattern: 0}
         self.install_success_patterns = list(self.install_patterns.keys())
@@ -521,6 +522,7 @@ class BlackMambaSwitch(IbSwitch):
         self.ib_ports_num = 2 * 72
         self.core_count = 4
         self.asic_type = NvosConst.QTM3
+        self.multi_planar = True
         self.platform_file_path = MultiPlanarConsts.PLATFORM_FILE_FULL_PATH.format("x86_64-mlnx_qm8790-r0")
         self.show_platform_output.update({
             "product-name": "Q3400_RA",

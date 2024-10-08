@@ -17,15 +17,15 @@ OPEN_SM_PATH = "opensm"
 class OpenSmTool:
 
     @staticmethod
-    def start_open_sm(engines=None):
-        return OpenSmTool.start_open_sm_on_server(engines)
+    def start_open_sm(engines=None, multiplanar=False):
+        return OpenSmTool.start_open_sm_on_server(engines, multiplanar)
 
     @staticmethod
     def stop_open_sm(engines=None):
         return OpenSmTool.stop_open_sm_on_server(engines)
 
     @staticmethod
-    def start_open_sm_on_server(engines):
+    def start_open_sm_on_server(engines, multiplanar=False):
         """
         Start open sm if it's not running
         """
@@ -42,6 +42,11 @@ class OpenSmTool:
             OpenSmTool.stop_open_sm_on_server(engines)
 
         with allure.step("Get GUID to start OpenSM"):
+            if multiplanar:
+                # CX8 needs to see the planarized interface
+                output = engines.ha.run_cmd("ibdev2netdev")
+                if "smi2" not in output:
+                    engines.ha.run_cmd(f"/opt/mellanox/iproute2/sbin/rdma dev add smi2 type SMI parent {port_name}")
             output = engines.ha.run_cmd("ibstat {}".format(port_name))
             guid = ''
             for line in output.splitlines():

@@ -12,6 +12,7 @@ from retry import retry
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
+from infra.tools.exceptions.setup_issue import SetupIssue
 from infra.tools.general_constants.constants import DefaultConnectionValues
 from infra.tools.sql.connect_to_mssql import ConnectMSSQL
 from ngts.cli_wrappers.linux.linux_general_clis import LinuxGeneralCli
@@ -23,7 +24,6 @@ from ngts.nvos_constants.constants_nvos import NvosConst
 from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
 from ngts.nvos_tools.Devices.DeviceFactory import DeviceFactory
 from ngts.nvos_tools.Devices.EthDevice import EthSwitch
-from ngts.nvos_tools.Devices.IbDevice import CrocodileSwitch
 from ngts.nvos_tools.cli_coverage.nvue_cli_coverage import NVUECliCoverage
 from ngts.nvos_tools.ib.opensm.OpenSmTool import OpenSmTool
 from ngts.nvos_tools.infra.CmdRunner import CmdRunner
@@ -199,13 +199,11 @@ def start_sm(engines, devices, traffic_available):
     Starts OpenSM
     """
     if traffic_available:
-        if isinstance(devices.dut, CrocodileSwitch):
-            RegressionConfigurations.configure_ports_to_legacy(engine=engines.dut, apply=True, throw_exception=False)
-        result = OpenSmTool.start_open_sm(engines)
-        if not result.result:
-            logging.warning("Failed to start openSM")
+        RegressionConfigurations.configure_ports_to_legacy(engine=engines.dut, apply=True, throw_exception=False)
+        result = OpenSmTool.start_open_sm(engines, multiplanar=devices.dut.multi_planar)
+        result.verify_result()
     else:
-        logging.warning("Traffic is not available on this setup")
+        raise SetupIssue("Traffic is not available on this setup")
 
 
 @pytest.fixture
