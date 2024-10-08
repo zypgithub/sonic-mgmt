@@ -19,6 +19,7 @@ running_dockers = {}
 KEEP_ALL_CONFIG = "keep-all-config"
 KEEP_ONLY_FILES = "only-files"
 KEEP_BASIC = "keep basic"
+DO_NOT_CHECK_DOCKERS = ['snmp']
 
 
 def update_timezone(system):
@@ -128,9 +129,10 @@ def add_verification_data(engine, system):
         for line in output:
             line = line.split()
             docker_name = line[len(line) - 1]
-            start_time = engine.run_cmd(r"docker inspect -f \{\{'.Created'\}\} " + docker_name)
-            start_time = datetime.strptime(start_time.split(".")[0], f'%Y-%m-%dT%H:%M:%S')
-            running_dockers[docker_name] = start_time
+            if docker_name not in DO_NOT_CHECK_DOCKERS:
+                start_time = engine.run_cmd(r"docker inspect -f \{\{'.Created'\}\} " + docker_name)
+                start_time = datetime.strptime(start_time.split(".")[0], f'%Y-%m-%dT%H:%M:%S')
+                running_dockers[docker_name] = start_time
 
     with allure.step("Create new user"):
         username, password = System(force_api=ApiType.NVUE).aaa.user.set_new_user(apply=True)

@@ -39,7 +39,7 @@ class Configurations:
     }
 
     post_install_commands = {"10.7.144.153": ['nv set acl ACL_MGMT_INBOUND_CP_DEFAULT rule 120 match ip recent-list hit-count 3000',
-                                              'nv config apply'],
+                                              'nv config apply -y'],
                              }
 
     devices_to_configure_ndr_ports = ndr_ports.keys()

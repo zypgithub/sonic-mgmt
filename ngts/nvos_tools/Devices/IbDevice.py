@@ -788,7 +788,7 @@ class CrocodileSimxSwitch(IbSwitch):
 class NvLinkSwitch(IbSwitch):
 
     def __init__(self, asic_amount):
-        super().__init__(switch_type="NVL", asic_amount=asic_amount)
+        super().__init__(switch_type=NvosConst.NVL_SWITCH_TYPE, asic_amount=asic_amount)
 
     def _init_constants(self):
         super()._init_constants()

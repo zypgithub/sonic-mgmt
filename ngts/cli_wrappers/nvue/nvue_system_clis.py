@@ -113,7 +113,8 @@ class NvueSystemCli(NvueBaseCli):
 
     @staticmethod
     @check_output
-    def action_reboot(engine, device, resource_path, op_param="", should_wait_till_system_ready=True, recovery_engine=None, topology_obj=None):
+    def action_reboot(engine, device, resource_path, op_param="", should_wait_till_system_ready=True,
+                      recovery_engine=None, topology_obj=None):
         """
         Rebooting the switch
         """

@@ -33,3 +33,4 @@ pyodbc==4.0.34
 lxml
 perscache
 pytest-timeout==2.3.1
+paramiko

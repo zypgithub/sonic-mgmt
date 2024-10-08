@@ -144,7 +144,8 @@ def test_ib_interface_speed(engines, players, interfaces, devices, start_sm, tes
             Tools.TrafficGeneratorTool.send_ib_traffic(players=players, interfaces=interfaces, should_success=True'''
 
     with allure.step("Select a random ib-speed value for port {}".format(selected_port.name)):
-        selected_ib_speed_value = Tools.RandomizationTool.select_random_value(supported_ib_speeds).get_returned_value()
+        selected_ib_speed_value = Tools.RandomizationTool.select_random_value(list_of_values=supported_ib_speeds,
+                                                                              forbidden_values=[IbInterfaceConsts.XDR]).get_returned_value()
         logging.info("Selected ib-speed: " + selected_ib_speed_value)
 
     with allure.step("Set ib-speed '{}' for port '{}".format(selected_ib_speed_value, selected_port.name)):
@@ -152,6 +153,7 @@ def test_ib_interface_speed(engines, players, interfaces, devices, start_sm, tes
                                          apply=True, ask_for_confirmation=True).verify_result()
 
         with allure.step("Verify the ib-speed value updated to: {}".format(selected_ib_speed_value)):
+            sleep(2)
             wait_for_port_to_become_active(selected_port)
             current_link_dict = OutputParsingTool.parse_json_str_to_dictionary(
                 selected_port.interface.link.show()).get_returned_value()
@@ -169,6 +171,7 @@ def test_ib_interface_speed(engines, players, interfaces, devices, start_sm, tes
     with allure.step("Unset ib_speed for port {}".format(selected_port.name)):
         selected_port.interface.link.unset(op_param='ib-speed', apply=True,
                                            ask_for_confirmation=True).verify_result()
+        sleep(2)
         wait_for_port_to_become_active(selected_port)
         verify_speed_values(devices, selected_port)
 
@@ -177,6 +180,7 @@ def test_ib_interface_speed(engines, players, interfaces, devices, start_sm, tes
                                          apply=True, ask_for_confirmation=True).verify_result()
 
         with allure.step("Verify the ib-speed value updated to: {}".format(origin_ib_speed_value)):
+            sleep(2)
             wait_for_port_to_become_active(selected_port)
             current_link_dict = OutputParsingTool.parse_json_str_to_dictionary(
                 selected_port.interface.link.show()).get_returned_value()

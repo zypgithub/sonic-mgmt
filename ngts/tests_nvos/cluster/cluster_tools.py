@@ -357,7 +357,7 @@ def disabled_access_ports(func):
         has_access_ports = True
         try:
             TestToolkit.tested_api = 'NVUE'
-            if not hasattr(devices.dut, 'nvl5_access_ports_list'):
+            if not devices or not devices.dut or not hasattr(devices.dut, 'nvl5_access_ports_list'):
                 has_access_ports = False
             if has_access_ports:
                 port_name = summarize_ports(devices.dut.nvl5_access_ports_list)
