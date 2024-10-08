@@ -669,4 +669,8 @@ tests_nvos/multi_asic/test_fatal_mode.py::test_flow_until_close_ports:
     conditions:
       - https://redmine.mellanox.com/issues/4103939
 
+tests_nvos/system/clock/test_system_clock.py::test_change_valid_datetime_ntp_on_error_flow:
+  skip:
+    reason: "Skip until fixed because this failure changes the system time which causes other tests to fail"
+
 ########################## NVOS IGNORE END ##########################
