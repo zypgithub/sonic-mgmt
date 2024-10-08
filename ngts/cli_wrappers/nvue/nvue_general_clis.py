@@ -144,7 +144,7 @@ class NvueGeneralCli(SonicGeneralCliDefault):
 
         logger.info(f'*** Image {image_path} successfully installed ***')
 
-    def install_nos_using_onie_in_serial(self, nos_image: str, ssh_engine, topology_obj, dut_alias,
+    def install_nos_using_onie_in_serial(self, nos_image: str, ssh_engine, topology_obj, dut_alias='dut',
                                          serial_engine: PexpectSerialEngine = None):
         with allure.step("Get image path and url"):
             image_path, image_url = self._get_image_path_and_url(nos_image)
@@ -165,7 +165,7 @@ class NvueGeneralCli(SonicGeneralCliDefault):
     def deploy_image(self, topology_obj, image_path, apply_base_config=False, setup_name=None,
                      platform_params=None, deploy_type='sonic', reboot_after_install=None, fw_pkg_path=None,
                      set_timezone='Israel', disable_ztp=False, configure_dns=False, destination_hwsku=None,
-                     setup_info=None, dut_alias=None, deploy_fanout_threads=None):
+                     setup_info=None, dut_alias='dut', deploy_fanout_threads=None):
         with allure.step('Preparing switch for installation'):
             logger.info("Begin: Preparing switch for installation ")
             in_onie = self.prepare_for_installation(topology_obj, dut_alias)
@@ -182,7 +182,7 @@ class NvueGeneralCli(SonicGeneralCliDefault):
         with allure.step("Complete installation"):
             self._wait_nos_to_become_functional(engine, topology_obj, dut_alias, serial_engine)
 
-    def _wait_nos_to_become_functional(self, engine, topology_obj="", dut_alias=None, serial_engine: PexpectSerialEngine = None):
+    def _wait_nos_to_become_functional(self, engine, topology_obj="", dut_alias='dut', serial_engine: PexpectSerialEngine = None):
         with allure.step('Ping switch until shutting down'):
             ping_till_alive(should_be_alive=False, destination_host=engine.ip)
         with allure.step('Ping switch until back alive'):
@@ -386,7 +386,7 @@ class NvueGeneralCli(SonicGeneralCliDefault):
         serial_engine.create_serial_engine(login_to_switch=False)
         return serial_engine
 
-    def enter_onie_install_mode(self, topology_obj, dut_alias):
+    def enter_onie_install_mode(self, topology_obj, dut_alias='dut'):
         '''
         @summary: in this function we want to enter install mode,
         we are doing so by the following step:
@@ -488,7 +488,7 @@ class NvueGeneralCli(SonicGeneralCliDefault):
         serial_engine.run_cmd('\r', ['Please press Enter to activate this console', 'ONIE:/\\s+'], timeout=60)
 
     @retry(Exception, tries=3, delay=5)
-    def enter_onie(self, topology_obj, dut_alias):
+    def enter_onie(self, topology_obj, dut_alias='dut'):
         self.enter_onie_install_mode(topology_obj, dut_alias)
 
     def confirm_in_onie_install_mode(self, topology_obj, dut_alias='dut'):
