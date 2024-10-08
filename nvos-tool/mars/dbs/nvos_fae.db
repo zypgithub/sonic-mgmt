@@ -40,4 +40,5 @@
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/fae/nvos_fae.cases </cases>
 	</test>
+
 </DBDEF>

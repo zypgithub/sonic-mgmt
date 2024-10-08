@@ -25,7 +25,7 @@ class ClusterConsts:
     UNDEFINED_LOG_LEVEL = '''Output was expected to contain:
     Action succeeded
     But the output is:
-    Error: At @update.parameters.log_level: 'undefined' is not one of ['critical', 'error', 'warn', 'notice', 'info', 'debug', None]'''
+    Error: 'undefined' is not one of ['critical', 'error', 'warn', 'notice', 'info', 'debug', None]'''
     SLEEP_AFTER_LOG_ROTATE = 20
     PARTITIONS_NAMES = ['test_partition1', 'test_partition2', 'test_partition3']
     RESILIENCY_MODES = ['ADAPTIVE_BANDWIDTH', 'FULL_BANDWIDTH', 'USER_ACTION']
