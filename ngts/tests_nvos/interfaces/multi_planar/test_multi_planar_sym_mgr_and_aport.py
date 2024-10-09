@@ -65,8 +65,9 @@ def test_fae_interface_commands(engines, devices, test_api, start_sm):
                 output_fae_fnm_port = OutputParsingTool.parse_show_interface_output_to_dictionary(
                     selected_fae_fnm_port.port.interface.show()).get_returned_value()
                 if output_fae_fnm_port[IbInterfaceConsts.LINK][IbInterfaceConsts.LINK_CONNECTION_MODE] != IbInterfaceConsts.XDR:
-                    MgmtPort(selected_fae_fnm_port.port.name).interface.link.connection_mode.set(
-                        op_param_name=IbInterfaceConsts.XDR, apply=True, ask_for_confirmation=True).verify_result()
+                    MgmtPort(selected_fae_fnm_port.port.name).interface.link.set(
+                        op_param_name=IbInterfaceConsts.LINK_CONNECTION_MODE, op_param_value=IbInterfaceConsts.XDR,
+                        apply=True, ask_for_confirmation=True).verify_result()
 
     # ------------- show commands -------------------------------------------------------------
 
