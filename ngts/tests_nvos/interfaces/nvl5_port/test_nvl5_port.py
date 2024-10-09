@@ -68,7 +68,7 @@ def test_show_nvl5_interface_commands(engines, devices, test_api):
             verify_result()
         ValidationTool.compare_values(output_fae_port['type'], devices.dut.nvl5_port_type).verify_result()
 
-    with allure_step('Check is JulietNonScaleoutSwitch Device'):
+    with allure_step('Check if device is not a JulietNonScaleoutSwitch Device'):
         if not isinstance(dut_device, JulietNonScaleoutSwitch):
             with allure_step("Verify switch port speed"):
                 if devices.dut.nvl5_trunk_ports_list != []:
