@@ -39,7 +39,7 @@ class Transceiver(BaseComponent):
                 dict_of_transceivers = {k: v for k, v in dict_of_transceivers.items() if v.get(PlatformConsts.TRANSCEIVER_CABLE_TYPE) == cable_type}
                 logging.info(f"get_dict_of_transceivers - {dict_of_transceivers} meets the requirements of {cable_type}")
             else:
-                dict_of_transceivers = {k: v for k, v in dict_of_transceivers.items() if PlatformConsts.TRANSCEIVER_CABLE_TYPE not in dict_of_transceivers}
+                dict_of_transceivers = {k: v for k, v in dict_of_transceivers.items() if PlatformConsts.TRANSCEIVER_CABLE_TYPE not in v}
                 logging.info(f"get_dict_of_transceivers - {dict_of_transceivers} no {PlatformConsts.TRANSCEIVER_CABLE_TYPE} field therefore cable is not connected")
 
             return dict_of_transceivers
