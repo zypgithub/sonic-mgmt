@@ -8,28 +8,16 @@ from functools import wraps
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_constants.constants_nvos import PlatformConsts, IbConsts, ApiType, OutputFormat, SystemConsts, ClusterAppsLogLevels, ClusterConsts, NvosConst
+from ngts.nvos_constants.constants_nvos import PlatformConsts, IbConsts, ApiType, OutputFormat, SystemConsts, ClusterAppsLogLevels, NvosConst
 from ngts.nvos_tools.ib.Ib import Ib
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
+from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
 
 logger = logging.getLogger()
-
-NMX_CONTROLLER = 'nmx-controller'
-NMX_TELEMETRY = 'nmx-telemetry'
-TELEMETRY_SERVICES = ['nmx-connector', 'ib-telemetry']
-CONTROLLER_SERVICES = ['nmxc-sdn', 'nmxc-fib', 'redis']
-INITIAL_EXPECTED_APPS = [NMX_CONTROLLER, NMX_TELEMETRY]
-NMX_CONTROLLER_CONFIG_FILE_TYPES = ['fm_config', 'sm_config', 'rdm_config', 'chassis_mapping']
-NMX_CONTROLLER_STATE_FILE_TYPES = ['sm_dump', 'topology']
-ClusterAppsLogLevelsList = [ClusterAppsLogLevels.DEBUG, ClusterAppsLogLevels.INFO, ClusterAppsLogLevels.NOTICE, ClusterAppsLogLevels.WARNING, ClusterAppsLogLevels.ERROR, ClusterAppsLogLevels.CRITICAL]
-NMX_LOG_MESSAGES_TAGS = ['nmxc-sm', 'nmxc-fm', 'nmxc-fib', 'nmxc-gw_api', 'nmxc-rest', 'nmxc-config_daemon']
-WAIT_FOR_APPS_RUNNING = 15
-NMXC_CONN = 'nmxc-conn'
-NMXC_CONN_STATE_PER_CLUSTER_STATE = {NvosConst.ENABLED: 'up', NvosConst.DISABLED: 'down'}
 
 
 class ClusterTools:
@@ -37,10 +25,10 @@ class ClusterTools:
     @staticmethod
     def stop_start_app(cluster, engines, devices):
         with allure.step("Stop/Start apps"):
-            for app in INITIAL_EXPECTED_APPS:
+            for app in ClusterConsts.INITIAL_EXPECTED_APPS:
                 with allure.step(f"Validate app {app} is up"):
                     ClusterTools.verify_app_is_up(engines, app)
-                    if app == NMX_CONTROLLER:
+                    if app == ClusterConsts.NMX_CONTROLLER:
                         ClusterTools.verify_lid_value(devices)
                         ClusterTools.verify_interface_up(devices)
                 with allure.step("Running 'nv show cluster apps running' command and verifying output"):
@@ -59,7 +47,7 @@ class ClusterTools:
                     output = cluster.apps.apps_name[app].action_start_cluster_apps()
                     ClusterTools.wait_for_apps_to_be_in_wanted_state()
                 ClusterTools.verify_app_is_up(engines, app)
-                if app == NMX_CONTROLLER:
+                if app == ClusterConsts.NMX_CONTROLLER:
                     ClusterTools.verify_lid_value(devices)
                     ClusterTools.verify_interface_up(devices)
                 with allure.step("Running 'nv show cluster apps running' command and verifying output"):
@@ -90,12 +78,12 @@ class ClusterTools:
                 assert output[SystemConsts.STATE] == 'enabled', f"Cluster state is , " \
                     f"{output[SystemConsts.STATE]}, Expected to be: " \
                     f"enabled"
-                assert NMXC_CONN in output, f"{NMXC_CONN} was not found in {output}"
-                expected_nmxc_state = NMXC_CONN_STATE_PER_CLUSTER_STATE[output[SystemConsts.STATE]]
+                assert ClusterConsts.NMXC_CONN in output, f"{ClusterConsts.NMXC_CONN} was not found in {output}"
+                expected_nmxc_state = ClusterConsts.NMXC_CONN_STATE_PER_CLUSTER_STATE[output[SystemConsts.STATE]]
                 Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output,
-                                                                  field_name=NMXC_CONN,
+                                                                  field_name=ClusterConsts.NMXC_CONN,
                                                                   expected_value=expected_nmxc_state).verify_result()
-                assert output[NMXC_CONN] == expected_nmxc_state, f"{NMXC_CONN} state was expected to be {expected_nmxc_state} but instead it was {output[NMXC_CONN]}"
+                assert output[ClusterConsts.NMXC_CONN] == expected_nmxc_state, f"{ClusterConsts.NMXC_CONN} state was expected to be {expected_nmxc_state} but instead it was {output[ClusterConsts.NMXC_CONN]}"
 
     @staticmethod
     def check_cluster_state(cluster, output_format):
@@ -134,9 +122,9 @@ class ClusterTools:
                 assert output[SystemConsts.STATE] == 'disabled', f"State state is , " \
                     f"{output[SystemConsts.STATE]}, Expected to be: " \
                     f"disabled"
-                assert NMXC_CONN in output, f"{NMXC_CONN} was not found in {output}"
-                expected_nmxc_state = NMXC_CONN_STATE_PER_CLUSTER_STATE[output[SystemConsts.STATE]]
-                assert output[NMXC_CONN] == expected_nmxc_state, f"{NMXC_CONN} state was expected to be {expected_nmxc_state} but instead it was {output[NMXC_CONN]}"
+                assert ClusterConsts.NMXC_CONN in output, f"{ClusterConsts.NMXC_CONN} was not found in {output}"
+                expected_nmxc_state = ClusterConsts.NMXC_CONN_STATE_PER_CLUSTER_STATE[output[SystemConsts.STATE]]
+                assert output[ClusterConsts.NMXC_CONN] == expected_nmxc_state, f"{ClusterConsts.NMXC_CONN} state was expected to be {expected_nmxc_state} but instead it was {output[ClusterConsts.NMXC_CONN]}"
 
     @staticmethod
     def verify_app_is_up(engines, app):
@@ -144,7 +132,7 @@ class ClusterTools:
             output = engines.dut.run_cmd('docker ps | grep -i nmx')
             assert output != '', f"nmx docker is still down, {output}"
             output = output.split('\n')
-            expected_services = CONTROLLER_SERVICES if app == NMX_CONTROLLER else TELEMETRY_SERVICES
+            expected_services = ClusterConsts.CONTROLLER_SERVICES if app == ClusterConsts.NMX_CONTROLLER else ClusterConsts.TELEMETRY_SERVICES
             all_services_present = all(any(service in line for line in output) for service in expected_services)
             assert all_services_present, f"Missing services - expected services {expected_services}, actual: {output}"
 
@@ -153,7 +141,7 @@ class ClusterTools:
         with allure.step("Checking if service is down using docker ps | grep -i nmx"):
             output = engines.dut.run_cmd('docker ps | grep -i nmx')
             output = output.split('\n')
-            expected_services = CONTROLLER_SERVICES if app == NMX_CONTROLLER else TELEMETRY_SERVICES
+            expected_services = ClusterConsts.CONTROLLER_SERVICES if app == ClusterConsts.NMX_CONTROLLER else ClusterConsts.TELEMETRY_SERVICES
             none_services_present = all(not any(service in line for line in output) for service in expected_services)
             assert none_services_present, f"nmx docker is still up, {output}"
 
@@ -225,7 +213,7 @@ class ClusterTools:
     @staticmethod
     def verify_apps_running(engines, devices, cluster, expected_state, output_format):
         with allure.step("Running 'nv show cluster apps running' command and verifying output"):
-            for app in INITIAL_EXPECTED_APPS:
+            for app in ClusterConsts.INITIAL_EXPECTED_APPS:
                 output = OutputParsingTool.parse_show_output_to_dict(
                     cluster.apps.running.show(output_format=output_format),
                     output_format=output_format).get_returned_value()
@@ -264,10 +252,10 @@ class ClusterTools:
     def get_current_config_files_paths(sdn):
         files_dict = {}
         with allure.step("Fetch & Generate config files"):
-            for file_type in NMX_CONTROLLER_CONFIG_FILE_TYPES:
-                output = sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].action_generate_sdn()
+            for file_type in ClusterConsts.NMX_CONTROLLER_CONFIG_FILE_TYPES:
+                output = sdn.config.app.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].action_generate_sdn()
                 installed_file = ClusterTools().get_generated_file_name(output.returned_value, 'config')
-                output = OutputParsingTool.parse_show_output_to_dict(sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=OutputFormat.json),
+                output = OutputParsingTool.parse_show_output_to_dict(sdn.config.app.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=OutputFormat.json),
                                                                      output_format=OutputFormat.json).get_returned_value()
                 current_installed_config_path = output[installed_file]['path']
                 files_dict[file_type] = current_installed_config_path
@@ -301,16 +289,16 @@ class ClusterTools:
         TestToolkit.tested_api = 'NVUE'
         lines_checked = 0
         # Get the index of the current log level
-        current_level_index = ClusterAppsLogLevelsList.index(log_level)
+        current_level_index = ClusterConsts.ClusterAppsLogLevelsList.index(log_level)
 
         # Define the expected log levels based on the current log level
-        expected_log_levels = ClusterAppsLogLevelsList[current_level_index:]
-        unexpected_log_levels = ClusterAppsLogLevelsList[0:current_level_index]
+        expected_log_levels = ClusterConsts.ClusterAppsLogLevelsList[current_level_index:]
+        unexpected_log_levels = ClusterConsts.ClusterAppsLogLevelsList[0:current_level_index]
         # Convert expected log levels to uppercase
         expected_log_levels_upper = [level.upper() for level in expected_log_levels]
         unexpected_log_levels = [level.upper() for level in unexpected_log_levels]
 
-        show_output = system.log.show_log(param=f"| grep -E \"{'|'.join(NMX_LOG_MESSAGES_TAGS)}\"").split('\n')[1:]
+        show_output = system.log.show_log(param=f"| grep -E \"{'|'.join(ClusterConsts.NMX_LOG_MESSAGES_TAGS)}\"").split('\n')[1:]
         for line in show_output:
             if ":~$" in line:  # Symbolizes start of prompt line, no need to check.
                 continue
@@ -323,22 +311,22 @@ class ClusterTools:
 
     @staticmethod
     def wait_for_apps_to_be_in_wanted_state():
-        time.sleep(WAIT_FOR_APPS_RUNNING)
-        logger.info(f'Sleeping for {WAIT_FOR_APPS_RUNNING} seconds until apps are running')
+        time.sleep(ClusterConsts.WAIT_FOR_APPS_RUNNING)
+        logger.info(f'Sleeping for {ClusterConsts.WAIT_FOR_APPS_RUNNING} seconds until apps are running')
 
     @staticmethod
     def verify_sdn_config_files_deleted(sdn):
         with allure.step("Running nv show sdn config app <app> type <type> files and make sure files are deleted"):
-            for file_type in NMX_CONTROLLER_CONFIG_FILE_TYPES:
-                files = OutputParsingTool.parse_show_output_to_dict(sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=OutputFormat.json),
+            for file_type in ClusterConsts.NMX_CONTROLLER_CONFIG_FILE_TYPES:
+                files = OutputParsingTool.parse_show_output_to_dict(sdn.config.app.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=OutputFormat.json),
                                                                     output_format=OutputFormat.json).get_returned_value()
                 assert not files, f"Expected to get empty output, but instead received {output}"
 
     @staticmethod
     def verify_sdn_state_files_deleted(sdn):
         with allure.step("Running nv show sdn state app <app> type <type> files and make sure files are deleted"):
-            for file_type in NMX_CONTROLLER_STATE_FILE_TYPES:
-                files = OutputParsingTool.parse_show_output_to_dict(sdn.state.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=OutputFormat.json),
+            for file_type in ClusterConsts.NMX_CONTROLLER_STATE_FILE_TYPES:
+                files = OutputParsingTool.parse_show_output_to_dict(sdn.state.app.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=OutputFormat.json),
                                                                     output_format=OutputFormat.json).get_returned_value()
                 assert not files, f"Expected to get empty output, but instead received {output}"
 

@@ -3,7 +3,8 @@ import re
 
 import pytest
 
-from ngts.nvos_constants.constants_nvos import ApiType, ClusterConsts, OutputFormat, ActionConsts
+from ngts.nvos_constants.constants_nvos import ApiType, OutputFormat, ActionConsts
+from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
