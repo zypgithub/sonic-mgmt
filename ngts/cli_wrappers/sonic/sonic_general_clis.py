@@ -6,7 +6,6 @@ import time
 import traceback
 import xml.etree.ElementTree as ET
 
-import allure
 import netmiko
 from retry import retry
 from retry.api import retry_call
@@ -41,6 +40,7 @@ from ngts.tests.nightly.app_extension.app_extension_helper import get_installed_
 from ngts.tests.nightly.show_techsupport.constants import HealthEventConst
 from ngts.tests.nightly.show_techsupport.test_health_event import get_health_event_config
 from ngts.tools.infra import update_platform_info_files
+from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 
 logger = logging.getLogger()
 DUMMY_COMMAND = 'echo dummy_command'
@@ -821,11 +821,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             self.upload_port_config_ini(platform, hwsku, shared_path)
 
         self.upload_config_db_file(topology_obj, setup_name, hwsku, platform, shared_path)
-
-        if is_redmine_issue_active([3858467]) and platform == 'x86_64-mlnx_msn4700-r0':
-            self.reboot_reload_flow(r_type=SonicConst.CONFIG_RELOAD_CMD, topology_obj=topology_obj, reload_force=True)
-        else:
-            self.reboot_reload_flow(topology_obj=topology_obj)
+        self.reboot_reload_flow(topology_obj=topology_obj)
 
     def upload_port_config_ini(self, platform, hwsku, shared_path):
         switch_config_ini_path = f'/usr/share/sonic/device/{platform}/{hwsku}'
