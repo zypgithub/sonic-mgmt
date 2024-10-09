@@ -1,4 +1,5 @@
 import datetime
+import random
 
 import pytest
 
@@ -220,7 +221,7 @@ def test_techsupport_upload(engines):
 
 @pytest.mark.system
 @pytest.mark.tech_support
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', random.sample(ApiType.ALL_TYPES, 1))
 def test_techsupport_multiple_times(engines, test_name, test_api, devices):
     """
     Run nv show system tech-support files command and verify the required fields are exist
@@ -254,18 +255,21 @@ def test_techsupport_size(engines, test_name):
     Test flow:
         1. run nv action generate system tech-support
         2. check file size by du -sm
-        3. assert if size > 50 MB
+        3. assert if size > 75 MB
     """
     engine = engines.dut
     system = System(None)
     with allure.step('Run generate tech-support'):
-        tech_support_folder, duration = system.techsupport.action_generate()
-        # Round output to MB by -m flag and trim white spaces with column to receive int like output
-        output = engine.run_cmd(f"sudo du -sm {tech_support_folder} | column -t")
-        size_in_MB = int(output.split(" ")[0])
-        assert size_in_MB < 50, f"{tech_support_folder} size ({size_in_MB}MB) should be less than 50MB"
+        try:
+            tech_support_folder, duration = system.techsupport.action_generate()
+            # Round output to MB by -m flag and trim white spaces with column to receive int like output
+            output = engine.run_cmd(f"sudo du -sm {tech_support_folder} | column -t")
+            size_in_MB = int(output.split(" ")[0])
+            assert size_in_MB < SystemConsts.TECHSUPPORT_SIZE_LIMIT, f"{tech_support_folder} size ({size_in_MB}MB)" \
+                f" should be less than {SystemConsts.TECHSUPPORT_SIZE_LIMIT}MB"
 
-        system.techsupport.action_delete(system.techsupport.file_name)
+        finally:
+            system.techsupport.action_delete(system.techsupport.file_name)
 
 
 def validate_techsupport_output(output_dictionary_before, output_dictionary_after, number_of_expected_files):

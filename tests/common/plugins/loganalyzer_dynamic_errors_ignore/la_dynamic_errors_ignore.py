@@ -376,7 +376,7 @@ class GitHubDynamicErrorsIgnore(LaDynamicErrorsIgnore):
         :param url: github api url
         :return: dictionary with data
         """
-        response = requests.get(url, auth=self.auth)
+        response = requests.get(url, auth=self.auth, timeout=30)
         response.raise_for_status()
         return response.json()
 

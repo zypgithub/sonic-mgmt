@@ -81,7 +81,7 @@ def test_install_platform_firmware(engines, devices, test_name):
 
 def get_version_and_file_name(asic_type: str) -> Tuple[str, str]:
     firmware_versions = {NvosConst.QTM2: ("31_2014_0902-024", "fw-QTM2-rel-31_2014_0902-024.mfa"),
-                         NvosConst.QTM3: ("35_2014_0902-024", "fw-QTM3-rel-35_2014_0902-024.mfa"),
+                         NvosConst.QTM3: ("35.2014.2012", "fw-QTM3-rel-35_2014_2012.mfa"),
                          NvosConst.NVL5: ("35_2014_1100", "fw-QTM3-rel-35_2014_1100.mfa")}
     if asic_type in firmware_versions.keys():
         return firmware_versions[asic_type]

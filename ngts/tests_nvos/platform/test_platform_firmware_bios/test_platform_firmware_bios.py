@@ -17,7 +17,7 @@ logger = logging.getLogger()
 @pytest.mark.bios
 @pytest.mark.system
 @pytest.mark.parametrize('test_api', random.sample(ApiType.ALL_TYPES, 1))
-def test_bios_auto_update_disabled(devices, engines, topology_obj, test_api, original_version):
+def test_bios_auto_update_disabled(devices, engines, topology_obj, test_api, original_version, test_name):
     """
     Test flow:
         1. fetch current and previous BIOS versions
@@ -44,7 +44,8 @@ def test_bios_auto_update_disabled(devices, engines, topology_obj, test_api, ori
         install_bios(devices, fae, devices.dut.previous_bios_version_name, topology_obj)
         verify_bios_version(devices, platform)
 
-        system.reboot.action_reboot(topology_obj=topology_obj)
+        res, duration = OperationTime.save_duration('reboot with BIOS 004 installation', '',
+                                                    test_name, system.reboot.action_reboot, topology_obj=topology_obj)
 
         verify_bios_version(devices, platform)
 
@@ -63,7 +64,7 @@ def test_bios_auto_update_disabled(devices, engines, topology_obj, test_api, ori
 @pytest.mark.bios
 @pytest.mark.system
 @pytest.mark.parametrize('test_api', random.sample(ApiType.ALL_TYPES, 1))
-def test_bios_auto_update_enabled(devices, engines, topology_obj, test_api, original_version):
+def test_bios_auto_update_enabled(devices, engines, topology_obj, test_api, original_version, test_name):
     """
     Test flow:
         1. fetch current and previous BIOS versions
@@ -91,6 +92,7 @@ def test_bios_auto_update_enabled(devices, engines, topology_obj, test_api, orig
         TestToolkit.GeneralApi[test_api].save_config(engine=engines.dut)
 
     verify_bios_version(devices, platform)
-    system.reboot.action_reboot(topology_obj=topology_obj)
+    res, duration = OperationTime.save_duration('reboot with BIOS 005 installation', '',
+                                                test_name, system.reboot.action_reboot, topology_obj=topology_obj)
 
     verify_bios_version(devices, platform, True)
