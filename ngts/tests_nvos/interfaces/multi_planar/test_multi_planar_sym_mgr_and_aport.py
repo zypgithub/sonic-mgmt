@@ -4,6 +4,7 @@ import random
 import time
 
 # from ngts.cli_wrappers.common.general_clis_common import GeneralCliCommon
+from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import ApiType, IbConsts, MultiPlanarConsts
 from ngts.nvos_tools.ib.Ib import Ib
@@ -229,8 +230,9 @@ def test_aggregated_port_configuration(engines, devices, start_sm, test_api):
                                                         dut_device.supported_ib_speeds, True)
 
             # Validate mtu field aggregation
-            validate_aggregation_of_specific_link_param(selected_aggregated_port, selected_fae_plane_port,
-                                                        IbInterfaceConsts.LINK_MTU, IbInterfaceConsts.MTU_VALUES, True)
+            if not is_redmine_issue_active([4119124]):
+                validate_aggregation_of_specific_link_param(selected_aggregated_port, selected_fae_plane_port,
+                                                            IbInterfaceConsts.LINK_MTU, IbInterfaceConsts.MTU_VALUES, True)
 
             # Validate op-vls field aggregation
             validate_aggregation_of_specific_link_param(selected_aggregated_port, selected_fae_plane_port,

@@ -776,6 +776,10 @@ class CrocodileSwitch(IbSwitch):
         self.interface_active_internal_fnm_ports = ['fnma0p1', 'fnma1p1']
         self.default_port = 'swA1p1'
 
+    def _init_ib_speeds(self):
+        super()._init_ib_speeds()
+        self.supported_ib_speeds = ("sdr", "hdr", "ndr", "xdr")
+
 
 # -------------------------- Crocodile Simx Switch ----------------------------
 class CrocodileSimxSwitch(IbSwitch):
