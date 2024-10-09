@@ -16,6 +16,7 @@ from ngts.nvos_tools.ib.Ib import Ib
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports
+from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
 
 logger = logging.getLogger()
 NMX_CONTROLLER = 'nmx-controller'
@@ -25,8 +26,6 @@ INITIAL_EXPECTED_APPS = [NMX_CONTROLLER, NMX_TELEMETRY]
 START_APP_WHILE_CLUSTER_DISABLED_ERR_MSG = 'Output was expected to contain:\nApp has been successfully started\nBut the output is:\nAction executing ...\nError: Action failed with the following issue:\n  cluster is not enabled'
 STOP_APP_WHILE_CLUSTER_DISABLED_ERR_MSG = 'Output was expected to contain:\nAction succeeded\nBut the output is:\nAction executing ...\nError: Action failed with the following issue:\n  cluster is not enabled'
 CLUSTER_IS_NOT_ENABLED_MESSAGE = 'cluster is not enabled'
-TELEMETRY_SERVICES = ['nmx-connector', 'ib-telemetry']
-CONTROLLER_SERVICES = ['nmxc-sdn', 'nmxc-fib', 'redis']
 INVALID_SHOW_EXPECTED_OUTPUT = 'Error: The requested item does not exist.'
 
 

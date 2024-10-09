@@ -22,17 +22,9 @@ from ngts.tests_nvos.system.gnmi.helpers import factory_reset_gnmi_checker
 from ngts.tests_nvos.system.factory_reset.helpers import add_verification_data, \
     verify_cleanup_done, verify_the_setup_is_functional, get_current_time
 from ngts.nvos_tools.system.System import System
+from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
 
 logger = logging.getLogger()
-START_APP_WHILE_CLUSTER_DISABLED_ERR_MSG = 'Output was expected to contain:\nAction succeeded\nBut the output is:\nAction executing ...\nError: Action failed with the following issue:\n  cluster is not enabled'
-TELEMETRY_SERVICES = ['nmx-connector', 'ib-telemetry']
-CONTROLLER_SERVICES = ['nmxc-sdn', 'nmxc-fib', 'redis']
-
-
-PARTITIONS_NAMES = ['test_partition1', 'test_partition2', 'test_partition3']
-RESILIENCY_MODES = ['ADAPTIVE_BANDWIDTH', 'FULL_BANDWIDTH', 'USER_ACTION']
-CONFIDENTIAL_COMPUTE = [True, False]
-DEFAULT_PARTITION = 1
 
 
 @disabled_access_ports
@@ -85,8 +77,8 @@ def test_cluster_partition(engines, devices, test_api):
         with allure.step("Create and validate a new partition"):
             partition_id = random.choice([x for x in range(100, 201) if x not in used_partition_ids])
             used_partition_ids.append(partition_id)
-            resiliency_mode = random.choice(RESILIENCY_MODES)
-            confidential_compute = random.choice(CONFIDENTIAL_COMPUTE)
+            resiliency_mode = random.choice(ClusterConsts.RESILIENCY_MODES)
+            confidential_compute = random.choice(ClusterConsts.CONFIDENTIAL_COMPUTE)
             mcast_limit = random.randint(100, 1000)  # TODO - check with chris, what is the expected range of values here? And what is the usage of this param?
             created_partition_id, location_id_uuid, gpu_taken_from_partition, create_output = \
                 create_and_validate_partition(used_partition_ids, sdn, used_locations_uuids,
@@ -123,8 +115,8 @@ def test_cluster_partition(engines, devices, test_api):
         with allure.step("Create and validate a second partition"):
             partition_id = random.choice([x for x in range(100, 201) if x not in used_partition_ids])
             used_partition_ids.append(partition_id)
-            resiliency_mode = random.choice(RESILIENCY_MODES)
-            confidential_compute = random.choice(CONFIDENTIAL_COMPUTE)
+            resiliency_mode = random.choice(ClusterConsts.RESILIENCY_MODES)
+            confidential_compute = random.choice(ClusterConsts.CONFIDENTIAL_COMPUTE)
             mcast_limit = random.randint(100, 1000)  # TODO - check with chris, what is the expected range of values here? And what is the usage of this param?
             second_created_partition_id, second_location_id_uuid, second_gpu_taken_from_partition, create_output = \
                 create_and_validate_partition(used_partition_ids, sdn, used_locations_uuids, partition_mapping_to_location_uuid,
@@ -138,7 +130,7 @@ def test_cluster_partition(engines, devices, test_api):
                                                                      output_format=output_format).get_returned_value()
                 # Todo - validate output.
 
-        # sdn.partition.partition_id[partition_id].action_create_partition_id(PARTITIONS_NAMES[0], resiliency_mode, confidential_compute, mcast_limit, uuid=param_value)
+        # sdn.partition.partition_id[partition_id].action_create_partition_id(ClusterConsts.PARTITIONS_NAMES[0], resiliency_mode, confidential_compute, mcast_limit, uuid=param_value)
 
         with allure.step("Use ansible to verify connectivity between two gpus on same partition"):
             pass
@@ -159,7 +151,7 @@ def test_cluster_partition(engines, devices, test_api):
             if location_id_uuid in used_locations_uuids:
                 used_locations_uuids.remove(location_id_uuid)
 
-            update_partition_to_location_uuid_map(DEFAULT_PARTITION, DEFAULT_PARTITION, location_id_uuid, partition_to_take_gpu_from, partition_mapping_to_location_uuid)
+            update_partition_to_location_uuid_map(ClusterConsts.DEFAULT_PARTITION, ClusterConsts.DEFAULT_PARTITION, location_id_uuid, partition_to_take_gpu_from, partition_mapping_to_location_uuid)
 
         with allure.step("Delete created partitions"):
             # TODO Show second partition, and save all uuids/locations we have there, and remove them from used location uuid list.
@@ -182,7 +174,7 @@ def test_cluster_partition(engines, devices, test_api):
         with allure.step('Restore to initial state - delete all partitions Except for default partition'):
             partitions = partition_mapping_to_location_uuid.keys()
             for partition in partitions:
-                if partition != DEFAULT_PARTITION:
+                if partition != ClusterConsts.DEFAULT_PARTITION:
                     sdn.partition.partition_id[partition].action_delete_partition()
 
 
@@ -236,8 +228,8 @@ def test_cluster_partition_bad_flow(engines, devices, test_api):
         with allure.step("Create and validate a new partition"):
             partition_id = random.choice([x for x in range(100, 201) if x not in used_partition_ids])
             used_partition_ids.append(partition_id)
-            resiliency_mode = random.choice(RESILIENCY_MODES)
-            confidential_compute = random.choice(CONFIDENTIAL_COMPUTE)
+            resiliency_mode = random.choice(ClusterConsts.RESILIENCY_MODES)
+            confidential_compute = random.choice(ClusterConsts.CONFIDENTIAL_COMPUTE)
             mcast_limit = random.randint(100, 1000)  # TODO - check with chris, what is the expected range of values here? And what is the usage of this param?
             created_partition_id, location_id_uuid, gpu_taken_from_partition, create_output = \
                 create_and_validate_partition(used_partition_ids, sdn, used_locations_uuids,
@@ -256,9 +248,9 @@ def test_cluster_partition_bad_flow(engines, devices, test_api):
                 add_mode = random.choice(['location-id', 'uuid'])
                 if add_mode == 'uuid':
                     pass  # Dont have current format for uuid in order to generate a non real one.
-                    create_output = sdn.partition.partition_id[partition_id].action_create_partition_id(PARTITIONS_NAMES[0], resiliency_mode, confidential_compute, mcast_limit, uuid=location_id_uuid[1])
+                    create_output = sdn.partition.partition_id[partition_id].action_create_partition_id(ClusterConsts.PARTITIONS_NAMES[0], resiliency_mode, confidential_compute, mcast_limit, uuid=location_id_uuid[1])
                 else:
-                    create_output = sdn.partition.partition_id[partition_id].action_create_partition_id(PARTITIONS_NAMES[0], resiliency_mode, confidential_compute, mcast_limit, location=location_id_uuid[0])
+                    create_output = sdn.partition.partition_id[partition_id].action_create_partition_id(ClusterConsts.PARTITIONS_NAMES[0], resiliency_mode, confidential_compute, mcast_limit, location=location_id_uuid[0])
 
                 # TODO Validate correct error message
 
@@ -271,15 +263,15 @@ def test_cluster_partition_bad_flow(engines, devices, test_api):
                     # Todo - validate output. nothing is changed
 
             with allure.step("Re-Create same partitions with different parameters"):
-                resiliency_mode = random.choice(RESILIENCY_MODES)
-                confidential_compute = random.choice(CONFIDENTIAL_COMPUTE)
+                resiliency_mode = random.choice(ClusterConsts.RESILIENCY_MODES)
+                confidential_compute = random.choice(ClusterConsts.CONFIDENTIAL_COMPUTE)
                 mcast_limit = random.randint(100, 1000)  # TODO - check with chris, what is the expected range of values here? And what is the usage of this param?
                 add_mode = random.choice(['location-id', 'uuid'])
                 if add_mode == 'uuid':
                     pass  # Dont have current format for uuid in order to generate a non real one.
-                    create_output = sdn.partition.partition_id[partition_id].action_create_partition_id(PARTITIONS_NAMES[0], resiliency_mode, confidential_compute, mcast_limit, uuid=location_id_uuid[1])
+                    create_output = sdn.partition.partition_id[partition_id].action_create_partition_id(ClusterConsts.PARTITIONS_NAMES[0], resiliency_mode, confidential_compute, mcast_limit, uuid=location_id_uuid[1])
                 else:
-                    create_output = sdn.partition.partition_id[partition_id].action_create_partition_id(PARTITIONS_NAMES[0], resiliency_mode, confidential_compute, mcast_limit, location=location_id_uuid[0])
+                    create_output = sdn.partition.partition_id[partition_id].action_create_partition_id(ClusterConsts.PARTITIONS_NAMES[0], resiliency_mode, confidential_compute, mcast_limit, location=location_id_uuid[0])
 
                 # TODO - Check that parameters of the already existing partition is being updated.
 
@@ -294,15 +286,15 @@ def test_cluster_partition_bad_flow(engines, devices, test_api):
             with allure.step("Create Partition with undefined parameters"):
                 parameters = ['resiliency_mode', 'confidential_compute', 'mcast_limit']
                 undefined_params = random.sample(parameters, random.randint(0, len(parameters)))
-                resiliency_mode = random.choice(RESILIENCY_MODES) if 'resiliency_mode' not in undefined_params else 'undefined'
-                confidential_compute = random.choice(CONFIDENTIAL_COMPUTE) if 'confidential_compute' not in undefined_params else 'undefined'
+                resiliency_mode = random.choice(ClusterConsts.RESILIENCY_MODES) if 'resiliency_mode' not in undefined_params else 'undefined'
+                confidential_compute = random.choice(ClusterConsts.CONFIDENTIAL_COMPUTE) if 'confidential_compute' not in undefined_params else 'undefined'
                 mcast_limit = random.randint(100, 1000) if 'mcast_limit' not in undefined_params else 'undefined'
                 add_mode = random.choice(['location-id', 'uuid'])
                 if add_mode == 'uuid':
                     pass  # Dont have current format for uuid in order to generate a non real one.
-                    create_output = sdn.partition.partition_id[partition_id].action_create_partition_id(PARTITIONS_NAMES[0], resiliency_mode, confidential_compute, mcast_limit, uuid=location_id_uuid[1])
+                    create_output = sdn.partition.partition_id[partition_id].action_create_partition_id(ClusterConsts.PARTITIONS_NAMES[0], resiliency_mode, confidential_compute, mcast_limit, uuid=location_id_uuid[1])
                 else:
-                    create_output = sdn.partition.partition_id[partition_id].action_create_partition_id(PARTITIONS_NAMES[0], resiliency_mode, confidential_compute, mcast_limit, location=random_location_id)
+                    create_output = sdn.partition.partition_id[partition_id].action_create_partition_id(ClusterConsts.PARTITIONS_NAMES[0], resiliency_mode, confidential_compute, mcast_limit, location=random_location_id)
                     # Todo - Validate we get a proper fail message.
                 # TODO - Check that we get a proper fail message.
                 with allure.step("Validate partition is not created"):
@@ -325,15 +317,15 @@ def test_cluster_partition_bad_flow(engines, devices, test_api):
 
                 partition_id = random.choice([x for x in range(100, 201) if x not in used_partition_ids])
                 used_partition_ids.append(partition_id)
-                resiliency_mode = random.choice(RESILIENCY_MODES)
-                confidential_compute = random.choice(CONFIDENTIAL_COMPUTE)
+                resiliency_mode = random.choice(ClusterConsts.RESILIENCY_MODES)
+                confidential_compute = random.choice(ClusterConsts.CONFIDENTIAL_COMPUTE)
                 mcast_limit = random.randint(100, 1000)  # TODO - check with chris, what is the expected range of values here? And what is the usage of this param?
                 add_mode = random.choice(['location-id', 'uuid'])
                 if add_mode == 'uuid':
                     pass  # Dont have current format for uuid in order to generate a non real one.
-                    # create_output = sdn.partition.partition_id[partition_id].action_create_partition_id(PARTITIONS_NAMES[0], resiliency_mode, confidential_compute, mcast_limit, uuid=location_id_uuid[1])
+                    # create_output = sdn.partition.partition_id[partition_id].action_create_partition_id(ClusterConsts.PARTITIONS_NAMES[0], resiliency_mode, confidential_compute, mcast_limit, uuid=location_id_uuid[1])
                 else:
-                    create_output = sdn.partition.partition_id[partition_id].action_create_partition_id(PARTITIONS_NAMES[0], resiliency_mode, confidential_compute, mcast_limit, location=random_location_id)
+                    create_output = sdn.partition.partition_id[partition_id].action_create_partition_id(ClusterConsts.PARTITIONS_NAMES[0], resiliency_mode, confidential_compute, mcast_limit, location=random_location_id)
                     # Todo - Validate we get a proper fail message.
 
                 with allure.step("Restore non existing partition"):
@@ -404,7 +396,7 @@ def test_cluster_partition_bad_flow(engines, devices, test_api):
         with allure.step('Restore to initial state - delete all partitions Except for default partition'):
             partitions = partition_mapping_to_location_uuid.keys()
             for partition in partitions:
-                if partition != DEFAULT_PARTITION:
+                if partition != ClusterConsts.DEFAULT_PARTITION:
                     sdn.partition.partition_id[partition].action_delete_partition()
 
 
@@ -431,9 +423,9 @@ def create_and_validate_partition(used_partition_ids, sdn, used_locations_uuids,
             location_id_uuid, gpu_taken_from_partition = choose_gpu_to_move_from_partition(partition_mapping_to_location_uuid, used_locations_uuids)
         used_locations_uuids.append(location_id_uuid)
     if add_mode == 'uuid':
-        create_output = sdn.partition.partition_id[partition_id].action_create_partition_id(PARTITIONS_NAMES[0], resiliency_mode, confidential_compute, mcast_limit, uuid=location_id_uuid[1])
+        create_output = sdn.partition.partition_id[partition_id].action_create_partition_id(ClusterConsts.PARTITIONS_NAMES[0], resiliency_mode, confidential_compute, mcast_limit, uuid=location_id_uuid[1])
     else:
-        create_output = sdn.partition.partition_id[partition_id].action_create_partition_id(PARTITIONS_NAMES[0], resiliency_mode, confidential_compute, mcast_limit, location=location_id_uuid[0])
+        create_output = sdn.partition.partition_id[partition_id].action_create_partition_id(ClusterConsts.PARTITIONS_NAMES[0], resiliency_mode, confidential_compute, mcast_limit, location=location_id_uuid[0])
 
         if partition_id not in partition_mapping_to_location_uuid.keys():
             partition_mapping_to_location_uuid[partition_id] = []

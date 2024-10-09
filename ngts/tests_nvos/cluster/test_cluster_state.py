@@ -15,14 +15,9 @@ from ngts.nvos_tools.ib.Ib import Ib
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.tests_nvos.constants import MINUTE
+from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
 
 logger = logging.getLogger()
-UNDEFINED_STATE = 'undefined'
-UNDEFINED_STATE_ERR_MSG_NVUE = 'Error: At state: \'undefined\' is not one of [\'enabled\', \'disabled\']'
-UNDEFINED_STATE_ERR_MSG_OPENAPI = 'Error: Request failed. Details: Error at state: \'undefined\' is not one of [\'enabled\', \'disabled\', None]'
-UNDEFINED_STATE_DICT = {'NVUE': UNDEFINED_STATE_ERR_MSG_NVUE, 'OpenApi': UNDEFINED_STATE_ERR_MSG_OPENAPI}
-NMXC_CONN = 'nmxc-conn'
-NMXC_CONN_STATE_PER_CLUSTER_STATE = {NvosConst.ENABLED: 'up', NvosConst.DISABLED: 'down'}
 
 
 @disabled_access_ports
@@ -48,8 +43,8 @@ def test_cluster_state(engines, devices, test_api):
                 # [NVOS - Design] Bug SW #3982533: [Functional] [NVL5 - NMX] | nmxc-conn field shows NONE value instead of empty string | Assignee: Oren Reiss | Status: Assigned
                 # assert output['nmxc-conn'] == NvosConst.DISABLED, f"nmxc-conn state is {output['nmxc-conn']} " \
                 #                                                   f"instead of disabled"
-                assert NMXC_CONN in output, f"{NMXC_CONN} was not found in {output}"
-                assert output[NMXC_CONN] == 'down', f"{NMXC_CONN} state was expected to be down but instead it was {output[NMXC_CONN]}"
+                assert ClusterConsts.NMXC_CONN in output, f"{ClusterConsts.NMXC_CONN} was not found in {output}"
+                assert output[ClusterConsts.NMXC_CONN] == 'down', f"{ClusterConsts.NMXC_CONN} state was expected to be down but instead it was {output[ClusterConsts.NMXC_CONN]}"
 
         for state in [NvosConst.ENABLED, NvosConst.DISABLED]:
             with allure.step("Running 'nv set cluster state {state}' and validating state changed"):
@@ -63,17 +58,17 @@ def test_cluster_state(engines, devices, test_api):
                     assert output[SystemConsts.STATE] == state, f"initial state is , " \
                         f"{output[SystemConsts.STATE]}, Expected to be: " \
                         f"{state}"
-                    assert NMXC_CONN in output, f"{NMXC_CONN} was not found in {output}"
-                    expected_nmxc_state = NMXC_CONN_STATE_PER_CLUSTER_STATE[output[SystemConsts.STATE]]
-                    assert output[NMXC_CONN] == expected_nmxc_state, f"{NMXC_CONN} state was expected to be {expected_nmxc_state} but instead it was {output[NMXC_CONN]}"
+                    assert ClusterConsts.NMXC_CONN in output, f"{ClusterConsts.NMXC_CONN} was not found in {output}"
+                    expected_nmxc_state = ClusterConsts.NMXC_CONN_STATE_PER_CLUSTER_STATE[output[SystemConsts.STATE]]
+                    assert output[ClusterConsts.NMXC_CONN] == expected_nmxc_state, f"{ClusterConsts.NMXC_CONN} state was expected to be {expected_nmxc_state} but instead it was {output[ClusterConsts.NMXC_CONN]}"
                     # TBD - once bug fixed:
                     # [NVOS - Design] Bug SW #3982533: [Functional] [NVL5 - NMX] | nmxc-conn field shows NONE value instead of empty string | Assignee: Oren Reiss | Status: Assigned
                     # assert output['nmxc-conn'] == state, f"nmxc-conn state is {output['nmxc-conn']} " \
                     #                                                   f"instead of {state}"
         with allure.step("Apply a non defined state"):
-            output = cluster.set(op_param_name="state", op_param_value=UNDEFINED_STATE)
+            output = cluster.set(op_param_name="state", op_param_value=ClusterConsts.ClusterConsts)
             output = output.info.split('\n')[1]
-            assert output == UNDEFINED_STATE_DICT[test_api], f"Expected error message {UNDEFINED_STATE_DICT[test_api]}, " \
+            assert output == ClusterConsts.UNDEFINED_STATE_DICT[test_api], f"Expected error message {ClusterConsts.UNDEFINED_STATE_DICT[test_api]}, " \
                 f"actual message received {output}"
 
         with allure.step("Running 'nv set cluster state enabled' and validating state changed"):
@@ -87,9 +82,9 @@ def test_cluster_state(engines, devices, test_api):
                 assert output[SystemConsts.STATE] == NvosConst.ENABLED, f"state is , " \
                     f"{output[SystemConsts.STATE]}, Expected to be: " \
                     f"{state}"
-                assert NMXC_CONN in output, f"{NMXC_CONN} was not found in {output}"
-                expected_nmxc_state = NMXC_CONN_STATE_PER_CLUSTER_STATE[output[SystemConsts.STATE]]
-                assert output[NMXC_CONN] == expected_nmxc_state, f"{NMXC_CONN} state was expected to be {expected_nmxc_state} but instead it was {output[NMXC_CONN]}"
+                assert ClusterConsts.NMXC_CONN in output, f"{ClusterConsts.NMXC_CONN} was not found in {output}"
+                expected_nmxc_state = ClusterConsts.NMXC_CONN_STATE_PER_CLUSTER_STATE[output[SystemConsts.STATE]]
+                assert output[ClusterConsts.NMXC_CONN] == expected_nmxc_state, f"{ClusterConsts.NMXC_CONN} state was expected to be {expected_nmxc_state} but instead it was {output[ClusterConsts.NMXC_CONN]}"
 
             with allure.step("Running 'nv cluster unset' and validate state is back to disabled"):
                 cluster.unset(apply=True)
@@ -101,9 +96,9 @@ def test_cluster_state(engines, devices, test_api):
                     assert output[SystemConsts.STATE] == NvosConst.DISABLED, f"State is , " \
                         f"{output[SystemConsts.STATE]}, Expected to be: " \
                         f"{state}"
-                    assert NMXC_CONN in output, f"{NMXC_CONN} was not found in {output}"
-                    expected_nmxc_state = NMXC_CONN_STATE_PER_CLUSTER_STATE[output[SystemConsts.STATE]]
-                    assert output[NMXC_CONN] == expected_nmxc_state, f"{NMXC_CONN} state was expected to be {expected_nmxc_state} but instead it was {output[NMXC_CONN]}"
+                    assert ClusterConsts.NMXC_CONN in output, f"{ClusterConsts.NMXC_CONN} was not found in {output}"
+                    expected_nmxc_state = ClusterConsts.NMXC_CONN_STATE_PER_CLUSTER_STATE[output[SystemConsts.STATE]]
+                    assert output[ClusterConsts.NMXC_CONN] == expected_nmxc_state, f"{ClusterConsts.NMXC_CONN} state was expected to be {expected_nmxc_state} but instead it was {output[ClusterConsts.NMXC_CONN]}"
 
     finally:
         with allure.step("Reset cluster state"):
