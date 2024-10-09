@@ -44,13 +44,14 @@ class OpenApiRequest:
     port_num = "443"
 
     @staticmethod
-    def print_request(r: requests.Request, req_data: RequestData):
-        output = f'\n' \
-            f'=======Request=======\n' \
-            f'Method: {r.method}\n' \
-            f'URL: {r.url}\n' \
-            f'User: {req_data.user_name}\n' \
-            f'Body: {OpenApiRequest.format_json_str(json.dumps(r.body, indent=2)) if r.body else "{}"}'
+    def print_request(r: requests.PreparedRequest, req_data: RequestData):
+        output = f"\n=======Request=======\ncurl -k --user {req_data.user_name}:***** \\\n"
+        if r.headers:
+            output += "  " + ' '.join(f"-H '{k}: {v}'" for k, v in r.headers.items()) + " \\\n"
+        output += f"  --request {r.method} {r.url} "
+        if r.body:
+            output += f"\\\n  -d '{OpenApiRequest.format_json_str(json.dumps(r.body))}'"
+        output += "\n====================="
         logger.info(output)
 
     @staticmethod
