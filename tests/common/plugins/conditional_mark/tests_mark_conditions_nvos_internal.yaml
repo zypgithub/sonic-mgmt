@@ -128,18 +128,6 @@ tests_nvos/general/security/password_hardening/test_password_hardening_nvos.py::
     conditions:
       - https://redmine.mellanox.com/issues/3408710
 
-tests_nvos/system/test_log_commands.py::test_log_files_set_unset_log_rotation_size_disk_percentage:
-  skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3212520"
-    conditions:
-      - https://redmine.mellanox.com/issues/3212520
-
-tests_nvos/system/test_log_commands.py::test_debug_log_files_set_unset_log_rotation_size_disk_percentage:
-  skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3212520"
-    conditions:
-      - https://redmine.mellanox.com/issues/3212520
-
 tests_nvos/general/security/test_secure_boot/test_secure_boot.py::test_unsigned_kernel_module_load:
   skip:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/3338619"

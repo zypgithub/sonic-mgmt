@@ -443,11 +443,12 @@ def _log_files_set_unset_log_rotation_size_disk_percentage(engines, system_log_o
         output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(show_output).get_returned_value()
         ValidationTool.verify_field_value_in_output(output_dictionary, 'size', '0.001').verify_result()
 
-        system_log_obj.rotation.set('size', '3499.999')
+        log_rotation_size = '3499.0'
+        system_log_obj.rotation.set('size', log_rotation_size)
         NvueGeneralCli.apply_config(engines.dut)
         show_output = system_log_obj.rotation.show()
         output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(show_output).get_returned_value()
-        ValidationTool.verify_field_value_in_output(output_dictionary, 'size', '3499.999').verify_result()
+        ValidationTool.verify_field_value_in_output(output_dictionary, 'size', log_rotation_size).verify_result()
         system_log_obj.rotation.unset(op_param='size')
 
     with allure.step("Negative validation disk percentage configuration"):
@@ -457,11 +458,11 @@ def _log_files_set_unset_log_rotation_size_disk_percentage(engines, system_log_o
 
     with allure.step("Validate disk percentage configuration"):
         logging.info("Validate disk percentage configuration")
-        system_log_obj.rotation.set('disk-percentage', '50')
+        system_log_obj.rotation.set('disk-percentage', '50.0')
         NvueGeneralCli.apply_config(engines.dut)
         show_output = system_log_obj.rotation.show()
         output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(show_output).get_returned_value()
-        ValidationTool.verify_field_value_in_output(output_dictionary, 'size', '1750').verify_result()
+        ValidationTool.verify_field_value_in_output(output_dictionary, 'size', '1750.0').verify_result()
         ValidationTool.verify_field_value_in_output(output_dictionary, 'disk-percentage', '50.0').verify_result()
         system_log_obj.rotation.unset(op_param='disk-percentage')
 
@@ -474,12 +475,12 @@ def _log_files_set_unset_log_rotation_size_disk_percentage(engines, system_log_o
         ValidationTool.verify_field_value_in_output(output_dictionary, 'disk-percentage', '0.001').verify_result()
 
         logging.info("Validate disk percentage configuration with highest value")
-        system_log_obj.rotation.set('disk-percentage', '100')
+        system_log_obj.rotation.set('disk-percentage', '100.0')
         NvueGeneralCli.apply_config(engines.dut)
         show_output = system_log_obj.rotation.show()
         output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(show_output).get_returned_value()
-        ValidationTool.verify_field_value_in_output(output_dictionary, 'size', '3500').verify_result()
-        ValidationTool.verify_field_value_in_output(output_dictionary, 'disk-percentage', '3500').verify_result()
+        ValidationTool.verify_field_value_in_output(output_dictionary, 'size', '3500.0').verify_result()
+        ValidationTool.verify_field_value_in_output(output_dictionary, 'disk-percentage', '100.0').verify_result()
 
     with allure.step("Validate unset log rotation"):
         logging.info("Validate unset log rotation")
