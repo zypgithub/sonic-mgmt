@@ -20,7 +20,7 @@ class Uuid(BaseComponent):
                          api={ApiType.NVUE: NvueClusterCli, ApiType.OPENAPI: OpenApiClusterCli},
                          path='/uuid')
         self.uuid_value: Dict[str, UuidVal] = DefaultDict(
-            lambda uuid_value: AppsName(parent=self, uuid_value=uuid_value))
+            lambda uuid_value: UuidVal(parent=self, uuid_value=uuid_value))
 
 
 class UuidVal(BaseComponent):
