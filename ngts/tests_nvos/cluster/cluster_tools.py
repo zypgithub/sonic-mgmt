@@ -86,7 +86,24 @@ class ClusterTools:
                 assert output[ClusterConsts.NMXC_CONN] == expected_nmxc_state, f"{ClusterConsts.NMXC_CONN} state was expected to be {expected_nmxc_state} but instead it was {output[ClusterConsts.NMXC_CONN]}"
 
     @staticmethod
-    def check_cluster_state(cluster, output_format):
+    def validate_cluster_enabled(cluster, output_format=OutputFormat.json):
+        output = OutputParsingTool.parse_show_output_to_dict(
+            cluster.show(output_format=output_format),
+            output_format=output_format).get_returned_value()
+
+        with allure.step("Validate state is enabled"):
+            assert output[SystemConsts.STATE] == 'enabled', f"Cluster state is , " \
+                f"{output[SystemConsts.STATE]}, Expected to be: " \
+                f"enabled"
+            assert ClusterConsts.NMXC_CONN in output, f"{ClusterConsts.NMXC_CONN} was not found in {output}"
+            expected_nmxc_state = ClusterConsts.NMXC_CONN_STATE_PER_CLUSTER_STATE[output[SystemConsts.STATE]]
+            Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output,
+                                                              field_name=ClusterConsts.NMXC_CONN,
+                                                              expected_value=expected_nmxc_state).verify_result()
+            assert output[ClusterConsts.NMXC_CONN] == expected_nmxc_state, f"{ClusterConsts.NMXC_CONN} state was expected to be {expected_nmxc_state} but instead it was {output[ClusterConsts.NMXC_CONN]}"
+
+    @staticmethod
+    def check_cluster_state(cluster, output_format=OutputFormat.json):
         with allure.step("Check cluster state"):
             output = OutputParsingTool.parse_show_output_to_dict(
                 cluster.show(output_format=output_format),
