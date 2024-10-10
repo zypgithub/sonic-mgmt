@@ -11,6 +11,7 @@ from ngts.nvos_constants.constants_nvos import NvosConst, ActionConsts, SystemCo
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.GrubMenuTool import GrubMenuTool
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
+from ngts.nvos_tools.infra.SerialConsoleTool import SerialConsoleTool
 from ngts.tests_nvos.general.security.test_secure_boot.constants import SecureBootConsts
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tools.test_utils import allure_utils as allure
@@ -366,31 +367,12 @@ class NvueGeneralCli(SonicGeneralCliDefault):
             server_ip = TopologyConsts.site_server_ip[TopologyConsts.MTL]  # default
         return server_ip
 
-    def get_serial_connection_cmd(self, topology_obj, dut_alias='dut') -> str:
-        serial_alias = dut_alias + "_serial"
-        att = topology_obj.players[serial_alias]['attributes'].noga_query_data['attributes']
-        # add connection options to pass connection problems
-        extended_rcon_command = att['Specific']['serial_conn_cmd'].split(' ')
-        extended_rcon_command.insert(1, DefaultConnectionValues.BASIC_SSH_CONNECTION_OPTIONS)
-        extended_rcon_command = ' '.join(extended_rcon_command)
-        return extended_rcon_command
-
     def enter_serial_connection_context(self, topology_obj, dut_alias='dut'):
         '''
         @summary: in this function we will execute the rcon command and return the serial engine
         :return: serial connection engine
         '''
-        serial_alias = dut_alias + "_serial"
-        att = topology_obj.players[serial_alias]['attributes'].noga_query_data['attributes']
-        extended_rcon_command = self.get_serial_connection_cmd(topology_obj, dut_alias)
-        serial_engine = PexpectSerialEngine(ip=att['Specific']['ip'],
-                                            username=att['Topology Conn.']['CONN_USER'],
-                                            password=att['Topology Conn.']['CONN_PASSWORD'],
-                                            rcon_command=extended_rcon_command,
-                                            timeout=120)
-        # we don't want to login to switch because we are doing remote reboot
-        serial_engine.create_serial_engine(login_to_switch=False)
-        return serial_engine
+        return SerialConsoleTool.get_serial_console_session(topology_obj, dut_alias)
 
     def enter_onie_install_mode(self, topology_obj, dut_alias='dut'):
         '''

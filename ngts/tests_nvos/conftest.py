@@ -18,7 +18,6 @@ from infra.tools.general_constants.constants import DefaultConnectionValues
 from infra.tools.sql.connect_to_mssql import ConnectMSSQL
 from ngts.cli_wrappers.linux.linux_general_clis import LinuxGeneralCli
 from ngts.cli_wrappers.nvue.nvue_base_clis import NvueBaseCli
-from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.cli_wrappers.openapi.openapi_command_builder import OpenApiRequest
 from ngts.constants.constants import DbConstants, CliType, DebugKernelConsts, InfraConst
 from ngts.nvos_constants.constants_nvos import ApiType, OperationTimeConsts, OutputFormat
@@ -37,6 +36,7 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.PexpectTool import PexpectTool
 from ngts.nvos_tools.infra.RegressionConfigurations import RegressionConfigurations
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
+from ngts.nvos_tools.infra.SerialConsoleTool import SerialConsoleTool
 from ngts.nvos_tools.infra.TrafficGeneratorTool import TrafficGeneratorTool
 from ngts.nvos_tools.system.System import System
 from ngts.scripts.code_coverage.code_coverage_consts import NvosConsts
@@ -98,8 +98,7 @@ def track_serial_console(request, topology_obj, engines, devices):
     if should_track_serial_console:
         with allure.step('start tracking serial console into file'):
             serial_log_file_path = '/tmp/serial.log'
-            cli_obj = NvueGeneralCli(engines.dut, devices.dut)
-            serial_connection_cmd = cli_obj.get_serial_connection_cmd(topology_obj)
+            serial_connection_cmd = SerialConsoleTool.get_serial_console_connection_command(topology_obj)
             logging.info('connect to serial console and save output into a file')
             cmd = f'script -c "{serial_connection_cmd}" {serial_log_file_path}'
             child = pexpect.spawn(cmd)
