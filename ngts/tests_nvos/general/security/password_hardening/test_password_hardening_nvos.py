@@ -4,9 +4,13 @@ import string
 
 import pytest
 
+from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
+from infra.tools.connection_tools.utils import generate_strong_password
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import TestFlowType
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
+from ngts.nvos_tools.infra.SerialConsoleTool import SerialConsoleTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.system.System import *
 from ngts.nvos_tools.system.User import User
@@ -18,6 +22,7 @@ from ngts.tests_nvos.general.security.security_test_tools.constants import AaaCo
 @pytest.mark.cumulus
 @pytest.mark.system
 @pytest.mark.security
+@pytest.mark.user
 @pytest.mark.simx_security
 def test_password_hardening_weak_and_strong_passwords(engines, system):
     """
@@ -70,6 +75,7 @@ def test_password_hardening_weak_and_strong_passwords(engines, system):
 @pytest.mark.cumulus
 @pytest.mark.system
 @pytest.mark.security
+@pytest.mark.user
 @pytest.mark.simx_security
 def test_password_hardening_show_system_security(engines, system):
     """
@@ -98,6 +104,7 @@ def test_password_hardening_show_system_security(engines, system):
 @pytest.mark.cumulus
 @pytest.mark.system
 @pytest.mark.security
+@pytest.mark.user
 @pytest.mark.simx_security
 def test_password_hardening_enable_disable(engines, system, testing_users):
     """
@@ -161,6 +168,7 @@ def test_password_hardening_enable_disable(engines, system, testing_users):
 @pytest.mark.cumulus
 @pytest.mark.system
 @pytest.mark.security
+@pytest.mark.user
 @pytest.mark.simx_security
 def test_password_hardening_set_unset(engines, system):
     """
@@ -224,6 +232,7 @@ def test_password_hardening_set_unset(engines, system):
 @pytest.mark.cumulus
 @pytest.mark.system
 @pytest.mark.security
+@pytest.mark.user
 @pytest.mark.simx_security
 def test_password_hardening_set_invalid_input(engines, system):
     """
@@ -311,6 +320,7 @@ def test_password_hardening_set_invalid_input(engines, system):
 @pytest.mark.cumulus
 @pytest.mark.system
 @pytest.mark.security
+@pytest.mark.user
 @pytest.mark.simx_security
 @pytest.mark.checklist
 def test_password_hardening_functionality(engines, system, testing_users, tst_all_pwh_confs):
@@ -389,6 +399,7 @@ def test_password_hardening_functionality(engines, system, testing_users, tst_al
 @pytest.mark.cumulus
 @pytest.mark.system
 @pytest.mark.security
+@pytest.mark.user
 @pytest.mark.simx_security
 def test_password_hardening_history_functionality(engines, system, testing_users):
     """
@@ -441,6 +452,7 @@ def test_password_hardening_history_functionality(engines, system, testing_users
 @pytest.mark.cumulus
 @pytest.mark.system
 @pytest.mark.security
+@pytest.mark.user
 @pytest.mark.simx_security
 def test_password_hardening_expiration_functionality(engines, system, init_time, testing_users):
     """
@@ -500,6 +512,7 @@ def test_password_hardening_expiration_functionality(engines, system, init_time,
 @pytest.mark.cumulus
 @pytest.mark.system
 @pytest.mark.security
+@pytest.mark.user
 @pytest.mark.simx_security
 def test_password_hardening_expiration_warning_functionality(engines, system, init_time, testing_users):
     """
@@ -561,6 +574,7 @@ def test_password_hardening_expiration_warning_functionality(engines, system, in
 @pytest.mark.cumulus
 @pytest.mark.system
 @pytest.mark.security
+@pytest.mark.user
 @pytest.mark.simx_security
 def test_password_hardening_history_multi_user(engines, system, testing_users):
     """
@@ -643,6 +657,7 @@ def test_password_hardening_history_multi_user(engines, system, testing_users):
 @pytest.mark.cumulus
 @pytest.mark.system
 @pytest.mark.security
+@pytest.mark.user
 @pytest.mark.simx_security
 def test_password_hardening_history_increase(engines, system, testing_users):
     """
@@ -689,6 +704,7 @@ def test_password_hardening_history_increase(engines, system, testing_users):
 @pytest.mark.cumulus
 @pytest.mark.system
 @pytest.mark.security
+@pytest.mark.user
 @pytest.mark.simx_security
 def test_password_hardening_history_when_feature_disabled(engines, system, testing_users):
     """
@@ -740,6 +756,7 @@ def test_password_hardening_history_when_feature_disabled(engines, system, testi
 @pytest.mark.cumulus
 @pytest.mark.system
 @pytest.mark.security
+@pytest.mark.user
 @pytest.mark.simx_security
 def test_password_hardening_max_password_len(disable_password_hardening):
     """
@@ -769,3 +786,89 @@ def test_password_hardening_max_password_len(disable_password_hardening):
     for test_flow in TestFlowType.ALL_TYPES:
         with allure.step(test_flow):
             case_flow(test_flow)
+
+
+@pytest.mark.reboot
+@pytest.mark.system
+@pytest.mark.security
+@pytest.mark.user
+@pytest.mark.simx_security
+def test_password_hardening_history_with_reboot(engines, devices, topology_obj):
+    """
+    advanced password history verification
+
+    1.  reset admin password (unset)
+    2.  save
+    3.  make serial connection with admin
+    4.  login and apply new password (pw1) - cali law
+    5.  apply another new password (pw2)
+    6.  reboot (no save)
+    7.  login and apply same new password (pw1) - cali law - expect success
+    8.  apply again the other new password (pw2) - expect success
+    9.  save
+    10. restore password (unset to default)
+    11. disconnect
+    12. login and try apply same new password (pw1) - cali law - expect rejected
+    13. try to apply the other new password (pw2) - cali law - expect rejected
+    """
+    dut: LinuxSshEngine = engines.dut
+    system = System()
+    username = dut.username
+    password = dut.password
+    new_password1, new_password2 = generate_strong_password(), generate_strong_password()
+
+    password_history_err = 'Password should be different than.*previous passwords'
+
+    def _login_and_apply_new_password_for_cali_law(serial_engine: PexpectSerialEngine, new_password, should_reject_for_history=False):
+        SerialConsoleTool.login_nos(serial_engine, username, password, False)
+
+        if should_reject_for_history:
+            with allure.step(f'enter new password1: {new_password} - expect reject for password history'):
+                serial_engine.run_cmd(new_password, password_history_err, 10)
+            with allure.step('hit ctrl+c to stop login session'):
+                serial_engine.serial_engine.sendcontrol('c')
+                time.sleep(SerialConsoleTool.TIME_FOR_LOGIN_PROMPT)
+        else:
+            SerialConsoleTool.handle_change_password_prompt(serial_engine, new_password, False)
+            dut.last_new_password = new_password
+
+    def _set_apply_new_password(serial_engine: PexpectSerialEngine, new_password):
+        serial_engine.run_cmd(f'nv set system aaa user {username} password {new_password}')
+        serial_engine.run_cmd('nv config apply -y', 'applied')
+        dut.last_new_password = new_password
+
+    def _reboot_and_wait_for_system_ready(serial_engine: PexpectSerialEngine):
+        serial_engine.run_cmd('sudo reboot')
+        DutUtilsTool.wait_for_system_ready_in_serial(topology_obj, serial_engine, devices.dut.system_is_ready_wait_timeout)
+
+    with allure.step('reset admin password'):
+        system.aaa.user.user_id['admin'].unset(apply=True).verify_result()
+    with allure.step('save config'):
+        NvueGeneralCli.save_config(engines.dut)
+        engines.dut.disconnect()    # to prevent socket error after all flow
+    with allure.step('make serial connection with admin'):
+        with allure.step('enter to serial context'):
+            serial: PexpectSerialEngine = SerialConsoleTool.get_serial_console_session(topology_obj)
+        with allure.step('exit existing login'):
+            SerialConsoleTool.exit_existing_login(serial)
+    with allure.step(f'login and apply new password1 "{new_password1}" - cali law'):
+        _login_and_apply_new_password_for_cali_law(serial, new_password1)
+    with allure.step(f'apply another new password2 "{new_password2}"'):
+        _set_apply_new_password(serial, new_password2)
+    with allure.step('reboot (no save)'):
+        _reboot_and_wait_for_system_ready(serial)
+    with allure.step(f'login and apply again same new password1 "{new_password1}" - cali law - expect success'):
+        _login_and_apply_new_password_for_cali_law(serial, new_password1)
+    with allure.step(f'apply again another new password2 "{new_password2}" - expect success'):
+        _set_apply_new_password(serial, new_password2)
+    with allure.step('save config'):
+        serial.run_cmd('nv config save', 'saved')
+    with allure.step('unset password (restore to default)'):
+        serial.run_cmd(f'nv unset system aaa user {username}')
+        serial.run_cmd('nv config apply -y', 'applied')
+    with allure.step('disconnect'):
+        SerialConsoleTool.exit_existing_login(serial)
+    with allure.step(f'login and try apply same new password1 "{new_password1}" - expect rejected'):
+        _login_and_apply_new_password_for_cali_law(serial, new_password1, True)
+    with allure.step(f'try to apply the other new password2 "{new_password2}" - expect rejected'):
+        _login_and_apply_new_password_for_cali_law(serial, new_password2, True)

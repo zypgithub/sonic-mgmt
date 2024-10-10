@@ -9,6 +9,7 @@ from ngts.constants.constants import MarsConstants
 from ngts.nvos_constants.constants_nvos import NvosConst, ActionConsts, SystemConsts, ConfState
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.GrubMenuTool import GrubMenuTool
+from ngts.nvos_tools.infra.SerialConsoleTool import SerialConsoleTool
 from ngts.tests_nvos.general.security.test_secure_boot.constants import SecureBootConsts
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tools.test_utils import allure_utils as allure
@@ -346,19 +347,7 @@ class NvueGeneralCli(SonicGeneralCliDefault):
         @summary: in this function we will execute the rcon command and return the serial engine
         :return: serial connection engine
         '''
-        att = topology_obj.players['dut_serial']['attributes'].noga_query_data['attributes']
-        # add connection options to pass connection problems
-        extended_rcon_command = att['Specific']['serial_conn_cmd'].split(' ')
-        extended_rcon_command.insert(1, DefaultConnectionValues.BASIC_SSH_CONNECTION_OPTIONS)
-        extended_rcon_command = ' '.join(extended_rcon_command)
-        serial_engine = PexpectSerialEngine(ip=att['Specific']['ip'],
-                                            username=att['Topology Conn.']['CONN_USER'],
-                                            password=att['Topology Conn.']['CONN_PASSWORD'],
-                                            rcon_command=extended_rcon_command,
-                                            timeout=120)
-        # we don't want to login to switch because we are doing remote reboot
-        serial_engine.create_serial_engine(login_to_switch=False)
-        return serial_engine
+        return SerialConsoleTool.get_serial_console_session(topology_obj)
 
     def enter_onie_install_mode(self, topology_obj):
         '''
