@@ -278,7 +278,9 @@ def get_low_layer_components(duthost):
     components = duthost.show_and_parse("get_component_versions.py", module_ignore_errors=True)
     comps = ""
     for component in components:
-        comps += f"{component['component']}: {component['actual']} \n"
+        comp_name = component['component']
+        comp_value = component['compilation'] if component['actual'] == "N/A" else component['actual']
+        comps += f"{comp_name}: {comp_value} \n"
 
     return comps
 
