@@ -135,7 +135,7 @@ def test_show_nvl5_interface_commands(engines, devices, test_api):
 
 
 @pytest.mark.interface
-def test_toggle_interface_state(test_name):
+def test_toggle_interface_state(test_name, devices):
     """
     Configure port interface state and verify the configuration applied successfully
     Relevant cli commands:
