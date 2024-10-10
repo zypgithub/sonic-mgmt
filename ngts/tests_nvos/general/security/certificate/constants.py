@@ -55,6 +55,18 @@ class TestCert:
         cacert=f'{TEST_CERTS}/ca1/ca.crt'
     )
 
+    cert_valid_1_long_passphrase = CertInfo(
+        name='valid-cert-1-long-pass',
+        info='valid certificate for test with 89-char long passphrase - from ca1',
+        private=f'{TEST_CERTS}/cert-from-ca1-long-pass/service.key',
+        public=f'{TEST_CERTS}/cert-from-ca1-long-pass/service.pem',
+        p12_bundle=f'{TEST_CERTS}/cert-from-ca1-long-pass/service.p12',
+        p12_password='6RLTILPOCQKNMOUWC38WWXFHOQR24YN441EM0QB255L1OG53E0QPM94LLA0VV8J17XV20BLKU5X1HWI2UVMCYMVLT',
+        dn='nvos-dut',
+        ip=None,
+        cacert=f'{TEST_CERTS}/ca1/ca.crt'
+    )
+
     cert_valid_2 = CertInfo(
         name='valid-cert-2',
         info='valid certificate for test - from ca2',
