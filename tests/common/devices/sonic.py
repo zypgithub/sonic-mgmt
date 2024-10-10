@@ -24,6 +24,7 @@ from tests.common.helpers.platform_api.chassis import is_inband_port
 from tests.common.helpers.parallel import parallel_run_threaded
 from tests.common.errors import RunAnsibleModuleFail
 from tests.common import constants
+from infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 logger = logging.getLogger(__name__)
 
@@ -1528,6 +1529,8 @@ Totals               6450                 6449
             else:
                 result = x
             r = result.split()
+            if 'cpu-report' in r and len(r) <2 and is_redmine_issue_active([4115255])[0]:
+                continue
             feature_status[r[0]] = r[1]
         return feature_status, True
 
