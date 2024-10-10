@@ -249,7 +249,6 @@ class ReleaseResultsUploader:
             self.update_xml_path_if_modified(df, i)
             session_id = df.loc[i, "session_id"]
             result = df.loc[i, "result"]
-            message = df.loc[i, "message"]
             junit_xml_path = df.loc[i, "xml_path"]
             modify_xml = df.loc[i, "modify_xml"]
             test_name = df.loc[i, "test name"]
@@ -259,6 +258,10 @@ class ReleaseResultsUploader:
             df.loc[i, "test name"] = test_name.replace(old_hostname, new_hostname)
             test_name = df.loc[i, "test name"]
             df.loc[i, "testbed"] = df.loc[i, "testbed"].replace(old_hostname, new_hostname)
+            if isinstance(df.loc[i, "message"], str):
+                for internal_name, commercial_name in ResultUploaderConst.HOST_INTERNAL_NAMES_MAP.items():
+                    df.loc[i, "message"] = df.loc[i, "message"].replace(internal_name, commercial_name)
+            message = df.loc[i, "message"]
             host_commercial_name_col.append(new_hostname)
             junit_xml_path = self.handle_sanitize_data(df, i, junit_xml_path, session_id,
                                                        old_hostname, new_hostname, test_name, result)
@@ -417,6 +420,8 @@ class ReleaseResultsUploader:
             with open(junit_xml_path) as f:
                 contents = f.read()
                 updated_contents = contents.replace(old_hostname, new_hostname)
+                for internal_name, commercial_name in ResultUploaderConst.HOST_INTERNAL_NAMES_MAP.items():
+                    updated_contents = updated_contents.replace(internal_name, commercial_name)
             updated_junit_xml_path = self.get_updated_junit_xml_path(junit_xml_path, session, delete_updated=False)
             if updated_junit_xml_path != junit_xml_path:
                 with open(updated_junit_xml_path, 'w+') as updated_junit_xml:

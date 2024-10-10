@@ -1458,6 +1458,21 @@ class ResultUploaderConst:
                                 "lionfish", "anaconda", "tigris", "ocelot",
                                 "liger", "tigon", "leopard", "moose", "hippo", "bobcat"]
 
+    HOST_INTERNAL_NAMES_MAP = {"boxer": "msn2010",
+                               "bulldog": "msn2100",
+                               "spider": "msn2410",
+                               "panther": "msn2700",
+                               "lionfish": "msn3420",
+                               "anaconda": "msn3700",
+                               "tigris": "msn3800",
+                               "ocelot": "msn4410",
+                               "liger": "msn4600",
+                               "tigon": "msn4600c",
+                               "leopard": "msn4700",
+                               "moose": "sn5600",
+                               "hippo": "sn5400",
+                               "bobcat": "sn4280"}
+
 
 class BugHandlerConst:
     NGTS_PATH, path_suffix = os.path.abspath(__file__).split('constants/')
