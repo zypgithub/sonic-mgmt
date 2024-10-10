@@ -30,6 +30,7 @@ from ngts.nvos_tools.infra import ExceptionTool
 from ngts.nvos_tools.infra.CmdRunner import CmdRunner
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.nvos_tools.infra.DiskTool import DiskTool
+from ngts.nvos_tools.infra.IpTool import IpTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.PexpectTool import PexpectTool
@@ -144,6 +145,15 @@ def engines(topology_obj, devices):
     TestToolkit.update_engines(engines_data)
     TestToolkit.update_topology_obj(topology_obj)
     return engines_data
+
+
+@pytest.fixture(scope='session')
+def dut_ipv6_addr(engines, devices):
+    dut_ipv6_addr = IpTool.get_dut_ipv6_addr_of_given_eth_interface_using_nv_cli(devices.dut.cur_mgmt_port_name, engines.dut)
+    if not dut_ipv6_addr:
+        dut_ipv6_addr = IpTool.get_player_ipv6_addr(engines.dut.ip, engines.dut)
+    logging.info(f'dut ipv6 address: {dut_ipv6_addr}')
+    return dut_ipv6_addr
 
 
 def update_engine_dut_mgmt_port(topology, dut_engine: LinuxSshEngine, dut_device: BaseDevice):
