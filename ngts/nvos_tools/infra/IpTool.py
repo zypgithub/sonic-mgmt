@@ -5,8 +5,11 @@ from typing import List
 
 import allure
 
+from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_constants.constants_nvos import IbConsts, IpConsts
+from ngts.nvos_tools.infra import ExceptionTool
 from ngts.nvos_tools.infra.CmdRunner import CmdRunner
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 
 logger = logging.getLogger()
@@ -186,8 +189,27 @@ class IpTool:
         return matches[0]
 
     @staticmethod
-    def get_player_ipv6_addr(player_ipv4_addr: str) -> str:
-        ipv6_pattern = r'inet6\s+([0-9a-fA-F:]+)'
+    def get_dut_ipv6_addr_of_given_eth_interface_using_nv_cli(eth_interface_name: str, dut_engine: LinuxSshEngine = None) -> str:
+        try:
+            ipv6_pattern = r'([0-9a-fA-F:]+)/64'
+            out = dut_engine.run_cmd(f'nv show interface {eth_interface_name} ip address -o json', validate=True)
+            no_cli_msgs = ['Error', 'NVOS CLI is unavailable', 'System is initializing', 'This may take a few minutes']
+            if any(msg in out for msg in no_cli_msgs):
+                return ''
+            out_dict = OutputParsingTool.parse_json_str_to_dictionary(out).get_returned_value()
+            addresses = list(out_dict.keys())
+            for address in addresses:
+                matches = re.findall(ipv6_pattern, address)
+                if matches:
+                    return matches[0]
+            return ''
+        except Exception as e:
+            logging.warning(f'failed to get ipv6 address for interface {eth_interface_name}: {ExceptionTool.format_traceback()}')
+            return ''
+
+    @staticmethod
+    def get_player_ipv6_addr(player_ipv4_addr: str, player_engine: LinuxSshEngine = None) -> str:
+        ipv6_pattern = r'inet6\s+([0-9a-fA-F:]+)/64'
 
         def _is_interface_line(s: str) -> bool:
             return bool(re.match(r'^\d+: ', s))
@@ -203,7 +225,8 @@ class IpTool:
                     interfaces[-1].append(line)
             return ['\n'.join(interface) for interface in interfaces]
 
-        out_lines = CmdRunner('IpTool').run_cmd('ip addr').split('\n')
+        player_engine = player_engine or CmdRunner('IpTool')
+        out_lines = player_engine.run_cmd('ip addr').split('\n')
         interfaces = _split_interfaces(out_lines)
 
         for interface in interfaces:
