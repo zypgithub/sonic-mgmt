@@ -3,10 +3,8 @@ import time
 
 import pytest
 
-from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port, PortRequirements
-from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts, IbInterfaceConsts
-from ngts.nvos_tools.infra.Fae import Fae
-from ngts.nvos_tools.infra.LinuxCmdBuilderTool import LinuxCmdBuilderTool
+from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
+from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.IbInterfaceTool import IbInterfaceTool
 from ngts.nvos_tools.system.System import System
@@ -84,12 +82,12 @@ def test_transceiver_status_unplug(engines, devices, test_api, asic_conf_dict):
 
     try:
         _verify_transceiver_status(platform, transceiver_id=module_under_test, expected_module_status='Inserted')
-        IbInterfaceTool.simulate_unplug_module_event(engines.dut, devices.dut, module_index, mst_dev_name, 2)
+        IbInterfaceTool.simulate_unplug_module_event(engines.dut, devices.dut, module_index, mst_dev_name, 5)
         _verify_link_state_down(ports)
         _verify_transceiver_status(platform, transceiver_id=module_under_test, expected_module_status='Removed')
 
     finally:
-        IbInterfaceTool.simulate_plugin_module_event(engines.dut, devices.dut, module_index, mst_dev_name, 40)
+        IbInterfaceTool.simulate_plugin_module_event(engines.dut, devices.dut, module_index, mst_dev_name, 50)
         _verify_link_state_up(ports)
         _verify_transceiver_status(platform, transceiver_id=module_under_test, expected_module_status='Inserted')
 
@@ -128,7 +126,7 @@ def test_transceiver_status_with_reboot(engines, devices, test_api, asic_conf_di
     try:
         _verify_transceiver_status(platform, transceiver_id=module_under_test, expected_module_status='Inserted')
 
-        IbInterfaceTool.simulate_unplug_module_event(engines.dut, devices.dut, module_index, mst_dev_name, 2)
+        IbInterfaceTool.simulate_unplug_module_event(engines.dut, devices.dut, module_index, mst_dev_name, 5)
         _verify_link_state_down(ports)
         _verify_transceiver_status(platform, transceiver_id=module_under_test, expected_module_status='Removed')
 
@@ -140,7 +138,7 @@ def test_transceiver_status_with_reboot(engines, devices, test_api, asic_conf_di
         _verify_transceiver_status(platform, transceiver_id=module_under_test, expected_module_status='Inserted')
 
     finally:
-        IbInterfaceTool.simulate_plugin_module_event(engines.dut, devices.dut, module_index, mst_dev_name, 40)
+        IbInterfaceTool.simulate_plugin_module_event(engines.dut, devices.dut, module_index, mst_dev_name, 50)
         _verify_link_state_up(ports)
         _verify_transceiver_status(platform, transceiver_id=module_under_test, expected_module_status='Inserted')
 
