@@ -366,6 +366,15 @@ class NvueGeneralCli(SonicGeneralCliDefault):
             server_ip = TopologyConsts.site_server_ip[TopologyConsts.MTL]  # default
         return server_ip
 
+    def get_serial_connection_cmd(self, topology_obj, dut_alias='dut') -> str:
+        serial_alias = dut_alias + "_serial"
+        att = topology_obj.players[serial_alias]['attributes'].noga_query_data['attributes']
+        # add connection options to pass connection problems
+        extended_rcon_command = att['Specific']['serial_conn_cmd'].split(' ')
+        extended_rcon_command.insert(1, DefaultConnectionValues.BASIC_SSH_CONNECTION_OPTIONS)
+        extended_rcon_command = ' '.join(extended_rcon_command)
+        return extended_rcon_command
+
     def enter_serial_connection_context(self, topology_obj, dut_alias='dut'):
         '''
         @summary: in this function we will execute the rcon command and return the serial engine
@@ -373,10 +382,7 @@ class NvueGeneralCli(SonicGeneralCliDefault):
         '''
         serial_alias = dut_alias + "_serial"
         att = topology_obj.players[serial_alias]['attributes'].noga_query_data['attributes']
-        # add connection options to pass connection problems
-        extended_rcon_command = att['Specific']['serial_conn_cmd'].split(' ')
-        extended_rcon_command.insert(1, DefaultConnectionValues.BASIC_SSH_CONNECTION_OPTIONS)
-        extended_rcon_command = ' '.join(extended_rcon_command)
+        extended_rcon_command = self.get_serial_connection_cmd(topology_obj, dut_alias)
         serial_engine = PexpectSerialEngine(ip=att['Specific']['ip'],
                                             username=att['Topology Conn.']['CONN_USER'],
                                             password=att['Topology Conn.']['CONN_PASSWORD'],

@@ -6,6 +6,7 @@ import time
 from email.mime.text import MIMEText
 from typing import Dict
 
+import pexpect
 import pytest
 from dotted_dict import DottedDict
 from retry import retry
@@ -17,6 +18,7 @@ from infra.tools.general_constants.constants import DefaultConnectionValues
 from infra.tools.sql.connect_to_mssql import ConnectMSSQL
 from ngts.cli_wrappers.linux.linux_general_clis import LinuxGeneralCli
 from ngts.cli_wrappers.nvue.nvue_base_clis import NvueBaseCli
+from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.cli_wrappers.openapi.openapi_command_builder import OpenApiRequest
 from ngts.constants.constants import DbConstants, CliType, DebugKernelConsts, InfraConst
 from ngts.nvos_constants.constants_nvos import ApiType, OperationTimeConsts, OutputFormat
@@ -26,6 +28,7 @@ from ngts.nvos_tools.Devices.DeviceFactory import DeviceFactory
 from ngts.nvos_tools.Devices.EthDevice import EthSwitch
 from ngts.nvos_tools.cli_coverage.nvue_cli_coverage import NVUECliCoverage
 from ngts.nvos_tools.ib.opensm.OpenSmTool import OpenSmTool
+from ngts.nvos_tools.infra import ExceptionTool
 from ngts.nvos_tools.infra.CmdRunner import CmdRunner
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.nvos_tools.infra.DiskTool import DiskTool
@@ -79,6 +82,48 @@ def check_ib_output(request):
         NvueBaseCli.check_output_strings = True
     if request.config.getoption("--substrings_to_check"):
         NvueBaseCli.sub_strings_to_search = request.config.getoption('--substrings_to_check').split(',')
+
+
+@pytest.fixture(autouse=True)
+def track_serial_console(request, topology_obj, engines, devices):
+    """
+    fixture to track serial console during test run,
+        and if the test is failing, attach the serial console output to allure report (for better debug).
+
+    This will apply for all test that has any of the defined interesting markers below.
+    """
+    interesting_markers = ['track_serial_console', 'reboot', 'factory_reset', 'reset_factory']
+    should_track_serial_console = any(request.node.get_closest_marker(marker) for marker in interesting_markers)
+
+    if should_track_serial_console:
+        with allure.step('start tracking serial console into file'):
+            serial_log_file_path = '/tmp/serial.log'
+            cli_obj = NvueGeneralCli(engines.dut, devices.dut)
+            serial_connection_cmd = cli_obj.get_serial_connection_cmd(topology_obj)
+            logging.info('connect to serial console and save output into a file')
+            cmd = f'script -c "{serial_connection_cmd}" {serial_log_file_path}'
+            child = pexpect.spawn(cmd)
+
+    yield
+
+    if should_track_serial_console:
+        with allure.step('end serial console session'):
+            child.sendcontrol('z')
+            time.sleep(1)
+            child.sendcontrol('d')
+            child.expect(pexpect.EOF)
+        if request.node.rep_call.failed:
+            try:
+                with allure.step('take log file content'):
+                    with open(serial_log_file_path, 'r', errors='replace') as file:
+                        serial_log_content = file.read()
+                with allure.step('attach content to allure'):
+                    allure.attach('Serial Console log during test', serial_log_content)
+            except Exception as e:
+                logging.warning(f'failed to attach serial output from {serial_log_file_path} : {ExceptionTool.format_traceback()}')
+        else:
+            with allure.step('test passed. not attaching serial console log'):
+                pass
 
 
 @pytest.fixture(scope='session')
