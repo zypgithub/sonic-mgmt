@@ -28,13 +28,20 @@ class SerialConsoleTool:
     ENABLE_PW_HARDENING_CMD = 'nv set system security password-hardening state enabled'
 
     @classmethod
-    def get_serial_console_session(cls, topology_obj, dut_alias='dut') -> PexpectSerialEngine:
+    def get_serial_console_connection_command(cls, topology_obj, dut_alias='dut') -> str:
         serial_alias = dut_alias + "_serial"
         att = topology_obj.players[serial_alias]['attributes'].noga_query_data['attributes']
         # add connection options to pass connection problems
         extended_rcon_command = att['Specific']['serial_conn_cmd'].split(' ')
         extended_rcon_command.insert(1, DefaultConnectionValues.BASIC_SSH_CONNECTION_OPTIONS)
         extended_rcon_command = ' '.join(extended_rcon_command)
+        return extended_rcon_command
+
+    @classmethod
+    def get_serial_console_session(cls, topology_obj, dut_alias='dut') -> PexpectSerialEngine:
+        serial_alias = dut_alias + "_serial"
+        att = topology_obj.players[serial_alias]['attributes'].noga_query_data['attributes']
+        extended_rcon_command = cls.get_serial_console_connection_command(topology_obj)
         serial_engine = PexpectSerialEngine(ip=att['Specific']['ip'],
                                             username=att['Topology Conn.']['CONN_USER'],
                                             password=att['Topology Conn.']['CONN_PASSWORD'],

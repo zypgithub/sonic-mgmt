@@ -186,19 +186,20 @@ def test_api_mtls_delete_installed_ca(test_flow, engines, local_adminuser, impor
         verify_api_connection(test_flow, engines.dut, local_adminuser, True, server_cert, server_ca)
 
 
+@pytest.mark.reboot
 @pytest.mark.timeout(20 * MINUTE, func_only=True)
 @pytest.mark.mtls
 @pytest.mark.security
 @pytest.mark.parametrize('reboot_flow', RebootTestFlowType.ALL_TYPES)
 def test_api_mtls_reboot(reboot_flow, engines, local_adminuser):
     """
-    Verify that delete of ca-cert that is installed to api rejected
+    Verify mtls config and functionality after reboot
 
-    1. Set api ca-certificate
-    2. Try to delete that ca-certificate
-    3. Verify reject
-    4. Verify in show – expect ca-cert still installed
-    5. Verify client cant request without suitable cert – expect fail
+    1. Set api certificate & ca-certificate
+    2. Save / no save
+    3. Reboot
+    4. Verify config in show
+    5. Verify REST connection
     """
     with_save = reboot_flow == RebootTestFlowType.WITH_SAVE
     system = System()

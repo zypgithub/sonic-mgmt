@@ -6,6 +6,7 @@ import time
 from email.mime.text import MIMEText
 from typing import Dict
 
+import pexpect
 import pytest
 from dotted_dict import DottedDict
 from retry import retry
@@ -25,6 +26,7 @@ from ngts.nvos_tools.Devices.DeviceFactory import DeviceFactory
 from ngts.nvos_tools.Devices.EthDevice import EthSwitch
 from ngts.nvos_tools.cli_coverage.nvue_cli_coverage import NVUECliCoverage
 from ngts.nvos_tools.ib.opensm.OpenSmTool import OpenSmTool
+from ngts.nvos_tools.infra import ExceptionTool
 from ngts.nvos_tools.infra.CmdRunner import CmdRunner
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.nvos_tools.infra.DiskTool import DiskTool
@@ -33,6 +35,7 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.PexpectTool import PexpectTool
 from ngts.nvos_tools.infra.RegressionConfigurations import RegressionConfigurations
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
+from ngts.nvos_tools.infra.SerialConsoleTool import SerialConsoleTool
 from ngts.nvos_tools.infra.TrafficGeneratorTool import TrafficGeneratorTool
 from ngts.nvos_tools.system.System import System
 from ngts.scripts.code_coverage.code_coverage_consts import NvosConsts
@@ -78,6 +81,47 @@ def check_ib_output(request):
         NvueBaseCli.check_output_strings = True
     if request.config.getoption("--substrings_to_check"):
         NvueBaseCli.sub_strings_to_search = request.config.getoption('--substrings_to_check').split(',')
+
+
+@pytest.fixture(autouse=True)
+def track_serial_console(request, topology_obj, engines, devices):
+    """
+    fixture to track serial console during test run,
+        and if the test is failing, attach the serial console output to allure report (for better debug).
+
+    This will apply for all test that has any of the defined interesting markers below.
+    """
+    interesting_markers = ['track_serial_console', 'reboot', 'factory_reset', 'reset_factory']
+    should_track_serial_console = any(request.node.get_closest_marker(marker) for marker in interesting_markers)
+
+    if should_track_serial_console:
+        with allure.step('start tracking serial console into file'):
+            serial_log_file_path = '/tmp/serial.log'
+            serial_connection_cmd = SerialConsoleTool.get_serial_console_connection_command(topology_obj)
+            logging.info('connect to serial console and save output into a file')
+            cmd = f'script -c "{serial_connection_cmd}" {serial_log_file_path}'
+            child = pexpect.spawn(cmd)
+
+    yield
+
+    if should_track_serial_console:
+        with allure.step('end serial console session'):
+            child.sendcontrol('z')
+            time.sleep(1)
+            child.sendcontrol('d')
+            child.expect(pexpect.EOF)
+        if request.node.rep_call.failed:
+            try:
+                with allure.step('take log file content'):
+                    with open(serial_log_file_path, 'r', errors='replace') as file:
+                        serial_log_content = file.read()
+                with allure.step('attach content to allure'):
+                    allure.attach('Serial Console log during test', serial_log_content)
+            except Exception as e:
+                logging.warning(f'failed to attach serial output from {serial_log_file_path} : {ExceptionTool.format_traceback()}')
+        else:
+            with allure.step('test passed. not attaching serial console log'):
+                pass
 
 
 @pytest.fixture(scope='session')
