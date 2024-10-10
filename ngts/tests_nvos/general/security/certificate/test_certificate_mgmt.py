@@ -2,6 +2,7 @@ import logging
 
 import pytest
 
+from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_constants.constants_nvos import CertificateFiles, SyslogConsts, OpenApiReqType, ApiType, SystemConsts, \
     TestFlowType
 from ngts.nvos_tools.infra.CurlTool import CurlTool
@@ -13,6 +14,11 @@ from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_general_utils import generate_scp_uri_using_player
 
 logger = logging.getLogger()
+
+
+def get_scp_player(engines):
+    # return engines['sonic_mgmt']
+    return LinuxSshEngine('10.237.38.139', 'root', '12345')
 
 
 @pytest.mark.system
@@ -28,7 +34,7 @@ def test_certificate_commands(engines, test_api, test_flow):
     """
     TestToolkit.tested_api = test_api
     system = System()
-    player = engines['sonic_mgmt']
+    player = get_scp_player(engines)
     cert_id_bundle = 'cert_id_1'
     cert_id_public_private = "cert_id_2"
     cert_list = []
@@ -91,7 +97,7 @@ def test_certificate_commands(engines, test_api, test_flow):
 def test_ca_certificate_commands(engines, test_api):
     TestToolkit.tested_api = test_api
     system = System()
-    player = engines['sonic_mgmt']
+    player = get_scp_player(engines)
     ca_cert_id = "ca_cert_id"
     test_cert = TestCert.cert_mgmt_test_cacert
 
@@ -107,6 +113,51 @@ def test_ca_certificate_commands(engines, test_api):
     with allure.step('delete imported ca-certificates'):
         for cert in [ca_cert_id]:
             system.security.ca_certificate.cert_id[cert].action_delete().verify_result()
+
+
+@pytest.mark.system
+@pytest.mark.certificate
+@pytest.mark.parametrize('test_api', [ApiType.NVUE])
+@pytest.mark.parametrize('test_flow', [TestFlowType.GOOD_FLOW])
+def test_import_certificate_with_long_passphrase(test_api, test_flow, engines):
+    """
+    test that users able to import certificate bundle with long passphrase
+    """
+    TestToolkit.tested_api = test_api
+    test_cert = TestCert.cert_valid_1_long_passphrase
+    cert_id_bundle = test_cert.name
+    system = System()
+    player = get_scp_player(engines)
+
+    with allure.step(f'import cert {test_cert.name} named {cert_id_bundle} uri-bundle with URI'):
+        bundle_uri = generate_scp_uri_using_player(player, test_cert.p12_bundle)
+        system.security.certificate.cert_id[cert_id_bundle].action_import(uri_bundle=bundle_uri,
+                                                                          passphrase=test_cert.p12_password).verify_result()
+        verify_imported_certificate(engines, system, cert_id=cert_id_bundle,
+                                    first_arg=CertificateFiles.PASSPHRASE, second_arg=CertificateFiles.URI_BUNDLE,
+                                    test_api=test_api)
+
+    with allure.step(f'Install certificate'):
+        system.api.set(CertificateFiles.CERTIFICATE, cert_id_bundle, apply=True).verify_result()
+        verify_show_api_output(system, cert_id_bundle)
+
+    with allure.step("Verify certificate installation"):
+        _verify_certificate(system, [cert_id_bundle])
+
+    with allure.step("Run open api command using imported certificate"):
+        if test_flow == TestFlowType.GOOD_FLOW:
+            client = CurlTool(server_host=test_cert.dn, username=engines.dut.username,
+                              password=engines.dut.password, cacert=test_cert.cacert)
+            out, err = client.request(request_type=OpenApiReqType.GET, path=GET_SYSTEM_VERSION_PATH,
+                                      skip_cert_verify=False)
+            verify_output(out, err, True)
+        else:
+            mismatch_cert = TestCert.cert_ca_mismatch
+            client = CurlTool(server_host=test_cert.dn, username=engines.dut.username, password=engines.dut.password,
+                              cacert=mismatch_cert.cacert)
+            out, err = client.request(request_type=OpenApiReqType.GET, path=GET_SYSTEM_VERSION_PATH,
+                                      skip_cert_verify=False)
+            verify_output(out, err, False)
 
 
 def _verify_certificate(system, cert_list, check_cacert: bool = False):
