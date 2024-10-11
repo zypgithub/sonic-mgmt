@@ -120,9 +120,12 @@ def get_intf_from_ip(local_ip, config_facts):
             if str(intf_ip.ip) == local_ip:
                 return intf, intf_ip
 
+
 @pytest.fixture(params=["no-underlay-route", "with-underlay-route"])
 def use_underlay_route(request):
     return request.param == "with-underlay-route"
+
+
 @pytest.fixture
 def dash_pl_config(duthost, config_facts, minigraph_facts):
     dash_info = {
@@ -379,6 +382,8 @@ def acl_default_rule(localhost, duthost, ptfhost, dash_config_info):
 @pytest.fixture(scope="function", params=['udp', 'tcp', 'echo_request', 'echo_reply'])
 def inner_packet_type(request):
     return request.param
+
+
 @pytest.fixture(scope="module")
 def dpu_index():
     return 1

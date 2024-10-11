@@ -5,6 +5,7 @@ import os
 from tests.smart_switch.dpuhost import DpuHost
 from ipaddress import ip_address
 from tests.common.platform.interface_utils import get_dpu_npu_ports_from_hwsku
+from tests.dash.conftest import dpu_index
 
 logger = logging.getLogger(__name__)
 SMARTSWITCH_PLATFORMS = ['x86_64-nvidia_sn4280-r0']
@@ -36,7 +37,7 @@ def platform(duthost):
 @pytest.fixture(scope="session")
 def skip_unsupported_platform(duthost, platform):
     if platform not in SMARTSWITCH_PLATFORMS and 'nvda_bf' not in platform:
-        pytest.skip("BYO is only supported on DPU or smartswitch platforms")
+        pytest.skip("The test is only supported by DPU or smartswitch platforms")
 
 
 @pytest.fixture(scope="session")
@@ -72,6 +73,11 @@ def dpuhosts(duthost, copy_proxy_ssh):
         }
         dpuhosts.append(DpuHost(duthost, **dpu_info))
     return dpuhosts
+
+
+@pytest.fixture(scope="module")
+def dpuhost(dpuhosts, dpu_index):
+    return dpuhosts[dpu_index]
 
 
 def dpu_shell(dpu_mgmt_ip):

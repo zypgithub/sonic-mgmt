@@ -361,6 +361,8 @@ def apply_messages(
 
     write_gnmi_files(localhost, duthost, ptfhost, env, delete_list, update_list, max_updates_in_single_cmd)
     time.sleep(wait_after_apply)
+
+
 def apply_gnmi_file(localhost, duthost, ptfhost, dest_path=None, config_json=None,
                     wait_after_apply=5, max_updates_in_single_cmd=1024):
     """
@@ -423,6 +425,8 @@ def apply_gnmi_file(localhost, duthost, ptfhost, dest_path=None, config_json=Non
             logger.info("Invalid operation %s" % operation["OP"])
     write_gnmi_files(localhost, duthost, ptfhost, env, delete_list, update_list, max_updates_in_single_cmd)
     time.sleep(wait_after_apply)
+
+
 def write_gnmi_files(localhost, duthost, ptfhost, env, delete_list, update_list, max_updates_in_single_cmd):
     localhost.shell(f'tar -zcvf /tmp/updates.tar.gz -C {env.work_dir} .')
     ptfhost.copy(src='/tmp/updates.tar.gz', dest='~')

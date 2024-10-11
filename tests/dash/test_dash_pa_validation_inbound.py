@@ -10,7 +10,7 @@ from gnmi_utils import apply_messages
 from tests.smart_switch.conftest import SMARTSWITCH_PLATFORMS, copy_proxy_ssh, skip_unsupported_platform, platform # noqa F401
 from ipaddress import ip_interface, ip_network
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
-from tests.smart_switch.conftest import dpuhosts
+from tests.smart_switch.conftest import dpuhost
 
 VIP = "10.2.0.1"
 
@@ -20,11 +20,6 @@ pytestmark = [
     pytest.mark.topology('t1'),
     pytest.mark.skip_check_dut_health
 ]
-
-
-@pytest.fixture(scope="module")
-def dpuhost(dpuhosts, dpu_index):
-    return dpuhosts[dpu_index]
 
 
 @pytest.fixture(scope="module")

@@ -28,7 +28,6 @@ from google.protobuf.descriptor import FieldDescriptor
 from google.protobuf.json_format import ParseDict
 
 
-
 ENABLE_PROTO = True
 PB_INT_TYPES = set([
     FieldDescriptor.TYPE_INT32,
