@@ -11,6 +11,7 @@
       <Device Hostname="juliet-130" HwSku="ACS-N5100_LD" Type="DevSonic"/>
       <Device Hostname="mamba-44" HwSku="ACS-QM3000" Type="DevSonic"/>
       <Device Hostname="mamba-112" HwSku="ACS-QM3000" Type="DevSonic"/>
+      <Device Hostname="mamba-150" HwSku="ACS-QM3000" Type="DevSonic"/>
       <Device Hostname="bm-bu-bsp" HwSku="ACS-QM3000" Type="DevSonic"/>
       <Device Hostname="bm-bu-core" HwSku="ACS-QM3000" Type="DevSonic"/>
       <Device Hostname="croc-61" HwSku="ACS-QM3400" Type="DevSonic"/>

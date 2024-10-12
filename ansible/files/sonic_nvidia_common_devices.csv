@@ -55,6 +55,7 @@ juliet-121,10.7.148.121,ACS-N5110_LD,DevSonic,,sonic
 juliet-126,10.7.148.126,ACS-N5110_LD,DevSonic,,sonic
 mamba-44,10.7.147.44,ACS-QM3000,DevSonic,,sonic
 mamba-112,10.7.148.112,ACS-QM3000,DevSonic,,sonic
+mamba-150,10.7.148.150,ACS-QM3000,DevSonic,,sonic
 mlx-2410b-01,10.188.108.46,Mellanox-SN2410,DevSonic,,sonic
 mlx-4600a1-05,10.188.108.49,Mellanox-SN4600,DevSonic,,sonic
 mlx-4700a1-07,10.188.52.105,Mellanox-SN4700,DevSonic,,sonic
