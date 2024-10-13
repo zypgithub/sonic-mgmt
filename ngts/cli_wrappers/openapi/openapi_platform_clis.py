@@ -15,7 +15,7 @@ class OpenApiPlatformCli(OpenApiBaseCli):
         self.cli_name = "Platform"
 
     @staticmethod
-    def action_install_fae_bios_firmware(engine, bios_image_path, resource_path='', device=None):
+    def action_install_bios_firmware(engine, bios_image_path, resource_path='', device=None):
         """
         Method to install BIOS firmware using rest api
         :param engine: the engine to use
@@ -23,7 +23,7 @@ class OpenApiPlatformCli(OpenApiBaseCli):
         :param resource_path: path (example : /fae/platform/firmware/)
         :param device: Noga device info
         """
-        resource_path = resource_path + '/bios/files/' + bios_image_path.replace('/', '%2F')
+        resource_path = resource_path + '/BIOS/files/' + bios_image_path.replace('/', '%2F')
 
         action_type = ActionType.INSTALL
         params = \

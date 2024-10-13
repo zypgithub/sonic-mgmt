@@ -107,14 +107,18 @@ def test_platform_firmware_image_rename(engines, devices, topology_obj):
     dut = devices.dut
     _, fetched_image_name, _ = get_image_data_and_fetch_random_image_files(platform, dut, topology_obj)
     fetched_image_file = platform.firmware.asic.files.file_name[fetched_image_name]
-    with allure.step("Rename image without mfa ending"):
+    with allure.step("Fetch image 2nd try"):
         if dut.asic_type == NvosConst.QTM3 or dut.asic_type == NvosConst.NVL5:
             platform.firmware.asic.action_fetch(f"{PlatformConsts.XDR_FW_PATH}/{fetched_image_name}").verify_result()
         else:
             platform.firmware.asic.action_fetch(f"{PlatformConsts.FW_PATH}/{fetched_image_name}").verify_result()
 
-    with allure.step("Rename image and verify"):
+    with allure.step("Rename image without mfa ending, should fail"):
         new_name = RandomizationTool.get_random_string(20, ascii_letters=string.ascii_letters + string.digits)
+        fetched_image_file.action_rename(new_name, expected_str="", rewrite_file_name=False, should_succeed=False)
+
+    with allure.step("Rename image and verify"):
+        new_name += '.mfa'
         fetched_image_file.action_rename(new_name, expected_str="", rewrite_file_name=False)
 
     with allure.step("Rename already exist image and verify"):

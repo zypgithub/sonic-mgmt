@@ -1,7 +1,6 @@
 import random
 
 from ngts.nvos_constants.constants_nvos import ApiType, NvosConst
-from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.constants import MINUTE
@@ -28,7 +27,6 @@ def test_bios_auto_update_disabled(devices, engines, test_api, original_version,
     TestToolkit.tested_api = test_api
     with allure.step('Create System objects'):
         platform = Platform()
-        fae = Fae()
         system = System()
 
     verify_current_version(original_version, system)
@@ -45,14 +43,16 @@ def test_bios_auto_update_disabled(devices, engines, test_api, original_version,
                                    op_param_value=NvosConst.DISABLED, apply=True).verify_result()
         verify_bios_auto_update_value(platform, NvosConst.DISABLED)
         TestToolkit.GeneralApi[test_api].save_config(engine=engines.dut)
+        path, filename, version_name, date = get_bios_info_from_device(devices.dut, 'alternate_version')
+        fetch_and_install_bios(platform=platform, path=path, name=version_name, filename=filename,
+                               topology_obj=topology_obj)
+        verify_bios_version(engines, platform, version_name, date)
 
-        install_bios(devices, fae, devices.dut.previous_bios_version_name)
-        verify_bios_version(devices, platform)
+        with allure.step('Reboot with previous BIOS version installation'):
+            res, duration = OperationTime.save_duration('reboot with BIOS 004 installation', '',
+                                                        test_name, system.reboot.action_reboot, topology_obj=topology_obj)
 
-        install_image_and_verify(orig_engine=orig_engine, image_name=fetched_image_curr, system=system,
-                                 test_name=test_name)
-
-        verify_bios_version(devices, platform)
+        verify_bios_version(engines, platform, version_name, date)
 
     except Exception as e:
         logger.info("Received Exception during test: {}".format(e))
@@ -67,7 +67,7 @@ def test_bios_auto_update_disabled(devices, engines, test_api, original_version,
         TestToolkit.GeneralApi[test_api].save_config(engine=engines.dut)
 
 
-@pytest.mark.timeout(20 * MINUTE, func_only=True)
+@pytest.mark.timeout(25 * MINUTE, func_only=True)
 @pytest.mark.bios
 @pytest.mark.system
 @pytest.mark.parametrize('test_api', random.sample(ApiType.ALL_TYPES, 1))
@@ -84,33 +84,31 @@ def test_bios_auto_update_enabled(devices, engines, test_api, original_version, 
     TestToolkit.tested_api = test_api
     with allure.step('Create System objects'):
         platform = Platform()
-        fae = Fae()
         system = System()
 
     verify_current_version(original_version, system)
     verify_bios_auto_update_value(platform, NvosConst.ENABLED)
 
-    with allure.step('Fetch image - target_version_realpath fixture'):
-        original_image_partition, fetched_image_curr = get_image_data_and_fetch_image
-
-    try:
-
-        orig_engine: LinuxSshEngine = TestToolkit.engines.dut
-        if get_bios_version(platform) == devices.dut.current_bios_version_name:
-            platform.firmware.bios.set(op_param_name=PlatformConsts.FW_AUTO_UPDATE,
-                                       op_param_value=NvosConst.DISABLED, apply=True).verify_result()
-            TestToolkit.GeneralApi[test_api].save_config(engine=engines.dut)
-            verify_bios_auto_update_value(platform, NvosConst.DISABLED)
-            install_bios(devices, fae, devices.dut.previous_bios_version_name)
-            platform.firmware.bios.set(op_param_name=PlatformConsts.FW_AUTO_UPDATE,
-                                       op_param_value=NvosConst.ENABLED, apply=True).verify_result()
+    if get_bios_version(platform) == devices.dut.current_bios_version_name:
+        platform.firmware.bios.set(op_param_name=PlatformConsts.FW_AUTO_UPDATE,
+                                   op_param_value=NvosConst.DISABLED, apply=True).verify_result()
         TestToolkit.GeneralApi[test_api].save_config(engine=engines.dut)
-        verify_bios_version(devices, platform)
+        verify_bios_auto_update_value(platform, NvosConst.DISABLED)
+        path, filename, version_name, date = get_bios_info_from_device(devices.dut, 'alternate_version')
+        fetch_and_install_bios(platform=platform, path=path, name=version_name, filename=filename,
+                               topology_obj=topology_obj)
+        platform.firmware.bios.set(op_param_name=PlatformConsts.FW_AUTO_UPDATE,
+                                   op_param_value=NvosConst.ENABLED, apply=True).verify_result()
+        TestToolkit.GeneralApi[test_api].save_config(engine=engines.dut)
+        path, filename, version_name, date = get_bios_info_from_device(devices.dut, 'alternate_version')
+    verify_bios_version(engines, platform, version_name, date)
+    with allure.step('Reboot with current BIOS version installation'):
 
         install_image_and_verify(orig_engine=orig_engine, image_name=fetched_image_curr, system=system,
                                  test_name=test_name)
 
-        verify_bios_version(devices, platform, True)
+        path, filename, version_name, date = get_bios_info_from_device(devices.dut, 'current_version')
+    verify_bios_version(engines, platform, version_name, date)
 
     except Exception as e:
         logger.info("Received Exception during test: {}".format(e))

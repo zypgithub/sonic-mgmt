@@ -284,6 +284,7 @@ class BaseSwitch(BaseDevice):
                                          'bmc_dump_files', 'erots'])
     CpldImageConsts = namedtuple('CpldImageConsts', ('burn_image_path', 'refresh_image_path', 'version_names'))
     SsdImageConsts = namedtuple('SsdImageConsts', ('file', 'current_version', 'alternate_version'))
+    BiosImagesConsts = namedtuple('BiosImagesConsts', ('current_version', 'alternate_version'))
 
     def init_documents_consts(self):
         super().init_documents_consts()
