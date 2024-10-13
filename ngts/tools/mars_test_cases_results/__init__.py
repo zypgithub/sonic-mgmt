@@ -25,10 +25,11 @@ EXCEPTION_REGEX = "exception_regex"
 LA_REDMINE_ISSUES = "log_analyzer_redmine_issues"
 SKYNET = "skynet"
 
+DUAL_TOR_SETUPS_PATTERNS = r"sonic-dual-tor-?([\w-]*)-?(\d*)"
+COMMUNITY_SETUPS_PATTERNS = r"mtbc-sonic-\d+-\d+_setup|r-\w+-\d+_setup|mtvr-\w+-\d+_setup|arc-\w+\d+_setup"
 SONIC_CI_SETUP_NAME_PATTERNS = r"CI_sonic(?:_simx)?_SPC(?:\d+)?_\d+"
-SONIC_SETUP_NAME_PATTERN = rf"sonic_\S+_r-\S+-\S+|sonic_\S+_mtvr-\S+-\S+|sonic_simx_r-\S+-simx-\S+|\
-sonic_simx_mtvr-\S+-simx-\S+|{SONIC_CI_SETUP_NAME_PATTERNS}|sonic_air_\S+-\S+"
-SONIC_SWITCH_NAME_PATTERN = r"r-\S+|mtvr-\S+|r-\S+-simx-\S+|mtvr-\S+-simx-\S+"
+SONIC_SETUP_NAME_PATTERN = rf"{DUAL_TOR_SETUPS_PATTERNS}|{COMMUNITY_SETUPS_PATTERNS}|sonic_simx_r-\w+-simx-\w+|sonic_simx_mtvr-\w+-simx-\w+|{SONIC_CI_SETUP_NAME_PATTERNS}|sonic_air_\w+-\w+|sonic_\w+_r-\w+-\w+|sonic_\w+_mtvr-\w+-\w+"
+SONIC_SWITCH_NAME_PATTERN = r"r-\w+-simx-\w+|mtvr-\w+-simx-\w+-\w+|r-\w+-\w+|mtvr-\w+-\w+|arc-\w+\d+"
 MAC_PATTERN = r"(?:[0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}|[0-9A-Fa-f]{12}"
 IPV4_PATTERN = r"\b(?:\d{1,3}\.){3}\d{1,3}\b"
 IPV6_PATTERN = r"\b(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}\b"
@@ -46,8 +47,14 @@ HEX_NUM_PATTERN = r"0[xX][0-9a-fA-F]+|\b[0-9a-fA-F]*[0-9][0-9a-fA-F]*\b"
 DIGIT_PATTERN = r"\d+"
 QUOTE_PATTERN = r'"'
 PORT_NAME_PATTERN = r"\betp[1-9][0-9a-g]*\b"
-PORT_NAME_REPLACEMENT = "REDACTED_INTERFACE_NAME"
+PORT_NAME_REPLACEMENT = "REDACTED_PORT_NAME"
+PLATFORM_PREFIX = r"x86_64-(?:mlnx_msn\d+|nvidia_sn\d+)(?:c|a1)?"
+PLATFORM_POSTFIX = r"(?:-a1-respined|-swb-respined|-respined|-a1)?"
+PLATFORM_PATTERN = rf"{PLATFORM_PREFIX}-r0{PLATFORM_POSTFIX}"
+HWSKU_PATTERN = r"(Mellanox-SN\d+|ACS-(M)?SN\d+)(?:C|A1)?(-\w+(-\w+)?)?"
 
+REDACTED_PLATFORM_NAME = "REDACTED_PLATFORM_NAME"
+REDACTED_HWSKU_NAME = "REDACTED_HWSKU_NAME"
 REDACTED_SONIC_SETUP_NAME = "REDACTED_SONIC_SETUP_NAME"
 REDACTED_SONIC_SWITCH_NAME = "REDACTED_SONIC_SWITCH_NAME"
 REDACTED_MAC = "REDACTED_MAC"
@@ -58,12 +65,15 @@ HEX_NUM_REPLACEMENT = "*"
 DIGIT_REPLACEMENT = "*"
 ESCAPED_QUOTE_REPLACEMENT = r'\"'
 # The patterns are ordered so regex replacements are done correctly (i.e., replace full ip before digits)
-GENERALIZE_EXCEPTION_TUPLES = [(SONIC_SETUP_NAME_PATTERN, REDACTED_SONIC_SETUP_NAME),
+GENERALIZE_EXCEPTION_TUPLES = [(PLATFORM_PATTERN, REDACTED_PLATFORM_NAME),
+                               (HWSKU_PATTERN, REDACTED_HWSKU_NAME),
+                               (SONIC_SETUP_NAME_PATTERN, REDACTED_SONIC_SETUP_NAME),
                                (SONIC_SWITCH_NAME_PATTERN, REDACTED_SONIC_SWITCH_NAME), (MAC_PATTERN, REDACTED_MAC),
                                (IPV4_PATTERN, REDACTED_IP), (IPV6_PATTERN, REDACTED_IP),
                                (BRACKETED_NUM_PATTERN, REDACTED_BRACKETED_NUM), (DATE_PATTERN, REDACTED_DATE),
-                               (PORT_NAME_PATTERN, PORT_NAME_REPLACEMENT), (HEX_NUM_PATTERN, HEX_NUM_REPLACEMENT),
-                               (DIGIT_PATTERN, DIGIT_REPLACEMENT), (QUOTE_PATTERN, ESCAPED_QUOTE_REPLACEMENT)]
+                               (PORT_NAME_PATTERN, PORT_NAME_REPLACEMENT),
+                               (HEX_NUM_PATTERN, HEX_NUM_REPLACEMENT), (DIGIT_PATTERN, DIGIT_REPLACEMENT),
+                               (QUOTE_PATTERN, ESCAPED_QUOTE_REPLACEMENT)]
 
 
 def pytest_addoption(parser):
