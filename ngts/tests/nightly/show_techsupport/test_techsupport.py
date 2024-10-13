@@ -7,6 +7,7 @@ import logging
 import tarfile
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.helpers.sonic_branch_helper import get_sonic_branch
+from ngts.common.checkers import is_ver1_greater_or_equal_ver2
 
 logger = logging.getLogger(__name__)
 
@@ -272,7 +273,7 @@ def stop_irisics(chip_type, host):
 def check_all_dumps_file_exsits(topology_obj, engine, chip_type):
     # DumpMe dumps should contain the following dumps:
     # 3 CR space dumps
-    # SDK dump
+    # SDK dump + SDK thread backtrace dump
     # mlxtrace dump
     # FW core dump - only on FW event from level CRITICAL or ERROR
     sonic_branch = get_sonic_branch(topology_obj)
@@ -293,6 +294,16 @@ def check_all_dumps_file_exsits(topology_obj, engine, chip_type):
             assert '_pci_cr0_mlxtrace.trc' in output_fw_dump, 'Missing mlxtrace'
         else:
             assert re.search(r'sdk_dump_ext_.*fw_trace.txt', output_fw_dump) is not None, 'Missing FW trace'
+
+    # Check SDK Thread Backtrace dump:
+    sai_version = topology_obj.players['dut']['cli'].general.get_sai_version()
+    base_sai_version_thread_backtrace = "2405.29.2.49"  # SDK Thread Backtrace dump will appear from this version onward
+    logger.info(f'sai_version: {sai_version}, base sai_version:{base_sai_version_thread_backtrace}')
+    if sai_version and is_ver1_greater_or_equal_ver2(sai_version, base_sai_version_thread_backtrace):
+        assert re.search(r'sdk_dump_ext_.*sdk_threads_backtrace.txt', output_fw_dump), 'Missing SDK Thread Backtrace'
+    else:
+        logger.info(f"sai_version doesn't contain SDK Thread Backtrace dump")
+
     # Check FW core dump:
     # This should be uncommented when FW stuck event level would change to critical
     # assert 'ir_core_dump_' in output, 'Missing FW core dump'
