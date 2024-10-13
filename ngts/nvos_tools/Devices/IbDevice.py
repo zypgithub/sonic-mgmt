@@ -234,10 +234,17 @@ class IbSwitch(BaseSwitch):
         self.category_list = ['temperature', 'cpu', 'disk', 'power', 'fan', 'mgmt-interface', 'voltage']
         self.category_disk_interval_default = '30'
         self.system_profile_default_values = ['enabled', '2048', 'disabled', 'disabled', '1']
-        self.current_bios_version_name = "0ACQF_06.01.005"
-        self.current_bios_version_path = "/auto/sw_system_release/sx_mlnx_bios/CoffeeLake/0ACQF_06.01.x05_rc1/Release/0ACQF.cab"
-        self.previous_bios_version_name = "0ACQF_06.01.004"
-        self.previous_bios_version_path = "/auto/sw_system_release/sx_mlnx_bios/CoffeeLake/0ACQF_06.01.x04_rc1/Release/0ACQF.cab"
+        self.bios_image_info = BaseSwitch.BiosImagesConsts(
+            current_version={
+                'path': "/auto/sw_system_release/sx_mlnx_bios/CoffeeLake/0ACQF_06.01.x05_rc1/Release/0ACQF.cab",
+                'filename': '0ACQF.cab',
+                'version_name': '0ACQF_06.01.005',
+                'date': '04/28/2024'},
+            alternate_version={
+                'path': '/auto/sw_system_release/sx_mlnx_bios/CoffeeLake/0ACQF_06.01.x04_rc1/Release/0ACQF.cab',
+                'filename': '0ACQF.cab',
+                'version_name': '0ACQF_06.01.004',
+                'date': '11/12/2023'})
         self.erot_fw_image_info = self.ErotFirmwareImagesTestConsts(
             current_image_path='auto/sw_system_release/erot/juliet/01.03.0202.000/sign/n04/dev/cec1736-ecfw-01.03.0202.0000-n04-dev-initial.bin',
             previous_image_path='auto/sw_system_release/erot/juliet/01.03.0183.000/sign/n04/dev/cec1736-ecfw-01.03.0183.0000-n04-dev-initial.bin',
@@ -619,6 +626,7 @@ class CrocodileSwitch(IbSwitch):
         self.core_count = 4
         self.split_ports_supported = True
         self.asic_type = NvosConst.QTM3
+        self.system_is_ready_wait_timeout = 10 * MINUTE
         self.platform_file_path = MultiPlanarConsts.PLATFORM_FILE_FULL_PATH.format("x86_64-nvidia_qm3400-r0")
         self.show_platform_output.update({
             "product-name": "QM3400",
@@ -811,7 +819,6 @@ class JulietSwitch(NvLinkSwitch):
     FaeImagesTestConsts = namedtuple('FaeImagesTestConsts', ('current_image_version', 'alternate_image_version'))
     NmxClusterAppsConsts = namedtuple('NmxClusterAppsConsts',
                                       ('burn_path', 'burn_version_names'))
-    BiosImagesTestConsts = namedtuple('BiosImagesTestConsts', ('current_version', 'alternate_version'))
 
     def __init__(self, asic_amount):
         super().__init__(asic_amount=asic_amount)
@@ -886,7 +893,7 @@ class JulietSwitch(NvLinkSwitch):
         )
         self.supported_commands.extend([ActionConsts.POWER_CYCLE])
 
-        self.bios_image_info = self.BiosImagesTestConsts(
+        self.bios_image_info = BaseSwitch.BiosImagesConsts(
             current_version={
                 'path': '/auto/sw_system_release/sx_mlnx_bios/SnowyOwl/0ACTV_00.00.016/Release/erot_sign_debug/cec1736-apfw-0000010.fwpkg',
                 'filename': 'cec1736-apfw-0000010.fwpkg',
