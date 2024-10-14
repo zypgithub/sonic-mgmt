@@ -22,12 +22,6 @@ class Firmware(BaseComponent):
         self.bios = PlatformComponent(self, component_name='BIOS')
         self.erot = Erot(self)
 
-    def install_bios_firmware(self, bios_image_path, device, topology_obj=None):
-        with allure.step("installing bios firmware from {action_type}".format(action_type=bios_image_path)):
-            return SendCommandTool.execute_command(
-                self.api_obj[TestToolkit.tested_api].action_install_bios_firmware,
-                TestToolkit.engines.dut, bios_image_path, self.get_resource_path(), device, topology_obj)
-
 
 class PlatformComponent(BaseComponent):
     def __init__(self, parent_obj=None, component_name=None):

@@ -33,7 +33,7 @@ class Transceiver(BaseComponent):
         with allure.step('Search for transceivers that meet provided requirements'):
 
             logging.info("get_dict_of_transceivers - Searching for relevant transceivers")
-            dict_of_transceivers = OutputParsingTool.parse_show_output_to_dict(self.show()).get_returned_value()
+            dict_of_transceivers = OutputParsingTool.parse_show_output_to_dict(self.show(op_param='--view detail')).get_returned_value()
 
             if cable_type:
                 dict_of_transceivers = {k: v for k, v in dict_of_transceivers.items() if v.get(PlatformConsts.TRANSCEIVER_CABLE_TYPE) == cable_type}

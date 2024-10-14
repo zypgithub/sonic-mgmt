@@ -5,6 +5,7 @@ from typing import Tuple
 
 import pytest
 
+from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import ImageConsts, NvosConst
 from ngts.nvos_constants.constants_nvos import PlatformConsts
 from ngts.nvos_tools.infra.Fae import Fae
@@ -91,7 +92,7 @@ def test_set_unset_platform_firmware_default(engines):
 @pytest.mark.simx
 @pytest.mark.image
 @pytest.mark.platform
-@pytest.mark.timeout(10 * MINUTE, func_only=True)
+@pytest.mark.timeout(15 * MINUTE, func_only=True)
 def test_platform_firmware_image_rename(engines, devices, topology_obj, clear_asic_files):
     """
     Check the image rename cmd.
@@ -143,10 +144,13 @@ def test_platform_firmware_image_rename(engines, devices, topology_obj, clear_as
     try:
         with allure.step("Install new image name"):
             logging.info("Install new image name: {}".format(new_name))
+            platform.firmware.asic.set(PlatformConsts.FW_SOURCE, PlatformConsts.FW_SOURCE_CUSTOM, apply=True)
+            NvueGeneralCli.save_config(engines.dut)
             fetched_image_file.action_file_install_with_reboot(force=True).verify_result(should_succeed=True)
 
     finally:
         set_firmware_property(platform, PlatformConsts.FW_SOURCE, PlatformConsts.FW_SOURCE_DEFAULT)
+        NvueGeneralCli.save_config(engines.dut)
 
 
 @pytest.mark.checklist

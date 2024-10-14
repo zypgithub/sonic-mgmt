@@ -21,7 +21,7 @@ logger = logging.getLogger()
 @pytest.mark.checklist
 @pytest.mark.platform
 @pytest.mark.timeout(20 * MINUTE, func_only=True)
-def test_install_platform_firmware(engines, devices, test_name):
+def test_install_platform_firmware(engines, devices, test_name, clear_asic_files):
     """
     Install platform firmware test
 
@@ -36,7 +36,7 @@ def test_install_platform_firmware(engines, devices, test_name):
     platform = Platform()
     fae = Fae()
     fw_has_changed = False
-    new_fw_name, fw_file_name = get_version_and_file_name(devices.dut.asic_type)
+    new_fw_name, fw_file_name = get_version_and_file_name(devices.dut)
     fw_file = f"/auto/sw_system_project/NVOS_INFRA/verification_files/{fw_file_name}"
     logging.info(f"using {fw_file} fw file")
 
@@ -58,9 +58,10 @@ def test_install_platform_firmware(engines, devices, test_name):
                     platform.firmware.asic.action_fetch(fw_file, base_url=scp_path).verify_result()
 
                 with allure.step("Install firmware and verify"):
-                    res_obj, duration = OperationTime.save_duration('install user FW', 'include reboot', test_name,
-                                                                    install_new_user_fw, system, platform, fw_file_name, fae,
-                                                                    new_fw_name, actual_firmware, engines, test_name)
+                    platform.firmware.asic.set(PlatformConsts.FW_SOURCE, PlatformConsts.FW_SOURCE_CUSTOM, apply=True)
+                    NvueGeneralCli.save_config(engines.dut)
+                    func = platform.firmware.asic.files.file_name[fw_file_name].action_file_install_with_reboot
+                    res_obj, duration = OperationTime.save_duration('install user FW', 'include reboot', test_name, func)
 
                 with allure.step('Verify the firmware installed successfully'):
                     verify_firmware_with_platform_and_fae_cmd(platform, fae, new_fw_name, new_fw_name)
@@ -73,22 +74,20 @@ def test_install_platform_firmware(engines, devices, test_name):
 
         finally:
             with allure.step("cleanup steps"):
+                with allure.step("Install original system firmware file"):
+                    platform.firmware.asic.set(PlatformConsts.FW_SOURCE, PlatformConsts.FW_SOURCE_DEFAULT, apply=True)
+                    NvueGeneralCli.save_config(engines.dut)
+
                 OperationTime.save_duration('install default fw', 'include reboot', test_name, install_image_fw,
-                                            system, platform, engines, test_name, fw_has_changed)
+                                            system, test_name, fw_has_changed)
 
             with allure.step('Verify the firmware installed successfully'):
                 verify_firmware_with_platform_and_fae_cmd(platform, fae, actual_firmware, actual_firmware)
                 validate_all_asics_have_same_info()
 
 
-def get_version_and_file_name(asic_type: str) -> Tuple[str, str]:
-    firmware_versions = {NvosConst.QTM2: ("31_2014_0902-024", "fw-QTM2-rel-31_2014_0902-024.mfa"),
-                         NvosConst.QTM3: ("35.2014.2022", "fw-QTM3-rel-35_2014_2022.mfa"),
-                         NvosConst.NVL5: ("35_2014_1100", "fw-QTM3-rel-35_2014_1100.mfa")}
-    if asic_type in firmware_versions.keys():
-        return firmware_versions[asic_type]
-    else:
-        raise NotImplementedError()
+def get_version_and_file_name(device) -> Tuple[str, str]:
+    return getattr(device.asic_version, 'version'), getattr(device.asic_version, 'filename')
 
 
 def get_asic_dict(fae):
@@ -98,11 +97,7 @@ def get_asic_dict(fae):
     return asic_dictionary
 
 
-def install_image_fw(system, platform, engines, test_name, fw_has_changed):
-    with allure.step("Install original system firmware file"):
-        platform.firmware.asic.set(PlatformConsts.FW_SOURCE, PlatformConsts.FW_SOURCE_DEFAULT, apply=True)
-        NvueGeneralCli.save_config(engines.dut)
-
+def install_image_fw(system, test_name, fw_has_changed):
     with allure.step('Rebooting the dut after image installation'):
         logging.info("Rebooting dut")
         if fw_has_changed:
@@ -114,25 +109,6 @@ def install_image_fw(system, platform, engines, test_name, fw_has_changed):
             res = system.reboot.action_reboot()
 
         return res
-
-
-def install_new_user_fw(system, platform, new_fw_to_install, fae, new_fw_name, actual_firmware, engines, test_name):
-    platform.firmware.asic.set(PlatformConsts.FW_SOURCE, PlatformConsts.FW_SOURCE_CUSTOM, apply=True)
-    platform.firmware.asic.files.file_name[new_fw_to_install].action_file_install_with_reboot(force=True).verify_result(
-        should_succeed=True)
-
-    with allure.step("Verify installed file can be found in show output"):
-        verify_firmware_with_platform_and_fae_cmd(platform, fae, new_fw_name, actual_firmware)
-        validate_all_asics_have_same_info()
-        NvueGeneralCli.save_config(engines.dut)
-
-    with allure.step('Rebooting the dut after image installation'):
-        logging.info("Rebooting dut")
-        res, duration = OperationTime.save_duration('reboot with new user FW', '',
-                                                    test_name, system.reboot.action_reboot)
-        OperationTime.verify_operation_time(duration, 'reboot with new user FW').verify_result()
-
-    return res
 
 
 def get_original_fw_path(engines, original_fw):
