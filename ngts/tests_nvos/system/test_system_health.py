@@ -235,7 +235,7 @@ def test_ignore_health_issue(engines, devices, loganalyzer):
             verify_devices_health_status_in_issues_list(system, [fan_display_name])
 
         with allure.step("Remove the ignore from PSU issue too and Validate"):
-            ignore_health_issue(None, health_config_file, ignore_psu_redundancy=False)
+            ignore_health_issue([], health_config_file, ignore_psu_redundancy=False)
             system.wait_until_health_status_change_to(NOT_OK)
             verify_health_status_and_led(system, NOT_OK)
             verify_devices_health_status_in_monitor_list({psu_display_name: NOT_OK, psu_fan_display_name: NOT_OK, fan_display_name: NOT_OK})
@@ -492,6 +492,7 @@ def get_fan_display_name(fan_id):
 
 
 def ignore_health_issue(components_list_to_ignore, health_config_file: EngineFile, ignore_psu_redundancy=None):
+    components_list_to_ignore.append('leakage')
     components_as_string = ", ".join(["\"{}\"".format(comp) for comp in components_list_to_ignore]) if components_list_to_ignore else ""
     health_config_file.sed(DEVICES_TO_IGNORE_LINE.format(".*"), DEVICES_TO_IGNORE_LINE.format(components_as_string))
     if ignore_psu_redundancy is not None:

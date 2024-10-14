@@ -8,6 +8,7 @@ from ngts.nvos_constants.constants_nvos import NvosConst, PlatformConsts
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.ContextManagers import check_health_baseline
 from ngts.nvos_tools.infra.Fae import Fae
+from ngts.tests_nvos.constants import MINUTE
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.platform.Platform import Platform
@@ -19,6 +20,7 @@ logger = logging.getLogger()
 
 @pytest.mark.checklist
 @pytest.mark.platform
+@pytest.mark.timeout(20 * MINUTE, func_only=True)
 def test_install_platform_firmware(engines, devices, test_name):
     """
     Install platform firmware test
@@ -81,7 +83,7 @@ def test_install_platform_firmware(engines, devices, test_name):
 
 def get_version_and_file_name(asic_type: str) -> Tuple[str, str]:
     firmware_versions = {NvosConst.QTM2: ("31_2014_0902-024", "fw-QTM2-rel-31_2014_0902-024.mfa"),
-                         NvosConst.QTM3: ("35.2014.2012", "fw-QTM3-rel-35_2014_2012.mfa"),
+                         NvosConst.QTM3: ("35.2014.2022", "fw-QTM3-rel-35_2014_2022.mfa"),
                          NvosConst.NVL5: ("35_2014_1100", "fw-QTM3-rel-35_2014_1100.mfa")}
     if asic_type in firmware_versions.keys():
         return firmware_versions[asic_type]
@@ -115,9 +117,9 @@ def install_image_fw(system, platform, engines, test_name, fw_has_changed):
 
 
 def install_new_user_fw(system, platform, new_fw_to_install, fae, new_fw_name, actual_firmware, engines, test_name):
-    platform.firmware.asic.files.file_name[new_fw_to_install].action_file_install(force=False).verify_result(
-        should_succeed=True)
     platform.firmware.asic.set(PlatformConsts.FW_SOURCE, PlatformConsts.FW_SOURCE_CUSTOM, apply=True)
+    platform.firmware.asic.files.file_name[new_fw_to_install].action_file_install_with_reboot(force=True).verify_result(
+        should_succeed=True)
 
     with allure.step("Verify installed file can be found in show output"):
         verify_firmware_with_platform_and_fae_cmd(platform, fae, new_fw_name, actual_firmware)

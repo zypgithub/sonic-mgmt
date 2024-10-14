@@ -8,6 +8,7 @@ import pytest
 from ngts.nvos_constants.constants_nvos import ImageConsts, NvosConst
 from ngts.nvos_constants.constants_nvos import PlatformConsts
 from ngts.nvos_tools.infra.Fae import Fae
+from ngts.tests_nvos.constants import MINUTE
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
@@ -90,7 +91,8 @@ def test_set_unset_platform_firmware_default(engines):
 @pytest.mark.simx
 @pytest.mark.image
 @pytest.mark.platform
-def test_platform_firmware_image_rename(engines, devices, topology_obj):
+@pytest.mark.timeout(10 * MINUTE, func_only=True)
+def test_platform_firmware_image_rename(engines, devices, topology_obj, clear_asic_files):
     """
     Check the image rename cmd.
     Validate that install and delete commands will success with the new name
@@ -106,6 +108,8 @@ def test_platform_firmware_image_rename(engines, devices, topology_obj):
     """
     platform = Platform()
     dut = devices.dut
+    platform.firmware.asic.files.verify_show_files_output([], [])
+    set_firmware_property(platform, PlatformConsts.FW_SOURCE, PlatformConsts.FW_SOURCE_CUSTOM)
     _, fetched_image_name, _ = get_image_data_and_fetch_random_image_files(platform, dut, topology_obj)
     fetched_image_file = platform.firmware.asic.files.file_name[fetched_image_name]
     with allure.step("Fetch image 2nd try"):
@@ -125,11 +129,12 @@ def test_platform_firmware_image_rename(engines, devices, topology_obj):
 
     with allure.step("Rename already exist image and verify"):
         fetched_image_file.action_rename(new_name, expected_str="already exists")
+        platform.firmware.asic.files.verify_show_files_output([new_name], [])
 
     with allure.step("Install original image name, should fail"):
         logging.info("Install original image name: {}, should fail".format(fetched_image_name))
         platform.firmware.asic.files.file_name[fetched_image_name].action_file_install(
-            force=False).verify_result(should_succeed=False)
+            force=True).verify_result(should_succeed=False)
 
     with allure.step("Delete original image name, should fail"):
         logging.info("Delete original image name, should fail")
@@ -138,7 +143,7 @@ def test_platform_firmware_image_rename(engines, devices, topology_obj):
     try:
         with allure.step("Install new image name"):
             logging.info("Install new image name: {}".format(new_name))
-            fetched_image_file.action_file_install(force=False).verify_result(should_succeed=True)
+            fetched_image_file.action_file_install_with_reboot(force=True).verify_result(should_succeed=True)
 
     finally:
         set_firmware_property(platform, PlatformConsts.FW_SOURCE, PlatformConsts.FW_SOURCE_DEFAULT)

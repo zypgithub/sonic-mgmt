@@ -2,6 +2,7 @@ import pytest
 
 from ngts.nvos_constants.constants_nvos import PlatformConsts, SystemConsts
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.system.System import System
 from ngts.tools.test_utils import allure_utils as allure
 
@@ -35,3 +36,12 @@ def asic_conf_dict(engines) -> dict:
             asic_conf[asic_dev_id] = value
 
         return asic_conf
+
+
+@pytest.fixture(scope='function')
+def clear_asic_files():
+    yield
+    platform = Platform()
+    with allure.step('delete fetched firmware asic image files'):
+        files = platform.firmware.asic.files.get_files()
+        platform.firmware.asic.files.delete_files(files_to_delete=files)

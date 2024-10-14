@@ -33,6 +33,11 @@ class Files(BaseComponent):
     def verify_show_files_output(self, expected_files=[], unexpected_files=[], dut_engine=None):
         with allure.step("Verify files are as expected"):
             files = self.get_files(dut_engine=dut_engine)
+
+            # If no expected files, ensure there are no files present
+            if not expected_files and files:
+                raise AssertionError(f"Expected no files, but got: {files}")
+
             for file in expected_files:
                 assert file in files, "File: {} is not in the files output: {}".format(file, files)
             for file in unexpected_files:
