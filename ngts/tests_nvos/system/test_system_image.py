@@ -174,6 +174,7 @@ def test_system_image_upload(engines, release_name, test_api, original_version, 
 @pytest.mark.image
 @pytest.mark.system
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.timeout(25 * MINUTE, func_only=True)
 def test_image_uninstall(release_name, test_api, original_version, test_name, devices, base_version):
     """
      Will check the uninstall commands
@@ -193,6 +194,7 @@ def test_image_uninstall(release_name, test_api, original_version, test_name, de
 @pytest.mark.simx
 @pytest.mark.image
 @pytest.mark.system
+@pytest.mark.timeout(25 * MINUTE, func_only=True)
 def test_image_uninstall_force(release_name, original_version, test_name, devices, base_version):
     """
      Will check the uninstall force commands
