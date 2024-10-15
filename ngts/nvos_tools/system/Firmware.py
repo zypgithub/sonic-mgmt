@@ -1,6 +1,8 @@
 import logging
+from typing import List
 
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.system.Files import Files
@@ -20,6 +22,7 @@ class Firmware(BaseComponent):
         self.bmc = PlatformComponent(self, component_name='BMC')
         self.fpga = PlatformComponent(self, component_name='FPGA')
         self.bios = PlatformComponent(self, component_name='BIOS')
+        self.cpld = PlatformComponent(self, component_name='CPLD1')
         self.erot = Erot(self)
 
     def install_bios_firmware(self, bios_image_path, device, topology_obj=None):
@@ -33,3 +36,6 @@ class PlatformComponent(BaseComponent):
     def __init__(self, parent_obj=None, component_name=None):
         super().__init__(parent=parent_obj, path=f"/{component_name}")
         self.files = Files(self)
+
+    def show_files_as_list(self) -> List[str]:
+        return OutputParsingTool.parse_show_files_to_names(self.files.show()).get_returned_value()

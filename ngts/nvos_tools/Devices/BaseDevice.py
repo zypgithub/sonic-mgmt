@@ -84,6 +84,7 @@ class BaseDevice(ABC):
         self.supported_commands = []
         self.system_is_ready_wait_timeout = 5 * MINUTE
         self.supports_tpm_testing = True
+        self.allow_cpld_update = False
 
     def _init_fan_list(self):
         self.fan_list = []

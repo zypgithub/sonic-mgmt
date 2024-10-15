@@ -27,9 +27,6 @@ logger = logging.getLogger()
 
 
 class IbSwitch(BaseSwitch):
-    ErotFirmwareImagesTestConsts = namedtuple('ErotFirmwareImagesTestConsts',
-                                              ('previous_image_path', 'current_image_path', 'version_names'))
-
     def __init__(self, asic_amount, switch_type=NvosConst.IB_SWITCH_TYPE):
         super().__init__(switch_type=switch_type, asic_amount=asic_amount)
         self.documents_path = None
@@ -236,11 +233,6 @@ class IbSwitch(BaseSwitch):
                 'filename': '0ACQF.cab',
                 'version_name': '0ACQF_06.01.004',
                 'date': '11/12/2023'})
-        self.erot_fw_image_info = self.ErotFirmwareImagesTestConsts(
-            current_image_path='auto/sw_system_release/erot/juliet/01.03.0202.000/sign/n04/dev/cec1736-ecfw-01.03.0202.0000-n04-dev-initial.bin',
-            previous_image_path='auto/sw_system_release/erot/juliet/01.03.0183.000/sign/n04/dev/cec1736-ecfw-01.03.0183.0000-n04-dev-initial.bin',
-            version_names={'cec1736-ecfw-01.03.0196.0001-n04-dev-initial.fwpkg': '01.03.0196.0001_n04',
-                           'cec1736-ecfw-01.03.0202.0000-n04-dev-initial.fwpkg': '01.03.0202.0000_n04'})
         self.category_default_disabled_dict = {
             StatsConsts.HISTORY_DURATION: StatsConsts.HISTORY_DURATION_DEFAULT,
             StatsConsts.INTERVAL: StatsConsts.INTERVAL_DEFAULT,
@@ -744,6 +736,7 @@ class CrocodileSwitch(IbSwitch):
         self.core_count = 4
         self.asic_type = NvosConst.QTM3
         self.system_is_ready_wait_timeout = 10 * MINUTE
+        self.allow_cpld_update = True
         self.platform_file_path = MultiPlanarConsts.PLATFORM_FILE_FULL_PATH.format("x86_64-nvidia_qm3400-r0")
         self.show_platform_output.update({
             "product-name": "QM3400",
@@ -985,11 +978,6 @@ class JulietSwitch(NvLinkSwitch):
         self.constants = self.constants._replace(bmc_dump_files=bmc_dump_files)
         self.constants.dump_files.append('BMCeeprom')
         self.constants.erots.extend(['ERoT_BMC_0', 'ERoT_CPU_0', 'ERoT_FPGA_0', 'ERoT_NVSwitch_0', 'ERoT_NVSwitch_1'])
-        self.erot_fw_image_info = self.ErotFirmwareImagesTestConsts(
-            current_image_path='/auto/sw_system_release/erot/juliet/01.03.0216.0000/dev/cec1736-ecfw-01.03.0216.0000-n04-dev-initial.fwpkg',
-            previous_image_path='/auto/sw_system_release/erot/juliet/01.03.0202.000/sign/n04/dev/cec1736-ecfw-01.03.0202.0000-n04-dev-initial.fwpkg',
-            version_names={'cec1736-ecfw-01.03.0202.0000-n04-dev-initial.fwpkg': '01.03.0202.0000_n04',
-                           'cec1736-ecfw-01.03.0216.0000-n04-dev-initial.fwpkg': '01.03.0216.0000_n04'})
 
         self.nmx_cluster_apps_versions = self.NmxClusterAppsConsts(
             burn_path={
@@ -1103,26 +1091,6 @@ class JulietScaleoutSwitch(JulietSwitch):
             "asic-model": self.asic_type,
         })
 
-        self.current_cpld_version = BaseSwitch.CpldImageConsts(
-            burn_image_path="/auto/sw_system_project/NVOS_INFRA/verification_files/cpld_fw/FUI000299_BURN_JULIET_CPLD000370_REV0104_CPLD000371_REV0107_CPLD000373_REV0100_CPLD000372_REV0004.vme",
-            refresh_image_path="",
-            version_names={
-                "CPLD1": "CPLD000370_REV0104",
-                "CPLD2": "CPLD000371_REV0107",
-                "CPLD3": "CPLD000373_REV0100",
-                "CPLD4": "CPLD000372_REV0004"
-            }
-        )
-        self.previous_cpld_version = BaseSwitch.CpldImageConsts(
-            burn_image_path="/auto/sw_system_project/NVOS_INFRA/verification_files/cpld_fw/OLD/FUI000287_BURN_JULIET_CPLD000370_REV0010_CPLD000371_REV0010_CPLD000373_REV0010_CPLD000372_REV0003.vme",
-            refresh_image_path="",
-            version_names={
-                "CPLD1": "CPLD000370_REV0010",
-                "CPLD2": "CPLD000371_REV0010",
-                "CPLD3": "CPLD000373_REV0010",
-                "CPLD4": "CPLD000372_REV0003"
-            }
-        )
         self.stats_fan_header_num_of_lines = 21
         self.stats_cpu_header_num_of_lines = 10
         self.stats_temperature_header_num_of_lines = 48
@@ -1209,24 +1177,25 @@ class JulietTTMSwitch(JulietScaleoutSwitch):
 
     def _init_constants(self):
         super()._init_constants()
+        self.allow_cpld_update = True
         self.current_cpld_version = BaseSwitch.CpldImageConsts(
-            burn_image_path="/auto/sw_system_project/NVOS_INFRA/verification_files/cpld_fw/FUI000319_BURN_JULIET_TTM_CPLD000370_REV0104_CPLD000377_REV0104_CPLD000373_REV0100_CPLD000390_REV0100_IPN.vme",
+            burn_image_path="/auto/swgwork/omerr/Juliet_QS/Secured_CPLD/FUI000349/FUI000349_BURN_JULIET_TTM_CPLD000370_REV0109_CPLD000377_REV0307_CPLD000373_REV0204_CPLD000390_REV0103_IPN.vme",
             refresh_image_path="",
             version_names={
-                "CPLD1": "CPLD000370_REV0104",
-                "CPLD2": "CPLD000377_REV0104",
-                "CPLD3": "CPLD000373_REV0100",
-                "CPLD4": "CPLD000390_REV0100"
+                "CPLD1": "CPLD000370_REV0109",
+                "CPLD2": "CPLD000377_REV0307",
+                "CPLD3": "CPLD000373_REV0204",
+                "CPLD4": "CPLD000390_REV0103"
             }
         )
         self.previous_cpld_version = BaseSwitch.CpldImageConsts(
-            burn_image_path="/auto/sw_system_project/NVOS_INFRA/verification_files/cpld_fw/OLD/FUI000314_BURN_JULIET_TTM_CPLD000370_REV0104_CPLD000377_REV0102_CPLD000373_REV0100_CPLD000390_REV0100_IPN.vme",
+            burn_image_path="/auto/swgwork2/rlupovich/CPLD/Juliet_QS/FUI000343/FUI000343_BURN_JULIET_TTM_CPLD000370_REV0109_CPLD000377_REV0305_CPLD000373_REV0203_CPLD000390_REV0103_IPN.vme",
             refresh_image_path="",
             version_names={
-                "CPLD1": "CPLD000370_REV0104",
-                "CPLD2": "CPLD000377_REV0102",
-                "CPLD3": "CPLD000373_REV0100",
-                "CPLD4": "CPLD000390_REV0100"
+                "CPLD1": "CPLD000370_REV0109",
+                "CPLD2": "CPLD000377_REV0305",
+                "CPLD3": "CPLD000373_REV0203",
+                "CPLD4": "CPLD000390_REV0103"
             }
         )
 
@@ -1253,26 +1222,6 @@ class JulietAriel(JulietTTMSwitch):
     def _init_constants(self):
         super()._init_constants()
         # TODO - Need to be changed to correct values for Ariel. Double check with tamuz.
-        self.current_cpld_version = BaseSwitch.CpldImageConsts(
-            burn_image_path="/auto/sw_system_project/NVOS_INFRA/verification_files/cpld_fw/FUI000319_BURN_JULIET_TTM_CPLD000370_REV0104_CPLD000377_REV0104_CPLD000373_REV0100_CPLD000390_REV0100_IPN.vme",
-            refresh_image_path="",
-            version_names={
-                "CPLD1": "CPLD000370_REV0104",
-                "CPLD2": "CPLD000377_REV0104",
-                "CPLD3": "CPLD000373_REV0100",
-                "CPLD4": "CPLD000390_REV0100"
-            }
-        )
-        self.previous_cpld_version = BaseSwitch.CpldImageConsts(
-            burn_image_path="/auto/sw_system_project/NVOS_INFRA/verification_files/cpld_fw/OLD/FUI000314_BURN_JULIET_TTM_CPLD000370_REV0104_CPLD000377_REV0102_CPLD000373_REV0100_CPLD000390_REV0100_IPN.vme",
-            refresh_image_path="",
-            version_names={
-                "CPLD1": "CPLD000370_REV0104",
-                "CPLD2": "CPLD000377_REV0102",
-                "CPLD3": "CPLD000373_REV0100",
-                "CPLD4": "CPLD000390_REV0100"
-            }
-        )
         self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
             "x86_64-nvidia_n5112_ld-r0")
         self.show_platform_output.update({
