@@ -5,8 +5,8 @@ import pytest
 
 from ngts.nvos_constants.constants_nvos import ApiType, PlatformConsts
 from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
+from ngts.nvos_tools.Devices.IbDevice import CrocodileSwitch, JulietTTMSwitch
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
-from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.platform.Platform import Platform
@@ -38,23 +38,26 @@ def test_cpld_upgrade(engines, devices, topology_obj):
     """
     with allure.step('Create System objects'):
         platform = Platform()
-        fae = Fae()
 
     device = devices.dut
+
+    if not device.allow_cpld_update:
+        pytest.skip("Not a crocodile, nor Juliet TTM... Should ignore test.")
+
     if not (device.current_cpld_version and device.previous_cpld_version):
         raise NotImplementedError(f"{type(device)} does not have 'current_cpld_version' or 'previous_cpld_version'")
 
     try:
         TestToolkit.tested_api = ApiType.NVUE
         with allure.step(f"Fetch, install and assert old CPLD version (through {TestToolkit.tested_api})"):
-            _firmware_install_test(devices, fae, platform, devices.dut.previous_cpld_version, engines, topology_obj)
+            _firmware_install_test(devices, platform, devices.dut.previous_cpld_version, engines, topology_obj)
     finally:
         TestToolkit.tested_api = ApiType.OPENAPI
         with allure.step(f"Cleanup: Fetch, install and assert original CPLD version (through {TestToolkit.tested_api})"):
-            _firmware_install_test(devices, fae, platform, devices.dut.current_cpld_version, engines, topology_obj)
+            _firmware_install_test(devices, platform, devices.dut.current_cpld_version, engines, topology_obj)
 
 
-def _firmware_install_test(devices, fae: Fae, platform: Platform, image_consts: BaseSwitch.CpldImageConsts,
+def _firmware_install_test(devices, platform: Platform, image_consts: BaseSwitch.CpldImageConsts,
                            engines, topology_obj):
     refresh_filename = os.path.basename(image_consts.refresh_image_path)  # will be empty for switches that have no REFRESH file
     burn_filename = os.path.basename(image_consts.burn_image_path)
@@ -65,19 +68,19 @@ def _firmware_install_test(devices, fae: Fae, platform: Platform, image_consts: 
     logger.info(f"{file_names=} {type(devices.dut)=}")
 
     with allure.step(f"Asserting the image files don't exist yet"):
-        initial_files = fae.platform.firmware.cpld.show_files_as_list()
+        initial_files = platform.firmware.cpld.show_files_as_list()
         assert not (file_names & set(initial_files)), ("Can't test `fetch` because file is already present: " +
                                                        str(set(initial_files) & file_names))
 
     with allure.step(f"Fetching BURN image"):
-        fae.platform.firmware.cpld.action_fetch(image_consts.burn_image_path).verify_result()
+        platform.firmware.cpld.action_fetch(image_consts.burn_image_path).verify_result()
 
     if refresh_filename:
         with allure.step(f"Fetching REFRESH image"):
-            fae.platform.firmware.cpld.action_fetch(image_consts.refresh_image_path).verify_result()
+            platform.firmware.cpld.action_fetch(image_consts.refresh_image_path).verify_result()
 
     with allure.step(f"Asserting fetch was successful"):
-        file_list = fae.platform.firmware.cpld.show_files_as_list()
+        file_list = platform.firmware.cpld.show_files_as_list()
         assert set(file_list) == set(initial_files) | file_names, \
             f"Expected new files {file_names} but the old file list is {initial_files} " \
             f"and the new one is {file_list}"
@@ -85,15 +88,15 @@ def _firmware_install_test(devices, fae: Fae, platform: Platform, image_consts: 
     try:
         with allure.step(f"Installing BURN image {burn_filename}"):
             result, _ = OperationTime.save_duration(
-                "nv action install fae platform firmware cpld files (BURN)", burn_filename, test_cpld_upgrade.__name__,
-                fae.platform.firmware.cpld.action_install,
-                burn_filename, device=devices.dut, expect_reboot=False)
+                "nv action install platform firmware CPLD files (BURN)", burn_filename, test_cpld_upgrade.__name__,
+                platform.firmware.cpld.files.file_name[burn_filename].action_file_install_with_reboot,
+                device=devices.dut, topology_obj=topology_obj)
             result.verify_result()
 
         if refresh_filename:
             with allure.step(f"Installing REFRESH image (and rebooting) {refresh_filename}"):
-                fae.platform.firmware.cpld.action_install(refresh_filename, device=devices.dut, expect_reboot=True
-                                                          ).verify_result()
+                platform.firmware.cpld.files.file_name[refresh_filename].action_file_install_with_reboot(
+                    device=devices.dut, topology_obj=topology_obj).verify_result()
         else:
             recover_dut_with_remote_reboot(topology_obj, engines, should_clear_config=False)
 
@@ -111,10 +114,10 @@ def _firmware_install_test(devices, fae: Fae, platform: Platform, image_consts: 
     finally:
         for file_name in file_names:
             with allure.step(f"Deleting image file {file_name}"):
-                fae.platform.firmware.cpld.action_delete(file_name).verify_result()
+                platform.firmware.cpld.files.file_name[file_name].action_delete().verify_result()
 
         with allure.step(f"Asserting delete was successful"):
-            final_file_list = fae.platform.firmware.cpld.show_files_as_list()
+            final_file_list = platform.firmware.cpld.show_files_as_list()
             assert set(initial_files) == set(final_file_list), (
                 f"File list is expected to be the same at the start and end of the test, but the initial file list is:\n"
                 f"{initial_files}\nAnd at the end of the test the list is:\n{final_file_list}")

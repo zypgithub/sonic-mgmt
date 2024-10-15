@@ -1,4 +1,5 @@
 import logging
+import os
 
 from ngts.cli_wrappers.nvue.nvue_system_clis import NvueSystemCli
 from ngts.cli_wrappers.openapi.openapi_system_clis import OpenApiSystemCli
@@ -45,6 +46,10 @@ class BaseComponent:
     def get_resource_path(self):
         return "{parent_path}{self_path}".format(
             parent_path=self.parent_obj.get_resource_path() if self.parent_obj else "", self_path=self._resource_path)
+
+    def get_resource_basename(self):
+        resource_path = self.get_resource_path()
+        return os.path.basename(resource_path)
 
     def update_param(self, param, rev):
         if self._api_to_use == ApiType.OPENAPI:
