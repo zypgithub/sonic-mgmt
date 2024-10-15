@@ -1,9 +1,10 @@
 from ngts.tests_nvos.general.security.certificate.constants import TestCert
-from ngts.tests_nvos.general.security.nmx_cert.constants import CA_CERTIFICATE
 
 MTLS = 'mtls'
 INSTALLED = 'installed'
 API_INSTALLED = 'nvue-rest-api'
+CERTIFICATE = 'certificate'
+CA_CERTIFICATE = 'ca-certificate'
 
 
 class ApiConsts:

@@ -13,9 +13,10 @@ from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
-from ngts.tests_nvos.general.security.nmx_cert.constants import CA_CERTIFICATE, CERTIFICATE
+from ngts.tests_nvos.general.security.security_test_tools.constants import AddressingType
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
-from ngts.tests_nvos.general.security.test_api_server_security.constants import ApiConsts, TEST_CERTS
+from ngts.tests_nvos.general.security.test_api_server_security.constants import ApiConsts, TEST_CERTS, CERTIFICATE
+from ngts.tests_nvos.general.security.test_api_server_security.constants import CA_CERTIFICATE
 from ngts.tests_nvos.general.security.test_api_server_security.helpers import verify_api_connection, verify_mtls_config, \
     verify_api_ca_configuration, setup_steps, cleanup_steps
 
@@ -126,7 +127,8 @@ def test_api_mtls_set_ca_without_cert_not_rejected(test_api):
 @pytest.mark.mtls
 @pytest.mark.security
 @pytest.mark.parametrize('test_flow', TestFlowType.ALL_TYPES)
-def test_api_mtls_core_functionality(test_flow, engines, local_adminuser):
+@pytest.mark.parametrize('addressing_type', [AddressingType.IPV4, AddressingType.IPV6])
+def test_api_mtls_core_functionality(test_flow, addressing_type, engines, local_adminuser, dut_ipv6_addr):
     """
     Verify the core functionality:
 
@@ -141,17 +143,18 @@ def test_api_mtls_core_functionality(test_flow, engines, local_adminuser):
     system = System()
     server_cert: CertInfo = random.choice(TEST_CERTS)
     server_ca: CertInfo = RandomizationTool.select_random_value(TEST_CERTS, [server_cert]).get_returned_value()
+    ipv6_addr = dut_ipv6_addr if addressing_type == AddressingType.IPV6 else None
 
     with allure.step(f'set some cert: {server_cert.name}'):
         system.api.set(CERTIFICATE, server_cert.name).verify_result()
     with allure.step(f'set ca: {server_ca.cacert_name}'):
         system.api.mtls.set(CA_CERTIFICATE, server_ca.cacert_name, apply=True).verify_result()
     with allure.step('verify api server is mtls only'):
-        verify_api_connection(test_flow, engines.dut, local_adminuser, True, server_cert, server_ca)
+        verify_api_connection(test_flow, engines.dut, local_adminuser, True, server_cert, server_ca, ipv6_addr)
     with allure.step('unset ca'):
         system.api.mtls.unset(CA_CERTIFICATE, apply=True).verify_result()
     with allure.step('verify api server is not mtls only'):
-        verify_api_connection(test_flow, engines.dut, local_adminuser, False, server_cert, server_ca)
+        verify_api_connection(test_flow, engines.dut, local_adminuser, False, server_cert, server_ca, ipv6_addr)
 
 
 @pytest.mark.mtls
