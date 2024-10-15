@@ -224,6 +224,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         :return: None, raise error in case of unexpected result
         """
         ports_list = self.get_ports_list_reboot_reload_flow(ports_list, topology_obj)
+        self.disable_ztp(disable_ztp=True)
         with allure.step('Reloading dut'):
             logger.info("Reloading dut")
             self.reload_configuration(reload_force)
@@ -731,7 +732,6 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                            tries=3,
                            delay=10,
                            logger=logger)
-                self.save_configuration()
 
     def update_platform_params(self, platform_params, setup_name):
         if hasattr(self, 'cli_obj'):  # SONiC only
