@@ -242,3 +242,8 @@ class IpTool:
 
         raise ValueError(
             f'could not find ipv6 address that is attached to same interface as given ipv4 address: {player_ipv4_addr}')
+
+    @staticmethod
+    def is_address_ipv6(address: str) -> bool:
+        pattern = r'^(?:[A-F0-9]{1,4}:){7}[A-F0-9]{1,4}$'
+        return bool(re.match(pattern, address, re.IGNORECASE))
