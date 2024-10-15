@@ -6,6 +6,7 @@ from typing import Tuple, List
 import ngts.tools.test_utils.allure_utils as allure
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_constants.constants_nvos import SystemConsts
+from ngts.nvos_tools.infra.IpTool import IpTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 
@@ -45,7 +46,7 @@ class CurlTool:
         with allure.step('compose the curl command'):
             username = username or self.username
             password = password or self.password
-            host = self.server_host
+            host = f'[{self.server_host}]' if IpTool.is_address_ipv6(self.server_host) else self.server_host
 
             if is_insecure:
                 cert_flag = '--insecure'
@@ -57,7 +58,7 @@ class CurlTool:
                 if client_cert_to_use:
                     cert_flag += f' --key {client_cert_to_use.private} --cert {client_cert_to_use.public}'
                 if resolve_dn:
-                    cert_flag += f' --resolve {resolve_dn}:{self.server_port}:{self.server_host}'
+                    cert_flag += f' --resolve {resolve_dn}:{self.server_port}:{host}'
                     host = resolve_dn
 
             curl_cmd = (f"curl {cert_flag} --user {username}:{password} "
