@@ -4120,6 +4120,18 @@
     - Affected_test_cases:
         - tests_nvos/system/test_system_ztp.py::test_ztp_json
 
+# NVOS
+- Errors_list:
+    - '.*startup-file\: Failed to apply YAML configuration.*'
+    - '.*startup-file\: Error\: NVUE file must contain a list of operation objects.*'
+    - '.*ztp.*Traceback.*'
+    - '.*Exception.*'
+    - '.*Error.*'
+
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/system/test_system_ztp.py::test_ztp_startup_file_commands_list
+
 # NVOS gorilla-100 PSU2 is missing.
 - Errors_list:
     - '.*gorilla-100 ERR health-statsd#health_history: PSU2: is missing or not available.*'
