@@ -271,12 +271,6 @@ tests_nvos/interfaces/test_ib_interface_counters.py::test_range_clear_counters_n
       - https://redmine.mellanox.com/issues/3916837
       - https://redmine.mellanox.com/issues/3920791
 
-tests_nvos/system/test_system_ztp.py::test_ztp_startup_file_commands_list:
-  skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3980592"
-    conditions:
-      - https://redmine.mellanox.com/issues/3980592
-
 tests_nvos/interfaces/test_lldp.py::test_lldp_additional_ipv6:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3941826"
