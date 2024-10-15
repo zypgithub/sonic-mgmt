@@ -41,6 +41,7 @@ from ngts.nvos_tools.infra.TrafficGeneratorTool import TrafficGeneratorTool
 from ngts.nvos_tools.system.System import System
 from ngts.scripts.code_coverage.code_coverage_consts import NvosConsts
 from ngts.scripts.code_coverage.test_code_coverage import extract_python_coverage_for_nvos
+from ngts.tests_nvos.helpers.pytest_helpers import is_cur_test_has_marker
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_config_utils import clear_conf
 from ngts.tools.test_utils.nvos_general_utils import wait_for_ldap_nvued_restart_workaround, set_base_configurations, \
@@ -93,7 +94,7 @@ def track_serial_console(request, topology_obj, engines, devices):
     This will apply for all test that has any of the defined interesting markers below.
     """
     interesting_markers = ['track_serial_console', 'reboot', 'factory_reset', 'reset_factory']
-    should_track_serial_console = any(request.node.get_closest_marker(marker) for marker in interesting_markers)
+    should_track_serial_console = any(is_cur_test_has_marker(request, marker) for marker in interesting_markers)
 
     if should_track_serial_console:
         with allure.step('start tracking serial console into file'):
