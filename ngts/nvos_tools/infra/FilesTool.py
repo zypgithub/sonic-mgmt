@@ -26,6 +26,26 @@ class FilesTool:
         reg = r'\b(?:{})-\d+\+[^\s]+\b|\b(?:{})\+\d*[^\s]+\b'.format(subfiles_pattern, subfiles_pattern)
         return re.findall(reg, output)
 
+    @staticmethod
+    def validate_expected_files(engine, folder_path, expected_files, should_succeed=True):
+        """
+        :param engine:
+        :param folder_path: folder full path
+        :param expected_files: list of expected files or folders
+        :param should_succeed:
+        :return:
+        """
+        err_msg = ""
+        with allure.step(f"validate all {expected_files} in {folder_path}"):
+            output = engine.run_cmd(f'ls -l {folder_path}')
+            output.splitlines()
+            for file in expected_files:
+                if file not in output:
+                    err_msg += f"{file} file does not exist in the path {folder_path}"
+
+        assert bool(err_msg) != should_succeed, err_msg if err_msg else ""
+        return True
+
 
 class EngineFile:
     """

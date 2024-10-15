@@ -107,4 +107,10 @@
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/system/nvos_system_ztp.cases </cases>
 	</test>
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/system/nvos_system_ztp.cases </cases>
+	</test>
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/system/nvos_system_fae_remarkable_logs.cases </cases>
+	</test>
 </DBDEF>
