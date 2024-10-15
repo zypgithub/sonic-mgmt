@@ -1695,3 +1695,33 @@ class IssuConsts:
                                    '  Downgrade image is not allowed')  # TODO: update message
     ERROR_ANY_ERROR = 'Error: Action failed with the following issue:'
     SNMP_READ_ONLY_COMMUNITY = 'qwerty12'
+
+
+class RemarkableLogsConsts:
+    REQUESTED = "requested"
+    ERROR = "error"
+    STORM = "storm"
+    LOGS_CLEAN_TIME = "-logs-clean-time"
+    LOGS_NUMBER = "-logs-number"
+    LOGS_RATE = "-logs-rate"
+    LOGS_TIME_WINDOW = "-logs-time-window"
+    BOOTS_HISTORY = "boots-history"
+    ERROR_LOGS_CLEAN_TIME = ERROR + LOGS_CLEAN_TIME
+    ERROR_LOGS_NUMBER = ERROR + LOGS_NUMBER
+    ERROR_LOGS_RATE = ERROR + LOGS_RATE
+    ERROR_LOGS_TIME_WINDOW = ERROR + LOGS_TIME_WINDOW
+    FIRST_SAVED_BOOT_LOGS = "first-saved-boot-logs"
+    REQUESTED_BY_DAEMON_LOGS = "requested-by-daemon-logs"
+    STATE = "state"
+    STORM_LOGS_CLEAN_TIME = STORM + LOGS_CLEAN_TIME
+    STORM_LOGS_NUMBER = STORM + LOGS_NUMBER
+    STORM_LOGS_RATE = STORM + LOGS_RATE
+    STORM_LOGS_TIME_WINDOW = STORM + LOGS_TIME_WINDOW
+    REQUESTED_FILE_NAME = REQUESTED + '_'
+    LOGS_PATH = "/var/log/"
+    FIRST_BOOT_FOLDER_NAME = "remarkable_logs_first_boot"
+    REMARKABLE_LOGS_FOLDER_NAME = "remarkable_logs_"
+    FEATURE_EXPECTED_FIELDS = [BOOTS_HISTORY, ERROR_LOGS_CLEAN_TIME, ERROR_LOGS_NUMBER, ERROR_LOGS_RATE,
+                               ERROR_LOGS_TIME_WINDOW, FIRST_SAVED_BOOT_LOGS, REQUESTED_BY_DAEMON_LOGS,
+                               STATE, STORM_LOGS_CLEAN_TIME, STORM_LOGS_NUMBER,
+                               STORM_LOGS_RATE, STORM_LOGS_TIME_WINDOW]

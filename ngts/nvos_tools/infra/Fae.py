@@ -203,6 +203,7 @@ class FaeSystem(BaseComponent):
         self.fatal = BaseComponent(self, path='/fatal')
         self.fatal.monitor = BaseComponent(self.fatal, path='/monitor')
         self.serial_console = BaseComponent(self, path='/serial-console')
+        self.log = FaeLog(self)
 
     def ssd_cleanup(self, expected_str="", dut_engine=None):
         """nv action run fae system ssd-cleanup """
@@ -213,3 +214,9 @@ class ErotComponent(BaseComponent):
     def __init__(self, parent_obj=None, erot_name=None):
         super().__init__(parent=parent_obj, path=f"/{erot_name}")
         self.files = Files(self)
+
+
+class FaeLog(BaseComponent):
+    def __init__(self, parent_obj=None):
+        BaseComponent.__init__(self, parent=parent_obj, path='/log')
+        self.remarkable_logs = BaseComponent(self, path='/remarkable-logs')
