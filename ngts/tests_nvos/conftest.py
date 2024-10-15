@@ -107,10 +107,14 @@ def track_serial_console(request, topology_obj, engines, devices):
 
     if should_track_serial_console:
         with allure.step('end serial console session'):
-            child.sendcontrol('z')
-            time.sleep(1)
-            child.sendcontrol('d')
-            child.expect(pexpect.EOF)
+            for _ in range(3):
+                child.sendcontrol('z')
+                time.sleep(0.5)
+            for _ in range(3):
+                child.sendcontrol('d')
+                time.sleep(0.5)
+            # child.expect(pexpect.EOF)
+            child.close()
         if request.node.rep_call.failed:
             try:
                 with allure.step('take log file content'):
@@ -119,7 +123,9 @@ def track_serial_console(request, topology_obj, engines, devices):
                 with allure.step('attach content to allure'):
                     allure.attach('Serial Console log during test', serial_log_content)
             except Exception as e:
-                logging.warning(f'failed to attach serial output from {serial_log_file_path} : {ExceptionTool.format_traceback()}')
+                err = f'failed to attach serial output from {serial_log_file_path} : {ExceptionTool.format_traceback()}'
+                logging.warning(err)
+                allure.attach('Attachment Failure', err)
         else:
             with allure.step('test passed. not attaching serial console log'):
                 pass
