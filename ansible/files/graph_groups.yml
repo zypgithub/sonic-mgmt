@@ -1,7 +1,6 @@
 ---
   - mlx-2410b-01
   - moose-42
-  - mtvr-hippo-01
   - mtvr-hippo-05
   - mtvr-moose-01
   - mtvr-moose-02
@@ -10,6 +9,7 @@
   - mtvr-moose-06
   - mtvr-moose-07
   - mtvr-moose-08
+  - mtvr-moose-09
   - nvidia_common
   - nvidia
   - r-alligator-04
