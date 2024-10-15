@@ -363,7 +363,7 @@ def test_platform_environment_events_performance(engines, devices):
                     show_log_cmd = "nv show sys log | grep '" + str(FansConsts.FAN_DIRECTION_MISMATCH_ERR_CROC) + \
                                    "' | wc -l"
                 if err_found:
-                    fan = output["last"][events_no]["type-id"]
+                    fan = output[SystemConsts.SYSTEM_LAST_EVENT][events_no]["text"]
                     assert (fan not in fan_error_set), 'Fan mismatch event occurred more times for FAN:{}'.format(fan)
                     fan_error_set.add(fan)
                     logger.info("Fan direction mismatch Event captured for : {}".format(fan))
