@@ -14,13 +14,32 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.certificate.constants import TestCert
 from ngts.tests_nvos.general.security.conftest import local_adminuser
-from ngts.tests_nvos.system.gnmi.constants import CERTIFICATE, DEFAULT_CERTIFICATE, GnmicErr, MAX_GNMI_CONNECTIVITY_TIME
+from ngts.tests_nvos.general.security.helpers import remove_etc_host_mapping_to_dn, add_etc_host_mapping_to_dn
+from ngts.tests_nvos.general.security.security_test_tools.constants import AddressingType
+from ngts.tests_nvos.helpers.pytest_helpers import get_cur_test_param_value
+from ngts.tests_nvos.system.gnmi.constants import CERTIFICATE, DEFAULT_CERTIFICATE, GnmicErr, \
+    MAX_GNMI_CONNECTIVITY_TIME, GNMI_TEST_CERT, ETC_HOSTS
 from ngts.tests_nvos.system.gnmi.helpers import verify_gnmi_client, get_timestamp_of_first_gnmi_response
 
 
 @pytest.fixture(scope='module', autouse=True)
 def import_test_certs(import_required_test_certs):
     pass
+
+
+@pytest.fixture()
+def add_etc_host_mapping_for_ipv6_cert_test(request, engines, dut_ipv6_addr):
+    should_run = get_cur_test_param_value(request, 'addressing_type') == AddressingType.IPV6
+    cert = GNMI_TEST_CERT
+    if should_run:
+        with allure.step(f'add ipv6 mapping of new dut hostname to {ETC_HOSTS}'):
+            remove_etc_host_mapping_to_dn(cert.dn)
+            add_etc_host_mapping_to_dn(cert.dn, dut_ipv6_addr)
+    yield
+    if should_run:
+        with allure.step(f'remove ipv6 mapping of new dut hostname to {ETC_HOSTS} and restore ipv4 mapping'):
+            remove_etc_host_mapping_to_dn(cert.dn)
+            add_etc_host_mapping_to_dn(cert.dn, engines.dut.ip)
 
 
 # @pytest.mark.system
@@ -141,7 +160,8 @@ def test_gnmi_cert_cli_when_gnmi_disabled(api):
 @pytest.mark.system
 @pytest.mark.gnmi
 @pytest.mark.parametrize('test_flow', TestFlowType.ALL_TYPES)
-def test_gnmi_cert_set_cert(test_flow, local_adminuser):
+@pytest.mark.parametrize('addressing_type', [AddressingType.IPV4, AddressingType.IPV6])
+def test_gnmi_cert_set_cert(test_flow, addressing_type, local_adminuser, add_etc_host_mapping_for_ipv6_cert_test):
     """
     verify that set command loads the certificate into gnmi,
         so clients with the right CA crt can communicate with gnmi with/out skip-verify flag
