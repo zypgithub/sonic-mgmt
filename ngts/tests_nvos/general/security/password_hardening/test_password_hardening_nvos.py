@@ -7,6 +7,7 @@ import pytest
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
 from infra.tools.connection_tools.utils import generate_strong_password
+from infra.tools.validations.traffic_validations.ping.send import ping_till_alive
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import TestFlowType
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
@@ -838,8 +839,12 @@ def test_password_hardening_history_with_reboot(engines, devices, topology_obj):
         dut.last_new_password = new_password
 
     def _reboot_and_wait_for_system_ready(serial_engine: PexpectSerialEngine):
-        serial_engine.run_cmd('sudo reboot')
-        DutUtilsTool.wait_for_system_ready_in_serial(topology_obj, serial_engine, devices.dut.system_is_ready_wait_timeout)
+        with allure.step('run reboot command'):
+            serial_engine.run_cmd('sudo reboot')
+        with allure.step('Ping switch until shutting down'):
+            ping_till_alive(should_be_alive=False, destination_host=serial_engine.ip)
+        with allure.step('wait for System is ready'):
+            DutUtilsTool.wait_for_system_ready_in_serial(topology_obj, serial_engine, devices.dut.system_is_ready_wait_timeout)
 
     with allure.step('reset admin password'):
         system.aaa.user.user_id['admin'].unset(apply=True).verify_result()
