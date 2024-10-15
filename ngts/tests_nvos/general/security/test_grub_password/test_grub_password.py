@@ -1,11 +1,13 @@
 import random
 
 import pexpect
+import pytest
 
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.switch_recovery import recover_dut_with_remote_reboot
 
 
+@pytest.mark.track_serial_console
 def test_grub_password(topology_obj, engines, serial_engine, is_secure_boot_enabled):
     '''
     @summary:

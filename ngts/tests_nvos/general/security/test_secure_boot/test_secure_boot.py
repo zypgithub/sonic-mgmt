@@ -91,6 +91,7 @@ def manipulate_nvos_system_file_signature(chain_of_trust_node: str, dut_engine: 
         os.remove(system_file_local_path)
 
 
+@pytest.mark.track_serial_console
 @pytest.mark.checklist
 @pytest.mark.secure_boot
 @pytest.mark.parametrize('tested_chain_of_trust_node', [random.choice(ChainOfTrustNode.ALL_NODES)])
