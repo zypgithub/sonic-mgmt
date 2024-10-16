@@ -72,7 +72,7 @@ def check_feature_status(cli_objects):
 
 
 @pytest.fixture(scope='module', autouse=True)
-def check_no_roce_configuration(cli_objects, interfaces, players, is_simx, platform_params):
+def check_no_roce_configuration(cli_objects, interfaces, players, is_simx, platform_params, check_feature_status):
     is_doroce_enabled = cli_objects.dut.doroce.is_doroce_configuration_enabled()
     if is_doroce_enabled:
         cli_objects.dut.doroce.disable_doroce()
