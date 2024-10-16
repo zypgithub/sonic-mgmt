@@ -140,6 +140,38 @@
     - r-leopard-72
   comment: 4700 Active-Standby Dual-TOR testbed
 
+- conf-name: sonic-dual-tor-leopard-dualtor-64-breakout
+  group-name: vm-t1
+  topo: dualtor-64-breakout
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-r-leopard-70
+  ptf_ip: 10.215.26.182/16
+  ptf_ipv6:
+  ptf_extra_mgmt_ip:
+  netns_mgmt_ip: 10.215.26.215/16
+  server: server_61
+  vm_base: VM2601
+  dut:
+    - r-leopard-70
+    - r-leopard-72
+  comment: 4700 Active-Standby Dual-TOR testbed
+
+- conf-name: sonic-dual-tor-leopard-dualtor-aa-64-breakout
+  group-name: vm-t1
+  topo: dualtor-aa-64-breakout
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-r-leopard-70
+  ptf_ip: 10.215.26.182/16
+  ptf_ipv6:
+  ptf_extra_mgmt_ip:
+  netns_mgmt_ip: 10.215.26.215/16
+  server: server_61
+  vm_base: VM2601
+  dut:
+    - r-leopard-70
+    - r-leopard-72
+  comment: 4700 Active-Active Dual-TOR testbed
+
 - conf-name: mts-sonic-dut-t0
   group-name: vm-t1
   topo: t0
