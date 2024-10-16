@@ -365,9 +365,11 @@ tests/nightly/dynamic_port_breakout/test_dpb_introp.py::TestDPBInterop::test_rem
 
 tests/push_build_tests/system/test_cpu_ram_hdd_usage.py::TestCpuRamHddUsage::test_ssd_endurance:
   skip:
-    reason: "Test is not supported on SIMX platform"
+    reason: "Test is not supported on SIMX platform and skipped due to RM 4124841 on r-moose-02 and mtvr-moose-09"
+    conditions_logical_operator: or
     conditions:
       - "'simx' in platform"
+      - "https://redmine.mellanox.com/issues/4124841 and ('r-moose-02' in testbed or 'mtvr-moose-09' in testbed)"
 
 tests/push_build_tests/general/wjh/test_wjh.py::test_l1_raw_drop:
   skip:
