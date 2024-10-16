@@ -14,6 +14,7 @@ import pytest
 
 from ngts.nvos_constants.constants_nvos import ImageConsts
 from ngts.nvos_tools.infra.CmdRunner import CmdRunner
+from ngts.nvos_tools.infra.SecureBootTool import SecureBootTool
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.test_secure_upgrade.constants import TEST_DIR, BAD_SIGNATURE_IMG, PROD_IMG, \
     DEV_IMG, PROD_IMG_FILE, DEV_IMG_FILE
@@ -105,12 +106,6 @@ def non_secure_images(target_version_realpath):
 
 
 @pytest.fixture(scope='session')
-def is_prod_system(engines) -> bool:
-    out = (engines.dut.run_cmd('mokutil --db | grep DEV')).strip()
-    return not out
-
-
-@pytest.fixture(scope='session')
 def non_secure_image_name(non_secure_image_path):
     '''
     @summary: will extract the non secure image name from target_version
@@ -136,13 +131,13 @@ def delete_fetched_image(non_secure_image_name):
 
 @pytest.mark.secure_boot
 @pytest.mark.checklist
-def test_non_secure_boot_upgrade_failure(keep_same_version_installed, is_secure_boot_enabled, non_secure_images, is_prod_system):
+def test_non_secure_boot_upgrade_failure(keep_same_version_installed, is_secure_boot_enabled, non_secure_images, engines):
     """
     @summary: This test case validates non successful upgrade of a given non secure image
     """
     # system will be used for nv fetch/install
     system = System()
-    img = non_secure_images[DEV_IMG] if is_prod_system else non_secure_images[PROD_IMG]
+    img = non_secure_images[DEV_IMG] if SecureBootTool.is_prod_system(engines.dut) else non_secure_images[PROD_IMG]
     img_name = img.split('/')[-1]
     # install non secure image
     with allure.step(f"install non secure image - expect fail, image path = {img}"):
