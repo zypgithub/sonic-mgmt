@@ -10,6 +10,7 @@ from ngts.constants.constants import LinuxConsts, SerialLoggerConst
 from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.nvos_tools.infra.SecureBootTool import SecureBootTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.system.System import System
@@ -18,7 +19,7 @@ from ngts.tests_nvos.general.post_upgrade_switch.constants import UPGRADE_STATUS
     UPGRADE_STATUS_FILE_PATH
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_config_utils import clear_conf
-from ngts.tools.test_utils.nvos_general_utils import set_base_configurations, is_secure_boot_enabled
+from ngts.tools.test_utils.nvos_general_utils import set_base_configurations
 
 logger = logging.getLogger()
 
@@ -65,7 +66,7 @@ class NvosInstallationSteps:
 
         if verify_secure_boot:
             with allure.step('Verify Secure-Boot is enabled'):
-                assert is_secure_boot_enabled(dut_engine), "Secure-Boot is expected to be enabled, but it's disabled!"
+                assert SecureBootTool.is_secure_boot_enabled(dut_engine), "Secure-Boot is expected to be enabled, but it's disabled!"
 
         if base_version:
             with allure.step('========== NVOS - Upgrade With Saved Configuration Flow =========='):
