@@ -33,29 +33,6 @@ def is_ar_supported(chip_type, sonic_branch):
 
 
 @pytest.fixture(scope='module')
-def wa_for_orchagent_issue(cli_objects, engines, platform_params):
-    """
-    This method is applying workaround due to RM #3606485, and adds a SAI parameter to the sai profile.
-    """
-    if is_redmine_issue_active([3606485]):
-        platform = platform_params['platform']
-        hwsku = platform_params['hwsku']
-        sai_profile_dir = SonicConst.SAI_PROFILE_FILE_PATH.format(PLATFORM=platform, HWSKU=hwsku)
-        sai_flag = "SAI_HOSTIF_OPER_STATUS_UPDATE_BY_APP=1"
-        sai_profile_backup = sai_profile_dir + ".bk"
-        # Create and save a backup file for SAI profile
-        engines.dut.run_cmd(f'sudo bash -c \'cp {sai_profile_dir} {sai_profile_backup}\'')
-        # ADD the WA script and reload
-        engines.dut.run_cmd(f'sudo bash -c \'echo "{sai_flag}" >> {sai_profile_dir}\'')
-        cli_objects.dut.general.reload_configuration(force=True)
-
-        yield
-        # Restore the original SAI profile and reload
-        engines.dut.run_cmd(f'sudo bash -c \'cp {sai_profile_backup} {sai_profile_dir}\'')
-        cli_objects.dut.general.reload_configuration(force=True)
-
-
-@pytest.fixture(scope='module')
 def set_config_db_split_mode(cli_objects, topology_obj):
     """
     This method is to set split mode for config_db.json
