@@ -175,11 +175,6 @@ def wait_for_ldap_nvued_restart_workaround(test_item, engine_to_use=None):
         #     wait_until_cli_is_up(engine=engine_to_use)
 
 
-def is_secure_boot_enabled(engine: ProxySshEngine) -> bool:
-    output: str = engine.run_cmd('mokutil --sb-state')
-    return output.replace('SecureBoot ', '').strip() == 'enabled'
-
-
 def get_version_info(version: str) -> Tuple[str, str]:
     """
     extract version number and build number from a given image url/path or just a version

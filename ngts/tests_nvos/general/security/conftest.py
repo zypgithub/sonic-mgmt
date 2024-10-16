@@ -13,6 +13,7 @@ from ngts.nvos_tools.Devices.EthDevice import EthSwitch  # temporary, needed unt
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.PexpectTool import PexpectTool
+from ngts.nvos_tools.infra.SecureBootTool import SecureBootTool
 from ngts.nvos_tools.infra.SshCmdBuilder import SshPassCmdBuilder
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.conftest import security_cleanup
@@ -128,14 +129,8 @@ def post_test_remote_reboot(topology_obj):
 
 @pytest.fixture(scope='function')
 def is_secure_boot_enabled(engines):
-    res = "0"
-    try:
-        res = engines.dut.run_cmd('bootctl status 2>/dev/null | grep -c "Secure Boot: enabled"')
-    except BaseException as err:
-        logging.info(err)
-
-    if res != "1":
-        logging.info("The test is skipped - secure boot is disabled")
+    if SecureBootTool.is_secure_boot_disabled(engines.dut):
+        logging.warning("The test is skipped - secure boot is disabled")
         pytest.skip("The test is skipped - secure boot is disabled")
 
 
