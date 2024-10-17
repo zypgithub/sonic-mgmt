@@ -779,28 +779,20 @@
 				]
 			}
 		},
-		"mtvr-hippo-05": {
+		"mtvr-moose-10": {
 			"component": {
-				"BIOS": [
+				"ONIE": [
 					{
+						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0010/115200/onie-updater-x86_64-mlnx_x86-r0",
 						"force_reboot": true,
-						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_bios/CoffeeLake/0ACQF_06.01.x05_rc1/Release/0ACQF.cab",
-						"version": "0ACQF_06.01.005",
+						"version": "2022.08-5.3.0010-115200",
 						"reboot": ["cold"]
 					}
 				],
-				"ONIE": [
-					{
-                        "firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0011/115200/onie-updater-x86_64-mlnx_x86-r0",
-						"force_reboot": true,
-                        "version": "2023.11-5.3.0011-115200",
-						"reboot": ["cold"]
-                    }
-				],
 				"CPLD2": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/hw_cpld/Approved_CPLDs/SN5400/FUI000313/FUI000313.mpfa",
-						"version": "CPLD000352_REV0500",
+						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN5600/FUI000240/FUI000240.mpfa",
+						"version": "CPLD000330_REV0700",
 						"reboot": ["power off", "cold"]
 					}
 				]

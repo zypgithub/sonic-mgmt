@@ -1258,7 +1258,7 @@
     - mtvr-moose-09
   comment: Mellanox MTR testbed
 
-- conf-name: mtvr-hippo-05-ptf-any
+- conf-name: mtvr-moose-10-ptf-any
   group-name: vm-t1
   topo: ptf-any
   ptf_image_name: docker-ptf-mlnx
@@ -1268,7 +1268,7 @@
   server: server_54
   vm_base: VM0000
   dut:
-    - mtvr-hippo-05
+    - mtvr-moose-10
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-leopard-01-t0
