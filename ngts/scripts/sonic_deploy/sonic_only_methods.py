@@ -504,6 +504,14 @@ class SonicInstallationSteps:
                         is_air_setup=platform_params.setup_name.startswith('air'))
                     general_cli_obj.save_configuration()
             if deploy_dpu:
+                def _fetch_dash_api_package():
+                    rc = os.system("wget 'https://sonic-build.azurewebsites.net/api/sonic/artifacts?branchName=master&"
+                                   "definitionId=1055&artifactName=sonic-buildimage.amd64.ubuntu20_04&"
+                                   "target=libdashapi_1.0.0_amd64.deb' -O libdashapi_1.0.0_amd64.deb")
+                    assert rc == 0, "Failed to fetch the dash api package"
+                with allure.step('Update the dash api in sonic-mgmt'):
+                    retry_call(_fetch_dash_api_package, tries=3, delay=3, logger=logger)
+                    os.system("dpkg --install ./libdashapi_1.0.0_amd64.deb")
                 with allure.step('Apply DPU IP assignment configuration'):
                     dut_engine = topology_obj.players['dut']['engine']
                     config_path = \
