@@ -3,10 +3,17 @@ import yaml
 import os
 import logging
 import shutil
+import sys
 
 from infra.tools.topology_tools.topology_setup_utils import get_topology_by_setup_name
 
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+ch = logging.StreamHandler(sys.stdout)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+ch.setFormatter(formatter)
+logger.addHandler(ch)
+logger.propagate = False
 
 
 class ConfFiles:
