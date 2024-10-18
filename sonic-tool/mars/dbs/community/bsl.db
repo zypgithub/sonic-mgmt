@@ -48,6 +48,9 @@
             </on_not_success>
         </Case>
     </global>
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/arp_bsl.cases </cases>
+    </test>
 
     <test>
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/fdb_bsl.cases </cases>
