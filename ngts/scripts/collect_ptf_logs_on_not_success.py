@@ -28,13 +28,5 @@ def test_collect_ptf_logs(topology_obj, setup_name, dumps_folder, is_simx, is_ai
                 os.chmod(dest_file, 0o777)
                 hyper_engine.run_cmd('rm /tmp/{}'.format(ptf_log_file))
             logger.info('Ptf log tar file location: {}'.format(dest_file))
-            with allure.step(f'Gather the server port tcpdump tar file'):
-                server_port_tcpdump_file = f"server_port_tcpdump.{int(time.time())}.tgz"
-                hyper_engine.run_cmd(f"tar -czvf /tmp/{server_port_tcpdump_file} "
-                                     f"/tmp/{setup_name.rstrip('_setup')}*server_port_tcpdump*")
-                hyper_engine.run_cmd(f"sudo cp /tmp/{server_port_tcpdump_file} {dumps_folder}/")
-                hyper_engine.run_cmd(f'sudo rm -rf /tmp/{setup_name.rstrip("_setup")}*server_port_tcpdump*')
-                hyper_engine.run_cmd(f'sudo rm -rf /tmp/{server_port_tcpdump_file}')
-            logger.info(f"Server port tcpdump tar file location: {dumps_folder}/{server_port_tcpdump_file}")
         except Exception:
             logger.error('Failed to collect the ptf log files')
