@@ -1429,6 +1429,12 @@ dash/test_dash_acl.py:
     reason: "All the dash vnet related tests need to be aligned with the latest master image, skip them for now."
     conditions:
       - "'nvda_bf' in platform"
+
+platform_tests/sfp/test_show_intf_xcvr.py::test_check_show_lpmode:
+  skip:
+    reason: "The test is not supported on the bluefield DPU."
+    conditions:
+      - "'nvda_bf' in platform"
 ########################## NVIDIA INTERNAL COMMUNITY IGNORE END ############################
 
 
