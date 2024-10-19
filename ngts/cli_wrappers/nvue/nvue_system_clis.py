@@ -173,6 +173,48 @@ class NvueSystemCli(NvueBaseCli):
 
     @staticmethod
     @check_output
+    def action_run_ztp_url(engine, device, resource_path, op_param="", url=''):
+        """
+        Ztp action run url
+        """
+        list_items = [f'{key} {value}' for key, value in op_param.items()]
+        op_param = ' '.join(list_items)
+        path = resource_path.replace('/', ' ')
+        cmd = "nv action run {path} url {url} force {op_param}".format(path=path, url=url, op_param=op_param)
+        cmd = " ".join(cmd.split())
+        logging.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
+        return engine.run_cmd(cmd)
+
+    @staticmethod
+    @check_output
+    def action_enable_ztp(engine, device, resource_path, op_param=""):
+        """
+        Ztp enable
+        """
+        list_items = [f'{key} {value}' for key, value in op_param.items()]
+        op_param = ' '.join(list_items)
+        path = resource_path.replace('/', ' ')
+        cmd = "nv action enable {path} force {op_param}".format(path=path, op_param=op_param)
+        cmd = " ".join(cmd.split())
+        logging.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
+        return engine.run_cmd(cmd)
+
+    @staticmethod
+    @check_output
+    def action_disable_ztp(engine, device, resource_path, op_param=""):
+        """
+        Ztp disable
+        """
+        list_items = [f'{key} {value}' for key, value in op_param.items()]
+        op_param = ' '.join(list_items)
+        path = resource_path.replace('/', ' ')
+        cmd = "nv action disable {path} force {op_param}".format(path=path, op_param=op_param)
+        cmd = " ".join(cmd.split())
+        logging.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
+        return engine.run_cmd(cmd)
+
+    @staticmethod
+    @check_output
     def show_log(engine, log_type='', param='', exit_cmd=''):
         cmd = "nv show system {type}log {param}".format(type=log_type, param=param)
         logging.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))

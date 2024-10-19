@@ -43,3 +43,44 @@ class Ztp(BaseComponent):
                                                   self.get_resource_path(), params_dict)
 
             return res
+
+    def action_run_ztp_url(self, engine=None, device=None, params_dict={}, url=''):
+        with allure.step('Execute action for {resource_path}'.format(resource_path=self.get_resource_path())):
+            if not engine:
+                engine = TestToolkit.engines.dut
+            if not device:
+                device = TestToolkit.devices.dut
+
+            marker = TestToolkit.get_loganalyzer_marker(engine)
+            res = SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].action_run_ztp_url, engine, device,
+                                                  self.get_resource_path(), params_dict, url)
+
+            return res
+
+    def action_enable_ztp(self, engine=None, device=None, params_dict={}):
+        with allure.step('Execute action for {resource_path}'.format(resource_path=self.get_resource_path())):
+            if not engine:
+                engine = TestToolkit.engines.dut
+            if not device:
+                device = TestToolkit.devices.dut
+
+            marker = TestToolkit.get_loganalyzer_marker(engine)
+
+            res = SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].action_enable_ztp, engine, device,
+                                                  self.get_resource_path(), params_dict)
+
+            return res
+
+    def action_disable_ztp(self, engine=None, device=None, params_dict={}):
+        with allure.step('Execute action for {resource_path}'.format(resource_path=self.get_resource_path())):
+            if not engine:
+                engine = TestToolkit.engines.dut
+            if not device:
+                device = TestToolkit.devices.dut
+
+            marker = TestToolkit.get_loganalyzer_marker(engine)
+
+            res = SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].action_disable_ztp, engine, device,
+                                                  self.get_resource_path(), params_dict)
+
+            return res
