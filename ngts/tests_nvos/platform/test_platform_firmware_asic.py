@@ -1,12 +1,15 @@
 import logging
+import os
 import string
 from typing import Tuple
 
 import pytest
 
+from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import ImageConsts, NvosConst
 from ngts.nvos_constants.constants_nvos import PlatformConsts
 from ngts.nvos_tools.infra.Fae import Fae
+from ngts.tests_nvos.constants import MINUTE
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
@@ -89,7 +92,8 @@ def test_set_unset_platform_firmware_default(engines):
 @pytest.mark.simx
 @pytest.mark.image
 @pytest.mark.platform
-def test_platform_firmware_image_rename(engines, devices, topology_obj):
+@pytest.mark.timeout(15 * MINUTE, func_only=True)
+def test_platform_firmware_image_rename(engines, devices, topology_obj, clear_asic_files):
     """
     Check the image rename cmd.
     Validate that install and delete commands will success with the new name
@@ -105,25 +109,33 @@ def test_platform_firmware_image_rename(engines, devices, topology_obj):
     """
     platform = Platform()
     dut = devices.dut
+    platform.firmware.asic.files.verify_show_files_output([], [])
+    set_firmware_property(platform, PlatformConsts.FW_SOURCE, PlatformConsts.FW_SOURCE_CUSTOM)
     _, fetched_image_name, _ = get_image_data_and_fetch_random_image_files(platform, dut, topology_obj)
     fetched_image_file = platform.firmware.asic.files.file_name[fetched_image_name]
-    with allure.step("Rename image without mfa ending"):
-        if dut.asic_type == NvosConst.QTM3 or dut.asic_type == NvosConst.NVL5:
-            platform.firmware.asic.action_fetch(f"{PlatformConsts.XDR_FW_PATH}/{fetched_image_name}").verify_result()
-        else:
-            platform.firmware.asic.action_fetch(f"{PlatformConsts.FW_PATH}/{fetched_image_name}").verify_result()
+    with allure.step("Fetch image 2nd try"):
+        base_path = (PlatformConsts.XDR_FW_PATH.format(asic="QTM3")
+                     if dut.asic_type in (NvosConst.QTM3, NvosConst.NVL5)
+                     else PlatformConsts.FW_PATH)
+        logger.info(f"{base_path=}")
+        platform.firmware.asic.action_fetch(os.path.join(base_path, fetched_image_name)).verify_result()
+
+    with allure.step("Rename image without mfa ending, should fail"):
+        new_name = RandomizationTool.get_random_string(20, ascii_letters=string.ascii_letters + string.digits)
+        fetched_image_file.action_rename(new_name, expected_str="", rewrite_file_name=False, should_succeed=False)
 
     with allure.step("Rename image and verify"):
-        new_name = RandomizationTool.get_random_string(20, ascii_letters=string.ascii_letters + string.digits)
+        new_name += '.mfa'
         fetched_image_file.action_rename(new_name, expected_str="", rewrite_file_name=False)
 
     with allure.step("Rename already exist image and verify"):
         fetched_image_file.action_rename(new_name, expected_str="already exists")
+        platform.firmware.asic.files.verify_show_files_output([new_name], [])
 
     with allure.step("Install original image name, should fail"):
         logging.info("Install original image name: {}, should fail".format(fetched_image_name))
         platform.firmware.asic.files.file_name[fetched_image_name].action_file_install(
-            force=False).verify_result(should_succeed=False)
+            force=True).verify_result(should_succeed=False)
 
     with allure.step("Delete original image name, should fail"):
         logging.info("Delete original image name, should fail")
@@ -132,10 +144,13 @@ def test_platform_firmware_image_rename(engines, devices, topology_obj):
     try:
         with allure.step("Install new image name"):
             logging.info("Install new image name: {}".format(new_name))
-            fetched_image_file.action_file_install(force=False).verify_result(should_succeed=True)
+            platform.firmware.asic.set(PlatformConsts.FW_SOURCE, PlatformConsts.FW_SOURCE_CUSTOM, apply=True)
+            NvueGeneralCli.save_config(engines.dut)
+            fetched_image_file.action_file_install_with_reboot(force=True).verify_result(should_succeed=True)
 
     finally:
         set_firmware_property(platform, PlatformConsts.FW_SOURCE, PlatformConsts.FW_SOURCE_DEFAULT)
+        NvueGeneralCli.save_config(engines.dut)
 
 
 @pytest.mark.checklist
@@ -237,13 +252,13 @@ def get_image_data_and_fetch_random_image_files(platform, dut, topology_obj, ima
                                                 ) -> Tuple[str, str, str]:
     original_image, default_firmware = get_image_data(platform, dut)
 
-    with ((allure.step("Get {} available image files".format(images_amount_to_fetch)))):
+    with allure.step(f"Get {images_amount_to_fetch} available image files"):
         asic_type = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific'][
             'chip_type']
         if "QTM3" in default_firmware:
-            image_to_fetch = '{}fw-{}-'.format(PlatformConsts.XDR_FW_PATH, asic_type) + \
-                ImageConsts.XDR_FW_STABLE_VERSION
-            image_name = 'fw-{}-'.format(asic_type) + ImageConsts.XDR_FW_STABLE_VERSION
+            directory = PlatformConsts.XDR_FW_PATH.format(asic=asic_type)
+            image_name = f'fw-{asic_type}-{ImageConsts.XDR_FW_STABLE_VERSION}'
+            image_to_fetch = os.path.join(directory, image_name)
         else:
             image_to_fetch = '{}fw-{}-'.format(PlatformConsts.FW_PATH, asic_type) + ImageConsts.FW_STABLE_VERSION
             image_name = 'fw-{}-'.format(asic_type) + ImageConsts.FW_STABLE_VERSION

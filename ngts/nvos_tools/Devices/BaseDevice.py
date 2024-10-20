@@ -287,6 +287,7 @@ class BaseSwitch(BaseDevice):
     CpldImageConsts = namedtuple('CpldImageConsts', ('burn_image_path', 'refresh_image_path', 'version_names'))
     SsdImageConsts = namedtuple('SsdImageConsts', ('file', 'current_version', 'alternate_version'))
     BiosImagesConsts = namedtuple('BiosImagesConsts', ('current_version', 'alternate_version'))
+    AsicImageConsts = namedtuple('AsicImageConsts', ('version', 'filename'))
 
     def init_documents_consts(self):
         super().init_documents_consts()
