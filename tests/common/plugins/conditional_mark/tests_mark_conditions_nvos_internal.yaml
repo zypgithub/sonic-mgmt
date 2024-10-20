@@ -516,21 +516,12 @@ tests_nvos/interfaces/test_ib_interface_configuration.py::test_ib_interface_vls:
       - "'mamba' in testbed"
       - https://redmine.mellanox.com/issues/4077966
 
-tests_nvos/interfaces/test_interface_link_transceiver_diagnostics.py::test_interface_link_diagnostics_basic_invalid_ports:
-  skip:
-    reason: "[NVUE_Core - Design] Bug SW #4001790: [NVUE-CORE] Pruned properties are present in error message"
-    conditions:
-      - https://redmine.mellanox.com/issues/4001790
-
-
-
 tests_nvos/platform/test_platform_transceiver.py::test_transceiver_status_with_reboot:
   skip:
     reason: "[NVOS - Design] Bug SW #4034283: [Non-Functional ] [interface] | Sometimes ports don't show primary asic under fae command"
     conditions:
       - "'mamba' in testbed"
       - https://redmine.mellanox.com/issues/4034283
-
 
 tests_nvos/system/test_techsupport_feature.py::test_techsupport_bmc_badflow:
   skip:
