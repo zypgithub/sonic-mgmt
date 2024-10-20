@@ -6,9 +6,6 @@ from datetime import datetime
 from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
 from ngts.tools.test_utils import allure_utils as allure
 
-from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
-from ngts.tools.test_utils import allure_utils as allure
-
 logger = logging.getLogger()
 
 
@@ -25,6 +22,31 @@ class FilesTool:
         output = engine.run_cmd('ls {}/*'.format(folder_path))
         reg = r'\b(?:{})-\d+\+[^\s]+\b|\b(?:{})\+\d*[^\s]+\b'.format(subfiles_pattern, subfiles_pattern)
         return re.findall(reg, output)
+
+    @staticmethod
+    def validate_expected_files(engine, folder_path, expected_files, should_succeed=True):
+        """
+        :param engine:
+        :param folder_path: folder full path
+        :param expected_files: list of expected files or folders
+        :param should_succeed:
+        :return:
+        """
+        err_msg = ""
+        with allure.step(f"validate all {expected_files} in {folder_path}"):
+            output = engine.run_cmd(f'ls -l {folder_path}')
+            output.splitlines()
+            for file in expected_files:
+                if file not in output:
+                    err_msg += f"{file} file does not exist in the path {folder_path}"
+
+        assert bool(err_msg) != should_succeed, err_msg if err_msg else ""
+        return True
+
+    @staticmethod
+    def get_file_size_in_bytes(engine, file_path):
+        output = engine.run_cmd(f'stat --format="%s" {file_path}')
+        return int(output) if output.isdigit() else -1
 
 
 class EngineFile:
