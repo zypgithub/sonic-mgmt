@@ -432,6 +432,10 @@ class GorillaSwitch(IbSwitch):
             "product-name": "MQM9700",
             "asic-model": self.asic_type,
         })
+        self.asic_version = BaseSwitch.AsicImageConsts(
+            version="31_2014_1462",
+            filename="fw-QTM2-rel-31_2014_1462.mfa"
+        )
         self.previous_cpld_version = BaseSwitch.CpldImageConsts(
             burn_image_path="/auto/sw_system_project/NVOS_INFRA/verification_files/cpld_fw/FUI000258_BURN_Gorilla_MNG_CPLD000232_REV0700_CPLD000324_REV0300_CPLD000268_REV0700_IPN.vme",
             refresh_image_path="/auto/sw_system_project/NVOS_INFRA/verification_files/cpld_fw/FUI000258_REFRESH_Gorilla_MNG_CPLD000232_REV0700_CPLD000324_REV0300_CPLD000268_REV0700.vme",
@@ -527,7 +531,10 @@ class BlackMambaSwitch(IbSwitch):
             "product-name": "Q3400_RA",
             "asic-model": self.asic_type,
         })
-
+        self.asic_version = BaseSwitch.AsicImageConsts(
+            version="35.2014.2012",
+            filename="fw-QTM3-rel-35_2014_2012.mfa"
+        )
         self.voltage_sensors = ["PMIC-1+12V_VDD_ASIC1+Vol+In+1", "PMIC-1+ASIC1_VDD+Vol+Out+1",
                                 "PMIC-2+12V_HVDD_DVDD_ASIC1+Vol+In+1", "PMIC-2+ASIC1_DVDD_PL0+Vol+Out+2",
                                 "PMIC-2+ASIC1_HVDD_PL0+Vol+Out+1", "PMIC-3+12V_HVDD_DVDD_ASIC1+Vol+In+1",
@@ -742,6 +749,10 @@ class CrocodileSwitch(IbSwitch):
             "product-name": "QM3400",
             "asic-model": self.asic_type,
         })
+        self.asic_version = BaseSwitch.AsicImageConsts(
+            version="35.2014.2012",
+            filename="fw-QTM3-rel-35_2014_2012.mfa"
+        )
         self.mst_dev_name = '/dev/mst/mt54004_pciconf0'  # TODO update
         self.voltage_sensors = ['PMIC-1-12V-VDD-ASIC1-In-1', 'PMIC-1-ASIC1-VDD-Out-1',
                                 'PMIC-2-12V-HVDD-DVDD-ASIC1-In-1', 'PMIC-2-ASIC1-DVDD-PL0-Out-2',
@@ -990,7 +1001,10 @@ class JulietSwitch(NvLinkSwitch):
             }
         )
         self.supported_commands.extend([ActionConsts.POWER_CYCLE])
-
+        self.asic_version = BaseSwitch.AsicImageConsts(
+            version="35.2014.1476",
+            filename="fw-QTM3-rel-35_2014_1476.mfa"
+        )
         self.bios_image_info = BaseSwitch.BiosImagesConsts(
             current_version={
                 'path': '/auto/sw_system_release/sx_mlnx_bios/SnowyOwl/0ACTV_00.00.016/Release/erot_sign_debug/cec1736-apfw-0000010.fwpkg',
