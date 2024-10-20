@@ -262,7 +262,13 @@ def start_sm(engines, devices, traffic_available):
     if traffic_available:
         RegressionConfigurations.configure_ports_to_legacy(engine=engines.dut, apply=True, throw_exception=False)
         result = OpenSmTool.start_open_sm(engines, multiplanar=devices.dut.multi_planar)
-        result.verify_result()
+        if not result.result:  # If open_sm fails then reboot the VMs and try again. WA for recovering from #4088479
+            if hasattr(engines, 'ha'):
+                engines.ha.run_cmd("sudo reboot")
+            if hasattr(engines, 'hb'):
+                engines.hb.run_cmd("sudo reboot")
+            time.sleep(200)
+            OpenSmTool.start_open_sm(engines, multiplanar=devices.dut.multi_planar).verify_result()
     else:
         raise SetupIssue("Traffic is not available on this setup")
 
