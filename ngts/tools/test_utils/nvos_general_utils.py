@@ -144,16 +144,17 @@ def check_partitions_capacity(partition_name: str = DiskConsts.DEFAULT_PARTITION
             for storage in available_partitions_capacity:
                 if not storage:
                     continue
-                logging.info(f"Available disk space for partition is {storage}")
+                logging.info(f"Disk used space for partition is {storage}")
                 # Trim percent symbol from the end, e.g '22%'
-                available_disk_space = int(storage.strip()[:-1])
-                assert available_disk_space < allowed_limit, f'The disk space is over {allowed_limit}%, so image may ' \
-                    f'not fit '
+                disk_used_space = int(storage.strip()[:-1])
+                assert disk_used_space < allowed_limit, f'The disk used space is {disk_used_space}% which is over ' \
+                    f'allowed limit of {allowed_limit}%, so image may not fit'
         with allure.step('Check Minimum Free Space'):
-            free_space = disk_tool.get_free_space()
+            available_disk_free_space = disk_tool.get_free_space()
             # Trim "G" symbol from the end, e.g '6.7G%'
-            free = float(free_space.strip()[:-1])
-            assert free >= minimum_free_space, f'Available disk space {free}G is below {minimum_free_space}G'
+            free = float(available_disk_free_space.strip()[:-1])
+            assert free >= minimum_free_space, f'Available free disk space is {available_disk_free_space} which is ' \
+                f'below {minimum_free_space}G'
 
     finally:
         disk_tool.unmount_partitions(partitions)
