@@ -6,7 +6,7 @@ class ClusterConsts:
     NMX_TELEMETRY = 'nmx-telemetry'
     INITIAL_EXPECTED_APPS = [NMX_CONTROLLER, NMX_TELEMETRY]
     START_APP_WHILE_CLUSTER_DISABLED_ERR_MSG = 'Output was expected to contain:\nAction succeeded\nBut the output is:\nAction executing ...\nError: Action failed with the following issue:\n  cluster is not enabled'
-    TELEMETRY_SERVICES = ['nmx-connector', 'ib-telemetry']
+    TELEMETRY_SERVICES = ['nmx-connector', 'ib-telemetry', 'nmx-syslog-aggregator']
     CONTROLLER_SERVICES = ['nmxc-sdn', 'nmxc-fib', 'redis']
     ClusterAppsLogLevelsList = [ClusterAppsLogLevels.DEBUG, ClusterAppsLogLevels.INFO, ClusterAppsLogLevels.NOTICE, ClusterAppsLogLevels.WARNING, ClusterAppsLogLevels.ERROR, ClusterAppsLogLevels.CRITICAL]
     NMX_CONTROLLER_CONFIG_FILE_TYPES = ['fm_config', 'sm_config', 'rdm_config', 'chassis_mapping']
