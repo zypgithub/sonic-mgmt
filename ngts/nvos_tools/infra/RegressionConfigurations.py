@@ -12,6 +12,11 @@ from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
 logger = logging.getLogger()
 
 
+SET_PS_REDUNDANCY_POLICY_COMMAND_LIST = ['nv set platform ps-redundancy policy no-redundancy',
+                                         'nv config apply -y',
+                                         'nv config save']
+
+
 class Configurations:
     # List of NDR ports in Crocodile (for setting connection-mode to ndr)
     ndr_ports = {"10.7.148.94": ['swA1p1', 'swA2p1'],
@@ -40,6 +45,15 @@ class Configurations:
 
     post_install_commands = {"10.7.144.153": ['nv set acl ACL_MGMT_INBOUND_CP_DEFAULT rule 120 match ip recent-list hit-count 3000',
                                               'nv config apply -y'],
+                             # mamba mtvr-q3400-06:
+                             '10.245.21.54': SET_PS_REDUNDANCY_POLICY_COMMAND_LIST,
+                             '10.245.21.65': SET_PS_REDUNDANCY_POLICY_COMMAND_LIST,
+                             # mtvr-croc-19:
+                             '10.245.21.19': SET_PS_REDUNDANCY_POLICY_COMMAND_LIST,
+                             '10.245.21.68': SET_PS_REDUNDANCY_POLICY_COMMAND_LIST,
+                             # mtvr-croc-50:
+                             '10.245.21.50': SET_PS_REDUNDANCY_POLICY_COMMAND_LIST,
+                             '10.245.21.67': SET_PS_REDUNDANCY_POLICY_COMMAND_LIST,
                              }
 
     devices_to_configure_ndr_ports = ndr_ports.keys()
