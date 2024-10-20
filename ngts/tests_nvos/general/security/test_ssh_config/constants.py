@@ -15,6 +15,7 @@ class SshConfigConsts:
     LOGIN_TIMEOUT = 'login-timeout'
     DEFAULT_PORT = 22
     PORTS = 'ports'
+    PORT = 'port'
 
     SSH_CONFIG_CONNECTION_OPTIONS = ' -o ControlMaster=auto ' \
         '  -o ControlPersist=60s ' \

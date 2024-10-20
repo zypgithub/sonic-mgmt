@@ -98,7 +98,7 @@ def test_ssh_config_good_flow(engines, devices, rand_ssh_port):
         with allure.step("validating ssh login ports, in range [{}-{}]".format(SshConfigConsts.MIN_LOGIN_PORT,
                                                                                SshConfigConsts.MAX_LOGIN_PORT)):
             with allure.step("Configuring {} as new login port".format(rand_ssh_port)):
-                system.ssh_server.set(SshConfigConsts.PORTS,
+                system.ssh_server.set(SshConfigConsts.PORT,
                                       '{},{}'.format(SshConfigConsts.DEFAULT_PORT, rand_ssh_port),
                                       apply=True, ask_for_confirmation=True).verify_result()
             with allure.step(f'check ssh login through port {rand_ssh_port}'):
