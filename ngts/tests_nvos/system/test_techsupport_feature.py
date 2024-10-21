@@ -85,6 +85,8 @@ def test_techsupport_expected_files(engines, devices, test_name):
     expected_files_dict = {'dump': devices.dut.constants.dump_files,
                            'sai_sdk_dump0': devices.dut.constants.sdk_dump_files,
                            'log': devices.dut.constants.log_dump_files,
+                           'log/nginx': devices.dut.constants.log_nginx_files,
+                           'log/nmx-c': devices.dut.constants.log_nmx_files,
                            'stats': devices.dut.constants.stats_dump_files,
                            'hw-mgmt': devices.dut.constants.hw_mgmt_files,
                            'etc': devices.dut.constants.etc_files}
@@ -112,15 +114,16 @@ def test_techsupport_expected_files(engines, devices, test_name):
                 logger.info("Tech-support generation takes: {} seconds".format(duration))
             system.techsupport.extract_techsupport_files(engines.dut)
             techsupport_files_dict = system.techsupport.get_techsupport_files_names(engines.dut, expected_files_dict)
-        with allure.step('validate files names'):
-            techsupport_files_dict['sai_sdk_dump0'] = system.techsupport.clean_timestamp_techsupport_sdk_files_names(techsupport_files_dict['sai_sdk_dump0'])
-            for folder, files in techsupport_files_dict.items():
-                verify_techsupport_files_names(files, expected_files_dict[folder])
+        with allure.step("validate each expected file name and size"):
+            with allure.independent_step('validate files names'):
+                techsupport_files_dict['sai_sdk_dump0'] = system.techsupport.clean_timestamp_techsupport_sdk_files_names(techsupport_files_dict['sai_sdk_dump0'])
+                for folder, files in techsupport_files_dict.items():
+                    verify_techsupport_files_names(files, expected_files_dict[folder])
 
-        with allure.step('validate files sizes'):
-            for folder in expected_files_dict.keys():
-                files_list = system.techsupport.get_techsupport_empty_files(engines.dut, folder)
-                verify_techsupport_files_sizes(files_list, folder)
+            with allure.independent_step('validate files sizes'):
+                for folder in expected_files_dict.keys():
+                    files_list = system.techsupport.get_techsupport_empty_files(engines.dut, folder)
+                    verify_techsupport_files_sizes(files_list, folder)
     finally:
         cluster.unset(apply=True)
         ClusterTools.wait_for_apps_to_be_in_wanted_state()
