@@ -54,7 +54,7 @@ def test_transceiver_files_actions_positive(engines, test_api):
 
         with allure.step("Rename firmware transceiver file and verify"):
             renamed_file = platform.firmware.transceiver.files.file_name[new_fw_file1]
-            new_fw_file_name = RandomizationTool.get_random_string(20, ascii_letters=string.ascii_letters + string.digits)
+            new_fw_file_name = RandomizationTool.get_random_string(20, ascii_letters=string.ascii_letters + string.digits) + '.bin'
             renamed_file.rename_and_verify(new_fw_file_name)
 
             with allure.step("Run the show command and verify that all expected files are correct"):
@@ -120,7 +120,7 @@ def test_transceiver_files_negative(engines, test_api):
         fw_path_1 = f"{SystemConsts.GENERAL_TRANSCEIVER_FIRMWARE_FILES}/{fw_file_name1}"
         invalid_url_expected_message = "is not a 'remote-url-fetch'"
         invalid_file_expected_message = "File not found"
-        non_exist_file_name = "NO_FILE"
+        non_exist_file_name = "NO_FILE.bin"
 
     with allure.step("Create platform object"):
         platform = Platform()
@@ -136,7 +136,7 @@ def test_transceiver_files_negative(engines, test_api):
         assert invalid_file_expected_message in fetched_file.action_upload(upload_path=upload_path, should_succeed=False), "Test failed: trying to upload non exist file = {} the expected error message = {}".format(non_exist_file_name, invalid_file_expected_message)
 
     with allure.step('trying to rename non exist transceiver firmware file'):
-        assert invalid_file_expected_message in fetched_file.action_rename(new_name="Not_file", should_succeed=False), "Test failed: trying to rename non exist file = {} the expected error message = {}".format(non_exist_file_name, invalid_file_expected_message)
+        assert invalid_file_expected_message in fetched_file.action_rename(new_name="Not_file.bin", should_succeed=False), "Test failed: trying to rename non exist file = {} the expected error message = {}".format(non_exist_file_name, invalid_file_expected_message)
 
     with allure.step('trying to delete non exist file'):
         assert invalid_file_expected_message in fetched_file.action_delete(should_succeed=False), "Test failed: trying to delete non exist file = {} the expected error message = {}".format(non_exist_file_name, invalid_file_expected_message)
