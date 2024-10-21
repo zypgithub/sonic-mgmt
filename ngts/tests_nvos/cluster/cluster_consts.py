@@ -19,7 +19,7 @@ class ClusterConsts:
     UNDEFINED_STATE_DICT = {'NVUE': UNDEFINED_STATE_ERR_MSG_NVUE, 'OpenApi': UNDEFINED_STATE_ERR_MSG_OPENAPI}
     NMXC_CONN = 'nmxc-conn'
     NMXC_CONN_STATE_PER_CLUSTER_STATE = {NvosConst.ENABLED: 'up', NvosConst.DISABLED: 'down'}
-    WAIT_FOR_APPS_RUNNING = 15
+    WAIT_FOR_APPS_RUNNING = 35  # Reduce to 15 once bug is fixed [NVOS - Design] Bug SW #4099507: [Non-Functional ] [NVL5 - JULIET - NMX] | nmxc-conn takes too long to be in "up" state | Assignee: Or Farfara | Status: Opened on other team
     UNDEFINED_STATE_ERR_MSG = 'Error: At state: \'undefined\' is not one of [\'enabled\', \'disabled\']'
     DEFAULT_LOG_LEVEL = 'notice'
     UNDEFINED_LOG_LEVEL = '''Output was expected to contain:
