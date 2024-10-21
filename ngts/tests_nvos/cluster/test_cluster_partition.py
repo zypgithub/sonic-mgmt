@@ -177,6 +177,10 @@ def test_cluster_partition(engines, devices, test_api):
                 if partition != ClusterConsts.DEFAULT_PARTITION:
                     sdn.partition.partition_id[partition].action_delete_partition()
 
+        with allure.step("Reset cluster state"):
+            cluster.unset(apply=True)
+            ClusterTools.wait_for_apps_to_be_in_wanted_state()
+
 
 @disabled_access_ports
 @pytest.mark.nmx
@@ -398,6 +402,10 @@ def test_cluster_partition_bad_flow(engines, devices, test_api):
             for partition in partitions:
                 if partition != ClusterConsts.DEFAULT_PARTITION:
                     sdn.partition.partition_id[partition].action_delete_partition()
+
+        with allure.step("Reset cluster state"):
+            cluster.unset(apply=True)
+            ClusterTools.wait_for_apps_to_be_in_wanted_state()
 
 
 def update_partition_to_location_uuid_map(partition_id, created_partition_id, location_id_uuid, partition_to_take_gpu_from, partition_mapping_to_location_uuid):
