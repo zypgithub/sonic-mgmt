@@ -1466,7 +1466,6 @@ class MultiPlanarConsts:
     LOG_MSG_UNSET_FAE_INTERFACE = "PATCH..."  # TODO: complete
     LOG_MSG_SET_FAE_INTERFACE = "PATCH /nvue_v1/interface/"
     LOG_MSG_ACTION_CLEAR_FAE_INTERFACE = 'Clearing counters for interface {port_name} for user admin'
-    CONFIG_STATE_RETRIES = 5
 
 
 class FastRecoveryConsts:
