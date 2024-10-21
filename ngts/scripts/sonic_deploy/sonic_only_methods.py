@@ -502,7 +502,7 @@ class SonicInstallationSteps:
                     general_cli_obj.cli_obj.ip.apply_dns_servers_into_resolv_conf(
                         is_air_setup=platform_params.setup_name.startswith('air'))
                     general_cli_obj.save_configuration()
-            if deploy_dpu:
+            if deploy_dpu or is_bf_topo(sonic_topo):
                 def _fetch_dash_api_package():
                     rc = os.system("wget 'https://sonic-build.azurewebsites.net/api/sonic/artifacts?branchName=master&"
                                    "definitionId=1055&artifactName=sonic-buildimage.amd64.ubuntu20_04&"
@@ -511,6 +511,7 @@ class SonicInstallationSteps:
                 with allure.step('Update the dash api in sonic-mgmt'):
                     retry_call(_fetch_dash_api_package, tries=3, delay=3, logger=logger)
                     os.system("dpkg --install ./libdashapi_1.0.0_amd64.deb")
+            if deploy_dpu:
                 with allure.step('Apply DPU IP assignment configuration'):
                     dut_engine = topology_obj.players['dut']['engine']
                     config_path = \
