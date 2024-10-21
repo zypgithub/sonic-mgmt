@@ -855,6 +855,7 @@ class JulietSwitch(NvLinkSwitch):
 
     def _init_constants(self):
         super()._init_constants()
+
         self.system_is_ready_wait_timeout = 20 * MINUTE
         self.category_list = ['temperature', 'cpu', 'disk', 'fan', 'mgmt-interface', 'voltage']
         self.category_disabled_dict = {
@@ -888,6 +889,7 @@ class JulietSwitch(NvLinkSwitch):
         bmc_dump_files = ['bmc_debug_log_dump.tar']
         self.constants = self.constants._replace(bmc_dump_files=bmc_dump_files)
         self.constants.dump_files.append('BMCeeprom')
+        self.constants.log_nmx_files.extend(['fabricmanager.log.gz', 'gwapi.log.gz', 'nvlsm.log.gz'])
         self.constants.erots.extend(['ERoT_BMC_0', 'ERoT_CPU_0', 'ERoT_FPGA_0', 'ERoT_NVSwitch_0', 'ERoT_NVSwitch_1'])
         self.erot_fw_image_info = self.ErotFirmwareImagesTestConsts(
             current_image_path='/auto/sw_system_release/erot/juliet/01.03.0216.0000/dev/cec1736-ecfw-01.03.0216.0000-n04-dev-initial.fwpkg',

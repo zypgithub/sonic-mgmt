@@ -285,8 +285,9 @@ class BaseAppliance(BaseDevice):
 class BaseSwitch(BaseDevice):
     __metaclass__ = ABCMeta
 
-    Constants = namedtuple('Constants', ['system', 'dump_files', 'sdk_dump_files', 'firmware', 'log_dump_files',
-                                         'stats_dump_files', 'hw_mgmt_files', 'cluster_files', 'bmc_dump_files', 'erots'])
+    Constants = namedtuple('Constants', ['system', 'dump_files', 'sdk_dump_files', 'firmware',
+                                         'log_dump_files', 'log_nginx_files', 'log_nmx_files', 'stats_dump_files', 'hw_mgmt_files',
+                                         'cluster_files', 'bmc_dump_files', 'erots'])
     CpldImageConsts = namedtuple('CpldImageConsts', ('burn_image_path', 'refresh_image_path', 'version_names'))
     SsdImageConsts = namedtuple('SsdImageConsts', ('file', 'current_version', 'alternate_version'))
     BiosImagesConsts = namedtuple('BiosImagesConsts', ('current_version', 'alternate_version'))
@@ -336,20 +337,22 @@ class BaseSwitch(BaseDevice):
                       'saidump', 'sensors', 'services.summary', 'ssdhealth', 'STATE_DB.json', 'swapon', 'sysctl',
                       'syseeprom', 'systemd.analyze.blame', 'systemd.analyze.dump', 'systemd.analyze.plot.svg',
                       'temperature', 'top', 'version', 'vlan.summary', 'vmstat', 'vmstat.m', 'vmstat.s', 'who']
-        sdk_dump_files = ['fw_trace_attr.json.gz', 'sai_sdk_dump.gz',
+        sdk_dump_files = ['fw_trace_attr.json.gz', 'sai_sdk_dump.gz', "fw_trace_attr.json.gz",
                           'sdk_dump_ext_dev1_summary.txt.gz', 'sdk_dump_ext_dev1_cr_space_2.udmp.gz',
                           'sdk_dump_ext_dev1_cr_space_1.udmp.gz', 'sdk_dump_ext_dev1_cr_space_2.udmp.gz', 'sdk_dump_ext_dev1_cr_space_3.udmp.gz', 'sdk_dump_ext_dev1_dpt.txt.gz',
                           'sdk_dump_ext_dev1_fw_trace.txt.gz', 'fw_trace_attr.json.gz', 'fw_trace_string_db.json.gz',
                           'sai_sdk_dump.json.gz', 'sdk_dump_ext_dev1_cr_space_1.udmp.gz',
                           'sdk_dump_ext_dev1_cr_space_3.udmp.gz', 'sdk_dump_ext_dev1_driver.txt.gz',
                           'sdk_dump_ext_dev1_amber.hex.gz']
-        log_dump_files = ["access.log.gz", "audit.log.gz", "auth.log.gz", "btmp.gz", "cron.log.gz", "error.log.gz",
-                          "firewall_packet_capture.log.gz", "fw_trace_attr.json.gz", "health_history.gz",
+        log_dump_files = ["audit.log.gz", "auth.log.gz", "btmp.gz", "cron.log.gz",
+                          "firewall_packet_capture.log.gz", "health_history.gz",
                           "nv-cli.log.gz", "nvued.log.gz", "syslog.gz", "tc_log.gz", "wtmp.gz", "ztp.log.gz"]
+        log_nginx_files = ["access.log.gz", "error.log.gz"]
 
         stats_dump_files = ["cpu.csv.gz", "disk.csv.gz", "fan.csv.gz", "power.csv.gz",
                             "mgmt-interface.csv.gz", "temperature.csv.gz", "voltage.csv.gz"]
         hw_mgmt_files = ['hw-mgmt-dump.tar.gz']
+        log_nmx_files = []
 
         bmc_dump_files = None
         cluster_files = None
@@ -358,7 +361,8 @@ class BaseSwitch(BaseDevice):
                     PlatformConsts.FW_CPLD + '1', PlatformConsts.FW_CPLD + '2', PlatformConsts.FW_CPLD + '3']
         erots = []
         self.constants = BaseSwitch.Constants(system_dic, dump_files, sdk_dump_files, firmware, log_dump_files,
-                                              stats_dump_files, hw_mgmt_files, cluster_files, bmc_dump_files, erots)
+                                              log_nginx_files, log_nmx_files, stats_dump_files, hw_mgmt_files, cluster_files,
+                                              bmc_dump_files, erots)
 
         self.current_bios_version_name = ""
         self.current_bios_version_path = ""
