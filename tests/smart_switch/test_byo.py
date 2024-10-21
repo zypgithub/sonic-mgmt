@@ -14,20 +14,16 @@ from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 from tests.common.helpers.assertions import pytest_assert
 from tests.common.constants import RESOLV_CONF_NAMESERVERS
 from tests.common.utilities import wait_until
-from tests.smart_switch.conftest import SMARTSWITCH_PLATFORMS, copy_proxy_ssh
+from tests.smart_switch.conftest import SMARTSWITCH_PLATFORMS, DPU_INFO, dpu_shell
 
 pytestmark = [
-    pytest.mark.usefixtures('copy_proxy_ssh')
+    pytest.mark.usefixtures('skip_unsupported_platform', 'copy_proxy_ssh')
 ]
 
 logger = logging.getLogger(__name__)
 
 DPDK_CONTAINER_NAME = "dpdk-app-container"
 DPDK_APP = "harbor.mellanox.com/sonic/dpdk-app:latest"
-DPU_INFO = {"dpu0": {"mgmt_ip": "169.254.200.1", "data_port": "Ethernet224"},
-            "dpu1": {"mgmt_ip": "169.254.200.2", "data_port": "Ethernet232"},
-            "dpu2": {"mgmt_ip": "169.254.200.3", "data_port": "Ethernet240"},
-            "dpu3": {"mgmt_ip": "169.254.200.4", "data_port": "Ethernet248"}}
 SWITCH_DATA_PORT = {'x86_64-nvidia_sn4280-r0': 'Ethernet64'}
 ptf_port_index = 0
 
@@ -41,19 +37,8 @@ def option(request):
 def dpu_info(duthost, platform):
     if platform in SMARTSWITCH_PLATFORMS:
         # For smartswitch, randomly select a dpu to test
-        dpu = random.choice(list(DPU_INFO.keys()))
-        return DPU_INFO[dpu]
-
-
-def dpu_shell(dpu_mgmt_ip):
-    def _dpu_shell(self, cmd, module_ignore_errors=False, module_async=False):
-        command = f'sudo proxy_ssh.py --dpu-mgmt-ip {dpu_mgmt_ip} --cmd "{cmd}"'
-        if not module_ignore_errors:
-            command += ' --validate'
-        if module_async:
-            command += ' --async'
-        return self.shell(command)
-    return _dpu_shell
+        dpu = random.choice(list(DPU_INFO[platform].keys()))
+        return DPU_INFO[platform][dpu]
 
 
 def check_byo_status(status, dut_run_command):
@@ -74,16 +59,12 @@ def check_byo_status(status, dut_run_command):
 
 
 @pytest.fixture(scope="module", autouse=True)
-def setup(duthost, tbinfo, dpu_info, platform):
+def setup(duthost, tbinfo, dpu_info, platform, enable_dpu_mgmt_forwarding):
     global ptf_port_index
     # Enable the dpu mgmt forwarding if the dut is smartswitch
     if dpu_info:
         dpu_mgmt_ip = dpu_info["mgmt_ip"]
         duthost.dpu_shell = types.MethodType(dpu_shell(dpu_mgmt_ip), duthost)
-        with allure.step("Enable the dpu mgmt forwarding on smartswitch"):
-            # Enable the dpu mgmt forwarding if the dut is smartswitch
-            duthost.shell('sudo chmod 777 /usr/local/bin/sonic-dpu-mgmt-traffic.sh')
-            duthost.shell('sudo sonic-dpu-mgmt-traffic.sh -e')
         with allure.step("Config vlan for the smartswitch dataplane"):
             # Config vlan for the smartswitch dataplane
             mg_facts = duthost.get_extended_minigraph_facts(tbinfo)
@@ -98,6 +79,7 @@ def setup(duthost, tbinfo, dpu_info, platform):
             duthost.shell(f'config vlan member add 1000 {dpu_data_port} --untagged')
             ptf_port_index = mg_facts['minigraph_ptf_indices'][switch_data_port]
         with allure.step("Align the DPU time"):
+            # The time on DPU need to be synced for accessing the docker registry
             current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             duthost.dpu_shell(f"sudo date -s \'{current_time}\'")
         with allure.step("Config dns nameserver for DPU"):
@@ -116,8 +98,6 @@ def setup(duthost, tbinfo, dpu_info, platform):
         with allure.step("Disable byo on the dpu"):
             duthost.dpu_shell(f"sudo sonic-byo.py disable")
             pytest_assert(check_byo_status('disabled', duthost.dpu_shell), "Failed to disable BYO on DPU.")
-        with allure.step("Disable the dpu mgmt forwarding on smartswitch"):
-            duthost.shell('sonic-dpu-mgmt-traffic.sh -d')
         with allure.step("Reload switch config"):
             config_reload(duthost, safe_reload=True)
         del duthost.dpu_shell
