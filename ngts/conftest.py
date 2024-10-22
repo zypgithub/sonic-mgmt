@@ -32,6 +32,8 @@ from ngts.tools.allure_report.allure_report_attacher import add_fixture_end_tag,
     clean_stored_cmds_with_fixture_scope, update_fixture_scope_list, enable_record_cmds
 from ngts.tools.infra import get_platform_info, get_devinfo, is_deploy_run, get_chip_type
 from ngts.tools.topology_tools.topology_by_setup import get_topology_by_setup_name_and_aliases
+from ngts.nvos_tools.infra.RegressionConfigurations import Configurations
+
 
 logger = logging.getLogger()
 
@@ -246,6 +248,16 @@ def setup_name(request):
     :return: setup name
     """
     return request.config.getoption('--setup_name')
+
+
+@pytest.fixture(scope='session')
+def has_loopbox(setup_name):
+    """
+    Method to check if system has loopbox.
+    :param setup_name: the setup name
+    :return: if setup has loopbox or not
+    """
+    return setup_name in Configurations.juliet_systems_with_loopbox
 
 
 @pytest.fixture(scope="session")
