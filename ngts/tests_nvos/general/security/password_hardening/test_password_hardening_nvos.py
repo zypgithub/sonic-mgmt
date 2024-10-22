@@ -816,7 +816,7 @@ def test_password_hardening_history_with_reboot(engines, devices, topology_obj):
     system = System()
     username = dut.username
     password = dut.password
-    new_password1, new_password2 = generate_strong_password(), generate_strong_password()
+    new_password1, new_password2 = generate_strong_password(15), generate_strong_password(15)
 
     password_history_err = 'Password should be different than.*previous passwords'
 
