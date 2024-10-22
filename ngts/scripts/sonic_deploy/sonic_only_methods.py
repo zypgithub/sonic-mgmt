@@ -509,7 +509,7 @@ class SonicInstallationSteps:
                                    "target=libdashapi_1.0.0_amd64.deb' -O libdashapi_1.0.0_amd64.deb")
                     assert rc == 0, "Failed to fetch the dash api package"
                 with allure.step('Update the dash api in sonic-mgmt'):
-                    retry_call(_fetch_dash_api_package, tries=3, delay=3, logger=logger)
+                    retry_call(_fetch_dash_api_package, tries=3, delay=10, logger=logger)
                     os.system("dpkg --install ./libdashapi_1.0.0_amd64.deb")
             if deploy_dpu:
                 with allure.step('Apply DPU IP assignment configuration'):
