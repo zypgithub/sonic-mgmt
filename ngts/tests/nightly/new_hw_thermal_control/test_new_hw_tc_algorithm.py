@@ -149,7 +149,7 @@ class TestNewTc:
                 if sensor_err_type.startswith("psu_err") and SENSOR_DATA["psu"]["total_number"] < 2:
                     pytest.skip("Only one psu, skipping this test")
                 sensor_err_file, expected_pwm, mock_value = get_sensor_err_test_data(
-                    sensor_err_type, mock_sensor, tc_config_dict, self.cli_objects.dut.im.is_im_enabled())
+                    sensor_err_type, mock_sensor, tc_config_dict, self.cli_objects)
                 sensor_read_error_type = None
                 if "sensor_read_error" == sensor_err_file:
                     sensor_read_error_type = random.choice(SENSOR_ERR_TEST_DATA["sensor_read_error"])
@@ -179,7 +179,10 @@ class TestNewTc:
         try:
             with MockSensors(self.dut_engine, self.cli_objects) as mock_sensor:
                 pwm_before_adding_blacklist = get_pwm(mock_sensor)
-                asci_dev_param_info = tc_config_dict["dev_parameters"]["asic"]
+                if "asic" in list(tc_config_dict["dev_parameters"].keys()):
+                    asci_dev_param_info = tc_config_dict["dev_parameters"]["asic"]
+                else:
+                    pytest.skip('"asic" sensor does not exist')
                 pwm_max = asci_dev_param_info["pwm_max"]
                 with allure.step(f'Verify pwm {pwm_before_adding_blacklist} before adding blacklist is smaller than max pwm {pwm_max}'):
                     if pwm_before_adding_blacklist >= pwm_max:
