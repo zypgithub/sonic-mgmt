@@ -17,8 +17,8 @@ DPU_LIST = ["dpu0", "dpu1", "dpu2", "dpu3"]
 SKU_SUPPORT_DPU_CTL_LIST = ["Mellanox-SN4280-O28"]
 
 DPU_PIC_ID_RISHIM_MAP = {
-    "dpu0": {"pci_id": "0000:06:00.0", "rshim": "rshim@0"},
-    "dpu1": {"pci_id": "0000:05:00.0", "rshim": "rshim@1"},
+    "dpu0": {"pci_id": "0000:08:00.0", "rshim": "rshim@0"},
+    "dpu1": {"pci_id": "0000:07:00.0", "rshim": "rshim@1"},
     "dpu2": {"pci_id": "0000:01:00.0", "rshim": "rshim@2"},
     "dpu3": {"pci_id": "0000:02:00.0", "rshim": "rshim@3"},
 }
