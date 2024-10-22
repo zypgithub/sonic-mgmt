@@ -1,4 +1,5 @@
 import random
+import random
 import string
 import time
 from typing import List
@@ -399,17 +400,21 @@ def test_cluster_manager_connection():
             if enable_mngr:
                 with allure.step('enable manager'):
                     mngr.action_update(ENABLED).verify_result()
+                    mngr.action_update(ENABLED).verify_result()  # TODO: remove once bug #4127907 is closed
             if self.server_cert.name != Test.cur_server_cert:
                 with allure.step(f'update server cert: {self.server_cert.name}'):
                     mngr.certificate.action_update(self.server_cert.name).verify_result()
+                    mngr.certificate.action_update(self.server_cert.name).verify_result()  # TODO: remove once bug #4127907 is closed
                     Test.cur_server_cert = self.server_cert.name
             if self.server_ca.cacert_name != Test.cur_server_ca:
                 with allure.step(f'update server CA: {self.server_ca.cacert_name}'):
                     mngr.ca_certificate.action_update(self.server_ca.cacert_name).verify_result()
+                    mngr.ca_certificate.action_update(self.server_ca.cacert_name).verify_result()  # TODO: remove once bug #4127907 is closed
                     Test.cur_server_ca = self.server_ca.cacert_name
             if self.server_mode != Test.cur_server_mode:
                 with allure.step(f'update server encryption: {self.server_mode}'):
                     mngr.encryption.action_update(self.server_mode).verify_result()
+                    mngr.encryption.action_update(self.server_mode).verify_result()  # TODO: remove once bug #4127907 is closed
                     Test.cur_server_mode = self.server_mode
 
         def run_client_and_verify(self):
@@ -447,7 +452,7 @@ def test_cluster_manager_connection():
         cluster.set(STATE, ENABLED, apply=True).verify_result()
     with allure.step('enable cluster manager'):
         cluster.manager.action_update(ENABLED).verify_result()
-        time.sleep(2)
+        cluster.manager.action_update(ENABLED).verify_result()  # TODO: remove once bug #4127907 is closed
 
     with allure.step('run all cases'):
         for case in cases:
