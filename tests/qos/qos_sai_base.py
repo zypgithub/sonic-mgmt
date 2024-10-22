@@ -1226,16 +1226,12 @@ class QosSaiBase(QosBase):
             updateFeatureState(lower_tor_host, "mux", "disabled")
 
         src_services = [
-            {"docker": src_asic.get_docker_name("bgp"), "service": "bgpd"},
-            {"docker": src_asic.get_docker_name("bgp"), "service": "bgpmon"},
             {"docker": src_asic.get_docker_name("radv"), "service": "radvd"},
             {"docker": src_asic.get_docker_name("swss"), "service": "arp_update"}
         ]
         dst_services = []
         if src_asic != dst_asic:
             dst_services = [
-                {"docker": dst_asic.get_docker_name("bgp"), "service": "bgpd"},
-                {"docker": dst_asic.get_docker_name("bgp"), "service": "bgpmon"},
                 {"docker": dst_asic.get_docker_name("radv"), "service": "radvd"},
                 {"docker": dst_asic.get_docker_name("swss"), "service": "arp_update"}
             ]
@@ -1250,20 +1246,25 @@ class QosSaiBase(QosBase):
 
         for service in src_services:
             updateDockerService(src_dut, action="stop", **service)
+        src_dut.shell("sudo config bgp shutdown all")
         if src_asic != dst_asic:
             disable_container_autorestart(dst_dut, testcase="test_qos_sai", feature_list=feature_list)
             updateFeatureState(dst_dut, "lldp", "disabled")
             for service in dst_services:
                 updateDockerService(dst_dut, action="stop", **service)
+            dst_dut.shell("sudo config bgp shutdown all")
+
         yield
 
         updateFeatureState(src_dut, "lldp", "enabled")
         for service in src_services:
             updateDockerService(src_dut, action="start", **service)
+        src_dut.shell("sudo config bgp start all")
         if src_asic != dst_asic:
             updateFeatureState(dst_asic, "lldp", "enabled")
             for service in dst_services:
                 updateDockerService(dst_dut, action="start", **service)
+            dst_dut.shell("sudo config bgp start all")
 
         """ Start mux conatiner for dual ToR """
         if 'dualtor' in tbinfo['topo']['name']:
