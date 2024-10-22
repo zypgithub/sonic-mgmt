@@ -1,3 +1,5 @@
+import time
+
 import pytest
 import logging
 
@@ -27,7 +29,7 @@ logger = logging.getLogger()
 @pytest.mark.multiplanar
 @pytest.mark.simx
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_show_nvl5_interface_commands(engines, devices, test_api):
+def test_show_nvl5_interface_commands(engines, devices, test_api, has_loopbox):
     """
     validate all show fae interface nvl5 commands.
 
@@ -44,7 +46,6 @@ def test_show_nvl5_interface_commands(engines, devices, test_api):
     # cluster = Cluster()
     # ClusterTools.start_cluster(cluster)
     # ClusterTools.wait_for_apps_to_be_in_wanted_state()
-
     with allure_step("Select nvl5 port"):
         port_name = RandomizationTool.select_random_value(devices.dut.nvl5_access_ports_list + devices.dut.nvl5_trunk_ports_list).get_returned_value()
         selected_port = MgmtPort(port_name)
@@ -80,19 +81,21 @@ def test_show_nvl5_interface_commands(engines, devices, test_api):
                         f"{output_dictionary[IbInterfaceConsts.LINK_SPEED]}"
 
     with allure_step("Verify access ports speed"):
-        selected_port = Tools.RandomizationTool.select_random_port(requested_ports_logical_state=NvosConsts.LINK_LOG_STATE_INITIALIZE, interface_type='acp').get_returned_value()
-        output_dictionary = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
-            selected_port.interface.link.show()).get_returned_value()
-        assert output_dictionary[IbInterfaceConsts.LINK_SPEED] == dut_device.nvl5_port_speed, \
-            f"port speed should be {dut_device.nvl5_port_speed} instead of" \
-            f"{output_dictionary[IbInterfaceConsts.LINK_SPEED]}"
+        if has_loopbox:
+            selected_port = Tools.RandomizationTool.select_random_port(requested_ports_logical_state=NvosConsts.LINK_LOG_STATE_INITIALIZE, interface_type='acp').get_returned_value()
+            output_dictionary = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
+                selected_port.interface.link.show()).get_returned_value()
+            assert output_dictionary[IbInterfaceConsts.LINK_SPEED] == dut_device.nvl5_port_speed, \
+                f"port speed should be {dut_device.nvl5_port_speed} instead of" \
+                f"{output_dictionary[IbInterfaceConsts.LINK_SPEED]}"
 
     with allure_step("Verify fnm port speed"):
-        output_dictionary = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
-            fnm_port.interface.link.show()).get_returned_value()
-        assert output_dictionary[IbInterfaceConsts.LINK_SPEED] == dut_device.fnm_link_speed, \
-            f"port speed should be {dut_device.fnm_link_speed} instead of" \
-            f"{output_dictionary[IbInterfaceConsts.LINK_SPEED]}"
+        if has_loopbox:
+            output_dictionary = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
+                fnm_port.interface.link.show()).get_returned_value()
+            assert output_dictionary[IbInterfaceConsts.LINK_SPEED] == dut_device.fnm_link_speed, \
+                f"port speed should be {dut_device.fnm_link_speed} instead of" \
+                f"{output_dictionary[IbInterfaceConsts.LINK_SPEED]}"
 
     with allure_step("Verify fae fnm port speed"):
         output_dictionary = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
@@ -135,7 +138,7 @@ def test_show_nvl5_interface_commands(engines, devices, test_api):
 
 
 @pytest.mark.interface
-def test_toggle_interface_state(test_name, devices):
+def test_toggle_interface_state(test_name, devices, has_loopbox):
     """
     Configure port interface state and verify the configuration applied successfully
     Relevant cli commands:
@@ -154,30 +157,35 @@ def test_toggle_interface_state(test_name, devices):
     # ClusterTools.start_cluster(cluster)
     # ClusterTools.wait_for_apps_to_be_in_wanted_state()
     port_init_state_restored = True
+    toggleable_interface = ['fnm', 'sw', 'acp'] if has_loopbox else ['sw']
     try:
-        for interface_type in ['sw', 'acp', 'fnm']:
+        for interface_type in toggleable_interface:
             if devices.dut.nvl5_trunk_ports_list == [] and interface_type == 'sw':
                 continue
             port_type = 'fnm' if interface_type == 'fnm' else ''
             selected_port = Tools.RandomizationTool.select_random_port(requested_ports_state=NvosConsts.LINK_STATE_UP, requested_ports_type=port_type, interface_type=interface_type).get_returned_value()
-        TestToolkit.update_tested_ports([selected_port])
-        toggle_port_state(selected_port, NvosConsts.LINK_STATE_DOWN, test_name)
-        port_init_state_restored = False
-        output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
-            selected_port.interface.link.show()).get_returned_value()
+            TestToolkit.update_tested_ports([selected_port])
+            toggle_port_state(selected_port, NvosConsts.LINK_STATE_DOWN, test_name)
+            logger.info("Sleeping for 15 seconds till toggle is reflected")
+            time.sleep(15)
+            port_init_state_restored = False
+            output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
+                selected_port.interface.link.show()).get_returned_value()
 
-        Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
-                                                          field_name=IbInterfaceConsts.LINK_STATE,
-                                                          expected_value=NvosConsts.LINK_STATE_DOWN).verify_result()
+            Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
+                                                              field_name=IbInterfaceConsts.LINK_STATE,
+                                                              expected_value=NvosConsts.LINK_STATE_DOWN).verify_result()
 
-        toggle_port_state(selected_port, NvosConsts.LINK_STATE_UP, test_name)
-        port_init_state_restored = True
-        output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
-            selected_port.interface.link.show()).get_returned_value()
+            toggle_port_state(selected_port, NvosConsts.LINK_STATE_UP, test_name)
+            logger.info("Sleeping for 15 seconds till toggle is reflected")
+            time.sleep(15)
+            port_init_state_restored = True
+            output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
+                selected_port.interface.link.show()).get_returned_value()
 
-        Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
-                                                          field_name=IbInterfaceConsts.LINK_STATE,
-                                                          expected_value=NvosConsts.LINK_STATE_UP).verify_result()
+            Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
+                                                              field_name=IbInterfaceConsts.LINK_STATE,
+                                                              expected_value=NvosConsts.LINK_STATE_UP).verify_result()
     finally:
         if not port_init_state_restored:
             toggle_port_state(selected_port, NvosConsts.LINK_STATE_UP, test_name)
@@ -267,7 +275,7 @@ def show_interface_and_validate(engines, devices, ports_list, command=''):
 
 def toggle_port_state(selected_port, port_state, test_name=''):
     selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True).verify_result()
-    with allure.step("Wait till port {} is {}".format(selected_port, port_state)):
+    with allure_step("Wait till port {} is {}".format(selected_port, port_state)):
         res_obj, duration = OperationTime.save_duration('port goes {}'.format(port_state), '', test_name,
                                                         selected_port.interface.wait_for_port_state, port_state,
                                                         sleep_time=0.2)

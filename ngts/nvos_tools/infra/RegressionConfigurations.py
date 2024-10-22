@@ -29,6 +29,8 @@ class Configurations:
                  "10.7.148.113": ['sw8p1', 'sw16p1', 'sw67p1'],
                  }
 
+    juliet_systems_with_loopbox = ["NVOS_juliet_10_7_148_142", "NVOS_juliet_10_7_148_130"]
+
     ports_by_rate = {"ndr": ndr_ports, "xdr": xdr_ports}
 
     post_install_commands = {"10.7.144.153": ['nv set acl ACL_MGMT_INBOUND_CP_DEFAULT rule 120 match ip recent-list hit-count 3000',
