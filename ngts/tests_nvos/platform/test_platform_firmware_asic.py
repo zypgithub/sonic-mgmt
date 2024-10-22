@@ -6,6 +6,7 @@ import pytest
 
 from ngts.nvos_constants.constants_nvos import ImageConsts, NvosConst
 from ngts.nvos_constants.constants_nvos import PlatformConsts
+from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
@@ -19,18 +20,18 @@ logger = logging.getLogger()
 
 @pytest.mark.checklist
 @pytest.mark.platform
-def test_show_platform_firmware(devices):
+def test_show_fae_firmware(devices):
     """
     Show platform firmware test
 
     Test flow:
-    1. Run show platform firmware
+    1. Run show fae platform firmware
     2. Make sure that all required fields exist for all ASICs
     """
-    platform = Platform()
+    fae = Fae()
 
-    with allure.step("Run show platform firmware asic"):
-        output_dictionary = get_asic_dict(platform)
+    with allure.step("Run show fae firmware asic"):
+        output_dictionary = get_asic_dict(fae)
 
     with allure.step("Validate asic amount"):
         expected_asic_amount = len(devices.dut.device_list) - 1

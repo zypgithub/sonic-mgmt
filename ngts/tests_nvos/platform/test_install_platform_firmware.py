@@ -6,6 +6,7 @@ import pytest
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import NvosConst, PlatformConsts, HealthConsts
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
+from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.platform.Platform import Platform
@@ -30,13 +31,14 @@ def test_install_platform_firmware(engines, devices, test_name):
     """
     system = System()
     platform = Platform()
+    fae = Fae()
     fw_has_changed = False
     new_fw_name, fw_file_name = get_version_and_file_name(devices.dut.asic_type)
     fw_file = f"/auto/sw_system_project/NVOS_INFRA/verification_files/{fw_file_name}"
     logging.info(f"using {fw_file} fw file")
 
     with allure.step("Check actual firmware value"):
-        asic_dictionary = get_asic_dict(platform)
+        asic_dictionary = get_asic_dict(fae)
         first_asic_name = list(asic_dictionary.keys())[0]
         actual_firmware = asic_dictionary[first_asic_name]["actual-firmware"]
         logging.info("Original actual firmware - " + actual_firmware)
@@ -52,12 +54,12 @@ def test_install_platform_firmware(engines, devices, test_name):
 
             with allure.step("Install firmware and verify"):
                 res_obj, duration = OperationTime.save_duration('install user FW', 'include reboot', test_name,
-                                                                install_new_user_fw, system, platform, fw_file_name,
+                                                                install_new_user_fw, system, fae, platform, fw_file_name,
                                                                 actual_firmware, engines, test_name)
                 OperationTime.verify_operation_time(duration, 'install user FW').verify_result()
 
             with allure.step('Verify the new firmware installed successfully'):
-                verify_firmware_with_platform_and_fae_cmd(platform, new_fw_name)
+                verify_firmware_with_platform_and_fae_cmd(fae, new_fw_name)
                 validate_all_asics_have_same_info()
                 system.validate_health_status(HealthConsts.OK)
 
@@ -69,7 +71,7 @@ def test_install_platform_firmware(engines, devices, test_name):
                                         system, platform, engines, test_name, fw_has_changed)
 
         with allure.step('Verify the default firmware installed successfully'):
-            verify_firmware_with_platform_and_fae_cmd(platform, actual_firmware)
+            verify_firmware_with_platform_and_fae_cmd(fae, actual_firmware)
             validate_all_asics_have_same_info()
             # system.validate_health_status(HealthConsts.OK)
 
@@ -84,8 +86,8 @@ def get_version_and_file_name(asic_type: str) -> Tuple[str, str]:
         raise NotImplementedError()
 
 
-def get_asic_dict(platform):
-    show_output = OutputParsingTool.parse_json_str_to_dictionary(platform.firmware.show()).get_returned_value()
+def get_asic_dict(fae):
+    show_output = OutputParsingTool.parse_json_str_to_dictionary(fae.platform.firmware.show()).get_returned_value()
     asic_dictionary = {k: v for k, v in show_output.items() if PlatformConsts.FW_ASIC in k}
     assert asic_dictionary and len(asic_dictionary.keys()) > 0, "asic list is empty"
     return asic_dictionary
@@ -109,13 +111,13 @@ def install_image_fw(system, platform, engines, test_name, fw_has_changed):
         return res
 
 
-def install_new_user_fw(system, platform, new_fw_to_install, actual_firmware, engines, test_name):
+def install_new_user_fw(system, fae, platform, new_fw_to_install, actual_firmware, engines, test_name):
     platform.firmware.asic.files.file_name[new_fw_to_install].action_file_install_with_reboot(
         force=False, deny_reboot=True)
     platform.firmware.asic.set(PlatformConsts.FW_SOURCE, PlatformConsts.FW_SOURCE_CUSTOM, apply=True)
 
     with allure.step("Verify new installed file can be found in show output"):
-        verify_firmware_with_platform_and_fae_cmd(platform, actual_firmware)
+        verify_firmware_with_platform_and_fae_cmd(fae, actual_firmware)
         validate_all_asics_have_same_info()
         NvueGeneralCli.save_config(engines.dut)
 
@@ -141,7 +143,7 @@ def verify_field_value_in_output_for_each_asic(output_dictionary, field, value):
 
 
 def validate_all_asics_have_same_info():
-    show_output = get_asic_dict(Platform())
+    show_output = get_asic_dict(Fae())
     output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(show_output).get_returned_value()
     assert output_dictionary and len(output_dictionary.keys()) > 0, "asic list is empty"
 
@@ -153,9 +155,10 @@ def validate_all_asics_have_same_info():
                 assert asic_info == output_dictionary[asic], "ASICs are different"
 
 
-def verify_firmware_with_platform_and_fae_cmd(platform, actual_fw):
-    output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(platform.firmware.asic.show()).get_returned_value()
+def verify_firmware_with_platform_and_fae_cmd(fae, actual_fw):
+    output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(fae.platform.firmware.asic.show()).\
+        get_returned_value()
     verify_field_value_in_output_for_each_asic(output_dictionary, "actual-firmware", actual_fw)
-    asic_dictionary = get_asic_dict(platform)
+    asic_dictionary = get_asic_dict(fae)
     for asic in asic_dictionary:
         verify_field_value_in_output_for_each_asic(asic_dictionary[asic], "actual-firmware", actual_fw)
