@@ -1435,6 +1435,12 @@ platform_tests/sfp/test_show_intf_xcvr.py::test_check_show_lpmode:
     reason: "The test is not supported on the bluefield DPU."
     conditions:
       - "'nvda_bf' in platform"
+
+platform_tests/test_dpu_ctrl.py::test_dpu_power_off_and_on:
+  skip:
+    reason: "The test is skipped due to https://redmine.mellanox.com/issues/4101627"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4101627"
 ########################## NVIDIA INTERNAL COMMUNITY IGNORE END ############################
 
 
