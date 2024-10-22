@@ -32,6 +32,7 @@ IM_REDIS_VENDOR_OUI_KEY = "vendor_oui"
 IM_REDIS_VENDOR_PM_KEY = "model"
 IM_REDIS_VENDOR_REV_KEY = "vendor_rev"
 IM_REDIS_VENDOR_SN_KEY = "serial"
+IM_REDIS_SFP_IDENTIFIER_KEY = "type"
 
 IM_TRANCEIVER_STATUS_MODULE_STATE = "Current module state"
 IM_TRANCEIVER_STATUS_REASON_FAULT = "Reason of entering the module fault state"
@@ -45,7 +46,7 @@ EEPROM_CLI_KEYS = [
     IM_EEPROM_VENDOR_OUI_KEY,
     IM_EEPROM_VENDOR_PM_KEY,
     IM_EEPROM_VENDOR_REV_KEY,
-    IM_EEPROM_VENDOR_SN_KEY
+    IM_EEPROM_VENDOR_SN_KEY,
 ]
 
 TRANCEIVER_CLI_KEYS = [
@@ -83,6 +84,12 @@ BER_KEY_MAP = {
 PLATFORM_GENERATION = ['4280', '4700', '5600']
 MS_HWSKUS = ['Mellanox-SN4700-O8C48', 'Mellanox-SN4700-O8V48', 'ACS-SN5600', 'ACS-MSN4700', 'Mellanox-SN4280-O28',
              'Mellanox-SN4700-O32', 'Mellanox-SN4700-V64', 'Mellanox-SN5600-V256']
+
+CMD_INTERFACE_TRANSCEIVER = "show interface transceiver eeprom"
+CMD_SFPUTIL_EEPROM = "sudo sfputil show eeprom"
+CMD_INTERFACE_TRANSCEIVER_STATUS= "show interfaces transceiver status"
+CMD_REDIS_TRANSCEIVER_INFO = 'redis-cli -n 6 hgetall "TRANSCEIVER_INFO|{}"'
+CMD_REDIS_TRANSCEIVER_STATUS = 'redis-cli -n 6 hgetall "TRANSCEIVER_STATUS|{}"'
 
 
 def enable_cmis_mgr_in_pmon_file(duthost):
@@ -167,7 +174,7 @@ def parse_output_to_dict(output, keys_list):
     """
     result_dict = {}
     for key in keys_list:
-        result_dict.update({key.replace('\\', ''): re.search(f"{key}(\\s+)?: (.*)", output).group(2).rstrip()})
+        result_dict.update({key.replace('\\', ''): re.search(f"{key}(\\s+)?:\\n? (.*)", output).group(2).strip()})
     return result_dict
 
 
@@ -204,6 +211,24 @@ def parse_sfp_info_from_redis(duthost, cmd, asic_index, interfaces):
         result_dict.update({intf: redis_all_data_dict})
     return result_dict
 
+
+def compare_data_from_cli_and_redis(cli_data, redis_data, port, key_mapping):
+    for cli_eeprom_key, redis_key in key_mapping.items():
+        # For SFF cables some fields having multi line output, taking first and check if present in redis db output
+        cli_value = cli_data[cli_eeprom_key.replace("\\", "")]
+        redis_value = redis_data[port][redis_key]
+        assert cli_value == redis_value if ":" not in cli_value else cli_value.split(":")[-1].strip() in redis_value, \
+            f"Data from cli param {cli_eeprom_key} does not match data from redis"
+
+
+def get_sff_cables(duthost, cmd, asic_index, port_list):
+    sff_ports = []
+    for port in port_list:
+        redis_output = parse_sfp_info_from_redis(duthost, cmd,
+                                                 asic_index, [port])
+        if 'QSFP28' in redis_output[port][IM_REDIS_SFP_IDENTIFIER_KEY]:
+            sff_ports.append(port)
+    return sff_ports
 
 def parse_im_tranceiver_status(output_lines):
     """

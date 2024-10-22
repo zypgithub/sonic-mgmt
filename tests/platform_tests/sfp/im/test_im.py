@@ -7,11 +7,6 @@ from tests.platform_tests.sfp.util import get_sfp_type, get_dev_conn, read_eepro
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 from tests.common.platform.transceiver_utils import parse_sfp_eeprom_infos, is_passive_cable
 
-cmd_interface_transceiver = "show interface transceiver eeprom"
-cmd_sfputil_eeprom = "sudo sfputil show eeprom"
-cmd_interface_transceiver_status = "show interfaces transceiver status"
-cmd_redis_tranceiver_info = 'redis-cli -n 6 hgetall "TRANSCEIVER_INFO|{}"'
-cmd_redis_tranceiver_status = 'redis-cli -n 6 hgetall "TRANSCEIVER_STATUS|{}"'
 
 pytestmark = [
     pytest.mark.topology('any')
@@ -31,22 +26,21 @@ class TestIndependentModuleFunctional:
         self.enum_frontend_asic_index = enum_frontend_asic_index
         self.conn_graph_facts = conn_graph_facts
         self.im_port_list = get_ports_supporting_im(self.duthost, self.conn_graph_facts)
+        self.sff_cables = get_sff_cables(self.duthost, CMD_REDIS_TRANSCEIVER_INFO, self.enum_frontend_asic_index,
+                                    self.im_port_list)
 
     def test_im_check_show_interfaces_transceiver_eeprom(self):
         """
         @summary: Check SFP transceiver info using 'show interface transceiver eeprom'
         """
         for port in self.im_port_list:
-            sfp_show_eeprom = self.duthost.command(f"{cmd_interface_transceiver} {port}")
+            sfp_show_eeprom = self.duthost.command(f"{CMD_INTERFACE_TRANSCEIVER} {port}")
             parsed_eeprom = parse_im_eeprom(sfp_show_eeprom["stdout"])
-            redis_output = parse_sfp_info_from_redis(self.duthost, cmd_redis_tranceiver_info,
+            redis_output = parse_sfp_info_from_redis(self.duthost, CMD_REDIS_TRANSCEIVER_INFO,
                                                      self.enum_frontend_asic_index, [port])
 
             # Compare information from eeprom and redis
-            for cli_eeprom_key, redis_key in EEPROM_TO_REDIS_KEY_MAP.items():
-                assert parsed_eeprom[cli_eeprom_key.replace("\\", "")] == redis_output[port][redis_key], \
-                    f"Data from cli param {cli_eeprom_key} does not match data from redis" \
-                    f" {redis_output[port][redis_key]}"
+            compare_data_from_cli_and_redis(parsed_eeprom, redis_output, port, EEPROM_TO_REDIS_KEY_MAP)
 
     def test_check_im_sfputil_eeprom_params(self):
         """
@@ -54,25 +48,26 @@ class TestIndependentModuleFunctional:
         """
 
         for port in self.im_port_list:
-            sfp_show_eeprom = self.duthost.command(f"{cmd_sfputil_eeprom} -p {port}")
+            sfp_show_eeprom = self.duthost.command(f"{CMD_SFPUTIL_EEPROM} -p {port}")
             parsed_eeprom = parse_im_eeprom(sfp_show_eeprom["stdout"])
-            redis_output = parse_sfp_info_from_redis(self.duthost, cmd_redis_tranceiver_info,
+            redis_output = parse_sfp_info_from_redis(self.duthost, CMD_REDIS_TRANSCEIVER_INFO,
                                                      self.enum_frontend_asic_index, [port])
 
             # Compare information from eeprom and redis
-            for cli_eeprom_key, redis_key in EEPROM_TO_REDIS_KEY_MAP.items():
-                assert parsed_eeprom[cli_eeprom_key.replace("\\", "")] == redis_output[port][redis_key], \
-                    f"Data from cli param {cli_eeprom_key} does not data from redis"
+            compare_data_from_cli_and_redis(parsed_eeprom, redis_output, port, EEPROM_TO_REDIS_KEY_MAP)
 
     def test_im_check_show_interfaces_transceiver_status(self):
         """
         @summary: Check SFP transceiver info using 'show interface transceiver status'
         """
         for port in self.im_port_list:
-            show_transceiver_status = self.duthost.command(f"{cmd_interface_transceiver_status} {port}")
-            parsed_tranceiver_status = parse_im_tranceiver_status(show_transceiver_status["stdout"])
-            redis_output = parse_sfp_info_from_redis(self.duthost, cmd_redis_tranceiver_status,
+            show_transceiver_status = self.duthost.command(f"{CMD_INTERFACE_TRANSCEIVER_STATUS} {port}")
+            redis_output = parse_sfp_info_from_redis(self.duthost, CMD_REDIS_TRANSCEIVER_STATUS,
                                                      self.enum_frontend_asic_index, [port])
+            if port in self.sff_cables:
+                logger.info(f"Port {port} has SFF cable connected, skip for this test")
+                continue
+            parsed_tranceiver_status = parse_im_tranceiver_status(show_transceiver_status["stdout"])
             # Compare information from cli and redis
             for cli_eeprom_key, redis_key in TRANSCEIVER_STATUS_TO_REDIS_KEY_MAP.items():
                 assert parsed_tranceiver_status[cli_eeprom_key] == redis_output[port][redis_key], \
@@ -116,7 +111,7 @@ class TestIndependentModuleFunctional:
         original_port_to_eeprom_dict = {}
         try:
             with allure.step(f"Verify Writing eeprom for {self.im_port_list}"):
-                sfp_type_not_support_write_on_passive_cable = ["cmis"]
+                sfp_type_not_support_write_on_passive_cable = ["cmis", "sff8636"]
                 for intf in self.im_port_list:
                     page = 0
                     offset = DICT_WRITABLE_BYTE_FOR_PAGE_0[sfp_type_im_port_dict[intf]]
