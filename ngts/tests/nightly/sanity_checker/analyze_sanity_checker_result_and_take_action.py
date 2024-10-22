@@ -19,6 +19,7 @@ SANITY_CHECKER_TEST_ACTION_MAP = {
     "test_more_then_2_fan_status_wrong_check": "stop",
     "test_fan_status_check": "raise warning msg in allure report and disable bug handler",
     "test_psu_status_check": "raise warning msg in allure report and disable bug handler",
+    "test_core_dump_file_in_var_core_check": "raise warning msg in allure report and disable bug handler"
 }
 RETURN_CODE = {"stop": 1,
                "continue": 0}
@@ -79,14 +80,16 @@ def take_action_based_on_sanity_checker_result(skip_stop_regression, setup_name)
             failed_sanity_checker_cases.append(case_name)
 
     if failed_sanity_checker_cases:
-        if os.path.exists(FILE_INCLUDE_FAILED_SANITY_CHECKER_CASE):
-            os.remove(FILE_INCLUDE_FAILED_SANITY_CHECKER_CASE)
-        with open(FILE_INCLUDE_FAILED_SANITY_CHECKER_CASE, "x") as f:
-            logger.info(f"write failed sanity checker cases into {FILE_INCLUDE_FAILED_SANITY_CHECKER_CASE}")
-            f.write(",".join(failed_sanity_checker_cases))
+        write_failed_sanity_checker_cases_to_file(failed_sanity_checker_cases)
 
     logger.info(f"failed sanity checker cases: {failed_sanity_checker_cases}")
     return RETURN_CODE["continue"]
+
+
+def write_failed_sanity_checker_cases_to_file(failed_sanity_checker_cases):
+    with open(FILE_INCLUDE_FAILED_SANITY_CHECKER_CASE, "a") as f:
+        logger.info(f"write failed sanity checker cases into {FILE_INCLUDE_FAILED_SANITY_CHECKER_CASE}")
+        f.write(",".join(failed_sanity_checker_cases))
 
 
 def parse_args():

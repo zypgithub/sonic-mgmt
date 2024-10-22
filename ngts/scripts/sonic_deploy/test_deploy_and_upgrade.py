@@ -8,6 +8,7 @@ import shutil
 import time
 import json
 import yaml
+import sys
 
 import allure
 import pytest
@@ -32,7 +33,12 @@ from ngts.tools.infra import get_platform_info
 
 logger = logging.getLogger()
 
+pytestmark = [
+    pytest.mark.dependency(depends=["test_deploy_and_upgrade"])
+]
 
+
+@pytest.mark.dependency()
 @pytest.mark.disable_loganalyzer
 @allure.title('Deploy and upgrade image')
 def test_deploy_and_upgrade(topology_obj, is_simx, is_performance, base_version, base_version_dpu, target_version,
@@ -508,3 +514,10 @@ def get_hwsku(sonic_topo, dest_hwsku, setup_name):
             logger.warning(f"No hwsku assigned, will use the default value: "
                            f"{hwsku_data[setup_name]['default_hwsku']}")
             return hwsku_data[setup_name]['default_hwsku']
+
+
+if 'base-version=/auto/sw_system_release/sonic' in ' '.join(sys.argv):
+    from ngts.tests.nightly.sanity_checker.test_sanity_checker import platform_json_data, is_in_deploy_image_flow, \
+        clear_file_inlcude_failed_sanity_check_case, test_device_asic_check, \
+        test_cable_connection_for_canonical_check, test_more_then_2_fan_status_wrong_check, test_psu_status_check, \
+        test_fan_status_check, test_cpld_version_check, test_core_dump_file_in_var_core_check

@@ -9,6 +9,8 @@ from retry.api import retry
 from ngts.cli_util.cli_parsers import generic_sonic_output_parser
 from ngts.helpers.secure_boot_helper import SonicSecureBootHelper
 from ngts.tests.conftest import get_dut_loopbacks
+from ngts.constants.constants import FILE_INCLUDE_FAILED_SANITY_CHECKER_CASE
+from ngts.tests.nightly.sanity_checker.analyze_sanity_checker_result_and_take_action import write_failed_sanity_checker_cases_to_file
 
 pytestmark = [
     pytest.mark.disable_loganalyzer
@@ -19,6 +21,29 @@ logger = logging.getLogger()
 POSSIBLE_CPLD_LIST = ['CPLD1', 'CPLD2', 'CPLD3', 'CPLD4']
 NOT_DEFINED_CPLD_DEVICES_LIST = ['MSN2010', 'SN4800']
 CURRENT_PATH = os.path.dirname(os.path.abspath(__file__))
+
+
+@pytest.fixture(scope='module')
+def sonic_topo():
+    return "ptf-any"
+
+
+@pytest.fixture(scope='module')
+def is_in_deploy_image_flow(request):
+    # When some sanity checker cases run in the following scripts, it will not fail the case when case fail
+    script_in_deploy_image_flow_list = ["test_deploy_and_upgrade.py", "test_apply_configuration.py"]
+    if request.node.name in script_in_deploy_image_flow_list:
+        logger.info("sanity checker cases are running in deploy flow script")
+        return True
+    else:
+        logger.info("sanity checker cases are not running in deploy flow script")
+        return False
+
+
+@pytest.fixture(scope='module', autouse=True)
+def clear_file_inlcude_failed_sanity_check_case():
+    if os.path.exists(FILE_INCLUDE_FAILED_SANITY_CHECKER_CASE):
+        os.remove(FILE_INCLUDE_FAILED_SANITY_CHECKER_CASE)
 
 
 @pytest.fixture(scope='module')
@@ -58,7 +83,7 @@ def enable_and_disable_fanout_lldp(request, engines, topology_obj, interfaces):
 
 
 @pytest.mark.sanity_checker_common
-def test_cpld_version_check(topology_obj, engines, platform_params, cli_objects):
+def test_cpld_version_check(topology_obj, engines, platform_params, cli_objects, request, is_in_deploy_image_flow, sonic_topo):
     """
     This test validates that the CPLD version(s) deployed on the dut are the latest approved ones,
     as defined in the firmware.json versions file. If not, try it install the latest one.
@@ -70,6 +95,9 @@ def test_cpld_version_check(topology_obj, engines, platform_params, cli_objects)
     :param engines: engines fixture
     :param platform_params: platform_params fixture
     """
+    if "dpu" in sonic_topo:
+        pytest.skip("DPU platform does not support this case")
+    is_test_failed = False
     with allure.step('Getting info about the CPLD component from firmware.json'):
         cpld_component_data = None
         defined_cpld = None
@@ -82,8 +110,10 @@ def test_cpld_version_check(topology_obj, engines, platform_params, cli_objects)
                 logger.info(e)
                 pass
         device_with_not_defined_cpld = platform_params.filtered_platform.upper() in NOT_DEFINED_CPLD_DEVICES_LIST
-        assert device_with_not_defined_cpld or (defined_cpld and cpld_component_data), \
-            "Failed to get the data for any CPLD from the firmware.json"
+        if not (device_with_not_defined_cpld or (defined_cpld and cpld_component_data)):
+            err_msg = "Failed to get the data for any CPLD from the firmware.json"
+            assert_failure_or_just_print_err(err_msg, is_in_deploy_image_flow)
+            is_test_failed = True
 
     with allure.step('Getting info about CPLD from dut'):
         component_versions_dict = get_info_about_current_components_version_dict(engines.dut)
@@ -93,28 +123,35 @@ def test_cpld_version_check(topology_obj, engines, platform_params, cli_objects)
             _, latest_cpld_ver = SonicSecureBootHelper.get_latest_expected_cpld(cpld_component_data, defined_cpld)
             current_cpld_ver = component_versions_dict[defined_cpld]
             if current_cpld_ver != latest_cpld_ver:
-                dut_topology_obj = topology_obj.players['dut']['cli']
-                try:
-                    with allure.step(f'Shutdown bpg all'):
-                        dut_topology_obj.bgp.shutdown_bgp_all()
-                    with allure.step(f'Restore CPLD to {latest_cpld_ver}'):
-                        logger.info(f"Restore CPLD to the expected one:{latest_cpld_ver}")
-                        SonicSecureBootHelper.restore_cpld(cli_objects, engines, topology_obj, platform_params, defined_cpld)
-                    with allure.step("disconnect dut"):
-                        engines.dut.disconnect()
-                    with allure.step(f" After power cycle, check containers and interfaces are up"):
-                        dut_topology_obj.general.verify_dockers_are_up()
-                        check_port_oper_up_on_admin_up(dut_topology_obj)
+                if not is_in_deploy_image_flow:
+                    dut_topology_obj = topology_obj.players['dut']['cli']
+                    try:
+                        with allure.step(f'Shutdown bpg all'):
+                            dut_topology_obj.bgp.shutdown_bgp_all()
+                        with allure.step(f'Restore CPLD to {latest_cpld_ver}'):
+                            logger.info(f"Restore CPLD to the expected one:{latest_cpld_ver}")
+                            SonicSecureBootHelper.restore_cpld(cli_objects, engines, topology_obj, platform_params, defined_cpld)
+                        with allure.step("disconnect dut"):
+                            engines.dut.disconnect()
+                        with allure.step(f" After power cycle, check containers and interfaces are up"):
+                            dut_topology_obj.general.verify_dockers_are_up()
+                            check_port_oper_up_on_admin_up(dut_topology_obj)
 
-                    with allure.step(f"Check if the cpld version is updated to {latest_cpld_ver}"):
-                        component_versions_dict = get_info_about_current_components_version_dict(engines.dut)
-                        current_cpld_ver = component_versions_dict[defined_cpld]
-                        assert current_cpld_ver == latest_cpld_ver, \
-                            f'Current {defined_cpld} version: {current_cpld_ver} is not latest: {latest_cpld_ver}'
-                except Exception as err:
-                    logger.info(f"Fail to restore cpld \n. {err}")
-                    with allure.step(f'Start bpg all'):
-                        dut_topology_obj.startup_bgp_all()
+                        with allure.step(f"Check if the cpld version is updated to {latest_cpld_ver}"):
+                            component_versions_dict = get_info_about_current_components_version_dict(engines.dut)
+                            current_cpld_ver = component_versions_dict[defined_cpld]
+                            assert current_cpld_ver == latest_cpld_ver, \
+                                f'Current {defined_cpld} version: {current_cpld_ver} is not latest: {latest_cpld_ver}'
+                    except Exception as err:
+                        logger.info(f"Fail to restore cpld \n. {err}")
+                        with allure.step(f'Start bpg all'):
+                            dut_topology_obj.startup_bgp_all()
+                else:
+                    logger.error(
+                        f"The current CPLD {current_cpld_ver} ver does not match the latest one {latest_cpld_ver}")
+                    is_test_failed = True
+
+        write_failed_case_name(is_test_failed, request.node.name, is_in_deploy_image_flow)
 
 
 @pytest.mark.sanity_checker_ci
@@ -135,13 +172,13 @@ def test_device_asic_check(engines, platform_params):
     assert pci_device_name, "device asic is not up"
 
 
+@pytest.mark.flaky(reruns=30, reruns_delay=4)
 @pytest.mark.sanity_checker_community
 def test_cable_connection_between_dut_and_fanout_check(engines, topology_obj, request, enable_and_disable_fanout_lldp):
     """
     This test is verify that cable connection between dut and fanout is ok.
     If case fail, the consequent regression steps will be stopped by mars
     """
-
     cli_object_a = topology_obj.players['dut']['cli']
     dut_a = engines.dut
 
@@ -157,6 +194,7 @@ def test_cable_connection_between_dut_and_fanout_check(engines, topology_obj, re
             check_one_dut_to_fanout_cable_connection(cli_object_a, dut_b)
 
 
+@pytest.mark.flaky(reruns=30, reruns_delay=4)
 @pytest.mark.sanity_checker_community
 def test_bgp_session_status_check(topology_obj):
     """
@@ -170,12 +208,15 @@ def test_bgp_session_status_check(topology_obj):
             f"The bpg session with neighbor {neighbor_ip} doesn't work"
 
 
+@pytest.mark.flaky(reruns=30, reruns_delay=4)
 @pytest.mark.sanity_checker_canonical
-def test_cable_connection_for_canonical_check(topology_obj):
+def test_cable_connection_for_canonical_check(topology_obj, sonic_topo):
     """
     This test is verify that the cable connection for canonical setup is ok.
     If case fail, the consequent regression steps will be stopped by mars
     """
+    if sonic_topo != "ptf-any":
+        pytest.skip(f"The topo {sonic_topo} does not support the case ")
     dut_cli_object = topology_obj.players['dut']['cli']
     lldp_table_info = dut_cli_object.lldp.parse_lldp_table_info()
 
@@ -201,14 +242,16 @@ def test_cable_connection_for_canonical_check(topology_obj):
             3], f"loopback for ports {ports} doesn't match the definition in noga"
 
 
+@pytest.mark.flaky(reruns=30, reruns_delay=4)
 @pytest.mark.sanity_checker_ci
 @pytest.mark.sanity_checker_common
-def test_fan_status_check(platform_params, topology_obj, platform_json_data):
+def test_fan_status_check(platform_params, topology_obj, platform_json_data, request, is_in_deploy_image_flow):
     """
     This test is verify that the fan status is ok.
     If case fail, we will raise the failed case information in the allure report and disable bug handler tool
     """
     fan_status_info = topology_obj.players['dut']['cli'].chassis.show_platform_fan()
+    is_test_failed = False
 
     if len(platform_json_data["chassis"]["fan_drawers"]) == 1:
         fan_number = len(platform_json_data["chassis"]["fan_drawers"][0]["fans"])
@@ -218,11 +261,20 @@ def test_fan_status_check(platform_params, topology_obj, platform_json_data):
     for fan_name, status_info in fan_status_info.items():
         if "psu" not in fan_name:
             actual_fan_number += 1
-        assert status_info["Status"].lower() == "ok", f"The status of {fan_name} is not ok"
-    assert actual_fan_number in [fan_number, fan_number * 2], \
-        f"fan number is not correct. expected:{fan_number} or {fan_number * 2}, actual: {actual_fan_number}"
+        if status_info["Status"].lower() != "ok":
+            err_msg = f"The status of {fan_name} is not ok"
+            assert_failure_or_just_print_err(err_msg, is_in_deploy_image_flow)
+            is_test_failed = True
+
+    if actual_fan_number not in [fan_number, fan_number * 2]:
+        err_msg = f"fan number is not correct. expected:{fan_number} or {fan_number * 2}, actual: {actual_fan_number}"
+        assert_failure_or_just_print_err(err_msg, is_in_deploy_image_flow)
+        is_test_failed = True
+
+    write_failed_case_name(is_test_failed, request.node.name, is_in_deploy_image_flow)
 
 
+@pytest.mark.flaky(reruns=30, reruns_delay=4)
 @pytest.mark.sanity_checker_ci
 @pytest.mark.sanity_checker_common
 def test_more_then_2_fan_status_wrong_check(topology_obj):
@@ -241,19 +293,48 @@ def test_more_then_2_fan_status_wrong_check(topology_obj):
         f"The status of {broken_fan_number} fan are not ok "
 
 
+@pytest.mark.flaky(reruns=30, reruns_delay=4)
 @pytest.mark.sanity_checker_ci
 @pytest.mark.sanity_checker_common
-def test_psu_status_check(platform_params, topology_obj, platform_json_data):
+def test_psu_status_check(platform_params, topology_obj, platform_json_data, request, is_in_deploy_image_flow):
     """
     This test is verify the psu status is ok or not
     If case fail, we will raise the failed case information in the allure report and disable bug handler tool
     """
+    is_test_failed = False
     psu_status_info = topology_obj.players['dut']['cli'].chassis.show_platform_psu_status()
     psu_number = len(platform_json_data["chassis"]["psus"])
     actual_psu_number = len(psu_status_info.keys())
-    assert actual_psu_number == psu_number, f"psu number is correct.Expected: {psu_number}, actual: {actual_psu_number}"
+
+    if actual_psu_number != psu_number:
+        err_msg = f"psu number is correct.Expected: {psu_number}, actual: {actual_psu_number}"
+        assert_failure_or_just_print_err(err_msg, is_in_deploy_image_flow)
+        is_test_failed = True
+
     for psu_name, status_info in psu_status_info.items():
-        assert status_info["Status"].lower() == "ok", f"The status of {psu_name} is not ok"
+        if status_info["Status"].lower() != "ok":
+            err_msg = f"The status of {psu_name} is not ok"
+            assert_failure_or_just_print_err(err_msg, is_in_deploy_image_flow)
+            is_test_failed = True
+
+    write_failed_case_name(is_test_failed, request.node.name, is_in_deploy_image_flow)
+
+
+@pytest.mark.sanity_checker_common
+def test_core_dump_file_in_var_core_check(engines, request, is_in_deploy_image_flow):
+    """
+    This test is verify if the folder of /var/core has the core dump file, if yes fail case
+    If case fail, we will raise the failed case information in the allure report and disable bug handler tool
+    """
+    is_test_failed = False
+    var_core_data = engines.dut.run_cmd("ls /var/core")
+
+    if var_core_data:
+        err_msg = f"/var/core folder has core dump file: {var_core_data}"
+        assert_failure_or_just_print_err(err_msg, is_in_deploy_image_flow)
+        is_test_failed = True
+
+    write_failed_case_name(is_test_failed, request.node.name, is_in_deploy_image_flow)
 
 
 def get_info_about_current_components_version_dict(engine):
@@ -339,3 +420,16 @@ def check_port_oper_up_on_admin_up(dut_topology_obj):
         for port, status in port_status.items():
             if status["Admin"] == "up":
                 assert status["Oper"] == 'up', f"{port} is not up"
+
+
+def assert_failure_or_just_print_err(print_msg, is_in_deploy_image_flow):
+    if is_in_deploy_image_flow:
+        logger.error(print_msg)
+    else:
+        assert False, print_msg
+
+
+def write_failed_case_name(is_test_failed, case_name, is_in_deploy_image_flow):
+    if is_test_failed and is_in_deploy_image_flow:
+        logger.info(f"write test name {case_name} to file")
+        write_failed_sanity_checker_cases_to_file([f"{case_name} "])

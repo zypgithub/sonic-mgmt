@@ -8,6 +8,12 @@ from ngts.constants.constants import SonicConst
 logger = logging.getLogger()
 
 
+pytestmark = [
+    pytest.mark.dependency(depends=["test_apply_basic_conf"])
+]
+
+
+@pytest.mark.dependency()
 @pytest.mark.reboot_reload
 @pytest.mark.disable_loganalyzer
 @allure.title('Apply Sonic Basic Configuration')
@@ -77,3 +83,7 @@ def check_ports_exist(topology_obj, cli_object):
             missing_ports.append(port)
     if missing_ports:
         raise AssertionError(f"show interfaces status doesn't show status of ports: {missing_ports}")
+
+
+from ngts.tests.nightly.sanity_checker.test_sanity_checker import is_in_deploy_image_flow, \
+    clear_file_inlcude_failed_sanity_check_case, test_core_dump_file_in_var_core_check
