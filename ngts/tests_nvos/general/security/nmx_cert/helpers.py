@@ -65,7 +65,7 @@ def run_manager_client_hello_request(client_tls_mode: str, server_cert: CertInfo
                                     delay_between_requests=delay_between_requests))
     try:
         with allure.step('run client hello request'):
-            responses = run_grpc_client(config, TestToolkit.engines.dut.ip, logging)
+            responses = run_grpc_client(config, TestToolkit.engines.dut.ip, logging, False)
         result.returned_value = responses
     except Exception as e:
         result = ResultObj(result=False, info=f'client failed:\n{e}', returned_value=None)

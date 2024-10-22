@@ -87,9 +87,10 @@ def run_grpc_client_app(config: GrpcConfig, logger=None) -> str:
     return ClientApp(config, logger).run()
 
 
-def run_grpc_client(config, remote_host_addr='127.0.0.1', logger=None):
-    remove_etc_host_mapping_to_dn(config.server.address)
-    add_etc_host_mapping_to_dn(config.server.address, remote_host_addr)
+def run_grpc_client(config, remote_host_addr='127.0.0.1', logger=None, skip_etc_mapping=False):
+    if not skip_etc_mapping:
+        remove_etc_host_mapping_to_dn(config.server.address)
+        add_etc_host_mapping_to_dn(config.server.address, remote_host_addr)
 
     return run_grpc_client_app(config, logger)
 
@@ -114,7 +115,7 @@ def main_with_switch():
             tls_mode=EncryptionMode.MTLS,
             cert=TestCert.cert_valid_2,
             cacert=TestCert.cert_valid_1,
-            num_requests=3,
+            num_requests=2,
             delay_between_requests=1
         )
     )
