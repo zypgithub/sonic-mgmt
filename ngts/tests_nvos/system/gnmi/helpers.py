@@ -447,6 +447,7 @@ def get_scp_player(engines) -> LinuxSshEngine:
     # return LinuxSshEngine(ip='10.237.116.70', username='root', password='12345')
     # return LinuxSshEngine(ip='10.237.116.84', username='root', password='12345')
     # return LinuxSshEngine(ip='10.237.38.124', username='root', password='12345')
+    # return LinuxSshEngine(ip='10.237.38.139', username='root', password='12345')
 
 
 def verify_gnmi_client_tools_installed():
