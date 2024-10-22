@@ -72,7 +72,7 @@ def test_show_nvl5_interface_commands(engines, devices, test_api):
         if not isinstance(dut_device, JulietNonScaleoutSwitch):
             with allure_step("Verify switch port speed"):
                 if devices.dut.nvl5_trunk_ports_list != []:
-                    selected_port = Tools.RandomizationTool.select_random_port(requested_ports_logical_state=NvosConsts.LINK_LOG_STATE_INITIALIZE, interface_type='sw').get_returned_value()
+                    selected_port = Tools.RandomizationTool.select_random_port(requested_ports_state=NvosConsts.LINK_STATE_UP, interface_type='sw').get_returned_value()
                     output_dictionary = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
                         selected_port.interface.link.show()).get_returned_value()
                     assert output_dictionary[IbInterfaceConsts.LINK_SPEED] == dut_device.nvl5_port_speed, \
@@ -135,7 +135,7 @@ def test_show_nvl5_interface_commands(engines, devices, test_api):
 
 
 @pytest.mark.interface
-def test_toggle_interface_state(test_name):
+def test_toggle_interface_state(test_name, devices):
     """
     Configure port interface state and verify the configuration applied successfully
     Relevant cli commands:
@@ -159,7 +159,7 @@ def test_toggle_interface_state(test_name):
             if devices.dut.nvl5_trunk_ports_list == [] and interface_type == 'sw':
                 continue
             port_type = 'fnm' if interface_type == 'fnm' else ''
-            selected_port = Tools.RandomizationTool.select_random_port(requested_ports_logical_state=NvosConsts.LINK_LOG_STATE_INITIALIZE, requested_ports_type=port_type, interface_type=interface_type).get_returned_value()
+            selected_port = Tools.RandomizationTool.select_random_port(requested_ports_state=NvosConsts.LINK_STATE_UP, requested_ports_type=port_type, interface_type=interface_type).get_returned_value()
         TestToolkit.update_tested_ports([selected_port])
         toggle_port_state(selected_port, NvosConsts.LINK_STATE_DOWN, test_name)
         port_init_state_restored = False

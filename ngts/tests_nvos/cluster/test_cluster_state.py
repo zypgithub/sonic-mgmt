@@ -66,7 +66,7 @@ def test_cluster_state(engines, devices, test_api):
                     # assert output['nmxc-conn'] == state, f"nmxc-conn state is {output['nmxc-conn']} " \
                     #                                                   f"instead of {state}"
         with allure.step("Apply a non defined state"):
-            output = cluster.set(op_param_name="state", op_param_value=ClusterConsts.ClusterConsts)
+            output = cluster.set(op_param_name="state", op_param_value=ClusterConsts.UNDEFINED_STATE)
             output = output.info.split('\n')[1]
             assert output == ClusterConsts.UNDEFINED_STATE_DICT[test_api], f"Expected error message {ClusterConsts.UNDEFINED_STATE_DICT[test_api]}, " \
                 f"actual message received {output}"
