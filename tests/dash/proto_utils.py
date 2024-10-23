@@ -20,9 +20,10 @@ from dash_api.route_pb2 import Route
 from dash_api.route_rule_pb2 import RouteRule
 from dash_api.route_type_pb2 import (ActionType, RouteType, RouteTypeItem,
                                      RoutingType)
-from dash_api.types_pb2 import IpPrefix, IpVersion, ValueOrRange
+from dash_api.types_pb2 import IpPrefix, IpVersion, ValueOrRange, IpAddress
 from dash_api.vnet_mapping_pb2 import VnetMapping
 from dash_api.vnet_pb2 import Vnet
+from dash_api.pa_validation_pb2 import PaValidation
 from google.protobuf.descriptor import FieldDescriptor
 from google.protobuf.json_format import ParseDict
 
@@ -51,6 +52,11 @@ PB_CLASS_MAP = {
     "ROUTING_TYPE": RouteType,
     "ROUTE_GROUP": RouteGroup,
     "ENI_ROUTE": EniRoute,
+    "QOS": Qos,
+    "ROUTE_RULE": RouteRule,
+    "ACL_GROUP": AclGroup,
+    "ACL_RULE": AclRule,
+    "PA_VALIDATION": PaValidation
 }
 
 
@@ -88,9 +94,11 @@ def parse_dash_proto(key: str, proto_dict: dict):
     new_dict = {}
     for key, value in proto_dict.items():
         if field_map[key].type == field_map[key].TYPE_MESSAGE:
-
             if field_map[key].message_type.name == "IpAddress":
-                new_dict[key] = parse_ip_address(value)
+                if field_map[key].label == field_map[key].LABEL_REPEATED:
+                    new_dict[key] = [parse_ip_address(ip) for ip in value]
+                else:
+                    new_dict[key] = parse_ip_address(value)
             elif field_map[key].message_type.name == "IpPrefix":
                 new_dict[key] = parse_ip_prefix(value)
             elif field_map[key].message_type.name == "Guid":
@@ -266,6 +274,15 @@ def prefix_tag_from_json(json_obj):
     return pb
 
 
+def pa_validation_from_json(json_obj):
+    pb = PaValidation()
+    for addr in json_obj["addresses"]:
+        ip = IpAddress()
+        ip.ipv4 = socket.htonl(int(ipaddress.ip_address(addr)))
+        pb.addresses.extend([ip])
+    return pb
+
+
 handlers_map = {
     "APPLIANCE": appliance_from_json,
     "VNET": vnet_from_json,
@@ -280,6 +297,7 @@ handlers_map = {
     "ACL_IN": acl_in_from_json,
     "ACL_RULE": acl_rule_from_json,
     "PREFIX_TAG": prefix_tag_from_json,
+    "PA_VALIDATION": pa_validation_from_json,
 }
 
 

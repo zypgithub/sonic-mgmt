@@ -155,7 +155,7 @@ def test_deploy_and_upgrade(topology_obj, is_simx, is_performance, base_version,
                 if "DARK_MODE=true" in topology_obj.players['dut']['engine'].run_cmd("cat /etc/mlnx/dpu.conf"):
                     with allure.step('Disable dark mode and power cycle'):
                         topology_obj.players['dut']['engine'].run_cmd(
-                            'sudo sh -c "echo DARK_MODE=false > /etc/mlnx/dpu.conf"')
+                            'sudo sh -c "sed -i \'s/DARK_MODE=true/DARK_MODE=false/\' /etc/mlnx/dpu.conf"')
                         time.sleep(5)
                         cli_obj.remote_reboot(topology_obj)
                         cli_obj.verify_dockers_are_up()

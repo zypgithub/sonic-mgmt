@@ -2,6 +2,9 @@ import logging
 import pytest
 import os
 
+from tests.smart_switch.dpuhost import DpuHost
+from ipaddress import ip_address
+from tests.common.platform.interface_utils import get_dpu_npu_ports_from_hwsku
 
 logger = logging.getLogger(__name__)
 SMARTSWITCH_PLATFORMS = ['x86_64-nvidia_sn4280-r0']
@@ -48,6 +51,27 @@ def copy_proxy_ssh(duthost, platform):
                      dest='/usr/local/bin/proxy_ssh.py')
         duthost.shell("sudo chmod 777 /usr/local/bin/proxy_ssh.py")
         logger.info("The proxy_ssh.py is copied to /usr/local/bin/proxy_ssh.py")
+
+
+@pytest.fixture(scope="session", autouse=True)
+def dpuhosts(duthost, copy_proxy_ssh):
+    dpuhosts = []
+    base_ip = ip_address("169.254.200.1")
+    data_port_base_ip = ip_address("10.0.0.74")
+    dpu_npu_port_list = sorted(get_dpu_npu_ports_from_hwsku(duthost))
+    for index, port in enumerate(dpu_npu_port_list):
+        npu_data_port_ip = str(data_port_base_ip + index * 2)
+        dpu_data_port_ip = str(ip_address(npu_data_port_ip) + 1)
+        dpu_info = {
+            "name": f"dpu{index}",
+            "mgmt_ip": str(base_ip + index),
+            "data_port": port,
+            "npu_data_port_ip": npu_data_port_ip,
+            "dpu_data_port_ip": dpu_data_port_ip,
+            "dataplane_mask_length": 31
+        }
+        dpuhosts.append(DpuHost(duthost, **dpu_info))
+    return dpuhosts
 
 
 def dpu_shell(dpu_mgmt_ip):

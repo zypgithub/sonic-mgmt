@@ -528,17 +528,18 @@ class SonicInstallationSteps:
                     os.system("dpkg --install ./libdashapi_1.0.0_amd64.deb")
             if deploy_dpu:
                 with allure.step('Apply DPU IP assignment configuration'):
+                    config_file_name = "dpu_basic_config.json"
                     dut_engine = topology_obj.players['dut']['engine']
                     config_path = \
                         os.path.join(MarsConstants.SONIC_MGMT_DIR,
-                                     "tests/smart_switch/dpu_ip_assignment_config.json")
+                                     f"tests/smart_switch/{config_file_name}")
                     dut_engine.copy_file(source_file=config_path,
-                                         dest_file="dpu_ip_assignment_config.json", file_system='/tmp/',
+                                         dest_file=config_file_name, file_system='/tmp/',
                                          overwrite_file=True, verify_file=False)
                     dut_engine.run_cmd(
                         'sudo cp /etc/sonic/config_db.json /etc/sonic/config_db.backup.json')
                     dut_engine.run_cmd(
-                        'sudo sonic-cfggen -j /tmp/dpu_ip_assignment_config.json --write-to-db', validate=True)
+                        f'sudo sonic-cfggen -j /tmp/{config_file_name} --write-to-db', validate=True)
                     general_cli_obj.save_configuration()
 
             # Enable IM

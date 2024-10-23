@@ -3,7 +3,6 @@ import logging
 import re
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 from tests.common.helpers.assertions import pytest_assert
-from tests.common.config_reload import config_reload
 from tests.common.utilities import wait_until
 from tests.common.platform.interface_utils import get_dpu_npu_ports_from_hwsku
 
@@ -24,27 +23,6 @@ def skip_non_smartswitch_testbed(duthost, tbinfo):
     hwsku = duthost.facts["hwsku"]
     if hwsku not in IP_ADDRESS_LIST.keys():
         pytest.skip("This test is only for smart switch")
-
-
-@pytest.fixture(autouse=True)
-def apply_ip_assignment_config(duthost):
-    # Apply the ip assignment config if it was not applied in deployment
-    config_applied_by_test = False
-    config_facts = duthost.get_running_config_facts()
-    if config_facts['DEVICE_METADATA']['localhost'].get('subtype') != 'SmartSwitch':
-        with allure.step('Apply DPU IP assignment configuration'):
-            duthost.copy(src='smart_switch/dpu_ip_assignment_config.json',
-                         dest='/tmp/dpu_ip_assignment_config.json')
-            duthost.shell('sudo sonic-cfggen -j /tmp/dpu_ip_assignment_config.json --write-to-db')
-            duthost.shell('sudo config save -y')
-            config_applied_by_test = True
-            config_reload(duthost, safe_reload=True)
-
-    yield
-
-    if config_applied_by_test:
-        with allure.step('Restore the config via loading minigraph'):
-            config_reload(duthost, config_source='minigraph', safe_reload=True, check_intf_up_ports=True)
 
 
 def test_dpu_ip_assignment(duthost, creds):
@@ -105,5 +83,5 @@ def test_dpu_ip_assignment(duthost, creds):
         pattern = r"Ethernet0.*up.*up"
         cmd = "show interface status Ethernet0"
         for address in ip_addresses:
-            output = duthost.shell(f'sudo proxy_ssh.py --dpu-mgmt-ip {dpu_mgmt_ip} --cmd "{cmd}"')['stdout']
+            output = duthost.shell(f'sudo proxy_ssh.py --dpu-mgmt-ip {address} --cmd "{cmd}"')['stdout']
             pytest_assert(re.search(pattern, output), f"The Ethernet0 port of dpu {address} is not up.")

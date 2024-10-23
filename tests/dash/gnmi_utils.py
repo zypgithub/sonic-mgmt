@@ -193,6 +193,8 @@ def apply_gnmi_cert(duthost, ptfhost):
     dut_command += "--ca_crt %s%s " % (env.gnmi_cert_path, env.gnmi_ca_cert)
     if env.enable_zmq:
         dut_command += " -zmq_address=tcp://127.0.0.1:8100 "
+        if duthost.facts['asic_type'] == 'mellanox':
+            dut_command += "-zmq_dpu_proxy_address_base=127.0.10.10 "
     dut_command += "-gnmi_native_write=true -v=10 >/root/gnmi.log 2>&1 &\""
     duthost.shell(dut_command)
     time.sleep(env.gnmi_server_start_wait_time)
