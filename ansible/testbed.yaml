@@ -3482,7 +3482,7 @@
   ptf_ip: 10.215.28.122/16
   ptf_ipv6:
   server: server_68
-  vm_base: VM3301
+  vm_base: VM3333
   dut:
     - r-panther-01
   comment: Mellanox MTR testbed
@@ -3495,7 +3495,7 @@
   ptf_ip: 10.215.28.122/16
   ptf_ipv6:
   server: server_68
-  vm_base: VM3301
+  vm_base: VM3333
   dut:
     - r-panther-01
   comment: Mellanox MTR testbed
@@ -3508,7 +3508,7 @@
   ptf_ip: 10.215.28.122/16
   ptf_ipv6:
   server: server_68
-  vm_base: VM3301
+  vm_base: VM3333
   dut:
     - r-panther-01
   comment: Mellanox MTR testbed
@@ -3521,7 +3521,7 @@
   ptf_ip: 10.215.28.122/16
   ptf_ipv6:
   server: server_68
-  vm_base: VM3301
+  vm_base: VM3333
   dut:
     - r-panther-01
   comment: Mellanox MTR testbed
@@ -3534,7 +3534,7 @@
   ptf_ip: 10.215.28.122/16
   ptf_ipv6:
   server: server_68
-  vm_base: VM3301
+  vm_base: VM3333
   dut:
     - r-panther-01
   comment: Mellanox MTR testbed
@@ -3547,7 +3547,7 @@
   ptf_ip: 10.215.28.122/16
   ptf_ipv6:
   server: server_68
-  vm_base: VM3301
+  vm_base: VM3333
   dut:
     - r-panther-01
   comment: Mellanox MTR testbed
@@ -3560,7 +3560,7 @@
   ptf_ip: 10.215.32.182/16
   ptf_ipv6:
   server: server_67
-  vm_base: VM3201
+  vm_base: VM3233
   dut:
     - r-panther-02
   comment: Mellanox MTR testbed
@@ -3573,7 +3573,7 @@
   ptf_ip: 10.215.32.182/16
   ptf_ipv6:
   server: server_67
-  vm_base: VM3201
+  vm_base: VM3233
   dut:
     - r-panther-02
   comment: Mellanox MTR testbed
@@ -3586,7 +3586,7 @@
   ptf_ip: 10.215.32.182/16
   ptf_ipv6:
   server: server_67
-  vm_base: VM3201
+  vm_base: VM3233
   dut:
     - r-panther-02
   comment: Mellanox MTR testbed
@@ -3599,7 +3599,7 @@
   ptf_ip: 10.215.32.182/16
   ptf_ipv6:
   server: server_67
-  vm_base: VM3201
+  vm_base: VM3233
   dut:
     - r-panther-02
   comment: Mellanox MTR testbed
@@ -3612,7 +3612,7 @@
   ptf_ip: 10.215.32.182/16
   ptf_ipv6:
   server: server_67
-  vm_base: VM3201
+  vm_base: VM3233
   dut:
     - r-panther-02
   comment: Mellanox MTR testbed
@@ -3625,7 +3625,7 @@
   ptf_ip: 10.215.32.182/16
   ptf_ipv6:
   server: server_67
-  vm_base: VM3201
+  vm_base: VM3233
   dut:
     - r-panther-02
   comment: Mellanox MTR testbed
@@ -3872,7 +3872,7 @@
   ptf_ip: 10.215.34.182/16
   ptf_ipv6:
   server: server_74
-  vm_base: VM3901
+  vm_base: VM3933
   dut:
     - r-panther-23
   comment: Mellanox MTR testbed
@@ -3885,7 +3885,7 @@
   ptf_ip: 10.215.34.182/16
   ptf_ipv6:
   server: server_74
-  vm_base: VM3901
+  vm_base: VM3933
   dut:
     - r-panther-23
   comment: Mellanox MTR testbed
@@ -3898,7 +3898,7 @@
   ptf_ip: 10.215.34.182/16
   ptf_ipv6:
   server: server_74
-  vm_base: VM3901
+  vm_base: VM3933
   dut:
     - r-panther-23
   comment: Mellanox MTR testbed
@@ -3911,7 +3911,7 @@
   ptf_ip: 10.215.34.182/16
   ptf_ipv6:
   server: server_74
-  vm_base: VM3901
+  vm_base: VM3933
   dut:
     - r-panther-23
   comment: Mellanox MTR testbed
@@ -3924,7 +3924,7 @@
   ptf_ip: 10.215.34.182/16
   ptf_ipv6:
   server: server_74
-  vm_base: VM3901
+  vm_base: VM3933
   dut:
     - r-panther-23
   comment: Mellanox MTR testbed
@@ -3937,7 +3937,7 @@
   ptf_ip: 10.215.34.182/16
   ptf_ipv6:
   server: server_74
-  vm_base: VM3901
+  vm_base: VM3933
   dut:
     - r-panther-23
   comment: Mellanox MTR testbed
@@ -4106,7 +4106,7 @@
   ptf_ip: 10.215.32.3/16
   ptf_ipv6:
   server: server_80
-  vm_base: VM4501
+  vm_base: VM4533
   dut:
     - r-panther-47
   comment: Mellanox MTR testbed
@@ -4119,7 +4119,7 @@
   ptf_ip: 10.215.32.3/16
   ptf_ipv6:
   server: server_80
-  vm_base: VM4501
+  vm_base: VM4533
   dut:
     - r-panther-47
   comment: Mellanox MTR testbed
@@ -4132,7 +4132,7 @@
   ptf_ip: 10.215.32.3/16
   ptf_ipv6:
   server: server_80
-  vm_base: VM4501
+  vm_base: VM4533
   dut:
     - r-panther-47
   comment: Mellanox MTR testbed
@@ -4145,7 +4145,7 @@
   ptf_ip: 10.215.32.3/16
   ptf_ipv6:
   server: server_80
-  vm_base: VM4501
+  vm_base: VM4533
   dut:
     - r-panther-47
   comment: Mellanox MTR testbed
@@ -4158,7 +4158,7 @@
   ptf_ip: 10.215.32.3/16
   ptf_ipv6:
   server: server_80
-  vm_base: VM4501
+  vm_base: VM4533
   dut:
     - r-panther-47
   comment: Mellanox MTR testbed
@@ -4171,7 +4171,7 @@
   ptf_ip: 10.215.32.3/16
   ptf_ipv6:
   server: server_80
-  vm_base: VM4501
+  vm_base: VM4533
   dut:
     - r-panther-47
   comment: Mellanox MTR testbed
@@ -4262,7 +4262,7 @@
   ptf_ip: 10.245.40.3/16
   ptf_ipv6:
   server: server_82
-  vm_base: VM4701
+  vm_base: VM4733
   dut:
     - mtvr-panther-02
   comment: Mellanox MTR testbed
@@ -4275,7 +4275,7 @@
   ptf_ip: 10.245.40.3/16
   ptf_ipv6:
   server: server_82
-  vm_base: VM4701
+  vm_base: VM4733
   dut:
     - mtvr-panther-02
   comment: Mellanox MTR testbed
@@ -4288,7 +4288,7 @@
   ptf_ip: 10.245.40.3/16
   ptf_ipv6:
   server: server_82
-  vm_base: VM4701
+  vm_base: VM4733
   dut:
     - mtvr-panther-02
   comment: Mellanox MTR testbed
@@ -4301,7 +4301,7 @@
   ptf_ip: 10.245.40.3/16
   ptf_ipv6:
   server: server_82
-  vm_base: VM4701
+  vm_base: VM4733
   dut:
     - mtvr-panther-02
   comment: Mellanox MTR testbed
@@ -4314,7 +4314,7 @@
   ptf_ip: 10.245.40.3/16
   ptf_ipv6:
   server: server_82
-  vm_base: VM4701
+  vm_base: VM4733
   dut:
     - mtvr-panther-02
   comment: Mellanox MTR testbed
@@ -4327,7 +4327,7 @@
   ptf_ip: 10.245.40.3/16
   ptf_ipv6:
   server: server_82
-  vm_base: VM4701
+  vm_base: VM4733
   dut:
     - mtvr-panther-02
   comment: Mellanox MTR testbed
@@ -4912,7 +4912,7 @@
   ptf_ip: 10.215.32.3/16
   ptf_ipv6:
   server: server_80
-  vm_base: VM4501
+  vm_base: VM4533
   dut:
     - r-panther-47
   comment: Mellanox MTR testbed
@@ -4938,7 +4938,7 @@
   ptf_ip: 10.245.40.3/16
   ptf_ipv6:
   server: server_82
-  vm_base: VM4701
+  vm_base: VM4733
   dut:
     - mtvr-panther-02
   comment: Mellanox MTR testbed
