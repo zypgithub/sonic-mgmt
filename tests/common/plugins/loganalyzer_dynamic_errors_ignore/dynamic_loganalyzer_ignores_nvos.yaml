@@ -546,16 +546,6 @@
         - 3599794
 
 - Errors_list:
-    - '.* ERR neighbor_advertiser: EVERFLOW table does not exist.*'
-  Conditions:
-    - Affected_test_cases:
-        - decap/test_decap.py
-      Redmine:
-        - 3431638
-      Platform:
-        - 5600
-
-- Errors_list:
     - '.*ERR swss#orchagent: :- meta_generic_validation_remove: object.*'
     - '.*ERR swss#orchagent: :- meta_sai_validate_eni_ether_address_map_entry: object key SAI_OBJECT_TYPE_ENI_ETHER_ADDRESS_MAP_ENTRY.*exist.*'
     - '.*ERR swss#orchagent: :- flush_removing_entries: ObjectBulker.flush remove entries failed, number of entries to remove: \d+, status: SAI_STATUS_OBJECT_IN_USE.*'

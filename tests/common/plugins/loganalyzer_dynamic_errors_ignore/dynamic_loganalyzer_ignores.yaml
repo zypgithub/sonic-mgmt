@@ -2827,16 +2827,6 @@
         - 3599794
 
 - Errors_list:
-    - '.* ERR neighbor_advertiser: EVERFLOW table does not exist.*'
-  Conditions:
-    - Affected_test_cases:
-        - decap/test_decap.py
-      Redmine:
-        - 3431638
-      Platform:
-        - 5600
-
-- Errors_list:
     - '.*ERR pmon#ycabled: Stop daemon main loop.*'
   Conditions:
     - Affected_test_cases:

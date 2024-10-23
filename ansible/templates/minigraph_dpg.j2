@@ -259,13 +259,11 @@
           <Type>SSH</Type>
         </AclInterface>
 {% if card_type is not defined or card_type != 'supervisor' %}
-        {% if (inventory_hostname != "r-moose-01" and inventory_hostname != "mtvr-moose-04") %}
         <AclInterface>
           <AttachTo>ERSPAN</AttachTo>
           <InAcl>Everflow</InAcl>
           <Type>Everflow</Type>
         </AclInterface>
-        {% endif %}
         <AclInterface>
           <AttachTo>ERSPANV6</AttachTo>
           <InAcl>EverflowV6</InAcl>

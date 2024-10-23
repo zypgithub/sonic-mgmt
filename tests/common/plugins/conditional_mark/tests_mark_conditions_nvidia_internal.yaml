@@ -543,12 +543,6 @@ dualtor_io/test_link_failure.py::test_active_link_down_upstream[active-standby]:
     conditions:
       - "https://redmine.mellanox.com/issues/3572162 and '202211' in release"
 
-arp/test_wr_arp.py::TestWrArp::testWrArp:
-  skip:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/3431638 on sn5600 platform"
-    conditions:
-      - "https://redmine.mellanox.com/issues/3431638 and 'sn5600' in platform"
-
 autorestart/test_container_autorestart.py::test_containers_autorestart[r-tigris-26-None-teamd]:
   skip:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/3587377"
@@ -634,12 +628,6 @@ platform_tests/test_auto_negotiation.py:
     conditions:
       - "'3800' in platform"
       - "'r-tigon-11' in testbed"
-
-everflow/test_everflow_testbed.py:
-  skip:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/3431638 and platform sn5"
-    conditions:
-      - "https://redmine.mellanox.com/issues/3431638 and 'sn5' in platform"
 
 # SONiC can't enable loop-back filter feature
 # Test case is skipped, because SONiC does not have a control to adjust loop-back filter settings.
