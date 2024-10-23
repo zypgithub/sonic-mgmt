@@ -381,6 +381,8 @@ def get_test_duration(duthost):
         duration = duration + math.ceil(item.rep_call.duration)
     if hasattr(item, "rep_teardown"):
         duration = duration + math.ceil(item.rep_teardown.duration)
+    if "test_check_errors_in_log_during_deploy_sonic_image" in item.name:
+        duration = 7200   # need to collect all the dumps for this test, assume 2 hours is enough after the deployment.
     return duration
 
 
