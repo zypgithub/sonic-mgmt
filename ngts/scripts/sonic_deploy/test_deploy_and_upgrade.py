@@ -8,7 +8,6 @@ import shutil
 import time
 import json
 import netmiko
-import pathlib
 
 import allure
 import pytest
@@ -328,13 +327,8 @@ def get_image_for_dut(base_version, target_version, dut):
 def get_image_for_traffic_generators(base_version, target_version, dut):
     if dut['cli_type'] == CliType.SONIC:
         base_version = PerfConsts.SONIC_GA_IMAGE
-        if dut['dut_name'] == 'mtvr-moose-01':
-            base_version = base_version.replace('/dev', '/prod')
     elif dut['cli_type'] == CliType.NVUE:
         target_version = PerfConsts.CL_GA_IMAGE
-        if dut['dut_name'] == 'mtvr-moose-01':
-            # remove develop-signed image suffix and install prod
-            target_version = str(pathlib.Path(target_version).with_suffix(""))
     return base_version, target_version
 
 
