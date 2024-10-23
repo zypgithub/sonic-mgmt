@@ -5,6 +5,7 @@ import pytest
 from ngts.tests_nvos.general.security.centralized_tests.factory_reset.constants import FactoryResetType, \
     FACTORY_RESET_TYPE_TO_ACTION_PARAM
 from ngts.tests_nvos.general.security.nmx_cert.test_nmx_cert import nmx_cert_factory_reset_no_params_check
+from ngts.tests_nvos.general.security.test_ssh_pka.test_ssh_pka_pka_only import ssh_pka_factory_reset_no_params_check, ssh_pka_factory_reset__keep_basic_check
 from ngts.tests_nvos.general.security.test_api_server_security.test_api_mtls import \
     api_mtls_factory_reset_no_params_check, \
     api_mtls_factory_reset_keep_all_config_check, api_mtls_factory_reset_keep_only_files_check
@@ -22,10 +23,12 @@ NO_PARAMS_CHECKERS: Dict[str, Generator[None, None, None]] = {
     'GNMI cert': gnmi_cert_factory_reset_no_params_check(),
     'NMX cert': nmx_cert_factory_reset_no_params_check(),
     'API mTLS': api_mtls_factory_reset_no_params_check(),
+    'SSH PKA': ssh_pka_factory_reset_no_params_check(),
 }
 
 KEEP_BASIC_CHECKERS: Dict[str, Generator[None, None, None]] = {
     'API mTLS': api_mtls_factory_reset_no_params_check(),
+    'SSH PKA': ssh_pka_factory_reset__keep_basic_check(),
 }
 
 KEEP_ALL_CONFIG_CHECKERS: Dict[str, Generator[None, None, None]] = {
