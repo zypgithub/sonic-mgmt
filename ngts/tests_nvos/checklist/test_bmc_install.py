@@ -4,9 +4,11 @@ import random
 
 import pytest
 
-from ngts.nvos_constants.constants_nvos import ApiType
+from ngts.nvos_constants.constants_nvos import ApiType, PlatformConsts
 from ngts.nvos_tools.infra.BmcTool import BmcTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.nvos_tools.platform.Platform import Platform
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tools.test_utils import allure_utils as allure
 
@@ -42,6 +44,13 @@ def test_component_install(engines, devices, topology_obj, test_api, platform_co
 
     TestToolkit.tested_api = test_api
     component_name = platform_component_with_clear.get_resource_basename().lower()
+
+    if component_name == PlatformConsts.FW_FPGA.lower():
+        platform = Platform()
+        platform_output = OutputParsingTool.parse_show_output_to_dict(platform.show()).get_returned_value()
+        # 692-9K36F-A5MV-JQS has encrypted fpga
+        if platform_output[PlatformConsts.FW_PART_NUMBER].strip() == "692-9K36F-A5MV-JQS":
+            component_name = f"{component_name}_encrypted"
 
     try:
         path, filename, version_name = BmcTool.get_fw_component_version_previous(component_name)
