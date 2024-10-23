@@ -1597,6 +1597,7 @@ class IndependentModuleConst:
     OPTICS_SI_SETTINGS_FILE_NAME = "optics_si_settings.json"
     IM_INTERFACE_SETTINGS_FILE_PATH = "/usr/share/sonic/device/{PLATFORM}"
     PLATFORM_GENERATION = ['4280', '4700', '5600']
+    AOC_VENDOR_PN = ['MMS1V00-WM', 'MMS4X00-NS', 'MFA7U10-H003', 'MMA4Z00-NS', '7123-G78-09', 'ALQA9N11ADLA1580']
     MS_HWSKU = ['Mellanox-SN4700-O8C48', 'Mellanox-SN4700-O8V48', 'ACS-SN5600', 'ACS-MSN4700', 'ACS-SN4280',
                 'Mellanox-SN4280-O28', 'Mellanox-SN4700-O32', 'Mellanox-SN4700-V64', 'Mellanox-SN5600-V256']
     DUTS_SUPPORTING_IM = ['r-leopard-32', 'r-leopard-41', 'r-leopard-56', 'r-leopard-01', 'r-leopard-58',
