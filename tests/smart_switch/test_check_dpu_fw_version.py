@@ -7,6 +7,7 @@ from tests.common.helpers.assertions import pytest_assert
 from tests.smart_switch.conftest import DPU_INFO
 
 pytestmark = [
+    pytest.mark.topology('any'),
     pytest.mark.usefixtures('skip_unsupported_platform', 'copy_proxy_ssh'),
     pytest.mark.skip_check_dut_health
 ]
