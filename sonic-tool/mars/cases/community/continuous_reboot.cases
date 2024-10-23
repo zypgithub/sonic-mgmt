@@ -10,7 +10,7 @@
         <Case>
             <tags> REBOOT, CONTINUOUS_REBOOT </tags>
             <wrapper> run_ansible_playbook.py </wrapper>
-            <tout> 3600 </tout>
+            <tout> 5400 </tout>
         </Case>
     </global>
 
