@@ -21,6 +21,5 @@ class DvsInstallationSteps:
     def post_installation_steps(duts, sdk_version):
         for dut in duts:
             # TODO: FW burn on prod switch isn't functional at the moment, need to find a WA
-            if dut['dut_name'] != "mtvr-moose-01":
-                cli_obj = dut['cli_obj']
-                cli_obj.install_sdk_and_burn_fw_flow(sdk_version)
+            cli_obj = dut['cli_obj']
+            cli_obj.install_sdk_and_burn_fw_flow(sdk_version)
