@@ -59,8 +59,8 @@ r-tigon-11,Ethernet224,r-tigon-30,Ethernet224,100000,157,Access
 r-tigon-11,Ethernet228,r-tigon-30,Ethernet228,100000,158,Access
 r-tigon-11,Ethernet232,r-tigon-30,Ethernet232,100000,159,Access
 r-tigon-11,Ethernet236,r-tigon-30,Ethernet236,100000,101-164,Trunk
-r-tigon-11,Ethernet240,r-tigon-30,Ethernet240,100000,161,Access
-r-tigon-11,Ethernet244,r-tigon-30,Ethernet244,100000,162,Access
-r-tigon-11,Ethernet248,r-tigon-30,Ethernet248,50000,163,Access
-r-tigon-11,Ethernet252,r-tigon-30,Ethernet252,50000,164,Access
+r-tigon-11,Ethernet240,r-tigon-30,Ethernet240,100000,160,Access
+r-tigon-11,Ethernet244,r-tigon-30,Ethernet244,100000,161,Access
+r-tigon-11,Ethernet248,r-tigon-30,Ethernet248,50000,162,Access
+r-tigon-11,Ethernet252,r-tigon-30,Ethernet252,50000,163,Access
 r-tigon-30,Ethernet236,r-mgtswh-185,p2p1,100000,101-164,Trunk
