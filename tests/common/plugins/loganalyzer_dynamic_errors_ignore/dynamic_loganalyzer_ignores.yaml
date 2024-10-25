@@ -4251,3 +4251,12 @@
       - tests/nightly/lag/test_lag.py::test_lag_min_links
       - tests/nightly/lag/test_lag.py::test_lag_members_scale
       - tests/nightly/lag/test_lag.py::test_port_cannot_be_added_to_lag
+
+- Errors_list:
+  - '.*ERR systemd\[\d+\]: Failed to start rsyslog.service - System Logging Service.*'
+  - '.*ERR systemctl\[\d+\]: Job for rsyslog.service failed because the control process exited with error code.*'
+  - '.* ERR systemctl.*: See \"systemctl status rsyslog\.service\" and \"journalctl -xeu rsyslog\.service\" for details.*'
+  - '.* ERR systemd.*: Failed to start eventd\.service - EVENTD container.*'
+  Conditions:
+  - Redmine:
+    - 4110995
