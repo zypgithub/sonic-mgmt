@@ -534,8 +534,8 @@ def test_mgmt_interface_default(engines, topology_obj):
         check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port)
 
     with allure.step('Check logs for mgmt interface exist'):
-        show_output = system.log.show_log(exit_cmd='q')
-        ValidationTool.verify_expected_output(show_output, mgmt_port_name).verify_result()
+        show_output_lines = system.log.show(op_param=" | grep '" + mgmt_port_name + "'", output_format="").splitlines()
+        assert len(show_output_lines) > 0, "Mgmt port {} not found in system log".format(mgmt_port_name)
 
     with allure.step('Check stats'):
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_stats_output_to_dictionary(
