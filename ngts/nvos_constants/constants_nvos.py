@@ -351,6 +351,7 @@ class SystemConsts:
     SNMP_DEFAULT_VALUES = [SNMP_DEFAULT_IS_RUNNING, SNMP_DEFAULT_LISTENING_ADDRESS,
                            SNMP_DEFAULT_READONLY_COMMUNITY, SNMP_DEFAULT_STATE]
 
+    SSH_CONFIG_PKA_ONLY = 'pka-only'
     SSH_CONFIG_AUTH_RETRIES = 'authentication-retries'
     SSH_CONFIG_INACTIV_TIMEOUT = 'inactivity-timeout'
     SSH_CONFIG_LOGIN_TIMEOUT = 'login-timeout'
