@@ -1,6 +1,5 @@
 import logging
 import pytest
-import ipaddress
 from tests.common.helpers.assertions import pytest_assert
 from tests.common.helpers.snmp_helpers import get_snmp_facts
 from tests.platform_tests.counterpoll.counterpoll_helper import ConterpollHelper
@@ -330,7 +329,6 @@ def test_snmp_interfaces_error_discard(duthosts, enum_rand_one_per_hwsku_hostnam
                                        enum_asic_index, disable_conterpoll, tbinfo, mg_facts):
     """Verify correct behaviour of port MIBs ifInError, ifOutError, IfInDiscards, IfOutDiscards """
     duthost = duthosts[enum_rand_one_per_hwsku_hostname]
-    namespace = duthost.get_namespace_from_asic_id(enum_asic_index)
     hostip = duthost.host.options['inventory_manager'].get_host(
         duthost.hostname).vars['ansible_host']
     port_interface, rif_interface = get_interfaces(duthost, tbinfo)
@@ -378,7 +376,7 @@ def test_snmp_interfaces_error_discard(duthosts, enum_rand_one_per_hwsku_hostnam
 
     minigraph_port_name_to_alias_map = mg_facts['minigraph_port_name_to_alias_map']
     snmp_port_map = {snmp_facts['snmp_interfaces'][idx]['name']: idx for idx in snmp_facts['snmp_interfaces']}
-    rif_snmp_facts = snmp_facts['snmp_interfaces'][snmp_port_map[rif_interface]]
+    rif_snmp_facts = snmp_facts['snmp_interfaces'][snmp_port_map[minigraph_port_name_to_alias_map[rif_interface]]]
 
     assert (int(rif_snmp_facts['ifInDiscards']) == int(rif_counters[rif_interface]['rx_err']) +
                                                     int(port_counters['rx_drp'])), \
