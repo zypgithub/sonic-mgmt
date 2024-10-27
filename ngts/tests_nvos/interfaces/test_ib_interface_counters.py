@@ -298,7 +298,7 @@ def create_new_user(engine):
         system = System(force_api=ApiType.NVUE)
         user_name, password = system.aaa.user.set_new_user(apply=True)
         user_id = system.aaa.user.get_lslogins(engine=engine, username=user_name)["UID"]
-        file_name = "/tmp/portstat-{}".format(user_id)
+        file_name = "/tmp/cache/portstat-{}".format(user_id)
         logging.info("User created: \nuser_name: {} \npassword: {} \nUID: {}".format(user_name, password, user_id))
         with allure.step("Crate an ssh connection for user {user_name} (UID {uid})".format(user_name=user_name,
                                                                                            uid=user_id)):

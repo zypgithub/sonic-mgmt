@@ -1688,8 +1688,7 @@ class IssuConsts:
     ERROR_OPENSM_NO_PERMISSION = ('Error: Action failed with the following issue:\n'
                                   '  No permission from OpenSM')  # TODO: update message
     ERROR_OPENSM_REACH_TIMEOUT = ('Error: Action failed with the following issue:\n'
-                                  '  Failed to install the image {image_version}.\n'
-                                  'No permission to perform ISSU from the SM')
+                                  '  No permission to perform ISSU from the SM')
     ERROR_DOWNGRADE_NOT_ALLOWED = ('Error: Action failed with the following issue:\n'
                                    '  Downgrade image is not allowed')  # TODO: update message
     ERROR_ANY_ERROR = 'Error: Action failed with the following issue:'

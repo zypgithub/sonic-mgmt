@@ -685,7 +685,7 @@ def test_verify_sm_commands_not_exist(engines, test_api):
     ib = Ib(None)
 
     with allure.step('verify "sm" commands not exist in commands list'):
-        output = NvueGeneralCli.search_in_list_commands(engines_dut, " sm")
+        output = NvueGeneralCli.search_in_list_commands(engines_dut, " sm").replace('nv show interface small', '')
         assert not output, "sm commands should not exist"
 
     with allure.step("Validate show ib sm"):

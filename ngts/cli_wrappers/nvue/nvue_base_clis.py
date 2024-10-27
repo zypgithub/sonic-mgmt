@@ -98,8 +98,9 @@ class NvueBaseCli:
         logger.info(f"Running command: {command}")
         if expect_reboot:
             confirm = not ("force" in param_name)
-            return DutUtilsTool.reload(engine=engine, device=device, command=command, confirm=confirm,
-                                       recovery_engine=recovery_engine, topology_obj=topology_obj).verify_result()
+            return (DutUtilsTool.reload(engine=engine, device=device, command=command, confirm=confirm,
+                                        recovery_engine=recovery_engine, topology_obj=topology_obj).
+                    verify_result(should_succeed=should_succeed))
         else:
             output = engine.run_cmd(command)
             logger.info(output)

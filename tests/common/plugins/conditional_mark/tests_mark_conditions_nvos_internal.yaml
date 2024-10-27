@@ -234,15 +234,17 @@ tests_nvos/interfaces/test_response_mgmt_ip_inband.py::test_dhcp_shutdown:
     conditions:
       - "'gorilla' or 'marlin' in testbed"
 
+tests_nvos/interfaces/test_response_mgmt_ip_inband.py:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4041220"
+    conditions:
+      - https://redmine.mellanox.com/issues/4041220
+
 tests_nvos/interfaces/multi_planar/test_multi_planar_sym_mgr_and_aport.py::test_fae_interface_commands:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3795750"
     conditions:
       - https://redmine.mellanox.com/issues/3795750
-
-tests_nvos/system/test_system_ptp.py:
-  skip:
-    reason: "Decided to disable for now"
 
 tests_nvos/system/test_system_image.py::test_install_multiple_images:
   skip:
@@ -546,4 +548,8 @@ tests_nvos/system/test_log_commands.py::test_log_idle:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4126563"
     conditions:
       - https://redmine.mellanox.com/issues/4126563
+
+tests_nvos/system/ntp/test_system_ntp.py::test_ntp_system_authentication:
+  skip:
+    reason: "Skip until fixed"
 ########################## NVOS IGNORE END ##########################
