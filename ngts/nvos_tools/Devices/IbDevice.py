@@ -941,22 +941,6 @@ class JulietSwitch(NvLinkSwitch):
     def __init__(self, asic_amount):
         super().__init__(asic_amount=asic_amount)
 
-    def show_setup_versions(self, dut_engine: LinuxSshEngine = None):
-        get_bmc_version_cmd = 'curl -k -u root:{} -X GET https://10.0.1.1/redfish/v1/UpdateService/FirmwareInventory/MGX_FW_BMC_0'
-        psws = ['0penBmc', 'Test123!', 'ABYX12#14artb']
-        outputs = {
-            'system version': dut_engine.run_cmd('nv show system version'),
-            'platform firmware': dut_engine.run_cmd('nv show platform firmware'),
-            'fae platform firmware': dut_engine.run_cmd('nv show fae platform firmware'),
-        }
-        for pw in psws:
-            out = dut_engine.run_cmd(get_bmc_version_cmd.format(pw))
-            if 'error' not in out:
-                outputs['bmc version (redfish)'] = out
-                break
-        res = [f'{title.upper()}:\n{output}\n' for title, output in outputs.items()]
-        return '\n'.join(res)
-
     def _init_constants(self):
         super()._init_constants()
         self.system_is_ready_wait_timeout = 20 * MINUTE
