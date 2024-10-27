@@ -1,6 +1,6 @@
 ########################## NVOS IGNORE START ##########################
 
-tests_nvos/general/security/test_api_server_security/test_api_mtls.py::test_api_mtls_reboot[save]:
+tests_nvos/general/security/test_api_server_security/test_api_mtls.py::test_api_mtls_reboot:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4103432"
     conditions:
