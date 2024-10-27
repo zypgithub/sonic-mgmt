@@ -70,6 +70,9 @@ def test_ports_are_up(engines, devices):
     Verifying the NVOS ports are up
     :return: None, raise error in case one or more ports are down
     """
+    if NvosConst.HOST_HA not in engines:
+        pytest.skip("Test skipped since no traffic host connected")
+
     result = OpenSmTool.start_open_sm(engines)
     assert result.result, "Failed to start openSM"
 

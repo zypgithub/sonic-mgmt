@@ -49,9 +49,11 @@ def test_show_platform_environment(engines, devices, test_api, output_format):
 
     with allure.step("Validate all environment items are present"):
         output = OutputParsingTool.parse_show_output_to_dict(raw_output, output_format).get_returned_value()
+        missing_psus = [psu for psu, info in output.items() if info['state'] == 'absent']
+        temperature_sensors = [psu_temp for psu_temp in devices.dut.temperature_sensors if psu_temp not in missing_psus]
         ValidationTool.validate_set_equal(output.keys(),
                                           devices.dut.psu_fan_list + devices.dut.fan_list + devices.dut.psu_list +
-                                          devices.dut.temperature_sensors + devices.dut.led_list +
+                                          temperature_sensors + devices.dut.led_list +
                                           devices.dut.voltage_sensors).verify_result()
 
 

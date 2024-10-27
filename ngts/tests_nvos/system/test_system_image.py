@@ -224,7 +224,7 @@ def test_image_uninstall_force(release_name, original_version, test_name, device
 @pytest.mark.image
 @pytest.mark.system
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_system_image_bad_flow(engines, release_name, test_api, original_version):
+def test_system_image_bad_flow(engines, release_name, test_api, original_version, dut_ipv6_addr):
     """
     Check bad flow scenarios:
     -	Fetch something that doesn’t / already exist
@@ -250,13 +250,16 @@ def test_system_image_bad_flow(engines, release_name, test_api, original_version
     with allure.step("Fetch bad flows"):
         with allure.step("Fetch an image"):
             player = engines['sonic_mgmt']
-            scp_path = 'scp://{}:{}@{}'.format(player.username, player.password, player.ip)
-            system.image.action_fetch(scp_path + image_path)
+            scp_path = ImageConsts.SCP_PATH_SERVER.format(username=player.username, password=player.password,
+                                                          ip=player.ip, path=image_path)
+            system.image.action_fetch(scp_path)
             images_name.append(image_name)
-        with allure.step("Fetch the same image again"):
-            system.image.action_fetch(scp_path + image_path)
+        with allure.step("Fetch the same image again using ipv6 address"):
+            scp_path = ImageConsts.SCP_PATH_SERVER.format(username=player.username, password=player.password,
+                                                          ip=f"[{dut_ipv6_addr}]", path=image_path)
+            system.image.action_fetch(scp_path)
         with allure.step("Fetch an image that does not exist"):
-            system.image.action_fetch(scp_path + image_path + rand_name, "Failed")
+            system.image.action_fetch(scp_path + rand_name, "Failed")
 
     with allure.step("Delete bad flows"):
         with allure.step("Delete file that does not exist"):
