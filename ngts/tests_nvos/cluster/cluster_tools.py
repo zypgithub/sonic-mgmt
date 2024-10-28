@@ -23,14 +23,14 @@ logger = logging.getLogger()
 class ClusterTools:
 
     @staticmethod
-    def stop_start_app(cluster, engines, devices):
+    def stop_start_app(cluster, engines, devices, has_loopbox):
         with allure.step("Stop/Start apps"):
             for app in ClusterConsts.INITIAL_EXPECTED_APPS:
                 with allure.step(f"Validate app {app} is up"):
                     ClusterTools.verify_app_is_up(engines, app)
                     if app == ClusterConsts.NMX_CONTROLLER:
                         ClusterTools.verify_lid_value(devices)
-                        ClusterTools.verify_interface_up(devices)
+                        ClusterTools.verify_interface_up(devices, has_loopbox)
                 with allure.step("Running 'nv show cluster apps running' command and verifying output"):
                     output = OutputParsingTool.parse_show_output_to_dict(
                         cluster.apps.running.show(output_format=OutputFormat.json),
@@ -49,7 +49,7 @@ class ClusterTools:
                 ClusterTools.verify_app_is_up(engines, app)
                 if app == ClusterConsts.NMX_CONTROLLER:
                     ClusterTools.verify_lid_value(devices)
-                    ClusterTools.verify_interface_up(devices)
+                    ClusterTools.verify_interface_up(devices, has_loopbox)
                 with allure.step("Running 'nv show cluster apps running' command and verifying output"):
                     output = OutputParsingTool.parse_show_output_to_dict(
                         cluster.apps.running.show(output_format=OutputFormat.json),
