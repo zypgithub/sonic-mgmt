@@ -75,6 +75,9 @@ def test_show_log_continues(engines):
         logging.info("Run show command to view system image")
         system.image.show()
 
+    with allure.step("Do nothing for 1 sec"):
+        time.sleep(1)
+
     with allure.step("Run nv show system log command --view follow to view system logs"):
         logging.info("Run nv show system log command --view follow to view system logs")
         system.log.show_log(param='--view follow', expected_str='system/image', exit_cmd='\x03')

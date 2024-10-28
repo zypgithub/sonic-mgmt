@@ -6,7 +6,6 @@ from datetime import datetime
 from ngts.constants.constants import LinuxConsts
 from ngts.nvos_constants.constants_nvos import HealthConsts, NvosConst, ApiType, SystemConsts
 from ngts.nvos_tools.ib.opensm.OpenSmTool import OpenSmTool
-from ngts.nvos_tools.Devices.IbDevice import JulietSwitch
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.system.System import System
@@ -213,6 +212,12 @@ def verify_cleanup_done(engine, current_time, system, username, param=''):
             if output and "No such file or directory" not in output:
                 errors += "\n/etc/sonic was not cleared"
 
+    with allure.step("Verify /etc/sonic content was cleared"):
+        if param != KEEP_ONLY_FILES:
+            output = engine.run_cmd("ls /host/tpm/oIAK.cert")
+            if output and "No such file or directory" not in output:
+                errors += "\n/host/tpm/oIAK.cert was not cleared"
+
     with allure.step("Verify /host/warmboot content was deleted"):
         if param != KEEP_ONLY_FILES:
             output = engine.run_cmd("ls /host/warmboot")
@@ -292,14 +297,8 @@ def verify_profile_and_split(selected_port):
         logging.warning("Currently not supported")
 
 
-def verify_the_setup_is_functional(system, engines, had_sm_before_test=True, dut=None):
+def verify_the_setup_is_functional(system, engines, dut=None):
     logging.info("Verify the setup is functional")
-
-    if had_sm_before_test:
-        with allure.step("Start OpenSM"):
-            with allure.step('Check is Juliet Device'):
-                if not isinstance(dut, JulietSwitch):
-                    OpenSmTool.start_open_sm(engines).verify_result()
 
     with allure.step("Run show commands"):
         system.message.show()
@@ -318,5 +317,5 @@ def verify_the_setup_is_functional(system, engines, had_sm_before_test=True, dut
 
 def get_current_time(engines):
     date_time_str = engines.dut.run_cmd("date").split(" ", 1)[1]
-    current_time = datetime.strptime(date_time_str, '%d %b %Y %H:%M:%S %p %Z')
+    current_time = datetime.strptime(date_time_str, '%d %b %Y %I:%M:%S %p %Z')
     return current_time
