@@ -39,7 +39,7 @@ class Ztp(BaseComponent):
 
             marker = TestToolkit.get_loganalyzer_marker(engine)
 
-            res = SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].action_run_ztp, engine, device,
+            res = SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].action_abort_ztp, engine, device,
                                                   self.get_resource_path(), params_dict)
 
             return res

@@ -283,6 +283,161 @@ def test05_run_ztp_non_existing_file(engines, devices):
         reset_ztp(engines, system)
 
 
+@pytest.mark.cumulus
+@pytest.mark.cumulus_only
+@pytest.mark.ztp
+@pytest.mark.system
+def test06_run_ztp_script_config_reboot(engines, devices):
+    """
+    Name: run_ztp_script_config
+    ====
+    Description:
+    ============
+    Verify ZTP running with reboot in ztp script
+
+    Steps:
+         - create a script (has auto provisioning flag and exits 0) with reload
+         - run ztp
+         - wait for ZTP to complete
+         - verify that ZTP is executed as expected and returns the expected results
+         - run it again using NVUE command
+         - verify that ZTP completes again (RM2660705)
+    """
+    system = System(None)
+
+    try:
+        with allure.step("Download ztp script file"):
+            _download_ztp_script_reboot(engines)
+
+        with allure.step("Run nv action run system ztp"):
+            system.ztp.action_run_ztp()
+            logger.info("excepted rebooting of the dut")
+            time.sleep(240)
+            with allure.step('Wait for switch to be up'):
+                engines.dut.disconnect()
+                time.sleep(30)
+
+            with allure.step("Run show ztp after run and verify values"):
+                system_ztp_output = OutputParsingTool.parse_json_str_to_dictionary(system.ztp.show()).get_returned_value()
+                _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_SUCCESS)
+                ValidationTool.verify_field_value_in_output(system_ztp_output, 'service', 'disabled').verify_result()
+
+    except Exception as e:
+        logger.info("Received Exception during test_ztp_connectivity_check: {}".format(e))
+        raise e
+    finally:
+        engines.dut.run_cmd('sudo rm -f /var/lib/cumulus/ztp/cumulus-ztp')
+        reset_ztp(engines, system)
+
+
+@pytest.mark.cumulus
+@pytest.mark.cumulus_only
+@pytest.mark.ztp
+@pytest.mark.system
+def test07_run_ztp_abort(engines, devices):
+    """
+    Description:
+    ============
+    Verify ZTP abort while ztp script is running
+
+    Steps:
+        - create a script (has auto provisioning flag and exits 0) with reload
+        - run ztp
+        - wait for ZTP
+        - abort ztp while ZTP is running
+        - verify that ZTP is aborted as expected and returns the expected results
+
+    """
+    system = System(None)
+    try:
+        reset_ztp(engines, system)
+        with allure.step("Download ztp script file"):
+            _download_ztp_script(engines, cmd="sleep 100")
+
+            with allure.step("Run nv action run system ztp"):
+                system.ztp.action_run_ztp()
+                with allure.step("Run nv action abort system ztp "):
+                    system.ztp.action_abort_ztp()
+
+                with allure.step("Check ztp status"):
+                    # ztp status enabled since it did not run
+                    _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_ENABLED)
+
+    except Exception as e:
+        logger.info("Received Exception during test_ztp_connectivity_check: {}".format(e))
+        raise e
+    finally:
+        engines.dut.run_cmd('sudo rm -f /var/lib/cumulus/ztp/cumulus-ztp')
+        reset_ztp(engines, system)
+
+
+@pytest.mark.cumulus
+@pytest.mark.cumulus_only
+@pytest.mark.ztp
+@pytest.mark.system
+def test08_run_ztp_run_after_enable(engines, topology_obj):
+    """
+    Name: run_ztp_run_after_enable
+    =====
+    Description:
+    ============
+    Verify ZTP enabled, ZTP must run after the next reboot/run
+    enable ztp does not delete ztp script
+
+    Steps:
+        - create a script
+        - enable ZTP
+        - verify that ZTP is enabled
+        - verify script is present
+        - run ZTP
+        - wait for ZTP to complete
+        - verify that ZTP is executed
+    """
+    system = System()
+
+    try:
+        with allure.step("Download ztp script file"):
+            _download_ztp_script(engines)
+
+        with allure.step("Run nv action enable system ztp"):
+            system.ztp.action_enable_ztp()
+
+            with allure.step("Check ztp status"):
+                _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_ENABLED)
+                try:
+                    engines.dut.run_cmd('cat /var/lib/cumulus/ztp/cumulus-ztp')
+                except Exception as e:
+                    logger.info("ztp script not found: /var/lib/cumulus/ztp/cumulus-ztp")
+
+        with allure.step("Run nv action run system ztp"):
+            system.ztp.action_run_ztp()
+
+            with allure.step("Run show ztp and verify default values"):
+                _wait_until_ztp_service(system, SystemConsts.ZTP_SERVICE_DISABLED)
+                _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_SUCCESS)
+
+        with allure.step("Download ztp script file"):
+            _download_ztp_script(engines)
+
+        with allure.step("Run nv action enable system ztp"):
+            system.ztp.action_enable_ztp()
+
+        with allure.step("Run nv action run system ztp url"):
+            # nv action run system ztp url < >
+            system.ztp.action_run_ztp_url(url='/var/lib/cumulus/ztp/cumulus-ztp')
+
+            with allure.step("Run show ztp and verify default values"):
+                _wait_until_ztp_service(system, SystemConsts.ZTP_SERVICE_DISABLED)
+                _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_SUCCESS)
+
+    except Exception as e:
+        logger.info("Received Exception during test_run_ztp_run_after_enable {}".format(e))
+        raise e
+    finally:
+        engines.dut.run_cmd('sudo rm -f /var/lib/cumulus/ztp/cumulus-ztp')
+        reset_ztp(engines, system)
+
+
 def reboot_dut(engines, system, sleep_time_seconds=240):
     try:
         system.reboot.action_reboot(engines.dut)
@@ -313,9 +468,9 @@ def create_script(cmds=None, auto_flag=True, cascade_flag=False, front_panel_fla
     return script_str
 
 
-def _download_ztp_script(engines):
+def _download_ztp_script(engines, cmd=''):
     engines.dut.run_cmd('sudo rm -f /var/lib/cumulus/ztp/cumulus-ztp')
-    success_str = create_script()
+    success_str = create_script(cmds=cmd)
     # return engines.dut.run_cmd("echo '{}' > {}' ".format(success_str, '/var/lib/cumulus/ztp/cumulus-ztp'))
     return engines.dut.run_cmd("echo '{}' | sudo tee {} > /dev/null".format(success_str, '/var/lib/cumulus/ztp/cumulus-ztp'))
 
@@ -329,7 +484,7 @@ def _download_ztp_script_path(engines, path=''):
 def _download_ztp_script_reboot(engines):
     engines.dut.run_cmd('sudo rm -f /var/lib/cumulus/ztp/cumulus-ztp')
     success_str = create_script(config_reboot=True)
-    return engines.dut.run_cmd("sudo sh -c 'echo '{}' > {}' ".format(success_str, '/var/lib/cumulus/ztp/cumulus-ztp'))
+    return engines.dut.run_cmd("echo '{}' | sudo tee {} > /dev/null".format(success_str, '/var/lib/cumulus/ztp/cumulus-ztp'))
 
 
 @retry(Exception, tries=30, delay=2)
