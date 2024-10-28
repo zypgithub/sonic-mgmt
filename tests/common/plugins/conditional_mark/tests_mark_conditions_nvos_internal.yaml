@@ -228,9 +228,7 @@ tests_nvos/system/test_system_image.py::test_system_image_rename_openapi:
 
 tests_nvos/system/ntp/test_system_ntp.py::test_ntp_system_authentication:
   skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3612870"
-    conditions:
-      - https://redmine.mellanox.com/issues/3612870
+    reason: "Skip until fixed"
 
 tests_nvos/system/test_techsupport_commands.py::test_techsupport_size:
   skip:
@@ -321,10 +319,6 @@ tests_nvos/interfaces/split_aggregated_port/test_split_aggregated_port.py::test_
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3795718"
     conditions:
       - https://redmine.mellanox.com/issues/3795718
-
-tests_nvos/system/test_system_ptp.py:
-  skip:
-    reason: "Decided to disable for now"
 
 tests_nvos/system/test_system_image.py::test_install_multiple_images:
   skip:
@@ -562,7 +556,6 @@ tests_nvos/platform/test_platform_environment.py::test_platform_environment_fan_
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3978721"
     conditions:
       - https://redmine.mellanox.com/issues/3978721
-
 
 tests_nvos/system/test_techsupport_feature.py::test_techsupport_bmc_badflow:
   skip:
