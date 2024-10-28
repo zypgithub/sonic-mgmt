@@ -95,7 +95,7 @@ def test_cluster_app_start_stop(engines, devices, test_api, has_loopbox):
 
         # TestToolkit.tested_api = test_api
 
-        ClusterTools.stop_start_app(cluster, engines, devices)
+        ClusterTools.stop_start_app(cluster, engines, devices, has_loopbox)
 
     finally:
         # if interface_wa_called:
@@ -127,7 +127,7 @@ def test_stress_cluster_app_start_stop(engines, devices, test_api, test_name):
             ClusterTools.start_cluster(cluster, output_format)
             for i in range(5):
                 logger.info(f"Starting iteration {i}")
-                result_obj, duration = OperationTime.save_duration('start stop cluster app', '', test_name, ClusterTools.stop_start_app, cluster, engines, devices)
+                result_obj, duration = OperationTime.save_duration('start stop cluster app', '', test_name, ClusterTools.stop_start_app, cluster, engines, devices, has_loopbox)
                 OperationTime.verify_operation_time(duration, 'start stop cluster app').verify_result()
 
     finally:
@@ -167,7 +167,7 @@ def test_cluster_app_start_stop_under_stressed_resources(engines, devices, test_
                 #     next(interfaces_wa)
                 #     interface_wa_called = True
                 ClusterTools.start_cluster(cluster, output_format)
-                result_obj, duration = OperationTime.save_duration('start stop cluster app stressed resources', '', test_name, ClusterTools.stop_start_app, cluster, engines, devices)
+                result_obj, duration = OperationTime.save_duration('start stop cluster app stressed resources', '', test_name, ClusterTools.stop_start_app, cluster, engines, devices, has_loopbox)
                 OperationTime.verify_operation_time(duration, 'start stop cluster app stressed resources').verify_result()
 
     finally:
