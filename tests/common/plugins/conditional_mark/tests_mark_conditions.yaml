@@ -20,9 +20,9 @@ acl/null_route/test_null_route_helper.py:
 
 acl/test_acl.py:
   xfail:
-    reason: "ACL test is not supported on mellanox platform with dualtor topology "
+    reason: "On Dualtor setup, ingress-uplink->downlink forward test cases are failing due to script issue"
     conditions:
-      - "asic_type in ['mellanox'] and 'dualtor' in topo_name"
+      - "'dualtor' in topo_name and 'https://github.com/sonic-net/sonic-mgmt/issues/15206'"
 
 acl/test_acl_outer_vlan.py:
   #Outer VLAN id match support is planned for future release with SONIC on Cisco 8000
@@ -1218,9 +1218,10 @@ qos/test_qos_masic.py:
 
 qos/test_qos_sai.py:
   skip:
-    reason: "qos_sai tests not supported on t1 topo"
+    reason: "qos_sai tests not supported on t1 and dualtor-aa topo"
     conditions:
       - "asic_type in ['barefoot'] and topo_name in ['t1']"
+      - "'dualtor-aa' in topo_name and 'https://github.com/sonic-net/sonic-mgmt/issues/15205'"
 
 qos/test_qos_sai.py::TestQosSai:
   skip:
