@@ -154,6 +154,7 @@ class BaseComponent:
                         {"@fetch": {"state": "start", "parameters": {"remote-url": "scp://..."}}}
         """
         dut_engine = dut_engine or TestToolkit.engines.dut
+        dut_device = dut_device or TestToolkit.devices.dut
         topology_obj = topology_obj or (TestToolkit.topology_obj if TestToolkit else None)
         resource_path = self.get_resource_path()
         with allure.step(f"Execute action {action} for {resource_path}"):

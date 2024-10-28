@@ -3,12 +3,14 @@ from ngts.nvos_constants.constants_nvos import *
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.Tools import Tools
+from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.general.security.conftest import *
 from ngts.tests_nvos.constants import MINUTE
 
 logger = logging.getLogger()
 
 
+@pytest.mark.timeout(20 * MINUTE, func_only=True)
 @pytest.mark.init_flow
 def test_system_ready_state_up(engines, devices, topology_obj):
     """

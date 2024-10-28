@@ -84,7 +84,7 @@ def test_cluster_default_factory_reset(engines, devices, test_api):
         ClusterTools.wait_for_apps_to_be_in_wanted_state()
 
         with allure.step("Verify the setup is functional"):
-            verify_the_setup_is_functional(system, engines, had_sm_before_test=False, dut=devices.dut)
+            verify_the_setup_is_functional(system, engines, dut=devices.dut)
 
         if not sdn_files_deleted:
             ClusterTools.start_cluster(cluster, OutputFormat.json)
@@ -145,7 +145,7 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name)
         ClusterTools.wait_for_apps_to_be_in_wanted_state()
 
         with allure.step("Verify the setup is functional"):
-            verify_the_setup_is_functional(system, engines, had_sm_before_test=False, dut=devices.dut)
+            verify_the_setup_is_functional(system, engines, dut=devices.dut)
 
         if not sdn_files_deleted:
             ClusterTools.start_cluster(cluster, OutputFormat.json)
@@ -205,7 +205,7 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name):
         ClusterTools.wait_for_apps_to_be_in_wanted_state()
 
         with allure.step("Verify the setup is functional"):
-            verify_the_setup_is_functional(system, engines, had_sm_before_test=False, dut=devices.dut)
+            verify_the_setup_is_functional(system, engines, dut=devices.dut)
 
         if not sdn_files_deleted:
             ClusterTools.start_cluster(cluster, OutputFormat.json)
@@ -270,7 +270,7 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
         ClusterTools.wait_for_apps_to_be_in_wanted_state()
 
         with allure.step("Verify the setup is functional"):
-            verify_the_setup_is_functional(system, engines, had_sm_before_test=False, dut=devices.dut)
+            verify_the_setup_is_functional(system, engines, dut=devices.dut)
 
         if not sdn_files_deleted:
             ClusterTools.start_cluster(cluster, OutputFormat.json)
