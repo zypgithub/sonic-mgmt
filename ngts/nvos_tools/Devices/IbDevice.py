@@ -976,11 +976,11 @@ class JulietSwitch(NvLinkSwitch):
 
         self.nmx_cluster_apps_versions = self.NmxClusterAppsConsts(
             burn_path={
-                ClusterConsts.NMX_CONTROLLER: "/auto/sw/release/NMX/NMX-controller/package/0.6.0/nmx-c-nvlink_0.6.0_2024-08-27_17-17.tar.gz",
+                ClusterConsts.NMX_CONTROLLER: "/auto/sw/release/NMX/NMX-controller/package/0.6.1/nmx-c-nvlink_0.6.1_2024-10-22_19-40.tar.gz",
                 ClusterConsts.NMX_TELEMETRY: "/auto/sw/release/NMX/NMX-telemetry/nmx-telemetry_0.6.2_2024-08-20.tgz"
             },
             burn_version_names={
-                ClusterConsts.NMX_CONTROLLER: "0.6.0",
+                ClusterConsts.NMX_CONTROLLER: "0.6.1",
                 ClusterConsts.NMX_TELEMETRY: "0.6.2"
             }
         )
@@ -991,15 +991,15 @@ class JulietSwitch(NvLinkSwitch):
         )
         self.bios_image_info = BaseSwitch.BiosImagesConsts(
             current_version={
-                'path': '/auto/sw_system_release/sx_mlnx_bios/SnowyOwl/0ACTV_00.00.016/Release/erot_sign_debug/cec1736-apfw-0000010.fwpkg',
-                'filename': 'cec1736-apfw-0000010.fwpkg',
-                'version_name': '00.00.016',
-                'date': '08/05/2024'},
+                'path': '/auto/sw_system_release/sx_mlnx_bios/SnowyOwl/0ACTV_00.00.018/Release/erot_sign_debug/cec1736-apfw-0000012.fwpkg',
+                'filename': 'cec1736-apfw-0000012.fwpkg',
+                'version_name': '0ACTV_00.00.018d',
+                'date': '08/21/2024'},
             alternate_version={
-                'path': '/auto/sw_system_release/sx_mlnx_bios/SnowyOwl/0ACTV_00.00.015_rc7/Release/erot_sign_debug/cec1736-apfw-000000f.fwpkg',
-                'filename': 'cec1736-apfw-000000f.fwpkg',
-                'version_name': '00.00.015_rc7',
-                'date': '08/05/2024'})
+                'path': '/auto/sw_system_release/sx_mlnx_bios/SnowyOwl/0ACTV_00.00.018/Release/erot_sign_debug/cec1736-apfw-0000012.fwpkg',
+                'filename': 'cec1736-apfw-0000012.fwpkg',
+                'version_name': '0ACTV_00.00.018d',
+                'date': '08/21/2024'})
 
         self.power_cycle_type = 'juliet-power-cycle'
 

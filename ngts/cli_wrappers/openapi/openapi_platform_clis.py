@@ -15,37 +15,6 @@ class OpenApiPlatformCli(OpenApiBaseCli):
         self.cli_name = "Platform"
 
     @staticmethod
-    def action_install_bios_firmware(engine, bios_image_path, resource_path='', device=None):
-        """
-        Method to install BIOS firmware using rest api
-        :param engine: the engine to use
-        :param bios_image_path: the path to the BIOS firmware image
-        :param resource_path: path (example : /fae/platform/firmware/)
-        :param device: Noga device info
-        """
-        resource_path = resource_path + '/BIOS/files/' + bios_image_path.replace('/', '%2F')
-
-        action_type = ActionType.INSTALL
-        params = \
-            {
-                "state": "start",
-                "parameters": {"force": True}
-            }
-        logging.info("Running action: '{action_type}' on dut using OpenApi".format(action_type=action_type))
-        result = OpenApiCommandHelper.execute_action(action_type, engine.engine.username, engine.engine.password,
-                                                     engine.ip, resource_path, params, expected_regex="Installing firmware")
-
-        logger.info("Waiting for switch shutdown after reload command")
-        check_port_status_till_alive(False, engine.ip, engine.ssh_port)
-        engine.disconnect()
-        logger.info("Waiting for switch to be ready")
-        check_port_status_till_alive(True, engine.ip, engine.ssh_port)
-
-        DutUtilsTool.wait_for_nvos_to_become_functional(engine).verify_result()
-
-        return result
-
-    @staticmethod
     def action_generate(engine, resource_path, file_name=''):
         logging.info("Running action: 'generate' on dut using OpenApi")
         params = \
