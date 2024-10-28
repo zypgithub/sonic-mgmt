@@ -75,6 +75,18 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         self._is_simx_moose = None
         self._is_simx_bison = None
 
+    def apply_configuration_file(self, engine, src_file, dst_dut_dir="/tmp"):
+        logger.info("Applying the configuration_file onto the dut after copying")
+        engine.copy_file(source_file=src_file, file_system=dst_dut_dir, dest_file="config.json", overwrite_file=True, verify_file=False)
+        with allure.step("Apply Sonic configuration"):
+            full_path = dst_dut_dir + "/config.json"
+            self.load_configuration(full_path)
+
+    def get_configuration_file_path(self, ngts_path, scenario, switch_name="dut", template_suite="performance_config_templates"):
+        full_path = ngts_path + "/performance_tests/" + template_suite + "/" + scenario + "/sonic/" + switch_name + ".json"
+        logger.info("Full Path returned is {}".format(full_path))
+        return full_path
+
     def show_setup_versions(self):
         return ''
 

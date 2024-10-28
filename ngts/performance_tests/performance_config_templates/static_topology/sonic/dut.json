@@ -1,0 +1,1303 @@
+{
+    "PORT": {
+        "Ethernet0": {
+            "admin_status": "up"
+        },
+        "Ethernet2": {
+            "admin_status": "up"
+        },
+        "Ethernet4": {
+            "admin_status": "up"
+        },
+        "Ethernet6": {
+            "admin_status": "up"
+        },
+        "Ethernet8": {
+            "admin_status": "up"
+        },
+        "Ethernet10": {
+            "admin_status": "up"
+        },
+        "Ethernet12": {
+            "admin_status": "up"
+        },
+        "Ethernet14": {
+            "admin_status": "up"
+        },
+        "Ethernet16": {
+            "admin_status": "up"
+        },
+        "Ethernet18": {
+            "admin_status": "up"
+        },
+        "Ethernet20": {
+            "admin_status": "up"
+        },
+        "Ethernet22": {
+            "admin_status": "up"
+        },
+        "Ethernet24": {
+            "admin_status": "up"
+        },
+        "Ethernet26": {
+            "admin_status": "up"
+        },
+        "Ethernet28": {
+            "admin_status": "up"
+        },
+        "Ethernet30": {
+            "admin_status": "up"
+        },
+        "Ethernet32": {
+            "admin_status": "up"
+        },
+        "Ethernet34": {
+            "admin_status": "up"
+        },
+        "Ethernet36": {
+            "admin_status": "up"
+        },
+        "Ethernet38": {
+            "admin_status": "up"
+        },
+        "Ethernet40": {
+            "admin_status": "up"
+        },
+        "Ethernet42": {
+            "admin_status": "up"
+        },
+        "Ethernet44": {
+            "admin_status": "up"
+        },
+        "Ethernet46": {
+            "admin_status": "up"
+        },
+        "Ethernet48": {
+            "admin_status": "up"
+        },
+        "Ethernet50": {
+            "admin_status": "up"
+        },
+        "Ethernet52": {
+            "admin_status": "up"
+        },
+        "Ethernet54": {
+            "admin_status": "up"
+        },
+        "Ethernet56": {
+            "admin_status": "up"
+        },
+        "Ethernet58": {
+            "admin_status": "up"
+        },
+        "Ethernet60": {
+            "admin_status": "up"
+        },
+        "Ethernet62": {
+            "admin_status": "up"
+        },
+        "Ethernet64": {
+            "admin_status": "up"
+        },
+        "Ethernet66": {
+            "admin_status": "up"
+        },
+        "Ethernet68": {
+            "admin_status": "up"
+        },
+        "Ethernet70": {
+            "admin_status": "up"
+        },
+        "Ethernet72": {
+            "admin_status": "up"
+        },
+        "Ethernet74": {
+            "admin_status": "up"
+        },
+        "Ethernet76": {
+            "admin_status": "up"
+        },
+        "Ethernet78": {
+            "admin_status": "up"
+        },
+        "Ethernet80": {
+            "admin_status": "up"
+        },
+        "Ethernet82": {
+            "admin_status": "up"
+        },
+        "Ethernet84": {
+            "admin_status": "up"
+        },
+        "Ethernet86": {
+            "admin_status": "up"
+        },
+        "Ethernet88": {
+            "admin_status": "up"
+        },
+        "Ethernet90": {
+            "admin_status": "up"
+        },
+        "Ethernet92": {
+            "admin_status": "up"
+        },
+        "Ethernet94": {
+            "admin_status": "up"
+        },
+        "Ethernet96": {
+            "admin_status": "up"
+        },
+        "Ethernet98": {
+            "admin_status": "up"
+        },
+        "Ethernet100": {
+            "admin_status": "up"
+        },
+        "Ethernet102": {
+            "admin_status": "up"
+        },
+        "Ethernet104": {
+            "admin_status": "up"
+        },
+        "Ethernet106": {
+            "admin_status": "up"
+        },
+        "Ethernet108": {
+            "admin_status": "up"
+        },
+        "Ethernet110": {
+            "admin_status": "up"
+        },
+        "Ethernet112": {
+            "admin_status": "up"
+        },
+        "Ethernet114": {
+            "admin_status": "up"
+        },
+        "Ethernet116": {
+            "admin_status": "up"
+        },
+        "Ethernet118": {
+            "admin_status": "up"
+        },
+        "Ethernet120": {
+            "admin_status": "up"
+        },
+        "Ethernet122": {
+            "admin_status": "up"
+        },
+        "Ethernet124": {
+            "admin_status": "up"
+        },
+        "Ethernet126": {
+            "admin_status": "up"
+        },
+        "Ethernet128": {
+            "admin_status": "up"
+        },
+        "Ethernet130": {
+            "admin_status": "up"
+        },
+        "Ethernet132": {
+            "admin_status": "up"
+        },
+        "Ethernet134": {
+            "admin_status": "up"
+        },
+        "Ethernet136": {
+            "admin_status": "up"
+        },
+        "Ethernet138": {
+            "admin_status": "up"
+        },
+        "Ethernet140": {
+            "admin_status": "up"
+        },
+        "Ethernet142": {
+            "admin_status": "up"
+        },
+        "Ethernet144": {
+            "admin_status": "up"
+        },
+        "Ethernet146": {
+            "admin_status": "up"
+        },
+        "Ethernet148": {
+            "admin_status": "up"
+        },
+        "Ethernet150": {
+            "admin_status": "up"
+        },
+        "Ethernet152": {
+            "admin_status": "up"
+        },
+        "Ethernet154": {
+            "admin_status": "up"
+        },
+        "Ethernet156": {
+            "admin_status": "up"
+        },
+        "Ethernet158": {
+            "admin_status": "up"
+        },
+        "Ethernet160": {
+            "admin_status": "up"
+        },
+        "Ethernet162": {
+            "admin_status": "up"
+        },
+        "Ethernet164": {
+            "admin_status": "up"
+        },
+        "Ethernet166": {
+            "admin_status": "up"
+        },
+        "Ethernet168": {
+            "admin_status": "up"
+        },
+        "Ethernet170": {
+            "admin_status": "up"
+        },
+        "Ethernet172": {
+            "admin_status": "up"
+        },
+        "Ethernet174": {
+            "admin_status": "up"
+        },
+        "Ethernet176": {
+            "admin_status": "up"
+        },
+        "Ethernet178": {
+            "admin_status": "up"
+        },
+        "Ethernet180": {
+            "admin_status": "up"
+        },
+        "Ethernet182": {
+            "admin_status": "up"
+        },
+        "Ethernet184": {
+            "admin_status": "up"
+        },
+        "Ethernet186": {
+            "admin_status": "up"
+        },
+        "Ethernet188": {
+            "admin_status": "up"
+        },
+        "Ethernet190": {
+            "admin_status": "up"
+        },
+        "Ethernet192": {
+            "admin_status": "up"
+        },
+        "Ethernet194": {
+            "admin_status": "up"
+        },
+        "Ethernet196": {
+            "admin_status": "up"
+        },
+        "Ethernet198": {
+            "admin_status": "up"
+        },
+        "Ethernet200": {
+            "admin_status": "up"
+        },
+        "Ethernet202": {
+            "admin_status": "up"
+        },
+        "Ethernet204": {
+            "admin_status": "up"
+        },
+        "Ethernet206": {
+            "admin_status": "up"
+        },
+        "Ethernet208": {
+            "admin_status": "up"
+        },
+        "Ethernet210": {
+            "admin_status": "up"
+        },
+        "Ethernet212": {
+            "admin_status": "up"
+        },
+        "Ethernet214": {
+            "admin_status": "up"
+        },
+        "Ethernet216": {
+            "admin_status": "up"
+        },
+        "Ethernet218": {
+            "admin_status": "up"
+        },
+        "Ethernet220": {
+            "admin_status": "up"
+        },
+        "Ethernet222": {
+            "admin_status": "up"
+        },
+        "Ethernet224": {
+            "admin_status": "up"
+        },
+        "Ethernet226": {
+            "admin_status": "up"
+        },
+        "Ethernet228": {
+            "admin_status": "up"
+        },
+        "Ethernet230": {
+            "admin_status": "up"
+        },
+        "Ethernet232": {
+            "admin_status": "up"
+        },
+        "Ethernet234": {
+            "admin_status": "up"
+        },
+        "Ethernet236": {
+            "admin_status": "up"
+        },
+        "Ethernet238": {
+            "admin_status": "up"
+        },
+        "Ethernet240": {
+            "admin_status": "up"
+        },
+        "Ethernet242": {
+            "admin_status": "up"
+        },
+        "Ethernet244": {
+            "admin_status": "up"
+        },
+        "Ethernet246": {
+            "admin_status": "up"
+        },
+        "Ethernet248": {
+            "admin_status": "up"
+        },
+        "Ethernet250": {
+            "admin_status": "up"
+        },
+        "Ethernet252": {
+            "admin_status": "up"
+        },
+        "Ethernet254": {
+            "admin_status": "up"
+        },
+        "Ethernet256": {
+            "admin_status": "up"
+        },
+        "Ethernet258": {
+            "admin_status": "up"
+        },
+        "Ethernet260": {
+            "admin_status": "up"
+        },
+        "Ethernet262": {
+            "admin_status": "up"
+        },
+        "Ethernet264": {
+            "admin_status": "up"
+        },
+        "Ethernet266": {
+            "admin_status": "up"
+        },
+        "Ethernet268": {
+            "admin_status": "up"
+        },
+        "Ethernet270": {
+            "admin_status": "up"
+        },
+        "Ethernet272": {
+            "admin_status": "up"
+        },
+        "Ethernet274": {
+            "admin_status": "up"
+        },
+        "Ethernet276": {
+            "admin_status": "up"
+        },
+        "Ethernet278": {
+            "admin_status": "up"
+        },
+        "Ethernet280": {
+            "admin_status": "up"
+        },
+        "Ethernet282": {
+            "admin_status": "up"
+        },
+        "Ethernet284": {
+            "admin_status": "up"
+        },
+        "Ethernet286": {
+            "admin_status": "up"
+        },
+        "Ethernet288": {
+            "admin_status": "up"
+        },
+        "Ethernet290": {
+            "admin_status": "up"
+        },
+        "Ethernet292": {
+            "admin_status": "up"
+        },
+        "Ethernet294": {
+            "admin_status": "up"
+        },
+        "Ethernet296": {
+            "admin_status": "up"
+        },
+        "Ethernet298": {
+            "admin_status": "up"
+        },
+        "Ethernet300": {
+            "admin_status": "up"
+        },
+        "Ethernet302": {
+            "admin_status": "up"
+        },
+        "Ethernet304": {
+            "admin_status": "up"
+        },
+        "Ethernet306": {
+            "admin_status": "up"
+        },
+        "Ethernet308": {
+            "admin_status": "up"
+        },
+        "Ethernet310": {
+            "admin_status": "up"
+        },
+        "Ethernet312": {
+            "admin_status": "up"
+        },
+        "Ethernet314": {
+            "admin_status": "up"
+        },
+        "Ethernet316": {
+            "admin_status": "up"
+        },
+        "Ethernet318": {
+            "admin_status": "up"
+        },
+        "Ethernet320": {
+            "admin_status": "up"
+        },
+        "Ethernet322": {
+            "admin_status": "up"
+        },
+        "Ethernet324": {
+            "admin_status": "up"
+        },
+        "Ethernet326": {
+            "admin_status": "up"
+        },
+        "Ethernet328": {
+            "admin_status": "up"
+        },
+        "Ethernet330": {
+            "admin_status": "up"
+        },
+        "Ethernet332": {
+            "admin_status": "up"
+        },
+        "Ethernet334": {
+            "admin_status": "up"
+        },
+        "Ethernet336": {
+            "admin_status": "up"
+        },
+        "Ethernet338": {
+            "admin_status": "up"
+        },
+        "Ethernet340": {
+            "admin_status": "up"
+        },
+        "Ethernet342": {
+            "admin_status": "up"
+        },
+        "Ethernet344": {
+            "admin_status": "up"
+        },
+        "Ethernet346": {
+            "admin_status": "up"
+        },
+        "Ethernet348": {
+            "admin_status": "up"
+        },
+        "Ethernet350": {
+            "admin_status": "up"
+        },
+        "Ethernet352": {
+            "admin_status": "up"
+        },
+        "Ethernet354": {
+            "admin_status": "up"
+        },
+        "Ethernet356": {
+            "admin_status": "up"
+        },
+        "Ethernet358": {
+            "admin_status": "up"
+        },
+        "Ethernet360": {
+            "admin_status": "up"
+        },
+        "Ethernet362": {
+            "admin_status": "up"
+        },
+        "Ethernet364": {
+            "admin_status": "up"
+        },
+        "Ethernet366": {
+            "admin_status": "up"
+        },
+        "Ethernet368": {
+            "admin_status": "up"
+        },
+        "Ethernet370": {
+            "admin_status": "up"
+        },
+        "Ethernet372": {
+            "admin_status": "up"
+        },
+        "Ethernet374": {
+            "admin_status": "up"
+        },
+        "Ethernet376": {
+            "admin_status": "up"
+        },
+        "Ethernet378": {
+            "admin_status": "up"
+        },
+        "Ethernet380": {
+            "admin_status": "up"
+        },
+        "Ethernet382": {
+            "admin_status": "up"
+        },
+        "Ethernet384": {
+            "admin_status": "up"
+        },
+        "Ethernet386": {
+            "admin_status": "up"
+        },
+        "Ethernet388": {
+            "admin_status": "up"
+        },
+        "Ethernet390": {
+            "admin_status": "up"
+        },
+        "Ethernet392": {
+            "admin_status": "up"
+        },
+        "Ethernet394": {
+            "admin_status": "up"
+        },
+        "Ethernet396": {
+            "admin_status": "up"
+        },
+        "Ethernet398": {
+            "admin_status": "up"
+        },
+        "Ethernet400": {
+            "admin_status": "up"
+        },
+        "Ethernet402": {
+            "admin_status": "up"
+        },
+        "Ethernet404": {
+            "admin_status": "up"
+        },
+        "Ethernet406": {
+            "admin_status": "up"
+        },
+        "Ethernet408": {
+            "admin_status": "up"
+        },
+        "Ethernet410": {
+            "admin_status": "up"
+        },
+        "Ethernet412": {
+            "admin_status": "up"
+        },
+        "Ethernet414": {
+            "admin_status": "up"
+        },
+        "Ethernet416": {
+            "admin_status": "up"
+        },
+        "Ethernet418": {
+            "admin_status": "up"
+        },
+        "Ethernet420": {
+            "admin_status": "up"
+        },
+        "Ethernet422": {
+            "admin_status": "up"
+        },
+        "Ethernet424": {
+            "admin_status": "up"
+        },
+        "Ethernet426": {
+            "admin_status": "up"
+        },
+        "Ethernet428": {
+            "admin_status": "up"
+        },
+        "Ethernet430": {
+            "admin_status": "up"
+        },
+        "Ethernet432": {
+            "admin_status": "up"
+        },
+        "Ethernet434": {
+            "admin_status": "up"
+        },
+        "Ethernet436": {
+            "admin_status": "up"
+        },
+        "Ethernet438": {
+            "admin_status": "up"
+        },
+        "Ethernet440": {
+            "admin_status": "up"
+        },
+        "Ethernet442": {
+            "admin_status": "up"
+        },
+        "Ethernet444": {
+            "admin_status": "up"
+        },
+        "Ethernet446": {
+            "admin_status": "up"
+        },
+        "Ethernet448": {
+            "admin_status": "up"
+        },
+        "Ethernet450": {
+            "admin_status": "up"
+        },
+        "Ethernet452": {
+            "admin_status": "up"
+        },
+        "Ethernet454": {
+            "admin_status": "up"
+        },
+        "Ethernet456": {
+            "admin_status": "up"
+        },
+        "Ethernet458": {
+            "admin_status": "up"
+        },
+        "Ethernet460": {
+            "admin_status": "up"
+        },
+        "Ethernet462": {
+            "admin_status": "up"
+        },
+        "Ethernet464": {
+            "admin_status": "up"
+        },
+        "Ethernet466": {
+            "admin_status": "up"
+        },
+        "Ethernet468": {
+            "admin_status": "up"
+        },
+        "Ethernet470": {
+            "admin_status": "up"
+        },
+        "Ethernet472": {
+            "admin_status": "up"
+        },
+        "Ethernet474": {
+            "admin_status": "up"
+        },
+        "Ethernet476": {
+            "admin_status": "up"
+        },
+        "Ethernet478": {
+            "admin_status": "up"
+        },
+        "Ethernet480": {
+            "admin_status": "up"
+        },
+        "Ethernet482": {
+            "admin_status": "up"
+        },
+        "Ethernet484": {
+            "admin_status": "up"
+        },
+        "Ethernet486": {
+            "admin_status": "up"
+        },
+        "Ethernet488": {
+            "admin_status": "up"
+        },
+        "Ethernet490": {
+            "admin_status": "up"
+        },
+        "Ethernet492": {
+            "admin_status": "up"
+        },
+        "Ethernet494": {
+            "admin_status": "up"
+        },
+        "Ethernet496": {
+            "admin_status": "up"
+        },
+        "Ethernet498": {
+            "admin_status": "up"
+        },
+        "Ethernet500": {
+            "admin_status": "up"
+        },
+        "Ethernet502": {
+            "admin_status": "up"
+        },
+        "Ethernet504": {
+            "admin_status": "up"
+        },
+        "Ethernet506": {
+            "admin_status": "up"
+        },
+        "Ethernet508": {
+            "admin_status": "up"
+        },
+        "Ethernet510": {
+            "admin_status": "up"
+        }
+    },
+    "INTERFACE": {
+        "Ethernet0": {},
+        "Ethernet0|12.0.0.1/24": {},
+        "Ethernet2": {},
+        "Ethernet2|12.1.0.1/24": {},
+        "Ethernet4": {},
+        "Ethernet4|12.2.0.1/24": {},
+        "Ethernet6": {},
+        "Ethernet6|12.3.0.1/24": {},
+        "Ethernet8": {},
+        "Ethernet8|12.4.0.1/24": {},
+        "Ethernet10": {},
+        "Ethernet10|12.5.0.1/24": {},
+        "Ethernet12": {},
+        "Ethernet12|12.6.0.1/24": {},
+        "Ethernet14": {},
+        "Ethernet14|12.7.0.1/24": {},
+        "Ethernet16": {},
+        "Ethernet16|12.8.0.1/24": {},
+        "Ethernet18": {},
+        "Ethernet18|12.9.0.1/24": {},
+        "Ethernet20": {},
+        "Ethernet20|12.10.0.1/24": {},
+        "Ethernet22": {},
+        "Ethernet22|12.11.0.1/24": {},
+        "Ethernet24": {},
+        "Ethernet24|12.12.0.1/24": {},
+        "Ethernet26": {},
+        "Ethernet26|12.13.0.1/24": {},
+        "Ethernet28": {},
+        "Ethernet28|12.14.0.1/24": {},
+        "Ethernet30": {},
+        "Ethernet30|12.15.0.1/24": {},
+        "Ethernet32": {},
+        "Ethernet32|12.16.0.1/24": {},
+        "Ethernet34": {},
+        "Ethernet34|12.17.0.1/24": {},
+        "Ethernet36": {},
+        "Ethernet36|12.18.0.1/24": {},
+        "Ethernet38": {},
+        "Ethernet38|12.19.0.1/24": {},
+        "Ethernet40": {},
+        "Ethernet40|12.20.0.1/24": {},
+        "Ethernet42": {},
+        "Ethernet42|12.21.0.1/24": {},
+        "Ethernet44": {},
+        "Ethernet44|12.22.0.1/24": {},
+        "Ethernet46": {},
+        "Ethernet46|12.23.0.1/24": {},
+        "Ethernet48": {},
+        "Ethernet48|12.24.0.1/24": {},
+        "Ethernet50": {},
+        "Ethernet50|12.25.0.1/24": {},
+        "Ethernet52": {},
+        "Ethernet52|12.26.0.1/24": {},
+        "Ethernet54": {},
+        "Ethernet54|12.27.0.1/24": {},
+        "Ethernet56": {},
+        "Ethernet56|12.28.0.1/24": {},
+        "Ethernet58": {},
+        "Ethernet58|12.29.0.1/24": {},
+        "Ethernet60": {},
+        "Ethernet60|12.30.0.1/24": {},
+        "Ethernet62": {},
+        "Ethernet62|12.31.0.1/24": {},
+        "Ethernet64": {},
+        "Ethernet64|12.32.0.1/24": {},
+        "Ethernet66": {},
+        "Ethernet66|12.33.0.1/24": {},
+        "Ethernet68": {},
+        "Ethernet68|12.34.0.1/24": {},
+        "Ethernet70": {},
+        "Ethernet70|12.35.0.1/24": {},
+        "Ethernet72": {},
+        "Ethernet72|12.36.0.1/24": {},
+        "Ethernet74": {},
+        "Ethernet74|12.37.0.1/24": {},
+        "Ethernet76": {},
+        "Ethernet76|12.38.0.1/24": {},
+        "Ethernet78": {},
+        "Ethernet78|12.39.0.1/24": {},
+        "Ethernet80": {},
+        "Ethernet80|12.40.0.1/24": {},
+        "Ethernet82": {},
+        "Ethernet82|12.41.0.1/24": {},
+        "Ethernet84": {},
+        "Ethernet84|12.42.0.1/24": {},
+        "Ethernet86": {},
+        "Ethernet86|12.43.0.1/24": {},
+        "Ethernet88": {},
+        "Ethernet88|12.44.0.1/24": {},
+        "Ethernet90": {},
+        "Ethernet90|12.45.0.1/24": {},
+        "Ethernet92": {},
+        "Ethernet92|12.46.0.1/24": {},
+        "Ethernet94": {},
+        "Ethernet94|12.47.0.1/24": {},
+        "Ethernet96": {},
+        "Ethernet96|12.48.0.1/24": {},
+        "Ethernet98": {},
+        "Ethernet98|12.49.0.1/24": {},
+        "Ethernet100": {},
+        "Ethernet100|12.50.0.1/24": {},
+        "Ethernet102": {},
+        "Ethernet102|12.51.0.1/24": {},
+        "Ethernet104": {},
+        "Ethernet104|12.52.0.1/24": {},
+        "Ethernet106": {},
+        "Ethernet106|12.53.0.1/24": {},
+        "Ethernet108": {},
+        "Ethernet108|12.54.0.1/24": {},
+        "Ethernet110": {},
+        "Ethernet110|12.55.0.1/24": {},
+        "Ethernet112": {},
+        "Ethernet112|12.56.0.1/24": {},
+        "Ethernet114": {},
+        "Ethernet114|12.57.0.1/24": {},
+        "Ethernet116": {},
+        "Ethernet116|12.58.0.1/24": {},
+        "Ethernet118": {},
+        "Ethernet118|12.59.0.1/24": {},
+        "Ethernet120": {},
+        "Ethernet120|12.60.0.1/24": {},
+        "Ethernet122": {},
+        "Ethernet122|12.61.0.1/24": {},
+        "Ethernet124": {},
+        "Ethernet124|12.62.0.1/24": {},
+        "Ethernet126": {},
+        "Ethernet126|12.63.0.1/24": {},
+        "Ethernet128": {},
+        "Ethernet128|12.64.0.1/24": {},
+        "Ethernet130": {},
+        "Ethernet130|12.65.0.1/24": {},
+        "Ethernet132": {},
+        "Ethernet132|12.66.0.1/24": {},
+        "Ethernet134": {},
+        "Ethernet134|12.67.0.1/24": {},
+        "Ethernet136": {},
+        "Ethernet136|12.68.0.1/24": {},
+        "Ethernet138": {},
+        "Ethernet138|12.69.0.1/24": {},
+        "Ethernet140": {},
+        "Ethernet140|12.70.0.1/24": {},
+        "Ethernet142": {},
+        "Ethernet142|12.71.0.1/24": {},
+        "Ethernet144": {},
+        "Ethernet144|12.72.0.1/24": {},
+        "Ethernet146": {},
+        "Ethernet146|12.73.0.1/24": {},
+        "Ethernet148": {},
+        "Ethernet148|12.74.0.1/24": {},
+        "Ethernet150": {},
+        "Ethernet150|12.75.0.1/24": {},
+        "Ethernet152": {},
+        "Ethernet152|12.76.0.1/24": {},
+        "Ethernet154": {},
+        "Ethernet154|12.77.0.1/24": {},
+        "Ethernet156": {},
+        "Ethernet156|12.78.0.1/24": {},
+        "Ethernet158": {},
+        "Ethernet158|12.79.0.1/24": {},
+        "Ethernet160": {},
+        "Ethernet160|12.80.0.1/24": {},
+        "Ethernet162": {},
+        "Ethernet162|12.81.0.1/24": {},
+        "Ethernet164": {},
+        "Ethernet164|12.82.0.1/24": {},
+        "Ethernet166": {},
+        "Ethernet166|12.83.0.1/24": {},
+        "Ethernet168": {},
+        "Ethernet168|12.84.0.1/24": {},
+        "Ethernet170": {},
+        "Ethernet170|12.85.0.1/24": {},
+        "Ethernet172": {},
+        "Ethernet172|12.86.0.1/24": {},
+        "Ethernet174": {},
+        "Ethernet174|12.87.0.1/24": {},
+        "Ethernet176": {},
+        "Ethernet176|12.88.0.1/24": {},
+        "Ethernet178": {},
+        "Ethernet178|12.89.0.1/24": {},
+        "Ethernet180": {},
+        "Ethernet180|12.90.0.1/24": {},
+        "Ethernet182": {},
+        "Ethernet182|12.91.0.1/24": {},
+        "Ethernet184": {},
+        "Ethernet184|12.92.0.1/24": {},
+        "Ethernet186": {},
+        "Ethernet186|12.93.0.1/24": {},
+        "Ethernet188": {},
+        "Ethernet188|12.94.0.1/24": {},
+        "Ethernet190": {},
+        "Ethernet190|12.95.0.1/24": {},
+        "Ethernet192": {},
+        "Ethernet192|12.96.0.1/24": {},
+        "Ethernet194": {},
+        "Ethernet194|12.97.0.1/24": {},
+        "Ethernet196": {},
+        "Ethernet196|12.98.0.1/24": {},
+        "Ethernet198": {},
+        "Ethernet198|12.99.0.1/24": {},
+        "Ethernet200": {},
+        "Ethernet200|12.100.0.1/24": {},
+        "Ethernet202": {},
+        "Ethernet202|12.101.0.1/24": {},
+        "Ethernet204": {},
+        "Ethernet204|12.102.0.1/24": {},
+        "Ethernet206": {},
+        "Ethernet206|12.103.0.1/24": {},
+        "Ethernet208": {},
+        "Ethernet208|12.104.0.1/24": {},
+        "Ethernet210": {},
+        "Ethernet210|12.105.0.1/24": {},
+        "Ethernet212": {},
+        "Ethernet212|12.106.0.1/24": {},
+        "Ethernet214": {},
+        "Ethernet214|12.107.0.1/24": {},
+        "Ethernet216": {},
+        "Ethernet216|12.108.0.1/24": {},
+        "Ethernet218": {},
+        "Ethernet218|12.109.0.1/24": {},
+        "Ethernet220": {},
+        "Ethernet220|12.110.0.1/24": {},
+        "Ethernet222": {},
+        "Ethernet222|12.111.0.1/24": {},
+        "Ethernet224": {},
+        "Ethernet224|12.112.0.1/24": {},
+        "Ethernet226": {},
+        "Ethernet226|12.113.0.1/24": {},
+        "Ethernet228": {},
+        "Ethernet228|12.114.0.1/24": {},
+        "Ethernet230": {},
+        "Ethernet230|12.115.0.1/24": {},
+        "Ethernet232": {},
+        "Ethernet232|12.116.0.1/24": {},
+        "Ethernet234": {},
+        "Ethernet234|12.117.0.1/24": {},
+        "Ethernet236": {},
+        "Ethernet236|12.118.0.1/24": {},
+        "Ethernet238": {},
+        "Ethernet238|12.119.0.1/24": {},
+        "Ethernet240": {},
+        "Ethernet240|12.120.0.1/24": {},
+        "Ethernet242": {},
+        "Ethernet242|12.121.0.1/24": {},
+        "Ethernet244": {},
+        "Ethernet244|12.122.0.1/24": {},
+        "Ethernet246": {},
+        "Ethernet246|12.123.0.1/24": {},
+        "Ethernet248": {},
+        "Ethernet248|12.124.0.1/24": {},
+        "Ethernet250": {},
+        "Ethernet250|12.125.0.1/24": {},
+        "Ethernet252": {},
+        "Ethernet252|12.126.0.1/24": {},
+        "Ethernet254": {},
+        "Ethernet254|12.127.0.1/24": {},
+        "Ethernet256": {},
+        "Ethernet256|13.0.0.1/24": {},
+        "Ethernet258": {},
+        "Ethernet258|13.1.0.1/24": {},
+        "Ethernet260": {},
+        "Ethernet260|13.2.0.1/24": {},
+        "Ethernet262": {},
+        "Ethernet262|13.3.0.1/24": {},
+        "Ethernet264": {},
+        "Ethernet264|13.4.0.1/24": {},
+        "Ethernet266": {},
+        "Ethernet266|13.5.0.1/24": {},
+        "Ethernet268": {},
+        "Ethernet268|13.6.0.1/24": {},
+        "Ethernet270": {},
+        "Ethernet270|13.7.0.1/24": {},
+        "Ethernet272": {},
+        "Ethernet272|13.8.0.1/24": {},
+        "Ethernet274": {},
+        "Ethernet274|13.9.0.1/24": {},
+        "Ethernet276": {},
+        "Ethernet276|13.10.0.1/24": {},
+        "Ethernet278": {},
+        "Ethernet278|13.11.0.1/24": {},
+        "Ethernet280": {},
+        "Ethernet280|13.12.0.1/24": {},
+        "Ethernet282": {},
+        "Ethernet282|13.13.0.1/24": {},
+        "Ethernet284": {},
+        "Ethernet284|13.14.0.1/24": {},
+        "Ethernet286": {},
+        "Ethernet286|13.15.0.1/24": {},
+        "Ethernet288": {},
+        "Ethernet288|13.16.0.1/24": {},
+        "Ethernet290": {},
+        "Ethernet290|13.17.0.1/24": {},
+        "Ethernet292": {},
+        "Ethernet292|13.18.0.1/24": {},
+        "Ethernet294": {},
+        "Ethernet294|13.19.0.1/24": {},
+        "Ethernet296": {},
+        "Ethernet296|13.20.0.1/24": {},
+        "Ethernet298": {},
+        "Ethernet298|13.21.0.1/24": {},
+        "Ethernet300": {},
+        "Ethernet300|13.22.0.1/24": {},
+        "Ethernet302": {},
+        "Ethernet302|13.23.0.1/24": {},
+        "Ethernet304": {},
+        "Ethernet304|13.24.0.1/24": {},
+        "Ethernet306": {},
+        "Ethernet306|13.25.0.1/24": {},
+        "Ethernet308": {},
+        "Ethernet308|13.26.0.1/24": {},
+        "Ethernet310": {},
+        "Ethernet310|13.27.0.1/24": {},
+        "Ethernet312": {},
+        "Ethernet312|13.28.0.1/24": {},
+        "Ethernet314": {},
+        "Ethernet314|13.29.0.1/24": {},
+        "Ethernet316": {},
+        "Ethernet316|13.30.0.1/24": {},
+        "Ethernet318": {},
+        "Ethernet318|13.31.0.1/24": {},
+        "Ethernet320": {},
+        "Ethernet320|13.32.0.1/24": {},
+        "Ethernet322": {},
+        "Ethernet322|13.33.0.1/24": {},
+        "Ethernet324": {},
+        "Ethernet324|13.34.0.1/24": {},
+        "Ethernet326": {},
+        "Ethernet326|13.35.0.1/24": {},
+        "Ethernet328": {},
+        "Ethernet328|13.36.0.1/24": {},
+        "Ethernet330": {},
+        "Ethernet330|13.37.0.1/24": {},
+        "Ethernet332": {},
+        "Ethernet332|13.38.0.1/24": {},
+        "Ethernet334": {},
+        "Ethernet334|13.39.0.1/24": {},
+        "Ethernet336": {},
+        "Ethernet336|13.40.0.1/24": {},
+        "Ethernet338": {},
+        "Ethernet338|13.41.0.1/24": {},
+        "Ethernet340": {},
+        "Ethernet340|13.42.0.1/24": {},
+        "Ethernet342": {},
+        "Ethernet342|13.43.0.1/24": {},
+        "Ethernet344": {},
+        "Ethernet344|13.44.0.1/24": {},
+        "Ethernet346": {},
+        "Ethernet346|13.45.0.1/24": {},
+        "Ethernet348": {},
+        "Ethernet348|13.46.0.1/24": {},
+        "Ethernet350": {},
+        "Ethernet350|13.47.0.1/24": {},
+        "Ethernet352": {},
+        "Ethernet352|13.48.0.1/24": {},
+        "Ethernet354": {},
+        "Ethernet354|13.49.0.1/24": {},
+        "Ethernet356": {},
+        "Ethernet356|13.50.0.1/24": {},
+        "Ethernet358": {},
+        "Ethernet358|13.51.0.1/24": {},
+        "Ethernet360": {},
+        "Ethernet360|13.52.0.1/24": {},
+        "Ethernet362": {},
+        "Ethernet362|13.53.0.1/24": {},
+        "Ethernet364": {},
+        "Ethernet364|13.54.0.1/24": {},
+        "Ethernet366": {},
+        "Ethernet366|13.55.0.1/24": {},
+        "Ethernet368": {},
+        "Ethernet368|13.56.0.1/24": {},
+        "Ethernet370": {},
+        "Ethernet370|13.57.0.1/24": {},
+        "Ethernet372": {},
+        "Ethernet372|13.58.0.1/24": {},
+        "Ethernet374": {},
+        "Ethernet374|13.59.0.1/24": {},
+        "Ethernet376": {},
+        "Ethernet376|13.60.0.1/24": {},
+        "Ethernet378": {},
+        "Ethernet378|13.61.0.1/24": {},
+        "Ethernet380": {},
+        "Ethernet380|13.62.0.1/24": {},
+        "Ethernet382": {},
+        "Ethernet382|13.63.0.1/24": {},
+        "Ethernet384": {},
+        "Ethernet384|13.64.0.1/24": {},
+        "Ethernet386": {},
+        "Ethernet386|13.65.0.1/24": {},
+        "Ethernet388": {},
+        "Ethernet388|13.66.0.1/24": {},
+        "Ethernet390": {},
+        "Ethernet390|13.67.0.1/24": {},
+        "Ethernet392": {},
+        "Ethernet392|13.68.0.1/24": {},
+        "Ethernet394": {},
+        "Ethernet394|13.69.0.1/24": {},
+        "Ethernet396": {},
+        "Ethernet396|13.70.0.1/24": {},
+        "Ethernet398": {},
+        "Ethernet398|13.71.0.1/24": {},
+        "Ethernet400": {},
+        "Ethernet400|13.72.0.1/24": {},
+        "Ethernet402": {},
+        "Ethernet402|13.73.0.1/24": {},
+        "Ethernet404": {},
+        "Ethernet404|13.74.0.1/24": {},
+        "Ethernet406": {},
+        "Ethernet406|13.75.0.1/24": {},
+        "Ethernet408": {},
+        "Ethernet408|13.76.0.1/24": {},
+        "Ethernet410": {},
+        "Ethernet410|13.77.0.1/24": {},
+        "Ethernet412": {},
+        "Ethernet412|13.78.0.1/24": {},
+        "Ethernet414": {},
+        "Ethernet414|13.79.0.1/24": {},
+        "Ethernet416": {},
+        "Ethernet416|13.80.0.1/24": {},
+        "Ethernet418": {},
+        "Ethernet418|13.81.0.1/24": {},
+        "Ethernet420": {},
+        "Ethernet420|13.82.0.1/24": {},
+        "Ethernet422": {},
+        "Ethernet422|13.83.0.1/24": {},
+        "Ethernet424": {},
+        "Ethernet424|13.84.0.1/24": {},
+        "Ethernet426": {},
+        "Ethernet426|13.85.0.1/24": {},
+        "Ethernet428": {},
+        "Ethernet428|13.86.0.1/24": {},
+        "Ethernet430": {},
+        "Ethernet430|13.87.0.1/24": {},
+        "Ethernet432": {},
+        "Ethernet432|13.88.0.1/24": {},
+        "Ethernet434": {},
+        "Ethernet434|13.89.0.1/24": {},
+        "Ethernet436": {},
+        "Ethernet436|13.90.0.1/24": {},
+        "Ethernet438": {},
+        "Ethernet438|13.91.0.1/24": {},
+        "Ethernet440": {},
+        "Ethernet440|13.92.0.1/24": {},
+        "Ethernet442": {},
+        "Ethernet442|13.93.0.1/24": {},
+        "Ethernet444": {},
+        "Ethernet444|13.94.0.1/24": {},
+        "Ethernet446": {},
+        "Ethernet446|13.95.0.1/24": {},
+        "Ethernet448": {},
+        "Ethernet448|13.96.0.1/24": {},
+        "Ethernet450": {},
+        "Ethernet450|13.97.0.1/24": {},
+        "Ethernet452": {},
+        "Ethernet452|13.98.0.1/24": {},
+        "Ethernet454": {},
+        "Ethernet454|13.99.0.1/24": {},
+        "Ethernet456": {},
+        "Ethernet456|13.100.0.1/24": {},
+        "Ethernet458": {},
+        "Ethernet458|13.101.0.1/24": {},
+        "Ethernet460": {},
+        "Ethernet460|13.102.0.1/24": {},
+        "Ethernet462": {},
+        "Ethernet462|13.103.0.1/24": {},
+        "Ethernet464": {},
+        "Ethernet464|13.104.0.1/24": {},
+        "Ethernet466": {},
+        "Ethernet466|13.105.0.1/24": {},
+        "Ethernet468": {},
+        "Ethernet468|13.106.0.1/24": {},
+        "Ethernet470": {},
+        "Ethernet470|13.107.0.1/24": {},
+        "Ethernet472": {},
+        "Ethernet472|13.108.0.1/24": {},
+        "Ethernet474": {},
+        "Ethernet474|13.109.0.1/24": {},
+        "Ethernet476": {},
+        "Ethernet476|13.110.0.1/24": {},
+        "Ethernet478": {},
+        "Ethernet478|13.111.0.1/24": {},
+        "Ethernet480": {},
+        "Ethernet480|13.112.0.1/24": {},
+        "Ethernet482": {},
+        "Ethernet482|13.113.0.1/24": {},
+        "Ethernet484": {},
+        "Ethernet484|13.114.0.1/24": {},
+        "Ethernet486": {},
+        "Ethernet486|13.115.0.1/24": {},
+        "Ethernet488": {},
+        "Ethernet488|13.116.0.1/24": {},
+        "Ethernet490": {},
+        "Ethernet490|13.117.0.1/24": {},
+        "Ethernet492": {},
+        "Ethernet492|13.118.0.1/24": {},
+        "Ethernet494": {},
+        "Ethernet494|13.119.0.1/24": {},
+        "Ethernet496": {},
+        "Ethernet496|13.120.0.1/24": {},
+        "Ethernet498": {},
+        "Ethernet498|13.121.0.1/24": {},
+        "Ethernet500": {},
+        "Ethernet500|13.122.0.1/24": {},
+        "Ethernet502": {},
+        "Ethernet502|13.123.0.1/24": {},
+        "Ethernet504": {},
+        "Ethernet504|13.124.0.1/24": {},
+        "Ethernet506": {},
+        "Ethernet506|13.125.0.1/24": {},
+        "Ethernet508": {},
+        "Ethernet508|13.126.0.1/24": {},
+        "Ethernet510": {},
+        "Ethernet510|13.127.0.1/24": {}
+    },
+    "STATIC_ROUTE": {
+        "default|50.0.0.0/24": {
+            "blackhole": "false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false",
+            "distance": "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
+            "ifname": ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,",
+            "nexthop": "12.0.1.2,12.1.1.2,12.2.1.2,12.3.1.2,12.4.1.2,12.5.1.2,12.6.1.2,12.7.1.2,12.8.1.2,12.9.1.2,12.10.1.2,12.11.1.2,12.12.1.2,12.13.1.2,12.14.1.2,12.15.1.2,12.16.1.2,12.17.1.2,12.18.1.2,12.19.1.2,12.20.1.2,12.21.1.2,12.22.1.2,12.23.1.2,12.24.1.2,12.25.1.2,12.26.1.2,12.27.1.2,12.28.1.2,12.29.1.2,12.30.1.2,12.31.1.2",
+            "nexthop-vrf": ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,"
+        },
+        "default|60.0.0.0/24": {
+            "blackhole": "false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false",
+            "distance": "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
+            "ifname": ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,",
+            "nexthop": "13.0.1.2,13.1.1.2,13.2.1.2,13.3.1.2,13.4.1.2,13.5.1.2,13.6.1.2,13.7.1.2,13.8.1.2,13.9.1.2,13.10.1.2,13.11.1.2,13.12.1.2,13.13.1.2,13.14.1.2,13.15.1.2,13.16.1.2,13.17.1.2,13.18.1.2,13.19.1.2,13.20.1.2,13.21.1.2,13.22.1.2,13.23.1.2,13.24.1.2,13.25.1.2,13.26.1.2,13.27.1.2,13.28.1.2,13.29.1.2,13.30.1.2,13.31.1.2",
+            "nexthop-vrf": ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,"
+        }
+    
+    }
+}
