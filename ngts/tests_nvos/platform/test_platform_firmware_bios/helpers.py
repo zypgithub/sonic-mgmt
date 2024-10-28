@@ -73,7 +73,8 @@ def install_image_and_verify(orig_engine, image_name, system, test_name=''):
 
 def verify_current_version(original_version, system):
     with allure.step(f"Verify that current image is {original_version}"):
-        current_version = OutputParsingTool.parse_json_str_to_dictionary(system.version.show()).get_returned_value()['image']
+        current_version = OutputParsingTool.parse_json_str_to_dictionary(system.version.show()).get_returned_value()[
+            'image']
         assert current_version == original_version, f"Current version is invalid: {current_version}, expected: {original_version}"
 
 

@@ -725,7 +725,7 @@ class PlatformConsts:
     CHASSIS_LOCATION_STANDALONE_DICT = {CHASSIS_LOCATION_TRAY_ID: '0',
                                         CHASSIS_LOCATION_SLOT_ID: '0',
                                         CHASSIS_LOCATION_CHAS_ID: 'N/A',
-                                        CHASSIS_LOCATION_TOPO_ID: 'Loopback'}
+                                        CHASSIS_LOCATION_TOPO_ID: '7'}
 
     INV_STATE = 'state'
     INV_OK = 'ok'
@@ -1423,6 +1423,7 @@ class BiosConsts:
     ENTER_CURRENT_PASSWORD = "Enter Current Password"
     NVLINK_ENTER_CURRENT_PASSWORD = "Enter Current Administrator Password"
     CLEAR_OLD_PASSWORD = "Clear Old Password"
+    NVLINK_CLEAR_OLD_PASSWORD = "Clear Old Administrator Password"
     ENABLED_SELECTED = "[1;37;47m[Enabled]"
     DISABLED_SELECTED = "[1;37;47m[Disabled]"
     KEY_STROKE_SLEEP = 0.5
@@ -1430,10 +1431,10 @@ class BiosConsts:
     SELECTED_LINE_REGEX = "\\x1b[[1];37;47m([^\\[\\]]*?)\\x1b"
     SELECTED_LINE_VAL_REGEX = "\\x1b[[1];37;47m[[]([^\\\\*?)[]]\\x1b"
     SELECTED_OPTION_LINE_REGEX = "\\x1b[[]1;37;40m([^\\[\\]]*?)\\x1b"
-    BIOS_MENU_PAGES = ["Main", "Advanced", "Chipset", "Security", "Boot", "Save & Exit", "Event Logs"]
+    BIOS_MENU_PAGES = ["Main", "Advanced", "Chipset", "Security", "Boot", "Save & Exit", "Event Logs", "Server Mgmt"]
     MISSING_PAGE_ERR = "Target page {} not found in the BIOS setting pages list {}"
     MAX_SELECTIONS_PER_PAGE = 30
-    PEXPECT_TIMEOUT = 2
+    PEXPECT_TIMEOUT = 1.2
 
 
 class AclConsts:
