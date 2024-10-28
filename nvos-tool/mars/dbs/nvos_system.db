@@ -104,9 +104,6 @@
 		<cases> sonic-mgmt/nvos-tool/mars/cases/system/nvos_system_performance_stress.cases </cases>
 	</test>
 	<test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/platform/nvos_transceiver_upgrade.cases </cases>
-	</test>
-	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/system/nvos_system_power_button.cases </cases>
 	</test>
 	<test>
