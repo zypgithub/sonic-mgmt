@@ -60,7 +60,7 @@ class ClusterTools:
             return ResultObj(result=True)
 
     @staticmethod
-    def start_cluster(cluster, output_format=OutputFormat.json):
+    def start_cluster(cluster, output_format=OutputFormat.json, verify_nmx_c=True):
         with allure.step("Start cluster"):
             output = OutputParsingTool.parse_show_output_to_dict(
                 cluster.show(output_format=output_format),
@@ -79,11 +79,11 @@ class ClusterTools:
                     f"{output[SystemConsts.STATE]}, Expected to be: " \
                     f"enabled"
                 assert ClusterConsts.NMXC_CONN in output, f"{ClusterConsts.NMXC_CONN} was not found in {output}"
-                expected_nmxc_state = ClusterConsts.NMXC_CONN_STATE_PER_CLUSTER_STATE[output[SystemConsts.STATE]]
-                Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output,
-                                                                  field_name=ClusterConsts.NMXC_CONN,
-                                                                  expected_value=expected_nmxc_state).verify_result()
-                assert output[ClusterConsts.NMXC_CONN] == expected_nmxc_state, f"{ClusterConsts.NMXC_CONN} state was expected to be {expected_nmxc_state} but instead it was {output[ClusterConsts.NMXC_CONN]}"
+                if verify_nmx_c:
+                    expected_nmxc_state = ClusterConsts.NMXC_CONN_STATE_PER_CLUSTER_STATE[output[SystemConsts.STATE]]
+                    Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output,
+                                                                      field_name=ClusterConsts.NMXC_CONN,
+                                                                      expected_value=expected_nmxc_state).verify_result()
 
     @staticmethod
     def validate_cluster_enabled(cluster, output_format=OutputFormat.json):
@@ -188,8 +188,9 @@ class ClusterTools:
                     assert dev_output['lid'] > 0, "Invalid number of lid"
 
     @staticmethod
-    def verify_interface_up(devices):
-        for interface_type in ['sw', 'fnm']:
+    def verify_interface_up(devices, has_loopbox):
+        interface_types = ['sw', 'fnm', 'acp'] if has_loopbox else ['sw']
+        for interface_type in interface_types:
             if devices.dut.nvl5_trunk_ports_list == [] and interface_type == 'sw':
                 continue
             port_type = 'fnm' if interface_type == 'fnm' else ''
@@ -346,6 +347,60 @@ class ClusterTools:
                 files = OutputParsingTool.parse_show_output_to_dict(sdn.state.app.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=OutputFormat.json),
                                                                     output_format=OutputFormat.json).get_returned_value()
                 assert not files, f"Expected to get empty output, but instead received {output}"
+
+    @staticmethod
+    def wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines):
+        ClusterTools().stop_cluster(cluster)
+
+        devices.dut.nvl5_access_ports_list
+        logger.info("Disable access ports")
+        port_name = summarize_ports(devices.dut.nvl5_access_ports_list)  # Returns range of ports.
+        selected_port = Port(port_name, "", "")
+        port_state = NvosConsts.LINK_STATE_DOWN
+        selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True).verify_result()
+        time.sleep(90)
+
+        ClusterTools().start_cluster(cluster)
+        sm_config = ClusterConsts.NMX_CONTROLLER_CONFIG_FILE_TYPES[1]
+        output = sdn.config.app.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[sm_config].action_generate_sdn().get_returned_value()
+        generated_file_name = ClusterTools().get_generated_sdn_file(output, 'config')
+        output_format = OutputFormat.json
+        output = OutputParsingTool.parse_show_output_to_dict(sdn.config.app.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[sm_config].files.show(output_format=output_format),
+                                                             output_format=output_format).get_returned_value()
+        path_to_generated_file = output[generated_file_name]['path']
+        logger.info("Comment lines - Part of WA")
+        engines.dut.run_cmd(
+            f"sudo sed -i \"/^nvlink_enable TRUE/s/^/#/\" {path_to_generated_file} && sudo sed -i \"/^plugin_name grpc_mgr/s/^/#/\" {path_to_generated_file}"
+        )
+
+        sdn.config.app.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[sm_config].files.file_name[generated_file_name].action_file_install(force=False)
+
+        selected_port = Port(port_name, "", "")
+        port_state = NvosConsts.LINK_STATE_UP
+        selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True).verify_result()
+        time.sleep(90)
+
+        ClusterTools().stop_app(cluster, ClusterConsts.NMX_CONTROLLER)
+        ClusterTools().start_app(cluster, ClusterConsts.NMX_CONTROLLER)
+
+        ClusterTools().validate_cluster_enabled(cluster)
+        yield
+
+        engines.dut.run_cmd(
+            f"sudo sed -i \"/^#nvlink_enable TRUE/s/^#//\" {path_to_generated_file} && sudo sed -i \"/^#plugin_name grpc_mgr/s/^#//\" {path_to_generated_file}"
+        )
+        sdn.config.app.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[sm_config].files.file_name[generated_file_name].action_file_install(force=False)
+        sdn.config.app.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[sm_config].files.file_name[generated_file_name].action_delete()
+
+    @staticmethod
+    def get_generated_sdn_file(output, file_type):
+        # Use a regular expression to capture the filename
+        match = re.search(fr"App {file_type} file (\S+)", output)
+        if match:
+            filename = match.group(1)
+            return filename
+        else:
+            return None
 
 
 def disabled_access_ports(func):
