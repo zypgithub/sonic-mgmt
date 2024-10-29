@@ -1,14 +1,13 @@
 import logging
+import random
 import time
 
 import pytest
 
-from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port, PortRequirements
-from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts, IbInterfaceConsts
-from ngts.nvos_tools.infra.Fae import Fae
-from ngts.nvos_tools.infra.LinuxCmdBuilderTool import LinuxCmdBuilderTool
+from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
+from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_tools.infra.RegisterTool import RegisterTool
+from ngts.nvos_tools.infra.IbInterfaceTool import IbInterfaceTool
 from ngts.nvos_tools.system.System import System
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.platform.Platform import Platform
@@ -75,36 +74,23 @@ def test_transceiver_status_unplug(engines, devices, test_api, asic_conf_dict):
     with allure.step(f"Get module with state {desired_state}"):
         module_under_test = _get_module_with_status(platform, PlatformConsts.INSERTED)
         ports = _get_ports_for_module(module_under_test)
-        mst_dev_name = _get_mst_dev_name(engines, ports, asic_conf_dict)
+        assert ports, "Should be at least one port for module"
+        mst_dev_name = IbInterfaceTool.get_mst_dev_name(engines=engines, module_name=module_under_test,
+                                                        asic_conf_dict=asic_conf_dict, port_name=ports[0].name)
         assert module_under_test, f"No module with state {desired_state} found"
         module_index = int(
             ''.join(c for c in module_under_test if c.isdigit())) - 1  # module start from 0, while sw from 1
 
     try:
         _verify_transceiver_status(platform, transceiver_id=module_under_test, expected_module_status='Inserted')
-        _simulate_unplug_event(engines.dut, devices.dut, module_index, mst_dev_name)
+        IbInterfaceTool.simulate_unplug_module_event(engines.dut, devices.dut, module_index, mst_dev_name, 5)
         _verify_link_state_down(ports)
         _verify_transceiver_status(platform, transceiver_id=module_under_test, expected_module_status='Removed')
 
     finally:
-        _simulate_plugin_event(engines.dut, devices.dut, module_index, mst_dev_name)
+        IbInterfaceTool.simulate_plugin_module_event(engines.dut, devices.dut, module_index, mst_dev_name, 50)
         _verify_link_state_up(ports)
         _verify_transceiver_status(platform, transceiver_id=module_under_test, expected_module_status='Inserted')
-
-
-def _get_mst_dev_name(engines, ports, asic_conf_dict):
-    assert ports, "No ports were found"
-    with allure.step(f"Find correct mst_dev_name for port"):
-        port_name = ports[0].name
-        output_fae_port = OutputParsingTool.parse_show_interface_output_to_dictionary(
-            Fae(port_name=port_name).port.interface.show()).get_returned_value()
-        asic_number = output_fae_port.get(IbInterfaceConsts.PRIMARY_ASIC, "0")
-        assert asic_number is not None, "primary-asic is None"
-        asic_dev_id_number = _get_asic_dev_id_number(asic_number)
-        asic_mapping_number = asic_conf_dict[asic_dev_id_number]
-        cmd = LinuxCmdBuilderTool("sudo mst status -v").grep("pciconf").grep(f"{asic_mapping_number}").awk_print("2").build()
-        mst_dev_name = engines.dut.run_cmd(cmd)
-        return mst_dev_name
 
 
 @pytest.mark.platform
@@ -131,7 +117,9 @@ def test_transceiver_status_with_reboot(engines, devices, test_api, asic_conf_di
     with allure.step(f"Get module with state {desired_state}"):
         module_under_test = _get_module_with_status(platform, PlatformConsts.INSERTED)
         ports = _get_ports_for_module(module_under_test)
-        mst_dev_name = _get_mst_dev_name(engines, ports, asic_conf_dict)
+        assert ports, "Should be at least one port for module"
+        mst_dev_name = IbInterfaceTool.get_mst_dev_name(engines=engines, module_name=module_under_test,
+                                                        asic_conf_dict=asic_conf_dict, port_name=ports[0].name)
         assert module_under_test, f"No module with state {desired_state} found"
         module_index = int(
             ''.join(c for c in module_under_test if c.isdigit())) - 1  # module start from 0, while sw from 1
@@ -139,17 +127,19 @@ def test_transceiver_status_with_reboot(engines, devices, test_api, asic_conf_di
     try:
         _verify_transceiver_status(platform, transceiver_id=module_under_test, expected_module_status='Inserted')
 
-        _simulate_unplug_event(engines.dut, devices.dut, module_index, mst_dev_name)
+        IbInterfaceTool.simulate_unplug_module_event(engines.dut, devices.dut, module_index, mst_dev_name, 5)
         _verify_link_state_down(ports)
         _verify_transceiver_status(platform, transceiver_id=module_under_test, expected_module_status='Removed')
 
-        with allure.step("Reboot the system"):
+        sleep_time_seconds = 60
+        with allure.step(f"Reboot the system and sleep {sleep_time_seconds} seconds"):
             system.reboot.action_reboot(engine=engines.dut, device=devices.dut)
+            time.sleep(sleep_time_seconds)
 
         _verify_transceiver_status(platform, transceiver_id=module_under_test, expected_module_status='Inserted')
 
     finally:
-        _simulate_plugin_event(engines.dut, devices.dut, module_index, mst_dev_name)
+        IbInterfaceTool.simulate_plugin_module_event(engines.dut, devices.dut, module_index, mst_dev_name, 50)
         _verify_link_state_up(ports)
         _verify_transceiver_status(platform, transceiver_id=module_under_test, expected_module_status='Inserted')
 
@@ -212,30 +202,15 @@ def _verify_link_state_down(down_ports):
                 assert False, "The link state is up for removed transceiver"
 
 
-def _simulate_plugin_event(engine, device, module_index, mst_dev_name):
-    with allure.step(f"Simulate plugin event for module {module_index}"):
-        admin_status = "1"  # The code to simulate plug event
-        RegisterTool.update_pmaos_register(engine, device, mst_dev_name=mst_dev_name,
-                                           admin_status=admin_status, module_index=module_index)
-        time.sleep(40)
-
-
-def _simulate_unplug_event(engine, device, module_index, mst_dev_name):
-    with allure.step(f"Simulate unplug event for module {module_index}"):
-        admin_status = "0xe"  # The code to simulate unplug event
-        RegisterTool.update_pmaos_register(engine, device, mst_dev_name=mst_dev_name,
-                                           admin_status=admin_status, module_index=module_index)
-        time.sleep(2)
-
-
 def _get_module_with_status(platform, status):
     with allure.step(f"Find {status} module"):
-        transceivers_output = OutputParsingTool.parse_json_str_to_dictionary(
-            platform.transceiver.show()).get_returned_value()
-        for name, transceiver in transceivers_output.items():
-            if "sw" in name and transceiver[PlatformConsts.TRANSCEIVER_STATUS] == status:
-                return name
-        assert False, f"No transceiver with status {status} found"
+        transceivers = [name for name, transceiver in
+                        OutputParsingTool.parse_json_str_to_dictionary(
+                            platform.transceiver.show()).get_returned_value().items() if
+                        "sw" in name and transceiver[PlatformConsts.TRANSCEIVER_STATUS] == status]
+        if not transceivers:
+            pytest.skip(f"No {status} transceivers found for setup")
+        return random.choice(transceivers)
 
 
 def _get_ports_for_module(module_name):
@@ -243,7 +218,3 @@ def _get_ports_for_module(module_name):
         ports = Port.get_list_of_ports()
         ports_for_module = [port for port in ports if f"{module_name}p" in port.name]
         return ports_for_module
-
-
-def _get_asic_dev_id_number(asic_number):
-    return f"DEV_ID_ASIC_{asic_number}"
