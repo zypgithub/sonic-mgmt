@@ -15,7 +15,7 @@ class ClusterConsts:
     INITIAL_CONFIGURATIONS_PATH = '/auto/sw_system_project/NVOS_INFRA/verification_files/cluster/uploaded_control_plane_files'
     UNDEFINED_STATE = 'undefined'
     UNDEFINED_STATE_ERR_MSG_NVUE = 'Error: At state: \'undefined\' is not one of [\'enabled\', \'disabled\']'
-    UNDEFINED_STATE_ERR_MSG_OPENAPI = 'Error: Request failed. Details: Error at state: \'undefined\' is not one of [\'enabled\', \'disabled\', None]'
+    UNDEFINED_STATE_ERR_MSG_OPENAPI = 'Error: Request failed. Details: Error: \'undefined\' is not one of [\'enabled\', \'disabled\', None]'
     UNDEFINED_STATE_DICT = {'NVUE': UNDEFINED_STATE_ERR_MSG_NVUE, 'OpenApi': UNDEFINED_STATE_ERR_MSG_OPENAPI}
     NMXC_CONN = 'nmxc-conn'
     NMXC_CONN_STATE_PER_CLUSTER_STATE = {NvosConst.ENABLED: 'up', NvosConst.DISABLED: 'down'}
