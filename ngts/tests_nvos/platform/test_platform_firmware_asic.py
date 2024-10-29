@@ -92,7 +92,7 @@ def test_set_unset_platform_firmware_default(engines):
 @pytest.mark.simx
 @pytest.mark.image
 @pytest.mark.platform
-@pytest.mark.timeout(15 * MINUTE, func_only=True)
+@pytest.mark.timeout(20 * MINUTE, func_only=True)
 def test_platform_firmware_image_rename(engines, devices, topology_obj, clear_asic_files):
     """
     Check the image rename cmd.

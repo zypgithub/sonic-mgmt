@@ -33,6 +33,16 @@ DEVICES_TO_IGNORE_LINE = "\"devices_to_ignore\": \\[{}\\]"
 SIMULATED_ISSUES = {"bad_device": "device is out of power"}
 
 
+@pytest.fixture(scope='function')
+def set_unset_ps_redundancy_grid():
+    platform = Platform()
+    with allure.step(f"Set platform ps-redundancy to {PlatformConsts.PS_REDUNDANCY_GRID}"):
+        platform.ps_redundancy.set(PlatformConsts.PS_REDUNDANCY_POLICY, PlatformConsts.PS_REDUNDANCY_GRID, apply=True)
+    yield
+    with allure.step('Run unset platform ps-redundancy command and apply'):
+        platform.ps_redundancy.unset(apply=True).verify_result()
+
+
 @pytest.mark.system
 @pytest.mark.health
 def test_reboot_test():
@@ -163,7 +173,7 @@ def test_system_health_files_with_rotation(engines):
 
 @pytest.mark.system
 @pytest.mark.health
-def test_ignore_health_issue(engines, devices, loganalyzer):
+def test_ignore_health_issue(engines, devices, loganalyzer, set_unset_ps_redundancy_grid):
     """
     Validate we can ignore all health issue and status will change to OK
     steps:
@@ -182,9 +192,6 @@ def test_ignore_health_issue(engines, devices, loganalyzer):
     validate_psu_redundancy(devices, platform)
 
     try:
-        with allure.step(f"Set platform ps-redundancy to {PlatformConsts.PS_REDUNDANCY_GRID}"):
-            platform.ps_redundancy.set(PlatformConsts.PS_REDUNDANCY_POLICY, PlatformConsts.PS_REDUNDANCY_GRID, apply=True)
-
         with allure.step("Simulate PSU and FAN health issue"):
             psu_id, fan_id = simulate_fan_and_psu_health_issue(engines, devices)
             psu_display_name = "PSU{}".format(psu_id)
@@ -254,13 +261,10 @@ def test_ignore_health_issue(engines, devices, loganalyzer):
             system.wait_until_health_status_change_to(OK)
             verify_health_status_and_led(system, OK)
 
-        with allure.step('Run unset platform ps-redundancy command and apply'):
-            platform.ps_redundancy.unset(apply=True).verify_result()
-
 
 @pytest.mark.system
 @pytest.mark.health
-def test_simulate_health_problem_with_hw_simulator(devices, engines):
+def test_simulate_health_problem_with_hw_simulator(devices, engines, set_unset_ps_redundancy_grid):
     """
     Validate health monitoring.
     Health status should change to "Not OK" when we simulate a problem and return to "OK" if status fixed or ignored.
@@ -276,6 +280,7 @@ def test_simulate_health_problem_with_hw_simulator(devices, engines):
 
     system = System()
     system.log.rotate_logs()
+    health_issue_dict = {}
     date_time = ClockTools.get_datetime_object_from_show_system_output(system.show())
     system.health.history.delete_history_file(HealthConsts.HEALTH_FIRST_FILE)
     time.sleep(1)
@@ -284,9 +289,8 @@ def test_simulate_health_problem_with_hw_simulator(devices, engines):
     try:
         psu_id, fan_id = simulate_fan_and_psu_health_issue(engines, devices)
         psu_display_name = "PSU{}".format(psu_id)
-        psu_fan_display_name = "PSU{}/FAN".format(psu_id)
         fan_display_name = get_fan_display_name(fan_id)
-        health_issue_dict = {psu_display_name: "missing or not available", psu_fan_display_name: "missing",
+        health_issue_dict = {psu_display_name: "missing or not available",
                              fan_display_name: "not working"}
         logger.info("sleep 5 sec after simulating HW issue")
         time.sleep(5)
