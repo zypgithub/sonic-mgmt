@@ -204,15 +204,12 @@ def _verify_link_state_down(down_ports):
 
 def _get_module_with_status(platform, status):
     with allure.step(f"Find {status} module"):
-        detail = ""
-        if TestToolkit.tested_api == ApiType.NVUE:
-            detail = "detail"
         transceivers = [name for name, transceiver in
                         OutputParsingTool.parse_json_str_to_dictionary(
-                            platform.transceiver.show(detail)).get_returned_value().items() if
+                            platform.transceiver.show()).get_returned_value().items() if
                         "sw" in name and transceiver[PlatformConsts.TRANSCEIVER_STATUS] == status]
         if not transceivers:
-            assert False, f"No {status} transceiver found"
+            pytest.skip(f"No {status} transceivers found for setup")
         return random.choice(transceivers)
 
 
