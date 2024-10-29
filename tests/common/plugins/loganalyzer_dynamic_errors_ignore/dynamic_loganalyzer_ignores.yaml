@@ -476,6 +476,22 @@
       - 2615940
 
 - Errors_list:
+    - 'ERR pmon.*chassisd.*Chassisd has no modules available.*'
+  Conditions:
+    - Redmine:
+        - 4127870
+      Platform:
+        - sn4280
+
+- Errors_list:
+    - 'ERR pmon#sensord: Error getting sensor data: mp2975.*16: Kernel interface error.*'
+  Conditions:
+    - Redmine:
+        - 4029831
+      Platform:
+        - sn4280
+
+- Errors_list:
     - '.* ERR swss#orchagent: :- removeLag: Failed to remove non-empty LAG PortChannel.*'
   Conditions:
     - Affected_test_cases:
