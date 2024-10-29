@@ -21,6 +21,7 @@ from ngts.nvos_tools.infra.Tools import Tools
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
+from ngts.nvos_tools.platform.Platform import Platform
 
 logger = logging.getLogger()
 
@@ -43,6 +44,8 @@ def test_show_nvl5_interface_commands(engines, devices, test_api, has_loopbox):
 
     TestToolkit.tested_api = test_api
     dut_device = devices.dut
+    platform = Platform()
+    present_transceivers = platform.transceiver.get_list_of_connected_transceivers()
     # cluster = Cluster()
     # ClusterTools.start_cluster(cluster)
     # ClusterTools.wait_for_apps_to_be_in_wanted_state()
@@ -72,7 +75,7 @@ def test_show_nvl5_interface_commands(engines, devices, test_api, has_loopbox):
     with allure_step('Check if device is not a JulietNonScaleoutSwitch Device'):
         if not isinstance(dut_device, JulietNonScaleoutSwitch):
             with allure_step("Verify switch port speed"):
-                if devices.dut.nvl5_trunk_ports_list != []:
+                if devices.dut.nvl5_trunk_ports_list != [] and present_transceivers != []:
                     selected_port = Tools.RandomizationTool.select_random_port(requested_ports_state=NvosConsts.LINK_STATE_UP, interface_type='sw').get_returned_value()
                     output_dictionary = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
                         selected_port.interface.link.show()).get_returned_value()
@@ -158,6 +161,10 @@ def test_toggle_interface_state(test_name, devices, has_loopbox):
     # ClusterTools.wait_for_apps_to_be_in_wanted_state()
     port_init_state_restored = True
     toggleable_interface = ['fnm', 'sw', 'acp'] if has_loopbox else ['sw']
+    platform = Platform()
+    present_transceivers = platform.transceiver.get_list_of_connected_transceivers()
+    if not present_transceivers:
+        toggleable_interface.remove('sw')
     try:
         for interface_type in toggleable_interface:
             if devices.dut.nvl5_trunk_ports_list == [] and interface_type == 'sw':

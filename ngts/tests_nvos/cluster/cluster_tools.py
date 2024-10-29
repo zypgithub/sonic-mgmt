@@ -16,6 +16,7 @@ from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceCon
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
+from ngts.nvos_tools.platform.Platform import Platform
 
 logger = logging.getLogger()
 
@@ -189,10 +190,8 @@ class ClusterTools:
 
     @staticmethod
     def verify_interface_up(devices, has_loopbox):
-        interface_types = ['sw', 'fnm', 'acp'] if has_loopbox else ['sw']
+        interface_types = ['fnm', 'acp'] if has_loopbox else []
         for interface_type in interface_types:
-            if devices.dut.nvl5_trunk_ports_list == [] and interface_type == 'sw':
-                continue
             port_type = 'fnm' if interface_type == 'fnm' else ''
             selected_port = Tools.RandomizationTool.select_random_port(requested_ports_logical_state=NvosConsts.LINK_LOG_STATE_ACTIVE, requested_ports_type=port_type, interface_type=interface_type).get_returned_value()
             output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
@@ -207,20 +206,36 @@ class ClusterTools:
                                                               field_name=IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE,
                                                               expected_value=IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE_LINK_UP).verify_result()
 
-    # @staticmethod
-    # def verify_interface_down(devices, selected_port):
-    #     port_type = devices.dut.switch_type.lower()
-    #     output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
-    #         selected_port.interface.link.show()).get_returned_value()
-    #     Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
-    #                                                       field_name=IbInterfaceConsts.LINK_STATE,
-    #                                                       expected_value=NvosConsts.LINK_STATE_DOWN).verify_result()
-    #     Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
-    #                                                       field_name=IbInterfaceConsts.LINK_LOGICAL_PORT_STATE,
-    #                                                       expected_value=IbInterfaceConsts.LINK_LOGICAL_PORT_STATE_DOWN).verify_result()
-    #     Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
-    #                                                       field_name=IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE,
-    #                                                       expected_value=IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE_POLLING).verify_result()
+        with allure.step("Verify switch ports state - that are connected to transceivers"):
+            ClusterTools().verify_external_interfaces_state_up_and_active(devices)
+
+    @staticmethod
+    def get_all_interfaces_with_transceivers(devices):
+        interfaces = []
+        platform = Platform()
+        present_transceivers = platform.transceiver.get_list_of_connected_transceivers()
+
+        for transceiver in present_transceivers:
+            interfaces.extend([interface for interface in devices.dut.nvl5_trunk_ports_list if interface.startswith(transceiver)])
+        return interfaces
+
+    @staticmethod
+    def verify_external_interfaces_state_up_and_active(devices):
+        interfaces = ClusterTools().get_all_interfaces_with_transceivers(devices)
+        for interface in interfaces:
+            selected_port = Port(interface, "", "")
+            # Verify fields.
+            output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
+                selected_port.interface.link.show()).get_returned_value()
+            Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
+                                                              field_name=IbInterfaceConsts.LINK_STATE,
+                                                              expected_value=NvosConsts.LINK_STATE_UP).verify_result()
+            Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
+                                                              field_name=IbInterfaceConsts.LINK_LOGICAL_PORT_STATE,
+                                                              expected_value=IbInterfaceConsts.LINK_LOGICAL_PORT_STATE_ACTIVE).verify_result()
+            Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
+                                                              field_name=IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE,
+                                                              expected_value=IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE_LINK_UP).verify_result()
 
     @staticmethod
     def start_stop_cluster(cluster, output_format):

@@ -43,3 +43,7 @@ class Transceiver(BaseComponent):
                 logging.info(f"get_dict_of_transceivers - {dict_of_transceivers} no {PlatformConsts.TRANSCEIVER_CABLE_TYPE} field therefore cable is not connected")
 
             return dict_of_transceivers
+
+    def get_list_of_connected_transceivers(self):
+        dict_of_transceivers = OutputParsingTool.parse_show_output_to_dict(self.show()).get_returned_value()
+        return [tarnsceiver for tarnsceiver, info in dict_of_transceivers.items() if info.get("status") == "Inserted"]
