@@ -385,5 +385,9 @@ def get_sonic_branch(duthost, cli_type):
                          f'Got error: {err}')
     # master branch always has release "none"
     if branch == "none":
-        branch = "master"
+        branch_output = duthost.shell("sonic-cfggen -y /etc/sonic/sonic_version.yml -v branch")['stdout']
+        if branch_output == "smart-switch-master":
+            branch = "000000"
+        else:
+            branch = "master"
     return branch.strip()
