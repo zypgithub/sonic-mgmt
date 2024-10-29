@@ -10,6 +10,7 @@ from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_constants.constants_nvos import PlatformConsts, HealthConsts
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from retry import retry
 
 
 logger = logging.getLogger()
@@ -41,7 +42,7 @@ def test_platform_environment_bmc_leakage(engines, devices):
 
         with allure.step("Validate system health is OK"):
             if not is_redmine_issue_active([4015156])[0]:
-                system.validate_health_status(OK)
+                retry_validate_health_fix_or_issue(system, OK)
 
         with allure.step("Verify default fields and values"):
             leakage_output = OutputParsingTool.parse_json_str_to_dictionary(platform.environment.leakage.show()) \
@@ -67,7 +68,7 @@ def test_platform_environment_bmc_leakage(engines, devices):
                                               PlatformConsts.LEAKAGE_STATUS_LEAK).verify_result()
 
             with allure.step("Validate system health"):
-                system.validate_health_status(NOT_OK)
+                retry_validate_health_fix_or_issue(system, NOT_OK)
                 ValidationTool.compare_values(leakage_output[random_selected_leakage]['state'],
                                               PlatformConsts.LEAKAGE_STATUS_LEAK).verify_result()
                 health_output = OutputParsingTool.parse_json_str_to_dictionary(system.health.show())\
@@ -98,7 +99,7 @@ def test_platform_environment_bmc_leakage(engines, devices):
     finally:
         _link_back_sysfs_files(engines, PlatformConsts.LEAKAGE_DEFAULT_OUTPUT_FIELDS, leakage_folder_name)
         if not is_redmine_issue_active([4015156])[0]:
-            system.validate_health_status(OK)
+            retry_validate_health_fix_or_issue(system, OK)
         leakage_output = OutputParsingTool.parse_json_str_to_dictionary(platform.environment.leakage.show()) \
             .get_returned_value()
         ValidationTool.validate_fields_values_in_output(PlatformConsts.LEAKAGE_DEFAULT_OUTPUT_FIELDS,
@@ -133,6 +134,11 @@ def _link_back_sysfs_files(engines, leakage, leakage_folder_name):
         engines.dut.run_cmd("sudo sh -c 'rm {0}{1}'".format(PlatformConsts.LEAKAGE_FILES_FOLDER, leakage_file))
         engines.dut.run_cmd("sudo sh -c 'ln -s {2}{3}/{1} {0}{1}'".format(PlatformConsts.LEAKAGE_FILES_FOLDER,
                                                                           leakage_file, PlatformConsts.LEAKAGE_FILES_SYSFS_FOLDER, leakage_folder_name))
+
+
+@retry(Exception, tries=2, delay=1)
+def retry_validate_health_fix_or_issue(system, status):
+    system.validate_health_status(status)
 
 
 def convert_string(input_string):
