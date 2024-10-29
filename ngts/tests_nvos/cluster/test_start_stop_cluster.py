@@ -110,7 +110,7 @@ def test_cluster_app_start_stop(engines, devices, test_api, has_loopbox):
 @pytest.mark.timeout(30 * MINUTE, func_only=True)
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_stress_cluster_app_start_stop(engines, devices, test_api, test_name):
+def test_stress_cluster_app_start_stop(engines, devices, test_api, test_name, has_loopbox):
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
 
@@ -142,7 +142,7 @@ def test_stress_cluster_app_start_stop(engines, devices, test_api, test_name):
 @pytest.mark.nmx
 @pytest.mark.timeout(20 * MINUTE, func_only=True)
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_cluster_app_start_stop_under_stressed_resources(engines, devices, test_api, test_name):
+def test_cluster_app_start_stop_under_stressed_resources(engines, devices, test_api, test_name, has_loopbox):
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
 
