@@ -928,6 +928,12 @@ ip/test_mgmt_ipv6_only.py::test_telemetry_output_ipv6_only:
     conditions:
     - "'r-lionfish-13' in testbed"
 
+ip/test_mgmt_ipv6_only.py::test_ntp_ipv6_only:
+  skip:
+    reason: "Skip at r-lionfish-13 as docker-ptf not starting at canonical setup"
+    conditions:
+      - "'r-lionfish-13' in testbed"
+
 platform_tests/sfp/test_show_intf_xcvr.py::test_check_show_lpmode:
   skip:
     reason: "The test is not supported on the bluefield DPU."
