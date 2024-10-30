@@ -21,7 +21,7 @@ logger = logging.getLogger()
 @pytest.mark.checklist
 @pytest.mark.platform
 @pytest.mark.timeout(20 * MINUTE, func_only=True)
-def test_install_platform_firmware(engines, devices, test_name, clear_asic_files):
+def test_install_platform_firmware(engines, devices, test_name, topology_obj, clear_asic_files):
     """
     Install platform firmware test
 
@@ -80,7 +80,7 @@ def test_install_platform_firmware(engines, devices, test_name, clear_asic_files
                     NvueGeneralCli.save_config(engines.dut)
 
                 OperationTime.save_duration('install default fw', 'include reboot', test_name, install_image_fw,
-                                            system, test_name, fw_has_changed)
+                                            system, test_name, fw_has_changed, topology_obj)
 
             with allure.step('Verify the firmware installed successfully'):
                 verify_firmware_with_platform_and_fae_cmd(platform, fae, actual_firmware, actual_firmware)
@@ -99,16 +99,16 @@ def get_asic_dict(fae):
     return asic_dictionary
 
 
-def install_image_fw(system, test_name, fw_has_changed):
+def install_image_fw(system, test_name, fw_has_changed, topology_obj):
     with allure.step('Rebooting the dut after image installation'):
         logging.info("Rebooting dut")
         if fw_has_changed:
             res_obj, duration = OperationTime.save_duration('reboot with default FW installation', '', test_name,
-                                                            system.reboot.action_reboot)
+                                                            system.reboot.action_reboot, topology_obj=topology_obj)
             res = res_obj
             OperationTime.verify_operation_time(duration, 'reboot with default FW installation').verify_result()
         else:
-            res = system.reboot.action_reboot()
+            res = system.reboot.action_reboot(topology_obj=topology_obj)
 
         return res
 

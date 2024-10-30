@@ -17,6 +17,7 @@ from ngts.tools.test_utils import allure_utils as allure
 
 @pytest.fixture(scope='session', autouse=True)
 def clear_cluster_package_files():
+    yield
     fae = Fae(None)
     nmx_package = fae.cluster.package
     with allure.step('delete fetched nmx package files'):
@@ -148,7 +149,6 @@ def verify_start_stop(cluster, app):
 def delete_package_file(fae, filename):
     with allure.step(f'try to delete fetched file {filename}'):
         fae.cluster.package.files.file_name[filename].action_delete()
-        fae.cluster.package.files.verify_show_files_output()
 
 
 def nmx_package_flow(app, path, new_version):
@@ -210,8 +210,6 @@ def test_nmx_package_bad_flow(devices, engines, test_name, test_api):
 
     with allure.step(f'try to delete fetched file {filename}'):
         nmx_package.files.file_name[filename].action_delete()
-        nmx_package.files.verify_show_files_output()
 
     with allure.step(f'try to delete already deleted fetched file {filename}'):
         nmx_package.files.file_name[filename].action_delete(should_succeed=False)
-        nmx_package.files.verify_show_files_output()

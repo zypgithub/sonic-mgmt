@@ -99,7 +99,7 @@ class NvueSystemCli(NvueBaseCli):
 
     @staticmethod
     @check_output
-    def action_reboot(engine, device, resource_path, op_param="", should_wait_till_system_ready=True, recovery_engine=None):
+    def action_reboot(engine, device, resource_path, op_param="", should_wait_till_system_ready=True, recovery_engine=None, topology_obj=None):
         """
         Rebooting the switch
         """
@@ -109,7 +109,7 @@ class NvueSystemCli(NvueBaseCli):
         logging.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
         return DutUtilsTool.reload(engine=engine, device=device, command=cmd,
                                    should_wait_till_system_ready=should_wait_till_system_ready,
-                                   confirm=True, recovery_engine=recovery_engine).verify_result()
+                                   confirm=True, recovery_engine=recovery_engine, topology_obj=topology_obj).verify_result()
 
     @staticmethod
     @check_output
