@@ -96,6 +96,9 @@ def test_downgrade_upgrade(release_name, test_api, original_version, devices, ba
     6. Uninstall image
     7. Delete the new image name , success
     """
+    if not base_version:
+        pytest.skip("Cannot run test because base_version parameter is missing from the setup file")
+
     TestToolkit.tested_api = test_api
     system = System()
 

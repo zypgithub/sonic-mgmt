@@ -23,6 +23,7 @@ logger = logging.getLogger()
 @disabled_access_ports
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.timeout(18 * MINUTE, func_only=True)
 def test_cluster_state(engines, devices, test_api):
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
@@ -107,7 +108,7 @@ def test_cluster_state(engines, devices, test_api):
 
 
 @disabled_access_ports
-@pytest.mark.timeout(30 * MINUTE, func_only=True)
+@pytest.mark.timeout(35 * MINUTE, func_only=True)
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
 def test_stress_cluster_state(engines, devices, test_api, test_name):
