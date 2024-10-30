@@ -4,7 +4,10 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.TpmTool import TpmTool
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_constants.constants_nvos import SystemConsts, PlatformConsts
+from ngts.nvos_constants.constants_nvos import SystemConsts, PlatformConsts, OutputFormat
+from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
+from ngts.nvos_tools.nmx.Cluster import Cluster
+from ngts.tests_nvos.constants import MINUTE
 from ngts.tools.test_utils import allure_utils as allure
 import logging
 import pytest
@@ -61,6 +64,7 @@ def test_techsupport_with_dockers_down(engines, dockers_list=['gnmi-server']):
 
 @pytest.mark.general
 @pytest.mark.tech_support
+@pytest.mark.timeout(20 * MINUTE, func_only=True)
 def test_techsupport_expected_files(engines, devices, test_name):
     """
     Run nv show system tech-support files command and verify the required fields are exist
@@ -94,6 +98,16 @@ def test_techsupport_expected_files(engines, devices, test_name):
         expected_files_dict['bmc'] = bmc_dump_files
 
     try:
+        cluster = Cluster()
+        with allure.step("Start cluster"):
+            output = OutputParsingTool.parse_show_output_to_dict(
+                cluster.show(output_format=OutputFormat.json),
+                output_format=OutputFormat.json).get_returned_value()
+
+            if output[SystemConsts.STATE] == 'disabled':
+                cluster.set(op_param_name="state", op_param_value='enabled', apply=True)
+                ClusterTools.wait_for_apps_to_be_in_wanted_state()
+
         with allure.step('Run nv action generate system tech-support and validate dump files'):
             tech_support_folder, duration = system.techsupport.action_generate(test_name=test_name)
             with allure.step("Tech-support generation takes: {} seconds".format(duration)):
@@ -111,6 +125,8 @@ def test_techsupport_expected_files(engines, devices, test_name):
                     files_list = system.techsupport.get_techsupport_empty_files(engines.dut, folder)
                     verify_techsupport_files_sizes(files_list, folder)
     finally:
+        cluster.unset(apply=True)
+        ClusterTools.wait_for_apps_to_be_in_wanted_state()
         system.techsupport.cleanup(engines.dut)
         if system.techsupport.file_name:
             system.techsupport.action_delete(system.techsupport.file_name)

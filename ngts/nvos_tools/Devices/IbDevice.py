@@ -975,6 +975,9 @@ class JulietSwitch(NvLinkSwitch):
         self.constants.dump_files.append('BMCeeprom')
         self.constants.log_nmx_files.extend(['fabricmanager.log.gz', 'gwapi.log.gz', 'nvlsm.log.gz'])
         self.constants.erots.extend(['ERoT_BMC_0', 'ERoT_CPU_0', 'ERoT_FPGA_0', 'ERoT_NVSwitch_0', 'ERoT_NVSwitch_1'])
+        stats_dump_files = ["cpu.csv.gz", "disk.csv.gz", "fan.csv.gz",
+                            "mgmt-interface.csv.gz", "temperature.csv.gz", "voltage.csv.gz"]
+        self.constants = self.constants._replace(stats_dump_files=stats_dump_files)
 
         self.nmx_cluster_apps_versions = self.NmxClusterAppsConsts(
             burn_path={
