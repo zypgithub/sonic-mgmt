@@ -61,7 +61,7 @@ def test_install_platform_firmware(engines, devices, test_name, clear_asic_files
                     platform.firmware.asic.set(PlatformConsts.FW_SOURCE, PlatformConsts.FW_SOURCE_CUSTOM, apply=True)
                     NvueGeneralCli.save_config(engines.dut)
                     func = platform.firmware.asic.files.file_name[fw_file_name].action_file_install_with_reboot
-                    res_obj, duration = OperationTime.save_duration('install user FW', 'include reboot', test_name, func)
+                    res_obj, duration = OperationTime.save_duration('install user FW', 'include reboot', test_name, func, system_is_ready_timeout=PlatformConsts.TIMEOUT_AFTER_FW_INSTALL)
 
                 with allure.step('Verify the firmware installed successfully'):
                     verify_firmware_with_platform_and_fae_cmd(platform, fae, new_fw_name, new_fw_name)
@@ -102,7 +102,7 @@ def install_image_fw(system, test_name, fw_has_changed):
         logging.info("Rebooting dut")
         if fw_has_changed:
             res_obj, duration = OperationTime.save_duration('reboot with default FW installation', '', test_name,
-                                                            system.reboot.action_reboot)
+                                                            system.reboot.action_reboot, system_is_ready_timeout=PlatformConsts.TIMEOUT_AFTER_FW_INSTALL)
             res = res_obj
             OperationTime.verify_operation_time(duration, 'reboot with default FW installation').verify_result()
         else:

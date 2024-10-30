@@ -530,7 +530,7 @@ class BlackMambaSwitch(IbSwitch):
     def _init_constants(self):
         self.asic_amount = 4
         super()._init_constants()
-        self.system_is_ready_wait_timeout = 10 * MINUTE
+        self.system_is_ready_wait_timeout = 5 * MINUTE
         self.ib_ports_num = 2 * 72
         self.core_count = 4
         self.asic_type = NvosConst.QTM3
@@ -637,7 +637,7 @@ class CrocodileSwitch(IbSwitch):
         self.core_count = 4
         self.split_ports_supported = True
         self.asic_type = NvosConst.QTM3
-        self.system_is_ready_wait_timeout = 10 * MINUTE
+        self.system_is_ready_wait_timeout = 5 * MINUTE
         self.platform_file_path = MultiPlanarConsts.PLATFORM_FILE_FULL_PATH.format("x86_64-nvidia_qm3400-r0")
         self.show_platform_output.update({
             "product-name": "QM3400",

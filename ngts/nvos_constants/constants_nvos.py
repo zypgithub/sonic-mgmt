@@ -852,6 +852,7 @@ class PlatformConsts:
     INV_OK = 'ok'
     ASIC_CONF_FILE_PATH = "/usr/share/sonic/device/{}/asic.conf"
     INV_FAILED = 'failed'
+    TIMEOUT_AFTER_FW_INSTALL = 600
 
 
 class FansConsts:

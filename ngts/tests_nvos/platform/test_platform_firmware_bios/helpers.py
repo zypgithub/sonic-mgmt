@@ -13,6 +13,7 @@ from infra.tools.redmine.redmine_api import *
 from ngts.nvos_constants.constants_nvos import ImageConsts, PlatformConsts
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.tests_nvos.constants import MINUTE
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.infra.Tools import Tools
@@ -63,12 +64,12 @@ def verify_bios_version(engines, platform, expected_version: str, date: str):
             f"Expected to find {date} in this output: {dmidecode_output}"
 
 
-def fetch_and_install_bios(platform, path, name, filename, topology_obj):
+def fetch_and_install_bios(platform, path, name, filename, topology_obj, system_is_ready_timeout):
     with allure.step(f'Fetch {name} Bios image from: {path}'):
         platform.firmware.bios.action_fetch(path).verify_result()
 
     with allure.step(f'installing Bios image {name}'):
-        platform.firmware.bios.files.file_name[filename].action_file_install_with_reboot(topology_obj=topology_obj)
+        platform.firmware.bios.files.file_name[filename].action_file_install_with_reboot(topology_obj=topology_obj, system_is_ready_timeout=system_is_ready_timeout)
 
 
 def get_bios_info_from_device(device, version):

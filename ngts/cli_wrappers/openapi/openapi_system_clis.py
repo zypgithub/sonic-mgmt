@@ -210,7 +210,7 @@ class OpenApiSystemCli(OpenApiBaseCli):
 
     @staticmethod
     def action_reboot(engine, device, resource_path, op_param="", should_wait_till_system_ready=True,
-                      recovery_engine=None, topology_obj=None):
+                      recovery_engine=None, topology_obj=None, system_is_ready_timeout=None):
         logging.info("Running action: rotate system log on dut using OpenApi")
         parameters_dict = {}
         if "force" in op_param:
