@@ -7,16 +7,20 @@ import yaml
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.constants.constants import LinuxConsts, SerialLoggerConst
+from ngts.nvos_constants.constants_nvos import PlatformConsts
 from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
+from ngts.nvos_tools.infra.CurlTool import CurlTool
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.SecureBootTool import SecureBootTool
+from ngts.nvos_tools.infra.TpmTool import TpmTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.conftest import ProxySshEngine
 from ngts.tests_nvos.general.post_upgrade_switch.constants import UPGRADE_STATUS_SUCCESS_MSG, UPGRADE_STATUS_FAIL_MSG, \
     UPGRADE_STATUS_FILE_PATH
+from ngts.tests_nvos.general.security.bmc.bmc_creds.constants import BmcUsers
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_config_utils import clear_conf
@@ -64,6 +68,10 @@ class NvosInstallationSteps:
             platform = Platform()
             system.version.show(dut_engine=dut_engine)
             platform.firmware.show(dut_engine=dut_engine)
+
+        if dut_device.has_bmc:
+            with allure.step('reset password of bmc root user'):
+                CurlTool(PlatformConsts.BMC_INTERNAL_IP, BmcUsers.admin.username, TpmTool(dut_engine).get_bmc_admin_password_from_tpm()).change_root_password()
 
         if verify_secure_boot:
             with allure.step('Verify Secure-Boot is enabled'):

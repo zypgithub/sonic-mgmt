@@ -75,7 +75,7 @@ class CurlTool:
                                         username=username, password=password)
 
     def change_root_password(self, username='', password=''):
-        return self.run_redfish_command(rest_op='POST', data='{"Password": "ABYX12#14artb"}',
+        return self.run_redfish_command(rest_op='PATCH', data='{"Password": "ABYX12#14artb"}',
                                         path='/AccountService/Accounts/root',
                                         username=username, password=password)
 
