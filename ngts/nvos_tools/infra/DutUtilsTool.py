@@ -26,7 +26,7 @@ class DutUtilsTool:
 
     @staticmethod
     def reload(engine, device, command, find_prompt_tries=80, find_prompt_delay=2, should_wait_till_system_ready=True,
-               confirm=False, recovery_engine=None, topology_obj=None):
+               confirm=False, recovery_engine=None, topology_obj=None, system_is_ready_timeout=None):
         """
 
         :param should_wait_till_system_ready: if True then we will wait till the system is ready, if false then we only will wait till we can re-connect to the system
@@ -48,7 +48,7 @@ class DutUtilsTool:
                 return ResultObj(result=False, info=output)
 
             res_obj = DutUtilsTool.wait_on_system_reboot(engine, recovery_engine, None, should_wait_till_system_ready,
-                                                         device, False, True, topology_obj)
+                                                         device, False, True, topology_obj, system_is_ready_timeout)
             if not should_wait_till_system_ready:
                 time.sleep(40)
                 return res_obj
@@ -86,7 +86,7 @@ class DutUtilsTool:
 
     @staticmethod
     def wait_on_system_reboot(engine, recovery_engine=None, wait_time_before_reboot=120, wait_till_system_ready=True,
-                              device=None, verify_final_result=True, wait_for_nvos=True, topology_obj=None):
+                              device=None, verify_final_result=True, wait_for_nvos=True, topology_obj=None, system_is_ready_timeout=None):
         """
         Call this after an operation that should trigger a reboot. Will wait on the switch until it's functional.
         :param wait_time_before_reboot: How many seconds to wait for the switch to go down. If this time elapsed and
@@ -109,7 +109,9 @@ class DutUtilsTool:
                     check_port_status_till_alive(True, dut_engine.ip, dut_engine.ssh_port)
                 if wait_for_nvos and topology_obj:
                     with allure.step('wait for System is ready in serial'):
-                        if device:
+                        if system_is_ready_timeout:
+                            DutUtilsTool.wait_for_system_ready_in_serial(topology_obj, wait_timeout=system_is_ready_timeout)
+                        elif device:
                             DutUtilsTool.wait_for_system_ready_in_serial(topology_obj, wait_timeout=device.system_is_ready_wait_timeout)
                         else:
                             DutUtilsTool.wait_for_system_ready_in_serial(topology_obj)
