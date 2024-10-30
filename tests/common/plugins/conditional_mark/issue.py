@@ -4,7 +4,6 @@ import logging
 import multiprocessing
 import os
 import re
-import yaml
 import six
 import requests
 import pytest
@@ -22,8 +21,6 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 DEFAULT_CONDITIONS_FILE = os.path.join(dir_path, "tests_mark_conditions*.yaml")
 
 logger = logging.getLogger(__name__)
-
-CREDENTIALS_FILE = 'credentials.yaml'
 
 
 @cache(ttl=dt.timedelta(hours=36))
@@ -102,29 +99,8 @@ class GitHubIssueChecker(IssueCheckerBase):
 
     def __init__(self, url, proxies):
         super(GitHubIssueChecker, self).__init__(url)
-        self.user = ''
-        self.api_token = ''
         self.api_url = url.replace('github.com', 'api.github.com/repos')
         self.proxies = proxies
-        self.get_cred()
-
-    def get_cred(self):
-        """Get GitHub API credentials
-        """
-        creds_folder_path = os.path.dirname(__file__)
-        creds_file_path = os.path.join(creds_folder_path, CREDENTIALS_FILE)
-        try:
-            with open(creds_file_path) as creds_file:
-                creds = yaml.safe_load(creds_file)
-                if creds is not None:
-                    github_creds = creds.get(self.NAME, {})
-                    self.user = github_creds.get('user', '')
-                    self.api_token = github_creds.get('api_token', '')
-                else:
-                    self.user = os.environ.get("GIT_USER_NAME")
-                    self.api_token = os.environ.get("GIT_API_TOKEN")
-        except Exception as e:
-            logger.error('Load credentials from {} failed with error: {}'.format(creds_file_path, repr(e)))
 
     def is_active(self):
         """Check if the issue is still active.
@@ -135,7 +111,7 @@ class GitHubIssueChecker(IssueCheckerBase):
             bool: False if the issue is closed else True.
         """
         try:
-            response = requests.get(self.api_url, auth=(self.user, self.api_token), proxies=self.proxies, timeout=10)
+            response = requests.get(self.api_url, proxies=self.proxies, timeout=10)
             response.raise_for_status()
             issue_data = response.json()
             if issue_data.get('state', '') == 'closed':
