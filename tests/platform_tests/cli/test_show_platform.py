@@ -419,11 +419,15 @@ def test_show_platform_ssdhealth(duthosts, enum_supervisor_dut_hostname):
         cmds_list.append(platform_ssd_device_path_dict[platform])
 
     cmd = " ".join(cmds_list)
+    supported_disks = ["SATA", "NVME"]
 
     logging.info("Verifying output of '{}' on ''{}'...".format(cmd, duthost.hostname))
+
     ssdhealth_output_lines = duthost.command(cmd)["stdout_lines"]
+    if not any(disk_type in ssdhealth_output_lines[0] for disk_type in supported_disks):
+        pytest.skip("Disk Type {} is not supported".format(ssdhealth_output_lines[0].split(':')[-1]))
     ssdhealth_dict = util.parse_colon_speparated_lines(ssdhealth_output_lines)
-    expected_fields = {"Device Model", "Health", "Temperature"}
+    expected_fields = {"Disk Type", "Device Model", "Health", "Temperature"}
     actual_fields = set(ssdhealth_dict.keys())
 
     missing_fields = expected_fields - actual_fields
