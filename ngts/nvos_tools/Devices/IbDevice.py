@@ -1134,7 +1134,8 @@ class JulietScaleoutSwitch(JulietSwitch):
                                       ]
         self.network_ports = ['eth0', 'eth1', 'lo']
         self.all_nvl5_ports_list = self.nvl5_access_ports_list + self.nvl5_trunk_ports_list + self.network_ports
-        self.nvl5_fnm_ports = ['fnm1', 'fnm2', 'fnma0p1', 'fnma1p1']
+        self.nvl5_fnm_ports = ['fnm1', 'fnm2']
+        self.nvl5_internal_fnm_ports = ['fnma0p1', 'fnma1p1']
         self.all_fae_nvl5_ports_list = self.all_nvl5_ports_list + self.nvl5_fnm_ports
         self.nvl5_port = ['sw1p1s1']
         self.nvl5_port_speed = '400G'
@@ -1292,7 +1293,8 @@ class JulietNonScaleoutSwitch(JulietScaleoutSwitch):
         self.nvl5_trunk_ports_list = []
         self.network_ports = ['eth0', 'eth1', 'lo']
         self.all_nvl5_ports_list = self.nvl5_access_ports_list + self.nvl5_trunk_ports_list + self.network_ports
-        self.nvl5_fnm_ports = ['fnm1', 'fnm2', 'fnma0p1', 'fnma1p1']
+        self.nvl5_fnm_ports = ['fnm1', 'fnm2']
+        self.nvl5_internal_fnm_ports = ['fnma0p1', 'fnma1p1']
         self.all_fae_nvl5_ports_list = self.all_nvl5_ports_list + self.nvl5_fnm_ports
         self.nvl5_port = ['sw1p1s1']
         self.nvl5_port_speed = '400G'
