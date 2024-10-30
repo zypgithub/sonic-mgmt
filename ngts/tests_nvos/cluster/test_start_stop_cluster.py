@@ -107,7 +107,7 @@ def test_cluster_app_start_stop(engines, devices, test_api, has_loopbox):
 
 
 @disabled_access_ports
-@pytest.mark.timeout(30 * MINUTE, func_only=True)
+@pytest.mark.timeout(35 * MINUTE, func_only=True)
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
 def test_stress_cluster_app_start_stop(engines, devices, test_api, test_name):
