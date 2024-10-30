@@ -447,7 +447,7 @@ class SonicInstallationSteps:
             hwskus = [platform_params["hwsku"]]
             need_gen_mingraph = True
         if "r-moose-01" in setup_name or "mtvr-moose-04" in setup_name:
-            hwskus = ['Mellanox-SN5600-V256']
+            hwskus = ['Mellanox-SN5600-V256', 'Mellanox-SN5600-C256S1', 'Mellanox-SN5600-C224O8']
             need_gen_mingraph = True
         if "bobcat" in setup_name:
             hwskus = ['ACS-SN4280', 'Mellanox-SN4280-O28']
@@ -480,6 +480,12 @@ class SonicInstallationSteps:
 
         if "r-moose-01" in setup_name or "mtvr-moose-04" in setup_name:
             execute_script(f'sed -i "s/200000/100000/g" {sonic_mgmt_hwsku_path}/Mellanox-SN5600-V256/port_config.ini',
+                           ansible_path)
+            execute_script(f'sed -i "s/100000/50000/g" {sonic_mgmt_hwsku_path}/Mellanox-SN5600-C256S1/port_config.ini',
+                           ansible_path)
+            execute_script(f'sed -i "s/100000/50000/g" {sonic_mgmt_hwsku_path}/Mellanox-SN5600-C224O8/port_config.ini',
+                           ansible_path)
+            execute_script(f'sed -i "s/400000/100000/g" {sonic_mgmt_hwsku_path}/Mellanox-SN5600-C224O8/port_config.ini',
                            ansible_path)
         if need_gen_mingraph:
             if "sonic-dual-tor-leopard" in setup_name:

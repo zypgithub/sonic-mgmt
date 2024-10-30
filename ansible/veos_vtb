@@ -11,6 +11,7 @@ all:
         topologies:
           - t1
           - t1-lag
+          - t1-lag-c224o8
           - t1-28-lag
           - t1-56-lag
           - t1-64-lag
@@ -29,6 +30,7 @@ all:
           - t0-64-32
           - t0-64-256
           - t0-116
+          - t0-c256
           - t0-256
           - t0-backend
           - dualtor
