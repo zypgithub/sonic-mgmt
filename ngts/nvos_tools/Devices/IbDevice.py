@@ -862,6 +862,7 @@ class JulietSwitch(NvLinkSwitch):
         self.bmc_older_version_path = "/auto/sw_system_release/low_level/openbmc/88.0002.0472/dev/juliet-bmc/erot_sign_debug/cec1736-apfw-000201d8.fwpkg"
         self.fpga_older_version_path = "/auto/sw_system_release/fpga/juliet/V0_15/FPGA_juliet_0v15.fwpkg"
         self.has_nmx = True
+        self.has_bmc = True
         self.is_standalone = True
         self.show_platform_chassis_location_output = {
             PlatformConsts.CHASSIS_LOCATION_TRAY_ID: ExpectedString(range_min=-1, range_max=9),

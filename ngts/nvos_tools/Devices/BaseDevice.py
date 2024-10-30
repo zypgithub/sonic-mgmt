@@ -84,6 +84,7 @@ class BaseDevice(ABC):
         self.profile_change_supported = False
         self.voltage_sensors = []
         self.has_nmx = False
+        self.has_bmc = False
         self.supported_commands = []
         self.system_is_ready_wait_timeout = 5 * MINUTE
         self.supports_tpm_testing = True
