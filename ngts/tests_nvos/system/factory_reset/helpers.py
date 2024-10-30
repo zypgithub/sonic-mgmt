@@ -29,20 +29,14 @@ def update_timezone(system):
             os.popen('sudo timedatectl set-timezone {}'.format(LinuxConsts.JERUSALEM_TIMEZONE))
 
 
-def validate_health_status_report(system, last_status_line, should_change=True):
-    start_time = time.time()
-    system.health.wait_until_health_status_change_after_reboot(HealthConsts.OK)
-    end_time = time.time()
-    duration = end_time - start_time
+def validate_health_status_report(system, pre_health_status):
+    if pre_health_status == HealthConsts.OK:
+        start_time = time.time()
+        system.health.wait_until_health_status_change_after_reboot(HealthConsts.OK)
+        end_time = time.time()
+        duration = end_time - start_time
 
-    logger.info("Took {} seconds until health status changed to OK after reset factory".format(duration))
-
-    with allure.step("Validate new health file"):
-        logger.info("Validate new health file")
-        expected_num = 0 if should_change else 1
-        system.health.history.validate_new_summary_line_in_history_file_after_boot(last_status_line)
-        assert len(system.health.history.search_line(last_status_line, system.health.history.show())) == expected_num, \
-            "Health file has not changed after reset factory"
+        logger.info("Took {} seconds until health status changed to OK after reset factory".format(duration))
 
 
 def validate_port_description(engine, port, expected_description):

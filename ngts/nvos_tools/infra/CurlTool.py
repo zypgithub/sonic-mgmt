@@ -69,6 +69,16 @@ class CurlTool:
         return self.run_redfish_command(rest_op='POST', data='{"ResetType": "GracefulRestart"}',
                                         path='/Managers/BMC_0/Actions/Manager.Reset')
 
+    def reset_bmc_to_factory(self, username='', password=''):
+        return self.run_redfish_command(rest_op='POST', data='{"ResetToDefaultsType": "ResetAll"}',
+                                        path='/Managers/BMC_0/Actions/Manager.ResetToDefaults',
+                                        username=username, password=password)
+
+    def change_root_password(self, username='', password=''):
+        return self.run_redfish_command(rest_op='POST', data='{"Password": "ABYX12#14artb"}',
+                                        path='/AccountService/Accounts/root',
+                                        username=username, password=password)
+
     def run_redfish_command(self, rest_op: str, data: str = '', username: str = '',
                             password: str = '', path: str = ''):
         dut_engine: LinuxSshEngine = TestToolkit.engines.dut

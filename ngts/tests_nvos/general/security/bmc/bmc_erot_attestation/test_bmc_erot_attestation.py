@@ -219,7 +219,7 @@ def test_reboot_system_keeps_data(available_spdm_components):
                     out = OutputParsingTool.parse_json_str_to_dictionary(component_obj.show()).get_returned_value()
                     outputs_before_reboot[component] = out
     with allure.step('reboot the system'):
-        System().action('reboot', param_name='force', expect_reboot=True, output_format=None).verify_result()
+        System().reboot.action_reboot(params='force').verify_result()
     with allure.step('run show components and compare outputs'):
         for component in available_spdm_components:
             with allure.step(f'component: {component}'):

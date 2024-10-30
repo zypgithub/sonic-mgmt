@@ -5,18 +5,18 @@ import pytest
 
 from ngts.nvos_constants.constants_nvos import ApiType, PlatformConsts
 from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
-from ngts.nvos_tools.Devices.IbDevice import CrocodileSwitch, JulietTTMSwitch
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.platform.Platform import Platform
+from ngts.tests_nvos.constants import MINUTE
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.switch_recovery import recover_dut_with_remote_reboot
 
 logger = logging.getLogger()
 
 
-@pytest.mark.timeout(30, func_only=True)
+@pytest.mark.timeout(30 * MINUTE, func_only=True)
 @pytest.mark.cpld
 def test_cpld_upgrade(engines, devices, topology_obj):
     """
