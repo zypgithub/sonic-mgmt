@@ -166,7 +166,7 @@ class OpenApiSystemCli(OpenApiBaseCli):
                                                    engine.ip, resource_path, params)
 
     @staticmethod
-    def action_reset(engine, device, comp, param, topology_obj=None):
+    def action_reset(engine, device, comp, param, topology_obj=None, system_is_ready_timeout=None):
         logging.info("Running action: reset system {} on dut using OpenApi".format(comp))
 
         assert not param, "params are not supported yet"
