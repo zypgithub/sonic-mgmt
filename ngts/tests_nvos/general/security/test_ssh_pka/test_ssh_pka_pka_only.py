@@ -1,17 +1,15 @@
-import logging
 import time
 
 import allure
 import pytest
 
-from ngts.nvos_tools.infra.CmdRunner import CmdRunner
-from ngts.tests_nvos.general.security.security_test_tools.tool_classes.AuthVerifier import *
-from ngts.tests_nvos.general.security.test_ssh_pka.helpers import _generate_new_key, keys_path, public_key_length, _check_password_prompt
-from ngts.tests_nvos.general.security.security_test_tools.tool_classes.SecuritySshTool import SecuritySshTool
-from ngts.nvos_tools.infra.ValidationTool import ValidationTool
-from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.tests_nvos.general.security.security_test_tools.constants import AddressingType
+from ngts.tests_nvos.general.security.security_test_tools.tool_classes.AuthVerifier import *
+from ngts.tests_nvos.general.security.security_test_tools.tool_classes.SecuritySshTool import SecuritySshTool
+from ngts.tests_nvos.general.security.test_ssh_pka.helpers import _generate_new_key, keys_path, public_key_length
 
 
 @pytest.mark.security
@@ -347,7 +345,7 @@ def test_ssh_pka_connections_stress(engines):
                 SecuritySshTool.rm_auth_keypair(f"{keys_path}/{private_key}")
 
 
-def ssh_pka_factory_reset_no_params_check(engines, generate_new_admin_keys):
+def ssh_pka_factory_reset_no_params_check(generate_new_admin_keys):
     """
     Verify that user keys deleted after factory reset
 
@@ -358,7 +356,7 @@ def ssh_pka_factory_reset_no_params_check(engines, generate_new_admin_keys):
     5. verify show command is empty
     """
 
-    engines = engines if engines else TestToolkit.engines
+    engines = TestToolkit.engines
 
     with allure.step("create system"):
         system = System()
