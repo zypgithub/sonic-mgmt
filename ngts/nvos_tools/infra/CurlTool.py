@@ -74,14 +74,14 @@ class CurlTool:
                                         path='/Managers/BMC_0/Actions/Manager.ResetToDefaults',
                                         username=username, password=password)
 
-    def change_root_password(self, username='', password=''):
+    def change_root_password(self, username='', password='', dut_engine=None):
         return self.run_redfish_command(rest_op='PATCH', data='{"Password": "ABYX12#14artb"}',
                                         path='/AccountService/Accounts/root',
-                                        username=username, password=password)
+                                        username=username, password=password, dut_engine=dut_engine)
 
     def run_redfish_command(self, rest_op: str, data: str = '', username: str = '',
-                            password: str = '', path: str = ''):
-        dut_engine: LinuxSshEngine = TestToolkit.engines.dut
+                            password: str = '', path: str = '', dut_engine=None):
+        dut_engine: LinuxSshEngine = dut_engine or TestToolkit.engines.dut
         with allure.step('compose the curl command'):
             username = username or self.username
             password = password or self.password

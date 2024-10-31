@@ -71,7 +71,7 @@ class NvosInstallationSteps:
 
         if dut_device.has_bmc:
             with allure.step('reset password of bmc root user'):
-                CurlTool(PlatformConsts.BMC_INTERNAL_IP, BmcUsers.admin.username, TpmTool(dut_engine).get_bmc_admin_password_from_tpm()).change_root_password()
+                CurlTool(PlatformConsts.BMC_INTERNAL_IP, BmcUsers.admin.username, TpmTool(dut_engine).get_bmc_admin_password_from_tpm()).change_root_password(dut_engine=dut_engine)
 
         if verify_secure_boot:
             with allure.step('Verify Secure-Boot is enabled'):
