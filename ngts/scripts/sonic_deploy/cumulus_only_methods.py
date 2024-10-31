@@ -36,6 +36,6 @@ class CumulusInstallationSteps:
         cl_password = os.getenv("CUMULUS_SWITCH_PASSWORD")
         for dut in setup_info['duts']:
             logging.info("Updating /etc/sudoers file to permit NOPASSWD for sudo")
-            dut['engine'].run_cmd_set(["sudo sed -i --follow-symlinks 's/%sudo.*all=(all:all) all/%sudo all=(all:all) nopasswd: all/' /etc/sudoers",
+            dut['engine'].run_cmd_set(["sudo sed -i --follow-symlinks 's/%sudo.*ALL=(ALL:ALL) ALL/%sudo ALL=(ALL:ALL) NOPASSWD: ALL/' /etc/sudoers",
                                        cl_password], patterns_list=["password_for_cumulus"])
             logging.info("Updated /etc/sudoers file to permit NOPASSWD for sudo")
