@@ -3,6 +3,7 @@ import random
 
 import pytest
 
+from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.nvos_tools.infra.BmcTool import BmcTool
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_constants.constants_nvos import ApiType, PlatformConsts
@@ -17,7 +18,7 @@ from ngts.tests_nvos.constants import MINUTE
 logger = logging.getLogger()
 
 
-@pytest.fixture(scope='module', autouse=True)
+@pytest.fixture(scope='module')
 def restore_bios(topology_obj):
     yield
     configure_bios(topology_obj)
