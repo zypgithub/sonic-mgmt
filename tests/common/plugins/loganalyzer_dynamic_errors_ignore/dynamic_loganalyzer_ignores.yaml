@@ -823,6 +823,14 @@
         - sn5640_simx
 
 - Errors_list:
+    - '.*ERR swss#buffermgrd: .*recalculateSharedBufferPool: Buffer pool egress_lossy_pool: Invalid size.*exceeding the mmu size.*'
+  Conditions:
+    - Redmine:
+      - 4070941
+      Platform:
+        - sn5640_simx
+
+- Errors_list:
     - '.*ERR syncd#SDK: \[SAI_BUFFER.ERR\] mlnx_sai_buffer.c\[\d+\].*Failed to prepare bulk counter for pg occupancy stats.*'
     - '.*ERR syncd#SDK: \[SAI_QUEUE\.ERR\] mlnx_sai_queue.c\[\d*\]- .*Failed to prepare bulk counter for queue stats.'
   Conditions:
