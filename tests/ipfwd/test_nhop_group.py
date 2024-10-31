@@ -327,9 +327,9 @@ def build_pkt(dest_mac, ip_addr, ttl, flow_count):
 
 def validate_asic_route(duthost, route, exist=True):
     logger.info(f"Checking ip route: {route}")
-    asic_info = duthost.shell(f'redis-cli -n 1 keys "ASIC_STATE:SAI_OBJECT_TYPE_ROUTE_ENTRY*" | grep {route}',
+    asic_info = duthost.shell(f'redis-cli -n 1 keys "ASIC_STATE:SAI_OBJECT_TYPE_ROUTE_ENTRY:*{route}*"',
                               module_ignore_errors=True)["stdout"]
-    if asic_info:
+    if route in asic_info:
         logger.info(f"Matched ASIC route: {asic_info}")
         return exist is True
     else:
