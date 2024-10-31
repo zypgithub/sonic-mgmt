@@ -1,21 +1,18 @@
 import hashlib
 import os.path
+import traceback
 
 import ecdsa
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from cryptography.x509 import load_pem_x509_certificate
 
-from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.client_verification.spdm_measurements import \
+from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.client_scripts.verify_spdm_measurements.SPDMMeasurements import \
     SPDMMeasurements
-from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.client_verification.utils import printtt, \
-    CLIENT_VERIFICATION_DIR
+from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.client_scripts.verify_spdm_measurements.utils import log, \
+    step
 
 CLIENT_VERIFICATION_ERR = 'client verification failed'
-
-
-def printt(msg):
-    printtt(msg, 'VERIFIER')
 
 
 def load_measurements(filename, output=False):
@@ -23,11 +20,11 @@ def load_measurements(filename, output=False):
 
     no_leftovers = meas.parse()
 
-    if (output):
+    if output:
         if no_leftovers:
-            printt("OK: All data consumed. This is expected.")
+            log("OK: All data consumed. This is expected.")
         else:
-            printt(
+            log(
                 "WARNING: Leftover data detected! You have provided more than just signed measurements. Check your input!")
         meas.show_manifest()
         meas.show_req_nonce()
@@ -64,7 +61,7 @@ def load_pubkey(filename):
                                                format=serialization.PublicFormat.SubjectPublicKeyInfo)
     # This is a bit of black magic: The extracted, DER encoded key has a prefix before the actual public key bytes. Experimentally, this is the first 23 bytes, and then the key bytes follow.
     pubkey = public_key_bytes[23:]
-    # printt(pubkey)
+    # log(pubkey)
     return pubkey
 
 
@@ -77,74 +74,80 @@ def load_nonce(filename):
 def validate_request_nonce_against_expected(meas, nonce_file):
     expected_nonce = load_nonce(nonce_file).strip()
     req_nonce = meas.get_req_nonce().hex().strip()
-    printt(
+    log(
         f'\n\n==================\nexpected nonce:\t{expected_nonce}\nactual nonce:\t{req_nonce}\n==================\n\n')
     if req_nonce != expected_nonce:
-        printt(
+        log(
             f'{CLIENT_VERIFICATION_ERR}: request nonce is not as expected.\nexpected: {expected_nonce}\nactual: {req_nonce}')
         raise ValueError(
             f'{CLIENT_VERIFICATION_ERR}: request nonce is not as expected.\nexpected: {expected_nonce}\nactual: {req_nonce}')
     else:
-        printt('request nonce is OK')
+        log('request nonce is OK')
 
 
 # Currently doesn't do a nonce comparison, so nonce_file is not used.
-def verify(meas_file, key_file, nonce_file=None, output=False):
-    if (output):
-        printt("Verifying measurements from file: " + meas_file)
-        printt("Using key from file: " + key_file)
-    meas = load_measurements(meas_file, output)
-    pubkey = load_pubkey(key_file)
+def verify_spdm_measurements(meas_file, key_file, nonce_file=None, output=False):
+    log("Verifying measurements from file: " + meas_file)
+    log("Using key from leaf cert file: " + key_file)
 
-    if nonce_file:
-        validate_request_nonce_against_expected(meas, nonce_file)
-
-    # if (output):
-    #    # Print raw data
-    #    meas.show_data()
-    #    # Print signed content
-    #    meas.show_signed_content()
-    #    # Print signature bytes
-    #    meas.show_signature()
-
-    measurements_sig_verify(meas, pubkey)
-
-
-def run_spdm_measurements_verification(measurements_json_file, leaf_cert_file, nonce_file, expect_success: bool):
-    err = ''
     try:
-        verify(measurements_json_file, leaf_cert_file, nonce_file)
-        success = True
-    except Exception as e:
-        success = False
-        err = e
+        with step('Load measurements from file'):
+            meas = load_measurements(meas_file, output)
+            if output:
+                # Print raw data
+                meas.show_data()
+                # Print signed content
+                meas.show_signed_content()
+                # Print signature bytes
+                meas.show_signature()
 
-    if success == expect_success:
-        printt("\n[PASS!] Signature Verification of Signature Successful.\n\n")
-    else:
-        printt("\n[FAIL!] Signature Verification of Signature Failed.\n\n")
-        if success:
-            printt(f'{CLIENT_VERIFICATION_ERR}: spdm measurements verification passed but expected to fail')
-            raise ValueError(f'{CLIENT_VERIFICATION_ERR}: spdm measurements verification passed but expected to fail')
-        else:
-            printt(f'{CLIENT_VERIFICATION_ERR}: spdm measurements verification failed but expected to pass: {err}')
-            raise ValueError(
-                f'{CLIENT_VERIFICATION_ERR}: spdm measurements verification failed but expected to pass: {err}')
+        with step('Load pubkey from leaf certificate file'):
+            pubkey = load_pubkey(key_file)
+
+        if nonce_file:
+            with step('Validate request nonce against expected'):
+                validate_request_nonce_against_expected(meas, nonce_file)
+
+        with step('Verify measurements signature'):
+            measurements_sig_verify(meas, pubkey)
+
+        log("SUCCESS: SPDM Measurements verified successfully")
+    except Exception as e:
+        log(f"ERROR: {str(e)}\n{traceback.format_exc()}")
+        raise
 
 
 if __name__ == '__main__':
-    os.path.join(CLIENT_VERIFICATION_DIR, 'bmc_nvue_meas.json')
-    meas_file = os.path.join(CLIENT_VERIFICATION_DIR, 'bmc_nvue_meas.json')
-    key_file = os.path.join(CLIENT_VERIFICATION_DIR, 'bmc_nvue_leaf_cert.pem')
-    nonce_file = None
+    tmp_files_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'tmp_files')
+    tests_dir = os.path.join(tmp_files_dir, 'tests')
+
+    ###########################
+    # Test
+    dir = os.path.join(tests_dir, 'juliet-126-24-10-31-reverted-leaf')
+    meas_file = os.path.join(dir, 'test-measurements.json')
+    key_file = os.path.join(dir, 'test-leaf-cert.pem')
+    nonce_file = None  # os.path.join(tmp_files_dir, 'test-nonce.txt')
 
     # Start praying here! Verifying signature!
-    run_spdm_measurements_verification(meas_file, key_file, nonce_file, True)
+    verify_spdm_measurements(meas_file, key_file, nonce_file)
 
-    # Load Bad Measurements JSON output file
-    meas_file = os.path.join(CLIENT_VERIFICATION_DIR, 'bmc_nvue_meas_bad_sig.json')
-    key_file = os.path.join(CLIENT_VERIFICATION_DIR, 'bmc_nvue_leaf_cert.pem')
-    nonce_file = None
+    ###########################
+    # # Goodflow 1
+    # dir = os.path.join(tests_dir, 'verify_spdm_good_1')
+    # meas_file = os.path.join(dir, 'bmc_nvue_meas.json')
+    # key_file = os.path.join(dir, 'bmc_nvue_leaf_cert.pem')
+    # nonce_file = None
+    #
+    # # Start praying here! Verifying signature!
+    # verify_spdm_measurements(meas_file, key_file, nonce_file)
 
-    # Keep praying here! Verifying signature!
-    run_spdm_measurements_verification(meas_file, key_file, nonce_file, True)
+    ###########################
+    # # Badflow 1
+    # dir = os.path.join(tests_dir, 'verify_spdm_bad_1')
+    # # Load Bad Measurements JSON output file
+    # meas_file = os.path.join(dir, 'bmc_nvue_meas_bad_sig.json')
+    # key_file = os.path.join(dir, 'bmc_nvue_leaf_cert.pem')
+    # nonce_file = None
+    #
+    # # Keep praying here! Verifying signature!
+    # verify_spdm_measurements(meas_file, key_file, nonce_file)
