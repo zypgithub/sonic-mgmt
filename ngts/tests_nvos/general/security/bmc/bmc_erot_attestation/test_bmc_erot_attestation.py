@@ -13,7 +13,6 @@ from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.system.Spdm import SpdmComponentFields
 from ngts.nvos_tools.system.System import System
-from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.client_verification.utils import CLIENT_VERIFICATION_DIR
 from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.constants import VALID_NONCE_LEN, SpdmConsts, NOT_EMPTY
 from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.helpers import get_component_obj, randomize_hex_str, \
     randomize_non_hex_str, verify_component_outputs, run_client_verification, \
@@ -58,7 +57,7 @@ def test_available_components(available_spdm_components):
 @pytest.mark.security
 @pytest.mark.parametrize("component, test_api",
                          [(component, random.choice(ApiType.ALL_TYPES)) for component in SpdmConsts.components])
-def test_main_flow(component, test_api, clear_measurements, available_spdm_components):
+def test_main_flow(component, test_api, available_spdm_components):
     """
     Verify that show component works properly and shows certificate chain
 
@@ -237,11 +236,12 @@ def test_dummy_attestation_verification(test_flow):
     """
     this is as unit-test to run_client_verification helper function, to make sure it fails for invalid nonce too
     """
+    cur_dir = os.path.dirname(os.path.abspath(__file__))
     test_is_good_flow = test_flow == TestFlowType.GOOD_FLOW
     correct_nonce = '5b017bcbe464aa0d5d4d029f7d6c77afee391d5e3f2ad7bdbc6045350d12bc35'
     invalid_nonce = '5b017bcbe464aa0d5d4d029f7d6c76afee391d5e3f2ad7bdbc6045350d12bc35'
     example_nonce = correct_nonce if test_is_good_flow else invalid_nonce
-    example_component_data_json_file = os.path.join(CLIENT_VERIFICATION_DIR, 'bmc_nvue_response.json')
+    example_component_data_json_file = os.path.join(cur_dir, 'dummy_bmc_nvue_response.json')
     with allure.step('get component data'):
         with open(example_component_data_json_file, 'r') as file:
             component_data = json.load(file)

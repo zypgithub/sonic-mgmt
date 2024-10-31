@@ -22,11 +22,7 @@ from pathlib import Path
 
 import cbor2
 
-from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.client_verification.utils import printtt
-
-
-def printt(msg):
-    printtt(msg, 'VERIFIER')
+from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.client_scripts.verify_spdm_measurements.utils import log
 
 
 # SPDM message header
@@ -140,8 +136,8 @@ class DMTFSpecMeasurement:
             }
         return mrecord
 
-    def printt(self):
-        printt('{:2d}: [0x{:02x}] {}'.format(self.index, self.valtype, self.val.hex()))
+    def log(self):
+        log('{:2d}: [0x{:02x}] {}'.format(self.index, self.valtype, self.val.hex()))
 
 
 class SPDMMeasurements:
@@ -229,9 +225,9 @@ class SPDMMeasurements:
         return self.measurements
 
     def show_manifest(self):
-        printt('SPDM Measurements:')
+        log('SPDM Measurements:')
         for m in self.measurements.values():
-            m.printt()
+            m.log()
 
     def get_req_nonce(self):
         return self.req_nonce
@@ -239,8 +235,8 @@ class SPDMMeasurements:
     def show_req_nonce(self):
         output = self.req_nonce.hex()
         byte_sz = int(len(output) / 2)
-        printt(f'SPDM REQUESTER Nonce ({byte_sz} bytes):')
-        printt(output)
+        log(f'SPDM REQUESTER Nonce ({byte_sz} bytes):')
+        log(output)
 
     def get_resp_nonce(self):
         return self.resp_nonce
@@ -248,8 +244,8 @@ class SPDMMeasurements:
     def show_resp_nonce(self):
         output = self.resp_nonce.hex()
         byte_sz = int(len(output) / 2)
-        printt(f'SPDM RESPONDER Nonce ({byte_sz} bytes):')
-        printt(output)
+        log(f'SPDM RESPONDER Nonce ({byte_sz} bytes):')
+        log(output)
 
     def get_signature(self):
         return self.signature
@@ -257,8 +253,8 @@ class SPDMMeasurements:
     def show_signature(self):
         output = self.signature.hex()
         byte_sz = int(len(output) / 2)
-        printt(f'SPDM Signature ({byte_sz} bytes):')
-        printt(output)
+        log(f'SPDM Signature ({byte_sz} bytes):')
+        log(output)
 
     def get_signed_content(self):
         return self.signed_content
@@ -266,8 +262,8 @@ class SPDMMeasurements:
     def show_signed_content(self):
         output = self.signed_content.hex()
         byte_sz = int(len(output) / 2)
-        printt(f'Signed Content ({byte_sz} bytes):')
-        printt(output)
+        log(f'Signed Content ({byte_sz} bytes):')
+        log(output)
 
     def get_data(self):
         return self.data
@@ -275,8 +271,8 @@ class SPDMMeasurements:
     def show_data(self):
         output = self.data.hex()
         byte_sz = int(len(output) / 2)
-        printt(f'Raw Data ({byte_sz} bytes):')
-        printt(output)
+        log(f'Raw Data ({byte_sz} bytes):')
+        log(output)
 
 
 def main():
