@@ -33,6 +33,10 @@ def configure_bios(topology_obj):
                 dut_ip = topology_obj.players[host]['attributes'].noga_query_data['attributes']['Specific'].get(
                     'ip address', '')
                 dut_engine = topology_obj.players[host]['engine']
+                sub_type = topology_obj.players[host]['attributes'].noga_query_data['attributes']['Specific'].get(
+                    'Sub-Type', '').lower()
+                menu = BiosConsts.NVLINK_BIOS_MENU_PAGES if sub_type == 'juliet' else BiosConsts.BIOS_MENU_PAGES
+
                 bios_obj = BiosTool()
                 # dummy class init just to be able to access non-static inner methods
                 nvue_cli_obj = NvueGeneralCli(engine=None, device=None)
@@ -42,17 +46,17 @@ def configure_bios(topology_obj):
 
                 serial_engine = nvue_cli_obj.enter_serial_connection_context(topology_obj)
                 with allure.step('Configuring empty BIOS password'):
-                    bios_obj.go_to_bios_page(serial_engine, "Main", "Security", BiosConsts.BIOS_MENU_PAGES)
+                    bios_obj.go_to_bios_page(serial_engine, "Main", "Security", menu)
                     bios_obj.bios_find_and_select(serial_engine, "Administrator Password")
                     bios_obj.disable_bios_password(serial_engine)
 
                 with allure.step('Enabling network stack configuration'):
-                    bios_obj.go_to_bios_page(serial_engine, "Security", "Advanced", BiosConsts.BIOS_MENU_PAGES)
+                    bios_obj.go_to_bios_page(serial_engine, "Security", "Advanced", menu)
                     bios_obj.bios_find_and_select(serial_engine, "Network Stack Configuration")
                     bios_obj.enable_network_stack(serial_engine)
 
                 with allure.step('Done configuring network stack and BIOS password, Save and exit the BIOS'):
-                    bios_obj.go_to_bios_page(serial_engine, "Advanced", "Save & Exit", BiosConsts.BIOS_MENU_PAGES)
+                    bios_obj.go_to_bios_page(serial_engine, "Advanced", "Save & Exit", menu)
                     bios_obj.bios_find_and_select(serial_engine, "Save Changes and Exit")
                     serial_engine.run_cmd(BiosConsts.ENTER, '.*', timeout=3, send_without_enter=True)
 

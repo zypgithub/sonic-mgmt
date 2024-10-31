@@ -1430,10 +1430,11 @@ class BiosConsts:
     SELECTED_LINE_REGEX = "\\x1b[[1];37;47m([^\\[\\]]*?)\\x1b"
     SELECTED_LINE_VAL_REGEX = "\\x1b[[1];37;47m[[]([^\\\\*?)[]]\\x1b"
     SELECTED_OPTION_LINE_REGEX = "\\x1b[[]1;37;40m([^\\[\\]]*?)\\x1b"
-    BIOS_MENU_PAGES = ["Main", "Advanced", "Chipset", "Security", "Boot", "Save & Exit", "Event Logs", "Server Mgmt"]
+    BIOS_MENU_PAGES = ["Main", "Advanced", "Chipset", "Security", "Boot", "Save & Exit", "Event Logs"]
+    NVLINK_BIOS_MENU_PAGES = ["Main", "Advanced", "Chipset", "Security", "Boot", "Save & Exit", "Event Logs", "Server Mgmt"]
     MISSING_PAGE_ERR = "Target page {} not found in the BIOS setting pages list {}"
     MAX_SELECTIONS_PER_PAGE = 30
-    PEXPECT_TIMEOUT = 1.2
+    PEXPECT_TIMEOUT = 2
 
 
 class AclConsts:
