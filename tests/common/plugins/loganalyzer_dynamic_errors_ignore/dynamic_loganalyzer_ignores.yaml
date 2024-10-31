@@ -4276,3 +4276,11 @@
   Conditions:
   - Redmine:
     - 4110995
+
+- Errors_list:
+    - '.*ERR ntpd.*: CLOCK: Panic: offset too big.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests/nightly/logging/test_log_analyzer_errors_during_deploy_sonic.py::test_check_errors_in_log_during_deploy_sonic_image
+    - Redmine:
+      - 4056053
