@@ -17,6 +17,7 @@ from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
+from ngts.tests_nvos.constants import MINUTE
 
 logger = logging.getLogger()
 
