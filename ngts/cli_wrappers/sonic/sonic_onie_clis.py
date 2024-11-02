@@ -7,7 +7,7 @@ from retry.api import retry_call
 
 from infra.tools.connection_tools.onie_engine import OnieEngine
 from infra.tools.general_constants.constants import SonicNvidiaAirConstants
-from ngts.constants.constants import InfraConst, PlatformTypesConstants, PerfConsts
+from ngts.constants.constants import InfraConst, PlatformTypesConstants, PerfConsts, SonicDeployConstants
 from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.helpers.json_file_helper import extract_fw_data
 from ngts.helpers.run_process_on_host import run_process_on_host
@@ -278,8 +278,9 @@ class SonicOnieCli:
             time.sleep(1)
         self.latest_onie_version, self.latest_onie_url = get_latest_onie_version(self.fw_pkg_path,
                                                                                  self.platform_params)
-        # switch 10.245.20.39 is prod device, can't be updated by regular ONIE
-        if self.latest_onie_version in onie_version_output or self.ip == '10.245.20.39':
+        host_name = self.platform_params.host_name
+        # prod devices can't be updated by regular ONIE
+        if self.latest_onie_version in onie_version_output or host_name in SonicDeployConstants.PRODUCTION_DUTS:
             install_required = False
         return install_required
 
