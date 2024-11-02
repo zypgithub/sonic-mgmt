@@ -11,8 +11,10 @@ class GeneralCliCommon(GeneralCliInterface):
     This class hosts methods which are implemented identically for Linux and SONiC
     """
 
-    def __init__(self, engine):
+    def __init__(self, engine, cli_obj=None, dut_alias=None):
         self.engine = engine
+        self.cli_obj = cli_obj
+        self.dut_alias = dut_alias
 
     def start_service(self, service):
         output = self.engine.run_cmd('sudo service {} start'.format(service), validate=True)

@@ -66,13 +66,12 @@ class SonicGeneralCliDefault(GeneralCliCommon):
     """
     This class is for general cli commands for sonic only
     """
-    _is_simx_moose = None
 
     def __init__(self, engine, cli_obj, dut_alias):
-        self.engine = engine
-        self.cli_obj = cli_obj
-        self.dut_alias = dut_alias
         self.backup_logs_stored = False
+        super().__init__(engine, cli_obj, dut_alias)
+        self._is_simx_moose = None
+        self._is_simx_bison = None
 
     def show_setup_versions(self):
         return ''
@@ -1461,13 +1460,25 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         # if sn3 in platform, it's spc1. e.g. x86_64-mlnx_msn3800-r0
         return 'sn3' in platform
 
-    @classmethod
-    def is_simx_moose(cls, engine):
+    def is_simx_moose(self):
+        if self._is_simx_moose is None:
+            self._is_simx_moose = self.check_is_platform(['sn5600', 'simx'])
+        return self._is_simx_moose
 
-        if cls._is_simx_moose is None:
-            platform = engine.run_cmd("show platform summary | grep Platform | awk '{print $2}'")
-            cls._is_simx_moose = all(condition in platform for condition in ('sn5', 'simx'))
-        return cls._is_simx_moose
+    def is_simx_bison(self):
+        if self._is_simx_bison is None:
+            self._is_simx_bison = self.check_is_platform(['sn5640', 'simx'])
+        return self._is_simx_bison
+
+    def check_is_platform(self, exp_condition_list, platform=None):
+        """
+        Checks if the platform as an expected condition list.
+        :param exp_condition_list: platform expected conditions. Example: ['sn5640', 'simx']
+        :param platform: system platform. Example: 'x86_64-nvidia_sn5640_simx-r0'
+        """
+        if platform is None:
+            platform = self.cli_obj.chassis.get_platform()
+        return all(condition in platform for condition in exp_condition_list)
 
     def show_version(self, validate=False):
         return self.engine.run_cmd('show version', validate=validate)

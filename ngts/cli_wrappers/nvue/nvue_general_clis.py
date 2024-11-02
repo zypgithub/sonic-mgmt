@@ -475,3 +475,7 @@ class NvueGeneralCli(SonicGeneralCliDefault):
 
         logger.warning("can't match rev_id after apply")
         return ''
+
+    def get_config_db_from_running_config(self):
+        config = self.engine.run_cmd('sudo sonic-cfggen -d --print-data', print_output=False)
+        return json.loads(config)
