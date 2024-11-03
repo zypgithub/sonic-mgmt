@@ -4,14 +4,13 @@ import pytest
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_constants.constants_nvos import PlatformConsts
-from ngts.nvos_tools.infra.BmcSshEngine import BmcSshEngine
 from ngts.nvos_tools.infra.CurlTool import CurlTool
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.TpmTool import TpmTool
+from ngts.nvos_tools.platform.Platform import Platform
 from ngts.tests_nvos.general.security.bmc.bmc_creds.constants import BmcUsers, CURL_AUTHORIZATION_ERR_MSGS
-from ngts.tests_nvos.general.security.bmc.bmc_creds.helpers import bmc_factory_reset, \
-    enable_mctp_pcie_ctrl_service_in_bmc
+from ngts.tests_nvos.general.security.bmc.bmc_creds.helpers import enable_mctp_pcie_ctrl_service_in_bmc
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
@@ -45,13 +44,17 @@ def test_bmc_creds_flow(engines, devices, topology_obj):
         with allure.step("run factory reset to bmc"):
             client = CurlTool(server_host=PlatformConsts.BMC_INTERNAL_IP, username=BmcUsers.root.username,
                               password=BmcUsers.root.another_password)
-            client.reset_bmc_to_factory()
+            client.change_root_password(password=BmcUsers.root.default_password)
+            client.reset_bmc_to_factory()  # Causes switch to reboot
+            dut.disconnect()
             DutUtilsTool.wait_on_system_reboot(dut, topology_obj=TestToolkit.topology_obj)
             client.change_root_password(password=BmcUsers.root.default_password)
 
     with allure.step(f'verify bmc user "{BmcUsers.admin.username}" can login only with TPM password'):
         with allure.step(f'curl with user "{BmcUsers.admin.username}" + default password - expect fail'):
             check_auth_with_curl(dut, BmcUsers.admin.username, BmcUsers.admin.default_password, False)
+        with allure.step("Run nv command to restore admin password"):
+            Platform().firmware.show().verify_result()
         with allure.step(f'curl with user "{BmcUsers.admin.username}" + password from tpm cipher - expect success'):
             check_auth_with_curl(dut, BmcUsers.admin.username, BmcUsers.admin.another_password, True)
 

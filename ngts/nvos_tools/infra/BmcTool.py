@@ -7,7 +7,7 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.SecureBootTool import SecureBootTool
 from ngts.nvos_tools.infra.TpmTool import TpmTool
-from ngts.tests_nvos.constants import PLATFORM_COMPONENT_FW_JSON_FILE_PATH, PRODUCTION, DEVELOPMENT
+from ngts.tests_nvos.constants import PRODUCTION, DEVELOPMENT
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
@@ -17,19 +17,6 @@ class BmcTool():
     BASE_URL = "https://10.0.1.1/redfish/v1/"
     USER_NAME = "admin"
     PLATFORM_COMPONENTS_DICT = dict()
-    DEVICE_TYPE_MAPPING = \
-        {
-            "GorillaSwitch": "gorilla",
-            "GorillaSwitchBF3": "gorilla",
-            "BlackMambaSwitch": "mamba",
-            "CrocodileSwitch": "croc",
-            "CrocodileSimxSwitch": "croc",
-            "JulietSwitch": "juliet",
-            "JulietScaleoutSwitch": "juliet",
-            "JulietTTMSwitch": "juliet",
-            "JulietAriel": "juliet",
-            "JulietNonScaleoutSwitch": "juliet",
-        }
 
     @staticmethod
     def _get_bmc_password(engine: LinuxSshEngine):
@@ -65,23 +52,35 @@ class BmcTool():
                 f"firmware is {output_version}, expected {expected_version} after the install"
 
     @staticmethod
-    def _get_fw_component_version_info(component_name, version, json_file_path=PLATFORM_COMPONENT_FW_JSON_FILE_PATH):
+    def _get_fw_component_version_info(component_name, version):
         device = TestToolkit.devices.dut
-        device_class_name = type(device).__name__
-        device_name = BmcTool.DEVICE_TYPE_MAPPING[device_class_name]
-        with allure.step(f'Read platform components info from json {json_file_path}'):
+        fw_path = device.fw_versions_json_file_path
+        with allure.step(f'Read platform components info from json {fw_path}'):
             if not BmcTool.PLATFORM_COMPONENTS_DICT:
-                with open(json_file_path, 'r') as file:
+                with open(fw_path, 'r') as file:
                     BmcTool.PLATFORM_COMPONENTS_DICT = json.load(file)
             platform_components_dict = BmcTool.PLATFORM_COMPONENTS_DICT
             provisioning = DEVELOPMENT if SecureBootTool.is_dev_system(TestToolkit.engines.dut) else PRODUCTION
-            component_image_info = platform_components_dict[device_name][provisioning][component_name][version]
+            component_image_info = platform_components_dict[provisioning][component_name][version]
             return component_image_info['path'], component_image_info['filename'], component_image_info['version_name']
 
     @staticmethod
-    def get_fw_component_version_latest(component_name, json_file_path=PLATFORM_COMPONENT_FW_JSON_FILE_PATH):
-        return BmcTool._get_fw_component_version_info(component_name, "latest", json_file_path=json_file_path)
+    def get_fw_component_version_dict(component_name, version):
+        device = TestToolkit.devices.dut
+        fw_path = device.fw_versions_json_file_path
+        with allure.step(f'Read platform components info from json {fw_path}'):
+            if not BmcTool.PLATFORM_COMPONENTS_DICT:
+                with open(fw_path, 'r') as file:
+                    BmcTool.PLATFORM_COMPONENTS_DICT = json.load(file)
+            platform_components_dict = BmcTool.PLATFORM_COMPONENTS_DICT
+            provisioning = DEVELOPMENT if SecureBootTool.is_dev_system(TestToolkit.engines.dut) else PRODUCTION
+            component_image_info = platform_components_dict[provisioning][component_name][version]
+            return component_image_info
 
     @staticmethod
-    def get_fw_component_version_previous(component_name, json_file_path=PLATFORM_COMPONENT_FW_JSON_FILE_PATH):
-        return BmcTool._get_fw_component_version_info(component_name, "previous", json_file_path=json_file_path)
+    def get_fw_component_version_latest(component_name):
+        return BmcTool._get_fw_component_version_info(component_name, "latest")
+
+    @staticmethod
+    def get_fw_component_version_previous(component_name):
+        return BmcTool._get_fw_component_version_info(component_name, "previous")

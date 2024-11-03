@@ -284,7 +284,6 @@ class BaseSwitch(BaseDevice):
     Constants = namedtuple('Constants', ['system', 'dump_files', 'sdk_dump_files', 'firmware',
                                          'log_dump_files', 'log_nginx_files', 'log_nmx_files', 'stats_dump_files',
                                          'hw_mgmt_files', 'etc_files', 'cluster_files', 'bmc_dump_files', 'erots'])
-    CpldImageConsts = namedtuple('CpldImageConsts', ('burn_image_path', 'refresh_image_path', 'version_names'))
     SsdImageConsts = namedtuple('SsdImageConsts', ('file', 'current_version', 'alternate_version'))
     BiosImagesConsts = namedtuple('BiosImagesConsts', ('current_version', 'alternate_version'))
     AsicImageConsts = namedtuple('AsicImageConsts', ('version', 'filename'))
@@ -360,8 +359,7 @@ class BaseSwitch(BaseDevice):
         self.current_bios_version_path = ""
         self.previous_bios_version_name = ""
         self.previous_bios_version_path = ""
-        self.current_cpld_version = None
-        self.previous_cpld_version = None
+        self.fw_versions_json_file_path = None
         self.show_platform_output = {
             "system-mac": ExpectedString(regex=r"([\dA-F]{2}:){5}[\dA-F]{2}"),
             "manufacturer": "Nvidia",
