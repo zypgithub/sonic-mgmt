@@ -14,6 +14,7 @@ class OpenApiPlatformCli(OpenApiBaseCli):
     def __init__(self):
         self.cli_name = "Platform"
 
+    @staticmethod
     def action_generate(engine, resource_path, file_name=''):
         logging.info("Running action: 'generate' on dut using OpenApi")
         params = \

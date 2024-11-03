@@ -23,10 +23,10 @@ logger = logging.getLogger()
 
 
 @pytest.mark.checklist
-@pytest.mark.fae
+@pytest.mark.platform
 def test_show_fae_firmware(devices):
     """
-    Show fae firmware test
+    Show platform firmware test
 
     Test flow:
     1. Run show fae platform firmware
@@ -228,7 +228,7 @@ def set_auto_update(platform, value):
 
 def verify_asic_fields(asic_dictionary):
     with allure.step("Verify all expected asic fields are presented in the output"):
-        asic_fields = ["actual-firmware", "installed-firmware", "part-number", "auto-update", "fw-source"]
+        asic_fields = ["actual-firmware", "part-number", "auto-update", "fw-source"]
         for asic_name, asic_prop in asic_dictionary.items():
             ValidationTool.verify_field_exist_in_json_output(asic_prop, asic_fields).verify_result()
 

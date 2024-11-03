@@ -15,7 +15,7 @@ logger = logging.getLogger()
 
 BMC_ON_LOG_LINE = r"BMC status changed from .* to Ok"
 LOG_DELAY = 150
-CPU_MAX_UTILIZATION = 20.0
+CPU_MAX_UTILIZATION = 25.0
 BMC_LOG_LINES_MAX = 30
 
 

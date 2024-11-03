@@ -20,7 +20,7 @@ class Location(BaseComponent):
                          api={ApiType.NVUE: NvueClusterCli, ApiType.OPENAPI: OpenApiClusterCli},
                          path='/location')
         self.location_id: Dict[str, LocationId] = DefaultDict(
-            lambda location_id: AppsName(parent=self, location_id=location_id))
+            lambda location_id: LocationId(parent=self, location_id=location_id))
 
 
 class LocationId(BaseComponent):

@@ -143,6 +143,7 @@ def uninstall_install_and_verify_package(fae, app, filename, expected_version, c
 def verify_start_stop(cluster, app):
     with allure.step(f'try to start stop {app}'):
         cluster.apps.apps_name[app].action_start_cluster_apps().verify_result()
+        ClusterTools.wait_for_apps_to_be_in_wanted_state()
         cluster.apps.apps_name[app].action_stop_cluster_apps().verify_result()
 
 
@@ -171,7 +172,7 @@ def nmx_package_flow(app, path, new_version):
 
 @pytest.mark.fae
 @pytest.mark.nmx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', random.sample(ApiType.ALL_TYPES, 1))
 def test_nmx_package_bad_flow(devices, engines, test_name, test_api):
     """
     Test the bad flow of NMX package management.

@@ -135,12 +135,14 @@ class BaseComponent:
         return result_obj
 
     def action(self, action: str, suffix="", param_name="", param_value="", output_format=OutputFormat.json,
-               dut_device=None, dut_engine=None, expected_output='', expect_reboot=False, topology_obj=None) -> ResultObj:
+               dut_device=None, dut_engine=None, expected_output='', expect_reboot=False, deny_reboot=False,
+               topology_obj=None) -> ResultObj:
         """
         Runs nv action commands. The arguments `suffix`, `param_name` and `param_value` are all arguments passed to the
         the command, the difference is that in OpenAPI the `suffix` is appended to the URL while param_name and
         param_value are in the message contents. See examples below (also notice how NVUE handles param_name differently
         in these examples, based on whether or not we have param_value).
+        :param deny_reboot:
         :param expect_reboot: Set to True if the system is expected to reboot when the action is run.
 
         Example: fae.platform.firmware.cpld.action('install', "files /path/to/xyz.img", param_name="force")
@@ -158,10 +160,10 @@ class BaseComponent:
         topology_obj = topology_obj or (TestToolkit.topology_obj if TestToolkit else None)
         resource_path = self.get_resource_path()
         with allure.step(f"Execute action {action} for {resource_path}"):
-            return SendCommandTool.execute_command_expected_str(
-                self._cli_wrapper.action, expected_output,
-                dut_engine, dut_device, action, resource_path, suffix, param_name, param_value, output_format,
-                expect_reboot, None, topology_obj)
+            return SendCommandTool.execute_command_expected_str(self._cli_wrapper.action, expected_output, dut_engine,
+                                                                dut_device, action, resource_path, suffix, param_name,
+                                                                param_value, output_format, expect_reboot, None,
+                                                                deny_reboot=deny_reboot, topology_obj=topology_obj)
 
     def action_fetch(self, path, base_url='') -> ResultObj:
         """nv action fetch <resource-path> <remote-url>"""

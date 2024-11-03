@@ -1106,15 +1106,14 @@ def test_override_default_rule(engines, topology_obj):
         rule_packets_after = get_rule_packets(mgmt_port, default_chosen_acl, default_rule_to_override_field)
         assert rule_packets_after[default_rule_to_override_field] == rule_packets_before[default_rule_to_override_field], \
             f'the rule should not catch this packet cause it is different dest port'
-
-    with allure.step("save default rules output"):
-        default_rule_to_add_field_output = acl_obj.rule.parse_show(default_rule_to_add_field)
-        default_rule_to_override_field_output = acl_obj.rule.parse_show(default_rule_to_override_field)
-
     try:
-        with ((allure.step("override default rules - add new field"))):
-            config_rule(engines.dut, acl_obj, default_rule_to_add_field, {AclConsts.SOURCE_IP: src_ip})
-            if not is_redmine_issue_active([3955725])[0]:
+        with allure.step("save default rules output"):
+            default_rule_to_add_field_output = acl_obj.rule.parse_show(default_rule_to_add_field)
+            default_rule_to_override_field_output = acl_obj.rule.parse_show(default_rule_to_override_field)
+
+        if not is_redmine_issue_active([4138944])[0]:
+            with ((allure.step("override default rules - add new field"))):
+                config_rule(engines.dut, acl_obj, default_rule_to_add_field, {AclConsts.SOURCE_IP: src_ip})
                 with allure.step("validate with show command"):
                     rule_output = acl_obj.rule.parse_show(default_rule_to_add_field)
                     assert AclConsts.SOURCE_IP in rule_output[AclConsts.MATCH][AclConsts.IP].keys(), \
@@ -1123,25 +1122,25 @@ def test_override_default_rule(engines, topology_obj):
                         (f"{AclConsts.SOURCE_IP} = {rule_output[AclConsts.MATCH][AclConsts.IP][AclConsts.SOURCE_IP]}, "
                          f"expected - {src_ip}")
 
-            with allure.step("Validate ACL counters"):
-                rule_packets_before = get_rule_packets(mgmt_port, default_chosen_acl, default_rule_to_add_field)
-                scapy_send_packet(engines.sonic_mgmt, packet_tcp)
-                rule_packets_after = get_rule_packets(mgmt_port, default_chosen_acl, default_rule_to_add_field)
-                assert rule_packets_after[default_rule_to_add_field] == rule_packets_before[default_rule_to_add_field], \
-                    f'the rule should not catch this packet because we override it with src ip that not exist in this setup'
+                with allure.step("Validate ACL counters"):
+                    rule_packets_before = get_rule_packets(mgmt_port, default_chosen_acl, default_rule_to_add_field)
+                    scapy_send_packet(engines.sonic_mgmt, packet_tcp)
+                    rule_packets_after = get_rule_packets(mgmt_port, default_chosen_acl, default_rule_to_add_field)
+                    assert rule_packets_after[default_rule_to_add_field] == rule_packets_before[default_rule_to_add_field], \
+                        f'the rule should not catch this packet because we override it with src ip that not exist in this setup'
 
-        with allure.step("override default rules - change existing field"):
-            config_rule(engines.dut, acl_obj, default_rule_to_override_field, {AclConsts.UDP_DEST_PORT: '52'})
-            with allure.step("validate with show command"):
-                rule_output = acl_obj.rule.parse_show(default_rule_to_override_field)
-                assert '52' in rule_output[AclConsts.MATCH][AclConsts.IP]['udp']['dest-port'].keys()
+            with allure.step("override default rules - change existing field"):
+                config_rule(engines.dut, acl_obj, default_rule_to_override_field, {AclConsts.UDP_DEST_PORT: '52'})
+                with allure.step("validate with show command"):
+                    rule_output = acl_obj.rule.parse_show(default_rule_to_override_field)
+                    assert '52' in rule_output[AclConsts.MATCH][AclConsts.IP]['udp']['dest-port'].keys()
 
-            with allure.step("Validate ACL counters"):
-                rule_packets_1_before = get_rule_packets(mgmt_port, default_chosen_acl, default_rule_to_override_field)
-                scapy_send_packet(engines.sonic_mgmt, packet_udp)
-                rule_packets_1_after = get_rule_packets(mgmt_port, default_chosen_acl, default_rule_to_override_field)
-                assert int(rule_packets_1_after[default_rule_to_override_field]) > int(rule_packets_1_before[default_rule_to_override_field]), \
-                    f'the rule should catch this packet because we override it'
+                with allure.step("Validate ACL counters"):
+                    rule_packets_1_before = get_rule_packets(mgmt_port, default_chosen_acl, default_rule_to_override_field)
+                    scapy_send_packet(engines.sonic_mgmt, packet_udp)
+                    rule_packets_1_after = get_rule_packets(mgmt_port, default_chosen_acl, default_rule_to_override_field)
+                    assert int(rule_packets_1_after[default_rule_to_override_field]) > int(rule_packets_1_before[default_rule_to_override_field]), \
+                        f'the rule should catch this packet because we override it'
 
     finally:
         with allure.step("unset acl - should return all the default rules"):

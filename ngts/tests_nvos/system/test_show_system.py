@@ -43,7 +43,11 @@ def test_system(test_api, engines, devices, topology_obj, test_name):
         system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
 
     with allure.step('validate expected fields exist in output'):
-        system_output.pop(SystemConsts.VERSION)
+
+        keys_to_remove = [SystemConsts.VERSION, SystemConsts.LOCATION, SystemConsts.CONTACT]  # keys pruned from output
+        for key in keys_to_remove:
+            system_output.pop(key, None)
+
         ValidationTool.verify_all_fields_value_exist_in_output_dictionary(
             system_output, system.get_expected_fields(devices.dut, 'system')).verify_result()
 

@@ -8,6 +8,7 @@ NONE = 'None'
 UNKNOWN = 'unknown'
 NA = 'N/A'
 NOT_EMPTY = -1
+SPDM_VERSION = '1.1.0'
 
 
 class SpdmConsts:
@@ -34,9 +35,9 @@ class SpdmConsts:
             VERSION = 'Version'
             fields = [HASHING_ALGO, SIGNED_MEASUREMENTS, SIGNING_ALGO, VERSION]
             initial_values: Dict[str, str] = {
-                HASHING_ALGO: NONE,
-                SIGNED_MEASUREMENTS: '',
-                SIGNING_ALGO: NONE,
-                VERSION: UNKNOWN,
+                HASHING_ALGO: 'TPM_ALG_SHA_384',
+                SIGNED_MEASUREMENTS: NOT_EMPTY,
+                SIGNING_ALGO: 'TPM_ALG_ECDSA_ECC_NIST_P384',
+                VERSION: SPDM_VERSION,
             }
             na_values: Dict[str, str] = {f: NA for f in fields}

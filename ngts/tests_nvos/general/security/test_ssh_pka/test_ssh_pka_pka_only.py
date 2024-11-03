@@ -439,21 +439,15 @@ def ssh_pka_factory_reset_no_params_check(generate_new_admin_keys):
     5. verify show command is empty
     """
 
-    engines = TestToolkit.engines
+    engines = engines if engines else TestToolkit.engines
 
     with allure.step("create system"):
         system = System()
+        key_id = 'new_key'
 
-    admin_key, admin_key_type, admin_private_key_path = generate_new_admin_keys
-
-    with allure.step("generate valid key id"):
-        random_key_id = system.aaa.user.generate_username()
-        admin_key_obj = system.aaa.user.user_id['admin'].ssh.authorized_key.key_id[random_key_id]
-
-        with allure.independent_step("add new public key using three set commands to admin user"):
-            admin_key_obj.set()
-            admin_key_obj.set(op_param_name='key', op_param_value=admin_key)
-            admin_key_obj.set(op_param_name='type', op_param_value=admin_key_type, apply=True).verify_result()
+    with allure.step(f"generate new key with key_id = {key_id}"):
+        with allure.step("generate new key for admin"):
+            admin_key, admin_key_type, admin_private_key_path = _generate_new_key(engines.dut, 'admin')
 
     yield  # factory reset
 

@@ -54,8 +54,9 @@ def test_show_nvl5_interface_commands(engines, devices, test_api, has_loopbox):
         selected_port = MgmtPort(port_name)
         selected_fae_port = Fae(port_name=port_name)
         fnm_port_name = RandomizationTool.select_random_value(devices.dut.nvl5_fnm_ports).get_returned_value()
+        fnm_fae_port_name = RandomizationTool.select_random_value(devices.dut.nvl5_internal_fnm_ports).get_returned_value()
         fnm_port = MgmtPort(fnm_port_name)
-        fnm_fae_port = Fae(port_name=fnm_port_name)
+        fnm_fae_port = Fae(port_name=fnm_fae_port_name)
 
     with allure_step("Validate show interface command with all nvl5 interfaces"):
         show_interface_and_validate(engines, devices, devices.dut.all_nvl5_ports_list)

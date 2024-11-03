@@ -19,9 +19,9 @@ class Firmware(BaseComponent):
         super().__init__(parent=parent_obj, path='/firmware')
         self.asic = Asic(self)
         self.transceiver = Transceiver(self)
-        self.bmc = BaseComponent(self, path='/BMC')
-        self.fpga = BaseComponent(self, path='/FPGA')
-        self.bios = BaseComponent(self, path='/BIOS')
+        self.bmc = PlatformComponent(self, component_name='BMC')
+        self.fpga = PlatformComponent(self, component_name='FPGA')
+        self.bios = PlatformComponent(self, component_name='BIOS')
         self.cpld = PlatformComponent(self, component_name='CPLD1')
         self.erot = Erot(self)
 

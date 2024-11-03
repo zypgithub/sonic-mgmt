@@ -6,13 +6,11 @@ import pytest
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.nvos_tools.infra.BmcTool import BmcTool
 from ngts.tools.test_utils import allure_utils as allure
-from ngts.nvos_constants.constants_nvos import ApiType, PlatformConsts
+from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.nvos_tools.infra.Fae import Fae
-from ngts.nvos_tools.infra.Tools import Tools
+from ngts.tests_nvos.platform.test_platform_firmware_bios.helpers import get_bios_info_from_device, fetch_and_install_bios, verify_bios_version
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.scripts.bios_config import configure_bios
-from ngts.tools.test_utils.switch_recovery import recover_dut_with_remote_reboot
 from ngts.tests_nvos.constants import MINUTE
 
 logger = logging.getLogger()

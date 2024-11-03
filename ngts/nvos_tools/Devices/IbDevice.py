@@ -936,7 +936,6 @@ class JulietSwitch(NvLinkSwitch):
     FaeImagesTestConsts = namedtuple('FaeImagesTestConsts', ('current_image_version', 'alternate_image_version'))
     NmxClusterAppsConsts = namedtuple('NmxClusterAppsConsts',
                                       ('burn_path', 'burn_version_names'))
-    BiosImagesTestConsts = namedtuple('BiosImagesTestConsts', ('current_version', 'alternate_version'))
 
     def __init__(self, asic_amount):
         super().__init__(asic_amount=asic_amount)
@@ -1138,7 +1137,8 @@ class JulietScaleoutSwitch(JulietSwitch):
                                       ]
         self.network_ports = ['eth0', 'eth1', 'lo']
         self.all_nvl5_ports_list = self.nvl5_access_ports_list + self.nvl5_trunk_ports_list + self.network_ports
-        self.nvl5_fnm_ports = ['fnm1', 'fnm2', 'fnma0p1', 'fnma1p1']
+        self.nvl5_fnm_ports = ['fnm1', 'fnm2']
+        self.nvl5_internal_fnm_ports = ['fnma0p1', 'fnma1p1']
         self.all_fae_nvl5_ports_list = self.all_nvl5_ports_list + self.nvl5_fnm_ports
         self.nvl5_port = ['sw1p1s1']
         self.nvl5_port_speed = '400G'
@@ -1254,7 +1254,7 @@ class JulietAriel(JulietTTMSwitch):
 
     def _init_platform_lists(self):
         super()._init_platform_lists()
-        self.platform_inventory_switch_values.update({"model": "692-9K36F-A5MV-JS0"})
+        self.platform_inventory_switch_values.update({"model": "692-9K36F-A5MV-JQS"})
 
 
 # -------------------------- JulietNonScaleoutSwitch Switch ----------------------------
@@ -1296,7 +1296,8 @@ class JulietNonScaleoutSwitch(JulietScaleoutSwitch):
         self.nvl5_trunk_ports_list = []
         self.network_ports = ['eth0', 'eth1', 'lo']
         self.all_nvl5_ports_list = self.nvl5_access_ports_list + self.nvl5_trunk_ports_list + self.network_ports
-        self.nvl5_fnm_ports = ['fnm1', 'fnm2', 'fnma0p1', 'fnma1p1']
+        self.nvl5_fnm_ports = ['fnm1', 'fnm2']
+        self.nvl5_internal_fnm_ports = ['fnma0p1', 'fnma1p1']
         self.all_fae_nvl5_ports_list = self.all_nvl5_ports_list + self.nvl5_fnm_ports
         self.nvl5_port = ['sw1p1s1']
         self.nvl5_port_speed = '400G'
