@@ -955,8 +955,8 @@ class JulietSwitch(NvLinkSwitch):
         )
         self.supported_commands.extend([ActionConsts.POWER_CYCLE])
         self.asic_version = BaseSwitch.AsicImageConsts(
-            version="35.2014.1476",
-            filename="fw-QTM3-rel-35_2014_1476.mfa"
+            version="35.2014.1492",
+            filename="fw-QTM3-rel-35_2014_1492.mfa"
         )
         self.bios_image_info = BaseSwitch.BiosImagesConsts(
             current_version={

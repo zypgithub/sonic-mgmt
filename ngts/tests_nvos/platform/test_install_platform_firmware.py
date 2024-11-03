@@ -4,7 +4,7 @@ from typing import Tuple
 import pytest
 
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from ngts.nvos_constants.constants_nvos import NvosConst, PlatformConsts
+from ngts.nvos_constants.constants_nvos import NvosConst, PlatformConsts, HealthConsts
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.ContextManagers import check_health_baseline
 from ngts.nvos_tools.infra.Fae import Fae
@@ -48,6 +48,7 @@ def test_install_platform_firmware(engines, devices, test_name, topology_obj, cl
         installed_firmware = asic_dictionary[first_asic_name]["installed-firmware"]
         logging.info("Original actual installed firmware - " + installed_firmware)
         validate_all_asics_have_same_info()
+        system.validate_health_status(HealthConsts.OK)
 
     with check_health_baseline() as health_baseline:
         try:
