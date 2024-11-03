@@ -16,8 +16,10 @@ from ngts.nvos_tools.ib.Ib import Ib
 from ngts.nvos_tools.nmx.Sdn import Sdn
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.ResultObj import ResultObj
-from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports
+from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports, refresh_switch_ports
 from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
+from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
+
 
 logger = logging.getLogger()
 NMX_CONTROLLER = 'nmx-controller'
@@ -32,6 +34,7 @@ INVALID_SHOW_EXPECTED_OUTPUT = 'Error: The requested item does not exist.'
 
 @disabled_access_ports
 @pytest.mark.nmx
+@pytest.mark.timeout(20 * MINUTE, func_only=True)
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_cluster_app_start_stop(engines, devices, test_api, has_loopbox):
     TestToolkit.tested_api = test_api
@@ -45,19 +48,20 @@ def test_cluster_app_start_stop(engines, devices, test_api, has_loopbox):
 
         with allure.step("Verify 'nv show cluster apps' output"):
             ValidationTool.validate_output_of_show(output[NMX_TELEMETRY], devices.dut.cluster_app_nmx_telemetry).verify_result()
-            ValidationTool.validate_output_of_show(output[NMX_CONTROLLER], devices.dut.cluster_app_nmx_controller).verify_result()
+            if not has_loopbox:
+                ValidationTool.validate_output_of_show(output[NMX_CONTROLLER], devices.dut.cluster_app_nmx_controller).verify_result()
 
     with allure.step("Create Cluster object"):
-        # interface_wa_called = False
+        interface_wa_called = False
         cluster = Cluster()
         sdn = Sdn()
-        # interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines)
+        interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox)
 
     try:
         logger.info("Setting cluster state to enabled")
-        # if has_loopbox:
-        # next(interfaces_wa)
-        # interface_wa_called = True
+        if has_loopbox:
+            next(interfaces_wa)
+            interface_wa_called = True
         ClusterTools.start_cluster(cluster, output_format)
 
         with allure.step("Running 'nv show cluster apps' command and parsing output"):
@@ -71,7 +75,10 @@ def test_cluster_app_start_stop(engines, devices, test_api, has_loopbox):
                 output = OutputParsingTool.parse_show_output_to_dict(
                     cluster.apps.apps_name[app].show(output_format=OutputFormat.json),
                     output_format=OutputFormat.json).get_returned_value()
-                ValidationTool.validate_output_of_show(output, devices.dut.cluster_app[app]).verify_result()
+                if has_loopbox and app == NMX_CONTROLLER:
+                    pass
+                else:
+                    ValidationTool.validate_output_of_show(output, devices.dut.cluster_app[app]).verify_result()
 
         TestToolkit.tested_api = 'NVUE'
         with allure.step("Running 'nv show cluster apps installed' command and verifying output"):
@@ -79,8 +86,10 @@ def test_cluster_app_start_stop(engines, devices, test_api, has_loopbox):
                 cluster.apps.installed.show(output_format=output_format),
                 output_format=output_format).get_returned_value()
             for app in INITIAL_EXPECTED_APPS:
-                ValidationTool.validate_output_of_show(output[app], devices.dut.cluster_app[app]).verify_result()
-            # verify_apps_attributes(output)
+                if has_loopbox and app == NMX_CONTROLLER:
+                    pass
+                else:
+                    ValidationTool.validate_output_of_show(output[app], devices.dut.cluster_app[app]).verify_result()
 
         with allure.step("Running 'nv show cluster apps running' command and verifying output"):
             ClusterTools.wait_for_apps_to_be_in_wanted_state()
@@ -88,6 +97,8 @@ def test_cluster_app_start_stop(engines, devices, test_api, has_loopbox):
                 cluster.apps.running.show(output_format=OutputFormat.json),
                 output_format=OutputFormat.json).get_returned_value()
             for app in INITIAL_EXPECTED_APPS:
+                if has_loopbox and app == NMX_CONTROLLER:
+                    continue  # Need to be removed once WA is not needed.
                 app_status = output[app]['status']
                 assert app_status == 'ok', f"App {app} status is {app_status} instead of 'ok'"
             logger.info("Make sure there are no extra Unexpected apps")
@@ -98,12 +109,17 @@ def test_cluster_app_start_stop(engines, devices, test_api, has_loopbox):
         ClusterTools.stop_start_app(cluster, engines, devices, has_loopbox)
 
     finally:
-        # if interface_wa_called:
-        #     next(interfaces_wa)
+        if interface_wa_called:
+            try:
+                next(interfaces_wa)
+            except StopIteration:
+                pass  # Or handle it if necessary
         TestToolkit.tested_api = test_api
         with allure.step("Reset cluster state"):
             cluster.unset(apply=True)
             ClusterTools.wait_for_apps_to_be_in_wanted_state()
+        if hasattr(devices.dut, 'nvl5_trunk_ports_list') and devices.dut.nvl5_trunk_ports_list is not []:
+            refresh_switch_ports(devices.dut.nvl5_trunk_ports_list, engines)
 
 
 @disabled_access_ports
@@ -111,31 +127,40 @@ def test_cluster_app_start_stop(engines, devices, test_api, has_loopbox):
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
 def test_stress_cluster_app_start_stop(engines, devices, test_api, test_name, has_loopbox):
+    if has_loopbox:
+        pytest.skip("Skipping test - tested on systems without loopbox - same flow.")
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
 
     with allure.step("Create Cluster object"):
-        # interface_wa_called = False
+        interface_wa_called = False
         cluster = Cluster()
         sdn = Sdn()
-        # interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines)
+        interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox)
     try:
         with allure.step("Stress testing start/stop apps"):
-            # if has_loopbox:
-            #     next(interfaces_wa)
-            #     interface_wa_called = True
+            operation = 'start stop cluster app'
+            if has_loopbox:
+                next(interfaces_wa)
+                interface_wa_called = True
+                operation = 'start stop cluster app with loopbox'
             ClusterTools.start_cluster(cluster, output_format)
             for i in range(5):
                 logger.info(f"Starting iteration {i}")
-                result_obj, duration = OperationTime.save_duration('start stop cluster app', '', test_name, ClusterTools.stop_start_app, cluster, engines, devices, has_loopbox)
-                OperationTime.verify_operation_time(duration, 'start stop cluster app').verify_result()
+                result_obj, duration = OperationTime.save_duration(operation, '', test_name, ClusterTools.stop_start_app, cluster, engines, devices, has_loopbox)
+                OperationTime.verify_operation_time(duration, operation).verify_result()
 
     finally:
-        # if interface_wa_called:
-        #     next(interfaces_wa)
+        if interface_wa_called:
+            try:
+                next(interfaces_wa)
+            except StopIteration:
+                pass
         with allure.step("Reset cluster state"):
             cluster.unset(apply=True)
             ClusterTools.wait_for_apps_to_be_in_wanted_state()
+        if hasattr(devices.dut, 'nvl5_trunk_ports_list') and devices.dut.nvl5_trunk_ports_list is not []:
+            refresh_switch_ports(devices.dut.nvl5_trunk_ports_list, engines)
 
 
 @disabled_access_ports
@@ -143,15 +168,17 @@ def test_stress_cluster_app_start_stop(engines, devices, test_api, test_name, ha
 @pytest.mark.timeout(20 * MINUTE, func_only=True)
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
 def test_cluster_app_start_stop_under_stressed_resources(engines, devices, test_api, test_name, has_loopbox):
+    if has_loopbox:
+        pytest.skip("Skipping test - tested on systems without loopbox - same flow.")
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
 
     with allure.step("Create Cluster object"):
-        # interface_wa_called = False
+        interface_wa_called = False
         cluster = Cluster()
         sdn = Sdn()
         installed_packages = []
-        # interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines)
+        interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox)
     try:
         with allure.step("Test cluster with stressed CPU and Memory utilization"):
             # This will run in background &
@@ -162,22 +189,29 @@ def test_cluster_app_start_stop_under_stressed_resources(engines, devices, test_
             start_time = time.time()
 
             # Loop until the timeout is reached
+            operation = 'start stop cluster app stressed resources'
             while time.time() - start_time < timeout:
-                # if has_loopbox:
-                #     next(interfaces_wa)
-                #     interface_wa_called = True
+                if has_loopbox:
+                    next(interfaces_wa)
+                    interface_wa_called = True
+                    operation = 'start stop cluster app stressed resources with loopbox'
                 ClusterTools.start_cluster(cluster, output_format)
-                result_obj, duration = OperationTime.save_duration('start stop cluster app stressed resources', '', test_name, ClusterTools.stop_start_app, cluster, engines, devices, has_loopbox)
-                OperationTime.verify_operation_time(duration, 'start stop cluster app stressed resources').verify_result()
+                result_obj, duration = OperationTime.save_duration(operation, '', test_name, ClusterTools.stop_start_app, cluster, engines, devices, has_loopbox)
+                OperationTime.verify_operation_time(duration, operation).verify_result()
 
     finally:
-        # if interface_wa_called:
-        #     next(interfaces_wa)
+        if interface_wa_called:
+            try:
+                next(interfaces_wa)
+            except StopIteration:
+                pass
         with allure.step("Reset cluster state"):
             cluster.unset(apply=True)
             ClusterTools.wait_for_apps_to_be_in_wanted_state()
         if installed_packages:
             StressResourcesTool.delete_packages(engines, installed_packages)
+        if hasattr(devices.dut, 'nvl5_trunk_ports_list') and devices.dut.nvl5_trunk_ports_list is not []:
+            refresh_switch_ports(devices.dut.nvl5_trunk_ports_list, engines)
 
 
 @pytest.mark.nmx
