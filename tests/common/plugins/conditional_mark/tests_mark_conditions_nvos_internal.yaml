@@ -581,4 +581,10 @@ tests_nvos/system/test_log_commands.py::test_log_idle:
     conditions:
       - https://redmine.mellanox.com/issues/4126563
 
+tests_nvos/general/security/bmc/bmc_creds/test_bmc_creds.py::test_bmc_creds_flow:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4146744"
+    conditions:
+      - https://redmine.mellanox.com/issues/4146744
+
 ########################## NVOS IGNORE END ##########################

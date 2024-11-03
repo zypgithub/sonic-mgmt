@@ -4,9 +4,8 @@ import os.path
 import pytest
 
 from ngts.nvos_constants.constants_nvos import ApiType, PlatformConsts
-from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
-from ngts.nvos_tools.Devices.IbDevice import CrocodileSwitch, JulietTTMSwitch
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
+from ngts.nvos_tools.infra.BmcTool import BmcTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.platform.Platform import Platform
@@ -45,24 +44,23 @@ def test_cpld_upgrade(engines, devices, topology_obj):
     if not device.allow_cpld_update:
         pytest.skip("Not a crocodile, nor Juliet TTM... Should ignore test.")
 
-    if not (device.current_cpld_version and device.previous_cpld_version):
-        raise NotImplementedError(f"{type(device)} does not have 'current_cpld_version' or 'previous_cpld_version'")
-
     try:
         TestToolkit.tested_api = ApiType.NVUE
         with allure.step(f"Fetch, install and assert old CPLD version (through {TestToolkit.tested_api})"):
-            _firmware_install_test(devices, platform, devices.dut.previous_cpld_version, engines, topology_obj)
+            image_previous_details = BmcTool.get_fw_component_version_dict("cpld", "previous")
+            _firmware_install_test(devices, platform, image_previous_details, engines, topology_obj)
     finally:
         TestToolkit.tested_api = ApiType.OPENAPI
         with allure.step(f"Cleanup: Fetch, install and assert original CPLD version (through {TestToolkit.tested_api})"):
-            _firmware_install_test(devices, platform, devices.dut.current_cpld_version, engines, topology_obj)
+            image_details = BmcTool.get_fw_component_version_dict("cpld", "latest")
+            _firmware_install_test(devices, platform, image_details, engines, topology_obj)
 
 
-def _firmware_install_test(devices, platform: Platform, image_consts: BaseSwitch.CpldImageConsts,
-                           engines, topology_obj):
-    refresh_filename = os.path.basename(image_consts.refresh_image_path)  # will be empty for switches that have no REFRESH file
-    burn_filename = os.path.basename(image_consts.burn_image_path)
-    if refresh_filename:
+def _firmware_install_test(devices, platform: Platform, image_details, engines, topology_obj):
+    burn_filename = os.path.basename(image_details['path'])
+    has_refresh_image = 'refresh_path' in image_details
+    if has_refresh_image:
+        refresh_filename = os.path.basename(image_details['refresh_path'])  # will be empty for switches that have no REFRESH file
         file_names = {burn_filename, refresh_filename}
     else:
         file_names = {burn_filename}
@@ -74,11 +72,11 @@ def _firmware_install_test(devices, platform: Platform, image_consts: BaseSwitch
                                                        str(set(initial_files) & file_names))
 
     with allure.step(f"Fetching BURN image"):
-        platform.firmware.cpld.action_fetch(image_consts.burn_image_path).verify_result()
+        platform.firmware.cpld.action_fetch(image_details['path']).verify_result()
 
-    if refresh_filename:
+    if has_refresh_image:
         with allure.step(f"Fetching REFRESH image"):
-            platform.firmware.cpld.action_fetch(image_consts.refresh_image_path).verify_result()
+            platform.firmware.cpld.action_fetch(image_details['refresh_path']).verify_result()
 
     with allure.step(f"Asserting fetch was successful"):
         file_list = platform.firmware.cpld.show_files_as_list()
@@ -94,7 +92,7 @@ def _firmware_install_test(devices, platform: Platform, image_consts: BaseSwitch
                 device=devices.dut, topology_obj=topology_obj)
             result.verify_result()
 
-        if refresh_filename:
+        if has_refresh_image:
             with allure.step(f"Installing REFRESH image (and rebooting) {refresh_filename}"):
                 platform.firmware.cpld.files.file_name[refresh_filename].action_file_install_with_reboot(
                     device=devices.dut, topology_obj=topology_obj).verify_result()
@@ -103,7 +101,7 @@ def _firmware_install_test(devices, platform: Platform, image_consts: BaseSwitch
 
         with allure.step(f"Asserting install was successful"):
             firmware_shown = OutputParsingTool.parse_json_str_to_dictionary(platform.firmware.show()).get_returned_value()
-            for cpld_number, expected_version in image_consts.version_names.items():
+            for cpld_number, expected_version in image_details['version_name'].items():
                 actual_firmware = firmware_shown[cpld_number][PlatformConsts.FW_ACTUAL]
                 assert actual_firmware == expected_version, \
                     f"Expected {cpld_number} version: {expected_version}. Actual version: {actual_firmware}"
@@ -115,7 +113,7 @@ def _firmware_install_test(devices, platform: Platform, image_consts: BaseSwitch
     finally:
         for file_name in file_names:
             with allure.step(f"Deleting image file {file_name}"):
-                platform.firmware.cpld.files.file_name[file_name].action_delete().verify_result()
+                platform.firmware.cpld.files.file_name[file_name].action_delete()
 
         with allure.step(f"Asserting delete was successful"):
             final_file_list = platform.firmware.cpld.show_files_as_list()
