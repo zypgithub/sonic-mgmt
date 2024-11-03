@@ -1164,6 +1164,7 @@ class OperationTimeConsts:
                   'generate tech-support': 75,
                   'julietscaleout generate_tech_support': 120,
                   'start stop cluster app': 375,
+                  'start stop cluster app with loopbox': 720,
                   'start stop cluster': 165,
                   'cluster update log level': 5,
                   'install bmc': 900,
@@ -1172,6 +1173,7 @@ class OperationTimeConsts:
                   'juliet-power-cycle': 445
                   }
     THRESHOLDS['start stop cluster app stressed resources'] = THRESHOLDS['start stop cluster app'] * 1.1
+    THRESHOLDS['start stop cluster app stressed resources with loopbox'] = THRESHOLDS['start stop cluster app with loopbox'] * 1.1
     THRESHOLDS['start stop cluster stressed resources'] = THRESHOLDS['start stop cluster'] * 1.1
 
 
