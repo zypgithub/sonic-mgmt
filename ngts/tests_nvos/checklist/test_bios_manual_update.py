@@ -5,6 +5,7 @@ import pytest
 
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.nvos_tools.infra.BmcTool import BmcTool
+from ngts.nvos_tools.infra.DMIDecodeTool import DMIDecodeTool
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
@@ -52,6 +53,7 @@ def test_bios_manual_update(engines, devices, topology_obj, test_api, platform_c
                                                      name=version_name, filename=filename,
                                                      topology_obj=topology_obj)
         BmcTool.verify_platform_component_version(platform_component_with_clear, version_name)
+        DMIDecodeTool.verify_dmi_info(engines, devices)
 
     finally:
         path, filename, version_name = BmcTool.get_fw_component_version_latest(component_name)
@@ -59,3 +61,4 @@ def test_bios_manual_update(engines, devices, topology_obj, test_api, platform_c
                                                      name=version_name, filename=filename,
                                                      topology_obj=topology_obj)
         BmcTool.verify_platform_component_version(platform_component_with_clear, version_name)
+        DMIDecodeTool.verify_dmi_info(engines, devices)
