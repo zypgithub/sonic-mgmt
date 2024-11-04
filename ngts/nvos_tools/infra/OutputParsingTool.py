@@ -303,9 +303,18 @@ class OutputParsingTool:
             output_json = ''.join(output_json.split('\n')[1:])
         if output_json == '{}' or output_json == '':
             return ResultObj(True, "", {})
+        if output_json[0] != '{' or output_json[-1] != '}':  # Need to parse output from serial engine
+            start = output_json.find('{')
+            end = output_json.rfind('}')
+
+            if start != -1 and end != -1 and start < end:
+                output_json = output_json[start:end + 1]
+                output_json = output_json.replace("\\r", "").replace("\\n", "")
         with allure.step('Create a dictionary according to provided JSON string'):
-            output_dictionary = json.loads(output_json)
-            return ResultObj(True, "", output_dictionary)
+            try:
+                return ResultObj(True, "", json.loads(output_json))
+            except json.JSONDecodeError as err:
+                return ResultObj(False, f"Json could not parse to dict: \n{err}")
 
     @staticmethod
     def parse_show_files_to_dict(output_json) -> ResultObj:

@@ -357,8 +357,7 @@ def test_lldp_disable_dhcp(engines, devices, serial_engine):
 
         try:
             with allure.step("Get ip addresses"):
-                ip_addresses_dict = OutputParsingTool.parse_json_str_to_dictionary(
-                    mgmt_interface.interface.ip.address.show(dut_engine=serial_engine)).get_returned_value()
+                ip_addresses_dict = mgmt_interface.interface.ip.address.parse_show(dut_engine=serial_engine)
                 ip_addresses = list(ip_addresses_dict.keys())
 
             with allure.step(f"Disable dhcp-client for {interface_name}"):
