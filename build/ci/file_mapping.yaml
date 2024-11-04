@@ -16,6 +16,7 @@ SONIC_BAT_ONLY:
   - tests/common/devices
   - tests/common/fixtures
   - tests/common/platform
+  - tests/common/helpers
   - tests/conftest.py
 
 SONIC_COMMUNITY_BAT_ONLY:
