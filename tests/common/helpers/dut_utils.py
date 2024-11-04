@@ -10,6 +10,7 @@ from tests.common.utilities import get_host_visible_vars
 from tests.common.utilities import wait_until
 from collections import defaultdict
 from tests.common.connections.console_host import ConsoleHost
+from tests.common.utilities import get_dut_current_passwd
 
 CONTAINER_CHECK_INTERVAL_SECS = 1
 CONTAINER_RESTART_THRESHOLD_SECS = 180
@@ -380,12 +381,11 @@ def creds_on_dut(duthost):
         r'qos\.yml',
         r'sku-sensors-data\.yml',
         r'mux_simulator_http_port_map\.yml'
-        ]
-    ansible_folder_path = os.path.join(BASI_PATH, "../../../ansible/")
-    files = glob.glob(os.path.join(ansible_folder_path, "group_vars/all/*.yml"))
-    files += glob.glob(os.path.join(ansible_folder_path, "vars/*.yml"))
+    ]
+    files = glob.glob("../ansible/group_vars/all/*.yml")
+    files += glob.glob("../ansible/vars/*.yml")
     for group in groups:
-        files += glob.glob(os.path.join(ansible_folder_path, f"group_vars/{group}/*.yml"))
+        files += glob.glob("../ansible/group_vars/{}/*.yml".format(group))
     filtered_files = [
         f for f in files if not re.search('|'.join(exclude_regex_patterns), f)
     ]
@@ -418,6 +418,20 @@ def creds_on_dut(duthost):
         console_login_creds = hostvars["console_login"]
     creds["console_user"] = {}
     creds["console_password"] = {}
+
+    creds["ansible_altpasswords"] = []
+
+    # If ansible_altpasswords is empty, add ansible_altpassword to it
+    if len(creds["ansible_altpasswords"]) == 0:
+        creds["ansible_altpasswords"].append(hostvars["ansible_altpassword"])
+
+    passwords = creds["ansible_altpasswords"] + [creds["sonicadmin_password"]]
+    creds['sonicadmin_password'] = get_dut_current_passwd(
+        duthost.mgmt_ip,
+        duthost.mgmt_ipv6,
+        creds['sonicadmin_user'],
+        passwords
+    )
 
     for k, v in list(console_login_creds.items()):
         creds["console_user"][k] = v["user"]
