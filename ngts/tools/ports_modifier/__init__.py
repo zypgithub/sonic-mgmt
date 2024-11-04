@@ -115,15 +115,20 @@ def pytest_collection_modifyitems(session, config, items):
                                                  dut_to_host_ports_list, topology)
             save_config_db_json(dut_engine, modified_config)
             cli_object.general.reload_configuration(force=True)
+
+            # Mark that the original configuration needs to be restored after the test
+            logger.info('The max port configuration has loaded')
+            setattr(session, 'restore_original_config', True)
             cli_object.ip.apply_dns_servers_into_resolv_conf()
 
 
 def pytest_sessionfinish(session, exitstatus):
 
     if len(session.items) == 1 and session.items[0].name == REBOOT_TEST_NAME and session.config.option.ports_number:
-        skip_marker = [marker for marker in session.items[0].own_markers if marker.name == "skip"]
-        if len(skip_marker):
-            return  # No need to do cleanup, test skipped
+        restore_original_config = getattr(session, 'restore_original_config', False)
+        logger.info(f'Configuration restoration needed: {restore_original_config}')
+        if not restore_original_config:
+            return
 
         topology = get_topology_by_setup_name_and_aliases(session.config.option.setup_name, slow_cli=False)
         dut_engine = topology.players['dut']['engine']
