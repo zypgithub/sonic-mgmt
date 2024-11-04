@@ -367,9 +367,11 @@ tests_nvos/platform/test_platform.py::test_show_platform_chassis_location:
 
 tests_nvos/platform/test_platform_firmware_bios/test_platform_firmware_bios.py:
   skip:
-    reason: "Testcase skipped on Juliet systems, feature is pruned in Juliet"
+    reason: "Testcase skipped on Juliet systems, feature is pruned in Juliet or open RM issue https://redmine.mellanox.com/issues/4140823"
+    conditions_logical_operator: or
     conditions:
       - "'juliet' in testbed"
+      - https://redmine.mellanox.com/issues/4140823
 
 tests_nvos/checklist/erot_fw_upgrade/test_erot_upgrade.py:
   skip:

@@ -36,6 +36,14 @@ BASE_IMAGE_VERSION_TO_INSTALL = "nvos-amd64-{pre_release_name}.bin"
 BASE_IMAGE_VERSION_TO_INSTALL_PATH = "/auto/sw_system_release/nos/nvos/{pre_release_name}/amd64/{base_image}"
 
 
+@pytest.fixture(scope='module', autouse=True)
+def clear_system_image_files():
+    system = System()
+    with allure.step('clear all system image files before tests'):
+        files = system.image.files.get_files()
+        system.image.files.delete_files(files_to_delete=files)
+
+
 @pytest.mark.checklist
 @pytest.mark.nvos_ci
 @pytest.mark.simx
@@ -638,13 +646,13 @@ def cleanup_test(system, original_images, original_image_partition, fetched_imag
         with allure.step('restore original dut engine'):
             TestToolkit.engines.dut = orig_engine or TestToolkit.engines.dut
 
-        with allure.step("Uninstall unused images and verify"):
-            system.image.action_uninstall(params='force')
-            system.image.verify_show_images_output(original_images)
-
         with allure.step("Delete all images that have been fetch during the test and verify"):
             system.image.files.delete_files(fetched_image_files)
             system.image.files.verify_show_files_output(unexpected_files=fetched_image_files)
+
+        with allure.step("Uninstall unused images and verify"):
+            system.image.action_uninstall(params='force')
+            system.image.verify_show_images_output(original_images)
 
 
 def get_image_data(system):
