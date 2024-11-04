@@ -15,6 +15,8 @@ from infra.tools.validations.traffic_validations.port_check.port_checker import 
 from ngts.nvos_constants.constants_nvos import SystemConsts, DatabaseConst, NvosConst
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.nvos_tools.infra.DatabaseTool import DatabaseTool
+from ngts.tests_nvos.general.post_upgrade_switch.constants import InstallSteps
+from ngts.tests_nvos.general.post_upgrade_switch.install_steps_timer import InstallStepsTimer
 from ngts.tools.test_utils import allure_utils as allure
 from .ResultObj import ResultObj, IssueType
 
@@ -26,7 +28,7 @@ class DutUtilsTool:
 
     @staticmethod
     def reload(engine, device, command, find_prompt_tries=80, find_prompt_delay=2, should_wait_till_system_ready=True,
-               confirm=False, recovery_engine=None, topology_obj=None, system_is_ready_timeout=None):
+               confirm=False, recovery_engine=None, topology_obj=None, system_is_ready_timeout=None, track_boot_intervals=False):
         """
 
         :param should_wait_till_system_ready: if True then we will wait till the system is ready, if false then we only will wait till we can re-connect to the system
@@ -48,7 +50,7 @@ class DutUtilsTool:
                 return ResultObj(result=False, info=output)
 
             res_obj = DutUtilsTool.wait_on_system_reboot(engine, recovery_engine, None, should_wait_till_system_ready,
-                                                         device, False, True, topology_obj, system_is_ready_timeout)
+                                                         device, False, True, topology_obj, system_is_ready_timeout, track_boot_intervals)
             if not should_wait_till_system_ready:
                 time.sleep(40)
                 return res_obj
@@ -86,7 +88,7 @@ class DutUtilsTool:
 
     @staticmethod
     def wait_on_system_reboot(engine, recovery_engine=None, wait_time_before_reboot=120, wait_till_system_ready=True,
-                              device=None, verify_final_result=True, wait_for_nvos=True, topology_obj=None, system_is_ready_timeout=None):
+                              device=None, verify_final_result=True, wait_for_nvos=True, topology_obj=None, system_is_ready_timeout=None, track_boot_intervals=False):
         """
         Call this after an operation that should trigger a reboot. Will wait on the switch until it's functional.
         :param wait_time_before_reboot: How many seconds to wait for the switch to go down. If this time elapsed and
@@ -98,6 +100,8 @@ class DutUtilsTool:
                                              tries=wait_time_before_reboot / 2)  # divide by 2 because 2 delay=2 seconds
             else:
                 check_port_status_till_alive(False, engine.ip, engine.ssh_port)
+                if track_boot_intervals:
+                    InstallStepsTimer.add_timestamp(InstallSteps.SHUT_DOWN)
             engine.disconnect()
             if not wait_till_system_ready:
                 return ResultObj(result=True, info="system is not ready yet")
@@ -115,6 +119,8 @@ class DutUtilsTool:
                             DutUtilsTool.wait_for_system_ready_in_serial(topology_obj, wait_timeout=device.system_is_ready_wait_timeout)
                         else:
                             DutUtilsTool.wait_for_system_ready_in_serial(topology_obj)
+                        if track_boot_intervals:
+                            InstallStepsTimer.add_timestamp(InstallSteps.SYSTEM_IS_READY_AFTER_UPGRADE)
                 if not wait_for_nvos:
                     with allure.step('wait for ssh'):
                         dut_engine.run_cmd('echo "SSH OK"')

@@ -106,12 +106,12 @@ class File(BaseComponent):
 
     def action_file_install_with_reboot(self, expected_str="", force=True, engine=None, device=None,
                                         recovery_engine=None, topology_obj=None, param_value='',
-                                        should_succeed=True, system_is_ready_timeout=None) -> ResultObj:
+                                        should_succeed=True, system_is_ready_timeout=None, track_boot_intervals=False) -> ResultObj:
         return self._action_file_install(True, expected_str, force, engine, device, recovery_engine,
-                                         topology_obj, param_value, should_succeed, system_is_ready_timeout)
+                                         topology_obj, param_value, should_succeed, system_is_ready_timeout, track_boot_intervals)
 
     def _action_file_install(self, with_reboot: bool, expected_str="", force=True, dut_engine=None, device=None,
-                             recovery_engine=None, topology_obj=None, param_value='', should_succeed=True, system_is_ready_timeout=None) -> ResultObj:
+                             recovery_engine=None, topology_obj=None, param_value='', should_succeed=True, system_is_ready_timeout=None, track_boot_intervals=False) -> ResultObj:
         engine = dut_engine if dut_engine else TestToolkit.engines.dut
         device = device if device else TestToolkit.devices.dut
         topology_obj = topology_obj or TestToolkit.topology_obj
@@ -121,7 +121,7 @@ class File(BaseComponent):
                 self._cli_wrapper.action, expected_str,
                 engine, device, action_type='install', resource_path=resource_path, param_name='force' if force else '',
                 param_value=param_value, expect_reboot=with_reboot, recovery_engine=recovery_engine,
-                topology_obj=topology_obj, should_succeed=should_succeed, system_is_ready_timeout=system_is_ready_timeout)
+                topology_obj=topology_obj, should_succeed=should_succeed, system_is_ready_timeout=system_is_ready_timeout, track_boot_intervals=track_boot_intervals)
 
     def rename_and_verify(self, new_name, expected_str="", dut_engine=None):
         original_name = self.file_name
