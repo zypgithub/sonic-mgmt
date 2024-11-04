@@ -823,7 +823,7 @@
         - sn5640_simx
 
 - Errors_list:
-    - '.*ERR swss#buffermgrd: .*recalculateSharedBufferPool: Buffer pool egress_lossy_pool: Invalid size.*exceeding the mmu size.*'
+    - '.*ERR swss#buffermgrd: .*recalculateSharedBufferPool: Buffer pool.*Invalid size.*exceeding the mmu size.*'
   Conditions:
     - Redmine:
       - 4070941
