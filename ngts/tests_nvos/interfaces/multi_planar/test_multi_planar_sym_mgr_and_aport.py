@@ -26,6 +26,7 @@ logger = logging.getLogger()
 
 @pytest.mark.interface
 @pytest.mark.multiplanar
+@pytest.mark.nvos_ci
 def test_internal_fnm_ports(devices):
     """
     nv show fae interfaces --> Validate that all internal FNM ports that should be always up - are up.
