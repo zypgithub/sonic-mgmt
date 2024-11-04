@@ -709,6 +709,23 @@
       </params>
     </cmd>
   </case>
+    <case>
+    <ignore>
+      <!-- daily case  -->
+      <condition>
+        <key> skip_weekend_cases </key>
+        <op> == </op>
+        <value> no </value>
+      </condition>
+    </ignore>
+    <name> Component Versions daily </name>
+    <info> </info>
+    <cmd>
+      <params>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests/nightly/component_versions --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --clean-alluredir --alluredir=/tmp/allure-results --showlocals --timeout 1800 --session-timeout 3600\'"</static_args>
+      </params>
+    </cmd>
+  </case>
   <case>
     <ignore>
       <!-- daily case  -->

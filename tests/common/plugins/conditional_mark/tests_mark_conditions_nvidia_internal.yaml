@@ -49,6 +49,12 @@ tests/nightly/crm/test_crm.py::test_crm_nexthop_group_and_member:
     conditions:
       - "https://redmine.mellanox.com/issues/3933623"
 
+tests/nightly/component_versions/test_component_versions.py:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4017774"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4017774"
+
 tests/nightly/ecmp_calculator/test_ecmp_calculator.py::TestInterfaceDefaultVrf:test_ecmp_calculator_interface_default_vrf:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3933623"
