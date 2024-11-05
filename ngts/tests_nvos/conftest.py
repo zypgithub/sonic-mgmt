@@ -145,6 +145,15 @@ def engines(topology_obj, devices):
     if "hb" in topology_obj.players:
         engines_data.hb = topology_obj.players['hb']['engine']
         engines_data.hb_attr = topology_obj.players['hb']['attributes']
+
+    # engines.hfnm refers to the VM connected to the FNM port if there is one, or to HA if there isn't
+    if "hfnm" in topology_obj.players:
+        engines_data.hfnm = topology_obj.players['hfnm']['engine']
+        engines_data.hfnm_attr = topology_obj.players['hfnm']['attributes']
+    elif "ha" in topology_obj.players:
+        engines_data.hfnm = topology_obj.players['ha']['engine']
+        engines_data.hfnm_attr = topology_obj.players['ha']['attributes']
+
     if "server" in topology_obj.players:
         engines_data.server = topology_obj.players['server']['engine']
     if "sonic-mgmt" in topology_obj.players:
