@@ -10,7 +10,7 @@ from ngts.tools.test_utils import allure_utils as allure
 
 
 @disabled_access_ports
-def factory_reset_no_params_pre_steps(engines, platform_params, system, devices):
+def factory_reset_no_params_pre_steps(engines, platform_params, system, devices, has_loopbox):
     port_type = devices.dut.switch_type.lower()
 
     with allure.step('Create System object'):
