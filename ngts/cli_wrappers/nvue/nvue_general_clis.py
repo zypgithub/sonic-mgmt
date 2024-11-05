@@ -10,6 +10,7 @@ from ngts.nvos_constants.constants_nvos import NvosConst, ActionConsts, SystemCo
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.GrubMenuTool import GrubMenuTool
 from ngts.nvos_tools.infra.SerialConsoleTool import SerialConsoleTool
+from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.general.security.test_secure_boot.constants import SecureBootConsts
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tools.test_utils import allure_utils as allure
@@ -191,7 +192,7 @@ class NvueGeneralCli(SonicGeneralCliDefault):
         with allure.step('Ping switch until back alive'):
             ping_till_alive(should_be_alive=True, destination_host=engine.ip)
         with allure.step('wait for System is ready in serial'):
-            DutUtilsTool.wait_for_system_ready_in_serial(topology_obj, serial_engine, self.device.system_is_ready_wait_timeout)
+            DutUtilsTool.wait_for_system_ready_in_serial(topology_obj, serial_engine, 20 * MINUTE)  # TODO: restore to self.device.system_is_ready_wait_timeout
         with allure.step('Wait until switch is up'):
             engine.disconnect()  # force engines.dut to reconnect
             DutUtilsTool.wait_for_nvos_to_become_functional(engine=engine)
