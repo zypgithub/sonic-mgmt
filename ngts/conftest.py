@@ -22,6 +22,7 @@ from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.cli_wrappers.linux.linux_cli import LinuxCli, LinuxCliStub
 from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
 from ngts.cli_wrappers.sonic.sonic_cli import SonicCli, SonicCliStub
+from ngts.cli_wrappers.dvs.dvs_general_cli import DvsGeneralCli
 from ngts.cli_wrappers.sonic.sonic_general_clis import SonicGeneralCliDefault
 from ngts.constants.constants import PytestConst, NvosCliTypes, DebugKernelConsts, SerialLoggerConst
 from ngts.constants.constants import PytestConst, NvosCliTypes, DebugKernelConsts, PlayersAliases, CliType
@@ -359,17 +360,19 @@ def update_topology_with_cli_class(topology, request=None):
     # TODO: determine player type by topology attribute, rather than alias
     nvos_setup = False
     for player_key, player_info in topology.players.items():
-        if player_key == 'dut':
-            if player_info['attributes'].noga_query_data['attributes']['Topology Conn.'][
-                    'CLI_TYPE'] in NvosCliTypes.NvueCliTypes:
-                update_nvos_topology(topology, player_info, request)
+        cli_type = player_info['attributes'].noga_query_data['attributes']['Topology Conn.']['CLI_TYPE']
+        if player_key == 'dut' or player_key == 'left_tg' or player_key == 'right_tg':
+            if cli_type in NvosCliTypes.NvueCliTypes:
+                update_nvos_topology(topology, player_key, player_info, request)
                 nvos_setup = True
-            else:
+            elif cli_type == CliType.SONIC:
                 player_info['cli'] = SonicCli(topology, dut_alias=player_key)
                 player_info.update({'stub_cli': SonicCliStub(topology)})
+            elif cli_type == CliType.DVS:
+                player_info['cli'] = DvsGeneralCli(player_info['engine'], dut_alias=player_key)
 
         elif player_key == 'fanout' or player_key == 'fanout-b':
-            if player_info['attributes'].noga_query_data['attributes']['Topology Conn.']['CLI_TYPE'] == CliType.SONIC:
+            if cli_type == CliType.SONIC:
                 player_info['cli'] = SonicCli(topology, dut_alias=player_key)
             else:
                 player_info['cli'] = LinuxCli(player_info['engine'])
@@ -378,9 +381,6 @@ def update_topology_with_cli_class(topology, request=None):
         elif player_key == 'dut-b':
             player_info['cli'] = SonicCli(topology, dut_alias=player_key)
 
-        elif player_key == 'left_tg' or player_key == 'right_tg':
-            player_info['cli'] = SonicCli(topology, dut_alias=player_key)
-            player_info.update({'stub_cli': SonicCliStub(topology)})
         else:
             player_info['cli'] = LinuxCli(player_info['engine'])
             player_info.update({'stub_cli': LinuxCliStub(player_info['engine'])})
@@ -389,12 +389,12 @@ def update_topology_with_cli_class(topology, request=None):
         update_topology_for_mlnxos_setups(topology)  # for NVOS setups only
 
 
-def update_nvos_topology(topology, player_info, request):
+def update_nvos_topology(topology, player_key, player_info, request):
     if player_info['attributes'].noga_query_data['attributes']['Topology Conn.']['CLI_TYPE'] != "NVUE":
         player_info['engine'] = LinuxSshEngine(player_info['engine'].ip, player_info['engine'].username,
                                                player_info['engine'].password)
         player_info['attributes'].noga_query_data['attributes']['Topology Conn.']['CLI_TYPE'] = "NVUE"
-        player_info['attributes'].noga_query_data['attributes']['Common']['Description'] = "dut"
+        player_info['attributes'].noga_query_data['attributes']['Common']['Description'] = player_key
     player_info['cli'] = NvueCli(topology)
     player_info['is_nvos'] = True
     switch_type = player_info['attributes'].noga_query_data['attributes']['Specific'].get('TYPE', '')
