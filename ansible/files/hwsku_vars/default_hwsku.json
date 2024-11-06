@@ -128,8 +128,8 @@
         "support_hwsku": ["Mellanox-SN3800-D112C8"]
     },
     "arc-switch1004_setup": {
-        "default_hwsku": "Mellanox-SN2700-D40C8S8",
-        "support_hwsku": ["Mellanox-SN2700-D40C8S8"]
+        "default_hwsku": "Mellanox-SN2700-D48C8",
+        "support_hwsku": ["Mellanox-SN2700-D40C8S8", "Mellanox-SN2700-D48C8"]
     },
     "arc-switch1025_setup": {
         "default_hwsku": "Mellanox-SN2700",
