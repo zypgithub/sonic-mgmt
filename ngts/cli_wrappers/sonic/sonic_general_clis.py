@@ -428,6 +428,11 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         if deploy_type == 'bfb' and 'sn4280' in platform_params.platform:
             return
 
+    def deploy_image_post_installtion(self, topology_obj, apply_base_config=False, setup_name=None,
+                                      platform_params=None, reboot_after_install=None,
+                                      set_timezone='Israel', disable_ztp=False, configure_dns=False,
+                                      setup_info=None, dut_alias=None):
+
         with allure.step('Verify dockers are up'):
             self.verify_dockers_are_up()
 

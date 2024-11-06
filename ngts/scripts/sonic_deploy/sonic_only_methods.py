@@ -408,7 +408,7 @@ class SonicInstallationSteps:
     @staticmethod
     def post_installation_steps(topology_obj, sonic_topo, recover_by_reboot, setup_name, platform_params,
                                 apply_base_config, target_version, is_shutdown_bgp, reboot_after_install,
-                                deploy_only_target, fw_pkg_path, reboot, additional_apps, setup_info,
+                                deploy_only_target, fw_pkg_path, reboot, additional_apps, setup_info, dut_alias,
                                 is_performance, chip_type, deploy_dpu=False, xml_rpc=True):
         """
         Post-installation steps
@@ -433,7 +433,12 @@ class SonicInstallationSteps:
         ansible_path = setup_info['ansible_path']
         cli = SonicInstallationSteps.get_dut_cli(setup_info)
         cli.cli_obj.general.update_platform_params(platform_params, setup_name)
-
+        apply_base_config = False if is_performance else apply_base_config
+        cli.cli_obj.general.deploy_image_post_installtion(topology_obj, apply_base_config=apply_base_config,
+                                                          setup_name=setup_name,
+                                                          platform_params=platform_params,
+                                                          reboot_after_install=reboot_after_install,
+                                                          setup_info=setup_info, dut_alias=dut_alias)
         dut_name = setup_info['duts'][0]['dut_name']
         dut_platform_path = f'/usr/share/sonic/device/{platform_params["platform"]}'
         sonic_mgmt_hwsku_path = '/usr/share/sonic/device/x86_64-kvm_x86_64-r0'
@@ -502,8 +507,8 @@ class SonicInstallationSteps:
             logger.info("Prepare sai.xml files for Port Init feature testing")
             cli.update_sai_xml_file(platform_params['platform'], platform_params['hwsku'], global_flag=True,
                                     local_flags=False)
-
-            cli.cli_obj.im.enable_im(topology_obj, platform_params, chip_type=chip_type)
+            if not is_performance:
+                cli.cli_obj.im.enable_im(topology_obj, platform_params, chip_type=chip_type)
 
         # Community only steps
         if is_community(sonic_topo):

@@ -230,7 +230,17 @@ def target_version(request):
     :param request: pytest builtin
     :return: target_version argument value
     """
-    return request.config.getoption('--target_version')
+    target_version = request.config.getoption('--target_version')
+    cli_type = request.config.getoption('--target_cli_type')
+    if cli_type == 'DVS':
+        target_version = parse_dvs_target_version(request)
+    return target_version
+
+
+def parse_dvs_target_version(request):
+    sdk_pointer = request.config.getoption('--target_version')
+    dvs_target_version = os.popen(f'cat {sdk_pointer}/SDK_VERSION').read().replace('\n', '')
+    return f"sx_sdk_eth-{dvs_target_version}"
 
 
 @pytest.fixture(scope="session")
