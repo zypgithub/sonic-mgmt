@@ -43,7 +43,7 @@ class SerialConsoleTool:
     def get_serial_console_session(cls, topology_obj, dut_alias='dut') -> PexpectSerialEngine:
         serial_alias = dut_alias + "_serial"
         att = topology_obj.players[serial_alias]['attributes'].noga_query_data['attributes']
-        extended_rcon_command = cls.get_serial_console_connection_command(topology_obj)
+        extended_rcon_command = cls.get_serial_console_connection_command(topology_obj, dut_alias)
         serial_engine = PexpectSerialEngine(ip=att['Specific']['ip'],
                                             username=att['Topology Conn.']['CONN_USER'],
                                             password=att['Topology Conn.']['CONN_PASSWORD'],
