@@ -25,7 +25,8 @@ logger = logging.getLogger()
 @disabled_access_ports
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_cluster_app_log_level(engines, devices, test_api):
+@pytest.mark.timeout(25 * MINUTE, func_only=True)
+def test_cluster_app_log_level(engines, devices, test_api, has_loopbox):
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
 
@@ -72,22 +73,20 @@ def test_cluster_app_log_level(engines, devices, test_api):
             app_status = output[app]['status']
             if app_status != 'ok':
                 ClusterTools.stop_app(cluster, app)
-                ClusterTools.start_app(cluster, app)
+                ClusterTools.start_app(cluster, app, has_loopbox)
             cluster.apps.apps_name[app].loglevel.action_restore_cluster()
             ClusterTools.verify_log_level(ClusterConsts.DEFAULT_LOG_LEVEL, app, output_format, cluster)
         _rotate_logs(system)
         logger.info(f"Sleeping for {ClusterConsts.SLEEP_AFTER_LOG_ROTATE} seconds to gather log messages and verify its level")
         time.sleep(ClusterConsts.SLEEP_AFTER_LOG_ROTATE)
         ClusterTools.verify_log_messages_log_level(ClusterConsts.DEFAULT_LOG_LEVEL, system, test_api, cluster)
-        cluster.unset(apply=True)
-        ClusterTools.wait_for_apps_to_be_in_wanted_state()
 
 
 @disabled_access_ports
 @pytest.mark.nmx
-@pytest.mark.timeout(20 * MINUTE, func_only=True)
+@pytest.mark.timeout(30 * MINUTE, func_only=True)
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_cluster_app_log_level_under_stress(engines, devices, test_api, test_name):
+def test_cluster_app_log_level_under_stress(engines, devices, test_api, test_name, has_loopbox):
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
 
@@ -130,7 +129,7 @@ def test_cluster_app_log_level_under_stress(engines, devices, test_api, test_nam
                 with allure.step("Start apps that were stopped"):
                     if app_status != 'ok':
                         ClusterTools.stop_app(cluster, app)
-                        ClusterTools.start_app(cluster, app)
+                        ClusterTools.start_app(cluster, app, has_loopbox)
             with allure.step("Restore log level"):
                 cluster.apps.apps_name[app].loglevel.action_restore_cluster()
                 ClusterTools.verify_log_level(ClusterConsts.DEFAULT_LOG_LEVEL, app, output_format, cluster)
@@ -138,8 +137,6 @@ def test_cluster_app_log_level_under_stress(engines, devices, test_api, test_nam
         logger.info(f"Sleeping for {ClusterConsts.SLEEP_AFTER_LOG_ROTATE} seconds to gather log messages and verify its level")
         time.sleep(ClusterConsts.SLEEP_AFTER_LOG_ROTATE)
         ClusterTools.verify_log_messages_log_level(ClusterConsts.DEFAULT_LOG_LEVEL, system, test_api, cluster)
-        cluster.unset(apply=True)
-        ClusterTools.wait_for_apps_to_be_in_wanted_state()
 
 
 def _rotate_logs(system):

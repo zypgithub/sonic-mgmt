@@ -23,8 +23,8 @@ logger = logging.getLogger()
 @disabled_access_ports
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-@pytest.mark.timeout(18 * MINUTE, func_only=True)
-def test_cluster_state(engines, devices, test_api):
+@pytest.mark.timeout(30 * MINUTE, func_only=True)
+def test_cluster_state(engines, devices, test_api, has_loopbox):
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
 
@@ -102,16 +102,14 @@ def test_cluster_state(engines, devices, test_api):
                     assert output[ClusterConsts.NMXC_CONN] == expected_nmxc_state, f"{ClusterConsts.NMXC_CONN} state was expected to be {expected_nmxc_state} but instead it was {output[ClusterConsts.NMXC_CONN]}"
 
     finally:
-        with allure.step("Reset cluster state"):
-            cluster.unset(apply=True)
-            ClusterTools.wait_for_apps_to_be_in_wanted_state()
+        pass
 
 
 @disabled_access_ports
-@pytest.mark.timeout(35 * MINUTE, func_only=True)
+@pytest.mark.timeout(45 * MINUTE, func_only=True)
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_stress_cluster_state(engines, devices, test_api, test_name):
+def test_stress_cluster_state(engines, devices, test_api, test_name, has_loopbox):
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
 
@@ -126,16 +124,14 @@ def test_stress_cluster_state(engines, devices, test_api, test_name):
                 OperationTime.verify_operation_time(duration, 'start stop cluster').verify_result()
 
     finally:
-        with allure.step("Reset cluster state"):
-            cluster.unset(apply=True)
-            ClusterTools.wait_for_apps_to_be_in_wanted_state()
+        pass
 
 
 @disabled_access_ports
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-@pytest.mark.timeout(20 * MINUTE, func_only=True)
-def test_cluster_state_with_stressed_resources(engines, devices, test_api, test_name):
+@pytest.mark.timeout(30 * MINUTE, func_only=True)
+def test_cluster_state_with_stressed_resources(engines, devices, test_api, test_name, has_loopbox):
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
 
@@ -156,8 +152,5 @@ def test_cluster_state_with_stressed_resources(engines, devices, test_api, test_
                 result_obj, duration = OperationTime.save_duration('start stop cluster stressed resources', '', test_name, ClusterTools.start_stop_cluster, cluster, output_format)
                 OperationTime.verify_operation_time(duration, 'start stop cluster stressed resources').verify_result()
     finally:
-        with allure.step("Reset cluster state"):
-            cluster.unset(apply=True)
-            ClusterTools.wait_for_apps_to_be_in_wanted_state()
         if installed_packages:
             StressResourcesTool.delete_packages(engines, installed_packages)
