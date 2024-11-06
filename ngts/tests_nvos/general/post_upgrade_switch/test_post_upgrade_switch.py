@@ -17,7 +17,7 @@ def test_post_upgrade_switch(engines):
     with allure.step('make post install & upgrade checks'):
         with allure.independent_step('check upgrade with saved config status'):
             check_result_of_upgrade_with_save_config(engines.dut)
-        with allure.independent_step('check upgrade with saved config status'):
+        with allure.independent_step('check install & upgrade flow steps timing'):
             check_install_and_upgrade_steps_intervals()
 
 
@@ -31,7 +31,8 @@ def check_install_and_upgrade_steps_intervals():
     Verify if the intervals between specified steps are within the defined limits.
     Raises an AssertionError if any limit is exceeded.
     """
-    InstallStepsTimer.print_saved_timestamps()
+    timestamps_summary_str = InstallStepsTimer.analyze_saved_timestamps()
+    allure.attach('install & upgrade flow steps timing', timestamps_summary_str)
 
     # Constant dictionary for step limits
     intervals_limit: Dict[Tuple[str, str], float] = {
@@ -43,7 +44,7 @@ def check_install_and_upgrade_steps_intervals():
     with allure.step('verify install/upgrade intervals against defined limits'):
         for (start_key, end_key), limit in intervals_limit.items():
             if InstallStepsTimer.get_timestamp(start_key) and InstallStepsTimer.get_timestamp(start_key):
-                with allure.independent_step(f'verify that: from "{start_key}" to "{end_key}" <= {limit} seconds'):
+                with allure.independent_step(f'verify: from "{start_key}" to "{end_key}" <= {limit} seconds'):
                     interval = InstallStepsTimer.calculate_interval(start_key, end_key)
                     logging.info(f'actual interval: from "{start_key}" to "{end_key}" - {interval} seconds')
                     if interval is None:

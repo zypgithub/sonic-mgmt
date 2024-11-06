@@ -1,3 +1,4 @@
+import io
 import json
 import logging
 import time
@@ -106,3 +107,65 @@ class InstallStepsTimer:
 
         except IOError as e:
             logging.info(f"Error accessing the JSON file: {e}")
+
+    @classmethod
+    def analyze_saved_timestamps(cls) -> str:
+        """
+        Read the JSON file, create two ordered dictionaries:
+        1. Timestamps ordered by their value
+        2. Intervals between sequential timestamps
+        Then log the output using logging.info and return it as a string.
+        Handle the case where the file is empty or contains no timestamps.
+        """
+        output = io.StringIO()
+
+        try:
+            with open(JSON_FILE_PATH, 'r') as f:
+                data = json.load(f)
+        except (IOError, json.JSONDecodeError) as e:
+            error_msg = f"Error reading the JSON file: {e}"
+            logging.error(error_msg)
+            return error_msg
+
+        if not data:
+            message = "No timestamps found in the file."
+            logging.info(message)
+            return message
+
+        # Create an ordered dict of timestamps
+        timestamps = OrderedDict(sorted(data.items(), key=lambda x: x[1]))
+
+        # Create an ordered dict of intervals
+        intervals = OrderedDict()
+        keys = list(timestamps.keys())
+        for i in range(len(keys) - 1):
+            from_key, to_key = keys[i], keys[i + 1]
+            interval = timestamps[to_key] - timestamps[from_key]
+            interval_key = f"from {from_key} to {to_key}"
+            intervals[interval_key] = interval
+
+        # Capture timestamps
+        print("Ordered Timestamps:", file=output)
+        print("-" * 40, file=output)
+        for key, value in timestamps.items():
+            readable_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(value))
+            print(f"{key}: {readable_time}", file=output)
+        print("-" * 40, file=output)
+
+        # Capture intervals
+        if intervals:
+            print("\nOrdered Intervals:", file=output)
+            print("-" * 40, file=output)
+            for key, value in intervals.items():
+                print(f"{key}: {value:.2f} seconds", file=output)
+            print("-" * 40, file=output)
+        else:
+            print("\nNo intervals to display (less than two timestamps).", file=output)
+
+        # Get the entire output as a string
+        full_output = output.getvalue()
+
+        # Log the full output
+        logging.info("\n" + full_output)
+
+        return full_output

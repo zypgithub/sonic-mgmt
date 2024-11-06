@@ -93,6 +93,9 @@ class NvosInstallationSteps:
             logger.info('NVOS: Argument "base-version" was not given. therefore not running the upgrade with saved '
                         'configuration scenario')
 
+        with allure.step('show intervals of installation flow steps'):
+            allure.attach('install flow intervals', InstallStepsTimer.analyze_saved_timestamps())
+
         with allure.step('Set base configuration for tests after the install phase'):
             try:
                 set_base_configurations(dut_engine=dut_engine, timezone=LinuxConsts.JERUSALEM_TIMEZONE, apply=True,
