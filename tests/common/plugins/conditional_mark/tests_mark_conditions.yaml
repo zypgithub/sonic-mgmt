@@ -22,7 +22,7 @@ acl/test_acl.py:
   xfail:
     reason: "On Dualtor setup, ingress-uplink->downlink forward test cases are failing due to script issue"
     conditions:
-      - "'dualtor' in topo_name and 'https://github.com/sonic-net/sonic-mgmt/issues/15206'"
+      - "'dualtor' in topo_name and https://github.com/sonic-net/sonic-mgmt/issues/15206"
 
 acl/test_acl_outer_vlan.py:
   #Outer VLAN id match support is planned for future release with SONIC on Cisco 8000
@@ -1033,6 +1033,12 @@ pfcwd/test_pfc_config.py::TestPfcConfig::test_forward_action_cfg:
      conditions:
         - "asic_type in ['cisco-8000']"
 
+pfcwd/test_pfcwd_function.py::TestPfcwdFunc::test_pfcwd_actions:
+  xfail:
+    reason: "On Dualtor AA setup, test_pfcwd_actions is not stable due to github issue https://github.com/sonic-net/sonic-mgmt/issues/15387"
+    conditions:
+      - "'dualtor-aa' in topo_name and https://github.com/sonic-net/sonic-mgmt/issues/15387"
+
 pfcwd/test_pfcwd_warm_reboot.py:
    skip:
      reason: "Warm Reboot is not supported in T2."
@@ -1221,7 +1227,7 @@ qos/test_qos_sai.py:
     reason: "qos_sai tests not supported on t1 and dualtor-aa topo"
     conditions:
       - "asic_type in ['barefoot'] and topo_name in ['t1']"
-      - "'dualtor-aa' in topo_name and 'https://github.com/sonic-net/sonic-mgmt/issues/15205'"
+      - "'dualtor-aa' in topo_name and https://github.com/sonic-net/sonic-mgmt/issues/15205"
 
 qos/test_qos_sai.py::TestQosSai:
   skip:
