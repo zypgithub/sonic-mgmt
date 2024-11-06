@@ -88,7 +88,7 @@ def test_cluster_default_factory_reset(engines, devices, test_api, has_loopbox):
 
         if not sdn_files_deleted:
             ClusterTools.start_cluster(cluster, OutputFormat.json)
-            delete_all_sdn_fetched_generated_files(sdn, all_config_files_paths, all_state_files_paths)
+            delete_all_sdn_fetched_generated_files(engines, sdn, all_config_files_paths, all_state_files_paths)
 
 
 @disabled_access_ports
@@ -147,7 +147,7 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name,
 
         if not sdn_files_deleted:
             ClusterTools.start_cluster(cluster, OutputFormat.json)
-            delete_all_sdn_fetched_generated_files(sdn, all_config_files_paths, all_state_files_paths)
+            delete_all_sdn_fetched_generated_files(engines, sdn, all_config_files_paths, all_state_files_paths)
 
 
 @disabled_access_ports
@@ -205,7 +205,7 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name, 
 
         if not sdn_files_deleted:
             ClusterTools.start_cluster(cluster, OutputFormat.json)
-            delete_all_sdn_fetched_generated_files(sdn, all_config_files_paths, all_state_files_paths)
+            delete_all_sdn_fetched_generated_files(engines, sdn, all_config_files_paths, all_state_files_paths)
 
 
 @disabled_access_ports
@@ -268,7 +268,7 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
 
         if not sdn_files_deleted:
             ClusterTools.start_cluster(cluster, OutputFormat.json)
-            delete_all_sdn_fetched_generated_files(sdn, all_config_files_paths, all_state_files_paths)
+            delete_all_sdn_fetched_generated_files(engines, sdn, all_config_files_paths, all_state_files_paths)
 
 
 def execute_reset_factory(engines, system, operation, flag, current_time):
@@ -420,7 +420,7 @@ def post_factory_reset_security_checks():
     pre_factory_reset_security_checks()
 
 
-def delete_all_sdn_fetched_generated_files(sdn, all_config_files_paths, all_state_files_paths):
+def delete_all_sdn_fetched_generated_files(engines, sdn, all_config_files_paths, all_state_files_paths):
     with allure.step("Delete state/config Files"):
         for file_type in ClusterConsts.NMX_CONTROLLER_CONFIG_FILE_TYPES:
             if all_config_files_paths[file_type]:
