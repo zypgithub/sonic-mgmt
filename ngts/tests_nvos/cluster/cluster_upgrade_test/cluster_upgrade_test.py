@@ -31,9 +31,9 @@ logger = logging.getLogger()
 @disabled_access_ports
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
-@pytest.mark.timeout(45 * MINUTE, func_only=True)
+@pytest.mark.timeout(55 * MINUTE, func_only=True)
 def test_upgrade_with_nmx_enabled(test_api, devices, base_version,
-                                  target_version, topology_obj, setup_name, platform_params, engines, release_name, test_name):
+                                  target_version, topology_obj, setup_name, platform_params, engines, release_name, test_name, has_loopbox):
     '''
     Test will install a base version (Taken from regression).
     On base version perform the following:
