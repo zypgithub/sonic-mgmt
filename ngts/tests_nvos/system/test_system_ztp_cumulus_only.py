@@ -61,14 +61,12 @@ def test01_run_ztp_from_local_files_nv(engines, devices):
                 # nv action run system ztp force
                 system.ztp.action_run_ztp()
 
-            with allure.step("Run show ztp after run and verify values"):
-                system_ztp_output = OutputParsingTool.parse_json_str_to_dictionary(system.ztp.show()).get_returned_value()
-                logger.info(system_ztp_output)
-
                 with allure.step("Run show ztp and verify default values"):
                     _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_SUCCESS)
 
                 with allure.step("Verify show ztp value"):
+                    system_ztp_output = OutputParsingTool.parse_json_str_to_dictionary(system.ztp.show()).get_returned_value()
+                    logger.info(system_ztp_output)
                     ValidationTool.verify_field_value_in_output(system_ztp_output, 'service', 'disabled').verify_result()
                     ValidationTool.verify_field_value_in_output(system_ztp_output, 'source', 'local-fs').verify_result()
 
