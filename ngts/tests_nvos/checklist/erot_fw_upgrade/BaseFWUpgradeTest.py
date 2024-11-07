@@ -22,11 +22,6 @@ def verify_installation(fae, firmware_component, expected_version, filename):
             f"Expected {filename} version: {expected_version}. Actual version: {actual_firmware}"
 
 
-def set_firmware_property(firmware_component, property, value):
-    logging.info(f"Set firmware {property} to {value}")
-    firmware_component.set(property, value, apply=True)
-
-
 class BaseFWUpgradeTest:
 
     def __init__(self, firmware_component):
@@ -69,8 +64,6 @@ class BaseFWUpgradeTest:
 
             fw_component.files.verify_show_files_output(expected_files=[prev_filename])
 
-            set_firmware_property(fw_component, PlatformConsts.FW_SOURCE, PlatformConsts.FW_SOURCE_CUSTOM)
-
             fetched_image_file = fw_component.files.file_name[prev_filename]
             fetched_image_file.action_file_install(force=False)
 
@@ -93,8 +86,6 @@ class BaseFWUpgradeTest:
                 verify_installation(fae, comp_name, curr_version, filename=curr_filename)
 
         finally:
-
-            set_firmware_property(fw_component, PlatformConsts.FW_SOURCE, PlatformConsts.FW_SOURCE_DEFAULT)
-            with allure.step("Deleting fw image files"):
-                fw_component.files.delete_files([prev_filename, curr_filename])
-                fw_component.files.verify_show_files_output()
+            with allure.step('delete fetched firmware image files'):
+                files = fw_component.files.get_files()
+                fw_component.files.delete_files(files_to_delete=files)
