@@ -1,24 +1,24 @@
-import logging
-import time
-import re
 import inspect
-from collections import namedtuple, defaultdict
+import logging
+import re
+import time
+from collections import defaultdict
 from functools import wraps
 
-from ngts.tools.test_utils import allure_utils as allure
-from ngts.nvos_tools.infra.ResultObj import ResultObj
-from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_constants.constants_nvos import PlatformConsts, IbConsts, ApiType, OutputFormat, SystemConsts, ClusterAppsLogLevels, NvosConst
+from ngts.nvos_constants.constants_nvos import IbConsts, OutputFormat, SystemConsts
 from ngts.nvos_tools.ib.Ib import Ib
-from ngts.nvos_tools.infra.Tools import Tools
-from ngts.nvos_tools.infra.ValidationTool import ValidationTool
+from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
-from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
-from ngts.nvos_tools.platform.Platform import Platform
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.nvos_tools.infra.ResultObj import ResultObj
+from ngts.nvos_tools.infra.Tools import Tools
+from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.nvos_tools.nmx.Sdn import Sdn
+from ngts.nvos_tools.platform.Platform import Platform
+from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
+from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
 
@@ -44,13 +44,13 @@ class ClusterTools:
                         app_status = output[app]['status']
                         assert app_status == 'ok', f"App {app} status is {app_status} instead of 'ok"
                 with allure.step(f"Stop app {app} and validate its down"):
-                    cluster.apps.apps_name[app].action_stop_cluster_apps()
+                    cluster.apps.app_name[app].action_stop_cluster_app()
                     ClusterTools.wait_for_apps_to_be_in_wanted_state()
                     # TBD -- once "running" is working, use it to verify app is not running
                     ClusterTools.verify_app_is_down(engines, app)
 
                 with allure.step(f"Start app again {app} and validate its up"):
-                    output = cluster.apps.apps_name[app].action_start_cluster_apps()
+                    output = cluster.apps.app_name[app].action_start_cluster_app()
                     ClusterTools.wait_for_apps_to_be_in_wanted_state()
                 ClusterTools.verify_app_is_up(engines, app)
                 if app == ClusterConsts.NMX_CONTROLLER:
@@ -274,7 +274,7 @@ class ClusterTools:
     @staticmethod
     def start_app(cluster, app, has_loopbox):
         with allure.step(f"Start app {app}"):
-            cluster.apps.apps_name[app].action_start_cluster_apps()
+            cluster.apps.app_name[app].action_start_cluster_app()
             ClusterTools.wait_for_apps_to_be_in_wanted_state()
             if has_loopbox and app == ClusterConsts.NMX_CONTROLLER:
                 pass
@@ -289,7 +289,7 @@ class ClusterTools:
     @staticmethod
     def stop_app(cluster, app):
         with allure.step(f"Stop app {app}"):
-            cluster.apps.apps_name[app].action_stop_cluster_apps()
+            cluster.apps.app_name[app].action_stop_cluster_app()
             ClusterTools.wait_for_apps_to_be_in_wanted_state()
 
     @staticmethod
@@ -321,7 +321,7 @@ class ClusterTools:
     def verify_log_level(log_level, app, output_format, cluster):
         with allure.step(f"Verifying log level is updated to {log_level}"):
             output = OutputParsingTool.parse_show_output_to_dict(
-                cluster.apps.apps_name[app].loglevel.show(output_format=output_format),
+                cluster.apps.app_name[app].loglevel.show(output_format=output_format),
                 output_format=output_format).get_returned_value()
             # Add assert on log level
             assert output['log-level'] == log_level, f"Expected log level: {log_level}, Actual log-level {output['log-level']}"

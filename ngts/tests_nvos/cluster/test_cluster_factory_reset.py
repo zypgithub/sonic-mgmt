@@ -11,15 +11,15 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.nvos_tools.nmx.Sdn import Sdn
-from ngts.tests_nvos.constants import MINUTE
 from ngts.nvos_tools.system.System import System
+from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports
+from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.general.security.tpm_attestation.helpers import factory_reset_tpm_checker
 from ngts.tests_nvos.system.factory_reset.helpers import add_verification_data, \
     verify_the_setup_is_functional, get_current_time
 from ngts.tests_nvos.system.gnmi.helpers import factory_reset_gnmi_checker
 from ngts.tools.test_utils import allure_utils as allure
-from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
 
 logger = logging.getLogger()
 
@@ -261,7 +261,7 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
     finally:
         engines.sonic_mgmt.run_cmd(f"sudo rm -rf {ClusterConsts.INITIAL_CONFIGURATIONS_PATH + '/*'}")
         for app in ClusterConsts.INITIAL_EXPECTED_APPS:
-            cluster.apps.apps_name[app].loglevel.action_restore_cluster()
+            cluster.apps.app_name[app].loglevel.action_restore_cluster()
 
         with allure.step("Verify the setup is functional"):
             verify_the_setup_is_functional(system, engines, dut=devices.dut)
@@ -326,7 +326,7 @@ def reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, s
     with allure.step("Choose random log level, and set cluster app log level to and start app"):
         log_level = random.choice(ClusterConsts.ClusterAppsLogLevelsList)
         for app in ClusterConsts.INITIAL_EXPECTED_APPS:
-            cluster.apps.apps_name[app].loglevel.action_update_cluster_log_level(level=log_level)
+            cluster.apps.app_name[app].loglevel.action_update_cluster_log_level(level=log_level)
 
     config_files_paths = get_current_config_files_paths(sdn)
     for file_type, file_path in config_files_paths.items():

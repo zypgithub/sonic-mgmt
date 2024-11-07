@@ -1,25 +1,18 @@
 import logging
-import random
-import pytest
 import time
 
-from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
-from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_tools.infra.ValidationTool import ValidationTool
-from ngts.nvos_tools.infra.StressResourcesTool import StressResourcesTool
-from ngts.tools.test_utils import allure_utils as allure
-from ngts.nvos_tools.nmx.Cluster import Cluster
-from ngts.tests_nvos.constants import MINUTE
-from ngts.nvos_constants.constants_nvos import PlatformConsts, IbConsts, ApiType, OutputFormat, SystemConsts
-from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.nvos_tools.ib.Ib import Ib
-from ngts.nvos_tools.nmx.Sdn import Sdn
-from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
-from ngts.nvos_tools.infra.ResultObj import ResultObj
-from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports, refresh_switch_ports
-from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
-from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
+import pytest
 
+from ngts.nvos_constants.constants_nvos import ApiType, OutputFormat
+from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.nvos_tools.infra.StressResourcesTool import StressResourcesTool
+from ngts.nvos_tools.infra.ValidationTool import ValidationTool
+from ngts.nvos_tools.nmx.Cluster import Cluster
+from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports
+from ngts.tests_nvos.constants import MINUTE
+from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
 NMX_CONTROLLER = 'nmx-controller'
@@ -67,7 +60,7 @@ def test_cluster_app_start_stop(engines, devices, test_api, has_loopbox):
         with allure.step("Running 'nv show cluster apps <app-name>' command and parsing output"):
             for app in INITIAL_EXPECTED_APPS:
                 output = OutputParsingTool.parse_show_output_to_dict(
-                    cluster.apps.apps_name[app].show(output_format=OutputFormat.json),
+                    cluster.apps.app_name[app].show(output_format=OutputFormat.json),
                     output_format=OutputFormat.json).get_returned_value()
                 if has_loopbox and app == NMX_CONTROLLER:
                     pass
@@ -189,7 +182,7 @@ def test_cluster_app_start_stop_disabled_cluster(engines, devices, test_api):
         for app in INITIAL_EXPECTED_APPS:
             try:
                 output = OutputParsingTool.parse_show_output_to_dict(
-                    cluster.apps.apps_name[app].show(output_format=OutputFormat.json),
+                    cluster.apps.app_name[app].show(output_format=OutputFormat.json),
                     output_format=OutputFormat.json).get_returned_value()
             except Exception as e:
                 err = e.args[0].split('\n')[-1]
@@ -213,8 +206,8 @@ def test_cluster_app_start_stop_disabled_cluster(engines, devices, test_api):
     with allure.step("Start/Stop apps"):
         for app in INITIAL_EXPECTED_APPS:
             with allure.step(f"Start app {app} and validate action fails"):
-                output = cluster.apps.apps_name[app].action_start_cluster_apps().get_returned_value(False)
+                output = cluster.apps.app_name[app].action_start_cluster_app().get_returned_value(False)
                 assert CLUSTER_IS_NOT_ENABLED_MESSAGE in output, f"Expected output to contain {CLUSTER_IS_NOT_ENABLED_MESSAGE}, actual output {output}"
             with allure.step(f"Stop app {app} and validate action fails"):
-                output = cluster.apps.apps_name[app].action_stop_cluster_apps().get_returned_value(False)
+                output = cluster.apps.app_name[app].action_stop_cluster_app().get_returned_value(False)
                 assert CLUSTER_IS_NOT_ENABLED_MESSAGE in output, f"Expected output to contain {CLUSTER_IS_NOT_ENABLED_MESSAGE}, actual output {output}"
