@@ -8,6 +8,7 @@ import pytest
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import ImageConsts, NvosConst
 from ngts.nvos_constants.constants_nvos import PlatformConsts
+from ngts.nvos_tools.infra.BmcTool import BmcTool
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.constants import MINUTE
@@ -93,7 +94,6 @@ def test_set_unset_platform_firmware_default(engines):
 @pytest.mark.simx
 @pytest.mark.image
 @pytest.mark.platform
-@pytest.mark.timeout(15 * MINUTE, func_only=True)
 def test_platform_firmware_image_rename(engines, devices, topology_obj, clear_asic_files):
     """
     Check the image rename cmd.
@@ -102,16 +102,15 @@ def test_platform_firmware_image_rename(engines, devices, topology_obj, clear_as
     1. Fetch random image, fetch image
     2. Rename image without mfa ending
     3. Install original image name , should fail
-    4. Install original image new name , should success
-    5. Delete the original image name , should fail
-    6. Install new image name , success
-    7. Uninstall image
-    8. Delete the new image name , success
+    4. Delete the original image name , should fail
+    5. Install new image name , success
+    7. Reboot and load fw from default source
     """
     platform = Platform()
     platform.firmware.asic.files.verify_show_files_output([], [])
-    _, fetched_image_name = get_version_and_file_name(devices.dut)
-    fw_file = f"/auto/sw_system_project/NVOS_INFRA/verification_files/{fetched_image_name}"
+    component_name = 'asic'
+    fw_has_changed = False
+    fw_file, fetched_image_name, version_name = BmcTool.get_fw_component_version_latest(component_name)
 
     with allure.step("Fetch image 1st try"):
         player_engine = engines['sonic_mgmt']

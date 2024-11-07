@@ -22,6 +22,7 @@ from ngts.tests_nvos.system.factory_reset.helpers import add_verification_data, 
     verify_cleanup_done, verify_the_setup_is_functional, get_current_time
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
+from ngts.tests_nvos.constants import MINUTE
 
 logger = logging.getLogger()
 
@@ -29,7 +30,8 @@ logger = logging.getLogger()
 @disabled_access_ports
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_cluster_sdn(engines, devices, test_api):
+@pytest.mark.timeout(30 * MINUTE, func_only=True)
+def test_cluster_sdn(engines, devices, test_api, has_loopbox):
 
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
@@ -153,8 +155,6 @@ def test_cluster_sdn(engines, devices, test_api):
                             file = file.split('/')[-1]
                             sdn.state.app.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].files.file_name[file].action_delete()
                     # engines.sonic_mgmt.run_cmd(f"sudo rm -rf {initial_configs_paths_to_restore[file_type]}")
-        cluster.unset(apply=True)
-        ClusterTools.wait_for_apps_to_be_in_wanted_state()
 
 
 def verify_all_files_are_deleted(engines, files_list):

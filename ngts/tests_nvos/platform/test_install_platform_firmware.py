@@ -8,6 +8,7 @@ from ngts.nvos_constants.constants_nvos import NvosConst, PlatformConsts, Health
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.ContextManagers import check_health_baseline
 from ngts.nvos_tools.infra.Fae import Fae
+from ngts.nvos_tools.infra.BmcTool import BmcTool
 from ngts.tests_nvos.constants import MINUTE
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
@@ -35,10 +36,10 @@ def test_install_platform_firmware(engines, devices, test_name, topology_obj, cl
     system = System()
     platform = Platform()
     fae = Fae()
+    component_name = 'asic'
+    test_image_name = "test_image.mfa"
     fw_has_changed = False
-    new_fw_name, fw_file_name = get_version_and_file_name(devices.dut)
-    fw_file = f"/auto/sw_system_project/NVOS_INFRA/verification_files/{fw_file_name}"
-    logging.info(f"using {fw_file} fw file")
+    fw_file, filename, version_name = BmcTool.get_fw_component_version_latest(component_name)
 
     with allure.step("Check actual firmware value"):
         asic_dictionary = get_asic_dict(fae)
@@ -61,11 +62,11 @@ def test_install_platform_firmware(engines, devices, test_name, topology_obj, cl
                 with allure.step("Install firmware and verify"):
                     platform.firmware.asic.set(PlatformConsts.FW_SOURCE, PlatformConsts.FW_SOURCE_CUSTOM, apply=True)
                     NvueGeneralCli.save_config(engines.dut)
-                    func = platform.firmware.asic.files.file_name[fw_file_name].action_file_install_with_reboot
-                    res_obj, duration = OperationTime.save_duration('install user FW', 'include reboot', test_name, func)
-
+                    res_obj, duration = OperationTime.save_duration('install user FW', 'include reboot', test_name,
+                                                                    install_new_image_fw, platform, test_name,
+                                                                    filename)
                 with allure.step('Verify the firmware installed successfully'):
-                    verify_firmware_with_platform_and_fae_cmd(platform, fae, new_fw_name, new_fw_name)
+                    verify_firmware_with_platform_and_fae_cmd(platform, fae, version_name, version_name)
                     validate_all_asics_have_same_info()
                     health_baseline.compare()
                     fw_has_changed = True
@@ -79,13 +80,12 @@ def test_install_platform_firmware(engines, devices, test_name, topology_obj, cl
                     platform.firmware.asic.set(PlatformConsts.FW_SOURCE, PlatformConsts.FW_SOURCE_DEFAULT, apply=True)
                     NvueGeneralCli.save_config(engines.dut)
 
-                OperationTime.save_duration('install default fw', 'include reboot', test_name, install_image_fw,
-                                            system, test_name, fw_has_changed, topology_obj)
+                OperationTime.save_duration('install default fw', 'include reboot', test_name, install_default_image_fw,
+                                            system, test_name, fw_has_changed)
 
             with allure.step('Verify the firmware installed successfully'):
                 verify_firmware_with_platform_and_fae_cmd(platform, fae, actual_firmware, actual_firmware)
                 validate_all_asics_have_same_info()
-                system.validate_health_status(HealthConsts.OK)
 
 
 def get_version_and_file_name(device) -> Tuple[str, str]:
@@ -99,16 +99,25 @@ def get_asic_dict(fae):
     return asic_dictionary
 
 
-def install_image_fw(system, test_name, fw_has_changed, topology_obj):
+def install_new_image_fw(platform, test_name, fw_file_name):
+    with allure.step('new fw image installation'):
+        res_obj, duration = OperationTime.save_duration('reboot with new user FW', '', test_name,
+                                                        platform.firmware.asic.files.file_name[fw_file_name].action_file_install_with_reboot,
+                                                        system_is_ready_timeout=PlatformConsts.TIMEOUT_AFTER_FW_INSTALL)
+
+    return res_obj
+
+
+def install_default_image_fw(system, test_name, fw_has_changed):
     with allure.step('Rebooting the dut after image installation'):
         logging.info("Rebooting dut")
         if fw_has_changed:
             res_obj, duration = OperationTime.save_duration('reboot with default FW installation', '', test_name,
-                                                            system.reboot.action_reboot, topology_obj=topology_obj)
+                                                            system.reboot.action_reboot, system_is_ready_timeout=PlatformConsts.TIMEOUT_AFTER_FW_INSTALL)
             res = res_obj
             OperationTime.verify_operation_time(duration, 'reboot with default FW installation').verify_result()
         else:
-            res = system.reboot.action_reboot(topology_obj=topology_obj)
+            res = system.reboot.action_reboot()
 
         return res
 

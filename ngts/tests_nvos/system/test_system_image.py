@@ -12,6 +12,7 @@ from ngts.nvos_constants.constants_nvos import SystemConsts, NvosConst
 from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
 from ngts.nvos_tools.actions.Actions import Action
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
+from ngts.nvos_tools.infra.DMIDecodeTool import DMIDecodeTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
@@ -83,7 +84,7 @@ def test_show_system_image(original_version):
 @pytest.mark.system
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 @pytest.mark.timeout(25 * MINUTE, func_only=True)
-def test_downgrade_upgrade(release_name, test_api, original_version, devices, base_version):
+def test_downgrade_upgrade(release_name, test_api, original_version, devices, engines, base_version):
     """
     Check the image rename cmd.
     Validate that install and delete commands will success with the new name
@@ -125,6 +126,7 @@ def test_downgrade_upgrade(release_name, test_api, original_version, devices, ba
         install_image_and_verify(orig_engine=orig_engine, image_name=fetched_image, partition_id=partition_id_for_new_image,
                                  original_images=original_images, system=system, release_name=release_name,
                                  test_name='test_downgrade_upgrade')
+        DMIDecodeTool.verify_dmi_info(engines, devices)
     finally:
         # cleanup - boot back with orig image, uninstall new image, and restore to orig engine
         cleanup_test(system, original_images, original_image_partition, [fetched_image], orig_engine=orig_engine)

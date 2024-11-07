@@ -7,18 +7,20 @@ from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.tools.test_utils import allure_utils as allure
-from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
+from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports
 from ngts.nvos_constants.constants_nvos import OutputFormat, ApiType
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 
 logger = logging.getLogger()
 
 
+@disabled_access_ports
 @pytest.mark.system
 @pytest.mark.nvos_build
 @pytest.mark.nmx
+@pytest.mark.timeout(35 * MINUTE, func_only=True)
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_reboot_command(engines, devices, test_name, test_api):
+def test_reboot_command(engines, devices, test_name, test_api, has_loopbox):
     """
     Test flow:
         1. Enabled Cluster

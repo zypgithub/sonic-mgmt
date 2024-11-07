@@ -488,19 +488,22 @@ class SystemConsts:
 
     ZTP_SERVICE = 'service'
     ZTP_STATUS = 'status'
+    ZTP_STATE = 'state'
     ZTP_CONFIG_SAVE = 'config-save'
-    ZTP_OUTPUT_FIELDS = [ZTP_SERVICE, ZTP_STATUS, ZTP_CONFIG_SAVE]
-    ZTP_DEFAULT_SERVICE = 'enabled'
-    ZTP_DEFAULT_STATUS = 'discovering'
+    ZTP_OUTPUT_FIELDS = [ZTP_SERVICE, ZTP_STATE, ZTP_STATUS, ZTP_CONFIG_SAVE]
+    ZTP_DEFAULT_SERVICE = 'active-discovery'
+    ZTP_DEFAULT_STATE = 'enabled'
+    ZTP_DEFAULT_STATUS = 'not-started'
     ZTP_DEFAULT_CONFIG_SAVE = 'disabled'
-    ZTP_DEFAULT_VALUES = [ZTP_DEFAULT_SERVICE, ZTP_DEFAULT_STATUS, ZTP_DEFAULT_CONFIG_SAVE]
-    ZTP_CONFIG_SAVE_SERVICE = 'disabled'
-    ZTP_CONFIG_SAVE_STATUS = 'aborted'
+    ZTP_DEFAULT_VALUES = [ZTP_DEFAULT_SERVICE, ZTP_DEFAULT_STATE, ZTP_DEFAULT_STATUS, ZTP_DEFAULT_CONFIG_SAVE]
+    ZTP_CONFIG_SAVE_SERVICE = 'inactive'
+    ZTP_CONFIG_SAVE_STATE = 'disabled'
+    ZTP_CONFIG_SAVE_STATUS = 'not-started'
     ZTP_CONFIG_SAVE = 'disabled'
     ZTP_STATUS_ENABLED = 'enabled'
-    ZTP_AFTER_CONFIG_SAVE_VALUES = [ZTP_CONFIG_SAVE_SERVICE, ZTP_CONFIG_SAVE_STATUS,
+    ZTP_AFTER_CONFIG_SAVE_VALUES = [ZTP_CONFIG_SAVE_SERVICE, ZTP_CONFIG_SAVE_STATE, ZTP_CONFIG_SAVE_STATUS,
                                     ZTP_CONFIG_SAVE]
-    ZTP_CONFIG_SAVE_VALUES = [ZTP_CONFIG_SAVE_SERVICE, ZTP_CONFIG_SAVE_STATUS,
+    ZTP_CONFIG_SAVE_VALUES = [ZTP_CONFIG_SAVE_SERVICE, ZTP_CONFIG_SAVE_STATE, ZTP_CONFIG_SAVE_STATUS,
                               ZTP_STATUS_ENABLED]
     ZTP_DEFAULT_LOG_FILE = '/var/log/ztp.log'
     DUMMY_JSON = 'dummy.json'
@@ -517,7 +520,7 @@ class SystemConsts:
     CONNECTIVITY_IPV4_IPV6 = 'ping_ipv4_ipv6.json'
     NEGATIVE_CONNECTIVITY = 'negative_connectivity.json'
     COMPLEX = 'complex.json'
-    ZTP_STATUS_RUNNING = 'running'
+    ZTP_STATUS_IN_PROGRESS = 'in-progress'
     ZTP_STATUS_SUCCESS = 'success'
     ZTP_STATUS_FAILED = 'failed'
     HTTP_SERVER = 'http://nbu-nfs.mellanox.com'
@@ -741,6 +744,7 @@ class PlatformConsts:
     INV_OK = 'ok'
     INV_FAILED = 'failed'
     ASIC_CONF_FILE_PATH = "/usr/share/sonic/device/{}/asic.conf"
+    TIMEOUT_AFTER_FW_INSTALL = 1200
 
 
 class FansConsts:
@@ -1164,6 +1168,7 @@ class OperationTimeConsts:
                   'generate tech-support': 75,
                   'julietscaleout generate_tech_support': 120,
                   'start stop cluster app': 375,
+                  'start stop cluster app with loopbox': 720,
                   'start stop cluster': 165,
                   'cluster update log level': 5,
                   'install bmc': 900,
@@ -1172,6 +1177,7 @@ class OperationTimeConsts:
                   'juliet-power-cycle': 445
                   }
     THRESHOLDS['start stop cluster app stressed resources'] = THRESHOLDS['start stop cluster app'] * 1.1
+    THRESHOLDS['start stop cluster app stressed resources with loopbox'] = THRESHOLDS['start stop cluster app with loopbox'] * 1.1
     THRESHOLDS['start stop cluster stressed resources'] = THRESHOLDS['start stop cluster'] * 1.1
 
 
