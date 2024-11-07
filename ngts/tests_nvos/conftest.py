@@ -276,6 +276,8 @@ def start_sm(engines, devices, traffic_available):
                 engines.ha.run_cmd("sudo reboot")
             if hasattr(engines, 'hb'):
                 engines.hb.run_cmd("sudo reboot")
+            if hasattr(engines, 'hfnm') and (not hasattr(engines, 'ha') or engines.ha.ip != engines.hfnm.ip):
+                engines.hfnm.run_cmd("sudo reboot")
             time.sleep(200)
             OpenSmTool.start_open_sm(engines, multiplanar=devices.dut.multi_planar).verify_result()
     else:
