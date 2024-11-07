@@ -566,7 +566,6 @@ class BlackMambaSwitch(IbSwitch):
         self.stats_fan_header_num_of_lines = 17
         self.stats_cpu_header_num_of_lines = 12
         self.stats_temperature_header_num_of_lines = 104
-        self.fnm_link_speed = '800G'
 
     def get_mgmt_ports(self) -> List[str]:
         return self.mgmt_ports
@@ -611,6 +610,8 @@ class BlackMambaSwitch(IbSwitch):
         self.interface_active_internal_fnm_ports = {'fnma1p1', 'fnma1p2', 'fnma2p1', 'fnma2p2', 'fnma3p1', 'fnma3p2',
                                                     'fnma4p1', 'fnma4p2'}
         # because other internal fnm ports are unused currently
+        self.fnm_link_speed = '800G'
+        self.fnm_internal_link_speed = '200G'
 
     def _init_eth0_speeds(self):
         super()._init_eth0_speeds()
