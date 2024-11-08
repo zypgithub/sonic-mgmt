@@ -2,13 +2,13 @@ import random
 import random
 import string
 import time
-from typing import List
+from typing import List, Dict
 
 import pytest
 
 import ngts.tools.test_utils.allure_utils as allure
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from ngts.nvos_constants.constants_nvos import ApiType, TestFlowType
+from ngts.nvos_constants.constants_nvos import ApiType, TestFlowType, ClusterApps
 from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.nmx.Cluster import Cluster
@@ -19,16 +19,17 @@ from ngts.tests_nvos.general.security.certificate.constants import TestCert
 from ngts.tests_nvos.general.security.certificate.helpers import import_test_certs
 from ngts.tests_nvos.general.security.nmx_cert.conftest import clear_manager_config
 from ngts.tests_nvos.general.security.nmx_cert.constants import Defaults, EncryptionMode, ENABLED, DISABLED, \
-    UserCfgJsonFields, FILE_SHOULD_NOT_EXIST, NA, STATE, UserCfgJsonValues
+    UserCfgJsonFields, NA, STATE, UserCfgJsonValues
 from ngts.tests_nvos.general.security.nmx_cert.helpers import verify_manager_show, verify_cert_show, verify_cacert_show, \
-    verify_encryption_show, verify_static_checks, run_manager_client_hello_request
+    verify_encryption_show, run_manager_client_hello_request, verify_files
 from ngts.tests_nvos.system.gnmi.conftest import scp_player, get_scp_player
 
 
 @pytest.mark.nmx
 @pytest.mark.security
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_cluster_app_mngr_security_cli(test_api):
+@pytest.mark.parametrize('app_name', ClusterApps.ALL_APPS)
+def test_cluster_app_mngr_security_cli(test_api, app_name, engines):
     """
     Verify that all CLI work and check values change properly in show
 
@@ -43,106 +44,113 @@ def test_cluster_app_mngr_security_cli(test_api):
     """
     TestToolkit.tested_api = test_api
     cluster = Cluster()
+    app = cluster.apps.app_name[app_name]
     cert = TestCert.cert_valid_1
     with allure.step('Verify outputs contain the required fields'):
         with allure.independent_step('verify manager show'):
-            verify_manager_show()
+            verify_manager_show(app_name)
         with allure.independent_step('verify cert show'):
-            verify_cert_show()
+            verify_cert_show(app_name)
         with allure.independent_step('verify cacert show'):
-            verify_cacert_show()
+            verify_cacert_show(app_name)
         with allure.independent_step('verify encryption show'):
-            verify_encryption_show()
+            verify_encryption_show(app_name)
     with allure.step('check values after update ca/certificate'):
         with allure.step('Run update ca/certificate'):
-            cluster.manager.certificate.action_update(cert.name).verify_result()
-            cluster.manager.ca_certificate.action_update(cert.cacert_name).verify_result()
+            app.manager.certificate.action_update(cert.name).verify_result()
+            app.manager.ca_certificate.action_update(cert.cacert_name).verify_result()
         with allure.independent_step('Verify in show that the related fields change accordingly'):
             with allure.independent_step('verify manager show'):
-                verify_manager_show(expect_cert=cert.name, expect_cacert=cert.cacert_name)
+                verify_manager_show(app_name, expect_cert=cert.name, expect_cacert=cert.cacert_name)
             with allure.independent_step('verify cert show'):
-                verify_cert_show(expect_cert_id=cert.name)
+                verify_cert_show(app_name, expect_cert_id=cert.name)
             with allure.independent_step('verify cacert show'):
-                verify_cacert_show(expect_cert_id=cert.cacert_name)
+                verify_cacert_show(app_name, expect_cert_id=cert.cacert_name)
         with allure.independent_step('verify files and fields in json'):
-            verify_static_checks({UserCfgJsonFields.CERTIFICATE: UserCfgJsonValues.CERTIFICATE.format(filename=cert.name),
-                                  UserCfgJsonFields.PRIVATE_KEY: UserCfgJsonValues.PRIVATE_KEY.format(filename=cert.name),
-                                  UserCfgJsonFields.CA_CERTIFICATE: UserCfgJsonValues.CA_CERTIFICATE.format(filename=cert.cacert_name)}, cert.name, cert.cacert_name)
+            verify_files(app_name, engines.dut, {
+                UserCfgJsonFields.CERTIFICATE: UserCfgJsonValues.CERTIFICATE.format(filename=cert.name),
+                UserCfgJsonFields.PRIVATE_KEY: UserCfgJsonValues.PRIVATE_KEY.format(filename=cert.name),
+                UserCfgJsonFields.CA_CERTIFICATE: UserCfgJsonValues.CA_CERTIFICATE.format(filename=cert.cacert_name),
+            }, cert.name, cert.cacert_name)
     with allure.step('check values after update encryption'):
         for mode in EncryptionMode.ALL_MODES:
             with allure.step(f'Run update encryption: {mode}'):
-                cluster.manager.encryption.action_update(mode).verify_result()
+                app.manager.encryption.action_update(mode).verify_result()
             with allure.independent_step('Verify in show that related field updates accordingly'):
                 with allure.independent_step('verify manager show'):
-                    verify_manager_show(expect_encryption=mode)
+                    verify_manager_show(app_name, expect_encryption=mode)
                 with allure.independent_step('verify encryption show'):
-                    verify_encryption_show(expect_mode=mode)
-            with allure.independent_step('verify fields in json'):
-                verify_static_checks({UserCfgJsonFields.ENCRYPTION: mode})
+                    verify_encryption_show(app_name, expect_mode=mode)
+            with allure.independent_step('verify files and fields in json'):
+                verify_files(app_name, engines.dut, {
+                    UserCfgJsonFields.CERTIFICATE: UserCfgJsonValues.CERTIFICATE.format(filename=cert.name),
+                    UserCfgJsonFields.PRIVATE_KEY: UserCfgJsonValues.PRIVATE_KEY.format(filename=cert.name),
+                    UserCfgJsonFields.CA_CERTIFICATE: UserCfgJsonValues.CA_CERTIFICATE.format(filename=cert.cacert_name),
+                    UserCfgJsonFields.ENCRYPTION: mode,
+                }, cert.name, cert.cacert_name)
     with allure.step('check values after restore encryption'):
         with allure.step('Run restore encryption'):
-            cluster.manager.encryption.action_restore().verify_result()
+            app.manager.encryption.action_restore().verify_result()
         with allure.independent_step('Verify in show that related fields restored to default'):
             with allure.independent_step('verify manager show'):
-                verify_manager_show(expect_encryption=Defaults.ENCRYPTION)
+                verify_manager_show(app_name, expect_encryption=Defaults.ENCRYPTION)
             with allure.independent_step('verify encryption show'):
-                verify_encryption_show(expect_mode=Defaults.ENCRYPTION)
-        with allure.independent_step(
-                'verify fields in json'):
-            verify_static_checks({UserCfgJsonFields.ENCRYPTION: None})
+                verify_encryption_show(app_name, expect_mode=Defaults.ENCRYPTION)
+        with allure.independent_step('verify files and fields in json'):
+            verify_files(app_name, engines.dut, {
+                UserCfgJsonFields.CERTIFICATE: UserCfgJsonValues.CERTIFICATE.format(filename=cert.name),
+                UserCfgJsonFields.PRIVATE_KEY: UserCfgJsonValues.PRIVATE_KEY.format(filename=cert.name),
+                UserCfgJsonFields.CA_CERTIFICATE: UserCfgJsonValues.CA_CERTIFICATE.format(filename=cert.cacert_name),
+            }, cert.name, cert.cacert_name)
     with allure.step('check values after restore ca/certificate'):
         with allure.step('Run restore ca/certificate'):
-            cluster.manager.certificate.action_restore().verify_result()
-            cluster.manager.ca_certificate.action_restore().verify_result()
+            app.manager.certificate.action_restore().verify_result()
+            app.manager.ca_certificate.action_restore().verify_result()
         with allure.independent_step('Verify in show that related fields restored to default'):
             with allure.independent_step('verify manager show'):
-                verify_manager_show(expect_cert=Defaults.CERT, expect_cacert=Defaults.CACERT)
+                verify_manager_show(app_name, expect_cert=Defaults.CERT, expect_cacert=Defaults.CACERT)
             with allure.independent_step('verify cert show'):
-                verify_cert_show(expect_cert_id=Defaults.CERT)
+                verify_cert_show(app_name, expect_cert_id=Defaults.CERT)
             with allure.independent_step('verify cacert show'):
-                verify_cacert_show(expect_cert_id=Defaults.CACERT)
-        with allure.independent_step('verify files and fields in json deleted'):
-            verify_static_checks({UserCfgJsonFields.CERTIFICATE: None,
-                                  UserCfgJsonFields.PRIVATE_KEY: None, UserCfgJsonFields.CA_CERTIFICATE: None}, FILE_SHOULD_NOT_EXIST,
-                                 FILE_SHOULD_NOT_EXIST)
+                verify_cacert_show(app_name, expect_cert_id=Defaults.CACERT)
+        with allure.independent_step('verify files and fields in json'):
+            verify_files(app_name, engines.dut)
     with allure.step('check values after update manager'):
         for state in [ENABLED, DISABLED]:
             with allure.step(f'Run update manager: state {state}'):
-                cluster.manager.action_update(state).verify_result()
+                app.manager.action_update(state).verify_result()
             with allure.independent_step('Verify in manager show that related fields'):
-                verify_manager_show(expect_state=state)
-            with allure.independent_step('verify fields in json'):
-                verify_static_checks({UserCfgJsonFields.STATE: state})
+                verify_manager_show(app_name, expect_state=state)
+            with allure.independent_step('verify files and fields in json'):
+                verify_files(app_name, engines.dut, {UserCfgJsonFields.STATE: state})
     with allure.step('check values after restore manager'):
         with allure.step('Run restore manager (disable manager communication)'):
-            cluster.manager.action_restore().verify_result()
+            app.manager.action_restore().verify_result()
         with allure.independent_step('Verify in manager show that related fields restored to default'):
-            verify_manager_show(expect_state=DISABLED)
-        with allure.independent_step('verify fields in json'):
-            verify_static_checks({UserCfgJsonFields.STATE: DISABLED})
+            verify_manager_show(app_name, expect_state=DISABLED)
+            with allure.independent_step('verify files and fields in json'):
+                verify_files(app_name, engines.dut, {UserCfgJsonFields.STATE: DISABLED})
     with allure.step('check values after disable cluster'):
         with allure.step('disable cluster'):
             cluster.set(STATE, DISABLED, apply=True).verify_result()
         with allure.independent_step('Verify outputs contain the required fields'):
             with allure.independent_step('verify manager show'):
-                verify_manager_show(NA, NA, NA, NA)
+                verify_manager_show(app_name, NA, NA, NA, NA)
             with allure.independent_step('verify cert show'):
-                verify_cert_show(NA)
+                verify_cert_show(app_name, NA)
             with allure.independent_step('verify cacert show'):
-                verify_cacert_show(NA)
+                verify_cacert_show(app_name, NA)
             with allure.independent_step('verify encryption show'):
-                verify_encryption_show(NA)
+                verify_encryption_show(app_name, NA)
         with allure.independent_step('verify files and fields in json deleted'):
-            verify_static_checks({UserCfgJsonFields.CERTIFICATE: None,
-                                  UserCfgJsonFields.PRIVATE_KEY: None, UserCfgJsonFields.CA_CERTIFICATE: None,
-                                  UserCfgJsonFields.ENCRYPTION: None, UserCfgJsonFields.STATE: DISABLED}, FILE_SHOULD_NOT_EXIST,
-                                 FILE_SHOULD_NOT_EXIST)
+            verify_files(app_name, engines.dut)
 
 
 @pytest.mark.nmx
 @pytest.mark.security
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_cluster_app_mngr_security_cli_fail_when_cluster_off(test_api):
+@pytest.mark.parametrize('app_name', ClusterApps.ALL_APPS)
+def test_cluster_app_mngr_security_cli_fail_when_cluster_off(test_api, app_name):
     """
     Verify that:
         1. update/restore manager commands fail when cluster disabled
@@ -152,68 +160,69 @@ def test_cluster_app_mngr_security_cli_fail_when_cluster_off(test_api):
     2.	Run manager update/restore command
     3.	Verify failed and show doesn’t change
     """
-    # TODO: https://redmine.mellanox.com/issues/3993892
     TestToolkit.tested_api = test_api
     cluster = Cluster()
+    app = cluster.apps.app_name[app_name]
     cert = TestCert.cert_valid_1
     with allure.step('Make sure cluster disabled'):
         cluster.set(STATE, DISABLED, apply=True).verify_result()
     with allure.step('verify show outputs NAs'):
         with allure.independent_step('verify manager show'):
-            verify_manager_show(NA, NA, NA, NA)
+            verify_manager_show(app_name, NA, NA, NA, NA)
         with allure.independent_step('verify cert show'):
-            verify_cert_show(NA)
+            verify_cert_show(app_name, NA)
         with allure.independent_step('verify cacert show'):
-            verify_cacert_show(NA)
+            verify_cacert_show(app_name, NA)
         with allure.independent_step('verify encryption show'):
-            verify_encryption_show(NA)
+            verify_encryption_show(app_name, NA)
     with allure.step('check manager update/restore commands fail'):
         with allure.independent_step('update commands'):
             for state in [ENABLED, DISABLED]:
                 with allure.independent_step(f'verify update manager fail: state {state}'):
-                    cluster.manager.action_update().verify_result(False)
+                    app.manager.action_update().verify_result(False)
             with allure.independent_step('verify update certificate fail'):
-                cluster.manager.certificate.action_update(cert.name).verify_result(False)
+                app.manager.certificate.action_update(cert.name).verify_result(False)
             with allure.independent_step('verify update ca_certificate fail'):
-                cluster.manager.ca_certificate.action_update(cert.cacert_name).verify_result(False)
+                app.manager.ca_certificate.action_update(cert.cacert_name).verify_result(False)
             with allure.independent_step('verify update encryption fail'):
-                cluster.manager.encryption.action_update().verify_result(False)
+                app.manager.encryption.action_update().verify_result(False)
         with allure.step('restore commands'):
             with allure.independent_step('verify restore manager fail'):
-                cluster.manager.action_restore().verify_result(False)
+                app.manager.action_restore().verify_result(False)
             with allure.independent_step('verify restore certificate fail'):
-                cluster.manager.certificate.action_restore().verify_result(False)
+                app.manager.certificate.action_restore().verify_result(False)
             with allure.independent_step('verify restore ca_certificate fail'):
-                cluster.manager.ca_certificate.action_restore().verify_result(False)
+                app.manager.ca_certificate.action_restore().verify_result(False)
             with allure.independent_step('verify restore encryption fail'):
-                cluster.manager.encryption.action_restore().verify_result(False)
+                app.manager.encryption.action_restore().verify_result(False)
     with allure.step('Verify show doesn’t change - outputs NAs'):
         with allure.independent_step('verify manager show'):
-            verify_manager_show(NA, NA, NA, NA)
+            verify_manager_show(app_name, NA, NA, NA, NA)
         with allure.independent_step('verify cert show'):
-            verify_cert_show(NA)
+            verify_cert_show(app_name, NA)
         with allure.independent_step('verify cacert show'):
-            verify_cacert_show(NA)
+            verify_cacert_show(app_name, NA)
         with allure.independent_step('verify encryption show'):
-            verify_encryption_show(NA)
+            verify_encryption_show(app_name, NA)
     with allure.step('enable cluster and verify all fields were not changed and still default'):
         with allure.step('enable cluster'):
             cluster.set(STATE, ENABLED, apply=True).verify_result()
         with allure.independent_step('verify manager show'):
-            verify_manager_show(expect_state=Defaults.STATE, expect_cert=Defaults.CERT, expect_cacert=Defaults.CACERT,
+            verify_manager_show(app_name, expect_state=Defaults.STATE, expect_cert=Defaults.CERT, expect_cacert=Defaults.CACERT,
                                 expect_encryption=Defaults.ENCRYPTION)
         with allure.independent_step('verify cert show'):
-            verify_cert_show(expect_cert_id=Defaults.CERT)
+            verify_cert_show(app_name, expect_cert_id=Defaults.CERT)
         with allure.independent_step('verify cacert show'):
-            verify_cacert_show(expect_cert_id=Defaults.CACERT)
+            verify_cacert_show(app_name, expect_cert_id=Defaults.CACERT)
         with allure.independent_step('verify encryption show'):
-            verify_encryption_show(expect_mode=Defaults.ENCRYPTION)
+            verify_encryption_show(app_name, expect_mode=Defaults.ENCRYPTION)
 
 
 @pytest.mark.nmx
 @pytest.mark.security
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_delete_cert_fail_when_bound_to_cluster_app_mngr(test_api, scp_player, engines, import_certs_back_after_test):
+@pytest.mark.parametrize('app_name', ClusterApps.ALL_APPS)
+def test_delete_cert_fail_when_bound_to_cluster_app_mngr(test_api, app_name, scp_player, engines, import_certs_back_after_test):
     """
     Verify that we cannot delete certs when are used (updated) for cluster manager config
 
@@ -224,11 +233,12 @@ def test_delete_cert_fail_when_bound_to_cluster_app_mngr(test_api, scp_player, e
     """
     TestToolkit.tested_api = test_api
     cluster = Cluster()
+    app = cluster.apps.app_name[app_name]
     cert = TestCert.cert_valid_1
     with allure.step('Update certs'):
-        cluster.manager.certificate.action_update(cert.name).verify_result()
-        cluster.manager.ca_certificate.action_update(cert.cacert_name).verify_result()
-        cluster.manager.show()
+        app.manager.certificate.action_update(cert.name).verify_result()
+        app.manager.ca_certificate.action_update(cert.cacert_name).verify_result()
+        app.manager.show()
     with allure.step('try delete bound ca/cert and verify fail'):
         with allure.independent_step('Try to delete certs - expect fail'):
             security = System().security
@@ -238,17 +248,18 @@ def test_delete_cert_fail_when_bound_to_cluster_app_mngr(test_api, scp_player, e
                 security.ca_certificate.cert_id[cert.cacert_name].action_delete().verify_result(False)
         with allure.independent_step('Verify that there’s no change in related fields'):
             with allure.independent_step('verify manager show'):
-                verify_manager_show(expect_cert=cert.name, expect_cacert=cert.cacert_name)
+                verify_manager_show(app_name, expect_cert=cert.name, expect_cacert=cert.cacert_name)
             with allure.independent_step('verify cert show'):
-                verify_cert_show(expect_cert_id=cert.name)
+                verify_cert_show(app_name, expect_cert_id=cert.name)
             with allure.independent_step('verify cacert show'):
-                verify_cacert_show(expect_cert_id=cert.cacert_name)
+                verify_cacert_show(app_name, expect_cert_id=cert.cacert_name)
 
 
 @pytest.mark.nmx
 @pytest.mark.security
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_update_cluster_app_mngr_security_bad_param(test_api):
+@pytest.mark.parametrize('app_name', ClusterApps.ALL_APPS)
+def test_update_cluster_app_mngr_security_bad_param(test_api, app_name):
     """
     Verify that updating with bad param fails, and show output is not changed
 
@@ -257,7 +268,7 @@ def test_update_cluster_app_mngr_security_bad_param(test_api):
     3.	Verify in show that related field doesn’t change
     """
     TestToolkit.tested_api = test_api
-    manager = Cluster().manager
+    manager = Cluster().apps.app_name[app_name].manager
     rand_str = ''.join(random.choice(string.ascii_lowercase) for _ in range(6))
     with allure.step('Run update to cert-id that was not imported - expect fail'):
         with allure.independent_step('run update commands - expect fail'):
@@ -269,20 +280,21 @@ def test_update_cluster_app_mngr_security_bad_param(test_api):
                 manager.encryption.action_update(rand_str).verify_result(False)
         with allure.step("Verify in show that related fields don’t change"):
             with allure.independent_step('verify manager show'):
-                verify_manager_show(expect_cert=Defaults.CERT, expect_cacert=Defaults.CACERT,
+                verify_manager_show(app_name, expect_cert=Defaults.CERT, expect_cacert=Defaults.CACERT,
                                     expect_encryption=Defaults.ENCRYPTION)
             with allure.independent_step('verify cert show'):
-                verify_cert_show(expect_cert_id=Defaults.CERT)
+                verify_cert_show(app_name, expect_cert_id=Defaults.CERT)
             with allure.independent_step('verify cacert show'):
-                verify_cacert_show(expect_cert_id=Defaults.CACERT)
+                verify_cacert_show(app_name, expect_cert_id=Defaults.CACERT)
             with allure.independent_step('verify encryption show'):
-                verify_encryption_show(expect_mode=Defaults.ENCRYPTION)
+                verify_encryption_show(app_name, expect_mode=Defaults.ENCRYPTION)
 
 
 @pytest.mark.nmx
 @pytest.mark.security
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_update_cluster_app_mngr_encryption_fail_when_cert_not_bound(test_api):
+@pytest.mark.parametrize('app_name', ClusterApps.ALL_APPS)
+def test_update_cluster_app_mngr_encryption_fail_when_cert_not_bound(test_api, app_name):
     """
     Verify that:
         1. can’t configure tls when certificate is not loaded.
@@ -295,25 +307,26 @@ def test_update_cluster_app_mngr_encryption_fail_when_cert_not_bound(test_api):
     4.	Verify error and show output is not changed
     """
     TestToolkit.tested_api = test_api
-    manager = Cluster().manager
+    manager = Cluster().apps.app_name[app_name].manager
     with allure.step('Try configure tls'):
         res = manager.encryption.action_update(EncryptionMode.TLS)
     with allure.step('Verify error and show output is not changed'):
         res.verify_result(False)
-        verify_manager_show(expect_encryption=Defaults.ENCRYPTION)
-        verify_encryption_show(expect_mode=Defaults.ENCRYPTION)
+        verify_manager_show(app_name, expect_encryption=Defaults.ENCRYPTION)
+        verify_encryption_show(app_name, expect_mode=Defaults.ENCRYPTION)
     with allure.step('Try configure mtls'):
         res = manager.encryption.action_update(EncryptionMode.MTLS)
     with allure.step('Verify error and show output is not changed'):
         res.verify_result(False)
-        verify_manager_show(expect_encryption=Defaults.ENCRYPTION)
-        verify_encryption_show(expect_mode=Defaults.ENCRYPTION)
+        verify_manager_show(app_name, expect_encryption=Defaults.ENCRYPTION)
+        verify_encryption_show(app_name, expect_mode=Defaults.ENCRYPTION)
 
 
 @pytest.mark.nmx
 @pytest.mark.security
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_restore_cluster_app_mngr_cert_fail_when_in_encryption_mode(test_api):
+@pytest.mark.parametrize('app_name', ClusterApps.ALL_APPS)
+def test_restore_cluster_app_mngr_cert_fail_when_in_encryption_mode(test_api, app_name):
     """
     Verify that clearing ca/certificate fails when encryption mode is m/tls, and show output is not changed
 
@@ -329,7 +342,7 @@ def test_restore_cluster_app_mngr_cert_fail_when_in_encryption_mode(test_api):
     10.	Verify error and show is not changed
     """
     TestToolkit.tested_api = test_api
-    manager = Cluster().manager
+    manager = Cluster().apps.app_name[app_name].manager
     cert = TestCert.cert_valid_1
 
     with allure.step('Load certificate'):
@@ -340,8 +353,8 @@ def test_restore_cluster_app_mngr_cert_fail_when_in_encryption_mode(test_api):
         res = manager.certificate.action_restore()
     with allure.step('Verify error and show is not changed'):
         res.verify_result(False)
-        verify_manager_show(expect_cert=cert.name)
-        verify_cert_show(expect_cert_id=cert.name)
+        verify_manager_show(app_name, expect_cert=cert.name)
+        verify_cert_show(app_name, expect_cert_id=cert.name)
     with allure.step('Load ca-cert'):
         manager.ca_certificate.action_update(cert.cacert_name).verify_result()
     with allure.step('Configure mtls'):
@@ -350,19 +363,20 @@ def test_restore_cluster_app_mngr_cert_fail_when_in_encryption_mode(test_api):
         res = manager.certificate.action_restore()
     with allure.step('Verify error and show is not changed'):
         res.verify_result(False)
-        verify_manager_show(expect_cert=cert.name)
-        verify_cert_show(expect_cert_id=cert.name)
+        verify_manager_show(app_name, expect_cert=cert.name)
+        verify_cert_show(app_name, expect_cert_id=cert.name)
     with allure.step('Try restore ca-certificate'):
         res = manager.certificate.action_restore()
     with allure.step('Verify error and show is not changed'):
         res.verify_result(False)
-        verify_manager_show(expect_cacert=cert.cacert_name)
-        verify_cacert_show(expect_cert_id=cert.cacert_name)
+        verify_manager_show(app_name, expect_cacert=cert.cacert_name)
+        verify_cacert_show(app_name, expect_cert_id=cert.cacert_name)
 
 
 @pytest.mark.nmx
 @pytest.mark.security
-def test_cluster_app_mngr_connection():
+@pytest.mark.parametrize('app_name', [ClusterApps.NMX_CONTROLLER])  # TODO: adjust also for nmx-t
+def test_cluster_app_mngr_connection(app_name):
     """
     Verify communication of app with manager
 
@@ -445,23 +459,25 @@ def test_cluster_app_mngr_connection():
 
     with allure.step('enable cluster'):
         cluster = Cluster()
+        app = cluster.apps.app_name[app_name]
         cluster.set(STATE, ENABLED, apply=True).verify_result()
     with allure.step('enable cluster manager'):
-        cluster.manager.action_update(ENABLED).verify_result()
-        cluster.manager.action_update(ENABLED).verify_result()  # TODO: remove once bug #4127907 is closed
+        app.manager.action_update(ENABLED).verify_result()
+        app.manager.action_update(ENABLED).verify_result()  # TODO: remove once bug #4127907 is closed
 
     with allure.step('run all cases'):
         for case in cases:
             with allure.independent_step(case.get_name()):
                 with allure.step('set up'):
-                    case.setup(cluster.manager)
+                    case.setup(app.manager)
                 with allure.step(f'verify connection: {case.expect_success}'):
                     case.run_client_and_verify()
 
 
 @pytest.mark.nmx
 @pytest.mark.security
-def test_cluster_app_mngr_connection_after_restore_encryption():
+@pytest.mark.parametrize('app_name', ClusterApps.ALL_APPS)
+def test_cluster_app_mngr_connection_after_restore_encryption(app_name):
     """
     Verify that after encryption mode – manager can connect only insecurely
 
@@ -476,8 +492,8 @@ def test_cluster_app_mngr_connection_after_restore_encryption():
         cluster = Cluster()
         cluster.set(STATE, ENABLED, apply=True).verify_result()
     with allure.step('enable cluster manager'):
-        manager = cluster.manager
-        cluster.manager.action_update(ENABLED).verify_result()
+        manager = cluster.apps.app_name[app_name].manager
+        manager.action_update(ENABLED).verify_result()
     with allure.step('update encryption'):
         manager.certificate.action_update(cert.name).verify_result()
         manager.ca_certificate.action_update(cert.cacert_name).verify_result()
@@ -504,7 +520,8 @@ def verify_no_client_connection(server_cert: CertInfo, server_ca: CertInfo):
 
 @pytest.mark.nmx
 @pytest.mark.security
-def test_cluster_app_mngr_no_connection_when_state_disabled():
+@pytest.mark.parametrize('app_name', ClusterApps.ALL_APPS)
+def test_cluster_app_mngr_no_connection_when_state_disabled(app_name):
     """
     Verify that when cluster manager state disabled (restore/update disabled) – client cannot connect at all
 
@@ -519,7 +536,7 @@ def test_cluster_app_mngr_no_connection_when_state_disabled():
         cluster.set(STATE, ENABLED, apply=True).verify_result()
 
     with allure.step('enable cluster manager'):
-        manager = cluster.manager
+        manager = cluster.apps.app_name[app_name].manager
         manager.action_update(ENABLED).verify_result()
 
     with allure.step('update encryption'):
@@ -535,7 +552,7 @@ def test_cluster_app_mngr_no_connection_when_state_disabled():
         verify_no_client_connection(cert, cert)
 
     with allure.step('enable cluster manager'):
-        cluster.manager.action_update(ENABLED).verify_result()
+        manager.action_update(ENABLED).verify_result()
 
     with allure.step('disable manager (restore)'):
         manager.action_restore().verify_result()
@@ -547,7 +564,8 @@ def test_cluster_app_mngr_no_connection_when_state_disabled():
 
 @pytest.mark.nmx
 @pytest.mark.security
-def test_cluster_app_mngr_no_connection_when_cluster_disabled():
+@pytest.mark.parametrize('app_name', ClusterApps.ALL_APPS)
+def test_cluster_app_mngr_no_connection_when_cluster_disabled(app_name):
     """
     Verify that after disabling cluster (restore) – client cannot connect at all
 
@@ -562,7 +580,7 @@ def test_cluster_app_mngr_no_connection_when_cluster_disabled():
         cluster.set(STATE, ENABLED, apply=True).verify_result()
 
     with allure.step('enable cluster manager'):
-        manager = cluster.manager
+        manager = cluster.apps.app_name[app_name].manager
         manager.action_update(ENABLED).verify_result()
 
     with allure.step('update encryption'):
@@ -589,22 +607,25 @@ def test_cluster_app_mngr_security_reboot_case(engines):
     4.	Verify updated values in show kept
     5.  verify connection works with the configured mode
     """
+    apps = ClusterApps.ALL_APPS
+
+    cert: Dict[str, CertInfo] = {ClusterApps.NMX_CONTROLLER: TestCert.cert_valid_1, ClusterApps.NMX_TELEMETRY: TestCert.cert_valid_2}
+    encryption_mode: Dict[str, str] = {app_name: random.choice(EncryptionMode.ALL_MODES) for app_name in apps}
+
     cluster = Cluster()
-    manager = cluster.manager
-    cert = TestCert.cert_valid_1
-    encryption_mode = random.choice(EncryptionMode.ALL_MODES)
 
     with allure.step('enable cluster'):
         cluster.set(STATE, ENABLED, apply=True).verify_result()
 
-    with allure.step('enable cluster manager'):
-        manager.action_update(ENABLED).verify_result()
-
-    with allure.step('load cert & cacert'):
-        manager.certificate.action_update(cert.name).verify_result()
-        manager.ca_certificate.action_update(cert.cacert_name).verify_result()
-    with allure.step('Update encryption mode'):
-        manager.encryption.action_update(encryption_mode)
+    for app_name in apps:
+        manager = cluster.apps.app_name[app_name].manager
+        with allure.step(f'enable {app_name} cluster manager'):
+            manager.action_update(ENABLED).verify_result()
+        with allure.step(f'bind cert & cacert to {app_name}'):
+            manager.certificate.action_update(cert[app_name].name).verify_result()
+            manager.ca_certificate.action_update(cert[app_name].cacert_name).verify_result()
+        with allure.step(f'Update {app_name} encryption mode'):
+            manager.encryption.action_update(encryption_mode[app_name])
 
     with allure.step('save config'):
         NvueGeneralCli.save_config(engines.dut)
@@ -614,16 +635,20 @@ def test_cluster_app_mngr_security_reboot_case(engines):
         engines.dut.disconnect()
 
     with allure.step('Verify updated values in show kept'):
-        with allure.independent_step('verify manager show'):
-            verify_manager_show(expect_cert=cert.name, expect_cacert=cert.cacert_name, expect_encryption=encryption_mode)
-        with allure.independent_step('verify cert show'):
-            verify_cert_show(expect_cert_id=cert.name)
-        with allure.independent_step('verify cacert show'):
-            verify_cacert_show(expect_cert_id=cert.cacert_name)
-        with allure.independent_step('verify encryption show'):
-            verify_encryption_show(expect_mode=encryption_mode)
-        with allure.independent_step(f'verify connection. mode: {encryption_mode}'):
-            run_manager_client_hello_request(encryption_mode, cert, cert, cert, cert).verify_result(True)
+        for app_name in apps:
+            with allure.independent_step(f'app: {app_name}'):
+                app_cert = cert[app_name]
+                app_encryption = encryption_mode[app_name]
+                with allure.independent_step('verify manager show'):
+                    verify_manager_show(app_name, expect_cert=app_cert.name, expect_cacert=app_cert.cacert_name, expect_encryption=encryption_mode)
+                with allure.independent_step('verify cert show'):
+                    verify_cert_show(app_name, expect_cert_id=app_cert.name)
+                with allure.independent_step('verify cacert show'):
+                    verify_cacert_show(app_name, expect_cert_id=app_cert.cacert_name)
+                with allure.independent_step('verify encryption show'):
+                    verify_encryption_show(app_name, expect_mode=app_encryption)
+                with allure.independent_step(f'verify connection. mode: {app_encryption}'):
+                    run_manager_client_hello_request(app_encryption, app_cert, app_cert, app_cert, app_cert).verify_result(True)
 
 
 def cluster_app_mngr_security_factory_reset_no_params_check():
@@ -635,37 +660,41 @@ def cluster_app_mngr_security_factory_reset_no_params_check():
     3.	Factory reset
     4.	Verify values in show restored to defaults
     """
+    apps = ClusterApps.ALL_APPS
+
+    certs: Dict[str, CertInfo] = {ClusterApps.NMX_CONTROLLER: TestCert.cert_valid_1, ClusterApps.NMX_TELEMETRY: TestCert.cert_valid_2}
+
+    cluster = Cluster()
     dut_device: BaseDevice = TestToolkit.devices.dut
-    should_check_nmx: bool = dut_device.has_nmx
     scp_player = get_scp_player(TestToolkit.engines)
-    cert = TestCert.cert_valid_1
-    manager = Cluster().manager
-    clear_manager_config()
     encryption_mode = random.choice([EncryptionMode.TLS, EncryptionMode.MTLS])
 
-    if should_check_nmx:
-        with allure.step('enable cluster and clear manager config'):
-            clear_manager_config()
-        with allure.step('Import and load cert & cacert'):
-            import_test_certs(scp_player, TestToolkit.engines.dut, [cert])
-            manager.certificate.action_update(cert.name).verify_result()
-            manager.ca_certificate.action_update(cert.cacert_name).verify_result()
-        with allure.step('Update encryption mode'):
-            manager.encryption.action_update(encryption_mode).verify_result()
+    if dut_device.has_nmx:
+        with allure.step('import relevant certs'):
+            import_test_certs(scp_player, TestToolkit.engines.dut, list(certs.values()))
+        with allure.step('enable cluster and clear managers config'):
+            for app_name in apps:
+                clear_manager_config(app_name)
+        for app_name in apps:
+            with allure.step(f'bind ca/cert to {app_name}'):
+                cluster.apps.app_name[app_name].manager.certificate.action_update(certs[app_name].name).verify_result()
+                cluster.apps.app_name[app_name].manager.ca_certificate.action_update(certs[app_name].cacert_name).verify_result()
+            with allure.step('Update encryption mode'):
+                cluster.apps.app_name[app_name].manager.encryption.action_update(encryption_mode).verify_result()
 
     yield  # do factory reset
 
-    if should_check_nmx:
-        with allure.step('Verify values in show restored to defaults'):
-            with allure.independent_step('verify manager show'):
-                verify_manager_show(expect_cert=Defaults.CERT, expect_cacert=Defaults.CACERT,
-                                    expect_encryption=Defaults.ENCRYPTION)
-            with allure.independent_step('verify cert show'):
-                verify_cert_show(expect_cert_id=Defaults.CERT)
-            with allure.independent_step('verify cacert show'):
-                verify_cacert_show(expect_cert_id=Defaults.CACERT)
-            with allure.independent_step('verify encryption show'):
-                verify_encryption_show(expect_mode=Defaults.ENCRYPTION)
+    if dut_device.has_nmx:
+        for app_name in apps:
+            with allure.step('Verify values in show restored to defaults'):
+                with allure.independent_step('verify manager show'):
+                    verify_manager_show(app_name, expect_cert=Defaults.CERT, expect_cacert=Defaults.CACERT, expect_encryption=Defaults.ENCRYPTION)
+                with allure.independent_step('verify cert show'):
+                    verify_cert_show(app_name, expect_cert_id=Defaults.CERT)
+                with allure.independent_step('verify cacert show'):
+                    verify_cacert_show(app_name, expect_cert_id=Defaults.CACERT)
+                with allure.independent_step('verify encryption show'):
+                    verify_encryption_show(app_name, expect_mode=Defaults.ENCRYPTION)
 
     yield  # to prevent StopIteration on the 2nd next() call
 

@@ -9,7 +9,8 @@ from ngts.tests_nvos.general.security.centralized_tests.factory_reset.constants 
     FACTORY_RESET_TYPE_TO_ACTION_PARAM
 from ngts.tests_nvos.general.security.centralized_tests.helpers.checker_skip_rules import SkipCheckerBySetup, \
     CheckerSkipRule, should_skip_checker, SkipCheckerByCond
-from ngts.tests_nvos.general.security.nmx_cert.test_nmx_cert import nmx_cert_factory_reset_no_params_check
+from ngts.tests_nvos.general.security.nmx_cert.test_cluster_app_mngr_security import \
+    cluster_app_mngr_security_factory_reset_no_params_check
 from ngts.tests_nvos.general.security.sed.helpers import sed_password_factory_reset_check
 from ngts.tests_nvos.general.security.test_api_server_security.test_api_mtls import \
     api_mtls_factory_reset_no_params_check, api_mtls_factory_reset_keep_all_config_check, \
@@ -38,7 +39,7 @@ CHECKERS_SKIP_RULES: Dict[str, CheckerSkipRule] = {
 NO_PARAMS_CHECKERS: Dict[str, Generator[None, None, None]] = {
     TPM_ATTESTATION: tpm_attestation_factory_reset_no_params_check(),
     GNMI_CERT: gnmi_cert_factory_reset_no_params_check(),
-    NMX_CERT: nmx_cert_factory_reset_no_params_check(),
+    NMX_CERT: cluster_app_mngr_security_factory_reset_no_params_check(),
     API_MTLS: api_mtls_factory_reset_no_params_check(),
     # SSH_PKA: ssh_pka_factory_reset_no_params_check(), # FIXME: remove expected param
     SED_PASSWORD: sed_password_factory_reset_check(),

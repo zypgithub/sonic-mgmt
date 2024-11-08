@@ -1,3 +1,7 @@
+from typing import List, Dict
+
+from ngts.nvos_constants.constants_nvos import ClusterApps
+
 NA = 'N/A'
 STATE = 'state'
 
@@ -19,8 +23,6 @@ NMX_CACERTS_DIR = '/etc/nmx/ca_cert'
 
 FILE_NOT_EXIST_ERR = 'No such file or directory'
 
-FILE_SHOULD_NOT_EXIST = -1
-
 
 class UserCfgJsonFields:
     CERTIFICATE = 'manager-certificate'
@@ -28,6 +30,7 @@ class UserCfgJsonFields:
     CA_CERTIFICATE = 'manager-ca-certificate'
     ENCRYPTION = 'manager-encryption'
     STATE = 'manager-port'
+    ALL_FIELDS = [CERTIFICATE, PRIVATE_KEY, CA_CERTIFICATE, ENCRYPTION, STATE]
 
 
 class UserCfgJsonValues:
@@ -55,3 +58,30 @@ class Defaults:
     CERT = ''
     CACERT = ''
     ENCRYPTION = EncryptionMode.DISABLED
+
+
+class ClusterAppConsts:
+
+    def __init__(self):
+        # TODO: clarify
+        self.user_config_json_path: str = USR_CFG_JSON_PATH
+        self.user_config_json_fields: List[str] = UserCfgJsonFields.ALL_FIELDS
+        self.fields_that_must_exist_in_user_config_json: dict = {UserCfgJsonFields.STATE: Defaults.STATE}
+        self.cert_private_key_path: str = NMX_CERTS_DIR + '/{}.key'
+        self.cert_public_key_path: str = NMX_CERTS_DIR + '/{}.crt'
+        self.cacert_path: str = NMX_CACERTS_DIR + '/{}.crt'
+
+
+class NmxControllerConsts(ClusterAppConsts):
+
+    def __init__(self):
+        super().__init__()
+
+
+class NmxTelemetryConsts(ClusterAppConsts):
+
+    def __init__(self):
+        super().__init__()
+
+
+APP_CONSTS: Dict[str, ClusterAppConsts] = {ClusterApps.NMX_CONTROLLER: NmxControllerConsts(), ClusterApps.NMX_TELEMETRY: NmxTelemetryConsts()}

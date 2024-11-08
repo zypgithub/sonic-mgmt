@@ -1075,11 +1075,17 @@ class ClusterAppsLogLevels:
     DEBUG = 'debug'
 
 
+class ClusterApps:
+    NMX_CONTROLLER = 'nmx-controller'
+    NMX_TELEMETRY = 'nmx-telemetry'
+    ALL_APPS = [NMX_CONTROLLER, NMX_TELEMETRY]
+
+
 class ClusterConsts:
     APP_VERSION = 'app-ver'
     APP_NAME = 'app-name'
-    NMX_CONTROLLER = 'nmx-controller'
-    NMX_TELEMETRY = 'nmx-telemetry'
+    NMX_CONTROLLER = ClusterApps.NMX_CONTROLLER
+    NMX_TELEMETRY = ClusterApps.NMX_TELEMETRY
     NMX_CONTROLLER_PREFIX = 'nmx-c'
     NMX_TELEMETRY_PREFIX = 'nmx-t'
     TELEMETRY_SERVICES = ['nmx-connector', 'ib-telemetry']

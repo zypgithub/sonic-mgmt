@@ -30,7 +30,7 @@ tests_nvos/general/security/test_ssh_config/test_ssh_config.py::test_ssh_config_
     conditions:
       - https://redmine.mellanox.com/issues/4040069
 
-tests_nvos/general/security/nmx_cert/test_nmx_cert.py::test_delete_cert_fail_when_is_used:
+tests_nvos/general/security/nmx_cert/test_cluster_app_mngr_security.py::test_delete_cert_fail_when_bound_to_cluster_app_mngr:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3995421"
     conditions:
