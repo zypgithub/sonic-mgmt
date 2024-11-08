@@ -509,8 +509,6 @@ class SonicInstallationSteps:
             logger.info("Prepare sai.xml files for Port Init feature testing")
             cli.update_sai_xml_file(platform_params['platform'], platform_params['hwsku'], global_flag=True,
                                     local_flags=False)
-            if not is_performance:
-                cli.cli_obj.im.enable_im(topology_obj, platform_params, chip_type=chip_type)
 
         # Community only steps
         if is_community(sonic_topo):

@@ -800,6 +800,10 @@ class SonicGeneralCliDefault(GeneralCliCommon):
 
         self.cli_obj.general.save_configuration()
 
+    def get_chip_gen(self, platform_params):
+        chip_gen = int((re.search(r'SN(\d)', platform_params['hwsku']).group(1))) - 1
+        return f"SPC{chip_gen}"
+
     def apply_config_files(self, topology_obj, setup_name, platform_params):
         platform = platform_params['platform']
         hwsku = platform_params['hwsku']
@@ -812,6 +816,8 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             self.upload_port_config_ini(platform, hwsku, shared_path)
 
         self.upload_config_db_file(topology_obj, setup_name, hwsku, platform, shared_path)
+        self.cli_obj.im.enable_im(topology_obj=topology_obj, platform_params=platform_params,
+                                  chip_type=self.get_chip_gen(platform_params), enable_im=True)
         self.reboot_reload_flow(topology_obj=topology_obj)
 
     def upload_port_config_ini(self, platform, hwsku, shared_path):
@@ -919,7 +925,6 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         if branch not in ['202205', '202211', '202305']:
             self.remove_syslog_telemetry_entry(setup_name, config_db_file_name)
         self.update_config_db_simx_setup_metadata_mac(setup_name, config_db_file_name)
-        self.disable_auto_neg_on_aoc_ports(setup_name, config_db_file_name, topology_obj)
         self.restore_container_autorestart(setup_name, config_db_file_name)
         return config_db_file_name
 
@@ -1029,23 +1034,6 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         if syslog_config_key in config_db_json:
             if "telemetry" in config_db_json[syslog_config_key]:
                 config_db_json[syslog_config_key].pop("telemetry")
-        return self.create_extended_config_db_file(setup_name, config_db_json, file_name=config_db_json_file_name)
-
-    def disable_auto_neg_on_aoc_ports(self, setup_name, config_db_json_file_name, topology_obj):
-        config_db_json = self.get_config_db_json_obj(setup_name, config_db_json_file_name=config_db_json_file_name)
-        with allure.step("Disable autoneg on AOC cables"):
-            if self.cli_obj.im.is_im_enabled():
-                port_supporting_im = self.cli_obj.im.get_ports_supporting_im(
-                    self.cli_obj.im.dut_ports_number_dict(topology_obj))
-                if port_supporting_im:
-                    aoc_cables = self.cli_obj.im.sw_controlled_aoc_cables(port_supporting_im)
-                    if aoc_cables:
-                        with allure.step('Disable autoneg on AOC ports if SW controlled'):
-                            port_key = "PORT"
-                            if port_key in config_db_json:
-                                for cable in aoc_cables:
-                                    if cable in config_db_json[port_key]:
-                                        config_db_json[port_key][cable]["autoneg"] = "off"
         return self.create_extended_config_db_file(setup_name, config_db_json, file_name=config_db_json_file_name)
 
     def restore_container_autorestart(self, setup_name, config_db_json_file_name):

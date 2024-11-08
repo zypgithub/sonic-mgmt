@@ -60,8 +60,6 @@ class SonicImClis:
                         f'{SonicConst.SAI_PROFILE_FILE_PATH.format(PLATFORM=platfrom, HWSKU=hwsku)}')
             self.engine.run_cmd(f'sudo bash -c \'echo "{IndependentModuleConst.IM_SAI_ATTRIBUTE_NAME}=1" >> '
                                 f'{SonicConst.SAI_PROFILE_FILE_PATH.format(PLATFORM=platfrom, HWSKU=hwsku)}\'')
-            self.general_cli.reload_configuration(force=True)
-            self.general_cli.verify_dockers_are_up()
 
     def is_ms_hwsku(self):
         """
@@ -211,14 +209,13 @@ class SonicImClis:
         else:
             return None
 
-    def enable_im(self, topology_obj, platform_params, chip_type, enable_im=True, is_community=False):
+    def enable_im(self, topology_obj, platform_params, chip_type, enable_im=True):
         """
         @summary: This method is for enable IM feature at DUT
         @param: topology_obj: topology_obj fixture
         @param: platform_params: platform_params fixture
         @param: chip_type: chip_type fixture
         @param: enable_im: flag for enable IM by default
-        @param: is_community: if function call for community setup
         """
         # TODO: This is WA on mtvr-moose-08 ci setup for RM#4154761
         from infra.tools.redmine.redmine_api import is_redmine_issue_active
@@ -239,26 +236,8 @@ class SonicImClis:
                                     with allure.step('Check if IM enabled by default, if not - enable it'):
                                         if enable_im and not self.is_im_enabled():
                                             self.enable_im_in_sai()
-                                        with allure.step('Get all ports supporting IM'):
                                             if self.is_im_enabled():
-                                                self.general_cli.verify_dockers_are_up()
-                                                ports_supporting_im = \
-                                                    self.get_ports_supporting_im(
-                                                        self.dut_ports_number_dict(topology_obj, is_community))
-                                                if ports_supporting_im.get('all_cables'):
-                                                    with allure.step('Enable Independent Module feature at system:'
-                                                                     ' Upload files, skip cmis_mgr, disable auto'
-                                                                     ' neg at ports supporting IM'):
-                                                        logger.info(f'Configure IM at DUT')
-                                                        self.upload_cmis_files(platform_params, chip_type)
-                                                        self.enable_cmis_mgr_in_pmon_file(platform_params)
-                                                        if ports_supporting_im.get('aoc_cables'):
-                                                            self.disable_autoneg_on_ports_supporting_im(
-                                                                ports_supporting_im['aoc_cables'])
-                                                        if is_community:
-                                                            self.update_port_lanes_in_config_db(platform_params,
-                                                                                                ports_supporting_im[
-                                                                                                    'all_cables'])
-                                                            if ports_supporting_im.get('passive_copper_cables'):
-                                                                self.enable_autoneg_on_passive_copper(
-                                                                    ports_supporting_im['passive_copper_cables'], )
+                                                with allure.step('Upload IM files files, skip cmis_mgr'):
+                                                    logger.info(f'Configure IM at DUT')
+                                                    self.upload_cmis_files(platform_params, chip_type)
+                                                    self.enable_cmis_mgr_in_pmon_file(platform_params)
