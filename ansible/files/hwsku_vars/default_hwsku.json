@@ -61,7 +61,7 @@
     },
     "r-panther-47_setup": {
         "default_hwsku": "Mellanox-SN2700",
-        "support_hwsku": ["Mellanox-SN2700"]
+        "support_hwsku": ["Mellanox-SN2700", "Mellanox-SN2700-D48C8"]
     },
     "r-panther-48_setup": {
         "default_hwsku": "Mellanox-SN2700-D48C8",
