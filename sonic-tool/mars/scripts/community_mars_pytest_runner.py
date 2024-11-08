@@ -8,6 +8,8 @@ import os
 import sys
 import time
 import re
+import yaml
+import random
 
 # Third-party libs
 from xml.etree import ElementTree
@@ -22,6 +24,8 @@ from sig_term_handler.handler_mixin import TermHandlerMixin
 from lib.utils import get_allure_project_id
 
 ErrorCode.NO_COLLECTION = 5
+
+TESTBED_YAML_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../../ansible/testbed.yaml")
 
 
 class RunPytest(TermHandlerMixin, StandaloneWrapper):
@@ -50,6 +54,8 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
                               help="True if test case should run from python3, by default False(use python 2.7)")
         self.add_cmd_argument("--test_type", required=False, default="", dest="test_type",
                               help="Decide the pytest marker we want to use in the CI test")
+        self.add_cmd_argument("--run_test_on_dpu_only", required=False, default=False, dest="run_test_on_dpu_only",
+                              help="run tests only on smartswitch dpu")
 
     def _parse_junit_xml(self, content):
 
@@ -201,9 +207,24 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
         pytest_bin_name = "python3 -m pytest"
         random_seed = int(time.time())
 
+        testbed = f'{self.dut_name}-{self.sonic_topo}'
+        self.Logger.info(f"testbed: {testbed}")
+        if 'bobcat' in self.dut_name:
+            duts = read_duts_from_testbed_yaml(f"{self.dut_name}-{self.sonic_topo}")
+            self.Logger.info(f"duts :{duts}")
+            duts.remove(self.dut_name)
+            dpu_duts = duts
+            self.Logger.info(f" dpu duts: {dpu_duts}")
+            self.Logger.info(f" self.run_test_on_dpu_only: {self.run_test_on_dpu_only}, {type(self.run_test_on_dpu_only)}")
+
+        if self.run_test_on_dpu_only == "True":
+            # dut_name will be replaced by dpu host name. It is to run the tests on dup for smartswitch
+            self.dut_name = random.choice(dpu_duts)
+            self.Logger.info(f"the dpu dut is  :{self.dut_name}")
+
         # The test script file must come first, see explaination on https://github.com/Azure/sonic-mgmt/pull/2131
         cmd = "{PYTEST_BIN_NAME} {SCRIPTS} --inventory=\"../ansible/inventory,../ansible/veos\" --host-pattern {DUT_NAME} --module-path \
-               ../ansible/library/ --testbed {DUT_NAME}-{SONIC_TOPO} --testbed_file ../ansible/testbed.yaml \
+               ../ansible/library/ --testbed {TESTBED} --testbed_file ../ansible/testbed.yaml \
                --allow_recover  --session_id {SESSION_ID} --mars_key_id {MARS_KEY_ID} \
                --junit-xml {REPORT_FILE} --assert plain {OPTIONS} {ALLURE_PROJ} --skip_sanity --dynamic_update_skip_reason --random_seed={RANDOM_SEED} --store_la_logs --ignore_la_failure"
         cmd = cmd.format(PYTEST_BIN_NAME=pytest_bin_name,
@@ -215,8 +236,11 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
                          REPORT_FILE=self.report_file,
                          OPTIONS=self.raw_options,
                          ALLURE_PROJ=allure_proj_pytest_arg,
-                         RANDOM_SEED=random_seed
+                         RANDOM_SEED=random_seed,
+                         TESTBED=testbed
                          )
+        if 'bobcat' in self.dut_name and self.run_test_on_dpu_only != "True":
+            cmd += f" --dpu-pattern {','.join(dpu_duts)}"
         # For dualtor test, need to use setup name in --testbed
         if 'dualtor' in (self.sonic_topo):
             cmd = "{PYTEST_BIN_NAME} {SCRIPTS} --inventory=\"../ansible/inventory,../ansible/veos\" --host-pattern {DUT_NAME} --module-path \
@@ -306,6 +330,18 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
         with open(python3_script_file) as file:
             file_contents = [line.replace("\n", "") for line in file.readlines()]
         return script_name in file_contents
+
+
+def read_duts_from_testbed_yaml(testbed_name):
+    """Read yaml testbed info file."""
+    duts = []
+    with open(TESTBED_YAML_FILE) as f:
+        tb_info = yaml.safe_load(f)
+        for tb in tb_info:
+            if tb["conf-name"] == testbed_name:
+                duts = tb.pop("dut")
+                break
+    return duts
 
 
 if __name__ == "__main__":

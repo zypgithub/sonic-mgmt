@@ -552,6 +552,8 @@ class SonicInstallationSteps:
                     dut_engine.run_cmd(
                         f'sudo sonic-cfggen -j /tmp/{config_file_name} --write-to-db', validate=True)
                     general_cli_obj.save_configuration()
+                with allure.step('Apply NAT config to smartSwitch'):
+                    enable_nat_from_dut_mgmt_to_dpu_mgmt_intf(dut_engine)
 
             for dut in setup_info['duts']:
                 SonicInstallationSteps.post_install_check_sonic(sonic_topo=sonic_topo, dut_name=dut['dut_name'],
@@ -825,3 +827,20 @@ def get_cached_hwsku(dut_name):
             if len(cached_vars) >= 3:
                 cached_hwsku = cached_vars[2].strip()
     return cached_hwsku
+
+
+def enable_nat_from_dut_mgmt_to_dpu_mgmt_intf(engine):
+    enable_nat_cmds = [
+        "sudo su",
+        "sudo  sed -i 's/#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/g' /etc/sysctl.conf",
+        "sudo echo net.ipv4.conf.eth0.forwarding=1 >> /etc/sysctl.conf",
+        "sudo sysctl -p",
+        "sudo iptables -t nat -A POSTROUTING -s 169.254.200.0/24 -o eth0 -j MASQUERADE",
+        "sudo iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 5021 -j DNAT --to-destination 169.254.200.1:22",
+        "sudo iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 5022 -j DNAT --to-destination 169.254.200.2:22",
+        "sudo iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 5023 -j DNAT --to-destination 169.254.200.3:22",
+        "sudo iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 5024 -j DNAT --to-destination 169.254.200.4:22",
+        "sudo iptables -t nat -L",
+        "sudo iptables-save > /etc/iptables/rules.v4"
+    ]
+    engine.run_cmd_set(enable_nat_cmds)

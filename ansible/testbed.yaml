@@ -854,19 +854,6 @@
     - r-leopard-72
   comment: Mellanox MTR testbed
 
-- conf-name: r-bobcat-03-t0
-  group-name: vm-t1
-  topo: t0
-  ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-r-bobcat-03
-  ptf_ip: 10.215.28.182/16
-  ptf_ipv6:
-  server: server_69
-  vm_base: VM3401
-  dut:
-    - r-bobcat-03
-  comment: Mellanox MTR testbed
-
 - conf-name: r-bobcat-03-t0-28
   group-name: vm-t1
   topo: t0-28
@@ -878,32 +865,10 @@
   vm_base: VM3401
   dut:
     - r-bobcat-03
-  comment: Mellanox MTR testbed
-
-- conf-name: r-bobcat-03-t1
-  group-name: vm-t1
-  topo: t1
-  ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-r-bobcat-03
-  ptf_ip: 10.215.28.182/16
-  ptf_ipv6:
-  server: server_69
-  vm_base: VM3401
-  dut:
-    - r-bobcat-03
-  comment: Mellanox MTR testbed
-
-- conf-name: r-bobcat-03-t1-lag
-  group-name: vm-t1
-  topo: t1-lag
-  ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-r-bobcat-03
-  ptf_ip: 10.215.28.182/16
-  ptf_ipv6:
-  server: server_69
-  vm_base: VM3401
-  dut:
-    - r-bobcat-03
+    - r-bobcat-03-dpu-0
+    - r-bobcat-03-dpu-1
+    - r-bobcat-03-dpu-2
+    - r-bobcat-03-dpu-3
   comment: Mellanox MTR testbed
 
 - conf-name: r-bobcat-03-t1-28-lag
@@ -917,19 +882,10 @@
   vm_base: VM3401
   dut:
     - r-bobcat-03
-  comment: Mellanox MTR testbed
-
-- conf-name: r-bobcat-03-ptf32
-  group-name: vm-t1
-  topo: ptf32
-  ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-r-bobcat-03
-  ptf_ip: 10.215.28.182/16
-  ptf_ipv6:
-  server: server_69
-  vm_base: VM3401
-  dut:
-    - r-bobcat-03
+    - r-bobcat-03-dpu-0
+    - r-bobcat-03-dpu-1
+    - r-bobcat-03-dpu-2
+    - r-bobcat-03-dpu-3
   comment: Mellanox MTR testbed
 
 - conf-name: r-bobcat-03-ptf-any
@@ -943,19 +899,10 @@
   vm_base: VM3401
   dut:
     - r-bobcat-03
-  comment: Mellanox MTR testbed
-
-- conf-name: r-bobcat-01-t0
-  group-name: vm-t2
-  topo: t0
-  ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-r-bobcat-01
-  ptf_ip: 10.215.6.123/16
-  ptf_ipv6:
-  server: server_72
-  vm_base: VM3701
-  dut:
-    - r-bobcat-01
+    - r-bobcat-03-dpu-0
+    - r-bobcat-03-dpu-1
+    - r-bobcat-03-dpu-2
+    - r-bobcat-03-dpu-3
   comment: Mellanox MTR testbed
 
 - conf-name: r-bobcat-01-t0-28
@@ -969,32 +916,10 @@
   vm_base: VM3701
   dut:
     - r-bobcat-01
-  comment: Mellanox MTR testbed
-
-- conf-name: r-bobcat-01-t1
-  group-name: vm-t2
-  topo: t1
-  ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-r-bobcat-01
-  ptf_ip: 10.215.6.123/16
-  ptf_ipv6:
-  server: server_72
-  vm_base: VM3701
-  dut:
-    - r-bobcat-01
-  comment: Mellanox MTR testbed
-
-- conf-name: r-bobcat-01-t1-lag
-  group-name: vm-t2
-  topo: t1-lag
-  ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-r-bobcat-01
-  ptf_ip: 10.215.6.123/16
-  ptf_ipv6:
-  server: server_72
-  vm_base: VM3701
-  dut:
-    - r-bobcat-01
+    - r-bobcat-01-dpu-0
+    - r-bobcat-01-dpu-1
+    - r-bobcat-01-dpu-2
+    - r-bobcat-01-dpu-3
   comment: Mellanox MTR testbed
 
 - conf-name: r-bobcat-01-t1-28-lag
@@ -1008,19 +933,10 @@
   vm_base: VM3701
   dut:
     - r-bobcat-01
-  comment: Mellanox MTR testbed
-
-- conf-name: r-bobcat-01-ptf32
-  group-name: vm-t2
-  topo: ptf32
-  ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-r-bobcat-01
-  ptf_ip: 10.215.6.123/16
-  ptf_ipv6:
-  server: server_72
-  vm_base: VM3701
-  dut:
-    - r-bobcat-01
+    - r-bobcat-01-dpu-0
+    - r-bobcat-01-dpu-1
+    - r-bobcat-01-dpu-2
+    - r-bobcat-01-dpu-3
   comment: Mellanox MTR testbed
 
 - conf-name: r-bobcat-01-ptf-any
@@ -1034,6 +950,10 @@
   vm_base: VM3701
   dut:
     - r-bobcat-01
+    - r-bobcat-01-dpu-0
+    - r-bobcat-01-dpu-1
+    - r-bobcat-01-dpu-2
+    - r-bobcat-01-dpu-3
   comment: Mellanox MTR testbed
 
 - conf-name: r-moose-01-t0

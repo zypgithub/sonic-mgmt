@@ -198,6 +198,11 @@ def pytest_addoption(parser):
     parser.addoption("--public_docker_registry", action="store_true", default=False,
                      help="To use public docker registry for syncd swap, by default is disabled (False)")
 
+    ############################
+    #   SmartSwitch options    #
+    ############################
+    parser.addoption("--dpu-pattern", action="store", default=None, help="dpu host name")
+
 
 def pytest_configure(config):
     if config.getoption("enable_macsec"):
@@ -295,15 +300,14 @@ def tbinfo(request):
     return testbedinfo
 
 
-def get_specified_duts(request):
+def get_specified_device_info(request, device_pattern):
     """
-    Get a list of DUT hostnames specified with the --host-pattern CLI option
-    or -d if using `run_tests.sh`
+    Get a list of device hostnames specified with the --host-pattern or --dpu-pattern CLI option
     """
     tbname, tbinfo = get_tbinfo(request)
     testbed_duts = tbinfo['duts']
 
-    host_pattern = request.config.getoption("--host-pattern")
+    host_pattern = request.config.getoption(device_pattern)
     if host_pattern == 'all':
         return testbed_duts
 
@@ -321,6 +325,21 @@ def get_specified_duts(request):
                      .format(str(duts)))
 
     return duts
+
+
+def get_specified_duts(request):
+    """
+    Get a list of DUT hostnames specified with the --host-pattern CLI option
+    or -d if using `run_tests.sh`
+    """
+    return get_specified_device_info(request, "--host-pattern")
+
+
+def get_specified_dpus(request):
+    """
+    Get a list of DUT hostnames specified with the --dpu-pattern CLI option
+    """
+    return get_specified_device_info(request, "--dpu-pattern")
 
 
 def pytest_sessionfinish(session, exitstatus):
@@ -346,6 +365,45 @@ def fixture_duthosts(enhance_inventory, ansible_adhoc, tbinfo, request):
         request.config.cache.set("duthosts_fixture_failed", True)
         pt_assert(False, "!!!!!!!!!!!!!!!! duthosts fixture failed !!!!!!!!!!!!!!!!"
                   "Exception: {}".format(repr(e)))
+
+
+@pytest.fixture(name="dpuhosts", scope="session")
+def fixture_dpuhosts(enhance_inventory, ansible_adhoc, tbinfo, request):
+    """
+    @summary: fixture to get DUT hosts defined in testbed.
+    @param ansible_adhoc: Fixture provided by the pytest-ansible package.
+        Source of the various device objects. It is
+        mandatory argument for the class constructors.
+    @param tbinfo: fixture provides information about testbed.
+    """
+    try:
+        host = DutHosts(ansible_adhoc, tbinfo, get_specified_dpus(request))
+        return host
+    except BaseException as e:
+        logger.error("Failed to initialize dpuhosts.")
+        request.config.cache.set("dpuhosts_fixture_failed", True)
+        pt_assert(False, "!!!!!!!!!!!!!!!! dpuhosts fixture failed !!!!!!!!!!!!!!!!"
+                  "Exception: {}".format(repr(e)))
+
+
+@pytest.fixture(scope="session")
+def dpuhost(dpuhosts, request):
+    '''
+    @summary: Shortcut fixture for getting DUT host. For a lengthy test case, test case module can
+              pass a request to disable sh time out mechanis on dut in order to avoid ssh timeout.
+              After test case completes, the fixture will restore ssh timeout.
+    @param duthosts: fixture to get DUT hosts
+    @param request: request parameters for duthost test fixture
+    '''
+    dpu_index = getattr(request.session, "dpu_index", 0)
+    assert dpu_index < len(dpuhosts), \
+        "DUT index '{0}' is out of bound '{1}'".format(dpu_index,
+                                                       len(dpuhosts))
+
+    duthost = dpuhosts[dpu_index]
+
+    return duthost
+
 
 
 @pytest.fixture(scope="session")
