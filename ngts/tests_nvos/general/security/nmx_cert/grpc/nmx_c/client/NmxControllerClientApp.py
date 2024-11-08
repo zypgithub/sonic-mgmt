@@ -2,18 +2,19 @@ import time
 
 import grpc
 
-import ngts.tests_nvos.general.security.nmx_cert.grpc.proto.nmx_m_nmx_c_pb2 as pb
-import ngts.tests_nvos.general.security.nmx_cert.grpc.proto.nmx_m_nmx_c_pb2_grpc as pb_grpc
+import ngts.tests_nvos.general.security.nmx_cert.grpc.nmx_c.proto.nmx_m_nmx_c_pb2 as pb
+import ngts.tests_nvos.general.security.nmx_cert.grpc.nmx_c.proto.nmx_m_nmx_c_pb2_grpc as pb_grpc
 from ngts.tests_nvos.general.security.certificate.constants import TestCert
 from ngts.tests_nvos.general.security.helpers import remove_etc_host_mapping_to_dn, add_etc_host_mapping_to_dn
 from ngts.tests_nvos.general.security.nmx_cert.constants import EncryptionMode, DEFAULT_NMX_C_MGMT_PORT
-from ngts.tests_nvos.general.security.nmx_cert.grpc.config import CONFIG, GrpcConfig, GrpcServerConfig, GrpcClientConfig
+from ngts.tests_nvos.general.security.nmx_cert.grpc.config import NMX_C_CONFIG, GrpcConfig, GrpcServerConfig, \
+    GrpcClientConfig
 from ngts.tests_nvos.general.security.nmx_cert.grpc.utils.logs import standalone_logger
 
 
-class ClientApp:
+class NmxControllerClientApp:
     def __init__(self, config: GrpcConfig, logger=standalone_logger):
-        self.name = 'CLIENT'
+        self.name = 'NMX-C CLIENT'
         self.config = config
         self.logger = logger or standalone_logger
 
@@ -84,10 +85,10 @@ class ClientApp:
 
 
 def run_grpc_client_app(config: GrpcConfig, logger=None) -> str:
-    return ClientApp(config, logger).run()
+    return NmxControllerClientApp(config, logger).run()
 
 
-def run_grpc_client(config, remote_host_addr='127.0.0.1', logger=None, skip_etc_mapping=False):
+def run_nmx_c_grpc_client(config, remote_host_addr='127.0.0.1', logger=None, skip_etc_mapping=False):
     if not skip_etc_mapping:
         remove_etc_host_mapping_to_dn(config.server.address)
         add_etc_host_mapping_to_dn(config.server.address, remote_host_addr)
@@ -96,7 +97,7 @@ def run_grpc_client(config, remote_host_addr='127.0.0.1', logger=None, skip_etc_
 
 
 def local_main():
-    run_grpc_client(CONFIG)
+    run_nmx_c_grpc_client(NMX_C_CONFIG)
 
 
 def main_with_switch():
@@ -120,7 +121,7 @@ def main_with_switch():
         )
     )
 
-    run_grpc_client(config, switch_ip)
+    run_nmx_c_grpc_client(config, switch_ip)
 
 
 if __name__ == '__main__':

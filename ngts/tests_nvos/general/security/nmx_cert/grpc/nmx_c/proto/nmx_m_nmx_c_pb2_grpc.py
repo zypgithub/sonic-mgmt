@@ -2,7 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-import ngts.tests_nvos.general.security.nmx_cert.grpc.proto.nmx_m_nmx_c_pb2 as nmx__m__nmx__c__pb2
+import ngts.tests_nvos.general.security.nmx_cert.grpc.nmx_c.proto.nmx_m_nmx_c_pb2 as nmx__m__nmx__c__pb2
 
 
 class NMX_ControllerStub(object):

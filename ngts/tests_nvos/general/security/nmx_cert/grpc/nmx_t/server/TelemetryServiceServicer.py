@@ -1,10 +1,10 @@
-import ngts.tests_nvos.general.security.nmx_cert.grpc.proto.nmx_m_nmx_c_pb2 as pb
-import ngts.tests_nvos.general.security.nmx_cert.grpc.proto.nmx_m_nmx_c_pb2_grpc as pb_grpc
+import ngts.tests_nvos.general.security.nmx_cert.grpc.nmx_t.proto.nmx_telemetry_pb2 as pb
+import ngts.tests_nvos.general.security.nmx_cert.grpc.nmx_t.proto.nmx_telemetry_pb2_grpc as pb_grpc
 from ngts.tests_nvos.general.security.nmx_cert.grpc.config import GrpcConfig
 from ngts.tests_nvos.general.security.nmx_cert.grpc.utils.logs import standalone_logger
 
 
-class NMX_ControllerServicer(pb_grpc.NMX_ControllerServicer):
+class TelemetryServiceServicer(pb_grpc.TelemetryServiceServicer):
     def __init__(self, name: str, config: GrpcConfig, logger=standalone_logger):
         self.name = name
         self.config = config
@@ -21,13 +21,13 @@ class NMX_ControllerServicer(pb_grpc.NMX_ControllerServicer):
                 domain_uuid=f"Hello World! {self.counter}",
                 app_uuid=f"Hello World! {self.counter}",
                 app_ver=f"Hello World! {self.counter}",
-                returnCode=pb.ST_ReturnCode.ST_UNDEFINED
+                returnCode=pb.ST_ReturnCode.ST_SUCCESS
             ),
             components_ver=[],
             capabilities=[],
             host_os_details=f"Hello World! {self.counter}",
-            major_version=pb.ProtoMsgMajorVersion.PROTO_MSG_MAJOR_VERSION_UNDEFINED,
-            minor_version=pb.ProtoMsgMajorVersion.PROTO_MSG_MAJOR_VERSION_UNDEFINED
+            major_version=pb.ProtoMsgMajorVersion.PROTO_MSG_MAJOR_VERSION,
+            minor_version=pb.ProtoMsgMinorVersion.PROTO_MSG_MINOR_VERSION
         )
 
     def _log(self, msg: str):

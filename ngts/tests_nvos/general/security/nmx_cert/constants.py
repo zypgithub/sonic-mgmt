@@ -14,6 +14,7 @@ CA_CERTIFICATE = 'ca-certificate'
 ENCRYPTION = 'encryption'
 
 DEFAULT_NMX_C_MGMT_PORT = 9370
+DEFAULT_NMX_T_MGMT_PORT = 9351
 
 USR_CFG_JSON_PATH = '/etc/cluster_infra/conf/user_config.json'
 USR_CFG_JSON = USR_CFG_JSON_PATH.split('/')[-1]
@@ -64,24 +65,32 @@ class ClusterAppConsts:
 
     def __init__(self):
         # TODO: clarify
+        self.app_name: str = ''
         self.user_config_json_path: str = USR_CFG_JSON_PATH
         self.user_config_json_fields: List[str] = UserCfgJsonFields.ALL_FIELDS
         self.fields_that_must_exist_in_user_config_json: dict = {UserCfgJsonFields.STATE: Defaults.STATE}
         self.cert_private_key_path: str = NMX_CERTS_DIR + '/{}.key'
         self.cert_public_key_path: str = NMX_CERTS_DIR + '/{}.crt'
         self.cacert_path: str = NMX_CACERTS_DIR + '/{}.crt'
+        self.external_manager_port = None
 
 
 class NmxControllerConsts(ClusterAppConsts):
 
     def __init__(self):
         super().__init__()
+        self.app_name: str = ClusterApps.NMX_CONTROLLER
+        self.external_manager_port = DEFAULT_NMX_C_MGMT_PORT
 
 
 class NmxTelemetryConsts(ClusterAppConsts):
 
     def __init__(self):
         super().__init__()
+        self.app_name: str = ClusterApps.NMX_TELEMETRY
+        self.external_manager_port = DEFAULT_NMX_T_MGMT_PORT
 
 
-APP_CONSTS: Dict[str, ClusterAppConsts] = {ClusterApps.NMX_CONTROLLER: NmxControllerConsts(), ClusterApps.NMX_TELEMETRY: NmxTelemetryConsts()}
+NMX_C_CONSTS = NmxControllerConsts()
+NMX_T_CONSTS = NmxTelemetryConsts()
+APP_CONSTS: Dict[str, ClusterAppConsts] = {ClusterApps.NMX_CONTROLLER: NMX_C_CONSTS, ClusterApps.NMX_TELEMETRY: NMX_T_CONSTS}
