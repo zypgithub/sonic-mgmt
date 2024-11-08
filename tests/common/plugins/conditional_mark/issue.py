@@ -10,6 +10,7 @@ import pytest
 import glob
 import json
 import datetime as dt
+import yaml
 
 from abc import ABCMeta, abstractmethod
 from perscache import Cache
