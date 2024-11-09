@@ -2,7 +2,6 @@ import logging
 
 import pytest
 
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_constants.constants_nvos import CertificateFiles, SyslogConsts, OpenApiReqType, ApiType, SystemConsts, \
     TestFlowType
 from ngts.nvos_tools.infra.CurlTool import CurlTool
@@ -10,15 +9,11 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.certificate.constants import TestCert, GET_SYSTEM_VERSION_PATH, CertMsgs
+from ngts.tests_nvos.system.gnmi.helpers import get_scp_player
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_general_utils import generate_scp_uri_using_player
 
 logger = logging.getLogger()
-
-
-def get_scp_player(engines):
-    # return engines['sonic_mgmt']
-    return LinuxSshEngine('10.237.38.139', 'root', '12345')
 
 
 @pytest.mark.system

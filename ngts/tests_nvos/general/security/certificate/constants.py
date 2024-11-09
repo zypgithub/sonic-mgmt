@@ -67,6 +67,18 @@ class TestCert:
         cacert=f'{TEST_CERTS}/ca1/ca.crt'
     )
 
+    cert_valid_1_no_passphrase = CertInfo(
+        name='valid-cert-1-no-pass',
+        info='valid certificate for test with no passphrase - from ca1',
+        private=f'{TEST_CERTS}/cert-from-ca1-no-pass/service.key',
+        public=f'{TEST_CERTS}/cert-from-ca1-no-pass/service.pem',
+        p12_bundle=f'{TEST_CERTS}/cert-from-ca1-no-pass/service.p12',
+        p12_password='',
+        dn='nvos-dut',
+        ip=None,
+        cacert=f'{TEST_CERTS}/ca1/ca.crt'
+    )
+
     cert_valid_2 = CertInfo(
         name='valid-cert-2',
         info='valid certificate for test - from ca2',
