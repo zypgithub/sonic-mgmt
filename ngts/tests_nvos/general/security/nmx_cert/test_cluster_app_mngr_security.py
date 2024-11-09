@@ -21,7 +21,7 @@ from ngts.tests_nvos.general.security.nmx_cert.conftest import clear_manager_con
 from ngts.tests_nvos.general.security.nmx_cert.constants import Defaults, EncryptionMode, ENABLED, DISABLED, \
     UserCfgJsonFields, NA, STATE, UserCfgJsonValues
 from ngts.tests_nvos.general.security.nmx_cert.helpers import verify_manager_show, verify_cert_show, verify_cacert_show, \
-    verify_encryption_show, run_manager_client_hello_request, verify_files
+    verify_encryption_show, run_manager_hello_request, verify_files
 from ngts.tests_nvos.system.gnmi.conftest import scp_player, get_scp_player
 
 
@@ -375,7 +375,7 @@ def test_restore_cluster_app_mngr_cert_fail_when_in_encryption_mode(test_api, ap
 
 @pytest.mark.nmx
 @pytest.mark.security
-@pytest.mark.parametrize('app_name', [ClusterApps.NMX_CONTROLLER])  # TODO: adjust also for nmx-t
+@pytest.mark.parametrize('app_name', ClusterApps.ALL_APPS)
 def test_cluster_app_mngr_connection(app_name):
     """
     Verify communication of app with manager
@@ -428,8 +428,8 @@ def test_cluster_app_mngr_connection(app_name):
                     Test.cur_server_mode = self.server_mode
 
         def run_client_and_verify(self):
-            run_manager_client_hello_request(self.client_mode, self.server_cert, self.server_ca, self.client_cert,
-                                             self.client_ca).verify_result(self.expect_success)
+            run_manager_hello_request(app_name, self.client_mode, self.server_cert, self.server_ca, self.client_cert,
+                                      self.client_ca).verify_result(self.expect_success)
 
     cases: List[Test] = [
         # basic - mode mismatch
@@ -509,13 +509,13 @@ def test_cluster_app_mngr_connection_after_restore_encryption(app_name):
         time.sleep(2)
         for client_mode, expect_success in cases.items():
             with allure.independent_step(f'verify client connection: client mode: {client_mode}. expect success: {expect_success}'):
-                run_manager_client_hello_request(client_mode, cert, cert, cert, cert).verify_result(expect_success)
+                run_manager_hello_request(app_name, client_mode, cert, cert, cert, cert).verify_result(expect_success)
 
 
-def verify_no_client_connection(server_cert: CertInfo, server_ca: CertInfo):
+def verify_no_client_connection(app_name, server_cert: CertInfo, server_ca: CertInfo):
     for client_mode in EncryptionMode.ALL_MODES:
         with allure.independent_step(f'verify client connection: client mode: {client_mode}. expect success: False'):
-            run_manager_client_hello_request(client_mode, server_cert, server_ca, server_ca, server_cert).verify_result(False)
+            run_manager_hello_request(app_name, client_mode, server_cert, server_ca, server_ca, server_cert).verify_result(False)
 
 
 @pytest.mark.nmx
@@ -549,7 +549,7 @@ def test_cluster_app_mngr_no_connection_when_state_disabled(app_name):
         time.sleep(2)
 
     with allure.step('verify cluster manager client cannot connect'):
-        verify_no_client_connection(cert, cert)
+        verify_no_client_connection(app_name, cert, cert)
 
     with allure.step('enable cluster manager'):
         manager.action_update(ENABLED).verify_result()
@@ -559,7 +559,7 @@ def test_cluster_app_mngr_no_connection_when_state_disabled(app_name):
         time.sleep(2)
 
     with allure.step('verify cluster manager client cannot connect'):
-        verify_no_client_connection(cert, cert)
+        verify_no_client_connection(app_name, cert, cert)
 
 
 @pytest.mark.nmx
@@ -592,7 +592,7 @@ def test_cluster_app_mngr_no_connection_when_cluster_disabled(app_name):
         cluster.set(STATE, DISABLED, apply=True).verify_result()
 
     with allure.step('verify cluster manager client cannot connect'):
-        verify_no_client_connection(cert, cert)
+        verify_no_client_connection(app_name, cert, cert)
 
 
 @pytest.mark.nmx
@@ -648,7 +648,7 @@ def test_cluster_app_mngr_security_reboot_case(engines):
                 with allure.independent_step('verify encryption show'):
                     verify_encryption_show(app_name, expect_mode=app_encryption)
                 with allure.independent_step(f'verify connection. mode: {app_encryption}'):
-                    run_manager_client_hello_request(app_encryption, app_cert, app_cert, app_cert, app_cert).verify_result(True)
+                    run_manager_hello_request(app_name, app_encryption, app_cert, app_cert, app_cert, app_cert).verify_result(True)
 
 
 def cluster_app_mngr_security_factory_reset_no_params_check():

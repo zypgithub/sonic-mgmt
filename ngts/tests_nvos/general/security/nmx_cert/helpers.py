@@ -3,6 +3,7 @@ from typing import Union, Dict
 
 import ngts.tools.test_utils.allure_utils as allure
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from ngts.nvos_constants.constants_nvos import ClusterApps
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
@@ -10,9 +11,10 @@ from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tests_nvos.general.security.nmx_cert.constants import FieldsInShowOf, CERTIFICATE, CA_CERTIFICATE, ENCRYPTION, \
-    DEFAULT_NMX_C_MGMT_PORT, FILE_NOT_EXIST_ERR, STATE, APP_CONSTS, ClusterAppConsts
-from ngts.tests_nvos.general.security.nmx_cert.grpc.client.client import run_grpc_client
+    FILE_NOT_EXIST_ERR, STATE, APP_CONSTS, ClusterAppConsts, NMX_C_CONSTS, NMX_T_CONSTS
 from ngts.tests_nvos.general.security.nmx_cert.grpc.config import GrpcConfig, GrpcServerConfig, GrpcClientConfig
+from ngts.tests_nvos.general.security.nmx_cert.grpc.nmx_c.client.NmxControllerClientApp import run_nmx_c_grpc_client
+from ngts.tests_nvos.general.security.nmx_cert.grpc.nmx_t.client.NmxTelemetryClientApp import run_nmx_t_grpc_client
 
 
 def verify_component_show(component: BaseComponent, required_fields,
@@ -50,14 +52,14 @@ def verify_encryption_show(app_name: str, expect_mode=None):
                           {ENCRYPTION: expect_mode})
 
 
-def run_manager_client_hello_request(client_tls_mode: str, server_cert: CertInfo, server_ca: CertInfo,
-                                     client_cert: CertInfo, client_ca: CertInfo,
-                                     num_requests: int = 1, delay_between_requests: int = 1) -> ResultObj:
+def run_nmx_c_client_hello_request(client_tls_mode: str, server_cert: CertInfo, server_ca: CertInfo,
+                                   client_cert: CertInfo, client_ca: CertInfo,
+                                   num_requests: int = 1, delay_between_requests: int = 1) -> ResultObj:
     result = ResultObj(result=True, info='client successfully communicated with nmx-c', returned_value=True)
 
     with allure.step('create config for grpc client'):
         config = GrpcConfig(
-            server=GrpcServerConfig(address=server_cert.dn or server_cert.ip, port=DEFAULT_NMX_C_MGMT_PORT,
+            server=GrpcServerConfig(address=server_cert.dn or server_cert.ip, port=NMX_C_CONSTS.external_manager_port,
                                     tls_mode=client_tls_mode, cert=server_cert, cacert=server_ca),
             client=GrpcClientConfig(address=client_cert.dn or client_cert.ip, tls_mode=client_tls_mode,
                                     cert=client_cert,
@@ -65,7 +67,58 @@ def run_manager_client_hello_request(client_tls_mode: str, server_cert: CertInfo
                                     delay_between_requests=delay_between_requests))
     try:
         with allure.step('run client hello request'):
-            responses = run_grpc_client(config, TestToolkit.engines.dut.ip, logging, False)
+            responses = run_nmx_c_grpc_client(config, TestToolkit.engines.dut.ip, logging, False)
+        result.returned_value = responses
+    except Exception as e:
+        result = ResultObj(result=False, info=f'client failed:\n{e}', returned_value=None)
+
+    return result
+
+
+def run_nmx_t_client_hello_request(client_tls_mode: str, server_cert: CertInfo, server_ca: CertInfo,
+                                   client_cert: CertInfo, client_ca: CertInfo,
+                                   num_requests: int = 1, delay_between_requests: int = 1) -> ResultObj:
+    result = ResultObj(result=True, info='client successfully communicated with nmx-t', returned_value=True)
+
+    with allure.step('create config for grpc client'):
+        config = GrpcConfig(
+            server=GrpcServerConfig(address=server_cert.dn or server_cert.ip, port=NMX_T_CONSTS.external_manager_port,
+                                    tls_mode=client_tls_mode, cert=server_cert, cacert=server_ca),
+            client=GrpcClientConfig(address=client_cert.dn or client_cert.ip, tls_mode=client_tls_mode,
+                                    cert=client_cert,
+                                    cacert=client_ca, num_requests=num_requests,
+                                    delay_between_requests=delay_between_requests))
+    try:
+        with allure.step('run client hello request'):
+            responses = run_nmx_c_grpc_client(config, TestToolkit.engines.dut.ip, logging, False)
+        result.returned_value = responses
+    except Exception as e:
+        result = ResultObj(result=False, info=f'client failed:\n{e}', returned_value=None)
+
+    return result
+
+
+def run_manager_hello_request(app_name: str, client_tls_mode: str, server_cert: CertInfo, server_ca: CertInfo,
+                              client_cert: CertInfo, client_ca: CertInfo,
+                              num_requests: int = 1, delay_between_requests: int = 1) -> ResultObj:
+    app_consts: ClusterAppConsts = APP_CONSTS[app_name]
+
+    result = ResultObj(result=True, info=f'client successfully communicated with {app_name}', returned_value=True)
+
+    with allure.step('create config for grpc client'):
+        config = GrpcConfig(
+            server=GrpcServerConfig(address=server_cert.dn or server_cert.ip, port=app_consts.external_manager_port,
+                                    tls_mode=client_tls_mode, cert=server_cert, cacert=server_ca),
+            client=GrpcClientConfig(address=client_cert.dn or client_cert.ip, tls_mode=client_tls_mode,
+                                    cert=client_cert,
+                                    cacert=client_ca, num_requests=num_requests,
+                                    delay_between_requests=delay_between_requests))
+    try:
+        with allure.step('run client hello request'):
+            if app_name == ClusterApps.NMX_CONTROLLER:
+                responses = run_nmx_c_grpc_client(config, TestToolkit.engines.dut.ip, logging, False)
+            else:
+                responses = run_nmx_t_grpc_client(config, TestToolkit.engines.dut.ip, logging, False)
         result.returned_value = responses
     except Exception as e:
         result = ResultObj(result=False, info=f'client failed:\n{e}', returned_value=None)

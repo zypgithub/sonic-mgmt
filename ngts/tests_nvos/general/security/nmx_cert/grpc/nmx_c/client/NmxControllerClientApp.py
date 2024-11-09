@@ -106,7 +106,7 @@ def main_with_switch():
         server=GrpcServerConfig(
             address='nvos-dut',
             port=DEFAULT_NMX_C_MGMT_PORT,
-            tls_mode=EncryptionMode.TLS,
+            tls_mode=EncryptionMode.MTLS,
             cert=TestCert.cert_valid_1,
             cacert=TestCert.cert_valid_2,
             max_workers=10

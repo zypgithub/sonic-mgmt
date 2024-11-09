@@ -6,7 +6,7 @@ import ngts.tests_nvos.general.security.nmx_cert.grpc.nmx_t.proto.nmx_telemetry_
 import ngts.tests_nvos.general.security.nmx_cert.grpc.nmx_t.proto.nmx_telemetry_pb2_grpc as pb_grpc
 from ngts.tests_nvos.general.security.certificate.constants import TestCert
 from ngts.tests_nvos.general.security.helpers import remove_etc_host_mapping_to_dn, add_etc_host_mapping_to_dn
-from ngts.tests_nvos.general.security.nmx_cert.constants import EncryptionMode, DEFAULT_NMX_C_MGMT_PORT
+from ngts.tests_nvos.general.security.nmx_cert.constants import EncryptionMode, DEFAULT_NMX_T_MGMT_PORT
 from ngts.tests_nvos.general.security.nmx_cert.grpc.config import NMX_T_CONFIG, GrpcConfig, GrpcServerConfig, \
     GrpcClientConfig
 from ngts.tests_nvos.general.security.nmx_cert.grpc.utils.logs import standalone_logger
@@ -105,15 +105,15 @@ def main_with_switch():
     config = GrpcConfig(
         server=GrpcServerConfig(
             address='nvos-dut',
-            port=DEFAULT_NMX_C_MGMT_PORT,
-            tls_mode=EncryptionMode.TLS,
+            port=DEFAULT_NMX_T_MGMT_PORT,
+            tls_mode=EncryptionMode.MTLS,
             cert=TestCert.cert_valid_1,
             cacert=TestCert.cert_valid_2,
             max_workers=10
         ),
         client=GrpcClientConfig(
             address='nvos-dut',
-            tls_mode=EncryptionMode.MTLS,
+            tls_mode=EncryptionMode.TLS,
             cert=TestCert.cert_valid_2,
             cacert=TestCert.cert_valid_1,
             num_requests=2,
@@ -125,5 +125,5 @@ def main_with_switch():
 
 
 if __name__ == '__main__':
-    local_main()
-    # main_with_switch()
+    # local_main()
+    main_with_switch()
