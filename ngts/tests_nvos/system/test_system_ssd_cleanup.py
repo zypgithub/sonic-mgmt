@@ -92,8 +92,8 @@ def test_ssd_cleanup_positive_flow(engines, devices):
     try:
         system_health_status = OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).verify_result()[HealthConsts.STATUS] == HealthConsts.NOT_OK
         df_output = _get_df_output(engines.dut)
-        with allure.step("add file to reach usage threshold {}".format(5.5)):
-            engines.dut.run_cmd(f"sudo fallocate -l {df_output[SystemConsts.SSD_SPACE_AVAILABLE_SIZE] - 5.5}G {paths_order[-1]}/big_file")
+        with allure.step("add file to reach usage threshold {}".format(5.1)):
+            engines.dut.run_cmd(f"sudo fallocate -l {df_output[SystemConsts.SSD_SPACE_AVAILABLE_SIZE] - 5.1}G {paths_order[-1]}/big_file")
 
         files_to_delete = _add_files(engines.dut, 4, df_output[SystemConsts.SSD_SPACE_AVAILABLE_SIZE])
 
