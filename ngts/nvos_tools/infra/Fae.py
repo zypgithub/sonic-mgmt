@@ -1,25 +1,25 @@
 import logging
 import time
-from typing import List
 from typing import Dict
-import requests
+from typing import List
 
+import requests
 
 from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.cli_wrappers.nvue.nvue_base_clis import NvueBaseCli
+from ngts.cli_wrappers.nvue.nvue_cluster_clis import NvueClusterCli
 from ngts.cli_wrappers.nvue.nvue_platform_clis import NvuePlatformCli
 from ngts.cli_wrappers.nvue.nvue_system_clis import NvueSystemCli
 from ngts.cli_wrappers.openapi.openapi_base_clis import OpenApiBaseCli
+from ngts.cli_wrappers.openapi.openapi_cluster_clis import OpenApiClusterCli
 from ngts.cli_wrappers.openapi.openapi_platform_clis import OpenApiPlatformCli
 from ngts.cli_wrappers.openapi.openapi_system_clis import OpenApiSystemCli
-from ngts.cli_wrappers.nvue.nvue_cluster_clis import NvueClusterCli
-from ngts.cli_wrappers.openapi.openapi_cluster_clis import OpenApiClusterCli
-from ngts.nvos_tools.infra.DefaultDict import DefaultDict
 from ngts.nvos_constants.constants_nvos import ApiType, ActionConsts
 from ngts.nvos_tools.fae.Debug import Debug
 from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
 from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
+from ngts.nvos_tools.infra.DefaultDict import DefaultDict
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
@@ -79,13 +79,13 @@ class FaeApps(BaseComponent):
         super().__init__(parent=parent_obj,
                          api={ApiType.NVUE: NvueClusterCli, ApiType.OPENAPI: OpenApiClusterCli},
                          path='/apps')
-        self.apps_name: Dict[str, FaeAppsName] = DefaultDict(
-            lambda apps_name: FaeAppsName(parent=self, apps_name=apps_name))
+        self.app_name: Dict[str, FaeClusterApp] = DefaultDict(
+            lambda app_name: FaeClusterApp(parent=self, app_name=app_name))
 
 
-class FaeAppsName(BaseComponent):
-    def __init__(self, parent, apps_name):
-        super().__init__(parent=parent, path=f'/{apps_name}')
+class FaeClusterApp(BaseComponent):
+    def __init__(self, parent, app_name):
+        super().__init__(parent=parent, path=f'/{app_name}')
 
     def action_uninstall(self, expect_reboot=False) -> ResultObj:
         """nv action uninstall fae cluster apps <app_name> [force]"""

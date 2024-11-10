@@ -1,7 +1,7 @@
 from ngts.cli_wrappers.nvue.nvue_base_clis import NvueBaseCli, check_output
-from ngts.nvos_constants.constants_nvos import ActionType, ImageConsts
 from ngts.cli_wrappers.sonic.sonic_general_clis import *
 from ngts.nvos_constants.constants_nvos import ActionType
+from ngts.nvos_constants.constants_nvos import ImageConsts
 
 logger = logging.getLogger()
 server_ip = "10.237.116.60"
@@ -17,11 +17,11 @@ class NvueClusterCli(NvueBaseCli):
         self.cli_name = "Cluster"
 
     @staticmethod
-    def action_start_cluster_apps(engine, path):
+    def action_start_cluster_app(engine, path):
         return NvueClusterCli.action(engine, action_type=ActionType.START.replace('@', ''), resource_path=path)
 
     @staticmethod
-    def action_stop_cluster_apps(engine, path):
+    def action_stop_cluster_app(engine, path):
         return NvueClusterCli.action(engine, action_type=ActionType.STOP.replace('@', ''), resource_path=path)
 
     @staticmethod

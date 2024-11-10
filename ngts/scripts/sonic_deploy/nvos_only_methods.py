@@ -19,7 +19,8 @@ from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.conftest import ProxySshEngine
 from ngts.tests_nvos.general.post_upgrade_switch.constants import UPGRADE_STATUS_SUCCESS_MSG, UPGRADE_STATUS_FAIL_MSG, \
-    UPGRADE_STATUS_FILE_PATH
+    UPGRADE_STATUS_FILE_PATH, InstallSteps
+from ngts.tests_nvos.general.post_upgrade_switch.install_steps_timer import InstallStepsTimer
 from ngts.tests_nvos.general.security.bmc.bmc_creds.constants import BmcUsers
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tools.test_utils import allure_utils as allure
@@ -34,6 +35,9 @@ class NvosInstallationSteps:
     @staticmethod
     def pre_installation_steps(setup_info, base_version='', target_version=''):
         assert target_version, 'Argument "target_version" must be provided for installing NVOS'
+
+        with allure.step('Initialize timer'):
+            InstallStepsTimer.initialize_timer()
 
     @staticmethod
     def post_installation_steps(topology_obj, workspace_path, setup_info, serial_log_analyzer,
@@ -88,6 +92,9 @@ class NvosInstallationSteps:
         else:
             logger.info('NVOS: Argument "base-version" was not given. therefore not running the upgrade with saved '
                         'configuration scenario')
+
+        with allure.step('show intervals of installation flow steps'):
+            allure.attach('install flow intervals', InstallStepsTimer.analyze_saved_timestamps())
 
         with allure.step('Set base configuration for tests after the install phase'):
             try:
@@ -198,8 +205,9 @@ class NvosInstallationSteps:
         # use new default password for recovery after upgrade
         recovery_engine = LinuxSshEngine(dut_engine.ip, dut_engine.username,
                                          dut_device.get_default_password_by_version(target_version_path))
+        InstallStepsTimer.add_timestamp(InstallSteps.UPGRADE_CMD)
         system.image.files.file_name[bin_filename].action_file_install_with_reboot(engine=dut_engine, device=dut_device,
-                                                                                   recovery_engine=recovery_engine, topology_obj=topology_obj)
+                                                                                   recovery_engine=recovery_engine, topology_obj=topology_obj, track_boot_intervals=True)
 
     @staticmethod
     def fetch_apply_save_config(config_filename, config_file_path, dut_engine, scp_host_creds, system):
