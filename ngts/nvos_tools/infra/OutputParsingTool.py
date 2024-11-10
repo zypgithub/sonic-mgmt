@@ -303,6 +303,7 @@ class OutputParsingTool:
             output_json = ''.join(output_json.split('\n')[1:])
         if output_json == '{}' or output_json == '':
             return ResultObj(True, "", {})
+        output_json = output_json.strip()
         if (output_json[0] != '{' or output_json[-1] != '}') and (output_json[0] != "[" or output_json[-1] != "]"):  # Need to parse output from serial engine
             start = output_json.find('{')
             end = output_json.rfind('}')
