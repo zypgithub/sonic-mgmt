@@ -137,7 +137,7 @@ def test_ib_interface_state_unset(engines, test_api):
 
 @pytest.mark.ib_interfaces
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-@pytest.mark.skip(reason="Skipping this test since up-once not merged yet")
+@pytest.mark.skip(reason="https://redmine.mellanox.com/issues/4107460")
 def test_ib_interface_state_up_once(engines, devices, test_api, asic_conf_dict):
 
     with allure.step('set up system objects'):

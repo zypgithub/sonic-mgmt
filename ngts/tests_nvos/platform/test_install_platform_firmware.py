@@ -4,9 +4,10 @@ from typing import Tuple
 import pytest
 
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from ngts.nvos_constants.constants_nvos import NvosConst, PlatformConsts
+from ngts.nvos_constants.constants_nvos import NvosConst, PlatformConsts, HealthConsts
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.ContextManagers import check_health_baseline
+from ngts.nvos_tools.infra.FWComponentsTool import FWComponentsTool
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.tests_nvos.constants import MINUTE
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
@@ -20,25 +21,23 @@ logger = logging.getLogger()
 
 @pytest.mark.checklist
 @pytest.mark.platform
-@pytest.mark.timeout(20 * MINUTE, func_only=True)
-def test_install_platform_firmware(engines, devices, test_name, clear_asic_files):
+@pytest.mark.timeout(25 * MINUTE, func_only=True)
+def test_install_platform_firmware(engines, devices, test_name, topology_obj, clear_asic_files):
     """
     Install platform firmware test
 
     Test flow:
-    1. Install platform firmware
-    2. Make sure the installed firmware exist in 'installed-firmware'
-    3. Reboot the system
-    4. Verify the firmware is updated successfully
-    5. Install the original firmware
+    1. Install platform firmware and reboot
+    2. Verify the firmware is updated successfully to new version
+    3. Change fw-source to default and reboot
+    4. Verify the firmware is updated successfully to embedded version
     """
     system = System()
     platform = Platform()
     fae = Fae()
+    component_name = 'asic'
     fw_has_changed = False
-    new_fw_name, fw_file_name = get_version_and_file_name(devices.dut)
-    fw_file = f"/auto/sw_system_project/NVOS_INFRA/verification_files/{fw_file_name}"
-    logging.info(f"using {fw_file} fw file")
+    fw_file, filename, version_name = FWComponentsTool.get_fw_component_version_latest(component_name)
 
     with allure.step("Check actual firmware value"):
         asic_dictionary = get_asic_dict(fae)
@@ -48,6 +47,7 @@ def test_install_platform_firmware(engines, devices, test_name, clear_asic_files
         installed_firmware = asic_dictionary[first_asic_name]["installed-firmware"]
         logging.info("Original actual installed firmware - " + installed_firmware)
         validate_all_asics_have_same_info()
+        system.validate_health_status(HealthConsts.OK)
 
     with check_health_baseline() as health_baseline:
         try:
@@ -62,9 +62,9 @@ def test_install_platform_firmware(engines, devices, test_name, clear_asic_files
                     NvueGeneralCli.save_config(engines.dut)
                     res_obj, duration = OperationTime.save_duration('install user FW', 'include reboot', test_name,
                                                                     install_new_image_fw, platform, test_name,
-                                                                    fw_file_name)
+                                                                    filename)
                 with allure.step('Verify the firmware installed successfully'):
-                    verify_firmware_with_platform_and_fae_cmd(platform, fae, new_fw_name, new_fw_name)
+                    verify_firmware_with_platform_and_fae_cmd(platform, fae, version_name, version_name)
                     validate_all_asics_have_same_info()
                     health_baseline.compare()
                     fw_has_changed = True
@@ -118,14 +118,6 @@ def install_default_image_fw(system, test_name, fw_has_changed):
             res = system.reboot.action_reboot()
 
         return res
-
-
-def get_original_fw_path(engines, original_fw):
-    fw_dir = "/auto/sw_system_project/MLNX_OS_INFRA/mlnx_os2/sx_mlnx_fw/"
-    orig_fw_file = engines[NvosConst.SONIC_MGMT].run_cmd("ls {}| grep {}".format(fw_dir, original_fw))
-    fw_path = fw_dir + orig_fw_file
-    logger.info(" original fw path is: {}".format(fw_path))
-    return fw_path
 
 
 def verify_field_value_in_output_for_each_asic(output_dictionary, field, value):

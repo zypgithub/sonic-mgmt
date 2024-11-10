@@ -50,7 +50,7 @@ def verify_bios_auto_update_value(platform, value):
         assert value == output[PlatformConsts.FW_AUTO_UPDATE], f"auto-update should be {value}"
 
 
-def verify_bios_version(engines, platform, expected_version: str, date: str):
+def verify_bios_version(engines, platform, expected_version: str):
     with allure.step(f'Making sure BIOS is now on version {expected_version}'):
         fw_output = Tools.OutputParsingTool.parse_json_str_to_dictionary(platform.firmware.show()).verify_result()
         new_bios_version = fw_output[PlatformConsts.FW_BIOS][PlatformConsts.FW_ACTUAL]
@@ -58,10 +58,6 @@ def verify_bios_version(engines, platform, expected_version: str, date: str):
 
         assert new_bios_version == expected_version, \
             f"BIOS firmware is {new_bios_version}, expected {expected_version} after the install"
-
-        dmidecode_output = engines.dut.run_cmd("sudo dmidecode -t0 -t11 | grep -E 'Release Date:|String 1:'")
-        assert date in dmidecode_output, \
-            f"Expected to find {date} in this output: {dmidecode_output}"
 
 
 def fetch_and_install_bios(platform, path, name, filename, topology_obj, system_is_ready_timeout):

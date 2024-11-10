@@ -8,6 +8,7 @@ import pytest
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import ImageConsts, NvosConst
 from ngts.nvos_constants.constants_nvos import PlatformConsts
+from ngts.nvos_tools.infra.FWComponentsTool import FWComponentsTool
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.constants import MINUTE
@@ -108,8 +109,8 @@ def test_platform_firmware_image_rename(engines, devices, topology_obj, clear_as
     """
     platform = Platform()
     platform.firmware.asic.files.verify_show_files_output([], [])
-    _, fetched_image_name = get_version_and_file_name(devices.dut)
-    fw_file = f"/auto/sw_system_project/NVOS_INFRA/verification_files/{fetched_image_name}"
+    component_name = 'asic'
+    fw_file, fetched_image_name, version_name = FWComponentsTool.get_fw_component_version_latest(component_name)
 
     with allure.step("Fetch image 1st try"):
         player_engine = engines['sonic_mgmt']
@@ -160,27 +161,32 @@ def test_platform_firmware_image_upload(engines, devices, topology_obj):
     """
     platform = Platform()
     dut = devices.dut
-    _, fetched_image, _ = get_image_data_and_fetch_random_image_files(platform, dut, topology_obj)
+    component_name = 'asic'
+    fw_file, fetched_image_name, _ = FWComponentsTool.get_fw_component_version_latest(component_name)
+    with allure.step("Fetch image"):
+        player = engines['sonic_mgmt']
+        scp_path = 'scp://{}:{}@{}'.format(player.username, player.password, player.ip)
+        platform.firmware.asic.action_fetch(fw_file, base_url=scp_path).verify_result()
+
     upload_protocols = ['scp', 'sftp']
-    player = engines['sonic_mgmt']
-    image_file = platform.firmware.asic.files.file_name[fetched_image]
+    image_file = platform.firmware.asic.files.file_name[fetched_image_name]
 
     with allure.step("Upload image to player {} with the next protocols : {}".format(player.ip, upload_protocols)):
         for protocol in upload_protocols:
             with allure.step("Upload image to player with {} protocol".format(protocol)):
                 upload_path = '{}://{}:{}@{}/tmp/{}'.format(protocol, player.username, player.password, player.ip,
-                                                            fetched_image)
+                                                            fetched_image_name)
                 image_file.action_upload(upload_path, expected_str='File upload successfully')
 
             with allure.step("Validate file was uploaded to player and delete it"):
                 assert player.run_cmd(
-                    cmd='ls /tmp/ | grep {}'.format(fetched_image)), "Did not find the file with ls cmd"
-                player.run_cmd(cmd='rm -f /tmp/{}'.format(fetched_image))
+                    cmd='ls /tmp/ | grep {}'.format(fetched_image_name)), "Did not find the file with ls cmd"
+                player.run_cmd(cmd='rm -f /tmp/{}'.format(fetched_image_name))
 
     with allure.step("Delete file from player"):
         logging.info("Delete file from player")
-        platform.firmware.asic.files.delete_files([fetched_image])
-        platform.firmware.asic.files.verify_show_files_output(unexpected_files=[fetched_image])
+        platform.firmware.asic.files.delete_files([fetched_image_name])
+        platform.firmware.asic.files.verify_show_files_output(unexpected_files=[fetched_image_name])
 
 
 def _set_and_verify(platform: Platform, property: str, value: str, unset=False):
