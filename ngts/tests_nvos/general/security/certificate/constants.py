@@ -15,6 +15,9 @@ DUT_IMPORTED_CACERTS_DIR = '/etc/ssl/certs'
 
 class CertMsgs:
     SSL_CERTIFICATE_PROBLEM = 'SSL certificate problem'
+    SSL_CERTIFICATE_ERROR = 'SSL certificate error'
+    NO_REQUIRED_SSL_CERT_SENT = 'No required SSL certificate was sent'
+    ALL_ERRORS = [SSL_CERTIFICATE_PROBLEM, SSL_CERTIFICATE_ERROR, NO_REQUIRED_SSL_CERT_SENT]
 
 
 class TestCert:
@@ -128,3 +131,29 @@ class TestCert:
     )
 
     all_certs: List[CertInfo] = [cert_valid_1, cert_valid_2, cert_private_public_mismatch, cert_ca_mismatch]
+
+
+class CertShowFields:
+    INSTALLED = 'installed'
+    SERIAL_NUMBER = 'serial-number'
+    VALID_FROM = 'valid-from'
+    VALID_TO = 'valid-to'
+    ALL_FIELDS = [INSTALLED, SERIAL_NUMBER, VALID_FROM, VALID_TO]
+
+
+CERT_PRIVATE_KEY_LOCATION = '/etc/nvue/certificates/private'
+CERT_PUBLIC_KEY_LOCATION = '/etc/nvue/certificates/public'
+
+
+class CaShowFields:
+    COUNT = 'count'
+    INSTALLED = 'installed'
+    SERIAL_NUMBER = 'serial-number'
+    VALID_FROM = 'valid-from'
+    VALID_TO = 'valid-to'
+    ALL_FIELDS = [COUNT, INSTALLED, SERIAL_NUMBER, VALID_FROM, VALID_TO]
+
+
+CA_PEM_FILE_LOCATION = '/etc/ssl/certs'
+CA_CRT_FILE_LOCATION = '/usr/local/share/ca-certificates/nvue'
+CA_POOL_FILE = '/etc/ssl/certs/ca-certificates.crt'

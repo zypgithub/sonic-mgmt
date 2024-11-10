@@ -6,19 +6,37 @@ from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import ImageConsts
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ResultObj import ResultObj
+from ngts.tests_nvos.general.security.centralized_tests.helpers.checker_skip_rules import CheckerSkipRule, \
+    SkipCheckerByCond, SkipCheckerBySetup, should_skip_checker
+from ngts.tests_nvos.general.security.certificate.test_cert_cacert_mgmt import certs_mgmt_upgrade_check
 from ngts.tests_nvos.general.security.test_api_server_security.test_api_mtls import api_mtls_upgrade_check
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tests_nvos.system.factory_reset.helpers import *
 from ngts.tests_nvos.system.gnmi.helpers import get_scp_player
 from ngts.tools.test_utils import allure_utils as allure
 
+TPM_ATTESTATION = 'TPM attestation'
+GNMI_CERT = 'GNMI cert'
+NMX_CERT = 'NMX cert'
+API_MTLS = 'API mTLS'
+SED_PASSWORD = 'SED password'
+CERTS_MGMT = 'Certificates management'
+
 UPGRADE_CHECKERS: Dict[str, Generator[None, None, None]] = {
-    'API mTLS': api_mtls_upgrade_check(),
+    API_MTLS: api_mtls_upgrade_check(),
+    CERTS_MGMT: certs_mgmt_upgrade_check(),
+}
+
+CHECKERS_SKIP_RULES: Dict[str, CheckerSkipRule] = {
+    API_MTLS: SkipCheckerByCond(is_bug_active(4103432)),  # TODO: remove once bug #4103432 closed
+    NMX_CERT: SkipCheckerBySetup(['juliet'], False),
+    SED_PASSWORD: SkipCheckerBySetup(['gorilla'])
 }
 
 
 @pytest.mark.security
 @pytest.mark.upgrade
-def test_downgrade_upgrade(base_version_realpath, target_version_realpath, devices, engines, topology_obj):
+def test_downgrade_upgrade(base_version_realpath, target_version_realpath, devices, engines, topology_obj, setup_name):
     """
     Validate upgrade scenario
     """
@@ -27,6 +45,10 @@ def test_downgrade_upgrade(base_version_realpath, target_version_realpath, devic
     if not checkers:
         pytest.skip('test skipped: no checkers registered for this test')
     logging.info(f'checkers names for upgrade: {list(checkers.keys())}')
+    checkers = {name: checker for name, checker in checkers.items() if
+                not should_skip_checker(CHECKERS_SKIP_RULES, name, setup_name)}
+    if not checkers:
+        pytest.skip('test skipped: no checkers registered for this test')
 
     system = System()
 
@@ -46,16 +68,18 @@ def test_downgrade_upgrade(base_version_realpath, target_version_realpath, devic
 
             with allure.independent_step('pre upgrade steps'):
                 for name, checker in checkers.items():
-                    with allure.independent_step(name):
-                        next(checker)
+                    if not should_skip_checker(CHECKERS_SKIP_RULES, name, setup_name):
+                        with allure.independent_step(name):
+                            next(checker)
 
             with allure.step(f"Run upgrade: {target_version_name}"):
                 fetch_install_img(system, target_version_realpath, engines)
 
             with allure.step('post upgrade steps'):
                 for name, checker in checkers.items():
-                    with allure.independent_step(name):
-                        next(checker)
+                    if not should_skip_checker(CHECKERS_SKIP_RULES, name, setup_name):
+                        with allure.independent_step(name):
+                            next(checker)
 
     finally:
         with allure.step('upgrade test cleanup'):
@@ -77,7 +101,8 @@ def is_cur_version_as_expected(system: System, expected_version: str) -> ResultO
     cur_version = out['image']
     with allure.step(f'check if {expected_version} (orig) == {cur_version} (cur)'):
         res = expected_version == cur_version
-        return ResultObj(res, f'cur version is {"" if res else "not "}as expected.\nexpected: {expected_version}\nactual: {cur_version}')
+        return ResultObj(res,
+                         f'cur version is {"" if res else "not "}as expected.\nexpected: {expected_version}\nactual: {cur_version}')
 
 
 def fetch_install_img(system: System, img_path: str, engines):
