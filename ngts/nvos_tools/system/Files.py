@@ -118,7 +118,8 @@ class File(BaseComponent):
         with allure.step(f"Install file: {resource_path}"):
             return SendCommandTool.execute_command_expected_str(
                 self._cli_wrapper.action, expected_str,
-                engine, device, action_type='install', resource_path=resource_path, param_name='force' if force else '',
+                engine, device, action_type='install', resource_path=resource_path,
+                param_name='force' if force else 'skip-reboot',
                 expect_reboot=with_reboot, recovery_engine=recovery_engine, deny_reboot=deny_reboot,
                 topology_obj=topology_obj, track_boot_intervals=track_boot_intervals)
 

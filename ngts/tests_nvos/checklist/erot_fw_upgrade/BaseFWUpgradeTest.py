@@ -1,3 +1,4 @@
+import copy
 import logging
 import os
 import allure
@@ -57,7 +58,8 @@ class BaseFWUpgradeTest:
         curr_path, curr_filename, curr_version = BmcTool.get_fw_component_version_latest(component_name)
         fae = Fae()
         fw_components_names = switch.constants.erots.copy()
-        fw_components_names.remove('ERoT_BMC_0')  # Bad BMC erot fw - hardware limitation, therefore removing 'ERoT_BMC_0' from install verification
+        fw_components_names.remove(
+            'ERoT_BMC_0')  # Bad BMC erot fw - hardware limitation, therefore removing 'ERoT_BMC_0' from install verification
         try:
             with allure.step(f"Fetching PREVIOUS image"):
                 fw_component.action_fetch(prev_path).verify_result()
@@ -72,20 +74,65 @@ class BaseFWUpgradeTest:
             for comp_name in fw_components_names:
                 verify_installation(fae, comp_name, prev_version, filename=prev_filename)
 
-            with allure.step(f"Fetching CURRENT image"):
-                fw_component.action_fetch(curr_path).verify_result()
+        finally:
+            try:
+                with allure.step(f"Fetching CURRENT image"):
+                    fw_component.action_fetch(curr_path).verify_result()
 
-            fw_component.files.verify_show_files_output(expected_files=[prev_filename, curr_filename])
+                fw_component.files.verify_show_files_output(expected_files=[prev_filename, curr_filename])
 
-            fetched_image_file = fw_component.files.file_name[curr_filename]
-            fetched_image_file.action_file_install(force=False)
+                fetched_image_file = fw_component.files.file_name[curr_filename]
+                fetched_image_file.action_file_install(force=False)
+
+                recover_dut_with_remote_reboot(topology_obj, engines, should_clear_config=False)
+
+                for comp_name in fw_components_names:
+                    verify_installation(fae, comp_name, curr_version, filename=curr_filename)
+            finally:
+                with allure.step('delete fetched firmware image files'):
+                    files = fw_component.files.get_files()
+                    fw_component.files.delete_files(files_to_delete=files)
+
+    def test_list(self, engines, switch, topology_obj, test_api, fae):
+        TestToolkit.tested_api = test_api
+        prev_path, prev_filename, prev_version = BmcTool.get_fw_component_version_previous("erot")
+        curr_path, curr_filename, curr_version = BmcTool.get_fw_component_version_latest("erot")
+        erots = copy.deepcopy(self._firmware_components)
+        del erots[
+            'ERoT_BMC_0']  # Bad BMC erot fw - hardware limitation, therefore removing 'ERoT_BMC_0' from install verification
+
+        try:
+            for comp_name, component in erots.items():
+                with allure.step(f"Fetching PREVIOUS image for {comp_name}"):
+                    component.action_fetch(prev_path).verify_result()
+
+                component.files.verify_show_files_output(expected_files=[prev_filename])
+
+                fetched_image_file = component.files.file_name[prev_filename]
+                fetched_image_file.action_file_install().verify_result()
 
             recover_dut_with_remote_reboot(topology_obj, engines, should_clear_config=False)
 
-            for comp_name in fw_components_names:
-                verify_installation(fae, comp_name, curr_version, filename=curr_filename)
+            for comp_name in erots.keys():
+                verify_installation(fae, comp_name, prev_version, filename=prev_filename)
 
         finally:
-            with allure.step('delete fetched firmware image files'):
-                files = fw_component.files.get_files()
-                fw_component.files.delete_files(files_to_delete=files)
+            try:
+                for comp_name, component in erots.items():
+                    with allure.step(f"Fetching CURRENT image for {comp_name}"):
+                        component.action_fetch(curr_path).verify_result()
+
+                    component.files.verify_show_files_output(expected_files=[prev_filename, curr_filename])
+
+                    fetched_image_file = component.files.file_name[curr_filename]
+                    fetched_image_file.action_file_install().verify_result()
+
+                recover_dut_with_remote_reboot(topology_obj, engines, should_clear_config=False)
+
+                for comp_name in erots.keys():
+                    verify_installation(fae, comp_name, curr_version, filename=curr_filename)
+            finally:
+                for comp_name, component in erots.items():
+                    with allure.step(f"Deleting fw image files of {comp_name}"):
+                        files = comp_name.files.get_files()
+                        comp_name.files.delete_files(files_to_delete=files)

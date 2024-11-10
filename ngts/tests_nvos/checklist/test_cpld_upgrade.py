@@ -88,8 +88,8 @@ def _firmware_install_test(devices, platform: Platform, image_details, engines, 
         with allure.step(f"Installing BURN image {burn_filename}"):
             result, _ = OperationTime.save_duration(
                 "nv action install platform firmware CPLD files (BURN)", burn_filename, test_cpld_upgrade.__name__,
-                platform.firmware.cpld.files.file_name[burn_filename].action_file_install_with_reboot,
-                device=devices.dut, topology_obj=topology_obj)
+                platform.firmware.cpld.files.file_name[burn_filename].action_file_install,
+                dut_engine=engines.dut, force=False)
             result.verify_result()
 
         if has_refresh_image:
