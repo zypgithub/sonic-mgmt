@@ -128,3 +128,15 @@ class TestCert:
     )
 
     all_certs: List[CertInfo] = [cert_valid_1, cert_valid_2, cert_private_public_mismatch, cert_ca_mismatch]
+
+
+class CertShowFields:
+    INSTALLED = 'installed'
+    SERIAL_NUMBER = 'serial-number'
+    VALID_FROM = 'valid-from'
+    VALID_TO = 'valid-to'
+    ALL_FIELDS = [INSTALLED, SERIAL_NUMBER, VALID_FROM, VALID_TO]
+
+
+CERT_PRIVATE_KEY_LOCATION = '/etc/nvue/certificates/private'
+CERT_PUBLIC_KEY_LOCATION = '/etc/nvue/certificates/public'

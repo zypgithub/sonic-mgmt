@@ -6,7 +6,7 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tests_nvos.general.security.certificate.constants import DUT_IMPORTED_CERTS_PRIVATE_DIR, \
-    DUT_IMPORTED_CERTS_PUBLIC_DIR, DUT_IMPORTED_CACERTS_DIR
+    DUT_IMPORTED_CERTS_PUBLIC_DIR, DUT_IMPORTED_CACERTS_DIR, CERT_PRIVATE_KEY_LOCATION, CERT_PUBLIC_KEY_LOCATION
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_general_utils import generate_scp_uri_using_player
 
@@ -74,3 +74,18 @@ def delete_certificates(ca: bool = False):
 def import_test_certs(scp_player: LinuxSshEngine, dut_engine: LinuxSshEngine, certs: List[CertInfo]):
     import_certificates(scp_player, dut_engine, certs)
     import_certificates(scp_player, dut_engine, certs, True)
+
+
+def verify_file_exists_in_dut(path: str, dut_engine: LinuxSshEngine, should_exist=True):
+    out = dut_engine.run_cmd(f'sudo ls {path}')
+    file_exists = FILE_NOT_EXIST_ERR not in out
+    assert file_exists == should_exist, (f'given path existence is not as expected\npath: {path}\nexpected: {should_exist}\n'
+                                         f'actual: {file_exists}\nout:\n{out}')
+
+
+def verify_cert_in_expected_locations(cert_name: str, dut_engine: LinuxSshEngine, should_exist=True):
+    with allure.step(f'verify cert "{cert_name}" {"exists" if should_exist else "does not exist"} in expected locations'):
+        with allure.independent_step(f'verify private'):
+            verify_file_exists_in_dut(f'{CERT_PRIVATE_KEY_LOCATION}/{cert_name}.key', dut_engine, should_exist)
+        with allure.independent_step(f'verify public'):
+            verify_file_exists_in_dut(f'{CERT_PUBLIC_KEY_LOCATION}/{cert_name}.crt', dut_engine, should_exist)
