@@ -133,13 +133,16 @@ class DbConstants:
                              CliType.SHELL: METADATA_PATH,
                              CliType.MLNX_OS: METADATA_PATH_NVOS,
                              CliType.SKYNET: METADATA_PATH}
-    CREDENTIALS = {CliType.SONIC: {'server': 'YOKNVSQLDB.nvidia.com', 'database': 'sonic_mars',
+    CREDENTIALS = {CliType.SONIC: {'server': 'm-il-misql-01-prd.public.fbd32f5072b8.database.windows.net,3342',
+                                   'database': 'sonic_mars',
                                    'username': os.getenv("SONIC_SERVER_USER"),
                                    'password': os.getenv("SONIC_SERVER_PASSWORD")},
-                   CliType.NVUE: {'server': 'YOKNVSQLDB.nvidia.com', 'database': "NVOS",
+                   CliType.NVUE: {'server': 'm-il-misql-01-prd.public.fbd32f5072b8.database.windows.net,3342',
+                                  'database': "NVOS",
                                   'username': os.getenv("NVUE_SERVER_USER"),
                                   'password': os.getenv("NVUE_SERVER_PASSWORD")},
-                   CliType.SKYNET: {'server': 'YOKNVSQLDB.nvidia.com', 'database': 'skynet',
+                   CliType.SKYNET: {'server': 'm-il-misql-01-prd.public.fbd32f5072b8.database.windows.net,3342',
+                                    'database': 'skynet',
                                     'username': os.getenv("SKYNET_SERVER_USER"),
                                     'password': os.getenv("SKYNET_SERVER_PASSWORD")}}
 
