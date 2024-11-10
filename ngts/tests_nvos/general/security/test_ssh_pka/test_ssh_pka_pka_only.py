@@ -10,6 +10,7 @@ from ngts.tests_nvos.general.security.security_test_tools.constants import Addre
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.AuthVerifier import *
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.SecuritySshTool import SecuritySshTool
 from ngts.tests_nvos.general.security.test_ssh_pka.helpers import _generate_new_key, keys_path, public_key_length
+from ngts.tests_nvos.constants import MINUTE
 
 
 @pytest.mark.security
@@ -192,6 +193,7 @@ def test_ssh_pka_invalid_values(engines, generate_new_admin_keys):
             system.aaa.user.user_id['admin'].ssh.authorized_key.key_id[invalid_key].set(expected_str="Error: 'Invalid@' is not a 'item-name'. Letters and digits, underscores and dashes are allowed, starting with a letter or digit.")
 
 
+@pytest.mark.timeout(20 * MINUTE, func_only=True)
 @pytest.mark.security
 def test_ssh_pka_after_reboot_system(engines, generate_new_admin_keys):
     """
@@ -428,7 +430,7 @@ def test_ssh_pka_only(engines, topology_obj):
                 SecuritySshTool.rm_auth_keypair(f"{keys_path}/{user_with_key}")
 
 
-def ssh_pka_factory_reset_no_params_check(generate_new_admin_keys):
+def ssh_pka_factory_reset_no_params_check():
     """
     Verify that user keys deleted after factory reset
 
@@ -439,15 +441,21 @@ def ssh_pka_factory_reset_no_params_check(generate_new_admin_keys):
     5. verify show command is empty
     """
 
-    engines = engines if engines else TestToolkit.engines
+    engines = TestToolkit.engines
 
     with allure.step("create system"):
         system = System()
-        key_id = 'new_key'
 
-    with allure.step(f"generate new key with key_id = {key_id}"):
-        with allure.step("generate new key for admin"):
-            admin_key, admin_key_type, admin_private_key_path = _generate_new_key(engines.dut, 'admin')
+    admin_key, admin_key_type, admin_private_key_path = _generate_new_key(engines.dut, 'admin', 'ssh-rsa')
+
+    with allure.step("generate valid key id"):
+        random_key_id = system.aaa.user.generate_username()
+        admin_key_obj = system.aaa.user.user_id['admin'].ssh.authorized_key.key_id[random_key_id]
+
+        with allure.independent_step("add new public key using three set commands to admin user"):
+            admin_key_obj.set()
+            admin_key_obj.set(op_param_name='key', op_param_value=admin_key)
+            admin_key_obj.set(op_param_name='type', op_param_value=admin_key_type, apply=True).verify_result()
 
     yield  # factory reset
 
@@ -466,7 +474,7 @@ def ssh_pka_factory_reset_no_params_check(generate_new_admin_keys):
     yield
 
 
-def ssh_pka_factory_reset__keep_basic_check(engines, generate_new_admin_keys):
+def ssh_pka_factory_reset__keep_basic_check():
     """
     Verify that user keys not deleted after factory reset keep basic
 
@@ -477,12 +485,12 @@ def ssh_pka_factory_reset__keep_basic_check(engines, generate_new_admin_keys):
     5. verify show command is not empty
     """
 
-    engines = engines if engines else TestToolkit.engines
+    engines = TestToolkit.engines
 
     with allure.step("create system"):
         system = System()
 
-    admin_key, admin_key_type, admin_private_key_path = generate_new_admin_keys
+    admin_key, admin_key_type, admin_private_key_path = _generate_new_key(engines.dut, 'admin', 'ssh-rsa')
 
     with allure.step("generate valid key id"):
         random_key_id = system.aaa.user.generate_username()

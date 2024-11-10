@@ -5,7 +5,7 @@ from ngts.nvos_tools.infra.CmdRunner import CmdRunner
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.SecuritySshTool import *
 
-keys_path = "./"
+keys_path = "/auto/sw_system_project/NVOS_INFRA/security/verification/ssh_pka/"
 
 public_key_length = {
     'ecdsa-sha2-nistp521': '521',
