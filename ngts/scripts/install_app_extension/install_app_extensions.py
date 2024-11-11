@@ -6,7 +6,7 @@ import allure
 import json
 import requests
 
-from ngts.constants.constants import AppExtensionInstallationConstants, P4SamplingConsts, MarsConstants
+from ngts.constants.constants import AppExtensionInstallationConstants, P4SamplingConsts, MarsConstants, InfraConst
 from ngts.tests.nightly.app_extension.app_extension_helper import verify_app_container_up_and_repo_status_installed, \
     retry_verify_app_container_up
 from ngts.scripts.install_app_extension.app_extension_info import AppExtensionInfo
@@ -120,7 +120,7 @@ class AppExtensionInstaller:
         self.platform_params = platform_params
         self.app_extension_dict = self.set_app_extension_dict(app_extension_dict_path)
         self.is_app_extension_present_in_application_list()
-        self.syncd_sdk_version = self.get_sdk_version(AppExtensionInstallationConstants.SYNCD_DOCKER)
+        self.syncd_sdk_version = self.cli_obj.general.get_sdk_version(InfraConst.SYNCD_DOCKER)
 
     def get_latest_applications(self):
         # TODO add implementation for latest applications fetch
@@ -220,7 +220,7 @@ class AppExtensionInstaller:
         if not app_ext_obj.is_sx_sdk_version_present():
             logger.warning(f'Skipping checking of sdk_version for {P4SamplingConsts.APP_NAME}')
             return
-        app_ext_obj.set_sdk_version(self.get_sdk_version(app_ext_obj.app_name))
+        app_ext_obj.set_sdk_version(self.cli_obj.general.get_sdk_version(app_ext_obj.app_name))
         if not self.is_sdk_version_app_extension_matches_sonic(app_ext_obj):
             raise AppExtensionError(f'App ext {app_ext_obj.app_name} sdk {app_ext_obj.sdk_version} '
                                     f'does not match sonic sdk {self.syncd_sdk_version}')
@@ -233,7 +233,7 @@ class AppExtensionInstaller:
 
     def install_app_ext(self, app_ext_obj):
         log_install_app_ext_version = f'Installing app extension {app_ext_obj.app_name} ' \
-                                      f'version {app_ext_obj.version} on the dut'
+            f'version {app_ext_obj.version} on the dut'
         with allure.step(log_install_app_ext_version):
             logger.info(log_install_app_ext_version)
             self.cli_obj.app_ext.install_app(
@@ -264,14 +264,10 @@ class AppExtensionInstaller:
 
     def is_sdk_version_app_extension_matches_sonic(self, app_ext_obj):
         log_check_app_ext_sdk = f'Checking syncd sdk version {self.syncd_sdk_version} matches app extension ' \
-                                f'{app_ext_obj.app_name} sdk version on the dut'
+            f'{app_ext_obj.app_name} sdk version on the dut'
         with allure.step(log_check_app_ext_sdk):
             logger.info(log_check_app_ext_sdk)
             return self.syncd_sdk_version == app_ext_obj.sdk_version
-
-    def get_sdk_version(self, docker_name):
-        return self.cli_obj.general.engine.run_cmd(
-            AppExtensionInstallationConstants.CMD_GET_SDK_VERSION.format(docker_name), validate=True)
 
 
 class AppExtensionError(Exception):

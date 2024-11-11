@@ -13,6 +13,57 @@ class CumulusGeneralCli(NvueGeneralCli):
     def __init__(self, engine, device):
         super().__init__(engine, device)
 
+    def install_traffic_generator(self):
+        """
+        Function verifies the traffic generator is functional post deploy on CL OS
+
+        Function first unpack sdk verification git on top of switch
+        install necessary packages for sdk verification git to be functional
+        then, run test to verify  sdk verification git works correctly and
+        is running traffic generation script.
+        :return: None
+        """
+        with allure.step('Get SDK_VER git'):
+            sdk_version = self.get_sdk_version()
+            deb_file_path = os.path.join(PerfConsts.SDK_DEB_DIR_TEMPLATE.format(SDK_VERSION=sdk_version),
+                                         PerfConsts.SDK_DEB_FILE_TEMPLATE.format(SDK_VERSION=sdk_version))
+            self.engine.copy_file(source_file=f'{deb_file_path}',
+                                  dest_file=f'{PerfConsts.SDK_DEB_FILE_TEMPLATE.format(SDK_VERSION=sdk_version)}',
+                                  file_system='/tmp/', overwrite_file=True, verify_file=False)
+            self.engine.run_cmd(f'sudo dpkg -i /tmp/{PerfConsts.SDK_DEB_FILE_TEMPLATE.format(SDK_VERSION=sdk_version)}')
+            self.engine.copy_file(source_file=f'{PerfConsts.REQUIRMENTS_DIR}/{PerfConsts.REQUIRMENTS_FILE}',
+                                  dest_file=f'./{PerfConsts.REQUIRMENTS_FILE}', file_system='/tmp/',
+                                  overwrite_file=True, verify_file=False)
+
+        with allure.step('pip dependencies'):
+            self.engine.run_cmd('sudo apt-get update')
+            self.engine.run_cmd('sudo apt install python3.11')
+            self.engine.run_cmd('sudo mkdir /home/cumulus/venv')
+            self.engine.run_cmd('sudo apt install python3.11-venv')
+            self.engine.run_cmd('python -m venv sdk_env --system-site-packages')
+            self.engine.run_cmd('sudo /home/cumulus/sdk_env/bin/pip install --upgrade pip --root-user-action=ignore')
+            self.engine.run_cmd('sudo /home/cumulus/sdk_env/bin/pip install -r /tmp/requirements.txt --root-user-action=ignore')
+
+        with allure.step('apt get'):
+            self.engine.run_cmd('echo Y | sudo apt-get install build-essential')
+            self.engine.run_cmd('echo Y | sudo apt-get install swig')
+            self.engine.run_cmd('echo Y | sudo apt-get install kmod')
+            self.engine.run_cmd('echo Y | sudo apt-get install pciutils')
+            self.engine.run_cmd('sudo apt-get install dmidecode')
+            self.engine.run_cmd('sudo touch /var/log/syslog')
+            self.engine.run_cmd('echo Y | sudo apt-get install python3-dev')
+
+        with allure.step('Prepare SDK_VER git to run tests'):
+            self.engine.run_cmd(f"sudo /home/cumulus/sdk_env/bin/python3.11 /root/sys_sdk/sx_sdk_py_tests/tests/run_tests.py -si")
+        # TODO: uncomment once sdk_ver has shahaf changes
+        # with allure.step('run SDK_VER traffic generator test '):
+            # self.engine.run_cmd(f"sudo /home/cumulus/sdk_env/bin/python3.11 /root/sys_sdk/sx_sdk_py_tests/tests/run_tests.py --names GenericTrafficGenerator")
+
+    def get_sdk_version(self):
+        sdk_version_output = self.engine.run_cmd(InfraConst.CMD_GET_SDK_VERSION, validate=True)
+        sdk_version = re.search(r"SX-SDK ETH (\d+\.\d+\.\d+)", sdk_version_output).group(1)
+        return sdk_version
+
     def _onie_nos_install_image(self, serial_engine, image_url, expected_patterns):
         logger.info('Install image using url')
         _, index = serial_engine.run_cmd(

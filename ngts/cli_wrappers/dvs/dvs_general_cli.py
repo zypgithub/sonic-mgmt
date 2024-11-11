@@ -49,6 +49,15 @@ class DvsGeneralCli(GeneralCliCommon):
             self.dvs_restart()
             logger.info("SDK and FW installation has ended successfully!")
 
+    def install_traffic_generator(self):
+        """
+        Function verifies the traffic generator is functional post deploy on DVS OS
+        :return: None
+        """
+        self.engine.run_cmd(f"/root/sys_sdk/sx_sdk_py_tests/tests/run_tests.py -si")
+        # TODO: uncomment once sdk_ver has shahaf changes
+        # self.engine.run_cmd(f"/root/sys_sdk/sx_sdk_py_tests/tests/run_tests.py --names GenericTrafficGenerator")
+
     def get_fw_version_from_sdk(self, sdk_version):
         fw_version_path = os.path.join(PerfConsts.SDK_VERSION_PATH, sdk_version, PerfConsts.FW_VERSION_FILE)
         fw_version = self.engine.run_cmd(f"cat {fw_version_path}")

@@ -120,11 +120,11 @@ def test_deploy_and_upgrade(topology_obj, is_simx, is_performance, base_version,
         with allure.step('installation'):
             install_threads = []
             executor = concurrent.futures.ThreadPoolExecutor()
-
+            use_GA_image = False
             for dut in setup_info['duts']:
                 cli_obj = dut['cli_obj']
                 related_base_version_url, related_target_version = get_related_image_to_switch(base_version_url,
-                                                                                               target_version_url, dut)
+                                                                                               target_version_url, dut, use_GA_image)
                 if not cli_obj.is_dut_supports_image(related_base_version_url, dut['dut_name'], dut['cli_type']):
                     continue
 
@@ -149,7 +149,7 @@ def test_deploy_and_upgrade(topology_obj, is_simx, is_performance, base_version,
                                                             serial_log_analyzers=serial_log_analyzers,
                                                             dut_ip=dut['dut_ip'],
                                                             fanout_target_version=fanout_target_version)))
-            wait_until_deploy_background_process(install_threads, timeout=1500)
+            DeployMethods.wait_until_deploy_background_process(install_threads, timeout=1500)
 
             if "bobcat" in setup_name and base_version_dpu:
                 if "DARK_MODE=true" in topology_obj.players['dut']['engine'].run_cmd("cat /etc/mlnx/dpu.conf"):
@@ -298,15 +298,15 @@ def post_installation_steps(topology_obj, sonic_topo, recover_by_reboot, deploy_
 
     replace_nos = request.config.getoption('--target_cli_type')
     if replace_nos:
-        DeployMethods.multi_nos_post_installation_steps(setup_info['duts'], replace_nos)
+        DeployMethods.multi_nos_post_installation_steps(setup_info['duts'], replace_nos, is_performance)
 
 
-def get_related_image_to_switch(base_version, target_version, dut):
+def get_related_image_to_switch(base_version, target_version, dut, use_GA_image):
     # production devices support only prod versions of ONIE and SONiC
     if dut['dut_alias'] == "dut":
         base_version, target_version = get_image_for_dut(base_version, target_version, dut)
     elif dut['dut_alias'] in PerfConsts.TG_ALIAS_LIST:
-        base_version, target_version = get_image_for_traffic_generators(base_version, target_version, dut)
+        base_version, target_version = get_image_for_traffic_generators(base_version, target_version, dut, use_GA_image)
     return base_version, target_version
 
 
@@ -324,22 +324,12 @@ def get_image_for_dut(base_version, target_version, dut):
     return base_version, target_version
 
 
-def get_image_for_traffic_generators(base_version, target_version, dut):
+def get_image_for_traffic_generators(base_version, target_version, dut, use_GA_image):
     if dut['cli_type'] == CliType.SONIC:
-        base_version = PerfConsts.SONIC_GA_IMAGE
+        base_version = PerfConsts.SONIC_GA_IMAGE if use_GA_image else base_version
     elif dut['cli_type'] == CliType.NVUE:
-        target_version = PerfConsts.CL_GA_IMAGE
+        target_version = PerfConsts.CL_GA_IMAGE if use_GA_image else target_version
     return base_version, target_version
-
-
-def wait_until_deploy_background_process(install_threads, timeout=1200):
-    for dut_name, task in install_threads:
-        with allure.step(f'Wait until {dut_name} installation background process done'):
-            try:
-                task.result(timeout=timeout)
-                logger.info(f"Image is successfully installed on {dut_name}")
-            except TimeoutError:
-                logger.error(f"The installation on {dut_name} failed to complete in {timeout}s.")
 
 
 def get_info_from_topology(topology_obj, workspace_path):

@@ -35,6 +35,7 @@ from ngts.helpers.interface_helpers import get_dut_default_ports_list
 from ngts.helpers.run_process_on_host import run_background_process_on_host
 
 from ngts.helpers.sonic_branch_helper import get_sonic_branch
+from ngts.helpers.system_helpers import copy_files_to_syncd
 from ngts.scripts.check_and_store_sanitizer_dump import check_sanitizer_and_store_dump
 from ngts.tests.nightly.app_extension.app_extension_helper import get_installed_mellanox_extensions
 from ngts.tests.nightly.show_techsupport.constants import HealthEventConst
@@ -756,11 +757,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             if platform_params["hwsku"] != current_platform_summary["HwSKU"] \
                     or platform_params["platform"] != current_platform_summary["Platform"] \
                     or self.is_performance_setup(setup_name):
-                if self.is_performance_setup(setup_name):
-                    # for performance setup the HwSKU not updated after install image
-                    platform_params["hwsku"] = PerformanceSetupConstants.HWSKU
-                else:
-                    platform_params["hwsku"] = current_platform_summary["HwSKU"]
+                platform_params["hwsku"] = current_platform_summary["HwSKU"]
                 platform_params["platform"] = current_platform_summary["Platform"]
                 hostname = self.cli_obj.chassis.get_hostname()
                 update_platform_info_files(hostname, current_platform_summary, update_inventory=True)
@@ -1628,6 +1625,52 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         for key, sub_keys in changed_keys_mapping.items():
             for sub_key in sub_keys:
                 self.engine.run_cmd(f'sudo sonic-db-cli CONFIG_DB HDEL "{key}" "{sub_key}"')
+
+    def install_traffic_generator(self):
+        """
+        Function verifies the traffic generator is functional post deploy on SONiC OS
+
+        Function first unpack sdk verification git on top of switch
+        install necessary packages for sdk verification git to be functional
+        then, run test to verify  sdk verification git works correctly and
+        is running traffic generation script.
+        :return: None
+        """
+        with allure.step('Get SDK_VER git'):
+            syncd_sdk_version = self.get_sdk_version(InfraConst.SYNCD_DOCKER)
+            docker_exec_syncd_cmd = InfraConst.DOCKER_EXEC_BASH_CMD.format(DOCKER=InfraConst.SYNCD_DOCKER)
+            copy_files_to_syncd(self.engine, [PerfConsts.SDK_DEB_FILE_TEMPLATE.format(SDK_VERSION=syncd_sdk_version)],
+                                PerfConsts.SDK_DEB_DIR_TEMPLATE.format(SDK_VERSION=syncd_sdk_version))
+            self.engine.run_cmd(f"{docker_exec_syncd_cmd} 'dpkg -i {PerfConsts.SDK_DEB_FILE_TEMPLATE.format(SDK_VERSION=syncd_sdk_version)}'")
+
+        with allure.step('pip dependencies'):
+            self.engine.run_cmd(f"{docker_exec_syncd_cmd} 'python3 -m pip install --upgrade pip --root-user-action=ignore'")
+            copy_files_to_syncd(self.engine, [PerfConsts.REQUIRMENTS_FILE],
+                                PerfConsts.REQUIRMENTS_DIR)
+            self.engine.run_cmd(f"{docker_exec_syncd_cmd} 'pip install -r {PerfConsts.REQUIRMENTS_FILE} --root-user-action=ignore'")
+
+        with allure.step('apt get'):
+            self.engine.run_cmd(f"{docker_exec_syncd_cmd} 'apt-get update'")
+            self.engine.run_cmd(f"{docker_exec_syncd_cmd} 'echo Y | apt-get install build-essential'")
+            self.engine.run_cmd(f"{docker_exec_syncd_cmd} 'echo Y | apt-get install swig'")
+            self.engine.run_cmd(f"{docker_exec_syncd_cmd} 'apt-get install dmidecode'")
+            self.engine.run_cmd(f"{docker_exec_syncd_cmd} 'touch /var/log/syslog'")
+            self.engine.run_cmd(f"{docker_exec_syncd_cmd} 'echo Y | apt-get install kmod'")
+            self.engine.run_cmd(f"{docker_exec_syncd_cmd} 'echo Y | apt-get install pciutils'")
+
+        with allure.step('Prepare SDK_VER git to run tests'):
+            self.engine.run_cmd(f"{docker_exec_syncd_cmd} '{PerfConsts.EXPORT_PYTHONPATH} "
+                                f"&& /root/sys_sdk/sx_sdk_py_tests/tests/run_tests.py -si'")
+        # TODO: uncomment once sdk_ver has shahaf changes
+        # with allure.step('run SDK_VER traffic generator test '):
+            # self.engine.run_cmd(f"{docker_exec_syncd_cmd} '{PerfConsts.EXPORT_PYTHONPATH}
+            # && /root/sys_sdk/sx_sdk_py_tests/tests/run_tests.py
+            # --names GenericTrafficGenerator'")
+
+    def get_sdk_version(self, docker_name):
+        sdk_version_output = self.engine.run_cmd(InfraConst.CMD_GET_SDK_VERSION_FROM_DOCKER.format(DOCKER=docker_name), validate=True)
+        sdk_version = re.search(r"SX-SDK ETH (\d+\.\d+\.\d+)", sdk_version_output).group(1)
+        return sdk_version
 
 
 class SonicGeneralCli202012(SonicGeneralCliDefault):

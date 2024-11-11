@@ -145,6 +145,12 @@ class DbConstants:
 
 
 class InfraConst:
+    DOCKER_EXEC_BASH_CMD = "docker exec -it {DOCKER} bash -c"
+    CMD_GET_SDK_VERSION = 'sx_sdk --version'
+    CMD_GET_SDK_VERSION_FROM_DOCKER = \
+        "{DOCKER_EXEC_BASH_CMD} '{CMD_GET_SDK_VERSION}'".format(DOCKER_EXEC_BASH_CMD=DOCKER_EXEC_BASH_CMD,
+                                                                CMD_GET_SDK_VERSION=CMD_GET_SDK_VERSION)
+    SYNCD_DOCKER = 'syncd'
     NVIDIA_MAIL_SERVER = 'mail.nvidia.com'
     HTTP_SERVER = 'http://nbu-mtr-nfs'
     HTTTP_SERVER_FIT16 = 'http://r-fit16-clone.mtr.labs.mlnx'
@@ -1177,8 +1183,6 @@ class AppExtensionInstallationConstants:
     LC_MANAGER = 'line-card-manager'
     DOAI = 'doai'
     LC_MANAGER_REPOSITORY = 'harbor.mellanox.com/sonic-lc-manager/line-card-manager'
-    CMD_GET_SDK_VERSION = "docker exec -i {} bash -c 'sx_sdk --version'"
-    SYNCD_DOCKER = 'syncd'
     APPLICATION_LIST = [
         P4SamplingConsts.APP_NAME,
         WJH_APP_NAME,
@@ -1611,6 +1615,13 @@ class IndependentModuleConst:
 
 class PerfConsts:
     CONFIG_FILES_DIR = os.path.join(BugHandlerConst.NGTS_PATH, 'tests/performance/config_files')
+    REQUIRMENTS_DIR = os.path.join(BugHandlerConst.NGTS_PATH, 'performance_tests/')
+    REQUIRMENTS_FILE = 'requirements.txt'
+    SDK_DEB_DIR_TEMPLATE = "/auto/sw_system_release/sx_sdk_eth/sx_sdk_eth-{SDK_VERSION}/DEBS/6.1.0-11-2-amd64/"
+    SDK_DEB_FILE_TEMPLATE = "sys-sdk-git_1.mlnx.{SDK_VERSION}_amd64.deb"
+    EXPORT_PYTHONPATH = 'export PYTHONPATH=/root/sys_sdk/sx_sdk_py_tests/:/root/sys_sdk/sx_sdk_py_tests/tests/:' \
+                        '/root/sys_sdk/sx_sdk_py_tests/tools/bpf_api_tracer/:/root/sys_sdk/sx_sdk_py_tests/libs/swig/:' \
+                        '/root/sys_sdk/sx_sdk_py_tests/tests/traffic_tests/vlan_bridge/'
     LEFT_TG_ALIAS = "left_tg"
     RIGHT_TG_ALIAS = "right_tg"
     TG_ALIAS_LIST = [LEFT_TG_ALIAS, RIGHT_TG_ALIAS]

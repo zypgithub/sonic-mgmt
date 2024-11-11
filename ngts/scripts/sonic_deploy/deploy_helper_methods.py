@@ -65,7 +65,7 @@ class DeployMethods:
                 patterns_list=["password for cumulus"])
 
     @staticmethod
-    def multi_nos_post_installation_steps(duts, target_cli_type):
+    def multi_nos_post_installation_steps(duts, target_cli_type, is_performance):
         for dut in duts:
             data_query = json.loads('{ "update": { "CLI_TYPE": "' + target_cli_type +
                                     '", "TYPE": "' + CliType.NOS_TO_TYPE_DICT[target_cli_type] +
@@ -75,3 +75,25 @@ class DeployMethods:
             logger.info(f"Set cli type of {dut['dut_name']} to {target_cli_type} and switch type to "
                         f"{CliType.NOS_TO_TYPE_DICT[target_cli_type]}")
             upload_data_to_noga(data_query)
+        if is_performance:
+            DeployMethods.multi_nos_install_traffic_generator(duts)
+
+    @staticmethod
+    def multi_nos_install_traffic_generator(duts):
+        install_threads = []
+        executor = concurrent.futures.ThreadPoolExecutor()
+        for dut in duts:
+            cli_obj = dut['cli_obj']
+            with allure.step('Install traffic generator on switch: {}'.format(dut['dut_name'])):
+                install_threads.append((dut['dut_name'], executor.submit(cli_obj.install_traffic_generator)))
+            DeployMethods.wait_until_deploy_background_process(install_threads, timeout=1500)
+
+    @staticmethod
+    def wait_until_deploy_background_process(install_threads, timeout=1200):
+        for dut_name, task in install_threads:
+            with allure.step(f'Wait until {dut_name} installation background process done'):
+                try:
+                    task.result(timeout=timeout)
+                    logger.info(f"Image is successfully installed on {dut_name}")
+                except TimeoutError:
+                    logger.error(f"The installation on {dut_name} failed to complete in {timeout}s.")
