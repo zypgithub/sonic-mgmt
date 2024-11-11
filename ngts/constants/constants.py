@@ -146,7 +146,7 @@ class DbConstants:
 
 class InfraConst:
     NVIDIA_MAIL_SERVER = 'mail.nvidia.com'
-    HTTP_SERVER = 'http://fit69'
+    HTTP_SERVER = 'http://nbu-mtr-nfs'
     HTTTP_SERVER_FIT16 = 'http://r-fit16-clone.mtr.labs.mlnx'
     MARS_TOPO_FOLDER_PATH = '/auto/sw_regression/system/SONIC/MARS/conf/topo/'
     MARS_CMIS_FOLDER_PATH = '/auto/sw_regression/system/SONIC/MARS/conf/cmis/'
