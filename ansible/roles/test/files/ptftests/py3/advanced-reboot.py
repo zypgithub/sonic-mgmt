@@ -1767,7 +1767,7 @@ class ReloadTest(BaseTest):
                                    'wait': wait, 'sniff_filter': sniff_filter})
         sniffer.start()
         # Let the scapy sniff initialize completely.
-        time.sleep(5)
+        time.sleep(10)
         # Unblock waiter for the send_in_background.
         self.sniffer_started.set()
         sniffer.join()
