@@ -462,7 +462,7 @@ class GorillaSwitch(IbSwitch):
             }
         )
         self.stats_fan_header_num_of_lines = 25
-        self.stats_cpu_header_num_of_lines = 10
+        self.stats_cpu_header_num_of_lines = 12
         self.stats_temperature_header_num_of_lines = 53
         self.supports_tpm_testing = False
 
