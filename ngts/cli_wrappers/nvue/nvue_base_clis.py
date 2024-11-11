@@ -76,15 +76,15 @@ class NvueBaseCli:
 
     @staticmethod
     def action(engine, device=None, action_type='', resource_path='', suffix="", param_name="", param_value="",
-               output_format=None, expect_reboot=False, recovery_engine=None, deny_reboot=False, topology_obj=None):
+               output_format=None, expect_reboot=False, recovery_engine=None, deny_reboot=False, topology_obj=None, track_boot_intervals=False):
         return NvueBaseCli.nvue_action(engine, device, action_type, resource_path, suffix, param_name, param_value,
                                        output_format, expect_reboot, recovery_engine, deny_reboot=deny_reboot,
-                                       topology_obj=topology_obj)
+                                       topology_obj=topology_obj, track_boot_intervals=track_boot_intervals)
 
     @staticmethod
     @check_output
     def nvue_action(engine, device, action_type, resource_path, suffix, param_name, param_value, output_format,
-                    expect_reboot, recovery_engine, deny_reboot=False, topology_obj=None):
+                    expect_reboot, recovery_engine, deny_reboot=False, topology_obj=None, track_boot_intervals=False):
         """See documentation of BaseComponent.action"""
         if not action_type:
             raise ValueError("action_type must be non-empty")
@@ -102,7 +102,7 @@ class NvueBaseCli:
             confirm = not ("force" in param_name)
             return DutUtilsTool.reload(engine=engine, device=device, command=command, confirm=confirm,
                                        recovery_engine=recovery_engine, deny_reboot=deny_reboot,
-                                       topology_obj=topology_obj).verify_result()
+                                       topology_obj=topology_obj, track_boot_intervals=track_boot_intervals).verify_result()
         else:
             output = engine.run_cmd(command)
             logger.info(output)

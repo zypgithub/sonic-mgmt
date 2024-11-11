@@ -1,29 +1,27 @@
+import copy
 import logging
 import random
-import pytest
-import copy
 import time
 
+import pytest
+
+from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
+from ngts.nvos_constants.constants_nvos import SystemConsts, OutputFormat, ApiType, NvosConst, ImageConsts
+from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_tools.infra.ValidationTool import ValidationTool
-from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.nvos_tools.nmx.Sdn import Sdn
-from ngts.nvos_constants.constants_nvos import PlatformConsts, SystemConsts, OutputFormat, ApiType, IbConsts, NvosConst, ClusterAppsLogLevels, ImageConsts
-from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.nvos_tools.ib.Ib import Ib
-from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports
-from ngts.scripts.sonic_deploy.nvos_only_methods import NvosInstallationSteps
-from ngts.scripts.sonic_deploy.image_preparetion_methods import get_real_paths, prepare_images
-from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from ngts.nvos_tools.Devices.DeviceFactory import DeviceFactory
 from ngts.nvos_tools.system.System import System
-from ngts.scripts.sonic_deploy.test_deploy_and_upgrade import get_target_version_url, get_base_version_url, prepare_images_to_install
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
-from ngts.tests_nvos.constants import MINUTE
+from ngts.scripts.sonic_deploy.image_preparetion_methods import get_real_paths
+from ngts.scripts.sonic_deploy.nvos_only_methods import NvosInstallationSteps
+from ngts.scripts.sonic_deploy.test_deploy_and_upgrade import get_target_version_url, get_base_version_url, \
+    prepare_images_to_install
 from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
-
+from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports
+from ngts.tests_nvos.constants import MINUTE
+from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
 
@@ -89,7 +87,7 @@ def test_upgrade_with_nmx_enabled(test_api, devices, base_version,
             with allure.step("Choose random log level, and set cluster app log level to"):
                 for app in ClusterConsts.INITIAL_EXPECTED_APPS:
                     log_level = random.choice(ClusterConsts.ClusterAppsLogLevelsList)
-                    cluster.apps.apps_name[app].loglevel.action_update_cluster_log_level(level=log_level)
+                    cluster.apps.app_name[app].loglevel.action_update_cluster_log_level(level=log_level)
                     log_levels[app] = log_level
 
             config_files_paths = ClusterTools.get_current_config_files_paths(sdn)
@@ -193,7 +191,7 @@ def test_upgrade_with_nmx_enabled(test_api, devices, base_version,
                 engines.sonic_mgmt.run_cmd(f"sudo rm -rf {ClusterConsts.INITIAL_CONFIGURATIONS_PATH}/*")
 
         with allure.step("Restore log level"):
-            cluster.apps.apps_name[app].loglevel.action_restore_cluster()
+            cluster.apps.app_name[app].loglevel.action_restore_cluster()
 
         cluster.unset(apply=True)
         ClusterTools.wait_for_apps_to_be_in_wanted_state()

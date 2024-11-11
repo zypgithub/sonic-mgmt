@@ -4,14 +4,14 @@ import re
 import pytest
 
 from ngts.nvos_constants.constants_nvos import ApiType, OutputFormat, ActionConsts
-from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
 from ngts.nvos_tools.infra.Fae import Fae
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.nmx.Cluster import Cluster
-from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports
-from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
+from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
 from ngts.tools.test_utils import allure_utils as allure
 
 
@@ -30,10 +30,10 @@ def enable_cluster_and_stop_apps():
     cluster = Cluster()
     ClusterTools.start_cluster(cluster, OutputFormat.json)
     for app in ClusterConsts.INITIAL_EXPECTED_APPS:
-        cluster.apps.apps_name[app].action_stop_cluster_apps().verify_result()
+        cluster.apps.app_name[app].action_stop_cluster_app().verify_result()
     yield
     for app in ClusterConsts.INITIAL_EXPECTED_APPS:
-        cluster.apps.apps_name[app].action_start_cluster_apps().verify_result()
+        cluster.apps.app_name[app].action_start_cluster_app().verify_result()
 
 
 @pytest.fixture()
@@ -127,7 +127,7 @@ def fetch_and_verify_package(fae, app, path):
 
 def uninstall_install_and_verify_package(fae, app, filename, expected_version, cluster):
     with allure.step(f'try to uninstall nmx package app {app}'):
-        fae.cluster.apps.apps_name[app].action_uninstall()
+        fae.cluster.apps.app_name[app].action_uninstall()
 
     with allure.step(f'verify nmx package app {app} not in installed apps'):
         output = OutputParsingTool.parse_show_output_to_dict(cluster.apps.show()).get_returned_value()
@@ -142,9 +142,9 @@ def uninstall_install_and_verify_package(fae, app, filename, expected_version, c
 
 def verify_start_stop(cluster, app):
     with allure.step(f'try to start stop {app}'):
-        cluster.apps.apps_name[app].action_start_cluster_apps().verify_result()
+        cluster.apps.app_name[app].action_start_cluster_app().verify_result()
         ClusterTools.wait_for_apps_to_be_in_wanted_state()
-        cluster.apps.apps_name[app].action_stop_cluster_apps().verify_result()
+        cluster.apps.app_name[app].action_stop_cluster_app().verify_result()
 
 
 def delete_package_file(fae, filename):

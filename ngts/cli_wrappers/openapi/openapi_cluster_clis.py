@@ -13,11 +13,11 @@ class OpenApiClusterCli(OpenApiBaseCli):
         self.cli_name = "Cluster"
 
     @staticmethod
-    def action_start_cluster_apps(engine, resource_path):
+    def action_start_cluster_app(engine, resource_path):
         return OpenApiClusterCli.action(engine, action_type=ActionType.START.replace('@', ''), resource_path=resource_path)
 
     @staticmethod
-    def action_stop_cluster_apps(engine, resource_path):
+    def action_stop_cluster_app(engine, resource_path):
         return OpenApiClusterCli.action(engine, action_type=ActionType.STOP.replace('@', ''), resource_path=resource_path)
 
     @staticmethod

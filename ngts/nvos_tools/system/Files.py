@@ -105,12 +105,12 @@ class File(BaseComponent):
         return self._action_file_install(False, expected_str=expected_str, force=force, dut_engine=dut_engine)
 
     def action_file_install_with_reboot(self, expected_str="", force=True, engine=None, device=None,
-                                        recovery_engine=None, deny_reboot=False, topology_obj=None) -> ResultObj:
+                                        recovery_engine=None, deny_reboot=False, topology_obj=None, track_boot_intervals=False) -> ResultObj:
         return self._action_file_install(True, expected_str, force, engine, device, recovery_engine,
-                                         deny_reboot=deny_reboot, topology_obj=topology_obj)
+                                         deny_reboot=deny_reboot, topology_obj=topology_obj, track_boot_intervals=track_boot_intervals)
 
     def _action_file_install(self, with_reboot: bool, expected_str="", force=True, dut_engine=None, device=None,
-                             recovery_engine=None, deny_reboot=False, topology_obj=None) -> ResultObj:
+                             recovery_engine=None, deny_reboot=False, topology_obj=None, track_boot_intervals=False) -> ResultObj:
         engine = dut_engine if dut_engine else TestToolkit.engines.dut
         device = device if device else TestToolkit.devices.dut
         topology_obj = topology_obj or TestToolkit.topology_obj
@@ -120,7 +120,7 @@ class File(BaseComponent):
                 self._cli_wrapper.action, expected_str,
                 engine, device, action_type='install', resource_path=resource_path, param_name='force' if force else '',
                 expect_reboot=with_reboot, recovery_engine=recovery_engine, deny_reboot=deny_reboot,
-                topology_obj=topology_obj)
+                topology_obj=topology_obj, track_boot_intervals=track_boot_intervals)
 
     def rename_and_verify(self, new_name, expected_str="", dut_engine=None):
         original_name = self.file_name
