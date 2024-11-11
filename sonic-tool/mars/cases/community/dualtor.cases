@@ -16,6 +16,14 @@
     </global>
 
     <case>
+        <ignore>
+            <!-- daily case  -->
+            <condition>
+                <key> skip_weekend_cases </key>
+                <op> == </op>
+                <value> no </value>
+            </condition>
+        </ignore>
         <info> IP in IP Case </info>
         <name> ipinip </name>
         <cmd>
@@ -26,6 +34,14 @@
     </case>
 
     <case>
+        <ignore>
+            <!-- daily case  -->
+            <condition>
+                <key> skip_weekend_cases </key>
+                <op> == </op>
+                <value> no </value>
+            </condition>
+        </ignore>
         <info> Orchagent Stress Case </info>
         <name> orchagent_stress </name>
         <cmd>
@@ -36,6 +52,14 @@
     </case>
 
     <case>
+        <ignore>
+            <!-- daily case  -->
+            <condition>
+                <key> skip_weekend_cases </key>
+                <op> == </op>
+                <value> no </value>
+            </condition>
+        </ignore>
         <info> Orchagent Active Tor Downstream Case </info>
         <name> orchagent_active_tor_downstream </name>
         <cmd>
@@ -46,6 +70,14 @@
     </case>
 
     <case>
+        <ignore>
+            <!-- daily case  -->
+            <condition>
+                <key> skip_weekend_cases </key>
+                <op> == </op>
+                <value> no </value>
+            </condition>
+        </ignore>
         <info> Orchagent Mac Move Case </info>
         <name> orchagent_mac_move </name>
         <cmd>
@@ -56,6 +88,14 @@
     </case>
 
     <case>
+        <ignore>
+            <!-- daily case  -->
+            <condition>
+                <key> skip_weekend_cases </key>
+                <op> == </op>
+                <value> no </value>
+            </condition>
+        </ignore>
         <info> Orchagent SLB Case </info>
         <name> orchagent_slb </name>
         <cmd>
@@ -66,6 +106,14 @@
     </case>
 
     <case>
+        <ignore>
+            <!-- daily case  -->
+            <condition>
+                <key> skip_weekend_cases </key>
+                <op> == </op>
+                <value> no </value>
+            </condition>
+        </ignore>
         <info> Orchagent Standby Tor Downstream Case </info>
         <name> orchagent_standby_tor_downstream </name>
         <cmd>
@@ -76,6 +124,14 @@
     </case>
 
     <case>
+        <ignore>
+            <!-- daily case  -->
+            <condition>
+                <key> skip_weekend_cases </key>
+                <op> == </op>
+                <value> no </value>
+            </condition>
+        </ignore>
         <info> Standby Tor Upstream Mux Toggle </info>
         <name> standby_tor_upstream_mux_toggle </name>
         <cmd>
@@ -86,6 +142,14 @@
     </case>
 
     <case>
+        <ignore>
+            <!-- daily case  -->
+            <condition>
+                <key> skip_weekend_cases </key>
+                <op> == </op>
+                <value> no </value>
+            </condition>
+        </ignore>
         <info> Tor ECN </info>
         <name> tor_ecn </name>
         <cmd>
