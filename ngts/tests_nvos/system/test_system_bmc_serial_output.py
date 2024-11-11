@@ -78,4 +78,4 @@ def _show_and_verify_serial_console(system, serial_engine, param):
         system.events.show(dut_engine=serial_engine)
 
     with allure_step("Verify system events logged"):
-        system.log.show_log(param='| grep {0}'.format(param), exit_cmd='q', expected_str='system/{0}'.format(param))
+        system.log.show_log(param='| grep -a {0}'.format(param), expected_str='system/{0}'.format(param))
