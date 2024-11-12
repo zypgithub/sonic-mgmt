@@ -60,15 +60,15 @@ class BaseComponent:
         return param
 
     def show(self, op_param="", output_format=OutputFormat.json, dut_engine=None, should_succeed=True,
-             rev=ConfState.OPERATIONAL):
+             rev=ConfState.OPERATIONAL, exempted_err_msgs=None):
         if not dut_engine:
             dut_engine = TestToolkit.engines.dut
 
         with allure.step('Execute show for {}'.format(self.get_resource_path())):
             op_param = self.update_param(op_param, rev)
-            return SendCommandTool.execute_command(self._cli_wrapper.show, dut_engine,
-                                                   self.get_resource_path(), op_param,
-                                                   output_format).get_returned_value(should_succeed=should_succeed)
+            return SendCommandTool.execute_command(self._cli_wrapper.show, dut_engine, self.get_resource_path(),
+                                                   op_param, output_format, exempted_err_msgs=exempted_err_msgs).\
+                get_returned_value(should_succeed=should_succeed)
 
     def parse_show(self, op_param="", dut_engine=None, should_succeed=True):
         output = self.show(op_param, OutputFormat.json, dut_engine, should_succeed)
