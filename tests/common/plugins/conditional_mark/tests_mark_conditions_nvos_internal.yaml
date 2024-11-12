@@ -593,9 +593,9 @@ tests_nvos/system/test_log_commands.py::test_log_idle:
     conditions:
       - https://redmine.mellanox.com/issues/4126563
 
-tests_nvos/fae/test_read_eeprom.py::test_system_bmc_serial_output:
+tests_nvos/fae/test_read_eeprom.py::test_show_eeprom_bmc:
   skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4126563"
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4158816"
     conditions:
       - https://redmine.mellanox.com/issues/4158816
 
