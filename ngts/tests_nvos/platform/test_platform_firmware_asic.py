@@ -23,7 +23,7 @@ logger = logging.getLogger()
 
 @pytest.mark.checklist
 @pytest.mark.platform
-def test_show_platform_firmware(devices):
+def test_show_platform_firmware_asic(devices):
     """
     Show platform firmware test
 

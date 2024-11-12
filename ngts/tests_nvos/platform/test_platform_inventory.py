@@ -61,7 +61,9 @@ class InventoryPsuTest(InventoryItemBaseTest):
     @classmethod
     def choose_item(cls, engines, devices, test_api) -> str:
         platform = Platform()
-        psu_list = list(devices.dut.psu_list)
+        output = OutputParsingTool.parse_json_str_to_dictionary(platform.environment.psu.show()).get_returned_value()
+        # Filter PSUs where all values are not "N/A"
+        psu_list = [key for key, stats in output.items() if all(value != "N/A" for value in stats.values())]
         random_psu = random.choice(psu_list)
         output_format = OutputFormat.auto if test_api == ApiType.NVUE else OutputFormat.json
         output = OutputParsingTool.parse_show_output_to_dict(

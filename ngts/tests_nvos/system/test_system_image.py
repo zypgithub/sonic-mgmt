@@ -110,30 +110,28 @@ def test_downgrade_upgrade(release_name, test_api, original_version, devices, ba
 
     TestToolkit.tested_api = test_api
     system = System()
-
     verify_current_version(original_version, system, devices.dut)
 
     original_images, _, original_image_partition, partition_id_for_new_image, fetched_image = \
         get_image_data_and_fetch_base_image(system, base_version)
     fetched_image_file = system.image.files.file_name[fetched_image]
-
-    with allure.step("Rename image and verify"):
-        new_name = RandomizationTool.get_random_string(20, ascii_letters=string.ascii_letters + string.digits)
-        fetched_image_file.rename_and_verify(new_name)
-
-    with allure.step("Install original image name, should fail"):
-        logger.info("Install original image name: {}, should fail".format(fetched_image))
-        system.image.files.file_name[fetched_image].action_file_install("Failed").verify_result()
-
-    with allure.step("Delete original image name, should fail"):
-        system.image.files.delete_files([fetched_image], "File not found")
-
     try:
-        orig_engine: LinuxSshEngine = TestToolkit.engines.dut
-        fetched_image_file.action_rename(fetched_image)
-        install_image_and_verify(orig_engine=orig_engine, image_name=fetched_image, partition_id=partition_id_for_new_image,
-                                 original_images=original_images, system=system, release_name=release_name,
-                                 test_name='test_downgrade_upgrade')
+        with allure.step("Rename image and verify"):
+            new_name = RandomizationTool.get_random_string(20, ascii_letters=string.ascii_letters + string.digits)
+            fetched_image_file.rename_and_verify(new_name)
+
+        with allure.step("Install original image name, should fail"):
+            logger.info("Install original image name: {}, should fail".format(fetched_image))
+            system.image.files.file_name[fetched_image].action_file_install("Failed").verify_result()
+
+        with allure.step("Delete original image name, should fail"):
+            system.image.files.delete_files([fetched_image], "File not found")
+
+            orig_engine: LinuxSshEngine = TestToolkit.engines.dut
+            fetched_image_file.action_rename(fetched_image)
+            install_image_and_verify(orig_engine=orig_engine, image_name=fetched_image, partition_id=partition_id_for_new_image,
+                                     original_images=original_images, system=system, release_name=release_name,
+                                     test_name='test_downgrade_upgrade')
     finally:
         # cleanup - boot back with orig image, uninstall new image, and restore to orig engine
         cleanup_test(system, original_images, original_image_partition, [fetched_image], orig_engine=orig_engine)
