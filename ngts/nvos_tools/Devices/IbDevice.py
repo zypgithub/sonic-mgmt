@@ -40,6 +40,7 @@ class IbSwitch(BaseSwitch):
         self._init_eth0_speeds()
         self.init_documents_consts()
         self.init_cli_coverage_prop("nvos")
+        self._init_interface_lists()
 
     def get_default_password_by_version(self, version: str):
         version_num, _ = get_version_info(version)
@@ -402,6 +403,9 @@ class IbSwitch(BaseSwitch):
         self.sensors_dict = {"VOLTAGE": self.voltage_sensors,
                              "TEMPERATURE": self.temperature_sensors}
 
+    def _init_interface_lists(self):
+        self.mgmt_ports = ['eth0']
+
     def wait_for_os_to_become_functional(self, engine, find_prompt_tries=60, find_prompt_delay=10):
         return DutUtilsTool.wait_for_nvos_to_become_functional(engine)
 
@@ -708,6 +712,10 @@ class BlackMambaSwitch(IbSwitch):
         self.platform_inventory_switch_values.update({"hardware-version": None,
                                                       "model": None})
 
+    def _init_interface_lists(self):
+        super()._init_interface_lists()
+        self.mgmt_ports = ['eth0']  # 'eth1' disabled for now
+
     def _init_eth0_speeds(self):
         super()._init_eth0_speeds()
         self.supported_eth0_speeds += ['10M']
@@ -863,6 +871,10 @@ class CrocodileSwitch(IbSwitch):
             "max-speed": ExpectedString(range_min=20000, range_max=40000)}
         self.platform_inventory_switch_values.update({"hardware-version": None,
                                                       "model": None})
+
+    def _init_interface_lists(self):
+        super()._init_interface_lists()
+        self.mgmt_ports = ['eth0', 'eth1']
 
 
 # -------------------------- Crocodile Simx Switch ----------------------------
