@@ -23,6 +23,6 @@
 		</Case>
 	</global>
 	<test>
-		<cases> sonic-mgmt/performance-tool/mars/cases/spx_ra.cases </cases>
+		<cases> sonic-mgmt/sonic-tool/mars/cases/performance/spx_ra.cases </cases>
 	</test>
 </DBDEF>
