@@ -63,7 +63,7 @@ def verify_bios_version(engines, platform, expected_version: str, date: str):
             f"Expected to find {date} in this output: {dmidecode_output}"
 
 
-def fetch_and_install_bios(platform, path, name, filename, topology_obj):
+def fetch_and_install_bios(platform, path, name, filename, topology_obj, system_is_ready_timeout=None):
     with allure.step(f'Fetch {name} Bios image from: {path}'):
         platform.firmware.bios.action_fetch(path).verify_result()
 
