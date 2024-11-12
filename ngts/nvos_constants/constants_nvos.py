@@ -275,6 +275,8 @@ class TopologyConsts:
     MTL = "MTL"
     MTVR = "MTVR"
     CL = "CL"
+    NVOS = "NVOS"
+    SONIC = "SONIC"
     site_server_ip = {MTL: "10.237.22.60",
                       MTVR: "10.237.22.60",
                       CL: "10.188.20.9"}
