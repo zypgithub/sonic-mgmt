@@ -12,6 +12,8 @@ from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.GrubMenuTool import GrubMenuTool
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.nvos_tools.infra.SerialConsoleTool import SerialConsoleTool
+from ngts.tests_nvos.general.post_upgrade_switch.constants import InstallSteps
+from ngts.tests_nvos.general.post_upgrade_switch.install_steps_timer import InstallStepsTimer
 from ngts.tests_nvos.general.security.test_secure_boot.constants import SecureBootConsts
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tools.test_utils import allure_utils as allure
@@ -118,6 +120,7 @@ class NvueGeneralCli(SonicGeneralCliDefault):
         return image_path, image_url
 
     def _onie_nos_install_image(self, serial_engine, image_url, expected_patterns):
+        InstallStepsTimer.add_timestamp(InstallSteps.ONIE_NOS_INSTALL, True)
         logger.info('Install image using url')
         _, index = serial_engine.run_cmd(
             f'{NvosConst.ONIE_NOS_INSTALL_CMD} {image_url}', expected_patterns,
@@ -158,6 +161,7 @@ class NvueGeneralCli(SonicGeneralCliDefault):
                 "Failed to install image on onie"
 
         logger.info(f'*** Image {image_path} successfully installed ***')
+        InstallStepsTimer.add_timestamp(InstallSteps.INSTALL_SUCCESS)
 
     def install_nos_using_onie_in_serial(self, nos_image: str, ssh_engine, topology_obj, dut_alias='dut',
                                          serial_engine: PexpectSerialEngine = None):
@@ -204,6 +208,7 @@ class NvueGeneralCli(SonicGeneralCliDefault):
             ping_till_alive(should_be_alive=True, destination_host=engine.ip)
         with allure.step('wait for System is ready in serial'):
             DutUtilsTool.wait_for_system_ready_in_serial(topology_obj, serial_engine, self.device.system_is_ready_wait_timeout)
+            InstallStepsTimer.add_timestamp(InstallSteps.SYSTEM_IS_READY_AFTER_MANUFACTURE)
         with allure.step('Wait until switch is up'):
             engine.disconnect()  # force engines.dut to reconnect
             DutUtilsTool.wait_for_nvos_to_become_functional(engine=engine)
@@ -510,3 +515,7 @@ class NvueGeneralCli(SonicGeneralCliDefault):
 
         logger.warning("can't match rev_id after apply")
         return ''
+
+    def get_config_db_from_running_config(self):
+        config = self.engine.run_cmd('sudo sonic-cfggen -d --print-data', print_output=False)
+        return json.loads(config)

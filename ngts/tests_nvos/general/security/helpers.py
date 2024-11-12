@@ -15,11 +15,13 @@ def assert_no_issues(header_prefix: str, issues: List[str], err_msg_header: str 
 ETC_HOSTS = '/etc/hosts'
 
 
-def add_etc_host_mapping_to_dn(dn, address, cmd_runner: CmdRunner = None):
+def add_etc_host_mapping_to_dn(dn, address, cmd_runner=None):
     cmd_runner = cmd_runner or CmdRunner()
-    cmd_runner.run_cmd_in_process(f'echo "{address} {dn}" | sudo tee -a {ETC_HOSTS}', wait_till_done=True)
+    cmd_runner.run_cmd(f'echo "{address} {dn}" | sudo tee -a {ETC_HOSTS}')
 
 
-def remove_etc_host_mapping_to_dn(dn, cmd_runner: CmdRunner = None):
+def remove_etc_host_mapping_to_dn(dn, cmd_runner=None):
     cmd_runner = cmd_runner or CmdRunner()
-    cmd_runner.run_cmd_in_process(f"sudo sed -i '/{dn}/d' {ETC_HOSTS}", wait_till_done=True)
+    # cmd = f"sudo sed -i '/{dn}/d' {ETC_HOSTS}"
+    cmd = f"cp -f {ETC_HOSTS} /tmp/hosts.new && sed -i '/{dn}/d' /tmp/hosts.new && sudo tee {ETC_HOSTS} < /tmp/hosts.new && rm -f /tmp/hosts.new"
+    cmd_runner.run_cmd(cmd)

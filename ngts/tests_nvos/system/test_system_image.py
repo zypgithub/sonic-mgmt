@@ -36,6 +36,14 @@ BASE_IMAGE_VERSION_TO_INSTALL = "nvos-amd64-{pre_release_name}.bin"
 BASE_IMAGE_VERSION_TO_INSTALL_PATH = "/auto/sw_system_release/nos/nvos/{pre_release_name}/amd64/{base_image}"
 
 
+@pytest.fixture(scope='module', autouse=True)
+def clear_system_image_files():
+    system = System()
+    with allure.step('clear all system image files before tests'):
+        files = system.image.files.get_files()
+        system.image.files.delete_files(files_to_delete=files)
+
+
 @pytest.mark.checklist
 @pytest.mark.nvos_ci
 @pytest.mark.simx
@@ -102,30 +110,28 @@ def test_downgrade_upgrade(release_name, test_api, original_version, devices, ba
 
     TestToolkit.tested_api = test_api
     system = System()
-
     verify_current_version(original_version, system, devices.dut)
 
     original_images, _, original_image_partition, partition_id_for_new_image, fetched_image = \
         get_image_data_and_fetch_base_image(system, base_version)
     fetched_image_file = system.image.files.file_name[fetched_image]
-
-    with allure.step("Rename image and verify"):
-        new_name = RandomizationTool.get_random_string(20, ascii_letters=string.ascii_letters + string.digits)
-        fetched_image_file.rename_and_verify(new_name)
-
-    with allure.step("Install original image name, should fail"):
-        logger.info("Install original image name: {}, should fail".format(fetched_image))
-        system.image.files.file_name[fetched_image].action_file_install("Failed").verify_result()
-
-    with allure.step("Delete original image name, should fail"):
-        system.image.files.delete_files([fetched_image], "File not found")
-
     try:
-        orig_engine: LinuxSshEngine = TestToolkit.engines.dut
-        fetched_image_file.action_rename(fetched_image)
-        install_image_and_verify(orig_engine=orig_engine, image_name=fetched_image, partition_id=partition_id_for_new_image,
-                                 original_images=original_images, system=system, release_name=release_name,
-                                 test_name='test_downgrade_upgrade')
+        with allure.step("Rename image and verify"):
+            new_name = RandomizationTool.get_random_string(20, ascii_letters=string.ascii_letters + string.digits)
+            fetched_image_file.rename_and_verify(new_name)
+
+        with allure.step("Install original image name, should fail"):
+            logger.info("Install original image name: {}, should fail".format(fetched_image))
+            system.image.files.file_name[fetched_image].action_file_install("Failed").verify_result()
+
+        with allure.step("Delete original image name, should fail"):
+            system.image.files.delete_files([fetched_image], "File not found")
+
+            orig_engine: LinuxSshEngine = TestToolkit.engines.dut
+            fetched_image_file.action_rename(fetched_image)
+            install_image_and_verify(orig_engine=orig_engine, image_name=fetched_image, partition_id=partition_id_for_new_image,
+                                     original_images=original_images, system=system, release_name=release_name,
+                                     test_name='test_downgrade_upgrade')
     finally:
         # cleanup - boot back with orig image, uninstall new image, and restore to orig engine
         cleanup_test(system, original_images, original_image_partition, [fetched_image], orig_engine=orig_engine)
@@ -224,7 +230,7 @@ def test_image_uninstall_force(release_name, original_version, test_name, device
 @pytest.mark.image
 @pytest.mark.system
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_system_image_bad_flow(engines, release_name, test_api, original_version):
+def test_system_image_bad_flow(engines, release_name, test_api, original_version, dut_ipv6_addr):
     """
     Check bad flow scenarios:
     -	Fetch something that doesn’t / already exist
@@ -250,13 +256,16 @@ def test_system_image_bad_flow(engines, release_name, test_api, original_version
     with allure.step("Fetch bad flows"):
         with allure.step("Fetch an image"):
             player = engines['sonic_mgmt']
-            scp_path = 'scp://{}:{}@{}'.format(player.username, player.password, player.ip)
-            system.image.action_fetch(scp_path + image_path)
+            scp_path = ImageConsts.SCP_PATH_SERVER.format(username=player.username, password=player.password,
+                                                          ip=player.ip, path=image_path)
+            system.image.action_fetch(scp_path)
             images_name.append(image_name)
-        with allure.step("Fetch the same image again"):
-            system.image.action_fetch(scp_path + image_path)
+        with allure.step("Fetch the same image again using ipv6 address"):
+            scp_path = ImageConsts.SCP_PATH_SERVER.format(username=player.username, password=player.password,
+                                                          ip=f"[{dut_ipv6_addr}]", path=image_path)
+            system.image.action_fetch(scp_path)
         with allure.step("Fetch an image that does not exist"):
-            system.image.action_fetch(scp_path + image_path + rand_name, "Failed")
+            system.image.action_fetch(scp_path + rand_name, "Failed")
 
     with allure.step("Delete bad flows"):
         with allure.step("Delete file that does not exist"):
@@ -635,13 +644,13 @@ def cleanup_test(system, original_images, original_image_partition, fetched_imag
         with allure.step('restore original dut engine'):
             TestToolkit.engines.dut = orig_engine or TestToolkit.engines.dut
 
-        with allure.step("Uninstall unused images and verify"):
-            system.image.action_uninstall(params='force')
-            system.image.verify_show_images_output(original_images)
-
         with allure.step("Delete all images that have been fetch during the test and verify"):
             system.image.files.delete_files(fetched_image_files)
             system.image.files.verify_show_files_output(unexpected_files=fetched_image_files)
+
+        with allure.step("Uninstall unused images and verify"):
+            system.image.action_uninstall(params='force')
+            system.image.verify_show_images_output(original_images)
 
 
 def get_image_data(system):

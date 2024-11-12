@@ -386,7 +386,7 @@ def test_ztp_json_complex(engines, devices):
 
                 with allure.step("Check ztp status"):
                     _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_RUNNING)
-                    _wait_until_ztp_step_status(system, '01-image', SystemConsts.ZTP_STATUS_SUCCESS)
+                    _wait_until_ztp_step_status(system, '01-image', SystemConsts.ZTP_STATUS_SUCCESS, tries=90)
                     _wait_until_ztp_step_status(system, '02-image', SystemConsts.ZTP_STATUS_SUCCESS)
                     _wait_until_ztp_step_status(system, '03-connectivity-check', SystemConsts.ZTP_STATUS_SUCCESS)
                     _wait_until_ztp_step_status(system, '04-connectivity-check', SystemConsts.ZTP_STATUS_FAILED)

@@ -338,8 +338,9 @@ class LdapConsts:
     CONNECTION_METHODS = [IPV4, IPV6, DNS]
     ENCRYPTION_MODES = [NONE, TLS, SSL]
 
-    DOCKER_LDAP_SERVER_CERT_PATH = \
-        '/auto/sw_system_project/NVOS_INFRA/security/verification/ldap/custom_ldap_server_cert.pem'
+    # DOCKER_LDAP_SERVER_CERT_PATH = \
+    #     '/auto/sw_system_project/NVOS_INFRA/security/verification/ldap/custom_ldap_server_cert.pem'
+    DOCKER_LDAP_SERVER_CERT_PATH = '/auto/sw_system_project/NVOS_INFRA/security/verification/ldap/LDAP_DOCKERS/ldap_final/ca/ca.pem'
     SWITCH_TMP_PATH = '/tmp'
     SERVER_CERT_FILE_IN_SWITCH = '/tmp/custom_ldap_server_cert.pem'
     SWITCH_CA_FILE = '/etc/ssl/certs/ca-certificates.crt'

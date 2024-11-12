@@ -46,6 +46,11 @@ class FilesTool:
         assert bool(err_msg) != should_succeed, err_msg if err_msg else ""
         return True
 
+    @staticmethod
+    def get_file_size_in_bytes(engine, file_path):
+        output = engine.run_cmd(f'stat --format="%s" {file_path}')
+        return int(output) if output.isdigit() else -1
+
 
 class EngineFile:
     """

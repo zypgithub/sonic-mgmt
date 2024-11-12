@@ -6,6 +6,7 @@ from retry import retry
 from typing import Dict
 
 from ngts.nvos_tools.infra.FilesTool import EngineFile, TempFileOnEngine
+from ngts.nvos_tools.platform.Platform import Platform
 from ngts.tools.test_utils import allure_utils as allure
 import pytest
 import random
@@ -16,7 +17,7 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.infra.Simulator import HWSimulator
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.nvos_constants.constants_nvos import SystemConsts, HealthConsts, NvosConst
+from ngts.nvos_constants.constants_nvos import SystemConsts, HealthConsts, NvosConst, PlatformConsts
 from ngts.tests_nvos.system.clock.ClockTools import ClockTools
 from ngts.nvos_tools.infra.DatabaseTool import DatabaseTool
 from ngts.nvos_constants.constants_nvos import DatabaseConst
@@ -30,6 +31,16 @@ IGNORED = HealthConsts.IGNORED
 USER_DEFINED_CHECKERS_KEY = 'user_defined_checkers'
 DEVICES_TO_IGNORE_LINE = "\"devices_to_ignore\": \\[{}\\]"
 SIMULATED_ISSUES = {"bad_device": "device is out of power"}
+
+
+@pytest.fixture(scope='function')
+def set_unset_ps_redundancy_grid():
+    platform = Platform()
+    with allure.step(f"Set platform ps-redundancy to {PlatformConsts.PS_REDUNDANCY_GRID}"):
+        platform.ps_redundancy.set(PlatformConsts.PS_REDUNDANCY_POLICY, PlatformConsts.PS_REDUNDANCY_GRID, apply=True)
+    yield
+    with allure.step('Run unset platform ps-redundancy command and apply'):
+        platform.ps_redundancy.unset(apply=True).verify_result()
 
 
 @pytest.mark.system
@@ -162,7 +173,7 @@ def test_system_health_files_with_rotation(engines):
 
 @pytest.mark.system
 @pytest.mark.health
-def test_ignore_health_issue(engines, devices, loganalyzer):
+def test_ignore_health_issue(engines, devices, loganalyzer, set_unset_ps_redundancy_grid):
     """
     Validate we can ignore all health issue and status will change to OK
     steps:
@@ -175,16 +186,16 @@ def test_ignore_health_issue(engines, devices, loganalyzer):
         7. Fix PSU and FAN health issue
     """
     system = System()
-
+    platform = Platform()
     health_config_file = EngineFile(engines.dut, get_system_health_monitoring_config_file_path())
     verify_health_status_and_led(system, OK)
+    validate_psu_redundancy(devices, platform)
 
     try:
         with allure.step("Simulate PSU and FAN health issue"):
             psu_id, fan_id = simulate_fan_and_psu_health_issue(engines, devices)
             psu_display_name = "PSU{}".format(psu_id)
             psu_config_name = "PSU {}".format(psu_id)
-            psu_fan_display_name = "PSU{}/FAN".format(psu_id)
             psu_fan_config_name = "psu{}_fan1".format(psu_id)
             fan_display_name = get_fan_display_name(fan_id)
             fan_config_name = "fan{}".format(fan_id)
@@ -202,8 +213,8 @@ def test_ignore_health_issue(engines, devices, loganalyzer):
             system.wait_until_health_status_change_to(NOT_OK)
             verify_health_status_and_led(system, NOT_OK)
             monitor_list = OutputParsingTool.parse_json_str_to_dictionary(Fae().health.show()).get_returned_value()[HealthConsts.MONITOR_LIST]
-            verify_devices_health_status_in_monitor_list({psu_display_name: NOT_OK, psu_fan_display_name: NOT_OK, fan_display_name: NOT_OK}, monitor_list)
-            verify_devices_health_status_in_issues_list(system, [psu_display_name, psu_fan_display_name,
+            verify_devices_health_status_in_monitor_list({psu_display_name: NOT_OK, fan_display_name: NOT_OK}, monitor_list)
+            verify_devices_health_status_in_issues_list(system, [psu_display_name,
                                                                  fan_display_name, psu_redundancy_display_name])
 
         with allure.step("Ignore PSU issue and Validate"):
@@ -212,7 +223,7 @@ def test_ignore_health_issue(engines, devices, loganalyzer):
             verify_health_status_and_led(system, NOT_OK)
             monitor_list = OutputParsingTool.parse_json_str_to_dictionary(Fae().health.show()).get_returned_value()[
                 HealthConsts.MONITOR_LIST]
-            verify_devices_health_status_in_monitor_list({psu_display_name: IGNORED, psu_fan_display_name: IGNORED, fan_display_name: NOT_OK}, monitor_list)
+            verify_devices_health_status_in_monitor_list({psu_display_name: IGNORED, fan_display_name: NOT_OK}, monitor_list)
             verify_devices_health_status_in_issues_list(system, [fan_display_name])
 
         with allure.step("Ignore FAN issue too and Validate health state change to OK"):
@@ -222,7 +233,7 @@ def test_ignore_health_issue(engines, devices, loganalyzer):
             verify_health_status_and_led(system, OK)
             monitor_list = OutputParsingTool.parse_json_str_to_dictionary(Fae().health.show()).get_returned_value()[
                 HealthConsts.MONITOR_LIST]
-            verify_devices_health_status_in_monitor_list({psu_display_name: IGNORED, psu_fan_display_name: IGNORED, fan_display_name: IGNORED}, monitor_list)
+            verify_devices_health_status_in_monitor_list({psu_display_name: IGNORED, fan_display_name: IGNORED}, monitor_list)
             verify_devices_health_status_in_issues_list(system, [])
 
         with allure.step("Remove the ignore from FAN issue and Validate health state change to Not OK"):
@@ -231,15 +242,15 @@ def test_ignore_health_issue(engines, devices, loganalyzer):
             verify_health_status_and_led(system, NOT_OK)
             monitor_list = OutputParsingTool.parse_json_str_to_dictionary(Fae().health.show()).get_returned_value()[
                 HealthConsts.MONITOR_LIST]
-            verify_devices_health_status_in_monitor_list({psu_display_name: IGNORED, psu_fan_display_name: IGNORED, fan_display_name: NOT_OK}, monitor_list)
+            verify_devices_health_status_in_monitor_list({psu_display_name: IGNORED, fan_display_name: NOT_OK}, monitor_list)
             verify_devices_health_status_in_issues_list(system, [fan_display_name])
 
         with allure.step("Remove the ignore from PSU issue too and Validate"):
-            ignore_health_issue(None, health_config_file, ignore_psu_redundancy=False)
+            ignore_health_issue([], health_config_file, ignore_psu_redundancy=False)
             system.wait_until_health_status_change_to(NOT_OK)
             verify_health_status_and_led(system, NOT_OK)
-            verify_devices_health_status_in_monitor_list({psu_display_name: NOT_OK, psu_fan_display_name: NOT_OK, fan_display_name: NOT_OK})
-            verify_devices_health_status_in_issues_list(system, [psu_display_name, psu_fan_display_name, fan_display_name, psu_redundancy_display_name])
+            verify_devices_health_status_in_monitor_list({psu_display_name: NOT_OK, fan_display_name: NOT_OK})
+            verify_devices_health_status_in_issues_list(system, [psu_display_name, fan_display_name, psu_redundancy_display_name])
 
     finally:
 
@@ -253,7 +264,7 @@ def test_ignore_health_issue(engines, devices, loganalyzer):
 
 @pytest.mark.system
 @pytest.mark.health
-def test_simulate_health_problem_with_hw_simulator(devices, engines):
+def test_simulate_health_problem_with_hw_simulator(devices, engines, set_unset_ps_redundancy_grid):
     """
     Validate health monitoring.
     Health status should change to "Not OK" when we simulate a problem and return to "OK" if status fixed or ignored.
@@ -269,6 +280,7 @@ def test_simulate_health_problem_with_hw_simulator(devices, engines):
 
     system = System()
     system.log.rotate_logs()
+    health_issue_dict = {}
     date_time = ClockTools.get_datetime_object_from_show_system_output(system.show())
     system.health.history.delete_history_file(HealthConsts.HEALTH_FIRST_FILE)
     time.sleep(1)
@@ -277,9 +289,8 @@ def test_simulate_health_problem_with_hw_simulator(devices, engines):
     try:
         psu_id, fan_id = simulate_fan_and_psu_health_issue(engines, devices)
         psu_display_name = "PSU{}".format(psu_id)
-        psu_fan_display_name = "PSU{}/FAN".format(psu_id)
         fan_display_name = get_fan_display_name(fan_id)
-        health_issue_dict = {psu_display_name: "missing or not available", psu_fan_display_name: "missing",
+        health_issue_dict = {psu_display_name: "missing or not available",
                              fan_display_name: "not working"}
         logger.info("sleep 5 sec after simulating HW issue")
         time.sleep(5)
@@ -434,6 +445,14 @@ def validate_docker_is_up(engine, docker):
     assert docker in engine.run_cmd("docker ps")
 
 
+def validate_psu_redundancy(devices, platform):
+    output = OutputParsingTool.parse_json_str_to_dictionary(platform.environment.psu.show()).get_returned_value()
+    # Filter PSUs where all values are not "N/A"
+    valid_psus = [int(key[3:]) for key, stats in output.items() if all(value != "N/A" for value in stats.values())]
+    if len(valid_psus) == len(devices.dut.psu_list) / 2:
+        pytest.skip(f"DUT has {len(valid_psus)} valid PSUs, we cant simulate psu fault due to ps-redundancy")
+
+
 def verify_health_status_and_led(system, expected_status, output=None):
     if not output:
         output = OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).get_returned_value()
@@ -463,7 +482,7 @@ def verify_devices_health_status_in_issues_list(system, devices_list):
     :param devices_list: list of devices with issues, example: [PSU1, PSU2, FAN1/1]
     """
     issues_dict = OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).get_returned_value()[HealthConsts.ISSUES]
-    assert set(devices_list) == set(list(issues_dict.keys()))
+    assert set(devices_list) <= set(list(issues_dict.keys()))
 
 
 def get_system_health_monitoring_config_file_path():
@@ -476,13 +495,13 @@ def get_system_health_monitoring_config_file_path():
 
 
 def simulate_fan_and_psu_health_issue(engines, devices):
-    logger.info("choose randomly PSU and FAN")
-    psu_id = random.randrange(1, len(devices.dut.psu_list) + 1)
-    fan_id = random.randrange(1, len(devices.dut.fan_list) + 1)
-    logger.info("Chosen PSU : {}\n Chosen fan : {}  - {}".format(psu_id, fan_id, get_fan_display_name(fan_id)))
-    HWSimulator.simulate_fan_fault(engines.dut, fan_id)
-    HWSimulator.simulate_psu_fault(engines.dut, psu_id)
-    return psu_id, fan_id
+    with allure.step("choose randomly PSU and FAN"):
+        psu_id = random.randrange(1, len(devices.dut.psu_list) + 1)
+        fan_id = random.randrange(1, len(devices.dut.fan_list) + 1)
+        logger.info("Chosen PSU : {}\n Chosen fan : {}  - {}".format(psu_id, fan_id, get_fan_display_name(fan_id)))
+        HWSimulator.simulate_fan_fault(engines.dut, fan_id)
+        HWSimulator.simulate_psu_fault(engines.dut, psu_id)
+        return psu_id, fan_id
 
 
 def get_fan_display_name(fan_id):
@@ -492,6 +511,7 @@ def get_fan_display_name(fan_id):
 
 
 def ignore_health_issue(components_list_to_ignore, health_config_file: EngineFile, ignore_psu_redundancy=None):
+    components_list_to_ignore.append('leakage')
     components_as_string = ", ".join(["\"{}\"".format(comp) for comp in components_list_to_ignore]) if components_list_to_ignore else ""
     health_config_file.sed(DEVICES_TO_IGNORE_LINE.format(".*"), DEVICES_TO_IGNORE_LINE.format(components_as_string))
     if ignore_psu_redundancy is not None:

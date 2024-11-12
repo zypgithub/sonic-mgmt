@@ -92,10 +92,10 @@ def test_interface_eth0_speed_duplex_autoneg(engines, devices, topology_obj):
     2. Try to set autoneg to off
     3. Negative testing for speed, duplex, autoneg
     4. Set duplex to half on default speed 1G
-        5. Set speed to not default with supported duplex, verify changes via ping
-        6. Set autoneg to on and validate changes
-        7. Try to set all speeds from list supported with all supported duplex
-        8. Unset speed, validate changes
+    5. Set speed to not default with supported duplex, verify changes via ping
+    6. Set autoneg to on and validate changes
+    7. Try to set all speeds from list supported with all supported duplex
+    8. Unset speed, validate changes
     """
 
     mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
@@ -116,7 +116,7 @@ def test_interface_eth0_speed_duplex_autoneg(engines, devices, topology_obj):
                                                           field_name=IbInterfaceConsts.LINK_AUTO_NEGOTIATE,
                                                           expected_value="on")
 
-    with allure.step('Negative validation with auto neg, auto-neg must be on with default 1G speed'):
+    with allure.step(f'Negative validation with auto neg, {IbInterfaceConsts.LINK_AUTO_NEGOTIATE} must be on with default 1G speed'):
         mgmt_port.interface.link.set(op_param_name='auto_negotiate', op_param_value='off',
                                      apply=True).verify_result(False)
         NvueGeneralCli.detach_config(TestToolkit.engines.dut)
@@ -168,12 +168,12 @@ def test_interface_eth0_speed_duplex_autoneg(engines, devices, topology_obj):
                                                                   expected_value=duplex).verify_result()
 
     with allure.step('Set autoneg to off'):
-        mgmt_port.interface.link.set(op_param_name='auto-negotiate', op_param_value='off', apply=True,
+        mgmt_port.interface.link.set(op_param_name=IbInterfaceConsts.LINK_AUTO_NEGOTIATE, op_param_value='off', apply=True,
                                      ask_for_confirmation=True).verify_result()
         time.sleep(5)
 
     with allure.step('Run show command on mgmt port and verify default values after unset'):
-        mgmt_port.interface.link.unset(op_param='auto-negotiate', apply=True, ask_for_confirmation=True).verify_result()
+        mgmt_port.interface.link.unset(op_param=IbInterfaceConsts.LINK_AUTO_NEGOTIATE, apply=True, ask_for_confirmation=True).verify_result()
 
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
             mgmt_port.interface.link.show()).get_returned_value()
@@ -540,8 +540,8 @@ def test_mgmt_interface_default(engines, topology_obj):
         check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port)
 
     with allure.step('Check logs for mgmt interface exist'):
-        show_output = system.log.show_log(exit_cmd='q')
-        ValidationTool.verify_expected_output(show_output, mgmt_port_name).verify_result()
+        show_output_lines = system.log.show(op_param=" | grep '" + mgmt_port_name + "'", output_format="").splitlines()
+        assert len(show_output_lines) > 0, "Mgmt port {} not found in system log".format(mgmt_port_name)
 
     with allure.step('Check stats'):
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_stats_output_to_dictionary(

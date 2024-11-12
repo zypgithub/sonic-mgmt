@@ -7,18 +7,25 @@ import yaml
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.constants.constants import LinuxConsts, SerialLoggerConst
+from ngts.nvos_constants.constants_nvos import PlatformConsts
 from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
+from ngts.nvos_tools.infra.CurlTool import CurlTool
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.nvos_tools.infra.SecureBootTool import SecureBootTool
+from ngts.nvos_tools.infra.TpmTool import TpmTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.conftest import ProxySshEngine
 from ngts.tests_nvos.general.post_upgrade_switch.constants import UPGRADE_STATUS_SUCCESS_MSG, UPGRADE_STATUS_FAIL_MSG, \
-    UPGRADE_STATUS_FILE_PATH
+    UPGRADE_STATUS_FILE_PATH, InstallSteps
+from ngts.tests_nvos.general.post_upgrade_switch.install_steps_timer import InstallStepsTimer
+from ngts.tests_nvos.general.security.bmc.bmc_creds.constants import BmcUsers
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_config_utils import clear_conf
-from ngts.tools.test_utils.nvos_general_utils import set_base_configurations, is_secure_boot_enabled
+from ngts.tools.test_utils.nvos_general_utils import set_base_configurations
 
 logger = logging.getLogger()
 
@@ -28,6 +35,9 @@ class NvosInstallationSteps:
     @staticmethod
     def pre_installation_steps(setup_info, base_version='', target_version=''):
         assert target_version, 'Argument "target_version" must be provided for installing NVOS'
+
+        with allure.step('Initialize timer'):
+            InstallStepsTimer.initialize_timer()
 
     @staticmethod
     def post_installation_steps(topology_obj, workspace_path, setup_info, serial_log_analyzer,
@@ -63,9 +73,13 @@ class NvosInstallationSteps:
             system.version.show(dut_engine=dut_engine)
             platform.firmware.show(dut_engine=dut_engine)
 
+        if dut_device.has_bmc:
+            with allure.step('reset password of bmc root user'):
+                CurlTool(PlatformConsts.BMC_INTERNAL_IP, BmcUsers.admin.username, TpmTool(dut_engine).get_bmc_admin_password_from_tpm()).change_root_password(dut_engine=dut_engine)
+
         if verify_secure_boot:
             with allure.step('Verify Secure-Boot is enabled'):
-                assert is_secure_boot_enabled(dut_engine), "Secure-Boot is expected to be enabled, but it's disabled!"
+                assert SecureBootTool.is_secure_boot_enabled(dut_engine), "Secure-Boot is expected to be enabled, but it's disabled!"
 
         if base_version:
             with allure.step('========== NVOS - Upgrade With Saved Configuration Flow =========='):
@@ -78,6 +92,9 @@ class NvosInstallationSteps:
         else:
             logger.info('NVOS: Argument "base-version" was not given. therefore not running the upgrade with saved '
                         'configuration scenario')
+
+        with allure.step('show intervals of installation flow steps'):
+            allure.attach('install flow intervals', InstallStepsTimer.analyze_saved_timestamps())
 
         with allure.step('Set base configuration for tests after the install phase'):
             try:
@@ -135,10 +152,19 @@ class NvosInstallationSteps:
 
         with allure.step('Clear tested configuration for the tests'):
             clear_conf(dut_engine=dut_engine, dut_device=dut_device)
+            NvueGeneralCli.show_config(dut_engine)
 
         with allure.step('Clear fetched files for the tests'):
             system = System()
             dut_engine.disconnect()  # force engines.dut to reconnect
+            if is_bug_active(4132303):
+                with allure.step('work around bug #4132303 - let first connection to get stuck and force extra connection'):
+                    # TODO: remove once bug #4132303 is closed
+                    try:
+                        dut_engine.run_cmd('echo "tmp cmd"', timeout=10)
+                    except Exception:
+                        dut_engine.disconnect()
+                    dut_engine.disconnect()
 
             with allure.step('Delete fetched image file'):
                 system.image.files.delete_all_existing_files(engine=dut_engine)
@@ -180,10 +206,11 @@ class NvosInstallationSteps:
         # use new default password for recovery after upgrade
         recovery_engine = LinuxSshEngine(dut_engine.ip, dut_engine.username,
                                          dut_device.get_default_password_by_version(target_version_path))
+        InstallStepsTimer.add_timestamp(InstallSteps.UPGRADE_CMD)
         system.image.files.file_name[bin_filename].action_file_install_with_reboot(engine=dut_engine, device=dut_device,
                                                                                    recovery_engine=recovery_engine,
                                                                                    topology_obj=topology_obj,
-                                                                                   param_value=param_value)
+                                                                                   param_value=param_value, track_boot_intervals=True)
 
     @staticmethod
     def fetch_apply_save_config(config_filename, config_file_path, dut_engine, scp_host_creds, system):

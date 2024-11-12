@@ -297,8 +297,9 @@ def test_ldap_auth_error(test_flow, test_api, engines, topology_obj, local_admin
 @pytest.mark.security
 @pytest.mark.simx_security
 @pytest.mark.parametrize('test_flow', TestFlowType.ALL_TYPES)
-@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_cert_verify(test_flow, test_api, engines, devices, backup_and_restore_certificates, alias_ldap_server_dn, request,
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('addressing_type', [AddressingType.IPV4, AddressingType.IPV6])
+def test_cert_verify(test_flow, test_api, addressing_type, engines, devices, backup_and_restore_certificates, alias_ldap_server_dn, request,
                      topology_obj):
     item = request.node
     TestToolkit.tested_api = test_api
@@ -308,7 +309,6 @@ def test_cert_verify(test_flow, test_api, engines, devices, backup_and_restore_c
         scp_file(engines.dut, LdapConsts.DOCKER_LDAP_SERVER_CERT_PATH, LdapConsts.SERVER_CERT_FILE_IN_SWITCH)
 
     with allure.step('Configure ldap server that allows cert verify'):
-        aaa = System().aaa
         ldap_obj = System().aaa.ldap
         ldap_server_info = LdapServers.DOCKER_SERVER_DN_WITH_CERT
         server_resource = ldap_obj.hostname.hostname_id[ldap_server_info.hostname]
@@ -320,38 +320,36 @@ def test_cert_verify(test_flow, test_api, engines, devices, backup_and_restore_c
     with allure.step('Enable and set ldap as main authentication method'):
         ldap_obj.enable(failthrough=True)
 
-    for encryption_mode in LdapEncryptionModes.ALL_MODES:
-        with allure.step(f'Verify with encryption mode: {encryption_mode}'):
-            user_to_validate = random.choice(ldap_server_info.users)
+    with allure.step('test connection with all encryption modes'):
+        for encryption_mode in LdapEncryptionModes.ALL_MODES:
+            with allure.independent_step(f'Verify with encryption mode: {encryption_mode}'):
+                user_to_validate = random.choice(ldap_server_info.users)
 
-            with allure.step(f'Configure encryption mode: {encryption_mode}'):
-                update_ldap_encryption_mode(engines, item, ldap_server_info, server_resource, encryption_mode, False)
-                update_active_aaa_server(item,
-                                         ldap_server_info if encryption_mode == LdapEncryptionModes.NONE else None)
-                engine = engines.dut if not item.active_remote_admin_engine else item.active_remote_admin_engine
-                wait_for_ldap_nvued_restart_workaround(item, engine)
-                # DutUtilsTool.wait_for_nvos_to_become_functional(engine, find_prompt_delay=5)
+                with allure.step(f'Configure encryption mode: {encryption_mode}'):
+                    update_ldap_encryption_mode(engines, item, ldap_server_info, server_resource, encryption_mode, False)
+                    update_active_aaa_server(item,
+                                             ldap_server_info if encryption_mode == LdapEncryptionModes.NONE else None)
+                    engine = engines.dut if not item.active_remote_admin_engine else item.active_remote_admin_engine
+                    wait_for_ldap_nvued_restart_workaround(item, engine)
 
-            if encryption_mode != LdapEncryptionModes.NONE:
-                with allure.step(f'Verify auth with LDAP user when there is no CA cert in the switch- expect fail'):
-                    verify_auth(test_flow, engines, topology_obj, bad_flow_users=[user_to_validate],
+                if encryption_mode != LdapEncryptionModes.NONE:
+                    with allure.step(f'Verify auth with LDAP user when there is no CA cert in the switch- expect fail'):
+                        verify_auth(test_flow, engines, topology_obj, bad_flow_users=[user_to_validate],
+                                    verify_authorization=False, skip_auth_mediums=skip_auth_mediums)
+
+                    with allure.step('Add the server certificate to the switch'):
+                        add_ldap_server_certificate_to_switch(engine)
+                        update_active_aaa_server(item, ldap_server_info)
+                        wait_for_ldap_nvued_restart_workaround(item, item.active_remote_admin_engine)
+
+                with allure.step(f'Verify auth with LDAP user when there is CA cert in the switch - expect success'):
+                    verify_auth(test_flow, engines, topology_obj, good_flow_users=[user_to_validate],
                                 verify_authorization=False, skip_auth_mediums=skip_auth_mediums)
 
-                with allure.step('Add the server certificate to the switch'):
-                    add_ldap_server_certificate_to_switch(engine)
-                    update_active_aaa_server(item, ldap_server_info)
-                    wait_for_ldap_nvued_restart_workaround(item, item.active_remote_admin_engine)
-                    # DutUtilsTool.wait_for_nvos_to_become_functional(item.active_remote_admin_engine,
-                    #                                                 find_prompt_delay=5)
-
-            with allure.step(f'Verify auth with LDAP user when there is CA cert in the switch - expect success'):
-                verify_auth(test_flow, engines, topology_obj, good_flow_users=[user_to_validate],
-                            verify_authorization=False, skip_auth_mediums=skip_auth_mediums)
-
-            with allure.step('Restore certificates file'):
-                engine = engines.dut if not item.active_remote_admin_engine else item.active_remote_admin_engine
-                engine.run_cmd(f"sudo cp -f {LdapConsts.SWITCH_CA_BACKUP_FILE} {LdapConsts.SWITCH_CA_FILE}")
-                update_active_aaa_server(item, None)
+                with allure.step('Restore certificates file'):
+                    engine = engines.dut if not item.active_remote_admin_engine else item.active_remote_admin_engine
+                    engine.run_cmd(f"sudo cp -f {LdapConsts.SWITCH_CA_BACKUP_FILE} {LdapConsts.SWITCH_CA_FILE}")
+                    update_active_aaa_server(item, None)
 
 
 @pytest.mark.security

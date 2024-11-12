@@ -48,7 +48,7 @@ def test_ib_show_interface(engines, devices, test_api):
         with allure.step('validate fields values'):
             validate_one_port_show_output(output_dictionary, devices.dut.switch_type.lower(), devices.dut.asic_type == NvosConst.QTM3)
 
-    '''with allure.step(f'Check interface primary ASIC for port {selected_port.name}'):
+    with allure.step(f'Check interface primary ASIC for port {selected_port.name}'):
         fae = Fae(port_name=selected_port.name)
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_output_to_dictionary(
             fae.interface.show()).get_returned_value()
@@ -57,7 +57,7 @@ def test_ib_show_interface(engines, devices, test_api):
         assert int(output_dictionary[IbInterfaceConsts.PRIMARY_ASIC]) in range(0, devices.dut.asic_amount), \
             f"IbInterfaceConsts.PRIMARY_ASIC should be in range of 0-{devices.dut.asic_amount}, " \
             f"but for port {selected_port.name} - " \
-            f"{IbInterfaceConsts.PRIMARY_ASIC}={output_dictionary[IbInterfaceConsts.PRIMARY_ASIC]}"'''
+            f"{IbInterfaceConsts.PRIMARY_ASIC}={output_dictionary[IbInterfaceConsts.PRIMARY_ASIC]}"
 
 
 @pytest.mark.ib_interfaces

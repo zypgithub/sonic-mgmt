@@ -34,7 +34,7 @@ def test_transceiver_database_tables(engines, devices, test_api):
     with allure.step("Create platform object"):
         platform = Platform()
         transceivers_tables_name = "TRANSCEIVER_FIRMWARE_INFO"
-        transceivers_list = list(OutputParsingTool.parse_json_str_to_dictionary(platform.transceiver.show()).get_returned_value().keys())
+        transceivers_list = list(OutputParsingTool.parse_json_str_to_dictionary(platform.transceiver.show_detailed()).get_returned_value().keys())
         number_of_transceivers = sum(2 if transceiver.startswith('sw') else 1 for transceiver in transceivers_list)  # swA3 -> swA3p1, swA3p2
         with allure.step("Validate for each transceiver out of {} transceivers we have the table in STATE_DB".format(number_of_transceivers)):
             tables_in_database = Tools.DatabaseTool.sonic_db_cli_get_keys(engine=engines.dut, asic="",

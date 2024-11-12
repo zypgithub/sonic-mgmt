@@ -22,6 +22,7 @@ from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tests_nvos.general.security.certificate.constants import TestCert
 from ngts.tests_nvos.general.security.certificate.helpers import import_test_certs
+from ngts.tests_nvos.general.security.helpers import add_etc_host_mapping_to_dn, remove_etc_host_mapping_to_dn
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
 from ngts.tests_nvos.system.gnmi.constants import CERTIFICATE, DEFAULT_CERTIFICATE, GnmicErr
@@ -447,6 +448,7 @@ def get_scp_player(engines) -> LinuxSshEngine:
     # return LinuxSshEngine(ip='10.237.116.70', username='root', password='12345')
     # return LinuxSshEngine(ip='10.237.116.84', username='root', password='12345')
     # return LinuxSshEngine(ip='10.237.38.124', username='root', password='12345')
+    # return LinuxSshEngine(ip='10.237.38.139', username='root', password='12345')
 
 
 def verify_gnmi_client_tools_installed():
@@ -481,9 +483,13 @@ def gnmi_cert_factory_reset_no_params_check():
                 f'expected (default): {DEFAULT_CERTIFICATE}\n'
                 f'actual: {out[CERTIFICATE]}')
         with allure.independent_step('verify client cannot request using the certificate'):
-            verify_gnmi_client(TestFlowType.BAD_FLOW, cert.ip or cert.dn, GnmiConsts.GNMI_DEFAULT_PORT,
+            time.sleep(5)
+            remove_etc_host_mapping_to_dn(cert.dn)
+            add_etc_host_mapping_to_dn(cert.dn, engines.dut.ip)
+            verify_gnmi_client(TestFlowType.BAD_FLOW, cert.dn, GnmiConsts.GNMI_DEFAULT_PORT,
                                dut_engine.username, dut_engine.password, False, GnmicErr.CERT_VERIFY_FAIL,
                                cacert=cert.cacert)
+            remove_etc_host_mapping_to_dn(cert.dn)
 
     yield  # to prevent StopIteration on the 2nd next() call
 

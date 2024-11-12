@@ -12,6 +12,7 @@ from retry import retry
 logger = logging.getLogger()
 
 OPEN_SM_PATH = "opensm"
+MISSING_HFNM_MESSAGE = "HA and HFNM can't be found in topology"
 
 
 class OpenSmTool:
@@ -29,9 +30,9 @@ class OpenSmTool:
         """
         Start open sm if it's not running
         """
-        if not hasattr(engines, "ha"):
-            logging.warning("HA can't be found in topology")
-            return ResultObj(False, "HA can't be found in topology")
+        if not hasattr(engines, "hfnm"):
+            logging.warning(MISSING_HFNM_MESSAGE)
+            return ResultObj(False, MISSING_HFNM_MESSAGE)
 
         is_running, port_name = OpenSmTool.is_sm_running_on_server(engines)
 
@@ -44,10 +45,10 @@ class OpenSmTool:
         with allure.step("Get GUID to start OpenSM"):
             if multiplanar:
                 # CX8 needs to see the planarized interface
-                output = engines.ha.run_cmd("ibdev2netdev")
+                output = engines.hfnm.run_cmd("ibdev2netdev")
                 if "smi2" not in output:
-                    engines.ha.run_cmd(f"/opt/mellanox/iproute2/sbin/rdma dev add smi2 type SMI parent {port_name}")
-            output = engines.ha.run_cmd("ibstat {}".format(port_name))
+                    engines.hfnm.run_cmd(f"/opt/mellanox/iproute2/sbin/rdma dev add smi2 type SMI parent {port_name}")
+            output = engines.hfnm.run_cmd("ibstat {}".format(port_name))
             guid = ''
             for line in output.splitlines():
                 if "System image GUID" in line:
@@ -58,7 +59,7 @@ class OpenSmTool:
                 return ResultObj(False, "Failed to find GUID to start OpenSM")
 
         with allure.step("Start OpenSM"):
-            engines.ha.run_cmd(f"{OPEN_SM_PATH} -g {guid} -B")
+            engines.hfnm.run_cmd(f"{OPEN_SM_PATH} -g {guid} -B")
             time.sleep(5)
 
         with allure.step("Verify OpenSM is running"):
@@ -67,12 +68,12 @@ class OpenSmTool:
     @staticmethod
     def stop_open_sm_on_server(engines):
         try:
-            if not hasattr(engines, "ha"):
-                logging.warning("HA can't be found in topology")
-                return ResultObj(False, "HA can't be found in topology")
+            if not hasattr(engines, "hfnm"):
+                logging.warning(MISSING_HFNM_MESSAGE)
+                return ResultObj(False, MISSING_HFNM_MESSAGE)
 
             with allure.step("Get opensm process ids to stop"):
-                output = engines.ha.run_cmd(f"ps aux | grep opensm")
+                output = engines.hfnm.run_cmd(f"ps aux | grep opensm")
                 lines = [line for line in output.split('\n') if 'grep' not in line]
                 if not lines:
                     return ResultObj(True, "No opensm processes")
@@ -82,7 +83,7 @@ class OpenSmTool:
                 cmd = "sudo kill -9"
                 for process_id in process_ids:
                     cmd += f" {process_id}"
-                output = engines.ha.run_cmd(cmd)
+                output = engines.hfnm.run_cmd(cmd)
                 return ResultObj(True, info=output)
         except BaseException as ex:
             logging.error("Failed to stop opensm")
@@ -92,11 +93,11 @@ class OpenSmTool:
     def is_sm_running_on_server(engines):
         with allure.step("Check if OpenSM is running on a server"):
             # check if open sm process is currently running
-            output = engines.ha.run_cmd(f"ps aux | grep opensm")
+            output = engines.hfnm.run_cmd(f"ps aux | grep opensm")
             lines = [line for line in output.split('\n') if 'grep' not in line]
 
             # check if port is up
-            output = engines.ha.run_cmd("ibdev2netdev")
+            output = engines.hfnm.run_cmd("ibdev2netdev")
             is_up = "(Up)" in output
             port_name = output.split()[0]
 

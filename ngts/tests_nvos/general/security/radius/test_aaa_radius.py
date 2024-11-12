@@ -5,7 +5,6 @@ from ngts.tests_nvos.general.security.constants import MAX_TEST_TIMEOUT
 from ngts.tests_nvos.general.security.radius.constants import RadiusConsts, RadiusVmServer, RadiusPhysicalServer
 from ngts.tests_nvos.general.security.radius.radius_test_utils import update_radius_server_auth_type, \
     get_two_different_radius_servers
-from ngts.tests_nvos.general.security.security_test_tools.constants import AuthType
 from ngts.tests_nvos.general.security.security_test_tools.generic_remote_aaa_testing.generic_remote_aaa_testing import *
 from ngts.tests_nvos.general.security.security_test_tools.resource_utils import configure_resource
 from ngts.tests_nvos.general.security.security_test_tools.switch_authenticators import SshAuthenticator
@@ -87,14 +86,22 @@ def test_radius_auth(test_flow, test_api, addressing_type, engines, topology_obj
             - verify auth with local user - expect fail
     """
     radius = System().aaa.radius
+
+    # our vm radius server does not support mschapv2 - all auth types will be tested only on physical server
+    server_by_addr_type = {
+        AddressingType.IPV4: RadiusPhysicalServer.SERVER_IPV4,
+        AddressingType.IPV6: RadiusVmServer.SERVER_IPV6,
+        AddressingType.DN: RadiusVmServer.SERVER_DN
+    }
+    test_params = RadiusConsts.AUTH_TYPES if addressing_type == AddressingType.IPV4 else [AaaConsts.PAP, AaaConsts.CHAP]
+
     generic_aaa_test_auth(test_flow=test_flow, test_api=test_api, addressing_type=addressing_type, engines=engines,
                           topology_obj=topology_obj, local_adminuser=local_adminuser, request=request,
                           remote_aaa_type=RemoteAaaType.RADIUS,
                           remote_aaa_obj=radius,
-                          server_by_addr_type=RadiusVmServer.SERVER_BY_ADDRESSING_TYPE,
-                          test_param=AuthType.ALL_TYPES,
-                          test_param_update_func=update_radius_server_auth_type,
-                          skip_auth_mediums=[AuthMedium.SCP])
+                          server_by_addr_type=server_by_addr_type,
+                          test_param=test_params,
+                          test_param_update_func=update_radius_server_auth_type)
 
 
 @pytest.mark.security
@@ -116,8 +123,7 @@ def test_radius_bad_secret(test_api, engines, topology_obj):
     generic_aaa_test_bad_configured_server(test_api, engines, topology_obj,
                                            remote_aaa_type=RemoteAaaType.RADIUS,
                                            remote_aaa_obj=System().aaa.radius,
-                                           bad_param_name=AaaConsts.SECRET, bad_configured_server=radius_server,
-                                           skip_auth_mediums=[AuthMedium.SCP])
+                                           bad_param_name=AaaConsts.SECRET, bad_configured_server=radius_server)
 
 
 @pytest.mark.security
@@ -137,8 +143,7 @@ def test_radius_bad_port(test_api, engines, topology_obj):
     generic_aaa_test_bad_configured_server(test_api, engines, topology_obj,
                                            remote_aaa_type=RemoteAaaType.RADIUS,
                                            remote_aaa_obj=System().aaa.radius,
-                                           bad_param_name=AaaConsts.PORT, bad_configured_server=radius_server,
-                                           skip_auth_mediums=[AuthMedium.SCP])
+                                           bad_param_name=AaaConsts.PORT, bad_configured_server=radius_server)
 
 
 @pytest.mark.security
@@ -172,8 +177,7 @@ def test_radius_priority(test_flow, test_api, engines, topology_obj, request):
     """
     server1, server2 = get_two_different_radius_servers()
     generic_aaa_test_priority(test_flow, test_api, engines, topology_obj, request, remote_aaa_type=RemoteAaaType.RADIUS,
-                              remote_aaa_obj=System().aaa.radius, server1=server1, server2=server2,
-                              skip_auth_mediums=[AuthMedium.SCP])
+                              remote_aaa_obj=System().aaa.radius, server1=server1, server2=server2)
 
 
 @pytest.mark.security
@@ -202,7 +206,7 @@ def test_radius_server_unreachable(test_flow, test_api, engines, topology_obj, l
                                         local_adminuser=local_adminuser,
                                         remote_aaa_type=RemoteAaaType.RADIUS,
                                         remote_aaa_obj=System().aaa.radius,
-                                        server1=server1, server2=server2, skip_auth_mediums=[AuthMedium.SCP])
+                                        server1=server1, server2=server2)
 
 
 @pytest.mark.security
@@ -230,7 +234,7 @@ def test_radius_auth_error(test_flow, test_api, engines, topology_obj, local_adm
     generic_aaa_test_auth_error(test_flow, test_api, engines, topology_obj, request, local_adminuser=local_adminuser,
                                 remote_aaa_type=RemoteAaaType.RADIUS,
                                 remote_aaa_obj=System().aaa.radius,
-                                server1=server1, server2=server2, skip_auth_mediums=[AuthMedium.SCP])
+                                server1=server1, server2=server2)
 
 
 # -------------------- FEATURE SPECIFIC TESTS ---------------------

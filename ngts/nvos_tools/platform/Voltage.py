@@ -51,4 +51,4 @@ class Voltage(BaseComponent):
         with allure.step('Execute show for voltage sensors'):
             output = self.show()
             cli_sensors_list = json.loads(output).keys()
-            return cli_sensors_list
+            return list(cli_sensors_list)
