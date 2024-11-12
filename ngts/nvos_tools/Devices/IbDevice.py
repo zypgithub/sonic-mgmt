@@ -1327,7 +1327,7 @@ class JulietNonScaleoutSwitchNoNCI(JulietNonScaleoutSwitch):
         })
 
     def _init_fan_list(self):
-        self.fan_list = ["FAN1/1", "FAN1/2", "FAN2/1", "FAN2/2", "FAN3/1", "FAN3/2", "FAN4/1", "FAN4/2", "FAN5/1", "FAN5/2", "FAN6/1", "FAN6/2"]
+        self.fan_list = ["FAN1/1", "FAN1/2", "FAN2/1", "FAN2/2", "FAN3/1", "FAN3/2", "FAN4/1", "FAN4/2"]
         self.fan_led_list = []
 
     def _init_platform_lists(self):
