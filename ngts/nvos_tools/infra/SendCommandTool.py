@@ -1,3 +1,4 @@
+
 from ngts.nvos_tools.infra.ResultObj import ResultObj, IssueType
 
 invalid_cmd_str = ['invalid date', 'Invalid config', 'Error', 'command not found', 'Bad Request', 'Not Found',
@@ -15,11 +16,13 @@ timeout_cmd_str = ['Timeout while waiting for client response']
 class SendCommandTool:
 
     @staticmethod
-    def verify_cmd_execution(cmd_output, expected_str="") -> ResultObj:
+    def verify_cmd_execution(cmd_output, expected_str="", exempted_err_msgs=None) -> ResultObj:
         """
         Check executed command output and return a ResultObj
         """
         cmd_output_str = str(cmd_output)
+        if exempted_err_msgs is None:
+            exempted_err_msgs = []
 
         if expected_str:
             if expected_str in cmd_output_str:
@@ -33,10 +36,12 @@ class SendCommandTool:
             k = min(15, (len(lines) // 2) + 1)
             output_lines = '\n'.join(lines[:k] + lines[-k:])
 
-            # Check for any invalid command messages
-            if any(err_msg in output_lines for err_msg in invalid_cmd_str):
-                return ResultObj(False, f"Command failed with the following output: \n{cmd_output_str}", None,
-                                 IssueType.PossibleBug)
+            # Check for erroneous keywords in output
+            invalid_keyword_in_output = [err_msg for err_msg in invalid_cmd_str
+                                         if (err_msg not in exempted_err_msgs and err_msg in output_lines)]
+            if len(invalid_keyword_in_output) > 0:
+                return ResultObj(False, f"Following error messages found in output: \n{invalid_keyword_in_output}",
+                                 None, IssueType.PossibleBug)
 
             # Check for any timeout messages
             if any(timeout_msg in output_lines for timeout_msg in timeout_cmd_str):
@@ -59,6 +64,6 @@ class SendCommandTool:
         """
         if not command_to_execute:
             return ResultObj(False, "Command to execute was not provided", None, IssueType.TestIssue)
-
+        exempted_err_msgs = kwargs.pop('exempted_err_msgs', None)
         output = command_to_execute(*args, **kwargs)
-        return SendCommandTool.verify_cmd_execution(output)
+        return SendCommandTool.verify_cmd_execution(output, exempted_err_msgs=exempted_err_msgs)
