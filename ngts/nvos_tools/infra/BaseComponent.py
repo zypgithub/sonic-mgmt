@@ -7,6 +7,7 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
+from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tools.test_utils import allure_utils as allure
 
 
@@ -68,7 +69,7 @@ class BaseComponent:
         output = self.show(op_param, OutputFormat.json, dut_engine, should_succeed)
         return OutputParsingTool.parse_json_str_to_dictionary(output).verify_result()
 
-    def _set(self, param_name, param_value, expected_str='', apply=False, ask_for_confirmation=False, dut_engine=None):
+    def _set(self, param_name, param_value, expected_str='', apply=False, ask_for_confirmation=False, dut_engine=None, client_certs_after_apply: CertInfo = None):
         if not dut_engine:
             dut_engine = TestToolkit.engines.dut
 
@@ -78,11 +79,11 @@ class BaseComponent:
         if result_obj.result and apply:
             with allure.step("Applying set configuration"):
                 result_obj = SendCommandTool.execute_command(self._general_cli_wrapper.apply_config, dut_engine,
-                                                             ask_for_confirmation)
+                                                             ask_for_confirmation, client_certs_after_apply=client_certs_after_apply)
         return result_obj
 
     def set(self, op_param_name="", op_param_value={}, expected_str='', apply=False, ask_for_confirmation=False,
-            dut_engine=None):
+            dut_engine=None, client_certs_after_apply: CertInfo = None):
         if not dut_engine:
             dut_engine = TestToolkit.engines.dut
         with allure.step('Execute set for {resource_path}'.format(resource_path=self.get_resource_path())):
@@ -91,28 +92,28 @@ class BaseComponent:
                     if isinstance(op_param_value, str):
                         op_param_value = op_param_value.replace('"', '')
                     value = {op_param_name: op_param_value}
-                    return self._set('', value, expected_str, apply, ask_for_confirmation, dut_engine)
+                    return self._set('', value, expected_str, apply, ask_for_confirmation, dut_engine, client_certs_after_apply)
                 else:
                     if op_param_value == {}:
                         op_param_value = op_param_name
                         op_param_name = ''
                         return self._set(op_param_name, op_param_value, expected_str, apply, ask_for_confirmation,
-                                         dut_engine)
+                                         dut_engine, client_certs_after_apply)
                     elif isinstance(op_param_value, dict):
                         output = ''
                         for param_name, param_value in op_param_value.items():
                             res = self._set(param_name, param_value, expected_str, apply, ask_for_confirmation,
-                                            dut_engine)
+                                            dut_engine, client_certs_after_apply)
                             output = output + "\n" + res
                         return output
                     elif isinstance(op_param_value, str) or isinstance(op_param_value, int):
                         return self._set(op_param_name, op_param_value, expected_str, apply, ask_for_confirmation,
-                                         dut_engine)
+                                         dut_engine, client_certs_after_apply)
             else:
                 logging.info('Run set with no params')
                 op_param_value = '' if TestToolkit.tested_api == ApiType.NVUE else {}
                 return self._set(op_param_name, op_param_value, expected_str, apply, ask_for_confirmation,
-                                 dut_engine)
+                                 dut_engine, client_certs_after_apply)
 
     def unset(self, op_param="", expected_str="", apply=False, ask_for_confirmation=False, dut_engine=None):
         if not dut_engine:

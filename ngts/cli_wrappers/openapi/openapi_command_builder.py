@@ -11,13 +11,15 @@ from retry import retry
 
 from ngts.nvos_constants.constants_nvos import OpenApiReqType, NvosConst, SystemConsts
 from ngts.nvos_tools.infra.ResultObj import ResultObj
+from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 
 logger = logging.getLogger()
 
 ENDPOINT_URL_TEMPLATE = 'https://{ip}:{port_num}/nvue_v1'
 REQ_HEADER = {"Content-Type": "application/json"}
+SSL_ERRORS = ['No required SSL certificate was sent']
 ERRORS_TO_RETRY_APPLY_CHECK = ['Internal Server Error', 'Authentication service temporarily unavailable.']
-INVALID_RESPONSE = ["ays_fail", "invalid", "Bad Request", "Not Found", "Forbidden"] + ERRORS_TO_RETRY_APPLY_CHECK
+INVALID_RESPONSE = ["ays_fail", "invalid", "Bad Request", "Not Found", "Forbidden"] + ERRORS_TO_RETRY_APPLY_CHECK + SSL_ERRORS
 PENDING_RESPONSE = "pending"
 APPLIED_RESPONSES = ["applied", "applied_and_saved"]
 
@@ -43,6 +45,7 @@ class OpenApiRequest:
     payload = {}
     changeset = None
     port_num = "443"
+    client_certs: CertInfo = None
 
     @staticmethod
     def print_request(r: requests.PreparedRequest, req_data: RequestData):
@@ -82,7 +85,8 @@ class OpenApiRequest:
 
     @staticmethod
     def _get_endpoint_url(request_data):
-        return ENDPOINT_URL_TEMPLATE.format(ip=request_data.endpoint_ip, port_num=OpenApiRequest.port_num)
+        server_addr = OpenApiRequest.client_certs.dn if OpenApiRequest.client_certs else request_data.endpoint_ip
+        return ENDPOINT_URL_TEMPLATE.format(ip=server_addr, port_num=OpenApiRequest.port_num)
 
     @staticmethod
     def _get_http_auth(request_data):
@@ -94,7 +98,7 @@ class OpenApiRequest:
         with allure.step(f"Send {req_type} request to create NVUE change-set"):
             logging.info(f"Send {req_type} request to create NVUE change-set")
             r = requests.post(url=OpenApiRequest._get_endpoint_url(request_data) + "/revision",
-                              auth=OpenApiRequest._get_http_auth(request_data), verify=False)
+                              auth=OpenApiRequest._get_http_auth(request_data), **OpenApiRequest._get_client_security_config())
             OpenApiRequest.print_request(r.request, request_data)
             OpenApiRequest.print_response(r, req_type)
 
@@ -115,11 +119,11 @@ class OpenApiRequest:
         OpenApiRequest.payload = {}
 
     @staticmethod
-    def apply_nvue_changeset(request_data, op_param_name, add_approve=True):
+    def apply_nvue_changeset(request_data, op_param_name, add_approve=True, client_certs_after_apply: CertInfo = None):
         res = OpenApiRequest._config_diff(request_data)
         if not res.result:
             return res.info
-        res = OpenApiRequest._apply_config(request_data, add_approve)
+        res = OpenApiRequest._apply_config(request_data, add_approve, client_certs_after_apply)
         OpenApiRequest.clear_changeset_and_payload()
         return res.info
 
@@ -132,29 +136,29 @@ class OpenApiRequest:
                 'filled': 'False',
                 'diff': 'applied'
             }
-            r = requests.get(url=f'{OpenApiRequest._get_endpoint_url(request_data)}/', params=params, verify=False,
-                             auth=OpenApiRequest._get_http_auth(request_data))
+            r = requests.get(url=f'{OpenApiRequest._get_endpoint_url(request_data)}/', params=params,
+                             auth=OpenApiRequest._get_http_auth(request_data), **OpenApiRequest._get_client_security_config())
             OpenApiRequest.print_request(r.request, request_data)
             OpenApiRequest.print_response(r, OpenApiReqType.PATCH)
             return OpenApiRequest._validate_response(r, OpenApiReqType.PATCH)
 
     @staticmethod
-    def _apply_config(request_data, add_approve):
+    def _apply_config(request_data, add_approve, client_certs_after_apply: CertInfo = None):
         with allure.step("Apply NVUE change-set"):
             logging.info("Apply NVUE change-set")
             apply_payload = {"state": "apply", "auto-prompt": {"ays": "ays_yes"}} if add_approve else {"state": "apply"}
             url = '{url_end_point}/revision/{req_quote}'.format(
                 url_end_point=OpenApiRequest._get_endpoint_url(request_data),
                 req_quote=requests.utils.quote(OpenApiRequest.changeset, safe=""))
-            r = requests.patch(url=url, auth=OpenApiRequest._get_http_auth(request_data), verify=False,
-                               data=json.dumps(apply_payload), headers=REQ_HEADER)
+            r = requests.patch(url=url, auth=OpenApiRequest._get_http_auth(request_data),
+                               data=json.dumps(apply_payload), headers=REQ_HEADER, **OpenApiRequest._get_client_security_config())
             OpenApiRequest.print_request(r.request, request_data)
             OpenApiRequest.print_response(r, OpenApiReqType.PATCH)
             OpenApiRequest._validate_response(r, OpenApiReqType.PATCH)
 
             try:
                 time.sleep(1)
-                result = OpenApiRequest._check_apply_status(request_data, OpenApiRequest.changeset)
+                result = OpenApiRequest._check_apply_status(request_data, OpenApiRequest.changeset, client_certs_after_apply)
                 if result.result:
                     result.info = "Configuration applied successfully"
             except Exception:
@@ -165,19 +169,32 @@ class OpenApiRequest:
                 return result
 
     @staticmethod
+    def _get_client_security_config() -> dict:
+        if OpenApiRequest.client_certs:
+            return {
+                'verify': OpenApiRequest.client_certs.cacert,
+                'cert': (OpenApiRequest.client_certs.public, OpenApiRequest.client_certs.private)
+            }
+        else:
+            return {'verify': False}
+
+    @staticmethod
     @retry(Exception, tries=15, delay=3)
-    def _check_apply_status(request_data, changeset):
+    def _check_apply_status(request_data, changeset, client_certs_after_apply: CertInfo = None):
         with allure.step("Check the status of the apply"):
             logging.info("Check the status of the apply")
             req_url = '{url_endpoint}/revision/{req_quote}'.format(
                 url_endpoint=OpenApiRequest._get_endpoint_url(request_data),
                 req_quote=requests.utils.quote(changeset, safe=""))
-            r = requests.get(url=req_url, verify=False, auth=OpenApiRequest._get_http_auth(request_data))
+            r = requests.get(url=req_url, auth=OpenApiRequest._get_http_auth(request_data), **OpenApiRequest._get_client_security_config())
             OpenApiRequest.print_request(r.request, request_data)
             OpenApiRequest.print_response(r, OpenApiReqType.GET)
             res = OpenApiRequest._validate_response(r, OpenApiReqType.GET)
             if not res.result:
                 assert all(err not in res.info for err in ERRORS_TO_RETRY_APPLY_CHECK), res.info
+                if any(err in res.info for err in SSL_ERRORS):
+                    OpenApiRequest.update_client_certs_info(client_certs_after_apply)
+                    raise ValueError(res.info)
                 return res.info
 
             obj = json.loads(r.content)
@@ -201,6 +218,10 @@ class OpenApiRequest:
                         raise Exception("Configuration status in pending")
                 else:
                     raise Exception("Waiting for configuration to be applied")
+
+    @staticmethod
+    def update_client_certs_info(client_certs: CertInfo):
+        OpenApiRequest.client_certs = client_certs
 
     @staticmethod
     def _create_json_payload(resource, param):
@@ -254,7 +275,7 @@ class OpenApiRequest:
             req_url = '{url}{resource_path}{params}'.format(url=OpenApiRequest._get_endpoint_url(request_data),
                                                             params=params,
                                                             resource_path=request_data.resource_path)
-            r = requests.get(url=req_url, verify=False, auth=OpenApiRequest._get_http_auth(request_data))
+            r = requests.get(url=req_url, auth=OpenApiRequest._get_http_auth(request_data), **OpenApiRequest._get_client_security_config())
             OpenApiRequest.print_request(r.request, request_data)
             OpenApiRequest.print_response(r, OpenApiReqType.GET)
 
@@ -292,10 +313,9 @@ class OpenApiRequest:
             logging.info("Send PATCH request")
             r = requests.patch(url=url,
                                auth=OpenApiRequest._get_http_auth(request_data),
-                               verify=False,
                                data=json.dumps(OpenApiRequest.payload).replace('"null"', "null"),
                                params={"rev": OpenApiRequest.changeset},
-                               headers=REQ_HEADER)
+                               headers=REQ_HEADER, **OpenApiRequest._get_client_security_config())
             OpenApiRequest.print_request(r.request, request_data)
             OpenApiRequest.print_response(r, OpenApiReqType.PATCH)
             res = OpenApiRequest._validate_response(r, OpenApiReqType.PATCH)
@@ -321,9 +341,8 @@ class OpenApiRequest:
                 logging.info("Send DELETE request")
                 r = requests.delete(url=url,
                                     auth=OpenApiRequest._get_http_auth(request_data),
-                                    verify=False,
                                     params={"rev": OpenApiRequest.changeset},
-                                    headers=REQ_HEADER)
+                                    headers=REQ_HEADER, **OpenApiRequest._get_client_security_config())
 
                 OpenApiRequest.print_request(r.request, request_data)
                 OpenApiRequest.print_response(r, OpenApiReqType.DELETE)
@@ -340,9 +359,9 @@ class OpenApiRequest:
             OpenApiRequest.payload = {request_data.param_name: request_data.param_value}
 
             r = requests.post(url=req_url,
-                              auth=OpenApiRequest._get_http_auth(request_data), verify=False,
+                              auth=OpenApiRequest._get_http_auth(request_data),
                               data=json.dumps(OpenApiRequest.payload),
-                              headers=REQ_HEADER)
+                              headers=REQ_HEADER, **OpenApiRequest._get_client_security_config())
             OpenApiRequest.print_request(r.request, request_data)
             OpenApiRequest.print_response(r, OpenApiReqType.ACTION)
 
@@ -366,7 +385,7 @@ class OpenApiRequest:
             auth = OpenApiRequest._get_http_auth(request_data)
 
             while True:
-                r = requests.get(url=req_url, verify=False, auth=auth, timeout=30)
+                r = requests.get(url=req_url, auth=auth, timeout=30, **OpenApiRequest._get_client_security_config())
                 OpenApiRequest.print_request(r.request, request_data)
                 OpenApiRequest.print_response(r, OpenApiReqType.GET)
                 response = json.loads(r.content)
@@ -396,9 +415,12 @@ class OpenApiCommandHelper:
         logging.info(f"OpenApi port number updated to {port_num}")
 
     @staticmethod
-    def execute_script(user_name, password, req_type, dut_ip, resource_path, op_param_name='', op_param_value=''):
+    def execute_script(user_name, password, req_type, dut_ip, resource_path, op_param_name='', op_param_value='', client_certs_after_apply: CertInfo = None):
         request_data = RequestData(user_name, password, dut_ip, resource_path, op_param_name, op_param_value)
-        return OpenApiCommandHelper.req_method[req_type](request_data, op_param_name)
+        if req_type == OpenApiReqType.APPLY:
+            return OpenApiRequest.apply_nvue_changeset(request_data, op_param_name, client_certs_after_apply=client_certs_after_apply)
+        else:
+            return OpenApiCommandHelper.req_method[req_type](request_data, op_param_name)
 
     @staticmethod
     def execute_action(action_type, user_name, password, dut_ip, resource_path, params, expected_regex=''):

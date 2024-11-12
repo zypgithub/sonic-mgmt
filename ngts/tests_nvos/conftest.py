@@ -442,6 +442,7 @@ def clear_config(markers=None):
     finally:
         logging.info('Clear global OpenApi changeset and payload')
         OpenApiRequest.clear_changeset_and_payload()
+        OpenApiRequest.update_client_certs_info(None)
 
 
 def pytest_exception_interact(report):
