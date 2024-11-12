@@ -11,7 +11,7 @@
                 <tout> 1200 </tout>
                 <params>
                     <test_wrapper> [[run_time:db_tests_path]]/sonic-mgmt/sonic-tool/mars/cases/community/run_ansible_playbook.py </test_wrapper>
-                    <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --raw_args "\'-i lab fanout.yml -l [[conf:extra_info.fanout_switch]] -e pfcwd_dockers_url=[[conf:extra_info.pfcwd_dockers_url]] --tags pfcwd_config,check_pfcwd_config -vvv\'" </static_args>
+                    <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --raw_args "\'-i lab fanout.yml -l [[conf:extra_info.fanout_switch]] -e pfcwd_dockers_url=\"http://nbu-mtr-nfs.nvidia.com/auto/sw_system_project/sonic/docker/\" --tags pfcwd_config,check_pfcwd_config -vvv\'" </static_args>
                 </params>
             </pre>
 
