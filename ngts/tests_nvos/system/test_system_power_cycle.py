@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 import pytest
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import ApiType, ActionConsts, SystemConsts, PlatformConsts
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
@@ -82,13 +83,13 @@ def _test_command_not_supported(engines, devices, test_name, test_api, force_str
     - `nv action power-cycle system [force]` commands don't work
     """
     engine = engines.dut
-    if test_api == ApiType.NVUE:
-        with allure.step("Verify command doesn't exist in command list"):
+    if test_api == ApiType.NVUE and not is_redmine_issue_active([4105725]):
+        with allure.independent_step("Verify command doesn't exist in command list"):
             output = NvueGeneralCli.search_in_list_commands(engine, ActionConsts.POWER_CYCLE)
             assert not output, "The following commands should not exist: " + output
 
-    with allure.step("Verify command doesn't work"):
-        do_power_cycle(force_str=force_str).verify_result(should_succeed=False)
+    with allure.independent_step("Verify command doesn't work"):
+        System().action(ActionConsts.POWER_CYCLE, param_name=force_str).verify_result(should_succeed=False)
 
 
 def do_power_cycle(force_str: str) -> ResultObj:
