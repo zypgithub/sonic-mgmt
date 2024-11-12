@@ -11,7 +11,7 @@ from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.helpers import ra
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tests_nvos.general.security.certificate.constants import TestCert, CertShowFields
 from ngts.tests_nvos.general.security.certificate.helpers import verify_cert_in_expected_locations, import_certificates, \
-    send_curl_with_tls_and_verify
+    send_curl_with_and_verify
 from ngts.tests_nvos.general.security.nmx_cert.constants import EncryptionMode
 from ngts.tests_nvos.general.security.test_api_server_security.constants import CERTIFICATE
 from ngts.tests_nvos.system.gnmi.conftest import scp_player
@@ -349,7 +349,7 @@ def test_cert_mgmt_use_cert_for_rest_api_tls(test_api, test_flow, engines, scp_p
         system.api.set(CERTIFICATE, cert.name, apply=True).verify_result()
     if is_good_flow:
         with allure.step('send unsecured client request – expect success'):
-            send_curl_with_tls_and_verify(cert.dn, engines.dut.username, engines.dut.password, EncryptionMode.DISABLED)
+            send_curl_with_and_verify(cert.dn, engines.dut.username, engines.dut.password, EncryptionMode.DISABLED)
     with allure.step(f'send client request using {"" if is_good_flow else "non-"}proper CA – expect {"success" if is_good_flow else "fail"}'):
-        ca_path = cert.cacert if is_good_flow else TestCert.cert_valid_2.cacert
-        send_curl_with_tls_and_verify(cert.dn, engines.dut.username, engines.dut.password, EncryptionMode.TLS, ca_path, is_good_flow)
+        client_ca = cert if is_good_flow else TestCert.cert_valid_2
+        send_curl_with_and_verify(cert.dn, engines.dut.username, engines.dut.password, EncryptionMode.TLS, client_ca, None, is_good_flow)

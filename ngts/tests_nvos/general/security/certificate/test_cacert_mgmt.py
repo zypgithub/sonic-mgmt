@@ -3,7 +3,7 @@ from typing import List
 
 import pytest
 
-from ngts.nvos_constants.constants_nvos import ApiType
+from ngts.nvos_constants.constants_nvos import ApiType, TestFlowType
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.system.System import System
@@ -11,7 +11,9 @@ from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.helpers import ra
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tests_nvos.general.security.certificate.constants import TestCert, CaShowFields
 from ngts.tests_nvos.general.security.certificate.helpers import import_certificates, \
-    verify_ca_in_expected_locations
+    verify_ca_in_expected_locations, send_curl_with_and_verify
+from ngts.tests_nvos.general.security.nmx_cert.constants import EncryptionMode
+from ngts.tests_nvos.general.security.test_api_server_security.constants import CERTIFICATE, CA_CERTIFICATE
 from ngts.tests_nvos.system.gnmi.conftest import scp_player
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_general_utils import generate_scp_uri_using_player
@@ -240,3 +242,45 @@ def test_cacert_mgmt_import_ca_unique_id(test_api, engines, scp_player, clear_ce
                     assert ca in out, f'ca {ca} does not appear in ca-certificate show output but expected to exist\n{out}'
                 with allure.independent_step('verify files'):
                     verify_ca_in_expected_locations(ca, cacert, engines.dut)
+
+
+""" functional tests """
+
+
+@pytest.mark.system
+@pytest.mark.certificate
+@pytest.mark.parametrize('test_api', random.sample(ApiType.ALL_TYPES, 1))
+@pytest.mark.parametrize('test_flow', TestFlowType.ALL_TYPES)
+def test_cert_mgmt_use_ca_for_rest_api_mtls(test_api, test_flow, engines, scp_player, clear_certs):
+    """
+    Verify that valid imported cert can be used for REST server TLS
+
+    1. import cert
+    2. bind cert to rest server (system api certificate)
+    3. send unsecured client request – success
+    4. send client request using non/proper CA - fail/success
+    """
+    TestToolkit.tested_api = test_api
+    is_good_flow = test_flow == TestFlowType.GOOD_FLOW
+
+    system = System()
+    security = system.security
+
+    server_cert = TestCert.cert_valid_1.copy('cert1')
+    server_ca = TestCert.cert_valid_2.copy('cert2')
+    cert_bundle_uri = generate_scp_uri_using_player(scp_player, server_cert.p12_bundle)
+    ca_uri = generate_scp_uri_using_player(scp_player, server_ca.cacert)
+
+    with allure.step('import cert and ca'):
+        security.certificate.cert_id[server_cert.name].action_import(uri_bundle=cert_bundle_uri, passphrase=server_cert.p12_password).verify_result()
+        security.ca_certificate.cert_id[server_ca.cacert_name].action_import(uri=ca_uri).verify_result()
+    with allure.step('bind cert and ca to rest server (system api certificate & mtls)'):
+        system.api.set(CERTIFICATE, server_cert.name).verify_result()
+        system.api.mtls.set(CA_CERTIFICATE, server_ca.cacert_name, apply=True, client_certs_after_apply=CertInfo('', '', server_ca.private, server_ca.public, '', '', server_ca.dn, None, '')).verify_result()
+    if not is_good_flow:
+        with allure.step('send unsecured client request – expect fail'):
+            send_curl_with_and_verify(server_cert.dn, engines.dut.username, engines.dut.password, EncryptionMode.DISABLED, should_succeed=False)
+    with allure.step(f'send client request using {"" if is_good_flow else "non-"}proper client cert – expect {"success" if is_good_flow else "fail"}'):
+        client_ca = server_cert  # client cert matches server CA
+        client_cert = server_ca if is_good_flow else TestCert.cert_valid_3
+        send_curl_with_and_verify(server_cert.dn, engines.dut.username, engines.dut.password, EncryptionMode.MTLS, client_ca, client_cert, is_good_flow)

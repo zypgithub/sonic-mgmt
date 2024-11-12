@@ -15,6 +15,9 @@ DUT_IMPORTED_CACERTS_DIR = '/etc/ssl/certs'
 
 class CertMsgs:
     SSL_CERTIFICATE_PROBLEM = 'SSL certificate problem'
+    SSL_CERTIFICATE_ERROR = 'SSL certificate error'
+    NO_REQUIRED_SSL_CERT_SENT = 'No required SSL certificate was sent'
+    ALL_ERRORS = [SSL_CERTIFICATE_PROBLEM, SSL_CERTIFICATE_ERROR, NO_REQUIRED_SSL_CERT_SENT]
 
 
 class TestCert:

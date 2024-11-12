@@ -128,12 +128,16 @@ def verify_ca_in_expected_locations(ca_name: str, ca_info: CertInfo, dut_engine:
                 verify_ca_in_ssl_ca_pool(ca_name, ca_info, dut_engine, should_exist)
 
 
-def send_curl_with_tls_and_verify(server_host, username, password, secure_mode, ca_path=None, should_succeed: bool = True):
-    client = CurlTool(server_host=server_host, username=username, password=password, cacert=ca_path)
+def send_curl_with_and_verify(server_host, username, password, secure_mode, client_ca: CertInfo = None, client_cert: CertInfo = None, should_succeed: bool = True):
+    cacert = None if not client_ca else client_ca.cacert
+    client = CurlTool(server_host=server_host, username=username, password=password, cacert=cacert, client_cert=client_cert)
+
     skip_verify = secure_mode == EncryptionMode.DISABLED
     out, err = client.request(request_type=OpenApiReqType.GET, path=GET_SYSTEM_VERSION_PATH, skip_cert_verify=skip_verify)
-    got_ssl_error = CertMsgs.SSL_CERTIFICATE_PROBLEM in err
+    output = f'{out}\n{err}'
+
+    got_ssl_error = any(msg in output for msg in CertMsgs.ALL_ERRORS)
     if should_succeed:
-        assert not got_ssl_error, f'client got SSL err "{CertMsgs.SSL_CERTIFICATE_PROBLEM}" but expected to succeed\nout: {out}\nerr: {err}'
+        assert not got_ssl_error, f'client got SSL err of {CertMsgs.ALL_ERRORS} but expected to succeed\nout: {out}\nerr: {err}'
     else:
-        assert got_ssl_error, f'client succeeded and did not get SSL err "{CertMsgs.SSL_CERTIFICATE_PROBLEM}", but expected to fail\nout: {out}\nerr: {err}'
+        assert got_ssl_error, f'client succeeded and did not get any SSL err of {CertMsgs.ALL_ERRORS}, but expected to fail\nout: {out}\nerr: {err}'
