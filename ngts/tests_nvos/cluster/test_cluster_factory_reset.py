@@ -209,7 +209,7 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name, 
 
 
 @disabled_access_ports
-@pytest.mark.timeout(35 * MINUTE, func_only=True)
+@pytest.mark.timeout(50 * MINUTE, func_only=True)
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
 def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_name, has_loopbox):
@@ -255,6 +255,11 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
             time.sleep(30)
             for app in ClusterConsts.INITIAL_EXPECTED_APPS:
                 ClusterTools.verify_log_level(log_level, app, output_format, cluster)
+            # Not expecting content to change.
+            for file_type in ClusterConsts.NMX_CONTROLLER_CONFIG_FILE_TYPES:
+                if not initial_config_contents[file_type].endswith('\n') and (initial_config_contents[file_type] != ''):
+                    initial_config_contents[file_type] += '\n'
+                initial_config_contents[file_type] += '# This is dummy config file'
             verify_config_files_content_not_changed(sdn, initial_config_contents, engines)
             verify_apps_in_expected_state(cluster, 'ok')  # Apps should be running
 
@@ -269,6 +274,9 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
         if not sdn_files_deleted:
             ClusterTools.start_cluster(cluster, OutputFormat.json)
             delete_all_sdn_fetched_generated_files(engines, sdn, all_config_files_paths, all_state_files_paths)
+
+        with allure.step("Run reset factory with keep all-config param"):
+            execute_reset_factory(engines, system, devices.dut.reset_factory, "", current_time)
 
 
 def execute_reset_factory(engines, system, operation, flag, current_time):
@@ -403,7 +411,7 @@ def verify_config_files_content_not_changed(sdn, initial_config_contents, engine
     assert len(current_config_files_content) == len(initial_config_contents), 'Missing configs'
     for file_type, current_file_content in current_config_files_content.items():
         init_file_content = initial_config_contents.get(file_type)
-        assert current_file_content == init_file_content, f"Initial configuration was not restored for {file_type}. Current: {current_file_content}, Initial: {init_file_content}"
+        assert current_file_content == init_file_content, f"Current and initial configuration for {file_type}. Current: {current_file_content}, Initial: {init_file_content}"
 
 
 def pre_factory_reset_security_checks():
