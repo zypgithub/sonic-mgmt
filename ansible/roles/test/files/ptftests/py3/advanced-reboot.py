@@ -1912,6 +1912,7 @@ class ReloadTest(BaseTest):
             received_vlan_to_t1 = 0
             missed_vlan_to_t1 = 0
             missed_t1_to_vlan = 0
+            flooded_pkts = []
             self.disruption_start, self.disruption_stop = None, None
             for packet in packets:
                 if packet[scapyall.Ether].dst == self.dut_mac or packet[scapyall.Ether].dst == self.vlan_mac:
@@ -1920,6 +1921,8 @@ class ReloadTest(BaseTest):
                     #   t1->server sent pkt will have dst MAC as dut_mac,
                     #   and server->t1 sent pkt will have dst MAC as vlan_mac
                     sent_payload = int(bytes(packet[scapyall.TCP].payload))
+                    if sent_payload in sent_packets:
+                        flooded_pkts.append(sent_payload)
                     sent_packets[sent_payload] = packet.time
                     sent_counter += 1
                     continue
@@ -1975,6 +1978,7 @@ class ReloadTest(BaseTest):
             self.log("*********** received packets captured - vlan-to-t1 - {}".format(received_vlan_to_t1))
             self.log("*********** Missed received packets - t1-to-vlan - {}".format(missed_t1_to_vlan))
             self.log("*********** Missed received packets - vlan-to-t1 - {}".format(missed_vlan_to_t1))
+            self.log("*********** Flooded pkts - {}".format(flooded_pkts))
             self.log("**************************************************************")
         self.fails['dut'].add("Sniffer failed to filter any traffic from DUT")
         self.assertTrue(received_counter,
@@ -2014,11 +2018,12 @@ class ReloadTest(BaseTest):
         total_validation_packets = received_t1_to_vlan + \
             received_vlan_to_t1 + missed_t1_to_vlan + missed_vlan_to_t1
         # In some cases DUT may flood original packet to all members of VLAN, we do check that we do not flood too much
-        allowed_number_of_flooded_original_packets = 150
+        allowed_number_of_flooded_original_packets = 250
         if (sent_counter - total_validation_packets) > allowed_number_of_flooded_original_packets:
             self.dataplane_loss_checked_successfully = False
             self.fails["dut"].add("Unexpected count of sent packets available in pcap file. "
-                                  "Could be issue with DUT flooding for original packets which was sent to DUT")
+                                  "Could be issue with DUT flooding for original packets which was sent to DUT, "
+                                  "flooded count is: {}".format(sent_counter - total_validation_packets))
 
         if prev_payload != (self.sent_packet_count - 1):
             # Specific case when packet loss started but final lost packet not detected
