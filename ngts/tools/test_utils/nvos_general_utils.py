@@ -76,7 +76,7 @@ def set_base_configurations(dut_engine, timezone=LinuxConsts.JERUSALEM_TIMEZONE,
         system.aaa.authentication.restrictions.set(RestrictionsConsts.FAIL_DELAY, 0,
                                                    dut_engine=dut_engine).verify_result()
 
-        RegressionConfigurations.configure_ports_to_legacy(engine=dut_engine, apply=False, throw_exception=False)
+        RegressionConfigurations.set_base_configurations(engine=dut_engine, apply=False)
 
         if apply:
             logging.info('Apply configurations')
@@ -174,11 +174,6 @@ def wait_for_ldap_nvued_restart_workaround(test_item, engine_to_use=None):
         #     time.sleep(sleep_time)
         # with allure.step(f'Wait till cli up - using user "{engine_to_use.username}"'):
         #     wait_until_cli_is_up(engine=engine_to_use)
-
-
-def is_secure_boot_enabled(engine: ProxySshEngine) -> bool:
-    output: str = engine.run_cmd('mokutil --sb-state')
-    return output.replace('SecureBoot ', '').strip() == 'enabled'
 
 
 def get_version_info(version: str) -> Tuple[str, str]:

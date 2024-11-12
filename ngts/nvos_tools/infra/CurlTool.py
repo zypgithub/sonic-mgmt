@@ -6,6 +6,7 @@ from typing import Tuple, List
 import ngts.tools.test_utils.allure_utils as allure
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_constants.constants_nvos import SystemConsts
+from ngts.nvos_tools.infra.IpTool import IpTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 
@@ -45,7 +46,7 @@ class CurlTool:
         with allure.step('compose the curl command'):
             username = username or self.username
             password = password or self.password
-            host = self.server_host
+            host = f'[{self.server_host}]' if IpTool.is_address_ipv6(self.server_host) else self.server_host
 
             if is_insecure:
                 cert_flag = '--insecure'
@@ -57,7 +58,7 @@ class CurlTool:
                 if client_cert_to_use:
                     cert_flag += f' --key {client_cert_to_use.private} --cert {client_cert_to_use.public}'
                 if resolve_dn:
-                    cert_flag += f' --resolve {resolve_dn}:{self.server_port}:{self.server_host}'
+                    cert_flag += f' --resolve {resolve_dn}:{self.server_port}:{host}'
                     host = resolve_dn
 
             curl_cmd = (f"curl {cert_flag} --user {username}:{password} "
@@ -68,9 +69,19 @@ class CurlTool:
         return self.run_redfish_command(rest_op='POST', data='{"ResetType": "GracefulRestart"}',
                                         path='/Managers/BMC_0/Actions/Manager.Reset')
 
+    def reset_bmc_to_factory(self, username='', password=''):
+        return self.run_redfish_command(rest_op='POST', data='{"ResetToDefaultsType": "ResetAll"}',
+                                        path='/Managers/BMC_0/Actions/Manager.ResetToDefaults',
+                                        username=username, password=password)
+
+    def change_root_password(self, username='', password='', dut_engine=None):
+        return self.run_redfish_command(rest_op='PATCH', data='{"Password": "ABYX12#14artb"}',
+                                        path='/AccountService/Accounts/root',
+                                        username=username, password=password, dut_engine=dut_engine)
+
     def run_redfish_command(self, rest_op: str, data: str = '', username: str = '',
-                            password: str = '', path: str = ''):
-        dut_engine: LinuxSshEngine = TestToolkit.engines.dut
+                            password: str = '', path: str = '', dut_engine=None):
+        dut_engine: LinuxSshEngine = dut_engine or TestToolkit.engines.dut
         with allure.step('compose the curl command'):
             username = username or self.username
             password = password or self.password

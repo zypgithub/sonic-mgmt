@@ -5,6 +5,7 @@ from ngts.cli_wrappers.sonic.sonic_hw_mgmt_cli import SonicHwMgmtCli
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.cli_wrappers.sonic.sonic_interface_clis import SonicInterfaceCli
 from ngts.cli_wrappers.sonic.sonic_im_clis import SonicImClis
+from ngts.cli_wrappers.nvue.nvue_ip_clis import NvueIpCli
 
 logger = logging.getLogger()
 
@@ -18,6 +19,7 @@ class NvueCli():
         self._hw_mgmt = None
         self._interface = None
         self._im = None
+        self._ip = None
 
     @property
     def general(self):
@@ -42,3 +44,9 @@ class NvueCli():
         if self._im is None:
             self._im = SonicImClis(engine=self.engine, cli_obj=self)
         return self._im
+
+    @property
+    def ip(self):
+        if self._ip is None:
+            self._ip = NvueIpCli(engine=self.engine)
+        return self._ip

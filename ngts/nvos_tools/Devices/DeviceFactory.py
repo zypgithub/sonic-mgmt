@@ -26,7 +26,7 @@ class DeviceFactory:
             'Q3200-RA-Crocodile Sunbird': CrocodileSwitch,
             'QM3400': CrocodileSwitch,
             'QM3400 - Crocodile': CrocodileSwitch,
-            'QM3400_simx - Crocodile': CrocodileSimxSwitch,
+            'QM3400_simx - Crocodile': CrocodileSwitch,
             'QM8790 - Black Mamba': BlackMambaSwitch,
             'QM3000 - Black Mamba': BlackMambaSwitch,
             'Q3400-RA Black Mamba': BlackMambaSwitch,

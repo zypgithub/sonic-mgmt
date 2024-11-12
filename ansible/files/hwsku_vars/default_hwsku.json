@@ -44,8 +44,8 @@
         "support_hwsku": ["Mellanox-SN2700-A1", "Mellanox-SN2700-A1-D48C8"]
     },
     "r-panther-23_setup": {
-        "default_hwsku": "Mellanox-SN2700-D40C8S8",
-        "support_hwsku": ["Mellanox-SN2700-D40C8S8"]
+        "default_hwsku": "Mellanox-SN2700-D48C8",
+        "support_hwsku": ["Mellanox-SN2700-D40C8S8", "Mellanox-SN2700-D48C8"]
     },
     "r-panther-40_setup": {
         "default_hwsku": "Mellanox-SN2700-A1-D48C8",
@@ -64,8 +64,8 @@
         "support_hwsku": ["Mellanox-SN2700"]
     },
     "r-panther-48_setup": {
-        "default_hwsku": "Mellanox-SN2700-D40C8S8",
-        "support_hwsku": ["Mellanox-SN2700-D40C8S8"]
+        "default_hwsku": "Mellanox-SN2700-D48C8",
+        "support_hwsku": ["Mellanox-SN2700-D40C8S8", "Mellanox-SN2700-D48C8"]
     },
     "mtvr-panther-02_setup": {
         "default_hwsku": "Mellanox-SN2700",
@@ -128,8 +128,8 @@
         "support_hwsku": ["Mellanox-SN3800-D112C8"]
     },
     "arc-switch1004_setup": {
-        "default_hwsku": "Mellanox-SN2700-D40C8S8",
-        "support_hwsku": ["Mellanox-SN2700-D40C8S8"]
+        "default_hwsku": "Mellanox-SN2700-D48C8",
+        "support_hwsku": ["Mellanox-SN2700-D40C8S8", "Mellanox-SN2700-D48C8"]
     },
     "arc-switch1025_setup": {
         "default_hwsku": "Mellanox-SN2700",

@@ -184,7 +184,7 @@ def verify_cleanup_done(engine, current_time, system, username, param=''):
         if param != KEEP_ONLY_FILES:
             output = engine.run_cmd("ls /var/dump")
             if output and "No such file or directory" not in output:
-                errors += "\ntech-support files were not deleted"
+                errors += "\ntech-support files were not deleted: {}".format(output)
 
     with allure.step("Verify old stats internal files were deleted"):
         if param != KEEP_ONLY_FILES:
@@ -195,19 +195,19 @@ def verify_cleanup_done(engine, current_time, system, username, param=''):
                     output = engine.run_cmd(f"stat /var/stats/{stat_file} | grep Birth")
                     file_date_time = create_date_time_obj(output)
                     if current_time >= file_date_time:
-                        errors += "\nold stats internal files were not deleted"
+                        errors += "\nold stats internal file {} was not deleted".format(stat_file)
 
     with allure.step("Verify stats external files were deleted"):
         if param != KEEP_ONLY_FILES:
             output = engine.run_cmd("ls /host/stats")
             if output and "No such file or directory" not in output:
-                errors += "\nstats external files were not deleted"
+                errors += "\nstats external files were not deleted: {}".format(output)
 
     with allure.step("Verify /etc/sonic content was cleared"):
         if param != KEEP_ONLY_FILES:
             output = engine.run_cmd("ls /etc/sonic/verification_test")
             if output and "No such file or directory" not in output:
-                errors += "\n/etc/sonic was not cleared"
+                errors += "\n/etc/sonic was not cleared: {}".format(output)
 
     with allure.step("Verify /etc/sonic content was cleared"):
         if param != KEEP_ONLY_FILES:
@@ -219,7 +219,7 @@ def verify_cleanup_done(engine, current_time, system, username, param=''):
         if param != KEEP_ONLY_FILES:
             output = engine.run_cmd("ls /host/warmboot")
             if output and "No such file or directory" not in output:
-                errors += "\n/host/warmboot was not cleared"
+                errors += "\n/host/warmboot was not cleared: {}".format(output)
 
     with allure.step("Verify history was deleted"):
         if param not in [KEEP_BASIC, KEEP_ONLY_FILES]:
@@ -233,6 +233,8 @@ def verify_cleanup_done(engine, current_time, system, username, param=''):
             if "No such file or directory" not in output:
                 errors += "\n*.viminfo files were not deleted"
             output = engine.run_cmd("find /home/ -maxdepth 1 -type f ")
+            if output:
+                errors += "\nHome files were not deleted: {}".format(output)
 
     with allure.step("Verify btmp files were cleared"):
         if param != KEEP_ONLY_FILES:
@@ -240,19 +242,19 @@ def verify_cleanup_done(engine, current_time, system, username, param=''):
             if output and "No such file or directory" not in output:
                 file_date_time = create_date_time_obj(output)
                 if current_time >= file_date_time:
-                    errors += "\n/var/log/btmp was not cleared"
+                    errors += "\n/var/log/btmp was not cleared: {}".format(output)
 
             output = engine.run_cmd("stat /var/log/lastlog | grep Modify")
             if output and "No such file or directory" not in output:
                 file_date_time = create_date_time_obj(output)
                 if current_time >= file_date_time:
-                    errors += "\n/var/log/lastlog was not created"
+                    errors += "\n/var/log/lastlog was not created: {}".format(output)
 
             output = engine.run_cmd("stat /var/log/wtmp | grep Modify")
             if output and "No such file or directory" not in output:
                 file_date_time = create_date_time_obj(output)
                 if current_time >= file_date_time:
-                    errors += "\n/var/log/wtmp was not created"
+                    errors += "\n/var/log/wtmp was not created: {}".format(output)
 
     with allure.step("Create new user"):
         if param != KEEP_BASIC:

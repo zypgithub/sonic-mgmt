@@ -5,6 +5,7 @@ from typing import Tuple
 
 import ngts.tools.test_utils.allure_utils as allure
 from ngts.nvos_tools.infra.CmdRunner import CmdRunner
+from ngts.nvos_tools.infra.IpTool import IpTool
 from ngts.tests_nvos.system.gnmi.constants import GnmiMode
 
 
@@ -175,8 +176,9 @@ class GnmiClient:
                 assert cacert_to_use, 'cacert path was not specified'
                 cert_flag = f'-cacert {cacert_to_use}'
 
+            host = f'[{self.server_host}]' if IpTool.is_address_ipv6(self.server_host) else self.server_host
             grpcurl_cmd = (f"grpcurl {cert_flag} -H username:{username} -H password:{password} "
-                           f"{self.server_host}:{self.server_port} {grpcurl_op}")
+                           f"{host}:{self.server_port} {grpcurl_op}")
         with allure.step('run grpcurl command in process'):
             return self.cmd_runner.run_cmd_in_process(grpcurl_cmd, cmd_timeout=cmd_time)
 

@@ -122,7 +122,10 @@ def extract_number(s):
 def convert_date(fct, s):
     dt = None
     re_result = re.findall(r'^\S{3}\s{1,2}\d{1,2} \d{2}:\d{2}:\d{2}\.?\d*', s)
-    re_result_with_year = re.findall(r'^\d{4}\s{1}\S{3}\s{1,2}\d{1,2} \d{2}:\d{2}:\d{2}\.?\d*', s)
+    if len(re_result) == 0:
+        re_result_with_year = re.findall(r'^\d{4}\s{1}\S{3}\s{1,2}\d{1,2} \d{2}:\d{2}:\d{2}\.?\d*', s)
+    else:
+        re_result_with_year = list()
     # Workaround for pytest-ansible
     loc = locale.getlocale()
     locale.setlocale(locale.LC_ALL, (None, None))

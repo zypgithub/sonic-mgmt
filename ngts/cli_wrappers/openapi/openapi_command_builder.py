@@ -16,7 +16,8 @@ logger = logging.getLogger()
 
 ENDPOINT_URL_TEMPLATE = 'https://{ip}:{port_num}/nvue_v1'
 REQ_HEADER = {"Content-Type": "application/json"}
-INVALID_RESPONSE = ["ays_fail", "invalid", "Bad Request", "Not Found", "Forbidden", "Internal Server Error"]
+ERRORS_TO_RETRY_APPLY_CHECK = ['Internal Server Error', 'Authentication service temporarily unavailable.']
+INVALID_RESPONSE = ["ays_fail", "invalid", "Bad Request", "Not Found", "Forbidden"] + ERRORS_TO_RETRY_APPLY_CHECK
 PENDING_RESPONSE = "pending"
 APPLIED_RESPONSES = ["applied", "applied_and_saved"]
 
@@ -174,10 +175,9 @@ class OpenApiRequest:
             r = requests.get(url=req_url, verify=False, auth=OpenApiRequest._get_http_auth(request_data))
             OpenApiRequest.print_request(r.request, request_data)
             OpenApiRequest.print_response(r, OpenApiReqType.GET)
-
             res = OpenApiRequest._validate_response(r, OpenApiReqType.GET)
             if not res.result:
-                assert '500 Internal Server Error' not in res.info, res.info
+                assert all(err not in res.info for err in ERRORS_TO_RETRY_APPLY_CHECK), res.info
                 return res.info
 
             obj = json.loads(r.content)

@@ -3,6 +3,7 @@ import time
 
 from ngts.tools.test_utils import allure_utils as allure
 import pytest
+from retry.api import retry_call
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
@@ -19,7 +20,7 @@ cmd_to_simulate_events = 'docker exec eventd events_publish_test.py -c '
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_show_system_events(test_api, engines, devices):
+def test_show_system_events(test_api, engines):
     """
     Run show system events and table-size commands and verify the required events and table-size
         Test flow:
@@ -46,7 +47,8 @@ def test_show_system_events(test_api, engines, devices):
         assert no_of_events is 50, 'No of events in show output is {} instead of {}'.format(no_of_events, 50)
 
     with allure.step('Run show system events last command & validate there are 20(default) events in the output'):
-        output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show(SystemConsts.SYSTEM_LAST_EVENT)).get_returned_value()
+        output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show(SystemConsts.SYSTEM_LAST_EVENT)).\
+            get_returned_value()
         no_of_events = len(output)
         assert no_of_events is 20, 'No of events in show output is {} instead of {}'.format(no_of_events, 20)
 
@@ -66,7 +68,7 @@ def test_show_system_events(test_api, engines, devices):
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_show_system_events_table_size(test_api, engines, devices):
+def test_show_system_events_table_size(test_api):
     """
     Run show system events and table-size commands and verify the required events and table-size
         Test flow:
@@ -85,7 +87,7 @@ def test_show_system_events_table_size(test_api, engines, devices):
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_system_events_maximum(test_api, engines, devices):
+def test_system_events_maximum(test_api, engines):
     """
     Verify show system events is able to capture maximum no of events (10000)
         Test flow:
@@ -99,16 +101,16 @@ def test_system_events_maximum(test_api, engines, devices):
     TestToolkit.tested_api = test_api
     fae = Fae()
     system = System()
-    clear_system_events(system, engines)
+    clear_system_events(system)
     try:
         with allure.step('Set system events table-size to maximum(10000)'):
             fae.system.events.set(op_param_name='table-size', op_param_value=SystemConsts.EVENTS_TABLE_SIZE_MAX,
                                   apply=True, dut_engine=engines.dut).verify_result()
 
         with allure.step('Validate system events table-size is set to 10000'):
-            output = OutputParsingTool.parse_json_str_to_dictionary(fae.system.events.show()).get_returned_value()
-            ValidationTool.verify_field_value_in_output(output, SystemConsts.EVENTS_TABLE_SIZE,
-                                                        SystemConsts.EVENTS_TABLE_SIZE_MAX).verify_result()
+            retry_call(_verify_field_in_show_output,
+                       [fae.system.events, SystemConsts.EVENTS_TABLE_SIZE, SystemConsts.EVENTS_TABLE_SIZE_MAX],
+                       exceptions=AssertionError, tries=2, delay=5, logger=logger)
 
         with allure.step('Simulate 10100 system events'):
             # Trying to create more than 10000 to verify that the size of table is limited to 10000 which is max
@@ -130,18 +132,19 @@ def test_system_events_maximum(test_api, engines, devices):
             fae.system.events.unset(apply=True, dut_engine=engines.dut).verify_result()
 
         with allure.step('Validate system events table-size is set to default(1000)'):
-            output = OutputParsingTool.parse_json_str_to_dictionary(fae.system.events.show()).get_returned_value()
-            ValidationTool.verify_field_value_in_output(output, SystemConsts.EVENTS_TABLE_SIZE,
-                                                        SystemConsts.EVENTS_TABLE_SIZE_DEFAULT).verify_result()
+            retry_call(_verify_field_in_show_output,
+                       [fae.system.events, SystemConsts.EVENTS_TABLE_SIZE, SystemConsts.EVENTS_TABLE_SIZE_DEFAULT],
+                       exceptions=AssertionError, tries=2, delay=5, logger=logger)
+
         with allure.step('Clear system events'):
-            clear_system_events(system, engines)
+            clear_system_events(system)
 
 
 @pytest.mark.events
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_set_fae_system_events_table_size(test_api, engines, devices):
+def test_set_fae_system_events_table_size(test_api, engines):
     """
     Verify nv set fae system events table-size <size> command
         Test flow:
@@ -180,35 +183,31 @@ def test_set_fae_system_events_table_size(test_api, engines, devices):
             cmd_to_run = cmd_to_simulate_events + str(no_of_events_to_simulate)
             output = engines.dut.run_cmd(cmd_to_run)
             assert output == '', 'Error in executing simulate command: {}\n{}'.format(output, cmd_to_run)
-            time.sleep(10)
 
         with allure.step('Run show system events command & validate table-occupancy should be default'):
-            output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show()).get_returned_value()
-            ValidationTool.verify_field_value_in_output(output, SystemConsts.EVENTS_TABLE_OCCUPANCY,
-                                                        SystemConsts.EVENTS_TABLE_SIZE_DEFAULT).verify_result()
+            retry_call(_verify_field_in_show_output,
+                       [system.events, SystemConsts.EVENTS_TABLE_OCCUPANCY, SystemConsts.EVENTS_TABLE_SIZE_DEFAULT],
+                       exceptions=AssertionError, tries=4, delay=5, logger=logger)
 
         with allure.step('Set system events table-size to 600'):
             fae.system.events.set(op_param_name='table-size', op_param_value=600,
                                   apply=True, dut_engine=engines.dut).verify_result()
-            time.sleep(10)
 
         with allure.step('Validate system events table-size is set to 600'):
-            output = OutputParsingTool.parse_json_str_to_dictionary(fae.system.events.show()).get_returned_value()
-            ValidationTool.verify_field_value_in_output(output, SystemConsts.EVENTS_TABLE_SIZE, 600).verify_result()
+            retry_call(_verify_field_in_show_output, [fae.system.events, SystemConsts.EVENTS_TABLE_SIZE, 600],
+                       exceptions=AssertionError, tries=2, delay=5, logger=logger)
 
         with allure.step('Run show system events command & validate table-occupancy should be 600'):
-            # One space is left empty for any upcoming critical event, hence we will see 599 events if max is 600
-            output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show()).get_returned_value()
-            ValidationTool.verify_field_value_in_output(output, SystemConsts.EVENTS_TABLE_OCCUPANCY,
-                                                        599).verify_result()
+            retry_call(_verify_field_in_show_output, [system.events, SystemConsts.EVENTS_TABLE_OCCUPANCY, 599],
+                       exceptions=AssertionError, tries=4, delay=5, logger=logger)
 
         with allure.step('Set system events table-size to 1100'):
             fae.system.events.set(op_param_name='table-size', op_param_value=1100,
                                   apply=True, dut_engine=engines.dut).verify_result()
 
         with allure.step('Validate system events table-size is set to 1100'):
-            output = OutputParsingTool.parse_json_str_to_dictionary(fae.system.events.show()).get_returned_value()
-            ValidationTool.verify_field_value_in_output(output, SystemConsts.EVENTS_TABLE_SIZE, 1100).verify_result()
+            retry_call(_verify_field_in_show_output, [fae.system.events, SystemConsts.EVENTS_TABLE_SIZE, 1100],
+                       exceptions=AssertionError, tries=2, delay=5, logger=logger)
 
         with allure.step('Simulate 500 more system events(to make it 1100+)'):
             # Trying to create more than 1000 to verify that the size of table is limited to 1000 which is default
@@ -216,43 +215,56 @@ def test_set_fae_system_events_table_size(test_api, engines, devices):
             cmd_to_run = cmd_to_simulate_events + str(no_of_events_to_simulate)
             output = engines.dut.run_cmd(cmd_to_run)
             assert output == '', 'Error in executing simulate command: {}\n{}'.format(output, cmd_to_run)
-            time.sleep(10)
 
         with allure.step('Run show system events command & validate table-occupancy should be 1100'):
-            # One space is left empty for any upcoming critical event, hence we will see 599 events if max is 600
-            output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show()).get_returned_value()
-            table_occupancy = int(output[SystemConsts.EVENTS_TABLE_OCCUPANCY])
-            assert table_occupancy >= 1099, "Table occupancy is {}, less than expected 1100".format(table_occupancy)
+            retry_call(_verify_field_in_show_output,
+                       [system.events, SystemConsts.EVENTS_TABLE_OCCUPANCY, 1099, 0, True],
+                       exceptions=AssertionError, tries=4, delay=5, logger=logger)
 
         with allure.step('Unset system events table-size'):
             fae.system.events.unset(apply=True, dut_engine=engines.dut).verify_result()
 
         with allure.step('Validate system events table-size is set to default(1000)'):
-            output = OutputParsingTool.parse_json_str_to_dictionary(fae.system.events.show()).get_returned_value()
-            ValidationTool.verify_field_value_in_output(output, SystemConsts.EVENTS_TABLE_SIZE,
-                                                        SystemConsts.EVENTS_TABLE_SIZE_DEFAULT).verify_result()
+            retry_call(_verify_field_in_show_output,
+                       [fae.system.events, SystemConsts.EVENTS_TABLE_SIZE, SystemConsts.EVENTS_TABLE_SIZE_DEFAULT],
+                       exceptions=AssertionError, tries=2, delay=5, logger=logger)
 
         with allure.step('Run show system events command & validate table-occupancy should be default(1000)'):
-            # One space is left empty for any upcoming critical event, hence we will see 599 events if max is 600
-            output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show()).get_returned_value()
-            table_occupancy = int(output[SystemConsts.EVENTS_TABLE_OCCUPANCY])
-            assert table_occupancy >= 999, "Table occupancy is {}, less than expected 1000".format(table_occupancy)
+            retry_call(_verify_field_in_show_output,
+                       [system.events, SystemConsts.EVENTS_TABLE_OCCUPANCY, 999, 0, True],
+                       exceptions=AssertionError, tries=4, delay=5, logger=logger)
 
     finally:
         with allure.step('Clear system events'):
-            clear_system_events(system, engines)
+            clear_system_events(system)
 
 
-def clear_system_events(system, engines):
+def _verify_field_in_show_output(obj_name, field_name, val_min=0, val_max=0, check_min=False, check_max=False):
+    if not (check_min | check_max):
+        output = OutputParsingTool.parse_json_str_to_dictionary(obj_name.show()).get_returned_value()
+        # Minimum & maximum values are same
+        res_obj = ValidationTool.verify_field_value_in_output(output, field_name, val_min).verify_result()
+        return res_obj
+
+    if check_min:
+        output = OutputParsingTool.parse_json_str_to_dictionary(obj_name.show()).get_returned_value()
+        val = int(output[field_name])
+        assert val_min <= val, "{} is {}, less than minimum value of {}".format(field_name, val, val_min)
+
+    if check_max:
+        output = OutputParsingTool.parse_json_str_to_dictionary(obj_name.show()).get_returned_value()
+        val = int(output[field_name])
+        assert val_max >= val, "{} is {}, larger than maximum value of {}".format(field_name, val, val_max)
+
+
+def clear_system_events(system):
     """
     Method to unset the system messages for pre-login, post-login and post-logout
     :param system:  System object
-    :param engines: Engines object
     """
     with allure.step('Run clear system events and apply config'):
         system.events.action(ActionConsts.CLEAR)
 
     with allure.step('Validate events are cleared'):
-        output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show()).get_returned_value()
-        no_of_events = len(output[SystemConsts.SYSTEM_LAST_EVENT])
-        assert no_of_events is 0, 'System events are not cleared, is {} instead of {}'.format(no_of_events, 0)
+        retry_call(_verify_field_in_show_output, [system.events, SystemConsts.EVENTS_TABLE_OCCUPANCY, 0],
+                   exceptions=AssertionError, tries=4, delay=5, logger=logger)

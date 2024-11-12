@@ -569,11 +569,22 @@ class SystemConsts:
     MEMORY_PERCENT_THRESH_MIN = 0.0
     MEMORY_PERCENT_THRESH_MAX = 70.0
 
-    CPU_CORE_COUNT_KEY = 'core-count'
-    CPU_MODEL_KEY = 'model'
-    CPU_UTILIZATION_KEY = 'utilization'
     CPU_PERCENT_THRESH_MIN = 0.0
     CPU_PERCENT_THRESH_MAX = 60.0
+    CPU_CORE_COUNT_KEY = 'core-count'
+    CPU_CORES = 'cores'
+    CPU_LOAD_AVERAGE = 'load-average'
+    CPU_MODEL_KEY = 'model'
+    CPU_UTILIZATION_KEY = 'utilization'
+    CPU_INFO_LIST = [CPU_CORE_COUNT_KEY, CPU_CORES, CPU_LOAD_AVERAGE, CPU_MODEL_KEY, CPU_UTILIZATION_KEY]
+    DISK_AVAILABLE_KEY = 'available'
+    DISK_USED_KEY = 'used'
+    DISK_FREE_PERCENT_KEY = 'free-percent'
+    DISK_FREE_KEY = 'free'
+    DISK_MOUNT_KEY = 'mount-point'
+    DISK_TOTAL_SIZE_KEY = 'total-size'
+    DISK_INFO_FIELD_LIST = [DISK_AVAILABLE_KEY, DISK_USED_KEY, DISK_FREE_PERCENT_KEY, DISK_FREE_KEY, DISK_MOUNT_KEY,
+                            DISK_TOTAL_SIZE_KEY]
 
     HEALTH_STATUS = "health-status"
 
@@ -855,6 +866,7 @@ class PlatformConsts:
     INV_OK = 'ok'
     ASIC_CONF_FILE_PATH = "/usr/share/sonic/device/{}/asic.conf"
     INV_FAILED = 'failed'
+    TIMEOUT_AFTER_FW_INSTALL = 600
 
 
 class FansConsts:
@@ -1469,7 +1481,6 @@ class MultiPlanarConsts:
     LOG_MSG_UNSET_FAE_INTERFACE = "PATCH..."  # TODO: complete
     LOG_MSG_SET_FAE_INTERFACE = "PATCH /nvue_v1/interface/"
     LOG_MSG_ACTION_CLEAR_FAE_INTERFACE = 'Clearing counters for interface {port_name} for user admin'
-    CONFIG_STATE_RETRIES = 5
 
 
 class FastRecoveryConsts:
@@ -1692,8 +1703,7 @@ class IssuConsts:
     ERROR_OPENSM_NO_PERMISSION = ('Error: Action failed with the following issue:\n'
                                   '  No permission from OpenSM')  # TODO: update message
     ERROR_OPENSM_REACH_TIMEOUT = ('Error: Action failed with the following issue:\n'
-                                  '  Failed to install the image {image_version}.\n'
-                                  'No permission to perform ISSU from the SM')
+                                  '  No permission to perform ISSU from the SM')
     ERROR_DOWNGRADE_NOT_ALLOWED = ('Error: Action failed with the following issue:\n'
                                    '  Downgrade image is not allowed')  # TODO: update message
     ERROR_ANY_ERROR = 'Error: Action failed with the following issue:'

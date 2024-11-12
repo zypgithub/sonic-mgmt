@@ -11,7 +11,7 @@ from ngts.nvos_constants.constants_nvos import TestFlowType
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.conftest import local_adminuser
-from ngts.tests_nvos.general.security.security_test_tools.constants import AuthConsts, AaaConsts
+from ngts.tests_nvos.general.security.security_test_tools.constants import AuthConsts, AaaConsts, AddressingType
 from ngts.tests_nvos.general.security.security_test_tools.generic_remote_aaa_testing.constants import RemoteAaaType
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
@@ -25,7 +25,8 @@ from ngts.tools.test_utils.switch_recovery import generate_strong_password
 @pytest.mark.system
 @pytest.mark.gnmi
 @pytest.mark.parametrize('test_flow', TestFlowType.ALL_TYPES)
-def test_gnmi_authentication(test_flow, engines, local_adminuser, aaa_users):
+@pytest.mark.parametrize('addressing_type', [AddressingType.IPV4, AddressingType.IPV6])
+def test_gnmi_authentication(test_flow, addressing_type, engines, local_adminuser, aaa_users, dut_ipv6_addr):
     """
     verify that gnmi clients must be properly authenticated to subscribe and get updates
 
@@ -36,27 +37,30 @@ def test_gnmi_authentication(test_flow, engines, local_adminuser, aaa_users):
     4. good-flow: expect valid user client gets update
         bad-flow: expect invalid user client doesn't get update
     """
+    host_address = dut_ipv6_addr if addressing_type == AddressingType.IPV6 else engines.dut.ip
+
     system = System()
     auth = system.aaa.authentication
     selected_port = Tools.RandomizationTool.select_random_port(requested_ports_state=None).returned_value
     with allure.step(f'change description of interface: "{selected_port.name}"'):
         new_description = change_interface_description(selected_port)
-    for auth_method in ['default', AuthConsts.LOCAL] + RemoteAaaType.ALL_TYPES:
-        with allure.step(f'test with auth method: {auth_method}'):
-            user = UserInfo(engines.dut.username, engines.dut.password,
-                            'admin') if auth_method == 'default' else local_adminuser
-            if auth_method in RemoteAaaType.ALL_TYPES:
-                user = aaa_users[auth_method]
-                with allure.step(f'enable {auth_method} authentication'):
-                    auth.set(AuthConsts.ORDER, f'{auth_method},{AuthConsts.LOCAL}', apply=True).verify_result()
-                    if auth_method == RemoteAaaType.LDAP:
-                        wait_for_ldap_nvued_restart_workaround(None)
-                    else:
-                        time.sleep(3)
-            verify_gnmi_client(test_flow, engines.dut.ip, GnmiConsts.GNMI_DEFAULT_PORT, user.username,
-                               user.password if test_flow == TestFlowType.GOOD_FLOW else 'abcde', True,
-                               GnmicErr.AUTH_FAIL, selected_port, new_port_description_to_check=new_description,
-                               client_cmd_time=20 if test_flow == TestFlowType.BAD_FLOW else None)
+    with allure.step('test with all auth methods'):
+        for auth_method in ['default (user admin)', AuthConsts.LOCAL] + RemoteAaaType.ALL_TYPES:
+            with allure.independent_step(f'test with auth method: {auth_method}'):
+                user = UserInfo(engines.dut.username, engines.dut.password,
+                                'admin') if auth_method == 'default' else local_adminuser
+                if auth_method in RemoteAaaType.ALL_TYPES:
+                    user = aaa_users[auth_method]
+                    with allure.step(f'enable {auth_method} authentication'):
+                        auth.set(AuthConsts.ORDER, f'{auth_method},{AuthConsts.LOCAL}', apply=True).verify_result()
+                        if auth_method == RemoteAaaType.LDAP:
+                            wait_for_ldap_nvued_restart_workaround(None)
+                        else:
+                            time.sleep(3)
+                verify_gnmi_client(test_flow, host_address, GnmiConsts.GNMI_DEFAULT_PORT, user.username,
+                                   user.password if test_flow == TestFlowType.GOOD_FLOW else 'abcde', True,
+                                   GnmicErr.AUTH_FAIL, selected_port, new_port_description_to_check=new_description,
+                                   client_cmd_time=20 if test_flow == TestFlowType.BAD_FLOW else None)
 
 
 @pytest.mark.system

@@ -193,7 +193,7 @@ def test_deploy_and_upgrade(topology_obj, is_simx, is_performance, base_version,
                                     target_version=target_version, is_shutdown_bgp=True,
                                     reboot_after_install=reboot_after_install, deploy_only_target=deploy_only_target,
                                     fw_pkg_path=fw_pkg_path, reboot=reboot, additional_apps=additional_apps,
-                                    setup_info=setup_info, workspace_path=workspace_path, is_performance=is_performance,
+                                    setup_info=setup_info, dut_alias=dut['dut_alias'], workspace_path=workspace_path, is_performance=is_performance,
                                     chip_type=chip_type, base_version=base_version, deploy_dpu=deploy_dpu,
                                     verify_secure_boot=verify_secure_boot, serial_log_analyzers=serial_log_analyzers,
                                     request=request)
@@ -250,7 +250,7 @@ def pre_installation_steps(sonic_topo, neighbor_type, base_version, target_versi
 def post_installation_steps(topology_obj, sonic_topo, recover_by_reboot, deploy_dpu,
                             setup_name, platform_params, apply_base_config, target_version,
                             is_shutdown_bgp, reboot_after_install, deploy_only_target, fw_pkg_path, reboot,
-                            additional_apps, setup_info, workspace_path, is_performance, chip_type,
+                            additional_apps, setup_info, dut_alias, workspace_path, is_performance, chip_type,
                             serial_log_analyzers, request, base_version='', verify_secure_boot=True):
     """
     Post-installation steps
@@ -291,8 +291,8 @@ def post_installation_steps(topology_obj, sonic_topo, recover_by_reboot, deploy_
         SonicInstallationSteps.post_installation_steps(topology_obj, sonic_topo, recover_by_reboot, setup_name,
                                                        platform_params, apply_base_config, target_version,
                                                        is_shutdown_bgp, reboot_after_install, deploy_only_target,
-                                                       fw_pkg_path, reboot, additional_apps, setup_info, is_performance,
-                                                       chip_type, deploy_dpu)
+                                                       fw_pkg_path, reboot, additional_apps, setup_info, dut_alias,
+                                                       is_performance, chip_type, deploy_dpu)
     else:
         raise AssertionError(f"CLI type {dut_cli_obj} is not supported")
 

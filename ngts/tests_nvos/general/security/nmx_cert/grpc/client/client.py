@@ -33,8 +33,8 @@ class ClientApp:
                 # Create a request message
                 request = pb.ClientHello(
                     gatewayId=str(i),
-                    major_version=pb.ProtoMsgMajorVersion.PROTO_MSG_MAJOR_VERSION_UNDEFINED,
-                    minor_version=pb.ProtoMsgMajorVersion.PROTO_MSG_MAJOR_VERSION_UNDEFINED
+                    major_version=pb.ProtoMsgMajorVersion.PROTO_MSG_MAJOR_VERSION,
+                    minor_version=pb.ProtoMsgMinorVersion.PROTO_MSG_MINOR_VERSION
                 )
                 self._log('created request message')
 
@@ -99,7 +99,7 @@ def local_main():
 
 
 def main_with_switch():
-    switch_ip = '10.7.148.128'  # TODO: set this to the desired switch ip
+    switch_ip = '10.7.148.126'  # TODO: set this to the desired switch ip
     config = GrpcConfig(
         server=GrpcServerConfig(
             address='nvos-dut',

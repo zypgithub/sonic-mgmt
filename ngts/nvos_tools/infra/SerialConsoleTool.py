@@ -1,5 +1,7 @@
 import time
 
+from retry import retry
+
 from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
 from infra.tools.connection_tools.utils import generate_strong_password
 from infra.tools.general_constants.constants import DefaultConnectionValues
@@ -61,13 +63,19 @@ class SerialConsoleTool:
 
     @classmethod
     def login_nos(cls, serial_engine: PexpectSerialEngine, username='', password='',
-                  handle_change_password_prompt=True):
+                  handle_change_password_prompt=True, start_login_tries=2):
         username = username or serial_engine.username
         password = password or serial_engine.password
-        with allure.step('hit enter to get login prompt'):
-            serial_engine.run_cmd('', cls.LOGIN_PROMPT_PATTERN, 10)
-        with allure.step(f'enter username: {username}'):
-            serial_engine.run_cmd(username, cls.ENTER_PASSWORD_PATTERN, 10)
+
+        @retry(Exception, tries=start_login_tries, delay=5)
+        def _start_login():
+            with allure.step('hit enter to get login prompt'):
+                serial_engine.run_cmd('', cls.LOGIN_PROMPT_PATTERN, 10)
+            with allure.step(f'enter username: {username}'):
+                serial_engine.run_cmd(username, cls.ENTER_PASSWORD_PATTERN, 10)
+
+        _start_login()
+
         with allure.step(f'enter password: {password}'):
             out, idx = serial_engine.run_cmd(password, cls.SHELL_PROMPT_PATTERNS + [cls.NEW_PASSWORD_PATTERN], 10)
         if idx == 1 and handle_change_password_prompt:

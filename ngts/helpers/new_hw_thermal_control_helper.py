@@ -441,9 +441,14 @@ def get_tested_sensor_list(sensors_counter, dut, cli_object_dut):
             sensor_temperature_test_list.remove("module")
 
     if hasattr(cli_object_dut.chassis, 'get_platform'):
-        not_support_asic_platform_list = ["x86_64-nvidia_sn4280_simx-r0"]
-        if cli_object_dut.chassis.get_platform() in not_support_asic_platform_list:
+        not_support_asic_platform_list = ["x86_64-nvidia_sn4280_simx-r0", "x86_64-nvidia_n5110_ld-r0"]
+        platform = cli_object_dut.chassis.get_platform()
+        if platform in not_support_asic_platform_list:
             sensor_temperature_test_list.remove("asic")
+
+        if platform in ['x86_64-nvidia_n5110_ld-r0']:
+            sensor_temperature_test_list.remove("ambient")
+            sensor_temperature_test_list.remove("module")
 
     if not sensor_temperature_test_list:
         raise Exception("No sensor is available for testing ")
@@ -755,38 +760,46 @@ def get_psu_err_test_data():
     return sensor_type, sensor_index, sensor_temperature_file
 
 
-def get_sensor_read_error_test_data(im_enable):
+def get_sensor_read_error_test_data(cli_objects):
     sensor_read_error_test_sensors = ["ambient"]
     if SENSOR_DATA["cpu_pack"]["total_number"] > 0:
         sensor_read_error_test_sensors.append("cpu_pack")
     if SENSOR_DATA["module"]["index supporting sensor"]:
         # For IM enabled setup, 'module' sensor test are need be skipped as it created by kernel sysfs and
         # from user space we don't have permission to write it
-        if im_enable:
+        if cli_objects.dut.im.is_im_enabled():
             logger.info("skip module test due to IM is enabled")
         else:
             sensor_read_error_test_sensors.append("module")
+    platform = cli_objects.dut.chassis.get_platform()
+    if platform in ['x86_64-nvidia_n5110_ld-r0']:
+        sensor_read_error_test_sensors.remove("ambient")
+        sensor_read_error_test_sensors.remove("module")
     sensor_type = random.choice(sensor_read_error_test_sensors)
     sensor_temperature_file = get_sensor_read_err_file(sensor_type)
     return sensor_type, sensor_temperature_file
 
 
-def get_sensor_err_test_data(sensor_err_type, mock_sensor, tc_config_dict, im_enable):
+def get_sensor_err_test_data(sensor_err_type, mock_sensor, tc_config_dict, cli_objects):
     sys_fan_dir_str = get_system_fan_str()
     if "fan_err" in sensor_err_type:
         sensor_type, sensor_index, sensor_temperature_file = get_fan_err_test_data(sensor_err_type)
     elif "psu_err" in sensor_err_type:
         sensor_type, sensor_index, sensor_temperature_file = get_psu_err_test_data()
     elif "sensor_read_error" == sensor_err_type:
-        sensor_type, sensor_temperature_file = get_sensor_read_error_test_data(im_enable)
+        sensor_type, sensor_temperature_file = get_sensor_read_error_test_data(cli_objects)
 
     sensor_temperature_file = os.path.join(TC_CONST.HW_THERMAL_FOLDER, sensor_temperature_file)
 
-    # For all sensor errors, we all use min(port_amb, fan_abm) as the key to get the expected pwm from dmin table
-    temperature_port = mock_sensor.read_value(f"{TC_CONST.HW_THERMAL_FOLDER}/port_amb")
-    temperature_fan = mock_sensor.read_value(f"{TC_CONST.HW_THERMAL_FOLDER}/fan_amb")
-    logger.info(f"temperature_port :{temperature_port}, temperature_fan:{temperature_fan}")
-    current_temp = min(temperature_port, temperature_fan)
+    platform = cli_objects.dut.chassis.get_platform()
+    if platform not in ['x86_64-nvidia_n5110_ld-r0']:
+        # For all sensor errors, we all use min(port_amb, fan_abm) as the key to get the expected pwm from dmin table
+        temperature_port = mock_sensor.read_value(f"{TC_CONST.HW_THERMAL_FOLDER}/port_amb")
+        temperature_fan = mock_sensor.read_value(f"{TC_CONST.HW_THERMAL_FOLDER}/fan_amb")
+        logger.info(f"temperature_port :{temperature_port}, temperature_fan:{temperature_fan}")
+        current_temp = min(temperature_port, temperature_fan)
+    else:
+        current_temp = TC_CONST.PWM_MAX
 
     expected_pwm = get_expected_pwm_by_temp_from_dmin_table(tc_config_dict, current_temp, sys_fan_dir_str,
                                                             sensor_err_type)

@@ -31,7 +31,7 @@ pytestmark = [
 
 
 @pytest.fixture(scope="module")
-def apply_basic_config(duthost, dpu_index, another_dpu_index, dpu_info):
+def apply_basic_config(duthost, dpuhosts, dpu_index, another_dpu_index):
     ptf_gateway_ip = "10.0.0.1"
     dpu_dut_indexes = [dpu_index, another_dpu_index]
     for index in dpu_dut_indexes:
@@ -132,14 +132,14 @@ def apply_pl_config(localhost, duthost, ptfhost, dpu_index, pl_config):
 
 
 @pytest.fixture(scope="module", autouse=True)
-def common_setup_teardown(localhost, duthost, ptfhost, dpu_index, dpuhosts, apply_basic_config):
+def common_setup_teardown(localhost, duthost, ptfhost, dpu_index, another_dpu_index, dpuhosts, apply_basic_config):
     messages = apply_pl_config(localhost, duthost, ptfhost, dpu_index, pl_config_eni0)
 
     yield
 
     logger.info(f"Clean the pl config: {messages}")
     if is_redmine_issue_active([4125251, 4129123])[0]:
-        config_reload_dpu_and_switch(duthost, [dpuhosts[dpu_index], dpuhosts[dpu_index + 1]])
+        config_reload_dpu_and_switch(duthost, [dpuhosts[dpu_index], dpuhosts[another_dpu_index]])
     else:
         apply_messages(localhost, duthost, ptfhost, messages, dpu_index, set=False)
 

@@ -54,6 +54,11 @@ SESSION_INFO = {
 DPU_PLATFORM_DUMP_FILES = ["sysfs_tree", "sys_version", "dmesg",
                            "dmidecode", "lsmod", "lspci", "top", "bin/platform-dump.sh"]
 
+# TODO: WA for issue RM#4119718, remove after it is closed
+from infra.tools.redmine.redmine_api import is_redmine_issue_active
+if is_redmine_issue_active([4119718])[0]:
+    DPU_PLATFORM_DUMP_FILES.remove("dmidecode")
+
 # ACL PART #
 
 

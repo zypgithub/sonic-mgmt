@@ -8,7 +8,6 @@ class DpuHost:
         self.dpu_data_port_ip = kwargs['dpu_data_port_ip']
         self.dataplane_mask_length = kwargs['dataplane_mask_length']
 
-
     def shell(self, cmd, module_ignore_errors=False, module_async=False):
         command = f'sudo proxy_ssh.py --dpu-mgmt-ip {self.mgmt_ip} --cmd "{cmd}"'
         if not module_ignore_errors:

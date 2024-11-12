@@ -1,15 +1,25 @@
 import logging
 
+from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_tools.infra import ExceptionTool
+from ngts.nvos_tools.platform.Platform import Platform
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
-from ngts.nvos_constants.constants_nvos import LinkDetectionConsts
+from ngts.nvos_constants.constants_nvos import LinkDetectionConsts, PlatformConsts
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import NvosConst
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
 
 logger = logging.getLogger()
+
+
+MTVR_MAMBA_06_0 = '10.245.21.54'
+MTVR_MAMBA_06_1 = '10.245.21.65'
+MTVR_CROC_19_0 = '10.245.21.19'
+MTVR_CROC_19_1 = '10.245.21.68'
+MTVR_CROC_50_0 = '10.245.21.50'
+MTVR_CROC_50_1 = '10.245.21.67'
 
 
 class Configurations:
@@ -41,6 +51,10 @@ class Configurations:
     post_install_commands = {"10.7.144.153": ['nv set acl ACL_MGMT_INBOUND_CP_DEFAULT rule 120 match ip recent-list hit-count 3000',
                                               'nv config apply -y'],
                              }
+
+    devices_missing_psus = {
+        MTVR_MAMBA_06_0, MTVR_MAMBA_06_1, MTVR_CROC_19_0, MTVR_CROC_19_1, MTVR_CROC_50_0, MTVR_CROC_50_1,
+    }
 
     devices_to_configure_ndr_ports = ndr_ports.keys()
 
@@ -103,13 +117,38 @@ class Configurations:
                     {"link": {
                         "connection-mode": "ndr"
                     }, "type": "ib"}
-
-            return Configurations.default_conf
         except BaseException:
-            return Configurations.default_conf
+            pass
+
+        if engine.ip in Configurations.devices_missing_psus:
+            if 'platform' not in Configurations.default_conf:
+                Configurations.default_conf['platform'] = {}
+            Configurations.default_conf['platform']['ps-redundancy'] = {
+                PlatformConsts.PS_REDUNDANCY_POLICY: PlatformConsts.PS_REDUNDANCY_NO}
+
+        return Configurations.default_conf
 
 
 class RegressionConfigurations:
+
+    @staticmethod
+    def set_base_configurations(engine: LinuxSshEngine, apply=True):
+        with allure.step('Set base configurations for device'):
+            with allure.independent_step('Setting ps-redundancy if needed'):
+                RegressionConfigurations.configure_ps_redundancy_policy(engine)
+            with allure.independent_step('Setting connection-mode if needed'):
+                RegressionConfigurations.configure_ports_to_legacy(engine=engine, apply=False)
+            if apply:
+                with allure.independent_step('Applying base configuration (if there is a diff)'):
+                    config_diff = OutputParsingTool.parse_json_str_to_dictionary(NvueGeneralCli.show_config(engine)
+                                                                                 ).get_returned_value()
+                    if config_diff:
+                        NvueGeneralCli.apply_config(engine=engine, option='-y', verify_execution=True)
+
+    @staticmethod
+    def configure_ps_redundancy_policy(engine: LinuxSshEngine):
+        if engine.ip in Configurations.devices_missing_psus:
+            Platform().ps_redundancy.set(PlatformConsts.PS_REDUNDANCY_POLICY, PlatformConsts.PS_REDUNDANCY_NO)
 
     @staticmethod
     def configure_ports_to_legacy(engine, apply=True, throw_exception=True, wait_till_port_up=False):

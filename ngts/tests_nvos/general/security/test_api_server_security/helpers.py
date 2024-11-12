@@ -50,8 +50,8 @@ def verify_api_ca_configuration(expected_ca, verify_mtls_fields=False):
 
 
 def verify_api_connection(test_flow, dut: LinuxSshEngine, user: UserInfo, expect_mtls: bool, server_cert: CertInfo,
-                          server_ca: CertInfo):
-    curl = CurlTool(dut.ip, user.username, user.password)
+                          server_ca: CertInfo, dut_ipv6_addr=None):
+    curl = CurlTool(dut_ipv6_addr or dut.ip, user.username, user.password)
 
     def _run_curl_and_verify(expect_success: bool, run_insecure: bool, client_cacert: CertInfo = None,
                              client_cert: CertInfo = None):

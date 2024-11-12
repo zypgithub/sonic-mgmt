@@ -234,10 +234,18 @@ class IbSwitch(BaseSwitch):
         self.category_list = ['temperature', 'cpu', 'disk', 'power', 'fan', 'mgmt-interface', 'voltage']
         self.category_disk_interval_default = '30'
         self.system_profile_default_values = ['enabled', '2048', 'disabled', 'disabled', '1']
-        self.current_bios_version_name = "0ACQF_06.01.005"
-        self.current_bios_version_path = "/auto/sw_system_release/sx_mlnx_bios/CoffeeLake/0ACQF_06.01.x05_rc1/Release/0ACQF.cab"
-        self.previous_bios_version_name = "0ACQF_06.01.004"
-        self.previous_bios_version_path = "/auto/sw_system_release/sx_mlnx_bios/CoffeeLake/0ACQF_06.01.x04_rc1/Release/0ACQF.cab"
+        self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/crocodile_versions.json"
+        self.bios_image_info = BaseSwitch.BiosImagesConsts(
+            current_version={
+                'path': "/auto/sw_system_release/sx_mlnx_bios/CoffeeLake/0ACQF_06.01.x05_rc1/Release/0ACQF.cab",
+                'filename': '0ACQF.cab',
+                'version_name': '0ACQF_06.01.005',
+                'date': '04/28/2024'},
+            alternate_version={
+                'path': '/auto/sw_system_release/sx_mlnx_bios/CoffeeLake/0ACQF_06.01.x04_rc1/Release/0ACQF.cab',
+                'filename': '0ACQF.cab',
+                'version_name': '0ACQF_06.01.004',
+                'date': '11/12/2023'})
         self.erot_fw_image_info = self.ErotFirmwareImagesTestConsts(
             current_image_path='auto/sw_system_release/erot/juliet/01.03.0202.000/sign/n04/dev/cec1736-ecfw-01.03.0202.0000-n04-dev-initial.bin',
             previous_image_path='auto/sw_system_release/erot/juliet/01.03.0183.000/sign/n04/dev/cec1736-ecfw-01.03.0183.0000-n04-dev-initial.bin',
@@ -378,6 +386,7 @@ class IbSwitch(BaseSwitch):
         self.fnm_internal_port_list = ['fnma1p236']
         self.fnm_external_port_list = ['fnm1']
         self.fnm_external_child_port = 'fnm1s1'
+        self.interface_active_internal_fnm_ports = {}
         self.child_aggregated_port = 'sw10p1s1'
         self.num_of_plane_ports = 4
         self.num_of_fnm_plane_ports = 2
@@ -430,6 +439,10 @@ class GorillaSwitch(IbSwitch):
             "product-name": "MQM9700",
             "asic-model": self.asic_type,
         })
+        self.asic_version = BaseSwitch.AsicImageConsts(
+            version="31_2014_0902-024",
+            filename="fw-QTM2-rel-31_2014_0902-024.mfa"
+        )
         self.previous_cpld_version = BaseSwitch.CpldImageConsts(
             burn_image_path="/auto/sw_system_project/NVOS_INFRA/verification_files/cpld_fw/FUI000258_BURN_Gorilla_MNG_CPLD000232_REV0700_CPLD000324_REV0300_CPLD000268_REV0700_IPN.vme",
             refresh_image_path="/auto/sw_system_project/NVOS_INFRA/verification_files/cpld_fw/FUI000258_REFRESH_Gorilla_MNG_CPLD000232_REV0700_CPLD000324_REV0300_CPLD000268_REV0700.vme",
@@ -449,7 +462,7 @@ class GorillaSwitch(IbSwitch):
             }
         )
         self.stats_fan_header_num_of_lines = 25
-        self.stats_cpu_header_num_of_lines = 10
+        self.stats_cpu_header_num_of_lines = 12
         self.stats_temperature_header_num_of_lines = 53
         self.supports_tpm_testing = False
 
@@ -518,7 +531,7 @@ class BlackMambaSwitch(IbSwitch):
     def _init_constants(self):
         self.asic_amount = 4
         super()._init_constants()
-        self.system_is_ready_wait_timeout = 10 * MINUTE
+        self.system_is_ready_wait_timeout = 5 * MINUTE
         self.ib_ports_num = 2 * 72
         self.core_count = 4
         self.asic_type = NvosConst.QTM3
@@ -528,28 +541,32 @@ class BlackMambaSwitch(IbSwitch):
             "product-name": "Q3400_RA",
             "asic-model": self.asic_type,
         })
-
-        self.voltage_sensors = [
-            "PMIC-1-12V-VDD-ASIC1-In-1", "PMIC-1-ASIC1-VDD-Out-1", "PMIC-2-12V-HVDD-DVDD-ASIC1-In-1",
-            "PMIC-2-ASIC1-DVDD-PL0-Out-2", "PMIC-2-ASIC1-HVDD-PL0-Out-1", "PMIC-3-12V-HVDD-DVDD-ASIC1-In-1",
-            "PMIC-3-ASIC1-DVDD-PL1-Out-2", "PMIC-3-ASIC1-HVDD-PL1-Out-1", "PMIC-4-12V-VDD-ASIC2-In-1",
-            "PMIC-4-ASIC2-VDD-Out-1", "PMIC-5-12V-HVDD-DVDD-ASIC2-In-1", "PMIC-5-ASIC2-DVDD-PL0-Out-2",
-            "PMIC-5-ASIC2-HVDD-PL0-Out-1", "PMIC-6-12V-HVDD-DVDD-ASIC2-In-1", "PMIC-6-ASIC2-DVDD-PL1-Out-2",
-            "PMIC-6-ASIC2-HVDD-PL1-Out-1", "PMIC-7-12V-VDD-ASIC3-In-1", "PMIC-7-ASIC3-VDD-Out-1",
-            "PMIC-8-12V-HVDD-DVDD-ASIC3-In-1", "PMIC-8-ASIC3-DVDD-PL0-Out-2", "PMIC-8-ASIC3-HVDD-PL0-Out-1",
-            "PMIC-9-12V-HVDD-DVDD-ASIC3-In-1", "PMIC-9-ASIC3-DVDD-PL1-Out-2", "PMIC-9-ASIC3-HVDD-PL1-Out-1",
-            "PMIC-10-12V-VDD-ASIC4-In-1", "PMIC-10-ASIC4-VDD-Out-1", "PMIC-11-12V-HVDD-DVDD-ASIC4-In-1",
-            "PMIC-11-ASIC4-DVDD-PL0-Out-2", "PMIC-11-ASIC4-HVDD-PL0-Out-1", "PMIC-12-12V-HVDD-DVDD-ASIC4-In-1",
-            "PMIC-12-ASIC4-DVDD-PL1-Out-2", "PMIC-12-ASIC4-HVDD-PL1-Out-1", "PMIC-13-12V-MAIN-In-1",
-            "PMIC-13-CEX-VDD-Out-1",
-            "PSU-1-12V-Out", "PSU-2-12V-Out", "PSU-3-12V-Out", "PSU-4-12V-Out", "PSU-5-12V-Out", "PSU-6-12V-Out",
-            "PSU-7-12V-Out", "PSU-8-12V-Out",
-        ]
+        self.asic_version = BaseSwitch.AsicImageConsts(
+            version="35.2014.2012",
+            filename="fw-QTM3-rel-35_2014_2012.mfa"
+        )
+        self.voltage_sensors = ['PMIC-1-12V-VDD-ASIC1-In-1', 'PMIC-1-ASIC1-VDD-Out-1',
+                                'PMIC-2-12V-HVDD-DVDD-ASIC1-In-1', 'PMIC-2-ASIC1-DVDD-PL0-Out-2',
+                                'PMIC-2-ASIC1-HVDD-PL0-Out-1', 'PMIC-3-12V-HVDD-DVDD-ASIC1-In-1',
+                                'PMIC-3-ASIC1-DVDD-PL1-Out-2', 'PMIC-3-ASIC1-HVDD-PL1-Out-1',
+                                'PMIC-4-12V-VDD-ASIC2-In-1', 'PMIC-4-ASIC2-VDD-Out-1',
+                                'PMIC-5-12V-HVDD-DVDD-ASIC2-In-1', 'PMIC-5-ASIC2-DVDD-PL0-Out-2',
+                                'PMIC-5-ASIC2-HVDD-PL0-Out-1', 'PMIC-6-12V-HVDD-DVDD-ASIC2-In-1',
+                                'PMIC-6-ASIC2-DVDD-PL1-Out-2', 'PMIC-6-ASIC2-HVDD-PL1-Out-1',
+                                'PMIC-7-12V-VDD-ASIC3-In-1', 'PMIC-7-ASIC3-VDD-Out-1',
+                                'PMIC-8-12V-HVDD-DVDD-ASIC3-In-1', 'PMIC-8-ASIC3-DVDD-PL0-Out-2',
+                                'PMIC-8-ASIC3-HVDD-PL0-Out-1', 'PMIC-9-12V-HVDD-DVDD-ASIC3-In-1',
+                                'PMIC-9-ASIC3-DVDD-PL1-Out-2', 'PMIC-9-ASIC3-HVDD-PL1-Out-1',
+                                'PMIC-10-12V-VDD-ASIC4-In-1', 'PMIC-10-ASIC4-VDD-Out-1',
+                                'PMIC-11-12V-HVDD-DVDD-ASIC4-In-1', 'PMIC-11-ASIC4-DVDD-PL0-Out-2',
+                                'PMIC-11-ASIC4-HVDD-PL0-Out-1', 'PMIC-12-12V-HVDD-DVDD-ASIC4-In-1',
+                                'PMIC-12-ASIC4-DVDD-PL1-Out-2', 'PMIC-12-ASIC4-HVDD-PL1-Out-1', 'PMIC-13-12V-MAIN-In-1',
+                                'PMIC-13-CEX-VDD-Out-1', 'PSU-1-12V-Out', 'PSU-2-12V-Out', 'PSU-3-12V-Out',
+                                'PSU-4-12V-Out', 'PSU-5-12V-Out', 'PSU-6-12V-Out', 'PSU-7-12V-Out', 'PSU-8-12V-Out']
 
         self.stats_fan_header_num_of_lines = 17
         self.stats_cpu_header_num_of_lines = 12
         self.stats_temperature_header_num_of_lines = 104
-        self.fnm_link_speed = '800G'
 
     def get_mgmt_ports(self) -> List[str]:
         return self.mgmt_ports
@@ -591,9 +608,11 @@ class BlackMambaSwitch(IbSwitch):
             self.interface_list +
             [f'{p}pl{pl + 1}' for p in ib_ports for pl in range(self.asic_amount)] +  # e.g. sw7p1 - sw7p4
             [f'fnma{pl + 1}p{i + 1}' for i in range(3) for pl in range(self.asic_amount)])  # fnma1p1 - fnma4p3
-        self.interface_active_internal_fnm_ports = {port for port in self.interface_fae_list
-                                                    if port.startswith('fnm') and not port.endswith('p3')} - {'fnm1'}
+        self.interface_active_internal_fnm_ports = {'fnma1p1', 'fnma1p2', 'fnma2p1', 'fnma2p2', 'fnma3p1', 'fnma3p2',
+                                                    'fnma4p1', 'fnma4p2'}
         # because other internal fnm ports are unused currently
+        self.fnm_link_speed = '800G'
+        self.fnm_internal_link_speed = '200G'
 
     def _init_eth0_speeds(self):
         super()._init_eth0_speeds()
@@ -619,11 +638,16 @@ class CrocodileSwitch(IbSwitch):
         self.core_count = 4
         self.split_ports_supported = True
         self.asic_type = NvosConst.QTM3
+        self.system_is_ready_wait_timeout = 5 * MINUTE
         self.platform_file_path = MultiPlanarConsts.PLATFORM_FILE_FULL_PATH.format("x86_64-nvidia_qm3400-r0")
         self.show_platform_output.update({
             "product-name": "QM3400",
             "asic-model": self.asic_type,
         })
+        self.asic_version = BaseSwitch.AsicImageConsts(
+            version="35.2014.2012",
+            filename="fw-QTM3-rel-35_2014_2012.mfa"
+        )
         self.mst_dev_name = '/dev/mst/mt54004_pciconf0'  # TODO update
         self.voltage_sensors = ['PMIC-1-12V-VDD-ASIC1-In-1', 'PMIC-1-ASIC1-VDD-Out-1',
                                 'PMIC-2-12V-HVDD-DVDD-ASIC1-In-1', 'PMIC-2-ASIC1-DVDD-PL0-Out-2',
@@ -773,7 +797,7 @@ class CrocodileSwitch(IbSwitch):
     def _init_interface_lists(self):
         super()._init_interface_lists()
         self.mgmt_ports = ['eth0', 'eth1']
-        self.interface_active_internal_fnm_ports = ['fnma0p1', 'fnma1p1']
+        self.interface_active_internal_fnm_ports = {'fnma0p1', 'fnma1p1'}
         self.default_port = 'swA1p1'
 
     def _init_ib_speeds(self):
@@ -815,29 +839,13 @@ class JulietSwitch(NvLinkSwitch):
     FaeImagesTestConsts = namedtuple('FaeImagesTestConsts', ('current_image_version', 'alternate_image_version'))
     NmxClusterAppsConsts = namedtuple('NmxClusterAppsConsts',
                                       ('burn_path', 'burn_version_names'))
-    BiosImagesTestConsts = namedtuple('BiosImagesTestConsts', ('current_version', 'alternate_version'))
 
     def __init__(self, asic_amount):
         super().__init__(asic_amount=asic_amount)
 
-    def show_setup_versions(self, dut_engine: LinuxSshEngine = None):
-        get_bmc_version_cmd = 'curl -k -u root:{} -X GET https://10.0.1.1/redfish/v1/UpdateService/FirmwareInventory/MGX_FW_BMC_0'
-        psws = ['0penBmc', 'Test123!', 'ABYX12#14artb']
-        outputs = {
-            'system version': dut_engine.run_cmd('nv show system version'),
-            'platform firmware': dut_engine.run_cmd('nv show platform firmware'),
-            'fae platform firmware': dut_engine.run_cmd('nv show fae platform firmware'),
-        }
-        for pw in psws:
-            out = dut_engine.run_cmd(get_bmc_version_cmd.format(pw))
-            if 'error' not in out:
-                outputs['bmc version (redfish)'] = out
-                break
-        res = [f'{title.upper()}:\n{output}\n' for title, output in outputs.items()]
-        return '\n'.join(res)
-
     def _init_constants(self):
         super()._init_constants()
+
         self.system_is_ready_wait_timeout = 20 * MINUTE
         self.category_list = ['temperature', 'cpu', 'disk', 'fan', 'mgmt-interface', 'voltage']
         self.category_disabled_dict = {
@@ -859,6 +867,7 @@ class JulietSwitch(NvLinkSwitch):
         self.bmc_older_version_path = "/auto/sw_system_release/low_level/openbmc/88.0002.0472/dev/juliet-bmc/erot_sign_debug/cec1736-apfw-000201d8.fwpkg"
         self.fpga_older_version_path = "/auto/sw_system_release/fpga/juliet/V0_15/FPGA_juliet_0v15.fwpkg"
         self.has_nmx = True
+        self.has_bmc = True
         self.is_standalone = True
         self.show_platform_chassis_location_output = {
             PlatformConsts.CHASSIS_LOCATION_TRAY_ID: ExpectedString(range_min=-1, range_max=9),
@@ -871,6 +880,7 @@ class JulietSwitch(NvLinkSwitch):
         bmc_dump_files = ['bmc_debug_log_dump.tar']
         self.constants = self.constants._replace(bmc_dump_files=bmc_dump_files)
         self.constants.dump_files.append('BMCeeprom')
+        self.constants.log_nmx_files.extend(['fabricmanager.log.gz', 'gwapi.log.gz', 'nvlsm.log.gz'])
         self.constants.erots.extend(['ERoT_BMC_0', 'ERoT_CPU_0', 'ERoT_FPGA_0', 'ERoT_NVSwitch_0', 'ERoT_NVSwitch_1'])
         self.erot_fw_image_info = self.ErotFirmwareImagesTestConsts(
             current_image_path='/auto/sw_system_release/erot/juliet/01.03.0216.0000/dev/cec1736-ecfw-01.03.0216.0000-n04-dev-initial.fwpkg',
@@ -889,18 +899,21 @@ class JulietSwitch(NvLinkSwitch):
             }
         )
         self.supported_commands.extend([ActionConsts.POWER_CYCLE])
-
-        self.bios_image_info = self.BiosImagesTestConsts(
+        self.asic_version = BaseSwitch.AsicImageConsts(
+            version="35.2014.1482",
+            filename="fw-QTM3-rel-35_2014_1482.mfa"
+        )
+        self.bios_image_info = BaseSwitch.BiosImagesConsts(
             current_version={
-                'path': '/auto/sw_system_release/sx_mlnx_bios/SnowyOwl/0ACTV_00.00.016/Release/erot_sign_debug/cec1736-apfw-0000010.fwpkg',
-                'filename': 'cec1736-apfw-0000010.fwpkg',
-                'version_name': '00.00.016',
-                'date': '08/05/2024'},
+                'path': '/auto/sw_system_release/sx_mlnx_bios/SnowyOwl/0ACTV_01.00.002/Release/erot_sign_debug/cec1736-apfw-0100002.fwpkg',
+                'filename': 'cec1736-apfw-0100002.fwpkg',
+                'version_name': '01.00.002',
+                'date': '10/07/2024'},
             alternate_version={
-                'path': '/auto/sw_system_release/sx_mlnx_bios/SnowyOwl/0ACTV_00.00.015_rc7/Release/erot_sign_debug/cec1736-apfw-000000f.fwpkg',
-                'filename': 'cec1736-apfw-000000f.fwpkg',
-                'version_name': '00.00.015_rc7',
-                'date': '08/05/2024'})
+                'path': '/auto/sw_system_release/sx_mlnx_bios/SnowyOwl/0ACTV_00.00.018/Release/erot_sign_debug/cec1736-apfw-0000012.fwpkg',
+                'filename': 'cec1736-apfw-0000012.fwpkg',
+                'version_name': '00.00.018',
+                'date': '08/21/2024'})
 
         self.power_cycle_type = 'juliet-power-cycle'
 
@@ -1003,7 +1016,7 @@ class JulietScaleoutSwitch(JulietSwitch):
             }
         )
         self.stats_fan_header_num_of_lines = 21
-        self.stats_cpu_header_num_of_lines = 10
+        self.stats_cpu_header_num_of_lines = 12
         self.stats_temperature_header_num_of_lines = 48
 
         # Port 1-36 is from asic1/ Port 37-72 is from asic2

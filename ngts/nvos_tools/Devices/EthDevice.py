@@ -179,6 +179,8 @@ class EthSwitch(BaseSwitch):
 
 
 # -------------------------- Mlx3700 Anaconda Switch ----------------------------
+
+
 class Mlx3700Switch(EthSwitch):
     def __init__(self):
         super().__init__(asic_amount=1)
@@ -193,14 +195,9 @@ class Mlx3700Switch(EthSwitch):
             "asic-model": self.asic_type
         })
 
-        self.voltage_sensors = ["PMIC-1-ASIC-0.8V-VCORE-RAIL-OUT", "PMIC-1-PSU-12V-RAIL-IN1",
-                                "PMIC-2-ASIC-3.3V-RAIL-OUT", "PMIC-2-PSU-12V-RAIL-IN1",
-                                "PMIC-2-PSU-12V-RAIL-IN2", "PMIC-3-COMEX-1.8V-RAIL-OUT",
-                                "PMIC-3-PSU-12V-RAIL-IN1", "PMIC-3-PSU-12V-RAIL-IN2",
-                                "PMIC-4-COMEX-1.2V-RAIL-OUT", "PMIC-4-PSU-12V-RAIL-IN1",
-                                "PMIC-4-PSU-12V-RAIL-IN2", "PSU-1-12V-RAIL-OUT",
-                                "PSU-1-220V-RAIL-IN", "PSU-2-12V-RAIL-OUT",
-                                "PSU-2-220V-RAIL-IN"]
+        self.voltage_sensors = ["PMIC-1-PSU-12V-RAIL-IN1", "PMIC-1-PSU-12V-RAIL-IN2", "PMIC-2-PSU-12V-RAIL-IN1", "PMIC-2-PSU-12V-RAIL-IN2",
+                                "PMIC-3-COMEX-1.8V-RAIL-OUT", "PMIC-3-PSU-12V-RAIL-IN1", "PMIC-3-PSU-12V-RAIL-IN2", "PMIC-4-COMEX-1.2V-RAIL-OUT",
+                                "PMIC-4-PSU-12V-RAIL-IN1", "PMIC-4-PSU-12V-RAIL-IN2", "PSU-1-12V-RAIL-OUT", "PSU-1-220V-RAIL-IN"]
 
     def _init_temperature(self):
         self.temperature_sensors = ["Asic-Temp-Sensor", "CPU-Package-Sensor", "Main-Board-Ambient-Sensor",
@@ -229,6 +226,19 @@ class Mlx2410Switch(EthSwitch):
 
         self.voltage_sensors = ["VIN", "VOUT1", "VOUT2"]
 
+    def _init_platform_lists(self):
+        self.fan_prop_auto = {"Fan State": "state", "Current Speed (RPM)": "current-speed",
+                              "Fan Direction": "direction"}
+        self.platform_environment_fan_values = {
+            "state": FansConsts.STATE_OK, "direction": None, "current-speed": None,
+            "min-speed": ExpectedString(range_min=1500, range_max=10000),
+            "max-speed": ExpectedString(range_min=18000, range_max=40000)}
+        self.platform_environment_absent_fan_values = {
+            "state": FansConsts.STATE_ABSENT, "direction": "N/A", "current-speed": "N/A",
+            "min-speed": "N/A", "max-speed": "N/A"}
+        self.platform_inventory_items = self.fan_list + self.psu_list + self.psu_fan_list \
+            + [PlatformConsts.HW_COMP_SWITCH]
+
     def _init_temperature(self):
         self.temperature_sensors = ["Asic-Temp-Sensor", "CPU-Core-Sensor-0",
                                     "CPU-Core-Sensor-1",
@@ -241,6 +251,7 @@ class Mlx2410Switch(EthSwitch):
 
     def _init_led_list(self):
         self.led_list = ["FAN1", "FAN2", "FAN3", "FAN4", "PSU", "SYSTEM"]
+
 
 # -------------------------- Mlx4600 Switch -----------------------------
 
@@ -261,16 +272,30 @@ class Mlx4600Switch(EthSwitch):
             "asic-model": self.asic_type
         })
 
-        self.voltage_sensors = ["PMIC-1-PSU-12V-RAIL-IN", "PMIC-2-ASIC-1.2V_MAIN-RAIL-OUT2",
-                                "PMIC-2-ASIC-1.8V_MAIN-RAIL-OUT1", "PMIC-2-PSU-12V-RAIL-IN",
-                                "PMIC-3-ASIC-1.8V_T0_3-RAIL-OUT2", "PMIC-3-COMEX-1.05V-RAIL-OUT",
-                                "PMIC-3-PSU-12V-RAIL-IN", "PMIC-3-PSU-12V-RAIL-IN1",
-                                "PMIC-5-ASIC-1.2V_T0_3-RAIL-OUT1",
-                                "PMIC-5-ASIC-1.2V_T4_7-RAIL-OUT2", "PMIC-5-PSU-12V-RAIL-IN",
-                                "PMIC-6-COMEX-1.8V-RAIL-OUT1", "PMIC-6-PSU-12V-RAIL-IN1",
-                                "PMIC-6-PSU-12V-RAIL-IN2", "PMIC-7-COMEX-1.2V-RAIL-OUT",
-                                "PMIC-7-PSU-12V-RAIL-IN1", "PMIC-7-PSU-12V-RAIL-IN2",
-                                "PSU-1L-12V-RAIL-OUT", "PSU-1L-220V-RAIL-IN"]
+        self.voltage_sensors = ["PMIC-1-PSU-12V-RAIL-IN1", "PMIC-2-PSU-12V-RAIL-IN1",
+                                "PMIC-2-PSU-12V-RAIL-IN2", "PMIC-3-PSU-12V-RAIL-IN1",
+                                "PMIC-3-PSU-12V-RAIL-IN2", "PMIC-4-PSU-12V-RAIL-IN1",
+                                "PMIC-4-PSU-12V-RAIL-IN2", "PMIC-5-PSU-12V-RAIL-IN1",
+                                "PMIC-5-PSU-12V-RAIL-IN2", "PMIC-6-PSU-12V-RAIL-IN1",
+                                "PMIC-6-PSU-12V-RAIL-IN2", "PMIC-7-PSU-12V-RAIL-IN1",
+                                "PMIC-7-PSU-12V-RAIL-IN2", "PMIC-8-COMEX-1.8V-RAIL-OUT",
+                                "PMIC-8-PSU-12V-RAIL-IN1", "PMIC-8-PSU-12V-RAIL-IN2",
+                                "PMIC-9-COMEX-1.2V-RAIL-OUT", "PMIC-9-PSU-12V-RAIL-IN1",
+                                "PMIC-9-PSU-12V-RAIL-IN2", "PSU-2R-12V-RAIL-OUT",
+                                "PSU-2R-220V-RAIL-IN"]
+
+    def _init_platform_lists(self):
+        self.fan_prop_auto = {"Fan State": "state", "Current Speed (RPM)": "current-speed",
+                              "Fan Direction": "direction"}
+        self.platform_environment_fan_values = {
+            "state": FansConsts.STATE_OK, "direction": None, "current-speed": None,
+            "min-speed": ExpectedString(range_min=2000, range_max=10000),
+            "max-speed": ExpectedString(range_min=10000, range_max=40000)}
+        self.platform_environment_absent_fan_values = {
+            "state": FansConsts.STATE_ABSENT, "direction": "N/A", "current-speed": "N/A",
+            "min-speed": "N/A", "max-speed": "N/A"}
+        self.platform_inventory_items = self.fan_list + self.psu_list + self.psu_fan_list \
+            + [PlatformConsts.HW_COMP_SWITCH]
 
     def _init_temperature(self):
         self.temperature_sensors = ["Asic-Temp-Sensor", "CPU-Core-Sensor-0", "CPU-Core-Sensor-1",
@@ -284,6 +309,7 @@ class Mlx4600Switch(EthSwitch):
 
     def _init_led_list(self):
         self.led_list = ["FAN1", "FAN2", "FAN3", "PSU", "SYSTEM"]
+
 
 # -------------------------- Mlx4600C Switch -----------------------------
 
@@ -304,21 +330,30 @@ class Mlx4600cSwitch(EthSwitch):
             "asic-model": self.asic_type
         })
 
-        self.voltage_sensors = ["PMIC-1-PSU-12V-RAIL-IN1", "PMIC-2-ASIC-1.2V_MAIN-RAIL-OUT2",
-                                "PMIC-2-ASIC-1.8V_MAIN-RAIL-OUT1", "PMIC-2-PSU-12V-RAIL-IN1",
-                                "PMIC-2-PSU-12V-RAIL-IN2", "PMIC-3-ASIC-1.8V_T0_1-RAIL-OUT2",
-                                "PMIC-3-PSU-12V-RAIL-IN1", "PMIC-3-PSU-12V-RAIL-IN2",
-                                "PMIC-4-ASIC-1.8V_T2_3-RAIL-OUT2",
-                                "PMIC-4-PSU-12V-RAIL-IN1", "PMIC-4-PSU-12V-RAIL-IN2",
-                                "PMIC-5-ASIC-1.8V_T4_5-RAIL-OUT2", "PMIC-5-PSU-12V-RAIL-IN1",
-                                "PMIC-5-PSU-12V-RAIL-IN2", "PMIC-6-ASIC-1.8V_T6_7-RAIL-OUT2",
-                                "PMIC-6-PSU-12V-RAIL-IN1", "PMIC-6-PSU-12V-RAIL-IN2",
-                                "PMIC-7-ASIC-1.2V_T0_3-RAIL-OUT1", "PMIC-7-ASIC-1.2V_T4_7-RAIL-OUT2",
-                                "PMIC-7-PSU-12V-RAIL-IN1", "PMIC-7-PSU-12V-RAIL-IN2",
-                                "PMIC-8-COMEX-1.8V-RAIL-OUT", "PMIC-8-PSU-12V-RAIL-IN1",
-                                "PMIC-8-PSU-12V-RAIL-IN2", "PMIC-9-COMEX-1.2V-RAIL-OUT",
-                                "PMIC-9-PSU-12V-RAIL-IN1", "PMIC-9-PSU-12V-RAIL-IN2",
-                                "PSU-2R-12V-RAIL-OUT", "PSU-2R-220V-RAIL-IN"]
+        self.voltage_sensors = ["PMIC-1-PSU-12V-RAIL-IN1", "PMIC-2-PSU-12V-RAIL-IN1",
+                                "PMIC-2-PSU-12V-RAIL-IN2", "PMIC-3-PSU-12V-RAIL-IN1",
+                                "PMIC-3-PSU-12V-RAIL-IN2", "PMIC-4-PSU-12V-RAIL-IN1",
+                                "PMIC-4-PSU-12V-RAIL-IN2", "PMIC-5-PSU-12V-RAIL-IN1",
+                                "PMIC-5-PSU-12V-RAIL-IN2", "PMIC-6-PSU-12V-RAIL-IN1",
+                                "PMIC-6-PSU-12V-RAIL-IN2", "PMIC-7-PSU-12V-RAIL-IN1",
+                                "PMIC-7-PSU-12V-RAIL-IN2", "PMIC-8-COMEX-1.8V-RAIL-OUT1",
+                                "PMIC-8-PSU-12V-RAIL-IN1", "PMIC-8-PSU-12V-RAIL-IN2",
+                                "PMIC-9-COMEX-1.2V-RAIL-OUT", "PMIC-9-PSU-12V-RAIL-IN1",
+                                "PMIC-9-PSU-12V-RAIL-IN2", "PSU-1R-12V-RAIL-OUT",
+                                "PSU-1R-220V-RAIL-IN"]
+
+    def _init_platform_lists(self):
+        self.fan_prop_auto = {"Fan State": "state", "Current Speed (RPM)": "current-speed",
+                              "Fan Direction": "direction"}
+        self.platform_environment_fan_values = {
+            "state": FansConsts.STATE_OK, "direction": None, "current-speed": None,
+            "min-speed": ExpectedString(range_min=2000, range_max=10000),
+            "max-speed": ExpectedString(range_min=10000, range_max=40000)}
+        self.platform_environment_absent_fan_values = {
+            "state": FansConsts.STATE_ABSENT, "direction": "N/A", "current-speed": "N/A",
+            "min-speed": "N/A", "max-speed": "N/A"}
+        self.platform_inventory_items = self.fan_list + self.psu_list + self.psu_fan_list \
+            + [PlatformConsts.HW_COMP_SWITCH]
 
     def _init_temperature(self):
         self.temperature_sensors = ["Asic-Temp-Sensor", "CPU-Core-Sensor-0", "CPU-Core-Sensor-1",
@@ -352,6 +387,22 @@ class Mlx4700Switch(EthSwitch):
             "asic-model": self.asic_type
         })
 
+        self.voltage_sensors = ["PMIC-1-PSU-12V-RAIL-IN1", "PMIC-2-PSU-12V-RAIL-IN1", "PMIC-2-PSU-12V-RAIL-IN2",
+                                "PMIC-3-PSU-12V-RAIL-IN1", "PMIC-3-PSU-12V-RAIL-IN2", "PMIC-4-PSU-12V-RAIL-IN1",
+                                "PMIC-4-PSU-12V-RAIL-IN2", "PMIC-5-PSU-12V-RAIL-IN1", "PMIC-5-PSU-12V-RAIL-IN2",
+                                "PMIC-6-PSU-12V-RAIL-IN1", "PMIC-6-PSU-12V-RAIL-IN2", "PMIC-7-PSU-12V-RAIL-IN1",
+                                "PMIC-7-PSU-12V-RAIL-IN2", "PMIC-8-COMEX-1.8V-RAIL-OUT", "PMIC-8-PSU-12V-RAIL-IN1",
+                                "PMIC-8-PSU-12V-RAIL-IN2", "PMIC-9-COMEX-1.2V-RAIL-OUT", "PMIC-9-PSU-12V-RAIL-IN1",
+                                "PMIC-9-PSU-12V-RAIL-IN2", "PSU-2R-12V-RAIL-OUT", "PSU-2R-220V-RAIL-IN"]
+
+    def _init_temperature(self):
+        super()._init_temperature()
+        self.temperature_sensors = ["Asic-Temp-Sensor", "CPU-Core-Sensor-0", "CPU-Core-Sensor-1",
+                                    "CPU-Core-Sensor-2", "CPU-Core-Sensor-3", "CPU-Package-Sensor",
+                                    "Main-Board-Ambient-Sensor", "PSU1-Temp-Sensor", "PSU2-Temp-Sensor",
+                                    "Port-Ambient-Sensor"]
+
+
 # -------------------------- Mlx5600 Switch -----------------------------
 
 
@@ -376,8 +427,22 @@ class Mlx5600Switch(EthSwitch):
                                 "PMIC-4-PSU-13V5-RAIL-IN1", "PMIC-5-PSU-13V5-RAIL-IN1", "PMIC-6-PSU-13V5-RAIL-IN1",
                                 "PMIC-7-PSU-13V5-RAIL-IN1", "PMIC-8-PSU-13V5-RAIL-IN1", "PMIC-9-PSU-13V5-RAIL-IN1",
                                 "PMIC-10-HVDD_T03-1V2-RAIL-OUT1", "PMIC-10-HVDD_T47-1V2-RAIL-OUT2", "PMIC-10-PSU-13V5-RAIL-IN1",
-                                "PMIC-11-PSU-13V5-RAIL-IN1", "PMIC-12-PSU-13V5-RAIL-VIN", "PSU-1L-54V-RAIL-OUT",
+                                "PMIC-11-PSU-13V5-RAIL-IN1", "PMIC-11-VDDSCC-0V75-RAIL-OUT1", "PMIC-12-COMEX-VCCSA-OUT2",
+                                "PMIC-12-COMEX-VCORE-OUT1", "PMIC-12-PSU-13V5-RAIL-VIN", "PSU-1L-54V-RAIL-OUT",
                                 "PSU-1L-220V-RAIL-IN"]
+
+    def _init_platform_lists(self):
+        self.fan_prop_auto = {"Fan State": "state", "Current Speed (RPM)": "current-speed",
+                              "Fan Direction": "direction"}
+        self.platform_environment_fan_values = {
+            "state": FansConsts.STATE_OK, "direction": None, "current-speed": None,
+            "min-speed": ExpectedString(range_min=2800, range_max=10000),
+            "max-speed": ExpectedString(range_min=10000, range_max=40000)}
+        self.platform_environment_absent_fan_values = {
+            "state": FansConsts.STATE_ABSENT, "direction": "N/A", "current-speed": "N/A",
+            "min-speed": "N/A", "max-speed": "N/A"}
+        self.platform_inventory_items = self.fan_list + self.psu_list + self.psu_fan_list \
+            + [PlatformConsts.HW_COMP_SWITCH]
 
     def _init_temperature(self):
         super()._init_temperature()
@@ -413,6 +478,7 @@ class Mlx5400Switch(EthSwitch):
             "product-name": "SN5400",
             "asic-model": self.asic_type
         })
+
         self.voltage_sensors = ["ADAPTER", "IBC-1-13V5-RAIL-OUT", "IBC-1-PWR-CONV-54V-RAIL-IN1",
                                 "IBC-2-13V5-RAIL-OUT", "IBC-2-PWR-CONV-54V-RAIL-IN1", "IBC-3-13V5-RAIL-OUT",
                                 "IBC-3-PWR-CONV-54V-RAIL-IN1", "IBC-4-13V5-RAIL-OUT", "IBC-4-PWR-CONV-54V-RAIL-IN1",
@@ -420,8 +486,22 @@ class Mlx5400Switch(EthSwitch):
                                 "PMIC-4-PSU-13V5-RAIL-IN1", "PMIC-5-PSU-13V5-RAIL-IN1", "PMIC-6-PSU-13V5-RAIL-IN1",
                                 "PMIC-7-PSU-13V5-RAIL-IN1", "PMIC-8-PSU-13V5-RAIL-IN1", "PMIC-9-PSU-13V5-RAIL-IN1",
                                 "PMIC-10-HVDD_T03-1V2-RAIL-OUT1", "PMIC-10-HVDD_T47-1V2-RAIL-OUT2", "PMIC-10-PSU-13V5-RAIL-IN1",
-                                "PMIC-11-PSU-13V5-RAIL-IN1", "PMIC-12-PSU-13V5-RAIL-VIN", "PSU-1L-54V-RAIL-OUT",
+                                "PMIC-11-PSU-13V5-RAIL-IN1", "PMIC-11-VDDSCC-0V75-RAIL-OUT1", "PMIC-12-COMEX-VCCSA-OUT2",
+                                "PMIC-12-COMEX-VCORE-OUT1", "PMIC-12-PSU-13V5-RAIL-VIN", "PSU-1L-54V-RAIL-OUT",
                                 "PSU-1L-220V-RAIL-IN"]
+
+    def _init_platform_lists(self):
+        self.fan_prop_auto = {"Fan State": "state", "Current Speed (RPM)": "current-speed",
+                              "Fan Direction": "direction"}
+        self.platform_environment_fan_values = {
+            "state": FansConsts.STATE_OK, "direction": None, "current-speed": None,
+            "min-speed": ExpectedString(range_min=2800, range_max=10000),
+            "max-speed": ExpectedString(range_min=10000, range_max=40000)}
+        self.platform_environment_absent_fan_values = {
+            "state": FansConsts.STATE_ABSENT, "direction": "N/A", "current-speed": "N/A",
+            "min-speed": "N/A", "max-speed": "N/A"}
+        self.platform_inventory_items = self.fan_list + self.psu_list + self.psu_fan_list \
+            + [PlatformConsts.HW_COMP_SWITCH]
 
     def _init_temperature(self):
         super()._init_temperature()
@@ -456,6 +536,16 @@ class Mlx4410Switch(EthSwitch):
             "asic-model": self.asic_type
         })
 
+        self.voltage_sensors = ["PMIC-1-PSU-12V-RAIL-IN", "PMIC-2-PSU-12V-RAIL-IN", "PMIC-3-COMEX-1.05V-RAIL-OUT",
+                                "PMIC-3-COMEX-1.8V-RAIL-OUT", "PMIC-3-PSU-12V-RAIL-IN", "PMIC-3-PSU-12V-RAIL-IN1",
+                                "PMIC-5-PSU-12V-RAIL-IN", "PMIC-6-COMEX-1.8V-RAIL-OUT1", "PMIC-6-PSU-12V-RAIL-IN1",
+                                "PMIC-6-PSU-12V-RAIL-IN2", "PMIC-7-COMEX-1.2V-RAIL-OUT", "PMIC-7-PSU-12V-RAIL-IN1",
+                                "PMIC-7-PSU-12V-RAIL-IN2", "PSU-2R-12V-RAIL-OUT", "PSU-2R-220V-RAIL-IN"]
+
+    def _init_temperature(self):
+        self.temperature_sensors = ["Asic-Temp-Sensor", "CPU-Core-Sensor-0", "CPU-Core-Sensor-1", "CPU-Core-Sensor-2",
+                                    "CPU-Core-Sensor-3", "CPU-Package-Sensor", "Main-Board-Ambient-Sensor",
+                                    "PSU1-Temp-Sensor", "PSU2-Temp-Sensor", "Port-Ambient-Sensor"]
 
 # -------------------------- Mlx3750sx Switch -----------------------------
 
@@ -545,19 +635,15 @@ class Mlx3700cSwitch(EthSwitch):
             "asic-model": self.asic_type
         })
 
-        self.voltage_sensors = ["ADAPTER", "PMIC-1-ASIC-0.8V-VCORE-RAIL-OUT",
-                                "PMIC-1-PSU-12V-RAIL-IN1", "PMIC-2-ASIC-3.3V-RAIL-OUT",
-                                "PMIC-2-PSU-12V-RAIL-IN1", "PMIC-2-PSU-12V-RAIL-IN2",
-                                "PSU-2-12V-RAIL-OUT", "PSU-2-220V-RAIL-IN", "VIN"]
+        self.voltage_sensors = ["PMIC-1-PSU-12V-RAIL-IN1", "PMIC-1-PSU-12V-RAIL-IN2", "PMIC-2-PSU-12V-RAIL-IN1",
+                                "PMIC-2-PSU-12V-RAIL-IN2", "PMIC-3-COMEX-1.8V-RAIL-OUT", "PMIC-3-PSU-12V-RAIL-IN1",
+                                "PMIC-3-PSU-12V-RAIL-IN2", "PMIC-4-COMEX-1.2V-RAIL-OUT", "PMIC-4-PSU-12V-RAIL-IN1",
+                                "PMIC-4-PSU-12V-RAIL-IN2", "PSU-2-12V-RAIL-OUT", "PSU-2-220V-RAIL-IN"]
 
     def _init_temperature(self):
-        self.temperature_sensors = ["PMIC-1-ASIC-0.8V-VCORE-RAIL-OUT", "PMIC-1-PSU-12V-RAIL-IN1",
-                                    "PMIC-2-ASIC-3.3V-RAIL-OUT", "PMIC-2-PSU-12V-RAIL-IN1",
-                                    "PMIC-2-PSU-12V-RAIL-IN2", "PMIC-3-COMEX-1.8V-RAIL-OUT",
-                                    "PMIC-3-PSU-12V-RAIL-IN1", "PMIC-3-PSU-12V-RAIL-IN2",
-                                    "PMIC-4-COMEX-1.2V-RAIL-OUT", "PMIC-4-PSU-12V-RAIL-IN1",
-                                    "PMIC-4-PSU-12V-RAIL-IN2", "PSU-2-12V-RAIL-OUT",
-                                    "PSU-2-220V-RAIL-IN"]
+        self.temperature_sensors = ["Asic-Temp-Sensor", "CPU-Core-Sensor-0", "CPU-Core-Sensor-1",
+                                    "CPU-Package-Sensor", "Main-Board-Ambient-Sensor", "PSU1-Temp-Sensor",
+                                    "PSU2-Temp-Sensor", "Port-Ambient-Sensor"]
 
     def _init_fan_list(self):
         self.fan_list = ["FAN1/1", "FAN1/2", "FAN2/1", "FAN2/2", "FAN3/1", "FAN3/2", "FAN4/1", "FAN4/2"]
@@ -625,6 +711,19 @@ class Mlx2700Switch(EthSwitch):
 
         self.voltage_sensors = ["VIN", "VOUT1", "VOUT2"]
 
+    def _init_platform_lists(self):
+        self.fan_prop_auto = {"Fan State": "state", "Current Speed (RPM)": "current-speed",
+                              "Fan Direction": "direction"}
+        self.platform_environment_fan_values = {
+            "state": FansConsts.STATE_OK, "direction": None, "current-speed": None,
+            "min-speed": ExpectedString(range_min=1500, range_max=2000),
+            "max-speed": ExpectedString(range_min=18000, range_max=25000)}
+        self.platform_environment_absent_fan_values = {
+            "state": FansConsts.STATE_ABSENT, "direction": "N/A", "current-speed": "N/A",
+            "min-speed": "N/A", "max-speed": "N/A"}
+        self.platform_inventory_items = self.fan_list + self.psu_list + self.psu_fan_list \
+            + [PlatformConsts.HW_COMP_SWITCH]
+
     def _init_temperature(self):
         self.temperature_sensors = ["Asic-Temp-Sensor", "CPU-Core-Sensor-0",
                                     "CPU-Core-Sensor-1", "CPU-Package-Sensor",
@@ -657,12 +756,25 @@ class Mlx2201Switch(EthSwitch):
             "asic-model": self.asic_type
         })
 
-        self.voltage_sensors = ["MONITOR-CPU-BOARD-P2V5_VPP", "MONITOR-CPU-BOARD-V1P05",
-                                "MONITOR-CPU-BOARD-V1P8", "MONITOR-CPU-BOARD-V1P24",
-                                "MONITOR-CPU-BOARD-V3P3", "MONITOR-CPU-BOARD-VR_VCCRAM_1V15",
-                                "MONITOR-CPU-BOARD-VR_VCC_1V15", "MONITOR-CPU-BOARD-VR_VDDQ_1V20",
-                                "PSU-2-12V-RAILOUT", "PSU-2-220V-RAILIN",
-                                "VR-IC-PSU-12V-RAI"]
+        self.voltage_sensors = ["MONITOR-CPU-BOARD-P0V6_VTT_DIMM", "MONITOR-CPU-BOARD-P2V5_VPP",
+                                "MONITOR-CPU-BOARD-V1P05", "MONITOR-CPU-BOARD-V1P8",
+                                "MONITOR-CPU-BOARD-V1P24", "MONITOR-CPU-BOARD-V3P3",
+                                "MONITOR-CPU-BOARD-VR_VCCRAM_1V15", "MONITOR-CPU-BOARD-VR_VCC_1V15",
+                                "MONITOR-CPU-BOARD-VR_VDDQ_1V20", "MONITOR-CPU-BOARD-VR_VNN_1V05",
+                                "PSU-2-12V-RAILOUT", "PSU-2-220V-RAILIN", "VR-IC-PSU-12V-RAIL"]
+
+    def _init_platform_lists(self):
+        self.fan_prop_auto = {"Fan State": "state", "Current Speed (RPM)": "current-speed",
+                              "Fan Direction": "direction"}
+        self.platform_environment_fan_values = {
+            "state": FansConsts.STATE_OK, "direction": None, "current-speed": None,
+            "min-speed": ExpectedString(range_min=2200, range_max=2500),
+            "max-speed": ExpectedString(range_min=16000, range_max=22000)}
+        self.platform_environment_absent_fan_values = {
+            "state": FansConsts.STATE_ABSENT, "direction": "N/A", "current-speed": "N/A",
+            "min-speed": "N/A", "max-speed": "N/A"}
+        self.platform_inventory_items = self.fan_list + self.psu_list + self.psu_fan_list \
+            + [PlatformConsts.HW_COMP_SWITCH]
 
     def _init_temperature(self):
         self.temperature_sensors = ["Asic-Temp-Sensor", "CPU-Core-Sensor-0",
@@ -698,17 +810,29 @@ class Mlx2100Switch(EthSwitch):
 
         self.voltage_sensors = ["VIN", "VOUT1", "VOUT2"]
 
+    def _init_platform_lists(self):
+        self.fan_prop_auto = {"Fan State": "state", "Current Speed (RPM)": "current-speed",
+                              "Fan Direction": "direction"}
+        self.platform_environment_fan_values = {
+            "state": FansConsts.STATE_OK, "direction": None, "current-speed": None,
+            "min-speed": ExpectedString(range_min=1500, range_max=2500),
+            "max-speed": ExpectedString(range_min=16000, range_max=25000)}
+        self.platform_environment_absent_fan_values = {
+            "state": FansConsts.STATE_ABSENT, "direction": "N/A", "current-speed": "N/A",
+            "min-speed": "N/A", "max-speed": "N/A"}
+        self.platform_inventory_items = self.fan_list + self.psu_list + self.psu_fan_list \
+            + [PlatformConsts.HW_COMP_SWITCH]
+
     def _init_temperature(self):
         self.temperature_sensors = ["Asic-Temp-Sensor", "Main-Board-Ambient-Sensor",
-                                    "Port-Ambient-Sensor", "CPU-Core-Sensor-0",
-                                    "CPU-Core-Sensor-1", "CPU-Core-Sensor-2",
-                                    "CPU-Core-Sensor-3"]
+                                    "Port-Ambient-Sensor", "core0-Sensor",
+                                    "core1-Sensor", "core2-Sensor", "core3-Sensor"]
 
     def _init_fan_list(self):
-        self.fan_list = ["FAN1/1", "FAN1/2", "FAN2/1", "FAN2/2"]
+        self.fan_list = ["FAN1/1", "FAN2/1", "FAN3/1", "FAN4/1"]
 
     def _init_led_list(self):
-        self.led_list = ["FAN1", "PSU1", "PSU2", "SYSTEM"]
+        self.led_list = ["FAN", "PSU1", "PSU2", "SYSTEM"]
 
 
 # -------------------------- Mlx2010 Switch -----------------------------
@@ -732,14 +856,31 @@ class Mlx2010Switch(EthSwitch):
 
         self.voltage_sensors = ["VIN", "VOUT1", "VOUT2"]
 
+    def _init_platform_lists(self):
+        self.fan_prop_auto = {"Fan State": "state", "Current Speed (RPM)": "current-speed",
+                              "Fan Direction": "direction"}
+        self.platform_environment_fan_values = {
+            "state": FansConsts.STATE_OK, "direction": None, "current-speed": None,
+            "min-speed": ExpectedString(range_min=4500, range_max=5000),
+            "max-speed": ExpectedString(range_min=20000, range_max=30000)}
+        self.platform_environment_absent_fan_values = {
+            "state": FansConsts.STATE_ABSENT, "direction": "N/A", "current-speed": "N/A",
+            "min-speed": "N/A", "max-speed": "N/A"}
+        self.platform_inventory_items = self.fan_list + self.psu_list \
+            + [PlatformConsts.HW_COMP_SWITCH]
+
+    def _init_psu_list(self):
+        self.psu_list = ["PSU1", "PSU2"]
+        self.psu_fan_list = []
+        self.platform_env_psu_prop = ["state"]
+
     def _init_temperature(self):
         self.temperature_sensors = ["Asic-Temp-Sensor", "Main-Board-Ambient-Sensor",
-                                    "Port-Ambient-Sensor", "CPU-Core-Sensor-0",
-                                    "CPU-Core-Sensor-1", "CPU-Core-Sensor-2",
-                                    "CPU-Core-Sensor-3"]
+                                    "Port-Ambient-Sensor", "core0-Sensor",
+                                    "core1-Sensor", "core2-Sensor", "core3-Sensor"]
 
     def _init_fan_list(self):
-        self.fan_list = ["FAN1/1", "FAN1/1", "FAN3/1", "FAN4/1"]
+        self.fan_list = ["FAN1/1", "FAN2/1", "FAN3/1", "FAN4/1"]
 
     def _init_led_list(self):
-        self.led_list = ["FAN1", "PSU1", "PSU2", "SYSTEM"]
+        self.led_list = ["FAN", "PSU1", "PSU2", "SYSTEM"]
