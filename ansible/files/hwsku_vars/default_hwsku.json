@@ -133,7 +133,7 @@
     },
     "arc-switch1025_setup": {
         "default_hwsku": "Mellanox-SN2700",
-        "support_hwsku": ["Mellanox-SN2700"]
+        "support_hwsku": ["Mellanox-SN2700", "Mellanox-SN2700-D48C8"]
     },
     "mtbc-sonic-01-2410_setup": {
         "default_hwsku": "ACS-MSN2410",
