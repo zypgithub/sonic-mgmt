@@ -140,3 +140,17 @@ class CertShowFields:
 
 CERT_PRIVATE_KEY_LOCATION = '/etc/nvue/certificates/private'
 CERT_PUBLIC_KEY_LOCATION = '/etc/nvue/certificates/public'
+
+
+class CaShowFields:
+    COUNT = 'count'
+    INSTALLED = 'installed'
+    SERIAL_NUMBER = 'serial-number'
+    VALID_FROM = 'valid-from'
+    VALID_TO = 'valid-to'
+    ALL_FIELDS = [COUNT, INSTALLED, SERIAL_NUMBER, VALID_FROM, VALID_TO]
+
+
+CA_PEM_FILE_LOCATION = '/etc/ssl/certs'
+CA_CRT_FILE_LOCATION = '/usr/local/share/ca-certificates/nvue'
+CA_POOL_FILE = '/etc/ssl/certs/ca-certificates.crt'

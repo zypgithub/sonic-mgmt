@@ -58,7 +58,7 @@ def test_cert_mgmt_cert_cli(test_api, engines, scp_player, clear_certs):
     with allure.step('import certs'):
         with allure.independent_step('Import cert1 using data'):
             with allure.step('get cert data as string'):
-                data = cert1.get_content_str()
+                data = cert1.get_cert_content_str()
             with allure.step('import with data'):
                 security.certificate.cert_id[cert1.name].action_import(data=data).verify_result()
         with allure.independent_step('Import cert2 using private & public key URIs'):
@@ -129,7 +129,7 @@ def test_cert_mgmt_import_cert_data_bad_param(test_api, engines, scp_player, cle
     security = System().security
 
     cert = TestCert.cert_valid_1.copy()
-    real_data = cert.get_content_str()
+    real_data = cert.get_cert_content_str()
     index = real_data.find('-----END PRIVATE KEY-----')
     certs_datas = {'cert-empty-string': '', 'cert-rand-string': randomize_hex_str(10), 'cert-messed-data': real_data[:index - 5] + 'ALON' + real_data[index - 1:]}
 

@@ -305,10 +305,10 @@ class OpenApiSystemCli(OpenApiBaseCli):
                                                    engine.ip, resource_path, params)
 
     @staticmethod
-    def action_import_ca_certificate(engine, resource_path, data='', uri=''):
+    def action_import_ca_certificate(engine, resource_path, data=None, uri=None):
         logging.info(f'Run action import on: {resource_path} using OpenApi')
         parameters = {'data': data, 'uri': uri}
-        parameters = {param: val for param, val in parameters.items() if val}
+        parameters = {param: val for param, val in parameters.items() if val is not None}
         params = \
             {
                 "state": "start",

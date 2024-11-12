@@ -36,7 +36,7 @@ class CertInfo:
     def cacert_name(self) -> str:
         return f'cacert-of-{self.name}'
 
-    def get_content_str(self) -> str:
+    def get_cert_content_str(self) -> str:
         with open(self.public, 'r') as cert_file:
             cert_content = cert_file.read().strip()
 
@@ -45,3 +45,8 @@ class CertInfo:
 
         combined_content = f"{cert_content}\n{key_content}"
         return combined_content
+
+    def get_ca_content_str(self) -> str:
+        with open(self.cacert, 'r') as key_file:
+            content = key_file.read().strip()
+        return content
