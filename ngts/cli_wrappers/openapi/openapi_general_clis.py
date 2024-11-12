@@ -1,6 +1,8 @@
 import json
 import logging
+
 from .openapi_command_builder import OpenApiCommandHelper
+from ...tests_nvos.general.security.certificate.CertInfo import CertInfo
 
 logger = logging.getLogger()
 
@@ -15,14 +17,15 @@ class OpenApiGeneralCli:
         pass
 
     @staticmethod
-    def apply_config(engine, ask_for_confirmation=False):
+    def apply_config(engine, ask_for_confirmation=False, option='', validate_apply_message='', rev_id="",
+                     skip_no_config_diff_err=True, verify_execution=False, client_certs_after_apply: CertInfo = None):
         """
         Apply configuration
         :param engine: ssh engine object
         """
         logging.info("Execute config apply using OpenApi")
         return OpenApiCommandHelper.execute_script(engine.engine.username, engine.engine.password, 'APPLY', engine.ip,
-                                                   'system/config/apply')
+                                                   'system/config/apply', client_certs_after_apply=client_certs_after_apply)
 
     @staticmethod
     def save_config(engine):
