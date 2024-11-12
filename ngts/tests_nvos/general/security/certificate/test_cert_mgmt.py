@@ -3,17 +3,22 @@ from typing import List
 
 import pytest
 
-from ngts.nvos_constants.constants_nvos import ApiType
+from ngts.nvos_constants.constants_nvos import ApiType, TestFlowType
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.helpers import randomize_hex_str
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tests_nvos.general.security.certificate.constants import TestCert, CertShowFields
-from ngts.tests_nvos.general.security.certificate.helpers import verify_cert_in_expected_locations, import_certificates
+from ngts.tests_nvos.general.security.certificate.helpers import verify_cert_in_expected_locations, import_certificates, \
+    send_curl_with_tls_and_verify
+from ngts.tests_nvos.general.security.nmx_cert.constants import EncryptionMode
+from ngts.tests_nvos.general.security.test_api_server_security.constants import CERTIFICATE
 from ngts.tests_nvos.system.gnmi.conftest import scp_player
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_general_utils import generate_scp_uri_using_player
+
+""" CLI tests """
 
 
 @pytest.mark.system
@@ -313,3 +318,38 @@ def test_cert_mgmt_import_cert_unique_id(test_api, engines, scp_player, clear_ce
                     assert cert in out, f'cert {cert} does not appear in certificate show output but expected to exist\n{out}'
                 with allure.independent_step('verify files'):
                     verify_cert_in_expected_locations(cert, engines.dut)
+
+
+""" functional tests """
+
+
+@pytest.mark.system
+@pytest.mark.certificate
+@pytest.mark.parametrize('test_api', random.sample(ApiType.ALL_TYPES, 1))
+@pytest.mark.parametrize('test_flow', TestFlowType.ALL_TYPES)
+def test_cert_mgmt_use_cert_for_rest_api_tls(test_api, test_flow, engines, scp_player, clear_certs):
+    """
+    Verify that valid imported cert can be used for REST server TLS
+
+    1. import cert
+    2. bind cert to rest server (system api certificate)
+    3. send unsecured client request – success
+    4. send client request using non/proper CA - fail/success
+    """
+    TestToolkit.tested_api = test_api
+    is_good_flow = test_flow == TestFlowType.GOOD_FLOW
+    system = System()
+    security = system.security
+    cert = TestCert.cert_valid_1.copy('cert1')
+    bundle_uri = generate_scp_uri_using_player(scp_player, cert.p12_bundle)
+
+    with allure.step('import cert'):
+        security.certificate.cert_id[cert.name].action_import(uri_bundle=bundle_uri, passphrase=cert.p12_password).verify_result()
+    with allure.step('bind cert to rest server (system api certificate)'):
+        system.api.set(CERTIFICATE, cert.name, apply=True).verify_result()
+    if is_good_flow:
+        with allure.step('send unsecured client request – expect success'):
+            send_curl_with_tls_and_verify(cert.dn, engines.dut.username, engines.dut.password, EncryptionMode.DISABLED)
+    with allure.step(f'send client request using {"" if is_good_flow else "non-"}proper CA – expect {"success" if is_good_flow else "fail"}'):
+        ca_path = cert.cacert if is_good_flow else TestCert.cert_valid_2.cacert
+        send_curl_with_tls_and_verify(cert.dn, engines.dut.username, engines.dut.password, EncryptionMode.TLS, ca_path, is_good_flow)

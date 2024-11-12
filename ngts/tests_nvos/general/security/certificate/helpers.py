@@ -3,13 +3,15 @@ import string
 from typing import List
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from ngts.nvos_constants.constants_nvos import ApiType
+from ngts.nvos_constants.constants_nvos import ApiType, OpenApiReqType
+from ngts.nvos_tools.infra.CurlTool import CurlTool
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tests_nvos.general.security.certificate.constants import DUT_IMPORTED_CERTS_PRIVATE_DIR, \
     DUT_IMPORTED_CERTS_PUBLIC_DIR, DUT_IMPORTED_CACERTS_DIR, CERT_PRIVATE_KEY_LOCATION, CERT_PUBLIC_KEY_LOCATION, \
-    CA_PEM_FILE_LOCATION, CA_CRT_FILE_LOCATION, CA_POOL_FILE
+    CA_PEM_FILE_LOCATION, CA_CRT_FILE_LOCATION, CA_POOL_FILE, GET_SYSTEM_VERSION_PATH, CertMsgs
+from ngts.tests_nvos.general.security.nmx_cert.constants import EncryptionMode
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_general_utils import generate_scp_uri_using_player
 
@@ -124,3 +126,14 @@ def verify_ca_in_expected_locations(ca_name: str, ca_info: CertInfo, dut_engine:
         if ca_info:
             with allure.independent_step('verify default CAs pool'):
                 verify_ca_in_ssl_ca_pool(ca_name, ca_info, dut_engine, should_exist)
+
+
+def send_curl_with_tls_and_verify(server_host, username, password, secure_mode, ca_path=None, should_succeed: bool = True):
+    client = CurlTool(server_host=server_host, username=username, password=password, cacert=ca_path)
+    skip_verify = secure_mode == EncryptionMode.DISABLED
+    out, err = client.request(request_type=OpenApiReqType.GET, path=GET_SYSTEM_VERSION_PATH, skip_cert_verify=skip_verify)
+    got_ssl_error = CertMsgs.SSL_CERTIFICATE_PROBLEM in err
+    if should_succeed:
+        assert not got_ssl_error, f'client got SSL err "{CertMsgs.SSL_CERTIFICATE_PROBLEM}" but expected to succeed\nout: {out}\nerr: {err}'
+    else:
+        assert got_ssl_error, f'client succeeded and did not get SSL err "{CertMsgs.SSL_CERTIFICATE_PROBLEM}", but expected to fail\nout: {out}\nerr: {err}'
