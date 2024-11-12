@@ -280,27 +280,35 @@ def topology_obj(setup_name, request):
     :param setup_name: example: sonic_tigris_r-tigris-06
     :param request: pytest builtin
     """
-    logger.debug('Creating topology object')
-    cli_type = target_cli_type(request)
-    topology = get_topology_by_setup_name_and_aliases(setup_name, slow_cli=False, override_type=cli_type)
-    # Update CLI classes according to the current SONiC branch
-    branch = request.session.config.cache.get(PytestConst.CUSTOM_TEST_SKIP_BRANCH_NAME, None)
-    update_branch_in_topology(topology, branch)
-    is_sanitizer = request.session.config.cache.get(PytestConst.IS_SANITIZER_IMAGE, None)
-    update_sanitizer_in_topology(topology, is_sanitizer=is_sanitizer)
-    update_topology_with_cli_class(topology, request)
-    export_cli_type_to_cache(topology, request)
-    enable_record_cmds(topology)
+    with allure.step('Creating topology object'):
+        cli_type = target_cli_type(request)
+        topology = get_topology_by_setup_name_and_aliases(setup_name, slow_cli=False, override_type=cli_type)
+
+    with allure.step("Update branch in topology according to the current SONiC branch"):
+        branch = request.session.config.cache.get(PytestConst.CUSTOM_TEST_SKIP_BRANCH_NAME, None)
+        update_branch_in_topology(topology, branch)
+        logger.info(f"branch: {branch}")
+
+    with allure.step("Check if it's sanitizer image and update in topology"):
+        is_sanitizer = request.session.config.cache.get(PytestConst.IS_SANITIZER_IMAGE, None)
+        update_sanitizer_in_topology(topology, is_sanitizer=is_sanitizer)
+        logger.info(f"is_sanitizer: {is_sanitizer}")
+
+    with allure.step("Update CLI types in topology"):
+        update_topology_with_cli_class(topology, request)
+        export_cli_type_to_cache(topology, request)
+        enable_record_cmds(topology)
 
     if request.config.option.ports_number == "max":
-        # This is used for the fast reboot with max ports
-        config_db = topology.players['dut']['cli'].general.get_config_db()
-        topology.players_all_ports['dut'] = list(config_db['PORT'].keys())
+        with allure.step("Update topology for fast reboot with max ports"):
+            config_db = topology.players['dut']['cli'].general.get_config_db()
+            topology.players_all_ports['dut'] = list(config_db['PORT'].keys())
+
     yield topology
 
-    logger.debug('Cleaning-up the topology object')
-    for player_name, player_attributes in topology.players.items():
-        player_attributes['engine'].disconnect()
+    with allure.step('Cleaning-up the topology object'):
+        for player_name, player_attributes in topology.players.items():
+            player_attributes['engine'].disconnect()
 
 
 def target_cli_type(request):

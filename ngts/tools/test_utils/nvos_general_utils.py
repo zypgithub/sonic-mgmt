@@ -10,8 +10,7 @@ from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.constants.constants import LinuxConsts
-from ngts.nvos_constants.constants_nvos import ApiType, DiskConsts
-from ngts.nvos_constants.constants_nvos import NvosConst, SystemConsts
+from ngts.nvos_constants.constants_nvos import ApiType, DiskConsts, TopologyConsts, NvosConst, SystemConsts
 from ngts.nvos_tools.infra.DiskTool import DiskTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.RegressionConfigurations import RegressionConfigurations
@@ -195,3 +194,13 @@ def get_version_info(version: str) -> Tuple[str, str]:
 
 def generate_scp_uri_using_player(player: LinuxSshEngine, file_path: str) -> str:
     return f'scp://{player.username}:{player.password}@{player.ip}{file_path}'
+
+
+def get_switch_type(topology):
+    cli_type = topology.players['dut']['attributes'].noga_query_data['attributes']['Topology Conn.']['CLI_TYPE']
+    if cli_type == NvosConst.NVUE_CLI:
+        switch_type = topology.players['dut']['attributes'].noga_query_data['attributes']['Specific']['TYPE']
+        if switch_type == NvosConst.CUMULUS_SWITCH:
+            return TopologyConsts.CL
+        return TopologyConsts.NVOS
+    return TopologyConsts.SONIC
