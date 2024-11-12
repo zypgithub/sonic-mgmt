@@ -3,10 +3,11 @@ import logging
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_tools.infra.TpmTool import TpmTool
 
+
 logger = logging.getLogger()
 
 
-class BmcTool():
+class BmcTool:
     BASE_URL = "https://10.0.1.1/redfish/v1/"
     USER_NAME = "admin"
 

@@ -103,7 +103,7 @@ def test_system_remarkable_requested_logs(engines, devices):
 
     finally:
         with allure.step("remove all new files"):
-            engines.dut.run_cmd("sudo rm /var/log/*")
+            engines.dut.run_cmd("sudo rm /var/log/remarkable_logs_1/*")
         with allure.step(f"rotate logs"):
             system.log.rotate_logs()
             system.log.rotate_logs()
@@ -207,7 +207,7 @@ def _test_remarkable_logs(engine, testing, log_count, log_priority, threshold_fi
                                                   [f"{file_name}log.5.gz"], False)
     finally:
         with allure.step("remove all new files"):
-            engine.run_cmd("sudo rm /var/log/*")
+            engine.run_cmd("sudo rm /var/log/remarkable_logs_1/*")
         with allure.step(f"rotate logs"):
             system.log.rotate_logs()
             system.log.rotate_logs()

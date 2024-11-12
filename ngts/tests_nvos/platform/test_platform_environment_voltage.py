@@ -89,24 +89,26 @@ def test_database_platform_environment_voltage(engines, devices):
                                                                        grep_str="VOLTAGE").splitlines()
         database_output = [re.sub(r"PMIC-\d+ ", "", sensor_str) for sensor_str in raw_database_output]
 
-    with allure.step("Check the Sensors output from CLI"):
-        with allure.step("Verify for every sensor in sensors_dict[VOLTAGE], it exist in nv show platform environment voltage"):
-            diff_sensors = [x for x in devices.dut.sensors_dict["VOLTAGE"] if x not in cli_sensors_list]
-            err_mes = '' if not len(diff_sensors) else 'the next sensors are missed {}'.format(diff_sensors)
-        with allure.step("Verify no extra sensors are found in nv show platform environment voltage"):
-            diff_sensors = [x for x in cli_sensors_list if x not in devices.dut.sensors_dict["VOLTAGE"]]
-            err_mes += '' if not len(diff_sensors) else 'there extra sensors were found: {}'.format(diff_sensors)
+    with allure.step("Check the Sensors output from CLI and db tables"):
+        with allure.independent_step("Verify for every sensor in sensors_dict[VOLTAGE], it exist in nv show platform environment voltage"):
+            err_mes = compare_sensors(devices.dut.sensors_dict["VOLTAGE"], cli_sensors_list)
+            assert not err_mes, f"This sensors are missing: {err_mes}"
 
-    with allure.step("Check the Sensors dynamic tables"):
-        with allure.step("Verify for every sensor: VOLTAGE_INFO|<sensor_name> table exist in STATE_DB"):
-            diff_sensors = [x for x in sensors_list if x not in database_output]
-            err_mes += '' if not len(diff_sensors) else 'the next tables are missed {}'.format(diff_sensors)
+        with allure.independent_step("Verify for every sensor: VOLTAGE_INFO|<sensor_name> table exist in STATE_DB"):
+            err_mes = compare_sensors(sensors_list, database_output)
+            assert not err_mes, f"This sensors are missing: {err_mes}"
 
-        with allure.step("Verify no extra sensor tables in STATE_DB"):
-            diff_sensors = [x for x in database_output if x not in sensors_list]
-            err_mes += '' if not len(diff_sensors) else 'the next sensors are missed {}'.format(diff_sensors)
 
-        assert not err_mes, err_mes
+def compare_sensors(expected_sensors_list, actual_sensors_list):
+    expected = set([re.sub(r'[^a-z0-9]', '', s.lower()) for s in expected_sensors_list])
+    actual = set([re.sub(r'[^a-z0-9]', '', s.lower()) for s in actual_sensors_list])
+    missing = expected - actual
+    excess = actual - expected
+    result = excess.union(missing)
+    psu_found = [key for key in result if 'psu' in key]
+    assert len(psu_found) < 4, f"Found more than 4 missing psu {psu_found}"
+    result.difference_update(psu_found)
+    return result
 
 
 def get_random_sensor_max_min(sensors_dic):

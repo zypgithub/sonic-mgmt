@@ -27,7 +27,8 @@ enum ProtoMsgMajorVersion {
 
 enum ProtoMsgMinorVersion {
     PROTO_MSG_MINOR_VERSION_UNDEFINED = 0;
-    PROTO_MSG_MINOR_VERSION = 1;
+    PROTO_MSG_MINOR_VERSION_OBSOLETE1 = 1;
+    PROTO_MSG_MINOR_VERSION = 2;
 }
 
 enum ST_ReturnCode {

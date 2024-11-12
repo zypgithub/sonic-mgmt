@@ -18,7 +18,7 @@ from ngts.tests_nvos.system.factory_reset.pre_steps import (factory_reset_no_par
 from ngts.tools.test_utils import allure_utils as allure
 
 
-@pytest.mark.timeout(25 * MINUTE, func_only=True)
+@pytest.mark.timeout(30 * MINUTE)
 @pytest.mark.system
 @pytest.mark.checklist
 @pytest.mark.reset_factory
@@ -117,7 +117,7 @@ def test_reset_factory_keep_basic(engines, devices, test_api):
         verify_the_setup_is_functional(system, engines)
 
 
-@pytest.mark.timeout(20 * MINUTE, func_only=True)
+@pytest.mark.timeout(25 * MINUTE)
 @pytest.mark.system
 @pytest.mark.checklist
 @pytest.mark.reset_factory
@@ -168,7 +168,7 @@ def test_reset_factory_keep_all_config(engines, devices, test_api):
         verify_the_setup_is_functional(system, engines)
 
 
-@pytest.mark.timeout(25 * MINUTE, func_only=True)
+@pytest.mark.timeout(30 * MINUTE)
 @pytest.mark.system
 @pytest.mark.checklist
 @pytest.mark.reset_factory

@@ -1,12 +1,16 @@
 import random
 
 import pexpect
+import pytest
 
+from infra.tools.validations.traffic_validations.ping.send import ping_till_alive
+from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
+from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.tools.test_utils import allure_utils as allure
-from ngts.tools.test_utils.switch_recovery import recover_dut_with_remote_reboot
 
 
-def test_grub_password(topology_obj, engines, serial_engine, is_secure_boot_enabled):
+@pytest.mark.track_serial_console
+def test_grub_password(topology_obj, engines, serial_engine, devices):
     '''
     @summary:
         This test case will check that entering grub command line will requires
@@ -31,4 +35,9 @@ def test_grub_password(topology_obj, engines, serial_engine, is_secure_boot_enab
                 f"when entered '{cli_grub_activation_character}' in grub menu"
     finally:
         with allure.step("Test is Done. remote reboot to recover"):
-            recover_dut_with_remote_reboot(topology_obj, engines, False, 60)
+            with allure.step('run remote reboot'):
+                NvueGeneralCli(engines.dut, devices.dut).remote_reboot_nvue(topology_obj)
+            with allure.step('Ping switch until shutting down'):
+                ping_till_alive(should_be_alive=False, destination_host=serial_engine.ip)
+            with allure.step('wait for System is ready'):
+                DutUtilsTool.wait_for_system_ready_in_serial(topology_obj, serial_engine, devices.dut.system_is_ready_wait_timeout)

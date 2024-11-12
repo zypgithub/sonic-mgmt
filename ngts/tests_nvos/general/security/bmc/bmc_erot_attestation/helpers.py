@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import random
+import traceback
 from typing import Tuple
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
@@ -12,10 +13,10 @@ from ngts.nvos_tools.infra.TpmTool import TpmTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.system.Spdm import SpdmComponent, SPDMComponents, COMPONENT_TO_SPDM_OBJ_FIELD, SpdmComponentFields
 from ngts.nvos_tools.system.System import System
-from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.client_verification.CertChainTool import CertChainTool
-from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.client_verification.spdm_verify import \
-    run_spdm_measurements_verification
-from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.client_verification.utils import CLIENT_VERIFICATION_DIR
+from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.client_scripts.verify_cert_chain.verify_cert_chain import \
+    validate_certs_chain
+from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.client_scripts.verify_spdm_measurements.verify_spdm_measurements import \
+    verify_spdm_measurements
 from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.constants import VALID_NONCE_LEN, SpdmConsts, NOT_EMPTY
 from ngts.tools.test_utils import allure_utils as allure
 
@@ -119,9 +120,14 @@ def verify_component_values(component_name: str, expect_cert, expect_measurement
         else:
             with allure.independent_step('verify measurements initial values'):
                 for field, expected_value in SpdmConsts.Component.Measurements.initial_values.items():
-                    with allure.independent_step(f'verify field "{field}" = {expected_value}'):
-                        assert measurements_out[
-                            field] == expected_value, f'measurements field "{field}" not as expected.\nexpected: {expected_value}\nactual: {measurements_out[field]}'
+                    if expected_value == NOT_EMPTY:
+                        with allure.independent_step(f'verify field "{field}" is not empty'):
+                            assert measurements_out[
+                                field] != '', f'measurements field "{field}" is unexpectedly empty'
+                    else:
+                        with allure.independent_step(f'verify field "{field}" = {expected_value}'):
+                            assert measurements_out[
+                                field] == expected_value, f'measurements field "{field}" not as expected.\nexpected: {expected_value}\nactual: {measurements_out[field]}'
 
 
 def verify_cert_data_same_as_directly_from_bmc(erot_name: str, nv_cert: dict):
@@ -183,33 +189,24 @@ def run_client_measurements_verification_usecanse(component_obj: SpdmComponent, 
 
 
 def run_client_verification(cert_chain_content: str, measurements_data: dict, nonce: str, expect_success: bool):
-    leaf_cert_file = os.path.join(CLIENT_VERIFICATION_DIR, 'test-leaf-cert.pem')
-    measurements_file = os.path.join(CLIENT_VERIFICATION_DIR, 'test-measurements.json')
-    nonce_file = os.path.join(CLIENT_VERIFICATION_DIR, 'test-nonce.txt')
-    # meas_file = f"{CLIENT_VERIFICATION_DIR}/bmc_nvue_meas.json"
-    # key_file = f"{CLIENT_VERIFICATION_DIR}/bmc_nvue_leaf_cert.pem"
-    # nonce_file = None
+    cur_dir = os.path.dirname(os.path.abspath(__file__))
+    tmp_files_dir = os.path.join(cur_dir, 'client_scripts', 'tmp_files')
+    tests_dir = os.path.join(tmp_files_dir, 'tests')
+
+    output_ordered_chain_path = os.path.join(tests_dir, 'pytest-ordered_chain.pem')
+    leaf_cert_file = os.path.join(tests_dir, 'test-leaf-cert.pem')
+    measurements_file = os.path.join(tests_dir, 'test-measurements.json')
+    nonce_file = os.path.join(tests_dir, 'test-nonce.txt')
 
     files_to_remove = []
-    remove_test_files = True
-    test_subdir = ''  # os.path.join(CLIENT_VERIFICATION_DIR, 'test-0')
+    remove_test_files = False
 
     try:
-        with allure.step('verify certificates chain'):
-            with allure.step('divide cert-chain into cert pem files (order matters!)'):
-                chain = CertChainTool()
-                certs_chain_list = chain.split_cert_chain_str_to_list(cert_chain_content,
-                                                                      path_to_save_certs=test_subdir)
-            with allure.step('verify each cert signed the one after in order'):
-                chain.validate_cert_chain(
-                    certs_chain_list[:3])  # TODO: [:3] because our ERoTs have badly burned certificates
+        with allure.step('validate certificates chain and extract leaf to file'):
+            validate_certs_chain(chain_str=cert_chain_content, output_leaf_path=leaf_cert_file,
+                                 output_chain_path=output_ordered_chain_path)
 
         with allure.step('verify measurements using leaf certificate'):
-            with allure.step('prepare leaf cert pem file'):
-                leaf_cert: str = certs_chain_list[-1]
-                with open(leaf_cert_file, 'w') as file:
-                    file.write(leaf_cert)
-                files_to_remove.append(leaf_cert_file)
             with allure.step('prepare measurements json file'):
                 with open(measurements_file, 'w') as file:
                     json.dump(measurements_data, file, indent=4)
@@ -219,7 +216,14 @@ def run_client_verification(cert_chain_content: str, measurements_data: dict, no
                     file.write(nonce)
                 files_to_remove.append(nonce_file)
             with allure.step('run measurements verification'):
-                run_spdm_measurements_verification(measurements_file, leaf_cert_file, nonce_file, expect_success)
+                actual = True
+                try:
+                    verify_spdm_measurements(measurements_file, leaf_cert_file, nonce_file)
+                except Exception as e:
+                    actual = False
+                    logging.info(f"ERROR: {str(e)}\n{traceback.format_exc()}")
+            with allure.step(f'assert actual verification res ({actual}) is as expected ({expect_success})'):
+                assert actual == expect_success, f'SPDM measurements result not as expected\nexpected: {expect_success}\nactual: {actual}'
     finally:
         if files_to_remove and remove_test_files:
             with allure.step('remove new files created in test'):

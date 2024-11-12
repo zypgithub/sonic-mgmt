@@ -1,3 +1,4 @@
+import concurrent.futures
 import datetime
 import logging
 import random
@@ -31,6 +32,7 @@ from ngts.nvos_tools.infra import ExceptionTool
 from ngts.nvos_tools.infra.CmdRunner import CmdRunner
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.nvos_tools.infra.DiskTool import DiskTool
+from ngts.nvos_tools.infra.IpTool import IpTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.PexpectTool import PexpectTool
@@ -41,6 +43,7 @@ from ngts.nvos_tools.infra.TrafficGeneratorTool import TrafficGeneratorTool
 from ngts.nvos_tools.system.System import System
 from ngts.scripts.code_coverage.code_coverage_consts import NvosConsts
 from ngts.scripts.code_coverage.test_code_coverage import extract_python_coverage_for_nvos
+from ngts.tests_nvos.helpers.pytest_helpers import is_cur_test_has_marker
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_config_utils import clear_conf, clear_cl_conf
 from ngts.tools.test_utils.nvos_general_utils import wait_for_ldap_nvued_restart_workaround, set_base_configurations, \
@@ -93,7 +96,7 @@ def track_serial_console(request, topology_obj, engines, devices):
     This will apply for all test that has any of the defined interesting markers below.
     """
     interesting_markers = ['track_serial_console', 'reboot', 'factory_reset', 'reset_factory']
-    should_track_serial_console = any(request.node.get_closest_marker(marker) for marker in interesting_markers)
+    should_track_serial_console = any(is_cur_test_has_marker(request, marker) for marker in interesting_markers)
 
     if should_track_serial_console:
         with allure.step('start tracking serial console into file'):
@@ -107,10 +110,14 @@ def track_serial_console(request, topology_obj, engines, devices):
 
     if should_track_serial_console:
         with allure.step('end serial console session'):
-            child.sendcontrol('z')
-            time.sleep(1)
-            child.sendcontrol('d')
-            child.expect(pexpect.EOF)
+            for _ in range(3):
+                child.sendcontrol('z')
+                time.sleep(0.5)
+            for _ in range(3):
+                child.sendcontrol('d')
+                time.sleep(0.5)
+            # child.expect(pexpect.EOF)
+            child.close()
         if request.node.rep_call.failed:
             try:
                 with allure.step('take log file content'):
@@ -119,7 +126,9 @@ def track_serial_console(request, topology_obj, engines, devices):
                 with allure.step('attach content to allure'):
                     allure.attach('Serial Console log during test', serial_log_content)
             except Exception as e:
-                logging.warning(f'failed to attach serial output from {serial_log_file_path} : {ExceptionTool.format_traceback()}')
+                err = f'failed to attach serial output from {serial_log_file_path} : {ExceptionTool.format_traceback()}'
+                logging.warning(err)
+                allure.attach('Attachment Failure', err)
         else:
             with allure.step('test passed. not attaching serial console log'):
                 pass
@@ -137,6 +146,15 @@ def engines(topology_obj, devices):
     if "hb" in topology_obj.players:
         engines_data.hb = topology_obj.players['hb']['engine']
         engines_data.hb_attr = topology_obj.players['hb']['attributes']
+
+    # engines.hfnm refers to the VM connected to the FNM port if there is one, or to HA if there isn't
+    if "hfnm" in topology_obj.players:
+        engines_data.hfnm = topology_obj.players['hfnm']['engine']
+        engines_data.hfnm_attr = topology_obj.players['hfnm']['attributes']
+    elif "ha" in topology_obj.players:
+        engines_data.hfnm = topology_obj.players['ha']['engine']
+        engines_data.hfnm_attr = topology_obj.players['ha']['attributes']
+
     if "server" in topology_obj.players:
         engines_data.server = topology_obj.players['server']['engine']
     if "sonic-mgmt" in topology_obj.players:
@@ -145,6 +163,15 @@ def engines(topology_obj, devices):
     TestToolkit.update_engines(engines_data)
     TestToolkit.update_topology_obj(topology_obj)
     return engines_data
+
+
+@pytest.fixture(scope='session')
+def dut_ipv6_addr(engines, devices):
+    dut_ipv6_addr = IpTool.get_dut_ipv6_addr_of_given_eth_interface_using_nv_cli(devices.dut.cur_mgmt_port_name, engines.dut)
+    if not dut_ipv6_addr:
+        dut_ipv6_addr = IpTool.get_player_ipv6_addr(engines.dut.ip, engines.dut)
+    logging.info(f'dut ipv6 address: {dut_ipv6_addr}')
+    return dut_ipv6_addr
 
 
 def update_engine_dut_mgmt_port(topology, dut_engine: LinuxSshEngine, dut_device: BaseDevice):
@@ -245,7 +272,27 @@ def start_sm(engines, devices, traffic_available):
     if traffic_available:
         RegressionConfigurations.configure_ports_to_legacy(engine=engines.dut, apply=True, throw_exception=False)
         result = OpenSmTool.start_open_sm(engines, multiplanar=devices.dut.multi_planar)
-        result.verify_result()
+        if not result.result:
+            with allure.step('open_sm failed to start (possibly due to #4088479), attempting to recover'):
+                with allure.step('Rebooting all traffic VMs'):
+                    executor = concurrent.futures.ThreadPoolExecutor()
+                    tasks = []
+                    if hasattr(engines, 'ha'):
+                        tasks.append(executor.submit(engines.ha.reload, ['sudo reboot']))
+                    if hasattr(engines, 'hb'):
+                        tasks.append(executor.submit(engines.hb.reload, ['sudo reboot']))
+                    if hasattr(engines, 'hfnm') and (not hasattr(engines, 'ha') or engines.ha.ip != engines.hfnm.ip):
+                        tasks.append(executor.submit(engines.hfnm.reload, ['sudo reboot']))
+                    for task in tasks:
+                        try:
+                            task.result(timeout=300)
+                        except Exception:
+                            ExceptionTool.log_traceback()
+                            raise Exception('Failed to reboot traffic VMs, see traceback in logs')
+                    time.sleep(5)
+
+                with allure.step('Retrying to start open_sm'):
+                    OpenSmTool.start_open_sm(engines, multiplanar=devices.dut.multi_planar).verify_result()
     else:
         raise SetupIssue("Traffic is not available on this setup")
 

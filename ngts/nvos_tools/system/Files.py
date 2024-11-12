@@ -33,6 +33,11 @@ class Files(BaseComponent):
     def verify_show_files_output(self, expected_files=[], unexpected_files=[], dut_engine=None):
         with allure.step("Verify files are as expected"):
             files = self.get_files(dut_engine=dut_engine)
+
+            # If no expected files, ensure there are no files present
+            if not expected_files and files:
+                raise AssertionError(f"Expected no files, but got: {files}")
+
             for file in expected_files:
                 assert file in files, "File: {} is not in the files output: {}".format(file, files)
             for file in unexpected_files:
@@ -101,12 +106,12 @@ class File(BaseComponent):
 
     def action_file_install_with_reboot(self, expected_str="", force=True, engine=None, device=None,
                                         recovery_engine=None, topology_obj=None, param_value='',
-                                        should_succeed=True) -> ResultObj:
+                                        should_succeed=True, system_is_ready_timeout=None, track_boot_intervals=False, deny_reboot=False) -> ResultObj:
         return self._action_file_install(True, expected_str, force, engine, device, recovery_engine,
-                                         topology_obj, param_value, should_succeed)
+                                         topology_obj, param_value, should_succeed, system_is_ready_timeout, track_boot_intervals, deny_reboot=deny_reboot)
 
     def _action_file_install(self, with_reboot: bool, expected_str="", force=True, dut_engine=None, device=None,
-                             recovery_engine=None, topology_obj=None, param_value='', should_succeed=True) -> ResultObj:
+                             recovery_engine=None, topology_obj=None, param_value='', should_succeed=True, system_is_ready_timeout=None, track_boot_intervals=False, deny_reboot=False) -> ResultObj:
         engine = dut_engine if dut_engine else TestToolkit.engines.dut
         device = device if device else TestToolkit.devices.dut
         topology_obj = topology_obj or TestToolkit.topology_obj
@@ -116,7 +121,7 @@ class File(BaseComponent):
                 self._cli_wrapper.action, expected_str,
                 engine, device, action_type='install', resource_path=resource_path, param_name='force' if force else '',
                 param_value=param_value, expect_reboot=with_reboot, recovery_engine=recovery_engine,
-                topology_obj=topology_obj, should_succeed=should_succeed)
+                topology_obj=topology_obj, should_succeed=should_succeed, system_is_ready_timeout=system_is_ready_timeout, track_boot_intervals=track_boot_intervals, deny_reboot=deny_reboot)
 
     def rename_and_verify(self, new_name, expected_str="", dut_engine=None):
         original_name = self.file_name

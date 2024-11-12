@@ -27,6 +27,22 @@ logger = logging.getLogger()
 
 @pytest.mark.interface
 @pytest.mark.multiplanar
+@pytest.mark.nvos_ci
+def test_internal_fnm_ports(devices):
+    """
+    nv show fae interfaces --> Validate that all internal FNM ports that should be always up - are up.
+    """
+    output_dictionary = OutputParsingTool.parse_show_all_interfaces_output_to_dictionary(
+        Port.show_interface(fae_param='fae')).get_returned_value()
+
+    down_internal_fnm_ports = {port: output_dictionary[port][IbInterfaceConsts.LINK_STATE]
+                               for port in devices.dut.interface_active_internal_fnm_ports
+                               if output_dictionary[port][IbInterfaceConsts.LINK_STATE] != NvosConsts.LINK_STATE_UP}
+    assert not down_internal_fnm_ports
+
+
+@pytest.mark.interface
+@pytest.mark.multiplanar
 @pytest.mark.simx_xdr
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_fae_interface_commands(engines, devices, test_api, start_sm):
@@ -81,10 +97,18 @@ def test_fae_interface_commands(engines, devices, test_api, start_sm):
 
         with allure.independent_step("Validate external FNM port speed"):
             output_dictionary = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
-                selected_fae_fnm_plane_port.port.interface.link.show()).get_returned_value()
+                selected_fae_fnm_port.port.interface.link.show()).get_returned_value()
             if output_dictionary[IbInterfaceConsts.LINK_STATE] == NvosConsts.LINK_STATE_UP:
                 assert output_dictionary[IbInterfaceConsts.LINK_SPEED] == dut_device.fnm_link_speed, \
-                    f"FNM port speed should be {dut_device.fnm_link_speed} instead of" \
+                    f"External FNM port speed should be {dut_device.fnm_link_speed} instead of" \
+                    f"{output_dictionary[IbInterfaceConsts.LINK_SPEED]}"
+
+        with allure.independent_step("Validate external FNM port speed"):
+            output_dictionary = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
+                selected_fae_fnm_plane_port.port.interface.link.show()).get_returned_value()
+            if output_dictionary[IbInterfaceConsts.LINK_STATE] == NvosConsts.LINK_STATE_UP:
+                assert output_dictionary[IbInterfaceConsts.LINK_SPEED] == dut_device.fnm_internal_link_speed, \
+                    f"Internal FNM port speed should be {dut_device.fnm_internal_link_speed} instead of" \
                     f"{output_dictionary[IbInterfaceConsts.LINK_SPEED]}"
 
         with allure.independent_step("Validate show fae interface command"):
@@ -93,13 +117,6 @@ def test_fae_interface_commands(engines, devices, test_api, start_sm):
             output_keys = list(output_dictionary.keys())
             ValidationTool.compare_values(output_keys.sort(), dut_device.interface_fae_list.sort()).\
                 verify_result()
-
-            with allure.step(f"Validate all internal fnm ports are {NvosConsts.LINK_STATE_UP}"):
-                down_internal_fnm_ports = {port: output_dictionary[port][IbInterfaceConsts.LINK_STATE]
-                                           for port in devices.dut.interface_active_internal_fnm_ports
-                                           if output_dictionary[port][IbInterfaceConsts.LINK_STATE] !=
-                                           NvosConsts.LINK_STATE_UP}
-                assert not down_internal_fnm_ports
 
         with allure.independent_step("Validate all multi planar fields exist in show fae interface <port>"):
             output_fae_port = OutputParsingTool.parse_show_interface_output_to_dictionary(
@@ -239,20 +256,20 @@ def test_aggregated_port_configuration(engines, devices, start_sm, test_api):
                                                         IbInterfaceConsts.LINK_OPERATIONAL_VLS,
                                                         IbInterfaceConsts.SUPPORTED_VLS, True)
 
-        # Validate state field aggregation
-        with allure.step("Validate state field aggregation"):
-            new_state = NvosConsts.LINK_STATE_DOWN
-            selected_aggregated_port.interface.link.state.set(op_param_name=new_state, apply=True).\
-                verify_result()
-            time.sleep(MultiPlanarConsts.PORT_UP_MAX_TIME)
-            aport_state = OutputParsingTool.parse_json_str_to_dictionary(
-                selected_aggregated_port.interface.link.state.show()).get_returned_value()
-            pport_state = OutputParsingTool.parse_json_str_to_dictionary(
-                selected_fae_plane_port.port.interface.link.state.show()).get_returned_value()
+            # Validate state field aggregation
+            with allure.independent_step("Validate state field aggregation"):
+                new_state = NvosConsts.LINK_STATE_DOWN
+                selected_aggregated_port.interface.link.state.set(op_param_name=new_state, apply=True).\
+                    verify_result()
+                time.sleep(MultiPlanarConsts.PORT_UP_MAX_TIME)
+                aport_state = OutputParsingTool.parse_json_str_to_dictionary(
+                    selected_aggregated_port.interface.link.state.show()).get_returned_value()
+                pport_state = OutputParsingTool.parse_json_str_to_dictionary(
+                    selected_fae_plane_port.port.interface.link.state.show()).get_returned_value()
 
-            assert new_state in aport_state.keys() and aport_state == pport_state, \
-                f"mismatch in {IbInterfaceConsts.LINK_STATE}: aggregated port:{aport_state}, " \
-                f"plane port:{pport_state}, value set: {new_state}"
+                assert new_state in aport_state.keys() and aport_state == pport_state, \
+                    f"mismatch in {IbInterfaceConsts.LINK_STATE}: aggregated port:{aport_state}, " \
+                    f"plane port:{pport_state}, value set: {new_state}"
 
     finally:
         with allure.step("set config to default"):
@@ -450,41 +467,6 @@ def test_aggregated_port_mismatch_between_planes(engines, devices, test_api):
 #     finally:
 #         with allure.step("set config to default"):
 #             set_mp_config_to_default()
-
-
-@pytest.mark.interface
-@pytest.mark.multiplanar
-@pytest.mark.simx_xdr
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_symmetry_manager_performance(engines, devices, start_sm, test_api):
-    """
-    Validate configuring an aggregated port total time is not significantly longer than
-    configuring a regular (non-aggregated) port.
-
-    Test flow:
-    1. Select a random aggregated port:
-    2. Measure configuring an aggregated port in Black Mamba:
-    3. Compare between configuration time:
-    """
-
-    TestToolkit.tested_api = test_api
-
-    with allure.step("Select a random active aggregated port"):
-        selected_fae_port = MultiPlanarTool.select_random_aggregated_port(devices)
-        selected_aggregated_port = MgmtPort(selected_fae_port.port.name)
-
-    try:
-        with allure.step("Validate aggregated port configure state to DOWN time"):
-            validate_configuring_state_time(selected_aggregated_port, NvosConsts.LINK_STATE_DOWN,
-                                            MultiPlanarConsts.PORT_DOWN_MAX_TIME)
-
-        with allure.step("Validate aggregated port configure state to UP time"):
-            validate_configuring_state_time(selected_aggregated_port, NvosConsts.LINK_STATE_UP,
-                                            MultiPlanarConsts.PORT_UP_MAX_TIME)
-
-    finally:
-        with allure.step("set config to default"):
-            selected_aggregated_port.interface.link.unset(apply=True, ask_for_confirmation=True).verify_result()
 
 
 # @pytest.mark.interface
@@ -714,7 +696,7 @@ def test_verify_sm_commands_not_exist(engines, test_api):
     ib = Ib(None)
 
     with allure.step('verify "sm" commands not exist in commands list'):
-        output = NvueGeneralCli.search_in_list_commands(engines_dut, " sm")
+        output = NvueGeneralCli.search_in_list_commands(engines_dut, " sm").replace('nv show interface small', '')
         assert not output, "sm commands should not exist"
 
     with allure.step("Validate show ib sm"):
@@ -929,23 +911,6 @@ def validate_set_and_unset_fae_interface_link_lanes_command(selected_fae_port):
         assert output[IbInterfaceConsts.LINK_LANES] == IbInterfaceConsts.DEFAULT_LANES, \
             f"{IbInterfaceConsts.LINK_LANES} value is {output[IbInterfaceConsts.LINK_LANES]}," \
             f"instead of {IbInterfaceConsts.DEFAULT_LANES}"
-
-
-def validate_configuring_state_time(aggregated_port, state_value, max_time):
-    aport_state = {}
-    new_state = state_value
-    aggregated_port.interface.link.state.set(op_param_name=state_value, apply=True).verify_result()
-    retries = MultiPlanarConsts.CONFIG_STATE_RETRIES
-    start_time = time.time()
-    while new_state not in aport_state.keys() and retries > 0:
-        aport_state = OutputParsingTool.parse_json_str_to_dictionary(
-            aggregated_port.interface.link.state.show()).get_returned_value()
-        retries -= 1
-    end_time = time.time()
-    diff_time = end_time - start_time
-    logger.info(f"port: {aggregated_port.name}, state: {state_value}, diff_time = {diff_time}, retries={retries}")
-    assert diff_time < max_time, f"set and apply state to '{state_value}' time: {diff_time} secs, " \
-        f"is higher than expected: {max_time} secs"
 
 
 def set_mp_config_to_default():

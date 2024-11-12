@@ -18,10 +18,7 @@ from ngts.nvos_tools.system.System import System
 from ngts.nvos_constants.constants_nvos import ApiType, IbConsts
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.tools.test_utils import allure_utils as allure
-
 logger = logging.getLogger()
-
-MAX_COUNTERS_AFTER_CLEAR = 15000
 
 
 # todo openapi - need to implement OpenApiIbInterfaceCli.clear_stats
@@ -195,7 +192,7 @@ def _clear_counters_test_flow(engines, players, interfaces, all_counters=False, 
                 if not result.result:
                     selected_ports.remove(port)
 
-            assert len(selected_ports) != 0, "No traffic were detected"
+            assert len(selected_ports) != 0, "No traffic was detected. Counter errors:{}".format(result.info)
 
             if not all_counters:
                 selected_ports = [selected_ports[0]]
@@ -249,20 +246,39 @@ def clear_counters_for_user(active_ssh_engine, active_user_name, inactive_user_n
 
 def check_port_counters(selected_port, should_be_zero, ssh_engine):
     logging.info("--- Counters for user: {}".format(ssh_engine.username))
+    info = ""
     link_stats_dict = OutputParsingTool.parse_json_str_to_dictionary(
         selected_port.interface.link.stats.show(dut_engine=ssh_engine)).get_returned_value()
-    counters = link_stats_dict[IbInterfaceConsts.LINK_STATS_IN_BYTES]
-    counters += link_stats_dict[IbInterfaceConsts.LINK_STATS_IN_DROPS]
-    counters += link_stats_dict[IbInterfaceConsts.LINK_STATS_IN_ERRORS]
-    counters += link_stats_dict[IbInterfaceConsts.LINK_STATS_IN_SYMBOL_ERRORS]
-    counters += link_stats_dict[IbInterfaceConsts.LINK_STATS_IN_PKTS]
-    counters += link_stats_dict[IbInterfaceConsts.LINK_STATS_OUT_BYTES]
-    counters += link_stats_dict[IbInterfaceConsts.LINK_STATS_OUT_DROPS]
-    counters += link_stats_dict[IbInterfaceConsts.LINK_STATS_OUT_ERRORS]
-    counters += link_stats_dict[IbInterfaceConsts.LINK_STATS_OUT_PKTS]
-    counters += link_stats_dict[IbInterfaceConsts.LINK_STATS_OUT_WAIT]
-    return ResultObj((should_be_zero and counters < MAX_COUNTERS_AFTER_CLEAR) or
-                     (counters > MAX_COUNTERS_AFTER_CLEAR and not should_be_zero), "")
+
+    info += _validate_link_counters(link_stats_dict, IbInterfaceConsts.LINK_STATS_IN_DROPS, should_be_zero, 0)
+    info += _validate_link_counters(link_stats_dict, IbInterfaceConsts.LINK_STATS_IN_ERRORS, should_be_zero, 0)
+    info += _validate_link_counters(link_stats_dict, IbInterfaceConsts.LINK_STATS_IN_SYMBOL_ERRORS, should_be_zero, 0)
+    info += _validate_link_counters(link_stats_dict, IbInterfaceConsts.LINK_STATS_IN_BYTES, should_be_zero,
+                                    IbInterfaceConsts.MAX_BYTE_COUNTER_AFTER_CLEAR)
+    info += _validate_link_counters(link_stats_dict, IbInterfaceConsts.LINK_STATS_IN_PKTS, should_be_zero,
+                                    IbInterfaceConsts.MAX_PKT_COUNTER_AFTER_CLEAR)
+
+    info += _validate_link_counters(link_stats_dict, IbInterfaceConsts.LINK_STATS_OUT_DROPS, should_be_zero, 0)
+    info += _validate_link_counters(link_stats_dict, IbInterfaceConsts.LINK_STATS_OUT_ERRORS, should_be_zero, 0)
+    info += _validate_link_counters(link_stats_dict, IbInterfaceConsts.LINK_STATS_OUT_WAIT, should_be_zero, 0)
+    info += _validate_link_counters(link_stats_dict, IbInterfaceConsts.LINK_STATS_OUT_BYTES, should_be_zero,
+                                    IbInterfaceConsts.MAX_BYTE_COUNTER_AFTER_CLEAR)
+    info += _validate_link_counters(link_stats_dict, IbInterfaceConsts.LINK_STATS_OUT_PKTS, should_be_zero,
+                                    IbInterfaceConsts.MAX_PKT_COUNTER_AFTER_CLEAR)
+
+    return ResultObj(False if info else True, info=info)
+
+
+def _validate_link_counters(output_dict, field_name, should_be_zero, limit=0):
+    field_val = int(output_dict[field_name])
+    info = ""
+    if should_be_zero:
+        if field_val > limit:
+            info = "{} is {} instead of being under {}, ".format(field_name, field_val, limit)
+    else:
+        if field_val < limit:
+            info = "{} is {} instead of being over {}, ".format(field_name, field_val, limit)
+    return info
 
 
 def get_port_obj(port_name):
@@ -298,7 +314,7 @@ def create_new_user(engine):
         system = System(force_api=ApiType.NVUE)
         user_name, password = system.aaa.user.set_new_user(apply=True)
         user_id = system.aaa.user.get_lslogins(engine=engine, username=user_name)["UID"]
-        file_name = "/tmp/portstat-{}".format(user_id)
+        file_name = "/tmp/cache/portstat-{}".format(user_id)
         logging.info("User created: \nuser_name: {} \npassword: {} \nUID: {}".format(user_name, password, user_id))
         with allure.step("Crate an ssh connection for user {user_name} (UID {uid})".format(user_name=user_name,
                                                                                            uid=user_id)):

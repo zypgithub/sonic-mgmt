@@ -6,11 +6,11 @@ import pytest
 
 import ngts.tools.test_utils.allure_utils as allure
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from ngts.nvos_tools.infra.CmdRunner import CmdRunner
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.certificate.constants import TestCert
 from ngts.tests_nvos.general.security.conftest import cleanup_after_aaa
+from ngts.tests_nvos.general.security.helpers import remove_etc_host_mapping_to_dn, add_etc_host_mapping_to_dn
 from ngts.tests_nvos.general.security.radius.constants import RadiusVmServer
 from ngts.tests_nvos.general.security.security_test_tools.constants import AddressingType, AuthConsts, AaaConsts
 from ngts.tests_nvos.general.security.security_test_tools.generic_remote_aaa_testing.constants import RemoteAaaType
@@ -56,14 +56,14 @@ def aaa_users(engines, cleanup_after_aaa) -> Dict[str, UserInfo]:
 
 
 @pytest.fixture(scope='module', autouse=True)
-def add_etc_host_mapping_for_test_cert(engines):
+def add_etc_host_mapping_for_ipv4_cert_test(engines):
     cert = GNMI_TEST_CERT
-    with allure.step(f'add mapping of new dut hostname to {ETC_HOSTS}'):
-        cmd_runner = CmdRunner()
-        cmd_runner.run_cmd_in_process(f'echo "{engines.dut.ip} {cert.dn}" | sudo tee -a {ETC_HOSTS}')
+    with allure.step(f'add ipv4 mapping of new dut hostname to {ETC_HOSTS}'):
+        remove_etc_host_mapping_to_dn(cert.dn)
+        add_etc_host_mapping_to_dn(cert.dn, engines.dut.ip)
     yield
-    with allure.step(f'remove hostname mapping from {ETC_HOSTS}'):
-        cmd_runner.run_cmd_in_process(f"sudo sed -i '/{cert.dn}/d' {ETC_HOSTS}", wait_till_done=True)
+    with allure.step(f'remove ipv4 mapping of new dut hostname to {ETC_HOSTS}'):
+        remove_etc_host_mapping_to_dn(cert.dn)
 
 
 @pytest.fixture()

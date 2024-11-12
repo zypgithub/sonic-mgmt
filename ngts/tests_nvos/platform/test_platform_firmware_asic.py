@@ -7,7 +7,9 @@ import pytest
 
 from ngts.nvos_constants.constants_nvos import ImageConsts, NvosConst
 from ngts.nvos_constants.constants_nvos import PlatformConsts
-from ngts.nvos_tools.infra.Fae import Fae
+from ngts.nvos_tools.infra.FWComponentsTool import FWComponentsTool
+from ngts.tests_nvos.constants import MINUTE
+
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
@@ -20,22 +22,22 @@ logger = logging.getLogger()
 
 
 @pytest.mark.checklist
-@pytest.mark.fae
-def test_show_fae_firmware(devices):
+@pytest.mark.platform
+def test_show_platform_firmware_asic(devices):
     """
-    Show fae firmware test
+    Show platform firmware test
 
     Test flow:
-    1. Run show fae platform firmware
+    1. Run show platform firmware
     2. Make sure that all required fields exist for all ASICs
     """
-    fae = Fae()
+    platform = Platform()
 
-    with allure.step("Run show fae firmware asic"):
-        output_dictionary = get_asic_dict(fae)
+    with allure.step("Run show platform firmware asic"):
+        output_dictionary = get_asic_dict(platform)
 
     with allure.step("Validate asic amount"):
-        expected_asic_amount = len(devices.dut.device_list) - 1
+        expected_asic_amount = 1  # in show non-fae platform firmware we expect 1 ASIC
         assert len(output_dictionary) == expected_asic_amount, \
             "Unexpected num of ASIC\n Expected : {}\n but got {}".format(
                 expected_asic_amount, len(output_dictionary))
@@ -90,54 +92,56 @@ def test_set_unset_platform_firmware_default(engines):
 @pytest.mark.simx
 @pytest.mark.image
 @pytest.mark.platform
-def test_platform_firmware_image_rename(engines, devices, topology_obj):
+@pytest.mark.timeout(20 * MINUTE, func_only=True)
+def test_platform_firmware_image_rename(engines, devices, topology_obj, clear_asic_files):
     """
     Check the image rename cmd.
     Validate that install and delete commands will success with the new name
     and will fail with the old name.
-    1. Fetch random image, fetch image
+    1. Fetch the same image twice
     2. Rename image without mfa ending
     3. Install original image name , should fail
-    4. Install original image new name , should success
-    5. Delete the original image name , should fail
-    6. Install new image name , success
-    7. Uninstall image
-    8. Delete the new image name , success
+    4. Delete the original image name , should fail
+    5. Install new image name , success
+    6. Reboot, expect the original ASIC FW
     """
     platform = Platform()
-    dut = devices.dut
-    _, fetched_image_name, _ = get_image_data_and_fetch_random_image_files(platform, dut, topology_obj)
-    fetched_image_file = platform.firmware.asic.files.file_name[fetched_image_name]
-    with allure.step("Rename image without mfa ending"):
-        base_path = (PlatformConsts.XDR_FW_PATH.format(asic="QTM3")
-                     if dut.asic_type in (NvosConst.QTM3, NvosConst.NVL5)
-                     else PlatformConsts.FW_PATH)
-        logger.info(f"{base_path=}")
-        platform.firmware.asic.action_fetch(os.path.join(base_path, fetched_image_name)).verify_result()
+    platform.firmware.asic.files.verify_show_files_output([], [])
+    component_name = 'asic'
+    fw_file, fetched_image_name, version_name = FWComponentsTool.get_fw_component_version_latest(component_name)
+
+    with allure.step("Fetch image 1st try"):
+        player_engine = engines['sonic_mgmt']
+        scp_path = 'scp://{}:{}@{}'.format(player_engine.username, player_engine.password, player_engine.ip)
+        platform.firmware.asic.action_fetch(fw_file, base_url=scp_path).verify_result()
+
+    with allure.step("Fetch image 2nd try"):
+        platform.firmware.asic.action_fetch(fw_file, base_url=scp_path).verify_result()
+        fetched_image_file = platform.firmware.asic.files.file_name[fetched_image_name]
+
+        new_name = RandomizationTool.get_random_string(20, ascii_letters=string.ascii_letters + string.digits)
+        fetched_image_file.action_rename(new_name, expected_str="", rewrite_file_name=False, should_succeed=False)
 
     with allure.step("Rename image and verify"):
-        new_name = RandomizationTool.get_random_string(20, ascii_letters=string.ascii_letters + string.digits)
+        new_name += '.mfa'
         fetched_image_file.action_rename(new_name, expected_str="", rewrite_file_name=False)
 
     with allure.step("Rename already exist image and verify"):
         fetched_image_file.action_rename(new_name, expected_str="already exists")
+        platform.firmware.asic.files.verify_show_files_output([new_name], [])
 
     with allure.step("Install original image name, should fail"):
         logging.info("Install original image name: {}, should fail".format(fetched_image_name))
         platform.firmware.asic.files.file_name[fetched_image_name].action_file_install(
-            force=False).verify_result(should_succeed=False)
+            force=True).verify_result(should_succeed=False)
 
     with allure.step("Delete original image name, should fail"):
         logging.info("Delete original image name, should fail")
         platform.firmware.asic.files.file_name[fetched_image_name].action_delete(should_succeed=False)
 
-    try:
-        with allure.step("Install new image name"):
-            logging.info("Install new image name: {}".format(new_name))
-            fetched_image_file.action_file_install(force=False).verify_result(should_succeed=True)
-
-    finally:
-        set_firmware_property(platform, PlatformConsts.FW_SOURCE, PlatformConsts.FW_SOURCE_DEFAULT)
+    with allure.step("Install new image name"):
+        logging.info("Install new image name: {}".format(new_name))
+        fetched_image_file.action_file_install_with_reboot(force=True, system_is_ready_timeout=PlatformConsts.TIMEOUT_AFTER_FW_INSTALL).verify_result(should_succeed=True)
 
 
 @pytest.mark.checklist
@@ -155,27 +159,32 @@ def test_platform_firmware_image_upload(engines, devices, topology_obj):
     """
     platform = Platform()
     dut = devices.dut
-    _, fetched_image, _ = get_image_data_and_fetch_random_image_files(platform, dut, topology_obj)
+    component_name = 'asic'
+    fw_file, fetched_image_name, _ = FWComponentsTool.get_fw_component_version_latest(component_name)
+    with allure.step("Fetch image"):
+        player = engines['sonic_mgmt']
+        scp_path = 'scp://{}:{}@{}'.format(player.username, player.password, player.ip)
+        platform.firmware.asic.action_fetch(fw_file, base_url=scp_path).verify_result()
+
     upload_protocols = ['scp', 'sftp']
-    player = engines['sonic_mgmt']
-    image_file = platform.firmware.asic.files.file_name[fetched_image]
+    image_file = platform.firmware.asic.files.file_name[fetched_image_name]
 
     with allure.step("Upload image to player {} with the next protocols : {}".format(player.ip, upload_protocols)):
         for protocol in upload_protocols:
             with allure.step("Upload image to player with {} protocol".format(protocol)):
                 upload_path = '{}://{}:{}@{}/tmp/{}'.format(protocol, player.username, player.password, player.ip,
-                                                            fetched_image)
+                                                            fetched_image_name)
                 image_file.action_upload(upload_path, expected_str='File upload successfully')
 
             with allure.step("Validate file was uploaded to player and delete it"):
                 assert player.run_cmd(
-                    cmd='ls /tmp/ | grep {}'.format(fetched_image)), "Did not find the file with ls cmd"
-                player.run_cmd(cmd='rm -f /tmp/{}'.format(fetched_image))
+                    cmd='ls /tmp/ | grep {}'.format(fetched_image_name)), "Did not find the file with ls cmd"
+                player.run_cmd(cmd='rm -f /tmp/{}'.format(fetched_image_name))
 
     with allure.step("Delete file from player"):
         logging.info("Delete file from player")
-        platform.firmware.asic.files.delete_files([fetched_image])
-        platform.firmware.asic.files.verify_show_files_output(unexpected_files=[fetched_image])
+        platform.firmware.asic.files.delete_files([fetched_image_name])
+        platform.firmware.asic.files.verify_show_files_output(unexpected_files=[fetched_image_name])
 
 
 def _set_and_verify(platform: Platform, property: str, value: str, unset=False):
@@ -220,7 +229,7 @@ def set_auto_update(platform, value):
 
 def verify_asic_fields(asic_dictionary):
     with allure.step("Verify all expected asic fields are presented in the output"):
-        asic_fields = ["actual-firmware", "installed-firmware", "part-number", "auto-update", "fw-source"]
+        asic_fields = ["actual-firmware", "part-number", "auto-update", "fw-source"]
         for asic_name, asic_prop in asic_dictionary.items():
             ValidationTool.verify_field_exist_in_json_output(asic_prop, asic_fields).verify_result()
 

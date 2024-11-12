@@ -121,8 +121,6 @@ def memory_cpu_run(session, keep_running_event):
     while keep_running_event.is_set():
         logger.info(" checking memory and cpu ")
         memory_cpu_outputs.append(run_memory_mpstat_commands(session))
-        with allure.step("wait 5 seconds"):
-            time.sleep(5)
 
     return memory_cpu_outputs
 
@@ -173,7 +171,6 @@ def validate_memory_and_cpu(before_testing, after_connections, during_testing={}
     :param after_testing:
     :return:
     """
-    change_interval = 0.3
 
     with allure.step("printing outputs"):
         logger.info(f"the memory and cpu before testing: \n {before_testing} \n")
@@ -183,13 +180,13 @@ def validate_memory_and_cpu(before_testing, after_connections, during_testing={}
 
     with allure.step("validate memory and cpu after connections"):
         for key, value in after_connections.items():
-            assert abs(after_connections[key] - before_testing[key]) < change_interval, f"unexpected change in {key} detected: initial output was {before_testing}, revised output after connections: {after_connections}"
+            assert after_connections[key] - before_testing[key] < 0.1, f"unexpected change in {key} detected: initial output was {before_testing}, revised output after connections: {after_connections}"
 
     with allure.step("validate memory and cpu during testing"):
         for step in during_testing:
             for key, value in step.items():
-                assert abs(step[key] - before_testing[key]) < change_interval, f"unexpected change in {key} detected: initial output was {before_testing}, revised output after connections: {step}"
+                assert step[key] - before_testing[key] < 0.2, f"unexpected change in {key} detected: initial output was {before_testing}, revised output after connections: {step}"
 
     with allure.step("validate memory and cpu after testing"):
         for key, value in after_connections.items():
-            assert abs(after_testing[key] - before_testing[key]) < 1, f"unexpected change in {key} detected: initial output was {before_testing}, revised output after connections: {after_testing}"
+            assert after_testing[key] - before_testing[key] < 0.03, f"unexpected change in {key} detected: initial output was {before_testing}, revised output after connections: {after_testing}"
