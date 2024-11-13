@@ -12,6 +12,7 @@ from ngts.common.checkers import is_feature_ready
 from ngts.constants.constants import SonicConst, WJHConsts
 from ngts.tests.push_build_tests.general.wjh import utils
 from scapy.all import Ether, Dot1Q, IP, IPv6, Raw, TCP
+from ngts.tests.push_build_tests.general.conftest import check_qos_counter_status
 
 pytest.CHANNEL_CONF = None
 logger = logging.getLogger()
@@ -166,7 +167,7 @@ def get_parsed_table(dut, cmd, table_type):
 
 
 @pytest.fixture(scope='module')
-def wjh_buffer_configuration(topology_obj, cli_objects, interfaces):
+def wjh_buffer_configuration(topology_obj, cli_objects, interfaces, engines):
     """
     Pytest fixture which is doing configuration fot WJH Buffer test case
     :param topology_obj: topology object fixture
@@ -195,6 +196,9 @@ def wjh_buffer_configuration(topology_obj, cli_objects, interfaces):
     cli_objects.dut.interface.enable_interfaces([interfaces.dut_ha_2, interfaces.dut_hb_2])
     cli_objects.dut.interface.check_link_state([interfaces.dut_ha_2, interfaces.dut_hb_2])
     logger.info('WJH Buffer configuration completed')
+
+    with allure.step('Check qos counter is ready'):
+        check_qos_counter_status(engines)
 
     with allure.step('Doing config save'):
         logger.info('Doing config save')
