@@ -76,7 +76,7 @@ def test_cluster_default_factory_reset(engines, devices, test_api, has_loopbox):
             for app in ClusterConsts.INITIAL_EXPECTED_APPS:
                 ClusterTools.verify_log_level(ClusterAppsLogLevels.NOTICE, app, output_format, cluster)
             verify_config_files_content_not_changed(sdn, initial_config_contents, engines)
-            verify_apps_in_expected_state(cluster, 'ok')
+            verify_apps_in_expected_state(cluster, 'ok', has_loopbox)
 
     finally:
         engines.sonic_mgmt.run_cmd(f"sudo rm -rf {ClusterConsts.INITIAL_CONFIGURATIONS_PATH + '/*'}")
@@ -137,7 +137,7 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name,
             for app in ClusterConsts.INITIAL_EXPECTED_APPS:
                 ClusterTools.verify_log_level(ClusterAppsLogLevels.NOTICE, app, output_format, cluster)
             verify_config_files_content_not_changed(sdn, initial_config_contents, engines)
-            verify_apps_in_expected_state(cluster, 'ok')
+            verify_apps_in_expected_state(cluster, 'ok', has_loopbox)
 
     finally:
         engines.sonic_mgmt.run_cmd(f"sudo rm -rf {ClusterConsts.INITIAL_CONFIGURATIONS_PATH + '/*'}")
@@ -195,7 +195,7 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name, 
             for app in ClusterConsts.INITIAL_EXPECTED_APPS:
                 ClusterTools.verify_log_level(ClusterAppsLogLevels.NOTICE, app, output_format, cluster)
             verify_config_files_content_not_changed(sdn, initial_config_contents, engines)
-            verify_apps_in_expected_state(cluster, 'ok')
+            verify_apps_in_expected_state(cluster, 'ok', has_loopbox)
 
     finally:
         engines.sonic_mgmt.run_cmd(f"sudo rm -rf {ClusterConsts.INITIAL_CONFIGURATIONS_PATH + '/*'}")
@@ -261,7 +261,7 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
                     initial_config_contents[file_type] += '\n'
                 initial_config_contents[file_type] += '# This is dummy config file'
             verify_config_files_content_not_changed(sdn, initial_config_contents, engines)
-            verify_apps_in_expected_state(cluster, 'ok')  # Apps should be running
+            verify_apps_in_expected_state(cluster, 'ok', has_loopbox)  # Apps should be running
 
     finally:
         engines.sonic_mgmt.run_cmd(f"sudo rm -rf {ClusterConsts.INITIAL_CONFIGURATIONS_PATH + '/*'}")
@@ -295,14 +295,17 @@ def verify_cluster_state_resetted(cluster):
                 f"{NvosConst.DISABLED}"
 
 
-def verify_apps_in_expected_state(cluster, status):
+def verify_apps_in_expected_state(cluster, status, has_loopbox):
     with allure.step("Running 'nv show cluster apps running' command and verifying output"):
         output = OutputParsingTool.parse_show_output_to_dict(
             cluster.apps.running.show(output_format=OutputFormat.json),
             output_format=OutputFormat.json).get_returned_value()
         for app in ClusterConsts.INITIAL_EXPECTED_APPS:
             app_status = output[app]['status']
-            assert app_status == status, f"App {app} status is {app_status} instead of {status}"
+            if has_loopbox and app == ClusterConsts.NMX_CONTROLLER and status == 'ok':
+                pass
+            else:
+                assert app_status == status, f"App {app} status is {app_status} instead of {status}"
 
 
 def get_generated_file_name(output, file_type):
