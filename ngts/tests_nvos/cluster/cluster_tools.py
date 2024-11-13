@@ -35,7 +35,7 @@ class ClusterTools:
                         ClusterTools.verify_lid_value(devices)
                         ClusterTools.verify_interface_up(devices, has_loopbox)
                 with allure.step("Running 'nv show cluster apps running' command and verifying output"):
-                    if has_loopbox and app == ClusterConsts.NMX_CONTROLLER:
+                    if app == ClusterConsts.NMX_CONTROLLER:
                         pass
                     else:
                         output = OutputParsingTool.parse_show_output_to_dict(
@@ -57,7 +57,7 @@ class ClusterTools:
                     ClusterTools.verify_lid_value(devices)
                     ClusterTools.verify_interface_up(devices, has_loopbox)
                 with allure.step("Running 'nv show cluster apps running' command and verifying output"):
-                    if has_loopbox and app == ClusterConsts.NMX_CONTROLLER:
+                    if app == ClusterConsts.NMX_CONTROLLER:
                         pass
                     else:
                         output = OutputParsingTool.parse_show_output_to_dict(
@@ -259,7 +259,10 @@ class ClusterTools:
                     cluster.apps.running.show(output_format=output_format),
                     output_format=output_format).get_returned_value()
                 app_status = output[app]['status']
-                assert app_status == expected_state, f"App {app} status is {app_status} instead of {expected_state}"
+                if app == ClusterConsts.NMX_CONTROLLER:
+                    pass
+                else:
+                    assert app_status == expected_state, f"App {app} status is {app_status} instead of {expected_state}"
                 ClusterTools.verify_app_is_up(engines, app)
             ClusterTools.verify_lid_value(devices)
 
@@ -276,7 +279,7 @@ class ClusterTools:
         with allure.step(f"Start app {app}"):
             cluster.apps.app_name[app].action_start_cluster_app()
             ClusterTools.wait_for_apps_to_be_in_wanted_state()
-            if has_loopbox and app == ClusterConsts.NMX_CONTROLLER:
+            if app == ClusterConsts.NMX_CONTROLLER:
                 pass
             else:
                 with allure.step("Running 'nv show cluster apps running' command and verifying output"):

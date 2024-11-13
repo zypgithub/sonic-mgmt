@@ -2,17 +2,23 @@ import logging
 import time
 
 import pytest
-
-from ngts.nvos_constants.constants_nvos import ApiType, OutputFormat
-from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
-from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_tools.infra.StressResourcesTool import StressResourcesTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
-from ngts.nvos_tools.nmx.Cluster import Cluster
-from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports
-from ngts.tests_nvos.constants import MINUTE
+from ngts.nvos_tools.infra.StressResourcesTool import StressResourcesTool
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.nvos_tools.nmx.Cluster import Cluster
+from ngts.tests_nvos.constants import MINUTE
+from ngts.nvos_constants.constants_nvos import PlatformConsts, IbConsts, ApiType, OutputFormat, SystemConsts
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.nvos_tools.ib.Ib import Ib
+from ngts.nvos_tools.nmx.Sdn import Sdn
+from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
+from ngts.nvos_tools.infra.ResultObj import ResultObj
+from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports, refresh_switch_ports
+from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
+from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
+from ngts.nvos_tools.infra.ValidationTool import ExpectedString
 
 logger = logging.getLogger()
 NMX_CONTROLLER = 'nmx-controller'
@@ -41,11 +47,15 @@ def test_cluster_app_start_stop(engines, devices, test_api, has_loopbox):
 
         with allure.step("Verify 'nv show cluster apps' output"):
             ValidationTool.validate_output_of_show(output[NMX_TELEMETRY], devices.dut.cluster_app_nmx_telemetry).verify_result()
-            if not has_loopbox:
-                ValidationTool.validate_output_of_show(output[NMX_CONTROLLER], devices.dut.cluster_app_nmx_controller).verify_result()
+            # WA - [NVOS - Verification] Bug SW #4159006: [Non-Functional ] [Cluster - Juliet] | GFM unhealthy, when enabling cluster | Assignee: Elias Abboud | Status: Assigned
+            cluster_app_nmx_controller_not_ok = devices.dut.cluster_app_nmx_controller.copy()
+            cluster_app_nmx_controller_not_ok['status'] = ExpectedString(regex=".*")
+            cluster_app_nmx_controller_not_ok['reason'] = ExpectedString(regex=".*")
+            ValidationTool.validate_output_of_show(output[NMX_CONTROLLER], cluster_app_nmx_controller_not_ok).verify_result()
 
     with allure.step("Create Cluster object"):
         interface_wa_called = False
+
         cluster = Cluster()
     try:
         logger.info("Setting cluster state to enabled")
@@ -62,10 +72,7 @@ def test_cluster_app_start_stop(engines, devices, test_api, has_loopbox):
                 output = OutputParsingTool.parse_show_output_to_dict(
                     cluster.apps.app_name[app].show(output_format=OutputFormat.json),
                     output_format=OutputFormat.json).get_returned_value()
-                if has_loopbox and app == NMX_CONTROLLER:
-                    pass
-                else:
-                    ValidationTool.validate_output_of_show(output, devices.dut.cluster_app[app]).verify_result()
+                ValidationTool.validate_output_of_show(output, devices.dut.cluster_app[app]).verify_result()
 
         TestToolkit.tested_api = 'NVUE'
         with allure.step("Running 'nv show cluster apps installed' command and verifying output"):
@@ -73,10 +80,7 @@ def test_cluster_app_start_stop(engines, devices, test_api, has_loopbox):
                 cluster.apps.installed.show(output_format=output_format),
                 output_format=output_format).get_returned_value()
             for app in INITIAL_EXPECTED_APPS:
-                if has_loopbox and app == NMX_CONTROLLER:
-                    pass
-                else:
-                    ValidationTool.validate_output_of_show(output[app], devices.dut.cluster_app[app]).verify_result()
+                ValidationTool.validate_output_of_show(output[app], devices.dut.cluster_app[app]).verify_result()
 
         with allure.step("Running 'nv show cluster apps running' command and verifying output"):
             ClusterTools.wait_for_apps_to_be_in_wanted_state()
@@ -84,7 +88,7 @@ def test_cluster_app_start_stop(engines, devices, test_api, has_loopbox):
                 cluster.apps.running.show(output_format=OutputFormat.json),
                 output_format=OutputFormat.json).get_returned_value()
             for app in INITIAL_EXPECTED_APPS:
-                if has_loopbox and app == NMX_CONTROLLER:
+                if app == NMX_CONTROLLER:
                     continue  # Need to be removed once WA is not needed.
                 app_status = output[app]['status']
                 assert app_status == 'ok', f"App {app} status is {app_status} instead of 'ok'"

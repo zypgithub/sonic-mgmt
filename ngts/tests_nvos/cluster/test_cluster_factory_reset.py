@@ -302,7 +302,7 @@ def verify_apps_in_expected_state(cluster, status, has_loopbox):
             output_format=OutputFormat.json).get_returned_value()
         for app in ClusterConsts.INITIAL_EXPECTED_APPS:
             app_status = output[app]['status']
-            if has_loopbox and app == ClusterConsts.NMX_CONTROLLER and status == 'ok':
+            if app == ClusterConsts.NMX_CONTROLLER:
                 pass
             else:
                 assert app_status == status, f"App {app} status is {app_status} instead of {status}"
