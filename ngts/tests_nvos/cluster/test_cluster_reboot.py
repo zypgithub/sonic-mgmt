@@ -10,6 +10,7 @@ from ngts.tools.test_utils import allure_utils as allure
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports
 from ngts.nvos_constants.constants_nvos import OutputFormat, ApiType
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.tests_nvos.constants import MINUTE
 
 logger = logging.getLogger()
 
