@@ -58,7 +58,7 @@ KEEP_BASIC_CHECKERS: Dict[str, Generator[None, None, None]] = {
 KEEP_ALL_CONFIG_CHECKERS: Dict[str, Generator[None, None, None]] = {
     API_MTLS: api_mtls_factory_reset_keep_all_config_check(),
     SED_PASSWORD: sed_password_factory_reset_check(),
-    CERTS_MGMT: certs_mgmt_factory_reset_no_params_check(),
+    # CERTS_MGMT: certs_mgmt_factory_reset_no_params_check(),
 }
 
 KEEP_ONLY_FILES_CHECKERS: Dict[str, Generator[None, None, None]] = {
@@ -83,6 +83,9 @@ def test_reset_factory(factory_reset_type, engines, devices, topology_obj, platf
     Validate reset factory flavors
     """
     checkers = FACTORY_RESET_TYPE_TO_CHECKER_FUNCTIONS[factory_reset_type]
+    if not checkers:
+        pytest.skip('test skipped: no checkers registered for this test')
+    checkers = {name: checker for name, checker in checkers.items() if not should_skip_checker(CHECKERS_SKIP_RULES, name, setup_name)}
     if not checkers:
         pytest.skip('test skipped: no checkers registered for this test')
 

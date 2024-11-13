@@ -9,6 +9,7 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.certificate.constants import TestCert, GET_SYSTEM_VERSION_PATH, CertMsgs
+from ngts.tests_nvos.helpers.general_helpers import verify_hidden_cmd_args_in_history
 from ngts.tests_nvos.system.gnmi.helpers import get_scp_player
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_general_utils import generate_scp_uri_using_player
@@ -39,9 +40,7 @@ def test_certificate_commands(engines, test_api, test_flow):
         bundle_uri = generate_scp_uri_using_player(player, test_cert.p12_bundle)
         system.security.certificate.cert_id[cert_id_bundle].action_import(uri_bundle=bundle_uri,
                                                                           passphrase=test_cert.p12_password).verify_result()
-        verify_imported_certificate(engines, system, cert_id=cert_id_bundle,
-                                    first_arg=CertificateFiles.PASSPHRASE, second_arg=CertificateFiles.URI_BUNDLE,
-                                    test_api=test_api)
+        verify_imported_certificate(test_api, engines, system, cert_id_bundle, [CertificateFiles.PASSPHRASE, CertificateFiles.URI_BUNDLE], [bundle_uri, test_cert.p12_password])
         cert_list.append(cert_id_bundle)
 
     with allure.step(f'import cert {test_cert.name} named {cert_id_public_private} with public and private key'):
@@ -49,9 +48,7 @@ def test_certificate_commands(engines, test_api, test_flow):
         private_uri = generate_scp_uri_using_player(player, test_cert.private)
         system.security.certificate.cert_id[cert_id_public_private].action_import(uri_private_key=private_uri,
                                                                                   uri_public_key=public_uri).verify_result()
-        verify_imported_certificate(engines, system, cert_id=cert_id_public_private,
-                                    first_arg=CertificateFiles.PRIVATE_KEY_FILE,
-                                    second_arg=CertificateFiles.PUBLIC_KEY_FILE, test_api=test_api)
+        verify_imported_certificate(test_api, engines, system, cert_id_public_private, [CertificateFiles.PRIVATE_KEY_FILE, CertificateFiles.PUBLIC_KEY_FILE], [private_uri, public_uri])
         cert_list.append(cert_id_public_private)
 
     with allure.step(f'Install certificate'):
@@ -99,8 +96,7 @@ def test_ca_certificate_commands(engines, test_api):
     with allure.step(f'import system security ca-certificate {ca_cert_id} with URI'):
         uri = generate_scp_uri_using_player(player, test_cert.public)
         system.security.ca_certificate.cert_id[ca_cert_id].action_import(uri=uri).verify_result()
-        verify_imported_certificate(engines, system, ca_cert_id, CertificateFiles.URI, test_api=test_api,
-                                    check_cacert=True)
+        verify_imported_certificate(test_api, engines, system, ca_cert_id, [CertificateFiles.URI], [uri], True)
 
     with allure.step("Verify certificate installation"):
         _verify_certificate(system, [ca_cert_id], True)
@@ -128,9 +124,7 @@ def test_import_certificate_with_long_passphrase(test_api, test_flow, engines):
         bundle_uri = generate_scp_uri_using_player(player, test_cert.p12_bundle)
         system.security.certificate.cert_id[cert_id_bundle].action_import(uri_bundle=bundle_uri,
                                                                           passphrase=test_cert.p12_password).verify_result()
-        verify_imported_certificate(engines, system, cert_id=cert_id_bundle,
-                                    first_arg=CertificateFiles.PASSPHRASE, second_arg=CertificateFiles.URI_BUNDLE,
-                                    test_api=test_api)
+        verify_imported_certificate(test_api, engines, system, cert_id_bundle, [CertificateFiles.PASSPHRASE, CertificateFiles.URI_BUNDLE], [bundle_uri, test_cert.p12_password])
 
     with allure.step(f'Install certificate'):
         system.api.set(CertificateFiles.CERTIFICATE, cert_id_bundle, apply=True).verify_result()
@@ -187,17 +181,15 @@ def verify_show_security_ouput(system, cert_id, should_exist, check_cacert: bool
             assert cert_id not in show_output, f"Expected not to find {cert_id} in show output. Got: {show_output}"
 
 
-def verify_imported_certificate(engines, system, cert_id, first_arg, test_api, second_arg="",
-                                check_cacert: bool = False):
+def verify_imported_certificate(test_api, engines, system, cert_id, hidden_args, hidden_values, check_cacert: bool = False):
     verify_show_security_ouput(system, cert_id, True, check_cacert)
 
     if test_api == ApiType.NVUE:
         with allure.step('verify the password is hidden in the logs'):
-            with allure.step('Check history command'):
-                history_output = engines.dut.run_cmd('history 4')
-                str_to_serach = f"{first_arg} *" + (f" {second_arg} *" if second_arg else "")
-                assert str_to_serach in history_output, "the password is not hidden in 'history' command"
-            with allure.step('Check logs'):
+            with allure.independent_step('verify in history'):
+                verify_hidden_cmd_args_in_history(engines.dut, 4, 'nv', hidden_args, hidden_values)
+            with allure.independent_step('Check logs'):
+                str_to_serach = f"{hidden_args[0]} *" + (f" {hidden_args[1]} *" if len(hidden_args) > 1 else "")
                 logs_output = engines.dut.run_cmd(f'tail -4 {SyslogConsts.NVUE_LOG_PATH}')
                 logs_output_1 = engines.dut.run_cmd(f'tail -4 {SyslogConsts.NVUE_LOG_PATH}.1')
                 assert str_to_serach in logs_output or str_to_serach in logs_output_1, "the password is not hidden in syslog"

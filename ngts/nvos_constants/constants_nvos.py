@@ -199,6 +199,12 @@ class RebootTestFlowType:
     ALL_TYPES = [WITH_SAVE, NO_SAVE]
 
 
+class CacertType:
+    GLOBAL = 'global'
+    EXTERNAL = 'external'
+    ALL_TYPES = [GLOBAL, EXTERNAL]
+
+
 class OutputFormat:
     auto = 'auto'
     json = 'json'

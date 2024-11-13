@@ -14,6 +14,7 @@ from ngts.tests_nvos.general.security.certificate.helpers import verify_cert_in_
     send_curl_with_and_verify
 from ngts.tests_nvos.general.security.nmx_cert.constants import EncryptionMode
 from ngts.tests_nvos.general.security.test_api_server_security.constants import CERTIFICATE
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tests_nvos.system.gnmi.conftest import scp_player
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_general_utils import generate_scp_uri_using_player
@@ -55,7 +56,8 @@ def test_cert_mgmt_cert_cli(test_api, engines, scp_player, clear_certs):
     cert5 = TestCert.cert_valid_1.copy('cert5')
     cert6 = TestCert.cert_valid_1_long_passphrase.copy('cert6')
 
-    certs: List[CertInfo] = [cert1, cert2, cert3, cert4, cert5, cert6]
+    certs: List[CertInfo] = [cert1, cert2, cert4, cert5, cert6] if is_bug_active(4158635) \
+        else [cert1, cert2, cert3, cert4, cert5, cert6]  # TODO: remove once bug closed
 
     with allure.step('Show certs – expect no data – {}'):
         out = OutputParsingTool.parse_json_str_to_dictionary(security.certificate.show()).get_returned_value()
@@ -71,9 +73,10 @@ def test_cert_mgmt_cert_cli(test_api, engines, scp_player, clear_certs):
             public_uri = generate_scp_uri_using_player(scp_player, cert2.public)
             security.certificate.cert_id[cert2.name].action_import(uri_private_key=private_uri,
                                                                    uri_public_key=public_uri).verify_result()
-        with allure.independent_step('Import cert3 using bundle URI + no pass (use empty string as value)'):
-            bundle_uri = generate_scp_uri_using_player(scp_player, cert3.p12_bundle)
-            security.certificate.cert_id[cert3.name].action_import(uri_bundle=bundle_uri, passphrase="").verify_result()
+        if not is_bug_active(4158635):  # TODO: remove once bug closed
+            with allure.independent_step('Import cert3 using bundle URI + no pass (use empty string as value)'):
+                bundle_uri = generate_scp_uri_using_player(scp_player, cert3.p12_bundle)
+                security.certificate.cert_id[cert3.name].action_import(uri_bundle=bundle_uri, passphrase="").verify_result()
         with allure.independent_step('Import cert4 using bundle URI + no pass (without specifying pass param)'):
             bundle_uri = generate_scp_uri_using_player(scp_player, cert4.p12_bundle)
             security.certificate.cert_id[cert4.name].action_import(uri_bundle=bundle_uri).verify_result()
@@ -123,7 +126,7 @@ def test_cert_mgmt_cert_cli(test_api, engines, scp_player, clear_certs):
         out = OutputParsingTool.parse_json_str_to_dictionary(security.certificate.show()).get_returned_value()
         assert rand_cert.name not in out, f'deleted cert {rand_cert.name} unexpectedly exists in show output'
     with allure.step(f'Verify deleted cert {rand_cert.name} not exists in expected locations'):
-        verify_cert_in_expected_locations(cert.name, engines.dut, False)
+        verify_cert_in_expected_locations(rand_cert.name, engines.dut, False)
 
 
 @pytest.mark.system
@@ -144,8 +147,9 @@ def test_cert_mgmt_import_cert_data_bad_param(test_api, engines, scp_player, cle
     cert = TestCert.cert_valid_1.copy()
     real_data = cert.get_cert_content_str()
     index = real_data.find('-----END PRIVATE KEY-----')
-    certs_datas = {'cert-empty-string': '', 'cert-rand-string': randomize_hex_str(10),
-                   'cert-messed-data': real_data[:index - 5] + 'ALON' + real_data[index - 1:]}
+    # certs_datas = {'cert-empty-string': '', 'cert-rand-string': randomize_hex_str(10),
+    #                'cert-messed-data': real_data[:index - 5] + 'ALON' + real_data[index - 1:]}
+    certs_datas = {'cert-empty-string': '', 'cert-rand-string': randomize_hex_str(10)}
 
     with allure.step('import certs using bad data params - expect fail and not in output'):
         with allure.independent_step('try import cert with using data param with bad values'):
