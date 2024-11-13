@@ -25,8 +25,8 @@ class Environment(BaseComponent):
     def set(self, op_param_name="", op_param_value={}):
         raise Exception("set is not implemented")
 
-    def get_available_psus(self):
-        """Returns a list of all PSUs (as strings) whose status is 'ok'."""
-        output = OutputParsingTool.parse_json_str_to_dictionary(
-            self.psu.show(f"--filter '{PlatformConsts.INV_STATE}={PlatformConsts.INV_OK}'")).get_returned_value()
-        return list(output.keys())
+    def get_available_psus(self, invert=False):
+        """Returns a list of all PSUs (as strings) whose status is 'ok'. If invert=True return all other PSUs instead"""
+        output = OutputParsingTool.parse_json_str_to_dictionary(self.psu.show()).get_returned_value()
+        return list(psu for psu, fields in output.items() if (
+            fields[PlatformConsts.INV_STATE] == PlatformConsts.INV_OK) != invert)
