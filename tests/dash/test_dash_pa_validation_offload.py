@@ -10,12 +10,10 @@ from constants import LOCAL_PTF_INTF
 from gnmi_utils import apply_messages
 from copy import deepcopy
 from packets import outbound_pl_packets
-from tests.smart_switch.conftest import SMARTSWITCH_PLATFORMS, skip_unsupported_platform, platform # noqa F401
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 from tests.common.helpers.assertions import pytest_assert
 from tests.common import config_reload
-from tests.smart_switch.conftest import dpuhosts, copy_proxy_ssh
 
 
 ACL_TABLE_KEY_PATTERN = "ACL_TABLE_TABLE:DASH_PA_VALIDATION_DPU"
@@ -31,17 +29,21 @@ pytestmark = [
 
 
 @pytest.fixture(scope="module")
-def apply_basic_config(duthost, dpuhosts, dpu_index, another_dpu_index):
+def dpu_duts(dpuhosts, dpuhost):
+    next_dpuhost = dpuhosts[(dpuhost.dpu_index + 1) % len(dpuhosts)]
+    return [dpuhost, next_dpuhost]
+
+
+@pytest.fixture(scope="module")
+def apply_basic_config(duthost, dpu_duts):
     ptf_gateway_ip = "10.0.0.1"
-    dpu_dut_indexes = [dpu_index, another_dpu_index]
-    for index in dpu_dut_indexes:
-        dpuhost = dpuhosts[index]
-        loopback0_ip = eval(f"pl_config_eni{index - dpu_index}").SIP
+    for index, dpuhost in enumerate(dpu_duts):
+        loopback0_ip = eval(f"pl_config_eni{index}").SIP
         npu_data_port_ip = dpuhost.npu_data_port_ip
         dpu_data_port_ip = dpuhost.dpu_data_port_ip
         dataplane_mask_length = dpuhost.dataplane_mask_length
-        dpu_npu_port_name = dpuhost.data_port
-        outbound_underlay_ip = eval(f"pl_config_eni{index - dpu_index}").OUTBOUND_UNDERLAY_IP
+        dpu_npu_port_name = dpuhost.data_port_on_npu
+        outbound_underlay_ip = eval(f"pl_config_eni{index}").OUTBOUND_UNDERLAY_IP
         underlay_outbound_to_ptf_route_subnet = ip_network(f'{outbound_underlay_ip}/32').supernet(
             prefixlen_diff=8)
 
@@ -61,7 +63,9 @@ def apply_basic_config(duthost, dpuhosts, dpu_index, another_dpu_index):
         duthost.shell(f"ip route add {underlay_outbound_to_ptf_route_subnet} via {ptf_gateway_ip}")
 
         logger.info("Add ip default route via Ethernet0")
-        dpuhost.shell(f"sudo ip route add default via {npu_data_port_ip} dev Ethernet0")
+        pl_config = eval(f"pl_config_eni{index}")
+        dpuhost.shell(
+            f"sudo ip route add {pl_config.OUTBOUND_UNDERLAY_IP}/32 via {npu_data_port_ip} dev Ethernet0")
 
     yield
 
@@ -69,19 +73,20 @@ def apply_basic_config(duthost, dpuhosts, dpu_index, another_dpu_index):
     if is_redmine_issue_active([4125251, 4129123])[0]:
         return
 
-    for index in dpu_dut_indexes:
-        dpuhost = dpuhosts[dpu_index]
-        loopback0_ip = eval(f"pl_config_eni{index - dpu_index}").SIP
+    for index, dpuhost in enumerate(dpu_duts):
+        loopback0_ip = eval(f"pl_config_eni{index}").SIP
         npu_data_port_ip = dpuhost.npu_data_port_ip
         dpu_data_port_ip = dpuhost.dpu_data_port_ip
         dataplane_mask_length = dpuhost.dataplane_mask_length
-        dpu_npu_port_name = dpuhost.data_port
-        outbound_underlay_ip = eval(f"pl_config_eni{index - dpu_index}").OUTBOUND_UNDERLAY_IP
+        dpu_npu_port_name = dpuhost.data_port_on_npu
+        outbound_underlay_ip = eval(f"pl_config_eni{index}").OUTBOUND_UNDERLAY_IP
         underlay_outbound_to_ptf_route_subnet = ip_network(f'{outbound_underlay_ip}/32').supernet(
             prefixlen_diff=8)
 
         logger.info("Remove ip default route via Ethernet0")
-        dpuhost.shell(f"sudo ip route del default via {npu_data_port_ip} dev Ethernet0")
+        pl_config = eval(f"pl_config_eni{index}")
+        dpuhost.shell(
+            f"sudo ip route del {pl_config.OUTBOUND_UNDERLAY_IP}/32 via {npu_data_port_ip} dev Ethernet0")
 
         logger.info("Remove underlay outbound to ptf route")
         duthost.shell(f"ip route del {underlay_outbound_to_ptf_route_subnet} via {ptf_gateway_ip}")
@@ -132,16 +137,16 @@ def apply_pl_config(localhost, duthost, ptfhost, dpu_index, pl_config):
 
 
 @pytest.fixture(scope="module", autouse=True)
-def common_setup_teardown(localhost, duthost, ptfhost, dpu_index, another_dpu_index, dpuhosts, apply_basic_config):
-    messages = apply_pl_config(localhost, duthost, ptfhost, dpu_index, pl_config_eni0)
+def common_setup_teardown(localhost, duthost, ptfhost, dpu_duts, apply_basic_config):
+    messages = apply_pl_config(localhost, duthost, ptfhost, dpu_duts[0].dpu_index, pl_config_eni0)
 
     yield
 
     logger.info(f"Clean the pl config: {messages}")
     if is_redmine_issue_active([4125251, 4129123])[0]:
-        config_reload_dpu_and_switch(duthost, [dpuhosts[dpu_index], dpuhosts[another_dpu_index]])
+        config_reload_dpu_and_switch(duthost, dpu_duts)
     else:
-        apply_messages(localhost, duthost, ptfhost, messages, dpu_index, set=False)
+        apply_messages(localhost, duthost, ptfhost, messages, dpu_duts[0].dpu_index, set=False)
 
 
 def toggle_dpu_control_plane_state(duthost, state, dpu_index_list):
@@ -163,21 +168,16 @@ def config_reload_dpu_and_switch(duthost, dpuhost_ist):
     config_reload(duthost, safe_reload=True)
 
 
-@pytest.fixture(scope="module")
-def another_dpu_index(dpu_index, dpuhosts):
-    return (dpu_index + 1) % len(dpuhosts)
-
-
 @pytest.fixture(scope="function", autouse=True)
-def pa_validation_case_teardown(request, localhost, duthost, ptfhost, dpu_index, another_dpu_index):
+def pa_validation_case_teardown(request, localhost, duthost, ptfhost, dpu_duts):
 
     yield
 
-    clean_pa_validation_entries(localhost, duthost, ptfhost, dpu_index)
+    clean_pa_validation_entries(localhost, duthost, ptfhost, dpu_duts[0].dpu_index)
     if "multi_vni" in request.node.name:
-        clean_pa_validation_entries(localhost, duthost, ptfhost, dpu_index, vni=66666)
+        clean_pa_validation_entries(localhost, duthost, ptfhost, dpu_duts[0].dpu_index, vni=66666)
     if "multi_dpu" in request.node.name:
-        clean_pa_validation_entries(localhost, duthost, ptfhost, another_dpu_index)
+        clean_pa_validation_entries(localhost, duthost, ptfhost, dpu_duts[1].dpu_index)
 
 
 @pytest.fixture(scope="module")
@@ -236,8 +236,9 @@ def check_no_acl_rules_in_db(duthost, dpu_index):
                   f"There are acl entries not cleaned for dpu{dpu_index}:\n{acl_entries_in_db}")
 
 
-def test_pa_validation_single_dpu_single_vni(ptfadapter, dash_pl_config, dpu_index,
-                                             localhost, duthost, ptfhost, expected_ptf_ports):
+def test_pa_validation_single_dpu_single_vni(ptfadapter, dash_pl_config, localhost, dpu_duts,
+                                             duthost, ptfhost, expected_ptf_ports):
+    dpu_index = dpu_duts[0].dpu_index
     with allure.step("Add pa validation entries"):
         add_pa_validation_entries(localhost, duthost, ptfhost, dpu_index, [pl_config_eni0.INBOUND_UNDERLAY_IP])
     with allure.step("Check the ACL entries in db"):
@@ -276,8 +277,9 @@ def test_pa_validation_single_dpu_single_vni(ptfadapter, dash_pl_config, dpu_ind
         testutils.verify_no_packet_any(ptfadapter, exp_pkt, ports=expected_ptf_ports)
 
 
-def test_pa_validation_single_dpu_multi_vni(ptfadapter, dash_pl_config, dpu_index,
+def test_pa_validation_single_dpu_multi_vni(ptfadapter, dash_pl_config, dpu_duts,
                                             localhost, duthost, ptfhost, expected_ptf_ports):
+    dpu_index = dpu_duts[0].dpu_index
     with allure.step("Add pa validation entries for 2 VNIs on a same DPU"):
         add_pa_validation_entries(localhost, duthost, ptfhost, dpu_index, [pl_config_eni0.INBOUND_UNDERLAY_IP])
         dummy_vni = 66666
@@ -313,8 +315,10 @@ def test_pa_validation_single_dpu_multi_vni(ptfadapter, dash_pl_config, dpu_inde
         testutils.verify_no_packet_any(ptfadapter, exp_pkt, ports=expected_ptf_ports)
 
 
-def test_pa_validation_multi_dpu(ptfadapter, dash_pl_config, dpu_index, another_dpu_index,
+def test_pa_validation_multi_dpu(ptfadapter, dash_pl_config, dpu_duts,
                                  localhost, duthost, ptfhost, expected_ptf_ports):
+    dpu_index = dpu_duts[0].dpu_index
+    another_dpu_index = dpu_duts[1].dpu_index
     with allure.step("Apply the dash config for another ENI on another DPU"):
         messages = apply_pl_config(localhost, duthost, ptfhost, another_dpu_index, pl_config_eni1)
     with allure.step("Apply the pa validation entries for both ENIs"):
@@ -374,7 +378,9 @@ def test_pa_validation_multi_dpu(ptfadapter, dash_pl_config, dpu_index, another_
             apply_messages(localhost, duthost, ptfhost, messages, another_dpu_index, set=False)
 
 
-def test_pa_validation_dpu_shutdown(localhost, duthost, ptfhost, dpu_index, another_dpu_index):
+def test_pa_validation_dpu_shutdown(localhost, duthost, ptfhost, dpu_duts):
+    dpu_index = dpu_duts[0].dpu_index
+    another_dpu_index = dpu_duts[1].dpu_index
     with allure.step("Add the pa validation entry for two DPUs"):
         add_pa_validation_entries(localhost, duthost, ptfhost, dpu_index, [pl_config_eni0.INBOUND_UNDERLAY_IP])
         add_pa_validation_entries(localhost, duthost, ptfhost, another_dpu_index, [pl_config_eni1.INBOUND_UNDERLAY_IP])

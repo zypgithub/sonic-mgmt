@@ -7,10 +7,8 @@ import time
 from constants import LOCAL_PTF_INTF, REMOTE_PTF_INTF
 from configs import vnet_to_vnet_config
 from gnmi_utils import apply_messages
-from tests.smart_switch.conftest import SMARTSWITCH_PLATFORMS, copy_proxy_ssh, skip_unsupported_platform, platform # noqa F401
-from ipaddress import ip_interface, ip_network
+from ipaddress import ip_network
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
-from tests.smart_switch.conftest import dpuhost
 
 VIP = "10.2.0.1"
 
@@ -23,16 +21,16 @@ pytestmark = [
 
 
 @pytest.fixture(scope="module")
-def apply_switch_basic_config(duthost, dpu_index, dpuhost):
+def apply_switch_basic_config(duthost, dpuhost):
     logger.info("Add ip to npu dpu data port")
     duthost.shell(
-        f'sudo config interface ip add {dpuhost.data_port} {dpuhost.npu_data_port_ip}/{dpuhost.dataplane_mask_length}')
+        f'sudo config interface ip add {dpuhost.data_port_on_npu} {dpuhost.npu_data_port_ip}/{dpuhost.dataplane_mask_length}')
 
     yield
 
     logger.info("Remove the ip of npu dpu data port")
     duthost.shell(f'sudo config interface ip remove '
-                  f'{dpuhost.data_port} {dpuhost.npu_data_port_ip}/{dpuhost.dataplane_mask_length}')
+                  f'{dpuhost.data_port_on_npu} {dpuhost.npu_data_port_ip}/{dpuhost.dataplane_mask_length}')
 
 
 def config_reload_dpu(dpuhost):
@@ -40,8 +38,8 @@ def config_reload_dpu(dpuhost):
     time.sleep(100)
 
 
-@pytest.fixture(scope="module")
-def apply_dpu_basic_config(duthost, dpuhost, apply_switch_basic_config):
+@pytest.fixture(scope="function")
+def apply_dpu_basic_config(dpuhost, apply_switch_basic_config, dash_config_info):
     logger.info("Add ip to Ethernet0")
     npu_data_port_ip = dpuhost.npu_data_port_ip
     dpu_data_port_ip = dpuhost.dpu_data_port_ip
@@ -51,7 +49,7 @@ def apply_dpu_basic_config(duthost, dpuhost, apply_switch_basic_config):
     dpuhost.shell(f"sudo config interface ip add Loopback0 {VIP}/255.255.255.255")
 
     logger.info("Add ip default route via Ethernet0")
-    dpuhost.shell(f"sudo ip route add default via {npu_data_port_ip} dev Ethernet0")
+    dpuhost.shell(f"sudo ip route add {dash_config_info['local_pa_ip']}/32 via {npu_data_port_ip} dev Ethernet0")
 
     yield
 
@@ -65,13 +63,13 @@ def apply_dpu_basic_config(duthost, dpuhost, apply_switch_basic_config):
         return
 
     logger.info("Remove ip default route via Ethernet0")
-    duthost.shell(f"sudo ip route del default via {npu_data_port_ip} dev Ethernet0")
+    dpuhost.shell(f"sudo ip route del {dash_config_info['local_pa_ip']}/32 via {npu_data_port_ip} dev Ethernet0")
 
     logger.info("Remove the ip of Loopback0")
-    duthost.shell(f"sudo config interface ip remove Loopback0 {VIP}/255.255.255.255")
+    dpuhost.shell(f"sudo config interface ip remove Loopback0 {VIP}/255.255.255.255")
 
     logger.info("Remove ip of Ethernet0")
-    duthost.shell(
+    dpuhost.shell(
         f"sudo config interface ip remove Ethernet0 {dpu_data_port_ip}/{dpuhost.dataplane_mask_length}")
 
 
@@ -96,7 +94,7 @@ def add_dpu_static_route(duthost, dpuhost, apply_switch_basic_config, apply_dpu_
 
 
 @pytest.fixture(scope="function")
-def apply_inbound_configs(localhost, duthost, ptfhost, dpuhost, dpu_index):
+def apply_inbound_configs(localhost, duthost, ptfhost, dpuhost):
 
     config_messages = {
         **vnet_to_vnet_config.APPLIANCE_CONFIG,
@@ -110,7 +108,7 @@ def apply_inbound_configs(localhost, duthost, ptfhost, dpuhost, dpu_index):
         **vnet_to_vnet_config.ROUTE_VNET2_CONFIG,
         **vnet_to_vnet_config.ROUTE_RULE_CONFIG,
     }
-    apply_messages(localhost, duthost, ptfhost, config_messages, dpu_index)
+    apply_messages(localhost, duthost, ptfhost, config_messages, dpuhost.dpu_index)
 
     yield
 
@@ -119,7 +117,7 @@ def apply_inbound_configs(localhost, duthost, ptfhost, dpuhost, dpu_index):
         config_reload_dpu(dpuhost)
         return
 
-    apply_messages(localhost, duthost, ptfhost, config_messages, dpu_index, set=False)
+    apply_messages(localhost, duthost, ptfhost, config_messages, dpuhost.dpu_index, set=False)
 
 
 def test_inbound_vnet_pa_validate(ptfadapter, apply_inbound_configs, dash_config_info, acl_default_rule):

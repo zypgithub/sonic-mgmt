@@ -21,59 +21,49 @@ pytestmark = [
 
 
 @pytest.fixture(scope="module")
-def dpu_mgmt_ip(duthost, dpu_index):
-    return f"169.254.200.{dpu_index + 1}"
-
-
-@pytest.fixture(scope="module")
-def dpu_npu_port_name(duthost, dpu_index):
-    return "Ethernet232"
-
-
-@pytest.fixture(scope="module")
-def apply_switch_basic_config(duthost, dpu_index, dpu_npu_port_name, npu_interface_ip):
+def apply_switch_basic_config(duthost, dpuhost, npu_interface_ip):
     logger.info("Add ip to npu dpu data port")
-    cmd_add_npu_dpu_port_ip = f'sudo config interface ip add {dpu_npu_port_name} {npu_interface_ip}/31'
+    cmd_add_npu_dpu_port_ip = f'sudo config interface ip add {dpuhost.data_port_on_npu} {npu_interface_ip}/31'
     duthost.shell(cmd_add_npu_dpu_port_ip)
 
     yield
 
     logger.info("Remove the ip of npu dpu data port")
-    cmd_remove_npu_dpu_port_ip = f'sudo config interface ip Remove {dpu_npu_port_name} {npu_interface_ip}/31'
+    cmd_remove_npu_dpu_port_ip = f'sudo config interface ip Remove {dpuhost.data_port_on_npu} {npu_interface_ip}/31'
     duthost.shell(cmd_remove_npu_dpu_port_ip)
 
 
 @pytest.fixture(scope="module")
-def apply_dpu_basic_config(duthost, dpu_mgmt_ip, dpu_ip, npu_interface_ip, apply_switch_basic_config):
+def apply_dpu_basic_config(dpuhost, dpu_ip, npu_interface_ip, apply_switch_basic_config):
     logger.info("Add ip to Ethernet0")
     cmd_add_data_port_ip = f"sudo config interface ip  add Ethernet0 {dpu_ip}/31"
-    duthost.shell(f'sudo proxy_ssh.py --dpu-mgmt-ip {dpu_mgmt_ip} --cmd "{cmd_add_data_port_ip}" --validate')
+    dpuhost.shell(cmd_add_data_port_ip)
 
     logger.info("Add ip to Loopback0")
     cmd_add_l0_ip = f"sudo config interface ip  add Loopback0 {pl.SIP}/255.255.255.255"
-    duthost.shell(f'sudo proxy_ssh.py --dpu-mgmt-ip {dpu_mgmt_ip} --cmd "{cmd_add_l0_ip}" --validate')
+    dpuhost.shell(cmd_add_l0_ip)
 
     logger.info("Add ip default route via Ethernet0")
-    cmd_add_npu_neig_route = f"sudo ip route add default via {npu_interface_ip} dev Ethernet0"
-    duthost.shell(f'sudo proxy_ssh.py --dpu-mgmt-ip {dpu_mgmt_ip} --cmd "{cmd_add_npu_neig_route}" --validate')
+    cmd_add_npu_neig_route = f"sudo ip route add {pl.OUTBOUND_UNDERLAY_IP}/32 via {npu_interface_ip} dev Ethernet0"
+    dpuhost.shell(cmd_add_npu_neig_route)
 
     yield
 
     if not is_redmine_issue_active([4125251])[0]:
         if is_redmine_issue_active([4129123])[0]:
-            config_reload_dpu(duthost, dpu_mgmt_ip)
+            config_reload_dpu(dpuhost)
         else:
             logger.info("Remove ip default route via Ethernet0")
             cmd_del_npu_neig_route = f"sudo ip route del default via {npu_interface_ip} dev Ethernet0"
-            duthost.shell(f'sudo proxy_ssh.py --dpu-mgmt-ip {dpu_mgmt_ip} --cmd "{cmd_del_npu_neig_route}" --validate')
+            dpuhost.shell(cmd_del_npu_neig_route)
 
             logger.info("Remove the ip of Loopback0")
             cmd_remove_l0_ip = f"sudo config interface ip  remove Loopback0 {pl.SIP}/255.255.255.255"
-            duthost.shell(f'sudo proxy_ssh.py --dpu-mgmt-ip {dpu_mgmt_ip} --cmd "{cmd_remove_l0_ip}" --validate')
+            dpuhost.shell(cmd_remove_l0_ip)
 
             logger.info("Remove ip of Ethernet0")
             cmd_remove_data_port_ip = f"sudo config interface ip  remove Ethernet0 {dpu_ip}/31"
-            duthost.shell(f'sudo proxy_ssh.py --dpu-mgmt-ip {dpu_mgmt_ip} --cmd "{cmd_remove_data_port_ip}" --validate')
+            dpuhost.shell(cmd_remove_data_port_ip)
 
 
 @pytest.fixture(scope="module")
@@ -83,7 +73,7 @@ def dpu_ip(npu_interface_ip):
 
 
 @pytest.fixture(scope="module")
-def npu_interface_ip(duthost, dpu_index):
+def npu_interface_ip(duthost):
     npu_interface_ip = ip_interface("10.0.0.74")
     return npu_interface_ip.ip
 
@@ -111,9 +101,9 @@ def add_dpu_static_route(duthost, dpu_ip, apply_switch_basic_config, apply_dpu_b
 
 
 @pytest.fixture(autouse=True)
-def common_setup_teardown(localhost, duthost, ptfhost, dpu_index, dpu_mgmt_ip):
+def common_setup_teardown(localhost, duthost, ptfhost, dpuhost):
     logger.info(pl.ROUTING_TYPE_PL_CONFIG)
-    apply_messages(localhost, duthost, ptfhost, pl.ROUTING_TYPE_PL_CONFIG, dpu_index)
+    apply_messages(localhost, duthost, ptfhost, pl.ROUTING_TYPE_PL_CONFIG, dpuhost.dpu_index)
     messages1 = {
         **pl.APPLIANCE_CONFIG,
         **pl.VNET_CONFIG,
@@ -123,7 +113,7 @@ def common_setup_teardown(localhost, duthost, ptfhost, dpu_index, dpu_mgmt_ip):
     }
 
     logger.info(messages1)
-    apply_messages(localhost, duthost, ptfhost, messages1, dpu_index)
+    apply_messages(localhost, duthost, ptfhost, messages1, dpuhost.dpu_index)
 
     messages2 = {
         **pl.ROUTE_VNET_CONFIG,
@@ -131,28 +121,28 @@ def common_setup_teardown(localhost, duthost, ptfhost, dpu_index, dpu_mgmt_ip):
     }
 
     logger.info(messages2)
-    apply_messages(localhost, duthost, ptfhost, messages2, dpu_index)
+    apply_messages(localhost, duthost, ptfhost, messages2, dpuhost.dpu_index)
 
     yield
 
     if is_redmine_issue_active([4125251])[0]:
-        config_reload_dpu(duthost, dpu_mgmt_ip)
+        config_reload_dpu(dpuhost)
     else:
 
         logger.info(f"recover messages2: {messages2}")
-        apply_messages(localhost, duthost, ptfhost, messages2, dpu_index, set=False)
+        apply_messages(localhost, duthost, ptfhost, messages2, dpuhost.dpu_index, set=False)
 
 
         logger.info(f"recover messages1: {messages1}")
-        apply_messages(localhost, duthost, ptfhost, messages1, dpu_index, set=False)
+        apply_messages(localhost, duthost, ptfhost, messages1, dpuhost.dpu_index, set=False)
 
         logger.info(f"recover pl.ROUTING_TYPE_PL_CONFIG: {pl.ROUTING_TYPE_PL_CONFIG}")
-        apply_messages(localhost, duthost, ptfhost, pl.ROUTING_TYPE_PL_CONFIG, dpu_index, set=False)
+        apply_messages(localhost, duthost, ptfhost, pl.ROUTING_TYPE_PL_CONFIG, dpuhost.dpu_index, set=False)
 
 
-def config_reload_dpu(duthost, dpu_mgmt_ip):
+def config_reload_dpu(dpuhost):
     cmd_del_npu_neig_route = f"sudo config reload -y -f"
-    duthost.shell(f'sudo proxy_ssh.py --dpu-mgmt-ip {dpu_mgmt_ip} --cmd "{cmd_del_npu_neig_route}" --validate')
+    dpuhost.shell(cmd_del_npu_neig_route)
     time.sleep(100)
 
 

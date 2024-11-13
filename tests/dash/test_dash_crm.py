@@ -11,10 +11,10 @@ from tests.common.errors import RunAnsibleModuleFail
 from gnmi_utils import apply_messages
 from tests.common.helpers.crm import get_used_percent, CRM_UPDATE_TIME, CRM_POLLING_INTERVAL, \
     EXPECT_EXCEEDED, EXPECT_CLEAR, THR_VERIFY_CMDS
-from tests.smart_switch.conftest import SMARTSWITCH_PLATFORMS, dpuhosts, copy_proxy_ssh, skip_unsupported_platform, platform # noqa F401
 from configs import dash_crm_config
 from tests.common.helpers.assertions import pytest_assert
 from tests.common.utilities import wait_until
+from tests.common.plugins.loganalyzer.loganalyzer import LogAnalyzer
 
 logger = logging.getLogger(__name__)
 
@@ -57,37 +57,9 @@ CONFIG_MESSAGES = {
     **dash_crm_config.ROUTE_ACL_GROUP2_RULE2_CONFIG
 }
 
-DASH_CONFIG_LIST_FOR_CLEANUP = [
-    {
-        **dash_crm_config.ROUTE_ACL_GROUP1_RULE1_CONFIG,
-        **dash_crm_config.ROUTE_ACL_GROUP2_RULE1_CONFIG,
-        **dash_crm_config.ROUTE_ACL_GROUP2_RULE2_CONFIG
-    },
-    {
-        **dash_crm_config.ROUTE_ACL_GROUP1_CONFIG,
-        **dash_crm_config.ROUTE_ACL_GROUP2_CONFIG,
-        **dash_crm_config.ROUTE_RULE_CONFIG,
-        **dash_crm_config.ROUTE_VNET_CONFIG
-    },
-    {
-        **dash_crm_config.ROUTE_GROUP_CONFIG,
-        **dash_crm_config.VNET_MAPPING_CONFIG,
-        **dash_crm_config.ROUTING_TYPE_CONFIG
-    },
-    {
-        **dash_crm_config.ENI_CONFIG
-    },
-    {
-        **dash_crm_config.QOS_CONFIG,
-        **dash_crm_config.VNET1_CONFIG,
-        **dash_crm_config.VNET2_CONFIG,
-        **dash_crm_config.APPLIANCE_CONFIG
-    }
-]
-
 
 @pytest.fixture(scope="class")
-def set_polling_interval(duthost, dpuhost):
+def set_polling_interval(dpuhost):
     """
     Set CRM polling interval
     """
@@ -103,7 +75,7 @@ def set_polling_interval(duthost, dpuhost):
 
 
 @pytest.fixture(scope="class", autouse=True)
-def disable_logrotate_cron(duthost, dpuhost):
+def disable_logrotate_cron(dpuhost):
     logging.info("Disable DPU logrotate cron task / systemd timer "
                  "and make sure the running logrotate is stopped.")
     dpuhost.shell("sudo systemctl stop logrotate.timer", module_ignore_errors=True)
@@ -293,7 +265,7 @@ def get_crm_facts(dpuhost):
 
 
 @pytest.fixture(scope="class")
-def default_crm_facts(dpuhost, set_polling_interval, dpu_mgmt_ip):
+def default_crm_facts(dpuhost, set_polling_interval):
     """
     Get CRM configuration before test
     """
@@ -302,24 +274,23 @@ def default_crm_facts(dpuhost, set_polling_interval, dpu_mgmt_ip):
 
 
 @pytest.fixture(scope="class")
-def apply_resources_configs(default_crm_facts, localhost, duthost, ptfhost, dpu_index):
+def apply_resources_configs(default_crm_facts, localhost, duthost, ptfhost, dpuhost):
     """
     Apply CRM configuration before run test
     """
     logger.info("Apply the dash configurations.")
-    apply_messages(localhost, duthost, ptfhost, CONFIG_MESSAGES, dpu_index)
+    apply_messages(localhost, duthost, ptfhost, CONFIG_MESSAGES, dpuhost.dpu_index)
     pytest.crm_res_cleanup_required = True
 
     yield
 
     if pytest.crm_res_cleanup_required:
-        for config_item in DASH_CONFIG_LIST_FOR_CLEANUP:
-            apply_messages(localhost, duthost, ptfhost, config_item, dpu_index, set=False)
+        apply_messages(localhost, duthost, ptfhost, CONFIG_MESSAGES, dpuhost.dpu_index, set=False)
     del pytest.crm_res_cleanup_required
 
 
 @pytest.fixture(scope="class", autouse=True)
-def cleanup(duthost, dpuhost):
+def cleanup(dpuhost):
     """
     Restore original CLI CRM thresholds
     """
@@ -337,14 +308,14 @@ def cleanup(duthost, dpuhost):
 class TestDashCRM:
 
     @pytest.fixture(autouse=True)
-    def setup(self, localhost, duthost, ptfhost, default_crm_facts, apply_resources_configs, dpuhost, dpu_index):
+    def setup(self, localhost, duthost, ptfhost, default_crm_facts, apply_resources_configs, dpuhost):
         self.duthost = duthost
         self.dpuhost = dpuhost
         self.ptfhost = ptfhost
         self.localhost = localhost
         self.default_crm_facts = default_crm_facts
         self.crm_facts = get_crm_facts(dpuhost)
-        self.dpu_index = dpu_index
+        self.dpu_index = dpuhost.dpu_index
         self.vnets_num = 2
         self.eni_num = 1
         self.eni_eth_addr_num = 1
@@ -499,7 +470,7 @@ class TestDashCRM:
             pytest.skip("IPv6 not supported yet")
 
         crm_table_res_name = f"dash_{ip_ver}_acl_rule"
-        crm_facts = get_crm_facts(self.duthost, self.dpu_mgmt_ip)
+        crm_facts = get_crm_facts(self.dpuhost)
         dash_acl_group = crm_facts["dash_acl_group"]
 
         assert len(dash_acl_group) == self.acl_groups_num, \
@@ -533,7 +504,7 @@ class TestDashCRM:
 
     def test_crm_dram_counters(self):
         with allure.step('Get the DRAM crm counters'):
-            crm_facts = get_crm_facts(self.duthost, self.dpu_mgmt_ip)
+            crm_facts = get_crm_facts(self.dpuhost)
             used_count = crm_facts["resources"]["dram"]["used"]
             available_count = crm_facts["resources"]["dram"]["available"]
         with allure.step('Consume the memory by 1024M at maximum'):
@@ -575,8 +546,7 @@ class TestDashCRM:
         """
         Validate that after cleanup CRM resources - CRM output the same as it was before test case(without config)
         """
-        for config_item in DASH_CONFIG_LIST_FOR_CLEANUP:
-            apply_messages(self.localhost, self.duthost, self.ptfhost, config_item, self.dpu_index, set=False)
+        apply_messages(self.localhost, self.duthost, self.ptfhost, CONFIG_MESSAGES, self.dpu_index, set=False)
 
         pytest.crm_res_cleanup_required = False
 
@@ -633,8 +603,8 @@ def verify_thresholds(dpuhost, **kwargs):
     Verifies the following threshold parameters: actual used, actual free
     """
 
+    loganalyzer = LogAnalyzer(ansible_host=dpuhost, marker_prefix='dash_crm_test')
     thr_verify_cmds = kwargs.get("thr_verify_cmds", DASH_THR_VERIFY_CMDS)
-    expect_regex = []
 
     if kwargs["res_name"] == "dram":
         kwargs["dram_margin"] = 204800
@@ -648,40 +618,38 @@ def verify_thresholds(dpuhost, **kwargs):
             template = Template(value)
             if "exceeded" in key:
                 if "exceeded_used" in key and kwargs.get("ex_us_exp_regexp_list"):
-                    expect_regex = kwargs.get("ex_us_exp_regexp_list")
+                    loganalyzer.expect_regex = kwargs.get("ex_us_exp_regexp_list")
                 elif "exceeded_free" in key and kwargs.get("ex_free_exp_regexp_list"):
-                    expect_regex = kwargs.get("ex_free_exp_regexp_list")
+                    loganalyzer.expect_regex = kwargs.get("ex_free_exp_regexp_list")
                 else:
-                    expect_regex = [EXPECT_EXCEEDED]
+                    loganalyzer.expect_regex = [EXPECT_EXCEEDED]
             elif "clear" in key:
                 if "clear_used" in key and kwargs.get("cl_us_exp_regexp_list"):
-                    expect_regex = kwargs.get("cl_us_exp_regexp_list")
+                    loganalyzer.expect_regex = kwargs.get("cl_us_exp_regexp_list")
                 elif "clear_free" in key and kwargs.get("cl_free_exp_regexp_list"):
-                    expect_regex = kwargs.get("cl_free_exp_regexp_list")
+                    loganalyzer.expect_regex = kwargs.get("cl_free_exp_regexp_list")
                 else:
-                    expect_regex = [EXPECT_CLEAR]
+                    loganalyzer.expect_regex = [EXPECT_CLEAR]
 
             if "percentage" in key:
                 used_percent = get_used_percent(kwargs["crm_used"], kwargs["crm_avail"])
                 if key == "exceeded_percentage":
                     kwargs["th_lo"] = max(used_percent - 1 - dram_percent_margin * 2, 0)
                     kwargs["th_hi"] = max(used_percent - dram_percent_margin, 0)
-                    expect_regex = [EXPECT_EXCEEDED]
+                    loganalyzer.expect_regex = [EXPECT_EXCEEDED]
                 elif key == "clear_percentage":
                     kwargs["th_lo"] = min(used_percent + dram_percent_margin, 100)
                     kwargs["th_hi"] = min(used_percent + 1 + dram_percent_margin * 2, 100)
-                    expect_regex = [EXPECT_CLEAR]
+                    loganalyzer.expect_regex = [EXPECT_CLEAR]
 
             kwargs["crm_cli_res"] = get_dash_cli_crm_res_path(kwargs["res_name"])
             cmd = template.render(**kwargs)
 
-            rotate_dpu_syslog(dpuhost)
-
-            logger.info("Change the threshold and validate the expected syslog info")
-            dpuhost.shell(cmd)
-            # Make sure CRM counters updated
-            time.sleep(CRM_UPDATE_TIME)
-            validate_syslog(dpuhost, expect_regex)
+            with loganalyzer:
+                logger.info("Change the threshold and validate the expected syslog info")
+                dpuhost.shell(cmd)
+                # Make sure CRM counters updated
+                time.sleep(CRM_UPDATE_TIME)
 
 
 def get_dash_cli_crm_res_path(res_name):
