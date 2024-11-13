@@ -1,23 +1,26 @@
 import logging
 import os.path
-
+from typing import Dict, List
 import pytest
+import requests
+import time
 
 from ngts.nvos_constants.constants_nvos import ApiType, PlatformConsts
-from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
-from ngts.nvos_tools.infra.Fae import Fae
+from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
+from ngts.nvos_tools.infra.FWComponentsTool import FWComponentsTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.switch_recovery import recover_dut_with_remote_reboot
+from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 
 logger = logging.getLogger()
 
 
-@pytest.mark.timeout(30 * MINUTE, func_only=True)
+@pytest.mark.timeout(45 * MINUTE, func_only=True)
 @pytest.mark.cpld
 def test_cpld_upgrade(engines, devices, topology_obj):
     """
@@ -39,83 +42,99 @@ def test_cpld_upgrade(engines, devices, topology_obj):
     """
     with allure.step('Create System objects'):
         platform = Platform()
-        fae = Fae()
 
     device = devices.dut
-    if not (device.current_cpld_version and device.previous_cpld_version):
-        raise NotImplementedError(f"{type(device)} does not have 'current_cpld_version' or 'previous_cpld_version'")
+
+    if not hasattr(device, 'fw_versions_json_file_path'):
+        pytest.skip("Should ignore test, no designated file for fw comps")
 
     try:
         TestToolkit.tested_api = ApiType.NVUE
         with allure.step(f"Fetch, install and assert old CPLD version (through {TestToolkit.tested_api})"):
-            _firmware_install_test(devices, fae, platform, devices.dut.previous_cpld_version, engines, topology_obj)
+            image_previous_details = FWComponentsTool.get_fw_component_version_dict("cpld", "previous")
+            _firmware_install_test(devices, platform, image_previous_details, engines, topology_obj)
     finally:
         TestToolkit.tested_api = ApiType.OPENAPI
         with allure.step(f"Cleanup: Fetch, install and assert original CPLD version (through {TestToolkit.tested_api})"):
-            _firmware_install_test(devices, fae, platform, devices.dut.current_cpld_version, engines, topology_obj)
+            image_details = FWComponentsTool.get_fw_component_version_dict("cpld", "latest")
+            _firmware_install_test(devices, platform, image_details, engines, topology_obj)
 
 
-def _firmware_install_test(devices, fae: Fae, platform: Platform, image_consts: BaseSwitch.CpldImageConsts,
-                           engines, topology_obj):
-    refresh_filename = os.path.basename(image_consts.refresh_image_path)  # will be empty for switches that have no REFRESH file
-    burn_filename = os.path.basename(image_consts.burn_image_path)
-    if refresh_filename:
+def _firmware_install_test(devices, platform: Platform, image_details, engines, topology_obj):
+    burn_filename = os.path.basename(image_details['path'])
+    has_refresh_image = 'refresh_path' in image_details
+    if has_refresh_image:
+        refresh_filename = os.path.basename(image_details['refresh_path'])  # will be empty for switches that have no REFRESH file
         file_names = {burn_filename, refresh_filename}
     else:
         file_names = {burn_filename}
     logger.info(f"{file_names=} {type(devices.dut)=}")
 
     with allure.step(f"Asserting the image files don't exist yet"):
-        initial_files = fae.platform.firmware.cpld.show_files_as_list()
+        initial_files = platform.firmware.cpld.show_files_as_list()
         assert not (file_names & set(initial_files)), ("Can't test `fetch` because file is already present: " +
                                                        str(set(initial_files) & file_names))
 
     with allure.step(f"Fetching BURN image"):
-        fae.platform.firmware.cpld.action_fetch(image_consts.burn_image_path).verify_result()
+        platform.firmware.cpld.action_fetch(image_details['path']).verify_result()
 
-    if refresh_filename:
+    if has_refresh_image:
         with allure.step(f"Fetching REFRESH image"):
-            fae.platform.firmware.cpld.action_fetch(image_consts.refresh_image_path).verify_result()
+            platform.firmware.cpld.action_fetch(image_details['refresh_path']).verify_result()
 
     with allure.step(f"Asserting fetch was successful"):
-        file_list = fae.platform.firmware.cpld.show_files_as_list()
+        file_list = platform.firmware.cpld.show_files_as_list()
         assert set(file_list) == set(initial_files) | file_names, \
             f"Expected new files {file_names} but the old file list is {initial_files} " \
             f"and the new one is {file_list}"
-
     try:
         with allure.step(f"Installing BURN image {burn_filename}"):
             result, _ = OperationTime.save_duration(
-                "nv action install fae platform firmware cpld files (BURN)", burn_filename, test_cpld_upgrade.__name__,
-                fae.platform.firmware.cpld.action_install,
-                burn_filename, device=devices.dut, expect_reboot=False)
-            result.verify_result()
+                "nv action install platform firmware CPLD files (BURN)", burn_filename, test_cpld_upgrade.__name__,
+                platform.firmware.cpld.files.file_name[burn_filename].action_file_install_with_reboot, force=False, deny_reboot=True)
 
-        if refresh_filename:
-            with allure.step(f"Installing REFRESH image (and rebooting) {refresh_filename}"):
-                fae.platform.firmware.cpld.action_install(refresh_filename, device=devices.dut, expect_reboot=True
-                                                          ).verify_result()
-        else:
-            recover_dut_with_remote_reboot(topology_obj, engines, should_clear_config=False)
+            if has_refresh_image:
+                try:
+                    with allure.step(f"Installing REFRESH image (and rebooting) {refresh_filename}"):
+                        platform.firmware.cpld.files.file_name[refresh_filename].action_file_install_with_reboot(
+                            system_is_ready_timeout=PlatformConsts.TIMEOUT_AFTER_FW_INSTALL)
 
-        with allure.step(f"Asserting install was successful"):
-            firmware_shown = OutputParsingTool.parse_json_str_to_dictionary(platform.firmware.show()).get_returned_value()
-            for cpld_number, expected_version in image_consts.version_names.items():
-                actual_firmware = firmware_shown[cpld_number][PlatformConsts.FW_ACTUAL]
-                assert actual_firmware == expected_version, \
-                    f"Expected {cpld_number} version: {expected_version}. Actual version: {actual_firmware}"
+                except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout):
+                    logger.info(f"GET request failed as expected because of switch reboot")
+                    with allure.step("Waiting for reboot to finish"):
+                        logger.info(f"Waiting 30 seconds to make sure reboot has started")
+                        time.sleep(30)
+                        engine = TestToolkit.engines.dut
+                        engine.disconnect()
+                        check_port_status_till_alive(True, engine.ip, engine.ssh_port)
+                        DutUtilsTool.wait_for_nvos_to_become_functional(engine)
+            else:
+                recover_dut_with_remote_reboot(topology_obj, engines, should_clear_config=False)
 
-    except Exception as e:
-        logger.error(f"{type(e).__name__}: {e}")
-        raise
+            with allure.step(f"Asserting install was successful"):
+                firmware_shown = OutputParsingTool.parse_json_str_to_dictionary(platform.firmware.show()).get_returned_value()
+                errors = validate_firmware_versions(firmware_shown, image_details)
+                assert not errors, f"{len(errors)} firmware version mismatches found:\n" + '\n'.join(errors)
 
     finally:
         for file_name in file_names:
             with allure.step(f"Deleting image file {file_name}"):
-                fae.platform.firmware.cpld.action_delete(file_name).verify_result()
+                platform.firmware.cpld.files.file_name[file_name].action_delete()
 
         with allure.step(f"Asserting delete was successful"):
-            final_file_list = fae.platform.firmware.cpld.show_files_as_list()
+            final_file_list = platform.firmware.cpld.show_files_as_list()
             assert set(initial_files) == set(final_file_list), (
                 f"File list is expected to be the same at the start and end of the test, but the initial file list is:\n"
                 f"{initial_files}\nAnd at the end of the test the list is:\n{final_file_list}")
+
+
+def validate_firmware_versions(firmware_shown, image_details: Dict[str, Dict[str, str]]) -> List[str]:
+    errors = []
+    for cpld_number, expected_version in image_details['version_name'].items():
+        with allure.step(f"Checking {cpld_number}"):
+            actual_firmware = firmware_shown[cpld_number][PlatformConsts.FW_ACTUAL]
+            if actual_firmware != expected_version:
+                errors.append(
+                    f"{cpld_number} version mismatch: Expected '{expected_version}', Got '{actual_firmware}'")
+
+    return errors

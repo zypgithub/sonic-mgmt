@@ -101,8 +101,8 @@ class File(BaseComponent):
                 self._resource_path = f'/{new_name}'
             return result
 
-    def action_file_install(self, expected_str="", force=True, dut_engine=None, param_value='') -> ResultObj:
-        return self._action_file_install(False, expected_str, force, dut_engine, None, None, param_value)
+    def action_file_install(self, expected_str="", force=True, dut_engine=None, param_value='', deny_reboot=False) -> ResultObj:
+        return self._action_file_install(False, expected_str, force, dut_engine, None, None, param_value, deny_reboot=deny_reboot)
 
     def action_file_install_with_reboot(self, expected_str="", force=True, engine=None, device=None,
                                         recovery_engine=None, topology_obj=None, param_value='',

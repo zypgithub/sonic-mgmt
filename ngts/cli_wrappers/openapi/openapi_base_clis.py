@@ -59,7 +59,10 @@ class OpenApiBaseCli:
             OpenApiBaseCli._action_key(action_type), engine.engine.username, engine.engine.password, engine.ip,
             url, data)
 
-        if ((expect_reboot or any(msg in result for msg in SystemConsts.REBOOT_RESPONSE_MESSAGES)) and
+        if deny_reboot:
+            return result
+
+        elif ((expect_reboot or any(msg in result for msg in SystemConsts.REBOOT_RESPONSE_MESSAGES)) and
                 "abort" not in result):
 
             DutUtilsTool.wait_on_system_reboot(engine, recovery_engine, topology_obj=topology_obj, system_is_ready_timeout=system_is_ready_timeout, track_boot_intervals=track_boot_intervals)
