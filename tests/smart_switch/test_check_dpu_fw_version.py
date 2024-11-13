@@ -21,7 +21,7 @@ def test_check_dpu_fw_version(duthost, platform, localhost):
         show_version_cmd = 'show ver | grep "Software Version"'
         sonic_version_output = \
             duthost.shell(f"sudo proxy_ssh.py --dpu-mgmt-ip {dpu0_mgmt_ip} --cmd '{show_version_cmd}'")['stdout']
-        sonic_image_hash = re.search(r'[a-z0-9]{9,}$', sonic_version_output).group()
+        sonic_image_hash = re.search(r'([a-z0-9]{9,})($|_)', sonic_version_output).group(1)
         nfs_path = "/auto/sw_system_release/sonic/sonic_dpu"
         image_path = localhost.shell(f"ls {nfs_path} | grep {sonic_image_hash}")['stdout']
         readme_path = nfs_path + '/' + image_path + '/dev/README'
