@@ -69,7 +69,8 @@ def test_cert_mgmt_cert_cli(test_api, engines, scp_player, clear_certs):
         with allure.independent_step('Import cert2 using private & public key URIs'):
             private_uri = generate_scp_uri_using_player(scp_player, cert2.private)
             public_uri = generate_scp_uri_using_player(scp_player, cert2.public)
-            security.certificate.cert_id[cert2.name].action_import(uri_private_key=private_uri, uri_public_key=public_uri).verify_result()
+            security.certificate.cert_id[cert2.name].action_import(uri_private_key=private_uri,
+                                                                   uri_public_key=public_uri).verify_result()
         with allure.independent_step('Import cert3 using bundle URI + no pass (use empty string as value)'):
             bundle_uri = generate_scp_uri_using_player(scp_player, cert3.p12_bundle)
             security.certificate.cert_id[cert3.name].action_import(uri_bundle=bundle_uri, passphrase="").verify_result()
@@ -78,26 +79,32 @@ def test_cert_mgmt_cert_cli(test_api, engines, scp_player, clear_certs):
             security.certificate.cert_id[cert4.name].action_import(uri_bundle=bundle_uri).verify_result()
         with allure.independent_step('Import cert5 using bundle URI + regular pass'):
             bundle_uri = generate_scp_uri_using_player(scp_player, cert5.p12_bundle)
-            security.certificate.cert_id[cert5.name].action_import(uri_bundle=bundle_uri, passphrase=cert5.p12_password).verify_result()
+            security.certificate.cert_id[cert5.name].action_import(uri_bundle=bundle_uri,
+                                                                   passphrase=cert5.p12_password).verify_result()
         with allure.independent_step('Import cert6 using bundle URI + long pass (customer bug)'):
             bundle_uri = generate_scp_uri_using_player(scp_player, cert6.p12_bundle)
-            security.certificate.cert_id[cert6.name].action_import(uri_bundle=bundle_uri, passphrase=cert6.p12_password).verify_result()
+            security.certificate.cert_id[cert6.name].action_import(uri_bundle=bundle_uri,
+                                                                   passphrase=cert6.p12_password).verify_result()
     with allure.step('Show certs – expect all imported certs in output'):
         out = OutputParsingTool.parse_json_str_to_dictionary(security.certificate.show()).get_returned_value()
-        assert all(cert.name in out for cert in certs), f'not all expected certs names in show output\nexpected: {[cert.name for cert in certs]}\nout:\n{out}'
+        assert all(cert.name in out for cert in
+                   certs), f'not all expected certs names in show output\nexpected: {[cert.name for cert in certs]}\nout:\n{out}'
     with allure.step('Verify files in expected locations'):
         for cert in certs:
             with allure.independent_step(f'verify "{cert.name}" in expected cert locations'):
                 verify_cert_in_expected_locations(cert.name, engines.dut)
     rand_cert: CertInfo = random.choice(certs)
     with allure.step(f'Show a single cert "{rand_cert.name}" – expect fields {CertShowFields.ALL_FIELDS}'):
-        out_single = OutputParsingTool.parse_json_str_to_dictionary(security.certificate.cert_id[rand_cert.name].show()).get_returned_value()
-        assert all(field in out_single for field in CertShowFields.ALL_FIELDS), f'not all expected fields in single cert show output\nexpected: {CertShowFields.ALL_FIELDS}\nout:\n{out}'
+        out_single = OutputParsingTool.parse_json_str_to_dictionary(
+            security.certificate.cert_id[rand_cert.name].show()).get_returned_value()
+        assert all(field in out_single for field in
+                   CertShowFields.ALL_FIELDS), f'not all expected fields in single cert show output\nexpected: {CertShowFields.ALL_FIELDS}\nout:\n{out}'
     with allure.step('verify show values'):
         for field in CertShowFields.ALL_FIELDS:
             if field == CertShowFields.INSTALLED:
                 with allure.independent_step('Verify installed empty {}'):
-                    assert out_single[field] == {}, f'field {field} not as expected\nexpected: {"{}"}\nactual: {out_single[field]}'
+                    assert out_single[
+                        field] == {}, f'field {field} not as expected\nexpected: {"{}"}\nactual: {out_single[field]}'
             else:
                 with allure.independent_step(f'verify {field} not empty'):
                     assert out_single[field] != '', f'field {field} not as expected\nexpected: not empty\nactual: ""'
@@ -107,7 +114,8 @@ def test_cert_mgmt_cert_cli(test_api, engines, scp_player, clear_certs):
             dump_out_str = security.certificate.cert_id[rand_cert.name].dump.show()
             assert expected_str_in_content in dump_out_str, f'"{expected_str_in_content}" was not found in show dump output of {rand_cert.name}\nout:\n{dump_out_str}'
         with allure.independent_step('Show installed of any cert – expect empty {}'):
-            installed_out = OutputParsingTool.parse_json_str_to_dictionary(security.certificate.cert_id[rand_cert.name].installed.show()).get_returned_value()
+            installed_out = OutputParsingTool.parse_json_str_to_dictionary(
+                security.certificate.cert_id[rand_cert.name].installed.show()).get_returned_value()
             assert installed_out == {}, f'installed output not as expected\nexpected: {"{}"}\nactual: {installed_out}'
     with allure.step(f'Delete a cert: {rand_cert.name}'):
         security.certificate.cert_id[rand_cert.name].action_delete().verify_result()
@@ -136,7 +144,8 @@ def test_cert_mgmt_import_cert_data_bad_param(test_api, engines, scp_player, cle
     cert = TestCert.cert_valid_1.copy()
     real_data = cert.get_cert_content_str()
     index = real_data.find('-----END PRIVATE KEY-----')
-    certs_datas = {'cert-empty-string': '', 'cert-rand-string': randomize_hex_str(10), 'cert-messed-data': real_data[:index - 5] + 'ALON' + real_data[index - 1:]}
+    certs_datas = {'cert-empty-string': '', 'cert-rand-string': randomize_hex_str(10),
+                   'cert-messed-data': real_data[:index - 5] + 'ALON' + real_data[index - 1:]}
 
     with allure.step('import certs using bad data params - expect fail and not in output'):
         with allure.independent_step('try import cert with using data param with bad values'):
@@ -192,7 +201,9 @@ def test_cert_mgmt_import_cert_uri_bad_param(test_api, engines, scp_player, clea
         with allure.independent_step('try import cert with using data param with bad values'):
             for cert_name, params in bad_certs.items():
                 with allure.independent_step(cert_name):
-                    security.certificate.cert_id[cert_name].action_import(uri_private_key=params[private], uri_public_key=params[public]).verify_result(False)
+                    security.certificate.cert_id[cert_name].action_import(uri_private_key=params[private],
+                                                                          uri_public_key=params[public]).verify_result(
+                        False)
         with allure.independent_step('verify no cert in show'):
             out = OutputParsingTool.parse_json_str_to_dictionary(security.certificate.show()).get_returned_value()
             assert out == {}, f'output not as expected\nexpected: {"{}"}\nactual: {out}'
@@ -234,14 +245,17 @@ def test_cert_mgmt_import_cert_bundle_bad_param(test_api, engines, scp_player, c
         'cert3': {description: 'wrong pass to bundle with pass', uri: bundle_with_pass_uri, passphrase: rand_str},
         'cert4': {description: "don’t give pass to bundle with pass", uri: bundle_with_pass_uri, passphrase: None},
         'cert5': {description: 'empty pass to bundle with pass', uri: bundle_with_pass_uri, passphrase: ""},
-        'cert6': {description: 'pass to bundle without pass', uri: bundle_with_no_pass_uri, passphrase: cert_with_pass.p12_password},
+        'cert6': {description: 'pass to bundle without pass', uri: bundle_with_no_pass_uri,
+                  passphrase: cert_with_pass.p12_password},
     }
 
     with allure.step('import certs using bad data params - expect fail and not in output'):
         with allure.independent_step('try import cert with using data param with bad values'):
             for cert_name, info in bad_certs.items():
                 with allure.independent_step(f'{cert_name} - {info[description]}'):
-                    security.certificate.cert_id[cert_name].action_import(uri_bundle=info[uri], passphrase=info[passphrase]).verify_result(False)
+                    security.certificate.cert_id[cert_name].action_import(uri_bundle=info[uri],
+                                                                          passphrase=info[passphrase]).verify_result(
+                        False)
         with allure.independent_step('verify no cert in show'):
             out = OutputParsingTool.parse_json_str_to_dictionary(security.certificate.show()).get_returned_value()
             assert out == {}, f'output not as expected\nexpected: {"{}"}\nactual: {out}'
@@ -307,7 +321,9 @@ def test_cert_mgmt_import_cert_unique_id(test_api, engines, scp_player, clear_ce
     with allure.step('test importing in several cases'):
         for case in cases:
             with allure.independent_step(f'{case[title]} - expect: {case[expect]}'):
-                security.certificate.cert_id[case[cert_name]].action_import(uri_bundle=bundle_uri, passphrase=cert.p12_password).verify_result(case[expect])
+                security.certificate.cert_id[case[cert_name]].action_import(uri_bundle=bundle_uri,
+                                                                            passphrase=cert.p12_password).verify_result(
+                    case[expect])
     with allure.step('show certificates'):
         out = OutputParsingTool.parse_json_str_to_dictionary(security.certificate.show()).get_returned_value()
     with allure.step('verify existence of all certs'):
@@ -344,12 +360,15 @@ def test_cert_mgmt_use_cert_for_rest_api_tls(test_api, test_flow, engines, scp_p
     bundle_uri = generate_scp_uri_using_player(scp_player, cert.p12_bundle)
 
     with allure.step('import cert'):
-        security.certificate.cert_id[cert.name].action_import(uri_bundle=bundle_uri, passphrase=cert.p12_password).verify_result()
+        security.certificate.cert_id[cert.name].action_import(uri_bundle=bundle_uri,
+                                                              passphrase=cert.p12_password).verify_result()
     with allure.step('bind cert to rest server (system api certificate)'):
         system.api.set(CERTIFICATE, cert.name, apply=True).verify_result()
     if is_good_flow:
         with allure.step('send unsecured client request – expect success'):
             send_curl_with_and_verify(cert.dn, engines.dut.username, engines.dut.password, EncryptionMode.DISABLED)
-    with allure.step(f'send client request using {"" if is_good_flow else "non-"}proper CA – expect {"success" if is_good_flow else "fail"}'):
+    with allure.step(
+            f'send client request using {"" if is_good_flow else "non-"}proper CA – expect {"success" if is_good_flow else "fail"}'):
         client_ca = cert if is_good_flow else TestCert.cert_valid_2
-        send_curl_with_and_verify(cert.dn, engines.dut.username, engines.dut.password, EncryptionMode.TLS, client_ca, None, is_good_flow)
+        send_curl_with_and_verify(cert.dn, engines.dut.username, engines.dut.password, EncryptionMode.TLS, client_ca,
+                                  None, is_good_flow)
