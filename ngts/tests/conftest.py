@@ -451,7 +451,7 @@ def config_check(engines, cli_objects, topology_obj, request, sonic_version):
         # This list contains of known modules that lead to stale configurations, and need to be analyzed.
         config_check_problematic_modules = ["test_app_extension_upgrade.py", "test_app_extension_install_uninstall.py",
                                             "test_dpb_speeds.py", "test_dpb_negative.py", "test_dpb_all_ports.py",
-                                            "tests/push_build_tests/general/doroce/test_doroce.py"]
+                                            "tests/push_build_tests/general/doroce/test_doroce.py", "test_wjh.py"]
         if is_redmine_issue_active([4119542])[0] and module_name in config_check_problematic_modules:
             logger.error(f"There are known stale configurations, details in RM Issue #4119542.")
         else:
