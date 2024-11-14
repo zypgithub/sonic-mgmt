@@ -6666,7 +6666,7 @@
     - croc-simx-97
   comment: Mellanox MTR testbed
 
-- conf-name: gorilla-chipsim-62-ptf-any
+- conf-name: croc-chipsim-62-ptf-any
   group-name: vm-t1
   topo: ptf-any
   ptf_image_name: docker-ptf-mlnx
@@ -6676,10 +6676,10 @@
   server: server_54
   vm_base: VM0000
   dut:
-    - gorilla-chipsim-62
+    - croc-chipsim-62
   comment: Mellanox MTR testbed
 
-- conf-name: gorilla-chipsim-63-ptf-any
+- conf-name: croc-chipsim-63-ptf-any
   group-name: vm-t1
   topo: ptf-any
   ptf_image_name: docker-ptf-mlnx
@@ -6689,7 +6689,7 @@
   server: server_54
   vm_base: VM0000
   dut:
-    - gorilla-chipsim-63
+    - croc-chipsim-63
   comment: Mellanox MTR testbed
 
 - conf-name: gorilla-chipsim-64-ptf-any
@@ -6731,7 +6731,7 @@
     - gorilla-chipsim-66
   comment: Mellanox MTR testbed
 
-- conf-name: gorilla-chipsim-67-ptf-any
+- conf-name: croc-chipsim-67-ptf-any
   group-name: vm-t1
   topo: ptf-any
   ptf_image_name: docker-ptf-mlnx
@@ -6741,10 +6741,10 @@
   server: server_54
   vm_base: VM0000
   dut:
-    - gorilla-chipsim-67
+    - croc-chipsim-67
   comment: Mellanox MTR testbed
 
-- conf-name: gorilla-chipsim-69-ptf-any
+- conf-name: croc-chipsim-69-ptf-any
   group-name: vm-t1
   topo: ptf-any
   ptf_image_name: docker-ptf-mlnx
@@ -6754,10 +6754,10 @@
   server: server_54
   vm_base: VM0000
   dut:
-    - gorilla-chipsim-69
+    - croc-chipsim-69
   comment: Mellanox MTR testbed
 
-- conf-name: gorilla-chipsim-71-ptf-any
+- conf-name: croc-chipsim-71-ptf-any
   group-name: vm-t1
   topo: ptf-any
   ptf_image_name: docker-ptf-mlnx
@@ -6767,10 +6767,10 @@
   server: server_54
   vm_base: VM0000
   dut:
-    - gorilla-chipsim-71
+    - croc-chipsim-71
   comment: Mellanox MTR testbed
 
-- conf-name: gorilla-chipsim-73-ptf-any
+- conf-name: croc-chipsim-73-ptf-any
   group-name: vm-t1
   topo: ptf-any
   ptf_image_name: docker-ptf-mlnx
@@ -6780,10 +6780,10 @@
   server: server_54
   vm_base: VM0000
   dut:
-    - gorilla-chipsim-73
+    - croc-chipsim-73
   comment: Mellanox MTR testbed
 
-- conf-name: gorilla-chipsim-75-ptf-any
+- conf-name: croc-chipsim-75-ptf-any
   group-name: vm-t1
   topo: ptf-any
   ptf_image_name: docker-ptf-mlnx
@@ -6793,10 +6793,10 @@
   server: server_54
   vm_base: VM0000
   dut:
-    - gorilla-chipsim-75
+    - croc-chipsim-75
   comment: Mellanox MTR testbed
 
-- conf-name: gorilla-chipsim-77-ptf-any
+- conf-name: croc-chipsim-77-ptf-any
   group-name: vm-t1
   topo: ptf-any
   ptf_image_name: docker-ptf-mlnx
@@ -6806,7 +6806,7 @@
   server: server_54
   vm_base: VM0000
   dut:
-    - gorilla-chipsim-77
+    - croc-chipsim-77
   comment: Mellanox MTR testbed
 
 - conf-name: jaguar-113-ptf-any
