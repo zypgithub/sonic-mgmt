@@ -388,7 +388,8 @@ def get_test_duration(duthost):
 
 @retry(Exception, tries=5, delay=20)
 def _generate_sonic_techsupport(duthost):
-    duration = get_test_duration(duthost)
+    # required by design team to always collect the dump for the past 5 hrs.
+    duration = 5 * 3600
     return duthost.shell(f'sudo generate_dump -s \"-{duration} seconds\"')["stdout_lines"][-1]
 
 
