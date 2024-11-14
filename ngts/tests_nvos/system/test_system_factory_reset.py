@@ -53,7 +53,7 @@ def test_reset_factory_without_params(engines, devices, topology_obj, platform_p
 
     with allure.step('post factory reset steps'):
         factory_reset_no_params_post_steps(apply_and_save_port, engines, just_apply_port, health_status,
-                                           machine_type, not_apply_port, system, init_cluster_status)
+                                           machine_type, not_apply_port, system, init_cluster_status, devices)
         RegressionConfigurations.configure_ports_to_legacy(engine=engines.dut, apply=True, throw_exception=True)
 
     with allure.step("Verify the cleanup done successfully"):
