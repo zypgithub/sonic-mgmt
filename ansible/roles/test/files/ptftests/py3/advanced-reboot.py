@@ -425,6 +425,7 @@ class ReloadTest(BaseTest):
             # TimeoutError and Exception's from func
             # captured here
             signal.set()
+            self.log("{}: {}".format(message, traceback_msg))
             raise type(err)("{}: {}".format(message, traceback_msg))
         return res
 
@@ -1000,11 +1001,13 @@ class ReloadTest(BaseTest):
         time.sleep(5)
 
     def get_warmboot_finalizer_state(self):
+        self.log("get the finalizer_state with: 'sudo systemctl is-active warmboot-finalizer.service'")
         stdout, stderr, _ = self.dut_connection.execCommand(
             'sudo systemctl is-active warmboot-finalizer.service')
         if stderr:
             self.fails['dut'].add("Error collecting Finalizer state. stderr: {}, stdout:{}".format(
                 str(stderr), str(stdout)))
+            self.log("Error collecting Finalizer state. stderr: {}, stdout:{}".format(str(stderr), str(stdout)))
             raise Exception("Error collecting Finalizer state. stderr: {}, stdout:{}".format(
                 str(stderr), str(stdout)))
         if not stdout:
@@ -1012,6 +1015,7 @@ class ReloadTest(BaseTest):
             return ''
 
         finalizer_state = stdout[0].strip()
+        self.log("The returned finalizer_state is {}".format(finalizer_state))
         return finalizer_state
 
     def get_now_time(self):
@@ -1043,6 +1047,7 @@ class ReloadTest(BaseTest):
             if time_passed > finalizer_timeout:
                 self.fails['dut'].add(
                     'warmboot-finalizer never reached state "activating"')
+                self.log('TimeoutError: warmboot-finalizer never reached state "activating"')
                 raise TimeoutError
             self.finalizer_state = self.get_warmboot_finalizer_state()
 
@@ -1057,6 +1062,7 @@ class ReloadTest(BaseTest):
             if count * 10 > int(self.test_params['warm_up_timeout_secs']):
                 self.fails['dut'].add(
                     'warmboot-finalizer.service did not finish')
+                self.log('TimeoutError: warmboot-finalizer.service did not finish')
                 raise TimeoutError
             count += 1
         self.log('warmboot-finalizer service finished')
@@ -1515,6 +1521,7 @@ class ReloadTest(BaseTest):
             if time_passed > teamd_shutdown_timeout:
                 self.fails['dut'].add(
                     'Teamd service did not go down')
+                self.log('TimeoutError: Teamd service did not go down')
                 raise TimeoutError
             teamd_state = self.get_teamd_state()
 
