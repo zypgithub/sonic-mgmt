@@ -369,15 +369,14 @@ def test_simulate_health_problem_with_user_config_file(devices, engines):
     time.sleep(1)
     system.validate_health_status(OK)
 
-    try:
+    with allure.step("Simulate health issue"):
         with simulate_health_issue_using_config_file(engines.dut):
             validate_health_issues_exist(system, SIMULATED_ISSUES)
             validate_health_fix_or_issue(system, SIMULATED_ISSUES, date_time, False)
+            date_time = ClockTools.get_datetime_object_from_show_system_output(system.show())
 
-    finally:
-        date_time = ClockTools.get_datetime_object_from_show_system_output(system.show())
-        time.sleep(1)
-        validate_health_fix_or_issue(system, SIMULATED_ISSUES, date_time, True)
+    time.sleep(1)
+    validate_health_fix_or_issue(system, SIMULATED_ISSUES, date_time, True)
 
 
 @pytest.mark.system
