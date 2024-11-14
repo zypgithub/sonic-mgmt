@@ -1813,7 +1813,6 @@ class ReloadTest(BaseTest):
             curr_time = time.time()
             if curr_time - time_start > timeout:
                 break
-            time_start = curr_time
 
         self.log("Going to kill the tcpdump process by SIGTERM")
         self.vmhost_connection.execCommand(f'sudo pkill -f "{cmd}"')
