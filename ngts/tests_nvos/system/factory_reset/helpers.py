@@ -72,6 +72,8 @@ def create_date_time_obj(str_info):
 
 
 def add_verification_data(engine, system):
+    with allure.step("Clear running dockers dict"):
+        running_dockers.clear()
     with allure.step(f"Add file to {NvosConst.PATH_TO_IMAGES}"):
         output = engine.run_cmd("ls /host/mlnx")
         if "No such file or directory" in output:

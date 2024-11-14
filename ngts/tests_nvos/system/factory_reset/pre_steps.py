@@ -1,3 +1,5 @@
+import pytest
+
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import OutputFormat
 from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
