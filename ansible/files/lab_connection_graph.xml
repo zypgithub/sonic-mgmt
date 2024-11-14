@@ -283,18 +283,17 @@
       <Device Hostname="gorilla-simx-96" HwSku="ACS-MQM9700" Type="DevSonic"/>
       <Device Hostname="gorilla-simx-97" HwSku="ACS-MQM9700" Type="DevSonic"/>
       <Device Hostname="gorilla-simx-98" HwSku="ACS-MQM9700" Type="DevSonic"/>
-      <Device Hostname="gorilla-chipsim-62" HwSku="ACS-MQM9700" Type="DevSonic"/>
-      <Device Hostname="gorilla-chipsim-63" HwSku="ACS-MQM9700" Type="DevSonic"/>
-      <Device Hostname="gorilla-chipsim-63" HwSku="ACS-MQM9700" Type="DevSonic"/>
+      <Device Hostname="croc-chipsim-62" HwSku="ACS-MQM9700" Type="DevSonic"/>
+      <Device Hostname="croc-chipsim-63" HwSku="ACS-MQM9700" Type="DevSonic"/>
       <Device Hostname="gorilla-chipsim-64" HwSku="ACS-MQM9700" Type="DevSonic"/>
       <Device Hostname="gorilla-chipsim-65" HwSku="ACS-MQM9700" Type="DevSonic"/>
       <Device Hostname="gorilla-chipsim-66" HwSku="ACS-MQM9700" Type="DevSonic"/>
-      <Device Hostname="gorilla-chipsim-67" HwSku="ACS-MQM9700" Type="DevSonic"/>
-      <Device Hostname="gorilla-chipsim-69" HwSku="ACS-MQM9700" Type="DevSonic"/>
-      <Device Hostname="gorilla-chipsim-71" HwSku="ACS-MQM9700" Type="DevSonic"/>
-      <Device Hostname="gorilla-chipsim-73" HwSku="ACS-MQM9700" Type="DevSonic"/>
-      <Device Hostname="gorilla-chipsim-75" HwSku="ACS-MQM9700" Type="DevSonic"/>
-      <Device Hostname="gorilla-chipsim-77" HwSku="ACS-MQM9700" Type="DevSonic"/>
+      <Device Hostname="croc-chipsim-67" HwSku="ACS-MQM9700" Type="DevSonic"/>
+      <Device Hostname="croc-chipsim-69" HwSku="ACS-MQM9700" Type="DevSonic"/>
+      <Device Hostname="croc-chipsim-71" HwSku="ACS-MQM9700" Type="DevSonic"/>
+      <Device Hostname="croc-chipsim-73" HwSku="ACS-MQM9700" Type="DevSonic"/>
+      <Device Hostname="croc-chipsim-75" HwSku="ACS-MQM9700" Type="DevSonic"/>
+      <Device Hostname="croc-chipsim-77" HwSku="ACS-MQM9700" Type="DevSonic"/>
       <Device Hostname="jaguar-113" HwSku="ACS-MQM8700" Type="DevSonic"/>
       <Device Hostname="jaguar-112" HwSku="ACS-MQM8700" Type="DevSonic"/>
       <Device Hostname="gorilla-126" HwSku="ACS-MQM9700" Type="DevSonic"/>
