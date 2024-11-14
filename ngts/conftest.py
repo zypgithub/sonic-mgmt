@@ -22,7 +22,7 @@ from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.cli_wrappers.linux.linux_cli import LinuxCli, LinuxCliStub
 from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
 from ngts.cli_wrappers.sonic.sonic_cli import SonicCli, SonicCliStub
-from ngts.cli_wrappers.dvs.dvs_general_cli import DvsGeneralCli
+from ngts.cli_wrappers.dvs.dvs_cli import DvsCli
 from ngts.cli_wrappers.sonic.sonic_general_clis import SonicGeneralCliDefault
 from ngts.constants.constants import PytestConst, NvosCliTypes, DebugKernelConsts, SerialLoggerConst
 from ngts.constants.constants import PytestConst, NvosCliTypes, DebugKernelConsts, PlayersAliases, CliType
@@ -369,7 +369,7 @@ def update_topology_with_cli_class(topology, request=None):
                 player_info['cli'] = SonicCli(topology, dut_alias=player_key)
                 player_info.update({'stub_cli': SonicCliStub(topology)})
             elif cli_type == CliType.DVS:
-                player_info['cli'] = DvsGeneralCli(player_info['engine'], dut_alias=player_key)
+                player_info['cli'] = DvsCli(topology=topology, dut_alias=player_key)
 
         elif player_key == 'fanout' or player_key == 'fanout-b':
             if cli_type == CliType.SONIC:

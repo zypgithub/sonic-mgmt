@@ -98,3 +98,22 @@ class DvsGeneralCli(GeneralCliCommon):
         logger.info(
             f"dut: {dut_name} {'supports' if image_supports else 'does not support'} version: {base_version_url}")
         return image_supports
+
+    def get_configuration_file_path(self, ngts_path, scenario, switch_name="dut", template_suite="/performance_tests/performance_config_templates"):
+        '''
+        Please add the extension for static dvs configuration file...
+        TODO :- Shahaf Bodner
+        '''
+        full_path = ngts_path + template_suite + "/" + scenario + "/dvs/" + switch_name
+        logger.info("Full Path returned is {}".format(full_path))
+        return full_path
+
+    def apply_configuration_file(self, engine, src_file, dst_dut_dir="/home/cumulus"):
+        '''
+        TODO :- Shahaf Bodner
+        Create a static configuration file at sonic-mgmt/ngts/performance_tests/performance_config_templates/static_topology/dvs
+        Copy that file onto the dut and apply the configuration
+        Generate this path from the above function sonic-mgmt/ngts/performance_tests/performance_config_templates/static_topology/dvs
+        '''
+        logger.info("Applying the configuration_file onto the dut after copying it from the path")
+        raise NotImplementedError

@@ -8,7 +8,7 @@ from ngts.cli_wrappers.nvue.cumulus.cumulus_general_cli import CumulusGeneralCli
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.cli_wrappers.sonic.sonic_cli import SonicCli
 from ngts.cli_wrappers.sonic.sonic_general_clis import SonicGeneralCliDefault
-from ngts.cli_wrappers.dvs.dvs_general_cli import DvsGeneralCli
+from ngts.cli_wrappers.dvs.dvs_cli import DvsCli
 from ngts.constants.constants import SonicConst, PerfConsts
 from ngts.nvos_constants.constants_nvos import NvosConst
 from ngts.nvos_tools.Devices.DeviceFactory import DeviceFactory
@@ -49,7 +49,7 @@ def filter_canonical_setups(canonical_setups_platforms):
         canonical_setups_platforms.pop(key)
 
 
-def get_cli_obj(topology_obj, cli_type, switch_type, engine, host, dut_alias) -> SonicGeneralCliDefault:
+def get_cli_obj(topology_obj, cli_type, switch_type, engine, host, dut_alias):
     if cli_type == NvosConst.NVUE_CLI:
         device_name = topology_obj.players[host]['attributes'].noga_query_data['attributes']['Specific']. \
             get('switch_type', '')
@@ -59,7 +59,7 @@ def get_cli_obj(topology_obj, cli_type, switch_type, engine, host, dut_alias) ->
         else:
             cli_obj = NvueGeneralCli(engine, device)
     elif cli_type == PerfConsts.DVS_CLI_TYPE:
-        cli_obj = DvsGeneralCli(engine, dut_alias)
+        cli_obj = DvsCli(topology_obj, dut_alias=dut_alias).general
     else:
         cli_obj = SonicCli(topology_obj, dut_alias=dut_alias).general
 
@@ -76,7 +76,7 @@ def extract_host_details_from_topo_obj(topology_obj, host):
     return cli_type, dut_alias, dut_ip, dut_name, engine, switch_type
 
 
-def get_dut_cli_obj_from_topo_obj(topology_obj) -> SonicGeneralCliDefault:
+def get_dut_cli_obj_from_topo_obj(topology_obj):
     host = 'dut'
     cli_type, dut_alias, dut_ip, dut_name, engine, switch_type = extract_host_details_from_topo_obj(topology_obj, host)
     return get_cli_obj(topology_obj, cli_type, switch_type, engine, host, dut_alias)
