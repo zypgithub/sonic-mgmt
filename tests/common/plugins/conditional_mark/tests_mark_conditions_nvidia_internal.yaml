@@ -1586,6 +1586,8 @@ platform_tests/test_sensors.py:
     conditions:
       - "https://redmine.mellanox.com/issues/3768210 and ('sn5400' in platform)"
       - "https://redmine.mellanox.com/issues/3917712 and 'sn4280' in platform"
+      - "https://redmine.mellanox.com/issues/4163658 and ('sn5640' in platform)"
+      - "https://redmine.mellanox.com/issues/4163886 and ('sn5640' in platform)"
 
 tests/nightly/fec/:
   skip:
