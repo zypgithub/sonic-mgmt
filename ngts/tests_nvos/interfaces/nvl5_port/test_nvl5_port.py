@@ -29,6 +29,7 @@ logger = logging.getLogger()
 @pytest.mark.interface
 @pytest.mark.multiplanar
 @pytest.mark.simx
+@pytest.mark.nvl_ci
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_show_nvl5_interface_commands(engines, devices, test_api, has_loopbox):
     """
@@ -142,6 +143,7 @@ def test_show_nvl5_interface_commands(engines, devices, test_api, has_loopbox):
 
 
 @pytest.mark.interface
+@pytest.mark.nvl_ci
 def test_toggle_interface_state(test_name, devices, has_loopbox):
     """
     Configure port interface state and verify the configuration applied successfully
@@ -204,6 +206,7 @@ def test_toggle_interface_state(test_name, devices, has_loopbox):
 @pytest.mark.interface
 @pytest.mark.multiplanar
 @pytest.mark.simx
+@pytest.mark.nvl_ci
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_nvl5_port_configuration(engines, devices, test_api):
     """

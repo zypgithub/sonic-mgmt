@@ -22,6 +22,7 @@ logger = logging.getLogger()
 
 @disabled_access_ports
 @pytest.mark.nmx
+@pytest.mark.nvl_ci
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 @pytest.mark.timeout(30 * MINUTE, func_only=True)
 def test_cluster_state(engines, devices, test_api, has_loopbox):
