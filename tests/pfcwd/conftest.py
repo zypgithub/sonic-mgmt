@@ -220,3 +220,18 @@ def pause_icmp_responder(ptfhost):
     yield
 
     ptfhost.shell("supervisorctl restart icmp_responder", module_ignore_errors=True)
+
+
+@pytest.fixture(scope='module', autouse=True)
+def clear_ptf_ip_addr(duthosts, ptfhost, enum_rand_one_per_hwsku_frontend_hostname):
+    """
+    Fixture that remove ip address of ethX interface at ptf and clear arp at dut
+    :param duthosts: dut instance
+    :param ptfhost: ptf instance
+    :return: None
+    """
+    duthost = duthosts[enum_rand_one_per_hwsku_frontend_hostname]
+    yield
+    logger.info("Remove ip address of ethX interface at PTF")
+    ptfhost.script("./scripts/remove_ip.sh")
+    duthost.command("sonic-clear arp")
