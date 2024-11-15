@@ -386,7 +386,7 @@ def inner_packet_type(request):
 
 
 @pytest.fixture(scope="module", autouse=True)
-def add_dpu_index(dpuhosts, duthost):
+def add_dpu_info(dpuhosts, duthost):
     data_port_base_ip = ip_address("10.0.0.74")
     dpu_npu_port_list = sorted(get_dpu_npu_ports_from_hwsku(duthost))
     for dpuhost in dpuhosts:

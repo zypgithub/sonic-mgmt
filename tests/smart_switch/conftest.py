@@ -20,20 +20,16 @@ def enable_dpu_mgmt_forwarding(duthost):
     # Enable the dpu mgmt forwarding if the dut is smartswitch
     duthost.shell('sudo sonic-dpu-mgmt-traffic.sh -e')
 
-    yield
-
-    duthost.shell('sudo sonic-dpu-mgmt-traffic.sh -d')
-
 
 @pytest.fixture(scope="session", autouse=True)
 def platform(duthost):
     return duthost.facts["platform"]
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="session", autouse=True)
 def skip_unsupported_platform(duthost, platform):
-    if platform not in SMARTSWITCH_PLATFORMS and 'nvda_bf' not in platform:
-        pytest.skip("The test is only supported by DPU or smartswitch platforms")
+    if platform not in SMARTSWITCH_PLATFORMS:
+        pytest.skip("The test is only supported by smartswitch platforms")
 
 
 @pytest.fixture(scope="session")

@@ -375,7 +375,10 @@ def test_pa_validation_multi_dpu(ptfadapter, dash_pl_config, dpu_duts,
             testutils.verify_no_packet_any(ptfadapter, eni1_exp_pkt, ports=expected_ptf_ports)
     finally:
         with allure.step("Clean the dash config for ENI1"):
-            apply_messages(localhost, duthost, ptfhost, messages, another_dpu_index, set=False)
+            if is_redmine_issue_active([4125251])[0]:
+                config_reload(dpu_duts[1], safe_reload=True)
+            else:
+                apply_messages(localhost, duthost, ptfhost, messages, another_dpu_index, set=False)
 
 
 def test_pa_validation_dpu_shutdown(localhost, duthost, ptfhost, dpu_duts):

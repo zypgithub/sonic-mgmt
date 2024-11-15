@@ -9,7 +9,7 @@ from gnmi_utils import apply_messages
 from packets import outbound_pl_packets
 from tests.smart_switch.conftest import SMARTSWITCH_PLATFORMS, copy_proxy_ssh, skip_unsupported_platform, platform # noqa F401
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
-import time
+from tests.common import config_reload
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +51,7 @@ def apply_dpu_basic_config(dpuhost, dpu_ip, npu_interface_ip, apply_switch_basic
 
     if not is_redmine_issue_active([4125251])[0]:
         if is_redmine_issue_active([4129123])[0]:
-            config_reload_dpu(dpuhost)
+            config_reload(dpuhost, safe_reload=True)
         else:
             logger.info("Remove ip default route via Ethernet0")
             cmd_del_npu_neig_route = f"sudo ip route del default via {npu_interface_ip} dev Ethernet0"
@@ -126,7 +126,7 @@ def common_setup_teardown(localhost, duthost, ptfhost, dpuhost):
     yield
 
     if is_redmine_issue_active([4125251])[0]:
-        config_reload_dpu(dpuhost)
+        config_reload(dpuhost, safe_reload=True)
     else:
 
         logger.info(f"recover messages2: {messages2}")
@@ -138,12 +138,6 @@ def common_setup_teardown(localhost, duthost, ptfhost, dpuhost):
 
         logger.info(f"recover pl.ROUTING_TYPE_PL_CONFIG: {pl.ROUTING_TYPE_PL_CONFIG}")
         apply_messages(localhost, duthost, ptfhost, pl.ROUTING_TYPE_PL_CONFIG, dpuhost.dpu_index, set=False)
-
-
-def config_reload_dpu(dpuhost):
-    cmd_del_npu_neig_route = f"sudo config reload -y -f"
-    dpuhost.shell(cmd_del_npu_neig_route)
-    time.sleep(100)
 
 
 def test_privatelink_basic_transform(

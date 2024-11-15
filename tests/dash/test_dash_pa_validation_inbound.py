@@ -2,13 +2,13 @@ import logging
 import pytest
 import ptf.testutils as testutils
 import packets
-import time
 
 from constants import LOCAL_PTF_INTF, REMOTE_PTF_INTF
 from configs import vnet_to_vnet_config
 from gnmi_utils import apply_messages
 from ipaddress import ip_network
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from tests.common import config_reload
 
 VIP = "10.2.0.1"
 
@@ -33,11 +33,6 @@ def apply_switch_basic_config(duthost, dpuhost):
                   f'{dpuhost.data_port_on_npu} {dpuhost.npu_data_port_ip}/{dpuhost.dataplane_mask_length}')
 
 
-def config_reload_dpu(dpuhost):
-    dpuhost.shell(f"sudo config reload -y -f")
-    time.sleep(100)
-
-
 @pytest.fixture(scope="function")
 def apply_dpu_basic_config(dpuhost, apply_switch_basic_config, dash_config_info):
     logger.info("Add ip to Ethernet0")
@@ -59,7 +54,7 @@ def apply_dpu_basic_config(dpuhost, apply_switch_basic_config, dash_config_info)
 
     # TODO: WA for issue RM#4129123, remove this after the ticket is closed
     if is_redmine_issue_active([4129123])[0]:
-        config_reload_dpu(dpuhost)
+        config_reload(dpuhost, safe_reload=True)
         return
 
     logger.info("Remove ip default route via Ethernet0")
@@ -114,7 +109,7 @@ def apply_inbound_configs(localhost, duthost, ptfhost, dpuhost):
 
     # TODO: WA for issue RM#4125251, remove this after the ticket is closed
     if is_redmine_issue_active([4125251])[0]:
-        config_reload_dpu(dpuhost)
+        config_reload(dpuhost, safe_reload=True)
         return
 
     apply_messages(localhost, duthost, ptfhost, config_messages, dpuhost.dpu_index, set=False)

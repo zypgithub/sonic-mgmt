@@ -31,7 +31,7 @@ DASH_CRM_ACL_RULES_LIST = ["dash_ipv4_acl_rule", "dash_ipv6_acl_rule"]
 DEFAULT_LOW_THR = defaultdict(lambda: 70)
 DEFAULT_LOW_THR["dram"] = 90
 DEFAULT_HIGH_THR = defaultdict(lambda: 85)
-DEFAULT_HIGH_THR["dram"] = 85
+DEFAULT_HIGH_THR["dram"] = 95
 DEFAULT_THR_TYPE = "percentage"
 DEFAULT_CRM_POLLING_INTERVAL = 300
 
