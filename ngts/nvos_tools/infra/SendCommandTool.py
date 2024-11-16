@@ -40,7 +40,7 @@ class SendCommandTool:
             invalid_keyword_in_output = [err_msg for err_msg in invalid_cmd_str
                                          if (err_msg not in exempted_err_msgs and err_msg in output_lines)]
             if len(invalid_keyword_in_output) > 0:
-                return ResultObj(False, f"Following error messages found in output: \n{invalid_keyword_in_output}",
+                return ResultObj(False, f"Command output contains error message/keywords.\ninvalid keywords found: {invalid_keyword_in_output}\nfull output: {output_lines}",
                                  None, IssueType.PossibleBug)
 
             # Check for any timeout messages
