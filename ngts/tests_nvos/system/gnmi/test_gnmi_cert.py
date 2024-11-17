@@ -1,5 +1,6 @@
 import concurrent.futures
 import random
+import select
 import string
 import time
 
@@ -17,9 +18,11 @@ from ngts.tests_nvos.general.security.conftest import local_adminuser
 from ngts.tests_nvos.general.security.helpers import remove_etc_host_mapping_to_dn, add_etc_host_mapping_to_dn
 from ngts.tests_nvos.general.security.security_test_tools.constants import AddressingType
 from ngts.tests_nvos.helpers.pytest_helpers import get_cur_test_param_value
+from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
 from ngts.tests_nvos.system.gnmi.constants import CERTIFICATE, DEFAULT_CERTIFICATE, GnmicErr, \
-    MAX_GNMI_CONNECTIVITY_TIME, GNMI_TEST_CERT, ETC_HOSTS
-from ngts.tests_nvos.system.gnmi.helpers import verify_gnmi_client, get_timestamp_of_first_gnmi_response
+    MAX_GNMI_CONNECTIVITY_TIME, GNMI_TEST_CERT, ETC_HOSTS, GnmiMode
+from ngts.tests_nvos.system.gnmi.helpers import verify_gnmi_client, get_timestamp_of_first_gnmi_response, \
+    validate_gnmi_is_running_and_stream_updates
 
 
 @pytest.fixture(scope='module', autouse=True)
@@ -367,3 +370,89 @@ def test_gnmi_set_cert_response_time(local_adminuser):
                 f'gnmi connectivity time was too long after certificate change.\n'
                 f'expected limit: {MAX_GNMI_CONNECTIVITY_TIME} seconds\n'
                 f'actual: {interval_result} seconds')
+
+
+@pytest.mark.system
+@pytest.mark.gnmi
+def test_gnmi_cert_rotation(engines, devices):
+    """
+    Check gnmi rotation works when changing certificate on fly
+
+    1. Set cert-1 to gnmi
+    2. Run client using ca-cert1 and subscribe
+    3. Set cert-2 to gnmi
+    4. Verify connection was not interrupted
+    5. Verify still receiving new data
+    """
+    cert1 = TestCert.cert_valid_1
+    cert2 = TestCert.cert_valid_2
+    cert3 = TestCert.cert_ca_mismatch
+    gnmi = System().gnmi_server
+    username = devices.dut.default_username
+    password = devices.dut.default_password
+
+    with allure.step(f'set gnmi cert: {cert1.name}'):
+        gnmi.set(CERTIFICATE, cert1.name, apply=True).verify_result()
+
+    with allure.step('Subscribe to gnmi client stream'):
+        client = GnmiClient(cert1.dn, GnmiConsts.GNMI_DEFAULT_PORT, username, password,
+                            cacert=cert1.cacert)
+        _, _, gnmi_process = client.gnmic_subscribe(prefix='platform-general', path='', mode=GnmiMode.STREAM,
+                                                    cacert=cert1.cacert, keep_session_alive=True)
+
+    output, err = read_process_for_specified_time(gnmi_process, GnmiConsts.SLEEP_TIME_FOR_UPDATE)
+    validate_gnmi_streaming_output(output, err)
+
+    with allure.step(f'change gnmi cert to: {cert2.name}'):
+        gnmi.set(CERTIFICATE, cert2.name, apply=True).verify_result()
+
+    with allure.step('Verify still receiving updated after changing to other valid cert'):
+        output, err = read_process_for_specified_time(gnmi_process, GnmiConsts.SLEEP_TIME_FOR_UPDATE)
+        validate_gnmi_streaming_output(output, err)
+
+    with allure.step(f'change gnmi cert to invalid: {cert3.name}'):
+        gnmi.set(CERTIFICATE, cert3.name, apply=True).verify_result()
+
+    output, err = read_process_for_specified_time(gnmi_process, GnmiConsts.SLEEP_TIME_FOR_UPDATE)
+    validate_gnmi_streaming_output(output, err)
+
+
+def validate_gnmi_streaming_output(output, err):
+    with allure.step("Validate gnmi streaming is working and doesn't contain certification errors"):
+        has_failure = False
+        for line_error in err:
+            if "failed to verify certificate" in line_error:
+                has_failure = True
+                break
+        assert not has_failure, "The gnmi error contain certificate validation error"
+        assert output, "No streaming from gnmi was received"
+
+
+def validate_gnmi_mismatch(err):
+    with allure.step("Validate gnmi streaming is not working and contains certification errors"):
+        for line_error in err:
+            if "failed to verify certificate" in line_error:
+                assert True
+        assert False, "We should see cert validation fail"
+
+
+def read_process_for_specified_time(process, timeout):
+    with allure.step(f"Reading gnmi stream stdout and stderr for {timeout}s"):
+        output = []
+        err = []
+        start_time = time.time()
+
+        while time.time() - start_time < timeout:
+            out_ready, _, _ = select.select([process.stdout], [], [], 0.1)
+            err_ready, _, _ = select.select([process.stderr], [], [], 0.1)
+            for stream in out_ready:
+                line = stream.readline()
+                if line:
+                    output.append(line.decode('utf-8').strip())
+
+            for stream in err_ready:
+                line = stream.readline()
+                if line:
+                    err.append(line.decode('utf-8').strip())
+
+        return output, err
