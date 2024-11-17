@@ -14,9 +14,7 @@ logger = logging.getLogger()
 
 @pytest.mark.cumulus
 @pytest.mark.ib
-@pytest.mark.simx
 @pytest.mark.skynet
-@pytest.mark.nvos_chipsim_ci
 def test_mgmt_interface_mac(engines, serial_engine):
     """
     Run show interface eth0 link command and verify eth0 mac address in OS is expected

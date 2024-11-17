@@ -115,6 +115,6 @@ class ConnectionTool:
                 return True
             else:
                 logger.error("ip address {} is unreachable".format(server_ip))
-                return False
+                raise Exception(f"ip address {server_ip} is unreachable")
 
         return _ping_device(server_ip)
