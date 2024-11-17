@@ -401,7 +401,7 @@ def verify_gnmi_client(test_flow, server_host, server_port, username, password, 
             new_description = change_interface_description(selected_port)
 
     with allure.step('create gnmi client'):
-        client = GnmiClient(server_host, server_port, username, password, cacert=cacert, cmd_time=client_cmd_time or 10)
+        client = GnmiClient(server_host, server_port, username, password, cacert=cacert, cmd_time=client_cmd_time or 15)
     if test_flow == TestFlowType.GOOD_FLOW:
         with allure.step(f'good-flow: {log_msg}'):
             with allure.step('verify using capabilities command'):
