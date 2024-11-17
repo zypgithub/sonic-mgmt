@@ -192,6 +192,7 @@ def run_client_verification(cert_chain_content: str, measurements_data: dict, no
     cur_dir = os.path.dirname(os.path.abspath(__file__))
     tmp_files_dir = os.path.join(cur_dir, 'client_scripts', 'tmp_files')
     tests_dir = os.path.join(tmp_files_dir, 'tests')
+    os.makedirs(tests_dir, exist_ok=True)
 
     output_ordered_chain_path = os.path.join(tests_dir, 'pytest-ordered_chain.pem')
     leaf_cert_file = os.path.join(tests_dir, 'test-leaf-cert.pem')
