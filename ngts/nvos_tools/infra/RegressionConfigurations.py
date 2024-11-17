@@ -148,7 +148,8 @@ class RegressionConfigurations:
     @staticmethod
     def configure_ps_redundancy_policy(engine: LinuxSshEngine):
         if engine.ip in Configurations.devices_missing_psus:
-            Platform().ps_redundancy.set(PlatformConsts.PS_REDUNDANCY_POLICY, PlatformConsts.PS_REDUNDANCY_NO)
+            Platform().ps_redundancy.set(PlatformConsts.PS_REDUNDANCY_POLICY, PlatformConsts.PS_REDUNDANCY_NO,
+                                         dut_engine=engine)
 
     @staticmethod
     def configure_ports_to_legacy(engine, apply=True, throw_exception=True, wait_till_port_up=False):
