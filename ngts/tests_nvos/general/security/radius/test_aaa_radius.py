@@ -32,7 +32,7 @@ def test_radius_set_unset_show(test_api, engines):
                 AaaConsts.TIMEOUT: random.choice(RadiusConsts.VALID_VALUES[AaaConsts.TIMEOUT])
             },
         },
-        hostname_conf={
+        server_conf={
             AaaConsts.AUTH_TYPE: random.choice(RadiusConsts.VALID_VALUES[AaaConsts.AUTH_TYPE]),
             AaaConsts.PORT: random.choice(RadiusConsts.VALID_VALUES[AaaConsts.PORT]),
             AaaConsts.RETRANSMIT: random.choice(RadiusConsts.VALID_VALUES[AaaConsts.RETRANSMIT]),
@@ -55,14 +55,14 @@ def test_radius_set_invalid_param(test_api, engines):
     """
     radius_obj = System().aaa.radius
     global_radius_fields = [AaaConsts.AUTH_TYPE, AaaConsts.PORT, AaaConsts.SECRET, AaaConsts.TIMEOUT]
-    radius_hostname_fields = global_radius_fields + [AaaConsts.PRIORITY]
+    radius_server_fields = global_radius_fields + [AaaConsts.PRIORITY]
     generic_aaa_test_set_invalid_param(
         test_api=test_api,
         field_is_numeric=RadiusConsts.FIELD_IS_NUMERIC,
         valid_values=RadiusConsts.VALID_VALUES,
         resources_and_fields={
             radius_obj: global_radius_fields,
-            radius_obj.hostname.hostname_id['1.2.3.4']: radius_hostname_fields
+            radius_obj.server.server_id['1.2.3.4']: radius_server_fields
         }
     )
 
@@ -85,6 +85,7 @@ def test_radius_auth(test_flow, test_api, addressing_type, engines, topology_obj
             - verify auth with radius user - expect success
             - verify auth with local user - expect fail
     """
+    skip_auth_mediums = []
     radius = System().aaa.radius
 
     # our vm radius server does not support mschapv2 - all auth types will be tested only on physical server
@@ -101,7 +102,7 @@ def test_radius_auth(test_flow, test_api, addressing_type, engines, topology_obj
                           remote_aaa_obj=radius,
                           server_by_addr_type=server_by_addr_type,
                           test_param=test_params,
-                          test_param_update_func=update_radius_server_auth_type)
+                          test_param_update_func=update_radius_server_auth_type, skip_auth_mediums=skip_auth_mediums)
 
 
 @pytest.mark.security
@@ -118,12 +119,13 @@ def test_radius_bad_secret(test_api, engines, topology_obj):
         4. set bad secret
         5. verify auth - expect fail
     """
+    skip_auth_mediums = []
     radius_server = RadiusPhysicalServer.SERVER_IPV4.copy()
     radius_server.secret = RandomizationTool.get_random_string(6)
     generic_aaa_test_bad_configured_server(test_api, engines, topology_obj,
                                            remote_aaa_type=RemoteAaaType.RADIUS,
                                            remote_aaa_obj=System().aaa.radius,
-                                           bad_param_name=AaaConsts.SECRET, bad_configured_server=radius_server)
+                                           bad_param_name=AaaConsts.SECRET, bad_configured_server=radius_server, skip_auth_mediums=skip_auth_mediums)
 
 
 @pytest.mark.security
@@ -138,12 +140,13 @@ def test_radius_bad_port(test_api, engines, topology_obj):
         2. set bad port
         3. verify auth - expect fail
     """
+    skip_auth_mediums = []
     radius_server = RadiusPhysicalServer.SERVER_IPV4.copy()
     radius_server.port = AaaConsts.AAA_SERVER_BAD_PORT
     generic_aaa_test_bad_configured_server(test_api, engines, topology_obj,
                                            remote_aaa_type=RemoteAaaType.RADIUS,
                                            remote_aaa_obj=System().aaa.radius,
-                                           bad_param_name=AaaConsts.PORT, bad_configured_server=radius_server)
+                                           bad_param_name=AaaConsts.PORT, bad_configured_server=radius_server, skip_auth_mediums=skip_auth_mediums)
 
 
 @pytest.mark.security
@@ -151,11 +154,11 @@ def test_radius_bad_port(test_api, engines, topology_obj):
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_radius_unique_priority(test_api, engines, topology_obj):
     """
-    @summary: Verify that hostname priority must be unique
+    @summary: Verify that server priority must be unique
 
         Steps:
-        1. Set 2 hostnames with different priority - expect success
-        2. set another hostname with existing priority - expect failure
+        1. Set 2 servers with different priority - expect success
+        2. set another server with existing priority - expect failure
 
     """
     generic_aaa_test_unique_priority(test_api, remote_aaa_obj=System().aaa.radius)
@@ -175,9 +178,10 @@ def test_radius_priority(test_flow, test_api, engines, topology_obj, request):
         3. advance the lowest prioritized server to be most prioritized
         4. repeat steps 2-3 until reach priority 8 (max)
     """
+    skip_auth_mediums = []
     server1, server2 = get_two_different_radius_servers()
     generic_aaa_test_priority(test_flow, test_api, engines, topology_obj, request, remote_aaa_type=RemoteAaaType.RADIUS,
-                              remote_aaa_obj=System().aaa.radius, server1=server1, server2=server2)
+                              remote_aaa_obj=System().aaa.radius, server1=server1, server2=server2, skip_auth_mediums=skip_auth_mediums)
 
 
 @pytest.mark.security
@@ -201,12 +205,13 @@ def test_radius_server_unreachable(test_flow, test_api, engines, topology_obj, l
         9.	Bring back the first server
         10. Verify auth – success only with top server user
     """
+    skip_auth_mediums = []
     server1, server2 = get_two_different_radius_servers()
     generic_aaa_test_server_unreachable(test_flow, test_api, engines, topology_obj, request,
                                         local_adminuser=local_adminuser,
                                         remote_aaa_type=RemoteAaaType.RADIUS,
                                         remote_aaa_obj=System().aaa.radius,
-                                        server1=server1, server2=server2)
+                                        server1=server1, server2=server2, skip_auth_mediums=skip_auth_mediums)
 
 
 @pytest.mark.security
@@ -230,11 +235,12 @@ def test_radius_auth_error(test_flow, test_api, engines, topology_obj, local_adm
         6.	Verify auth with 2nd server credentials – expect success
         7.  Verify auth with local user credentials - expect success
     """
+    skip_auth_mediums = []
     server1, server2 = get_two_different_radius_servers()
     generic_aaa_test_auth_error(test_flow, test_api, engines, topology_obj, request, local_adminuser=local_adminuser,
                                 remote_aaa_type=RemoteAaaType.RADIUS,
                                 remote_aaa_obj=System().aaa.radius,
-                                server1=server1, server2=server2)
+                                server1=server1, server2=server2, skip_auth_mediums=skip_auth_mediums)
 
 
 # -------------------- FEATURE SPECIFIC TESTS ---------------------
@@ -268,7 +274,7 @@ def test_radius_timeout(test_api, engines, topology_obj, local_adminuser: UserIn
             rand_timeout = random.randint(RadiusConsts.VALID_VALUES[AaaConsts.TIMEOUT][0],
                                           RadiusConsts.VALID_VALUES[AaaConsts.TIMEOUT][-1] // 3)
             logging.info(f'Chosen timeout: {rand_timeout}')
-            configure_resource(engines, resource_obj=aaa.radius.hostname.hostname_id['1.2.3.4'], conf={
+            configure_resource(engines, resource_obj=aaa.radius.server.server_id['1.2.3.4'], conf={
                 AaaConsts.TIMEOUT: rand_timeout,
                 AaaConsts.SECRET: "xyz",
                 AaaConsts.PORT: AaaConsts.AAA_SERVER_BAD_PORT
@@ -293,7 +299,7 @@ def test_radius_timeout(test_api, engines, topology_obj, local_adminuser: UserIn
             rand_timeout2 = random.randint(RadiusConsts.VALID_VALUES[AaaConsts.TIMEOUT][0],
                                            RadiusConsts.VALID_VALUES[AaaConsts.TIMEOUT][-1] // 3)
             logging.info(f'Chosen timeout: {rand_timeout2}')
-            configure_resource(engines, resource_obj=aaa.radius.hostname.hostname_id['2.4.6.8'], conf={
+            configure_resource(engines, resource_obj=aaa.radius.server.server_id['2.4.6.8'], conf={
                 AaaConsts.PRIORITY: 2,
                 AaaConsts.TIMEOUT: rand_timeout2,
                 AaaConsts.SECRET: "xyz",

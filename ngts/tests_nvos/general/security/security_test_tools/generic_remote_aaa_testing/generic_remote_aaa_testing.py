@@ -11,8 +11,8 @@ from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.system.Aaa import Aaa
-from ngts.nvos_tools.system.Hostname import HostnameId
 from ngts.nvos_tools.system.RemoteAaaResource import RemoteAaaResource
+from ngts.nvos_tools.system.Server import ServerId
 from ngts.tests_nvos.general.security.security_test_tools.constants import AddressingType, AuthConsts, AuthMedium, \
     AaaConsts
 from ngts.tests_nvos.general.security.security_test_tools.generic_remote_aaa_testing.constants import *
@@ -30,21 +30,21 @@ from ngts.tools.test_utils.nvos_general_utils import wait_for_ldap_nvued_restart
 
 def generic_aaa_test_set_unset_show(test_api, engines, remote_aaa_type: str, main_resource_obj: RemoteAaaResource,
                                     confs: Dict[BaseComponent, dict],
-                                    hostname_conf: dict,
+                                    server_conf: dict,
                                     default_confs: Dict[BaseComponent, dict]):
     """
     @summary: Verify set, unset, show commands for remote AAA feature
 
         Steps:
         1. set general/global configurations
-        2. set hostnames
+        2. set servers
             1- with default configuration
             2- with new configuration
         3. apply changes
         4. verify new configurations with show commands
             1- general configurations as required
-            2- hostname1 configuration as default
-            3- hostname2 configuration as required
+            2- server1 configuration as default
+            3- server2 configuration as required
         5. unset configurations
         6. verify default configuration
     @param test_api: run commands with NVUE / OpenApi
@@ -52,7 +52,7 @@ def generic_aaa_test_set_unset_show(test_api, engines, remote_aaa_type: str, mai
     @param remote_aaa_type: name of he remote Aaa type (tacacs, ldap, radius)
     @param main_resource_obj: BaseComponent object representing the feature resource
     @param confs: configurations to set
-    @param hostname_conf: configuration for hostname2 (the non-default one)
+    @param server_conf: configuration for server2 (the non-default one)
     @param default_confs: default configurations
     """
     assert remote_aaa_type in RemoteAaaType.ALL_TYPES, f'{remote_aaa_type} is not one of {RemoteAaaType.ALL_TYPES}'
@@ -68,22 +68,22 @@ def generic_aaa_test_set_unset_show(test_api, engines, remote_aaa_type: str, mai
         for resource, conf in confs.items():
             configure_resource(engines, resource, conf)
 
-    with allure.step('Set hostnames'):
-        hostname1 = '1.2.3.4'
-        hostname2 = '2.3.4.5'
-        hostname3 = AaaConsts.VM_AAA_SERVER_DN
-        hostname4 = AaaConsts.VM_AAA_SERVER_IPV6_ADDR
-        main_resource_obj.hostname.set(hostname1)
-        hostname_conf[AaaConsts.PRIORITY] = 2
-        configure_resource(engines, main_resource_obj.hostname.hostname_id[hostname2], hostname_conf)
-        hostname_conf[AaaConsts.PRIORITY] = 3
-        configure_resource(engines, main_resource_obj.hostname.hostname_id[hostname3], hostname_conf)
-        hostname_conf[AaaConsts.PRIORITY] = 4
-        configure_resource(engines, main_resource_obj.hostname.hostname_id[hostname4], hostname_conf, apply=True)
-        non_default_hostnames = [hostname2, hostname3]
+    with allure.step('Set servers'):
+        server1 = '1.2.3.4'
+        server2 = '2.3.4.5'
+        server3 = AaaConsts.VM_AAA_SERVER_DN
+        server4 = AaaConsts.VM_AAA_SERVER_IPV6_ADDR
+        main_resource_obj.server.set(server1)
+        server_conf[AaaConsts.PRIORITY] = 2
+        configure_resource(engines, main_resource_obj.server.server_id[server2], server_conf)
+        server_conf[AaaConsts.PRIORITY] = 3
+        configure_resource(engines, main_resource_obj.server.server_id[server3], server_conf)
+        server_conf[AaaConsts.PRIORITY] = 4
+        configure_resource(engines, main_resource_obj.server.server_id[server4], server_conf, apply=True)
+        non_default_servers = [server2, server3]
         if remote_aaa_type == RemoteAaaType.LDAP or (not is_bug_active(3880238)):
             # TODO: remove cond once bug #3880238 closed
-            non_default_hostnames.append(hostname4)
+            non_default_servers.append(server4)
 
     with allure.step('Verify general configurations'):
         for resource, expected_conf in confs.items():
@@ -95,53 +95,53 @@ def generic_aaa_test_set_unset_show(test_api, engines, remote_aaa_type: str, mai
                                                                 expected_values=expected_conf.values(),
                                                                 output_dict=cur_conf).verify_result()
 
-    with allure.step('Verify hostnames exist in show output'):
+    with allure.step('Verify servers exist in show output'):
         show_rev_param = '' if remote_aaa_type == RemoteAaaType.LDAP else ConfState.APPLIED
-        show_hostname_output = show_and_parse(main_resource_obj.hostname, rev=show_rev_param)
-        ValidationTool.verify_field_exist_in_json_output(show_hostname_output,
-                                                         [hostname1, hostname2, hostname3, hostname4]).verify_result()
+        show_server_output = show_and_parse(main_resource_obj.server, rev=show_rev_param)
+        ValidationTool.verify_field_exist_in_json_output(show_server_output,
+                                                         [server1, server2, server3, server4]).verify_result()
 
-    with allure.step('Verify hostnames configurations'):
-        with allure.step(f'Verify default configuration for hostname {hostname1}'):
+    with allure.step('Verify servers configurations'):
+        with allure.step(f'Verify default configuration for server {server1}'):
             global_conf = show_and_parse(main_resource_obj)
             expected_conf = {
                 key: 1 if key == AaaConsts.PRIORITY else global_conf[key]
-                for key in hostname_conf.keys()
+                for key in server_conf.keys()
             } if remote_aaa_type == RemoteAaaType.LDAP else {AaaConsts.PRIORITY: 1}
-            cur_hostname_conf = show_and_parse(main_resource_obj.hostname.hostname_id[hostname1], rev=show_rev_param)
+            cur_server_conf = show_and_parse(main_resource_obj.server.server_id[server1], rev=show_rev_param)
             ValidationTool.validate_fields_values_in_output(expected_fields=expected_conf.keys(),
                                                             expected_values=expected_conf.values(),
-                                                            output_dict=cur_hostname_conf).verify_result()
+                                                            output_dict=cur_server_conf).verify_result()
 
-        with allure.step(f'Verify new configuration for hostnames {non_default_hostnames}'):
-            expected_conf = hostname_conf.copy()
+        with allure.step(f'Verify new configuration for servers {non_default_servers}'):
+            expected_conf = server_conf.copy()
             expected_conf[AaaConsts.PRIORITY] = 2
             if AaaConsts.SECRET in expected_conf.keys():
                 expected_conf[AaaConsts.SECRET] = '*'
-            for hostname in non_default_hostnames:
-                cur_hostname_conf = show_and_parse(main_resource_obj.hostname.hostname_id[hostname], rev=show_rev_param)
+            for server in non_default_servers:
+                cur_server_conf = show_and_parse(main_resource_obj.server.server_id[server], rev=show_rev_param)
                 ValidationTool.validate_fields_values_in_output(expected_fields=expected_conf.keys(),
                                                                 expected_values=expected_conf.values(),
-                                                                output_dict=cur_hostname_conf).verify_result()
+                                                                output_dict=cur_server_conf).verify_result()
                 expected_conf[AaaConsts.PRIORITY] += 1
 
-    if list(hostname_conf.keys()) != [AaaConsts.PRIORITY]:
-        with allure.step(f'Clear hostname {hostname2} configuration'):
-            for field in hostname_conf.keys():
+    if list(server_conf.keys()) != [AaaConsts.PRIORITY]:
+        with allure.step(f'Clear server {server2} configuration'):
+            for field in server_conf.keys():
                 if field != AaaConsts.PRIORITY:
-                    main_resource_obj.hostname.hostname_id[hostname2].unset(field).verify_result()
+                    main_resource_obj.server.server_id[server2].unset(field).verify_result()
             SendCommandTool.execute_command(TestToolkit.GeneralApi[TestToolkit.tested_api].apply_config, engines.dut,
                                             True).verify_result()
-        with allure.step(f'Verify default configuration for hostname {hostname2}'):
+        with allure.step(f'Verify default configuration for server {server2}'):
             global_conf = show_and_parse(main_resource_obj, rev=show_rev_param)
             expected_conf = {
                 key: 2 if key == AaaConsts.PRIORITY else global_conf[key]
-                for key in hostname_conf.keys()
+                for key in server_conf.keys()
             } if remote_aaa_type == RemoteAaaType.LDAP else {AaaConsts.PRIORITY: 2}
-            cur_hostname_conf = show_and_parse(main_resource_obj.hostname.hostname_id[hostname2], rev=show_rev_param)
+            cur_server_conf = show_and_parse(main_resource_obj.server.server_id[server2], rev=show_rev_param)
             ValidationTool.validate_fields_values_in_output(expected_fields=expected_conf.keys(),
                                                             expected_values=expected_conf.values(),
-                                                            output_dict=cur_hostname_conf).verify_result()
+                                                            output_dict=cur_server_conf).verify_result()
 
     with allure.step('Unset configuration'):
         time.sleep(0.5)
@@ -236,7 +236,7 @@ def generic_aaa_test_auth(test_flow: str, test_api: str, addressing_type: str, e
                           server_by_addr_type: Dict[str, RemoteAaaServerInfo],
                           test_param: List[str] = None,
                           test_param_update_func: Callable[
-                              [Any, Any, RemoteAaaServerInfo, HostnameId, str], None] = None,
+                              [Any, Any, RemoteAaaServerInfo, ServerId, str], None] = None,
                           skip_auth_mediums: List[str] = None):
     """
     @summary: Basic test to verify authentication and authorization through remote aaa, using all possible auth mediums:
@@ -270,7 +270,7 @@ def generic_aaa_test_auth(test_flow: str, test_api: str, addressing_type: str, e
 
     with allure.step(f'Configure {remote_aaa_type} server'):
         server = server_by_addr_type[addressing_type].copy()
-        server_resource = remote_aaa_obj.hostname.hostname_id[server.hostname]
+        server_resource = remote_aaa_obj.server.server_id[server.hostname]
         server.configure(engines)
 
     with allure.step(f'Enable {remote_aaa_type}'):
@@ -342,11 +342,11 @@ def generic_aaa_test_bad_configured_server(test_api, engines, topology_obj, remo
 
 def generic_aaa_test_unique_priority(test_api, remote_aaa_obj: RemoteAaaResource):
     """
-    @summary: Verify that hostname priority must be unique
+    @summary: Verify that server priority must be unique
 
         Steps:
-        1. Set 2 hostnames with different priority - expect success
-        2. set another hostname with existing priority - expect failure
+        1. Set 2 servers with different priority - expect success
+        2. set another server with existing priority - expect failure
     @param test_api: run commands with NVUE / OpenApi
     @param remote_aaa_obj: BaseComponent object representing the feature resource
     """
@@ -354,17 +354,17 @@ def generic_aaa_test_unique_priority(test_api, remote_aaa_obj: RemoteAaaResource
 
     TestToolkit.tested_api = test_api
 
-    with allure.step('Set 2 hostnames with different priority - expect success'):
+    with allure.step('Set 2 servers with different priority - expect success'):
         rand_prio1 = RandomizationTool.select_random_value(ValidValues.PRIORITY).get_returned_value()
-        remote_aaa_obj.hostname.hostname_id['1.2.3.4'].set(AaaConsts.PRIORITY, rand_prio1).verify_result()
+        remote_aaa_obj.server.server_id['1.2.3.4'].set(AaaConsts.PRIORITY, rand_prio1).verify_result()
         rand_prio2 = RandomizationTool.select_random_value(ValidValues.PRIORITY,
                                                            forbidden_values=[rand_prio1]).get_returned_value()
-        remote_aaa_obj.hostname.hostname_id['2.4.6.8'].set(AaaConsts.PRIORITY, rand_prio2,
-                                                           apply=True).verify_result()
+        remote_aaa_obj.server.server_id['2.4.6.8'].set(AaaConsts.PRIORITY, rand_prio2,
+                                                       apply=True).verify_result()
 
-    with allure.step('Set another hostname with existing priority - expect fail'):
-        remote_aaa_obj.hostname.hostname_id['3.6.9.12'].set(AaaConsts.PRIORITY, rand_prio2,
-                                                            apply=True).verify_result(False)
+    with allure.step('Set another server with existing priority - expect fail'):
+        remote_aaa_obj.server.server_id['3.6.9.12'].set(AaaConsts.PRIORITY, rand_prio2,
+                                                        apply=True).verify_result(False)
 
 
 def generic_aaa_test_priority(test_flow, test_api, engines, topology_obj, request, remote_aaa_type: str,
@@ -425,7 +425,7 @@ def generic_aaa_test_priority(test_flow, test_api, engines, topology_obj, reques
 
         next_prio = random.randint(top_server.priority + 1, ValidValues.PRIORITY[-1])
         with allure.step(f'Advance lower server to be top prioritized to: {next_prio}'):
-            lower_server_resource = remote_aaa_obj.hostname.hostname_id[lower_server.hostname]
+            lower_server_resource = remote_aaa_obj.server.server_id[lower_server.hostname]
             lower_server.priority = next_prio
             lower_server_resource.set(AaaConsts.PRIORITY, lower_server.priority, apply=True,
                                       dut_engine=item.active_remote_admin_engine)
@@ -481,6 +481,8 @@ def generic_aaa_test_server_unreachable(test_flow: str, test_api, engines, topol
 
     with allure.step(f'Enable {remote_aaa_type}'):
         remote_aaa_obj.enable(apply=True)
+        if remote_aaa_type == RemoteAaaType.LDAP:
+            wait_for_ldap_nvued_restart_workaround(item)
 
     with allure.step('Verify auth - success only with local user'):
         verify_auth(test_flow, engines, topology_obj,
