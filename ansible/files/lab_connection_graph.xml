@@ -255,6 +255,9 @@
       <Device Hostname="r-tigris-22" HwSku="ACS-MSN3800" Type="DevSonic"/>
       <Device Hostname="r-ocelot-07" HwSku="ACS-MSN4410" Type="DevSonic"/>
       <Device Hostname="r-tigon-17" HwSku="ACS-MSN4600C" Type="DevSonic"/>
+      <Device Hostname="mtvr-tigon-05" HwSku="ACS-MSN4600C" Type="DevSonic"/>
+      <Device Hostname="mtvr-tigon-06" HwSku="ACS-MSN4600C" Type="DevSonic"/>
+      <Device Hostname="mtvr-tigon-07" HwSku="ACS-MSN4600C" Type="DevSonic"/>
       <Device Hostname="r-alligator-04" HwSku="ACS-SN2201" Type="DevSonic" />
       <Device Hostname="r-buffalo-04" HwSku="ACS-MSN4800" Type="DevSonic"/>
       <Device Hostname="c-anaconda-01" HwSku="ACS-MSN3700C" Type="DevSonic" />
@@ -5278,6 +5281,15 @@
 
       <PowerControlLinkInfo EndDevice="mtvr-moose-08" EndPort="PSU1" StartDevice="pdu-10-245-2-40" StartPort="10"/>
       <PowerControlLinkInfo EndDevice="mtvr-moose-08" EndPort="PSU2" StartDevice="pdu-10-245-2-40" StartPort="14"/>
+
+      <PowerControlLinkInfo EndDevice="mtvr-tigon-05" EndPort="PSU1" StartDevice="pdu-10-245-2-49" StartPort="12"/>
+      <PowerControlLinkInfo EndDevice="mtvr-tigon-05" EndPort="PSU2" StartDevice="pdu-10-245-2-49" StartPort="14"/>
+
+      <PowerControlLinkInfo EndDevice="mtvr-tigon-06" EndPort="PSU1" StartDevice="pdu-10-245-2-49" StartPort="16"/>
+      <PowerControlLinkInfo EndDevice="mtvr-tigon-06" EndPort="PSU2" StartDevice="pdu-10-245-2-49" StartPort="18"/>
+
+      <PowerControlLinkInfo EndDevice="mtvr-tigon-07" EndPort="PSU1" StartDevice="pdu-10-245-2-49" StartPort="34"/>
+      <PowerControlLinkInfo EndDevice="mtvr-tigon-07" EndPort="PSU2" StartDevice="pdu-10-245-2-49" StartPort="36"/>
 
       <PowerControlLinkInfo EndDevice="mtvr-hippo-01" EndPort="PSU1" StartDevice="pdu-10-245-2-40" StartPort="18"/>
       <PowerControlLinkInfo EndDevice="mtvr-hippo-01" EndPort="PSU2" StartDevice="pdu-10-245-2-40" StartPort="28"/>

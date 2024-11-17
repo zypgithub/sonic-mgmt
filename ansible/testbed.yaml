@@ -1242,6 +1242,45 @@
     - mtvr-moose-03
   comment: Mellanox MTR testbed
 
+- conf-name: mtvr-tigon-05-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+    - mtvr-tigon-05
+  comment: Mellanox MTR testbed
+
+- conf-name: mtvr-tigon-06-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+    - mtvr-tigon-06
+  comment: Mellanox MTR testbed
+
+- conf-name: mtvr-tigon-07-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+    - mtvr-tigon-07
+  comment: Mellanox MTR testbed
+
 - conf-name: mtvr-moose-05-ptf-any
   group-name: vm-t1
   topo: ptf-any
