@@ -100,6 +100,7 @@ class AdvancedReboot:
         self.lagMemberCnt = 0
         self.vlanMaxCnt = 0
         self.hostMaxCnt = HOST_MAX_COUNT
+        self.capture_on_vmhost = True if vmhost.external_port else False
         if "dualtor" in self.getTestbedType():
             self.dual_tor_mode = True
             peer_duthost = get_peerhost(duthosts, duthost)
@@ -187,14 +188,13 @@ class AdvancedReboot:
             attr['mgmt_addr'] for dev, attr in list(self.mgFacts['minigraph_devices'].items())
             if attr['hwsku'] == 'Arista-VM'
         ]
-
-        self.rebootData['vmhost_mgmt_ip'] = self.vmhost.mgmt_ip
-        self.rebootData['vmhost_external_port'] = self.vmhost.external_port
-        self.rebootData['vmhost_username'] = \
-            self.duthost.host.options['variable_manager']._hostvars[self.vmhost.hostname]['vm_host_user']
-        self.rebootData['vmhost_password'] = \
-            self.duthost.host.options['variable_manager']._hostvars[self.vmhost.hostname]['vm_host_password']
-
+        if self.capture_on_vmhost:
+            self.rebootData['vmhost_mgmt_ip'] = self.vmhost.mgmt_ip
+            self.rebootData['vmhost_external_port'] = self.vmhost.external_port
+            self.rebootData['vmhost_username'] = \
+                self.duthost.host.options['variable_manager']._hostvars[self.vmhost.hostname]['vm_host_user']
+            self.rebootData['vmhost_password'] = \
+                self.duthost.host.options['variable_manager']._hostvars[self.vmhost.hostname]['vm_host_password']
 
         self.hostMaxLen = len(self.rebootData['arista_vms']) - 1
         self.lagMemberCnt = len(list(self.mgFacts['minigraph_portchannels'].values())[0]['members'])
@@ -703,10 +703,6 @@ class AdvancedReboot:
             "dut_username": self.rebootData['dut_username'],
             "dut_password": self.rebootData['dut_password'],
             "dut_hostname": self.rebootData['dut_hostname'],
-            "vmhost_username": self.rebootData['vmhost_username'],
-            "vmhost_password": self.rebootData['vmhost_password'],
-            "vmhost_mgmt_ip": self.rebootData['vmhost_mgmt_ip'],
-            "vmhost_external_port": self.rebootData['vmhost_external_port'],
             "reboot_limit_in_seconds": self.rebootLimit,
             "reboot_type": self.rebootType,
             "other_vendor_flag": self.other_vendor_nos,
@@ -736,6 +732,14 @@ class AdvancedReboot:
             "service_data": None if self.rebootType != 'service-warm-restart' else self.service_data,
             "neighbor_type": self.neighborType,
         }
+
+        if self.capture_on_vmhost:
+            params.update({
+                "vmhost_username": self.rebootData['vmhost_username'],
+                "vmhost_password": self.rebootData['vmhost_password'],
+                "vmhost_mgmt_ip": self.rebootData['vmhost_mgmt_ip'],
+                "vmhost_external_port": self.rebootData['vmhost_external_port']
+            })
 
         if self.dual_tor_mode:
             params.update({
@@ -885,6 +889,7 @@ def get_advanced_reboot(request, duthosts, enum_rand_one_per_hwsku_frontend_host
         @param ptfhost: PTFHost for interacting with PTF through ansible
         @param localhost: Localhost for interacting with localhost through ansible
         @param tbinfo: fixture provides information about testbed
+        @param vmhost: AnsibleHost instance of the test server
     """
     duthost = duthosts[enum_rand_one_per_hwsku_frontend_hostname]
     instances = []

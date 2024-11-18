@@ -145,10 +145,10 @@ class ReloadTest(BaseTest):
         self.check_param('dut_username', '', required=True)
         self.check_param('dut_password', '', required=True)
         self.check_param('dut_hostname', '', required=True)
-        self.check_param('vmhost_username', '', required=True)
-        self.check_param('vmhost_password', '', required=True)
-        self.check_param('vmhost_mgmt_ip', '', required=True)
-        self.check_param('vmhost_external_port', '', required=True)
+        self.check_param('vmhost_username', '', required=False)
+        self.check_param('vmhost_password', '', required=False)
+        self.check_param('vmhost_mgmt_ip', '', required=False)
+        self.check_param('vmhost_external_port', '', required=False)
         self.check_param('reboot_limit_in_seconds', 30, required=False)
         self.check_param('reboot_type', 'fast-reboot', required=False)
         self.check_param('graceful_limit', 240, required=False)
@@ -278,11 +278,13 @@ class ReloadTest(BaseTest):
             alt_password=self.test_params.get('alt_password')
         )
 
-        self.vmhost_connection = DeviceConnection(
-            self.test_params['vmhost_mgmt_ip'],
-            self.test_params['vmhost_username'],
-            password=self.test_params['vmhost_password']
-        )
+        self.vmhost_external_port = self.test_params['vmhost_external_port']
+        if self.vmhost_external_port:
+            self.vmhost_connection = DeviceConnection(
+                self.test_params['vmhost_mgmt_ip'],
+                self.test_params['vmhost_username'],
+                password=self.test_params['vmhost_password']
+            )
 
         self.installed_sonic_version = self.get_installed_sonic_version()
         self.sender_thr = threading.Thread(target=self.send_in_background)
@@ -763,8 +765,9 @@ class ReloadTest(BaseTest):
 
         self.log("Disabling arp_responder")
         self.cmd(["supervisorctl", "stop", "arp_responder"])
-        self.log("Remove the tcpdump pcap on the vm host.")
-        self.vmhost_connection.execCommand(f"sudo rm -rf {self.remote_capture_pcap}")
+        if self.vmhost_external_port:
+            self.log("Remove the tcpdump pcap on the vm host.")
+            self.vmhost_connection.execCommand(f"sudo rm -rf {self.remote_capture_pcap}")
 
         # Stop watching DUT
         self.watching = False
@@ -1766,8 +1769,21 @@ class ReloadTest(BaseTest):
         sniffer = threading.Thread(target=self.tcpdump_sniff, kwargs={
                                    'wait': wait, 'sniff_filter': sniff_filter})
         sniffer.start()
-        # Let the scapy sniff initialize completely.
-        time.sleep(10)
+        # Let the scapy sniff initialize completely. Need to wait more time when capturing on the vmhost.
+        time.sleep(2)
+        if self.vmhost_external_port:
+            start_sniffer_delay = 30
+            elapsed_time = 0
+            while elapsed_time < start_sniffer_delay:
+                elapsed_time += 1
+                time.sleep(1)
+                stdout_lines, stderr_lines, _ = self.vmhost_connection.execCommand(f"ls {self.remote_capture_pcap}")
+                if (self.remote_capture_pcap + '\n') in stdout_lines and len(stderr_lines) == 0:
+                    self.log(f"The pcap file on the vmhost is created: {self.remote_capture_pcap}")
+                    break
+            else:
+                self.log(f"Caution: the pcap file on the vmhost is not created in {start_sniffer_delay}s.")
+
         # Unblock waiter for the send_in_background.
         self.sniffer_started.set()
         sniffer.join()
@@ -1777,7 +1793,7 @@ class ReloadTest(BaseTest):
 
     def tcpdump_sniff(self, wait=300, sniff_filter=''):
         """
-        @summary: PTF runner -  runs a sniffer in vmhost(server).
+        @summary: PTF runner -  runs a sniffer in vmhost(server) or the PTF container.
         Args:
             wait (int): Duration in seconds to sniff the traffic
             sniff_filter (str): Filter that tcpdump will use to collect only relevant packets
@@ -1785,20 +1801,26 @@ class ReloadTest(BaseTest):
         try:
             capture_pcap = ("/tmp/capture_%s.pcap" % self.logfile_suffix
                             if self.logfile_suffix is not None else "/tmp/capture.pcap")
-            remote_capture_pcap = capture_pcap + f"_{self.test_params['dut_hostname']}"
-            self.remote_capture_pcap = remote_capture_pcap
-            self.vmhost_connection.execCommand(f"sudo rm -rf {remote_capture_pcap}")
             subprocess.call(["rm", "-rf", capture_pcap])
             self.kill_sniffer = False
-            self.start_sniffer(remote_capture_pcap, sniff_filter, wait)
-            self.vmhost_connection.fetch(remote_capture_pcap, capture_pcap)
+
+            if self.vmhost_external_port:
+                remote_capture_pcap = capture_pcap + f"_{self.test_params['dut_hostname']}"
+                self.remote_capture_pcap = remote_capture_pcap
+                self.vmhost_connection.execCommand(f"sudo rm -rf {remote_capture_pcap}")
+                self.start_sniffer_on_vmhost(remote_capture_pcap, sniff_filter, wait)
+                self.vmhost_connection.fetch(remote_capture_pcap, capture_pcap)
+            else:
+                self.start_sniffer_on_ptf(capture_pcap, sniff_filter, wait)
+                self.create_single_pcap(capture_pcap)
+
             self.packets = scapyall.rdpcap(capture_pcap)
             self.log("Number of all packets captured: {}".format(len(self.packets)))
         except Exception:
             traceback_msg = traceback.format_exc()
             self.log("Error in tcpdump_sniff: {}".format(traceback_msg))
 
-    def start_sniffer(self, pcap_path, tcpdump_filter, timeout):
+    def start_sniffer_on_vmhost(self, pcap_path, tcpdump_filter, timeout):
         """
         Start tcpdump sniffer on all data interfaces, and kill them after a specified timeout
         """
@@ -1817,6 +1839,93 @@ class ReloadTest(BaseTest):
         self.log("Going to kill the tcpdump process by SIGTERM")
         self.vmhost_connection.execCommand(f'sudo pkill -f "{cmd}"')
         self.log("Killed the tcpdump process")
+
+    def start_sniffer_on_ptf(self, pcap_path, tcpdump_filter, timeout):
+        """
+        Start tcpdump sniffer on all data interfaces, and kill them after a specified timeout
+        """
+        self.tcpdump_data_ifaces = [
+            iface for iface in scapyall.get_if_list() if iface.startswith('eth')]
+        processes_list = []
+        for iface in self.tcpdump_data_ifaces:
+            iface_pcap_path = '{}_{}'.format(pcap_path, iface)
+            process = subprocess.Popen(['tcpdump', '-i', iface, tcpdump_filter, '-w', iface_pcap_path])
+            self.log('Tcpdump sniffer starting on iface: {}'.format(iface))
+            processes_list.append(process)
+
+        time_start = time.time()
+        while not self.kill_sniffer:
+            time.sleep(1)
+            curr_time = time.time()
+            if curr_time - time_start > timeout:
+                break
+            time_start = curr_time
+
+        self.log("Going to kill all tcpdump processes by SIGTERM")
+        for process in processes_list:
+            process.terminate()
+
+        for process in processes_list:
+            process.wait(timeout=5)
+            # Return code here could be 0, so we need to explicitly check for None
+            if process.returncode is not None:
+                self.log("Tcpdump process {} terminated".format(process.args))
+
+        for process in processes_list:
+            if process.returncode is not None:
+                continue
+            self.log("Killing tcpdump process {}".format(process.args))
+            process.kill()
+            process.wait(timeout=5)
+            # Return code here could be 0, so we need to explicitly check for None
+            if process.returncode is not None:
+                self.log("Tcpdump process {} killed".format(process.args))
+
+        self.log("Killed all tcpdump processes")
+
+    def create_single_pcap(self, pcap_path):
+        """
+        Merge all pcaps from each interface into single pcap file
+        """
+        pcapng_full_capture = self.merge_pcaps(
+            pcap_path, self.tcpdump_data_ifaces)
+        self.convert_pcapng_to_pcap(pcap_path, pcapng_full_capture)
+        self.log('Pcap files merged into single pcap file: {}'.format(pcap_path))
+
+    def merge_pcaps(self, pcap_path, data_ifaces):
+        """
+        Merge all pcaps into one, format: pcapng
+        """
+        pcapng_full_capture = '{}.pcapng'.format(pcap_path)
+        cmd = ['mergecap', '-w', pcapng_full_capture]
+        ifaces_pcap_files_list = []
+        for iface in data_ifaces:
+            pcap_file_path = '{}_{}'.format(pcap_path, iface)
+            if os.path.exists(pcap_file_path):
+                cmd.append(pcap_file_path)
+                ifaces_pcap_files_list.append(pcap_file_path)
+
+        self.log('Starting merge pcap files')
+        subprocess.call(cmd)
+        self.log('Pcap files merged into tmp pcapng file')
+
+        # Remove pcap files created per interface
+        for pcap_file in ifaces_pcap_files_list:
+            subprocess.call(['rm', '-f', pcap_file])
+
+        return pcapng_full_capture
+
+    def convert_pcapng_to_pcap(self, pcap_path, pcapng_full_capture):
+        """
+        Convert pcapng file into pcap. We can't just merge all in pcap,
+        mergecap can merge multiple files only into pcapng format
+        """
+        cmd = ['mergecap', '-F', 'pcap', '-w', pcap_path, pcapng_full_capture]
+        self.log('Converting pcapng file into pcap file')
+        subprocess.call(cmd)
+        self.log('Pcapng file converted into pcap file')
+        # Remove tmp pcapng file
+        subprocess.call(['rm', '-f', pcapng_full_capture])
 
     def check_tcp_payload(self, packet):
         """
