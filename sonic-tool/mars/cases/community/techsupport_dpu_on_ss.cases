@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CASEDEF>
+    <global>
+        <Test>
+            <info> Show techsupport command test </info>
+            <!--Must be the test case name in sonic-mgmt/ansible/roles/test/vars/testcases.yml-->
+            <name> show_techsupport </name>
+            <owner> SONiC </owner>
+        </Test>
+        <Case>
+            <tags> SHOW_TECHSUPPORT </tags>
+            <wrapper> [[run_time:db_tests_path]]/sonic-mgmt/sonic-tool/mars/scripts/community_mars_pytest_runner.py  </wrapper>
+            <tout> 55555 </tout>
+        </Case>
+    </global>
+
+    <case>
+        <info> AUTO_TECHSUPPORT Case </info>
+        <name> auto_techsupport </name>
+        <cmd>
+            <params>
+                <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals -v --clean-alluredir --alluredir=/tmp/allure-results --timeout 3600 --session-timeout 3600 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts show_techsupport/test_auto_techsupport.py --run_test_on_dpu_only True </static_args>
+            </params>
+        </cmd>
+    </case>
+
+    <case>
+        <info> AUTO_TECHSUPPORT Case </info>
+        <name> techsupport_no_secret </name>
+        <cmd>
+            <params>
+                <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no  -ra --showlocals -v --clean-alluredir --alluredir=/tmp/allure-results --timeout 3600 --session-timeout 3600 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts show_techsupport/test_techsupport_no_secret.py --run_test_on_dpu_only True </static_args>
+            </params>
+        </cmd>
+    </case>
+
+    <case>
+        <info> SHOW TECHSUPPORT Case </info>
+        <name> fw_stuck_dump </name>
+        <cmd>
+            <params>
+                <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug   --show-capture=no  -ra --showlocals -v --clean-alluredir --alluredir=/tmp/allure-results --timeout 3600 --session-timeout 3600 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts show_techsupport/test_techsupport_fw_stuck_dump_dpu.py --run_test_on_dpu_only True </static_args>
+            </params>
+        </cmd>
+    </case>
+
+    <case>
+        <info> SHOW TECHSUPPORT Case </info>
+        <name> show_techsupport_on_dpu </name>
+        <cmd>
+            <params>
+                <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug   --show-capture=no  -ra --showlocals -v --clean-alluredir --alluredir=/tmp/allure-results --timeout 3600 --session-timeout 3600 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts show_techsupport/test_techsupport.py --run_test_on_dpu_only True </static_args>
+            </params>
+        </cmd>
+    </case>
+
+</CASEDEF>

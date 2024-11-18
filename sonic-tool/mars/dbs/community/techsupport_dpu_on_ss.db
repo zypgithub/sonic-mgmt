@@ -57,7 +57,7 @@
     </global>
 
     <test>
-        <cases> sonic-mgmt/sonic-tool/mars/cases/community/show_techsupport_bf.cases </cases>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/techsupport_dpu_on_ss.cases </cases>
     </test>
 
 </DBDEF>
