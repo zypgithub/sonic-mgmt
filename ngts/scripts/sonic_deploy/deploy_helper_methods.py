@@ -86,7 +86,7 @@ class DeployMethods:
             cli_obj = dut['cli_obj']
             with allure.step('Install traffic generator on switch: {}'.format(dut['dut_name'])):
                 install_threads.append((dut['dut_name'], executor.submit(cli_obj.install_traffic_generator)))
-            DeployMethods.wait_until_deploy_background_process(install_threads, timeout=1500)
+        DepoyMethods.wait_until_deploy_background_process(install_threads, timeout=1500)
 
     @staticmethod
     def wait_until_deploy_background_process(install_threads, timeout=1200):
