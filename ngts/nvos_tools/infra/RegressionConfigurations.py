@@ -52,10 +52,7 @@ class Configurations:
                                               'nv config apply -y'],
                              }
 
-    devices_missing_psus = {
-        MTVR_MAMBA_06_0, MTVR_MAMBA_06_1, MTVR_CROC_19_0, MTVR_CROC_19_1, MTVR_CROC_50_0, MTVR_CROC_50_1,
-    }
-
+    devices_missing_psus = {}
     devices_to_configure_ndr_ports = ndr_ports.keys()
 
     default_conf = NvosConst.DEFAULT_CONFIG
