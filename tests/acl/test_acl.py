@@ -47,7 +47,7 @@ ACL_REMOVE_RULES_FILE = "acl_rules_del.json"
 
 # TODO: We really shouldn't have two separate templates for v4 and v6, need to combine them somehow
 ACL_RULES_FULL_TEMPLATE = {
-    "ipv4": "acltb_test_rules.j2",
+    "ipv4": "acltb_test_rules_permit_loopback.j2",
     "ipv6": "acltb_v6_test_rules.j2"
 }
 ACL_RULES_PART_TEMPLATES = {
