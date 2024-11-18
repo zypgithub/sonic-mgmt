@@ -9,6 +9,8 @@ from ngts.nvos_tools.infra.SecureBootTool import SecureBootTool
 from ngts.nvos_tools.infra.TpmTool import TpmTool
 from ngts.tests_nvos.constants import PRODUCTION, DEVELOPMENT
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.nvos_tools.infra.Tools import Tools
+from ngts.nvos_constants.constants_nvos import DatabaseConst
 
 logger = logging.getLogger()
 
@@ -50,6 +52,16 @@ class BmcTool():
 
             assert output_version == expected_version, \
                 f"firmware is {output_version}, expected {expected_version} after the install"
+
+    @staticmethod
+    def compare_bmc_version_issu_module(engines, expected_version: str):
+        with allure.step(f'Making sure component is now on version {expected_version}'):
+            bmc_output = Tools.DatabaseTool.sonic_db_cli_hgetall(engine=engines.dut, asic="",
+                                                                 db_name=DatabaseConst.STATE_DB_NAME,
+                                                                 table_name='\"SYSTEM_COMPONENTS|BMC\"')
+
+            assert bmc_output == expected_version, \
+                f"firmware is {bmc_output}, expected {expected_version} after the install"
 
     @staticmethod
     def _get_fw_component_version_info(component_name, version):

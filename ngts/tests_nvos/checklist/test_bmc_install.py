@@ -55,3 +55,4 @@ def test_bmc_install(engines, devices, topology_obj, test_api, platform_componen
                                                      name=version_name, filename=filename,
                                                      topology_obj=topology_obj)
         BmcTool.verify_platform_component_version(platform_component_with_clear, version_name)
+        # BmcTool.compare_bmc_version_issu_module(engines, version_name)  !TBD uncomment after merge 1800 to master

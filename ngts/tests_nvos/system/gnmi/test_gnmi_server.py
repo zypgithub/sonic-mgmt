@@ -2,6 +2,7 @@ import logging
 import os
 import random
 import signal
+import ast
 import time
 import re
 from multiprocessing import Process
@@ -18,6 +19,7 @@ from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
 from ngts.tests_nvos.system.gnmi.constants import GnmiMode, MAX_GNMI_SUBSCRIBERS, GnmicErr
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.tests_nvos.system.gnmi.helpers import gnmi_basic_flow, validate_gnmi_is_running_and_stream_updates, \
     validate_show_gnmi, validate_gnmi_server_in_health_issues, run_gnmi_client_in_the_background, \
     verify_description_value, run_gnmi_client_and_parse_output, validate_gnmi_enabled_and_running, \
@@ -441,6 +443,63 @@ def test_gnmi_events_overload(engines, devices):
             validate_memory_and_cpu_utilization()
             mpstat_output = engines.dut.run_cmd('mpstat -P ALL')
             logger.info("At the End - Utilization: {}".format(parse_mpstat_output(regex, mpstat_output)))
+
+
+@pytest.mark.system
+@pytest.mark.gnmi
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_gnmi_extend_telemetry(test_api, engines, devices):
+    """
+    Check gnmi extend telemetry flow:
+        Test flow:
+            1. Get system version from nvue
+            2. Subscribe to the gnmi server and check system version
+            3. Get all firmware components from nv fae show platform firmware command"
+            4. Get all components with sonic-cli and check it have information, compare with fw output
+            5. Subscribe to gnmi and compare all components with fw output
+    """
+    TestToolkit.tested_api = test_api
+    system = System()
+    fae = Fae()
+
+    with allure.step("Get system version from nvue"):
+        system_version = OutputParsingTool.parse_json_str_to_dictionary(system.version.show()).get_returned_value()[
+            'image']
+
+    with allure.step("Subscribe to the gnmi server and check system version"):
+        gnmi_stream_updates = run_gnmi_client_and_parse_output(engines, devices, devices.dut.version_xpath,
+                                                               engines.dut.ip)
+        gnmi_stream_updates_value = list(gnmi_stream_updates.values())[0]
+        assert system_version == gnmi_stream_updates_value, f"'{system_version}' not exist in {gnmi_stream_updates_value}"
+
+    with allure.step("Get all firmware components from nv fae show platform firmware command"):
+        firmware_show = OutputParsingTool.parse_json_str_to_dictionary(
+            fae.platform.firmware.show()).get_returned_value()
+
+    with (allure.step("Get all components with sonic-cli and check it have information, compare with fw output")):
+        component_keys = Tools.DatabaseTool.sonic_db_cli_get_keys(engine=engines.dut, asic="",
+                                                                  db_name=DatabaseConst.STATE_DB_NAME,
+                                                                  grep_str=GnmiConsts.SYSTEM_COMPONENTS).splitlines()
+        for component in component_keys:
+            component_output = Tools.DatabaseTool.sonic_db_cli_hgetall(engine=engines.dut, asic="",
+                                                                       db_name=DatabaseConst.STATE_DB_NAME,
+                                                                       table_name=f'\"{component}\"')
+            output = ast.literal_eval(component_output)
+
+            assert GnmiConsts.FW_VERSION in output and output[GnmiConsts.FW_VERSION], f"fw_version is missing or empty for {component}"
+            assert GnmiConsts.PART_NUMBER in output and output[GnmiConsts.PART_NUMBER], f"part_number is missing or empty {component}"
+            assert GnmiConsts.DESCRIPTION in output and output[GnmiConsts.DESCRIPTION], f"description is missing or empty {component}"
+
+            if GnmiConsts.ONIE_COMPONENT in component:
+                pass
+            assert any(firmware_component.get('actual-firmware') == output['fw_version'] for firmware_component in
+                       firmware_show.values()), f"Value '{output['fw_version']}' not found in {firmware_show}"
+
+    with allure.step("Subscribe to gnmi and compare all components with fw output"):
+        for path in devices.dut.components_gnmi_xpath:
+            gnmi_stream_updates = run_gnmi_client_and_parse_output(engines, devices, path, engines.dut.ip)
+            gnmi_stream_updates_value = list(gnmi_stream_updates.values())[0]
+            assert any(component.get('actual-firmware') == gnmi_stream_updates_value for component in firmware_show.values()), f"Value '{gnmi_stream_updates_value}' not found in any 'actual-firmware' field"
 
 
 def check_subscriber_output_in_parallel(client_no, client_proc):

@@ -133,7 +133,7 @@ def run_gnmi_client_and_parse_output(engines, devices, xpath, target_ip, target_
         prefix_and_path = xpath.rsplit("/", 1)
         mode_flag = f"--mode {mode}" if mode else ''
         cmd = f"gnmic -a {target_ip} --port {target_port} --skip-verify subscribe --prefix '{prefix_and_path[0]}'" \
-            f" --path '{prefix_and_path[1]}' --target netq -u {username} " \
+            f" --path '{prefix_and_path[1]}' --target {devices.dut.gnmi_target} -u {username} " \
             f"-p {password} {mode_flag} --format flat"
         logger.info(f"run on the sonic mgmt docker {sonic_mgmt_engine.ip}: {cmd}")
         if "poll" == mode:

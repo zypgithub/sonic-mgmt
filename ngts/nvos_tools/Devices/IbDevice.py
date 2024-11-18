@@ -32,6 +32,7 @@ class IbSwitch(BaseSwitch):
         self.documents_path = None
         self.documents_files = None
         self._init_sensors_dict()
+        self._init_gnmi_consts()
         self.open_api_port = "443"
         self.default_password = os.environ["NVU_SWITCH_NEW_PASSWORD"]
         self.default_username = os.environ["NVU_SWITCH_USER"]
@@ -197,6 +198,17 @@ class IbSwitch(BaseSwitch):
     def _init_dependent_services(self):
         super()._init_dependent_services()
         self.dependent_services.append(NvosConst.SYM_MGR_SERVICES)
+
+    def _init_gnmi_consts(self):
+        self.gnmi_target = 'netq'
+        self.version_xpath = 'platform-general/versions/state/nos-version'
+        self.bios_xpath = "platform-general/versions/state/fw-version-bios"
+        self.cpld1_xpath = 'platform-general/versions/fw-versions-cpld/fw-version-cpld[id=1]/state/fw-version'
+        self.cpld2_xpath = 'platform-general/versions/fw-versions-cpld/fw-version-cpld[id=1]/state/fw-version'
+        self.cpld3_xpath = 'platform-general/versions/fw-versions-cpld/fw-version-cpld[id=3]/state/fw-version'
+        self.cpld4_xpath = 'platform-general/versions/fw-versions-cpld/fw-version-cpld[id=4]/state/fw-version'
+        self.components_gnmi_xpath = [self.bios_xpath, self.cpld1_xpath, self.cpld2_xpath,
+                                      self.cpld3_xpath, self.cpld4_xpath]
 
     def _init_dockers(self):
         super()._init_dockers()
@@ -1018,6 +1030,15 @@ class JulietSwitch(NvLinkSwitch):
             'PDB-Conv-2-Temp', 'PDB-Conv-3-Temp', 'PDB-Conv-4-Temp', 'PMIC-1-Temp', 'PMIC-2-Temp', 'PMIC-3-Temp',
             'PMIC-4-Temp', 'PMIC-5-Temp', 'PMIC-6-Temp', 'PMIC-7-Temp', 'PMIC-8-Temp', 'SODIMM-1-Temp',
             'SWB-ASIC1-PCB-Temp', 'SWB-ASIC2-PCB-Temp']
+
+    def _init_gnmi_consts(self):
+        super()._init_gnmi_consts()
+        self.gnmi_target = 'nvos'
+        self.bmc_xpath = "platform-general/versions/state/fw-version-bmc"
+        self.erot_xpath = "platform-general/versions/state/fw-version-erot"
+        self.fpga_xpath = "platform-general/versions/state/fw-version-fpga"
+        self.components_gnmi_xpath = [self.bmc_xpath, self.bios_xpath, self.erot_xpath, self.fpga_xpath,
+                                      self.cpld1_xpath, self.cpld2_xpath, self.cpld3_xpath, self.cpld4_xpath]
 
     def get_available_erot_names(self, setup_name: str) -> List[str]:
         available_erots_per_juliet_number: Dict[str, List[str]] = {
