@@ -1,5 +1,5 @@
 import logging
-
+import re
 from dotted_dict import DottedDict
 
 from ngts.nvos_tools.Devices.EthDevice import Mlx2410Switch, Mlx4600Switch, Mlx4600cSwitch, Mlx4700Switch, Mlx5600Switch, \
@@ -59,6 +59,8 @@ class DeviceFactory:
             if device_name not in DeviceFactory.device_type_dict.keys():
                 if "5600" in device_name:
                     device_name = 'Mellanox SN5600'
+                elif "4600C" in device_name:
+                    device_name = 'Mellanox SN4600c'
                 else:
                     device_name = device_name[0:7]
             instance_type = DeviceFactory.device_type_dict[device_name]
