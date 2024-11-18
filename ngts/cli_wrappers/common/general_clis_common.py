@@ -511,7 +511,7 @@ class GeneralCliCommon(GeneralCliInterface):
     def reboot_by_onie_reboot_script(self, onie_reboot_script_path, mode):
         logger.info(f"Reboot to ONIE with boot-mode {mode}")
         with allure.step(f"Reboot to ONIE with boot-mode {mode}"):
-            self.engine.reload([f'{onie_reboot_script_path} {mode}'], wait_after_ping=300, ssh_after_reload=False)
+            self.engine.reload([f'{onie_reboot_script_path} {mode}'], wait_after_ping=600, ssh_after_reload=False)
 
     def uninstall_os_flow(self, current_os):
         if current_os == "Cumulus":
