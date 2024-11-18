@@ -606,20 +606,6 @@ golden_config_infra/test_config_reload_with_rendered_golden_config.py:
     conditions:
       - "https://redmine.mellanox.com/issues/3955664 and ('leopard' in testbed or 'moose' in testbed)"
 
-platform_tests/cli/test_show_platform.py::test_show_platform_psustatus:
-  skip:
-    reason: "Testcase ignored due to platform nvda_bf or due to RM issue: https://redmine.mellanox.com/issues/3852184 on leopard"
-    conditions_logical_operator: or
-    conditions:
-      - "'nvda_bf' in platform"
-      - "https://redmine.mellanox.com/issues/3852184 and 'sn4700' in platform"
-
-platform_tests/cli/test_show_platform.py::test_show_platform_psustatus_json:
-  skip:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/3852184 on leopard"
-    conditions:
-      - "https://redmine.mellanox.com/issues/3852184 and 'sn4700' in platform"
-
 process_monitoring/test_critical_process_monitoring.py:
   skip:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/3464488 and platform nvda_bf"

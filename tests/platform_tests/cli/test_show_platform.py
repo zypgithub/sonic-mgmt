@@ -35,8 +35,15 @@ THERMAL_CONTROL_TEST_WAIT_TIME = 65
 THERMAL_CONTROL_TEST_CHECK_INTERVAL = 5
 
 BF_2_PLATFORM = 'arm64-nvda_bf-mbf2h536c'
-BF_3_PLATFORM = 'arm64-nvda_bf-9009d3b600cvaa'
+BF_3_PLATFORM = 'arm64-nvda_bf-bf3comdpu'
 VPD_DATA_FILE = "/var/run/hw-management/eeprom/vpd_data"
+
+
+@pytest.fixture(scope='function')
+def skip_dpu_platform(duthost):
+    platform = duthost.facts['platform']
+    if platform == BF_3_PLATFORM:
+        pytest.skip("PSU test is not supported by the DPU.")
 
 
 @pytest.fixture(scope='module')
@@ -233,7 +240,7 @@ def test_show_platform_syseeprom(duthosts, enum_rand_one_per_hwsku_hostname, dut
                               format(line, duthost.hostname))
 
 
-def test_show_platform_psustatus(duthosts, enum_supervisor_dut_hostname):
+def test_show_platform_psustatus(duthosts, enum_supervisor_dut_hostname, skip_dpu_platform):
     """
     @summary: Verify output of `show platform psustatus`
     """
@@ -263,7 +270,7 @@ def test_show_platform_psustatus(duthosts, enum_supervisor_dut_hostname):
     pytest_assert(num_psu_ok > 0, "No PSUs are displayed with OK status on '{}'".format(duthost.hostname))
 
 
-def test_show_platform_psustatus_json(duthosts, enum_supervisor_dut_hostname):
+def test_show_platform_psustatus_json(duthosts, enum_supervisor_dut_hostname, skip_dpu_platform):
     """
     @summary: Verify output of `show platform psustatus --json`
     """
