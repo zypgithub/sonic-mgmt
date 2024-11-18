@@ -58,6 +58,7 @@ def pytest_addoption(parser):
     :param parser: pytest build in
     """
     logger.info('Parsing NVOS pytest options')
+    parser.addoption("--max_case_instances", action="store", type=int, default=None, help="Randomly select N test instances for each test function")
     parser.addoption('--release_name', action='store',
                      help='The name of the release to be tested. For example: 25.01.0630')
     parser.addoption("--restore_to_image",
@@ -73,6 +74,38 @@ def pytest_addoption(parser):
                      help="Whether to run security post checker or not")
     parser.addoption("--check_output", action="store_true", default=False, help="Provide to check ib output")
     parser.addoption("--substrings_to_check", action="store", default=False, help="Provide which substrings to check")
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_collection_modifyitems(config, items):
+    new_items = []
+
+    max_case_instances: int = config.getoption("--max_case_instances")
+
+    if max_case_instances is not None and max_case_instances > 0:
+        # Group tests by their function name
+        grouped_tests = {}
+        for item in items:
+            test_func = item.originalname or item.name
+            if test_func not in grouped_tests:
+                grouped_tests[test_func] = []
+            grouped_tests[test_func].append(item)
+
+        # Randomly select instances for each test function
+        force_all_markers = ['force_all_params', 'force_all', 'use_all_params']
+        for test_func, test_instances in grouped_tests.items():
+            force_all = any(
+                any(item.get_closest_marker(marker) for marker in force_all_markers)
+                for item in test_instances
+            )
+            if force_all:
+                new_items.extend(test_instances)
+            else:
+                selected = random.sample(test_instances, min(max_case_instances, len(test_instances)))
+                new_items.extend(selected)
+
+        # Replace the original items with the new selection
+        items[:] = new_items
 
 
 @pytest.fixture(autouse=True)
