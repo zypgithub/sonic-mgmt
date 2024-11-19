@@ -10,7 +10,7 @@ from ipaddress import ip_address, IPv4Address
 from tests.common.helpers.assertions import pytest_assert as py_assert
 from tests.common.dualtor.mux_simulator_control import toggle_all_simulator_ports_to_rand_selected_tor_m   # noqa F401
 from tests.common.dualtor.dual_tor_utils import lower_tor_host   # noqa F401
-from tests.vlan.test_vlan import populate_mac_table
+from tests.vlan.test_vlan import populate_mac_table   # noqa F401
 
 logger = logging.getLogger(__name__)
 
@@ -127,7 +127,6 @@ def vlan_ping_setup(duthosts, rand_one_dut_hostname, ptfhost, nbrhosts, tbinfo, 
                             portchannel = intf['attachto']
                             for iface in mg_facts['minigraph_portchannels'][portchannel]['members']:
                                 ifaces_list.append(mg_facts['minigraph_ptf_indices'][iface])
-                        break
                 vm_host_info['port_index_list'] = ifaces_list
             break
 
