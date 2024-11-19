@@ -63,12 +63,13 @@ def get_pl_overlay_dip(orig_dip, ol_dip, ol_mask):
     return str(ip_address(overlay_dip))
 
 
-def outbound_pl_packets(config, inner_packet_type='udp', vxlan_udp_dport=4789):
+def outbound_pl_packets(config, inner_packet_type='udp', vxlan_udp_dport=4789, inner_extra_conf={}):
     inner_packet = generate_inner_packet(inner_packet_type)(
         eth_src=pl.ENI_MAC,
         eth_dst=pl.REMOTE_MAC,
         ip_src=config[LOCAL_CA_IP],
         ip_dst=pl.VNET_MAP_IP1,
+        **inner_extra_conf
     )
 
     vxlan_packet = testutils.simple_vxlan_packet(
@@ -99,13 +100,20 @@ def outbound_pl_packets(config, inner_packet_type='udp', vxlan_udp_dport=4789):
     logger.info(f"Expecting overlay SIP: {exp_overlay_sip}")
     logger.info(f"Expecting overlay DIP: {exp_overlay_dip}")
 
-    exp_inner_packet = scapy.Ether() / scapy.IPv6() / scapy.UDP()
+    if inner_packet_type == 'tcp':
+        exp_inner_packet = scapy.Ether() / scapy.IPv6() / scapy.TCP()
+    else:
+        exp_inner_packet = scapy.Ether() / scapy.IPv6() / scapy.UDP()
     exp_inner_packet[scapy.Ether].src = pl.ENI_MAC
     exp_inner_packet[scapy.Ether].dst = pl.REMOTE_MAC
     #exp_inner_packet[scapy.Ether].dst = "00:01:02:03:04:05"
     exp_inner_packet[scapy.IPv6].src = exp_overlay_sip
     exp_inner_packet[scapy.IPv6].dst = exp_overlay_dip
-    exp_inner_packet[scapy.UDP] = inner_packet[scapy.UDP]
+
+    if inner_packet_type == 'tcp':
+        exp_inner_packet[scapy.TCP] = inner_packet[scapy.TCP]
+    else:
+        exp_inner_packet[scapy.UDP] = inner_packet[scapy.UDP]
 
     exp_encap_packet = testutils.simple_gre_packet(
         eth_src=config[DUT_MAC],
