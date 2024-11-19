@@ -14,6 +14,7 @@ import pytest
 
 from tests.common.testbed import TestbedInfo
 from .issue import check_issues, DEFAULT_CONDITIONS_FILE
+from tests.common.utilities import get_duts_from_host_pattern
 
 logger = logging.getLogger(__name__)
 
@@ -358,7 +359,12 @@ def load_basic_facts(session):
     results['topo_name'] = tbinfo['topo']['name']
     results['testbed'] = testbed_name
 
-    dut_name = tbinfo['duts'][0]
+    host_pattern = session.config.option.ansible_host_pattern
+    if host_pattern == 'all':
+        dut_name = tbinfo['duts'][0]
+    else:
+        dut_name = get_duts_from_host_pattern(host_pattern)[0]
+
     if session.config.option.customize_inventory_file:
         inv_name = session.config.option.customize_inventory_file
     elif 'inv_name' in list(tbinfo.keys()):

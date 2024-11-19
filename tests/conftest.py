@@ -40,6 +40,7 @@ from tests.common.utilities import get_host_visible_vars
 from tests.common.utilities import get_test_server_host
 from tests.common.utilities import str2bool
 from tests.common.utilities import safe_filename
+from tests.common.utilities import get_duts_from_host_pattern
 from tests.common.helpers.dut_utils import is_supervisor_node, is_frontend_node, create_duthost_console, creds_on_dut
 from tests.common.cache import FactsCache
 from tests.common.config_reload import config_reload
@@ -310,11 +311,8 @@ def get_specified_device_info(request, device_pattern):
     host_pattern = request.config.getoption(device_pattern)
     if host_pattern == 'all':
         return testbed_duts
-
-    if ';' in host_pattern:
-        specified_duts = host_pattern.replace('[', '').replace(']', '').split(';')
     else:
-        specified_duts = host_pattern.split(',')
+        specified_duts = get_duts_from_host_pattern(host_pattern)
 
     if any([dut not in testbed_duts for dut in specified_duts]):
         pytest.fail("One of the specified DUTs {} does not belong to the testbed {}".format(specified_duts, tbname))

@@ -1160,3 +1160,11 @@ def get_dut_current_passwd(ipv4_address, ipv6_address, username, passwords):
     except Exception:
         _, passwd = _paramiko_ssh(ipv6_address, username, passwords)
     return passwd
+
+
+def get_duts_from_host_pattern(host_pattern):
+    if ';' in host_pattern:
+        duts = host_pattern.replace('[', '').replace(']', '').split(';')
+    else:
+        duts = host_pattern.split(',')
+    return duts
