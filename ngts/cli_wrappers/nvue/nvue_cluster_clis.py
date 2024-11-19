@@ -29,6 +29,11 @@ class NvueClusterCli(NvueBaseCli):
         return NvueClusterCli.action(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=path, param_value=level)
 
     @staticmethod
+    def action_update_cluster_chassis_id(engine, path, mapping_id=''):
+        param_value = "chassis-id " + str(mapping_id)
+        return NvueClusterCli.action(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=path, param_value=param_value)
+
+    @staticmethod
     def action_update(engine, path):
         return NvueClusterCli.action(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=path)
 

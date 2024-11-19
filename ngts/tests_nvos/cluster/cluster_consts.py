@@ -37,3 +37,4 @@ class ClusterConsts:
     NMX_TELEMETRY_PREFIX = 'nmx-t'
     INITIAL_APPS_PATH = '/usr/local/cluster_pkgfiles/'
     INFRA_PACKAGES_PATH = '/host/cluster_infra/packages/'
+    NMX_CONTROLLER_CONFIG_CHASSIS_MAPPING = 'chassis_mapping'

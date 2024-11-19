@@ -146,7 +146,7 @@ def test_downgrade_upgrade(release_name, test_api, original_version, devices, en
 @pytest.mark.image
 @pytest.mark.system
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_system_image_upload(engines, release_name, test_api, original_version, devices):
+def test_system_image_upload(engines, release_name, test_api, original_version, devices, base_version_realpath):
     """
     Uploading image file to player and validate.
     1. Fetch random image
@@ -159,12 +159,10 @@ def test_system_image_upload(engines, release_name, test_api, original_version, 
     system = System()
 
     verify_current_version(original_version, system, devices.dut)
-
-    _, _, _, _, image_names = get_image_data_and_fetch_random_image_files(release_name, system)
-    image_name = image_names[0]
+    _, _, _, _, image_name = get_image_data_and_fetch_base_image(system, base_version_realpath)
+    image_file = system.image.files.file_name[image_name]
     upload_protocols = ['scp', 'sftp']
     player = engines['sonic_mgmt']
-    image_file = system.image.files.file_name[image_name]
 
     try:
         with allure.step("Upload image to player {} with the next protocols : {}".format(player.ip, upload_protocols)):
