@@ -92,3 +92,11 @@ class NvueClusterCli(NvueBaseCli):
         cmd = f'nv action restore {path}'
         logging.info(f"Running action cmd: '{cmd}' on dut using NVUE")
         return engine.run_cmd(cmd)
+
+    @staticmethod
+    @check_output
+    def action_reset(engine, resource_path, param=''):
+        path = resource_path.replace('/', ' ').strip()
+        cmd = f"nv action reset {path} {param}"
+        logging.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
+        return engine.run_cmd(cmd)

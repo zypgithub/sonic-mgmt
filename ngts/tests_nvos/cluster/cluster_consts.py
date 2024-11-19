@@ -17,6 +17,17 @@ class ClusterConsts:
     UNDEFINED_STATE_ERR_MSG_NVUE = 'Error: At state: \'undefined\' is not one of [\'enabled\', \'disabled\']'
     UNDEFINED_STATE_ERR_MSG_OPENAPI = 'Error: Request failed. Details: Error: \'undefined\' is not one of [\'enabled\', \'disabled\', None]'
     UNDEFINED_STATE_DICT = {'NVUE': UNDEFINED_STATE_ERR_MSG_NVUE, 'OpenApi': UNDEFINED_STATE_ERR_MSG_OPENAPI}
+    RESET_FACTORY_CLUSTER_DISABLED_NVUE = 'Command failed with the following output: \nAction executing ...\nError: Action failed with the following issue:\n  cluster is not enabled'
+
+    RESET_FACTORY_NMX_CONN_DISABLED_NVUE = 'Command failed with the following output: \nAction executing ...\nError: Action failed with the following issue:\n  failed to reset NMX-C to factory-default'
+
+    RESET_FACTORY_CLUSTER_DISABLED_OPENAPI = 'Command failed with the following output: \naction_error: cluster is not enabled'
+
+    RESET_FACTORY_NMX_CONN_DISABLED_OPENAPI = 'Command failed with the following output: \naction_error: failed to reset NMX-C to factory-default'
+
+    RESET_FACTORY_CLUSTER_DISABLED = {'NVUE': RESET_FACTORY_CLUSTER_DISABLED_NVUE, 'OpenApi': RESET_FACTORY_CLUSTER_DISABLED_OPENAPI}
+    RESET_FACTORY_NMX_CONN_DISABLED = {'NVUE': RESET_FACTORY_NMX_CONN_DISABLED_NVUE, 'OpenApi': RESET_FACTORY_NMX_CONN_DISABLED_OPENAPI}
+
     NMXC_CONN = 'nmxc-conn'
     NMXC_CONN_STATE_PER_CLUSTER_STATE = {NvosConst.ENABLED: 'up', NvosConst.DISABLED: 'down'}
     WAIT_FOR_APPS_RUNNING = 70  # Reduce to 15 once bug is fixed [NVOS - Design] Bug SW #4099507: [Non-Functional ] [NVL5 - JULIET - NMX] | nmxc-conn takes too long to be in "up" state | Assignee: Or Farfara | Status: Opened on other team
@@ -37,4 +48,8 @@ class ClusterConsts:
     NMX_TELEMETRY_PREFIX = 'nmx-t'
     INITIAL_APPS_PATH = '/usr/local/cluster_pkgfiles/'
     INFRA_PACKAGES_PATH = '/host/cluster_infra/packages/'
+    CONFIG_FILES_CHANGE = {'sm_config': "sudo sed -i \"/^max_op_vls /c\\max_op_vls 4\" {file_path}",
+                           'fm_config': "sudo sed -i \"/^LOG_FILE_MAX_SIZE=/c\\LOG_FILE_MAX_SIZE=1023\" {file_path}",
+                           'rdm_config': "echo '# This is a comment for rdm_config' | sudo tee -a {file_path}",
+                           'chassis_mapping': "echo '# This is a comment for rdm_config' | sudo tee -a {file_path}"}
     NMX_CONTROLLER_CONFIG_CHASSIS_MAPPING = 'chassis_mapping'

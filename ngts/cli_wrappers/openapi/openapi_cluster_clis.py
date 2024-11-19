@@ -111,3 +111,18 @@ class OpenApiClusterCli(OpenApiBaseCli):
             }
         return OpenApiCommandHelper.execute_action(ActionType.RESTORE, engine.engine.username, engine.engine.password,
                                                    engine.ip, resource_path, params)
+
+    @staticmethod
+    def action_reset(engine, resource_path, param=''):
+        logging.info("Running action: reset {} on dut using OpenApi".format(resource_path))
+
+        params = \
+            {
+                "state": "start",
+                "parameters": {
+                    "force": True,
+                }
+            }
+
+        return OpenApiCommandHelper.execute_action(ActionType.RESET, engine.engine.username, engine.engine.password,
+                                                   engine.ip, resource_path, params)
