@@ -1,8 +1,5 @@
 import random
 
-from ngts.nvos_constants.constants_nvos import OSType
-from ngts.tests_nvos.general.security.security_test_tools.constants import AddressingType
-
 
 def run_nvos_pytest_items_modification(config, items):
     # Setup
@@ -10,7 +7,6 @@ def run_nvos_pytest_items_modification(config, items):
     deselected_items = []
 
     # Call deselection/filtering logics
-    deselect_ipv6_aaa_tests_for_cl(config, items, deselected_items)
     deselect_tests_by_max_case_instances_option(config, items, deselected_items)
 
     # Report & finish
@@ -61,26 +57,3 @@ def deselect_tests_by_max_case_instances_option(config, items, deselected_items)
 
         # Finish
         update_selected_and_deselected_items(items, deselected_items, final_selected, final_deselected)
-
-
-def deselect_ipv6_aaa_tests_for_cl(config, items, deselected_items):
-    os_type: str = config.getoption("--os_type") or OSType.NVOS
-
-    if os_type != OSType.CL:
-        return
-
-    test_param_name = 'addressing_type'
-
-    final_deselected = []
-    final_selected = []
-    for item in items:
-        if hasattr(item, 'callspec') and test_param_name in item.callspec.params:
-            if item.callspec.params[test_param_name] == AddressingType.IPV6:
-                final_deselected.append(item)
-            else:
-                final_selected.append(item)
-        else:
-            final_selected.append(item)
-
-    # Finish
-    update_selected_and_deselected_items(items, deselected_items, final_selected, final_deselected)

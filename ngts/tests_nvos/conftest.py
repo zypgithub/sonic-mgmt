@@ -21,7 +21,7 @@ from ngts.cli_wrappers.linux.linux_general_clis import LinuxGeneralCli
 from ngts.cli_wrappers.nvue.nvue_base_clis import NvueBaseCli
 from ngts.cli_wrappers.openapi.openapi_command_builder import OpenApiRequest
 from ngts.constants.constants import DbConstants, CliType, DebugKernelConsts, InfraConst
-from ngts.nvos_constants.constants_nvos import ApiType, OperationTimeConsts, OutputFormat, OSType
+from ngts.nvos_constants.constants_nvos import ApiType, OperationTimeConsts, OutputFormat
 from ngts.nvos_constants.constants_nvos import NvosConst
 from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
 from ngts.nvos_tools.Devices.DeviceFactory import DeviceFactory
@@ -59,7 +59,6 @@ def pytest_addoption(parser):
     :param parser: pytest build in
     """
     logger.info('Parsing NVOS pytest options')
-    parser.addoption("--os_type", action="store", type=str, default=OSType.NVOS, help=f"Specify OS type name {OSType.ALL_TYPES}")
     parser.addoption("--max_case_instances", action="store", type=int, default=None, help="Randomly select N test instances for each test function")
     parser.addoption('--release_name', action='store',
                      help='The name of the release to be tested. For example: 25.01.0630')
@@ -81,11 +80,6 @@ def pytest_addoption(parser):
 @pytest.hookimpl(tryfirst=True)
 def pytest_collection_modifyitems(config, items):
     run_nvos_pytest_items_modification(config, items)
-
-
-@pytest.fixture(scope='session')
-def os_type(request) -> str:
-    return request.config.getoption("--os_type") or OSType.NVOS
 
 
 @pytest.fixture(autouse=True)
