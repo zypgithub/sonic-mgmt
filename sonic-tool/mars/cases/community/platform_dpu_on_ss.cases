@@ -16,6 +16,16 @@
     </global>
 
     <case>
+        <info> PRE TEST Case </info>
+        <name> pretest </name>
+        <cmd>
+            <params>
+                <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals -v --clean-alluredir --alluredir=/tmp/allure-results --timeout 1200 --session-timeout 1200 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts test_pretest.py --run_test_on_dpu_only True </static_args>
+            </params>
+        </cmd>
+    </case>
+
+    <case>
         <info> Test Show Platform CLI Case </info>
         <name> show_platform </name>
         <cmd>
@@ -84,6 +94,16 @@
              <params>
                  <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 600 --session-timeout 600 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts platform_tests/daemon/test_syseepromd.py --run_test_on_dpu_only True </static_args>
              </params>
+        </cmd>
+    </case>
+
+    <case>
+        <info> Container Checker Case </info>
+        <name> container_checker </name>
+        <cmd>
+            <params>
+                <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals -v --clean-alluredir --alluredir=/tmp/allure-results --timeout 2700 --session-timeout 4800 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts container_checker/test_container_checker.py  --run_test_on_dpu_only True </static_args>
+            </params>
         </cmd>
     </case>
 
