@@ -1145,7 +1145,7 @@ def test_override_default_rule(engines, topology_obj):
 
     finally:
         with allure.step("unset acl - should return all the default rules"):
-            acl_obj.unset(apply=True)
+            acl_obj.unset(apply=True, ask_for_confirmation=True)
 
             with allure.step("Validate"):
                 added_field_output = acl_obj.rule.parse_show(default_rule_to_add_field)
@@ -1182,7 +1182,8 @@ def config_rule(engine, acl_id_obj, rule_id, rule_config_dict):
         for key, value in rule_config_dict.items():
             RULE_CONFIG_FUNCTION[key](rule_id_obj, value).verify_result()
 
-        result_obj = SendCommandTool.execute_command(TestToolkit.GeneralApi[TestToolkit.tested_api].apply_config, engine)
+        result_obj = SendCommandTool.execute_command(TestToolkit.GeneralApi[TestToolkit.tested_api].apply_config,
+                                                     engine, True)
         sleep()
         return result_obj
 
