@@ -33,6 +33,7 @@ from ngts.tools.allure_report.allure_report_attacher import add_fixture_end_tag,
     clean_stored_cmds_with_fixture_scope, update_fixture_scope_list, enable_record_cmds
 from ngts.tools.infra import get_platform_info, get_devinfo, is_deploy_run, get_chip_type
 from ngts.tools.topology_tools.topology_by_setup import get_topology_by_setup_name_and_aliases
+from ngts.tools.test_utils.nvos_general_utils import get_switch_type
 
 logger = logging.getLogger()
 
@@ -299,6 +300,11 @@ def topology_obj(setup_name, request):
     with allure.step('Cleaning-up the topology object'):
         for player_name, player_attributes in topology.players.items():
             player_attributes['engine'].disconnect()
+
+
+@pytest.fixture(scope='session')
+def switch_type(topology_obj):
+    return get_switch_type(topology_obj)
 
 
 def target_cli_type(request):
