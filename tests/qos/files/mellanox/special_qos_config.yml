@@ -15,7 +15,7 @@ qos_params:
             wm_pg_headroom:
                 packet_size: 800
             wm_q_shared_lossless:
-                packet_size: 800
+                packet_size: 700
             hdrm_pool_size:
                 packet_size: 800
         xon_1:
