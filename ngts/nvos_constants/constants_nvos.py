@@ -306,6 +306,13 @@ class ApiType:
     ALL_TYPES = [NVUE, OPENAPI]
 
 
+class OSType:
+    NVOS = "NVOS"
+    CL = "CL"
+    # list of all api types
+    ALL_TYPES = [NVOS, CL]
+
+
 class TestFlowType:
     GOOD_FLOW = 'GoodFlow'
     BAD_FLOW = 'BadFlow'

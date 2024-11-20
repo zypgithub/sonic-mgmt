@@ -21,7 +21,7 @@ from ngts.cli_wrappers.linux.linux_general_clis import LinuxGeneralCli
 from ngts.cli_wrappers.nvue.nvue_base_clis import NvueBaseCli
 from ngts.cli_wrappers.openapi.openapi_command_builder import OpenApiRequest
 from ngts.constants.constants import DbConstants, CliType, DebugKernelConsts, InfraConst
-from ngts.nvos_constants.constants_nvos import ApiType, OperationTimeConsts, OutputFormat
+from ngts.nvos_constants.constants_nvos import ApiType, OperationTimeConsts, OutputFormat, OSType
 from ngts.nvos_constants.constants_nvos import NvosConst
 from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
 from ngts.nvos_tools.Devices.DeviceFactory import DeviceFactory
@@ -44,6 +44,7 @@ from ngts.nvos_tools.system.System import System
 from ngts.scripts.code_coverage.code_coverage_consts import NvosConsts
 from ngts.scripts.code_coverage.test_code_coverage import extract_python_coverage_for_nvos
 from ngts.tests_nvos.helpers.pytest_helpers import is_cur_test_has_marker
+from ngts.tests_nvos.helpers.pytest_items_filters import run_nvos_pytest_items_modification
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_config_utils import clear_conf, clear_cl_conf
 from ngts.tools.test_utils.nvos_general_utils import wait_for_ldap_nvued_restart_workaround, set_base_configurations, \
@@ -58,6 +59,8 @@ def pytest_addoption(parser):
     :param parser: pytest build in
     """
     logger.info('Parsing NVOS pytest options')
+    parser.addoption("--os_type", action="store", type=str, default=OSType.NVOS, help=f"Specify OS type name {OSType.ALL_TYPES}")
+    parser.addoption("--max_case_instances", action="store", type=int, default=None, help="Randomly select N test instances for each test function")
     parser.addoption('--release_name', action='store',
                      help='The name of the release to be tested. For example: 25.01.0630')
     parser.addoption("--restore_to_image",
@@ -73,6 +76,16 @@ def pytest_addoption(parser):
                      help="Whether to run security post checker or not")
     parser.addoption("--check_output", action="store_true", default=False, help="Provide to check ib output")
     parser.addoption("--substrings_to_check", action="store", default=False, help="Provide which substrings to check")
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_collection_modifyitems(config, items):
+    run_nvos_pytest_items_modification(config, items)
+
+
+@pytest.fixture(scope='session')
+def os_type(request) -> str:
+    return request.config.getoption("--os_type") or OSType.NVOS
 
 
 @pytest.fixture(autouse=True)
