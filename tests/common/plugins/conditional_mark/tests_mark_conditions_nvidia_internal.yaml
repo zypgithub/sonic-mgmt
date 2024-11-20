@@ -1422,28 +1422,25 @@ platform_tests/test_dpu_ctrl.py::test_dpu_power_off_and_on:
     conditions:
       - "https://redmine.mellanox.com/issues/4101627"
 
-vxlan/test_vxlan_bfd_tsa.py::test_tsa_case4:
+vxlan/test_vxlan_bfd_tsa.py::Test_VxLAN_BFD_TSA::test_tsa_case4:
   skip:
     reason: "The test is skipped due to https://redmine.mellanox.com/issues/4164282"
     conditions:
       - "https://redmine.mellanox.com/issues/4164282"
-      - "'4600c' in platform or '2700-r0' in platform"
 
-vxlan/test_vxlan_bfd_tsa.py::test_tsa_case5:
+vxlan/test_vxlan_bfd_tsa.py::Test_VxLAN_BFD_TSA::test_tsa_case5:
   skip:
     reason: "The test is skipped due to https://redmine.mellanox.com/issues/4164282"
     conditions:
       - "https://redmine.mellanox.com/issues/4164282"
-      - "'4600c' in platform or '2700-r0' in platform"
 
-vxlan/test_vxlan_bfd_tsa.py::test_tsa_case6:
+vxlan/test_vxlan_bfd_tsa.py::Test_VxLAN_BFD_TSA::test_tsa_case6:
   skip:
     reason: "The test is skipped due to https://redmine.mellanox.com/issues/4164282"
     conditions:
       - "https://redmine.mellanox.com/issues/4164282"
-      - "'4600c' in platform or '2700-r0' in platform"
 
-tests/arp/test_stress_arp.py:
+arp/test_stress_arp.py:
   skip:
     reason: "The test is skipped due to https://redmine.mellanox.com/issues/4172801"
     conditions:
