@@ -196,6 +196,13 @@ def dut_ipv6_addr(engines, devices):
     return dut_ipv6_addr
 
 
+@pytest.fixture(scope='session')
+def sonic_mgmt_ipv6_addr(engines):
+    sonic_mgmt_ipv6_addr = IpTool.get_player_ipv6_addr(engines.sonic_mgmt.ip, engines.sonic_mgmt)
+    logging.info(f'sonic_mgmt ipv6 address: {sonic_mgmt_ipv6_addr}')
+    return sonic_mgmt_ipv6_addr
+
+
 def update_engine_dut_mgmt_port(topology, dut_engine: LinuxSshEngine, dut_device: BaseDevice):
     def attach_res_to_allure(available_ports_names, available_ports_ips, chosen_port_name, chosen_port_ip):
         attachment = (f'All ports: {available_ports_names} - {available_ports_ips}\n'

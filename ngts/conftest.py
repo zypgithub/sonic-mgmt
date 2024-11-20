@@ -33,6 +33,7 @@ from ngts.tools.allure_report.allure_report_attacher import add_fixture_end_tag,
 from ngts.tools.infra import get_platform_info, get_devinfo, is_deploy_run, get_chip_type
 from ngts.tools.topology_tools.topology_by_setup import get_topology_by_setup_name_and_aliases
 from ngts.nvos_tools.infra.RegressionConfigurations import Configurations
+from ngts.tools.test_utils.nvos_general_utils import get_switch_type
 
 
 logger = logging.getLogger()
@@ -294,9 +295,23 @@ def topology_obj(setup_name, request):
         topology.players_all_ports['dut'] = list(config_db['PORT'].keys())
     yield topology
 
-    logger.debug('Cleaning-up the topology object')
-    for player_name, player_attributes in topology.players.items():
-        player_attributes['engine'].disconnect()
+    with allure.step('Cleaning-up the topology object'):
+        for player_name, player_attributes in topology.players.items():
+            player_attributes['engine'].disconnect()
+
+
+@pytest.fixture(scope='session')
+def switch_type(topology_obj):
+    return get_switch_type(topology_obj)
+
+
+def target_cli_type(request):
+    """
+    Override cli type parameter in  Noga  to support different cli types on same switch
+    """
+    if request.config.getoption('--target_cli_type'):
+        cli_type = request.config.getoption('--target_cli_type')
+        return cli_type
 
 
 def update_default_password(dut, request):

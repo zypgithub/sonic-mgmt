@@ -192,3 +192,16 @@ def get_version_info(version: str) -> Tuple[str, str]:
 
 def generate_scp_uri_using_player(player: LinuxSshEngine, file_path: str) -> str:
     return f'scp://{player.username}:{player.password}@{player.ip}{file_path}'
+
+
+def get_switch_type(topology):
+    try:
+        cli_type = topology.players['dut']['attributes'].noga_query_data['attributes']['Topology Conn.']['CLI_TYPE']
+        if cli_type == NvosConst.NVUE_CLI:
+            switch_type = topology.players['dut']['attributes'].noga_query_data['attributes']['Specific']['TYPE']
+            if switch_type == NvosConst.CUMULUS_SWITCH:
+                return TopologyConsts.CL
+            return TopologyConsts.NVOS
+    except Exception as ex:
+        logging.warning(f"Failed to check switch type\n{ex}")
+        return TopologyConsts.SONIC
