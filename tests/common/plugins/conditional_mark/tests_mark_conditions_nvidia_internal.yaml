@@ -247,7 +247,7 @@ tests/push_build_tests:
     conditions:
     - "https://redmine.mellanox.com/issues/4205976 and 'sn5' in platform and 'simx' not in platform"
 
-tests/push_build_tests/general/wjh/test_wjh.py::test_buffer:
+tests/push_build_tests/general/wjh/test_wjh.py::TestBuffer::test_buffer:
   skip:
     reason: "Testcase is not supported on simx"
     conditions:

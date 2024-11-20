@@ -166,7 +166,7 @@ def get_parsed_table(dut, cmd, table_type):
     return table
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='class')
 def wjh_buffer_configuration(topology_obj, cli_objects, interfaces, engines):
     """
     Pytest fixture which is doing configuration fot WJH Buffer test case
@@ -200,18 +200,12 @@ def wjh_buffer_configuration(topology_obj, cli_objects, interfaces, engines):
     with allure.step('Check qos counter is ready'):
         check_qos_counter_status(engines)
 
-    with allure.step('Doing config save'):
-        logger.info('Doing config save')
-        cli_objects.dut.general.save_configuration()
-
     yield
 
     with allure.step("delete configured qos map and port scheduler"):
         cli_objects.dut.interface.del_port_qos_map(interfaces.dut_ha_2, port_scheduler)
         cli_objects.dut.interface.del_port_scheduler(port_scheduler)
     WjhBufferConfigTemplate.cleanup(topology_obj, thresholds_config_dict)
-    logger.info('Doing config save after cleanup')
-    cli_objects.dut.general.save_configuration()
     logger.info('WJH Buffer cleanup completed')
 
 
@@ -574,75 +568,78 @@ def generate_wjh_poll_cmd(channel, aggregate=False):
 @pytest.mark.build
 @pytest.mark.physical_coverage
 @pytest.mark.push_gate
-@pytest.mark.parametrize("drop_reason", drop_reason_dict.keys())
-@allure.title('WJH Buffer test case')
-def test_buffer(drop_reason, engines, topology_obj, players, interfaces, wjh_buffer_configuration, ha_dut_2_mac,
-                hb_dut_2_mac, sonic_branch):
-    """
-    This test will configure the DUT and hosts to generate buffer drops
-    """
-    validation = {
-        'server': 'ha',
-        'client': 'hb',
-        'client_args': {
-            'server_address': '40.0.0.2',
-            'duration': '30',
-            'bandwidth': '20G',
-            'protocol': 'UDP',
-            'length': '65507',
-            'window': '415k'
-        },
-        'expect': [
-            {
-                'parameter': 'loss_packets',
-                'operator': '>=',
-                'type': 'int',
-                'value': '0'
-            }
-        ]
-    }
-    ping_validation = {'sender': 'hb', 'args': {'count': 3, 'dst': '40.0.0.2'}}
-    ping_checker = PingChecker(players, ping_validation)
+@pytest.mark.usefixtures("wjh_buffer_configuration")
+class TestBuffer:
 
-    try:
-        retry_call(ping_checker.run_validation, fargs=[], tries=14, delay=10, logger=logger)
+    @pytest.mark.parametrize("drop_reason", drop_reason_dict.keys())
+    @allure.title('WJH Buffer test case')
+    def test_buffer(self, drop_reason, engines, topology_obj, players, interfaces,
+                    ha_dut_2_mac, hb_dut_2_mac, sonic_branch):
+        """
+        This test will configure the DUT and hosts to generate buffer drops
+        """
+        validation = {
+            'server': 'ha',
+            'client': 'hb',
+            'client_args': {
+                'server_address': '40.0.0.2',
+                'duration': '30',
+                'bandwidth': '20G',
+                'protocol': 'UDP',
+                'length': '65507',
+                'window': '415k'
+            },
+            'expect': [
+                {
+                    'parameter': 'loss_packets',
+                    'operator': '>=',
+                    'type': 'int',
+                    'value': '0'
+                }
+            ]
+        }
+        ping_validation = {'sender': 'hb', 'args': {'count': 3, 'dst': '40.0.0.2'}}
+        ping_checker = PingChecker(players, ping_validation)
 
-        with allure.step('Sending iPerf traffic'):
-            logger.info('Sending iPerf traffic')
-            IperfChecker(players, validation).run_validation()
+        try:
+            retry_call(ping_checker.run_validation, fargs=[], tries=14, delay=10, logger=logger)
 
-        ha_ip = '40.0.0.2'
-        hb_ip = '40.0.0.3'
-        drop_reason_message = drop_reason_dict[drop_reason]
-        cli_object = topology_obj.players['dut']['cli']
-        with allure.step('Validating WJH raw table output'):
-            do_acl_buffer_raw_test(engines=engines, cli_object=cli_object, channel=WJHConsts.BUFFER,
-                                   channel_types=[WJHConsts.RAW_TABLE, WJHConsts.RAW_ACL_TABLE],
-                                   interface=interfaces.dut_hb_2, dst_ip=ha_ip,
-                                   src_ip=hb_ip, proto=WJHConsts.UDP_PROTO, drop_reason_message=drop_reason_message,
-                                   dst_mac=ha_dut_2_mac, src_mac=hb_dut_2_mac,
-                                   command=generate_wjh_poll_cmd(WJHConsts.BUFFER),
-                                   drop_reason=drop_reason, table_separator=WJHConsts.BUFFER_TABLE_SEPARATOR)
+            with allure.step('Sending iPerf traffic'):
+                logger.info('Sending iPerf traffic')
+                IperfChecker(players, validation).run_validation()
 
-        with allure.step('Sending iPerf traffic'):
-            logger.info('Sending iPerf traffic')
-            IperfChecker(players, validation).run_validation()
+            ha_ip = '40.0.0.2'
+            hb_ip = '40.0.0.3'
+            drop_reason_message = drop_reason_dict[drop_reason]
+            cli_object = topology_obj.players['dut']['cli']
+            with allure.step('Validating WJH raw table output'):
+                do_acl_buffer_raw_test(engines=engines, cli_object=cli_object, channel=WJHConsts.BUFFER,
+                                       channel_types=[WJHConsts.RAW_TABLE, WJHConsts.RAW_ACL_TABLE],
+                                       interface=interfaces.dut_hb_2, dst_ip=ha_ip,
+                                       src_ip=hb_ip, proto=WJHConsts.UDP_PROTO, drop_reason_message=drop_reason_message,
+                                       dst_mac=ha_dut_2_mac, src_mac=hb_dut_2_mac,
+                                       command=generate_wjh_poll_cmd(WJHConsts.BUFFER),
+                                       drop_reason=drop_reason, table_separator=WJHConsts.BUFFER_TABLE_SEPARATOR)
 
-        with allure.step('Validating WJH aggregated table output'):
-            # The ip protocol cannot be parsed when the packet is fragmented.
-            # It will be displayed as "ip" in the table.
-            # As Extend WJH linux channel support with current buffer capabilities via WJH lib feature
-            # It will be displayed as "udp" in the pull buffer aggregate table in master and 202311 branch
-            agg_proto = WJHConsts.IP_PROTO if sonic_branch in ['202211', '202305'] else WJHConsts.UDP_PROTO
-            do_acl_buffer_agg_test(engines=engines, cli_object=cli_object, channel=WJHConsts.BUFFER,
-                                   channel_types=[WJHConsts.AGG_TABLE, WJHConsts.AGG_ACL_TABLE],
-                                   interface=interfaces.dut_hb_2, dst_ip=ha_ip,
-                                   src_ip=hb_ip, proto=agg_proto, drop_reason_message=drop_reason_message,
-                                   dst_mac=ha_dut_2_mac, src_mac=hb_dut_2_mac,
-                                   command=generate_wjh_poll_cmd(WJHConsts.BUFFER, aggregate=True),
-                                   drop_reason=drop_reason, table_separator=WJHConsts.BUFFER_TABLE_SEPARATOR)
-    except Exception as e:
-        pytest.fail(f"Could not finish the test due to exception: \n{e}.\nAborting!.")
+            with allure.step('Sending iPerf traffic'):
+                logger.info('Sending iPerf traffic')
+                IperfChecker(players, validation).run_validation()
+
+            with allure.step('Validating WJH aggregated table output'):
+                # The ip protocol cannot be parsed when the packet is fragmented.
+                # It will be displayed as "ip" in the table.
+                # As Extend WJH linux channel support with current buffer capabilities via WJH lib feature
+                # It will be displayed as "udp" in the pull buffer aggregate table in master and 202311 branch
+                agg_proto = WJHConsts.IP_PROTO if sonic_branch in ['202211', '202305'] else WJHConsts.UDP_PROTO
+                do_acl_buffer_agg_test(engines=engines, cli_object=cli_object, channel=WJHConsts.BUFFER,
+                                       channel_types=[WJHConsts.AGG_TABLE, WJHConsts.AGG_ACL_TABLE],
+                                       interface=interfaces.dut_hb_2, dst_ip=ha_ip,
+                                       src_ip=hb_ip, proto=agg_proto, drop_reason_message=drop_reason_message,
+                                       dst_mac=ha_dut_2_mac, src_mac=hb_dut_2_mac,
+                                       command=generate_wjh_poll_cmd(WJHConsts.BUFFER, aggregate=True),
+                                       drop_reason=drop_reason, table_separator=WJHConsts.BUFFER_TABLE_SEPARATOR)
+        except Exception as e:
+            pytest.fail(f"Could not finish the test due to exception: \n{e}.\nAborting!.")
 
 
 @pytest.mark.wjh
