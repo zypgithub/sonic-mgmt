@@ -1,5 +1,7 @@
 import logging
 import pytest
+
+from ngts.nvos_tools.infra import ExceptionTool
 from ngts.tools.test_utils import allure_utils as allure
 import subprocess
 
@@ -42,7 +44,8 @@ def test_checklist_ipv6(engines):
             _send_open_api_request(ipv6_add, engines.dut)
 
     except BaseException as ex:
-        assert str(ex)
+        ExceptionTool.log_traceback()
+        raise AssertionError(str(ex))
 
 
 def ping_switch(ipv6_add):
