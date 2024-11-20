@@ -2,60 +2,84 @@ import json
 import logging
 import math
 import os
+from collections import defaultdict
 
 import allure
 import pytest
 
+from ngts.conftest import update_topology_with_cli_class
 from ngts.constants.constants import PytestConst
 from ngts.scripts.store_techsupport_on_not_success import dump_simx_data
 from ngts.tools.allure_report.allure_report_attacher import collect_stored_cmds_then_attach_to_allure_report, \
     clean_stored_cmds_with_fixture_scope_list
 from ngts.tools.test_utils.nvos_general_utils import get_switch_type
 from ngts.nvos_constants.constants_nvos import TopologyConsts
+from ngts.tools.infra import get_dumps_folder
+from ngts.tools.topology_tools.topology_by_setup import get_topology_by_setup_name_and_aliases
 
 logger = logging.getLogger()
+
+test_suites_dumps = defaultdict(int)
+
+
+def get_topology_obj(item):
+    topology = get_topology_by_setup_name_and_aliases(item.config.option.setup_name, slow_cli=False)
+    update_topology_with_cli_class(topology, item._request)
+    return topology
+
+
+def generate_and_copy_dump(item, dumps_folder, topology_obj, duration):
+    switch_type = get_switch_type(topology_obj)
+    dut_engine = topology_obj.players['dut']['engine']
+    collect_stored_cmds_then_attach_to_allure_report(topology_obj)
+    generate_dump_method[switch_type](topology_obj, dut_engine, dumps_folder, duration, item)
 
 
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)
 def pytest_runtest_makereport(item, call):
     """
-    Techsupport creator. Will be executed as part of teardown.
+    Techsupport creator. Will be executed at the end of test call in case of failure.
     """
     outcome = yield
     rep = outcome.get_result()
 
-    if rep.when == 'teardown':
+    if rep.failed and os.environ.get(PytestConst.GET_DUMP_AT_TEST_FALIURE) != "False":
         os.environ.pop(item.name, None)
-        session_id = item.funcargs.get('session_id', '')
-        if (item.rep_setup.failed or (item.rep_setup.passed and (item.rep_call.failed or item.rep_teardown.failed))) \
-                and os.environ.get(PytestConst.GET_DUMP_AT_TEST_FALIURE) != "False":
-            if session_id:
-                try:
-                    test_name = item.name.replace('/', '_')
-                    dumps_folder = item.funcargs['dumps_folder']
-                    dump_file_exists = False
-                    for dump_file in os.listdir(dumps_folder):
-                        if test_name in dump_file:
-                            dump_file_exists = True
-                            existing_dump_file = dump_file
-                    if not dump_file_exists:
-                        topology_obj = item.funcargs['topology_obj']
-                        with allure.step('The test case has failed, generating a sysdump'):
-                            dut_cli_object = topology_obj.players['dut']['cli']
-                            dut_engine = topology_obj.players['dut']['engine']
-                            duration = get_test_duration(item)
-                            collect_stored_cmds_then_attach_to_allure_report(topology_obj)
-                            switch_type = get_switch_type(topology_obj)
-                            generate_dump_method[switch_type](topology_obj, dut_engine, dumps_folder, duration, item)
-                    else:
-                        with allure.step('The test case has failed, dump already exists at log folder {}/{}'.format(dumps_folder, existing_dump_file)):
-                            pass
-                except BaseException as err:
-                    error_message = f'Failed to generate/store techsupport dump.\nGot error: {err}'
-                    logger.error(error_message)
-            else:
-                logger.info('###  Session ID was not provided, assuming this is manual run,'
-                            ' sysdump will not be created  ###')
+        session_id = item.config.option.session_id
+        if session_id is None and item.config.option.store_dump_on_fail != True:
+            logger.info('### `session_id` and `store_dump_on_fail` flags were not provided, '
+                        'sysdump will not be created ###')
+            return
+        suite_name = item.parent.name
+        if test_suites_dumps.get(suite_name, 0) > 2:
+            logger.info('### The number of sysdumps for this test suite is more than 3, '
+                        'sysdump will not be created ###')
+            return
+        test_suites_dumps[suite_name] += 1
+
+        with allure.step('The test case has failed, generating a sysdump'):
+            try:
+                test_name = item.name.replace('/', '_')
+                # Set up configuration for Community test infra as it doesn't have topology_obj
+                if (topology_obj := item.funcargs.get('topology_obj')) is None:
+                    topology_obj = get_topology_obj(item)
+                    duration = 7200
+                else:
+                    duration = get_test_duration(item)
+                if (dumps_folder := item.funcargs.get('dumps_folder')) is None:
+                    dumps_folder = get_dumps_folder(item.config.option.setup_name, session_id, topology_obj)
+                existing_dump_file = next(
+                    (dump_file for dump_file in os.listdir(dumps_folder) if test_name in dump_file), None)
+                if existing_dump_file and session_id:
+                    dump_path = f'{dumps_folder}/{existing_dump_file}'
+                    with allure.step(f'The test case has failed, dump already exists at log folder {dump_path}'):
+                        pass
+                else:
+                    with allure.step('The test case has failed, generating a sysdump'):
+                        generate_and_copy_dump(item, dumps_folder, topology_obj, duration)
+            except BaseException as err:
+                error_message = f'Failed to generate/store techsupport dump.\nGot error: {err}'
+                logger.error(error_message)
         topology_obj = item.funcargs.get('topology_obj')
         if topology_obj:
             clean_stored_cmds_with_fixture_scope_list(topology_obj)

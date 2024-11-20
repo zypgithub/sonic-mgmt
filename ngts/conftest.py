@@ -153,6 +153,8 @@ def pytest_addoption(parser):
                      choices=SerialLoggerConst.CMD_LINE_VALUES, default=SerialLoggerConst.MODE_OFF,
                      help='Action for serial log handler. Options: off (no serial logging), store (without analyzing), '
                           'analyze, analyze_and_open_bugs')
+    parser.addoption('--store_dump_on_fail', required=False, action='store_true', default=False,
+                     help='Store techsupport dump on test fail during manual run')
 
 
 def pytest_runtest_call(item):

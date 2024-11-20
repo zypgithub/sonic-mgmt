@@ -80,7 +80,8 @@ SERVER_FILE = 'platform_api_server.py'
 SERVER_PORT = 8000
 IPTABLES_PREPEND_RULE_CMD = 'iptables -I INPUT 1 -p tcp -m tcp --dport {} -j ACCEPT'.format(SERVER_PORT)
 
-pytest_plugins = ('tests.common.plugins.ptfadapter',
+pytest_plugins = ('ngts.tools.sysdumps',
+                  'tests.common.plugins.ptfadapter',
                   'tests.common.plugins.ansible_fixtures',
                   'tests.common.plugins.dut_monitor',
                   'tests.common.plugins.loganalyzer',
@@ -107,6 +108,9 @@ def pytest_addoption(parser):
     parser.addoption("--testbed", action="store", default=None, help="testbed name")
     parser.addoption("--testbed_file", action="store", default=None, help="testbed file name")
 
+    parser.addoption("--setup_name", required=True, action="store", default=None, help="Name of the setup in MARS")
+    parser.addoption('--store_dump_on_fail', required=False, action='store_true', default=False,
+                     help='Store techsupport dump on test fail during manual run')
     parser.addoption("--session_id", action="store", default=None, help="Number of mars session id.")
     parser.addoption("--mars_key_id", action="store", default=None, help="mars key id.")
     # test_vrf options

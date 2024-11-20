@@ -13,6 +13,8 @@ from ngts.nvos_constants.constants_nvos import NvosConst
 logger = logging.getLogger()
 DEVICE_PLATFORM_INFO_PATH = os.path.join(os.path.dirname(__file__), '../../common/device_platform_info.json')
 INVENTORY_FILE_PATH = os.path.join(os.path.dirname(__file__), '../../../ansible/inventory')
+CANONICAL_INFRA_TYPE = 'Canonical'
+COMMUNITY_INFRA_TYPE = 'Community'
 
 
 @pytest.fixture(scope='session', autouse=True)
@@ -29,6 +31,20 @@ def session_id(request):
     return session_id
 
 
+def get_infra_type(request):
+    if 'sonic-mgmt/ngts' in str(request.node.fspath):
+        return CANONICAL_INFRA_TYPE
+    return COMMUNITY_INFRA_TYPE
+
+
+def get_dumps_folder(setup_name, session_id, topology_obj):
+    env_log_folder = os.environ.get(InfraConst.ENV_LOG_FOLDER)
+    if not env_log_folder:  # default value is empty string, defined in steps file
+        env_log_folder = create_result_dir(setup_name, session_id, InfraConst.CASES_DUMPS_DIR, topology_obj)
+        os.environ[InfraConst.ENV_LOG_FOLDER] = env_log_folder
+    return env_log_folder
+
+
 @pytest.fixture(scope='session', autouse=True)
 def dumps_folder(setup_name, session_id, topology_obj):
     """
@@ -36,11 +52,7 @@ def dumps_folder(setup_name, session_id, topology_obj):
     Relies on 'session_id' fixture.
     :return: dumps folder
     """
-    env_log_folder = os.environ.get(InfraConst.ENV_LOG_FOLDER)
-    if not env_log_folder:  # default value is empty string, defined in steps file
-        env_log_folder = create_result_dir(setup_name, session_id, InfraConst.CASES_DUMPS_DIR, topology_obj)
-        os.environ[InfraConst.ENV_LOG_FOLDER] = env_log_folder
-    return env_log_folder
+    return get_dumps_folder(setup_name, session_id, topology_obj)
 
 
 @pytest.fixture(scope='session')
@@ -80,6 +92,8 @@ def create_result_dir(setup_name, session_id, suffix_path_name, topology_obj):
     :return: created directory path
     """
     player_info = topology_obj.players['dut']
+    if not session_id:
+        session_id = 'manual_run'
     if player_info['attributes'].noga_query_data['attributes']['Topology Conn.']['CLI_TYPE'] == "NVUE":
         return create_nvos_result_dir(setup_name, session_id, suffix_path_name)
     else:

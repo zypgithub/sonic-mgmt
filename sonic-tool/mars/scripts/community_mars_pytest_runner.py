@@ -226,13 +226,14 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
 
         # The test script file must come first, see explaination on https://github.com/Azure/sonic-mgmt/pull/2131
         cmd = "{PYTEST_BIN_NAME} {SCRIPTS} --inventory=\"../ansible/inventory,../ansible/veos\" --host-pattern {DUT_NAME} --module-path \
-               ../ansible/library/ --testbed {TESTBED} --testbed_file ../ansible/testbed.yaml \
+               ../ansible/library/ --testbed {TESTBED} --setup_name={SETUP_NAME} --testbed_file ../ansible/testbed.yaml \
                --allow_recover  --session_id {SESSION_ID} --mars_key_id {MARS_KEY_ID} \
                --junit-xml {REPORT_FILE} --assert plain {OPTIONS} {ALLURE_PROJ} --skip_sanity --dynamic_update_skip_reason --random_seed={RANDOM_SEED} --store_la_logs --ignore_la_failure"
         cmd = cmd.format(PYTEST_BIN_NAME=pytest_bin_name,
                          SCRIPTS=self.test_scripts,
                          DUT_NAME=self.dut_name,
                          SONIC_TOPO=self.sonic_topo,
+                         SETUP_NAME=self.setup_name,
                          SESSION_ID=self.session_id,
                          MARS_KEY_ID=self.mars_key_id,
                          REPORT_FILE=self.report_file,
@@ -246,7 +247,7 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
         # For dualtor test, need to use setup name in --testbed
         if 'dualtor' in (self.sonic_topo):
             cmd = "{PYTEST_BIN_NAME} {SCRIPTS} --inventory=\"../ansible/inventory,../ansible/veos\" --host-pattern {DUT_NAME} --module-path \
-                           ../ansible/library/ --testbed {SETUP_NAME}-{SONIC_TOPO} --testbed_file ../ansible/testbed.yaml \
+                           ../ansible/library/ --testbed {SETUP_NAME}-{SONIC_TOPO} --setup_name={SETUP_NAME} --testbed_file ../ansible/testbed.yaml \
                            --allow_recover  --session_id {SESSION_ID} --mars_key_id {MARS_KEY_ID} \
                            --junit-xml {REPORT_FILE} --assert plain {OPTIONS} {ALLURE_PROJ} --skip_sanity --dynamic_update_skip_reason --random_seed={RANDOM_SEED} --store_la_logs --ignore_la_failure"
             cmd = cmd.format(PYTEST_BIN_NAME=pytest_bin_name,

@@ -4,6 +4,7 @@ import logging
 import json
 
 from ngts.constants.constants import DbConstants, CliType, RebootTestConstants
+from ngts.tools.infra import get_infra_type, CANONICAL_INFRA_TYPE
 from infra.tools.sql.connect_to_mssql import ConnectMSSQL
 from infra.tools.sql.skynet_collector import SkynetGenericCollector
 
@@ -54,7 +55,7 @@ class SonicDataCollector(object):
 
         self.request = request
         self.test_name = self.request.node.nodeid
-        self.is_canonical_setup = hasattr(self.request.config.option, 'setup_name')
+        self.is_canonical_setup = get_infra_type(self.request) == CANONICAL_INFRA_TYPE
         connections_params = DbConstants.CREDENTIALS[CliType.SONIC]
         self.mssql_connection_obj = ConnectMSSQL(connections_params['server'], connections_params['database'],
                                                  connections_params['username'], connections_params['password'])
