@@ -11,45 +11,50 @@ from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tests_nvos.general.security.nmx_cert.constants import FieldsInShowOf, CERTIFICATE, CA_CERTIFICATE, ENCRYPTION, \
-    FILE_NOT_EXIST_ERR, STATE, APP_CONSTS, ClusterAppConsts, NMX_C_CONSTS, NMX_T_CONSTS
+    FILE_NOT_EXIST_ERR, STATE, APP_CONSTS, ClusterAppConsts, NMX_C_CONSTS, NMX_T_CONSTS, ITEM_NOT_EXIST_ERR
 from ngts.tests_nvos.general.security.nmx_cert.grpc.config import GrpcConfig, GrpcServerConfig, GrpcClientConfig
 from ngts.tests_nvos.general.security.nmx_cert.grpc.nmx_c.client.NmxControllerClientApp import run_nmx_c_grpc_client
 from ngts.tests_nvos.general.security.nmx_cert.grpc.nmx_t.client.NmxTelemetryClientApp import run_nmx_t_grpc_client
 
 
 def verify_component_show(component: BaseComponent, required_fields,
-                          value_expectations: Dict[str, Union[str, None, int]]):
-    with allure.step(f'verify show: {component._resource_path}'):
-        with allure.step('run show command'):
-            out = OutputParsingTool.parse_json_str_to_dictionary(component.show()).get_returned_value()
-        with allure.independent_step('verify required fields exist'):
-            missing_fields = [field for field in required_fields if field not in out]
-            assert not missing_fields, f'some required fields are missing in show cluster manager output:\n{missing_fields}'
-        for field, expected in value_expectations.items():
-            with allure.independent_step(f'verify expected {field} - {expected}'):
-                assert expected is None or out[
-                    field] == expected, f'mismatch with field "{field}": expected {field}: {expected}, actual: {out[field]}'
+                          value_expectations: Dict[str, Union[str, None, int]], expect_item_not_exist: bool = False):
+    if expect_item_not_exist:
+        with allure.step(f'verify show: {component._resource_path} - expect item not exists'):
+            out = component.show(should_succeed=False)
+            assert ITEM_NOT_EXIST_ERR in out, f'wrong output. expected: "{ITEM_NOT_EXIST_ERR}". actual:\n{out}'
+    else:
+        with allure.step(f'verify show: {component._resource_path}'):
+            with allure.step('run show command'):
+                out = OutputParsingTool.parse_json_str_to_dictionary(component.show()).get_returned_value()
+            with allure.independent_step('verify required fields exist'):
+                missing_fields = [field for field in required_fields if field not in out]
+                assert not missing_fields, f'some required fields are missing in show cluster manager output:\n{missing_fields}'
+            for field, expected in value_expectations.items():
+                with allure.independent_step(f'verify expected {field} - {expected}'):
+                    assert expected is None or out[
+                        field] == expected, f'mismatch with field "{field}": expected {field}: {expected}, actual: {out[field]}'
 
 
-def verify_manager_show(app_name: str, expect_state=None, expect_cert=None, expect_cacert=None, expect_encryption=None):
+def verify_manager_show(app_name: str, expect_state=None, expect_cert=None, expect_cacert=None, expect_encryption=None, expect_item_not_exist: bool = False):
     verify_component_show(Cluster().apps.app_name[app_name].manager, FieldsInShowOf.MANAGER,
                           {STATE: expect_state, CERTIFICATE: expect_cert, CA_CERTIFICATE: expect_cacert,
-                           ENCRYPTION: expect_encryption})
+                           ENCRYPTION: expect_encryption}, expect_item_not_exist)
 
 
-def verify_cert_show(app_name: str, expect_cert_id=None):
+def verify_cert_show(app_name: str, expect_cert_id=None, expect_item_not_exist: bool = False):
     verify_component_show(Cluster().apps.app_name[app_name].manager.certificate, FieldsInShowOf.CERTIFICATE,
-                          {CERTIFICATE: expect_cert_id})
+                          {CERTIFICATE: expect_cert_id}, expect_item_not_exist)
 
 
-def verify_cacert_show(app_name: str, expect_cert_id=None):
+def verify_cacert_show(app_name: str, expect_cert_id=None, expect_item_not_exist: bool = False):
     verify_component_show(Cluster().apps.app_name[app_name].manager.ca_certificate, FieldsInShowOf.CA_CERTIFICATE,
-                          {CA_CERTIFICATE: expect_cert_id})
+                          {CA_CERTIFICATE: expect_cert_id}, expect_item_not_exist)
 
 
-def verify_encryption_show(app_name: str, expect_mode=None):
+def verify_encryption_show(app_name: str, expect_mode=None, expect_item_not_exist: bool = False):
     verify_component_show(Cluster().apps.app_name[app_name].manager.encryption, FieldsInShowOf.ENCRYPTION,
-                          {ENCRYPTION: expect_mode})
+                          {ENCRYPTION: expect_mode}, expect_item_not_exist)
 
 
 def run_nmx_c_client_hello_request(client_tls_mode: str, server_cert: CertInfo, server_ca: CertInfo,
@@ -141,7 +146,7 @@ def verify_user_config_json(app_name: str, dut_engine: LinuxSshEngine, expected_
             user_config_json_content = OutputParsingTool.parse_json_str_to_dictionary(
                 get_user_config_json_file_content(app_name, dut_engine)).get_returned_value()
         with allure.step('verify actual values against expected'):
-            for field in consts.user_config_json_fields:
+            for field in consts.user_config_json_fields.all_fields:
                 with allure.independent_step(f'check user_config.json key: {field}'):
                     if field not in expected_values:
                         if field in consts.fields_that_must_exist_in_user_config_json:
