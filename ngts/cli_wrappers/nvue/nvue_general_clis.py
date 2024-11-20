@@ -56,20 +56,6 @@ class NvueGeneralCli(SonicGeneralCliDefault):
         with allure.step("Validate dockers are up"):
             NvueGeneralCli._verify_dockers_are_up(self, dockers_list)
 
-    def apply_configuration_file(self, engine, src_file, dst_dut_dir="/home/cumulus"):
-        logger.info("Applying the configuration_file onto the dut after copying")
-
-        engine.copy_file(source_file=src_file, file_system=dst_dut_dir, dest_file="tmp.yaml", overwrite_file=True, verify_file=False)
-        with allure.step("Apply cumulus configuration"):
-            full_path = dst_dut_dir + "/tmp.yaml"
-            NvueGeneralCli.replace_config(engine, full_path, output_type="json")
-            NvueGeneralCli.apply_config(engine, option="-y")
-
-    def get_configuration_file_path(self, ngts_path, scenario, switch_name="dut", template_suite="performance_config_templates"):
-        full_path = ngts_path + "/performance_tests/" + template_suite + "/" + scenario + "/cumulus/" + switch_name + ".yaml"
-        logger.info("Full Path returned is {}".format(full_path))
-        return full_path
-
     def show_setup_versions(self):
         out = self.device.show_setup_versions(self.engine)
         return out

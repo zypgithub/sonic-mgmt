@@ -3,7 +3,8 @@ import re
 import os
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import NvosConst
-from ngts.constants.constants import InfraConst, PerfConsts
+from ngts.constants.constants import InfraConst
+from ngts.constants.performance_constants import PerfConsts
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 
@@ -44,10 +45,10 @@ class CumulusGeneralCli(NvueGeneralCli):
             self.install_apt_get_pkg()
 
         with allure.step('Prepare SDK_VER git to run tests'):
-            self.engine.run_cmd(f"sudo /home/cumulus/sdk_env/bin/python3.11 /root/sys_sdk/sx_sdk_py_tests/tests/run_tests.py -si")
-        # TODO: uncomment once sdk_ver has shahaf changes
-        # with allure.step('run SDK_VER traffic generator test '):
-            # self.engine.run_cmd(f"sudo /home/cumulus/sdk_env/bin/python3.11 /root/sys_sdk/sx_sdk_py_tests/tests/run_tests.py --names GenericTrafficGenerator")
+            self.engine.run_cmd(f"sudo {PerfConsts.CL_PYTHON_PATH} {PerfConsts.DVS_RUN_TEST_PATH} -si")
+        with allure.step('run SDK_VER traffic generator test '):
+            self.engine.run_cmd(f"sudo {PerfConsts.CL_PYTHON_PATH} "
+                                f"{PerfConsts.DVS_RUN_TEST_PATH} --names GenericTrafficGenerator")
 
     def install_pip_dependencies(self):
         self.engine.run_cmd('sudo apt-get update -y')

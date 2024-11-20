@@ -8,7 +8,8 @@ from retry.api import retry_call
 from retry import retry
 from functools import partial
 from ngts.tests.nightly.adaptive_routing.constants import ArConsts
-from ngts.constants.constants import AppExtensionInstallationConstants, PerfConsts
+from ngts.constants.constants import AppExtensionInstallationConstants
+from ngts.constants.performance_constants import PerfConsts
 from ngts.tests.conftest import get_dut_loopbacks
 from infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure

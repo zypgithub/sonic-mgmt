@@ -15,11 +15,12 @@ import pytest
 
 from ngts.cli_wrappers.nvue.cumulus.cumulus_general_cli import CumulusGeneralCli
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from ngts.cli_wrappers.dvs.dvs_general_cli import DvsGeneralCli
+from ngts.cli_wrappers.dvs.dvs_general_clis import DvsGeneralCli
 from ngts.cli_wrappers.sonic.sonic_cli import SonicCli
 from ngts.constants.constants import PlayersAliases, SonicDeployConstants, MarsConstants, SerialLoggerConst, CliType
 from ngts.cli_wrappers.sonic.sonic_general_clis import SonicGeneralCliDefault
-from ngts.constants.constants import PlayersAliases, SerialLoggerConst, PerfConsts, SSHConsts
+from ngts.constants.constants import PlayersAliases, SerialLoggerConst, SSHConsts
+from ngts.constants.performance_constants import PerfConsts
 from ngts.helpers.general_helper import extract_host_details_from_topo_obj, get_cli_obj
 from ngts.helpers.run_process_on_host import wait_until_background_procs_done
 from ngts.nvos_tools.Devices.IbDevice import BlackMambaSwitch, CrocodileSwitch

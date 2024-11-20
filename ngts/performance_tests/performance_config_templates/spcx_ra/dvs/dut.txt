@@ -1,0 +1,4 @@
+{
+"sdk_test_path": "sx_sdk_py_tests/tests/multi_os_tests/spcx_tests/spx_ra_dut.py",
+"sdk_test_name": "SPCXRA400Gto400GDUT"
+}

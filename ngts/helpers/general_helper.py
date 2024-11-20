@@ -9,7 +9,8 @@ from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.cli_wrappers.sonic.sonic_cli import SonicCli
 from ngts.cli_wrappers.sonic.sonic_general_clis import SonicGeneralCliDefault
 from ngts.cli_wrappers.dvs.dvs_cli import DvsCli
-from ngts.constants.constants import SonicConst, PerfConsts
+from ngts.constants.constants import SonicConst
+from ngts.constants.performance_constants import PerfConsts
 from ngts.nvos_constants.constants_nvos import NvosConst
 from ngts.nvos_tools.Devices.DeviceFactory import DeviceFactory
 

@@ -27,7 +27,8 @@ from ngts.cli_wrappers.sonic.sonic_onie_clis import SonicOnieCli, OnieInstallati
 from ngts.constants.constants import CliType, FanoutConfigFile
 from ngts.constants.constants import SonicConst, InfraConst, ConfigDbJsonConst, PerformanceSetupConstants, \
     AppExtensionInstallationConstants, DefaultCredentialConstants, BluefieldConstants, \
-    PlatformTypesConstants, PerfConsts, SonicDeployConstants
+    PlatformTypesConstants, SonicDeployConstants
+from ngts.constants.performance_constants import PerfConsts
 from ngts.helpers.breakout_helpers import get_port_current_breakout_mode, get_all_split_ports_parents, \
     get_split_mode_supported_breakout_modes, get_split_mode_supported_speeds, get_all_unsplit_ports
 from ngts.helpers.config_db_utils import save_config_db_json
@@ -75,18 +76,6 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         super().__init__(engine, cli_obj, dut_alias)
         self._is_simx_moose = None
         self._is_simx_bison = None
-
-    def apply_configuration_file(self, engine, src_file, dst_dut_dir="/tmp"):
-        logger.info("Applying the configuration_file onto the dut after copying")
-        engine.copy_file(source_file=src_file, file_system=dst_dut_dir, dest_file="config.json", overwrite_file=True, verify_file=False)
-        with allure.step("Apply Sonic configuration"):
-            full_path = dst_dut_dir + "/config.json"
-            self.load_configuration(full_path)
-
-    def get_configuration_file_path(self, ngts_path, scenario, switch_name="dut", template_suite="performance_config_templates"):
-        full_path = ngts_path + "/performance_tests/" + template_suite + "/" + scenario + "/sonic/" + switch_name + ".json"
-        logger.info("Full Path returned is {}".format(full_path))
-        return full_path
 
     def show_setup_versions(self):
         return ''
@@ -427,7 +416,8 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             image_path = '/auto/' + image_path.split('/auto/')[1]
 
         if setup_info and dut_alias and self.is_fanout_deploy_needed(setup_name):
-            self.deploy_fanout(topology_obj, destination_hwsku, platform_params, setup_info, dut_alias, deploy_fanout_threads, fanout_target_version=fanout_target_version)
+            self.deploy_fanout(topology_obj, destination_hwsku, platform_params, setup_info, dut_alias,
+                               deploy_fanout_threads, fanout_target_version=fanout_target_version)
 
         try:
             with allure.step("Trying to install sonic image"):
@@ -718,7 +708,8 @@ class SonicGeneralCliDefault(GeneralCliCommon):
 
         self.disable_ztp(disable_ztp)
 
-    def deploy_sonic_fanout(self, topology_obj, target_version, setup_info, threads_dict, platform_params, fanout_name, dut_alias):
+    def deploy_sonic_fanout(self, topology_obj, target_version, setup_info, threads_dict, platform_params, fanout_name,
+                            dut_alias):
         if target_version:
             # Check if is needed to install image on fanout.
             cli_version = self.get_image_sonic_version(only_branch=False)
@@ -1714,13 +1705,16 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             docker_exec_syncd_cmd = InfraConst.DOCKER_EXEC_BASH_CMD.format(DOCKER=InfraConst.SYNCD_DOCKER)
             copy_files_to_syncd(self.engine, [PerfConsts.SDK_DEB_FILE_TEMPLATE.format(SDK_VERSION=syncd_sdk_version)],
                                 PerfConsts.SDK_DEB_DIR_TEMPLATE.format(SDK_VERSION=syncd_sdk_version))
-            self.engine.run_cmd(f"{docker_exec_syncd_cmd} 'dpkg -i {PerfConsts.SDK_DEB_FILE_TEMPLATE.format(SDK_VERSION=syncd_sdk_version)}'")
+            self.engine.run_cmd(
+                f"{docker_exec_syncd_cmd} 'dpkg -i {PerfConsts.SDK_DEB_FILE_TEMPLATE.format(SDK_VERSION=syncd_sdk_version)}'")
 
         with allure.step('pip dependencies'):
-            self.engine.run_cmd(f"{docker_exec_syncd_cmd} 'python3 -m pip install --upgrade pip --root-user-action=ignore'")
+            self.engine.run_cmd(
+                f"{docker_exec_syncd_cmd} 'python3 -m pip install --upgrade pip --root-user-action=ignore'")
             copy_files_to_syncd(self.engine, [PerfConsts.REQUIRMENTS_FILE],
                                 PerfConsts.REQUIRMENTS_DIR)
-            self.engine.run_cmd(f"{docker_exec_syncd_cmd} 'pip install -r {PerfConsts.REQUIRMENTS_FILE} --root-user-action=ignore'")
+            self.engine.run_cmd(
+                f"{docker_exec_syncd_cmd} 'pip install -r {PerfConsts.REQUIRMENTS_FILE} --root-user-action=ignore'")
 
         with allure.step('apt get'):
             self.engine.run_cmd(f"{docker_exec_syncd_cmd} 'apt-get update'")
@@ -1733,15 +1727,14 @@ class SonicGeneralCliDefault(GeneralCliCommon):
 
         with allure.step('Prepare SDK_VER git to run tests'):
             self.engine.run_cmd(f"{docker_exec_syncd_cmd} '{PerfConsts.EXPORT_PYTHONPATH} "
-                                f"&& /root/sys_sdk/sx_sdk_py_tests/tests/run_tests.py -si'")
-        # TODO: uncomment once sdk_ver has shahaf changes
-        # with allure.step('run SDK_VER traffic generator test '):
-            # self.engine.run_cmd(f"{docker_exec_syncd_cmd} '{PerfConsts.EXPORT_PYTHONPATH}
-            # && /root/sys_sdk/sx_sdk_py_tests/tests/run_tests.py
-            # --names GenericTrafficGenerator'")
+                                f"&& {PerfConsts.DVS_RUN_TEST_PATH} -si'")
+        with allure.step('run SDK_VER traffic generator test'):
+            self.engine.run_cmd(f"{docker_exec_syncd_cmd} '{PerfConsts.EXPORT_PYTHONPATH} && "
+                                f"{PerfConsts.DVS_RUN_TEST_PATH} --names {PerfConsts.DVS_TG_NAME}'")
 
     def get_sdk_version(self, docker_name):
-        sdk_version_output = self.engine.run_cmd(InfraConst.CMD_GET_SDK_VERSION_FROM_DOCKER.format(DOCKER=docker_name), validate=True)
+        sdk_version_output = self.engine.run_cmd(InfraConst.CMD_GET_SDK_VERSION_FROM_DOCKER.format(DOCKER=docker_name),
+                                                 validate=True)
         sdk_version = re.search(r"SX-SDK ETH (\d+\.\d+\.\d+)", sdk_version_output).group(1)
         return sdk_version
 

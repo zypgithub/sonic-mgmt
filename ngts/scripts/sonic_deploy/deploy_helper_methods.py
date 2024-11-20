@@ -11,7 +11,8 @@ from infra.tools.topology_tools.nogaq import upload_data_to_noga
 from infra.tools.general_constants.constants import NogaConstants
 from ngts.cli_wrappers.common.general_clis_common import GeneralCliCommon
 from ngts.constants.constants import PlayersAliases, SonicDeployConstants, MarsConstants, SerialLoggerConst, CliType
-from ngts.constants.constants import PlayersAliases, SerialLoggerConst, PerfConsts, SSHConsts
+from ngts.constants.constants import PlayersAliases, SerialLoggerConst, SSHConsts
+from ngts.constants.performance_constants import PerfConsts
 
 logger = logging.getLogger()
 

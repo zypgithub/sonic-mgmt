@@ -9,7 +9,8 @@ import netmiko
 from ngts.cli_wrappers.interfaces.interface_general_clis import GeneralCliInterface
 from ngts.cli_wrappers.common.general_clis_common import GeneralCliCommon
 from ngts.cli_wrappers.sonic.sonic_onie_clis import SonicOnieCli, OnieInstallationError
-from ngts.constants.constants import InfraConst, PerfConsts
+from ngts.constants.constants import InfraConst
+from ngts.constants.performance_constants import PerfConsts
 from ngts.helpers.run_process_on_host import run_process_on_host
 from ngts.helpers.secure_boot_helper import SecureBootHelper
 
@@ -53,9 +54,9 @@ class DvsGeneralCli(GeneralCliCommon):
         Function verifies the traffic generator is functional post deploy on DVS OS
         :return: None
         """
-        self.engine.run_cmd(f"/root/sys_sdk/sx_sdk_py_tests/tests/run_tests.py -si")
+        self.engine.run_cmd(f"{PerfConsts.DVS_RUN_TEST_PATH} -si")
         # TODO: uncomment once sdk_ver has shahaf changes
-        # self.engine.run_cmd(f"/root/sys_sdk/sx_sdk_py_tests/tests/run_tests.py --names GenericTrafficGenerator")
+        # self.engine.run_cmd(f"{PerfConsts.DVS_RUN_TEST} --names {PerfConsts.DVS_TG_NAME}")
 
     def get_fw_version_from_sdk(self, sdk_version):
         fw_version_path = os.path.join(PerfConsts.SDK_VERSION_PATH, sdk_version, PerfConsts.FW_VERSION_FILE)
@@ -65,8 +66,9 @@ class DvsGeneralCli(GeneralCliCommon):
 
     def dvs_restart(self):
         logger.info("Performing restart to DVS")
-        cmd = "dvs_stop.sh && clean_switch && dvs_start.sh --sdk_bridge_mode=HYBRID"
-        self.engine.run_cmd(cmd, validate=True)
+        clean_switch_alias_cmd = f"alias clean_switch={PerfConsts.CLEAN_SWITCH_PATH}"
+        restart_cmd = "dvs_stop.sh && clean_switch && dvs_start.sh --sdk_bridge_mode=HYBRID"
+        self.engine.run_cmd_set([clean_switch_alias_cmd, restart_cmd], validate=True)
 
     def apply_mount(self):
         logger.info(f"Adding mounts for {PerfConsts.USED_SITE} site")
@@ -90,22 +92,3 @@ class DvsGeneralCli(GeneralCliCommon):
         logger.info(
             f"dut: {dut_name} {'supports' if image_supports else 'does not support'} version: {base_version_url}")
         return image_supports
-
-    def get_configuration_file_path(self, ngts_path, scenario, switch_name="dut", template_suite="/performance_tests/performance_config_templates"):
-        '''
-        Please add the extension for static dvs configuration file...
-        TODO :- Shahaf Bodner
-        '''
-        full_path = ngts_path + template_suite + "/" + scenario + "/dvs/" + switch_name
-        logger.info("Full Path returned is {}".format(full_path))
-        return full_path
-
-    def apply_configuration_file(self, engine, src_file, dst_dut_dir="/home/cumulus"):
-        '''
-        TODO :- Shahaf Bodner
-        Create a static configuration file at sonic-mgmt/ngts/performance_tests/performance_config_templates/static_topology/dvs
-        Copy that file onto the dut and apply the configuration
-        Generate this path from the above function sonic-mgmt/ngts/performance_tests/performance_config_templates/static_topology/dvs
-        '''
-        logger.info("Applying the configuration_file onto the dut after copying it from the path")
-        raise NotImplementedError

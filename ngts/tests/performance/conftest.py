@@ -5,7 +5,7 @@ import logging
 from ngts.helpers.adaptive_routing_helper import ArHelper, ArPerfHelper
 from ngts.helpers.system_helpers import copy_files_to_syncd
 from ngts.tests.nightly.adaptive_routing.constants import ArConsts
-from ngts.constants.constants import PerfConsts
+from ngts.constants.performance_constants import PerfConsts
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 
 logger = logging.getLogger()

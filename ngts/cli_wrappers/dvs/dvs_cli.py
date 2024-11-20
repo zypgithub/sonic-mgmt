@@ -1,5 +1,6 @@
-from ngts.cli_wrappers.dvs.dvs_general_cli import DvsGeneralCli
-from ngts.cli_wrappers.dvs.dvs_performance import DvsPerformance
+from ngts.cli_wrappers.dvs.dvs_general_clis import DvsGeneralCli
+from ngts.cli_wrappers.dvs.dvs_performance_clis import DvsPerformance
+from ngts.cli_wrappers.dvs.dvs_chassis_clis import DvsChassisCli
 
 
 class DvsCli:
@@ -9,6 +10,7 @@ class DvsCli:
         self.topology = topology
         self._general = None
         self._performance = None
+        self._chassis = None
 
     @property
     def general(self):
@@ -19,4 +21,11 @@ class DvsCli:
     @property
     def performance(self):
         if self._performance is None:
-            self._performance = DvsPerformance(self.topology)
+            self._performance = DvsPerformance(self.topology, self.engine, self.dut_alias, cli_obj=self)
+        return self._performance
+
+    @property
+    def chassis(self):
+        if self._chassis is None:
+            self._chassis = DvsChassisCli(engine=self.engine)
+        return self._chassis

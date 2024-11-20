@@ -3,8 +3,8 @@
   <global>
     <Test>
       <group> PERFORMANCE </group>
-      <name> Spectrum-X RA tests </name>
-      <info> Spectrum-X RA tests  </info>
+      <name> IP test </name>
+      <info> IP test  </info>
       <owner> ayussinghal </owner>
     </Test>
     <Case>
@@ -19,7 +19,7 @@
     <info> </info>
     <cmd>
       <params>
-          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/performance_tests/spx_ra --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --clean-alluredir --alluredir=/tmp/allure-results --target_cli_type=[[conf:extra_info.target_cli_type]] --showlocals\'"</static_args>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/performance_tests/mockup --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --clean-alluredir --alluredir=/tmp/allure-results --target_cli_type=[[conf:extra_info.target_cli_type]] --showlocals\'"</static_args>
       </params>
     </cmd>
   </case>

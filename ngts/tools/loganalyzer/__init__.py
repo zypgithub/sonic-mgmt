@@ -5,7 +5,8 @@ import logging
 from pytest_ansible.errors import AnsibleConnectionFailure
 from tests.common.errors import RunAnsibleModuleFail
 from ngts.tools.infra import update_sys_path_by_community_plugins_path
-from ngts.constants.constants import NvosCliTypes, PlayersAliases, PerfConsts, CliType
+from ngts.constants.constants import NvosCliTypes, PlayersAliases, CliType
+from ngts.constants.performance_constants import PerfConsts
 from ngts.nvos_constants.constants_nvos import NvosConst
 from devices.sonic import SonicHost
 from plugins.ansible_fixtures import ansible_adhoc

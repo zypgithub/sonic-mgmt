@@ -6,7 +6,8 @@ from multiprocessing.pool import ThreadPool
 from http.server import HTTPServer
 import json
 from ngts.scripts.sonic_deploy.image_http_request_handler import ImageHTTPRequestHandler
-from ngts.constants.constants import MarsConstants, PerfConsts
+from ngts.constants.constants import MarsConstants
+from ngts.constants.performance_constants import PerfConsts
 from ngts.tools.test_utils.nvos_general_utils import get_real_file_path
 
 logger = logging.getLogger()

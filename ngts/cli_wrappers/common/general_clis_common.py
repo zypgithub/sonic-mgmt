@@ -8,7 +8,8 @@ import netmiko
 
 from ngts.cli_wrappers.interfaces.interface_general_clis import GeneralCliInterface
 from ngts.cli_wrappers.sonic.sonic_onie_clis import SonicOnieCli
-from ngts.constants.constants import InfraConst, SSHConsts, PerfConsts
+from ngts.constants.constants import InfraConst, SSHConsts
+from ngts.constants.performance_constants import PerfConsts
 from ngts.helpers.run_process_on_host import run_process_on_host
 from ngts.helpers.secure_boot_helper import SecureBootHelper
 

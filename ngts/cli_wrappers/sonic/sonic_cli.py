@@ -34,6 +34,7 @@ from ngts.cli_wrappers.sonic.sonic_fwutil_clis import SonicFwutilCli
 from ngts.cli_wrappers.sonic.sonic_im_clis import SonicImClis
 from ngts.cli_wrappers.sonic.sonic_hw_mgmt_cli import SonicHwMgmtCli
 from ngts.cli_wrappers.sonic.sonic_wcmp_clis import SonicWcmpCli
+from ngts.cli_wrappers.sonic.sonic_performance_clis import SonicPerformanceCli
 from ngts.cli_util.stub_engine import StubEngine
 from dotted_dict import DottedDict
 logger = logging.getLogger()
@@ -41,6 +42,7 @@ logger = logging.getLogger()
 
 class SonicCli:
     def __init__(self, topology, dut_alias='dut'):
+        self.topology = topology
         self.dut_alias = dut_alias
         self.branch = topology.players['dut'].get('branch')
         self.engine = topology.players[self.dut_alias]['engine']
@@ -80,6 +82,7 @@ class SonicCli:
         self._hw_mgmt = None
         self._wcmp = None
         self._im = None
+        self._performance = None
 
     @property
     def ip(self):
@@ -297,6 +300,13 @@ class SonicCli:
         if self._im is None:
             self._im = SonicImClis(engine=self.engine, cli_obj=self)
         return self._im
+
+    @property
+    def performance(self):
+        if self._performance is None:
+            self._performance = SonicPerformanceCli(topology_obj=self.topology, engine=self.engine,
+                                                    dut_alias=self.dut_alias, cli_obj=self)
+        return self._performance
 
 
 class SonicCliStub(SonicCli):

@@ -2,7 +2,7 @@ import logging
 import re
 
 from paramiko.ssh_exception import SSHException
-from ngts.constants.constants import NvosCliTypes
+from ngts.constants.performance_constants import PerfConsts
 
 logger = logging.getLogger()
 
@@ -23,7 +23,7 @@ def get_sonic_branch(topology, dut_alias='dut'):
     # master branch always has release "none"
     except Exception as nvueerr:
         if topology.players['dut']['attributes'].noga_query_data['attributes']['Topology Conn.']['CLI_TYPE'] \
-                in NvosCliTypes.NvueCliTypes:
+                in PerfConsts.NON_SONIC_CLI_TYPE:
             branch = "master"
             logger.warning(f'unable to run sonic cmd on dut. Assuming that sonic image is not installed on this device '
                            f'Got error: {nvueerr}')
@@ -69,7 +69,7 @@ def is_sanitizer_image(topology):
                        f'Got error: {err}')
     except BaseException as err:
         if topology.players['dut']['attributes'].noga_query_data['attributes']['Topology Conn.']['CLI_TYPE'] \
-                in NvosCliTypes.NvueCliTypes:
+                in PerfConsts.NON_SONIC_CLI_TYPE:
             logger.info(f"Error ignored ({err}) - this is NVOS setup ")
         else:
             raise err
@@ -86,7 +86,7 @@ def get_sonic_image(topology):
     :return: branch name
     """
     if topology.players['dut']['attributes'].noga_query_data['attributes']['Topology Conn.']['CLI_TYPE'] \
-            in NvosCliTypes.NvueCliTypes:
+            in PerfConsts.NON_SONIC_CLI_TYPE:
         return "Unknown"
 
     try:

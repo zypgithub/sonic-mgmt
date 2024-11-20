@@ -401,7 +401,7 @@ def update_nvos_topology(topology, player_key, player_info, request):
                                                player_info['engine'].password)
         player_info['attributes'].noga_query_data['attributes']['Topology Conn.']['CLI_TYPE'] = "NVUE"
         player_info['attributes'].noga_query_data['attributes']['Common']['Description'] = player_key
-    player_info['cli'] = NvueCli(topology)
+    player_info['cli'] = NvueCli(topology, player_info['engine'], dut_alias=player_key)
     player_info['is_nvos'] = True
     switch_type = player_info['attributes'].noga_query_data['attributes']['Specific'].get('TYPE', '')
     if switch_type == NvosCliTypes.CumulusCliType:
