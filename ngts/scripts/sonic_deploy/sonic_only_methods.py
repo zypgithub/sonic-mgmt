@@ -438,7 +438,9 @@ class SonicInstallationSteps:
                                                           setup_name=setup_name,
                                                           platform_params=platform_params,
                                                           reboot_after_install=reboot_after_install,
-                                                          setup_info=setup_info, dut_alias=dut_alias)
+                                                          configure_dns=True,
+                                                          setup_info=setup_info,
+                                                          dut_alias=dut_alias)
         dut_name = setup_info['duts'][0]['dut_name']
         dut_platform_path = f'/usr/share/sonic/device/{platform_params["platform"]}'
         sonic_mgmt_hwsku_path = '/usr/share/sonic/device/x86_64-kvm_x86_64-r0'
