@@ -34,6 +34,7 @@ from ngts.tools.allure_report.allure_report_attacher import add_fixture_end_tag,
 from ngts.tools.infra import get_platform_info, get_devinfo, is_deploy_run, get_chip_type
 from ngts.tools.topology_tools.topology_by_setup import get_topology_by_setup_name_and_aliases
 from ngts.tools.test_utils.nvos_general_utils import get_switch_type
+from ngts.tools.infra import get_topology_from_noga
 
 logger = logging.getLogger()
 
@@ -49,7 +50,7 @@ def pytest_sessionstart(session):
 
 
 def pytest_collection(session):
-    topology = get_topology_by_setup_name_and_aliases(session.config.option.setup_name, slow_cli=False)
+    topology = get_topology_from_noga(session)
     logger.debug('Get switch devdescription from Noga')
     switch_attributes = topology.players['dut']['attributes'].noga_query_data['attributes']
     devinfo = get_devinfo(switch_attributes)
