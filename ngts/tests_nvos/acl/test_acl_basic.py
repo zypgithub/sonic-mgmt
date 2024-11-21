@@ -1153,7 +1153,46 @@ def test_override_default_rule(engines, topology_obj):
                 assert override_field_output == default_rule_to_override_field_output, "should return to default values after unset"
 
 
+@pytest.mark.acl
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_nmx_ports(engines, devices, test_api):
+    """
+    Check if device has acl rules for nmx
+    steps:
+    1. Check device has nmx support
+    2. Parse acl rules show
+    3. Find nmx related rule
+        * If no nmx rule found -> fail
+    4. Verify nmx ports 9351, 9352, 9353, 9370 are open for tcp
+    """
+
+    with allure.step("Check if device has nmx"):
+        if not devices.dut.has_nmx:
+            pytest.skip("This setup doesn't have nmx")
+
+    with allure.step("Show ACL rules and verify nmx ports are open"):
+        TestToolkit.tested_api = test_api
+
+        default_chosen_acl = 'ACL_MGMT_INBOUND_CP_DEFAULT'
+        acl_obj = Acl().acl_id[default_chosen_acl]
+        acl_rules = OutputParsingTool.parse_show_output_to_dict(acl_obj.show()).get_returned_value()[AclConsts.RULE]
+        assert acl_rules, "No ACL rules were found"
+
+        nmx_rule = None
+        for rule_id, rule in acl_rules.items():
+            if "nmx" in rule.get(AclConsts.REMARK, ""):
+                nmx_rule = rule
+                break
+        assert nmx_rule, "No acl rule was found for nmx"
+        assert AclConsts.PERMIT in nmx_rule[AclConsts.ACTION], "The acl action is not permit"
+
+    ports_to_check = {"9351", "9352", "9353", "9370"}
+    with allure.step(f"Verify ports for nmx are open {ports_to_check}"):
+        nmx_open_ports = nmx_rule[AclConsts.MATCH][AclConsts.IP][AclConsts.TCP][AclConsts.DEST_PORT]
+        assert ports_to_check <= nmx_open_ports.keys(), "Not all nmx ports are open"
+
 # ------------------- functions -------------------
+
 
 def sleep():
     logger.info(f"sleep {SLEEP_TIME}")

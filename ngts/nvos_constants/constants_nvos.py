@@ -1469,6 +1469,8 @@ class AclConsts:
     MATCH_IP = 'match_ip'
     SOURCE_IP = 'source-ip'
     DEST_IP = 'dest-ip'
+    TCP = "tcp"
+    DEST_PORT = "dest-port"
     TCP_SOURCE_PORT = 'tcp-source-port'
     UDP_SOURCE_PORT = 'udp-source-port'
     TCP_DEST_PORT = 'tcp-dest-port'
