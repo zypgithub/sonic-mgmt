@@ -1,6 +1,6 @@
 ########################## CL IGNORE START ##########################
 
-tests_nvos/general/security/certificate/test_certificate_mgmt.py::test_import_certificate_with_long_passphrase:
+tests_nvos/general/security_/certificate/test_certificate_mgmt.py::test_import_certificate_with_long_passphrase:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4077379"
     conditions:

@@ -112,18 +112,6 @@ tests_nvos/interfaces/multi_planar/test_multi_planar_sym_mgr_and_aport.py::test_
     conditions:
       - "'gorilla' in testbed"
 
-tests_nvos/interfaces/test_response_mgmt_ip_inband.py::test_interface_shutdown:
-  skip:
-    reason: "Should run only on xdr Black Mamba system"
-    conditions:
-      - "'gorilla' or 'marlin' in testbed"
-
-tests_nvos/interfaces/test_response_mgmt_ip_inband.py::test_dhcp_shutdown:
-  skip:
-    reason: "Should run only on xdr Black Mamba system"
-    conditions:
-      - "'gorilla' or 'marlin' in testbed"
-
 tests_nvos/system/test_system_ptp.py:
   skip:
     reason: "Decided to disable for now"
@@ -163,14 +151,6 @@ tests_nvos/interfaces/link_detection/test_link_detection.py::test_port_ranges:
     conditions:
       - https://redmine.mellanox.com/issues/3953065
 
-tests_nvos/platform/test_platform.py::test_show_platform:
-  skip:
-    reason: "Testcase skipped on non gorilla systems due to RM issue: https://redmine.mellanox.com/issues/3922673"
-    conditions_logical_operator: and
-    conditions:
-      - "'gorilla' not in testbed and 'juliet' not in testbed"
-      - https://redmine.mellanox.com/issues/3922673
-
 tests_nvos/platform/test_platform_environment.py::test_show_platform_environment_psu:
   skip:
     reason: "Testcase skipped on Juliet systems, Juliet Does not have PSU"
@@ -206,14 +186,6 @@ tests_nvos/platform/test_platform.py::test_show_platform_chassis_location:
     reason: "Testcase skipped on non Juliet systems, Juliet feature only (as a part of Uberon)"
     conditions:
       - "'juliet' not in testbed"
-
-tests_nvos/platform/test_platform_firmware_bios/test_platform_firmware_bios.py:
-  skip:
-    reason: "Testcase skipped on Juliet systems, feature is pruned in Juliet"
-    conditions_logical_operator: or
-    conditions:
-      - "'juliet' in testbed"
-      - https://redmine.mellanox.com/issues/4173449
 
 tests_nvos/checklist/erot_fw_upgrade/test_erot_upgrade.py:
   skip:
@@ -273,12 +245,6 @@ tests_nvos/checklist/test_cpld_upgrade.py::test_cpld_upgrade:
     conditions:
       - "'mamba' in testbed"
 
-tests_nvos/interfaces/test_ib0_interface_state.py::test_ib0_interface_state_unset:
-  skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4077016"
-    conditions:
-      - https://redmine.mellanox.com/issues/4077016
-
 tests_nvos/system/test_techsupport_feature.py::test_techsupport_bmc_badflow:
   skip:
     reason: "Testcase skipped on non Juliet systems, only Juliet has BMC"
@@ -302,5 +268,11 @@ tests_nvos/system/test_system_snmp.py::test_system_snmp_negative:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4177946"
     conditions:
       - https://redmine.mellanox.com/issues/4177946
+
+tests_nvos/interfaces/test_response_mgmt_ip_inband.py:
+  skip:
+    reason: "#4041220:[Functional] [Crocodile] | Empty addresses in ufm-mad response"
+    conditions:
+      - https://redmine.mellanox.com/issues/4041220
 
 ########################## NVOS IGNORE END ##########################
