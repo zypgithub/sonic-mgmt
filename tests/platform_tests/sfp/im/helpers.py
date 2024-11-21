@@ -82,8 +82,6 @@ BER_KEY_MAP = {
 }
 
 PLATFORM_GENERATION = ['4280', '4700', '5600']
-MS_HWSKUS = ['Mellanox-SN4700-O8C48', 'Mellanox-SN4700-O8V48', 'ACS-SN5600', 'ACS-MSN4700', 'Mellanox-SN4280-O28',
-             'Mellanox-SN4700-O32', 'Mellanox-SN4700-V64', 'Mellanox-SN5600-V256']
 
 CMD_INTERFACE_TRANSCEIVER = "show interface transceiver eeprom"
 CMD_SFPUTIL_EEPROM = "sudo sfputil show eeprom"
