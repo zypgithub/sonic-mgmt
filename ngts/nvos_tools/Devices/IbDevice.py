@@ -491,9 +491,6 @@ class GorillaSwitch(IbSwitch):
             "state": FansConsts.STATE_OK, "direction": None, "current-speed": None,
             "min-speed": ExpectedString(range_min=2000, range_max=10000),
             "max-speed": ExpectedString(range_min=20000, range_max=40000)}
-        self.platform_environment_absent_fan_values = {
-            "state": FansConsts.STATE_ABSENT, "direction": "N/A", "current-speed": "N/A",
-            "min-speed": "N/A", "max-speed": "N/A"}
         self.platform_inventory_switch_values.update({"hardware-version": None,
                                                       "model": ExpectedString(regex="MQM9700.*")})
 

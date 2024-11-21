@@ -437,6 +437,9 @@ class BaseSwitch(BaseDevice):
         self.platform_inventory_values = {"fan": self.platform_inventory_fan_values,
                                           "psu": self.platform_inventory_psu_values,
                                           "switch": self.platform_inventory_switch_values}
+        self.platform_environment_absent_fan_values = {
+            "state": FansConsts.STATE_ABSENT, "direction": "N/A", "current-speed": "N/A",
+            "min-speed": "N/A", "max-speed": "N/A"}
 
     def _init_fae_lists(self):
         super()._init_fae_lists()
