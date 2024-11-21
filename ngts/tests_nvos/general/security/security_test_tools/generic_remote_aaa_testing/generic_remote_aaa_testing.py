@@ -372,7 +372,7 @@ def generic_aaa_test_priority(test_flow, test_api, engines, topology_obj, reques
                               server1: RemoteAaaServerInfo, server2: RemoteAaaServerInfo,
                               skip_auth_mediums: List[str] = None):
     """
-    @summary: Verify that auth is done via the top prioritized server
+    @summary: Verify that auth is done via the lowest prioritized server (lowest number - better in priority)
 
         Steps:
         1. set and prioritize 2 servers
@@ -398,16 +398,16 @@ def generic_aaa_test_priority(test_flow, test_api, engines, topology_obj, reques
     item = request.node
 
     with allure.step(f'Set and prioritize 2 {remote_aaa_type} servers'):
-        server1.priority = 1
-        server2.priority = 2
+        server1.priority = 8
+        server2.priority = 7
         server1.configure(engines, set_explicit_priority=True)
         server2.configure(engines, set_explicit_priority=True)
 
     with allure.step(f'Enable {remote_aaa_type}'):
         remote_aaa_obj.enable(apply=True, verify_res=False)
-        top_server = server2
-        lower_server = server1
-        update_active_aaa_server(item, top_server)
+        best_server = server2
+        worse_server = server1
+        update_active_aaa_server(item, best_server)
         if remote_aaa_type == RemoteAaaType.LDAP:
             wait_for_ldap_nvued_restart_workaround(item)
 
@@ -415,22 +415,22 @@ def generic_aaa_test_priority(test_flow, test_api, engines, topology_obj, reques
         with allure.step('Wait for configuration to be fully applied'):
             time.sleep(RemoteAaaConsts.WAIT_TIME_BEFORE_AUTH)
 
-        with allure.step(f'Verify auth is done via top prioritized server: {top_server.hostname}'):
+        with allure.step(f'Verify auth is done via top prioritized server: {best_server.hostname}'):
             verify_auth(test_flow, engines, topology_obj,
-                        good_flow_users=[top_server.users[0]], bad_flow_users=[lower_server.users[0]],
+                        good_flow_users=[best_server.users[0]], bad_flow_users=[worse_server.users[0]],
                         verify_authorization=False, skip_auth_mediums=skip_auth_mediums)
 
-        if top_server.priority == ValidValues.PRIORITY[-1]:
+        if best_server.priority == ValidValues.PRIORITY[0]:
             break
 
-        next_prio = random.randint(top_server.priority + 1, ValidValues.PRIORITY[-1])
+        next_prio = random.randint(ValidValues.PRIORITY[0], best_server.priority - 1)
         with allure.step(f'Advance lower server to be top prioritized to: {next_prio}'):
-            lower_server_resource = remote_aaa_obj.server.server_id[lower_server.hostname]
-            lower_server.priority = next_prio
-            lower_server_resource.set(AaaConsts.PRIORITY, lower_server.priority, apply=True,
+            worse_server_resource = remote_aaa_obj.server.server_id[worse_server.hostname]
+            worse_server.priority = next_prio
+            worse_server_resource.set(AaaConsts.PRIORITY, worse_server.priority, apply=True,
                                       dut_engine=item.active_remote_admin_engine)
-            lower_server, top_server = top_server, lower_server
-            update_active_aaa_server(item, top_server)
+            worse_server, best_server = best_server, worse_server
+            update_active_aaa_server(item, best_server)
             if remote_aaa_type == RemoteAaaType.LDAP:
                 wait_for_ldap_nvued_restart_workaround(item)
 
@@ -476,8 +476,10 @@ def generic_aaa_test_server_unreachable(test_flow: str, test_api, engines, topol
         server2 = server2.copy()
         server1.priority = 2
         server2.priority = 1
-        server1.configure(engines, set_explicit_priority=True)
-        server1.make_unreachable(engines)
+        best_server = server2
+        worse_server = server1
+        best_server.configure(engines, set_explicit_priority=True)
+        best_server.make_unreachable(engines)
 
     with allure.step(f'Enable {remote_aaa_type}'):
         remote_aaa_obj.enable(apply=True)
@@ -486,40 +488,40 @@ def generic_aaa_test_server_unreachable(test_flow: str, test_api, engines, topol
 
     with allure.step('Verify auth - success only with local user'):
         verify_auth(test_flow, engines, topology_obj,
-                    good_flow_users=[local_adminuser], bad_flow_users=[random.choice(server1.users)],
+                    good_flow_users=[local_adminuser], bad_flow_users=[random.choice(best_server.users)],
                     verify_authorization=False, skip_auth_mediums=skip_auth_mediums)
 
-    with allure.step('Configure secondary prioritized reachable server'):
-        server2.configure(engines, set_explicit_priority=True, apply=True)
-        update_active_aaa_server(item, server2)
+    with allure.step('Configure worse prioritized reachable server'):
+        worse_server.configure(engines, set_explicit_priority=True, apply=True)
+        update_active_aaa_server(item, worse_server)
         if remote_aaa_type == RemoteAaaType.LDAP:
             wait_for_ldap_nvued_restart_workaround(item)
 
-    with allure.step('Verify auth – success only with 2nd server user'):
+    with allure.step('Verify auth – success only with worse server user'):
         verify_auth(test_flow, engines, topology_obj,
-                    good_flow_users=[random.choice(server2.users)], bad_flow_users=[local_adminuser],
+                    good_flow_users=[random.choice(worse_server.users)], bad_flow_users=[local_adminuser],
                     verify_authorization=False, skip_auth_mediums=skip_auth_mediums)
 
-    with allure.step('Make the 2nd server also unreachable'):
-        server2.make_unreachable(engines, apply=True, dut_engine=item.active_remote_admin_engine)
+    with allure.step('Make the worse server also unreachable'):
+        worse_server.make_unreachable(engines, apply=True, dut_engine=item.active_remote_admin_engine)
         update_active_aaa_server(item, None)
         if remote_aaa_type == RemoteAaaType.LDAP:
             wait_for_ldap_nvued_restart_workaround(item, engine_to_use=engines.dut)
 
     with allure.step('Verify auth - success only with local user'):
         verify_auth(test_flow, engines, topology_obj,
-                    good_flow_users=[local_adminuser], bad_flow_users=[random.choice(server2.users)],
+                    good_flow_users=[local_adminuser], bad_flow_users=[random.choice(worse_server.users)],
                     verify_authorization=False, skip_auth_mediums=skip_auth_mediums)
 
-    with allure.step('Bring back the first server'):
-        server1.make_reachable(engines, apply=True)
-        update_active_aaa_server(item, server1)
+    with allure.step('Bring back the best server'):
+        best_server.make_reachable(engines, apply=True)
+        update_active_aaa_server(item, best_server)
         if remote_aaa_type == RemoteAaaType.LDAP:
             wait_for_ldap_nvued_restart_workaround(item)
 
-    with allure.step('Verify auth – success only with top server user'):
+    with allure.step('Verify auth – success only with best server user'):
         verify_auth(test_flow, engines, topology_obj,
-                    good_flow_users=[server1.users[0]], bad_flow_users=[local_adminuser, server2.users[0]],
+                    good_flow_users=[best_server.users[0]], bad_flow_users=[local_adminuser, worse_server.users[0]],
                     verify_authorization=False, skip_auth_mediums=skip_auth_mediums)
 
 
@@ -565,17 +567,19 @@ def generic_aaa_test_auth_error(test_flow, test_api, engines, topology_obj, requ
         server2 = server2.copy()
         server1.priority = 2
         server2.priority = 1
-        server1.configure(engines, set_explicit_priority=True)
-        server2.configure(engines, set_explicit_priority=True)
+        best_server = server2
+        worse_server = server1
+        best_server.configure(engines, set_explicit_priority=True)
+        worse_server.configure(engines, set_explicit_priority=True)
 
     with allure.step(f'Enable {remote_aaa_type} and disable failthrough'):
         remote_aaa_obj.enable(apply=True, verify_res=False)
-        update_active_aaa_server(item, server1)
+        update_active_aaa_server(item, best_server)
         if remote_aaa_type == RemoteAaaType.LDAP:
             wait_for_ldap_nvued_restart_workaround(item)
 
-    with allure.step('Verify auth fail with users not from top server'):
-        verify_auth(test_flow, engines, topology_obj, bad_flow_users=[server2.users[0], local_adminuser],
+    with allure.step('Verify auth fail with users not from best server'):
+        verify_auth(test_flow, engines, topology_obj, bad_flow_users=[worse_server.users[0], local_adminuser],
                     verify_authorization=False, skip_auth_mediums=skip_auth_mediums)
 
     with allure.step('Enable failthrough'):
@@ -588,7 +592,7 @@ def generic_aaa_test_auth_error(test_flow, test_api, engines, topology_obj, requ
 
     good_flow_users = [local_adminuser]
     if remote_aaa_type != RemoteAaaType.LDAP:  # with LDAP + failthrough on - only move to next method, and not server
-        good_flow_users.append(server2.users[0])
+        good_flow_users.append(worse_server.users[0])
 
     with allure.step('Verify auth success with users not from top server'):
         verify_auth(test_flow, engines, topology_obj, good_flow_users=good_flow_users,

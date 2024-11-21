@@ -168,11 +168,11 @@ def test_tacacs_unique_priority(test_api, engines, topology_obj):
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_tacacs_priority(test_flow, test_api, engines, topology_obj, request):
     """
-    @summary: Verify that auth is done via the top prioritized server
+    @summary: Verify that auth is done via the lowest prioritized server
 
         Steps:
         1. set and prioritize 2 servers
-        2. verify auth is done via top prioritized server
+        2. verify auth is done via lowest prioritized server
         3. advance the lowest prioritized server to be most prioritized
         4. repeat steps 2-3 until reach priority 8 (max)
     """
@@ -200,7 +200,7 @@ def test_tacacs_server_unreachable(test_flow, test_api, engines, topology_obj, l
         7.	Make the 2nd server also unreachable
         8.	Verify auth – success only with local user
         9.	Bring back the first server
-        10. Verify auth – success only with top server user
+        10. Verify auth – success only with lowest server user
     """
     server1, server2 = get_two_different_tacacs_servers()
     generic_aaa_test_server_unreachable(test_flow, test_api, engines, topology_obj, request,
@@ -271,16 +271,16 @@ def test_tacacs_accounting_basic(test_api, addressing_type, engines, topology_ob
 @pytest.mark.security
 @pytest.mark.simx_security
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_tacacs_accounting_top_server_only(test_api, engines, topology_obj, request, local_adminuser: UserInfo,
-                                           switch_hostname: str):
+def test_tacacs_accounting_lowest_server_only(test_api, engines, topology_obj, request, local_adminuser: UserInfo,
+                                              switch_hostname: str):
     """
-    @summary: Verify that accounting logs are sent to top server only
+    @summary: Verify that accounting logs are sent to lowest server only
 
         Steps:
         1. configure tacacs with 2 servers
         2. enable accounting
         3. enable tacacs
-        4. verify accounting logs on top server only for tacacs users events
+        4. verify accounting logs on lowest server only for tacacs users events
     """
     addressing_type1 = random.choice(AddressingType.ALL_TYPES)
     auth_mode1 = random.choice(AuthMode.ALL_TYPES)
@@ -291,37 +291,37 @@ def test_tacacs_accounting_top_server_only(test_api, engines, topology_obj, requ
     test_server1 = TacacsDockerServer1.SERVER_BY_ADDRESSING_TYPE[addressing_type1].copy()
     test_server2 = TacacsDockerServer2.SERVER_BY_ADDRESSING_TYPE[addressing_type2].copy()
 
-    test_server1.priority = 2
-    test_server2.priority = 1
+    test_server1.priority = 1
+    test_server2.priority = 2
 
     test_server1.auth_mode = auth_mode1
     test_server1.users = TacacsDockerServer1.USERS_BY_AUTH_MODE[auth_mode1]
     test_server2.auth_mode = auth_mode2
     test_server2.users = TacacsDockerServer2.USERS_BY_AUTH_MODE[auth_mode2]
 
-    generic_aaa_test_accounting_top_server_only(test_api, engines, topology_obj, request, switch_hostname,
-                                                local_adminuser,
-                                                remote_aaa_type=RemoteAaaType.TACACS,
-                                                remote_aaa_obj=System().aaa.tacacs,
-                                                server1=test_server1, server2=test_server2)
+    generic_aaa_test_accounting_lowest_server_only(test_api, engines, topology_obj, request, switch_hostname,
+                                                   local_adminuser,
+                                                   remote_aaa_type=RemoteAaaType.TACACS,
+                                                   remote_aaa_obj=System().aaa.tacacs,
+                                                   lowest_server=test_server1, highest_server=test_server2)
 
 
 @pytest.mark.security
 @pytest.mark.simx_security
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_tacacs_accounting_unreachable_top_server(test_api, engines, topology_obj, request, local_adminuser: UserInfo,
-                                                  switch_hostname: str):
+def test_tacacs_accounting_unreachable_lowest_server(test_api, engines, topology_obj, request, local_adminuser: UserInfo,
+                                                     switch_hostname: str):
     """
-    @summary: Verify that when top server becomes unreachable, accounting logs are sent to next available server only
+    @summary: Verify that when lowest server becomes unreachable, accounting logs are sent to next available server only
 
         Steps:
-        1. configure tacacs with several top unreachable servers
+        1. configure tacacs with several lowest unreachable servers
         2. configure also reachable server with lower priority
         3. enable accounting
         4. enable tacacs
-        5. verify accounting logs on top available server only for tacacs users events
+        5. verify accounting logs on lowest available server only for tacacs users events
         6. make unreachable server reachable
-        7. verify accounting logs now on the top reachable server
+        7. verify accounting logs now on the lowest reachable server
     """
     addressing_type1 = random.choice(AddressingType.ALL_TYPES)
     auth_mode1 = random.choice(AuthMode.ALL_TYPES)
@@ -332,19 +332,19 @@ def test_tacacs_accounting_unreachable_top_server(test_api, engines, topology_ob
     test_server1 = TacacsDockerServer1.SERVER_BY_ADDRESSING_TYPE[addressing_type1].copy()
     test_server2 = TacacsDockerServer2.SERVER_BY_ADDRESSING_TYPE[addressing_type2].copy()
 
-    test_server1.priority = 2
-    test_server2.priority = 1
+    test_server1.priority = 1
+    test_server2.priority = 2
 
     test_server1.auth_mode = auth_mode1
     test_server1.users = TacacsDockerServer1.USERS_BY_AUTH_MODE[test_server1.auth_mode]
     test_server2.auth_mode = auth_mode2
     test_server2.users = TacacsDockerServer2.USERS_BY_AUTH_MODE[test_server2.auth_mode]
 
-    generic_aaa_test_accounting_unreachable_top_server(test_api, engines, topology_obj, request, switch_hostname,
-                                                       local_adminuser,
-                                                       remote_aaa_type=RemoteAaaType.TACACS,
-                                                       remote_aaa_obj=System().aaa.tacacs,
-                                                       server1=test_server1, server2=test_server2)
+    generic_aaa_test_accounting_unreachable_lowest_server(test_api, engines, topology_obj, request, switch_hostname,
+                                                          local_adminuser,
+                                                          remote_aaa_type=RemoteAaaType.TACACS,
+                                                          remote_aaa_obj=System().aaa.tacacs,
+                                                          lowest_server=test_server1, highest_server=test_server2)
 
 
 @pytest.mark.security
@@ -353,16 +353,16 @@ def test_tacacs_accounting_unreachable_top_server(test_api, engines, topology_ob
 def test_tacacs_accounting_local_first(test_api, engines, topology_obj, request, local_adminuser: UserInfo,
                                        switch_hostname: str):
     """
-    @summary: Verify that when top server becomes unreachable, accounting logs are sent to next available server only
+    @summary: Verify that when lowest server becomes unreachable, accounting logs are sent to next available server only
 
         Steps:
-        1. configure tacacs with several top unreachable servers
+        1. configure tacacs with several lowest unreachable servers
         2. configure also reachable server with lower priority
         3. enable accounting
         4. enable tacacs
-        5. verify accounting logs on top available server only for tacacs users events
+        5. verify accounting logs on lowest available server only for tacacs users events
         6. make unreachable server reachable
-        7. verify accounting logs now on the top reachable server
+        7. verify accounting logs now on the lowest reachable server
     """
     addressing_type = random.choice(AddressingType.ALL_TYPES)
     auth_mode = random.choice(AuthMode.ALL_TYPES)
