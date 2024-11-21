@@ -156,29 +156,21 @@ def load_dut_basic_facts(inv_name, dut_name):
 
     return results
 
+def get_dut_name(session):
+    host_pattern = session.config.option.ansible_host_pattern
+    if host_pattern == 'all':
+        dut_name = tbinfo['duts'][0]
+    else:
+        dut_name = get_duts_from_host_pattern(host_pattern)[0]
+    return dut_name
 
 def get_basic_facts(session):
-    testbed_name = session.config.option.testbed
-
-    testbed_name_cached = session.config.cache.get('TB_NAME', None)
-    basic_facts_cached = session.config.cache.get('BASIC_FACTS', None)
-
-    if testbed_name_cached != testbed_name:
-        # clear chche
-        session.config.cache.set('TB_NAME', None)
-        session.config.cache.set('BASIC_FACTS', None)
-
-        # get basic facts
-        basic_facts = load_basic_facts(session)
-
-        # update cache
-        session.config.cache.set('TB_NAME', testbed_name)
-        session.config.cache.set('BASIC_FACTS', basic_facts)
-    else:
-        if not basic_facts_cached:
-            basic_facts = load_basic_facts(session)
-            session.config.cache.set('BASIC_FACTS', basic_facts)
-
+    dut_name = get_dut_name(session)
+    cached_facts_name = f'BASIC_FACTS_{dut_name}'
+    basic_facts_cached = session.config.cache.get(cached_facts_name, None)
+    if not basic_facts_cached:
+        basic_facts = load_basic_facts(dut_name, session)
+        session.config.cache.set(cached_facts_name, basic_facts)
 
 def get_http_proxies(inv_name):
     INV_ENV_FILE = '../../../../ansible/group_vars/{}/env.yml'.format(inv_name)
@@ -337,12 +329,13 @@ def load_console_facts(inv_name, dut_name):
     return results
 
 
-def load_basic_facts(session):
+def load_basic_facts(dut_name, session):
     """Load some basic facts that can be used in condition statement evaluation.
 
     The facts will be a 1 level dictionary. The dict keys can be used as variables in condition statements evaluation.
 
     Args:
+        dut_name (str): The name of the dut
         session (obj): Pytest session object.
 
     Returns:
@@ -358,13 +351,6 @@ def load_basic_facts(session):
     results['topo_type'] = tbinfo['topo']['type']
     results['topo_name'] = tbinfo['topo']['name']
     results['testbed'] = testbed_name
-
-    host_pattern = session.config.option.ansible_host_pattern
-    if host_pattern == 'all':
-        dut_name = tbinfo['duts'][0]
-    else:
-        dut_name = get_duts_from_host_pattern(host_pattern)[0]
-
     if session.config.option.customize_inventory_file:
         inv_name = session.config.option.customize_inventory_file
     elif 'inv_name' in list(tbinfo.keys()):
@@ -590,7 +576,9 @@ def pytest_collection_modifyitems(session, config, items):
         logger.debug('No mark condition is defined')
         return
 
-    basic_facts = config.cache.get('BASIC_FACTS', None)
+    dut_name = get_dut_name(session)
+    cached_facts_name = f'BASIC_FACTS_{dut_name}'
+    basic_facts = config.cache.get(cached_facts_name, None)
     if not basic_facts:
         logger.debug('No basic facts')
         return
