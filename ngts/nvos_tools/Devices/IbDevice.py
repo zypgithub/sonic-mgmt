@@ -590,9 +590,10 @@ class BlackMambaSwitch(IbSwitch):
     def _init_temperature(self):
         super()._init_temperature()
         self.temperature_sensors = [
-            'ASIC1', 'ASIC2', 'ASIC3', 'ASIC4', 'Ambient-Fan-Side-Temp', 'Ambient-Port-Side-Temp',
+            'ASIC1', 'ASIC2', 'ASIC3', 'ASIC4', 'Ambient-Fan-Side-Temp', 'Ambient-Port-Side-Temp', 'PCH-Temp',
             'CPU-Core-0-Temp', 'CPU-Core-1-Temp', 'CPU-Core-2-Temp', 'CPU-Core-3-Temp', 'CPU-Pack-Temp', 'Drive-Temp',
-            'PMIC-1-Temp',
+            'PMIC-1-Temp', 'PMIC-2-Temp', 'PMIC-3-Temp', 'PMIC-4-Temp', 'PMIC-5-Temp', 'PMIC-6-Temp', 'PMIC-7-Temp',
+            'PMIC-8-Temp', 'PMIC-9-Temp', 'PMIC-10-Temp', 'PMIC-11-Temp', 'PMIC-12-Temp', 'PMIC-13-Temp',
             'PSU-1-Temp', 'PSU-2-Temp', 'PSU-3-Temp', 'PSU-4-Temp', 'PSU-5-Temp', 'PSU-6-Temp', 'PSU-7-Temp', 'PSU-8-Temp',
             'SODIMM-1-Temp', 'SODIMM-2-Temp']
 
