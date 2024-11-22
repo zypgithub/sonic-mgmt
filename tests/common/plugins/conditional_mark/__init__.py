@@ -156,13 +156,18 @@ def load_dut_basic_facts(inv_name, dut_name):
 
     return results
 
+
 def get_dut_name(session):
     host_pattern = session.config.option.ansible_host_pattern
     if host_pattern == 'all':
+        testbed_name = session.config.option.testbed
+        testbed_file = session.config.option.testbed_file
+        tbinfo = TestbedInfo(testbed_file).testbed_topo.get(testbed_name, None)
         dut_name = tbinfo['duts'][0]
     else:
         dut_name = get_duts_from_host_pattern(host_pattern)[0]
     return dut_name
+
 
 def get_basic_facts(session):
     dut_name = get_dut_name(session)
@@ -171,6 +176,7 @@ def get_basic_facts(session):
     if not basic_facts_cached:
         basic_facts = load_basic_facts(dut_name, session)
         session.config.cache.set(cached_facts_name, basic_facts)
+
 
 def get_http_proxies(inv_name):
     INV_ENV_FILE = '../../../../ansible/group_vars/{}/env.yml'.format(inv_name)
