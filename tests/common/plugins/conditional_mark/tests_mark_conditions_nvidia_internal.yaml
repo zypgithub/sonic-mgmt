@@ -459,7 +459,8 @@ dash/platform/test_dpu_show_platform_temperature.py:
     conditions:
       - "https://redmine.mellanox.com/issues/3923171"
 
-platform_tests/cli/test_show_platform.py::test_show_platform_ssdhealth:
+platform_tests.cli.test_show_platform.py::test_show_platform_ssdhealth:
+  regex: True
   skip:
     reason: "Simx doesn't support due to QEMU Disk and it is not meaningful to simulate it"
     conditions_logical_operator: or
