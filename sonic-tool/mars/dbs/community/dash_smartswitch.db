@@ -49,6 +49,9 @@
         </Case>
     </global>
     <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/dash_eni_counter.cases </cases>
+    </test>
+    <test>
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/dash_private_link.cases </cases>
     </test>
     <test>
