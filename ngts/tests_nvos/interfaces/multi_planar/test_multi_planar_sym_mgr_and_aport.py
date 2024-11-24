@@ -1,3 +1,4 @@
+from abc import ABC
 import pytest
 import logging
 import random
@@ -18,6 +19,7 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.system.System import System
+from ngts.tests_nvos.interfaces.test_ib_interface_state import wait_for_port_state
 from ngts.tools.test_utils import allure_utils as allure
 # from ngts.tests_nvos.interfaces.test_ib_interface_counters import test_ib_clear_counters, test_clear_all_counters
 
@@ -64,18 +66,12 @@ def test_fae_interface_commands(engines, devices, test_api, start_sm):
     dut_device = devices.dut
 
     with allure.step("Select random ports"):
-        with allure.step("Select a random aggregated port"):
-            selected_fae_port = MultiPlanarTool.select_random_aggregated_port(devices)
-            selected_port = MgmtPort(selected_fae_port.port.name)
-
-        with allure.step("Select random aggregated port and plane port (of the aggregated port)"):
-            selected_fae_plane_port = MultiPlanarTool.select_random_plane_port(
-                devices, selected_fae_port, dut_device.num_of_plane_ports)
+        with allure.step("Select a random aggregated port and plane"):
+            selected_port, selected_fae_port, selected_fae_plane_port = MultiPlanarTool.select_random_port_and_plane(dut_device)
 
         with (allure.step("Select random external fnm port and fnm plane port")):
             selected_fae_fnm_port = MultiPlanarTool.select_random_fnm_port(devices)
-            selected_fae_fnm_plane_port = MultiPlanarTool.select_random_plane_port(
-                devices, selected_fae_fnm_port, dut_device.num_of_fnm_plane_ports)
+            selected_fae_fnm_plane_port = MultiPlanarTool.select_random_plane_port(selected_fae_fnm_port, dut_device.num_of_plane_ports)
 
             with allure.step(f"Verify external FNM port is in connection_mode {IbInterfaceConsts.XDR}"):
                 output_fae_fnm_port = OutputParsingTool.parse_show_interface_output_to_dictionary(
@@ -119,7 +115,7 @@ def test_fae_interface_commands(engines, devices, test_api, start_sm):
 
         with allure.independent_step("Validate all multi planar fields exist in show fae interface <port>"):
             output_fae_port = OutputParsingTool.parse_show_interface_output_to_dictionary(
-                selected_fae_plane_port.port.interface.show()).get_returned_value()
+                selected_fae_plane_port.interface.show()).get_returned_value()
             fae_port_keys = list(output_fae_port.keys())
             ValidationTool.validate_all_values_exists_in_list(MultiPlanarConsts.MULTI_PLANAR_KEYS, fae_port_keys). \
                 verify_result()
@@ -127,39 +123,39 @@ def test_fae_interface_commands(engines, devices, test_api, start_sm):
         with allure.independent_step("Validate show fae interface <port-id> command"):
             validate_mp_show_interface_commands(OutputParsingTool.parse_show_interface_output_to_dictionary,
                                                 selected_port.interface.show,
-                                                selected_fae_port.port.interface.show,
-                                                selected_fae_plane_port.port.interface.show)
+                                                selected_fae_port.interface.show,
+                                                selected_fae_plane_port.interface.show)
 
         with allure.independent_step("Validate show fae interface <port-id> link command"):
             validate_mp_show_interface_commands(OutputParsingTool.parse_show_interface_link_output_to_dictionary,
                                                 selected_port.interface.link.show,
-                                                selected_fae_port.port.interface.link.show,
-                                                selected_fae_plane_port.port.interface.link.show)
+                                                selected_fae_port.interface.link.show,
+                                                selected_fae_plane_port.interface.link.show)
 
         with allure.independent_step("Validate show fae interface <port-id> link counters command"):
             validate_mp_show_interface_commands(OutputParsingTool.parse_json_str_to_dictionary,
                                                 selected_port.interface.link.counters.show,
-                                                selected_fae_port.port.interface.link.counters.show,
-                                                selected_fae_plane_port.port.interface.link.counters.show)
+                                                selected_fae_port.interface.link.counters.show,
+                                                selected_fae_plane_port.interface.link.counters.show)
 
         with allure.independent_step("Validate show fae interface <port-id> link diagnostics command"):
             validate_mp_show_interface_commands(OutputParsingTool.parse_json_str_to_dictionary,
                                                 selected_port.interface.link.diagnostics.show,
-                                                selected_fae_port.port.interface.link.diagnostics.show,
-                                                selected_fae_plane_port.port.interface.link.diagnostics.show)
+                                                selected_fae_port.interface.link.diagnostics.show,
+                                                selected_fae_plane_port.interface.link.diagnostics.show)
 
         with allure.independent_step("Validate show fae interface <port-id> link state command"):
             validate_mp_show_interface_commands(OutputParsingTool.parse_json_str_to_dictionary,
                                                 selected_port.interface.link.state.show,
-                                                selected_fae_port.port.interface.link.state.show,
-                                                selected_fae_plane_port.port.interface.link.state.show)
+                                                selected_fae_port.interface.link.state.show,
+                                                selected_fae_plane_port.interface.link.state.show)
 
         with allure.independent_step("Validate show fae interface <port-id> plan-ports command"):
             output_fae_port = OutputParsingTool.parse_json_str_to_dictionary(
-                selected_fae_port.port.interface.plan_ports.show()).get_returned_value()
+                selected_fae_port.interface.plan_ports.show()).get_returned_value()
             fae_port_plane_ports = list(output_fae_port.keys())
             for plane in range(dut_device.num_of_plane_ports):
-                full_plane_name = selected_fae_port.port.name + 'pl' + str(plane + 1)
+                full_plane_name = selected_fae_port.name + 'pl' + str(plane + 1)
                 assert full_plane_name in fae_port_plane_ports, \
                     f"{full_plane_name} not exists in aggregated port {output_fae_port.port.name} plane-ports"
 
@@ -209,69 +205,116 @@ def test_fae_interface_commands(engines, devices, test_api, start_sm):
 #             set_mp_config_to_default()
 
 
+class AggregatedPortConfigBaseTest(ABC):
+    LINK_PARAM = ''
+    POSSIBLE_VALUES = tuple()
+
+    @classmethod
+    def test_config(cls, engines, devices, test_api, test_name):
+        TestToolkit.tested_api = test_api
+        selected_aggregated_port, _, selected_fae_plane_port = MultiPlanarTool.select_random_port_and_plane(devices.dut)
+        try:
+            new_value = cls.set_config(devices.dut, selected_aggregated_port, selected_fae_plane_port)
+            cls.assert_aggregation(selected_aggregated_port, selected_fae_plane_port, new_value)
+        finally:
+            with allure.step("cleanup - unset config and wait for port to become active"):
+                selected_aggregated_port.interface.link.unset(apply=True, ask_for_confirmation=True).verify_result()
+                wait_for_port_state(selected_aggregated_port, NvosConsts.LINK_STATE_UP,
+                                    NvosConsts.LINK_LOG_STATE_ACTIVE, test_name)
+
+    @classmethod
+    def get_possible_values(cls, device):
+        if not cls.POSSIBLE_VALUES:
+            raise NotImplementedError("Subclass must override either POSSIBLE_VALUES or choose_value()")
+        return cls.POSSIBLE_VALUES
+
+    @classmethod
+    def set_config(cls, device, aggregated_port, plane_port):
+        aggregated_port_output = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
+            aggregated_port.interface.link.show()).get_returned_value()
+        param_new_value = RandomizationTool.select_random_value(
+            cls.get_possible_values(device), forbidden_values=[aggregated_port_output[cls.LINK_PARAM]]
+        ).get_returned_value()
+        aggregated_port.interface.link.set(op_param_name=cls.LINK_PARAM, op_param_value=param_new_value,
+                                           apply=True, ask_for_confirmation=True).verify_result()
+        logger.info(f"set port {aggregated_port.name} link param: {cls.LINK_PARAM} = {param_new_value}")
+        time.sleep(MultiPlanarConsts.PORT_UPDATE_TIME)  # todo assert port goes up & active
+        return param_new_value
+
+    @classmethod
+    def assert_aggregation(cls, aggregated_port, plane_port, expected_value):
+        aggregated_port_output = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
+            aggregated_port.interface.link.show()).get_returned_value()
+        plane_port_output = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
+            plane_port.interface.link.show()).get_returned_value()
+        aggregated_value = aggregated_port_output[cls.LINK_PARAM]
+        plane_value = plane_port_output[cls.LINK_PARAM]
+        assert aggregated_value == plane_value == expected_value, \
+            f"mismatch in {cls.LINK_PARAM}: {aggregated_value=}, {plane_value=}, {expected_value=}"
+
+
+# todo: pending decision which speeds are actually supported by mamba
+# class AggregatedPortConfigIbSpeedTest(AggregatedPortConfigBaseTest):
+#     LINK_PARAM = IbInterfaceConsts.LINK_IB_SPEED
+#
+#     @classmethod
+#     def get_possible_values(cls, device):
+#         return device.supported_ib_speeds  # todo: only take speeds supported by the transceiver
+
+
+class AggregatedPortConfigMtuTest(AggregatedPortConfigBaseTest):
+    LINK_PARAM = IbInterfaceConsts.LINK_MTU
+    POSSIBLE_VALUES = IbInterfaceConsts.MTU_VALUES
+
+
+class AggregatedPortConfigOpVlsTest(AggregatedPortConfigBaseTest):
+    LINK_PARAM = IbInterfaceConsts.LINK_OPERATIONAL_VLS
+    POSSIBLE_VALUES = IbInterfaceConsts.SUPPORTED_VLS
+
+
+class AggregatedPortConfigStateTest(AggregatedPortConfigBaseTest):
+    LINK_PARAM = IbInterfaceConsts.LINK_STATE
+    POSSIBLE_VALUES = (NvosConsts.LINK_STATE_UP, NvosConsts.LINK_STATE_DOWN)
+
+    @classmethod
+    def set_config(cls, device, aggregated_port, plane_port):
+        new_state = NvosConsts.LINK_STATE_DOWN
+        aggregated_port.interface.link.state.set(op_param_name=new_state, apply=True).verify_result()
+        time.sleep(MultiPlanarConsts.PORT_UP_MAX_TIME)
+        return new_state
+
+
+# todo: pending decision which speeds are actually supported by mamba
+# @pytest.mark.interface
+# @pytest.mark.multiplanar
+# @pytest.mark.simx_xdr
+# @pytest.mark.parametrize('test_api', [ApiType.NVUE])
+# def test_aggregated_port_config_ib_speed(engines, devices, start_sm, test_api, test_name):
+#     AggregatedPortConfigIbSpeedTest.test_config(engines, devices, test_api, test_name)
+
+
 @pytest.mark.interface
 @pytest.mark.multiplanar
 @pytest.mark.simx_xdr
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_aggregated_port_configuration(engines, devices, start_sm, test_api):
-    """
-    Validate all planes are configured while configuring the following Aport fields:
-    ib-speed, lanes, mtu, op-vls, state.
-    Setup requirements: A physical loopback connection (two ports on the switch connected to each other by cable).
+def test_aggregated_port_config_op_vls(engines, devices, start_sm, test_api, test_name):
+    AggregatedPortConfigOpVlsTest.test_config(engines, devices, test_api, test_name)
 
-    Test flow:
-    1. Validate ib-speed field aggregation
-    2. Validate lanes field aggregation
-    3. Validate mtu field aggregation
-    4. Validate op-vls field aggregation
-    5. Validate state field aggregation
-    """
 
-    TestToolkit.tested_api = test_api
-    dut_device = devices.dut
+@pytest.mark.interface
+@pytest.mark.multiplanar
+@pytest.mark.simx_xdr
+@pytest.mark.parametrize('test_api', [ApiType.NVUE])
+def test_aggregated_port_config_mtu(engines, devices, start_sm, test_api, test_name):
+    AggregatedPortConfigMtuTest.test_config(engines, devices, test_api, test_name)
 
-    try:
-        with allure.step("Select a random aggregated port (connected in loop back to another port)"):
-            selected_fae_aggregated_port = MultiPlanarTool.select_random_aggregated_port(devices)
-            selected_aggregated_port = MgmtPort(selected_fae_aggregated_port.port.name)
 
-        with allure.step("Select a random plane port"):
-            selected_fae_plane_port = MultiPlanarTool.select_random_plane_port(devices, selected_fae_aggregated_port,
-                                                                               dut_device.num_of_plane_ports)
-
-        with allure.step("Validate fields"):
-            # Validate ib-speed field aggregation
-            validate_aggregation_of_specific_link_param(selected_aggregated_port, selected_fae_plane_port,
-                                                        IbInterfaceConsts.LINK_IB_SPEED,
-                                                        dut_device.supported_ib_speeds, True)
-
-            # Validate mtu field aggregation
-            validate_aggregation_of_specific_link_param(selected_aggregated_port, selected_fae_plane_port,
-                                                        IbInterfaceConsts.LINK_MTU, IbInterfaceConsts.MTU_VALUES, True)
-
-            # Validate op-vls field aggregation
-            validate_aggregation_of_specific_link_param(selected_aggregated_port, selected_fae_plane_port,
-                                                        IbInterfaceConsts.LINK_OPERATIONAL_VLS,
-                                                        IbInterfaceConsts.SUPPORTED_VLS, True)
-
-            # Validate state field aggregation
-            with allure.independent_step("Validate state field aggregation"):
-                new_state = NvosConsts.LINK_STATE_DOWN
-                selected_aggregated_port.interface.link.state.set(op_param_name=new_state, apply=True).\
-                    verify_result()
-                time.sleep(MultiPlanarConsts.PORT_UP_MAX_TIME)
-                aport_state = OutputParsingTool.parse_json_str_to_dictionary(
-                    selected_aggregated_port.interface.link.state.show()).get_returned_value()
-                pport_state = OutputParsingTool.parse_json_str_to_dictionary(
-                    selected_fae_plane_port.port.interface.link.state.show()).get_returned_value()
-
-                assert new_state in aport_state.keys() and aport_state == pport_state, \
-                    f"mismatch in {IbInterfaceConsts.LINK_STATE}: aggregated port:{aport_state}, " \
-                    f"plane port:{pport_state}, value set: {new_state}"
-
-    finally:
-        with allure.step("set config to default"):
-            selected_aggregated_port.interface.link.unset(apply=True, ask_for_confirmation=True).verify_result()
+@pytest.mark.interface
+@pytest.mark.multiplanar
+@pytest.mark.simx_xdr
+@pytest.mark.parametrize('test_api', [ApiType.NVUE])
+def test_aggregated_port_config_state(engines, devices, start_sm, test_api, test_name):
+    AggregatedPortConfigStateTest.test_config(engines, devices, test_api, test_name)
 
 
 @pytest.mark.interface
@@ -291,6 +334,7 @@ def test_aggregated_port_mismatch_between_planes(engines, devices, test_api):
     6. Validate supported-ib-speed field mismatch aggregation
     7. Validate state field mismatch aggregation
     """
+    pytest.skip('Test needs to be restructured and fixed (how can we change config for a single plane?)')
 
     TestToolkit.tested_api = test_api
     dut_device = devices.dut
@@ -797,34 +841,6 @@ def validate_mp_show_interface_commands(parse_func, port_cmd, port_fae_cmd, ppor
     with allure.step("Compare between fae aggregated port and plane port show interface"):
         fae_plane_port_keys = list(set(fae_plane_port_keys) - set(MultiPlanarConsts.MULTI_PLANAR_KEYS))
         ValidationTool.compare_values(fae_port_keys.sort(), fae_plane_port_keys.sort()).verify_result()
-
-
-def validate_aggregation_of_specific_link_param(aggregated_port, plane_port, link_param,
-                                                link_param_list, unset_op=False):
-    with allure.independent_step(f"Validate {link_param} field aggregation"):
-        aggregated_port_output = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
-            aggregated_port.interface.link.show()).get_returned_value()
-        link_param_list = [item for item in link_param_list if item != aggregated_port_output[link_param]]
-        param_new_value = RandomizationTool.select_random_value(link_param_list).get_returned_value()
-        aggregated_port.interface.link.set(op_param_name=link_param, op_param_value=param_new_value,
-                                           apply=True, ask_for_confirmation=True).verify_result()
-        logger.info(f"set port {aggregated_port.name} link param: {link_param} = {param_new_value}")
-        time.sleep(MultiPlanarConsts.PORT_UPDATE_TIME)
-
-        aggregated_port_output = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
-            aggregated_port.interface.link.show()).get_returned_value()
-        plane_port_output = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
-            plane_port.port.interface.link.show()).get_returned_value()
-
-        assert aggregated_port_output[link_param] == \
-            plane_port_output[link_param] == param_new_value, \
-            f"mismatch in {link_param}:" \
-            f"aggregated port:{aggregated_port_output[link_param]}, " \
-            f"plane port:{plane_port_output[link_param]}, value set: {param_new_value}"
-
-        if unset_op:
-            aggregated_port.interface.link.unset(apply=True, ask_for_confirmation=True).verify_result()
-            time.sleep(MultiPlanarConsts.PORT_UP_MAX_TIME)
 
 
 def set_param_value_in_specific_plane(loop_back_port, aggregated_port, selected_plane_port,
