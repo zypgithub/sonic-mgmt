@@ -108,7 +108,7 @@
         },
         {
           "name": "Check SIMX compatibility",
-          "module": "/auto/sw_system_release/ci/sonic_devops/build/release/simx_compatibility.groovy",
+          "module": "/auto/sw_system_release/ci/sonic_devops/build/common/bat_compatibility.groovy",
           "category": "Pre BAT",
           "node": "SONIC_LITE",
           "parameters": {
