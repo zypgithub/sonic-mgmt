@@ -34,12 +34,12 @@ class NvueClusterCli(NvueBaseCli):
         return NvueClusterCli.action(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=path, param_value=param_value)
 
     @staticmethod
-    def action_update(engine, path):
-        return NvueClusterCli.action(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=path)
+    def action_update(engine, path, param_name='', param_value=''):
+        return NvueClusterCli.action(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=path, param_name=param_name, param_value=param_value)
 
     @staticmethod
-    def action_restore_cluster(engine, path):
-        return NvueClusterCli.action(engine, action_type=ActionType.RESTORE.replace('@', ''), resource_path=path)
+    def action_restore_cluster(engine, path, param_name='', param_value=''):
+        return NvueClusterCli.action(engine, action_type=ActionType.RESTORE.replace('@', ''), resource_path=path, param_name=param_name, param_value=param_value)
 
     @staticmethod
     @check_output
@@ -69,11 +69,12 @@ class NvueClusterCli(NvueBaseCli):
         return NvueClusterCli.action(engine, action_type=ActionType.UNINSTALL.replace('@', ''), resource_path=resource_path)
 
     @staticmethod
-    def action_create_partition(engine, resource_path, name, resiliency_mode, confidential_compute, mcast_limit, uuid='', location=''):
+    def action_create_partition(engine, resource_path, name, resiliency_mode, mcast_limit, uuid='', location=''):
+        cmd = f"nv action create {resource_path.replace('/', ' ')} name {name} resiliency-mode {resiliency_mode} mcast-limit {mcast_limit}"
         if uuid != '':
-            cmd = f"nv action create {resource_path.replace('/', ' ')} name {name} resiliency-mode {resiliency_mode} confidential_compute {confidential_compute} mcast-limit {mcast_limit} uuid {uuid}"
-        else:
-            cmd = f"nv action create {resource_path.replace('/', ' ')} name {name} resiliency-mode {resiliency_mode} confidential_compute {confidential_compute} mcast-limit {mcast_limit} location {location}"
+            cmd += f' uuid {uuid}'
+        if location != '':
+            cmd += f"location {location}"
         logging.info("Running action cmd: '{cmd}' on dut using NVUE".format(cmd=cmd))
         return engine.run_cmd(cmd)
 

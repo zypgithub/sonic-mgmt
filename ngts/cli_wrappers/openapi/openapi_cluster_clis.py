@@ -31,12 +31,30 @@ class OpenApiClusterCli(OpenApiBaseCli):
         return OpenApiClusterCli.action(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=resource_path, param_name="chassis-id", param_value=mapping_id)
 
     @staticmethod
-    def action_update(engine, path):
-        return OpenApiClusterCli.action(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=path)
+    def action_update(engine, path, param_name='', param_val=''):
+        logging.info("Running action: 'generate' on dut using OpenApi")
+        parameters = {} if not param_name and not param_val else {param_name: param_val}
+        params = \
+            {
+                "state": "start",
+                "parameters": parameters
+            }
+
+        return OpenApiCommandHelper.execute_action(ActionType.UPDATE, engine.engine.username, engine.engine.password,
+                                                   engine.ip, resource_path, params)
 
     @staticmethod
-    def action_restore_cluster(engine, resource_path):
-        return OpenApiClusterCli.action(engine, action_type=ActionType.RESTORE.replace('@', ''), resource_path=resource_path)
+    def action_restore_cluster(engine, resource_path, param_name='', param_val=''):
+        logging.info("Running action: 'restore' on dut using OpenApi")
+        parameters = {} if not param_name and not param_val else {param_name: param_val}
+        params = \
+            {
+                "state": "start",
+                "parameters": parameters
+            }
+
+        return OpenApiCommandHelper.execute_action(ActionType.RESTORE, engine.engine.username, engine.engine.password,
+                                                   engine.ip, resource_path, params)
 
     @staticmethod
     def action_generate(engine, resource_path):
@@ -68,14 +86,13 @@ class OpenApiClusterCli(OpenApiBaseCli):
         return OpenApiClusterCli.action(engine, action_type=ActionType.UNINSTALL.replace('@', ''), resource_path=resource_path)
 
     @staticmethod
-    def action_create_partition(engine, resource_path, name, resiliency_mode, confidential_compute, mcast_limit, uuid='', location=''):
-        logging.info("Running action: 'generate' on dut using OpenApi")
+    def action_create_partition(engine, resource_path, name, resiliency_mode, mcast_limit, uuid='', location=''):
+        logging.info("Running action: 'create' on dut using OpenApi")
         params = {
             "state": "start",
             "parameters": {
                 "name": name,
                 "resiliency-mode": resiliency_mode,
-                "confidential-compute": confidential_compute,
                 "mcast-limit": mcast_limit,
             }
         }
@@ -83,7 +100,7 @@ class OpenApiClusterCli(OpenApiBaseCli):
         # Add optional parameters if provided
         if uuid:
             params["parameters"]["uuid"] = uuid
-        else:
+        if location:
             params["parameters"]["location"] = location
 
         return OpenApiCommandHelper.execute_action(ActionType.CREATE, engine.engine.username, engine.engine.password,

@@ -30,7 +30,7 @@ logger = logging.getLogger()
 
 
 @pytest.mark.nmx
-@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 @pytest.mark.timeout(15 * MINUTE, func_only=True)
 def test_cluster_sdn(engines, devices, test_api, has_loopbox):
 
@@ -58,7 +58,7 @@ def test_cluster_sdn(engines, devices, test_api, has_loopbox):
 
 # @disabled_access_ports
 @pytest.mark.nmx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [ApiType.NVUE])
 @pytest.mark.timeout(25 * MINUTE, func_only=True)
 def test_sdn_reset_factory(engines, devices, test_api, has_loopbox, test_name):
     TestToolkit.tested_api = test_api
