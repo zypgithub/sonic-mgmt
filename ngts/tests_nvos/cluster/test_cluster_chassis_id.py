@@ -45,7 +45,7 @@ def test_cluster_chassis_id(engines, devices, test_api):
         output = platform.chassis_location.show()
         chassis_id_serial = OutputParsingTool.parse_show_output_to_dict(output).get_returned_value()['chassis-id']
         if chassis_id_serial == 'N/A':
-            pytest.skip("no chassis-id serial")
+            pytest.skip("no chassis-id serial available")
 
     with allure.step("Update chassis-id mapping with invalid number - should fail"):
         invalid_mapping_ids = [-1, 1000]
