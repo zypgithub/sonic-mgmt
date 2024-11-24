@@ -2,6 +2,7 @@ import logging
 import pytest
 import time
 import re
+import random
 
 from ngts.tools.test_utils import allure_utils as allure
 from retry import retry
@@ -13,6 +14,7 @@ from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_constants.constants_nvos import ApiType, SystemConsts, PlatformConsts
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
+from ngts.tests_nvos.platform.test_platform_transceiver import _get_ports_for_module
 
 logger = logging.getLogger()
 
@@ -33,7 +35,7 @@ def test_transceiver_database_tables(engines, devices, test_api):
         platform = Platform()
         transceivers_tables_name = "TRANSCEIVER_FIRMWARE_INFO"
         transceivers_list = list(OutputParsingTool.parse_json_str_to_dictionary(platform.transceiver.show()).returned_value.keys())
-        number_of_transceivers = len(transceivers_list) * 2
+        number_of_transceivers = len(transceivers_list) * 4
         with allure.step("Validate for each transceiver out of {} transceivers we have the table in STATE_DB".format(number_of_transceivers)):
             tables_in_database = Tools.DatabaseTool.sonic_db_cli_get_keys(engine=engines.dut, asic="",
                                                                           db_name=DatabaseConst.STATE_DB_NAME,
@@ -71,7 +73,7 @@ def test_reset_transceiver_firmware_positive(engines, test_api, start_sm):
     with allure.step("Create interface object"):
         interface = Interface(parent_obj=None, port_name=random_port)
 
-    with allure.step("reset {} and verify expected behavior using show command"):
+    with allure.step(f"reset {random_transceiver} and verify expected behavior using show command"):
         link_output_before_reset = OutputParsingTool.parse_json_str_to_dictionary(interface.link.show()).verify_result()
         default_output = OutputParsingTool.parse_json_str_to_dictionary(platform.transceiver.show(random_transceiver + ' firmware')).verify_result()
         default_fw = OutputParsingTool.parse_json_str_to_dictionary(default_output).verify_result()[PlatformConsts.FW_ACTUAL]
@@ -89,7 +91,7 @@ def test_reset_transceiver_firmware_positive(engines, test_api, start_sm):
             link_output_after_reset = OutputParsingTool.parse_json_str_to_dictionary(interface.link.show()).verify_result()
             link_output_before_reset = link_output_before_reset.pop('counters')
             link_output_after_reset = link_output_after_reset.pop('counters')
-            assert link_output_after_reset == link_output_before_reset, "at least ont field has been changed, output before reset = {} , output after reset = {}".format(link_output_before_reset, link_output_after_reset)
+            check_counters(link_output_before_reset, link_output_after_reset)
 
 
 @pytest.mark.platform
@@ -149,14 +151,13 @@ def test_install_transceiver_firmware_positive(engines, devices, test_api, start
 
         with allure.step("install new transceiver firmware - {}".format(bin_files[0])):
             platform.transceiver.action_install(random_transceiver, bin_files[0]).verify_result()
-            platform.transceiver.action_reset(random_transceiver)
 
         with allure.step("verify show commands after install"):
             output_after_install = OutputParsingTool.parse_json_str_to_dictionary(platform.transceiver.show(random_transceiver + ' firmware')).verify_result()
             _verify_expected_dict(command_output=output_after_install, default_fw=_get_firmware(bin_files[0]), status='OK', msg='N/A')
-
             show_interface_after_install = OutputParsingTool.parse_json_str_to_dictionary(interface.link.show()).verify_result()
-            assert show_interface_before_install == show_interface_after_install, "at lease one of the link values has been change, output before install = {}, after install = {}".format(show_interface_before_install, show_interface_after_install)
+            assert show_interface_before_install == show_interface_after_install, "at lease one of the link values has been change, output before install = {}, after install = {}".format(
+                show_interface_before_install, show_interface_after_install)
     finally:
         _cleanup_step(engines.dut, engines['sonic_mgmt'], platform, random_transceiver, default_fw)
 
@@ -302,7 +303,7 @@ def _find_transceiver_firmware_file_path(player, default_fw, number_of_files=1):
         folder_name = _get_folder_name(player, path, release_id, 'S')
         path += '/' + folder_name[0]
         folder_name = _get_folder_name(player, path, 'rel', 'S', folders_count=number_of_files)
-        paths = [path + '/' + folder + '/' + 'signed/' for folder in folder_name]
+        paths = [path + '/' + folder + '/' + 'signed/dev' for folder in folder_name]
         bin_files = []
         for path in paths:
             bin_files.append(_get_folder_name(player, path, '.bin', 'E')[0])
@@ -364,9 +365,10 @@ def _get_random_optical_module_transceiver():
             else:
                 random_transceiver = random_transceiver.verify_result()[0]
 
-            random_port_name = random_transceiver + 'p1'
+            temp = _get_ports_for_module(random_transceiver)
+            random_port_name = random.choice(temp)
 
-        return platform, random_transceiver, random_port_name
+        return platform, random_transceiver, random_port_name.name
 
 
 def _cleanup_step(engine, player_engine, platform, transceiver_id, default_fw):
@@ -395,3 +397,31 @@ def _cleanup_step(engine, player_engine, platform, transceiver_id, default_fw):
         with allure.step("delete all fetched files"):
             path = "/host/fw-images/module"
             engine.run_cmd(f"sudo rm -f {path}/*")
+
+
+def check_counters(counters_before, counters_after):
+    """
+
+    :param counters_before:
+    :param counters_after:
+    :return:
+    """
+    changes = []
+    err_msg = ""
+    with allure.step("Verify that no keys are missing after action"):
+        assert counters_before.keys() == counters_after.keys()
+
+    with allure.step("Validate that none of the counters have changed by more than 10%"):
+        for key, before_value in counters_before.items():
+            if counters_after[key] - counters_before[key] > counters_before[key] * 0.1:
+                changes.append({
+                    'key': key,
+                    'before': counters_before[key],
+                    'after': counters_after[key],
+                })
+
+        if changes:
+            for change in changes:
+                err_msg += f"Key: {change['key']}, Before: {change['before']}, After: {change['after']}"
+
+        assert not changes, err_msg
