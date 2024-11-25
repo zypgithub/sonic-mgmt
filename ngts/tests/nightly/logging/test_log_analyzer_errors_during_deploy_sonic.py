@@ -1,5 +1,6 @@
 import allure
 import logging
+from retry.api import retry_call
 
 logger = logging.getLogger()
 
@@ -45,9 +46,12 @@ def test_check_errors_in_log_during_deploy_sonic_image(engines, request, loganal
         # Logic below is required to overcome the issue the when end_marker is not present in syslog - in this case,
         # the end_marker will be added forcefully
         run_id = analyzer.ansible_loganalyzer.run_id
-        # Command below may fail, but we do not care about it - LA will do the same after test executed(it will pass)
-        engines.dut.run_cmd(
-            f'sudo python /tmp/loganalyzer.py --action add_end_marker --run_id {run_id}', validate=False)
+        cmd = f'sudo python /tmp/loganalyzer.py --action add_end_marker --run_id {run_id}'
+        retry_call(engines.dut.run_cmd,
+                   fkwargs={"cmd": cmd, "timeout": 10},
+                   tries=3,
+                   delay=3,
+                   logger=logger)
 
 
 def get_la_start_string(engine, request):

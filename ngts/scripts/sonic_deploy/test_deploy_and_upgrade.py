@@ -7,7 +7,7 @@ import os
 import shutil
 import time
 import json
-import netmiko
+import yaml
 
 import allure
 import pytest
@@ -299,6 +299,37 @@ def post_installation_steps(topology_obj, sonic_topo, recover_by_reboot, deploy_
     replace_nos = request.config.getoption('--target_cli_type')
     if replace_nos:
         DeployMethods.multi_nos_post_installation_steps(setup_info['duts'], replace_nos, is_performance)
+
+    filter_testbed_yaml_file(setup_info)
+
+
+def filter_testbed_yaml_file(setup_info):
+    """
+    Remove from testbed.yaml file all configurations, which not relevant to setup.
+    This action will save us ~1.5 minutes of runtime in the first test,
+     where need to get basic_facts in the first time.
+    :param setup_info: setup_info dictionary
+    """
+    duts = []
+    for dut in setup_info['duts']:
+        duts.append(dut['dut_name'])
+    testbed_yaml_file_path = os.path.join(os.path.dirname(__file__), "../../../ansible/testbed.yaml")
+    testbed_yaml_backup_file_path = os.path.join(os.path.dirname(__file__), "../../../ansible/testbed.yaml.backup")
+    # backup of original file
+    shutil.copyfile(testbed_yaml_file_path, testbed_yaml_backup_file_path)
+    # get current testbed.yaml data
+    with open(testbed_yaml_file_path, 'r') as f:
+        data = yaml.safe_load(f)
+    # entry should include at least one on switch name
+    filtered_data = []
+    for entry in data:
+        for device in entry['dut']:
+            if device in duts:
+                filtered_data.append(entry)
+                break
+    # store filtered data
+    with open(testbed_yaml_file_path, 'w') as out_file:
+        yaml.dump(filtered_data, out_file, default_flow_style=False)
 
 
 def get_related_image_to_switch(base_version, target_version, dut, use_GA_image):
