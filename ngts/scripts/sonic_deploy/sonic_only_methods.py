@@ -89,7 +89,8 @@ class SonicInstallationSteps:
         run_background_process_on_host(threads_dict, 'add_topology', add_topo_cmd, timeout=3600, exec_path=ansible_path)
         if not is_bf_topo(sonic_topo) and not is_dualtor_topo(sonic_topo) and "mtvr-hippo-03" != dut_name and\
                 "mtvr-hippo-02" != dut_name and 'bobcat' not in dut_name and "r-moose-01" != dut_name and \
-                "mtvr-moose-04" != dut_name and 'r-tigon-04' != dut_name:
+                "mtvr-moose-04" != dut_name and 'r-tigon-04' != dut_name and "mtvr-moose-13" != dut_name and \
+                "mtvr-moose-14" != dut_name:
             gen_mg_cmd = get_generate_minigraph_cmd(setup_info, dut_name, sonic_topo, port_number)
             run_background_process_on_host(threads_dict, 'generate_minigraph', gen_mg_cmd, timeout=300,
                                            exec_path=ansible_path)
@@ -453,7 +454,8 @@ class SonicInstallationSteps:
         if "mtvr-hippo-03" in setup_name or "mtvr-hippo-02" in setup_name:
             hwskus = [platform_params["hwsku"]]
             need_gen_mingraph = True
-        if "r-moose-01" in setup_name or "mtvr-moose-04" in setup_name:
+        if ("r-moose-01" in setup_name or "mtvr-moose-04" in setup_name or "mtvr-moose-13" in setup_name or
+                "mtvr-moose-14" in setup_name):
             hwskus = ['Mellanox-SN5600-V256', 'Mellanox-SN5600-C256S1', 'Mellanox-SN5600-C224O8']
             need_gen_mingraph = True
         if "bobcat" in setup_name:
@@ -485,7 +487,8 @@ class SonicInstallationSteps:
                 f"sudo sonic-cfggen --preset t1 -p -H "
                 f"-k {platform_params['hwsku']} > {SonicConst.SONIC_CONFIG_FOLDER}{SonicConst.CONFIG_DB_JSON}")
 
-        if "r-moose-01" in setup_name or "mtvr-moose-04" in setup_name:
+        if ("r-moose-01" in setup_name or "mtvr-moose-04" in setup_name or "mtvr-moose-13" in setup_name or
+                "mtvr-moose-14" in setup_name):
             v256 = "Mellanox-SN5600-V256"
             if os.path.exists(f'{sonic_mgmt_hwsku_path}/{v256}/port_config.ini'):
                 execute_script(f'sed -i "s/200000/100000/g" {sonic_mgmt_hwsku_path}/{v256}/port_config.ini',

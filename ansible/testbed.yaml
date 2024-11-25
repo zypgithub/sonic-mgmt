@@ -4011,82 +4011,95 @@
     - r-panther-23
   comment: Mellanox MTR testbed
 
-- conf-name: mtvr-hippo-03-t0
+- conf-name: mtvr-moose-14-t0
   group-name: vm-t1
   topo: t0
   ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-mtvr-hippo-03
+  ptf: ptf-mtvr-moose-14
   ptf_ip: 10.245.34.122/20
   ptf_ipv6:
   server: server_73
   vm_base: VM3801
   dut:
-    - mtvr-hippo-03
+    - mtvr-moose-14
   comment: Mellanox MTR testbed
 
-- conf-name: mtvr-hippo-03-t0-64
+- conf-name: mtvr-moose-14-t0-64
   group-name: vm-t1
   topo: t0-64
   ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-mtvr-hippo-03
+  ptf: ptf-mtvr-moose-14
   ptf_ip: 10.245.34.122/20
   ptf_ipv6:
   server: server_73
   vm_base: VM3801
   dut:
-    - mtvr-hippo-03
+    - mtvr-moose-14
   comment: Mellanox MTR testbed
 
-- conf-name: mtvr-hippo-03-t1
+- conf-name: mtvr-moose-14-t1
   group-name: vm-t1
   topo: t1
   ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-mtvr-hippo-03
+  ptf: ptf-mtvr-moose-14
   ptf_ip: 10.245.34.122/20
   ptf_ipv6:
   server: server_73
   vm_base: VM3801
   dut:
-    - mtvr-hippo-03
+    - mtvr-moose-14
   comment: Mellanox MTR testbed
 
-- conf-name: mtvr-hippo-03-t1-lag
+- conf-name: mtvr-moose-14-t1-lag
   group-name: vm-t1
   topo: t1-lag
   ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-mtvr-hippo-03
+  ptf: ptf-mtvr-moose-14
   ptf_ip: 10.245.34.122/20
   ptf_ipv6:
   server: server_73
   vm_base: VM3801
   dut:
-    - mtvr-hippo-03
+    - mtvr-moose-14
   comment: Mellanox MTR testbed
 
-- conf-name: mtvr-hippo-03-ptf32
+- conf-name: mtvr-moose-14-t1-lag-c224o8
+  group-name: vm-t1
+  topo: t1-lag-c224o8
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-mtvr-moose-14
+  ptf_ip: 10.245.34.122/20
+  ptf_ipv6:
+  server: server_73
+  vm_base: VM3801
+  dut:
+    - mtvr-moose-14
+  comment: Mellanox MTR testbed
+
+- conf-name: mtvr-moose-14-ptf32
   group-name: vm-t1
   topo: ptf32
   ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-mtvr-hippo-03
+  ptf: ptf-mtvr-moose-14
   ptf_ip: 10.245.34.122/20
   ptf_ipv6:
   server: server_73
   vm_base: VM3801
   dut:
-    - mtvr-hippo-03
+    - mtvr-moose-14
   comment: Mellanox MTR testbed
 
-- conf-name: mtvr-hippo-03-ptf-any
+- conf-name: mtvr-moose-14-ptf-any
   group-name: vm-t1
   topo: ptf-any
   ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-mtvr-hippo-03
+  ptf: ptf-mtvr-moose-14
   ptf_ip: 10.245.34.122/20
   ptf_ipv6:
   server: server_73
   vm_base: VM3801
   dut:
-    - mtvr-hippo-03
+    - mtvr-moose-14
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-hippo-02-t0
