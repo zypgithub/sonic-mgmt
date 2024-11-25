@@ -24,7 +24,7 @@ from ngts.tools.test_utils import allure_utils as allure
 logger = logging.getLogger()
 
 
-@disabled_access_ports
+# @disabled_access_ports
 @pytest.mark.timeout(35 * MINUTE, func_only=True)
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
@@ -91,7 +91,7 @@ def test_cluster_default_factory_reset(engines, devices, test_api, has_loopbox):
             delete_all_sdn_fetched_generated_files(engines, sdn, all_config_files_paths, all_state_files_paths)
 
 
-@disabled_access_ports
+# @disabled_access_ports
 @pytest.mark.timeout(35 * MINUTE, func_only=True)
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
@@ -150,7 +150,7 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name,
             delete_all_sdn_fetched_generated_files(engines, sdn, all_config_files_paths, all_state_files_paths)
 
 
-@disabled_access_ports
+# @disabled_access_ports
 @pytest.mark.timeout(35 * MINUTE, func_only=True)
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
@@ -208,7 +208,7 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name, 
             delete_all_sdn_fetched_generated_files(engines, sdn, all_config_files_paths, all_state_files_paths)
 
 
-@disabled_access_ports
+# @disabled_access_ports
 @pytest.mark.timeout(50 * MINUTE, func_only=True)
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])

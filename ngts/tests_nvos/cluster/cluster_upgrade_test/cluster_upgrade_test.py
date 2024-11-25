@@ -26,7 +26,7 @@ from ngts.tools.test_utils import allure_utils as allure
 logger = logging.getLogger()
 
 
-@disabled_access_ports
+# @disabled_access_ports
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
 @pytest.mark.timeout(55 * MINUTE, func_only=True)
@@ -83,7 +83,7 @@ def test_upgrade_with_nmx_enabled(test_api, devices, base_version,
                     f"{NvosConst.DISABLED}"
 
         with allure.step("Enable cluster and perform configurations"):
-            ClusterTools.start_cluster(cluster, output_format)
+            ClusterTools.start_cluster(cluster, output_format, verify_nmx_c=False)  # remove verify=False once base version for regression is different than 1638.
             with allure.step("Choose random log level, and set cluster app log level to"):
                 for app in ClusterConsts.INITIAL_EXPECTED_APPS:
                     log_level = random.choice(ClusterConsts.ClusterAppsLogLevelsList)
