@@ -3,7 +3,7 @@ import random
 import pytest
 
 from ngts.tests_nvos.checklist.erot_fw_upgrade.BaseFWUpgradeTest import BaseFWUpgradeTest
-from ngts.nvos_constants.constants_nvos import ApiType
+from ngts.nvos_constants.constants_nvos import ApiType, PlatformConsts
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.tools.test_utils import allure_utils as allure
@@ -13,7 +13,7 @@ from ngts.tests_nvos.constants import MINUTE
 @pytest.mark.timeout(20 * MINUTE, func_only=True)
 @pytest.mark.erot
 @pytest.mark.parametrize('test_api', random.sample(ApiType.ALL_TYPES, 1))
-def test_erot_upgrade_all(engines, devices, topology_obj, test_api, test_name, clear_files_non_fae):
+def test_erot_upgrade_all(engines, devices, topology_obj, test_api, test_name, clear_erot_files):
     """
     Test 'nv {show | fetch | install | delete} platform firmware EROT
     Bad BMC erot fw - hardware limitation, therefore removing 'ERoT_BMC_0' from install verification
@@ -35,9 +35,11 @@ def test_erot_upgrade_all(engines, devices, topology_obj, test_api, test_name, c
     """
     with allure.step('Create Test and system objects'):
         platform = Platform()
-        test = BaseFWUpgradeTest(firmware_component=platform.firmware.erot)
+        erots_list = devices.dut.constants.erots
+        erot_name = random.choice(erots_list)
+        test = BaseFWUpgradeTest(firmware_component=platform.firmware.erot_id[erot_name])
 
-    with allure.step(f"Fetch, install and assert prev & curr versions (through {test_api})"):
+    with allure.step(f"Fetch, install and assert prev & curr versions (through {test_api}) for {erot_name}"):
         test.test(engines=engines, switch=devices.dut, topology_obj=topology_obj, test_api=test_api)
 
 
@@ -57,7 +59,7 @@ def test_erot_upgrade_all_badflow(engines, devices, topology_obj, test_api, test
     """
     with allure.step('Create Test and system objects'):
         platform = Platform()
-        test = BaseFWUpgradeTest(firmware_component=platform.firmware.erot)
+        test = BaseFWUpgradeTest(firmware_component=platform.firmware.erot_id[PlatformConsts.EROT_CPU_PATH_NAME])
 
     with allure.step(f"Bad flow (through {test_api})"):
         test.test_badflow(engines=engines, switch=devices.dut, topology_obj=topology_obj,
@@ -90,10 +92,10 @@ def test_erot_upgrade_fae(engines, devices, topology_obj, test_api, test_name, c
     with allure.step('Create Test and system objects'):
         fae = Fae()
         fae.platform.firmware.create_erot_components(devices.dut)
-        test = BaseFWUpgradeTest(firmware_component=fae.platform.firmware.erots)
+        test = BaseFWUpgradeTest(firmware_component=fae.platform.firmware.erot_id)
 
     with allure.step(f"Fetch, install and assert prev & curr versions (through {test_api})"):
-        test.test_list(engines=engines, switch=devices.dut, topology_obj=topology_obj, test_api=test_api, fae=fae)
+        test.test_list(engines=engines, topology_obj=topology_obj, test_api=test_api)
 
 
 @pytest.mark.erot

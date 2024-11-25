@@ -27,7 +27,6 @@ from ngts.nvos_tools.infra.PortFastRecovery import PortFastRecovery
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.nvos_tools.system.Files import Files
-from ngts.nvos_tools.system.Firmware import Firmware
 from ngts.nvos_tools.system.Health import Health
 from ngts.tools.test_utils import allure_utils as allure
 
@@ -39,7 +38,6 @@ class Fae(BaseComponent):
         super().__init__(parent=parent_obj,
                          api={ApiType.NVUE: NvueBaseCli, ApiType.OPENAPI: OpenApiBaseCli}, path='/fae')
         self.system = FaeSystem(self)
-        self.firmware = Firmware(self)
         self.ipoibmapping = BaseComponent(self, path='/ipoib-mapping')
         self.health = Health(self)
         self.port = MgmtPort(port_name, self)
@@ -132,7 +130,7 @@ class FaeFirmware(BaseComponent):
         self.ssd = FaePlatformComponent(self, 'SSD')
         self.bmc = FaePlatformComponent(self, 'BMC')  # TODO: Fix after bug closed https://redmine.mellanox.com/issues/3955495
         self.fpga = FaePlatformComponent(self, 'FPGA')
-        self.erots: Dict[str, ErotComponent] = DefaultDict(lambda erot_name: ErotComponent(self, erot_name=erot_name))
+        self.erot_id: Dict[str, ErotComponent] = DefaultDict(lambda erot_id: ErotComponent(self, erot_name=erot_id))
 
     def install_bios_firmware(self, bios_image_path, device):
         with allure.step("installing bios firmware from {action_type}".format(action_type=bios_image_path)):
@@ -145,7 +143,7 @@ class FaeFirmware(BaseComponent):
         erots_names = switch.constants.erots.copy()
 
         for erot in erots_names:
-            self.erots[erot] = ErotComponent(self, erot)
+            self.erot_id[erot] = ErotComponent(self, erot)
 
 
 class FaeBiosComponent(BaseComponent):

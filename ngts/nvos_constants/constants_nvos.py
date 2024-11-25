@@ -648,6 +648,9 @@ class PlatformConsts:
     FW_BMC = "BMC"
     FW_FIELD_NAME_DICT = {"Actual FW": "actual-firmware"}
     FW_ACTUAL = "actual-firmware"
+    FW_BACKGROUND_COPY_STATUS = 'background-copy-status'
+    FW_DEBUG_TOKEN_STATUS = 'debug-token-status'
+    FW_AP_BOOT_STATUS = 'ap-boot-status'
     FW_UPGRADE_STATUS = 'fw-upgrade-status'
     FW_UPGRADE_ERROR_MSG = 'fw-upgrade-error-msg'
     FW_PART_NUMBER = 'part-number'
@@ -658,7 +661,9 @@ class PlatformConsts:
     FW_SPECTRUM1 = "1-Spectrum"
     FW_SPECTRUM2 = "1-Spectrum2"
     FW_SPECTRUM3 = "1-Spectrum3"
-    FW_FIELDS = [FW_ACTUAL, FW_PART_NUMBER, FW_AUTO_UPDATE, FW_SOURCE]
+    FW_SLOT_STATUS_ACTIVE = 'active'
+    FW_SLOT_STATUS_INACTIVE = 'inactive'
+    FW_FIELDS = [FW_ACTUAL, FW_PART_NUMBER, FW_SOURCE, FW_BACKGROUND_COPY_STATUS, FW_DEBUG_TOKEN_STATUS, FW_SLOT_STATUS_ACTIVE, FW_SLOT_STATUS_INACTIVE]
     HARDWARE_TRANCEIVER_DIAGNOSTIC_STATUS = "diagnostics-status"
     HARDWARE_TRANCEIVER_NOT_EXIST = "Non present module"
     HARDWARE_TRANCEIVER_NOT_DDMI = "No Diagnostic Data Available. Module is not DDMI capable"
@@ -711,6 +716,11 @@ class PlatformConsts:
     BMC_FIRMWARE_INVENTORY_LINK = '/UpdateService/FirmwareInventory'
     BMC_FIRMWARE_BMC_LINK = 'MGX_FW_BMC_0'
     BMC_FIRMWARE_EROT_LINK = 'MGX_FW_ERoT_BMC_0'
+    EROT_BMC_PATH_NAME = 'EROT-BMC'
+    EROT_CPU_PATH_NAME = 'EROT-CPU'
+    EROT_FPGA_PATH_NAME = 'EROT-FPGA'
+    EROT_ASIC1_PATH_NAME = 'EROT-ASIC1'
+    EROT_ASIC2_PATH_NAME = 'EROT-ASIC2'
     BMC_INVENTORY_PATTERN = r'/redfish/v1/UpdateService/FirmwareInventory/([^"]+)'
     BMC_COMPONENT_VERSION_PATTERN = r'"Version":\s*"([^"]+)"'
     BMC_LOGIN = 'admin'
