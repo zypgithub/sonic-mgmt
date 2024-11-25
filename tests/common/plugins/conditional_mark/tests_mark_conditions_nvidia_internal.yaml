@@ -435,6 +435,12 @@ tests/nightly/route/test_async_route.py::test_removing_routes[ipv6-static_routes
     conditions:
     - "https://redmine.mellanox.com/issues/4052989 and 'sn2' in platform"
 
+tests/push_build_tests/L3/rocev2_acl_counter/test_rocev2_acl_counter_basic.py::TestRocev2AclCounter::test_rocev2_acl_counter_basic:
+  skip:
+    reason: "Skip due to bug of https://redmine.mellanox.com/issues/4179880 in simx platforms"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4179880 and ('simx' in platform)"
+
 ########################## NGTS IGNORE END ##########################
 
 
@@ -1463,6 +1469,7 @@ platform_tests/mellanox/test_check_sfp_eeprom.py::test_check_sfp_eeprom_with_opt
     reason: "Skip due to bug of https://redmine.mellanox.com/issues/3914460"
     conditions:
       - "https://redmine.mellanox.com/issues/3914460"
+
 ########################## NVIDIA INTERNAL SIMX EMULATION IGNORE END ############################
 
 ########################## NVIDIA INTERNAL HIPPO BRINGUP IGNORE START ############################
