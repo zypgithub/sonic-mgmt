@@ -521,7 +521,7 @@ def disabled_access_ports(func):
                     next(interfaces_wa)
                 except StopIteration:
                     pass  # Or handle it if necessary
-            if hasattr(devices.dut, 'nvl5_trunk_ports_list') and devices.dut.nvl5_trunk_ports_list is not []:
+            if hasattr(devices.dut, 'nvl5_trunk_ports_list') and devices.dut.nvl5_trunk_ports_list:
                 refresh_switch_ports(devices.dut.nvl5_trunk_ports_list, engines)
             with allure.step("Reset cluster state"):
                 if ClusterTools.check_cluster_state(cluster, OutputFormat.json) == 'enabled':
