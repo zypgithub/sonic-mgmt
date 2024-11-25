@@ -88,9 +88,6 @@ def pytest_addoption(parser):
     logger.info('Parsing post_validation')
     parser.addoption("--post_validation", help="Specify whether do post installation validation",
                      default=False, action="store")
-    logger.info('Parsing deploy_dpu')
-    parser.addoption("--deploy_dpu", help="Specify whether to deploy dpu for smart switch setup.",
-                     action="store", default="no")
 
     logger.info('Parsing destination hwsku')
     parser.addoption("--dest_hwsku", help="The destination hwsku", default="", action="store")
@@ -333,11 +330,12 @@ def additional_apps(request):
 
 
 @pytest.fixture(scope="session")
-def deploy_dpu(request):
+def deploy_dpu(base_version_dpu, platform_params):
     """
-    Method for getting deploy_dpu from pytest arguments
+    Return True if it's bobcat setup and base_version_dpu is given.
     :param request: pytest builtin
+    :param base_version_dpu: base_version_dpu fixture
+    :param platform_params: platform_params fixture
     :return: deploy_dpu
     """
-    deploy_dpu = request.config.getoption('--deploy_dpu')
-    return deploy_dpu == "yes"
+    return base_version_dpu and '4280' in platform_params['platform']

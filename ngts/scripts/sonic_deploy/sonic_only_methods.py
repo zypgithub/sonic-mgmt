@@ -546,16 +546,10 @@ class SonicInstallationSteps:
                     general_cli_obj.cli_obj.ip.apply_dns_servers_into_resolv_conf(
                         is_air_setup=platform_params.setup_name.startswith('air'))
                     general_cli_obj.save_configuration()
-            if deploy_dpu or is_bf_topo(sonic_topo):
-                def _fetch_dash_api_package():
-                    rc = os.system("wget 'https://sonic-build.azurewebsites.net/api/sonic/artifacts?branchName=master&"
-                                   "definitionId=1055&artifactName=sonic-buildimage.amd64.ubuntu20_04&"
-                                   "target=libdashapi_1.0.0_amd64.deb' -O libdashapi_1.0.0_amd64.deb")
-                    assert rc == 0, "Failed to fetch the dash api package"
-                with allure.step('Update the dash api in sonic-mgmt'):
-                    retry_call(_fetch_dash_api_package, tries=3, delay=10, logger=logger)
-                    os.system("dpkg --install ./libdashapi_1.0.0_amd64.deb")
             if deploy_dpu:
+                with allure.step('Update the dash api in sonic-mgmt'):
+                    retry_call(fetch_dash_api_package, tries=3, delay=10, logger=logger)
+                    os.system("dpkg --install ./libdashapi_1.0.0_amd64.deb")
                 with allure.step('Apply DPU IP assignment configuration'):
                     config_file_name = "dpu_basic_config.json"
                     dut_engine = topology_obj.players['dut']['engine']
@@ -613,6 +607,13 @@ class SonicInstallationSteps:
                 # deploy the xmlrpc, the traffic may loss right after the xml rpc server is started
                 topology_obj.players['ha']['engine'].start_xml_rcp_server()
                 topology_obj.players['hb']['engine'].start_xml_rcp_server()
+
+            if deploy_dpu:
+                with allure.step('Update the dash api in sonic-mgmt'):
+                    retry_call(fetch_dash_api_package, tries=3, delay=10, logger=logger)
+                    os.system("dpkg --install ./libdashapi_1.0.0_amd64.deb")
+                with allure.step('Apply NAT config to smartSwitch'):
+                    enable_nat_from_dut_mgmt_to_dpu_mgmt_intf(dut_engine)
 
             # Only check port status at canonical setup, there is an ansible counterpart for community setup
             for dut in setup_info['duts']:
@@ -862,3 +863,10 @@ def enable_nat_from_dut_mgmt_to_dpu_mgmt_intf(engine):
         "sudo iptables-save > /etc/iptables/rules.v4"
     ]
     engine.run_cmd_set(enable_nat_cmds)
+
+
+def fetch_dash_api_package():
+    rc = os.system("wget 'https://sonic-build.azurewebsites.net/api/sonic/artifacts?branchName=master&"
+                   "definitionId=1055&artifactName=sonic-buildimage.amd64.ubuntu20_04&"
+                   "target=libdashapi_1.0.0_amd64.deb' -O libdashapi_1.0.0_amd64.deb")
+    assert rc == 0, "Failed to fetch the dash api package"

@@ -158,29 +158,9 @@ def test_deploy_and_upgrade(topology_obj, is_simx, is_performance, base_version,
                                                             fanout_target_version=fanout_target_version)))
             DeployMethods.wait_until_deploy_background_process(install_threads, timeout=1500)
 
-            if "bobcat" in setup_name and base_version_dpu:
-                if "DARK_MODE=true" in topology_obj.players['dut']['engine'].run_cmd("cat /etc/mlnx/dpu.conf"):
-                    with allure.step('Disable dark mode and power cycle'):
-                        topology_obj.players['dut']['engine'].run_cmd(
-                            'sudo sh -c "sed -i \'s/DARK_MODE=true/DARK_MODE=false/\' /etc/mlnx/dpu.conf"')
-                        time.sleep(60)
-                        cli_obj.remote_reboot(topology_obj)
-                        cli_obj.verify_dockers_are_up()
-                        dpu_ready = topology_obj.players['dut']['engine'].run_cmd(
-                            "dpuctl dpu-status | awk '{print $2}'")
-                        assert "False" not in dpu_ready, "Not all DPUs are ready."
-
-                with allure.step('Copying image to switch dut'):
-                    dpu_image_url = MarsConstants.HTTP_SERVER_NBU_NFS + base_version_dpu
-                    dest_file = "/tmp/" + base_version_dpu.split('/')[-1]
-                    topology_obj.players['dut']['engine'].run_cmd(
-                        f"sudo curl {dpu_image_url} --output {dest_file}")
-
-                with allure.step('Install BFB image on all DPUs'):
-                    # Disconnect ssh connection, prevent "Socket is closed" in case when pre step took more than 15 min
-                    output = topology_obj.players['dut']['engine'].run_cmd(
-                        f"sudo sonic-bfb-installer.sh -r all -b {dest_file} -v")
-                    assert re.search("Installation Successful", output), "Failed to install bfb image on all DPUs."
+            if deploy_dpu:
+                with allure.step(f'Start to install the bfb image on all DPUs:{base_version_dpu}'):
+                    bfb_install_dpu(topology_obj, setup_info, base_version_dpu)
 
         with allure.step('verify pre installation processes are done'):
             logger.info("Wait until pre-installation background process done")
@@ -515,6 +495,38 @@ def get_hwsku(sonic_topo, dest_hwsku, setup_name):
             logger.warning(f"No hwsku assigned, will use the default value: "
                            f"{hwsku_data[setup_name]['default_hwsku']}")
             return hwsku_data[setup_name]['default_hwsku']
+
+
+def bfb_install_dpu(topology_obj, setup_info, base_version_dpu):
+    cli_obj = setup_info['duts'][0]['cli_obj']
+    if "DARK_MODE=true" in topology_obj.players['dut']['engine'].run_cmd("cat /etc/mlnx/dpu.conf"):
+        with allure.step('Disable dark mode and power cycle'):
+            topology_obj.players['dut']['engine'].run_cmd(
+                'sudo sh -c "sed -i \'s/DARK_MODE=true/DARK_MODE=false/\' /etc/mlnx/dpu.conf"')
+            time.sleep(60)
+            cli_obj.remote_reboot(topology_obj)
+            cli_obj.verify_dockers_are_up()
+            dpu_ready = topology_obj.players['dut']['engine'].run_cmd(
+                "dpuctl dpu-status | awk '{print $2}'")
+            assert "False" not in dpu_ready, "Not all DPUs are ready."
+
+    with allure.step('Copying image to switch dut'):
+        dpu_image_url = MarsConstants.HTTP_SERVER_NBU_NFS + base_version_dpu
+        dest_file = "/tmp/" + base_version_dpu.split('/')[-1]
+        topology_obj.players['dut']['engine'].run_cmd(
+            f"sudo curl {dpu_image_url} --output {dest_file}")
+
+    with allure.step('Install BFB image on all DPUs'):
+        # Disconnect ssh connection, prevent "Socket is closed" in case when pre step took more than 15 min
+        output = topology_obj.players['dut']['engine'].run_cmd(
+            f"sudo sonic-bfb-installer.sh -r all -b {dest_file} -v")
+        failures = []
+        for index in range(4):
+            pattern = f"{index}.*Installation Successful"
+            if not re.search(pattern, output):
+                failures.append(index)
+        if failures:
+            assert False, f"Failed to install bfb image on DPU: {failures}."
 
 
 if 'base-version=/auto/sw_system_release/sonic' in ' '.join(sys.argv) and 'target_cli_type' not in ' '.join(sys.argv):

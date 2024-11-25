@@ -431,10 +431,6 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                 time.sleep(InfraConst.SLEEP_AFTER_RRBOOT)
                 self.do_installation(topology_obj, image_path, deploy_type, fw_pkg_path, platform_params, dut_alias)
 
-        # Break if it's installing the Bobcat DPUs
-        if deploy_type == 'bfb' and 'sn4280' in platform_params.platform:
-            return
-
     def deploy_image_post_installtion(self, topology_obj, apply_base_config=False, setup_name=None,
                                       platform_params=None, reboot_after_install=None,
                                       set_timezone='Israel', disable_ztp=False, configure_dns=False,
@@ -828,6 +824,8 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                            logger=logger)
 
     def update_platform_params(self, platform_params, setup_name):
+        if "4280" in platform_params["platform"]:
+            return
         if hasattr(self, 'cli_obj'):  # SONiC only
             current_platform_summary = self.cli_obj.chassis.parse_platform_summary()
             if platform_params["hwsku"] != current_platform_summary["HwSKU"] \
@@ -1042,6 +1040,8 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         config_db_json = self.get_config_db_json_obj(setup_name, config_db_json_file_name=config_db_json_file_name)
         hwsku = config_db_json[ConfigDbJsonConst.DEVICE_METADATA][ConfigDbJsonConst.LOCALHOST][ConfigDbJsonConst.HWSKU]
         localhost_type = ConfigDbJsonConst.TOR_ROUTER
+        if 'bobcat' in self.hostname():
+            localhost_type = ConfigDbJsonConst.LEAF_ROUTER
         if self.is_bluefield(hwsku):
             localhost_type = ConfigDbJsonConst.SONIC_HOST
         config_db_json[ConfigDbJsonConst.DEVICE_METADATA][ConfigDbJsonConst.LOCALHOST][ConfigDbJsonConst.TYPE] = \

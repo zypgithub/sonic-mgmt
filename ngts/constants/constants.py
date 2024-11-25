@@ -221,6 +221,7 @@ class ConfigDbJsonConst:
     LOCALHOST = "localhost"
     TYPE = 'type'
     TOR_ROUTER = 'ToRRouter'
+    LEAF_ROUTER = 'LeafRouter'
     SONIC_HOST = 'SonicHost'
     HOSTNAME = "hostname"
     MAC = "mac"
