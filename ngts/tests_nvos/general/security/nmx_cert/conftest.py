@@ -26,7 +26,7 @@ def use_external_ca_type(request) -> bool:
 
 @pytest.fixture(scope='session', autouse=True)
 def test_certs():
-    return [TestCert.cert_valid_1, TestCert.cert_valid_2]
+    return [TestCert.cert_valid_1, TestCert.cert_valid_2, TestCert.cert_valid_3]
 
 
 def bug_4180778_wa():
@@ -57,10 +57,13 @@ def clear_everything(app_name: str, wa2=False):
 @pytest.fixture(autouse=True)
 def setup_case(scp_player, engines, test_certs, use_external_ca_type, request):
     app_name: str = get_cur_test_param_value(request, 'app_name')
-    clear_everything(app_name)
+    if app_name:
+        clear_everything(app_name)
+
     import_test_certs(scp_player, engines.dut, test_certs, use_external_ca_type)
     yield
-    clear_everything(app_name, True)  # TODO: remove wa2 after https://redmine.mellanox.com/issues/4180778 (callback) closed
+    if app_name:
+        clear_everything(app_name, True)  # TODO: remove wa2 after https://redmine.mellanox.com/issues/4180778 (callback) closed
 
 
 @pytest.fixture()

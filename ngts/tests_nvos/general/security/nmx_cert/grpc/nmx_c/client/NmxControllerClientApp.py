@@ -113,7 +113,7 @@ def main_with_switch():
         ),
         client=GrpcClientConfig(
             address='nvos-dut',
-            tls_mode=EncryptionMode.MTLS,
+            tls_mode=EncryptionMode.DISABLED,
             cert=TestCert.cert_valid_2,
             cacert=TestCert.cert_valid_1,
             num_requests=2,
