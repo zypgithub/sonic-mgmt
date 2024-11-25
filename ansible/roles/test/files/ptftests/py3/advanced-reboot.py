@@ -672,6 +672,14 @@ class ReloadTest(BaseTest):
         if self.kvm_test:
             self.log("This test is for KVM platform")
 
+        self.capture_pcap = ("/tmp/capture_%s.pcap" % self.logfile_suffix
+                             if self.logfile_suffix is not None else "/tmp/capture.pcap")
+        if self.vmhost_external_port:
+            self.log("Test will collect tcpdump on the vmhost external port")
+            remote_capture_pcap = self.capture_pcap + f"_{self.test_params['dut_hostname']}"
+            self.remote_capture_pcap = remote_capture_pcap
+            self.log(f"The pcap file on vmhost will be located in {remote_capture_pcap}")
+
         # get VM info
         if isinstance(self.test_params['arista_vms'], list):
             arista_vms = self.test_params['arista_vms']
@@ -1799,22 +1807,18 @@ class ReloadTest(BaseTest):
             sniff_filter (str): Filter that tcpdump will use to collect only relevant packets
         """
         try:
-            capture_pcap = ("/tmp/capture_%s.pcap" % self.logfile_suffix
-                            if self.logfile_suffix is not None else "/tmp/capture.pcap")
-            subprocess.call(["rm", "-rf", capture_pcap])
+            subprocess.call(["rm", "-rf", self.capture_pcap])
             self.kill_sniffer = False
 
             if self.vmhost_external_port:
-                remote_capture_pcap = capture_pcap + f"_{self.test_params['dut_hostname']}"
-                self.remote_capture_pcap = remote_capture_pcap
-                self.vmhost_connection.execCommand(f"sudo rm -rf {remote_capture_pcap}")
-                self.start_sniffer_on_vmhost(remote_capture_pcap, sniff_filter, wait)
-                self.vmhost_connection.fetch(remote_capture_pcap, capture_pcap)
+                self.vmhost_connection.execCommand(f"sudo rm -rf {self.remote_capture_pcap}")
+                self.start_sniffer_on_vmhost(self.remote_capture_pcap, sniff_filter, wait)
+                self.vmhost_connection.fetch(self.remote_capture_pcap, self.capture_pcap)
             else:
-                self.start_sniffer_on_ptf(capture_pcap, sniff_filter, wait)
-                self.create_single_pcap(capture_pcap)
+                self.start_sniffer_on_ptf(self.capture_pcap, sniff_filter, wait)
+                self.create_single_pcap(self.capture_pcap)
 
-            self.packets = scapyall.rdpcap(capture_pcap)
+            self.packets = scapyall.rdpcap(self.capture_pcap)
             self.log("Number of all packets captured: {}".format(len(self.packets)))
         except Exception:
             traceback_msg = traceback.format_exc()
