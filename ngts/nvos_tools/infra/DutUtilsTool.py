@@ -65,8 +65,11 @@ class DutUtilsTool:
                 output = device.reload_device(engine, list_commands)
                 logger.info(output)
 
-                if 'aborted' in output.lower() or 'aborting' in output.lower():
-                    return ResultObj(result=False, info=output)
+                error_list = ['aborted', 'aborting', 'error: action failed', 'command not found']
+                output_lower = output.lower()
+                for error in error_list:
+                    if error in output_lower:
+                        return ResultObj(result=False, info=output)
 
                 res_obj = DutUtilsTool.wait_on_system_reboot(engine, recovery_engine, None, should_wait_till_system_ready,
                                                              device, False, True, topology_obj)

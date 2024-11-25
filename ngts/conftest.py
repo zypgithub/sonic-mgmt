@@ -94,6 +94,8 @@ def pytest_addoption(parser):
     parser.addoption('--setup_name', action='store', required=True, default=None,
                      help='Setup name, example: sonic_tigris_r-tigris-06')
     parser.addoption('--base_version', action='store', default=None, help='Path to base SONiC version')
+    parser.addoption('--downgrade_version', action='store', default=None, help='Path to downgrade SONiC version')
+    parser.addoption('--issu_version', action='store', default=None, help='Path to issu SONiC version')
     parser.addoption('--target_version', action='store', default=None, help='Path to target SONiC version')
     parser.addoption('--wjh_deb_url', action='store', default=None, help='URL path to WJH deb package')
     parser.addoption("--session_id", action="store", default=None, help="Number of mars session id.")
@@ -223,6 +225,26 @@ def base_version(request):
     :return: base_version argument value
     """
     return request.config.getoption('--base_version')
+
+
+@pytest.fixture(scope="session")
+def downgrade_version(request):
+    """
+    Method for getting base version from pytest arguments
+    :param request: pytest builtin
+    :return: downgrade_version argument value
+    """
+    return request.config.getoption('--downgrade_version')
+
+
+@pytest.fixture(scope="session")
+def issu_version(request):
+    """
+    Method for getting base version from pytest arguments
+    :param request: pytest builtin
+    :return: issu_version argument value
+    """
+    return request.config.getoption('--issu_version')
 
 
 @pytest.fixture(scope="session")

@@ -1667,8 +1667,8 @@ class PtpConsts:
 
 class IssuConsts:
     class IssuStatus(Enum):
-        NO_ISSU = 'no_issu'
-        IN_PROGRESS = 'in_progress'
+        NO_ISSU = 'no-issu'
+        IN_PROGRESS = 'in-progress'
         FAILED = 'failed'
         DONE = 'done'
 
@@ -1686,14 +1686,12 @@ class IssuConsts:
     OPENSM_RESPONSE_ABORT = 'abort'
     # DB_OPENSM_TIMEOUT = 'TBD'  # Currently not needed (constant 60 secs)
     OLD_IMAGE = "/auto/sw_system_release/nos/nvos/25.02.1930-007/amd64/dev/nvos-amd64-25.02.1930-007.bin"
-    LOG_MSG_REACH_TO = "reach timeout..."  # TODO [L.A] update message once receiving 1st drop
-    LOG_MSG_LIST = [LOG_MSG_REACH_TO]  # TODO [L.A] add all log error messages
     PYTHON_PATH = 'PYTHONPATH=/ngts_venv/ /ngts_venv/bin/python'
     PING_SERVER_SCRIPT = '/sonic-mgmt/ngts/tests_nvos/system/ping_server.py'
     CONTAINER_BU_TEMPLATE = '{python_path} {ping_server_script}'
     SERVER_SCRIPT = PYTHON_PATH + PING_SERVER_SCRIPT
     OPENSM_RESPONSE_TIMEOUT = '60'  # [sec]
-    TRAFFIC_DURATION = '120'  # [sec]
+    TRAFFIC_DURATION = '200'  # [sec]
     TRAFFIC_TIMEOUT = int(TRAFFIC_DURATION) + 10  # [sec]
     SERVER_OUTPUT = 'server_output.txt'
     CLIENT_OUTPUT = 'client_output.txt'
@@ -1701,14 +1699,16 @@ class IssuConsts:
                                   '  Configuration must be saved before performing ISSU')
     ERROR_SYSTEM_MUST_BE_REBOOTED = ('Error: Action failed with the following issue:\n'
                                      '  System must be rebooted during ISSU')
-    ERROR_OPENSM_NO_PERMISSION = ('Error: Action failed with the following issue:\n'
-                                  '  No permission from OpenSM')  # TODO: update message
     ERROR_OPENSM_REACH_TIMEOUT = ('Error: Action failed with the following issue:\n'
                                   '  No permission to perform ISSU from the SM')
     ERROR_DOWNGRADE_NOT_ALLOWED = ('Error: Action failed with the following issue:\n'
-                                   '  Downgrade image is not allowed')  # TODO: update message
-    ERROR_ANY_ERROR = 'Error: Action failed with the following issue:'
+                                   '  ISSU does not support downgrade')
+    LOG_MSG_LIST = ['issue: No permission to perform ISSU from the SM',
+                    'issue: System must be rebooted during ISSU',
+                    'issue: Configuration must be saved before performing ISSU',
+                    'issue: ISSU does not support downgrade']
     SNMP_READ_ONLY_COMMUNITY = 'qwerty12'
+    REDUCED_TIMEOUT = '20'  # [sec]
 
 
 class RemarkableLogsConsts:

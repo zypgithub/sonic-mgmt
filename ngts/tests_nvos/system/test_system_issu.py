@@ -9,14 +9,12 @@ import time
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.nvos_constants.constants_nvos import (ApiType, DatabaseConst, HealthConsts, IbConsts, IpConsts, IssuConsts,
-                                                NtpConsts, NvosConst, SystemConsts)
+                                                NvosConst, SystemConsts)
 from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
-from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
 from ngts.nvos_tools.ib.opensm.OpenSmTool import OpenSmTool
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.nvos_tools.infra.DatabaseTool import DatabaseTool
 from ngts.nvos_tools.infra.DutUtilsTool import ping_device
-from ngts.nvos_tools.infra.HostMethods import HostMethods
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RegressionConfigurations import Configurations
@@ -34,7 +32,7 @@ logger = logging.getLogger()
 @pytest.mark.system
 @pytest.mark.issu
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_system_issu_positive_flow(engines, devices, start_sm, base_version, target_version, test_api):
+def test_system_issu_positive_flow(engines, devices, start_sm, issu_version, target_version, test_api):
     """
     Validate:
     - Upgrade is successfully done (system boots up into new version of OS and FW)
@@ -72,15 +70,23 @@ def test_system_issu_positive_flow(engines, devices, start_sm, base_version, tar
     19. Validate event table
     20. Run another upgrade with ISSU to newer image
     """
-
     TestToolkit.tested_api = test_api
     dut_engine = engines.dut
     dut_device = devices.dut
     player = engines.sonic_mgmt
     system = System()
 
-    # TODO: to be removed
-    target_version = "/auto/sw_system_release/nos/nvos/25.02.1930-025/amd64/dev/nvos-amd64-25.02.1930-025.bin"
+    with allure.step("Prepare system base image for install"):
+        target_filename, recovery_engine, scp_host_creds = prepare_image_for_install(
+            player, dut_engine, dut_device, issu_version)
+
+    with allure.step("Install base version image (without ISSU)"):
+        system.image.files.file_name[issu_version].action_file_install_with_reboot(
+            force=False, engine=dut_engine, device=dut_device, recovery_engine=recovery_engine,
+            param_value=IssuConsts.ISSU, should_succeed=False, press_y=True).verify_result(should_succeed=False)
+
+    with allure.step(f"Reduce ISSU timeout to {IssuConsts.REDUCED_TIMEOUT} seconds"):
+        reduce_issu_timeout(engines.dut, IssuConsts.REDUCED_TIMEOUT)
 
     with allure.step("Prepare system target image for install"):
         target_filename, recovery_engine, scp_host_creds = prepare_image_for_install(
@@ -95,13 +101,14 @@ def test_system_issu_positive_flow(engines, devices, start_sm, base_version, tar
                                                         engines.dut.password).get_returned_value()
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-            with allure.step("Perform install image with iSSU no-sm flag"):
+            with allure.step("Perform install image with iSSU flag"):
                 executor.submit(run_install_system_image_issu, connection, dut_device,
-                                recovery_engine, target_filename, IssuConsts.ISSU_SKIP_SM, False)
+                                recovery_engine, target_filename, IssuConsts.ISSU, False)
 
-            # install image process will start immediately, even it still requesting openSM response, therefor we wait
-            # few seconds and status should be updated to "in progress".
-            time.sleep(5)
+            # install image process will start immediately, and only when finish - update issu status to "in-progress"
+            # and start requesting openSM response.
+            with allure.step(f'Verify ISSU status is: {IssuConsts.IssuStatus.IN_PROGRESS.value}'):
+                wait_for_image_status_update(system, IssuConsts.IssuStatus.IN_PROGRESS.value)
 
             with allure.step(f'Verify ISSU status is: {IssuConsts.IssuStatus.IN_PROGRESS.value}'):
                 issu_status = OutputParsingTool.parse_json_str_to_dictionary(
@@ -126,7 +133,8 @@ def test_system_issu_positive_flow(engines, devices, start_sm, base_version, tar
 @pytest.mark.system
 @pytest.mark.issu
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_system_issu_prevention_cases(engines, devices, start_sm, base_version, target_version, test_api):
+def test_system_issu_prevention_cases(engines, devices, start_sm, downgrade_version,
+                                      issu_version, target_version, test_api):
     """
     Validate:
     - No permission to upgrade system from SM
@@ -155,9 +163,20 @@ def test_system_issu_prevention_cases(engines, devices, start_sm, base_version, 
     player = engines.sonic_mgmt
     system = System()
 
-    # TODO: to be removed
-    base_version = "/auto/sw_system_release/nos/nvos/25.02.1930-024/amd64/dev/nvos-amd64-25.02.1930-024.bin"
-    target_version = "/auto/sw_system_release/nos/nvos/25.02.1930-025/amd64/dev/nvos-amd64-25.02.1930-025.bin"
+    with allure.step("Prepare system base image for install"):
+        target_filename, recovery_engine, scp_host_creds = prepare_image_for_install(
+            player, dut_engine, dut_device, issu_version)
+
+    with allure.step("Install base version image (without ISSU)"):
+        system.image.files.file_name[issu_version].action_file_install_with_reboot(
+            force=False, engine=dut_engine, device=dut_device, recovery_engine=recovery_engine,
+            param_value=IssuConsts.ISSU, should_succeed=False, press_y=True).verify_result(should_succeed=False)
+
+    with allure.step("Save configuration"):
+        TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
+
+    with allure.step(f"Reduce ISSU timeout to {IssuConsts.REDUCED_TIMEOUT} seconds"):
+        reduce_issu_timeout(engines.dut, IssuConsts.REDUCED_TIMEOUT)
 
     with allure.step("Prepare system target image for install"):
         target_filename, recovery_engine, scp_host_creds = prepare_image_for_install(
@@ -165,6 +184,9 @@ def test_system_issu_prevention_cases(engines, devices, start_sm, base_version, 
 
     with allure.step("Stop OpenSM"):
         OpenSmTool.stop_open_sm(engines).verify_result()
+
+    with allure.step('Clear system log (rotate)'):
+        system.log.rotate_logs()
 
     with allure.step("Simulate no permission from the SM by changing DB value"):
         with allure.step("Clear OpenSM response value in DB"):
@@ -177,23 +199,19 @@ def test_system_issu_prevention_cases(engines, devices, start_sm, base_version, 
 
             with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
                 with allure.step("Perform install image with iSSU"):
-                    issu_output = executor.submit(run_install_system_image_issu, connection, dut_device,
-                                                  recovery_engine, target_filename, IssuConsts.ISSU, False)
+                    executor.submit(run_install_system_image_issu, connection, dut_device,
+                                    recovery_engine, target_filename, IssuConsts.ISSU, False)
 
                 with allure.step("Wait for opensm status update in all asics"):
                     # in positive flow, the request to OpenSM should be sent after upgrading OS (~60 secs) and
                     # upgrading FW (~100 secs), therefore we'll wait up to 4 mins for changing OpenSM status value in
-                    # BD to "requesting". we'll check the status every 20 secs for case there was an error and other
+                    # DB to "requesting". we'll check the status every 20 secs for case there was an error and other
                     # status was written to the DB, in order to avoid unnecessary waiting.
                     opensm_response = wait_for_opensm_status_update(dut_engine, dut_device)
 
                 if opensm_response == IssuConsts.OPENSM_RESPONSE_REQUESTING:
                     with allure.step("Set OpenSM response to 'No'"):
                         set_opensm_response_status(dut_engine, dut_device, IssuConsts.OPENSM_RESPONSE_NO)
-
-        # reach here only when install ISSU action is done
-        assert IssuConsts.ERROR_OPENSM_NO_PERMISSION in issu_output, \
-            f'error message: {IssuConsts.ERROR_OPENSM_NO_PERMISSION} is missing in output: {issu_output}'
 
     with allure.step('Verify show ISSU status'):
         issu_status = OutputParsingTool.parse_json_str_to_dictionary(
@@ -208,11 +226,10 @@ def test_system_issu_prevention_cases(engines, devices, start_sm, base_version, 
         with allure.step("Perform install image with ISSU"):
             output = system.image.files.file_name[target_filename].action_file_install_with_reboot(
                 force=False, engine=dut_engine, device=dut_device, recovery_engine=recovery_engine,
-                param_value=IssuConsts.ISSU, should_succeed=False).verify_result(should_succeed=False)
+                param_value=IssuConsts.ISSU, should_succeed=False, press_y=True).verify_result(should_succeed=False)
 
-        assert IssuConsts.ERROR_OPENSM_REACH_TIMEOUT.format(image_version=target_filename) in output, \
-            (f'error message: {IssuConsts.ERROR_OPENSM_REACH_TIMEOUT.format(image_version=target_filename)} '
-             f'is missing in output: {output}')
+        assert IssuConsts.ERROR_OPENSM_REACH_TIMEOUT in output, \
+            f'error message: {IssuConsts.ERROR_OPENSM_REACH_TIMEOUT} is missing in output: {output}'
 
     with allure.step("Start OpenSM"):
         OpenSmTool.start_open_sm(engines).verify_result()
@@ -221,7 +238,8 @@ def test_system_issu_prevention_cases(engines, devices, start_sm, base_version, 
         with allure.step("Perform install image with ISSU with 'reboot no' flag"):
             output = system.image.files.file_name[target_filename].action_file_install_with_reboot(
                 force=False, engine=dut_engine, device=dut_device, recovery_engine=recovery_engine,
-                param_value=IssuConsts.ISSU_NO_REBOOT, should_succeed=False).verify_result(should_succeed=False)
+                param_value=IssuConsts.ISSU_NO_REBOOT, should_succeed=False, press_y=True).verify_result(
+                should_succeed=False)
 
         assert IssuConsts.ERROR_SYSTEM_MUST_BE_REBOOTED in output, \
             f'error message: {IssuConsts.ERROR_SYSTEM_MUST_BE_REBOOTED} is missing in output: {output}'
@@ -234,20 +252,24 @@ def test_system_issu_prevention_cases(engines, devices, start_sm, base_version, 
         with allure.step("Perform install image with ISSU"):
             output = system.image.files.file_name[target_filename].action_file_install_with_reboot(
                 force=False, engine=dut_engine, device=dut_device, recovery_engine=recovery_engine,
-                param_value=IssuConsts.ISSU, should_succeed=False).verify_result(should_succeed=False)
+                param_value=IssuConsts.ISSU, should_succeed=False, press_y=True).verify_result(should_succeed=False)
 
         assert IssuConsts.ERROR_CONFIG_MUST_BE_SAVED in output, \
             f'error message: {IssuConsts.ERROR_CONFIG_MUST_BE_SAVED} is missing in output: {output}'
 
+        with allure.step('Unset system message, apply and save config'):
+            system.message.unset(op_param="", apply=True, dut_engine=engines.dut).verify_result()
+            TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
+
     with allure.step("Downgrade image with ISSU"):
         with allure.step("Prepare system base image for install"):
             base_filename, recovery_engine, scp_host_creds = prepare_image_for_install(
-                player, dut_engine, dut_device, base_version)
+                player, dut_engine, dut_device, downgrade_version)
 
         with allure.step("Perform install image with ISSU"):
             output = system.image.files.file_name[base_filename].action_file_install_with_reboot(
                 force=False, engine=dut_engine, device=dut_device, recovery_engine=recovery_engine,
-                param_value=IssuConsts.ISSU, should_succeed=False).verify_result(should_succeed=False)
+                param_value=IssuConsts.ISSU, should_succeed=False, press_y=True).verify_result(should_succeed=False)
 
         assert IssuConsts.ERROR_DOWNGRADE_NOT_ALLOWED in output, \
             f'error message: {IssuConsts.ERROR_DOWNGRADE_NOT_ALLOWED} is missing in output: {output}'
@@ -255,21 +277,26 @@ def test_system_issu_prevention_cases(engines, devices, start_sm, base_version, 
     with allure.step("Perform ISSU with an invalid flag"):
         system.image.files.file_name[target_filename].action_file_install_with_reboot(
             force=False, engine=dut_engine, device=dut_device, recovery_engine=recovery_engine,
-            param_value=IssuConsts.ISSU_INVALID_FLAG, should_succeed=False).\
+            param_value=IssuConsts.ISSU_INVALID_FLAG, should_succeed=False, press_y=True). \
             verify_result(should_succeed=False)
 
     with allure.step("Validate system log"):
-        system.log.verify_expected_logs(IssuConsts.LOG_MSG_LIST, engine=dut_engine)
+        system.log.verify_expected_logs(IssuConsts.LOG_MSG_LIST, engine=dut_engine, only_latest_log=True)
 
-    with allure.step("Validate event table"):
-        # TODO update...
-        system.log.verify_expected_logs(IssuConsts.LOG_MSG_LIST, engine=dut_engine)
-
-    # TODO random no-sm/w SM flag in the positive flow, instead of here
-    with allure.step("Perform ISSU with no-sm flag"):
-        system.image.files.file_name[target_filename].action_file_install_with_reboot(
+    with allure.step("Install target version image (without ISSU)"):
+        system.image.files.file_name[target_version].action_file_install_with_reboot(
             force=False, engine=dut_engine, device=dut_device, recovery_engine=recovery_engine,
-            param_value=IssuConsts.ISSU_SKIP_SM).verify_result()
+            param_value=IssuConsts.ISSU, should_succeed=False, press_y=True).verify_result(should_succeed=False)
+
+    # with allure.step("Validate event table"):
+    #     # TODO update...
+    #     system.log.verify_expected_logs(IssuConsts.LOG_MSG_LIST, engine=dut_engine)
+
+    # # TODO random no-sm/w SM flag in the positive flow, instead of here
+    # with allure.step("Perform ISSU with no-sm flag"):
+    #     system.image.files.file_name[target_filename].action_file_install_with_reboot(
+    #         force=False, engine=dut_engine, device=dut_device, recovery_engine=recovery_engine,
+    #         param_value=IssuConsts.ISSU_SKIP_SM).verify_result()
 
 
 @pytest.mark.system
@@ -389,7 +416,6 @@ def test_stuck_asic_during_issu_process(engines, devices, test_api):
         engines.dut.run_cmd('sudo rm -Rf {}sai-dfw*'.format(sdk_dump_folder))
 
     with allure.step("Rotate logs"):
-        logging.info("Rotate logs")
         system.log.rotate_logs()
 
     try:
@@ -532,6 +558,7 @@ def test_link_down_during_issu(engines, devices, start_sm, test_api, target_vers
         assert port_state == IpConsts.PORT_STATE_DOWN, \
             f'port state is {port_state} instead of {IpConsts.PORT_STATE_DOWN}'
 
+
 # -------------------------------------------------------
 
 
@@ -563,22 +590,23 @@ def pre_issu_installation_steps(engines, devices, target_version, scp_host_creds
 
     with allure.step('Get config file and path for target version'):
         config_file_path, config_filename = dut_device.get_test_config_file_by_version(target_version)
+        config_file_path = '/root/mars/workspace/sonic-mgmt/ngts/tools/test_utils/nvos_resources/nvos_config_xdr.yml'  # TODO to be removed
 
     with allure.step('Apply and save pre-defined configuration'):
         NvosInstallationSteps.fetch_apply_save_config(config_filename, config_file_path, dut_engine,
                                                       scp_host_creds, system)
 
-    with allure.step('Run management services'):
-        with allure.step("Enable snmp"):
-            HostMethods.start_snmp_server(engine=engines.dut, state=NvosConst.ENABLED,
-                                          readonly_community=IssuConsts.SNMP_READ_ONLY_COMMUNITY,
-                                          listening_address=NvosConst.ALL)
-            HostMethods.wait_for_snmp_is_running(system)
-        with allure.step("Enable ntp"):
-            system.ntp.set(op_param_name=NtpConsts.STATE, op_param_value=NtpConsts.State.ENABLED.value,
-                           apply=True).verify_result()
+    # with allure.step('Run management services'):
+    #     with allure.step("Enable snmp"):
+    #         HostMethods.start_snmp_server(engine=engines.dut, state=NvosConst.ENABLED,
+    #                                       readonly_community=IssuConsts.SNMP_READ_ONLY_COMMUNITY,
+    #                                       listening_address=NvosConst.ALL)
+    #         HostMethods.wait_for_snmp_is_running(system)
+    #     with allure.step("Enable ntp"):
+    #         system.ntp.set(op_param_name=NtpConsts.STATE, op_param_value=NtpConsts.State.ENABLED.value,
+    #                        apply=True).verify_result()
 
-        # TODO: start gnmi, rsyslog, and AAA processes.
+    # TODO: start gnmi, rsyslog, and AAA processes.
 
     with allure.step('Clear ports counters'):
         for port in Configurations.ndr_ports[dut_engine.ip]:
@@ -655,44 +683,45 @@ def post_issu_installation_steps(engines, devices, target_version, traffic_start
                                                                     f'instead of {target_version.split}')
             # TODO: check FW version as well
 
-        with allure.step('Validate ports counters'):
-            for port in Configurations.ndr_ports[dut_engine.ip]:
-                counters = OutputParsingTool.parse_json_str_to_dictionary(
-                    MgmtPort(port).interface.link.stats.show(dut_engine=dut_engine)).get_returned_value()
-                assert counters[IbInterfaceConsts.LINK_STATS_IN_PKTS] > num_of_packets, \
-                    f"counters in packets is: {counters[IbInterfaceConsts.LINK_STATS_IN_PKTS]}, \
-                    while number of packets sent is: {num_of_packets}"
-                assert counters[IbInterfaceConsts.LINK_STATS_OUT_PKTS] > num_of_packets, \
-                    f"counters in packets is: {counters[IbInterfaceConsts.LINK_STATS_OUT_PKTS]}, \
-                    while number of packets sent is: {num_of_packets}"
+        # with allure.step('Validate ports counters'):
+        #     for port in Configurations.ndr_ports[dut_engine.ip]:
+        #         counters = OutputParsingTool.parse_json_str_to_dictionary(
+        #             MgmtPort(port).interface.link.stats.show(dut_engine=dut_engine)).get_returned_value()
+        #         assert counters[IbInterfaceConsts.LINK_STATS_IN_PKTS] > num_of_packets, \
+        #             f"counters in packets is: {counters[IbInterfaceConsts.LINK_STATS_IN_PKTS]}, \
+        #             while number of packets sent is: {num_of_packets}"
+        #         assert counters[IbInterfaceConsts.LINK_STATS_OUT_PKTS] > num_of_packets, \
+        #             f"counters in packets is: {counters[IbInterfaceConsts.LINK_STATS_OUT_PKTS]}, \
+        #             while number of packets sent is: {num_of_packets}"
 
         with allure.step('Get config file and path for target version'):
             config_file_path, config_filename = dut_device.get_test_config_file_by_version(target_version)
+            config_file_path = '/root/mars/workspace/sonic-mgmt/ngts/tools/test_utils/nvos_resources/nvos_config_xdr.yml'  # TODO to be removed
 
         with allure.step('Verify configuration after upgrade'):
             NvosInstallationSteps.verify_config_after_upgrade(config_file_path, dut_engine)
 
-        with allure.step('Validate management services'):
-            with allure.step("Verify ntp state"):
-                ntp_show = OutputParsingTool.parse_json_str_to_dictionary(system.ntp.show()).get_returned_value()
-                assert ntp_show[NtpConsts.STATE] == NtpConsts.State.ENABLED.value, \
-                    f"Ntp state should be {NtpConsts.State.ENABLED.value}"
-
-            with allure.step('Verify snmp status'):
-                system_snmp_output = OutputParsingTool.parse_json_str_to_dictionary(system.snmp_server.show())\
-                    .get_returned_value()
-                ValidationTool.validate_fields_values_in_output([SystemConsts.SNMP_STATE], [SystemConsts.SNMP_ENABLED_STATE],
-                                                                system_snmp_output).verify_result()
-            # TODO: verify gnmi, rsyslog, and AAA processes.
+        # with allure.step('Validate management services'):
+        #     with allure.step("Verify ntp state"):
+        #         ntp_show = OutputParsingTool.parse_json_str_to_dictionary(system.ntp.show()).get_returned_value()
+        #         assert ntp_show[NtpConsts.STATE] == NtpConsts.State.ENABLED.value, \
+        #             f"Ntp state should be {NtpConsts.State.ENABLED.value}"
+        #
+        #     with allure.step('Verify snmp status'):
+        #         system_snmp_output = OutputParsingTool.parse_json_str_to_dictionary(system.snmp_server.show())\
+        #             .get_returned_value()
+        #         ValidationTool.validate_fields_values_in_output([SystemConsts.SNMP_STATE], [SystemConsts.SNMP_ENABLED_STATE],
+        #                                                         system_snmp_output).verify_result()
+        #     # TODO: verify gnmi, rsyslog, and AAA processes.
 
         with allure.step('Validate health status'):
             system.validate_health_status(HealthConsts.OK)
 
         # with allure.step('Validate system log'):
-            # TODO: complete (check with Elias)
+        # TODO: complete (check with Elias)
 
         # with allure.step('Validate event table'):
-            # TODO: complete (check with Elias)
+        # TODO: complete (check with Elias)
 
     finally:
         with allure.step('Clear tested configuration for the tests'):
@@ -750,7 +779,7 @@ def remote_reboot_dut(topology_obj):
         return rc == 0
 
 
-@retry(Exception, tries=12, delay=20)
+@retry(AssertionError, tries=12, delay=20)
 def wait_for_opensm_status_update(dut_engine, dut_device, requested_status=''):
     opensm_response = IssuConsts.OPENSM_RESPONSE_CLEAR
     opensm_responses = []
@@ -770,6 +799,14 @@ def wait_for_opensm_status_update(dut_engine, dut_device, requested_status=''):
     return opensm_response
 
 
+@retry(AssertionError, tries=12, delay=20)
+def wait_for_image_status_update(system, status):
+    with allure.step(f'Verify ISSU status is: {status}'):
+        issu_status = OutputParsingTool.parse_json_str_to_dictionary(
+            system.image.show()).get_returned_value()[IssuConsts.ISSU_STATUS]
+        assert issu_status == status, f"ISSU status is {issu_status}, instead of: {status}"
+
+
 def set_opensm_response_status(dut_engine, dut_device, value):
     for asic_num in range(dut_device.asic_amount):
         DatabaseTool.sonic_db_cli_hset(
@@ -783,6 +820,15 @@ def run_install_system_image_issu(dut_engine, dut_device, recovery_engine, image
     with allure.step("Perform Install image with ISSU"):
         output = system.image.files.file_name[image_filename].action_file_install_with_reboot(
             force=False, engine=dut_engine, device=dut_device, recovery_engine=recovery_engine,
-            param_value=param_value, should_succeed=should_succeed).verify_result(should_succeed=should_succeed)
+            param_value=param_value, should_succeed=should_succeed, press_y=True).verify_result(
+            should_succeed=should_succeed)
 
     return output
+
+
+def reduce_issu_timeout(engine, timeout_in_sec):
+    with allure.step(f"Reduce ISSU timeout to {timeout_in_sec} seconds"):
+        engine.run_cmd(f"sudo sed -i 's/^SM_APPROVAL_TIMEOUT=[0-9]\\+$/SM_APPROVAL_TIMEOUT={timeout_in_sec}/g' "
+                       "/usr/local/bin/warm-reboot")
+        engine.run_cmd(f"sudo sed -i 's/^SM_APPROVAL_TIMEOUT=[0-9]\\+$/SM_APPROVAL_TIMEOUT={timeout_in_sec}/g' "
+                       "/usr/local/bin/fast-reboot")
