@@ -20,6 +20,7 @@ warm_reboot_iterations_number = os.environ.get('warm_reboot_iterations_number', 
 cold_reboot_executors = os.environ.get('cold_reboot_executors')
 cold_reboot_iterations_number = os.environ.get('cold_reboot_iterations_number', 1)
 base_version = os.environ.get('base_version')
+upgrade_testcase = os.environ.get('upgrade_testcase')
 fast_base_version = os.environ.get('fast_base_version')
 if not fast_base_version:
     fast_base_version = base_version
@@ -121,7 +122,7 @@ CASES_FILE_REBOOT_WITH_UPGRADE_TESTCASE_TEMPLATE = '''<case>
     <tout> 5400 </tout>
     <cmd>
          <params>
-             <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\\\'--neighbor_type [[conf:extra_info.neighbor_type]] --log-cli-level debug --downgrade_type=onie --show-capture=no -ra --showlocals --upgrade_type={test_type} --base_image_list={base_versions_list} --target_image_list={target_version} --restore_to_image={target_version} --clean-alluredir --alluredir=/tmp/allure-results --allure_server_project_id=\\\"\\\" --allure_server_addr=\\\"10.215.11.120\\\"\\\'" --test-scripts upgrade_path/test_upgrade_path.py::test_upgrade_path </static_args>
+             <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\\\'--neighbor_type [[conf:extra_info.neighbor_type]] --log-cli-level debug --downgrade_type=onie --show-capture=no -ra --showlocals --upgrade_type={test_type} --base_image_list={base_versions_list} --target_image_list={target_version} --restore_to_image={target_version} --clean-alluredir --alluredir=/tmp/allure-results --allure_server_project_id=\\\"\\\" --allure_server_addr=\\\"10.215.11.120\\\"\\\'" --test-scripts upgrade_path/test_upgrade_path.py::{upgrade_testcase} </static_args>
          </params>
     </cmd>
 </case>
@@ -168,7 +169,8 @@ def prepare_cases_files(reboot_type_iterations_dict, reboot_type_base_ver_images
                     file_data += CASES_FILE_REBOOT_WITH_UPGRADE_TESTCASE_TEMPLATE.format(test_name=test_name,
                                                                                          test_type=r_type,
                                                                                          base_versions_list=base_ver,
-                                                                                         target_version=target_ver)
+                                                                                         target_version=target_ver,
+                                                                                         upgrade_testcase=upgrade_testcase)
             else:
                 file_data += CASES_FILE_REBOOT_TESTCASE_TEMPLATE.format(test_name=test_name, test_type=r_type)
         file_data += CASES_FILE_END_LINE_TEMPLATE
