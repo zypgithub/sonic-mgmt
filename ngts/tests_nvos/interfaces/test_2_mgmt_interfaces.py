@@ -83,7 +83,7 @@ def test_2_mgmt_snmp(engines, topology_obj):
     with allure.step('Verify fields and values after snmp enabled'):
         listening_address_output = OutputParsingTool.parse_json_str_to_dictionary(
             system.snmp_server.listening_address.show()).get_returned_value()
-        ValidationTool.compare_values(listening_address_output, {'all': {'port': 161, 'vrf': ''}}).verify_result()
+        ValidationTool.compare_values(listening_address_output, {'all': {'port': 161}}).verify_result()
 
     with allure.step("Check snmpget with listening on 2 mgmt interfaces ip address"):
         for ip in setup_mgmt_ips:

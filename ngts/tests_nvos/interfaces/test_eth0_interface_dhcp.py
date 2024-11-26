@@ -601,6 +601,4 @@ def wait_for_mtu_changed(port_obj, mtu_to_verify):
 def wait_for_hostname_changed(system, dhcp_hostname):
     with (allure.step("Waiting for system hostname changed to {}".format(dhcp_hostname))):
         system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
-        assert dhcp_hostname in [system_output[SystemConsts.HOSTNAME],
-                                 f'{system_output[SystemConsts.HOSTNAME]}-{SystemConsts.MGMT2_HOSTNAME}'], \
-            "hostname wasn't changed"
+        assert dhcp_hostname in system_output[SystemConsts.HOSTNAME], f'expected hostname - {dhcp_hostname} not in system output - {system_output[SystemConsts.HOSTNAME]}'

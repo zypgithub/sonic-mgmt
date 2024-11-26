@@ -304,4 +304,10 @@ tests_nvos/system/clock/test_system_clock.py::test_change_valid_datetime_ntp_on_
   skip:
     reason: "Skip until fixed because this failure changes the system time which causes other tests to fail"
 
+tests_nvos/system/test_system_snmp.py::test_system_snmp_negative:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4177946"
+    conditions:
+      - https://redmine.mellanox.com/issues/4177946
+
 ########################## NVOS IGNORE END ##########################
