@@ -42,7 +42,6 @@ class DvsGeneralCli(GeneralCliCommon):
             self.apply_mount()
             self.set_aliases()
             fw_version = self.get_fw_version_from_sdk(sdk_version)
-            sdk_version = self.modify_sdk_version_name(sdk_version)
             logger.info(f"Starting installation of SDK version: {sdk_version} and FW version: {fw_version}")
             install_cmd = "sdk_install -v {} -di && fw_burn -v {} -f --ocr".format(sdk_version, fw_version)
             self.engine.run_cmd(install_cmd, validate=True)
@@ -80,13 +79,6 @@ class DvsGeneralCli(GeneralCliCommon):
         clean_switch_alias_cmd = f"alias clean_switch={PerfConsts.CLEAN_SWITCH_PATH}"
         fw_burn_alias_cmd = f"alias fw_burn={PerfConsts.FW_BURN_PATH}"
         self.engine.run_cmd_set([sdk_install_alias_cmd, clean_switch_alias_cmd, fw_burn_alias_cmd])
-
-    def modify_sdk_version_name(self, sdk_version):
-        """
-        Modify the sdk version name to match the sdk installation script format
-        """
-        fixed_sdk_version_name = sdk_version.replace("sx_sdk_eth-", "")
-        return fixed_sdk_version_name
 
     def is_dut_supports_image(self, base_version_url, dut_name, cli_type) -> bool:
         """
