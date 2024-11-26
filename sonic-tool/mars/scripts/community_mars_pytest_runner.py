@@ -219,6 +219,8 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
 
         if self.run_test_on_dpu_only == "True":
             # dut_name will be replaced by dpu host name. It is to run the tests on dup for smartswitch
+            random.seed(self.session_id)
+            self.Logger.info(f"session_id :{self.session_id}")
             self.dut_name = random.choice(dpu_duts)
             self.Logger.info(f"the dpu dut is  :{self.dut_name}")
 
