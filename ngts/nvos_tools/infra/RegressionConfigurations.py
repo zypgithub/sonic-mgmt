@@ -33,8 +33,8 @@ class Configurations:
     # List of all ports connected to traffic servers
     traffic_ports = {
         # Black Mamba
-        "10.7.148.112": ['sw38p1', 'sw53p1'],
-        "10.7.148.113": ['sw38p1', 'sw53p1'],
+        "10.7.148.112": ['sw53p1'],
+        "10.7.148.113": ['sw53p1'],
 
         # Crocodile
         "10.7.148.94": ['swA1p1', 'swA2p1'],

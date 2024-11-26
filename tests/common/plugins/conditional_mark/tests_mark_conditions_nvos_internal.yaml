@@ -279,13 +279,6 @@ tests_nvos/interfaces/test_ib0_interface_state.py::test_ib0_interface_state_unse
     conditions:
       - https://redmine.mellanox.com/issues/4077016
 
-tests_nvos/interfaces/test_ib_interface_configuration.py::test_ib_interface_vls:
-  skip:
-    reason: "#4077966 [Functional] [black mamba] [ib] [xdr] | if we set op-vls to VL0-VL3 link goes down and never goes back up, even after resetting op-vls"
-    conditions:
-      - "'mamba' in testbed"
-      - https://redmine.mellanox.com/issues/4077966
-
 tests_nvos/system/test_techsupport_feature.py::test_techsupport_bmc_badflow:
   skip:
     reason: "Testcase skipped on non Juliet systems, only Juliet has BMC"

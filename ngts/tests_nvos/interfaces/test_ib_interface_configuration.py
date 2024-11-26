@@ -66,7 +66,7 @@ def test_ib_interface_mtu(engines, players, interfaces, start_sm, test_api):
     with allure.step("Set mtu '{}' for port '{}".format(selected_mtu_value, selected_port.name)):
         selected_port.interface.link.set(op_param_name='mtu', op_param_value=selected_mtu_value,
                                          apply=True, ask_for_confirmation=True).verify_result()
-        sleep(2)
+        sleep(5)
 
         with allure.step("Verify the mtu value updated to: {}".format(selected_mtu_value)):
             wait_for_port_to_become_active(selected_port)
@@ -119,6 +119,8 @@ def test_ib_interface_speed(engines, players, interfaces, devices, start_sm, tes
     10.Send traffic -> Verify the traffic passes successfully
     """
     TestToolkit.tested_api = test_api
+    if len(devices.dut.supported_ib_speeds) <= 1:
+        pytest.skip(f"{type(devices.dut).__name__} has only one supported ib-speed: {devices.dut.supported_ib_speeds[0]}")
 
     with allure.step("Get a random active port"):
         selected_port = Tools.RandomizationTool.get_random_traffic_port().get_returned_value()[0]

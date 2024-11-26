@@ -625,7 +625,7 @@ class BlackMambaSwitch(IbSwitch):
 
     def _init_ib_speeds(self):
         super()._init_ib_speeds()
-        self.supported_ib_speeds = ("sdr", "hdr", "ndr", "xdr")
+        self.supported_ib_speeds = ("xdr",)
 
     def _relevant_config_filename_by_version(self, version: str) -> str:
         return 'nvos_config_xdr.yml'
