@@ -13,7 +13,7 @@ import glob
 import pytest
 
 from tests.common.testbed import TestbedInfo
-from .issue import check_issues, DEFAULT_CONDITIONS_FILE
+from .issue import check_issues, DEFAULT_CONDITIONS_FILE, check_if_current_ver_include_bug_fix
 from tests.common.utilities import get_duts_from_host_pattern
 
 logger = logging.getLogger(__name__)
@@ -439,7 +439,7 @@ def find_longest_matches(nodeid, conditions):
     return longest_matches
 
 
-def update_issue_status(condition_str, session):
+def update_issue_status(condition_str, session, basic_facts):
     """Replace issue URL with 'True' or 'False' based on its active state.
 
     If there is an issue URL is found, this function will try to query state of the issue and replace the URL
@@ -471,6 +471,11 @@ def update_issue_status(condition_str, session):
     for issue_url in issues:
         if issue_url in issue_status_cache:
             replace_str = str(issue_status_cache[issue_url])
+            if replace_str == "True" and "redmine" in issue_url:
+                # When ticket status is active, check if current version includes the bug fix
+                if check_if_current_ver_include_bug_fix(issue_url, basic_facts):
+                    logger.info("Current image includes the bug fix, so update the bug status to inactive status")
+                    replace_str = "False"
         else:
             # Consider the issue as active anyway if unable to get issue state
             replace_str = 'True'
@@ -498,7 +503,7 @@ def evaluate_condition(dynamic_update_skip_reason, mark_details, condition, basi
     if condition is None or condition.strip() == '':
         return True    # Empty condition item will be evaluated as True. Equivalent to be ignored.
 
-    condition_str = update_issue_status(condition, session)
+    condition_str = update_issue_status(condition, session, basic_facts)
     try:
         condition_result = bool(eval(condition_str, basic_facts))
         if condition_result and dynamic_update_skip_reason:

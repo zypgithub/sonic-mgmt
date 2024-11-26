@@ -11,10 +11,13 @@ import glob
 import json
 import datetime as dt
 import yaml
+import time
 
 from abc import ABCMeta, abstractmethod
 from perscache import Cache
-from infra.tools.redmine.redmine_api import get_issues_active_status
+from infra.tools.redmine.redmine_api import get_issues_active_status, get_issue_list_info
+from ngts.helpers.bug_handler.bug_handler_helper import is_current_ver_newer_or_equal_than_fixed_ver
+
 
 logger = logging.getLogger(__name__)
 cache = Cache()
@@ -54,8 +57,28 @@ def get_conditions_redmine_issues_status():
     conditions = get_conditions_list()
     ignore_list_string = json.dumps(conditions)
     all_redmine_issues = re.findall(r"https:\/\/redmine\.mellanox\.com\/issues\/(\d+)", ignore_list_string)
+    all_redmine_issues = list(set(all_redmine_issues))
     issues_active_status_dict = get_issues_active_status(all_redmine_issues)
     return issues_active_status_dict
+
+
+@cache(ttl=dt.timedelta(hours=36))
+def get_conditions_redmine_active_issues_fixed_version():
+    logger.info('Reading Redmine Issues information from API')
+
+    issues_active_status_dict = get_conditions_redmine_issues_status()
+    active_issue_list = [issue for issue, status in issues_active_status_dict.items() if status]
+    issues_info_dict = get_issue_list_info(active_issue_list, limit=len(active_issue_list) + 1)
+
+    active_issues_fixed_version_dict = dict()
+    for issue, info in issues_info_dict.items():
+        for data in info.get('custom_fields'):
+            if data.get("name") == 'Fixed in Version':
+                active_issues_fixed_version_dict[issue] = data.get("value", '')
+        if issue not in active_issues_fixed_version_dict:
+            active_issues_fixed_version_dict[issue] = ''
+
+    return active_issues_fixed_version_dict
 
 
 class IssueCheckerBase(six.with_metaclass(ABCMeta, object)):
@@ -90,6 +113,28 @@ class RedmineIssueChecker(IssueCheckerBase):
         issue_id = self.url.split('/issues/')[1]
         is_issue_active = redmine_issues_status[str(issue_id)]
         return is_issue_active
+
+
+def check_if_current_ver_include_bug_fix(issue_url, basic_facts):
+    start_time = time.perf_counter()
+    current_ver_include_bug_fix = False
+    issue_id = int(re.match(r"https:\/\/redmine\.mellanox\.com\/issues\/(\d+)", issue_url)[1])
+
+    active_issues_fixed_version_dict = get_conditions_redmine_active_issues_fixed_version()
+    fixed_in_version = active_issues_fixed_version_dict.get(issue_id, '')
+    fixed_in_version = '' if fixed_in_version is None else fixed_in_version
+    logger.info(f"Fixed ver is:{fixed_in_version}")
+
+    branch = basic_facts.get('branch', 'none')
+    cur_version = basic_facts.get('build_version', '')
+    if branch in fixed_in_version:
+        if is_current_ver_newer_or_equal_than_fixed_ver(branch, cur_version, fixed_in_version):
+            logger.info(f"The current image:{cur_version} has included the bug fix {issue_url}."
+                        f" Bug fix start form :{fixed_in_version}")
+            current_ver_include_bug_fix = True
+    end_time = time.perf_counter()
+    logger.info(f"Execution Time: {end_time - start_time} seconds")
+    return current_ver_include_bug_fix
 
 
 class GitHubIssueChecker(IssueCheckerBase):
