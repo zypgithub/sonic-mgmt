@@ -21,6 +21,10 @@ from ngts.nvos_tools.system.Spdm import SPDMComponents
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts
 from ngts.tools.test_utils.nvos_general_utils import get_version_info
+from ngts.tools.test_utils.nvos_config_utils import clear_conf
+from ngts.tools.test_utils import allure_utils as allure
+from infra.tools.linux_tools.linux_tools import scp_file
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 
 logger = logging.getLogger()
 
@@ -29,8 +33,8 @@ class IbSwitch(BaseSwitch):
     ErotFirmwareImagesTestConsts = namedtuple('ErotFirmwareImagesTestConsts',
                                               ('previous_image_path', 'current_image_path', 'version_names'))
 
-    def __init__(self, asic_amount, switch_type=NvosConst.IB_SWITCH_TYPE):
-        super().__init__(switch_type=switch_type, asic_amount=asic_amount)
+    def __init__(self, asic_amount, switch_type=NvosConst.IB_SWITCH_TYPE, switch_class=NvosConst.IB_SWITCH_TYPE):
+        super().__init__(switch_type=switch_type, asic_amount=asic_amount, switch_class=switch_class)
         self.documents_path = None
         self.documents_files = None
         self._init_sensors_dict()
@@ -85,6 +89,50 @@ class IbSwitch(BaseSwitch):
                                                    value[IbInterfaceConsts.LINK][IbInterfaceConsts.DHCP_STATE].keys())
 
         return ResultObj(False, err_msg) if err_msg else ResultObj(True, "", "")
+
+    def clear_config(self, dut_engine, markers=None, default_yml_path=None, root_dir=""):
+        clear_conf(dut_engine, self, default_yml_path, root_dir)
+
+    def handle_exception(self, dut_engine):
+        try:
+            logging.info("Handle ib exception")
+            dut_engine.run_cmd("docker ps")
+            dut_engine.run_cmd("systemctl --type=service")
+            dut_engine.run_cmd("nv show system version")
+        except BaseException as err:
+            logging.warning(err)
+
+    def get_default_config_yml(self, engine, root_dir):
+        try:
+            with allure.step("Get default yml file"):
+                default_config_name = NvosConst.DEFAULT_CONFIG_FILE_NAME
+                path_to_config_ymls = f"{root_dir}/{NvosConst.DEFAULT_CONFIG_PATH}"
+
+                for file_name in os.listdir(path_to_config_ymls):
+                    if self.switch_class in file_name:
+                        default_config_name = file_name
+                    if TestToolkit.dut_eth0_ip in file_name:
+                        default_config_name = file_name
+                        break
+
+            with allure.step(f"Copy {default_config_name} to the switch"):
+                scp_file(player=engine,
+                         src_path=f"{path_to_config_ymls}{default_config_name}",
+                         dst_path=NvosConst.PATH_TO_TMP_ON_DUT,
+                         download_from_remote=False, print_output=True)
+
+            tmp_file_path = f"{NvosConst.PATH_TO_TMP_ON_DUT}/{default_config_name}"
+            yml_file_path = f"{NvosConst.PATH_TO_CONFIG_FILES_ON_DUT}/{default_config_name}"
+
+            with allure.step(f"Copy {tmp_file_path} to {yml_file_path}"):
+                engine.run_cmd(f"sudo cp {tmp_file_path} {yml_file_path}")
+
+            logging.info(f"Using default yml file: {yml_file_path}")
+            return yml_file_path
+
+        except BaseException as ex:
+            print(f"SCP command failed - error output: {ex}")
+            return ""
 
     def _init_ib_speeds(self):
         self.invalid_ib_speeds = {'qdr': '40G'}
@@ -424,7 +472,7 @@ class IbSwitch(BaseSwitch):
 class GorillaSwitch(IbSwitch):
 
     def __init__(self, asic_amount=1):
-        super().__init__(asic_amount=asic_amount)
+        super().__init__(asic_amount=asic_amount, switch_class=NvosConst.GORILLA_SWITCH)
 
     def _init_constants(self):
         IbSwitch._init_constants(self)
@@ -527,7 +575,7 @@ class GorillaSwitchBF3(GorillaSwitch):
 class BlackMambaSwitch(IbSwitch):
 
     def __init__(self):
-        super().__init__(asic_amount=4)
+        super().__init__(asic_amount=4, switch_class=NvosConst.BLACK_MAMBA_SWITCH)
 
     def _init_constants(self):
         self.asic_amount = 4
@@ -642,7 +690,7 @@ class BlackMambaSwitch(IbSwitch):
 class CrocodileSwitch(IbSwitch):
 
     def __init__(self):
-        super().__init__(asic_amount=2)
+        super().__init__(asic_amount=2, switch_class=NvosConst.CROCODILE_SWITCH)
 
     def _init_constants(self):
         super()._init_constants()
@@ -802,14 +850,15 @@ class CrocodileSwitch(IbSwitch):
 class CrocodileSimxSwitch(IbSwitch):
 
     def __init__(self):
-        super().__init__(asic_amount=1)
+        super().__init__(asic_amount=1, switch_class=NvosConst.CROCODILE_SWITCH)
 
 
 # -------------------------- NvLink Switch ----------------------------
 class NvLinkSwitch(IbSwitch):
 
     def __init__(self, asic_amount):
-        super().__init__(switch_type=NvosConst.NVL_SWITCH_TYPE, asic_amount=asic_amount)
+        super().__init__(switch_type=NvosConst.NVL_SWITCH_TYPE, asic_amount=asic_amount,
+                         switch_class=NvosConst.JULIET_SWITCH)
 
     def _init_constants(self):
         super()._init_constants()
@@ -820,6 +869,7 @@ class NvLinkSwitch(IbSwitch):
         self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
             "x86_64-mlnx_mqm9700-r0")
         self.platform_file_path = MultiPlanarConsts.PLATFORM_FILE_FULL_PATH.format("x86_64-mlnx_mqm9700-r0")
+        self.unset_all_command += "; nv unset cluster"
 
     def get_mgmt_ports(self) -> List[str]:
         return self.mgmt_ports

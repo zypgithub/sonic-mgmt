@@ -22,7 +22,7 @@ logger = logging.getLogger()
 # -------------------------- Base Device ----------------------------
 class BaseDevice(ABC):
 
-    def __init__(self, switch_type="", asic_amount=1):
+    def __init__(self, switch_type="", asic_amount=1, switch_class=""):
         self.default_password = ""
         self.default_username = ""
         self.prev_default_password = ""
@@ -30,6 +30,7 @@ class BaseDevice(ABC):
         self.dependent_dockers = []
         self.asic_amount = asic_amount
         self.switch_type = switch_type
+        self.switch_class = switch_class
         self.cli_coverage_path = ""
         self.cli_coverage_project_name = ""
         self.cur_mgmt_port_name = ''
@@ -88,6 +89,7 @@ class BaseDevice(ABC):
         self.has_bmc = False
         self.supported_commands = []
         self.supports_tpm_testing = True
+        self.unset_all_command = "nv unset acl; nv unset interface; nv unset platform; nv unset system"
 
     def _init_fan_list(self):
         self.fan_list = []
@@ -131,6 +133,12 @@ class BaseDevice(ABC):
     def init_cli_coverage_prop(self, cli_coverage_project_name):
         self.cli_coverage_project_name = cli_coverage_project_name
         self.cli_coverage_path = f"/auto/sw/tools/comet/{self.cli_coverage_project_name}/"
+
+    def handle_exception(self, dut_engine):
+        logging.info("Handle exception")
+
+    def clear_config(self, dut_engine, markers=None, default_yml_path=None):
+        pass
 
     @abstractmethod
     def get_ib_ports_num(self):
@@ -452,3 +460,6 @@ class BaseSwitch(BaseDevice):
     def _init_fan_direction_dir(self):
         super()._init_fan_direction_dir()
         self.fan_direction_dir = "/var/run/hw-management/thermal"
+
+    def get_default_config_yml(self, engine, root_dir):
+        return ""

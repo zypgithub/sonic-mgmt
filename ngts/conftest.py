@@ -296,7 +296,7 @@ def topology_obj(setup_name, request):
     """
     with allure.step('Creating topology object'):
         cli_type = target_cli_type(request)
-        topology = get_topology_by_setup_name_and_aliases(setup_name, slow_cli=False, override_type=cli_type)
+        topology = get_topology_from_noga(request.session, slow_cli=False, override_type=cli_type)
 
     with allure.step("Update branch in topology according to the current SONiC branch"):
         branch = request.session.config.cache.get(PytestConst.CUSTOM_TEST_SKIP_BRANCH_NAME, None)

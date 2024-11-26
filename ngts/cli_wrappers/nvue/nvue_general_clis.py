@@ -250,8 +250,8 @@ class NvueGeneralCli(SonicGeneralCliDefault):
         :param ask_for_confirmation: True or False
         """
         if verify_execution:
-            SendCommandTool.execute_command(NvueGeneralCli._apply_config, engine, ask_for_confirmation, option,
-                                            validate_apply_message, rev_id, skip_no_config_diff_err).verify_result()
+            return SendCommandTool.execute_command(NvueGeneralCli._apply_config, engine, ask_for_confirmation, option,
+                                                   validate_apply_message, rev_id, skip_no_config_diff_err).verify_result()
         else:
             return NvueGeneralCli._apply_config(engine, ask_for_confirmation, option, validate_apply_message, rev_id, skip_no_config_diff_err)
 

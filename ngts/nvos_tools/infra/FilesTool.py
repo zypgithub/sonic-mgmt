@@ -27,6 +27,11 @@ class FilesTool:
         return re.findall(reg, output)
 
     @staticmethod
+    def file_exists(engine, file_path):
+        output = engine.run_cmd(f'ls {file_path}')
+        return "No such file or directory" not in output
+
+    @staticmethod
     def validate_expected_files(engine, folder_path, expected_files, should_succeed=True):
         """
         :param engine:

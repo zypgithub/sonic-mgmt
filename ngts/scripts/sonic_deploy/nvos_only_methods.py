@@ -24,8 +24,7 @@ from ngts.tests_nvos.general.post_upgrade_switch.install_steps_timer import Inst
 from ngts.tests_nvos.general.security.bmc.bmc_creds.constants import BmcUsers
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tools.test_utils import allure_utils as allure
-from ngts.tools.test_utils.nvos_config_utils import clear_conf
-from ngts.tools.test_utils.nvos_general_utils import set_base_configurations
+from ngts.tools.test_utils.nvos_config_utils import clear_conf, set_base_configurations
 
 logger = logging.getLogger()
 

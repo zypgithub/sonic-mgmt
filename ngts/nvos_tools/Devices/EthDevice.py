@@ -7,6 +7,7 @@ from ngts.nvos_constants.constants_nvos import NvosConst, FansConsts, PlatformCo
 from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.ValidationTool import ExpectedString
+from ngts.tools.test_utils.nvos_config_utils import clear_cl_conf
 from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts
 
 logger = logging.getLogger()
@@ -50,6 +51,9 @@ class EthSwitch(BaseSwitch):
         }
         res = [f'{title.upper()}:\n{output}\n' for title, output in outputs.items()]
         return '\n'.join(res)
+
+    def clear_config(self, dut_engine, markers=None, default_yml_path=None):
+        clear_cl_conf(dut_engine, markers, self)
 
     def _init_constants(self):
         super()._init_constants()

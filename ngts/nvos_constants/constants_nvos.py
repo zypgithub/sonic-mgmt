@@ -61,9 +61,19 @@ class CumulusConsts:
     ETH_SWITCH_TYPE = "ETH"
 
 
+class TestConsts:
+    PASSED = "passed"
+    FAILED = "failed"
+    SKIPPED = "skipped"
+
+
 class NvosConst:
     IB_SWITCH_TYPE = "IB"
     NVL_SWITCH_TYPE = "NVL"
+    JULIET_SWITCH = "JULIET"
+    CROCODILE_SWITCH = "CROCODILE"
+    BLACK_MAMBA_SWITCH = "BLACK_MAMBA"
+    GORILLA_SWITCH = "GORILLA"
     QTM2 = "Quantum2"
     QTM3 = "Quantum3"
     NVL5 = "NVLink-5 switch"
@@ -81,6 +91,11 @@ class NvosConst:
     DISABLED = 'disabled'
     NOT_AVAILABLE = 'N/A'
     ALL = 'all'
+    DEFAULT_CONFIG_FILE_NAME = "nvos_default_config_IB.yml"
+    DEFAULT_CONFIG_PATH = "/tools/test_utils/nvos_resources/clear_config/"
+    SCP_PATH_SWITCH = 'scp {path} {username}@{ip}:{dest_path}'
+    PATH_TO_CONFIG_FILES_ON_DUT = "/host/config_files"
+    PATH_TO_TMP_ON_DUT = "/tmp/"
 
     DOCKERS_LIST = ['pmon', 'syncd-ibv0', 'swss-ibv0', 'database']
     DOCKER_PER_ASIC_LIST = ['syncd-ibv0', 'swss-ibv0', 'database']
@@ -328,6 +343,7 @@ class ConfState:
     OPERATIONAL = 'operational'
     APPLIED = 'applied'
     STARTUP = 'startup'
+    SAVED = 'saved'
 
 
 class OpenApiReqType:

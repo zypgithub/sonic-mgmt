@@ -177,7 +177,7 @@ def update_sys_path_by_community_plugins_path():
         sys.path.append(full_path_to_community_plugins)
 
 
-def get_topology_from_noga(session, force_update=False):
+def get_topology_from_noga(session, slow_cli=False, override_type=False, force_update=False):
     """
     Access Noga to get topology according to provided setup_name.
     Topology object saved in session config
@@ -185,7 +185,8 @@ def get_topology_from_noga(session, force_update=False):
     try:
         if force_update or not hasattr(session.config, "topology_obj") or not session.config.topology_obj:
             session.config.topology_obj = get_topology_by_setup_name_and_aliases(session.config.option.setup_name,
-                                                                                 slow_cli=False)
+                                                                                 slow_cli=slow_cli,
+                                                                                 override_type=override_type)
         return session.config.topology_obj
     except BaseException as ex:
         logger.error("Failed to get topology from noga")

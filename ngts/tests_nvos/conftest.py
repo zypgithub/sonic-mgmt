@@ -1,8 +1,10 @@
 import concurrent.futures
 import datetime
 import logging
+import os
 import random
 import smtplib
+import subprocess
 import time
 from email.mime.text import MIMEText
 from typing import Dict
@@ -21,8 +23,7 @@ from ngts.cli_wrappers.linux.linux_general_clis import LinuxGeneralCli
 from ngts.cli_wrappers.nvue.nvue_base_clis import NvueBaseCli
 from ngts.cli_wrappers.openapi.openapi_command_builder import OpenApiRequest
 from ngts.constants.constants import DbConstants, CliType, DebugKernelConsts, InfraConst
-from ngts.nvos_constants.constants_nvos import ApiType, OperationTimeConsts, OutputFormat
-from ngts.nvos_constants.constants_nvos import NvosConst
+from ngts.nvos_constants.constants_nvos import ApiType, OperationTimeConsts, OutputFormat, NvosConst, TestConsts
 from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
 from ngts.nvos_tools.Devices.DeviceFactory import DeviceFactory
 from ngts.nvos_tools.Devices.EthDevice import EthSwitch
@@ -45,9 +46,7 @@ from ngts.scripts.code_coverage.code_coverage_consts import NvosConsts
 from ngts.scripts.code_coverage.test_code_coverage import extract_python_coverage_for_nvos
 from ngts.tests_nvos.helpers.pytest_helpers import is_cur_test_has_marker
 from ngts.tools.test_utils import allure_utils as allure
-from ngts.tools.test_utils.nvos_config_utils import clear_conf, clear_cl_conf
-from ngts.tools.test_utils.nvos_general_utils import wait_for_ldap_nvued_restart_workaround, set_base_configurations, \
-    set_base_configurations_cl
+from ngts.tools.test_utils.nvos_general_utils import wait_for_ldap_nvued_restart_workaround
 
 logger = logging.getLogger()
 
@@ -224,6 +223,7 @@ def update_engine_dut_mgmt_port(topology, dut_engine: LinuxSshEngine, dut_device
     mgmt_ports = dut_device.get_mgmt_ports()
 
     dut_device.update_mgmt_port(mgmt_ports[0], dut_engine.ip)
+    TestToolkit.update_dut_eth0_ip(dut_engine.ip)
 
     if not mgmt_ports or len(mgmt_ports) == 1:
         logger.info('keep original dut engine ip')
@@ -388,22 +388,6 @@ def check_switch_capacity(engine):
         logger.warning(str(ex))
 
 
-@pytest.fixture(scope='function', autouse=True)
-def log_test_wrapper(request, engines):
-    pytest.item = request.node
-    test_name = request.module.__name__
-    pytest.s_time = time.time()
-    logging.info(' ---------------- TEST STARTED - {test_name} ---------------- '.format(test_name=test_name))
-    if 'no_log_test_wrapper' in request.keywords:
-        return
-    try:
-        SendCommandTool.execute_command(LinuxGeneralCli(engines.dut).clear_history)
-    except BaseException as exc:
-        logger.error(" the command 'history -c' failed and this is the exception info : {}".format(exc))
-        # should not fail the test
-        pass
-
-
 @pytest.fixture(scope='session')
 def interfaces(topology_obj):
     interfaces_data = DottedDict()
@@ -469,70 +453,78 @@ def clear_security_config(item):
         #         TestToolkit.engines.dut.run_cmd(f'sudo rm -rf /home/{username}')
 
 
-def clear_config(markers=None):
-    logging.info("Clear config")
+@pytest.fixture(scope="session")
+def root_dir(request):
+    return request.config.rootdir
+
+
+@pytest.fixture(scope="session")
+def default_config_yml_path(engines, devices, root_dir):
+    return devices.dut.get_default_config_yml(engines.dut, root_dir)
+
+
+def pytest_exception_interact(report):
+    logging.error(f'----------- The test failed - an exception occurred: ----------- \n{report.longreprtext}')
+    TestToolkit.devices.dut.handle_exception(TestToolkit.engines.dut)
+
+
+@pytest.fixture(scope="function")
+def run_cli_coverage_flow(clear_config, request):
+    yield
+
     try:
-        TestToolkit.update_apis(ApiType.NVUE)
-        if isinstance(TestToolkit.devices.dut, EthSwitch):
-            clear_cl_conf(TestToolkit.engines.dut, markers, set_base_configurations_cl, TestToolkit.devices.dut)
-        else:
-            clear_conf(TestToolkit.engines.dut, markers, set_base_configurations, TestToolkit.devices.dut)
+        item = request.node
+        logging.info('------- Running CLI coverage -------')
+        run_cli_coverage(item, item.keywords)
+    except BaseException as err:
+        logging.warning(f"CLI coverage flow failed- {err}")
+
+
+@pytest.fixture(scope="function", autouse=True)
+def list_of_executed_commands(engines, run_cli_coverage_flow, request):
+    pytest.s_time = time.time()
+    logging.info(f'------- TEST STARTED - {request.node.name} -------')
+    if 'no_log_test_wrapper' not in request.keywords:
+        try:
+            SendCommandTool.execute_command(LinuxGeneralCli(engines.dut).clear_history)
+        except BaseException as exc:
+            logger.info(f"'history -c' failed - {exc}")
+
+    yield
+
+    try:
+        with allure.step("List of executed commands"):
+            commands_list = SendCommandTool.execute_command(
+                LinuxGeneralCli(engines.dut).get_history).get_returned_value()
+            allure.attach("List of commands", commands_list)
+    except BaseException as err:
+        logging.warning(f"Failed to get list of executed commands - {err}")
+
+
+@pytest.fixture(scope="function")
+def clear_config(request, devices, engines, default_config_yml_path, root_dir, markers=None):
+    yield
+
+    TestToolkit.tested_api = ApiType.NVUE
+    test_result = request.node.rep_call.outcome
+    logging.info(f"------- Test '{request.node.name}' {test_result} -------")
+
+    if test_result == TestConsts.SKIPPED:
+        pass
+
+    try:
+        with allure.step(f"Clear config for test {request.node.name}"):
+            """ if hasattr(item, 'active_remote_aaa_server') and item.active_remote_aaa_server:
+                 clear_security_config(item)
+            if hasattr(item, 'security_pexpect_ssh_session') and item.security_pexpect_ssh_session:
+                security_cleanup(item.security_pexpect_ssh_session)"""
+            devices.dut.clear_config(engines.dut, markers, default_config_yml_path, root_dir)
     except Exception as err:
         logging.warning("Failed to clear config:" + str(err))
     finally:
         logging.info('Clear global OpenApi changeset and payload')
         OpenApiRequest.clear_changeset_and_payload()
         OpenApiRequest.update_client_certs_info(None)
-
-
-def pytest_exception_interact(report):
-    with allure.step("Handle exception"):
-        if TestToolkit and hasattr(TestToolkit, 'engines') and TestToolkit.engines and TestToolkit.engines.dut:
-            if isinstance(TestToolkit.devices.dut, EthSwitch):
-                eth_handle_exception()
-            else:
-                ib_handle_exception()
-
-        if pytest and hasattr(pytest, 'item') and pytest.item:
-            save_results_and_clear_after_test(pytest.item)
-        logging.error(f'----------- The test failed - an exception occurred: ----------- \n{report.longreprtext}')
-
-
-def ib_handle_exception():
-    try:
-        logging.info("Handle ib exception")
-        TestToolkit.engines.dut.run_cmd("docker ps")
-        TestToolkit.engines.dut.run_cmd("systemctl --type=service")
-    except BaseException as err:
-        logging.warning(err)
-
-
-def eth_handle_exception():
-    logging.info("Handle eth exception")
-
-
-@pytest.hookimpl(trylast=True)
-def pytest_runtest_call(item):
-    save_results_and_clear_after_test(item)
-
-
-def save_results_and_clear_after_test(item):
-    markers = item.keywords._markers
-    try:
-        logging.info(' ---------------- The test completed successfully ---------------- ')
-        run_cli_coverage(item, markers)
-    except KeyboardInterrupt:
-        raise
-    except Exception as err:
-        logging.exception(' ---------------- The test failed - an exception occurred: ---------------- ')
-        raise AssertionError(err)
-    finally:
-        with allure.step('Test done - Clear configuration'):
-            # if hasattr(item, 'active_remote_aaa_server') and item.active_remote_aaa_server:
-            #     clear_security_config(item)
-            if hasattr(item, 'security_pexpect_ssh_session') and item.security_pexpect_ssh_session:
-                security_cleanup(item.security_pexpect_ssh_session)
-            clear_config(markers)
 
 
 @pytest.fixture(scope='function', autouse=True)

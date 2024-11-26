@@ -1,92 +1,17 @@
 import fnmatch
-import logging
 import os
 import re
 import time
 from contextlib import contextmanager
 from typing import Tuple
+import logging
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
-from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from ngts.constants.constants import LinuxConsts
-from ngts.nvos_constants.constants_nvos import ApiType, DiskConsts, TopologyConsts, NvosConst, SystemConsts
+from ngts.nvos_constants.constants_nvos import DiskConsts, TopologyConsts, NvosConst, SystemConsts
 from ngts.nvos_tools.infra.DiskTool import DiskTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.nvos_tools.infra.RegressionConfigurations import RegressionConfigurations
-from ngts.nvos_tools.system.System import System
-from ngts.tests_nvos.general.security.authentication_restrictions.constants import RestrictionsConsts
-from ngts.tests_nvos.system.clock.ClockConsts import ClockConsts
 from ngts.tools.test_utils import allure_utils as allure
-
-
-def set_base_configurations_cl(dut_engine, timezone=LinuxConsts.ETC_UTC_TIMEZONE, apply=False, save_conf=False):
-    """
-    @summary: Set base configurations.
-        Used in:
-            - nvos post installation steps
-            - nvos clear config (post test) function
-    """
-    logging.info('Set base configurations')
-    orig_api = TestToolkit.tested_api
-
-    try:
-        logging.info('Change tested api to NVUE')
-        TestToolkit.tested_api = ApiType.NVUE
-
-        logging.info(f'Set switch timezone: {timezone}')
-        system = System()
-        system.set(ClockConsts.TIMEZONE, LinuxConsts.ETC_UTC_TIMEZONE, dut_engine=dut_engine).verify_result()
-        system.api.set(SystemConsts.STATE, NvosConst.ENABLED, dut_engine=dut_engine).verify_result()
-
-        if apply:
-            logging.info('Apply configurations')
-            NvueGeneralCli.apply_config(engine=dut_engine, option='--assume-yes')
-
-        if save_conf:
-            logging.info('Save configurations')
-            NvueGeneralCli.save_config(dut_engine)
-    finally:
-        logging.info(f'Change tested api back to {orig_api}')
-        TestToolkit.tested_api = orig_api
-
-
-def set_base_configurations(dut_engine, timezone=LinuxConsts.JERUSALEM_TIMEZONE, apply=False, save_conf=False):
-    """
-    @summary: Set base configurations.
-        Used in:
-            - nvos post installation steps
-            - nvos clear config (post test) function
-    """
-    logging.info('Set base configurations')
-    orig_api = TestToolkit.tested_api
-
-    try:
-        logging.info('Change tested api to NVUE')
-        TestToolkit.tested_api = ApiType.NVUE
-
-        logging.info(f'Set switch timezone: {timezone}')
-        system = System()
-        system.set(ClockConsts.TIMEZONE, LinuxConsts.JERUSALEM_TIMEZONE, dut_engine=dut_engine).verify_result()
-
-        logging.info('Set authentication restrictions configurations')
-        system.aaa.authentication.restrictions.set(RestrictionsConsts.LOCKOUT_STATE,
-                                                   RestrictionsConsts.DISABLED, dut_engine=dut_engine).verify_result()
-        system.aaa.authentication.restrictions.set(RestrictionsConsts.FAIL_DELAY, 0,
-                                                   dut_engine=dut_engine).verify_result()
-
-        RegressionConfigurations.set_base_configurations(engine=dut_engine, apply=False)
-
-        if apply:
-            logging.info('Apply configurations')
-            NvueGeneralCli.apply_config(engine=dut_engine, option='-y', verify_execution=True)
-
-        if save_conf:
-            logging.info('Save configurations')
-            NvueGeneralCli.save_config(dut_engine)
-    finally:
-        logging.info(f'Change tested api back to {orig_api}')
-        TestToolkit.tested_api = orig_api
 
 
 @contextmanager
