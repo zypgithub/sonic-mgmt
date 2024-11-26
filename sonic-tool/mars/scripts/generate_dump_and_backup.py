@@ -54,7 +54,7 @@ def main():
     if "bobcat" in args.topo:
         for dpu_port in range(5021, 5025):
             dpu_dut = Connection(dut_device.BASE_IP, user=dut_device_username, port=dpu_port,
-                             config=Config(overrides={"run": {"echo": True}}), connect_timeout=5,
+                             config=Config(overrides={"run": {"echo": True}}), connect_timeout=15,
                              connect_kwargs={"password": dut_device_password})
             dpu_dut.ssh_port = dpu_port
             try:
