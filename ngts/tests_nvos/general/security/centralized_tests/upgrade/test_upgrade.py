@@ -6,6 +6,7 @@ from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import ImageConsts
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ResultObj import ResultObj
+from ngts.tests_nvos.general.security.certificate.test_cert_cacert_mgmt import certs_mgmt_upgrade_check
 from ngts.tests_nvos.general.security.test_api_server_security.test_api_mtls import api_mtls_upgrade_check
 from ngts.tests_nvos.system.factory_reset.helpers import *
 from ngts.tests_nvos.system.gnmi.helpers import get_scp_player
@@ -13,6 +14,7 @@ from ngts.tools.test_utils import allure_utils as allure
 
 UPGRADE_CHECKERS: Dict[str, Generator[None, None, None]] = {
     'API mTLS': api_mtls_upgrade_check(),
+    'Certificates mgmt': certs_mgmt_upgrade_check(),
 }
 
 
