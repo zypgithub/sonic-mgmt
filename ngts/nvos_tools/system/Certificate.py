@@ -22,8 +22,10 @@ class Certificate(BaseComponent):
 class CertId(BaseComponent):
     def __init__(self, parent, cert_id):
         BaseComponent.__init__(self, parent, path=f'/{cert_id}')
+        self.dump = BaseComponent(self, path='/dump')
+        self.installed = BaseComponent(self, path='/installed')
 
-    def action_import(self, data='', passphrase='', uri_bundle='', uri_private_key='', uri_public_key='',
+    def action_import(self, data=None, passphrase=None, uri_bundle=None, uri_private_key=None, uri_public_key=None,
                       dut_engine=None) -> ResultObj:
         with allure.step(f'Execute action import for {self.get_resource_path()}'):
             engine = dut_engine or TestToolkit.engines.dut

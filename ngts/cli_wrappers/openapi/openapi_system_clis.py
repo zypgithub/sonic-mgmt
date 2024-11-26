@@ -291,11 +291,11 @@ class OpenApiSystemCli(OpenApiBaseCli):
             DutUtilsTool.wait_for_nvos_to_become_functional(engine).verify_result()
 
     @staticmethod
-    def action_import_certificate(engine, resource_path, data='', passphrase='', uri_bundle='', uri_private_key='', uri_public_key=''):
+    def action_import_certificate(engine, resource_path, data=None, passphrase=None, uri_bundle=None, uri_private_key=None, uri_public_key=None):
         logging.info(f'Run action import on: {resource_path} using OpenApi')
-        parameters = {'data': data, 'passphrase': passphrase, 'uri-bundle': uri_bundle, 'uri-private-key': uri_private_key,
-                      'uri-public-key': uri_public_key}
-        parameters = {param: val for param, val in parameters.items() if val}
+        parameters = {'data': data, 'passphrase': passphrase, 'uri-bundle': uri_bundle,
+                      'uri-private-key': uri_private_key, 'uri-public-key': uri_public_key}
+        parameters = {param: val for param, val in parameters.items() if val is not None}
         params = \
             {
                 "state": "start",
@@ -305,10 +305,12 @@ class OpenApiSystemCli(OpenApiBaseCli):
                                                    engine.ip, resource_path, params)
 
     @staticmethod
-    def action_import_ca_certificate(engine, resource_path, data='', uri=''):
+    def action_import_ca_certificate(engine, resource_path, data=None, uri=None, external: bool = False):
         logging.info(f'Run action import on: {resource_path} using OpenApi')
         parameters = {'data': data, 'uri': uri}
-        parameters = {param: val for param, val in parameters.items() if val}
+        parameters = {param: val for param, val in parameters.items() if val is not None}
+        if external:
+            parameters['external_ca'] = True
         params = \
             {
                 "state": "start",

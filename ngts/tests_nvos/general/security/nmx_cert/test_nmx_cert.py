@@ -8,7 +8,7 @@ import pytest
 
 import ngts.tools.test_utils.allure_utils as allure
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from ngts.nvos_constants.constants_nvos import ApiType, TestFlowType
+from ngts.nvos_constants.constants_nvos import ApiType, TestFlowType, CacertType
 from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.nmx.Cluster import Cluster
@@ -28,7 +28,8 @@ from ngts.tests_nvos.system.gnmi.conftest import scp_player, get_scp_player
 @pytest.mark.nmx
 @pytest.mark.security
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_manager_cli(test_api):
+@pytest.mark.parametrize('ca_type', [random.choice(CacertType.ALL_TYPES)])
+def test_manager_cli(test_api, ca_type):
     """
     Verify that all CLI work and check values change properly in show
 
@@ -142,7 +143,8 @@ def test_manager_cli(test_api):
 @pytest.mark.nmx
 @pytest.mark.security
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_manager_cmd_fail_when_cluster_off(test_api):
+@pytest.mark.parametrize('ca_type', [random.choice(CacertType.ALL_TYPES)])
+def test_manager_cmd_fail_when_cluster_off(test_api, ca_type):
     """
     Verify that:
         1. update/restore manager commands fail when cluster disabled
@@ -213,7 +215,8 @@ def test_manager_cmd_fail_when_cluster_off(test_api):
 @pytest.mark.nmx
 @pytest.mark.security
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_delete_cert_fail_when_is_used(test_api, scp_player, engines, import_certs_back_after_test):
+@pytest.mark.parametrize('ca_type', [random.choice(CacertType.ALL_TYPES)])
+def test_delete_cert_fail_when_is_used(test_api, scp_player, engines, ca_type):
     """
     Verify that we cannot delete certs when are used (updated) for cluster manager config
 
@@ -248,7 +251,8 @@ def test_delete_cert_fail_when_is_used(test_api, scp_player, engines, import_cer
 @pytest.mark.nmx
 @pytest.mark.security
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_update_bad_param(test_api):
+@pytest.mark.parametrize('ca_type', [random.choice(CacertType.ALL_TYPES)])
+def test_update_bad_param(test_api, ca_type):
     """
     Verify that updating with bad param fails, and show output is not changed
 
@@ -282,7 +286,8 @@ def test_update_bad_param(test_api):
 @pytest.mark.nmx
 @pytest.mark.security
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_update_encryption_without_required_cert(test_api):
+@pytest.mark.parametrize('ca_type', [random.choice(CacertType.ALL_TYPES)])
+def test_update_encryption_without_required_cert(test_api, ca_type):
     """
     Verify that:
         1. can’t configure tls when certificate is not loaded.
@@ -313,7 +318,8 @@ def test_update_encryption_without_required_cert(test_api):
 @pytest.mark.nmx
 @pytest.mark.security
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_restore_cert_when_in_encryption_mode(test_api):
+@pytest.mark.parametrize('ca_type', [random.choice(CacertType.ALL_TYPES)])
+def test_restore_cert_when_in_encryption_mode(test_api, ca_type):
     """
     Verify that clearing ca/certificate fails when encryption mode is m/tls, and show output is not changed
 
@@ -362,7 +368,8 @@ def test_restore_cert_when_in_encryption_mode(test_api):
 
 @pytest.mark.nmx
 @pytest.mark.security
-def test_cluster_manager_connection():
+@pytest.mark.parametrize('ca_type', [random.choice(CacertType.ALL_TYPES)])
+def test_cluster_manager_connection(ca_type):
     """
     Verify that client can communicate with nmx-c
         * run with all possible encryption modes
@@ -465,7 +472,8 @@ def test_cluster_manager_connection():
 
 @pytest.mark.nmx
 @pytest.mark.security
-def test_connection_after_restore_encryption():
+@pytest.mark.parametrize('ca_type', [random.choice(CacertType.ALL_TYPES)])
+def test_connection_after_restore_encryption(ca_type):
     """
     Verify that after encryption mode – client can connect only in None mode
 
@@ -508,7 +516,8 @@ def verify_no_client_connection(server_cert: CertInfo, server_ca: CertInfo):
 
 @pytest.mark.nmx
 @pytest.mark.security
-def test_no_connection_when_manager_state_disabled():
+@pytest.mark.parametrize('ca_type', [random.choice(CacertType.ALL_TYPES)])
+def test_no_connection_when_manager_state_disabled(ca_type):
     """
     Verify that when cluster manager state disabled (restore/update disabled) – client cannot connect at all
 
@@ -551,7 +560,8 @@ def test_no_connection_when_manager_state_disabled():
 
 @pytest.mark.nmx
 @pytest.mark.security
-def test_no_connection_after_disable_cluster():
+@pytest.mark.parametrize('ca_type', [random.choice(CacertType.ALL_TYPES)])
+def test_no_connection_after_disable_cluster(ca_type):
     """
     Verify that after disabling cluster (restore) – client cannot connect at all
 
@@ -583,7 +593,8 @@ def test_no_connection_after_disable_cluster():
 
 @pytest.mark.nmx
 @pytest.mark.security
-def test_nmx_cert_reboot_case(engines):
+@pytest.mark.parametrize('ca_type', [random.choice(CacertType.ALL_TYPES)])
+def test_nmx_cert_reboot_case(engines, ca_type):
     """
     Verify that certificates and encryption mode are kept after reboot
 
@@ -646,12 +657,13 @@ def nmx_cert_factory_reset_no_params_check():
     manager = Cluster().manager
     clear_manager_config()
     encryption_mode = random.choice([EncryptionMode.TLS, EncryptionMode.MTLS])
+    use_external = random.choice([True, False])
 
     if should_check_nmx:
         with allure.step('enable cluster and clear manager config'):
             clear_manager_config()
-        with allure.step('Import and load cert & cacert'):
-            import_test_certs(scp_player, TestToolkit.engines.dut, [cert])
+        with allure.step(f'Import and load cert & {"external" if use_external else "global"} cacert'):
+            import_test_certs(scp_player, TestToolkit.engines.dut, [cert], use_external)
             manager.certificate.action_update(cert.name).verify_result()
             manager.ca_certificate.action_update(cert.cacert_name).verify_result()
         with allure.step('Update encryption mode'):
