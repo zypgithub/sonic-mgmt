@@ -13,8 +13,28 @@
 
             <!-- pre db commands - executed once before DB run -->
             <pre>
+                <name> Deploy L2 mode </name>
+                <type> reg_exec_cmd </type>
+                <tout> 900 </tout>
+                <run_posts_after_pre_failed> True </run_posts_after_pre_failed>
+                <players_selection>
+                    <ep_targets> SONIC_MGMT </ep_targets>
+                </players_selection>
+                <params>
+                    <exec> PYTHONPATH=/devts/  /ngts_venv/bin/pytest /root/mars/workspace/sonic-mgmt/ngts/scripts/sonic_deploy/test_deploy_l2_mode.py::test_deploy_l2_mode --setup_name=[[conf:extra_info.setup_name]] --sonic-topo=[[conf:extra_info.topology]] --rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini  --log-level=INFO --clean-alluredir --alluredir=/tmp/allure-results --disable_loganalyzer </exec>
+                </params>
             </pre>
-            <post></post>
+            <post>
+                <name> Restore default mode </name>
+                <type> reg_exec_cmd </type>
+                <tout> 900 </tout>
+                <players_selection>
+                    <ep_targets> SONIC_MGMT </ep_targets>
+                </players_selection>
+                <params>
+                    <exec> PYTHONPATH=/devts/  /ngts_venv/bin/pytest /root/mars/workspace/sonic-mgmt/ngts/scripts/sonic_deploy/test_deploy_l2_mode.py::test_restore_default_mode --setup_name=[[conf:extra_info.setup_name]] --sonic-topo=[[conf:extra_info.topology]] --rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini  --log-level=INFO --clean-alluredir --alluredir=/tmp/allure-results --disable_loganalyzer </exec>
+                </params>
+            </post>
         </DB>
         <Test>
             <!--Must reset any dynamic ignore tags created by other tests-->
