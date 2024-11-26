@@ -38,28 +38,34 @@ class CumulusGeneralCli(NvueGeneralCli):
                                   overwrite_file=True, verify_file=False)
 
         with allure.step('pip dependencies'):
-            self.engine.run_cmd('sudo apt-get update')
-            self.engine.run_cmd('sudo apt install python3.11')
-            self.engine.run_cmd('sudo mkdir /home/cumulus/venv')
-            self.engine.run_cmd('sudo apt install python3.11-venv')
-            self.engine.run_cmd('python -m venv sdk_env --system-site-packages')
-            self.engine.run_cmd('sudo /home/cumulus/sdk_env/bin/pip install --upgrade pip --root-user-action=ignore')
-            self.engine.run_cmd('sudo /home/cumulus/sdk_env/bin/pip install -r /tmp/requirements.txt --root-user-action=ignore')
+            self.install_pip_dependencies()
 
         with allure.step('apt get'):
-            self.engine.run_cmd('echo Y | sudo apt-get install build-essential')
-            self.engine.run_cmd('echo Y | sudo apt-get install swig')
-            self.engine.run_cmd('echo Y | sudo apt-get install kmod')
-            self.engine.run_cmd('echo Y | sudo apt-get install pciutils')
-            self.engine.run_cmd('sudo apt-get install dmidecode')
-            self.engine.run_cmd('sudo touch /var/log/syslog')
-            self.engine.run_cmd('echo Y | sudo apt-get install python3-dev')
+            self.install_apt_get_pkg()
 
         with allure.step('Prepare SDK_VER git to run tests'):
             self.engine.run_cmd(f"sudo /home/cumulus/sdk_env/bin/python3.11 /root/sys_sdk/sx_sdk_py_tests/tests/run_tests.py -si")
         # TODO: uncomment once sdk_ver has shahaf changes
         # with allure.step('run SDK_VER traffic generator test '):
             # self.engine.run_cmd(f"sudo /home/cumulus/sdk_env/bin/python3.11 /root/sys_sdk/sx_sdk_py_tests/tests/run_tests.py --names GenericTrafficGenerator")
+
+    def install_pip_dependencies(self):
+        self.engine.run_cmd('sudo apt-get update -y')
+        self.engine.run_cmd('sudo apt install python3.11 -y')
+        self.engine.run_cmd('sudo mkdir /home/cumulus/venv')
+        self.engine.run_cmd('sudo apt install python3.11-venv -y')
+        self.engine.run_cmd('python -m venv sdk_env --system-site-packages')
+        self.engine.run_cmd('sudo /home/cumulus/sdk_env/bin/pip install --upgrade pip --root-user-action=ignore')
+        self.engine.run_cmd('sudo /home/cumulus/sdk_env/bin/pip install -r /tmp/requirements.txt --root-user-action=ignore')
+
+    def install_apt_get_pkg(self):
+        self.engine.run_cmd('sudo apt-get install build-essential -y')
+        self.engine.run_cmd('sudo apt-get install swig -y')
+        self.engine.run_cmd('sudo apt-get install kmod -y')
+        self.engine.run_cmd('sudo apt-get install pciutils -y')
+        self.engine.run_cmd('sudo apt-get install dmidecode -y')
+        self.engine.run_cmd('sudo touch /var/log/syslog')
+        self.engine.run_cmd('sudo apt-get install python3-dev -y')
 
     def get_sdk_version(self):
         sdk_version_output = self.engine.run_cmd(InfraConst.CMD_GET_SDK_VERSION, validate=True)

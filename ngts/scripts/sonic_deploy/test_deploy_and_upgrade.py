@@ -132,7 +132,7 @@ def test_deploy_and_upgrade(topology_obj, is_simx, is_performance, base_version,
                     # Disconnect ssh connection, prevent "Socket is closed" in case when pre step took more than 15 min
                     topology_obj.players[dut['dut_alias']]['engine'].disconnect()
                     platform_params_copy = copy.deepcopy(platform_params)
-                    install_threads.append((dut['dut_name'],
+                    install_threads.append((f"image install on {dut['dut_name']}",
                                             executor.submit(deploy_image, topology_obj=topology_obj,
                                                             setup_name=setup_name,
                                                             image_url=related_base_version_url,

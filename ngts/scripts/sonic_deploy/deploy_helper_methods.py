@@ -85,15 +85,17 @@ class DeployMethods:
         for dut in duts:
             cli_obj = dut['cli_obj']
             with allure.step('Install traffic generator on switch: {}'.format(dut['dut_name'])):
-                install_threads.append((dut['dut_name'], executor.submit(cli_obj.install_traffic_generator)))
-        DeployMethods.wait_until_deploy_background_process(install_threads, timeout=1500)
+                install_threads.append((f"Traffic Generator install on {dut['dut_name']}",
+                                        executor.submit(cli_obj.install_traffic_generator)))
+        DeployMethods.wait_until_deploy_background_process(install_threads)
 
     @staticmethod
     def wait_until_deploy_background_process(install_threads, timeout=1200):
-        for dut_name, task in install_threads:
-            with allure.step(f'Wait until {dut_name} installation background process done'):
+        for task_name, task in install_threads:
+            with allure.step(f'Wait until {task_name} background process done'):
                 try:
                     task.result(timeout=timeout)
-                    logger.info(f"Image is successfully installed on {dut_name}")
-                except TimeoutError:
-                    logger.error(f"The installation on {dut_name} failed to complete in {timeout}s.")
+                    logger.info(f"{task_name} finished successfully")
+                except concurrent.futures.TimeoutError:
+                    logger.error(f"{task_name} failed to complete in {timeout}s.")
+                    raise
