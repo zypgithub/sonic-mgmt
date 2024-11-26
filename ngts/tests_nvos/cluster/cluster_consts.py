@@ -11,6 +11,16 @@ class ClusterConsts:
     ClusterAppsLogLevelsList = [ClusterAppsLogLevels.DEBUG, ClusterAppsLogLevels.INFO, ClusterAppsLogLevels.NOTICE, ClusterAppsLogLevels.WARNING, ClusterAppsLogLevels.ERROR, ClusterAppsLogLevels.CRITICAL]
     NMX_CONTROLLER_CONFIG_FILE_TYPES = ['fm_config', 'sm_config', 'rdm_config', 'chassis_mapping']
     NMX_CONTROLLER_STATE_FILE_TYPES = ['sm_dump', 'topology']
+    NMX_TELEMETRY_CONFIG_FILE_TYPES = []
+    NMX_TELEMETRY_STATE_FILE_TYPES = []
+    CONTROLLER_AND_TELEMETRY_CONFIG_FILES = NMX_CONTROLLER_CONFIG_FILE_TYPES + NMX_TELEMETRY_CONFIG_FILE_TYPES
+    CONTROLLER_AND_TELEMETRY_STATE_FILES = NMX_CONTROLLER_STATE_FILE_TYPES + NMX_TELEMETRY_STATE_FILE_TYPES
+    MAP_CONFIG_FILE_TYPE_TO_APP = {}
+    MAP_CONFIG_FILE_TYPE_TO_APP.update({file_type: 'nmx-controller' for file_type in ['fm_config', 'sm_config', 'rdm_config', 'chassis_mapping']})
+    MAP_CONFIG_FILE_TYPE_TO_APP.update({file_type: 'nmx-telemetry' for file_type in []})
+    MAP_STATE_FILE_TYPE_TO_APP = {}
+    MAP_STATE_FILE_TYPE_TO_APP.update({file_type: 'nmx-controller' for file_type in ['sm_dump', 'topology']})
+    MAP_STATE_FILE_TYPE_TO_APP.update({file_type: 'nmx-telemetry' for file_type in []})
     NMX_LOG_MESSAGES_TAGS = ['nmxc-sm', 'nmxc-fm', 'nmxc-fib', 'nmxc-gw_api', 'nmxc-rest', 'nmxc-config_daemon']
     INITIAL_CONFIGURATIONS_PATH = '/auto/sw_system_project/NVOS_INFRA/verification_files/cluster/uploaded_control_plane_files'
     UNDEFINED_STATE = 'undefined'

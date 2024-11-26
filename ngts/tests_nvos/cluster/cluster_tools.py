@@ -296,13 +296,13 @@ class ClusterTools:
             ClusterTools.wait_for_apps_to_be_in_wanted_state()
 
     @staticmethod
-    def get_current_config_files_paths(sdn):
+    def get_current_config_files_paths(sdn, app, files_types):
         files_dict = {}
         with allure.step("Fetch & Generate config files"):
-            for file_type in ClusterConsts.NMX_CONTROLLER_CONFIG_FILE_TYPES:
-                output = sdn.config.app.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].action_generate_sdn()
+            for file_type in files_types:
+                output = sdn.config.app.app_name[app].type.file_type[file_type].action_generate_sdn()
                 installed_file = ClusterTools().get_generated_file_name(output.returned_value, 'config')
-                output = OutputParsingTool.parse_show_output_to_dict(sdn.config.app.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=OutputFormat.json),
+                output = OutputParsingTool.parse_show_output_to_dict(sdn.config.app.app_name[app].type.file_type[file_type].files.show(output_format=OutputFormat.json),
                                                                      output_format=OutputFormat.json).get_returned_value()
                 current_installed_config_path = output[installed_file]['path']
                 files_dict[file_type] = current_installed_config_path
@@ -364,16 +364,18 @@ class ClusterTools:
     @staticmethod
     def verify_sdn_config_files_deleted(sdn):
         with allure.step("Running nv show sdn config app <app> type <type> files and make sure files are deleted"):
-            for file_type in ClusterConsts.NMX_CONTROLLER_CONFIG_FILE_TYPES:
-                files = OutputParsingTool.parse_show_output_to_dict(sdn.config.app.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=OutputFormat.json),
+            for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_CONFIG_FILES:
+                app = ClusterConsts.MAP_CONFIG_FILE_TYPE_TO_APP[file_type]
+                files = OutputParsingTool.parse_show_output_to_dict(sdn.config.app.app_name[app].type.file_type[file_type].files.show(output_format=OutputFormat.json),
                                                                     output_format=OutputFormat.json).get_returned_value()
                 assert not files, f"Expected to get empty output, but instead received {output}"
 
     @staticmethod
     def verify_sdn_state_files_deleted(sdn):
         with allure.step("Running nv show sdn state app <app> type <type> files and make sure files are deleted"):
-            for file_type in ClusterConsts.NMX_CONTROLLER_STATE_FILE_TYPES:
-                files = OutputParsingTool.parse_show_output_to_dict(sdn.state.app.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=OutputFormat.json),
+            for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_STATE_FILES:
+                app = ClusterConsts.MAP_STATE_FILE_TYPE_TO_APP[file_type]
+                files = OutputParsingTool.parse_show_output_to_dict(sdn.state.app.app_name[app].type.file_type[file_type].files.show(output_format=OutputFormat.json),
                                                                     output_format=OutputFormat.json).get_returned_value()
                 assert not files, f"Expected to get empty output, but instead received {output}"
 
