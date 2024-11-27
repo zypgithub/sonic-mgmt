@@ -94,6 +94,7 @@ class Ib(BaseComponent):
     def __init__(self, parent_obj=None):
         super().__init__(parent=parent_obj, path='/ib')
         self.ufm_mad = BaseComponent(self, path='/ufm-m')  # [L.A] temporary change ('/ufm-mad')
+        self.link_low_power = BaseComponent(self, path='/link-low-power')
 
 
 class SonicCli(BaseComponent):

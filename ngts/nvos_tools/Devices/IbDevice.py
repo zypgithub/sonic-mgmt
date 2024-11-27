@@ -1000,6 +1000,7 @@ class JulietSwitch(NvLinkSwitch):
 
         self.power_cycle_type = 'juliet-power-cycle'
         self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/juliet_versions.json"
+        self.valid_ports_count = 144
 
     def _init_fan_list(self):
         super()._init_fan_list()
@@ -1167,7 +1168,7 @@ class JulietScaleoutSwitch(JulietSwitch):
                                                       "model": "692-9K36F-00MV-JS0"})
 
     def sleep_after_system_reboot(self):
-        logger.info("Sleeping for 80 seconds - Reboot takes longer on juliet for now")
+        logger.info("Sleeping for 160 seconds - Reboot takes longer on juliet for now")
         time.sleep(80)
 
     def _relevant_config_filename_by_version(self, version: str) -> str:
