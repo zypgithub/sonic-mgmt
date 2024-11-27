@@ -58,7 +58,7 @@ tests_nvos/system/syslog/test_system_syslog.py::test_rsyslog_server_and_global_s
 
 tests_nvos/system/test_system_health.py:
   skip:
-    reason: "Testcase skipped due to health status is not ok on marlin because we don’t have the pmon docker"
+    reason: "Testcase skipped due to health status is not ok on marlin because we don't have the pmon docker"
     conditions:
       - "'marlin' in testbed"
 
@@ -82,7 +82,7 @@ tests_nvos/ib/test_set_unset_sm_state.py::test_show_ib_sm_default_values:
 
 tests_nvos/system/stats/test_system_stats.py:
   skip:
-    reason: "Testcase skipped due to voltage stats file is empty on marlin because we don’t have the pmon docker"
+    reason: "Testcase skipped due to voltage stats file is empty on marlin because we don't have the pmon docker"
     conditions:
       - "'marlin' in testbed"
 
@@ -198,6 +198,12 @@ tests_nvos/checklist/test_bios_manual_update.py:
     reason: "Testcase skipped on non Juliet systems since they has 'auto-update' which changes the upgrade's flow"
     conditions:
       - "'juliet' not in testbed"
+
+tests_nvos/platform/test_platform_firmware_bios/test_platform_firmware_bios.py:
+  skip:
+    reason: "Testcase skipped on Juliet systems, feature is pruned in Juliet"
+    conditions:
+      - "'juliet' in testbed"
 
 tests_nvos/interfaces/test_ib_interface_configuration.py::test_ib_interface_lanes:
   skip:

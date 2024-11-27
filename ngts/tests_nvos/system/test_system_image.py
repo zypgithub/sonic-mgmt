@@ -230,7 +230,7 @@ def test_image_uninstall_force(release_name, original_version, test_name, device
 @pytest.mark.image
 @pytest.mark.system
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_system_image_bad_flow(engines, release_name, test_api, original_version, sonic_mgmt_ipv6_addr):
+def test_system_image_bad_flow(engines, test_api, sonic_mgmt_ipv6_addr, base_version_realpath):
     """
     Check bad flow scenarios:
     -	Fetch something that doesn’t / already exist
@@ -249,7 +249,8 @@ def test_system_image_bad_flow(engines, release_name, test_api, original_version
     file_rand_name = system.image.files.file_name[rand_name]
 
     with allure.step("Get an available image file"):
-        image_name, image_path = get_images_to_fetch(release_name, original_image)[0]
+        _, _, _, _, image_name = get_image_data_and_fetch_base_image(system, base_version_realpath)
+        image_path = base_version_realpath
         images_name = []
         image_file = system.image.files.file_name[image_name]
 
