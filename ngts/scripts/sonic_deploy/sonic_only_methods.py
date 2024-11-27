@@ -486,14 +486,22 @@ class SonicInstallationSteps:
                 f"-k {platform_params['hwsku']} > {SonicConst.SONIC_CONFIG_FOLDER}{SonicConst.CONFIG_DB_JSON}")
 
         if "r-moose-01" in setup_name or "mtvr-moose-04" in setup_name:
-            execute_script(f'sed -i "s/200000/100000/g" {sonic_mgmt_hwsku_path}/Mellanox-SN5600-V256/port_config.ini',
-                           ansible_path)
-            execute_script(f'sed -i "s/100000/50000/g" {sonic_mgmt_hwsku_path}/Mellanox-SN5600-C256S1/port_config.ini',
-                           ansible_path)
-            execute_script(f'sed -i "s/100000/50000/g" {sonic_mgmt_hwsku_path}/Mellanox-SN5600-C224O8/port_config.ini',
-                           ansible_path)
-            execute_script(f'sed -i "s/400000/100000/g" {sonic_mgmt_hwsku_path}/Mellanox-SN5600-C224O8/port_config.ini',
-                           ansible_path)
+            v256 = "Mellanox-SN5600-V256"
+            if os.path.exists(f'{sonic_mgmt_hwsku_path}/{v256}/port_config.ini'):
+                execute_script(f'sed -i "s/200000/100000/g" {sonic_mgmt_hwsku_path}/{v256}/port_config.ini',
+                               ansible_path)
+
+            c256s1 = "Mellanox-SN5600-C256S1"
+            if os.path.exists(f'{sonic_mgmt_hwsku_path}/{c256s1}/port_config.ini'):
+                execute_script(f'sed -i "s/100000/50000/g" {sonic_mgmt_hwsku_path}/{c256s1}/port_config.ini',
+                               ansible_path)
+
+            c224o8 = "Mellanox-SN5600-C224O8"
+            if os.path.exists(f'{sonic_mgmt_hwsku_path}/{c224o8}/port_config.ini'):
+                execute_script(f'sed -i "s/100000/50000/g" {sonic_mgmt_hwsku_path}/{c224o8}/port_config.ini',
+                               ansible_path)
+                execute_script(f'sed -i "s/400000/100000/g" {sonic_mgmt_hwsku_path}/{c224o8}/port_config.ini',
+                               ansible_path)
         if need_gen_mingraph:
             if "sonic-dual-tor-leopard" in setup_name:
                 if not setup_info.get('setup_name', None):
