@@ -1,9 +1,13 @@
-from infra.tools.topology_tools.topology_setup_utils import get_topology_by_setup_name
+from infra.tools.topology_tools.topology_setup_utils import get_topology_by_setup_name, create_player_entry
 from ngts.constants.constants import PlayersAliases
+import logging
+logger = logging.getLogger()
 
 
 def get_topology_by_setup_name_and_aliases(setup_name, slow_cli, override_type=False):
     topology = get_topology_by_setup_name(setup_name, slow_cli, override_type)
+    if 'bobcat' in setup_name:
+        add_dpu_player(topology, slow_cli, override_type)
 
     return update_dut_alias(topology)
 
@@ -25,3 +29,24 @@ def update_dut_alias(topology):
                 topology.players['dut'] = topology.players[alias]
                 del topology.players[alias]
     return topology
+
+
+def add_dpu_player(topology, slow_cli, override_type):
+    dpu_player_entry = {'DESCRIPTION': 'dpu0',
+                        'SSH_PORT': 5021,
+                        'XML_RPC_PORT': 9999,
+                        'TYPE_TITLE': "Switch",
+                        'TYPE': '11',
+                        'IP': topology.players['dut']['engine'].ip,
+                        }
+
+    dpu_num = 4
+    base_dpu_ssh_nat_port = 5021
+    for dpu_index in range(0, dpu_num):
+        dpu_host_name = f'dpu{dpu_index}'
+        dpu_player_entry['DESCRIPTION'] = dpu_host_name
+        dpu_player_entry['SSH_PORT'] = base_dpu_ssh_nat_port + dpu_index
+        logger.info(f"create dpu{dpu_index} players")
+        topology.players.update(create_player_entry(dpu_player_entry, slow_cli, override_type))
+        if dpu_host_name in topology.players:
+            topology.players[dpu_host_name]['attributes'].noga_query_data['attributes']['Common']['Name'] += f"-dpu-{dpu_index}"

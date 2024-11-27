@@ -181,6 +181,7 @@ class InfraConst:
     CASES_DUMPS_DIR = 'cases_dumps'
     CASES_SYSLOG_DIR = 'cases_syslog'
     STM_IP = "10.209.104.53"
+    SELECTED__DPUS = 'selected_dpus'
 
 
 class LinuxConsts:
@@ -1255,7 +1256,7 @@ class MarsConstants:
 class PlayersAliases:
     Aliases_list = ['sl']
     SL = 'sl'
-    duts_list = ['dut', 'dut-b', 'left_tg', 'right_tg']
+    duts_list = ['dut', 'dut-b', 'left_tg', 'right_tg', 'dpu0', 'dpu1', 'dpu2', 'dpu3']
 
 
 class NvosCliTypes:

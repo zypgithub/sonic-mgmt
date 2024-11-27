@@ -1,11 +1,34 @@
 import allure
 import logging
+import pytest
+import random
+import os
 from retry.api import retry_call
+from ngts.constants.constants import InfraConst
 
 logger = logging.getLogger()
 
 
-def test_check_errors_in_log_during_deploy_sonic_image(engines, request, loganalyzer):
+@pytest.fixture(scope="function", params=['dpu', 'switch'])
+def device_type(request):
+    return request.param
+
+
+@pytest.fixture()
+def dut_host(engines, request, device_type):
+    if device_type == 'dpu':
+        if "dpu0" in engines:
+            dpu_index = random.randint(0, 4)
+            dpu_name = f'dpu{dpu_index}'
+            os.environ[InfraConst.SELECTED_DPUS] = dpu_name
+            return engines[dpu_name]
+        else:
+            pytest.skip("Skip it due to the device doesn't has dpu")
+    else:
+        return engines.dut
+
+
+def test_check_errors_in_log_during_deploy_sonic_image(dut_host, request, loganalyzer):
     """
     Test checks errors in logs which happen during deploy SONiC image
     This test must be executed as first test case after deploy SONiC image, because test logic will analyze syslog
@@ -19,10 +42,10 @@ def test_check_errors_in_log_during_deploy_sonic_image(engines, request, loganal
     :param engines: engines fixture
     :param request: pytest build-in
     """
-    log_analyzer_start_string_line = get_la_start_string(engines.dut, request)
-    oldest_syslog_id = get_oldest_syslog_id(engines.dut)
-    new_log_analyzer_start_string = get_new_start_string(engines.dut, oldest_syslog_id, log_analyzer_start_string_line)
-    insert_new_start_string(engines.dut, oldest_syslog_id, new_log_analyzer_start_string)
+    log_analyzer_start_string_line = get_la_start_string(dut_host, request)
+    oldest_syslog_id = get_oldest_syslog_id(dut_host)
+    new_log_analyzer_start_string = get_new_start_string(dut_host, oldest_syslog_id, log_analyzer_start_string_line)
+    insert_new_start_string(dut_host, oldest_syslog_id, new_log_analyzer_start_string)
     ignore_regex = [
         r".*crashkernel=\d+M",
         r".*Command line: BOOT_IMAGE=.*",
@@ -47,7 +70,7 @@ def test_check_errors_in_log_during_deploy_sonic_image(engines, request, loganal
         # the end_marker will be added forcefully
         run_id = analyzer.ansible_loganalyzer.run_id
         cmd = f'sudo python /tmp/loganalyzer.py --action add_end_marker --run_id {run_id}'
-        retry_call(engines.dut.run_cmd,
+        retry_call(dut_host.run_cmd,
                    fkwargs={"cmd": cmd, "timeout": 10},
                    tries=3,
                    delay=3,
@@ -61,7 +84,7 @@ def get_la_start_string(engine, request):
     :param request: pytest build-in
     :return: LogAnalyzer start_string line, example: r-lionfish-07 INFO start-LogAnalyzer-test_a.2022-05-16-13:49:02
     """
-    test_name = request.node.name
+    test_name = request.node.name.split("[")[0]
     start = 'start-LogAnalyzer'
     start_prefix = start + '-' + test_name
 
