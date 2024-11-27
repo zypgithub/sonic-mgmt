@@ -200,7 +200,6 @@ class IbSwitch(BaseSwitch):
         self.dependent_services.append(NvosConst.SYM_MGR_SERVICES)
 
     def _init_gnmi_consts(self):
-        self.gnmi_target = 'nvos'
         self.version_xpath = 'platform-general/versions/state/nos-version'
         self.bios_xpath = "platform-general/versions/state/fw-version-bios"
         self.cpld1_xpath = 'platform-general/versions/fw-versions-cpld/fw-version-cpld[id=1]/state/fw-version'
@@ -1035,7 +1034,6 @@ class JulietSwitch(NvLinkSwitch):
 
     def _init_gnmi_consts(self):
         super()._init_gnmi_consts()
-        self.gnmi_target = 'nvos'
         self.bmc_xpath = "platform-general/versions/state/fw-version-bmc"
         self.erot_xpath = "platform-general/versions/state/fw-version-erot"
         self.fpga_xpath = "platform-general/versions/state/fw-version-fpga"

@@ -48,7 +48,7 @@ def validate_memory_and_cpu_utilization():
 def run_gnmi_client_in_the_background(target_ip, xpath, device):
     prefix_and_path = xpath.rsplit("/", 1)
     command = f"gnmic -a {target_ip} --port {GnmiConsts.GNMI_DEFAULT_PORT} --skip-verify subscribe " \
-        f"--prefix '{prefix_and_path[0]}' --path '{prefix_and_path[1]}' --target netq " \
+        f"--prefix '{prefix_and_path[0]}' --path '{prefix_and_path[1]}' --target nvos " \
         f"-u {device.default_username} -p {device.default_password} --format flat"
     # Use the subprocess.Popen function to run the command in the background
     process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -133,7 +133,7 @@ def run_gnmi_client_and_parse_output(engines, devices, xpath, target_ip, target_
         prefix_and_path = xpath.rsplit("/", 1)
         mode_flag = f"--mode {mode}" if mode else ''
         cmd = f"gnmic -a {target_ip} --port {target_port} --skip-verify subscribe --prefix '{prefix_and_path[0]}'" \
-            f" --path '{prefix_and_path[1]}' --target {devices.dut.gnmi_target} -u {username} " \
+            f" --path '{prefix_and_path[1]}' --target nvos -u {username} " \
             f"-p {password} {mode_flag} --format flat"
         logger.info(f"run on the sonic mgmt docker {sonic_mgmt_engine.ip}: {cmd}")
         if "poll" == mode:
@@ -310,7 +310,7 @@ def validate_redis_cli_and_gnmi_commands_results(engines, devices, gnmi_list, al
     for command in gnmi_list:
         prefix_and_path = command[GnmiConsts.XPATH_KEY].rsplit("/", 1)
         cmd = f"gnmic -a {engines.dut.ip} --port {GnmiConsts.GNMI_DEFAULT_PORT} --skip-verify subscribe " \
-            f"--prefix '{prefix_and_path[0]}' --path '{prefix_and_path[1]}' --target netq " \
+            f"--prefix '{prefix_and_path[0]}' --path '{prefix_and_path[1]}' --target nvos " \
             f"-u {devices.dut.default_username} -p {devices.dut.default_password} --mode once --format flat"
         logger.info(f"run on the sonic mgmt docker {sonic_mgmt_engine.ip}: {cmd}")
         gnmi_client_output = sonic_mgmt_engine.run_cmd(cmd)
