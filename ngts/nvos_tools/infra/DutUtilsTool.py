@@ -72,7 +72,7 @@ class DutUtilsTool:
                         return ResultObj(result=False, info=output)
 
                 res_obj = DutUtilsTool.wait_on_system_reboot(engine, recovery_engine, None, should_wait_till_system_ready,
-                                                             device, False, True, topology_obj)
+                                                             device, False, True, topology_obj, system_is_ready_timeout)
                 if not should_wait_till_system_ready:
                     time.sleep(40)
                     return res_obj

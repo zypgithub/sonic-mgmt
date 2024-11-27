@@ -2,13 +2,72 @@ import logging
 import time
 
 
-from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from abc import ABC, abstractmethod
+from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_constants.constants_nvos import BiosConsts
 
 logger = logging.getLogger()
 
 
-class BiosTool:
+class BiosTool(ABC):
+    """
+    Abstract Base Class for BIOS tools.
+    """
+
+    def __init__(self, topology_obj, dut_engine, nvue_cli_obj, dut_ip):
+        self.topology_obj = topology_obj
+        self.dut_engine = dut_engine
+        self.nvue_cli_obj = nvue_cli_obj
+        self.dut_ip = dut_ip
+
+    @property
+    @abstractmethod
+    def BIOS_MENU_PAGES(self):
+        """
+        Abstract property to be defined in subclasses.
+        Each subclass provides its own list of supported features.
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def CREATE_NEW_PASSWORD(self):
+        """Abstract property to create a new password."""
+        pass
+
+    @property
+    @abstractmethod
+    def ENTER_CURRENT_PASSWORD(self):
+        """Abstract property to enter the current password."""
+        pass
+
+    @property
+    @abstractmethod
+    def CLEAR_OLD_PASSWORD(self):
+        """Abstract property to clear the old password."""
+        pass
+
+    def config_flow(self):
+        with allure.step('Entering BIOS on: {}'.format(self.dut_ip)):
+            self.enter_bios(self.topology_obj, self.nvue_cli_obj)
+
+        serial_engine = self.nvue_cli_obj.enter_serial_connection_context(self.topology_obj)
+        with allure.step('Configuring empty BIOS password'):
+            self.go_to_bios_page(serial_engine, "Main", "Security", self.BIOS_MENU_PAGES)
+            self.bios_find_and_select(serial_engine, "Administrator Password")
+            self.disable_bios_password(serial_engine)
+
+        with allure.step('Enabling network stack configuration'):
+            self.go_to_bios_page(serial_engine, "Security", "Advanced", self.BIOS_MENU_PAGES)
+            self.bios_find_and_select(serial_engine, "Network Stack Configuration")
+            self.enable_network_stack(serial_engine)
+
+        with allure.step('Done configuring network stack and BIOS password, Save and exit the BIOS'):
+            self.go_to_bios_page(serial_engine, "Advanced", "Save & Exit", self.BIOS_MENU_PAGES)
+            self.bios_find_and_select(serial_engine, "Save Changes and Exit")
+            serial_engine.run_cmd(BiosConsts.ENTER, '.*', timeout=3, send_without_enter=True)
+
+        logger.info("BIOS configuration script finished running, will now wait for machine to come up")
 
     def enter_bios(self, topology_obj, nvue_cli_obj):
         '''
@@ -20,7 +79,7 @@ class BiosTool:
         logger.info("Initializing serial connection to device")
         serial_engine = nvue_cli_obj.enter_serial_connection_context(topology_obj)
         logger.info('Executing remote reboot')
-        nvue_cli_obj.remote_reboot(topology_obj)
+        nvue_cli_obj.remote_reboot(topology_obj, wait_till_alive=False)
         logger.info("Waiting for enter BIOS prompt")
         serial_engine.run_cmd('', [BiosConsts.BIOS_START_REGEX], timeout=240, send_without_enter=True)
 
@@ -108,6 +167,13 @@ class BiosTool:
         logger.info("found title {}, pressing the Enter key".format(title_name))
         serial_engine.run_cmd(BiosConsts.ENTER, '.*', timeout=BiosConsts.PEXPECT_TIMEOUT, send_without_enter=True)
 
+    def bios_go_back(self, serial_engine):
+        '''
+        @summary: This method will just press ESC once
+        @param serial_engine: The RCON serial connection to the switch
+        '''
+        serial_engine.run_cmd(BiosConsts.ESC, '.*', timeout=BiosConsts.PEXPECT_TIMEOUT, send_without_enter=True)
+
     def disable_bios_password(self, serial_engine):
         '''
         @summary: This method will disable the BIOS password, it assumes we used bios_find_and_select
@@ -115,8 +181,7 @@ class BiosTool:
         @param serial_engine: The RCON serial connection to the switch
         '''
         logger.info("Changing BIOS password if there's one")
-        _, respond = serial_engine.run_cmd('', [BiosConsts.CREATE_NEW_PASSWORD, BiosConsts.ENTER_CURRENT_PASSWORD,
-                                                BiosConsts.NVLINK_ENTER_CURRENT_PASSWORD, BiosConsts.NVLINK_CREATE_NEW_PASSWORD],
+        _, respond = serial_engine.run_cmd('', [self.CREATE_NEW_PASSWORD, self.ENTER_CURRENT_PASSWORD],
                                            timeout=BiosConsts.PEXPECT_TIMEOUT,
                                            send_without_enter=True)
         time.sleep(BiosConsts.KEY_STROKE_SLEEP)
@@ -130,10 +195,10 @@ class BiosTool:
                 serial_engine.run_cmd(char, '.*', timeout=BiosConsts.PEXPECT_TIMEOUT, send_without_enter=True)
                 time.sleep(BiosConsts.KEY_STROKE_SLEEP)
 
-            serial_engine.run_cmd(BiosConsts.ENTER, BiosConsts.CREATE_NEW_PASSWORD, timeout=BiosConsts.PEXPECT_TIMEOUT,
+            serial_engine.run_cmd(BiosConsts.ENTER, self.CREATE_NEW_PASSWORD, timeout=BiosConsts.PEXPECT_TIMEOUT,
                                   send_without_enter=True)
             time.sleep(BiosConsts.KEY_STROKE_SLEEP)
-            serial_engine.run_cmd(BiosConsts.ENTER, BiosConsts.CLEAR_OLD_PASSWORD, timeout=BiosConsts.PEXPECT_TIMEOUT,
+            serial_engine.run_cmd(BiosConsts.ENTER, self.CLEAR_OLD_PASSWORD, timeout=BiosConsts.PEXPECT_TIMEOUT,
                                   send_without_enter=True)
             time.sleep(BiosConsts.KEY_STROKE_SLEEP)
             serial_engine.run_cmd(BiosConsts.ENTER, '.*', timeout=BiosConsts.PEXPECT_TIMEOUT, send_without_enter=True)
@@ -159,18 +224,13 @@ class BiosTool:
             self.bios_go_back(serial_engine)
         elif BiosConsts.DISABLED_SELECTED in output:
             logger.info("Network stack is Disabled, the script will now enable it")
-            serial_engine.run_cmd(BiosConsts.DOWN_ARROW, ".", timeout=BiosConsts.PEXPECT_TIMEOUT, send_without_enter=True)
+            serial_engine.run_cmd(BiosConsts.DOWN_ARROW, ".", timeout=BiosConsts.PEXPECT_TIMEOUT,
+                                  send_without_enter=True)
             time.sleep(BiosConsts.KEY_STROKE_SLEEP)
             serial_engine.run_cmd(BiosConsts.ENTER, ".", timeout=BiosConsts.PEXPECT_TIMEOUT, send_without_enter=True)
             time.sleep(BiosConsts.KEY_STROKE_SLEEP)
             self.bios_go_back(serial_engine)
             logger.info("Finished enabling Network stack")
         else:
-            raise Exception("The script couldn't figure if the network stack is enabled or disabled")
-
-    def bios_go_back(self, serial_engine):
-        '''
-        @summary: This method will just press ESC once
-        @param serial_engine: The RCON serial connection to the switch
-        '''
-        serial_engine.run_cmd(BiosConsts.ESC, '.*', timeout=BiosConsts.PEXPECT_TIMEOUT, send_without_enter=True)
+            raise Exception(
+                f"The script couldn't figure if the network stack is enabled or disabled \nOutput: {output}")

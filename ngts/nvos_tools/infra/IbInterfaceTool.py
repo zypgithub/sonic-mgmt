@@ -4,7 +4,6 @@ import re
 
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.nvos_constants.constants_nvos import LinkDetectionConsts
-from ngts.nvos_tools.Devices.IbDevice import CrocodileSwitch
 from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
 from ngts.nvos_tools.infra.Fae import Fae

@@ -868,6 +868,7 @@ class PlatformConsts:
     ASIC_CONF_FILE_PATH = "/usr/share/sonic/device/{}/asic.conf"
     INV_FAILED = 'failed'
     TIMEOUT_AFTER_FW_INSTALL = 600
+    TIMEOUT_AFTER_BIOS_INSTALL = 720
 
 
 class FansConsts:
@@ -1569,6 +1570,7 @@ class BiosConsts:
     ENTER_CURRENT_PASSWORD = "Enter Current Password"
     NVLINK_ENTER_CURRENT_PASSWORD = "Enter Current Administrator Password"
     CLEAR_OLD_PASSWORD = "Clear Old Password"
+    NVLINK_CLEAR_OLD_PASSWORD = "Clear Old Administrator Password"
     ENABLED_SELECTED = "[1;37;47m[Enabled]"
     DISABLED_SELECTED = "[1;37;47m[Disabled]"
     KEY_STROKE_SLEEP = 0.5
@@ -1577,6 +1579,7 @@ class BiosConsts:
     SELECTED_LINE_VAL_REGEX = "\\x1b[[1];37;47m[[]([^\\\\*?)[]]\\x1b"
     SELECTED_OPTION_LINE_REGEX = "\\x1b[[]1;37;40m([^\\[\\]]*?)\\x1b"
     BIOS_MENU_PAGES = ["Main", "Advanced", "Chipset", "Security", "Boot", "Save & Exit", "Event Logs"]
+    NVLINK_BIOS_MENU_PAGES = ["Main", "Advanced", "Chipset", "Security", "Boot", "Save & Exit", "Event Logs", "Server Mgmt"]
     MISSING_PAGE_ERR = "Target page {} not found in the BIOS setting pages list {}"
     MAX_SELECTIONS_PER_PAGE = 30
     PEXPECT_TIMEOUT = 2

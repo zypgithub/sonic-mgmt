@@ -1,10 +1,16 @@
 import random
+import pytest
 
 from ngts.nvos_constants.constants_nvos import ApiType, NvosConst
 from ngts.nvos_tools.infra.FWComponentsTool import FWComponentsTool
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.platform.test_platform_firmware_bios.helpers import *
+from infra.tools.redmine.redmine_api import *
+from ngts.nvos_constants.constants_nvos import PlatformConsts
+from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.tests_nvos.constants import MINUTE
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
@@ -92,7 +98,7 @@ def test_bios_auto_update_enabled(devices, engines, topology_obj, test_api, orig
     verify_bios_version(engines, platform, version_name)
     with allure.step('Reboot with current BIOS version installation'):
         res, duration = OperationTime.save_duration('reboot with BIOS 005 installation', '',
-                                                    test_name, system.reboot.action_reboot, topology_obj=topology_obj, system_is_ready_timeout=PlatformConsts.TIMEOUT_AFTER_FW_INSTALL)
+                                                    test_name, system.reboot.action_reboot, topology_obj=topology_obj, system_is_ready_timeout=PlatformConsts.TIMEOUT_AFTER_BIOS_INSTALL)
 
     path, filename, version_name, date = get_bios_info_from_device(devices.dut, 'current_version')
     verify_bios_version(engines, platform, version_name)
