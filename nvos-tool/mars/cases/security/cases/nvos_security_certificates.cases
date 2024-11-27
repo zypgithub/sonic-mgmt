@@ -43,7 +43,7 @@
   </case>
 
   <case>
-    <name> Cert & CA-Cert Mgmt - combined (new) </name>
+    <name> Cert and CA-Cert Mgmt - combined (new) </name>
     <info> </info>
     <cmd>
       <params>
@@ -57,7 +57,7 @@
   </case>
 
   <case>
-    <name> Ca/Cert Mgmt (old) </name>
+    <name> Cert and CA-Cert Mgmt (old) </name>
     <info> </info>
     <cmd>
       <params>
