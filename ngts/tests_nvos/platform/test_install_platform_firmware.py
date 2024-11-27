@@ -94,7 +94,7 @@ def get_version_and_file_name(device) -> Tuple[str, str]:
 
 def get_asic_dict(fae):
     show_output = OutputParsingTool.parse_json_str_to_dictionary(fae.platform.firmware.show()).get_returned_value()
-    asic_dictionary = {k: v for k, v in show_output.items() if PlatformConsts.FW_ASIC in k}
+    asic_dictionary = {k: v for k, v in show_output.items() if PlatformConsts.FW_ASIC in k and 'EROT' not in k}
     assert asic_dictionary and len(asic_dictionary.keys()) > 0, "asic list is empty"
     return asic_dictionary
 

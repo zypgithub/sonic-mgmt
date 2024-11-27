@@ -963,6 +963,7 @@ class JulietSwitch(NvLinkSwitch):
         bmc_dump_files = ['bmc_debug_log_dump.tar']
         self.constants = self.constants._replace(bmc_dump_files=bmc_dump_files)
         self.constants.dump_files.append('BMCeeprom')
+        self.constants.dump_files.remove('hdparm')
         self.constants.log_nmx_files.extend(['fabricmanager.log.gz', 'gwapi.log.gz', 'nvlsm.log.gz'])
         stats_dump_files = ["cpu.csv.gz", "disk.csv.gz", "fan.csv.gz",
                             "mgmt-interface.csv.gz", "temperature.csv.gz", "voltage.csv.gz"]

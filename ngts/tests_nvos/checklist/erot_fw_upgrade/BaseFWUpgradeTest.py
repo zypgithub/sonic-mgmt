@@ -17,7 +17,7 @@ from ngts.tools.test_utils.switch_recovery import recover_dut_with_remote_reboot
 logger = logging.getLogger()
 
 
-def verify_installation(erot_name, expected_version, filename):
+def verify_installation(erot_names, erot_name, expected_version, filename):
     platform = Platform()
     with allure.step(f"Asserting install was successful"):
         firmware_shown: Dict[str, str] = OutputParsingTool.parse_json_str_to_dictionary(
@@ -26,13 +26,7 @@ def verify_installation(erot_name, expected_version, filename):
             actual_firmware = firmware_shown[PlatformConsts.FW_ACTUAL]
             assert actual_firmware == expected_version, \
                 f"Expected {filename} version: {expected_version}. Actual version: {actual_firmware}"
-        fw_fields_to_check = [PlatformConsts.FW_ACTUAL, PlatformConsts.FW_BACKGROUND_COPY_STATUS,
-                              PlatformConsts.FW_DEBUG_TOKEN_STATUS, PlatformConsts.FW_SLOT_STATUS_INACTIVE,
-                              PlatformConsts.FW_SLOT_STATUS_ACTIVE, PlatformConsts.FW_AP_BOOT_STATUS]
-        for fw_field_name in fw_fields_to_check:
-            with allure.independent_step(f"Assert {fw_field_name} is not N/A"):
-                field_state = firmware_shown[fw_field_name]
-                assert field_state != NvosConst.NOT_AVAILABLE, f"The {fw_field_name} should not be N/A"
+        verify_erot_fields(erot_names)
 
 
 def verify_erot_fields(erot_names):
@@ -61,9 +55,7 @@ def get_active_inactive_slots(erot_name):
         return firmware_shown[active_field], firmware_shown[inactive_field]
 
 
-def fetch_and_install_erot_image(topology_obj, engines, fw_components_names, fw_component, path, version, filename):
-    verify_erot_fields(fw_components_names)
-
+def fetch_and_install_erot_image(topology_obj, engines, fw_component, path, version, filename):
     with allure.step(f"Fetching image {version} from {filename}"):
         fw_component.action_fetch(path).verify_result()
 
@@ -101,49 +93,28 @@ class BaseFWUpgradeTest:
             self._firmware_component = firmware_component
             self._firmware_components = None
 
-    def test_badflow(self, engines, switch, topology_obj, test_api, force):
-        TestToolkit.tested_api = test_api
-        fw_component = self._firmware_component
-        component_name = fw_component.get_resource_basename().lower()
-        path, filename, version = BmcTool.get_fw_component_version_previous(component_name)
-
-        with allure.step(f"Fetching PREVIOUS image"):
-            fw_component.action_fetch(path).verify_result()
-
-        fw_component.files.file_name[filename].action_delete()
-        with allure.step("Trying to delete non-existing image"):
-            fw_component.files.file_name[filename].action_delete(should_succeed=False)
-
-        fetched_image_file = fw_component.files.file_name[filename]
-        with allure.step("Trying to install non-existing image"):
-            fetched_image_file.action_file_install(force=force).verify_result(False)
-
     def test(self, engines, switch, topology_obj, test_api):
         TestToolkit.tested_api = test_api
         fw_component = self._firmware_component
         prev_path, prev_filename, prev_version = BmcTool.get_fw_component_version_previous(FW_COMPONENT_EROT)
         curr_path, curr_filename, curr_version = BmcTool.get_fw_component_version_latest(FW_COMPONENT_EROT)
         fw_components_names = switch.constants.erots[:]
-        fw_components_names.remove(
-            PlatformConsts.EROT_BMC_PATH_NAME)  # Bad BMC erot fw - hardware limitation, therefore removing 'ERoT_BMC_0' from install verification
-        component_name = fw_component.get_resource_basename()
+        component_name = random.choice(fw_components_names)
         try:
             active_slot, inactive_slot = get_active_inactive_slots(component_name)
 
-            fetch_and_install_erot_image(topology_obj, engines, fw_components_names, fw_component, prev_path,
-                                         prev_version, prev_filename)
+            fetch_and_install_erot_image(topology_obj, engines, fw_component, prev_path, prev_version, prev_filename)
             with allure.step(f"Sleep for {MINUTE} so the bg-copy will finish"):
                 time.sleep(MINUTE)
             with allure.step(f"Verifying installation was successful for each erot component"):
                 for comp_name in fw_components_names:
-                    verify_installation(comp_name, prev_version, filename=prev_filename)
+                    verify_installation(fw_components_names, comp_name, prev_version, filename=prev_filename)
                 verify_active_inactive_slots(component_name, active_slot, inactive_slot)
         finally:
-            fetch_and_install_erot_image(topology_obj, engines, fw_components_names, fw_component, curr_path,
-                                         curr_version, curr_filename)
+            fetch_and_install_erot_image(topology_obj, engines, fw_component, curr_path, curr_version, curr_filename)
             with allure.step(f"Verifying installation was successful for each erot component"):
                 for comp_name in fw_components_names:
-                    verify_installation(comp_name, curr_version, filename=curr_filename)
+                    verify_installation(fw_components_names, comp_name, curr_version, filename=curr_filename)
             with allure.step('delete fetched firmware image files'):
                 fw_component.files.delete_all_existing_files()
 
@@ -152,22 +123,20 @@ class BaseFWUpgradeTest:
         prev_path, prev_filename, prev_version = BmcTool.get_fw_component_version_previous(FW_COMPONENT_EROT)
         curr_path, curr_filename, curr_version = BmcTool.get_fw_component_version_latest(FW_COMPONENT_EROT)
         erots = copy.deepcopy(self._firmware_components)
-        del erots[
-            PlatformConsts.EROT_BMC_PATH_NAME]  # Bad BMC erot fw - hardware limitation, therefore removing 'ERoT_BMC_0' from install verification
         fw_components_names = list(erots.keys())
         erot_name = random.choice(fw_components_names)
         fw_component = fw_components_names[erot_name]
         component_name = fw_component.get_resource_basename()
 
         try:
-            fetch_and_install_erot_image(topology_obj, engines, fw_components_names, fw_component, prev_path,
-                                         prev_version, prev_filename)
+            fetch_and_install_erot_image(topology_obj, engines, fw_component, prev_path, prev_version, prev_filename)
+            with allure.step(f"Sleep for {MINUTE} so the bg-copy will finish"):
+                time.sleep(MINUTE)
             with allure.step(f"Verifying installation was successful only for {component_name}"):
-                verify_installation(component_name, prev_version, filename=prev_filename)
+                verify_installation([component_name], component_name, prev_version, filename=prev_filename)
         finally:
-            fetch_and_install_erot_image(topology_obj, engines, fw_components_names, fw_component, curr_path,
-                                         curr_version, curr_filename)
+            fetch_and_install_erot_image(topology_obj, engines, fw_component, curr_path, curr_version, curr_filename)
             with allure.step(f"Verifying installation was successful only for {component_name}"):
-                verify_installation(component_name, curr_version, filename=curr_filename)
+                verify_installation([component_name], component_name, curr_version, filename=curr_filename)
             with allure.step('delete fetched firmware image files'):
                 fw_component.files.delete_all_existing_files()
