@@ -290,6 +290,7 @@ class ReloadTest(BaseTest):
         self.installed_sonic_version = self.get_installed_sonic_version()
         self.sender_thr = threading.Thread(target=self.send_in_background)
         self.sniff_thr = threading.Thread(target=self.sniff_in_background)
+        self.start_sender_delay = 30
 
         # Check if platform type is kvm
         stdout, stderr, return_code = self.dut_connection.execCommand(
@@ -680,6 +681,7 @@ class ReloadTest(BaseTest):
             self.log("Test will collect tcpdump on the vmhost external port")
             remote_capture_pcap = self.capture_pcap + f"_{self.test_params['dut_hostname']}"
             self.remote_capture_pcap = remote_capture_pcap
+            self.vmhost_connection.execCommand(f"sudo rm -rf {self.remote_capture_pcap}")
             self.log(f"The pcap file on vmhost will be located in {remote_capture_pcap}")
 
         # get VM info
@@ -1711,7 +1713,7 @@ class ReloadTest(BaseTest):
         """
         if not packets_list:
             packets_list = self.packets_list
-        self.sniffer_started.wait(timeout=10)
+        self.sniffer_started.wait(timeout=self.start_sender_delay)
         with self.dataplane_io_lock:
             # While running fast data plane sender thread there are two reasons for filter to be applied
             #  1. filter out data plane traffic which is tcp to free up the load
@@ -1780,11 +1782,11 @@ class ReloadTest(BaseTest):
                                    'wait': wait, 'sniff_filter': sniff_filter})
         sniffer.start()
         # Let the scapy sniff initialize completely. Need to wait more time when capturing on the vmhost.
-        time.sleep(2)
+        base_tcpdump_delay = 2
+        time.sleep(base_tcpdump_delay)
         if self.vmhost_external_port:
-            start_sniffer_delay = 30
             elapsed_time = 0
-            while elapsed_time < start_sniffer_delay:
+            while elapsed_time < self.start_sender_delay - base_tcpdump_delay:
                 elapsed_time += 1
                 time.sleep(1)
                 stdout_lines, stderr_lines, _ = self.vmhost_connection.execCommand(f"ls {self.remote_capture_pcap}")
@@ -1792,7 +1794,8 @@ class ReloadTest(BaseTest):
                     self.log(f"The pcap file on the vmhost is created: {self.remote_capture_pcap}")
                     break
             else:
-                self.log(f"Caution: the pcap file on the vmhost is not created in {start_sniffer_delay}s.")
+                self.log(f"Error: the pcap file on the vmhost is not created in {self.start_sender_delay}s.")
+                raise Exception("Tcpdump on the vmhost failed to start, test is aborted.")
 
         # Unblock waiter for the send_in_background.
         self.sniffer_started.set()
@@ -1813,7 +1816,6 @@ class ReloadTest(BaseTest):
             self.kill_sniffer = False
 
             if self.vmhost_external_port:
-                self.vmhost_connection.execCommand(f"sudo rm -rf {self.remote_capture_pcap}")
                 self.start_sniffer_on_vmhost(self.remote_capture_pcap, sniff_filter, wait)
                 self.vmhost_connection.fetch(self.remote_capture_pcap, self.capture_pcap)
             else:
@@ -1832,7 +1834,7 @@ class ReloadTest(BaseTest):
         """
         interface = self.test_params['vmhost_external_port']
         cmd = f"sudo nohup tcpdump -i {interface} {tcpdump_filter} -w {pcap_path}"
-        self.vmhost_connection.execCommand(cmd)
+        self.vmhost_connection.execCommand(cmd + " > /dev/null 2>&1 &")
         self.log(f'Tcpdump sniffer starting on vmhost interface: {interface}')
 
         time_start = time.time()
