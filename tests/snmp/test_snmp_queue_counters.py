@@ -177,8 +177,7 @@ def test_snmp_queue_counters(duthosts,
 def teardown(duthosts, enum_rand_one_per_hwsku_frontend_hostname):
     """
     Teardown procedure for all test function
-    :param duthosts: List of DUT hosts
-    :param enum_rand_one_per_hwsku_frontend_hostname: hostname of a randomly selected DUT
+    param duthosts: duthosts object
     """
     duthost = duthosts[enum_rand_one_per_hwsku_frontend_hostname]
     yield
