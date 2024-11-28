@@ -186,5 +186,13 @@
     "mtvr-leopard-01_setup": {
         "default_hwsku": "Mellanox-SN4700-O28",
         "support_hwsku": ["Mellanox-SN4700-O28"]
+    },
+    "mtvr-bobcat-03_setup": {
+        "default_hwsku": "Mellanox-SN4280-O28",
+        "support_hwsku": ["Mellanox-SN4280-O28"]
+    },
+    "mtvr-bobcat-04_setup": {
+        "default_hwsku": "Mellanox-SN4280-O28",
+        "support_hwsku": ["Mellanox-SN4280-O28"]
     }
 }

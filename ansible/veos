@@ -145,6 +145,12 @@ MTVR-R740-07_1 ansible_host=mtvr-r740-07
 [vm_host_83]
 MTVR-R740-07_2 ansible_host=mtvr-r740-07
 
+[vm_host_86]
+MTVR-DL360-04_1 ansible_host=mtvr-dl360-04
+
+[vm_host_87]
+MTVR-DL360-04_2 ansible_host=mtvr-dl360-04
+
 [vm_host:children]
 vm_host_1
 vm_host_2
@@ -195,6 +201,8 @@ vm_host_80
 vm_host_81
 vm_host_82
 vm_host_83
+vm_host_86
+vm_host_87
 
 [vms_0]
 VM0000 ansible_host=0.0.0.0
@@ -1676,6 +1684,58 @@ VM4830 ansible_host=10.245.40.66
 VM4831 ansible_host=10.245.40.67
 VM4832 ansible_host=10.245.40.68
 
+[vms_86]
+VM5101 ansible_host=10.245.44.123
+VM5102 ansible_host=10.245.44.124
+VM5103 ansible_host=10.245.44.125
+VM5104 ansible_host=10.245.44.126
+VM5105 ansible_host=10.245.44.127
+VM5106 ansible_host=10.245.44.128
+VM5107 ansible_host=10.245.44.129
+VM5108 ansible_host=10.245.44.130
+VM5109 ansible_host=10.245.44.131
+VM5110 ansible_host=10.245.44.132
+VM5111 ansible_host=10.245.44.133
+VM5112 ansible_host=10.245.44.134
+VM5113 ansible_host=10.245.44.135
+VM5114 ansible_host=10.245.44.136
+VM5115 ansible_host=10.245.44.137
+VM5116 ansible_host=10.245.44.138
+VM5117 ansible_host=10.245.44.139
+VM5118 ansible_host=10.245.44.140
+VM5119 ansible_host=10.245.44.141
+VM5120 ansible_host=10.245.44.142
+VM5121 ansible_host=10.245.44.143
+VM5122 ansible_host=10.245.44.144
+VM5123 ansible_host=10.245.44.145
+VM5124 ansible_host=10.245.44.146
+
+[vms_87]
+VM5233 ansible_host=10.245.44.153
+VM5234 ansible_host=10.245.44.154
+VM5235 ansible_host=10.245.44.155
+VM5236 ansible_host=10.245.44.156
+VM5237 ansible_host=10.245.44.157
+VM5238 ansible_host=10.245.44.158
+VM5239 ansible_host=10.245.44.159
+VM5240 ansible_host=10.245.44.160
+VM5241 ansible_host=10.245.44.161
+VM5242 ansible_host=10.245.44.162
+VM5243 ansible_host=10.245.44.163
+VM5244 ansible_host=10.245.44.164
+VM5245 ansible_host=10.245.44.165
+VM5246 ansible_host=10.245.44.166
+VM5247 ansible_host=10.245.44.167
+VM5248 ansible_host=10.245.44.168
+VM5249 ansible_host=10.245.44.169
+VM5250 ansible_host=10.245.44.170
+VM5251 ansible_host=10.245.44.171
+VM5252 ansible_host=10.245.44.172
+VM5253 ansible_host=10.245.44.173
+VM5254 ansible_host=10.245.44.174
+VM5255 ansible_host=10.245.44.175
+VM5256 ansible_host=10.245.44.176
+
 [eos:children]
 vms_1
 vms_2
@@ -1726,6 +1786,8 @@ vms_80
 vms_81
 vms_82
 vms_83
+vms_86
+vms_87
 
 ## The groups below are helper to limit running playbooks to server_1, server_2 or server_3 only
 [server_1:children]
@@ -2196,6 +2258,29 @@ host_var_file=host_vars/MTVR-R740-07_2.yml
 host_var_file=host_vars/MTVR-R740-07_2.yml
 mgmt_prefixlen=16
 
+[server_86:children]
+vm_host_86
+vms_86
+
+[server_86:vars]
+host_var_file=host_vars/MTVR-DL360-04_1.yml
+
+[vms_86:vars]
+host_var_file=host_vars/MTVR-DL360-04_1.yml
+mgmt_prefixlen=16
+
+[server_87:children]
+vm_host_87
+vms_87
+
+[server_87:vars]
+host_var_file=host_vars/MTVR-DL360-04_2.yml
+
+[vms_87:vars]
+host_var_file=host_vars/MTVR-DL360-04_2.yml
+mgmt_prefixlen=16
+
+
 [servers:children]
 server_1
 server_2
@@ -2246,6 +2331,8 @@ server_80
 server_81
 server_82
 server_83
+server_86
+server_87
 
 [servers:vars]
 topologies=['dualtor', 'dualtor-64', 'dualtor-64-breakout', 'dualtor-mixed', 'dualtor-aa', 'dualtor-aa-64', 'dualtor-aa-64-breakout', 'dualtor-56', 'dualtor-mixed-56', 'dualtor-aa-56', 't1', 't1-lag', 't1-28-lag', 't1-32-lag', 't1-56-lag', 't1-64-lag', 't1-64-lag-clet', 't0', 't0-16', 't0-28', 't0-56', 't0-56-po2vlan', 't0-56-o8v48', 't0-52', 'ptf32', 'ptf64', 't0-64', 't0-64-32', 't0-64-256', 't0-80', 't0-116', 't0-120', 't0-256', 't0-c256', 't1-lag-c224o8', 'dpu', 'dpu-1']

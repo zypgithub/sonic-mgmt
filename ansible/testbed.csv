@@ -91,6 +91,14 @@ r-bobcat-01-t1-28-lag,vm-t2,t1-28-lag,docker-ptf-mlnx,ptf-r-bobcat-01,10.215.6.1
 r-bobcat-01-ptf32,vm-t2,ptf32,docker-ptf-mlnx,ptf-r-bobcat-01,10.215.6.123/16,,server_72,VM3701,r-bobcat-01,Mellanox MTR testbed
 r-bobcat-01-ptf-any,vm-t2,ptf-any,docker-ptf-mlnx,ptf-r-bobcat-01,10.215.6.123/16,,server_72,VM3701,r-bobcat-01,Mellanox MTR testbed
 
+mtvr-bobcat-03-t0-28,vm-t1,t0-28,docker-ptf-mlnx,ptf-mtvr-bobcat-03,10.245.44.122/16,,server_86,VM5101,mtvr-bobcat-03,Mellanox MTR testbed
+mtvr-bobcat-03-t1-28-lag,vm-t1,t1-28-lag,docker-ptf-mlnx,ptf-mtvr-bobcat-03,10.245.44.122/16,,server_86,VM5101,mtvr-bobcat-03,Mellanox MTR testbed
+mtvr-bobcat-03-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-mtvr-bobcat-03,10.245.44.122/16,,server_86,VM5101,mtvr-bobcat-03,Mellanox MTR testbed
+
+mtvr-bobcat-04-t0-28,vm-t2,t0-28,docker-ptf-mlnx,ptf-mtvr-bobcat-04,10.245.44.152/16,,server_87,VM5233,mtvr-bobcat-04,Mellanox MTR testbed
+mtvr-bobcat-04-t1-28-lag,vm-t2,t1-28-lag,docker-ptf-mlnx,ptf-mtvr-bobcat-04,10.245.44.152/16,,server_87,VM5233,mtvr-bobcat-04,Mellanox MTR testbed
+mtvr-bobcat-04-ptf-any,vm-t2,ptf-any,docker-ptf-mlnx,ptf-mtvr-bobcat-04,10.245.44.152/16,,server_87,VM5233,mtvr-bobcat-04,Mellanox MTR testbed
+
 r-moose-01-t0,vm-t1,t0,docker-ptf-mlnx,ptf-r-moose-01,10.215.22.3/16,,server_60,VM2501,r-moose-01,Mellanox MTR testbed
 r-moose-01-t0-c256,vm-t1,t0-c256,docker-ptf-mlnx,ptf-r-moose-01,10.215.22.3/16,,server_60,VM2501,r-moose-01,Mellanox MTR testbed
 r-moose-01-t0-64,vm-t1,t0-64,docker-ptf-mlnx,ptf-r-moose-01,10.215.22.3/16,,server_60,VM2501,r-moose-01,Mellanox MTR testbed
