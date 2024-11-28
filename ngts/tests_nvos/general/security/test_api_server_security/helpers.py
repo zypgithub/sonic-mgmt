@@ -6,7 +6,7 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
-from ngts.tests_nvos.general.security.certificate.helpers import import_test_certs, delete_certificates
+from ngts.tests_nvos.general.security.certificate.helpers import import_test_certs
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
 from ngts.tests_nvos.general.security.test_api_server_security.constants import API_INSTALLED, INSTALLED, TEST_CERTS, \
     ApiConsts, CA_CERTIFICATE
@@ -120,5 +120,5 @@ def setup_steps():
 
 
 def cleanup_steps():
-    delete_certificates()
-    delete_certificates(True)
+    with allure.step('cleanup'):
+        System().api.unset(apply=True).verify_result()

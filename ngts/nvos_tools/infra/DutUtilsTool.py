@@ -154,7 +154,7 @@ class DutUtilsTool:
                         if system_is_ready_timeout:
                             DutUtilsTool.wait_for_system_ready_in_serial(topology_obj, wait_timeout=system_is_ready_timeout)
                         elif device:
-                            DutUtilsTool.wait_for_system_ready_in_serial(topology_obj, wait_timeout=device.system_is_ready_wait_timeout)
+                            DutUtilsTool.wait_for_system_ready_in_serial(topology_obj, wait_timeout=device.timeout_system_is_ready)
                         else:
                             DutUtilsTool.wait_for_system_ready_in_serial(topology_obj)
                         if track_boot_intervals:

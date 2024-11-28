@@ -432,7 +432,6 @@ class GorillaSwitch(IbSwitch):
         self.asic_type = NvosConst.QTM2
         self.split_ports_supported = True
         self.profile_change_supported = True
-        self.system_is_ready_wait_timeout = 10 * MINUTE
         self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
             "x86_64-mlnx_mqm9700-r0")
         self.platform_file_path = MultiPlanarConsts.PLATFORM_FILE_FULL_PATH.format("x86_64-mlnx_mqm9700-r0")
@@ -498,6 +497,10 @@ class GorillaSwitch(IbSwitch):
         super()._init_eth0_speeds()
         self.supported_eth0_speeds += ['10M']
 
+    def _init_boot_time_timeouts(self):
+        super()._init_boot_time_timeouts()
+        self.timeout_system_is_ready = 10 * MINUTE
+
 
 # -------------------------- Gorilla BF3 Switch ----------------------------
 class GorillaSwitchBF3(GorillaSwitch):
@@ -529,7 +532,6 @@ class BlackMambaSwitch(IbSwitch):
     def _init_constants(self):
         self.asic_amount = 4
         super()._init_constants()
-        self.system_is_ready_wait_timeout = 15 * MINUTE
         self.ib_ports_num = 2 * 72
         self.core_count = 4
         self.asic_type = NvosConst.QTM3
@@ -630,6 +632,10 @@ class BlackMambaSwitch(IbSwitch):
     def _relevant_config_filename_by_version(self, version: str) -> str:
         return 'nvos_config_xdr.yml'
 
+    def _init_boot_time_timeouts(self):
+        super()._init_boot_time_timeouts()
+        self.timeout_system_is_ready = 15 * MINUTE
+
 
 # -------------------------- Crocodile Switch ----------------------------
 class CrocodileSwitch(IbSwitch):
@@ -643,7 +649,6 @@ class CrocodileSwitch(IbSwitch):
         self.core_count = 4
         self.split_ports_supported = True
         self.asic_type = NvosConst.QTM3
-        self.system_is_ready_wait_timeout = 10 * MINUTE
         self.platform_file_path = MultiPlanarConsts.PLATFORM_FILE_FULL_PATH.format("x86_64-nvidia_qm3400-r0")
         self.show_platform_output.update({
             "product-name": "QM3400",
@@ -787,6 +792,10 @@ class CrocodileSwitch(IbSwitch):
         self.interface_active_internal_fnm_ports = {'fnma0p1', 'fnma1p1'}
         self.default_port = 'swA1p1'
 
+    def _init_boot_time_timeouts(self):
+        super()._init_boot_time_timeouts()
+        self.timeout_system_is_ready = 10 * MINUTE
+
 
 # -------------------------- Crocodile Simx Switch ----------------------------
 class CrocodileSimxSwitch(IbSwitch):
@@ -829,7 +838,6 @@ class JulietSwitch(NvLinkSwitch):
     def _init_constants(self):
         super()._init_constants()
 
-        self.system_is_ready_wait_timeout = 20 * MINUTE
         self.category_list = ['temperature', 'cpu', 'disk', 'fan', 'mgmt-interface', 'voltage']
         self.category_disabled_dict = {
             self.category_list[0]: self.category_default_disabled_dict,
@@ -936,6 +944,11 @@ class JulietSwitch(NvLinkSwitch):
                 return available_erots
         logging.info(f'no available ERoTs found for {setup_name}')
         return []
+
+    def _init_boot_time_timeouts(self):
+        super()._init_boot_time_timeouts()
+        self.timeout_system_is_ready = 20 * MINUTE
+        self.timeout_reboot_to_grub_menu = 5 * MINUTE
 
 
 # -------------------------- JulietScaleout Switch ----------------------------

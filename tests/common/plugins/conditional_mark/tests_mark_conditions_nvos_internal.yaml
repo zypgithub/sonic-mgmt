@@ -1,29 +1,5 @@
 ########################## NVOS IGNORE START ##########################
 
-tests_nvos/general/security/test_api_server_security/test_api_mtls.py::test_api_mtls_reboot[save]:
-  skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4103432"
-    conditions:
-      - https://redmine.mellanox.com/issues/4103432
-
-tests_nvos/general/security/centralized_tests/factory_reset/test_factory_reset.py::test_reset_factory:
-  skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4100597"
-    conditions:
-      - https://redmine.mellanox.com/issues/4100597
-
-tests_nvos/general/security/test_api_server_security/test_api_mtls.py::test_api_mtls_core_functionality[BadFlow]:
-  skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4064106"
-    conditions:
-      - https://redmine.mellanox.com/issues/4064106
-
-tests_nvos/general/security/test_api_server_security/test_api_mtls.py::test_api_mtls_delete_installed_ca[BadFlow]:
-  skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4064106"
-    conditions:
-      - https://redmine.mellanox.com/issues/4064106
-
 tests_nvos/general/security/tpm_attestation/test_tpm_attestation.py:
   skip:
     reason: "Testcase skipped on gorilla systems - feature is pruned on gorilla"

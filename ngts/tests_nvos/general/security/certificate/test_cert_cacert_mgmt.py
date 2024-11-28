@@ -9,7 +9,7 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.certificate.constants import TestCert
 from ngts.tests_nvos.general.security.certificate.helpers import verify_cert_in_expected_locations, \
-    verify_ca_in_expected_locations, delete_certificates
+    verify_ca_in_expected_locations
 from ngts.tests_nvos.system.gnmi.conftest import scp_player
 from ngts.tests_nvos.system.gnmi.helpers import get_scp_player
 from ngts.tools.test_utils import allure_utils as allure
@@ -113,22 +113,17 @@ def certs_mgmt_factory_reset_no_params_check():
 
     yield  # factory reset
 
-    try:
-        with allure.step('verify after factory reset'):
-            with allure.independent_step('verify no cert in show'):
-                out = OutputParsingTool.parse_json_str_to_dictionary(security.certificate.show()).get_returned_value()
-                assert out == {}, f'certs show not as expected\nexpected: {"{}"}\nactual:\n{out}'
-            with allure.independent_step('verify no cas in show'):
-                out = OutputParsingTool.parse_json_str_to_dictionary(security.ca_certificate.show()).get_returned_value()
-                assert out == {}, f'cas show not as expected\nexpected: {"{}"}\nactual:\n{out}'
-            with allure.independent_step('verify cert not in certs locations'):
-                verify_cert_in_expected_locations(cert1.name, engines.dut, False)
-            with allure.independent_step('verify cas not in expected locations'):
-                verify_ca_in_expected_locations(ca1.name, ca1, engines.dut, False)
-    finally:
-        with allure.step('cleanup: delete ca/certs'):
-            delete_certificates()
-            delete_certificates(True)
+    with allure.step('verify after factory reset'):
+        with allure.independent_step('verify no cert in show'):
+            out = OutputParsingTool.parse_json_str_to_dictionary(security.certificate.show()).get_returned_value()
+            assert out == {}, f'certs show not as expected\nexpected: {"{}"}\nactual:\n{out}'
+        with allure.independent_step('verify no cas in show'):
+            out = OutputParsingTool.parse_json_str_to_dictionary(security.ca_certificate.show()).get_returned_value()
+            assert out == {}, f'cas show not as expected\nexpected: {"{}"}\nactual:\n{out}'
+        with allure.independent_step('verify cert not in certs locations'):
+            verify_cert_in_expected_locations(cert1.name, engines.dut, False)
+        with allure.independent_step('verify cas not in expected locations'):
+            verify_ca_in_expected_locations(ca1.name, ca1, engines.dut, False)
 
     yield  # to prevent StopIteration on the 2nd next() call
 
@@ -171,22 +166,17 @@ def certs_mgmt_factory_reset_keep_only_files_check():
 
     yield  # factory reset
 
-    try:
-        with allure.step('verify after factory reset'):
-            with allure.independent_step('verify cert exist in show'):
-                out = OutputParsingTool.parse_json_str_to_dictionary(security.certificate.show()).get_returned_value()
-                assert cert1.name in out, f'cert {cert1.name} expected to be in output but is not\n{out}'
-            with allure.independent_step('verify cas exist'):
-                out = OutputParsingTool.parse_json_str_to_dictionary(security.ca_certificate.show()).get_returned_value()
-                assert ca1.name in out, f'ca {ca1.name} expected to be in output but is not\n{out}'
-            with allure.independent_step('verify cert in certs locations'):
-                verify_cert_in_expected_locations(cert1.name, engines.dut)
-            with allure.independent_step('verify cas in expected locations'):
-                verify_ca_in_expected_locations(ca1.name, ca1, engines.dut)
-    finally:
-        with allure.step('cleanup: delete ca/certs'):
-            delete_certificates()
-            delete_certificates(True)
+    with allure.step('verify after factory reset'):
+        with allure.independent_step('verify cert exist in show'):
+            out = OutputParsingTool.parse_json_str_to_dictionary(security.certificate.show()).get_returned_value()
+            assert cert1.name in out, f'cert {cert1.name} expected to be in output but is not\n{out}'
+        with allure.independent_step('verify cas exist'):
+            out = OutputParsingTool.parse_json_str_to_dictionary(security.ca_certificate.show()).get_returned_value()
+            assert ca1.name in out, f'ca {ca1.name} expected to be in output but is not\n{out}'
+        with allure.independent_step('verify cert in certs locations'):
+            verify_cert_in_expected_locations(cert1.name, engines.dut)
+        with allure.independent_step('verify cas in expected locations'):
+            verify_ca_in_expected_locations(ca1.name, ca1, engines.dut)
 
     yield  # to prevent StopIteration on the 2nd next() call
 
@@ -227,21 +217,16 @@ def certs_mgmt_upgrade_check():
 
     yield  # upgrade
 
-    try:
-        with allure.step('verify after factory reset'):
-            with allure.independent_step('verify cert exist in show'):
-                out = OutputParsingTool.parse_json_str_to_dictionary(security.certificate.show()).get_returned_value()
-                assert cert1.name in out, f'cert {cert1.name} expected to be in output but is not\n{out}'
-            with allure.independent_step('verify cas exist'):
-                out = OutputParsingTool.parse_json_str_to_dictionary(security.ca_certificate.show()).get_returned_value()
-                assert ca1.name in out, f'ca {ca1.name} expected to be in output but is not\n{out}'
-            with allure.independent_step('verify cert in certs locations'):
-                verify_cert_in_expected_locations(cert1.name, engines.dut)
-            with allure.independent_step('verify cas in expected locations'):
-                verify_ca_in_expected_locations(ca1.name, ca1, engines.dut)
-    finally:
-        with allure.step('cleanup: delete ca/certs'):
-            delete_certificates()
-            delete_certificates(True)
+    with allure.step('verify after factory reset'):
+        with allure.independent_step('verify cert exist in show'):
+            out = OutputParsingTool.parse_json_str_to_dictionary(security.certificate.show()).get_returned_value()
+            assert cert1.name in out, f'cert {cert1.name} expected to be in output but is not\n{out}'
+        with allure.independent_step('verify cas exist'):
+            out = OutputParsingTool.parse_json_str_to_dictionary(security.ca_certificate.show()).get_returned_value()
+            assert ca1.name in out, f'ca {ca1.name} expected to be in output but is not\n{out}'
+        with allure.independent_step('verify cert in certs locations'):
+            verify_cert_in_expected_locations(cert1.name, engines.dut)
+        with allure.independent_step('verify cas in expected locations'):
+            verify_ca_in_expected_locations(ca1.name, ca1, engines.dut)
 
     yield  # to prevent StopIteration on the 2nd next() call

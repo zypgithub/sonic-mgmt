@@ -51,6 +51,7 @@ class BaseDevice(ABC):
         self._init_fae_lists()
         self._init_security_lists()
         self._init_password_hardening_lists()
+        self._init_boot_time_timeouts()
 
     def init_documents_consts(self):
         self.documents_path = {}
@@ -86,7 +87,6 @@ class BaseDevice(ABC):
         self.has_nmx = False
         self.has_bmc = False
         self.supported_commands = []
-        self.system_is_ready_wait_timeout = 5 * MINUTE
         self.supports_tpm_testing = True
 
     def _init_fan_list(self):
@@ -123,6 +123,10 @@ class BaseDevice(ABC):
 
     def _init_password_hardening_lists(self):
         self.local_test_users = []
+
+    def _init_boot_time_timeouts(self):
+        self.timeout_system_is_ready = 5 * MINUTE
+        self.timeout_reboot_to_grub_menu = 3 * MINUTE
 
     def init_cli_coverage_prop(self, cli_coverage_project_name):
         self.cli_coverage_project_name = cli_coverage_project_name

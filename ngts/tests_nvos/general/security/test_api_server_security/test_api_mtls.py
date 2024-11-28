@@ -266,14 +266,15 @@ def api_mtls_factory_reset_no_params_check():
 
     yield  # factory reset
 
-    with allure.step('verify no mtls after this factory reset'):
-        with allure.independent_step('verify mtls is not configured in show'):
-            verify_mtls_config('')
-        with allure.independent_step('verify no mtls only connection'):
-            verify_api_connection(TestFlowType.ALL_TYPES, dut, UserInfo(dut.username, dut.password, 'admin'), False,
-                                  server_cert, server_ca)
-
-    cleanup_steps()
+    try:
+        with allure.step('verify no mtls after this factory reset'):
+            with allure.independent_step('verify mtls is not configured in show'):
+                verify_mtls_config('')
+            with allure.independent_step('verify no mtls only connection'):
+                verify_api_connection(TestFlowType.ALL_TYPES, dut, UserInfo(dut.username, dut.password, 'admin'), False,
+                                      server_cert, server_ca)
+    finally:
+        cleanup_steps()
 
     yield  # to prevent StopIteration on the 2nd next() call
 
@@ -308,14 +309,15 @@ def api_mtls_factory_reset_keep_only_files_check():
 
     yield  # factory reset
 
-    with allure.step('verify no mtls after this factory reset'):
-        with allure.independent_step('verify mtls is not configured in show'):
-            verify_api_ca_configuration(None)
-        with allure.independent_step('verify no mtls only connection'):
-            verify_api_connection(TestFlowType.ALL_TYPES, dut, UserInfo(dut.username, dut.password, 'admin'), False,
-                                  server_cert, server_ca)
-
-    cleanup_steps()
+    try:
+        with allure.step('verify no mtls after this factory reset'):
+            with allure.independent_step('verify mtls is not configured in show'):
+                verify_api_ca_configuration(None)
+            with allure.independent_step('verify no mtls only connection'):
+                verify_api_connection(TestFlowType.ALL_TYPES, dut, UserInfo(dut.username, dut.password, 'admin'), False,
+                                      server_cert, server_ca)
+    finally:
+        cleanup_steps()
 
     yield  # to prevent StopIteration on the 2nd next() call
 
@@ -349,14 +351,15 @@ def api_mtls_factory_reset_keep_all_config_check():
 
     yield  # factory reset
 
-    with allure.step('verify mtls after this factory reset'):
-        with allure.independent_step('verify mtls is configured in show'):
-            verify_api_ca_configuration(server_ca.cacert_name)
-        with allure.independent_step('verify mtls only connection'):
-            verify_api_connection(TestFlowType.ALL_TYPES, dut, UserInfo(dut.username, dut.password, 'admin'), True,
-                                  server_cert, server_ca)
-
-    cleanup_steps()
+    try:
+        with allure.step('verify mtls after this factory reset'):
+            with allure.independent_step('verify mtls is configured in show'):
+                verify_api_ca_configuration(server_ca.cacert_name)
+            with allure.independent_step('verify mtls only connection'):
+                verify_api_connection(TestFlowType.ALL_TYPES, dut, UserInfo(dut.username, dut.password, 'admin'), True,
+                                      server_cert, server_ca)
+    finally:
+        cleanup_steps()
 
     yield  # to prevent StopIteration on the 2nd next() call
 
@@ -387,13 +390,14 @@ def api_mtls_upgrade_check():
 
     yield  # upgrade
 
-    with allure.step('verify mtls after this factory reset'):
-        with allure.independent_step('verify mtls is configured in show'):
-            verify_api_ca_configuration(server_ca.cacert_name)
-        with allure.independent_step('verify mtls only connection'):
-            verify_api_connection(TestFlowType.ALL_TYPES, dut, UserInfo(dut.username, dut.password, 'admin'), True,
-                                  server_cert, server_ca)
-
-    cleanup_steps()
+    try:
+        with allure.step('verify mtls after this factory reset'):
+            with allure.independent_step('verify mtls is configured in show'):
+                verify_api_ca_configuration(server_ca.cacert_name)
+            with allure.independent_step('verify mtls only connection'):
+                verify_api_connection(TestFlowType.ALL_TYPES, dut, UserInfo(dut.username, dut.password, 'admin'), True,
+                                      server_cert, server_ca)
+    finally:
+        cleanup_steps()
 
     yield  # to prevent StopIteration on the 2nd next() call

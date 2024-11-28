@@ -12,6 +12,7 @@ from ngts.nvos_constants.constants_nvos import TestFlowType, ApiType
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.system.System import System
+from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.general.security.certificate.constants import TestCert
 from ngts.tests_nvos.general.security.conftest import local_adminuser
 from ngts.tests_nvos.general.security.helpers import remove_etc_host_mapping_to_dn, add_etc_host_mapping_to_dn
@@ -281,6 +282,7 @@ def test_gnmi_delete_cert_in_use_by_gnmi():
         res.verify_result(False)
 
 
+@pytest.mark.timeout(20 * MINUTE, func_only=True)
 @pytest.mark.system
 @pytest.mark.gnmi
 def test_gnmi_reboot_system(engines, local_adminuser):
