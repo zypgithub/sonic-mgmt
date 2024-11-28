@@ -781,6 +781,15 @@
       - tests_nvos/general/security/tacacs/test_aaa_tacacs.py::test_tacacs_bad_secret
       - tests_nvos/general/security/tacacs/test_aaa_tacacs.py::test_tacacs_timeout
 
+# NVOS SECURITY
+- Errors_list:
+    - '.*ERR nvued:.*ERROR:.*Something went wrong in fetching the X\.509.*certificate.*URI.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests_nvos/general/security/certificate/test_cacert_mgmt.py::test_cacert_mgmt_import_ca_uri_bad_param
+      - tests_nvos/general/security/certificate/test_cert_mgmt.py::test_cert_mgmt_import_cert_uri_bad_param
+      - tests_nvos/general/security/certificate/test_cert_mgmt.py::test_cert_mgmt_import_cert_bundle_bad_param
+
 - Errors_list:
     - '.*ERR service_checker: nss_tacplus: failed to connect TACACS\+ server.*Transport endpoint is not connected.*'
   Conditions:
