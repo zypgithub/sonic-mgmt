@@ -281,7 +281,7 @@ class NvueSystemCli(NvueBaseCli):
         params = {'passphrase': passphrase, 'uri-bundle': uri_bundle, 'uri-private-key': uri_private_key, 'uri-public-key': uri_public_key}
         for param, val in params.items():
             if val is not None:
-                cmd += f' {param} "{val}"'
+                cmd += f' {param} {val}' if val != '' else f' {param} ""'
         logging.info(f"Running action cmd: '{cmd}' on dut using NVUE")
         return engine.run_cmd(cmd)
 
@@ -293,7 +293,7 @@ class NvueSystemCli(NvueBaseCli):
         if data is not None:
             cmd += f' data """{data}"""'
         if uri is not None:
-            cmd += f' uri "{uri}"'
+            cmd += f' uri {uri}' if uri != '' else ' uri ""'
         logging.info(f"Running action cmd: '{cmd}' on dut using NVUE")
         return engine.run_cmd(cmd)
 
