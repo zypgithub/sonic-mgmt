@@ -52,7 +52,7 @@ def test_techsupport_show(engines, test_name, test_api, devices):
             f"Output of show tech-support is missing key '{SystemConsts.LATEST_KEY}'. Existing keys: {output_dict.keys()}"
         latest_file = output_dict.pop(SystemConsts.LATEST_KEY)[SystemConsts.PATH_KEY]
         output_dict = {key: value[SystemConsts.PATH_KEY] for key, value in output_dict.items()}
-        assert latest_file == max(*output_dict.values()), (
+        assert latest_file == find_latest_key(output_dict), (
             f"Output of show tech-support contains a file marked 'latest', but that file either doesn't exist or is not"
             f" really the latest file. File is {latest_file}."
         )
@@ -284,3 +284,21 @@ def validate_techsupport_since(output_dictionary, substring):
     with allure.step('Validating the generate command and show command working as expected'):
         assert substring in output_dictionary, \
             "at least one of the new tech-support folders not found, expected folders"
+
+
+def find_latest_key(tech_support_dict):
+    """
+    Find the key in the dictionary with the latest timestamp based on
+    the `_YYYYMMDD_HHMMSS` format present in the key strings.
+
+    Example:
+        input_dict = {
+            "nvos_dump_mtvr-croc-19-mgmt2_20241118_203558.tar.gz": {...},
+            "nvos_dump_mtvr-croc-19-mgmt2_20241119_001126.tar.gz": {...},
+            "nvos_dump_mtvr-croc-19_20241118_232312.tar.gz": {...}
+        }
+
+        result = find_latest_key(tech_support_dict)
+        # result -> "/host/dump/nvos_dump_mtvr-croc-19-mgmt2_20241119_001126.tar.gz"
+    """
+    return SystemConsts.TECHSUPPORT_FILES_PATH + max(tech_support_dict.keys(), key=lambda x: x.split('_')[-2:])
