@@ -403,7 +403,7 @@ class BaseSwitch(BaseDevice):
     def _init_health_components(self):
         super()._init_health_components()
         self.health_components = self.fan_list + self.psu_list + self.psu_fan_list + \
-            ["ASIC Temperature", "Containers", "CPU utilization", "Disk check", "Disk space",
+            ["ASIC-HEALTH", "Containers", "CPU utilization", "Disk check", "Disk space",
              "Disk space log"]
 
     def _init_platform_lists(self):

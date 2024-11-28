@@ -226,7 +226,7 @@ def test_image_uninstall_force(release_name, original_version, test_name, device
 @pytest.mark.image
 @pytest.mark.system
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_system_image_bad_flow(engines, release_name, test_api, original_version, sonic_mgmt_ipv6_addr):
+def test_system_image_bad_flow(engines, release_name, test_api, original_version, sonic_mgmt_ipv6_addr, base_version_realpath):
     """
     Check bad flow scenarios:
     -	Fetch something that doesn’t / already exist
@@ -245,15 +245,15 @@ def test_system_image_bad_flow(engines, release_name, test_api, original_version
     file_rand_name = system.image.files.file_name[rand_name]
 
     with allure.step("Get an available image file"):
-        image_name, image_path = get_images_to_fetch(release_name, original_image)[0]
+        _, _, _, _, image_name = get_image_data_and_fetch_base_image(system, base_version_realpath)
+        image_path = base_version_realpath
         images_name = []
         image_file = system.image.files.file_name[image_name]
 
     with allure.step("Fetch bad flows"):
         with allure.step("Fetch an image"):
             player = engines['sonic_mgmt']
-            scp_path = 'scp://{}:{}@{}'.format(player.username, player.password, player.ip)
-            system.image.action_fetch(scp_path + image_path)
+            system.image.action_fetch(ImageConsts.SCP_PATH + image_path)
             images_name.append(image_name)
         with allure.step("Fetch the same image again using ipv6 address"):
             scp_path = ImageConsts.SCP_PATH_SERVER.format(username=player.username, password=player.password,
@@ -285,7 +285,7 @@ def test_system_image_bad_flow(engines, release_name, test_api, original_version
 
     with allure.step("Upload bad flows"):
         player = engines['sonic_mgmt']
-        upload_path = 'scp://{}:{}@{}/tmp/'.format(player.username, player.password, player.ip)
+        upload_path = ImageConsts.SCP_PATH_SERVER.format(username=player.username, password=player.password, ip=player.ip, path='/tmp')
         with allure.step("Upload image file that does not exist"):
             file_rand_name.action_upload(upload_path, "File not found")
         with allure.step("Upload the same image twice"):

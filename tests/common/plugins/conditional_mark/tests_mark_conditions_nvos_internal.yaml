@@ -547,13 +547,13 @@ tests_nvos/system/test_techsupport_feature.py::test_techsupport_expected_files:
 
 tests_nvos/platform/test_install_platform_firmware.py::test_install_platform_firmware:
   skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4146750"
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4146750, fixed in BMC ver 594"
     conditions:
       - https://redmine.mellanox.com/issues/4146750
 
 tests_nvos/platform/test_platform_firmware_asic.py::test_platform_firmware_image_rename:
   skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4146750"
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4146750, fixed in BMC ver 594"
     conditions:
       - https://redmine.mellanox.com/issues/4146750
 

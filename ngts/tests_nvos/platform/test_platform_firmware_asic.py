@@ -5,19 +5,16 @@ from typing import Tuple
 
 import pytest
 
-from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import ImageConsts, NvosConst
 from ngts.nvos_constants.constants_nvos import PlatformConsts
 from ngts.nvos_tools.infra.BmcTool import BmcTool
 from ngts.nvos_tools.infra.Fae import Fae
-from ngts.nvos_tools.system.System import System
-from ngts.tests_nvos.constants import MINUTE
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.platform.Platform import Platform
-from ngts.tests_nvos.platform.test_install_platform_firmware import get_asic_dict, get_version_and_file_name
+from ngts.tests_nvos.platform.test_install_platform_firmware import get_asic_dict
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
@@ -160,29 +157,33 @@ def test_platform_firmware_image_upload(engines, devices, topology_obj):
     4. Delete image file from player
     5. Delete image file from dut
     """
+
     platform = Platform()
-    dut = devices.dut
-    _, fetched_image, _ = get_image_data_and_fetch_random_image_files(platform, dut, topology_obj)
+    component_name = 'asic'
+    fw_file, fetched_image_name, _ = BmcTool.get_fw_component_version_latest(component_name)
+    with allure.step("Fetch image"):
+        platform.firmware.asic.action_fetch(fw_file, base_url=ImageConsts.SCP_PATH).verify_result()
+
     upload_protocols = ['scp', 'sftp']
     player = engines['sonic_mgmt']
-    image_file = platform.firmware.asic.files.file_name[fetched_image]
+    image_file = platform.firmware.asic.files.file_name[fetched_image_name]
 
     with allure.step("Upload image to player {} with the next protocols : {}".format(player.ip, upload_protocols)):
         for protocol in upload_protocols:
             with allure.step("Upload image to player with {} protocol".format(protocol)):
                 upload_path = '{}://{}:{}@{}/tmp/{}'.format(protocol, player.username, player.password, player.ip,
-                                                            fetched_image)
+                                                            fetched_image_name)
                 image_file.action_upload(upload_path, expected_str='File upload successfully')
 
             with allure.step("Validate file was uploaded to player and delete it"):
                 assert player.run_cmd(
-                    cmd='ls /tmp/ | grep {}'.format(fetched_image)), "Did not find the file with ls cmd"
-                player.run_cmd(cmd='rm -f /tmp/{}'.format(fetched_image))
+                    cmd='ls /tmp/ | grep {}'.format(fetched_image_name)), "Did not find the file with ls cmd"
+                player.run_cmd(cmd='rm -f /tmp/{}'.format(fetched_image_name))
 
     with allure.step("Delete file from player"):
         logging.info("Delete file from player")
-        platform.firmware.asic.files.delete_files([fetched_image])
-        platform.firmware.asic.files.verify_show_files_output(unexpected_files=[fetched_image])
+        platform.firmware.asic.files.delete_files([fetched_image_name])
+        platform.firmware.asic.files.verify_show_files_output(unexpected_files=[fetched_image_name])
 
 
 def _set_and_verify(platform: Platform, property: str, value: str, unset=False):
@@ -240,24 +241,6 @@ def compare_asic_names(first_dictionary, second_dictionary):
 def compare_asic_fields(first_dictionary, second_dictionary):
     logging.info("Compare asic fields")
     ValidationTool.compare_dictionaries(first_dictionary, second_dictionary).verify_result()
-
-
-def get_image_data_and_fetch_random_image_files(platform, dut, topology_obj, images_amount_to_fetch=1
-                                                ) -> Tuple[str, str, str]:
-    original_image, default_firmware = get_image_data(platform, dut)
-
-    with allure.step(f"Get {images_amount_to_fetch} available image files"):
-        asic_type = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific'][
-            'chip_type']
-        if "QTM3" in default_firmware:
-            directory = PlatformConsts.XDR_FW_PATH.format(asic=asic_type)
-            image_name = f'fw-{asic_type}-{ImageConsts.XDR_FW_STABLE_VERSION}'
-            image_to_fetch = os.path.join(directory, image_name)
-        else:
-            image_to_fetch = '{}fw-{}-'.format(PlatformConsts.FW_PATH, asic_type) + ImageConsts.FW_STABLE_VERSION
-            image_name = 'fw-{}-'.format(asic_type) + ImageConsts.FW_STABLE_VERSION
-        platform.firmware.asic.action_fetch(image_to_fetch).verify_result()
-    return original_image, image_name, default_firmware
 
 
 def get_image_data(platform, dut) -> Tuple[str, str]:

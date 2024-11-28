@@ -1,17 +1,17 @@
+import re
+
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from ngts.nvos_tools.infra.CurlTool import CurlTool
+from ngts.nvos_tools.infra.BmcTool import BmcTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.nvos_tools.infra.TpmTool import TpmTool
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_constants.constants_nvos import SystemConsts, PlatformConsts, OutputFormat
+from ngts.nvos_constants.constants_nvos import SystemConsts, OutputFormat
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tools.test_utils import allure_utils as allure
 import logging
 import pytest
-import time
 
 logger = logging.getLogger()
 
@@ -152,16 +152,8 @@ def test_techsupport_bmc_badflow(engines, test_name):
     system = System()
     try:
         dut_engine: LinuxSshEngine = TestToolkit.engines.dut
-        with allure.step('compare certificates data from nv show to data received directly from BMC'):
-            with allure.step('get nvos password to bmc from tpm'):
-                tpm = TpmTool(dut_engine)
-                bmc_password = tpm.get_bmc_admin_password_from_tpm()
-
         with allure.step('gracefully restart bmc via redfish'):
-            client = CurlTool(server_host=PlatformConsts.BMC_INTERNAL_IP, username=PlatformConsts.BMC_LOGIN,
-                              password=bmc_password)
-            output = client.graceful_restart_bmc()
-            assert 'The request completed successfully.' in output, f"Failed to reboot bmc via redfish.\nGot: {output}"
+            BmcTool.reset(dut_engine)
 
         with allure.step('Run nv action generate system tech-support'):
             tech_support_folder, duration = system.techsupport.action_generate(test_name=test_name)
@@ -175,9 +167,9 @@ def test_techsupport_bmc_badflow(engines, test_name):
             assert not files_list, f'bmc folder is not empty and got: {files_list}'
 
         with allure.step('verify error msg in logs'):
-            output = engines.dut.run_cmd("cat /var/log/syslog | grep 'bmc'")
-            assert 'Failed to extract BMC debug log dump' in output, f"Expected to find 'Failed' in out. Got: {output}"
-
+            output = engines.dut.run_cmd("cat /var/log/syslog | grep 'bmc_techsupport.py'")
+            assert re.search(r'Failed to (extract|collect) BMC debug log dump',
+                             output), f"Expected to find 'Failed to extract/collect BMC debug log dump' in output. Got: {output}"
     finally:
         engines.dut.run_cmd("sudo ifup usb0")
         system.techsupport.cleanup(engines.dut)
