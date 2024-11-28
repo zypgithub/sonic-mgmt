@@ -118,7 +118,7 @@ def test_reset_factory(factory_reset_type, engines, devices, topology_obj, platf
 
 def do_factory_reset(devices, engines, system, flag, topology_obj):
     with allure.step('do factory reset'):
-        system_is_ready_tout = devices.dut.system_is_ready_wait_timeout + 2 * MINUTE
+        system_is_ready_tout = devices.dut.timeout_system_is_ready + 2 * MINUTE
         system.factory_default.action_reset(operation=devices.dut.reset_factory, param=flag, topology_obj=topology_obj,
                                             system_is_ready_timeout=system_is_ready_tout, verify_duration=False).verify_result()
     with allure.step('update timezone'):

@@ -198,7 +198,7 @@ class NvueGeneralCli(SonicGeneralCliDefault):
             ping_till_alive(should_be_alive=True, destination_host=engine.ip)
         with allure.step('wait for System is ready in serial'):
             DutUtilsTool.wait_for_system_ready_in_serial(topology_obj, serial_engine,
-                                                         20 * MINUTE)  # TODO: restore to self.device.system_is_ready_wait_timeout
+                                                         20 * MINUTE)  # TODO: restore to self.device.timeout_system_is_ready
             InstallStepsTimer.add_timestamp(InstallSteps.SYSTEM_IS_READY_AFTER_MANUFACTURE)
         with allure.step('Wait until switch is up'):
             engine.disconnect()  # force engines.dut to reconnect

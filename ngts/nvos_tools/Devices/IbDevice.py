@@ -746,7 +746,6 @@ class CrocodileSwitch(IbSwitch):
         self.ib_ports_num = 64
         self.core_count = 4
         self.asic_type = NvosConst.QTM3
-        self.system_is_ready_wait_timeout = 10 * MINUTE
         self.allow_cpld_update = True
         self.platform_file_path = MultiPlanarConsts.PLATFORM_FILE_FULL_PATH.format("x86_64-nvidia_qm3400-r0")
         self.show_platform_output.update({
@@ -887,6 +886,10 @@ class CrocodileSwitch(IbSwitch):
         super()._init_interface_lists()
         self.mgmt_ports = ['eth0', 'eth1']
 
+    def _init_boot_time_timeouts(self):
+        super()._init_boot_time_timeouts()
+        self.timeout_system_is_ready = 10 * MINUTE
+
 
 # -------------------------- Crocodile Simx Switch ----------------------------
 class CrocodileSimxSwitch(IbSwitch):
@@ -929,7 +932,6 @@ class JulietSwitch(NvLinkSwitch):
     def _init_constants(self):
         super()._init_constants()
 
-        self.system_is_ready_wait_timeout = 20 * MINUTE
         self.category_list = ['temperature', 'cpu', 'disk', 'fan', 'mgmt-interface', 'voltage']
         self.category_disabled_dict = {
             self.category_list[0]: self.category_default_disabled_dict,
@@ -1041,6 +1043,11 @@ class JulietSwitch(NvLinkSwitch):
         self.fpga_xpath = "platform-general/versions/state/fw-version-fpga"
         self.components_gnmi_xpath = [self.bmc_xpath, self.bios_xpath, self.erot_xpath, self.fpga_xpath,
                                       self.cpld1_xpath, self.cpld2_xpath, self.cpld3_xpath, self.cpld4_xpath]
+
+    def _init_boot_time_timeouts(self):
+        super()._init_boot_time_timeouts()
+        self.timeout_system_is_ready = 20 * MINUTE
+        self.timeout_reboot_to_grub_menu = 5 * MINUTE
 
     def get_available_erot_names(self, setup_name: str) -> List[str]:
         available_erots_per_juliet_number: Dict[str, List[str]] = {

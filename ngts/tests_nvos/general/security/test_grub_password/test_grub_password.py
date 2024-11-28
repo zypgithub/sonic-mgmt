@@ -5,6 +5,7 @@ import pytest
 
 from infra.tools.validations.traffic_validations.ping.send import ping_till_alive
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
+from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.tools.test_utils import allure_utils as allure
 
@@ -21,9 +22,10 @@ def test_grub_password(topology_obj, engines, serial_engine, devices):
     :param serial_engine: pexpect serial engine
     '''
     try:
+        dut_device: BaseDevice = devices.dut
         with allure.step("Rebooting and entering grub cli"):
             serial_engine.serial_engine.sendline("sudo reboot now")
-            serial_engine.serial_engine.expect("select which entry is highlighted", timeout=180)
+            serial_engine.serial_engine.expect("select which entry is highlighted", timeout=dut_device.timeout_reboot_to_grub_menu)
 
         cli_grub_activation_character = random.choice(['e', 'c'])
         with allure.step("Entering cli command-line using {} character".format(cli_grub_activation_character)):
@@ -40,4 +42,4 @@ def test_grub_password(topology_obj, engines, serial_engine, devices):
             with allure.step('Ping switch until shutting down'):
                 ping_till_alive(should_be_alive=False, destination_host=serial_engine.ip)
             with allure.step('wait for System is ready'):
-                DutUtilsTool.wait_for_system_ready_in_serial(topology_obj, serial_engine, devices.dut.system_is_ready_wait_timeout)
+                DutUtilsTool.wait_for_system_ready_in_serial(topology_obj, serial_engine, devices.dut.timeout_system_is_ready)
