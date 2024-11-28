@@ -159,6 +159,10 @@
         "default_hwsku": "Mellanox-SN5600-V256",
         "support_hwsku": ["ACS-SN5600", "Mellanox-SN5600-V256", "Mellanox-SN5600-C256S1", "Mellanox-SN5600-C224O8"]
     },
+    "mtvr-moose-13_setup": {
+        "default_hwsku": "Mellanox-SN5600-C224O8",
+        "support_hwsku": ["Mellanox-SN5600-C224O8"]
+    },
     "mtvr-moose-14_setup": {
         "default_hwsku": "Mellanox-SN5600-C224O8",
         "support_hwsku": ["Mellanox-SN5600-C224O8"]
