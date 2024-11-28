@@ -20,7 +20,7 @@ logger = logging.getLogger()
 @pytest.mark.system
 @pytest.mark.certificate
 @pytest.mark.parametrize('test_api, test_flow', [(ApiType.NVUE, TestFlowType.GOOD_FLOW), (ApiType.NVUE, TestFlowType.BAD_FLOW), (ApiType.OPENAPI, TestFlowType.GOOD_FLOW)])
-def test_certificate_commands(engines, test_api, test_flow):
+def test_certificate_commands(engines, test_api, test_flow, clear_certs):
     """
     Test certificate mgmt commands:
         1. nv action import system security certificate <cert-id_1> uri-bundle <https://URI>
@@ -86,7 +86,7 @@ def test_certificate_commands(engines, test_api, test_flow):
 @pytest.mark.system
 @pytest.mark.certificate
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_ca_certificate_commands(engines, test_api):
+def test_ca_certificate_commands(engines, test_api, clear_certs):
     TestToolkit.tested_api = test_api
     system = System()
     player = get_scp_player(engines)
@@ -110,7 +110,7 @@ def test_ca_certificate_commands(engines, test_api):
 @pytest.mark.certificate
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
 @pytest.mark.parametrize('test_flow', [TestFlowType.GOOD_FLOW])
-def test_import_certificate_with_long_passphrase(test_api, test_flow, engines):
+def test_import_certificate_with_long_passphrase(test_api, test_flow, engines, clear_certs):
     """
     test that users able to import certificate bundle with long passphrase
     """
