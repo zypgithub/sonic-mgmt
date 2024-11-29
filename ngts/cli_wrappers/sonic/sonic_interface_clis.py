@@ -629,6 +629,15 @@ class SonicInterfaceCli(InterfaceCliCommon):
                 return interface
         return None
 
+    def get_passive_phy_ports(self):
+        intf_status = self.parse_interfaces_status()
+        passive_ports = []
+        for interface in intf_status.keys():
+            if intf_status[interface]['Oper'] == 'down' and \
+                    intf_status[interface]['Admin'] == 'down' and interface.startswith('Ethernet'):
+                passive_ports.append(interface)
+        return passive_ports
+
     def get_admin_up_ports(self):
         intf_status = self.parse_interfaces_status()
         admin_up_ports = []
