@@ -50,3 +50,4 @@ def add_dpu_player(topology, slow_cli, override_type):
         topology.players.update(create_player_entry(dpu_player_entry, slow_cli, override_type))
         if dpu_host_name in topology.players:
             topology.players[dpu_host_name]['attributes'].noga_query_data['attributes']['Common']['Name'] += f"-dpu-{dpu_index}"
+            topology.players[dpu_host_name]['attributes'].noga_query_data['attributes']['Common']['Description'] = dpu_host_name

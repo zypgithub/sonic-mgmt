@@ -84,14 +84,16 @@ def get_la_start_string(engine, request):
     :param request: pytest build-in
     :return: LogAnalyzer start_string line, example: r-lionfish-07 INFO start-LogAnalyzer-test_a.2022-05-16-13:49:02
     """
-    test_name = request.node.name.split("[")[0]
+    test_name = request.node.name
+    test_name = test_name.replace("[", r"\[")
+    test_name = test_name.replace("]", r"\]")
     start = 'start-LogAnalyzer'
     start_prefix = start + '-' + test_name
 
     msg = 'Getting original LogAnalyzer start_string'
     with allure.step(msg):
         logger.info(msg)
-        start_string_full_line = engine.run_cmd(f'sudo cat /var/log/syslog -n | grep {start_prefix}')
+        start_string_full_line = engine.run_cmd(f'sudo cat /var/log/syslog -n | grep "{start_prefix}"')
         # line example:  "   9	May 16 13:48:23.535689 r-lionfish-07 INFO start-LogAnalyzer-test_a.2022-05-16-13:49:02"
         start_string_line = ' '.join(start_string_full_line.split()[4:])
         start_string_line_number = start_string_full_line.split()[0]

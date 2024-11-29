@@ -384,7 +384,8 @@ def get_info_from_topology(topology_obj, workspace_path):
                 if dut_info['dut_alias'] == "dut":
                     setup_info['duts'].insert(0, dut_info)
                 else:
-                    setup_info['duts'].append(dut_info)
+                    if 'dpu' not in dut_info['dut_alias']:
+                        setup_info['duts'].append(dut_info)
             elif host == 'hypervisor':
                 hypervisor_name = topology_obj.players[host]['attributes'].noga_query_data['attributes']['Common']['Name']
                 hypervisor_ip = topology_obj.players[host]['attributes'].noga_query_data['attributes']['Specific']['ip']
