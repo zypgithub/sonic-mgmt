@@ -180,6 +180,6 @@ def check_issues(issues, proxies=None):
     for proc in check_procs:
         proc.start()
     for proc in check_procs:
-        proc.join(timeout=60)
+        proc.join(timeout=120)
 
     return dict(check_results)
