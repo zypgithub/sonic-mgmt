@@ -571,6 +571,72 @@ def test_fetch_image_via_http(release_name, test_name, test_api, devices):
             system.image.files.verify_show_files_output(unexpected_files=[image_to_fetch[0]])
 
 
+@pytest.mark.checklist
+@pytest.mark.image
+@pytest.mark.system
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_fetch_image_with_weird_password(test_api, engines):
+    """
+    Install system image test
+
+    1. Create a dummy image to be fetched
+    2. Create a user
+    3. Set the password of the new user to some weird password
+    4. Fetch the dummy image using the new user and password
+    5. Confirm the image was successfully fetched using nv show
+    6. Delete the image that has been fetched during the test
+    7. Delete the use which was created during the test
+    8. Delete the dummy image file created
+    """
+    TestToolkit.tested_api = test_api
+    system = System()
+    image_to_fetch = ["/tmp/", "dummy.bin"]
+    weird_passwords = ["Password@1", "Password.1"]
+
+    with allure.step("Create dummy file to be fetched"):
+        cmd_to_create_file = "touch " + image_to_fetch[0] + image_to_fetch[1]
+        engines.dut.run_cmd(cmd_to_create_file)
+
+    for weird_password in weird_passwords:
+        helper_fetch_image_with_weird_password(engines, system, weird_password, image_to_fetch)
+
+    with allure.step("Remove the dummy file"):
+        cmd_to_remove_file = "rm " + image_to_fetch[0] + image_to_fetch[1]
+        engines.dut.run_cmd(cmd_to_remove_file)
+
+
+def helper_fetch_image_with_weird_password(engines, system, weird_password, image_to_fetch):
+    new_user = ""
+    image_fetched = False
+    try:
+
+        with allure.step("Create a new user with the weird password"):
+            new_user, new_password = system.aaa.user.set_new_user(password=weird_password,
+                                                                  role=SystemConsts.ROLE_VIEWER, apply=True)
+
+        with allure.step("Fetch the dummy image {} using the new user and weird password".format(image_to_fetch[0])):
+            hostname = engines.dut.run_cmd('hostname')
+            scp_path = ImageConsts.SCP_PATH_SERVER.format(username=new_user, password=weird_password,
+                                                          ip=hostname, path=image_to_fetch[0] + image_to_fetch[1])
+            system.image.action_fetch(scp_path)
+            image_fetched = True
+
+        with allure.step("Verify fetched image is shown in the show command"):
+            system.image.files.verify_show_files_output(expected_files=[image_to_fetch[1]])
+
+    finally:
+        if image_fetched:
+            with allure.step("Delete the image that has been fetched during the test"):
+                system.image.files.delete_files([image_to_fetch[1]])
+
+            with allure.step("Verify earlier fetched image is not shown in the show command"):
+                system.image.files.verify_show_files_output(unexpected_files=[image_to_fetch[1]])
+
+        if new_user:
+            with allure.step("Delete the newly created user"):
+                system.aaa.user.user_id[new_user].unset(apply=True).verify_result()
+
+
 def normalize_image_name(image_name):
     return image_name.replace("-amd64", "").replace(".bin", "")
 
