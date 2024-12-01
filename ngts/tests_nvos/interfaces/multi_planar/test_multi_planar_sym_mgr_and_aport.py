@@ -230,27 +230,29 @@ class AggregatedPortConfigBaseTest(ABC):
 
     @classmethod
     def set_config(cls, device, aggregated_port, plane_port):
-        aggregated_port_output = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
-            aggregated_port.interface.link.show()).get_returned_value()
-        param_new_value = RandomizationTool.select_random_value(
-            cls.get_possible_values(device), forbidden_values=[aggregated_port_output[cls.LINK_PARAM]]
-        ).get_returned_value()
-        aggregated_port.interface.link.set(op_param_name=cls.LINK_PARAM, op_param_value=param_new_value,
-                                           apply=True, ask_for_confirmation=True).verify_result()
-        logger.info(f"set port {aggregated_port.name} link param: {cls.LINK_PARAM} = {param_new_value}")
-        time.sleep(MultiPlanarConsts.PORT_UPDATE_TIME)  # todo assert port goes up & active
-        return param_new_value
+        with allure.step('make config change'):
+            aggregated_port_output = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
+                aggregated_port.interface.link.show()).get_returned_value()
+            param_new_value = RandomizationTool.select_random_value(
+                cls.get_possible_values(device), forbidden_values=[aggregated_port_output[cls.LINK_PARAM]]
+            ).get_returned_value()
+            aggregated_port.interface.link.set(op_param_name=cls.LINK_PARAM, op_param_value=param_new_value,
+                                               apply=True, ask_for_confirmation=True).verify_result()
+            logger.info(f"set port {aggregated_port.name} link param: {cls.LINK_PARAM} = {param_new_value}")
+            time.sleep(MultiPlanarConsts.PORT_UPDATE_TIME)  # todo assert port goes up & active
+            return param_new_value
 
     @classmethod
     def assert_aggregation(cls, aggregated_port, plane_port, expected_value):
-        aggregated_port_output = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
-            aggregated_port.interface.link.show()).get_returned_value()
-        plane_port_output = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
-            plane_port.interface.link.show()).get_returned_value()
-        aggregated_value = aggregated_port_output[cls.LINK_PARAM]
-        plane_value = plane_port_output[cls.LINK_PARAM]
-        assert aggregated_value == plane_value == expected_value, \
-            f"mismatch in {cls.LINK_PARAM}: {aggregated_value=}, {plane_value=}, {expected_value=}"
+        with allure.step('assert aggregation'):
+            aggregated_port_output = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
+                aggregated_port.interface.link.show()).get_returned_value()
+            plane_port_output = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
+                plane_port.interface.link.show()).get_returned_value()
+            aggregated_value = aggregated_port_output[cls.LINK_PARAM]
+            plane_value = plane_port_output[cls.LINK_PARAM]
+            assert aggregated_value == plane_value == expected_value, \
+                f"mismatch in {cls.LINK_PARAM}: {aggregated_value=}, {plane_value=}, {expected_value=}"
 
 
 # todo: pending decision which speeds are actually supported by mamba
