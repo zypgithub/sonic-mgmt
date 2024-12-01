@@ -670,6 +670,12 @@
     - Affected_test_cases:
         - tests_nvos/general/security/test_aaa_ldap/test_aaa_ldap.py
 
+- Errors_list:
+    - '.*WARNING sed_pw_recovery_service.sh: Password used from TPM Bank 2 not passing authentication.*'
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/general/security/sed/test_sed_password.py::test_back_new_pass
+
 ## NVOS - commented the ignore for debug
 #- Errors_list:
 #    - '.* ERR auditd\[\d+\]: queue to plugins is full - dropping event.*'

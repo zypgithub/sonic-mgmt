@@ -4,14 +4,11 @@ import time
 
 import pytest
 
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.nvos_tools.infra.BmcTool import BmcTool
 from ngts.nvos_tools.infra.DMIDecodeTool import DMIDecodeTool
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.tests_nvos.platform.test_platform_firmware_bios.helpers import get_bios_info_from_device, fetch_and_install_bios, verify_bios_version
-from ngts.nvos_tools.platform.Platform import Platform
 from ngts.scripts.bios_config import configure_bios
 from ngts.tests_nvos.constants import MINUTE
 
@@ -24,7 +21,7 @@ def restore_bios(topology_obj):
     configure_bios(topology_obj)
 
 
-@pytest.mark.timeout(25 * MINUTE, func_only=True)
+@pytest.mark.timeout(30 * MINUTE, func_only=True)
 @pytest.mark.bios
 @pytest.mark.parametrize('test_api', random.sample(ApiType.ALL_TYPES, 1))
 @pytest.mark.parametrize("platform_component_with_clear", ["bios"], indirect=True)

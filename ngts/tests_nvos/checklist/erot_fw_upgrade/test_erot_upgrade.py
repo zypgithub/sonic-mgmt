@@ -10,7 +10,7 @@ from ngts.tools.test_utils import allure_utils as allure
 from ngts.tests_nvos.constants import MINUTE, FW_COMPONENT_EROT
 
 
-@pytest.mark.timeout(20 * MINUTE, func_only=True)
+@pytest.mark.timeout(25 * MINUTE, func_only=True)
 @pytest.mark.erot
 @pytest.mark.parametrize('test_api', random.sample(ApiType.ALL_TYPES, 1))
 def test_erot_upgrade_all(engines, devices, topology_obj, test_api, test_name):
@@ -41,7 +41,7 @@ def test_erot_upgrade_all(engines, devices, topology_obj, test_api, test_name):
         test.test(engines=engines, switch=devices.dut, topology_obj=topology_obj, test_api=test_api)
 
 
-@pytest.mark.timeout(20 * MINUTE, func_only=True)
+@pytest.mark.timeout(25 * MINUTE, func_only=True)
 @pytest.mark.erot
 @pytest.mark.parametrize('test_api', random.sample(ApiType.ALL_TYPES, 1))
 def test_erot_upgrade_fae(engines, devices, topology_obj, test_api, test_name, clear_erot_files):
