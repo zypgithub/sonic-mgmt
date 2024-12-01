@@ -626,9 +626,9 @@ def test_symmetry_manager_log_and_tech_support(engines, devices, test_api):
     system = System(devices_dut=dut_device)
 
     with allure.step("Select random aggregated port and plane port"):
-        selected_fae_aggregated_port = MultiPlanarTool.select_random_aggregated_port(devices)
+        selected_fae_aggregated_port = MultiPlanarTool.select_random_aggregated_port(dut_device)
         selected_aggregated_port = MgmtPort(selected_fae_aggregated_port.port.name)
-        selected_fae_plane_port = MultiPlanarTool.select_random_plane_port(devices, selected_fae_aggregated_port,
+        selected_fae_plane_port = MultiPlanarTool.select_random_plane_port(selected_fae_aggregated_port,
                                                                            dut_device.num_of_plane_ports)
 
     try:
