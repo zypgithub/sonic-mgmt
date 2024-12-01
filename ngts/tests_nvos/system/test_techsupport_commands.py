@@ -111,14 +111,14 @@ def test_techsupport_since_invalid_date(engines, test_api):
                      'of Invalid date {invalid_date_syntax}'.format(invalid_date_syntax=invalid_date_syntax)):
         output_dictionary, duration = system.techsupport.action_generate(option=SystemConsts.ACTIONS_GENERATE_SINCE,
                                                                          since_time=invalid_date_syntax)
-        assert 'Command failed with the following output' in output_dictionary, ""
+        assert 'Action failed with the following' in output_dictionary, ""
 
     invalid_date_syntax = 'aabbccdd'
     with allure.step('Validating the generate command failed because '
                      'of Invalid date {invalid_date_syntax}'.format(invalid_date_syntax=invalid_date_syntax)):
         output_dictionary, duration = system.techsupport.action_generate(option=SystemConsts.ACTIONS_GENERATE_SINCE,
                                                                          since_time=invalid_date_syntax)
-        assert 'Command failed with the following output' in output_dictionary, ""
+        assert 'Action failed with the following' in output_dictionary, ""
 
 
 @pytest.mark.system
