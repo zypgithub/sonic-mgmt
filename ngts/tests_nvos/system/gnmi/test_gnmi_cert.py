@@ -14,13 +14,15 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.general.security.certificate.constants import TestCert
+from ngts.tests_nvos.general.security.certificate.helpers import import_certificates
 from ngts.tests_nvos.general.security.conftest import local_adminuser
 from ngts.tests_nvos.general.security.helpers import remove_etc_host_mapping_to_dn, add_etc_host_mapping_to_dn
 from ngts.tests_nvos.general.security.security_test_tools.constants import AddressingType
 from ngts.tests_nvos.helpers.pytest_helpers import get_cur_test_param_value
 from ngts.tests_nvos.system.gnmi.constants import CERTIFICATE, DEFAULT_CERTIFICATE, GnmicErr, \
     MAX_GNMI_CONNECTIVITY_TIME, GNMI_TEST_CERT, ETC_HOSTS
-from ngts.tests_nvos.system.gnmi.helpers import verify_gnmi_client, get_timestamp_of_first_gnmi_response
+from ngts.tests_nvos.system.gnmi.helpers import verify_gnmi_client, get_timestamp_of_first_gnmi_response, \
+    verify_gnmi_client_tools_installed, get_scp_player
 
 
 @pytest.fixture(scope='module', autouse=True)
@@ -369,3 +371,44 @@ def test_gnmi_set_cert_response_time(local_adminuser):
                 f'gnmi connectivity time was too long after certificate change.\n'
                 f'expected limit: {MAX_GNMI_CONNECTIVITY_TIME} seconds\n'
                 f'actual: {interval_result} seconds')
+
+
+def gnmi_cert_upgrade_check():
+    engines = TestToolkit.engines
+    cert = TestCert.cert_valid_1
+    system = System()
+    scp_engine = get_scp_player(engines)
+    dut_engine = engines.dut
+
+    with allure.step('setup'):
+        with allure.step('verify player has gnmi client tools'):
+            verify_gnmi_client_tools_installed()
+        with allure.step(f'import cert {cert.name}'):
+            import_certificates(scp_engine, dut_engine, [cert])
+        with allure.step(f'set certificate "{cert.name}" to gnmi'):
+            system.gnmi_server.set(CERTIFICATE, cert.name, apply=True).verify_result()
+        with allure.step('save config'):
+            NvueGeneralCli.save_config(dut_engine)
+
+    yield  # do upgrade
+
+    try:
+        with allure.step('verify GNMI certificate kept'):
+            with allure.independent_step(f'verify in show'):
+                out = OutputParsingTool.parse_json_str_to_dictionary(system.gnmi_server.show()).get_returned_value()
+                assert out[CERTIFICATE] == cert.name, (
+                    f'value of field "{CERTIFICATE}" not as expected\n'
+                    f'expected: {cert.name}\n'
+                    f'actual: {out[CERTIFICATE]}')
+            with allure.independent_step('verify client can request using the certificate'):
+                time.sleep(5)
+                remove_etc_host_mapping_to_dn(cert.dn)
+                add_etc_host_mapping_to_dn(cert.dn, dut_engine.ip)
+                verify_gnmi_client(TestFlowType.GOOD_FLOW, cert.dn or cert.ip, GnmiConsts.GNMI_DEFAULT_PORT, dut_engine.username,
+                                   dut_engine.password, False, GnmicErr.CERT_VERIFY_FAIL, cacert=cert.cacert)
+                remove_etc_host_mapping_to_dn(cert.dn)
+    finally:
+        with allure.step('cleanup'):
+            system.gnmi_server.unset(apply=True).verify_result()
+
+    yield  # to prevent StopIteration on the 2nd next() call

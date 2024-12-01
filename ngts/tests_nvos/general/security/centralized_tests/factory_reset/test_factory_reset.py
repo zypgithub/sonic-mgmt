@@ -8,7 +8,7 @@ from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.general.security.centralized_tests.factory_reset.constants import FactoryResetType, \
     FACTORY_RESET_TYPE_TO_ACTION_PARAM
 from ngts.tests_nvos.general.security.centralized_tests.helpers.checker_skip_rules import SkipCheckerBySetup, \
-    CheckerSkipRule, should_skip_checker, SkipCheckerByCond
+    CheckerSkipRule, should_skip_checker
 from ngts.tests_nvos.general.security.certificate.helpers import delete_certificates
 from ngts.tests_nvos.general.security.certificate.test_cert_cacert_mgmt import certs_mgmt_factory_reset_no_params_check, \
     certs_mgmt_factory_reset_keep_only_files_check
@@ -18,7 +18,6 @@ from ngts.tests_nvos.general.security.test_api_server_security.test_api_mtls imp
     api_mtls_factory_reset_no_params_check, api_mtls_factory_reset_keep_all_config_check, \
     api_mtls_factory_reset_keep_only_files_check
 from ngts.tests_nvos.general.security.tpm_attestation.helpers import tpm_attestation_factory_reset_no_params_check
-from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tests_nvos.system.factory_reset.helpers import update_timezone
 from ngts.tests_nvos.system.gnmi.helpers import gnmi_cert_factory_reset_no_params_check
 from ngts.tools.test_utils import allure_utils as allure
@@ -33,7 +32,6 @@ SED_PASSWORD = 'SED password'
 CERTS_MGMT = 'Certificates management'
 
 CHECKERS_SKIP_RULES: Dict[str, CheckerSkipRule] = {
-    API_MTLS: SkipCheckerByCond(is_bug_active(4103432)),  # TODO: remove once bug #4103432 closed
     NMX_CERT: SkipCheckerBySetup(['juliet'], False),
     SED_PASSWORD: SkipCheckerBySetup(['gorilla']),
     TPM_ATTESTATION: SkipCheckerBySetup(['gorilla'])

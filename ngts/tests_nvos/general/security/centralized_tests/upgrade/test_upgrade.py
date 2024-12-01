@@ -9,13 +9,13 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.general.security.centralized_tests.helpers.checker_skip_rules import CheckerSkipRule, \
-    SkipCheckerByCond, SkipCheckerBySetup, should_skip_checker
+    SkipCheckerBySetup, should_skip_checker
 from ngts.tests_nvos.general.security.certificate.helpers import delete_certificates
 from ngts.tests_nvos.general.security.certificate.test_cert_cacert_mgmt import certs_mgmt_upgrade_check
 from ngts.tests_nvos.general.security.test_api_server_security.test_api_mtls import api_mtls_upgrade_check
-from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tests_nvos.system.factory_reset.helpers import *
 from ngts.tests_nvos.system.gnmi.helpers import get_scp_player
+from ngts.tests_nvos.system.gnmi.test_gnmi_cert import gnmi_cert_upgrade_check
 from ngts.tools.test_utils import allure_utils as allure
 
 TPM_ATTESTATION = 'TPM attestation'
@@ -28,10 +28,10 @@ CERTS_MGMT = 'Certificates management'
 UPGRADE_CHECKERS: Dict[str, Generator[None, None, None]] = {
     API_MTLS: api_mtls_upgrade_check(),
     CERTS_MGMT: certs_mgmt_upgrade_check(),
+    GNMI_CERT: gnmi_cert_upgrade_check()
 }
 
 CHECKERS_SKIP_RULES: Dict[str, CheckerSkipRule] = {
-    API_MTLS: SkipCheckerByCond(is_bug_active(4103432)),  # TODO: remove once bug #4103432 closed
     NMX_CERT: SkipCheckerBySetup(['juliet'], False),
     SED_PASSWORD: SkipCheckerBySetup(['gorilla']),
     TPM_ATTESTATION: SkipCheckerBySetup(['gorilla'])
