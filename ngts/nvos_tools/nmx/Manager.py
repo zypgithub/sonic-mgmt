@@ -1,8 +1,11 @@
+import time
+
 import ngts.tools.test_utils.allure_utils as allure
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 
 
 class Manager(BaseComponent):
@@ -15,8 +18,11 @@ class Manager(BaseComponent):
     def action_update(self, state: str = '', dut_engine=None) -> ResultObj:
         with allure.step(f'Execute action update for {self.get_resource_path()}'):
             engine = dut_engine or TestToolkit.engines.dut
-            return SendCommandTool.execute_command(self._cli_wrapper.action_update_cluster_manager_property, engine,
-                                                   self.get_resource_path(), 'state', state)
+            res = SendCommandTool.execute_command(self._cli_wrapper.action_update_cluster_manager_property, engine,
+                                                  self.get_resource_path(), 'state', state)
+            if is_bug_active(4180778):
+                time.sleep(7)  # TODO: remove this WA once closed
+            return res
 
     def action_restore(self, dut_engine=None) -> ResultObj:
         with allure.step(f'Execute action restore for {self.get_resource_path()}'):
