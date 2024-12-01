@@ -96,3 +96,28 @@ class BmcTool():
     @staticmethod
     def get_fw_component_version_previous(component_name):
         return BmcTool._get_fw_component_version_info(component_name, "previous")
+
+    @staticmethod
+    def get_bmc_ip_addresses(engines, topology_obj):
+        """
+        get ipv4 using noga and ipv6 using curl -k -u <user>>:<password> https://<bmc_ip>/redfish/v1/Managers/BMC_0/EthernetInterfaces/eth0
+        :param engines:
+        :param topology_obj:
+        :return:
+        """
+        ip_addresses = {}
+        with allure.step("Get bmc ipv4 from noga"):
+            bmc_ipv4_address = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific']['bmc_ip']
+            logger.info(f"the bmc IPv4 is {bmc_ipv4_address}")
+            ip_addresses["IPv4"] = bmc_ipv4_address
+
+        with allure.step("Sending a curl request to get the IPv6 address from the BMC"):
+            curl_request = f'curl -s -k -u {BmcTool.USER_NAME}:{BmcTool._get_bmc_password(engines.dut)} https://{bmc_ipv4_address}/redfish/v1/Managers/BMC_0/EthernetInterfaces/eth0 | python3 -m json.tool'
+            eth0_details = OutputParsingTool.parse_json_str_to_dictionary(engines.dut.run_cmd(curl_request)).verify_result()
+            ipv6_data = eth0_details["IPv6Addresses"]
+            slaac_address = next(
+                (address['Address'] for address in ipv6_data if address['AddressOrigin'] == 'SLAAC'),
+                None  # If no SLAAC address is found, return None
+            )
+            ip_addresses["IPv6"] = slaac_address
+            return ip_addresses
