@@ -251,6 +251,13 @@ tests_nvos/system/test_system_snmp.py::test_system_snmp_negative:
     conditions:
       - https://redmine.mellanox.com/issues/4177946
 
+tests_nvos/interfaces/test_interface_link_transceiver_diagnostics.py::test_interface_link_diagnostics_basic_invalid_ports:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4135623"
+    conditions:
+      - https://redmine.mellanox.com/issues/4135623
+
+
 tests_nvos/interfaces/test_response_mgmt_ip_inband.py:
   skip:
     reason: "#4041220:[Functional] [Crocodile] | Empty addresses in ufm-mad response"

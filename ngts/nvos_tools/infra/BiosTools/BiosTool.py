@@ -73,7 +73,7 @@ class BiosTool(ABC):
         '''
         @summary: this method will remote reboot the given switch and enter the BIOS menu
         @param topology_obj: topology object
-        @param topology_obj: NvueGeneralCli object
+        @param nvue_cli_obj: NvueGeneralCli object
         '''
 
         logger.info("Initializing serial connection to device")
