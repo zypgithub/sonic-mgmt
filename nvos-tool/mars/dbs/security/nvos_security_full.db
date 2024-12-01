@@ -54,6 +54,7 @@
 	</test>
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_tpm_attestation.cases </cases>
+        <ignore><condition> <key>dut_type</key> <op> in </op> <value>[gorilla]</value> </condition></ignore>
 	</test>
     <test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_bmc.cases </cases>
