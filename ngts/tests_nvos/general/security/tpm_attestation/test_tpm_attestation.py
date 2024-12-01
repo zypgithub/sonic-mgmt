@@ -221,27 +221,3 @@ def test_tpm_reboot_cases(engines, devices, save_local_timezone):
                 f'''creation times are different but expected to be equal.
                 before reboot: {quote_time1}
                 after reboot: {quote_time2}'''
-
-
-# TODO: understand how to upgrade here
-@pytest.mark.skip(reason='Skipped until there is GA version with the feature')
-@pytest.mark.tpm
-def test_tpm_upgrade_cases(engines, devices):
-    """
-    Verify that quote is removed after upgrade
-
-     1. before upgrade
-         1. generate quote
-     2. upgrade
-     3. checks after upgrade
-        1. verify quote file is removed
-    """
-    with allure.step('before upgrade steps'):
-        with allure.step('generate quote'):
-            system = System()
-            system.security.tpm.action_generate_quote(VALID_PCRS_PARAM, VALID_NONCE_PARAM).verify_result()
-    with allure.step('upgrade'):
-        pass  # TODO: understand how
-    with allure.step('checks after upgrade'):
-        with allure.step('verify quote file is removed'):
-            verify_only_aik_at_tpm_dir(engines)
