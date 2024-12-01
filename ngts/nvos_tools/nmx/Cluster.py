@@ -5,7 +5,6 @@ from ngts.cli_wrappers.openapi.openapi_cluster_clis import OpenApiClusterCli
 from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.nvos_tools.nmx.App import App
 from ngts.nvos_tools.nmx.Apps import Apps
-from ngts.nvos_tools.nmx.Manager import Manager
 import ngts.tools.test_utils.allure_utils as allure
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
@@ -22,7 +21,6 @@ class Cluster(BaseComponent):
                          path='/cluster')
         self.app = App(self)
         self.apps = Apps(self)
-        self.manager = Manager(self)
 
     def action_update_chassis_id(self, mapping_id: int = '', dut_engine=None) -> ResultObj:
         with allure.step(f'Execute action update for {self.get_resource_path()} with chassis-id {mapping_id}'):

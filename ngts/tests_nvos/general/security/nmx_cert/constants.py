@@ -1,3 +1,7 @@
+from typing import Dict
+
+from ngts.nvos_constants.constants_nvos import ClusterApps
+
 NA = 'N/A'
 STATE = 'state'
 
@@ -10,30 +14,12 @@ CA_CERTIFICATE = 'ca-certificate'
 ENCRYPTION = 'encryption'
 
 DEFAULT_NMX_C_MGMT_PORT = 9370
+DEFAULT_NMX_T_MGMT_PORT = 9351
 
 USR_CFG_JSON_PATH = '/etc/cluster_infra/conf/user_config.json'
-USR_CFG_JSON = USR_CFG_JSON_PATH.split('/')[-1]
-
-NMX_CERTS_DIR = '/etc/nmx/cert'
-NMX_CACERTS_DIR = '/etc/nmx/ca_cert'
 
 FILE_NOT_EXIST_ERR = 'No such file or directory'
-
-FILE_SHOULD_NOT_EXIST = -1
-
-
-class UserCfgJsonFields:
-    CERTIFICATE = 'manager-certificate'
-    PRIVATE_KEY = 'manager-private-key'
-    CA_CERTIFICATE = 'manager-ca-certificate'
-    ENCRYPTION = 'manager-encryption'
-    STATE = 'manager-port'
-
-
-class UserCfgJsonValues:
-    CERTIFICATE = NMX_CERTS_DIR + '/{filename}.crt'  # f'{NMX_CERTS_DIR}/nmx.csr'
-    PRIVATE_KEY = NMX_CERTS_DIR + '/{filename}.key'  # f'{NMX_CERTS_DIR}/nmx.key'
-    CA_CERTIFICATE = NMX_CACERTS_DIR + '/{filename}.crt'  # f'{NMX_CACERTS_DIR}/ca_nmx.crt'
+ITEM_NOT_EXIST_ERR = 'The requested item does not exist'
 
 
 class FieldsInShowOf:
@@ -55,3 +41,39 @@ class Defaults:
     CERT = ''
     CACERT = ''
     ENCRYPTION = EncryptionMode.DISABLED
+
+
+class ClusterAppUserCfgJsonFields:
+    def __init__(self, app_name: str):
+        self.certificate = f'{app_name}-manager-certificate'
+        self.private_key = f'{app_name}-manager-private-key'
+        self.ca_certificate = f'{app_name}-manager-ca-certificate'
+        self.encryption = f'{app_name}-manager-encryption'
+        self.state = f'{app_name}-manager-port'
+        self.all_fields = [self.certificate, self.private_key, self.ca_certificate, self.encryption, self.state]
+
+
+class ClusterAppConsts:
+
+    def __init__(self, app_name: str, external_port):
+        self.app_name: str = app_name
+        self.user_config_json_path: str = USR_CFG_JSON_PATH
+        self.user_config_json_fields: ClusterAppUserCfgJsonFields = ClusterAppUserCfgJsonFields(app_name)
+        self.fields_that_must_exist_in_user_config_json: dict = {self.user_config_json_fields.state: Defaults.STATE}
+        self.cert_private_key_path: str = f'/etc/{app_name}/cert' + '/{}.key'
+        self.cert_public_key_path: str = f'/etc/{app_name}/cert' + '/{}.crt'
+        self.cacert_path: str = f'/etc/{app_name}/ca_cert' + '/{}.crt'
+        self.external_manager_port = external_port
+
+
+NMX_C_CONSTS = ClusterAppConsts(
+    app_name=ClusterApps.NMX_CONTROLLER,
+    external_port=DEFAULT_NMX_C_MGMT_PORT,
+)
+
+NMX_T_CONSTS = ClusterAppConsts(
+    app_name=ClusterApps.NMX_TELEMETRY,
+    external_port=DEFAULT_NMX_T_MGMT_PORT
+)
+
+APP_CONSTS: Dict[str, ClusterAppConsts] = {ClusterApps.NMX_CONTROLLER: NMX_C_CONSTS, ClusterApps.NMX_TELEMETRY: NMX_T_CONSTS}
