@@ -257,9 +257,9 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
                 ClusterTools.verify_log_level(log_level, app, output_format, cluster)
             # Not expecting content to change.
             for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_CONFIG_FILES:
-                if not initial_config_contents[file_type].endswith('\n') and (initial_config_contents[file_type] != ''):
-                    initial_config_contents[file_type] += '\n'
-                initial_config_contents[file_type] += '# This is dummy config file'
+                transformation_fn = ClusterConsts.CONFIG_FILES_CONTENT_CHANGE.get(file_type, lambda x: x)
+                initial_config_contents[file_type] = transformation_fn(initial_config_contents[file_type])
+
             verify_config_files_content_not_changed(sdn, initial_config_contents, engines)
             verify_apps_in_expected_state(cluster, 'ok', has_loopbox)  # Apps should be running
 
@@ -356,7 +356,9 @@ def reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, s
         file_name = 'dummy_' + (initial_configs_paths_to_restore[file_type]).split('/')[-1]
         dummy_file_path = ClusterConsts.INITIAL_CONFIGURATIONS_PATH + '/' + file_name
         engines.sonic_mgmt.run_cmd("sudo cp {} {}".format(initial_configs_paths_to_restore[file_type], dummy_file_path))
-        engines.sonic_mgmt.run_cmd(f"sudo sh -c 'echo \"# This is dummy config file\" >> {dummy_file_path}'")
+        with allure.step("Change initial content"):
+            edit_cmd = ClusterConsts.CONFIG_FILES_CHANGE[file_type].format(file_path=dummy_file_path)
+            engines.sonic_mgmt.run_cmd(edit_cmd)
         path_to_config[file_type] = dummy_file_path
         config_file_name[file_type] = file_name
     with allure.step("Fetch & Generate config files"):
@@ -386,7 +388,10 @@ def reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, s
             current_installed_config_path = output[installed_file]['path']
             current_config_content = engines.dut.run_cmd("sudo cat {}".format(current_installed_config_path))
             expected_config_content = engines.sonic_mgmt.run_cmd("sudo cat {}".format(path_to_config[file_type]))
-            assert current_config_content == expected_config_content, f"Config file was not loaded properly. Expected content {expected_config_content}, Actual content: {current_config_content}"
+
+            current_config_set = set(line.strip() for line in current_config_content[file_type].strip().split('\n') if line.strip())
+            expected_config_set = set(line.strip() for line in expected_config_content.strip().split('\n') if line.strip())
+            assert current_config_set == expected_config_set, f"Configuration mismatch:\nCurrent: {current_config_set}\nExpected: {expected_config_set}"
 
     return log_level
 

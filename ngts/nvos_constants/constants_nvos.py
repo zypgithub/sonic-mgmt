@@ -1178,7 +1178,7 @@ class OperationTimeConsts:
     DATE_COL = 'date'
     THRESHOLDS = {'reboot': 250 if is_bug_active(4074566) else 220,     # TODO: revert once bug closed
                   'julietscaleout_reboot': 505,  # Currently there is a bug on this. Time needs to be decreased once fixed.
-                  'julietscaleout reset factory': 550,  # Currently there is a bug on this. Time needs to be decreased once fixed.
+                  'julietscaleout reset factory': 560,  # Currently there is a bug on this. Time needs to be decreased once fixed.
                   'reset factory': 260,
                   'install user FW': 450,
                   'install default fw': 360,

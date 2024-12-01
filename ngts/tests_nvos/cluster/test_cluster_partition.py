@@ -25,9 +25,13 @@ from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
 
 logger = logging.getLogger()
+EMPTY_PARTITION_ID = 10
+EMPTY_PARTITION_NAME = "empty_partition"
+MIN_MCAST = 0
+MAX_MCAST = 1024
+# @disabled_access_ports
 
 
-@disabled_access_ports
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_cluster_partition(engines, devices, test_api, has_loopbox):
@@ -45,7 +49,7 @@ def test_cluster_partition(engines, devices, test_api, has_loopbox):
         partition_mapping_to_location_uuid_copy = {}
         partitions = {}
         all_location_ids_uuids = []
-
+        partition_ids = []
     try:
         with allure.step("Enable cluster"):
             ClusterTools().start_cluster(cluster, output_format)
@@ -53,6 +57,28 @@ def test_cluster_partition(engines, devices, test_api, has_loopbox):
         with allure.step("Show All Partitions"):
             output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
                                                                  output_format=output_format).get_returned_value()
+            partition_ids = output.keys()
+        with allure.step("Show partition per partition id"):
+            for partition_id in partition_ids:
+                output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.partition_id[partition_id].show(output_format=output_format),
+                                                                     output_format=output_format).get_returned_value()
+        with allure.step("Create empty partition"):
+            resiliency_mode = random.choice(ClusterConsts.RESILIENCY_MODES)
+            mcast_limit = random.randint(MIN_MCAST, MAX_MCAST)
+            sdn.partition.partition_id[EMPTY_PARTITION_ID].action_create_partition_id(name=EMPTY_PARTITION_NAME, resiliency_mode=resiliency_mode, mcast_limit=mcast_limit)
+
+            with allure.step("Checking newly created partition"):
+                assert EMPTY_PARTITION_ID in output.keys(), f'Partition {EMPTY_PARTITION_ID} was not created'
+                output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.partition_id[EMPTY_PARTITION_ID].show(output_format=output_format),
+                                                                     output_format=output_format).get_returned_value()
+                # Add a method to verify all attributes --- {'health': '', 'locations': {}, 'mcast-limit': 0, 'name': '', 'num-gpus': 0, 'partition-type': '', 'resiliency-mode': '', 'uuids': {}}
+
+        with allure.step("Delete empty partition"):
+            sdn.partition.partition_id[EMPTY_PARTITION_ID].action_delete_partition()
+            output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
+                                                                 output_format=output_format).get_returned_value()
+            assert EMPTY_PARTITION_ID not in output.keys(), f'Partition {EMPTY_PARTITION_ID} was not deleted'
+
             # Todo - Add assert for initial expected state.
             # Todo - Save all "location_ids" and "uuids"
             partitions = []

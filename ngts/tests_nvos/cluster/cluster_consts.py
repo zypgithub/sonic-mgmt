@@ -1,4 +1,5 @@
 from ngts.nvos_constants.constants_nvos import ClusterAppsLogLevels, NvosConst
+import re
 
 
 class ClusterConsts:
@@ -6,12 +7,12 @@ class ClusterConsts:
     NMX_TELEMETRY = 'nmx-telemetry'
     INITIAL_EXPECTED_APPS = [NMX_CONTROLLER, NMX_TELEMETRY]
     START_APP_WHILE_CLUSTER_DISABLED_ERR_MSG = 'Output was expected to contain:\nAction succeeded\nBut the output is:\nAction executing ...\nError: Action failed with the following issue:\n  cluster is not enabled'
-    TELEMETRY_SERVICES = ['nmx-connector', 'ib-telemetry', 'nmx-syslog-aggregator']
+    TELEMETRY_SERVICES = ['nmx-telemetry']
     CONTROLLER_SERVICES = ['nmxc-sdn', 'nmxc-fib', 'redis']
     ClusterAppsLogLevelsList = [ClusterAppsLogLevels.DEBUG, ClusterAppsLogLevels.INFO, ClusterAppsLogLevels.NOTICE, ClusterAppsLogLevels.WARNING, ClusterAppsLogLevels.ERROR, ClusterAppsLogLevels.CRITICAL]
     NMX_CONTROLLER_CONFIG_FILE_TYPES = ['fm_config', 'sm_config', 'rdm_config', 'chassis_mapping']
     NMX_CONTROLLER_STATE_FILE_TYPES = ['sm_dump', 'topology']
-    NMX_TELEMETRY_CONFIG_FILE_TYPES = []
+    NMX_TELEMETRY_CONFIG_FILE_TYPES = []  # Once added make sure to adjust CONFIG_FILES_CHANGE
     NMX_TELEMETRY_STATE_FILE_TYPES = []
     CONTROLLER_AND_TELEMETRY_CONFIG_FILES = NMX_CONTROLLER_CONFIG_FILE_TYPES + NMX_TELEMETRY_CONFIG_FILE_TYPES
     CONTROLLER_AND_TELEMETRY_STATE_FILES = NMX_CONTROLLER_STATE_FILE_TYPES + NMX_TELEMETRY_STATE_FILE_TYPES
@@ -29,11 +30,11 @@ class ClusterConsts:
     UNDEFINED_STATE_DICT = {'NVUE': UNDEFINED_STATE_ERR_MSG_NVUE, 'OpenApi': UNDEFINED_STATE_ERR_MSG_OPENAPI}
     RESET_FACTORY_CLUSTER_DISABLED_NVUE = 'Command failed with the following output: \nAction executing ...\nError: Action failed with the following issue:\n  cluster is not enabled'
 
-    RESET_FACTORY_NMX_CONN_DISABLED_NVUE = 'Command failed with the following output: \nAction executing ...\nError: Action failed with the following issue:\n  failed to reset NMX-C to factory-default'
+    RESET_FACTORY_NMX_CONN_DISABLED_NVUE = 'Command failed with the following output: \nAction executing ...\nError: Action failed with the following issue:\n  gRPC connection is down'
 
     RESET_FACTORY_CLUSTER_DISABLED_OPENAPI = 'Command failed with the following output: \naction_error: cluster is not enabled'
 
-    RESET_FACTORY_NMX_CONN_DISABLED_OPENAPI = 'Command failed with the following output: \naction_error: failed to reset NMX-C to factory-default'
+    RESET_FACTORY_NMX_CONN_DISABLED_OPENAPI = 'Command failed with the following output: \naction_error: gRPC connection is down'
 
     RESET_FACTORY_CLUSTER_DISABLED = {'NVUE': RESET_FACTORY_CLUSTER_DISABLED_NVUE, 'OpenApi': RESET_FACTORY_CLUSTER_DISABLED_OPENAPI}
     RESET_FACTORY_NMX_CONN_DISABLED = {'NVUE': RESET_FACTORY_NMX_CONN_DISABLED_NVUE, 'OpenApi': RESET_FACTORY_NMX_CONN_DISABLED_OPENAPI}
@@ -49,7 +50,7 @@ class ClusterConsts:
     Error: 'undefined' is not one of ['critical', 'error', 'warn', 'notice', 'info', 'debug', None]'''
     SLEEP_AFTER_LOG_ROTATE = 20
     PARTITIONS_NAMES = ['test_partition1', 'test_partition2', 'test_partition3']
-    RESILIENCY_MODES = ['ADAPTIVE_BANDWIDTH', 'FULL_BANDWIDTH', 'USER_ACTION']
+    RESILIENCY_MODES = ['adaptive_bandwidth', 'full_bandwidth', 'user_action']
     CONFIDENTIAL_COMPUTE = [True, False]
     DEFAULT_PARTITION = 1
     APP_VERSION = 'app-ver'
@@ -62,4 +63,10 @@ class ClusterConsts:
                            'fm_config': "sudo sed -i \"/^LOG_FILE_MAX_SIZE=/c\\LOG_FILE_MAX_SIZE=1023\" {file_path}",
                            'rdm_config': "echo '# This is a comment for rdm_config' | sudo tee -a {file_path}",
                            'chassis_mapping': "echo '# This is a comment for rdm_config' | sudo tee -a {file_path}"}
+    CONFIG_FILES_CONTENT_CHANGE = {
+        'sm_config': lambda content: re.sub(r'^max_op_vls.*$', 'max_op_vls 4', content, flags=re.MULTILINE),
+        'fm_config': lambda content: re.sub(r'^LOG_FILE_MAX_SIZE=.*$', 'LOG_FILE_MAX_SIZE=1023', content, flags=re.MULTILINE),
+        'rdm_config': lambda content: content + '# This is a comment for rdm_config\n',
+        'chassis_mapping': lambda content: content + '# This is a comment for chassis_mapping\n',
+    }
     NMX_CONTROLLER_CONFIG_CHASSIS_MAPPING = 'chassis_mapping'
