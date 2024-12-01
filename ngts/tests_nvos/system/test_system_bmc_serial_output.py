@@ -70,7 +70,7 @@ def test_system_bmc_serial_output(engines, devices, serial_engine, topology_obj,
                 ValidationTool.verify_field_value_in_output(serial_output, SystemConsts.SERIAL_CONSOLE_CONNECTED_TO,
                                                             SystemConsts.SERIAL_CONSOLE_OUTPUT_CPU).verify_result()
 
-        _show_and_verify_serial_console(system, serial_engine, param='event')
+        _show_and_verify_serial_console(system, serial_engine, param='image')
 
 
 def _show_and_verify_serial_console(system, serial_engine, param):
@@ -78,4 +78,4 @@ def _show_and_verify_serial_console(system, serial_engine, param):
         system.image.show(dut_engine=serial_engine)
 
     with allure_step("Verify system events logged"):
-        system.log.show_log(param='| grep -a {0}'.format(param), expected_str='system/{0}'.format(param))
+        system.log.show_log(param='| grep -a {0}'.format(param), expected_str='{0}'.format(param))

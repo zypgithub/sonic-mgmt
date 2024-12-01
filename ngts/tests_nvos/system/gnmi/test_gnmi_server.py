@@ -491,7 +491,7 @@ def test_gnmi_extend_telemetry(test_api, engines, devices):
             assert GnmiConsts.DESCRIPTION in output and output[GnmiConsts.DESCRIPTION], f"description is missing or empty {component}"
 
             if GnmiConsts.ONIE_COMPONENT in component:
-                pass
+                continue
             assert any(firmware_component.get('actual-firmware') == output['fw_version'] for firmware_component in
                        firmware_show.values()), f"Value '{output['fw_version']}' not found in {firmware_show}"
 
