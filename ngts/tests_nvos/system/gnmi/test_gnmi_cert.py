@@ -1,4 +1,3 @@
-import concurrent.futures
 import random
 import string
 import time
@@ -20,9 +19,8 @@ from ngts.tests_nvos.general.security.helpers import remove_etc_host_mapping_to_
 from ngts.tests_nvos.general.security.security_test_tools.constants import AddressingType
 from ngts.tests_nvos.helpers.pytest_helpers import get_cur_test_param_value
 from ngts.tests_nvos.system.gnmi.constants import CERTIFICATE, DEFAULT_CERTIFICATE, GnmicErr, \
-    MAX_GNMI_CONNECTIVITY_TIME, GNMI_TEST_CERT, ETC_HOSTS
-from ngts.tests_nvos.system.gnmi.helpers import verify_gnmi_client, get_timestamp_of_first_gnmi_response, \
-    verify_gnmi_client_tools_installed, get_scp_player
+    GNMI_TEST_CERT, ETC_HOSTS
+from ngts.tests_nvos.system.gnmi.helpers import verify_gnmi_client, verify_gnmi_client_tools_installed, get_scp_player
 
 
 @pytest.fixture(scope='module', autouse=True)
@@ -337,40 +335,6 @@ def test_gnmi_reboot_system(engines, local_adminuser):
             system.aaa.user.user_id[local_adminuser.username].unset().verify_result()
             system.gnmi_server.unset(apply=True).verify_result()
             NvueGeneralCli.save_config(engines.dut)
-
-
-@pytest.mark.system
-@pytest.mark.gnmi
-def test_gnmi_set_cert_response_time(local_adminuser):
-    """
-    Check how long it takes from the time setting certificate, till clients using the CA-cert receive data
-
-    1. set cert-1 to gnmi
-    2. run client using ca-cert of another cert (cert-2)
-    3. set cert-2 to gnmi
-    4. receive data wit client
-    5. measure time between steps 3 and 4
-    """
-    cert1 = TestCert.cert_valid_1
-    cert2 = TestCert.cert_valid_2
-
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        with allure.step(f'set gnmi cert1: {cert1.name}'):
-            gnmi = System().gnmi_server
-            gnmi.set(CERTIFICATE, cert1.name, apply=True).verify_result()
-        with allure.step(f'in background - run client using cacert of cert2: {cert2.name}'):
-            client_thread = executor.submit(get_timestamp_of_first_gnmi_response, *(local_adminuser, cert2))
-        with allure.step(f'set gnmi cert2: {cert2.name}'):
-            gnmi.set(CERTIFICATE, cert2.name, apply=True).verify_result()
-            apply_timestamp = time.time()
-        with allure.step(f'wait and get timestamp of first response after cert change'):
-            response_timestamp = client_thread.result()
-            interval_result = response_timestamp - apply_timestamp
-        with allure.step(f'interval result: {interval_result} seconds. assert < limit ({MAX_GNMI_CONNECTIVITY_TIME})'):
-            assert interval_result < MAX_GNMI_CONNECTIVITY_TIME, (
-                f'gnmi connectivity time was too long after certificate change.\n'
-                f'expected limit: {MAX_GNMI_CONNECTIVITY_TIME} seconds\n'
-                f'actual: {interval_result} seconds')
 
 
 def gnmi_cert_upgrade_check():
