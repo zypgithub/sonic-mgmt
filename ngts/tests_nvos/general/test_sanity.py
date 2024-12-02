@@ -25,18 +25,33 @@ logger = logging.getLogger()
 @pytest.mark.simx
 @pytest.mark.nvos_chipsim_ci
 @pytest.mark.nvos_ci
-def test_ci_sanity(engines, topology_obj, devices):
+def test_ci_sanity_openapi(engines, topology_obj, devices):
     with allure.step("Test OpenApi"):
         test_show_platform(engines, ApiType.OPENAPI, devices)
 
+
+@pytest.mark.simx
+@pytest.mark.nvos_chipsim_ci
+@pytest.mark.nvos_ci
+def test_ci_sanity_acl(engines, topology_obj, devices):
     TestToolkit.tested_api = ApiType.NVUE
 
     with allure.step("Test ACL"):
         test_show_acls(engines, ApiType.NVUE)
 
+
+@pytest.mark.simx
+@pytest.mark.nvos_chipsim_ci
+@pytest.mark.nvos_ci
+def test_ci_sanity_ipv6(engines, topology_obj, devices):
     with allure.step("Test IPV6"):
         test_checklist_ipv6(engines)
 
+
+@pytest.mark.simx
+@pytest.mark.nvos_chipsim_ci
+@pytest.mark.nvos_ci
+def test_ci_sanity_set(engines, topology_obj, devices):
     with allure.step("Test 'set' command"):
         system = System()
         new_pre_login_msg = "test_msg"
@@ -48,6 +63,11 @@ def test_ci_sanity(engines, topology_obj, devices):
                                                     new_pre_login_msg).verify_result()
         system.message.unset(op_param=SystemConsts.PRE_LOGIN_MESSAGE, apply=True)
 
+
+@pytest.mark.simx
+@pytest.mark.nvos_chipsim_ci
+@pytest.mark.nvos_ci
+def test_ci_sanity_fetch(engines, topology_obj, devices):
     with allure.step("Test action fetch"):
         platform = Platform()
         new_fw_file = "sec_issu_46_120_10011_dev_signed.bin"
@@ -58,29 +78,51 @@ def test_ci_sanity(engines, topology_obj, devices):
         with allure.step("Run the show command and verify that all expected files are correct"):
             platform.firmware.transceiver.files.verify_show_files_output(expected_files=[new_fw_file])
 
-    with allure.step("Test security"):
-        with allure.step("Check LDAP output"):
-            output = OutputParsingTool.parse_json_str_to_dictionary(system.aaa.ldap.show()).get_returned_value()
-            expected_field = [LdapConsts.PORT, LdapConsts.BASE_DN, LdapConsts.BIND_DN,
-                              LdapConsts.TIMEOUT_BIND, LdapConsts.TIMEOUT, LdapConsts.SSL,
-                              LdapConsts.VERSION]
-            ValidationTool.verify_field_exist_in_json_output(json_output=output,
-                                                             keys_to_search_for=expected_field).verify_result()
 
-        with allure.step("Check TACACS output"):
-            output = OutputParsingTool.parse_json_str_to_dictionary(system.aaa.tacacs.show()).get_returned_value()
-            expected_field = [AaaConsts.PORT, AaaConsts.AUTH_TYPE, AaaConsts.TIMEOUT]
-            ValidationTool.verify_field_exist_in_json_output(json_output=output,
-                                                             keys_to_search_for=expected_field).verify_result()
+@pytest.mark.simx
+@pytest.mark.nvos_chipsim_ci
+@pytest.mark.nvos_ci
+def test_ci_sanity_ldap(engines, topology_obj, devices):
+    with allure.step("Check LDAP output"):
+        system = System()
+        output = OutputParsingTool.parse_json_str_to_dictionary(system.aaa.ldap.show()).get_returned_value()
+        expected_field = [LdapConsts.PORT, LdapConsts.BASE_DN, LdapConsts.BIND_DN,
+                          LdapConsts.TIMEOUT_BIND, LdapConsts.TIMEOUT, LdapConsts.SSL,
+                          LdapConsts.VERSION]
+        ValidationTool.verify_field_exist_in_json_output(json_output=output,
+                                                         keys_to_search_for=expected_field).verify_result()
 
-    #  Disabled due redmine bug: https://redmine.mellanox.com/issues/4116221
-    # with allure.step("Test Health"):
-    #     health_output = OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).get_returned_value()
-    #     ValidationTool.validate_all_values_exists_in_list([HealthConsts.STATUS, HealthConsts.STATUS_LED],
-    #                                                       health_output.keys()).verify_result()
-    #     system.validate_health_status(HealthConsts.OK)
 
+@pytest.mark.simx
+@pytest.mark.nvos_chipsim_ci
+@pytest.mark.nvos_ci
+def test_ci_sanity_tacacs(engines, topology_obj, devices):
+    with allure.step("Check TACACS output"):
+        system = System()
+        output = OutputParsingTool.parse_json_str_to_dictionary(system.aaa.tacacs.show()).get_returned_value()
+        expected_field = [AaaConsts.PORT, AaaConsts.AUTH_TYPE, AaaConsts.TIMEOUT]
+        ValidationTool.verify_field_exist_in_json_output(json_output=output,
+                                                         keys_to_search_for=expected_field).verify_result()
+
+
+@pytest.mark.simx
+@pytest.mark.nvos_chipsim_ci
+@pytest.mark.nvos_ci
+def test_ci_sanity_health(engines, topology_obj, devices):
+    with allure.step("Test Health"):
+        system = System()
+        health_output = OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).get_returned_value()
+        ValidationTool.validate_all_values_exists_in_list([HealthConsts.STATUS, HealthConsts.STATUS_LED],
+                                                          health_output.keys()).verify_result()
+        system.validate_health_status(HealthConsts.OK)
+
+
+@pytest.mark.simx
+@pytest.mark.nvos_chipsim_ci
+@pytest.mark.nvos_ci
+def test_ci_sanity_snmp(engines, topology_obj, devices):
     with allure.step("Show SNMP"):
+        system = System()
         system_snmp_output = OutputParsingTool.parse_json_str_to_dictionary(system.snmp_server.show()) \
             .get_returned_value()
 
