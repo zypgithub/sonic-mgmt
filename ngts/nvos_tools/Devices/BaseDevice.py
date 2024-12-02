@@ -226,7 +226,7 @@ class BaseDevice(ABC):
 
     def verify_nvue_service(self, dut_engine):
         logging.info("Verify nvued service is active")
-        nvued_cmd_output = dut_engine.run_cmd("sudo systemctl status nvued")
+        nvued_cmd_output = dut_engine.run_cmd_after_cmd(["sudo systemctl status nvued", 'q'])
         if NvosConst.SERVICE_STATUS_ACTIVE not in nvued_cmd_output:
             return ResultObj(False, "nvued service is not active. info: {}".format(nvued_cmd_output))
         return ResultObj(True)
