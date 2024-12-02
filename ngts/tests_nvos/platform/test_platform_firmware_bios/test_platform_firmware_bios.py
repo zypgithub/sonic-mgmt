@@ -20,7 +20,6 @@ logger = logging.getLogger()
 @pytest.mark.bios
 @pytest.mark.system
 @pytest.mark.parametrize('test_api', random.sample(ApiType.ALL_TYPES, 1))
-@pytest.mark.skip(reason='Skipped since something is off with bios 004')
 def test_bios_auto_update_disabled(devices, engines, topology_obj, test_api, original_version, test_name):
     """
     Test flow:
@@ -66,7 +65,6 @@ def test_bios_auto_update_disabled(devices, engines, topology_obj, test_api, ori
 @pytest.mark.bios
 @pytest.mark.system
 @pytest.mark.parametrize('test_api', random.sample(ApiType.ALL_TYPES, 1))
-@pytest.mark.skip(reason='Skipped since something is off with bios 004')
 def test_bios_auto_update_enabled(devices, engines, topology_obj, test_api, original_version, test_name):
     """
     Test flow:
