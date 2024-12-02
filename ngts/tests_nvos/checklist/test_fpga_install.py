@@ -48,7 +48,8 @@ def test_fpga_install(engines, devices, topology_obj, test_api, platform_compone
     platform = Platform()
     platform_output = OutputParsingTool.parse_show_output_to_dict(platform.show()).get_returned_value()
     # 692-9K36F-A5MV-JQS has encrypted fpga
-    if platform_output[PlatformConsts.FW_PART_NUMBER].strip() == "692-9K36F-A5MV-JQS":
+    part_number = platform_output[PlatformConsts.FW_PART_NUMBER].strip()
+    if part_number == "692-9K36F-A5MV-JQS" or part_number == "920-9K36F-00MV-QS1":
         component_name = f"{component_name}_encrypted"
 
     try:
