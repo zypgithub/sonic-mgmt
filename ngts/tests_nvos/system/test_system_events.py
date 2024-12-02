@@ -5,7 +5,6 @@ from ngts.tools.test_utils import allure_utils as allure
 import pytest
 from retry.api import retry_call
 from ngts.nvos_tools.system.System import System
-from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_constants.constants_nvos import SystemConsts, ActionConsts
@@ -75,10 +74,10 @@ def test_show_system_events_table_size(test_api):
             1. Run 'nv show system events table-size' and validate table-size is present in the output
     """
     TestToolkit.tested_api = test_api
-    fae = Fae()
+    system = System()
 
     with allure.step('Run show system events table-size command & validate table-size is present in the output'):
-        output = OutputParsingTool.parse_json_str_to_dictionary(fae.system.events.show()).get_returned_value()
+        output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show()).get_returned_value()
         ValidationTool.verify_field_value_exist_in_output_dict(output,
                                                                SystemConsts.EVENTS_TABLE_SIZE).verify_result()
 
@@ -91,25 +90,24 @@ def test_system_events_maximum(test_api, engines):
     """
     Verify show system events is able to capture maximum no of events (10000)
         Test flow:
-            1. Run 'nv set fae system events table-size 10000'
-            2. Run 'nv show fae system events' and validate table-size is set to 10000
+            1. Run 'nv set system events table-size 10000'
+            2. Run 'nv show system events' and validate table-size is set to 10000
             3. Simulate 10000 system events
             4. Run 'nv show system events' and validate 10000 events are shown in output
             5. Unset system events table-size and validate table-size is set to default(1000)
             6. Clear system events
     """
     TestToolkit.tested_api = test_api
-    fae = Fae()
     system = System()
     clear_system_events(system)
     try:
         with allure.step('Set system events table-size to maximum(10000)'):
-            fae.system.events.set(op_param_name='table-size', op_param_value=SystemConsts.EVENTS_TABLE_SIZE_MAX,
-                                  apply=True, dut_engine=engines.dut).verify_result()
+            system.events.set(op_param_name='table-size', op_param_value=SystemConsts.EVENTS_TABLE_SIZE_MAX,
+                              apply=True, dut_engine=engines.dut).verify_result()
 
         with allure.step('Validate system events table-size is set to 10000'):
             retry_call(_verify_field_in_show_output,
-                       [fae.system.events, SystemConsts.EVENTS_TABLE_SIZE, SystemConsts.EVENTS_TABLE_SIZE_MAX],
+                       [system.events, SystemConsts.EVENTS_TABLE_SIZE, SystemConsts.EVENTS_TABLE_SIZE_MAX],
                        exceptions=AssertionError, tries=2, delay=5, logger=logger)
 
         with allure.step('Simulate 10100 system events'):
@@ -129,11 +127,11 @@ def test_system_events_maximum(test_api, engines):
 
     finally:
         with allure.step('Unset system events table-size'):
-            fae.system.events.unset(apply=True, dut_engine=engines.dut).verify_result()
+            system.events.unset(apply=True, dut_engine=engines.dut).verify_result()
 
         with allure.step('Validate system events table-size is set to default(1000)'):
             retry_call(_verify_field_in_show_output,
-                       [fae.system.events, SystemConsts.EVENTS_TABLE_SIZE, SystemConsts.EVENTS_TABLE_SIZE_DEFAULT],
+                       [system.events, SystemConsts.EVENTS_TABLE_SIZE, SystemConsts.EVENTS_TABLE_SIZE_DEFAULT],
                        exceptions=AssertionError, tries=2, delay=5, logger=logger)
 
         with allure.step('Clear system events'):
@@ -144,36 +142,35 @@ def test_system_events_maximum(test_api, engines):
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_set_fae_system_events_table_size(test_api, engines):
+def test_set_system_events_table_size(test_api, engines):
     """
-    Verify nv set fae system events table-size <size> command
+    Verify nv set system events table-size <size> command
         Test flow:
-            1	Run nv unset fae system events table-size and validate table-size is set to default
+            1	Run nv unset system events table-size and validate table-size is set to default
             2	Simulate events more than default value (1100)
             3	Run nv show system events and validate table-occupancy should be default
-            4	Run nv set fae system events table-size 600
-            5	Run nv show fae system events table-size and validate it is set to 600 via show command
+            4	Run nv set system events table-size 600
+            5	Run nv show system events table-size and validate it is set to 600 via show command
             6	Run nv show system events and validate table-occupancy should be 600
-            7	Run nv set fae system events table-size 1100
-            8	Run nv show fae system events table-size and validate table-size should be 1100
+            7	Run nv set system events table-size 1100
+            8	Run nv show system events table-size and validate table-size should be 1100
             9	Simulate 500 more events (to make the total 1100+)
             10	Run nv show system events  and validate table-occupancy should be 1100+
-            11	Run nv unset fae system events table-size
-            12	Run nv show fae system events table-size and validate table-size should be default (1000)
+            11	Run nv unset system events table-size
+            12	Run nv show system events table-size and validate table-size should be default (1000)
             13	Run nv show system events and validate table-occupancy should be default (1000)
             14	Run nv action clear system events
             15	Run nv show system events and validate table-occupancy should be 0
     """
     TestToolkit.tested_api = test_api
     system = System()
-    fae = Fae()
 
     try:
         with allure.step('Unset system events table-size'):
-            fae.system.events.unset(apply=True, dut_engine=engines.dut).verify_result()
+            system.events.unset(apply=True, dut_engine=engines.dut).verify_result()
 
         with allure.step('Validate system events table-size is set to default(1000)'):
-            output = OutputParsingTool.parse_json_str_to_dictionary(fae.system.events.show()).get_returned_value()
+            output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show()).get_returned_value()
             ValidationTool.verify_field_value_in_output(output, SystemConsts.EVENTS_TABLE_SIZE,
                                                         SystemConsts.EVENTS_TABLE_SIZE_DEFAULT).verify_result()
 
@@ -190,11 +187,11 @@ def test_set_fae_system_events_table_size(test_api, engines):
                        exceptions=AssertionError, tries=4, delay=5, logger=logger)
 
         with allure.step('Set system events table-size to 600'):
-            fae.system.events.set(op_param_name='table-size', op_param_value=600,
-                                  apply=True, dut_engine=engines.dut).verify_result()
+            system.events.set(op_param_name='table-size', op_param_value=600,
+                              apply=True, dut_engine=engines.dut).verify_result()
 
         with allure.step('Validate system events table-size is set to 600'):
-            retry_call(_verify_field_in_show_output, [fae.system.events, SystemConsts.EVENTS_TABLE_SIZE, 600],
+            retry_call(_verify_field_in_show_output, [system.events, SystemConsts.EVENTS_TABLE_SIZE, 600],
                        exceptions=AssertionError, tries=2, delay=5, logger=logger)
 
         with allure.step('Run show system events command & validate table-occupancy should be 600'):
@@ -202,11 +199,11 @@ def test_set_fae_system_events_table_size(test_api, engines):
                        exceptions=AssertionError, tries=4, delay=5, logger=logger)
 
         with allure.step('Set system events table-size to 1100'):
-            fae.system.events.set(op_param_name='table-size', op_param_value=1100,
-                                  apply=True, dut_engine=engines.dut).verify_result()
+            system.events.set(op_param_name='table-size', op_param_value=1100,
+                              apply=True, dut_engine=engines.dut).verify_result()
 
         with allure.step('Validate system events table-size is set to 1100'):
-            retry_call(_verify_field_in_show_output, [fae.system.events, SystemConsts.EVENTS_TABLE_SIZE, 1100],
+            retry_call(_verify_field_in_show_output, [system.events, SystemConsts.EVENTS_TABLE_SIZE, 1100],
                        exceptions=AssertionError, tries=2, delay=5, logger=logger)
 
         with allure.step('Simulate 500 more system events(to make it 1100+)'):
@@ -222,11 +219,11 @@ def test_set_fae_system_events_table_size(test_api, engines):
                        exceptions=AssertionError, tries=4, delay=5, logger=logger)
 
         with allure.step('Unset system events table-size'):
-            fae.system.events.unset(apply=True, dut_engine=engines.dut).verify_result()
+            system.events.unset(apply=True, dut_engine=engines.dut).verify_result()
 
         with allure.step('Validate system events table-size is set to default(1000)'):
             retry_call(_verify_field_in_show_output,
-                       [fae.system.events, SystemConsts.EVENTS_TABLE_SIZE, SystemConsts.EVENTS_TABLE_SIZE_DEFAULT],
+                       [system.events, SystemConsts.EVENTS_TABLE_SIZE, SystemConsts.EVENTS_TABLE_SIZE_DEFAULT],
                        exceptions=AssertionError, tries=2, delay=5, logger=logger)
 
         with allure.step('Run show system events command & validate table-occupancy should be default(1000)'):
