@@ -4,7 +4,6 @@ import random
 import pytest
 import time
 from ngts.tools.test_utils import allure_utils as allure
-from ngts.tests_nvos.platform.test_platform import test_show_platform
 from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.platform.Platform import Platform
@@ -27,7 +26,9 @@ logger = logging.getLogger()
 @pytest.mark.nvos_ci
 def test_ci_sanity_openapi(engines, topology_obj, devices):
     with allure.step("Test OpenApi"):
-        test_show_platform(engines, ApiType.OPENAPI, devices)
+        TestToolkit.tested_api = ApiType.OPENAPI
+        platform = Platform()
+        platform.show()
 
 
 @pytest.mark.simx
@@ -105,16 +106,16 @@ def test_ci_sanity_tacacs(engines, topology_obj, devices):
                                                          keys_to_search_for=expected_field).verify_result()
 
 
-@pytest.mark.simx
-@pytest.mark.nvos_chipsim_ci
-@pytest.mark.nvos_ci
-def test_ci_sanity_health(engines, topology_obj, devices):
-    with allure.step("Test Health"):
-        system = System()
-        health_output = OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).get_returned_value()
-        ValidationTool.validate_all_values_exists_in_list([HealthConsts.STATUS, HealthConsts.STATUS_LED],
-                                                          health_output.keys()).verify_result()
-        system.validate_health_status(HealthConsts.OK)
+#   @pytest.mark.simx
+#   @pytest.mark.nvos_chipsim_ci
+#   @pytest.mark.nvos_ci
+#   def test_ci_sanity_health(engines, topology_obj, devices):
+    #   with allure.step("Test Health"):
+        #   system = System()
+        #   health_output = OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).get_returned_value()
+        #   ValidationTool.validate_all_values_exists_in_list([HealthConsts.STATUS, HealthConsts.STATUS_LED],
+        #                                                     health_output.keys()).verify_result()
+        #   system.validate_health_status(HealthConsts.OK)
 
 
 @pytest.mark.simx

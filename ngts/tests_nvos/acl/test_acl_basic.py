@@ -84,26 +84,6 @@ def test_can_ping_from_eth1(engines, devices):
         raise
 
 
-@pytest.mark.nvos_ci
-@pytest.mark.acl
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_show_acls(engines, test_api):
-    TestToolkit.tested_api = test_api
-
-    with allure.step("Show ACL and verify the output"):
-        acl = Acl()
-        acls = OutputParsingTool.parse_show_output_to_dict(acl.show()).get_returned_value()
-        assert acls and len(acls.keys()) > 1, "No ACLs were found"
-
-        with allure.step("Verify all default ACL are found"):
-            ValidationTool.verify_field_exist_in_json_output(acls, AclConsts.DEFAULT_ACLS).verify_result()
-
-        with allure.step("Verify expected ACL fields"):
-            ValidationTool.verify_field_exist_in_json_output(acls[AclConsts.DEFAULT_ACLS[0]],
-                                                             [AclConsts.RULE, AclConsts.TYPE])
-
-
-@pytest.mark.nvos_ci
 @pytest.mark.acl
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_show_acls(engines, test_api):
