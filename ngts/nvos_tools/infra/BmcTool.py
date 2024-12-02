@@ -3,6 +3,7 @@ import logging
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_constants.constants_nvos import PlatformConsts
+from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.SecureBootTool import SecureBootTool
@@ -35,12 +36,12 @@ class BmcTool():
             raise Exception("Shutdown command failed with the following response:\n" + response)
 
     @staticmethod
-    def fetch_and_install_platfrom_component(platform_component, path, name, filename, topology_obj):
+    def fetch_and_install_platform_component(platform_component, path, name, filename, topology_obj, test_name):
         with allure.step(f'Fetch {name} image from: {path}'):
             platform_component.action_fetch(path).verify_result()
 
         with allure.step(f'installing image {name}'):
-            platform_component.files.file_name[filename].action_file_install_with_reboot(topology_obj=topology_obj)
+            BmcTool.install_fw_image(platform_component, test_name, filename, topology_obj, name)
 
     @staticmethod
     def verify_platform_component_version(platform_component, expected_version: str):
@@ -121,3 +122,10 @@ class BmcTool():
             )
             ip_addresses["IPv6"] = slaac_address
             return ip_addresses
+
+    @staticmethod
+    def install_fw_image(platform_component, test_name, filename, topology_obj, name):
+        res_obj, duration = OperationTime.save_duration(f'Installation of {name} using {filename} with reboot', '', test_name,
+                                                        platform_component.files.file_name[filename].action_file_install_with_reboot,
+                                                        topology_obj=topology_obj)
+        return res_obj

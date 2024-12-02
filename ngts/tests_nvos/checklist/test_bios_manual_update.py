@@ -25,7 +25,7 @@ def restore_bios(topology_obj):
 @pytest.mark.bios
 @pytest.mark.parametrize('test_api', random.sample(ApiType.ALL_TYPES, 1))
 @pytest.mark.parametrize("platform_component_with_clear", ["bios"], indirect=True)
-def test_bios_manual_update(engines, devices, topology_obj, test_api, platform_component_with_clear):
+def test_bios_manual_update(engines, devices, topology_obj, test_api, platform_component_with_clear, test_name):
     """
     Test flow:
         1. fetch alternate BIOS version
@@ -47,17 +47,17 @@ def test_bios_manual_update(engines, devices, topology_obj, test_api, platform_c
 
     try:
         path, filename, version_name = BmcTool.get_fw_component_version_previous(component_name)
-        BmcTool.fetch_and_install_platfrom_component(platform_component=platform_component_with_clear, path=path,
-                                                     name=version_name, filename=filename,
-                                                     topology_obj=topology_obj)
+        BmcTool.fetch_and_install_platform_component(platform_component=platform_component_with_clear, path=path,
+                                                     name=version_name, filename=filename, topology_obj=topology_obj,
+                                                     test_name=test_name)
         BmcTool.verify_platform_component_version(platform_component_with_clear, version_name)
         DMIDecodeTool.verify_dmi_info(engines, devices)
         with allure.step(f"Sleep for {2 * MINUTE} seconds so background-copy will finish"):
             time.sleep(2 * MINUTE)
     finally:
         path, filename, version_name = BmcTool.get_fw_component_version_latest(component_name)
-        BmcTool.fetch_and_install_platfrom_component(platform_component=platform_component_with_clear, path=path,
-                                                     name=version_name, filename=filename,
-                                                     topology_obj=topology_obj)
+        BmcTool.fetch_and_install_platform_component(platform_component=platform_component_with_clear, path=path,
+                                                     name=version_name, filename=filename, topology_obj=topology_obj,
+                                                     test_name=test_name)
         BmcTool.verify_platform_component_version(platform_component_with_clear, version_name)
         DMIDecodeTool.verify_dmi_info(engines, devices)

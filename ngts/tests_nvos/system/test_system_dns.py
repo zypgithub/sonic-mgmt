@@ -429,7 +429,7 @@ def test_system_dns_server_max_set_unset_single_apply(engines):
 @pytest.mark.dns
 @pytest.mark.system
 @pytest.mark.simx
-def test_factory_reset_for_static_system_dns(engines):
+def test_factory_reset_for_static_system_dns(engines, devices):
     """
     Run factory reset system command and verify the system DNS fields are removed from show system dns
         Test flow:
@@ -459,7 +459,7 @@ def test_factory_reset_for_static_system_dns(engines):
                 format(dns_server_id)
 
         with allure.step("Run reset factory with keep basic param"):
-            system.factory_default.action_reset(param="keep basic").verify_result()
+            system.factory_default.action_reset(param="keep basic", operation=devices.dut.reset_factory).verify_result()
 
         with allure.step('Validate system dns is back to default (Null)'):
             system_dns_output = OutputParsingTool.parse_json_str_to_dictionary(
@@ -474,7 +474,7 @@ def test_factory_reset_for_static_system_dns(engines):
 @pytest.mark.dns
 @pytest.mark.system
 @pytest.mark.simx
-def test_factory_reset_with_config_save_for_static_system_dns(engines):
+def test_factory_reset_with_config_save_for_static_system_dns(engines, devices):
     """
     Run factory reset system command and verify the system DNS fields are removed from show system dns
         Test flow:
@@ -509,7 +509,7 @@ def test_factory_reset_with_config_save_for_static_system_dns(engines):
             TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
 
         with allure.step("Run reset factory with keep basic param"):
-            system.factory_default.action_reset(param="keep basic").verify_result()
+            system.factory_default.action_reset(param="keep basic", operation=devices.dut.reset_factory).verify_result()
 
         with allure.step('Validate system dns config is retained'):
             dns_output = OutputParsingTool.parse_json_str_to_dictionary(system.dns.show(SystemConsts.DNS_SERVER)). \

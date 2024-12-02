@@ -17,7 +17,7 @@ logger = logging.getLogger()
 @pytest.mark.bmc
 @pytest.mark.parametrize('test_api', random.sample(ApiType.ALL_TYPES, 1))
 @pytest.mark.parametrize("platform_component_with_clear", ["bmc"], indirect=True)
-def test_bmc_install(engines, devices, topology_obj, test_api, platform_component_with_clear):
+def test_bmc_install(engines, devices, topology_obj, test_api, platform_component_with_clear, test_name):
     """
     @summary: test all these commands:
         nv show platform firmware BMC files
@@ -45,16 +45,16 @@ def test_bmc_install(engines, devices, topology_obj, test_api, platform_componen
 
     try:
         path, filename, version_name = BmcTool.get_fw_component_version_previous(component_name)
-        BmcTool.fetch_and_install_platfrom_component(platform_component=platform_component_with_clear, path=path,
-                                                     name=version_name, filename=filename,
-                                                     topology_obj=topology_obj)
+        BmcTool.fetch_and_install_platform_component(platform_component=platform_component_with_clear, path=path,
+                                                     name=version_name, filename=filename, topology_obj=topology_obj,
+                                                     test_name=test_name)
         BmcTool.verify_platform_component_version(platform_component_with_clear, version_name)
         with allure.step(f"Sleep for {2 * MINUTE} seconds so background-copy will finish"):
             time.sleep(2 * MINUTE)
     finally:
         path, filename, version_name = BmcTool.get_fw_component_version_latest(component_name)
-        BmcTool.fetch_and_install_platfrom_component(platform_component=platform_component_with_clear, path=path,
-                                                     name=version_name, filename=filename,
-                                                     topology_obj=topology_obj)
+        BmcTool.fetch_and_install_platform_component(platform_component=platform_component_with_clear, path=path,
+                                                     name=version_name, filename=filename, topology_obj=topology_obj,
+                                                     test_name=test_name)
         BmcTool.verify_platform_component_version(platform_component_with_clear, version_name)
         # BmcTool.compare_bmc_version_issu_module(engines, version_name)  !TBD uncomment after merge 1800 to master
