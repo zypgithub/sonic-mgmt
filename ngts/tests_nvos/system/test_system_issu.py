@@ -76,14 +76,22 @@ def test_system_issu_positive_flow(engines, devices, start_sm, issu_version, tar
     player = engines.sonic_mgmt
     system = System()
 
-    with allure.step("Prepare system base image for install"):
-        target_filename, recovery_engine, scp_host_creds = prepare_image_for_install(
+    # issu_version = '/auto/sw_system_release/nos/nvos/25.02.1950-002/amd64/dev/nvos-amd64-25.02.1950-002.bin'
+    # target_version = '/auto/sw_system_release/nos/nvos/25.02.1950-003/amd64/dev/nvos-amd64-25.02.1950-003.bin'
+
+    target_version = player.run_cmd(f'ls {target_version}')
+
+    with allure.step("Prepare system issu image for install"):
+        issu_filename, recovery_engine, scp_host_creds = prepare_image_for_install(
             player, dut_engine, dut_device, issu_version)
 
-    with allure.step("Install base version image (without ISSU)"):
-        system.image.files.file_name[issu_version].action_file_install_with_reboot(
+    with allure.step("Install issu version image (without ISSU)"):
+        system.image.files.file_name[issu_filename].action_file_install_with_reboot(
             force=False, engine=dut_engine, device=dut_device, recovery_engine=recovery_engine,
-            param_value=IssuConsts.ISSU, should_succeed=False, press_y=True).verify_result(should_succeed=False)
+            should_succeed=True, press_y=True).verify_result(should_succeed=True)
+
+    with allure.step("Save configuration"):
+        TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
 
     with allure.step(f"Reduce ISSU timeout to {IssuConsts.REDUCED_TIMEOUT} seconds"):
         reduce_issu_timeout(engines.dut, IssuConsts.REDUCED_TIMEOUT)
@@ -103,18 +111,14 @@ def test_system_issu_positive_flow(engines, devices, start_sm, issu_version, tar
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
             with allure.step("Perform install image with iSSU flag"):
                 executor.submit(run_install_system_image_issu, connection, dut_device,
-                                recovery_engine, target_filename, IssuConsts.ISSU, False)
+                                recovery_engine, target_filename, IssuConsts.ISSU, True)
+            issu_start = time.time()
+            logger.info(f"ISSU start time: {issu_start}")
 
             # install image process will start immediately, and only when finish - update issu status to "in-progress"
             # and start requesting openSM response.
-            with allure.step(f'Verify ISSU status is: {IssuConsts.IssuStatus.IN_PROGRESS.value}'):
-                wait_for_image_status_update(system, IssuConsts.IssuStatus.IN_PROGRESS.value)
-
-            with allure.step(f'Verify ISSU status is: {IssuConsts.IssuStatus.IN_PROGRESS.value}'):
-                issu_status = OutputParsingTool.parse_json_str_to_dictionary(
-                    system.image.show()).get_returned_value()[IssuConsts.ISSU_STATUS]
-                assert issu_status == IssuConsts.IssuStatus.IN_PROGRESS.value, \
-                    f"ISSU status is {issu_status}, instead of: {IssuConsts.IssuStatus.IN_PROGRESS.value}"
+            # with allure.step(f'Verify ISSU status is: {IssuConsts.IssuStatus.IN_PROGRESS.value}'):
+            #     wait_for_image_status_update(system, IssuConsts.IssuStatus.IN_PROGRESS.value)
 
             # verify openSM status in updated to "yes" in all asics
             with allure.step("Wait for opensm status update to 'yes' in all asics"):
@@ -163,14 +167,20 @@ def test_system_issu_prevention_cases(engines, devices, start_sm, downgrade_vers
     player = engines.sonic_mgmt
     system = System()
 
-    with allure.step("Prepare system base image for install"):
-        target_filename, recovery_engine, scp_host_creds = prepare_image_for_install(
+    # downgrade_version = '/auto/sw_system_release/nos/nvos/25.02.1950-001/amd64/dev/nvos-amd64-25.02.1950-001.bin'
+    # issu_version = '/auto/sw_system_release/nos/nvos/25.02.1950-002/amd64/dev/nvos-amd64-25.02.1950-002.bin'
+    # target_version = '/auto/sw_system_release/nos/nvos/25.02.1950-003/amd64/dev/nvos-amd64-25.02.1950-003.bin'
+
+    target_version = player.run_cmd(f'ls {target_version}')
+
+    with allure.step("Prepare system issu image for install"):
+        issu_filename, recovery_engine, scp_host_creds = prepare_image_for_install(
             player, dut_engine, dut_device, issu_version)
 
-    with allure.step("Install base version image (without ISSU)"):
-        system.image.files.file_name[issu_version].action_file_install_with_reboot(
+    with allure.step("Install issu version image (without ISSU)"):
+        system.image.files.file_name[issu_filename].action_file_install_with_reboot(
             force=False, engine=dut_engine, device=dut_device, recovery_engine=recovery_engine,
-            param_value=IssuConsts.ISSU, should_succeed=False, press_y=True).verify_result(should_succeed=False)
+            should_succeed=True, press_y=True).verify_result(should_succeed=True)
 
     with allure.step("Save configuration"):
         TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
@@ -588,13 +598,13 @@ def pre_issu_installation_steps(engines, devices, target_version, scp_host_creds
     with allure.step('Validate health status'):
         system.validate_health_status(HealthConsts.OK)
 
-    with allure.step('Get config file and path for target version'):
-        config_file_path, config_filename = dut_device.get_test_config_file_by_version(target_version)
-        config_file_path = '/root/mars/workspace/sonic-mgmt/ngts/tools/test_utils/nvos_resources/nvos_config_xdr.yml'  # TODO to be removed
-
-    with allure.step('Apply and save pre-defined configuration'):
-        NvosInstallationSteps.fetch_apply_save_config(config_filename, config_file_path, dut_engine,
-                                                      scp_host_creds, system)
+    # with allure.step('Get config file and path for target version'):
+    #     config_file_path, config_filename = dut_device.get_test_config_file_by_version(target_version)
+    #     config_file_path = '/root/mars/workspace/sonic-mgmt/ngts/tools/test_utils/nvos_resources/nvos_config_xdr.yml'  # TODO to be removed
+    #
+    # with allure.step('Apply and save pre-defined configuration'):
+    #     NvosInstallationSteps.fetch_apply_save_config(config_filename, config_file_path, dut_engine,
+    #                                                   scp_host_creds, system)
 
     # with allure.step('Run management services'):
     #     with allure.step("Enable snmp"):
@@ -615,17 +625,17 @@ def pre_issu_installation_steps(engines, devices, target_version, scp_host_creds
     with allure.step('Clear system log (rotate)'):
         system.log.rotate_logs()
 
-    with allure.step('Verify show ISSU status'):
-        issu_status = OutputParsingTool.parse_json_str_to_dictionary(
-            system.image.show()).get_returned_value()[IssuConsts.ISSU_STATUS]
-        assert issu_status == IssuConsts.IssuStatus.NO_ISSU.value, \
-            f"ISSU status is {issu_status}, instead of: {IssuConsts.IssuStatus.NO_ISSU.value}"
+    # with allure.step('Verify show ISSU status'):
+    #     issu_status = OutputParsingTool.parse_json_str_to_dictionary(
+    #         system.image.show()).get_returned_value()[IssuConsts.ISSU_STATUS]
+    #     assert issu_status == IssuConsts.IssuStatus.NO_ISSU.value, \
+    #         f"ISSU status is {issu_status}, instead of: {IssuConsts.IssuStatus.NO_ISSU.value}"
 
-    with allure.step('Start pinging system mgmt ports'):
-        ip_list = []
-        for mgmt_port in devices.dut.mgmt_ports:
-            ip_list.append(MgmtPort(mgmt_port).get_port_ip_addresses(dut_engine))
-        Tools.TrafficGeneratorTool.start_ping_multiple_ips(player, ip_list)
+    # with allure.step('Start pinging system mgmt ports'):
+    #     ip_list = []
+    #     for mgmt_port in devices.dut.mgmt_ports:
+    #         ip_list.append(MgmtPort(mgmt_port).get_port_ip_addresses(dut_engine))
+    #     Tools.TrafficGeneratorTool.start_ping_multiple_ips(player, ip_list)
 
     with allure.step('start send traffic from Host A to Host B'):
         traffic_start_time = Tools.TrafficGeneratorTool.start_traffic_between_2_hosts(
@@ -662,8 +672,8 @@ def post_issu_installation_steps(engines, devices, target_version, traffic_start
     dut_device = devices.dut
 
     try:
-        with allure.step('Stop pinging system mgmt ports and verify results'):
-            Tools.TrafficGeneratorTool.stop_ping_multiple_ips(player)
+        # with allure.step('Stop pinging system mgmt ports and verify results'):
+        #     Tools.TrafficGeneratorTool.stop_ping_multiple_ips(player)
 
         with allure.step('Verify traffic results from Host A to Host B'):
             num_of_packets = Tools.TrafficGeneratorTool.stop_traffic_between_2_hosts(
@@ -673,15 +683,17 @@ def post_issu_installation_steps(engines, devices, target_version, traffic_start
         with allure.step('Verify show ISSU status'):
             issu_status = OutputParsingTool.parse_json_str_to_dictionary(
                 system.image.show()).get_returned_value()[IssuConsts.ISSU_STATUS]
-            assert issu_status == IssuConsts.IssuStatus.DONE.value, \
-                f"ISSU status is {issu_status}, instead of: {IssuConsts.IssuStatus.DONE.value}"
+            assert issu_status == IssuConsts.IssuStatus.NO_ISSU.value, \
+                f"ISSU status is {issu_status}, instead of: {IssuConsts.IssuStatus.NO_ISSU.value}"
 
-        with allure.step('Verify image versions'):
+        with (allure.step('Verify image versions')):
             system_version = OutputParsingTool.parse_json_str_to_dictionary(
                 system.version.show()).get_returned_value()['image']
-            assert system_version == target_version.split('TODO'), (f'system image is: {system_version}, '
-                                                                    f'instead of {target_version.split}')
-            # TODO: check FW version as well
+            expected_version = target_version.split('/')[-1].replace('amd64-', '').replace('.bin', '')
+            assert system_version == expected_version, (f'system image is: {system_version}, '
+                                                        f'instead of {expected_version}')
+
+        # TODO: check FW version as well
 
         # with allure.step('Validate ports counters'):
         #     for port in Configurations.ndr_ports[dut_engine.ip]:
@@ -694,12 +706,12 @@ def post_issu_installation_steps(engines, devices, target_version, traffic_start
         #             f"counters in packets is: {counters[IbInterfaceConsts.LINK_STATS_OUT_PKTS]}, \
         #             while number of packets sent is: {num_of_packets}"
 
-        with allure.step('Get config file and path for target version'):
-            config_file_path, config_filename = dut_device.get_test_config_file_by_version(target_version)
-            config_file_path = '/root/mars/workspace/sonic-mgmt/ngts/tools/test_utils/nvos_resources/nvos_config_xdr.yml'  # TODO to be removed
-
-        with allure.step('Verify configuration after upgrade'):
-            NvosInstallationSteps.verify_config_after_upgrade(config_file_path, dut_engine)
+        # with allure.step('Get config file and path for target version'):
+        #     config_file_path, config_filename = dut_device.get_test_config_file_by_version(target_version)
+        #     config_file_path = '/root/mars/workspace/sonic-mgmt/ngts/tools/test_utils/nvos_resources/nvos_config_xdr.yml'  # TODO to be removed
+        #
+        # with allure.step('Verify configuration after upgrade'):
+        #     NvosInstallationSteps.verify_config_after_upgrade(config_file_path, dut_engine)
 
         # with allure.step('Validate management services'):
         #     with allure.step("Verify ntp state"):

@@ -1695,7 +1695,7 @@ class IssuConsts:
     CONTAINER_BU_TEMPLATE = '{python_path} {ping_server_script}'
     SERVER_SCRIPT = PYTHON_PATH + PING_SERVER_SCRIPT
     OPENSM_RESPONSE_TIMEOUT = '60'  # [sec]
-    TRAFFIC_DURATION = '200'  # [sec]
+    TRAFFIC_DURATION = '800'  # [sec]
     TRAFFIC_TIMEOUT = int(TRAFFIC_DURATION) + 10  # [sec]
     SERVER_OUTPUT = 'server_output.txt'
     CLIENT_OUTPUT = 'client_output.txt'
