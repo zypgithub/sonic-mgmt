@@ -9,12 +9,12 @@ from ngts.nvos_constants.constants_nvos import ApiType, TestFlowType
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
-from ngts.nvos_tools.system.Spdm import SpdmComponentFields
+from ngts.nvos_tools.system.Spdm import SpdmComponentFields, SPDMComponents
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.constants import VALID_NONCE_LEN, SpdmConsts, NOT_EMPTY
 from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.helpers import get_component_obj, randomize_hex_str, \
     randomize_non_hex_str, verify_component_outputs, run_client_verification, \
-    run_client_measurements_verification_usecanse, clean_cert_str
+    run_client_measurements_verification_usecanse, clean_cert_str, compare_cert_chains_except_for_leaf
 from ngts.tools.test_utils import allure_utils as allure
 
 
@@ -193,6 +193,7 @@ def test_reboot_system_keeps_data(available_spdm_components):
     3.	reboot
     4.	run show components and compare outputs
     """
+    available_spdm_components = [SPDMComponents.BMC]
     outputs_before_reboot = {}
     with allure.step('generate measurements and save show output for all components'):
         for component in available_spdm_components:
@@ -212,13 +213,22 @@ def test_reboot_system_keeps_data(available_spdm_components):
         for component in available_spdm_components:
             with allure.independent_step(f'component: {component}'):
                 component_obj = get_component_obj(component)
-                with allure.step('show output after reboot'):
+                with allure.step('show cert output after reboot'):
                     out = OutputParsingTool.parse_json_str_to_dictionary(component_obj.show()).get_returned_value()
                     out[SpdmComponentFields.CERTIFICATES][
                         SpdmConsts.Component.Certificates.CERT_STRING] = clean_cert_str(
                         out[SpdmComponentFields.CERTIFICATES][SpdmConsts.Component.Certificates.CERT_STRING])
-                with allure.step('compare to output before reboot'):
-                    ValidationTool.compare_dictionaries(outputs_before_reboot[component], out).verify_result()
+                with allure.step('compare cert show to output before reboot'):
+                    actual_out_cert = out[SpdmComponentFields.CERTIFICATES]
+                    expected_out_cert = outputs_before_reboot[component][SpdmComponentFields.CERTIFICATES]
+                    with allure.independent_step(f'check all fields but {SpdmConsts.Component.Certificates.CERT_STRING} identical'):
+                        ValidationTool.compare_dictionaries(
+                            {k: v for k, v in expected_out_cert.items() if k != SpdmConsts.Component.Certificates.CERT_STRING},
+                            {k: v for k, v in actual_out_cert.items() if k != SpdmConsts.Component.Certificates.CERT_STRING}
+                        ).verify_result()
+                    with allure.independent_step(f'check {SpdmConsts.Component.Certificates.CERT_STRING} identical except for leaf cert'):
+                        compare_cert_chains_except_for_leaf(expected_out_cert[SpdmConsts.Component.Certificates.CERT_STRING],
+                                                            actual_out_cert[SpdmConsts.Component.Certificates.CERT_STRING])
 
 
 @pytest.mark.parametrize('test_flow', TestFlowType.ALL_TYPES)

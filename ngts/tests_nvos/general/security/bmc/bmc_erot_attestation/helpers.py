@@ -7,6 +7,7 @@ from typing import Tuple
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_constants.constants_nvos import TestFlowType
+from ngts.nvos_tools.infra.CmdRunner import CmdRunner
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.TpmTool import TpmTool
@@ -14,7 +15,7 @@ from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.system.Spdm import SpdmComponent, SPDMComponents, COMPONENT_TO_SPDM_OBJ_FIELD, SpdmComponentFields
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.client_scripts.verify_cert_chain.verify_cert_chain import \
-    validate_certs_chain
+    validate_certs_chain, save_ordered_chain, order_certs, parse_certs_str
 from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.client_scripts.verify_spdm_measurements.verify_spdm_measurements import \
     verify_spdm_measurements
 from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.constants import VALID_NONCE_LEN, SpdmConsts, NOT_EMPTY
@@ -269,3 +270,11 @@ def run_client_verification(cert_chain_content: str, measurements_data: dict, no
             with allure.step('remove new files created in test'):
                 for file in files_to_remove:
                     os.remove(file)
+
+
+def compare_cert_chains_except_for_leaf(chain1: str, chain2: str):
+    chain1_file, chain2_file = '/tmp/chain1.pem', '/tmp/chain2.pem'
+    save_ordered_chain(order_certs(parse_certs_str(chain1))[1:], chain1_file)
+    save_ordered_chain(order_certs(parse_certs_str(chain2))[1:], chain2_file)
+    diff = CmdRunner().run_cmd(f'diff {chain1_file} {chain2_file}')
+    assert not diff, f'chains are not identical as expected.\ndiff: {diff}'
