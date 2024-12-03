@@ -78,7 +78,7 @@ class GnmiClient:
         assert mode in allowed_modes, f'unsupported gnmi subscribe mode: "{mode}"'
         mode = f"--mode {mode}" if mode != GnmiMode.STREAM else GnmiMode.STREAM
         flat_option = ' --format flat' if flat else ''
-        subscribe_op = f"subscribe --prefix '{prefix}' --path '{path}' --target netq {mode}" + flat_option
+        subscribe_op = f"subscribe --prefix '{prefix}' --path '{path}' --target nvos {mode}" + flat_option
         return self._run_gnmic_op(subscribe_op, skip_cert_verify, cacert, debug_mode, cmd_time, username, password,
                                   keep_session_alive, wait_till_done)
 

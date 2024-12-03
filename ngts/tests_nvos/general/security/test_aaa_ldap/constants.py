@@ -1,7 +1,7 @@
 
 class LdapConsts:
     # keys
-    HOSTNAME = 'hostname'
+    SERVER = 'server'
     PRIORITY = 'priority'
     SCOPE = 'scope'
     USERS = 'users'
@@ -395,7 +395,7 @@ class LdapDefaults:
         LdapConsts.TIMEOUT_BIND: 5,
         LdapConsts.TIMEOUT: 5,
         LdapConsts.VERSION: 3,
-        LdapConsts.HOSTNAME: {}
+        LdapConsts.SERVER: {}
     }
 
     SSL_DEFAULTS = {

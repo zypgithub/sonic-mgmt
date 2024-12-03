@@ -2,7 +2,7 @@ import random
 from typing import Union
 
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
-from ngts.nvos_tools.system.Hostname import HostnameId
+from ngts.nvos_tools.system.Server import ServerId
 from ngts.tests_nvos.general.security.radius.constants import RadiusConsts, RadiusVmServer, RadiusPhysicalServer
 from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.RemoteAaaServerInfo import RemoteAaaServerInfo, \
@@ -10,7 +10,7 @@ from ngts.tests_nvos.general.security.security_test_tools.tool_classes.RemoteAaa
 from ngts.tools.test_utils import allure_utils as allure
 
 
-def update_radius_server_auth_type(engines, item, server_info: RemoteAaaServerInfo, server_resource: HostnameId,
+def update_radius_server_auth_type(engines, item, server_info: RemoteAaaServerInfo, server_resource: ServerId,
                                    auth_type: str):
     assert auth_type in RadiusConsts.AUTH_TYPES, f'{auth_type} is not one of {RadiusConsts.AUTH_TYPES}'
     with allure.step(f'Set server auth-type to: {auth_type}'):
