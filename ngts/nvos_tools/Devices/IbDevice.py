@@ -107,8 +107,11 @@ class IbSwitch(BaseSwitch):
         self.user_fields = ['admin', 'monitor']
 
     def _init_security_lists(self):
+        super()._init_security_lists()
         self.kex_algorithms = ['curve25519-sha256', 'curve25519-sha256@libssh.org', 'diffie-hellman-group16-sha512',
                                'diffie-hellman-group18-sha512', 'diffie-hellman-group14-sha256']
+        self.aaa_cleanup_cmds = ['nv unset system aaa authentication order',
+                                 'nv unset system aaa authentication failthrough', 'nv config apply -y']
 
     def _init_password_hardening_lists(self):
         self.aaa_admin_role = 'admin'
@@ -416,6 +419,12 @@ class IbSwitch(BaseSwitch):
 
     def get_bios_file_name(self):
         return self.current_bios_version_path.split('/')[-1]
+
+    def setup_base_aaa_config(self, dut_engine: LinuxSshEngine):
+        pass
+
+    def cleanup_base_aaa_config(self, dut_engine: LinuxSshEngine):
+        pass
 
 
 # -------------------------- Gorilla Switch ----------------------------

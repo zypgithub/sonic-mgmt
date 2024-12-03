@@ -17,33 +17,39 @@ from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_general_utils import loganalyzer_ignore, wait_for_ldap_nvued_restart_workaround
 
 
+@pytest.mark.cumulus
 @pytest.mark.security
 @pytest.mark.simx_security
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_ldap_set_unset_show(test_api, engines):
     ldap_obj = System().aaa.ldap
     random_str = RandomizationTool.get_random_string(6)
-    generic_aaa_test_set_unset_show(
-        test_api=test_api, engines=engines,
-        remote_aaa_type=RemoteAaaType.LDAP,
-        main_resource_obj=ldap_obj,
-        confs={
-            ldap_obj: {
-                LdapConsts.PORT: random.choice(LdapConsts.VALID_VALUES[LdapConsts.PORT]),
-                LdapConsts.BASE_DN: random_str,
-                LdapConsts.BIND_DN: random_str,
-                LdapConsts.SECRET: random_str,
-                LdapConsts.TIMEOUT_BIND: random.choice(LdapConsts.VALID_VALUES[LdapConsts.TIMEOUT_BIND]),
-                LdapConsts.TIMEOUT: random.choice(LdapConsts.VALID_VALUES[LdapConsts.TIMEOUT]),
-                LdapConsts.VERSION: random.choice(LdapConsts.VALID_VALUES[LdapConsts.VERSION])
-            },
-            ldap_obj.ssl: {
-                LdapConsts.SSL_CA_LIST: random.choice(LdapConsts.VALID_VALUES_SSL[LdapConsts.SSL_CA_LIST]),
-                LdapConsts.SSL_CERT_VERIFY: random.choice(LdapConsts.VALID_VALUES_SSL[LdapConsts.SSL_CERT_VERIFY]),
-                LdapConsts.SSL_MODE: random.choice(LdapConsts.VALID_VALUES_SSL[LdapConsts.SSL_MODE]),
-                LdapConsts.SSL_PORT: random.choice(LdapConsts.VALID_VALUES_SSL[LdapConsts.SSL_PORT]),
-                LdapConsts.SSL_TLS_CIPHERS: random.choice(LdapConsts.VALID_VALUES_SSL[LdapConsts.SSL_TLS_CIPHERS])
-            },
+
+    confs = {
+        ldap_obj: {
+            LdapConsts.PORT: random.choice(LdapConsts.VALID_VALUES[LdapConsts.PORT]),
+            LdapConsts.BASE_DN: random_str,
+            LdapConsts.BIND_DN: random_str,
+            LdapConsts.SECRET: random_str,
+            LdapConsts.TIMEOUT_BIND: random.choice(LdapConsts.VALID_VALUES[LdapConsts.TIMEOUT_BIND]),
+            LdapConsts.TIMEOUT: random.choice(LdapConsts.VALID_VALUES[LdapConsts.TIMEOUT]),
+            LdapConsts.VERSION: random.choice(LdapConsts.VALID_VALUES[LdapConsts.VERSION])
+        },
+        ldap_obj.ssl: {
+            LdapConsts.SSL_CA_LIST: random.choice(LdapConsts.VALID_VALUES_SSL[LdapConsts.SSL_CA_LIST]),
+            LdapConsts.SSL_CERT_VERIFY: random.choice(LdapConsts.VALID_VALUES_SSL[LdapConsts.SSL_CERT_VERIFY]),
+            LdapConsts.SSL_MODE: random.choice(LdapConsts.VALID_VALUES_SSL[LdapConsts.SSL_MODE]),
+            LdapConsts.SSL_PORT: random.choice(LdapConsts.VALID_VALUES_SSL[LdapConsts.SSL_PORT]),
+            LdapConsts.SSL_TLS_CIPHERS: random.choice(LdapConsts.VALID_VALUES_SSL[LdapConsts.SSL_TLS_CIPHERS])
+        }
+    }
+    default_confs = {
+        ldap_obj: LdapDefaults.GLOBAL_DEFAULTS,
+        ldap_obj.ssl: LdapDefaults.SSL_DEFAULTS,
+    }
+
+    if not TestToolkit.is_eth_dut():
+        confs.update({
             ldap_obj.filter: {
                 LdapConsts.PASSWD: random_str,
                 LdapConsts.GROUP: random_str,
@@ -65,21 +71,27 @@ def test_ldap_set_unset_show(test_api, engines):
             #     LdapShadowAttributes.MEMBER: random_str,
             #     LdapShadowAttributes.UID: random_str
             # }
-        },
-        server_conf={
-            AaaConsts.PRIORITY: 2
-        },
-        default_confs={
-            ldap_obj: LdapDefaults.GLOBAL_DEFAULTS,
-            ldap_obj.ssl: LdapDefaults.SSL_DEFAULTS,
+        })
+        default_confs.update({
             ldap_obj.filter: LdapDefaults.FILTER_DEFAULTS,
             ldap_obj.map.passwd: LdapDefaults.MAP_PASSWD_DEFAULTS,
             ldap_obj.map.group: LdapDefaults.MAP_GROUP_DEFAULTS,
             # ldap_obj.map.shadow: LdapDefaults.MAP_SHADOW_DEFAULTS
-        }
+        })
+
+    generic_aaa_test_set_unset_show(
+        test_api=test_api, engines=engines,
+        remote_aaa_type=RemoteAaaType.LDAP,
+        main_resource_obj=ldap_obj,
+        confs=confs,
+        server_conf={
+            AaaConsts.PRIORITY: 2
+        },
+        default_confs=default_confs
     )
 
 
+@pytest.mark.cumulus
 @pytest.mark.security
 @pytest.mark.simx_security
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
@@ -104,6 +116,7 @@ def test_ldap_set_invalid_param(test_api, engines):
 
 
 @pytest.mark.timeout(MAX_TEST_TIMEOUT, func_only=True)
+@pytest.mark.cumulus
 @pytest.mark.security
 @pytest.mark.simx_security
 @pytest.mark.parametrize('test_flow', TestFlowType.ALL_TYPES)
@@ -122,15 +135,18 @@ def test_ldap_auth(test_flow, test_api, addressing_type, engines, topology_obj, 
             - verify auth with local user - expect fail
     """
     ldap = System().aaa.ldap
+    skip_auth_mediums = []
     generic_aaa_test_auth(test_flow=test_flow, test_api=test_api, addressing_type=addressing_type, engines=engines,
                           topology_obj=topology_obj, local_adminuser=local_adminuser, request=request,
                           remote_aaa_type=RemoteAaaType.LDAP,
                           remote_aaa_obj=ldap,
                           server_by_addr_type=LdapServersP3.LDAP1_SERVERS,
                           test_param=LdapEncryptionModes.ALL_MODES,
-                          test_param_update_func=update_ldap_encryption_mode)
+                          test_param_update_func=update_ldap_encryption_mode,
+                          skip_auth_mediums=skip_auth_mediums)
 
 
+@pytest.mark.cumulus
 @pytest.mark.security
 @pytest.mark.simx_security
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
@@ -147,6 +163,7 @@ def test_ldap_bad_port_error_flow(test_api, engines, topology_obj):
                                            bad_param_name=LdapConsts.PORT, bad_configured_server=ldap_server)
 
 
+@pytest.mark.cumulus
 @pytest.mark.security
 @pytest.mark.simx_security
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
@@ -163,6 +180,7 @@ def test_ldap_bad_secret_error_flow(test_api, engines, topology_obj):
                                            bad_param_name=LdapConsts.SECRET, bad_configured_server=ldap_server)
 
 
+@pytest.mark.cumulus
 @pytest.mark.security
 @pytest.mark.simx_security
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
@@ -179,6 +197,7 @@ def test_ldap_bad_bind_dn_error_flow(test_api, engines, topology_obj):
                                            bad_param_name=LdapConsts.BIND_DN, bad_configured_server=ldap_server)
 
 
+@pytest.mark.cumulus
 @pytest.mark.security
 @pytest.mark.simx_security
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
@@ -195,6 +214,7 @@ def test_ldap_bad_base_dn_error_flow(test_api, engines, topology_obj):
                                            bad_param_name=LdapConsts.BASE_DN, bad_configured_server=ldap_server)
 
 
+@pytest.mark.cumulus
 @pytest.mark.security
 @pytest.mark.simx_security
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
@@ -210,6 +230,7 @@ def test_ldap_unique_priority(test_api, engines, topology_obj):
     generic_aaa_test_unique_priority(test_api, remote_aaa_obj=System().aaa.ldap)
 
 
+@pytest.mark.cumulus
 @pytest.mark.security
 @pytest.mark.simx_security
 @pytest.mark.parametrize('test_flow', TestFlowType.ALL_TYPES)

@@ -9,7 +9,7 @@ import pytest
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.cli_wrappers.openapi.openapi_command_builder import OpenApiCommandHelper
 from ngts.cli_wrappers.openapi.openapi_general_clis import OpenApiGeneralCli
-from ngts.nvos_constants.constants_nvos import ApiType, NvosConst
+from ngts.nvos_constants.constants_nvos import ApiType, NvosConst, CumulusConsts
 
 logger = logging.getLogger()
 
@@ -183,3 +183,8 @@ class TestToolkit:
             logging.info('End Loganalyzer ignore')
             for loganalyzer_dut in TestToolkit.loganalyzer_duts.values():
                 loganalyzer_dut.add_end_ignore_mark()
+
+    @staticmethod
+    def is_eth_dut() -> bool:
+        return (TestToolkit.devices and TestToolkit.devices.dut and
+                TestToolkit.devices.dut.switch_type == CumulusConsts.ETH_SWITCH_TYPE)

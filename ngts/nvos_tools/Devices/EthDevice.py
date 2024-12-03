@@ -149,11 +149,16 @@ class EthSwitch(BaseSwitch):
         self.user_fields = ['root', 'cumulus']
 
     def _init_security_lists(self):
+        super()._init_security_lists()
         self.kex_algorithms = ['ecdh-sha2-nistp521', 'diffie-hellman-group-exchange-sha256',
                                'curve25519-sha256@libssh.org', 'diffie-hellman-group18-sha512',
                                'kex-strict-s-v00@openssh.com', 'ecdh-sha2-nistp256',
                                'curve25519-sha256', 'ecdh-sha2-nistp384', 'diffie-hellman-group14-sha256',
                                'sntrup761x25519-sha512@openssh.com', 'diffie-hellman-group16-sha512']
+        self.aaa_cleanup_cmds = [
+            'nv unset system aaa authentication-order',
+            'nv config apply -y'
+        ]
 
     def _init_password_hardening_lists(self):
         self.aaa_admin_role = 'nvue-admin'
@@ -176,6 +181,19 @@ class EthSwitch(BaseSwitch):
 
     def _init_dockers(self):
         super()._init_dockers()
+
+    def setup_base_aaa_config(self, dut_engine: LinuxSshEngine):
+        dut_engine.run_cmd('nv set system config apply ignore "/etc/hosts"')
+        dut_engine.run_cmd("nv set system aaa role admin class nvapply")
+        dut_engine.run_cmd("nv set system aaa role admin class sudo")
+        dut_engine.run_cmd("nv set system aaa role monitor class nvshow")
+        dut_engine.run_cmd("nv config apply --assume-yes")
+
+    def cleanup_base_aaa_config(self, dut_engine: LinuxSshEngine):
+        dut_engine.run_cmd('nv unset system config apply ignore "/etc/hosts"')
+        dut_engine.run_cmd("nv unset system aaa role admin")
+        dut_engine.run_cmd("nv unset system aaa role monitor")
+        dut_engine.run_cmd("nv config apply --assume-yes")
 
 
 # -------------------------- Mlx3700 Anaconda Switch ----------------------------

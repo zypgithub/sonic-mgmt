@@ -177,10 +177,10 @@ def prepare_scp(engines):
 
     logging.info('Prepare non-privileged directory')
     engines.dut.run_cmd(f'mkdir -p {AuthConsts.SWITCH_MONITORS_DIR}')
-    engines.dut.run_cmd(f'chgrp {admin_monitor_mutual_group} {AuthConsts.SWITCH_MONITORS_DIR}')
+    engines.dut.run_cmd(f'sudo chgrp {admin_monitor_mutual_group} {AuthConsts.SWITCH_MONITORS_DIR}')
     engines.dut.run_cmd(f'chmod 770 {AuthConsts.SWITCH_MONITORS_DIR}')
     engines.dut.run_cmd(f'echo "Alon The King" > {AuthConsts.SWITCH_MONITOR_SCP_DOWNLOAD_TEST_FILE}')
-    engines.dut.run_cmd(f'chgrp {admin_monitor_mutual_group} {AuthConsts.SWITCH_MONITOR_SCP_DOWNLOAD_TEST_FILE}')
+    engines.dut.run_cmd(f'sudo chgrp {admin_monitor_mutual_group} {AuthConsts.SWITCH_MONITOR_SCP_DOWNLOAD_TEST_FILE}')
     engines.dut.run_cmd(f'chmod 770 {AuthConsts.SWITCH_MONITOR_SCP_DOWNLOAD_TEST_FILE}')
 
     yield

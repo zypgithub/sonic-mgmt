@@ -2,11 +2,22 @@ from time import sleep
 
 import pytest
 
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.tests_nvos.general.security.helpers import remove_etc_host_mapping_to_dn, add_etc_host_mapping_to_dn
 from ngts.tests_nvos.general.security.security_test_tools.constants import AddressingType, AaaConsts
 from ngts.tests_nvos.general.security.test_aaa_ldap.constants import LdapConsts
 from ngts.tests_nvos.helpers.pytest_helpers import get_cur_test_param_value
 from ngts.tools.test_utils import allure_utils as allure
+
+
+@pytest.fixture(scope='session', autouse=True)
+def prepare_base_aaa_config(engines, devices):
+    """
+    @summary: Add/remove base aaa config needed for ldap tests on cumulus switches
+    """
+    devices.dut.setup_base_aaa_config(engines.dut)
+    yield
+    devices.dut.cleanup_base_aaa_config(engines.dut)
 
 
 @pytest.fixture(scope='session', autouse=True)
@@ -41,7 +52,7 @@ def alias_ldap_server_dn(engines, request):
 
 
 @pytest.fixture(scope='function', autouse=False)
-def backup_and_restore_certificates(engines):
+def backup_and_restore_certificates(engines, devices):
     """
     @summary: To allow the switch work with the docker ldap server with cert-verify enabled,
         we need to get the right certificate, which is kept in specific shared location.
@@ -56,5 +67,9 @@ def backup_and_restore_certificates(engines):
         engines.dut.run_cmd(f"sudo mv -f {LdapConsts.SWITCH_CA_BACKUP_FILE} {LdapConsts.SWITCH_CA_FILE}")
 
     with allure.step('Restart nslcd service'):
+        # On cumulus switch, nslcd is already stopped and should not be running, so no need to restart it.
+        if TestToolkit.is_eth_dut():
+            return
+
         engines.dut.run_cmd('sudo service nslcd restart')
         sleep(3)
