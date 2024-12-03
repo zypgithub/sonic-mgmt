@@ -4304,3 +4304,9 @@
       - tests/nightly/logging/test_log_analyzer_errors_during_deploy_sonic.py::test_check_errors_in_log_during_deploy_sonic_image
     - Redmine:
       - 4056053
+
+# Ignore errors based on analysis of RM issue 4151768
+- Errors_list:
+    - '.* ERR syncd#SDK: \[SAI_UTILS.ERR\].*get_dispatch_attribs_handler:.*(INGRESS_SAMPLE_MIRROR_SESSION|EGRESS_SAMPLE_MIRROR_SESSION).*'
+  Conditions:
+    - Platform: sn2
