@@ -24,3 +24,5 @@ ansible/*_tmp
 tests/common/plugins/custom_skipif/credentials.yaml
 tests/common/plugins/custom_skipif/Redmine.py
 .python-version
+
+sonic-dump/
