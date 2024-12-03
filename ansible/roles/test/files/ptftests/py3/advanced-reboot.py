@@ -1906,7 +1906,6 @@ class ReloadTest(BaseTest):
             curr_time = time.time()
             if curr_time - time_start > timeout:
                 break
-            time_start = curr_time
 
         self.log("Going to kill all tcpdump processes by SIGTERM")
         for process in processes_list:
