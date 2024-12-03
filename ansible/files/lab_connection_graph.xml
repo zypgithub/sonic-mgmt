@@ -182,7 +182,7 @@
       <Device Hostname="mtvr-moose-01" HwSku="ACS-SN5600" Type="DevSonic"/>
       <Device Hostname="mtvr-moose-02" HwSku="ACS-MSN4700" Type="DevSonic"/>
       <Device Hostname="mtvr-moose-03" HwSku="ACS-MSN4700" Type="DevSonic"/>
-      <Device Hostname="mtvr-moose-04" HwSku="ACS-MSN4700" Type="DevSonic"/>
+      <Device Hostname="mtvr-moose-04" HwSku="ACS-SN5600" Type="DevSonic"/>
       <Device Hostname="mtvr-moose-05" HwSku="ACS-SN5600" Type="DevSonic"/>
       <Device Hostname="mtvr-moose-06" HwSku="ACS-SN5600" Type="DevSonic"/>
       <Device Hostname="mtvr-moose-07" HwSku="ACS-SN5600" Type="DevSonic"/>

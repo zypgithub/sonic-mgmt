@@ -155,9 +155,13 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                                      validate=True)
         return output
 
-    def get_image_sonic_version(self):
+    def get_image_sonic_version(self, only_branch=True):
         output = self.engine.run_cmd('sudo show boot')
-        current_image = re.search(r"Current:\s*SONiC-OS-([\d|\w|\-]*)\..*", output, re.IGNORECASE).group(1)
+        if only_branch:
+            pattern = r"Current:\s*SONiC-OS-([\d|\w|\-]*)\..*"
+        else:
+            pattern = r"Current:\s*(SONiC-OS-[\d|\w|\-]*\..*)"
+        current_image = re.search(pattern, output, re.IGNORECASE).group(1)
         return current_image
 
     def set_default_image(self, image_binary, delimiter='-'):
@@ -423,7 +427,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             image_path = '/auto/' + image_path.split('/auto/')[1]
 
         if setup_info and dut_alias and self.is_fanout_deploy_needed(setup_name):
-            self.deploy_fanout(topology_obj, destination_hwsku, setup_info, dut_alias, deploy_fanout_threads)
+            self.deploy_fanout(topology_obj, destination_hwsku, platform_params, setup_info, dut_alias, deploy_fanout_threads, fanout_target_version=fanout_target_version)
 
         try:
             with allure.step("Trying to install sonic image"):
@@ -679,39 +683,120 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             return False
         return True
 
-    def deploy_fanout(self, topology_obj, destination_hwsku, setup_info, dut_alias, threads_dict):
+    def deploy_fanout_image(self, topology_obj, image_path, dut_alias, platform_params=None, set_timezone='Israel'):
+        deploy_type = "onie"
+        disable_ztp = True
+        fw_pkg_path = None
+
+        if image_path.startswith('http'):
+            image_path = '/auto/' + image_path.split('/auto/')[1]
+
+        try:
+            with allure.step("Trying to install sonic image"):
+                self.do_installation(topology_obj, image_path, deploy_type, fw_pkg_path, platform_params, dut_alias)
+        except OnieInstallationError:
+            with allure.step("Caught exception OnieInstallationError during install. Perform reboot and trying again"):
+                logger.error('Caught exception OnieInstallationError during install. Perform reboot and trying again')
+                self.engine.disconnect()
+                self.remote_reboot(topology_obj)
+                logger.info('Sleeping %s seconds to handle ssh flapping' % InfraConst.SLEEP_AFTER_RRBOOT)
+                time.sleep(InfraConst.SLEEP_AFTER_RRBOOT)
+                self.do_installation(topology_obj, image_path, deploy_type, fw_pkg_path, platform_params, dut_alias)
+
+        with allure.step('Verify dockers are up'):
+            self.verify_dockers_are_up(dockers_list=SonicConst.DOCKERS_FANOUT)
+
+        if set_timezone:
+            with allure.step("Set dut NTP timezone to {} time.".format(set_timezone)):
+                self.engine.disconnect()
+                self.engine.run_cmd('sudo timedatectl set-timezone {}'.format(set_timezone), validate=True)
+
+        with allure.step("Init telemetry keys"):
+            self.init_telemetry_keys()
+
+        self.engine.disconnect()
+
+        self.disable_ztp(disable_ztp)
+
+    def deploy_sonic_fanout(self, topology_obj, target_version, setup_info, threads_dict, platform_params, fanout_name, dut_alias):
+        if target_version:
+            # Check if is needed to install image on fanout.
+            cli_version = self.get_image_sonic_version(only_branch=False)
+
+            match = re.search(r'sonic/([\w.-]+)/dev', target_version)
+
+            install_image = False
+
+            if match:
+                target_version_name = match.group(1)
+                if target_version_name != cli_version and target_version_name not in cli_version:
+                    logger.info(f"Target version is {target_version_name}, but current fanout version is {cli_version}")
+                    install_image = True
+                logger.info(f"Current fanout version is {cli_version}")
+            else:
+                install_image = True
+                logger.warning(
+                    f"No version name find in `fanout_target_version`({str(target_version)}), use this target image forcefully.")
+
+            if install_image:
+                with allure.step("Upgrade fanout version on fanout."):
+                    self.deploy_fanout_image(topology_obj, target_version, dut_alias, platform_params)
+
+        logger.info('Deploy SONiC fanout switch configurations')
+        ansible_cmd = f"ansible-playbook -i lab fanout.yml -l {fanout_name}"
+        logger.info(f"Running CMD: {ansible_cmd}")
+        run_background_process_on_host(threads_dict, 'deploy_sonic_fanout', ansible_cmd, timeout=600,
+                                       exec_path=setup_info['ansible_path'])
+
+    def deploy_onyx_fanout(self, base_path, setup_info, destination_hwsku, fanout_engine, fanout_name):
+        fanout_config_path = os.path.join(base_path,
+                                          f"../../../ansible/files/hwsku_vars/{setup_info['setup_name']}/"
+                                          f"{destination_hwsku}/{FanoutConfigFile.ONYX}")
+        if self.is_onyx_deploy_needed(fanout_engine, fanout_name, fanout_config_path):
+            logger.info(f"Copy fanout configuration file to ONYX fanout switch {fanout_name}")
+            fanout_engine.copy_file(source_file=fanout_config_path, dest_file=FanoutConfigFile.ONYX,
+                                    file_system=FanoutConfigFile.ONYX_CONFIG_PATH, overwrite_file=True,
+                                    verify_file=False)
+            logger.info(f"Load fanout config file {FanoutConfigFile.ONYX}")
+            fanout_engine.run_cmd(f"configuration switch-to {FanoutConfigFile.ONYX} no-reboot")
+            fanout_engine.run_cmd("reload")
+
+    def deploy_fanout(self, topology_obj, destination_hwsku, platform_params, setup_info, dut_alias, threads_dict,
+                      fanout_target_version=None):
         """
         Copy the specific configuration file to fanout switch and load it
         """
+
+        fanout_engine_type, fanout_name, fanout = self.get_fanout_info(topology_obj, dut_alias)
+
+        if fanout:
+            if fanout_engine_type == CliType.SONIC:
+                fanout.deploy_sonic_fanout(topology_obj, fanout_target_version, setup_info, threads_dict,
+                                           platform_params, fanout_name, dut_alias)
+            else:
+                base_path = os.path.dirname(os.path.realpath(__file__))
+                self.deploy_onyx_fanout(base_path, setup_info, destination_hwsku, fanout, fanout_name)
+
+    def get_fanout_info(self, topology_obj, dut_alias):
+        fanout_engine_type = None
+        fanout_name = None
+        fanout = None
         fanout_alias = 'fanout'
         if dut_alias == 'dut-b':
             fanout_alias = 'fanout-b'
+
         if topology_obj.players.get(fanout_alias):
-            fanout_engine = topology_obj.players[fanout_alias]['engine']
-            base_path = os.path.dirname(os.path.realpath(__file__))
             fanout_engine_type = topology_obj.players[fanout_alias]['attributes'].noga_query_data['attributes'][
                 'Topology Conn.']['CLI_TYPE']
             fanout_name = topology_obj.players[fanout_alias]['attributes'].noga_query_data['attributes'][
                 'Common']['Name']
 
             if fanout_engine_type == CliType.SONIC:
-                logger.info('Deploy SONiC fanout switch')
-                ansible_cmd = f"ansible-playbook -i lab fanout.yml -l {fanout_name}"
-                logger.info(f"Running CMD: {ansible_cmd}")
-                run_background_process_on_host(threads_dict, 'deploy_sonic_fanout', ansible_cmd, timeout=600,
-                                               exec_path=setup_info['ansible_path'])
+                fanout = topology_obj.players[fanout_alias]['cli']
+                fanout = fanout.general
             else:
-                fanout_config_path = os.path.join(base_path,
-                                                  f"../../../ansible/files/hwsku_vars/{setup_info['setup_name']}/"
-                                                  f"{destination_hwsku}/{FanoutConfigFile.ONYX}")
-                if self.is_onyx_deploy_needed(fanout_engine, fanout_name, fanout_config_path):
-                    logger.info(f"Copy fanout configuration file to ONYX fanout switch {fanout_name}")
-                    fanout_engine.copy_file(source_file=fanout_config_path, dest_file=FanoutConfigFile.ONYX,
-                                            file_system=FanoutConfigFile.ONYX_CONFIG_PATH, overwrite_file=True,
-                                            verify_file=False)
-                    logger.info(f"Load fanout config file {FanoutConfigFile.ONYX}")
-                    fanout_engine.run_cmd(f"configuration switch-to {FanoutConfigFile.ONYX} no-reboot")
-                    fanout_engine.run_cmd("reload")
+                fanout = topology_obj.players[fanout_alias]['engine']
+        return fanout_engine_type, fanout_name, fanout
 
     def disable_ipv6_sonic_fanout(self, topology_obj, dut_alias=None):
         """
