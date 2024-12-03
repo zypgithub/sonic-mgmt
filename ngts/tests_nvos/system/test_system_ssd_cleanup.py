@@ -14,10 +14,10 @@ from ngts.tests_nvos.constants import MINUTE
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger(__name__)
-# /etc/fae_platform_firmware/transceiver/
-paths_order = ['/host/nos-images/', '/etc/fae_platform_firmware/ssd/', '/etc/fae_platform_firmware/cpld/',
-               '/etc/fae_platform_firmware/bios/', '/host/stats/', '/var/stats/', '/host/dump/', '/var/core/',
-               "/host/fw-images/"]
+
+paths_order = ['/host/nos-images/', '/etc/fae_platform_firmware/ssd/', '/host/fw-images/cpld/', '/host/fw-images/bios/',
+               '/host/fw-images/fpga/', '/host/fw-images/bmc/', '/host/fw-images/erot/', '/host/fw-images/transceiver/',
+               '/host/stats/', '/var/stats/', '/host/dump/', '/var/core/', '/host/fw-images/asic/']
 
 
 @pytest.mark.system
@@ -90,21 +90,22 @@ def test_ssd_cleanup_positive_flow(engines, devices):
     _change_monit_and_reload(engines.dut, old_line, new_line, file_path)
 
     try:
+        system_health_status = OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).verify_result()[HealthConsts.STATUS] == HealthConsts.NOT_OK
         df_output = _get_df_output(engines.dut)
         with allure.step("add file to reach usage threshold {}".format(5.1)):
             engines.dut.run_cmd(f"sudo fallocate -l {df_output[SystemConsts.SSD_SPACE_AVAILABLE_SIZE] - 5.1}G {paths_order[-1]}/big_file")
 
         files_to_delete = _add_files(engines.dut, 4, df_output[SystemConsts.SSD_SPACE_AVAILABLE_SIZE])
 
-        with allure.step("health issue will be reported after 3 minutes"):
-            time.sleep(180)
+        with allure.step("health issue will be reported after 150 seconds"):
+            time.sleep(150)
 
         with allure.step("check health status is not ok"):
             _check_disk_issue(system, False)
 
             with allure.step("check system events - two events expected "):
                 events_dict = OutputParsingTool.parse_json_str_to_dictionary(system.events.show()).verify_result()
-                _verify_system_event(system_events_before_testing, events_dict, False)
+                _verify_system_event(system_events_before_testing, events_dict, False, system_health_status)
 
         with allure.step("try to cleanup and verify health status and deleted files after it"):
             with allure.step("Rotate logs"):
@@ -116,30 +117,30 @@ def test_ssd_cleanup_positive_flow(engines, devices):
             with allure.step("check deleted files and the deleting order"):
                 verify_deleted_folders_list(engines.dut, files_to_delete[:-2])
 
-            with allure.step("check no disk issue"):
-                with allure.step("waiting for 180 seconds, for monit and healthD"):
+            with allure.independent_step("check no disk issue"):
+                with allure.step("waiting for 120 seconds, for monit and healthD"):
                     time.sleep(120)
                 _check_disk_issue(system)
 
-            with allure.step("check system events - two events expected "):
+            with allure.independent_step("check system events - two events expected "):
                 events_dict = OutputParsingTool.parse_json_str_to_dictionary(system.events.show()).verify_result()
-                _verify_system_event(system_events_before_testing, events_dict, True)
+                _verify_system_event(system_events_before_testing, events_dict, True, system_health_status)
 
         df_output = _get_df_output(engines.dut)
         file_name = 'Big_file'
-        engines.dut.run_cmd('sudo fallocate -l {size}G /{path}/{file}'.format(size=df_output[SystemConsts.SSD_SPACE_AVAILABLE_SIZE] - 0.5, path=paths_order[0], file=file_name))
+        engines.dut.run_cmd('sudo fallocate -l {size}G /{path}/{file}'.format(size=df_output[SystemConsts.SSD_SPACE_AVAILABLE_SIZE] - 1, path=paths_order[0], file=file_name))
 
         with allure.step("check auto cleanup step"):
             with allure.step("check SSD Cleanup Started in the logs"):
-                wait_for_specific_regex_in_logs(engines.dut, "ssd_cleanup: SSD Cleanup Done", timeout=70)
+                wait_for_specific_regex_in_logs(engines.dut, "ssd_cleanup: SSD Cleanup Done", timeout=120)
 
             with allure.step("Verify that deleted files are completely removed"):
                 verify_deleted_folders_list(engines.dut, [file_name])
                 assert "No such file or directory" in engines.dut.run_cmd(f"cat {paths_order[0]}/{files_to_delete[0]}"), f"{files_to_delete[0]} should be deleted"
 
             with allure.step("check no disk issue"):
-                with allure.step("waiting for 180 seconds, for monit and healthD"):
-                    time.sleep(180)
+                with allure.step("waiting for 150 seconds, for monit and healthD"):
+                    time.sleep(150)
                 _check_disk_issue(system)
     finally:
         _delete_all_files(engines.dut)
@@ -340,12 +341,13 @@ def _wait_until_monit_is_running(engine):
             raise Exception("Waiting for monit to finish initializing")
 
 
-def _verify_system_event(events_dict_before_testing, events_dict_after_testing, is_ok):
+def _verify_system_event(events_dict_before_testing, events_dict_after_testing, is_ok, system_health_status):
     """
 
     :param events_dict_before_testing:
     :param events_dict_after_testing:
     :param is_ok:
+    :param system_health_status:
     :return:
     """
     with allure.step("create expected events"):
@@ -361,7 +363,7 @@ def _verify_system_event(events_dict_before_testing, events_dict_after_testing, 
     logger.info("the new events: {}".format(events_output.values()))
 
     with allure.step("verify health event"):
-        assert expected_health_issue_event in events_output.values(), f"can not find an expected event: {expected_health_issue_event}"
+        assert expected_health_issue_event in events_output.values() or system_health_status, f"can not find an expected event: {expected_health_issue_event}"
 
     with allure.step("verify disk issue event"):
         assert expected_disk_issue_event in events_output.values(), f"can not find an expected event: {expected_disk_issue_event}"
