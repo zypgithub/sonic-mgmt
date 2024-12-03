@@ -11,6 +11,11 @@ import re
 import yaml
 import random
 
+path = os.path.abspath(__file__)
+sonic_mgmt_path = path.split('/sonic-tool/')[0]
+sys.path.append(sonic_mgmt_path)
+print("The sys path: ", sys.path)
+
 # Third-party libs
 from xml.etree import ElementTree
 from rpyc.utils.classic import connect, download
@@ -22,6 +27,8 @@ from reg2_wrapper.test_wrapper.standalone_wrapper import StandaloneWrapper
 
 from sig_term_handler.handler_mixin import TermHandlerMixin
 from lib.utils import get_allure_project_id
+from lib.constants import HTTP_SERVER_NBU_NFS
+from ngts.tests.nightly.secure.constants import SecureBootConsts
 
 ErrorCode.NO_COLLECTION = 5
 
@@ -168,6 +175,32 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
         else:
             self.raw_options = self.raw_options + ' --allure_server_addr="allure.nvidia.com" '
         self.raw_options += ' --allure_server_port="" '
+
+        # Handle target_image_list parameter
+        if '--target_image_list=' in self.raw_options:
+            # Use regex to find the value of target_image_list
+            match = re.search(r'--target_image_list=(?:"([^"]+)"|\'([^\']+)\'|([^\s]+))', self.raw_options)
+            if match:
+                image_type = match.group(1) or match.group(2) or match.group(3)
+                self.Logger.info(f"The image type is {image_type}")
+
+                if image_type == "non_signed_image":
+                    image_path = SecureBootConsts.NON_SECURE_IMAGE_PATH
+                elif image_type == "sig_mismatch_prod_image":
+                    image_path = SecureBootConsts.SIG_MISMATCH_PROD_IMAGE_PATH
+                elif image_type == "sig_mismatch_dev_image":
+                    image_path = SecureBootConsts.SIG_MISMATCH_DEV_IMAGE_PATH
+                else:
+                    raise ValueError(f"Invalid image type: {image_type}. The supported values are: "
+                                     f"'non_signed_image', 'sig_mismatch_prod_image', 'sig_mismatch_dev_image'")
+
+                http_image_path = HTTP_SERVER_NBU_NFS + image_path
+                self.Logger.info(f"The target image path is {http_image_path}")
+                self.raw_options = self.raw_options.replace(
+                    f'--target_image_list={image_type}',
+                    f'--target_image_list={http_image_path}'
+                )
+                self.Logger.info(f"The raw options is {self.raw_options}")
 
         if self.test_type:
             if self.test_type != "default":

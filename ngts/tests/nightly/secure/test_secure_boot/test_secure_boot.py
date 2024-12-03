@@ -81,12 +81,12 @@ def test_non_signed_kernel_module_load(secure_boot_helper, restore_kernel_module
 
 @pytest.mark.disable_loganalyzer
 @pytest.mark.parametrize("image_path", SecureBootConsts.IMAGE_PATH)
-def test_sonic_secure_boot_from_onie(secure_boot_helper, request, image_path, topology_obj, restore_to_sonic):
+def test_sonic_secure_boot_from_onie(secure_boot_helper, request, image_path, topology_obj, restore_to_sonic, dut_secure_type):
     """
     In this test case we want to validate unsuccessful load of unsigned image from onie
     """
     with allure.step("Test secure boot in onie mode"):
-        secure_boot_helper.onie_secure_boot(request, image_path, topology_obj)
+        secure_boot_helper.onie_secure_boot(request, image_path, topology_obj, dut_secure_type)
 
 
 @pytest.mark.disable_loganalyzer
@@ -115,4 +115,4 @@ def test_fwutil_install_bios_key_check_fail(secure_boot_helper, platform_params,
             SonicSecureBootConsts.INVALID_SIGNATURE_EXPECTED_MESSAGE[SonicSecureBootConsts.BIOS_COMPONENT],
             SonicSecureBootConsts.SWITCH_RECOVER_TIMEOUT)
     with allure.step("Wait for the switch auto boot to SONiC"):
-        retry_call(secure_boot_helper.is_sonic_mode, tries=5, delay=10, logger=logger)
+        retry_call(secure_boot_helper.is_sonic_mode, tries=15, delay=10, logger=logger)

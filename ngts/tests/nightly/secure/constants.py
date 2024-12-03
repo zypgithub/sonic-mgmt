@@ -13,8 +13,9 @@ class SecureBootConsts:
     MOUNT_FOLDER = '/UEFI'
     IMAGE_PATH = ["non_secure_image_path", "sig_mismatch_image_path"]
     NON_SECURE_IMAGE_PATH = "/auto/sw_regression/system/SONIC/security/secure_boot/non_signed_image/sonic-mellanox.bin"
-    SIG_MISMATCH_IMAGE_PATH = \
-        "/auto/sw_regression/system/SONIC/security/secure_boot/sig_mismatch_image/sonic-mellanox.bin"
+    SIG_MISMATCH_BASE_PATH = "/auto/sw_regression/system/SONIC/security/secure_boot/sig_mismatch_image"
+    SIG_MISMATCH_DEV_IMAGE_PATH = f"{SIG_MISMATCH_BASE_PATH}/sonic-mellanox-dev.bin"
+    SIG_MISMATCH_PROD_IMAGE_PATH = f"{SIG_MISMATCH_BASE_PATH}/sonic-mellanox-prod.bin"
     EFI_PARTITION_CMD = "fdisk -l | grep \"EFI System\" | awk \'{print $1}\'"
     LAST_OCCURENCE_REGEX = "({})(?!.*\1)"
     VMILUNZ_REGEX = '(vmlinuz-.*-amd64)'

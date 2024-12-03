@@ -329,7 +329,7 @@ class SonicSecureBootHelper(SecureBootHelper):
             assert SonicSecureBootConsts.KERNEL_MODULE_BLOCK_MESSAGE in insmod_output, \
                 f"Unsigned kernel module {SonicSecureBootConsts.KERNEL_MODULE_TEMP_FILE_PATH} installed without block!"
 
-    def onie_secure_boot(self, request, image_path, topology_obj):
+    def onie_secure_boot(self, request, image_path, topology_obj, dut_secure_type):
         """
         This function will perform as the test body called by test function
         It will perform the following:
@@ -338,8 +338,18 @@ class SonicSecureBootHelper(SecureBootHelper):
             3. validate the installation would be blocked by secure boot
         """
         with allure.step("Get image path"):
-            image_path = request.getfixturevalue(image_path)
+            if image_path == "sig_mismatch_image_path":
+                if dut_secure_type == 'dev':
+                    # If the DUT secure type is 'dev', use the prod image as the test target image
+                    image_path = SecureBootConsts.SIG_MISMATCH_PROD_IMAGE_PATH
+                else:
+                    # If the DUT secure type is 'prod', use the dev image as the test target image
+                    image_path = SecureBootConsts.SIG_MISMATCH_DEV_IMAGE_PATH
+            else:
+                image_path = SecureBootConsts.NON_SECURE_IMAGE_PATH
             http_image_path = DockerBringupConstants.HTTP_SERVER + image_path
+            logger.info(f"The target image path is {http_image_path}")
+
         with allure.step("Get into ONIE mode"):
             self.get_into_onie_mode(topology_obj)
 

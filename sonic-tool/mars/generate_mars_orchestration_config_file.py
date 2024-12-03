@@ -119,7 +119,7 @@ canonical_develop_dbs = [
 
 community_keys = ["base_version", "target_version", "rpc_image", "custom_tarball_name", "target_version_specified",
                   "deploy_only_target", "skip_weekend_cases", "regression_type", "branch",
-                  "skip_stop_regression", "execution_block_generator"]
+                  "skip_stop_regression", "execution_block_generator", "sig_mismatch_image"]
 
 dualtor_as_keys = ["base_version", "rpc_image", "custom_tarball_name", "skip_weekend_cases", "regression_type",
                    "skip_stop_regression", "branch", "execution_block_generator"]
@@ -128,7 +128,8 @@ dualtor_aa_keys = ["topology", "base_version", "rpc_image", "custom_tarball_name
                    "regression_type", "branch", "skip_stop_regression", "execution_block_generator"]
 
 canonical_keys = ["base_version", "custom_tarball_name", "send_takeover_notification",
-                  "skip_weekend_cases", "regression_type", "branch", "skip_stop_regression", "execution_block_generator"]
+                  "skip_weekend_cases", "regression_type", "branch", "skip_stop_regression",
+                  "execution_block_generator", "sig_mismatch_image"]
 canonical_upgrade_keys = ["base_version", "target_version"]
 
 
