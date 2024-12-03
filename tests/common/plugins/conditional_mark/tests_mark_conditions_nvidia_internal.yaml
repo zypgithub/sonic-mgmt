@@ -1231,11 +1231,35 @@ hash/test_generic_hash.py::test_lag_member_flap:
     conditions:
       - "https://redmine.mellanox.com/issues/3647677"
 
+generic_config_updater:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4196870"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4196870"
+
+show_techsupport/test_techsupport.py::test_techsupport:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4196657"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4196657"
+
 bgp/test_bgp_update_timer.py::test_bgp_update_timer_single_route:
   xfail:
     reason: "Testcase statistically fails due to RM issue: https://redmine.mellanox.com/issues/3790712"
     conditions:
       - "https://redmine.mellanox.com/issues/3790712"
+
+bgp/test_bgp_bbr.py:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4196870"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4196870"
+
+bgp/test_bgp_bbr_default_state.py:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4196870"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4196870"
 
 platform_tests/test_secure_upgrade.py:
   skip:
