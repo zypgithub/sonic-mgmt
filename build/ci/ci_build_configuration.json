@@ -776,14 +776,31 @@
           "node": "SONIC_LITE",
           "skip": false,
           "on_failure": "stop"
+        }
+      ]
+    },
+    {
+      "phase_5": [
+        {
+          "name": "Clone for tarball",
+          "module": "com.mellanox.jenkins.generic_modules.Checkout",
+          "category": "Post Merge",
+          "node": "SONIC_LITE",
+          "parameters": {
+            "CLONE_PATH": "${PROJECT_NAME}",
+            "GIT_REPOSITORY": "${GIT_REPOSITORY}"
+          },
+          "skip": false,
+          "on_failure": "stop",
+          "out_of_mail": true
         },
         {
           "name": "Create tarball after merge",
           "module": "com.mellanox.jenkins.generic_modules.RunCmd",
-          "category": "Pre BAT",
+          "category": "Post Merge",
           "node": "SONIC_LITE",
           "parameters": {
-            "cmd": "cd ${nfs_dir}; tar -zcvf ${nfs_dir}/${TARBALL_NAME} sonic-mgmt"
+            "cmd": "cd ${WORKSPACE}/${PROJECT_NAME}; tar -zcvf ${nfs_dir}/${TARBALL_NAME} sonic-mgmt"
           },
           "skip": false,
           "on_failure": "stop",
@@ -792,7 +809,7 @@
         {
           "name": "move tarball to shared directory",
           "module": "com.mellanox.jenkins.generic_modules.RunCmd",
-          "category": "Move Tarball",
+          "category": "Post Merge",
           "node": "SONIC_LITE",
           "parameters": {
             "cmd": "sudo cp -f ${nfs_dir}/${TARBALL_NAME} /.autodirect/sw_regression/system/SONIC/MARS/tarballs/SONIC_CANONICAL-sonic-mgmt_${GERRIT_BRANCH}.db.1.tgz"
@@ -804,7 +821,7 @@
         {
           "name": "move tarball to mtbc shared directory",
           "module": "com.mellanox.jenkins.generic_modules.RunCmd",
-          "category": "Move Tarball",
+          "category": "Post Merge",
           "node": "SONIC_LITE",
           "parameters": {
             "cmd": "timeout 300 sudo scp ${nfs_dir}/${TARBALL_NAME} root@mtbc-stm-003:/auto/sw_regression/mtbcsw/system/SONIC/MARS/tarballs/SONIC_CANONICAL-sonic-mgmt_${GERRIT_BRANCH}.db.1.tgz"
