@@ -12,6 +12,7 @@
   dut:
     - arc-switch1004
     - arc-switch1025
+  inv_name: lab
   comment: Dual-TOR testbed
 
 - conf-name: sonic-dual-tor-dualtor
@@ -26,6 +27,7 @@
   dut:
     - arc-switch1004
     - arc-switch1025
+  inv_name: lab
   comment: 2700 Active-Standby Dual-TOR testbed
 
 - conf-name: sonic-dual-tor-tigon
@@ -40,6 +42,7 @@
   dut:
     - r-tigon-20
     - r-tigon-21
+  inv_name: lab
   comment: Dual-TOR testbed
 
 - conf-name: sonic-dual-tor-tigon-dualtor
@@ -54,6 +57,7 @@
   dut:
     - r-tigon-20
     - r-tigon-21
+  inv_name: lab
   comment: 4600C Active-Standby Dual-TOR testbed
 
 - conf-name: sonic-dual-tor-tigon-dualtor-64
@@ -68,6 +72,7 @@
   dut:
     - r-tigon-20
     - r-tigon-21
+  inv_name: lab
   comment: 4600C Active-Standby Dual-TOR testbed
 
 - conf-name: sonic-dual-tor-tigon-dualtor-aa
@@ -84,6 +89,7 @@
   dut:
     - r-tigon-20
     - r-tigon-21
+  inv_name: lab
   comment: 4600C Active-Active Dual-TOR testbed
 
 - conf-name: sonic-dual-tor-tigon-dualtor-aa-64
@@ -100,6 +106,7 @@
   dut:
     - r-tigon-20
     - r-tigon-21
+  inv_name: lab
   comment: 4600C Active-Active Dual-TOR testbed
 
 - conf-name: sonic-dual-tor-tigon-01
@@ -114,6 +121,7 @@
   dut:
     - mtvr-tigon-02
     - mtvr-tigon-04
+  inv_name: lab
   comment: Dual-TOR testbed
 
 - conf-name: sonic-dual-tor-tigon-01-dualtor
@@ -128,6 +136,7 @@
   dut:
     - mtvr-tigon-02
     - mtvr-tigon-04
+  inv_name: lab
   comment: 4600C Active-Standby Dual-TOR testbed
 
 - conf-name: sonic-dual-tor-tigon-01-dualtor-64
@@ -142,6 +151,7 @@
   dut:
     - mtvr-tigon-02
     - mtvr-tigon-04
+  inv_name: lab
   comment: 4600C Active-Standby Dual-TOR testbed
 
 - conf-name: sonic-dual-tor-leopard
@@ -156,6 +166,7 @@
   dut:
     - r-leopard-70
     - r-leopard-72
+  inv_name: lab
   comment: Dual-TOR testbed
 
 - conf-name: sonic-dual-tor-leopard-dualtor
@@ -170,6 +181,7 @@
   dut:
     - r-leopard-70
     - r-leopard-72
+  inv_name: lab
   comment: 4700 Active-Standby Dual-TOR testbed
 
 - conf-name: sonic-dual-tor-leopard-dualtor-64-breakout
@@ -186,6 +198,7 @@
   dut:
     - r-leopard-70
     - r-leopard-72
+  inv_name: lab
   comment: 4700 Active-Standby Dual-TOR testbed
 
 - conf-name: sonic-dual-tor-leopard-dualtor-aa-64-breakout
@@ -202,6 +215,7 @@
   dut:
     - r-leopard-70
     - r-leopard-72
+  inv_name: lab
   comment: 4700 Active-Active Dual-TOR testbed
 
 - conf-name: mts-sonic-dut-t0
@@ -215,6 +229,7 @@
   vm_base: VM0201
   dut:
     - mts-sonic-dut
+  inv_name: lab
   comment: Mellanox MTS testbed
 
 - conf-name: mts-sonic-dut-t1
@@ -228,6 +243,7 @@
   vm_base: VM0201
   dut:
     - mts-sonic-dut
+  inv_name: lab
   comment: Mellanox MTS testbed
 
 - conf-name: mts-sonic-dut-t1-lag
@@ -241,6 +257,7 @@
   vm_base: VM0201
   dut:
     - mts-sonic-dut
+  inv_name: lab
   comment: Mellanox MTS testbed
 
 - conf-name: mts-sonic-dut-ptf32
@@ -254,6 +271,7 @@
   vm_base: VM0201
   dut:
     - mts-sonic-dut
+  inv_name: lab
   comment: Mellanox MTS testbed
 
 - conf-name: mts-sonic-dut-ptf-any
@@ -267,6 +285,7 @@
   vm_base: VM0201
   dut:
     - mts-sonic-dut
+  inv_name: lab
   comment: Mellanox MTS testbed
 
 - conf-name: r-anaconda-81-t0
@@ -280,6 +299,7 @@
   vm_base: VM0301
   dut:
     - r-anaconda-81
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-anaconda-81-t1
@@ -293,6 +313,7 @@
   vm_base: VM0301
   dut:
     - r-anaconda-81
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-anaconda-81-t1-lag
@@ -306,6 +327,7 @@
   vm_base: VM0301
   dut:
     - r-anaconda-81
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-anaconda-81-ptf32
@@ -319,6 +341,7 @@
   vm_base: VM0301
   dut:
     - r-anaconda-81
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-anaconda-81-ptf-any
@@ -332,6 +355,7 @@
   vm_base: VM0301
   dut:
     - r-anaconda-81
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: arc-switch1025-t0
@@ -345,6 +369,7 @@
   vm_base: VM0601
   dut:
     - arc-switch1025
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: arc-switch1025-t0-56
@@ -358,6 +383,7 @@
   vm_base: VM0601
   dut:
     - arc-switch1025
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: arc-switch1025-t0-56-po2vlan
@@ -371,6 +397,7 @@
   vm_base: VM0601
   dut:
     - arc-switch1025
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: arc-switch1025-t0-64-32
@@ -384,6 +411,7 @@
   vm_base: VM0601
   dut:
     - arc-switch1025
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: arc-switch1025-t1
@@ -397,6 +425,7 @@
   vm_base: VM0601
   dut:
     - arc-switch1025
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: arc-switch1025-t1-lag
@@ -410,6 +439,7 @@
   vm_base: VM0601
   dut:
     - arc-switch1025
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: arc-switch1025-ptf32
@@ -423,6 +453,7 @@
   vm_base: VM0601
   dut:
     - arc-switch1025
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: arc-switch1025-dualtor
@@ -436,6 +467,7 @@
   vm_base: VM0701
   dut:
     - arc-switch1025
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: arc-switch1025-ptf-any
@@ -449,6 +481,7 @@
   vm_base: VM0601
   dut:
     - arc-switch1025
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: arc-switch1004-t0
@@ -462,6 +495,7 @@
   vm_base: VM0701
   dut:
     - arc-switch1004
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: arc-switch1004-t0-56
@@ -475,6 +509,7 @@
   vm_base: VM0701
   dut:
     - arc-switch1004
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: arc-switch1004-t0-56-po2vlan
@@ -488,6 +523,7 @@
   vm_base: VM0701
   dut:
     - arc-switch1004
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: arc-switch1004-t1
@@ -501,6 +537,7 @@
   vm_base: VM0701
   dut:
     - arc-switch1004
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: arc-switch1004-t1-lag
@@ -514,6 +551,7 @@
   vm_base: VM0701
   dut:
     - arc-switch1004
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: arc-switch1004-ptf32
@@ -527,6 +565,7 @@
   vm_base: VM0701
   dut:
     - arc-switch1004
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: arc-switch1004-dualtor
@@ -540,6 +579,7 @@
   vm_base: VM0701
   dut:
     - arc-switch1004
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: arc-switch1004-ptf-any
@@ -553,6 +593,7 @@
   vm_base: VM0701
   dut:
     - arc-switch1004
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-58-t0
@@ -566,6 +607,7 @@
   vm_base: VM1101
   dut:
     - r-leopard-58
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-58-t0-56-o8v48
@@ -579,6 +621,7 @@
   vm_base: VM1101
   dut:
     - r-leopard-58
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-58-t1
@@ -592,6 +635,7 @@
   vm_base: VM1101
   dut:
     - r-leopard-58
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-58-t1-lag
@@ -605,6 +649,7 @@
   vm_base: VM1101
   dut:
     - r-leopard-58
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-58-t1-32-lag
@@ -618,6 +663,7 @@
   vm_base: VM1101
   dut:
     - r-leopard-58
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-58-t1-56-lag
@@ -631,6 +677,7 @@
   vm_base: VM1101
   dut:
     - r-leopard-58
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-58-ptf32
@@ -644,6 +691,7 @@
   vm_base: VM1101
   dut:
     - r-leopard-58
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-58-ptf-any
@@ -657,6 +705,7 @@
   vm_base: VM1101
   dut:
     - r-leopard-58
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-70-t0
@@ -670,6 +719,7 @@
   vm_base: VM2601
   dut:
     - r-leopard-70
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-70-t0-56-o8v48
@@ -683,6 +733,7 @@
   vm_base: VM2601
   dut:
     - r-leopard-70
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-70-t1
@@ -696,6 +747,7 @@
   vm_base: VM2601
   dut:
     - r-leopard-70
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-70-t1-lag
@@ -709,6 +761,7 @@
   vm_base: VM2601
   dut:
     - r-leopard-70
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-70-ptf32
@@ -722,6 +775,7 @@
   vm_base: VM2601
   dut:
     - r-leopard-70
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-70-ptf-any
@@ -735,6 +789,7 @@
   vm_base: VM2601
   dut:
     - r-leopard-70
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-70-dualtor
@@ -748,6 +803,7 @@
   vm_base: VM2601
   dut:
     - r-leopard-70
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-72-t0
@@ -761,6 +817,7 @@
   vm_base: VM2701
   dut:
     - r-leopard-72
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-72-t0-56-o8v48
@@ -774,6 +831,7 @@
   vm_base: VM2701
   dut:
     - r-leopard-72
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-72-t1
@@ -787,6 +845,7 @@
   vm_base: VM2701
   dut:
     - r-leopard-72
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-72-t1-lag
@@ -800,6 +859,7 @@
   vm_base: VM2701
   dut:
     - r-leopard-72
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-72-t1-28-lag
@@ -813,6 +873,7 @@
   vm_base: VM2701
   dut:
     - r-leopard-72
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-72-ptf32
@@ -826,6 +887,7 @@
   vm_base: VM2701
   dut:
     - r-leopard-72
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-72-ptf-any
@@ -839,6 +901,7 @@
   vm_base: VM2701
   dut:
     - r-leopard-72
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-72-dualtor
@@ -852,6 +915,7 @@
   vm_base: VM2701
   dut:
     - r-leopard-72
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-bobcat-03-t0-28
@@ -869,6 +933,7 @@
     - r-bobcat-03-dpu-1
     - r-bobcat-03-dpu-2
     - r-bobcat-03-dpu-3
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-bobcat-03-t1-28-lag
@@ -886,6 +951,7 @@
     - r-bobcat-03-dpu-1
     - r-bobcat-03-dpu-2
     - r-bobcat-03-dpu-3
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-bobcat-03-ptf-any
@@ -903,6 +969,7 @@
     - r-bobcat-03-dpu-1
     - r-bobcat-03-dpu-2
     - r-bobcat-03-dpu-3
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-bobcat-01-t0-28
@@ -920,6 +987,7 @@
     - r-bobcat-01-dpu-1
     - r-bobcat-01-dpu-2
     - r-bobcat-01-dpu-3
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-bobcat-01-t1-28-lag
@@ -937,6 +1005,7 @@
     - r-bobcat-01-dpu-1
     - r-bobcat-01-dpu-2
     - r-bobcat-01-dpu-3
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-bobcat-01-ptf-any
@@ -954,6 +1023,7 @@
     - r-bobcat-01-dpu-1
     - r-bobcat-01-dpu-2
     - r-bobcat-01-dpu-3
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-moose-01-t0
@@ -967,6 +1037,7 @@
   vm_base: VM2501
   dut:
     - r-moose-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-moose-01-t0-c256
@@ -980,6 +1051,7 @@
   vm_base: VM2501
   dut:
     - r-moose-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-moose-01-t0-64
@@ -993,6 +1065,7 @@
   vm_base: VM2501
   dut:
     - r-moose-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-moose-01-t0-64-256
@@ -1006,6 +1079,7 @@
   vm_base: VM2501
   dut:
     - r-moose-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-moose-01-t0-256
@@ -1019,6 +1093,7 @@
   vm_base: VM2501
   dut:
     - r-moose-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-moose-01-t1
@@ -1032,6 +1107,7 @@
   vm_base: VM2501
   dut:
     - r-moose-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-moose-01-t1-lag
@@ -1045,6 +1121,7 @@
   vm_base: VM2501
   dut:
     - r-moose-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-moose-01-t1-lag-c224o8
@@ -1058,6 +1135,7 @@
   vm_base: VM2501
   dut:
     - r-moose-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-moose-01-ptf32
@@ -1071,6 +1149,7 @@
   vm_base: VM2501
   dut:
     - r-moose-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-moose-01-ptf-any
@@ -1084,6 +1163,7 @@
   vm_base: VM2501
   dut:
     - r-moose-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-moose-04-t0
@@ -1097,6 +1177,7 @@
   vm_base: VM3001
   dut:
     - mtvr-moose-04
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-moose-04-t0-c256
@@ -1110,6 +1191,7 @@
   vm_base: VM3001
   dut:
     - mtvr-moose-04
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-moose-04-t0-64
@@ -1123,6 +1205,7 @@
   vm_base: VM3001
   dut:
     - mtvr-moose-04
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-moose-04-t0-64-256
@@ -1136,6 +1219,7 @@
   vm_base: VM3001
   dut:
     - mtvr-moose-04
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-moose-04-t1
@@ -1149,6 +1233,7 @@
   vm_base: VM3001
   dut:
     - mtvr-moose-04
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-moose-04-t1-lag
@@ -1162,6 +1247,7 @@
   vm_base: VM3001
   dut:
     - mtvr-moose-04
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-moose-04-t1-lag-c224o8
@@ -1175,6 +1261,7 @@
   vm_base: VM3001
   dut:
     - mtvr-moose-04
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-moose-04-ptf32
@@ -1188,6 +1275,7 @@
   vm_base: VM3001
   dut:
     - mtvr-moose-04
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-moose-04-ptf-any
@@ -1201,6 +1289,7 @@
   vm_base: VM3001
   dut:
     - mtvr-moose-04
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-moose-01-ptf-any
@@ -1214,6 +1303,7 @@
   vm_base: VM0000
   dut:
     - mtvr-moose-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-moose-02-ptf-any
@@ -1227,6 +1317,7 @@
   vm_base: VM0000
   dut:
     - mtvr-moose-02
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-moose-03-ptf-any
@@ -1240,6 +1331,7 @@
   vm_base: VM0000
   dut:
     - mtvr-moose-03
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-tigon-05-ptf-any
@@ -1253,6 +1345,7 @@
   vm_base: VM0000
   dut:
     - mtvr-tigon-05
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-tigon-06-ptf-any
@@ -1266,6 +1359,7 @@
   vm_base: VM0000
   dut:
     - mtvr-tigon-06
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-tigon-07-ptf-any
@@ -1279,6 +1373,7 @@
   vm_base: VM0000
   dut:
     - mtvr-tigon-07
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-moose-05-ptf-any
@@ -1292,6 +1387,7 @@
   vm_base: VM0000
   dut:
     - mtvr-moose-05
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-moose-06-ptf-any
@@ -1305,6 +1401,7 @@
   vm_base: VM0000
   dut:
     - mtvr-moose-06
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-moose-07-ptf-any
@@ -1318,6 +1415,7 @@
   vm_base: VM0000
   dut:
     - mtvr-moose-07
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-moose-08-ptf-any
@@ -1331,6 +1429,7 @@
   vm_base: VM0000
   dut:
     - mtvr-moose-08
+  inv_name: lab
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-moose-09-ptf-any
@@ -1344,6 +1443,7 @@
   vm_base: VM0000
   dut:
     - mtvr-moose-09
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-moose-10-ptf-any
@@ -1357,6 +1457,7 @@
   vm_base: VM0000
   dut:
     - mtvr-moose-10
+  inv_name: lab
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-moose-16-ptf-any
@@ -1409,6 +1510,7 @@
   vm_base: VM3101
   dut:
     - mtvr-leopard-01
+  inv_name: lab
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-leopard-01-t1
@@ -1422,6 +1524,7 @@
   vm_base: VM3101
   dut:
     - mtvr-leopard-01
+  inv_name: lab
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-leopard-01-t1-lag
@@ -1435,6 +1538,7 @@
   vm_base: VM3101
   dut:
     - mtvr-leopard-01
+  inv_name: lab
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-leopard-01-t1-28-lag
@@ -1448,6 +1552,7 @@
   vm_base: VM3101
   dut:
     - mtvr-leopard-01
+  inv_name: lab
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-leopard-01-ptf32
@@ -1461,6 +1566,7 @@
   vm_base: VM3101
   dut:
     - mtvr-leopard-01
+  inv_name: lab
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-leopard-01-ptf-any
@@ -1474,6 +1580,7 @@
   vm_base: VM3101
   dut:
     - mtvr-leopard-01
+  inv_name: lab
   comment: Mellanox MTVR testbed
 
 - conf-name: r-tigris-04-t0
@@ -1487,6 +1594,7 @@
   vm_base: VM1201
   dut:
     - r-tigris-04
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-04-t0-16
@@ -1500,6 +1608,7 @@
   vm_base: VM1201
   dut:
     - r-tigris-04
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-04-t0-52
@@ -1513,6 +1622,7 @@
   vm_base: VM1201
   dut:
     - r-tigris-04
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-04-t0-56
@@ -1526,6 +1636,7 @@
   vm_base: VM1201
   dut:
     - r-tigris-04
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-04-t0-64
@@ -1539,6 +1650,7 @@
   vm_base: VM1201
   dut:
     - r-tigris-04
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-04-t0-120
@@ -1552,6 +1664,7 @@
   vm_base: VM1201
   dut:
     - r-tigris-04
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-04-t1
@@ -1565,6 +1678,7 @@
   vm_base: VM1201
   dut:
     - r-tigris-04
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-04-t1-lag
@@ -1578,6 +1692,7 @@
   vm_base: VM1201
   dut:
     - r-tigris-04
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-04-t1-64-lag
@@ -1591,6 +1706,7 @@
   vm_base: VM1201
   dut:
     - r-tigris-04
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-04-ptf32
@@ -1604,6 +1720,7 @@
   vm_base: VM1201
   dut:
     - r-tigris-04
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-04-ptf64
@@ -1617,6 +1734,7 @@
   vm_base: VM1201
   dut:
     - r-tigris-04
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-04-ptf-any
@@ -1630,6 +1748,7 @@
   vm_base: VM1201
   dut:
     - r-tigris-04
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-13-t0
@@ -1643,6 +1762,7 @@
   vm_base: VM1301
   dut:
     - r-tigris-13
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-13-t0-16
@@ -1656,6 +1776,7 @@
   vm_base: VM1301
   dut:
     - r-tigris-13
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-13-t0-52
@@ -1669,6 +1790,7 @@
   vm_base: VM1301
   dut:
     - r-tigris-13
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-13-t0-56
@@ -1682,6 +1804,7 @@
   vm_base: VM1301
   dut:
     - r-tigris-13
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-13-t0-64
@@ -1695,6 +1818,7 @@
   vm_base: VM1301
   dut:
     - r-tigris-13
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-13-t1
@@ -1708,6 +1832,7 @@
   vm_base: VM1301
   dut:
     - r-tigris-13
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-13-t1-lag
@@ -1721,6 +1846,7 @@
   vm_base: VM1301
   dut:
     - r-tigris-13
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-13-t1-64-lag
@@ -1734,6 +1860,7 @@
   vm_base: VM1301
   dut:
     - r-tigris-13
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-13-ptf32
@@ -1747,6 +1874,7 @@
   vm_base: VM1301
   dut:
     - r-tigris-13
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-13-ptf64
@@ -1760,6 +1888,7 @@
   vm_base: VM1301
   dut:
     - r-tigris-13
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-13-ptf-any
@@ -1773,6 +1902,7 @@
   vm_base: VM1301
   dut:
     - r-tigris-13
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-25-t0
@@ -1786,6 +1916,7 @@
   vm_base: VM0101
   dut:
     - r-tigris-25
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-25-t0-16
@@ -1799,6 +1930,7 @@
   vm_base: VM0101
   dut:
     - r-tigris-25
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-25-t0-52
@@ -1812,6 +1944,7 @@
   vm_base: VM0101
   dut:
     - r-tigris-25
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-25-t0-56
@@ -1825,6 +1958,7 @@
   vm_base: VM0101
   dut:
     - r-tigris-25
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-25-t0-64
@@ -1838,6 +1972,7 @@
   vm_base: VM0101
   dut:
     - r-tigris-25
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-25-t0-120
@@ -1851,6 +1986,7 @@
   vm_base: VM0101
   dut:
     - r-tigris-25
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-25-t1
@@ -1864,6 +2000,7 @@
   vm_base: VM0101
   dut:
     - r-tigris-25
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-25-t1-lag
@@ -1877,6 +2014,7 @@
   vm_base: VM0101
   dut:
     - r-tigris-25
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-25-t1-64-lag
@@ -1890,6 +2028,7 @@
   vm_base: VM0101
   dut:
     - r-tigris-25
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-25-ptf32
@@ -1903,6 +2042,7 @@
   vm_base: VM0101
   dut:
     - r-tigris-25
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-25-ptf64
@@ -1916,6 +2056,7 @@
   vm_base: VM0101
   dut:
     - r-tigris-25
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-25-ptf-any
@@ -1929,6 +2070,7 @@
   vm_base: VM0101
   dut:
     - r-tigris-25
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-01-t0
@@ -1942,6 +2084,7 @@
   vm_base: VM1501
   dut:
     - r-leopard-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-01-t0-56-o8v48
@@ -1955,6 +2098,7 @@
   vm_base: VM1501
   dut:
     - r-leopard-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-01-t0-16
@@ -1968,6 +2112,7 @@
   vm_base: VM1501
   dut:
     - r-leopard-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-01-t1
@@ -1981,6 +2126,7 @@
   vm_base: VM1501
   dut:
     - r-leopard-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-01-t1-lag
@@ -1994,6 +2140,7 @@
   vm_base: VM1501
   dut:
     - r-leopard-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-01-t1-32-lag
@@ -2007,6 +2154,7 @@
   vm_base: VM1501
   dut:
     - r-leopard-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-01-t1-56-lag
@@ -2020,6 +2168,7 @@
   vm_base: VM1501
   dut:
     - r-leopard-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-01-ptf32
@@ -2033,6 +2182,7 @@
   vm_base: VM1501
   dut:
     - r-leopard-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-01-ptf-any
@@ -2046,6 +2196,7 @@
   vm_base: VM1501
   dut:
     - r-leopard-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-70-t0-16
@@ -2059,6 +2210,7 @@
   vm_base: VM2601
   dut:
     - r-leopard-70
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-70-dualtor-aa
@@ -2072,6 +2224,7 @@
   vm_base: VM2601
   dut:
     - r-leopard-70
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-70-dualtor-64-breakout
@@ -2085,6 +2238,7 @@
   vm_base: VM2601
   dut:
     - r-leopard-70
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-70-dualtor-aa-64-breakout
@@ -2098,6 +2252,7 @@
   vm_base: VM2601
   dut:
     - r-leopard-70
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-72-t0-16
@@ -2111,6 +2266,7 @@
   vm_base: VM2701
   dut:
     - r-leopard-72
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-72-dualtor-aa
@@ -2124,6 +2280,7 @@
   vm_base: VM2701
   dut:
     - r-leopard-72
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-72-dualtor-64-breakout
@@ -2137,6 +2294,7 @@
   vm_base: VM2701
   dut:
     - r-leopard-72
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-72-dualtor-aa-64-breakout
@@ -2150,6 +2308,7 @@
   vm_base: VM2701
   dut:
     - r-leopard-72
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-04-t0
@@ -2163,6 +2322,7 @@
   vm_base: VM0401
   dut:
     - r-tigon-04
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-04-t0-16
@@ -2176,6 +2336,7 @@
   vm_base: VM0401
   dut:
     - r-tigon-04
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-04-t0-52-lag
@@ -2189,6 +2350,7 @@
   vm_base: VM0401
   dut:
     - r-tigon-04
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-04-t0-56
@@ -2202,6 +2364,7 @@
   vm_base: VM0401
   dut:
     - r-tigon-04
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-04-t0-64
@@ -2215,6 +2378,7 @@
   vm_base: VM0401
   dut:
     - r-tigon-04
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-04-t1
@@ -2228,6 +2392,7 @@
   vm_base: VM0401
   dut:
     - r-tigon-04
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-04-t1-lag
@@ -2241,6 +2406,7 @@
   vm_base: VM0401
   dut:
     - r-tigon-04
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-04-t1-64-lag
@@ -2254,6 +2420,7 @@
   vm_base: VM0401
   dut:
     - r-tigon-04
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-04-ptf32
@@ -2267,6 +2434,7 @@
   vm_base: VM0401
   dut:
     - r-tigon-04
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-04-ptf64
@@ -2280,6 +2448,7 @@
   vm_base: VM0401
   dut:
     - r-tigon-04
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-04-ptf-any
@@ -2293,6 +2462,7 @@
   vm_base: VM0401
   dut:
     - r-tigon-04
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-11-t0
@@ -2306,6 +2476,7 @@
   vm_base: VM1601
   dut:
     - r-tigon-11
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-11-t0-16
@@ -2319,6 +2490,7 @@
   vm_base: VM1601
   dut:
     - r-tigon-11
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-11-t0-52-lag
@@ -2332,6 +2504,7 @@
   vm_base: VM1601
   dut:
     - r-tigon-11
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-11-t0-56
@@ -2345,6 +2518,7 @@
   vm_base: VM1601
   dut:
     - r-tigon-11
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-11-t0-64
@@ -2358,6 +2532,7 @@
   vm_base: VM1601
   dut:
     - r-tigon-11
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-11-t1
@@ -2371,6 +2546,7 @@
   vm_base: VM1601
   dut:
     - r-tigon-11
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-11-t1-lag
@@ -2384,6 +2560,7 @@
   vm_base: VM1601
   dut:
     - r-tigon-11
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-11-t1-64-lag
@@ -2397,6 +2574,7 @@
   vm_base: VM1601
   dut:
     - r-tigon-11
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-11-ptf32
@@ -2410,6 +2588,7 @@
   vm_base: VM1601
   dut:
     - r-tigon-11
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-11-ptf64
@@ -2423,6 +2602,7 @@
   vm_base: VM1601
   dut:
     - r-tigon-11
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-11-ptf-any
@@ -2436,6 +2616,7 @@
   vm_base: VM1601
   dut:
     - r-tigon-11
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-20-t0
@@ -2449,6 +2630,7 @@
   vm_base: VM1701
   dut:
     - r-tigon-20
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-20-t0-16
@@ -2462,6 +2644,7 @@
   vm_base: VM1701
   dut:
     - r-tigon-20
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-20-t0-52-lag
@@ -2475,6 +2658,7 @@
   vm_base: VM1701
   dut:
     - r-tigon-20
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-20-t0-56
@@ -2488,6 +2672,7 @@
   vm_base: VM1701
   dut:
     - r-tigon-20
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-20-t0-64
@@ -2501,6 +2686,7 @@
   vm_base: VM1701
   dut:
     - r-tigon-20
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-20-t1
@@ -2514,6 +2700,7 @@
   vm_base: VM1701
   dut:
     - r-tigon-20
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-20-t1-lag
@@ -2527,6 +2714,7 @@
   vm_base: VM1701
   dut:
     - r-tigon-20
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-20-t1-64-lag
@@ -2540,6 +2728,7 @@
   vm_base: VM1701
   dut:
     - r-tigon-20
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-20-ptf32
@@ -2553,6 +2742,7 @@
   vm_base: VM1701
   dut:
     - r-tigon-20
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-20-ptf64
@@ -2566,6 +2756,7 @@
   vm_base: VM1701
   dut:
     - r-tigon-20
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-20-dualtor
@@ -2579,6 +2770,7 @@
   vm_base: VM1701
   dut:
     - r-tigon-20
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-20-dualtor-64
@@ -2592,6 +2784,7 @@
   vm_base: VM1701
   dut:
     - r-tigon-20
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-20-dualtor-aa
@@ -2605,6 +2798,7 @@
   vm_base: VM1701
   dut:
     - r-tigon-20
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-20-ptf-any
@@ -2618,6 +2812,7 @@
   vm_base: VM1701
   dut:
     - r-tigon-20
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-21-t0
@@ -2631,6 +2826,7 @@
   vm_base: VM1801
   dut:
     - r-tigon-21
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-21-t0-16
@@ -2644,6 +2840,7 @@
   vm_base: VM1801
   dut:
     - r-tigon-21
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-21-t0-52-lag
@@ -2657,6 +2854,7 @@
   vm_base: VM1801
   dut:
     - r-tigon-21
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-21-t0-56
@@ -2670,6 +2868,7 @@
   vm_base: VM1801
   dut:
     - r-tigon-21
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-21-t0-64
@@ -2683,6 +2882,7 @@
   vm_base: VM1801
   dut:
     - r-tigon-21
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-21-t1
@@ -2696,6 +2896,7 @@
   vm_base: VM1801
   dut:
     - r-tigon-21
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-21-t1-lag
@@ -2709,6 +2910,7 @@
   vm_base: VM1801
   dut:
     - r-tigon-21
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-21-t1-64-lag
@@ -2722,6 +2924,7 @@
   vm_base: VM1801
   dut:
     - r-tigon-21
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-21-ptf32
@@ -2735,6 +2938,7 @@
   vm_base: VM1801
   dut:
     - r-tigon-21
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-21-ptf64
@@ -2748,6 +2952,7 @@
   vm_base: VM1801
   dut:
     - r-tigon-21
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-21-dualtor
@@ -2761,6 +2966,7 @@
   vm_base: VM1801
   dut:
     - r-tigon-21
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-21-dualtor-64
@@ -2774,6 +2980,7 @@
   vm_base: VM1801
   dut:
     - r-tigon-21
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-21-dualtor-aa
@@ -2787,6 +2994,7 @@
   vm_base: VM1801
   dut:
     - r-tigon-21
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-21-ptf-any
@@ -2800,6 +3008,7 @@
   vm_base: VM1801
   dut:
     - r-tigon-21
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-tigon-04-t0
@@ -2813,6 +3022,7 @@
   vm_base: VM4201
   dut:
     - mtvr-tigon-04
+  inv_name: lab
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-tigon-04-t0-16
@@ -2826,6 +3036,7 @@
   vm_base: VM4201
   dut:
     - mtvr-tigon-04
+  inv_name: lab
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-tigon-04-t0-52-lag
@@ -2839,6 +3050,7 @@
   vm_base: VM4201
   dut:
     - mtvr-tigon-04
+  inv_name: lab
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-tigon-04-t0-56
@@ -2852,6 +3064,7 @@
   vm_base: VM4201
   dut:
     - mtvr-tigon-04
+  inv_name: lab
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-tigon-04-t0-64
@@ -2865,6 +3078,7 @@
   vm_base: VM4201
   dut:
     - mtvr-tigon-04
+  inv_name: lab
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-tigon-04-t1
@@ -2878,6 +3092,7 @@
   vm_base: VM4201
   dut:
     - mtvr-tigon-04
+  inv_name: lab
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-tigon-04-t1-lag
@@ -2891,6 +3106,7 @@
   vm_base: VM4201
   dut:
     - mtvr-tigon-04
+  inv_name: lab
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-tigon-04-t1-64-lag
@@ -2904,6 +3120,7 @@
   vm_base: VM4201
   dut:
     - mtvr-tigon-04
+  inv_name: lab
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-tigon-04-ptf32
@@ -2917,6 +3134,7 @@
   vm_base: VM4201
   dut:
     - mtvr-tigon-04
+  inv_name: lab
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-tigon-04-ptf64
@@ -2930,6 +3148,7 @@
   vm_base: VM4201
   dut:
     - mtvr-tigon-04
+  inv_name: lab
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-tigon-04-dualtor
@@ -2943,6 +3162,7 @@
   vm_base: VM4201
   dut:
     - mtvr-tigon-04
+  inv_name: lab
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-tigon-04-dualtor-64
@@ -2956,6 +3176,7 @@
   vm_base: VM4201
   dut:
     - mtvr-tigon-04
+  inv_name: lab
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-tigon-04-dualtor-aa
@@ -2969,6 +3190,7 @@
   vm_base: VM4201
   dut:
     - mtvr-tigon-04
+  inv_name: lab
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-tigon-04-ptf-any
@@ -2982,6 +3204,7 @@
   vm_base: VM4201
   dut:
     - mtvr-tigon-04
+  inv_name: lab
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-tigon-02-t0
@@ -2995,6 +3218,7 @@
   vm_base: VM4101
   dut:
     - mtvr-tigon-02
+  inv_name: lab
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-tigon-02-t0-16
@@ -3008,6 +3232,7 @@
   vm_base: VM4101
   dut:
     - mtvr-tigon-02
+  inv_name: lab
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-tigon-02-t0-52-lag
@@ -3021,6 +3246,7 @@
   vm_base: VM4101
   dut:
     - mtvr-tigon-02
+  inv_name: lab
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-tigon-02-t0-56
@@ -3034,6 +3260,7 @@
   vm_base: VM4101
   dut:
     - mtvr-tigon-02
+  inv_name: lab
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-tigon-02-t0-64
@@ -3047,6 +3274,7 @@
   vm_base: VM4101
   dut:
     - mtvr-tigon-02
+  inv_name: lab
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-tigon-02-t1
@@ -3060,6 +3288,7 @@
   vm_base: VM4101
   dut:
     - mtvr-tigon-02
+  inv_name: lab
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-tigon-02-t1-lag
@@ -3073,6 +3302,7 @@
   vm_base: VM4101
   dut:
     - mtvr-tigon-02
+  inv_name: lab
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-tigon-02-t1-64-lag
@@ -3086,6 +3316,7 @@
   vm_base: VM4101
   dut:
     - mtvr-tigon-02
+  inv_name: lab
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-tigon-02-ptf32
@@ -3099,6 +3330,7 @@
   vm_base: VM4101
   dut:
     - mtvr-tigon-02
+  inv_name: lab
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-tigon-02-ptf64
@@ -3112,6 +3344,7 @@
   vm_base: VM4101
   dut:
     - mtvr-tigon-02
+  inv_name: lab
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-tigon-02-dualtor
@@ -3125,6 +3358,7 @@
   vm_base: VM4101
   dut:
     - mtvr-tigon-02
+  inv_name: lab
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-tigon-02-dualtor-64
@@ -3138,6 +3372,7 @@
   vm_base: VM4101
   dut:
     - mtvr-tigon-02
+  inv_name: lab
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-tigon-02-dualtor-aa
@@ -3151,6 +3386,7 @@
   vm_base: VM4101
   dut:
     - mtvr-tigon-02
+  inv_name: lab
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-tigon-02-ptf-any
@@ -3164,6 +3400,7 @@
   vm_base: VM4101
   dut:
     - mtvr-tigon-02
+  inv_name: lab
   comment: Mellanox MTVR testbed
 
 - conf-name: r-tigris-26-t0
@@ -3177,6 +3414,7 @@
   vm_base: VM1901
   dut:
     - r-tigris-26
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-26-t0-16
@@ -3190,6 +3428,7 @@
   vm_base: VM1901
   dut:
     - r-tigris-26
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-26-t0-52
@@ -3203,6 +3442,7 @@
   vm_base: VM1901
   dut:
     - r-tigris-26
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-26-t0-56
@@ -3216,6 +3456,7 @@
   vm_base: VM1901
   dut:
     - r-tigris-26
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-26-t0-64
@@ -3229,6 +3470,7 @@
   vm_base: VM1901
   dut:
     - r-tigris-26
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-26-t1
@@ -3242,6 +3484,7 @@
   vm_base: VM1901
   dut:
     - r-tigris-26
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-26-t1-lag
@@ -3255,6 +3498,7 @@
   vm_base: VM1901
   dut:
     - r-tigris-26
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-26-t1-64-lag
@@ -3268,6 +3512,7 @@
   vm_base: VM1901
   dut:
     - r-tigris-26
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-26-ptf32
@@ -3281,6 +3526,7 @@
   vm_base: VM1901
   dut:
     - r-tigris-26
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-26-ptf64
@@ -3294,6 +3540,7 @@
   vm_base: VM1901
   dut:
     - r-tigris-26
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-26-ptf-any
@@ -3307,6 +3554,7 @@
   vm_base: VM1901
   dut:
     - r-tigris-26
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: c-panther-01-t0
@@ -3320,6 +3568,7 @@
   vm_base: VM0801
   dut:
     - c-panther-01
+  inv_name: lab
   comment: Mellanox MTBC testbed
 
 - conf-name: c-panther-01-t0-56
@@ -3333,6 +3582,7 @@
   vm_base: VM0801
   dut:
     - c-panther-01
+  inv_name: lab
   comment: Mellanox MTBC testbed
 
 - conf-name: c-panther-01-t1
@@ -3346,6 +3596,7 @@
   vm_base: VM0801
   dut:
     - c-panther-01
+  inv_name: lab
   comment: Mellanox MTBC testbed
 
 - conf-name: c-panther-01-t1-lag
@@ -3359,6 +3610,7 @@
   vm_base: VM0801
   dut:
     - c-panther-01
+  inv_name: lab
   comment: Mellanox MTBC testbed
 
 - conf-name: c-panther-01-ptf32
@@ -3372,6 +3624,7 @@
   vm_base: VM0801
   dut:
     - c-panther-01
+  inv_name: lab
   comment: Mellanox MTBC testbed
 
 - conf-name: c-panther-01-ptf-any
@@ -3385,6 +3638,7 @@
   vm_base: VM0801
   dut:
     - c-panther-01
+  inv_name: lab
   comment: Mellanox MTBC testbed
 
 - conf-name: mtbc-sonic-01-2410-t0
@@ -3398,6 +3652,7 @@
   vm_base: VM0501
   dut:
     - mtbc-sonic-01-2410
+  inv_name: lab
   comment: Mellanox MTBC testbed
 
 - conf-name: mtbc-sonic-01-2410-t1
@@ -3411,6 +3666,7 @@
   vm_base: VM0501
   dut:
     - mtbc-sonic-01-2410
+  inv_name: lab
   comment: Mellanox MTBC testbed
 
 - conf-name: mtbc-sonic-01-2410-t1-lag
@@ -3424,6 +3680,7 @@
   vm_base: VM0501
   dut:
     - mtbc-sonic-01-2410
+  inv_name: lab
   comment: Mellanox MTBC testbed
 
 - conf-name: mtbc-sonic-01-2410-ptf32
@@ -3437,6 +3694,7 @@
   vm_base: VM0501
   dut:
     - mtbc-sonic-01-2410
+  inv_name: lab
   comment: Mellanox MTBC testbed
 
 - conf-name: mtbc-sonic-01-2410-ptf-any
@@ -3450,6 +3708,7 @@
   vm_base: VM0501
   dut:
     - mtbc-sonic-01-2410
+  inv_name: lab
   comment: Mellanox MTBC testbed
 
 - conf-name: mtbc-sonic-03-2700-t0
@@ -3463,6 +3722,7 @@
   vm_base: VM1001
   dut:
     - mtbc-sonic-03-2700
+  inv_name: lab
   comment: Mellanox MTBC testbed
 
 - conf-name: mtbc-sonic-03-2700-t0-56
@@ -3476,6 +3736,7 @@
   vm_base: VM1001
   dut:
     - mtbc-sonic-03-2700
+  inv_name: lab
   comment: Mellanox MTBC testbed
 
 - conf-name: mtbc-sonic-03-2700-t1
@@ -3489,6 +3750,7 @@
   vm_base: VM1001
   dut:
     - mtbc-sonic-03-2700
+  inv_name: lab
   comment: Mellanox MTBC testbed
 
 - conf-name: mtbc-sonic-03-2700-t1-lag
@@ -3502,6 +3764,7 @@
   vm_base: VM1001
   dut:
     - mtbc-sonic-03-2700
+  inv_name: lab
   comment: Mellanox MTBC testbed
 
 - conf-name: mtbc-sonic-03-2700-ptf32
@@ -3515,6 +3778,7 @@
   vm_base: VM1001
   dut:
     - mtbc-sonic-03-2700
+  inv_name: lab
   comment: Mellanox MTBC testbed
 
 - conf-name: mtbc-sonic-03-2700-ptf-any
@@ -3528,6 +3792,7 @@
   vm_base: VM1001
   dut:
     - mtbc-sonic-03-2700
+  inv_name: lab
   comment: Mellanox MTBC testbed
 
 - conf-name: dev-r-vrt-233-010-t0
@@ -3541,6 +3806,7 @@
   vm_base: VM5201
   dut:
     - dev-r-vrt-233-010
+  inv_name: lab
   comment: Mellanox virtual SID testbed
 
 - conf-name: dev-r-vrt-233-010-ptf32
@@ -3554,6 +3820,7 @@
   vm_base: VM5201
   dut:
     - dev-r-vrt-233-010
+  inv_name: lab
   comment: Mellanox virtual SID testbed
 
 - conf-name: dev-r-vrt-232-010-t0
@@ -3567,6 +3834,7 @@
   vm_base: VM5001
   dut:
     - dev-r-vrt-232-010
+  inv_name: lab
   comment: Mellanox virtual SID testbed
 
 - conf-name: dev-r-vrt-232-010-ptf32
@@ -3580,6 +3848,7 @@
   vm_base: VM5001
   dut:
     - dev-r-vrt-232-010
+  inv_name: lab
   comment: Mellanox virtual SID testbed
 
 - conf-name: r-panther-01-t0
@@ -3593,6 +3862,7 @@
   vm_base: VM3333
   dut:
     - r-panther-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-01-t0-56
@@ -3606,6 +3876,7 @@
   vm_base: VM3333
   dut:
     - r-panther-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-01-t1
@@ -3619,6 +3890,7 @@
   vm_base: VM3333
   dut:
     - r-panther-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-01-t1-lag
@@ -3632,6 +3904,7 @@
   vm_base: VM3333
   dut:
     - r-panther-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-01-ptf32
@@ -3645,6 +3918,7 @@
   vm_base: VM3333
   dut:
     - r-panther-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-01-ptf-any
@@ -3658,6 +3932,7 @@
   vm_base: VM3333
   dut:
     - r-panther-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-02-t0
@@ -3671,6 +3946,7 @@
   vm_base: VM3233
   dut:
     - r-panther-02
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-02-t0-56
@@ -3684,6 +3960,7 @@
   vm_base: VM3233
   dut:
     - r-panther-02
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-02-t1
@@ -3697,6 +3974,7 @@
   vm_base: VM3233
   dut:
     - r-panther-02
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-02-t1-lag
@@ -3710,6 +3988,7 @@
   vm_base: VM3233
   dut:
     - r-panther-02
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-02-ptf32
@@ -3723,6 +4002,7 @@
   vm_base: VM3233
   dut:
     - r-panther-02
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-02-ptf-any
@@ -3736,6 +4016,7 @@
   vm_base: VM3233
   dut:
     - r-panther-02
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-42-t0
@@ -3749,6 +4030,7 @@
   vm_base: VM3501
   dut:
     - r-panther-42
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-42-t0-56
@@ -3762,6 +4044,7 @@
   vm_base: VM3501
   dut:
     - r-panther-42
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-42-t1
@@ -3775,6 +4058,7 @@
   vm_base: VM3501
   dut:
     - r-panther-42
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-42-t1-lag
@@ -3788,6 +4072,7 @@
   vm_base: VM3501
   dut:
     - r-panther-42
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-42-ptf32
@@ -3801,6 +4086,7 @@
   vm_base: VM3501
   dut:
     - r-panther-42
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-42-ptf-any
@@ -3814,6 +4100,7 @@
   vm_base: VM3501
   dut:
     - r-panther-42
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-40-t0
@@ -3827,6 +4114,7 @@
   vm_base: VM3601
   dut:
     - r-panther-40
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-40-t0-56
@@ -3840,6 +4128,7 @@
   vm_base: VM3601
   dut:
     - r-panther-40
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-40-t1
@@ -3853,6 +4142,7 @@
   vm_base: VM3601
   dut:
     - r-panther-40
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-40-t1-lag
@@ -3866,6 +4156,7 @@
   vm_base: VM3601
   dut:
     - r-panther-40
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-40-ptf32
@@ -3879,6 +4170,7 @@
   vm_base: VM3601
   dut:
     - r-panther-40
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-40-ptf-any
@@ -3892,6 +4184,7 @@
   vm_base: VM3601
   dut:
     - r-panther-40
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-45-t0
@@ -3905,6 +4198,7 @@
   vm_base: VM4001
   dut:
     - r-panther-45
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-45-t0-56
@@ -3918,6 +4212,7 @@
   vm_base: VM4001
   dut:
     - r-panther-45
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-45-t1
@@ -3931,6 +4226,7 @@
   vm_base: VM4001
   dut:
     - r-panther-45
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-45-t1-lag
@@ -3944,6 +4240,7 @@
   vm_base: VM4001
   dut:
     - r-panther-45
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-45-ptf32
@@ -3957,6 +4254,7 @@
   vm_base: VM4001
   dut:
     - r-panther-45
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-45-ptf-any
@@ -3970,6 +4268,7 @@
   vm_base: VM4001
   dut:
     - r-panther-45
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-23-t0
@@ -3983,6 +4282,7 @@
   vm_base: VM3933
   dut:
     - r-panther-23
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-23-t0-56
@@ -3996,6 +4296,7 @@
   vm_base: VM3933
   dut:
     - r-panther-23
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-23-t1
@@ -4009,6 +4310,7 @@
   vm_base: VM3933
   dut:
     - r-panther-23
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-23-t1-lag
@@ -4022,6 +4324,7 @@
   vm_base: VM3933
   dut:
     - r-panther-23
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-23-ptf32
@@ -4035,6 +4338,7 @@
   vm_base: VM3933
   dut:
     - r-panther-23
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-23-ptf-any
@@ -4048,6 +4352,7 @@
   vm_base: VM3933
   dut:
     - r-panther-23
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-moose-14-t0
@@ -4061,6 +4366,7 @@
   vm_base: VM3801
   dut:
     - mtvr-moose-14
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-moose-14-t0-64
@@ -4074,6 +4380,7 @@
   vm_base: VM3801
   dut:
     - mtvr-moose-14
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-moose-14-t1
@@ -4087,6 +4394,7 @@
   vm_base: VM3801
   dut:
     - mtvr-moose-14
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-moose-14-t1-lag
@@ -4100,6 +4408,7 @@
   vm_base: VM3801
   dut:
     - mtvr-moose-14
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-moose-14-t1-lag-c224o8
@@ -4113,6 +4422,7 @@
   vm_base: VM3801
   dut:
     - mtvr-moose-14
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-moose-14-ptf32
@@ -4126,6 +4436,7 @@
   vm_base: VM3801
   dut:
     - mtvr-moose-14
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-moose-14-ptf-any
@@ -4139,6 +4450,7 @@
   vm_base: VM3801
   dut:
     - mtvr-moose-14
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-moose-13-t0
@@ -4152,6 +4464,7 @@
   vm_base: VM4601
   dut:
     - mtvr-moose-13
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-moose-13-t0-64
@@ -4165,6 +4478,7 @@
   vm_base: VM4601
   dut:
     - mtvr-moose-13
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-moose-13-t1
@@ -4178,6 +4492,7 @@
   vm_base: VM4601
   dut:
     - mtvr-moose-13
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-moose-13-t1-lag
@@ -4191,6 +4506,7 @@
   vm_base: VM4601
   dut:
     - mtvr-moose-13
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-moose-13-t1-lag-c224o8
@@ -4204,6 +4520,7 @@
   vm_base: VM4601
   dut:
     - mtvr-moose-13
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-moose-13-ptf32
@@ -4217,6 +4534,7 @@
   vm_base: VM4601
   dut:
     - mtvr-moose-13
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-moose-13-ptf-any
@@ -4230,6 +4548,7 @@
   vm_base: VM4601
   dut:
     - mtvr-moose-13
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-47-t0
@@ -4243,6 +4562,7 @@
   vm_base: VM4533
   dut:
     - r-panther-47
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-47-t0-56
@@ -4256,6 +4576,7 @@
   vm_base: VM4533
   dut:
     - r-panther-47
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-47-t1
@@ -4269,6 +4590,7 @@
   vm_base: VM4533
   dut:
     - r-panther-47
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-47-t1-lag
@@ -4282,6 +4604,7 @@
   vm_base: VM4533
   dut:
     - r-panther-47
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-47-ptf32
@@ -4295,6 +4618,7 @@
   vm_base: VM4533
   dut:
     - r-panther-47
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-47-ptf-any
@@ -4308,6 +4632,7 @@
   vm_base: VM4533
   dut:
     - r-panther-47
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-48-t0
@@ -4321,6 +4646,7 @@
   vm_base: VM4401
   dut:
     - r-panther-48
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-48-t0-56
@@ -4334,6 +4660,7 @@
   vm_base: VM4401
   dut:
     - r-panther-48
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-48-t1
@@ -4347,6 +4674,7 @@
   vm_base: VM4401
   dut:
     - r-panther-48
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-48-t1-lag
@@ -4360,6 +4688,7 @@
   vm_base: VM4401
   dut:
     - r-panther-48
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-48-ptf32
@@ -4373,6 +4702,7 @@
   vm_base: VM4401
   dut:
     - r-panther-48
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-48-ptf-any
@@ -4386,6 +4716,7 @@
   vm_base: VM4401
   dut:
     - r-panther-48
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-panther-02-t0
@@ -4399,6 +4730,7 @@
   vm_base: VM4733
   dut:
     - mtvr-panther-02
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-panther-02-t0-56
@@ -4412,6 +4744,7 @@
   vm_base: VM4733
   dut:
     - mtvr-panther-02
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-panther-02-t1
@@ -4425,6 +4758,7 @@
   vm_base: VM4733
   dut:
     - mtvr-panther-02
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-panther-02-t1-lag
@@ -4438,6 +4772,7 @@
   vm_base: VM4733
   dut:
     - mtvr-panther-02
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-panther-02-ptf32
@@ -4451,6 +4786,7 @@
   vm_base: VM4733
   dut:
     - mtvr-panther-02
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-panther-02-ptf-any
@@ -4464,6 +4800,7 @@
   vm_base: VM4733
   dut:
     - mtvr-panther-02
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-panther-03-t0
@@ -4477,6 +4814,7 @@
   vm_base: VM4801
   dut:
     - mtvr-panther-03
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-panther-03-t0-56
@@ -4490,6 +4828,7 @@
   vm_base: VM4801
   dut:
     - mtvr-panther-03
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-panther-03-t1
@@ -4503,6 +4842,7 @@
   vm_base: VM4801
   dut:
     - mtvr-panther-03
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-panther-03-t1-lag
@@ -4516,6 +4856,7 @@
   vm_base: VM4801
   dut:
     - mtvr-panther-03
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-panther-03-ptf32
@@ -4529,6 +4870,7 @@
   vm_base: VM4801
   dut:
     - mtvr-panther-03
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-panther-03-ptf-any
@@ -4542,6 +4884,7 @@
   vm_base: VM4801
   dut:
     - mtvr-panther-03
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-r740-07-bf2-sonic-01-dpu
@@ -4555,6 +4898,7 @@
   vm_base: VM2001
   dut:
     - r-r740-07-bf2-sonic-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-r740-07-bf2-sonic-01-ptf-any
@@ -4568,6 +4912,7 @@
   vm_base: VM2001
   dut:
     - r-r740-07-bf2-sonic-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-r740-07-bf3-sonic-01-dpu
@@ -4581,6 +4926,7 @@
   vm_base: VM2003
   dut:
     - r-r740-07-bf3-sonic-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-r740-07-bf3-sonic-01-dpu-1
@@ -4594,6 +4940,7 @@
   vm_base: VM2003
   dut:
     - r-r740-07-bf3-sonic-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-r740-07-bf3-sonic-01-ptf-any
@@ -4607,6 +4954,7 @@
   vm_base: VM2003
   dut:
     - r-r740-07-bf3-sonic-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-r740-05-bf3-sonic-01-dpu
@@ -4620,6 +4968,7 @@
   vm_base: VM2103
   dut:
     - r-r740-05-bf3-sonic-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-r740-05-bf3-sonic-01-dpu-1
@@ -4633,6 +4982,7 @@
   vm_base: VM2103
   dut:
     - r-r740-05-bf3-sonic-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-r740-05-bf3-sonic-01-ptf-any
@@ -4646,6 +4996,7 @@
   vm_base: VM2103
   dut:
     - r-r740-05-bf3-sonic-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-r740-03-bf3-sonic-01-dpu
@@ -4659,6 +5010,7 @@
   vm_base: VM2203
   dut:
     - r-r740-03-bf3-sonic-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-r740-03-bf3-sonic-01-dpu-1
@@ -4672,6 +5024,7 @@
   vm_base: VM2203
   dut:
     - r-r740-03-bf3-sonic-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-r740-03-bf3-sonic-01-ptf-any
@@ -4685,6 +5038,7 @@
   vm_base: VM2203
   dut:
     - r-r740-03-bf3-sonic-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-r740-08-bf3-sonic-01-dpu
@@ -4698,6 +5052,7 @@
   vm_base: VM2301
   dut:
     - r-r740-08-bf3-sonic-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-r740-08-bf3-sonic-01-dpu-1
@@ -4711,6 +5066,7 @@
   vm_base: VM2301
   dut:
     - r-r740-08-bf3-sonic-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-r740-08-bf3-sonic-01-ptf-any
@@ -4724,6 +5080,7 @@
   vm_base: VM2301
   dut:
     - r-r740-08-bf3-sonic-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-r740-09-bf3-sonic-01-dpu
@@ -4737,6 +5094,7 @@
   vm_base: VM2401
   dut:
     - r-r740-09-bf3-sonic-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-r740-09-bf3-sonic-01-dpu-1
@@ -4750,6 +5108,7 @@
   vm_base: VM2401
   dut:
     - r-r740-09-bf3-sonic-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-r740-09-bf3-sonic-01-ptf-any
@@ -4763,6 +5122,7 @@
   vm_base: VM2401
   dut:
     - r-r740-09-bf3-sonic-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-anaconda-81-fastreboot
@@ -4776,6 +5136,7 @@
   vm_base: VM0301
   dut:
     - r-anaconda-81
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: arc-switch1038-fastreboot
@@ -4789,6 +5150,7 @@
   vm_base: VM0101
   dut:
     - arc-switch1038
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: arc-switch1025-fastreboot
@@ -4802,6 +5164,7 @@
   vm_base: VM0601
   dut:
     - arc-switch1025
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: arc-switch1004-fastreboot
@@ -4815,6 +5178,7 @@
   vm_base: VM0701
   dut:
     - arc-switch1004
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-58-fastreboot
@@ -4828,6 +5192,7 @@
   vm_base: VM1101
   dut:
     - r-leopard-58
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-70-fastreboot
@@ -4841,6 +5206,7 @@
   vm_base: VM2601
   dut:
     - r-leopard-70
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-72-fastreboot
@@ -4854,6 +5220,7 @@
   vm_base: VM2701
   dut:
     - r-leopard-72
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-04-fastreboot
@@ -4867,6 +5234,7 @@
   vm_base: VM1201
   dut:
     - r-tigris-04
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-13-fastreboot
@@ -4880,6 +5248,7 @@
   vm_base: VM1301
   dut:
     - r-tigris-13
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-25-fastreboot
@@ -4893,6 +5262,7 @@
   vm_base: VM0101
   dut:
     - r-tigris-25
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-01-fastreboot
@@ -4906,6 +5276,7 @@
   vm_base: VM1501
   dut:
     - r-leopard-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-11-fastreboot
@@ -4919,6 +5290,7 @@
   vm_base: VM1601
   dut:
     - r-tigon-11
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-20-fastreboot
@@ -4932,6 +5304,7 @@
   vm_base: VM1701
   dut:
     - r-tigon-20
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-21-fastreboot
@@ -4945,6 +5318,7 @@
   vm_base: VM1801
   dut:
     - r-tigon-21
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-tigon-02-fastreboot
@@ -4958,6 +5332,7 @@
   vm_base: VM4101
   dut:
     - mtvr-tigon-02
+  inv_name: lab
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-tigon-04-fastreboot
@@ -4971,6 +5346,7 @@
   vm_base: VM4201
   dut:
     - mtvr-tigon-04
+  inv_name: lab
   comment: Mellanox MTVR testbed
 
 - conf-name: r-tigris-26-fastreboot
@@ -4984,6 +5360,7 @@
   vm_base: VM1901
   dut:
     - r-tigris-26
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: c-panther-01-fastreboot
@@ -4997,6 +5374,7 @@
   vm_base: VM0801
   dut:
     - c-panther-01
+  inv_name: lab
   comment: Mellanox MTBC testbed
 
 - conf-name: mtbc-sonic-01-2410-fastreboot
@@ -5010,6 +5388,7 @@
   vm_base: VM0501
   dut:
     - mtbc-sonic-01-2410
+  inv_name: lab
   comment: Mellanox MTBC testbed
 
 - conf-name: mtbc-sonic-03-2700-fastreboot
@@ -5023,6 +5402,7 @@
   vm_base: VM1001
   dut:
     - mtbc-sonic-03-2700
+  inv_name: lab
   comment: Mellanox MTBC testbed
 
 - conf-name: mts-sonic-dut-fastreboot
@@ -5036,6 +5416,7 @@
   vm_base: VM0201
   dut:
     - mts-sonic-dut
+  inv_name: lab
   comment: Mellanox MTS testbed
 
 - conf-name: r-panther-47-fastreboot
@@ -5049,6 +5430,7 @@
   vm_base: VM4533
   dut:
     - r-panther-47
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-48-fastreboot
@@ -5062,6 +5444,7 @@
   vm_base: VM4401
   dut:
     - r-panther-48
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-panther-02-fastreboot
@@ -5075,6 +5458,7 @@
   vm_base: VM4733
   dut:
     - mtvr-panther-02
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-panther-03-fastreboot
@@ -5088,6 +5472,7 @@
   vm_base: VM4801
   dut:
     - mtvr-panther-03
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-bulldog-03-ptf-any
@@ -5101,6 +5486,7 @@
   vm_base: VM0000
   dut:
     - r-bulldog-03
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-bulldog-04-ptf-any
@@ -5114,6 +5500,7 @@
   vm_base: VM0000
   dut:
     - r-bulldog-04
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-bulldog-02-ptf-any
@@ -5127,6 +5514,7 @@
   vm_base: VM0000
   dut:
     - r-bulldog-02
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-16-ptf-any
@@ -5140,6 +5528,7 @@
   vm_base: VM0000
   dut:
     - r-panther-16
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-17-ptf-any
@@ -5153,6 +5542,7 @@
   vm_base: VM0000
   dut:
     - r-panther-17
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-anaconda-71-ptf-any
@@ -5166,6 +5556,7 @@
   vm_base: VM0000
   dut:
     - r-anaconda-71
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-anaconda-70-ptf-any
@@ -5179,6 +5570,7 @@
   vm_base: VM0000
   dut:
     - r-anaconda-70
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-anaconda-75-ptf-any
@@ -5192,6 +5584,7 @@
   vm_base: VM0000
   dut:
     - r-anaconda-75
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-anaconda-76-ptf-any
@@ -5205,6 +5598,7 @@
   vm_base: VM0000
   dut:
     - r-anaconda-76
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-anaconda-77-ptf-any
@@ -5218,6 +5612,7 @@
   vm_base: VM0000
   dut:
     - r-anaconda-77
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-19-ptf-any
@@ -5231,6 +5626,7 @@
   vm_base: VM0000
   dut:
     - r-panther-19
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-42-ptf-any
@@ -5244,6 +5640,7 @@
   vm_base: VM0000
   dut:
     - r-leopard-42
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-44-ptf-any
@@ -5257,6 +5654,7 @@
   vm_base: VM0000
   dut:
     - r-leopard-44
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-43-ptf-any
@@ -5270,6 +5668,7 @@
   vm_base: VM0000
   dut:
     - r-leopard-43
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-45-ptf-any
@@ -5283,6 +5682,7 @@
   vm_base: VM0000
   dut:
     - r-leopard-45
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-50-ptf-any
@@ -5296,6 +5696,7 @@
   vm_base: VM0000
   dut:
     - r-leopard-50
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-20-ptf-any
@@ -5309,6 +5710,7 @@
   vm_base: VM0000
   dut:
     - r-panther-20
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-22-ptf-any
@@ -5322,6 +5724,7 @@
   vm_base: VM0000
   dut:
     - r-panther-22
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-anaconda-15-ptf-any
@@ -5335,6 +5738,7 @@
   vm_base: VM0000
   dut:
     - r-anaconda-15
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-anaconda-51-ptf-any
@@ -5348,6 +5752,7 @@
   vm_base: VM0000
   dut:
     - r-anaconda-51
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-boxer-sw01-ptf-any
@@ -5361,6 +5766,7 @@
   vm_base: VM0000
   dut:
     - r-boxer-sw01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-32-ptf-any
@@ -5374,6 +5780,7 @@
   vm_base: VM0000
   dut:
     - r-leopard-32
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-41-ptf-any
@@ -5387,6 +5794,7 @@
   vm_base: VM0000
   dut:
     - r-leopard-41
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-56-ptf-any
@@ -5400,6 +5808,7 @@
   vm_base: VM0000
   dut:
     - r-leopard-56
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-liger-02-ptf-any
@@ -5413,6 +5822,7 @@
   vm_base: VM0000
   dut:
     - r-liger-02
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-15-ptf-any
@@ -5426,6 +5836,7 @@
   vm_base: VM0000
   dut:
     - r-tigon-15
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-lionfish-07-ptf-any
@@ -5439,6 +5850,7 @@
   vm_base: VM0000
   dut:
     - r-lionfish-07
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-lionfish-13-ptf-any
@@ -5452,6 +5864,7 @@
   vm_base: VM0000
   dut:
     - r-lionfish-13
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-lionfish-16-ptf-any
@@ -5465,6 +5878,7 @@
   vm_base: VM0000
   dut:
     - r-lionfish-16
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-ocelot-02-ptf-any
@@ -5478,6 +5892,7 @@
   vm_base: VM0000
   dut:
     - r-ocelot-02
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-03-ptf-any
@@ -5491,6 +5906,7 @@
   vm_base: VM0000
   dut:
     - r-panther-03
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-13-ptf-any
@@ -5504,6 +5920,7 @@
   vm_base: VM0000
   dut:
     - r-panther-13
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-anaconda-simx-129-ptf-any
@@ -5517,6 +5934,7 @@
   vm_base: VM0000
   dut:
     - r-anaconda-simx-129
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-anaconda-simx-134-ptf-any
@@ -5530,6 +5948,7 @@
   vm_base: VM0000
   dut:
     - r-anaconda-simx-134
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-anaconda-simx-139-ptf-any
@@ -5543,6 +5962,7 @@
   vm_base: VM0000
   dut:
     - r-anaconda-simx-139
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-anaconda-simx-133-ptf-any
@@ -5556,6 +5976,7 @@
   vm_base: VM0000
   dut:
     - r-anaconda-simx-133
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-anaconda-simx-141-ptf-any
@@ -5569,6 +5990,7 @@
   vm_base: VM0000
   dut:
     - r-anaconda-simx-141
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-anaconda-simx-10-ptf-any
@@ -5582,6 +6004,7 @@
   vm_base: VM0000
   dut:
     - r-anaconda-simx-10
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-anaconda-simx-169-ptf-any
@@ -5595,6 +6018,7 @@
   vm_base: VM0000
   dut:
     - r-anaconda-simx-169
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-anaconda-simx-37-ptf-any
@@ -5608,6 +6032,7 @@
   vm_base: VM0000
   dut:
     - r-anaconda-simx-37
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-anaconda-simx-41-ptf-any
@@ -5621,6 +6046,7 @@
   vm_base: VM0000
   dut:
     - r-anaconda-simx-41
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-anaconda-simx-45-ptf-any
@@ -5634,6 +6060,7 @@
   vm_base: VM0000
   dut:
     - r-anaconda-simx-45
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-anaconda-simx-49-ptf-any
@@ -5647,6 +6074,7 @@
   vm_base: VM0000
   dut:
     - r-anaconda-simx-49
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-simx-69-ptf-any
@@ -5660,6 +6088,7 @@
   vm_base: VM0000
   dut:
     - r-leopard-simx-69
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-simx-74-ptf-any
@@ -5673,6 +6102,7 @@
   vm_base: VM0000
   dut:
     - r-leopard-simx-74
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-simx-79-ptf-any
@@ -5686,6 +6116,7 @@
   vm_base: VM0000
   dut:
     - r-leopard-simx-79
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-simx-129-ptf-any
@@ -5699,6 +6130,7 @@
   vm_base: VM0000
   dut:
     - r-leopard-simx-129
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-simx-137-ptf-any
@@ -5712,6 +6144,7 @@
   vm_base: VM0000
   dut:
     - r-leopard-simx-137
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-simx-173-ptf-any
@@ -5725,6 +6158,7 @@
   vm_base: VM0000
   dut:
     - r-leopard-simx-173
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-simx-14-ptf-any
@@ -5738,6 +6172,7 @@
   vm_base: VM0000
   dut:
     - r-leopard-simx-14
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-simx-21-ptf-any
@@ -5751,6 +6186,7 @@
   vm_base: VM0000
   dut:
     - r-leopard-simx-21
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-simx-25-ptf-any
@@ -5764,6 +6200,7 @@
   vm_base: VM0000
   dut:
     - r-leopard-simx-25
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-simx-29-ptf-any
@@ -5777,6 +6214,7 @@
   vm_base: VM0000
   dut:
     - r-leopard-simx-29
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-simx-33-ptf-any
@@ -5790,6 +6228,7 @@
   vm_base: VM0000
   dut:
     - r-leopard-simx-33
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-bobcat-simx-87-ptf-any
@@ -5803,6 +6242,7 @@
   vm_base: VM0000
   dut:
     - r-bobcat-simx-87
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-bobcat-bu-ptf-any
@@ -5816,6 +6256,7 @@
   vm_base: VM0000
   dut:
     - r-bobcat-bu
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-bobcat-simx-144-ptf-any
@@ -5829,6 +6270,7 @@
   vm_base: VM0000
   dut:
     - r-bobcat-simx-144
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-simx-13-ptf-any
@@ -5842,6 +6284,7 @@
   vm_base: VM0000
   dut:
     - r-panther-simx-13
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-simx-18-ptf-any
@@ -5855,6 +6298,7 @@
   vm_base: VM0000
   dut:
     - r-panther-simx-18
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-simx-23-ptf-any
@@ -5868,6 +6312,7 @@
   vm_base: VM0000
   dut:
     - r-panther-simx-23
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-simx-02-ptf-any
@@ -5881,6 +6326,7 @@
   vm_base: VM0000
   dut:
     - r-panther-simx-02
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-simx-03-ptf-any
@@ -5894,6 +6340,7 @@
   vm_base: VM0000
   dut:
     - r-panther-simx-03
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-simx-09-ptf-any
@@ -5907,6 +6354,7 @@
   vm_base: VM0000
   dut:
     - r-panther-simx-09
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-simx-15-ptf-any
@@ -5920,6 +6368,7 @@
   vm_base: VM0000
   dut:
     - r-panther-simx-15
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-simx-17-ptf-any
@@ -5933,6 +6382,7 @@
   vm_base: VM0000
   dut:
     - r-panther-simx-17
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-simx-125-ptf-any
@@ -5946,6 +6396,7 @@
   vm_base: VM0000
   dut:
     - r-panther-simx-125
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-simx-06-ptf-any
@@ -5959,6 +6410,7 @@
   vm_base: VM0000
   dut:
     - r-panther-simx-06
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-simx-165-ptf-any
@@ -5972,6 +6424,7 @@
   vm_base: VM0000
   dut:
     - r-panther-simx-165
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-moose-simx-18-ptf-any
@@ -5985,6 +6438,7 @@
   vm_base: VM0000
   dut:
     - r-moose-simx-18
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-moose-simx-22-ptf-any
@@ -5998,6 +6452,7 @@
   vm_base: VM0000
   dut:
     - r-moose-simx-22
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-moose-simx-26-ptf-any
@@ -6011,6 +6466,7 @@
   vm_base: VM0000
   dut:
     - r-moose-simx-26
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-moose-simx-30-ptf-any
@@ -6024,6 +6480,7 @@
   vm_base: VM0000
   dut:
     - r-moose-simx-30
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-moose-simx-34-ptf-any
@@ -6037,6 +6494,7 @@
   vm_base: VM0000
   dut:
     - r-moose-simx-34
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-moose-simx-53-ptf-any
@@ -6050,6 +6508,7 @@
   vm_base: VM0000
   dut:
     - r-moose-simx-53
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-moose-simx-57-ptf-any
@@ -6063,6 +6522,7 @@
   vm_base: VM0000
   dut:
     - r-moose-simx-57
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-moose-simx-242-ptf-any
@@ -6076,6 +6536,7 @@
   vm_base: VM0000
   dut:
     - r-moose-simx-242
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-moose-simx-246-ptf-any
@@ -6089,6 +6550,7 @@
   vm_base: VM0000
   dut:
     - r-moose-simx-246
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-bison-simx-250-ptf-any
@@ -6102,6 +6564,7 @@
   vm_base: VM0000
   dut:
     - r-bison-simx-250
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-bison-simx-03-ptf-any
@@ -6115,6 +6578,7 @@
   vm_base: VM0000
   dut:
     - r-bison-simx-03
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-bison-simx-121-ptf-any
@@ -6128,6 +6592,7 @@
   vm_base: VM0000
   dut:
     - r-bison-simx-121
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-bison-simx-125-ptf-any
@@ -6141,6 +6606,7 @@
   vm_base: VM0000
   dut:
     - r-bison-simx-125
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-bison-simx-129-ptf-any
@@ -6154,6 +6620,7 @@
   vm_base: VM0000
   dut:
     - r-bison-simx-129
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-bison-simx-133-ptf-any
@@ -6167,6 +6634,7 @@
   vm_base: VM0000
   dut:
     - r-bison-simx-133
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-spider-05-ptf-any
@@ -6180,6 +6648,7 @@
   vm_base: VM0000
   dut:
     - r-spider-05
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: moose-42-ptf-any
@@ -6193,6 +6662,7 @@
   vm_base: VM0000
   dut:
     - moose-42
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-moose-02-ptf-any
@@ -6206,6 +6676,7 @@
   vm_base: VM0000
   dut:
     - r-moose-02
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigris-22-ptf-any
@@ -6219,6 +6690,7 @@
   vm_base: VM0000
   dut:
     - r-tigris-22
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-ocelot-07-ptf-any
@@ -6232,6 +6704,7 @@
   vm_base: VM0000
   dut:
     - r-ocelot-07
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-tigon-17-ptf-any
@@ -6245,6 +6718,7 @@
   vm_base: VM0000
   dut:
     - r-tigon-17
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-alligator-04-ptf-any
@@ -6258,6 +6732,7 @@
   vm_base: VM0000
   dut:
     - r-alligator-04
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: c-anaconda-01-ptf-any
@@ -6271,6 +6746,7 @@
   vm_base: VM0000
   dut:
     - c-anaconda-01
+  inv_name: lab
   comment: Mellanox MTBC testbed
 
 - conf-name: c-anaconda-02-ptf-any
@@ -6284,6 +6760,7 @@
   vm_base: VM0000
   dut:
     - c-anaconda-02
+  inv_name: lab
   comment: Mellanox MTBC testbed
 
 - conf-name: juliet-146-ptf-any
@@ -6297,6 +6774,7 @@
   vm_base: VM0000
   dut:
     - juliet-146
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: juliet-121-ptf-any
@@ -6310,6 +6788,7 @@
   vm_base: VM0000
   dut:
     - juliet-121
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: juliet-128-ptf-any
@@ -6323,6 +6802,7 @@
   vm_base: VM0000
   dut:
     - juliet-128
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: juliet-142-ptf-any
@@ -6336,6 +6816,7 @@
   vm_base: VM0000
   dut:
     - juliet-142
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: juliet-144-ptf-any
@@ -6349,6 +6830,7 @@
   vm_base: VM0000
   dut:
     - juliet-144
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: juliet-148-ptf-any
@@ -6362,6 +6844,7 @@
   vm_base: VM0000
   dut:
     - juliet-148
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: juliet-68-ptf-any
@@ -6375,6 +6858,7 @@
   vm_base: VM0000
   dut:
     - juliet-68
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: juliet-130-ptf-any
@@ -6388,6 +6872,7 @@
   vm_base: VM0000
   dut:
     - juliet-130
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: juliet-54-ptf-any
@@ -6401,6 +6886,7 @@
   vm_base: VM0000
   dut:
     - juliet-54
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: juliet-56-ptf-any
@@ -6414,6 +6900,7 @@
   vm_base: VM0000
   dut:
     - juliet-56
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: juliet-126-ptf-any
@@ -6427,6 +6914,7 @@
   vm_base: VM0000
   dut:
     - juliet-126
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: juliet-136-ptf-any
@@ -6440,6 +6928,7 @@
   vm_base: VM0000
   dut:
     - juliet-136
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: jaguar-119-ptf-any
@@ -6453,6 +6942,7 @@
   vm_base: VM0000
   dut:
     - jaguar-119
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: jaguar-25-ptf-any
@@ -6466,6 +6956,7 @@
   vm_base: VM0000
   dut:
     - jaguar-25
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-jaguar-03-ptf-any
@@ -6479,6 +6970,7 @@
   vm_base: VM0000
   dut:
     - r-jaguar-03
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: gorilla-58-ptf-any
@@ -6492,6 +6984,7 @@
   vm_base: VM0000
   dut:
     - gorilla-58
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: gorilla-30-ptf-any
@@ -6505,6 +6998,7 @@
   vm_base: VM0000
   dut:
     - gorilla-30
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: gorilla-153-ptf-any
@@ -6518,6 +7012,7 @@
   vm_base: VM0000
   dut:
     - gorilla-153
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: gorilla-11-ptf-any
@@ -6531,6 +7026,7 @@
   vm_base: VM0000
   dut:
     - gorilla-11
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: gorilla-154-ptf-any
@@ -6544,6 +7040,7 @@
   vm_base: VM0000
   dut:
     - gorilla-154
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: gorilla-152-ptf-any
@@ -6557,6 +7054,7 @@
   vm_base: VM0000
   dut:
     - gorilla-152
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: gorilla-100-ptf-any
@@ -6570,6 +7068,7 @@
   vm_base: VM0000
   dut:
     - gorilla-100
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: nvidia-arm-orion-ptf-any
@@ -6583,6 +7082,7 @@
   vm_base: VM0000
   dut:
     - nvidia-arm-orion
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: bm-bu-bsp-ptf-any
@@ -6596,6 +7096,7 @@
   vm_base: VM0000
   dut:
     - bm-bu-bsp
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mamba-44-ptf-any
@@ -6609,6 +7110,7 @@
   vm_base: VM0000
   dut:
     - mamba-44
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mamba-112-ptf-any
@@ -6622,6 +7124,7 @@
   vm_base: VM0000
   dut:
     - mamba-112
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mamba-150-ptf-any
@@ -6635,6 +7138,7 @@
   vm_base: VM0000
   dut:
     - mamba-150
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-q3400-06-ptf-any
@@ -6648,6 +7152,7 @@
   vm_base: VM0000
   dut:
     - mtvr-q3400-06
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-q3400-05-ptf-any
@@ -6661,6 +7166,7 @@
   vm_base: VM0000
   dut:
     - mtvr-q3400-05
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-q3400-04-ptf-any
@@ -6674,6 +7180,7 @@
   vm_base: VM0000
   dut:
     - mtvr-q3400-04
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: bm-bu-core-ptf-any
@@ -6687,6 +7194,7 @@
   vm_base: VM0000
   dut:
     - bm-bu-core
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: croc-61-ptf-any
@@ -6700,6 +7208,7 @@
   vm_base: VM0000
   dut:
     - croc-61
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: croc-80-ptf-any
@@ -6713,6 +7222,7 @@
   vm_base: VM0000
   dut:
     - croc-80
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: croc-88-ptf-any
@@ -6726,6 +7236,7 @@
   vm_base: VM0000
   dut:
     - croc-88
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: croc-94-ptf-any
@@ -6739,6 +7250,7 @@
   vm_base: VM0000
   dut:
     - croc-94
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: croc-98-ptf-any
@@ -6752,6 +7264,7 @@
   vm_base: VM0000
   dut:
     - croc-98
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-croc-50-ptf-any
@@ -6765,6 +7278,7 @@
   vm_base: VM0000
   dut:
     - mtvr-croc-50
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-croc-19-ptf-any
@@ -6778,6 +7292,7 @@
   vm_base: VM0000
   dut:
     - mtvr-croc-19
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: croc-138-ptf-any
@@ -6791,6 +7306,7 @@
   vm_base: VM0000
   dut:
     - croc-138
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: croc-skt-208-ptf-any
@@ -6804,6 +7320,7 @@
   vm_base: VM0000
   dut:
     - croc-skt-208
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-croc-19-ptf-any
@@ -6817,6 +7334,7 @@
   vm_base: VM0000
   dut:
     - mtvr-croc-19
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mtvr-croc-50-ptf-any
@@ -6830,6 +7348,7 @@
   vm_base: VM0000
   dut:
     - mtvr-croc-50
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: bm-bu-nos-ptf-any
@@ -6843,6 +7362,7 @@
   vm_base: VM0000
   dut:
     - bm-bu-nos
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-bsp-qm3400-ptf-any
@@ -6856,6 +7376,7 @@
   vm_base: VM0000
   dut:
     - r-bsp-qm3400
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-come-bf3-01-ptf-any
@@ -6869,6 +7390,7 @@
   vm_base: VM0000
   dut:
     - nvidia-arm-orion
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: gorilla-simx-84-ptf-any
@@ -6882,6 +7404,7 @@
   vm_base: VM0000
   dut:
     - gorilla-simx-84
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: gorilla-simx-85-ptf-any
@@ -6895,6 +7418,7 @@
   vm_base: VM0000
   dut:
     - gorilla-simx-85
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: gorilla-simx-86-ptf-any
@@ -6908,6 +7432,7 @@
   vm_base: VM0000
   dut:
     - gorilla-simx-86
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: gorilla-simx-87-ptf-any
@@ -6921,6 +7446,7 @@
   vm_base: VM0000
   dut:
     - gorilla-simx-87
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: gorilla-simx-88-ptf-any
@@ -6934,6 +7460,7 @@
   vm_base: VM0000
   dut:
     - gorilla-simx-88
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: croc-simx-93-ptf-any
@@ -6947,6 +7474,7 @@
   vm_base: VM0000
   dut:
     - croc-simx-93
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: croc-simx-95-ptf-any
@@ -6960,6 +7488,7 @@
   vm_base: VM0000
   dut:
     - croc-simx-95
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: croc-simx-91-ptf-any
@@ -6973,6 +7502,7 @@
   vm_base: VM0000
   dut:
     - croc-simx-91
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: croc-simx-97-ptf-any
@@ -6986,6 +7516,7 @@
   vm_base: VM0000
   dut:
     - croc-simx-97
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: croc-chipsim-62-ptf-any
@@ -6999,6 +7530,7 @@
   vm_base: VM0000
   dut:
     - croc-chipsim-62
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: croc-chipsim-63-ptf-any
@@ -7012,6 +7544,7 @@
   vm_base: VM0000
   dut:
     - croc-chipsim-63
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: gorilla-chipsim-64-ptf-any
@@ -7025,6 +7558,7 @@
   vm_base: VM0000
   dut:
     - gorilla-chipsim-64
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: gorilla-chipsim-65-ptf-any
@@ -7038,6 +7572,7 @@
   vm_base: VM0000
   dut:
     - gorilla-chipsim-65
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: gorilla-chipsim-66-ptf-any
@@ -7051,6 +7586,7 @@
   vm_base: VM0000
   dut:
     - gorilla-chipsim-66
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: croc-chipsim-67-ptf-any
@@ -7064,6 +7600,7 @@
   vm_base: VM0000
   dut:
     - croc-chipsim-67
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: croc-chipsim-69-ptf-any
@@ -7077,6 +7614,7 @@
   vm_base: VM0000
   dut:
     - croc-chipsim-69
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: croc-chipsim-71-ptf-any
@@ -7090,6 +7628,7 @@
   vm_base: VM0000
   dut:
     - croc-chipsim-71
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: croc-chipsim-73-ptf-any
@@ -7103,6 +7642,7 @@
   vm_base: VM0000
   dut:
     - croc-chipsim-73
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: croc-chipsim-75-ptf-any
@@ -7116,6 +7656,7 @@
   vm_base: VM0000
   dut:
     - croc-chipsim-75
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: croc-chipsim-77-ptf-any
@@ -7129,6 +7670,7 @@
   vm_base: VM0000
   dut:
     - croc-chipsim-77
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: jaguar-113-ptf-any
@@ -7142,6 +7684,7 @@
   vm_base: VM0000
   dut:
     - jaguar-113
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: jaguar-112-ptf-any
@@ -7155,6 +7698,7 @@
   vm_base: VM0000
   dut:
     - jaguar-112
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: gorilla-126-ptf-any
@@ -7168,6 +7712,7 @@
   vm_base: VM0000
   dut:
     - gorilla-126
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: gorilla-125-ptf-any
@@ -7181,6 +7726,7 @@
   vm_base: VM0000
   dut:
     - gorilla-125
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: gorilla-62-ptf-any
@@ -7194,6 +7740,7 @@
   vm_base: VM0000
   dut:
     - gorilla-62
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: gorilla-170-ptf-any
@@ -7207,6 +7754,7 @@
   vm_base: VM0000
   dut:
     - gorilla-170
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: gorilla-169-ptf-any
@@ -7220,6 +7768,7 @@
   vm_base: VM0000
   dut:
     - gorilla-169
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: gorilla-168-ptf-any
@@ -7233,6 +7782,7 @@
   vm_base: VM0000
   dut:
     - gorilla-168
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: marlin-104-ptf-any
@@ -7246,6 +7796,7 @@
   vm_base: VM0000
   dut:
     - marlin-104
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: marlin-100-ptf-any
@@ -7259,6 +7810,7 @@
   vm_base: VM0000
   dut:
     - marlin-100
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: marlin-101-ptf-any
@@ -7272,6 +7824,7 @@
   vm_base: VM0000
   dut:
     - marlin-101
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: marlin-102-ptf-any
@@ -7285,6 +7838,7 @@
   vm_base: VM0000
   dut:
     - marlin-102
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-anaconda-25-ptf-any
@@ -7298,6 +7852,7 @@
   vm_base: VM0000
   dut:
     - r-anaconda-25
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: r-anaconda-24-ptf-any
@@ -7311,6 +7866,7 @@
   vm_base: VM0000
   dut:
     - r-anaconda-24
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: gorilla-71-ptf-any
@@ -7324,6 +7880,7 @@
   vm_base: VM0000
   dut:
     - gorilla-71
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: gorilla-72-ptf-any
@@ -7337,6 +7894,7 @@
   vm_base: VM0000
   dut:
     - gorilla-72
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2410b-01-ptf-any
@@ -7350,6 +7908,7 @@
   vm_base: VM0000
   dut:
     - mlx-2410b-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-4600a1-05-ptf-any
@@ -7363,6 +7922,7 @@
   vm_base: VM0000
   dut:
     - mlx-4600a1-05
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-4700a1-07-ptf-any
@@ -7376,6 +7936,7 @@
   vm_base: VM0000
   dut:
     - mlx-4700a1-07
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-4600ca1-02-ptf-any
@@ -7389,6 +7950,7 @@
   vm_base: VM0000
   dut:
     - mlx-4600ca1-02
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-5600-22-ptf-any
@@ -7402,6 +7964,7 @@
   vm_base: VM0000
   dut:
     - mlx-5600-22
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: hpe-2010a1-01-ptf-any
@@ -7415,6 +7978,7 @@
   vm_base: VM0000
   dut:
     - hpe-2010a1-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: hpe-2100-01-ptf-any
@@ -7428,6 +7992,7 @@
   vm_base: VM0000
   dut:
     - hpe-2100-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: hpe-2100a1-01-ptf-any
@@ -7441,6 +8006,7 @@
   vm_base: VM0000
   dut:
     - hpe-2100a1-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: hpe-2410a1-01-ptf-any
@@ -7454,6 +8020,7 @@
   vm_base: VM0000
   dut:
     - hpe-2410a1-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: hpe-2700a1-01-ptf-any
@@ -7467,6 +8034,7 @@
   vm_base: VM0000
   dut:
     - hpe-2700a1-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2010a1-05-ptf-any
@@ -7480,6 +8048,7 @@
   vm_base: VM0000
   dut:
     - mlx-2010a1-05
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2010a1-06-ptf-any
@@ -7493,6 +8062,7 @@
   vm_base: VM0000
   dut:
     - mlx-2010a1-06
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2010a1-07-ptf-any
@@ -7506,6 +8076,7 @@
   vm_base: VM0000
   dut:
     - mlx-2010a1-07
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2010a1-08-ptf-any
@@ -7519,6 +8090,7 @@
   vm_base: VM0000
   dut:
     - mlx-2010a1-08
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2010a1-09-ptf-any
@@ -7532,6 +8104,7 @@
   vm_base: VM0000
   dut:
     - mlx-2010a1-09
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2010a1-18-ptf-any
@@ -7545,6 +8118,7 @@
   vm_base: VM0000
   dut:
     - mlx-2010a1-18
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2100-02-ptf-any
@@ -7558,6 +8132,7 @@
   vm_base: VM0000
   dut:
     - mlx-2100-02
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2100-03-ptf-any
@@ -7571,6 +8146,7 @@
   vm_base: VM0000
   dut:
     - mlx-2100-03
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2201-01-ptf-any
@@ -7584,6 +8160,7 @@
   vm_base: VM0000
   dut:
     - mlx-2201-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2201-04-ptf-any
@@ -7597,6 +8174,7 @@
   vm_base: VM0000
   dut:
     - mlx-2201-04
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2410-01-ptf-any
@@ -7610,6 +8188,7 @@
   vm_base: VM0000
   dut:
     - mlx-2410-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2410-06-ptf-any
@@ -7623,6 +8202,7 @@
   vm_base: VM0000
   dut:
     - mlx-2410-06
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2410a1-01-ptf-any
@@ -7636,6 +8216,7 @@
   vm_base: VM0000
   dut:
     - mlx-2410a1-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2410a1-12-ptf-any
@@ -7649,6 +8230,7 @@
   vm_base: VM0000
   dut:
     - mlx-2410a1-12
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2700a1-01-ptf-any
@@ -7662,6 +8244,7 @@
   vm_base: VM0000
   dut:
     - mlx-2700a1-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2700a1-21-ptf-any
@@ -7675,6 +8258,7 @@
   vm_base: VM0000
   dut:
     - mlx-2700a1-21
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2700a1-22-ptf-any
@@ -7688,6 +8272,7 @@
   vm_base: VM0000
   dut:
     - mlx-2700a1-22
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2700a1-29-ptf-any
@@ -7701,6 +8286,7 @@
   vm_base: VM0000
   dut:
     - mlx-2700a1-29
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2700a1-30-ptf-any
@@ -7714,6 +8300,7 @@
   vm_base: VM0000
   dut:
     - mlx-2700a1-30
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2700a1-31-ptf-any
@@ -7727,6 +8314,7 @@
   vm_base: VM0000
   dut:
     - mlx-2700a1-31
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2700a1-32-ptf-any
@@ -7740,6 +8328,7 @@
   vm_base: VM0000
   dut:
     - mlx-2700a1-32
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2700a1-35-ptf-any
@@ -7753,6 +8342,7 @@
   vm_base: VM0000
   dut:
     - mlx-2700a1-35
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2700a1-36-ptf-any
@@ -7766,6 +8356,7 @@
   vm_base: VM0000
   dut:
     - mlx-2700a1-36
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2700a1-37-ptf-any
@@ -7779,6 +8370,7 @@
   vm_base: VM0000
   dut:
     - mlx-2700a1-37
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2700a1-38-ptf-any
@@ -7792,6 +8384,7 @@
   vm_base: VM0000
   dut:
     - mlx-2700a1-38
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2700a1-39-ptf-any
@@ -7805,6 +8398,7 @@
   vm_base: VM0000
   dut:
     - mlx-2700a1-39
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2700a1-40-ptf-any
@@ -7818,6 +8412,7 @@
   vm_base: VM0000
   dut:
     - mlx-2700a1-40
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2700a1-41-ptf-any
@@ -7831,6 +8426,7 @@
   vm_base: VM0000
   dut:
     - mlx-2700a1-41
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2700b-02-ptf-any
@@ -7844,6 +8440,7 @@
   vm_base: VM0000
   dut:
     - mlx-2700b-02
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2740-01-ptf-any
@@ -7857,6 +8454,7 @@
   vm_base: VM0000
   dut:
     - mlx-2740-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-3420-01-ptf-any
@@ -7870,6 +8468,7 @@
   vm_base: VM0000
   dut:
     - mlx-3420-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-3420-05-ptf-any
@@ -7883,6 +8482,7 @@
   vm_base: VM0000
   dut:
     - mlx-3420-05
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-3420-06-ptf-any
@@ -7896,6 +8496,7 @@
   vm_base: VM0000
   dut:
     - mlx-3420-06
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-3700-03-ptf-any
@@ -7909,6 +8510,7 @@
   vm_base: VM0000
   dut:
     - mlx-3700-03
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-3700-10-ptf-any
@@ -7922,6 +8524,7 @@
   vm_base: VM0000
   dut:
     - mlx-3700-10
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-3700-21-ptf-any
@@ -7935,6 +8538,7 @@
   vm_base: VM0000
   dut:
     - mlx-3700-21
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-3700-22-ptf-any
@@ -7948,6 +8552,7 @@
   vm_base: VM0000
   dut:
     - mlx-3700-22
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-3700-23-ptf-any
@@ -7961,6 +8566,7 @@
   vm_base: VM0000
   dut:
     - mlx-3700-23
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-3700-24-ptf-any
@@ -7974,6 +8580,7 @@
   vm_base: VM0000
   dut:
     - mlx-3700-24
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-3700-25-ptf-any
@@ -7987,6 +8594,7 @@
   vm_base: VM0000
   dut:
     - mlx-3700-25
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-3700-26-ptf-any
@@ -8000,6 +8608,7 @@
   vm_base: VM0000
   dut:
     - mlx-3700-26
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-3700-27-ptf-any
@@ -8013,6 +8622,7 @@
   vm_base: VM0000
   dut:
     - mlx-3700-27
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-3700-28-ptf-any
@@ -8026,6 +8636,7 @@
   vm_base: VM0000
   dut:
     - mlx-3700-28
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-3700-34-ptf-any
@@ -8039,6 +8650,7 @@
   vm_base: VM0000
   dut:
     - mlx-3700-34
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-3700-48-ptf-any
@@ -8052,6 +8664,7 @@
   vm_base: VM0000
   dut:
     - mlx-3700-48
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-3700-61-ptf-any
@@ -8065,6 +8678,7 @@
   vm_base: VM0000
   dut:
     - mlx-3700-61
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-3700-62-ptf-any
@@ -8078,6 +8692,7 @@
   vm_base: VM0000
   dut:
     - mlx-3700-62
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-3700-70-ptf-any
@@ -8091,6 +8706,7 @@
   vm_base: VM0000
   dut:
     - mlx-3700-70
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-3700c-13-ptf-any
@@ -8104,6 +8720,7 @@
   vm_base: VM0000
   dut:
     - mlx-3700c-13
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-3700c-14-ptf-any
@@ -8117,6 +8734,7 @@
   vm_base: VM0000
   dut:
     - mlx-3700c-14
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-3700c-15-ptf-any
@@ -8130,6 +8748,7 @@
   vm_base: VM0000
   dut:
     - mlx-3700c-15
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-3700c-16-ptf-any
@@ -8143,6 +8762,7 @@
   vm_base: VM0000
   dut:
     - mlx-3700c-16
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-3700c-17-ptf-any
@@ -8156,6 +8776,7 @@
   vm_base: VM0000
   dut:
     - mlx-3700c-17
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-3700cs-03-ptf-any
@@ -8169,6 +8790,7 @@
   vm_base: VM0000
   dut:
     - mlx-3700cs-03
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-3750-01-ptf-any
@@ -8182,6 +8804,7 @@
   vm_base: VM0000
   dut:
     - mlx-3750-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-4410-04-ptf-any
@@ -8195,6 +8818,7 @@
   vm_base: VM0000
   dut:
     - mlx-4410-04
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-4410-07-ptf-any
@@ -8208,6 +8832,7 @@
   vm_base: VM0000
   dut:
     - mlx-4410-07
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-4410-08-ptf-any
@@ -8221,6 +8846,7 @@
   vm_base: VM0000
   dut:
     - mlx-4410-08
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-4410-11-ptf-any
@@ -8234,6 +8860,7 @@
   vm_base: VM0000
   dut:
     - mlx-4410-11
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-4410-12-ptf-any
@@ -8247,6 +8874,7 @@
   vm_base: VM0000
   dut:
     - mlx-4410-12
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-4410-13-ptf-any
@@ -8260,6 +8888,7 @@
   vm_base: VM0000
   dut:
     - mlx-4410-13
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-4600a1-06-ptf-any
@@ -8273,6 +8902,7 @@
   vm_base: VM0000
   dut:
     - mlx-4600a1-06
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-4600c-05-ptf-any
@@ -8286,6 +8916,7 @@
   vm_base: VM0000
   dut:
     - mlx-4600c-05
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-4600c-08-ptf-any
@@ -8299,6 +8930,7 @@
   vm_base: VM0000
   dut:
     - mlx-4600c-08
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-4600c-25-ptf-any
@@ -8312,6 +8944,7 @@
   vm_base: VM0000
   dut:
     - mlx-4600c-25
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-4600c-26-ptf-any
@@ -8325,6 +8958,7 @@
   vm_base: VM0000
   dut:
     - mlx-4600c-26
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-4700-03-ptf-any
@@ -8338,6 +8972,7 @@
   vm_base: VM0000
   dut:
     - mlx-4700-03
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-4700-09-ptf-any
@@ -8351,6 +8986,7 @@
   vm_base: VM0000
   dut:
     - mlx-4700-09
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-4700-11-ptf-any
@@ -8364,6 +9000,7 @@
   vm_base: VM0000
   dut:
     - mlx-4700-11
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-4700-12-ptf-any
@@ -8377,6 +9014,7 @@
   vm_base: VM0000
   dut:
     - mlx-4700-12
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-4700-30-ptf-any
@@ -8390,6 +9028,7 @@
   vm_base: VM0000
   dut:
     - mlx-4700-30
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-4700-31-ptf-any
@@ -8403,6 +9042,7 @@
   vm_base: VM0000
   dut:
     - mlx-4700-31
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-4700-32-ptf-any
@@ -8416,6 +9056,7 @@
   vm_base: VM0000
   dut:
     - mlx-4700-32
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-4700-33-ptf-any
@@ -8429,6 +9070,7 @@
   vm_base: VM0000
   dut:
     - mlx-4700-33
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-4700-34-ptf-any
@@ -8442,6 +9084,7 @@
   vm_base: VM0000
   dut:
     - mlx-4700-34
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-4700a1-12-ptf-any
@@ -8455,6 +9098,7 @@
   vm_base: VM0000
   dut:
     - mlx-4700a1-12
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-4700a1-14-ptf-any
@@ -8468,6 +9112,7 @@
   vm_base: VM0000
   dut:
     - mlx-4700a1-14
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-4700a1-15-ptf-any
@@ -8481,6 +9126,7 @@
   vm_base: VM0000
   dut:
     - mlx-4700a1-15
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-4700a1-16-ptf-any
@@ -8494,6 +9140,7 @@
   vm_base: VM0000
   dut:
     - mlx-4700a1-16
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-4700a1-17-ptf-any
@@ -8507,6 +9154,7 @@
   vm_base: VM0000
   dut:
     - mlx-4700a1-17
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-4700a1-20-ptf-any
@@ -8520,6 +9168,7 @@
   vm_base: VM0000
   dut:
     - mlx-4700a1-20
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-4800-02-ptf-any
@@ -8533,6 +9182,7 @@
   vm_base: VM0000
   dut:
     - mlx-4800-02
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-5400-01-ptf-any
@@ -8546,6 +9196,7 @@
   vm_base: VM0000
   dut:
     - mlx-5400-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-5400-05-ptf-any
@@ -8559,6 +9210,7 @@
   vm_base: VM0000
   dut:
     - mlx-5400-05
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-5600-01-ptf-any
@@ -8572,6 +9224,7 @@
   vm_base: VM0000
   dut:
     - mlx-5600-01
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-5600-04-ptf-any
@@ -8585,6 +9238,7 @@
   vm_base: VM0000
   dut:
     - mlx-5600-04
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-5600-06-ptf-any
@@ -8598,6 +9252,7 @@
   vm_base: VM0000
   dut:
     - mlx-5600-06
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-5600-08-ptf-any
@@ -8611,6 +9266,7 @@
   vm_base: VM0000
   dut:
     - mlx-5600-08
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-5600-09-ptf-any
@@ -8624,6 +9280,7 @@
   vm_base: VM0000
   dut:
     - mlx-5600-09
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-5600-10-ptf-any
@@ -8637,6 +9294,7 @@
   vm_base: VM0000
   dut:
     - mlx-5600-10
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-5600-15-ptf-any
@@ -8650,6 +9308,7 @@
   vm_base: VM0000
   dut:
     - mlx-5600-15
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-5600-18-ptf-any
@@ -8663,6 +9322,7 @@
   vm_base: VM0000
   dut:
     - mlx-5600-18
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-5600-19-ptf-any
@@ -8676,6 +9336,7 @@
   vm_base: VM0000
   dut:
     - mlx-5600-19
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-5600-23-ptf-any
@@ -8689,6 +9350,7 @@
   vm_base: VM0000
   dut:
     - mlx-5600-23
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-5600-24-ptf-any
@@ -8702,6 +9364,7 @@
   vm_base: VM0000
   dut:
     - mlx-5600-24
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-5600-25-ptf-any
@@ -8715,6 +9378,7 @@
   vm_base: VM0000
   dut:
     - mlx-5600-25
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: nv-xh3000hse-03-ptf-any
@@ -8728,6 +9392,7 @@
   vm_base: VM0000
   dut:
     - nv-xh3000hse-03
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: sug-2410a1-04-ptf-any
@@ -8741,6 +9406,7 @@
   vm_base: VM0000
   dut:
     - sug-2410a1-04
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2010-03-ptf-any
@@ -8754,6 +9420,7 @@
   vm_base: VM0000
   dut:
     - mlx-2010-03
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2010a1-12-ptf-any
@@ -8767,6 +9434,7 @@
   vm_base: VM0000
   dut:
     - mlx-2010a1-12
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2100-04-ptf-any
@@ -8780,6 +9448,7 @@
   vm_base: VM0000
   dut:
     - mlx-2100-04
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2100-07-ptf-any
@@ -8793,6 +9462,7 @@
   vm_base: VM0000
   dut:
     - mlx-2100-07
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2100ba1-02-ptf-any
@@ -8806,6 +9476,7 @@
   vm_base: VM0000
   dut:
     - mlx-2100ba1-02
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2410-05-ptf-any
@@ -8819,6 +9490,7 @@
   vm_base: VM0000
   dut:
     - mlx-2410-05
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2410a1-10-ptf-any
@@ -8832,6 +9504,7 @@
   vm_base: VM0000
   dut:
     - mlx-2410a1-10
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2700a1-07-ptf-any
@@ -8845,6 +9518,7 @@
   vm_base: VM0000
   dut:
     - mlx-2700a1-07
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-3700-14-ptf-any
@@ -8858,6 +9532,7 @@
   vm_base: VM0000
   dut:
     - mlx-3700-14
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-3700c-18-ptf-any
@@ -8871,6 +9546,7 @@
   vm_base: VM0000
   dut:
     - mlx-3700c-18
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-3700c-19-ptf-any
@@ -8884,6 +9560,7 @@
   vm_base: VM0000
   dut:
     - mlx-3700c-19
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-4410-06-ptf-any
@@ -8897,6 +9574,7 @@
   vm_base: VM0000
   dut:
     - mlx-4410-06
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-4600-04-ptf-any
@@ -8910,6 +9588,7 @@
   vm_base: VM0000
   dut:
     - mlx-4600-04
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-4700-04-ptf-any
@@ -8923,6 +9602,7 @@
   vm_base: VM0000
   dut:
     - mlx-4700-04
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-4700-17-ptf-any
@@ -8936,6 +9616,7 @@
   vm_base: VM0000
   dut:
     - mlx-4700-17
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-4700-18-ptf-any
@@ -8949,6 +9630,7 @@
   vm_base: VM0000
   dut:
     - mlx-4700-18
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-4700a1-03-ptf-any
@@ -8962,6 +9644,7 @@
   vm_base: VM0000
   dut:
     - mlx-4700a1-03
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-4700a1-08-ptf-any
@@ -8975,6 +9658,7 @@
   vm_base: VM0000
   dut:
     - mlx-4700a1-08
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-4700a1-11-ptf-any
@@ -8988,6 +9672,7 @@
   vm_base: VM0000
   dut:
     - mlx-4700a1-11
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: act-5812-13-ptf-any
@@ -9001,6 +9686,7 @@
   vm_base: VM0000
   dut:
     - act-5812-13
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: nv-xh3000hse-02-ptf-any
@@ -9014,6 +9700,7 @@
   vm_base: VM0000
   dut:
     - nv-xh3000hse-02
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2100-08-ptf-any
@@ -9027,6 +9714,7 @@
   vm_base: VM0000
   dut:
     - mlx-2100-08
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-4600c-21-ptf-any
@@ -9040,6 +9728,7 @@
   vm_base: VM0000
   dut:
     - mlx-4600c-21
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2700a1-25-ptf-any
@@ -9053,6 +9742,7 @@
   vm_base: VM0000
   dut:
     - mlx-2700a1-25
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-4600c-22-ptf-any
@@ -9066,6 +9756,7 @@
   vm_base: VM0000
   dut:
     - mlx-4600c-22
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-4600ca1-03-ptf-any
@@ -9079,6 +9770,7 @@
   vm_base: VM0000
   dut:
     - mlx-4600ca1-03
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-3700-47-ptf-any
@@ -9092,6 +9784,7 @@
   vm_base: VM0000
   dut:
     - mlx-3700-47
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2201-05-ptf-any
@@ -9105,6 +9798,7 @@
   vm_base: VM0000
   dut:
     - mlx-2201-05
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-3750-03-ptf-any
@@ -9118,6 +9812,7 @@
   vm_base: VM0000
   dut:
     - mlx-3750-03
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-5600-02-ptf-any
@@ -9131,6 +9826,7 @@
   vm_base: VM0000
   dut:
     - mlx-5600-02
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-5600-05-ptf-any
@@ -9144,6 +9840,7 @@
   vm_base: VM0000
   dut:
     - mlx-5600-05
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-3700-57-ptf-any
@@ -9157,6 +9854,7 @@
   vm_base: VM0000
   dut:
     - mlx-3700-57
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-3700-64-ptf-any
@@ -9170,6 +9868,7 @@
   vm_base: VM0000
   dut:
     - mlx-3700-64
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-3700-67-ptf-any
@@ -9183,6 +9882,7 @@
   vm_base: VM0000
   dut:
     - mlx-3700-67
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-3700-69-ptf-any
@@ -9196,6 +9896,7 @@
   vm_base: VM0000
   dut:
     - mlx-3700-69
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2700a1-42-ptf-any
@@ -9209,6 +9910,7 @@
   vm_base: VM0000
   dut:
     - mlx-2700a1-42
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2700a1-43-ptf-any
@@ -9222,6 +9924,7 @@
   vm_base: VM0000
   dut:
     - mlx-2700a1-43
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2700a1-44-ptf-any
@@ -9235,6 +9938,7 @@
   vm_base: VM0000
   dut:
     - mlx-2700a1-44
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2700a1-45-ptf-any
@@ -9248,6 +9952,7 @@
   vm_base: VM0000
   dut:
     - mlx-2700a1-45
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2700a1-46-ptf-any
@@ -9261,6 +9966,7 @@
   vm_base: VM0000
   dut:
     - mlx-2700a1-46
+  inv_name: lab
   comment: Mellanox MTR testbed
 
 - conf-name: mlx-2201m-01-ptf-any
@@ -9274,4 +9980,5 @@
   vm_base: VM0000
   dut:
     - mlx-2201m-01
+  inv_name: lab
   comment: Mellanox MTR testbed

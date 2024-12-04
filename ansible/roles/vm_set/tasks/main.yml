@@ -15,10 +15,14 @@
 
 # Need latest ubuntu 4.10 kernel to fix a openvswitch bug
 # https://bugs.launchpad.net/ubuntu/+source/kernel-package/+bug/1685742
+- name: Pick package_installation from env
+  set_fact:
+    package_installation: "{{ lookup('env', 'PACKAGE_INSTALLATION') | default(omit) }}"
+
 - name: Set the default variable package_installation
   set_fact:
     package_installation: true
-  when: package_installation is not defined
+  when: package_installation is not defined or package_installation == ''
 
 - name: get host distribution
   shell: grep ^NAME /etc/os-release | awk -F '=' '{print $2}' | tr -d '"'
@@ -140,6 +144,21 @@
 - include_tasks: docker.yml
   when: package_installation|bool
 
+- name: Update python3 packages
+  block:
+    # Workaround for '"Error connecting: Error while fetching server API version: Not supported URL scheme http+docker'
+    # See https://github.com/docker/docker-py/issues/3256
+  - name: Remove old requests package >=2.32.0
+    pip: name=requests state=absent executable={{ pip_executable }}
+    become: yes
+    environment: "{{ proxy_env | default({}) }}"
+    ignore_errors: yes
+  - name: Install requests package <2.32.0
+    pip: name=requests version=2.31.0 state=present executable={{ pip_executable }}
+    become: yes
+    environment: "{{ proxy_env | default({}) }}"
+  when: pip_executable=="pip3"
+
 - name: Ensure {{ ansible_user }} in docker,sudo group
   user:
     name: "{{ ansible_user }}"
@@ -181,6 +200,13 @@
   sysctl:
     name: "net.core.rmem_default"
     value: "31457280"
+    sysctl_set: yes
+  become: yes
+
+- name: Increase IPv6 route cache size
+  sysctl:
+    name: "net.ipv6.route.max_size"
+    value: "16384"
     sysctl_set: yes
   become: yes
 

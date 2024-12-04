@@ -10,7 +10,7 @@ from ngts.constants.performance_constants import PerfConsts
 from ngts.nvos_constants.constants_nvos import NvosConst
 from devices.sonic import SonicHost
 from plugins.ansible_fixtures import ansible_adhoc
-from plugins.loganalyzer import pytest_addoption, loganalyzer
+from plugins.loganalyzer import pytest_addoption, loganalyzer, log_rotate_modular_chassis
 
 
 update_sys_path_by_community_plugins_path()

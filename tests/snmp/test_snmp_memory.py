@@ -88,7 +88,7 @@ def test_snmp_memory(duthosts, enum_rand_one_per_hwsku_hostname, localhost, cred
     # Allow the test to retry a few times before claiming failure.
     for _ in range(3):
         snmp_facts = get_snmp_facts(
-            localhost, host=host_ip, version="v2c",
+            duthost, localhost, host=host_ip, version="v2c",
             community=creds_all_duts[duthost.hostname]["snmp_rocommunity"], wait=True)['ansible_facts']
         facts = collect_memory(duthost)
         # net-snmp calculate cached memory as cached + sreclaimable
@@ -142,6 +142,9 @@ def test_snmp_memory_load(duthosts, enum_rand_one_per_hwsku_hostname, localhost,
     mem_free = int(outputs['results'][1]['stdout'])
     mem_total = int(outputs['results'][2]['stdout'])
     percentage = get_percentage_threshold(int(mem_total))
+    # if total mem less than 2G
+    if mem_total <= 2 * 1024 * 1024:
+        pytest.skip("Total memory is too small for percentage.")
     logger.info("SNMP Free Memory: {}".format(snmp_free_memory))
     logger.info("DUT Free Memory: {}".format(mem_free))
     logger.info("Difference: {}".format(
@@ -172,7 +175,7 @@ def test_snmp_swap(duthosts, enum_rand_one_per_hwsku_hostname, localhost, creds_
             "Swap is not on for this device, snmp does not support swap related queries when swap isn't on")
 
     snmp_facts = get_snmp_facts(
-        localhost, host=host_ip, version="v2c", include_swap=True,
+        duthost, localhost, host=host_ip, version="v2c", include_swap=True,
         community=creds_all_duts[duthost.hostname]["snmp_rocommunity"], wait=True)['ansible_facts']
     snmp_total_swap = snmp_facts['ansible_sysTotalSwap']
     snmp_free_swap = snmp_facts['ansible_sysTotalFreeSwap']

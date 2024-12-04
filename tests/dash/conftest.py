@@ -316,6 +316,11 @@ def asic_db_checker(duthost):
     yield _check_asic_db
 
 
+@pytest.fixture(scope="function", params=['udp', 'tcp', 'echo_request', 'echo_reply'])
+def inner_packet_type(request):
+    return request.param
+
+
 def config_vxlan_udp_dport(duthost, port):
     vxlan_port_config = [
         {
@@ -355,7 +360,7 @@ def vxlan_udp_dport(request, duthost):
 
     yield vxlan_udp_dport
 
-    logger.info(f"Restore the VXLAN UDP dst port to 4789")
+    logger.info("Restore the VXLAN UDP dst port to 4789")
     config_vxlan_udp_dport(duthost, 4789)
 
 
@@ -378,11 +383,6 @@ def acl_default_rule(localhost, duthost, ptfhost, dash_config_info):
         default_acl_rule.teardown()
         del default_acl_group
         time.sleep(WAIT_AFTER_CONFIG)
-
-
-@pytest.fixture(scope="function", params=['udp', 'tcp', 'echo_request', 'echo_reply'])
-def inner_packet_type(request):
-    return request.param
 
 
 @pytest.fixture(scope="module", autouse=True)

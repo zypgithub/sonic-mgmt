@@ -452,4 +452,4 @@ def write_gnmi_files(localhost, duthost, ptfhost, env, delete_list, update_list,
     localhost.shell('rm -f /tmp/updates.tar.gz')
     ptfhost.shell('rm -f updates.tar.gz')
     localhost.shell(f'rm -f {env.work_dir}update*')
-    ptfhost.shell(f'rm -f update*')
+    ptfhost.shell('rm -f update*')

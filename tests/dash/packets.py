@@ -4,7 +4,6 @@ import ptf.packet as scapy
 import scapy.utils as scapy_utils
 from ptf.mask import Mask
 import ptf.testutils as testutils
-from ptf.ptfutils import default_timeout, default_negative_timeout
 from ptf.dataplane import match_exp_pkt
 from constants import *  # noqa: F403
 import logging
@@ -27,13 +26,6 @@ def generate_inner_packet(packet_type):
         return testutils.simple_icmp_packet
 
     return None
-
-
-def set_icmp_sub_type(packet, packet_type):
-    if packet_type == 'echo_request':
-        packet[scapy.ICMP].type = 8
-    elif packet_type == 'echo_reply':
-        packet[scapy.ICMP].type = 0
 
 
 def get_bits(ip):
@@ -134,6 +126,12 @@ def outbound_pl_packets(config, inner_packet_type='udp', vxlan_udp_dport=4789, i
     masked_exp_packet.set_do_not_care_packet(scapy.IP, "dst")
 
     return vxlan_packet, masked_exp_packet
+
+def set_icmp_sub_type(packet, packet_type):
+    if packet_type == 'echo_request':
+        packet[scapy.ICMP].type = 8
+    elif packet_type == 'echo_reply':
+        packet[scapy.ICMP].type = 0
 
 
 def inbound_vnet_packets(dash_config_info, inner_extra_conf={}, inner_packet_type='udp', vxlan_udp_dport=4789):
@@ -264,7 +262,8 @@ def verify_each_packet_on_each_port(exp_pkts, received_pkts_res, ports):
                     logger.info(f"find the matched packet on port {port}")
                     break
             if not find_matched_ptk:
-                logger.error(print_expect_packet_and_received_packet_hex_information([exp_pkt], received_pkts_res[port]))
+                logger.error(
+                    print_expect_packet_and_received_packet_hex_information([exp_pkt], received_pkts_res[port]))
                 pytest_assert(False, f"Not find the matched pkt on port {port}")
         else:
             pytest_assert(False, f"port {port} doesn't receive any packet")

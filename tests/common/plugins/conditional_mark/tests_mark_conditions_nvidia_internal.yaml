@@ -265,12 +265,6 @@ tests/push_build_tests/general/wjh/test_wjh.py::test_buffer:
     conditions:
       - "'simx' in platform"
 
-tests/push_build_tests/general/wjh/test_wjh.py::test_buffer[tail_drop]:
-  skip:
-    reason: "Ignored due to RM issue 4033200"
-    conditions:
-      - "https://redmine.mellanox.com/issues/4033200"
-
 tests/push_build_tests/general/doroce/test_doroce.py:
   skip:
     reason: "Testcase ignored on simx or due to SPC1 or due to RM issue 3769105 on SPC4 and SPC3"
@@ -1273,12 +1267,6 @@ bgp/test_bgp_bbr_default_state.py:
     conditions:
     - "https://redmine.mellanox.com/issues/4196870"
 
-platform_tests/test_secure_upgrade.py:
-  skip:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/3824755"
-    conditions:
-      - "https://redmine.mellanox.com/issues/3824755"
-
 syslog/test_syslog_source_ip.py::test_syslog_config_work_after_reboot:
   skip:
     reason: "Skip due to https://redmine.mellanox.com/issues/3981121"
@@ -1516,12 +1504,6 @@ platform_tests/daemon/test_syseepromd.py::test_pmon_syseepromd_running_status:
     reason: "Skip simx platform by bug of https://redmine.mellanox.com/issues/3715826"
     conditions:
       - "https://redmine.mellanox.com/issues/3715826 and'simx' in platform"
-
-platform_tests/mellanox/test_reboot_cause.py:
-  skip:
-    reason: "bobcat driver doesn't support reset_from_asic and reset_reload_bios"
-    conditions:
-    - "'sn4280' in platform"
 
 platform_tests/api/test_sfp.py::TestSfpApi::test_get_transceiver_bulk_status:
   skip:

@@ -9,14 +9,14 @@ from tests.common import config_reload
 from tests.common.utilities import wait_until
 from tests.common.helpers.assertions import pytest_require
 from tests.common.plugins.loganalyzer.loganalyzer import LogAnalyzer
-from tests.platform_tests.thermal_control_test_helper import disable_thermal_policy     # noqa F401
+from tests.common.helpers.thermal_control_test_helper import disable_thermal_policy     # noqa F401
 from .device_mocker import device_mocker_factory        # noqa F401
 from tests.common.helpers.assertions import pytest_assert
-from tests.common.fixtures.duthost_utils import is_support_mock_asic
-from tests.common.mellanox_data import is_mellanox_device
+from tests.common.fixtures.duthost_utils import is_support_mock_asic    # noqa F401
 
 pytestmark = [
-    pytest.mark.topology('any')
+    pytest.mark.topology('any'),
+    pytest.mark.device_type('physical')
 ]
 
 logger = logging.getLogger(__name__)
@@ -40,7 +40,7 @@ DEFAULT_INTERVAL = 62
 FAST_INTERVAL = 10
 THERMAL_CHECK_INTERVAL = 70
 PSU_CHECK_INTERVAL = FAST_INTERVAL + 5
-WAIT_TIMEOUT = 90
+WAIT_TIMEOUT = 180
 STATE_DB = 6
 
 SERVICE_EXPECT_STATUS_DICT = {

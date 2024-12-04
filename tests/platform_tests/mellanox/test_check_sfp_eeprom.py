@@ -38,7 +38,7 @@ def sfp_test_intfs_to_dom_map(duthosts, rand_one_dut_hostname, conn_graph_facts,
 
     sfp_test_intfs_to_dom_map_dict = {}
     platform = duthost.facts['platform']
-    dpu_platform_list = ["arm64-nvda_bf-9009d3b600cvaa","arm64-nvda_bf-9009d3b600svaa"]
+    dpu_platform_list = ["arm64-nvda_bf-9009d3b600cvaa", "arm64-nvda_bf-9009d3b600svaa"]
     pci_path = get_pciconf0_path(duthost) if platform in dpu_platform_list else get_pci_cr0_path(duthost)
 
     for intf in sfp_test_intf_list:

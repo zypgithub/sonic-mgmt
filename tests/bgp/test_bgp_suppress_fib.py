@@ -341,7 +341,7 @@ def install_route_from_exabgp(operation, ptfip, route_list, port):
     data = {"command": command}
     logger.info("url: {}".format(url))
     logger.info("command: {}".format(data))
-    r = requests.post(url, data=data, timeout=90)
+    r = requests.post(url, data=data, timeout=90, proxies={"http": None, "https": None})
     assert r.status_code == 200
 
 
@@ -740,7 +740,7 @@ def test_bgp_route_with_suppress(duthost, tbinfo, nbrhosts, ptfadapter, localhos
         for continous_boot_index in range(continuous_boot_times):
             if continuous_boot_times > 1:
                 logger.info("======== Continuous boot needed - this is the {} time boot test ========".
-                            format(continous_boot_index + 1))
+                            format(continous_boot_index+1))
 
             with allure.step("Do reload"):
                 param_reboot(request, duthost, localhost)

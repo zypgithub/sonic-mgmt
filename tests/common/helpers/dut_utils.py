@@ -3,18 +3,25 @@ import allure
 import jinja2
 import glob
 import re
-import os
 import yaml
+import os
 from tests.common.helpers.assertions import pytest_assert
 from tests.common.utilities import get_host_visible_vars
 from tests.common.utilities import wait_until
+from tests.common.errors import RunAnsibleModuleFail
 from collections import defaultdict
 from tests.common.connections.console_host import ConsoleHost
 from tests.common.utilities import get_dut_current_passwd
+import time
 
 CONTAINER_CHECK_INTERVAL_SECS = 1
 CONTAINER_RESTART_THRESHOLD_SECS = 180
+
+# Ansible config files
+LAB_CONNECTION_GRAPH_PATH = os.path.normpath((os.path.join(os.path.dirname(__file__), "../../../ansible/files")))
+
 BASI_PATH = os.path.dirname(os.path.abspath(__file__))
+
 
 logger = logging.getLogger(__name__)
 
@@ -184,6 +191,20 @@ def get_program_info(duthost, container_name, program_name):
     return program_status, program_pid
 
 
+def kill_process_by_pid(duthost, container_name, program_name, program_pid):
+    """
+    @summary: Kill a process in the specified container by its pid
+    """
+    kill_cmd_result = duthost.shell("docker exec {} kill -SIGKILL {}".format(container_name, program_pid))
+
+    # Get the exit code of 'kill' command
+    exit_code = kill_cmd_result["rc"]
+    pytest_assert(exit_code == 0, "Failed to stop program '{}' before test".format(program_name))
+
+    logger.info("Program '{}' in container '{}' was stopped successfully"
+                .format(program_name, container_name))
+
+
 def get_disabled_container_list(duthost):
     """Gets the container/service names which are disabled.
 
@@ -335,7 +356,7 @@ def get_sai_sdk_dump_file(duthost, dump_file_name):
     cmd_gen_sdk_dump = f"docker exec syncd bash -c 'saisdkdump -f {full_path_dump_file}' "
     duthost.shell(cmd_gen_sdk_dump)
 
-    cmd_copy_dmp_from_syncd_to_host = f"docker cp syncd:{full_path_dump_file}  {full_path_dump_file}"
+    cmd_copy_dmp_from_syncd_to_host = f"docker cp syncd: {full_path_dump_file}  {full_path_dump_file}"
     duthost.shell(cmd_copy_dmp_from_syncd_to_host)
 
     compressed_dump_file = f"/tmp/{dump_file_name}.tar.gz"
@@ -359,6 +380,7 @@ def create_duthost_console(duthost,localhost, conn_graph_facts, creds):  # noqa 
     # console password and sonic_password are lists, which may contain more than one password
     sonicadmin_alt_password = localhost.host.options['variable_manager']._hostvars[dut_hostname].get(
         "ansible_altpassword")
+    sonic_password = [creds['sonicadmin_password'], sonicadmin_alt_password]
     host = ConsoleHost(console_type=console_type,
                        console_host=console_host,
                        console_port=console_port,
@@ -366,6 +388,7 @@ def create_duthost_console(duthost,localhost, conn_graph_facts, creds):  # noqa 
                        sonic_password=[creds['sonicadmin_password'], sonicadmin_alt_password],
                        console_username=console_username,
                        console_password=creds['console_password'][console_type])
+
     return host
 
 
@@ -381,7 +404,7 @@ def creds_on_dut(duthost):
         r'qos\.yml',
         r'sku-sensors-data\.yml',
         r'mux_simulator_http_port_map\.yml'
-    ]
+        ]
     files = glob.glob("../ansible/group_vars/all/*.yml")
     files += glob.glob("../ansible/vars/*.yml")
     for group in groups:
@@ -438,3 +461,42 @@ def creds_on_dut(duthost):
         creds["console_password"][k] = v["passwd"]
 
     return creds
+
+
+def is_mellanox_devices(hwsku):
+    """
+    A helper function to check if a given sku is Mellanox device
+    """
+    hwsku = hwsku.lower()
+    return 'mellanox' in hwsku \
+        or 'msn' in hwsku \
+        or 'mlnx' in hwsku
+
+
+def is_mellanox_fanout(duthost, localhost):
+    # Ansible localhost fixture which calls ansible playbook on the local host
+
+    if duthost.facts.get("asic_type") == "vs":
+        return False
+
+    try:
+        dut_facts = \
+            localhost.conn_graph_facts(host=duthost.hostname, filepath=LAB_CONNECTION_GRAPH_PATH)["ansible_facts"]
+    except RunAnsibleModuleFail as e:
+        logger.info("Get dut_facts failed, reason:{}".format(e.results['msg']))
+        return False
+
+    intf = list(dut_facts["device_conn"][duthost.hostname].keys())[0]
+    fanout_host = dut_facts["device_conn"][duthost.hostname][intf]["peerdevice"]
+
+    try:
+        fanout_facts = \
+            localhost.conn_graph_facts(host=fanout_host, filepath=LAB_CONNECTION_GRAPH_PATH)["ansible_facts"]
+    except RunAnsibleModuleFail:
+        return False
+
+    fanout_sku = fanout_facts['device_info'][fanout_host]['HwSku']
+    if not is_mellanox_devices(fanout_sku):
+        return False
+
+    return True

@@ -4,7 +4,7 @@ import json
 import re
 import pytest
 
-from tests.platform_tests.link_flap.link_flap_utils import __check_if_status as check_if_status
+from tests.common.platform.device_utils import __check_if_status as check_if_status
 from tests.common.utilities import wait_until
 from tests.common.platform.interface_utils import get_physical_port_indices
 from tests.common.helpers.assertions import pytest_assert

@@ -134,8 +134,8 @@ def crm_interface(duthosts, enum_rand_one_per_hwsku_frontend_hostname, tbinfo, e
                 elif crm_intf2 is None:
                     crm_intf2 = intf
 
-        if crm_intf1 is not None and crm_intf2 is not None:
-            return (crm_intf1, crm_intf2)
+    if crm_intf1 is not None and crm_intf2 is not None:
+        return (crm_intf1, crm_intf2)
 
     if crm_intf1 is None or crm_intf2 is None:
         pytest.skip("Not enough interfaces on this host/asic (%s/%s) to support test." % (duthost.hostname,
@@ -219,8 +219,8 @@ def configure_a_route_with_same_prefix_as_vlan_for_mlnx(duthost, asichost, tbinf
 
     # Get sai sdk dump file in case test fail, we can get the LPM tree information
     get_sai_sdk_dump_file(duthost, "sai_sdk_dump_before_shutdown_vlan_ports")
-
-    del_dump_route_with_same_prefix_as_vlan_interface_cmd = f" sudo ip route del {network_with_same_prefix_as_vlan_interface} via {nh_ip}"
+    del_dump_route_with_same_prefix_as_vlan_interface_cmd = \
+        f" sudo ip route del {network_with_same_prefix_as_vlan_interface} via {nh_ip}"
 
     return del_dump_route_with_same_prefix_as_vlan_interface_cmd
 
@@ -279,3 +279,26 @@ def collector(duthosts, enum_rand_one_per_hwsku_frontend_hostname):
         data[asic.asic_index] = {}
 
     yield data
+
+
+@pytest.fixture(scope="function")
+def cleanup_ptf_interface(duthosts, ip_ver, enum_rand_one_per_hwsku_frontend_hostname,
+                          enum_frontend_asic_index, ptfhost):
+
+    duthost = duthosts[enum_rand_one_per_hwsku_frontend_hostname]
+    asichost = duthost.asic_instance(enum_frontend_asic_index)
+    if ip_ver == "4":
+        ip_remove_cmd = "config interface ip remove Ethernet1 2.2.2.1/24"
+    else:
+        ip_remove_cmd = "config interface ip remove Ethernet1 2001::2/64"
+    check_vlan_cmd = "show vlan br | grep -w 'Ethernet1'"
+
+    yield
+
+    if duthost.facts["asic_type"] == "marvell":
+        asichost.shell(ip_remove_cmd)
+        # Check if member not removed
+        output = asichost.shell(check_vlan_cmd, module_ignore_errors=True)
+        if "Ethernet1" not in output['stdout']:
+            asichost.sonichost.add_member_to_vlan(1000, 'Ethernet1', is_tagged=False)
+        ptfhost.remove_ip_addresses()

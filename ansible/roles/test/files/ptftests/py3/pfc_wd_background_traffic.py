@@ -1,20 +1,15 @@
 import ptf
 import logging
+import random
 from ptf.base_tests import BaseTest
 import time
-import ipaddress
-from ptf.testutils import test_params_get, simple_ip_packet, send_packet
+from ptf.testutils import test_params_get, simple_udp_packet, send_packet
 
 
 class PfcWdBackgroundTrafficTest(BaseTest):
     def __init__(self):
         BaseTest.__init__(self)
         self.test_params = test_params_get()
-
-    def gen_dynamic_ip(self, base_ip, count=20):
-        base_ip = ipaddress.IPv4Address(base_ip)
-        ip_list = [str(base_ip + i) for i in range(count)]
-        return ip_list
 
     def setUp(self):
         self.dataplane = ptf.dataplane_instance
@@ -45,40 +40,49 @@ class PfcWdBackgroundTrafficTest(BaseTest):
             for queue in self.queues:
                 print(f"traffic from {src_port} to {dst_port}: {queue} ")
                 logging.info(f"traffic from {src_port} to {dst_port}: {queue} ")
-                for src_ip in self.gen_dynamic_ip(self.src_ips[i]):
-                    pkt = simple_ip_packet(
-                        eth_src=src_mac,
+                pkt = simple_udp_packet(
+                    eth_src=src_mac,
+                    eth_dst=self.router_mac,
+                    ip_src=self.src_ips[i],
+                    ip_dst=self.dst_ips[i],
+                    ip_dscp=queue,
+                    ip_ecn=0,
+                    ip_ttl=ttl
+                )
+                pkts_dict[src_port].append(pkt)
+                if self.bidirection:
+                    print(f"traffic from {dst_port} to {src_port}: {queue} ")
+                    logging.info(f"traffic from {dst_port} to {src_port}: {queue} ")
+                    pkt = simple_udp_packet(
+                        eth_src=dst_mac,
                         eth_dst=self.router_mac,
-                        ip_src=src_ip,
-                        ip_dst=self.dst_ips[i],
+                        ip_src=self.dst_ips[i],
+                        ip_dst=self.src_ips[i],
                         ip_dscp=queue,
                         ip_ecn=0,
                         ip_ttl=ttl
                     )
-                    pkts_dict[src_port].append(pkt)
-                if self.bidirection:
-                    print(f"traffic from {dst_port} to {src_port}: {queue} ")
-                    logging.info(f"traffic from {dst_port} to {src_port}: {queue} ")
-                    for src_ip in self.gen_dynamic_ip(self.src_ips[i]):
-                        pkt = simple_ip_packet(
-                            eth_src=dst_mac,
-                            eth_dst=self.router_mac,
-                            ip_src=src_ip,
-                            ip_dst=self.src_ips[i],
-                            ip_dscp=queue,
-                            ip_ecn=0,
-                            ip_ttl=ttl
-                        )
-                        pkts_dict[dst_port].append(pkt)
+                    pkts_dict[dst_port].append(pkt)
 
         start = time.time()
         logging.info("Start to send the background traffic")
         print("Start to send the background traffic")
         timeout = 500
+        pkt_count_in_batch = 100
         while True:
             for port, pkts in pkts_dict.items():
                 for pkt in pkts:
-                    send_packet(self, port, pkt, self.pkt_count)
+                    sent_count = 0
+                    """
+                    Randomize the sport/dport to add entropy to the packets so that
+                    the traffic can be hashed to different egress ports.
+                    This is to ensure all the LAG members in the LAG take traffic.
+                    """
+                    while sent_count < self.pkt_count:
+                        pkt['UDP'].sport = random.randint(1, 65535)
+                        pkt['UDP'].dport = random.randint(1, 65535)
+                        send_packet(self, port, pkt, pkt_count_in_batch)
+                        sent_count += pkt_count_in_batch
 
             now = time.time()
             if now - start > timeout:

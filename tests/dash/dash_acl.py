@@ -11,7 +11,6 @@ from dash_utils import render_template
 from gnmi_utils import apply_gnmi_file
 import packets
 import ptf.testutils as testutils
-import copy
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +40,7 @@ def check_tables_not_exist_in_appl_db(duthost, tables):
     for table in tables:
         output = duthost.shell("sonic-db-cli APPL_DB keys '{}*'".format(table))
         assert output["stdout"].strip() == "", " Table {} still exists in APPL_DB".format(table)
+
 
 class AclGroup(object):
     def __init__(self, localhost, duthost, ptfhost, acl_group, eni, ip_version="ipv4"):
@@ -163,7 +163,7 @@ class DefaultAclRule(AclRuleTest):
             ACL_PRIORITY: 255,
             ACL_ACTION: self.default_action,
             ACL_TERMINATING: "false",
-            ACL_PROTOCOL: "17, 6, 1, 2",
+            ACL_PROTOCOL: "17, 6, 1",
         })
 
 
@@ -622,7 +622,8 @@ class AclMultiTagOrderTest(AclRuleTest):
             ACL_SRC_TAG: "AclMultiTagOrder1,AclMultiTagOrder2",
             ACL_SRC_PORT: "18"
         })
-        self.acl_tag = AclTag(self.localhost, self.duthost, self.ptfhost, "AclMultiTagOrder", [self.src_ip_prefix1, self.src_ip_prefix2])
+        self.acl_tag = AclTag(
+            self.localhost, self.duthost, self.ptfhost, "AclMultiTagOrder", [self.src_ip_prefix1, self.src_ip_prefix2])
         dash_config_info = copy.deepcopy(self.dash_config_info)
         dash_config_info[LOCAL_CA_IP] = self.src_ip1
         self.add_test_pkt(AclTestPacket(dash_config_info,
@@ -882,7 +883,8 @@ def acl_multi_tag_test(apply_vnet_configs, localhost, duthost, ptfhost, dash_con
 @pytest.fixture(scope="function")
 def acl_tag_not_exists_test(apply_vnet_configs, localhost, duthost, ptfhost, dash_config_info):
     testcases, default_acl_group = acl_tag_test_config(localhost, duthost, ptfhost, dash_config_info,
-                                                       AclTagNotExistsTest(localhost, duthost, ptfhost, dash_config_info))
+                                                       AclTagNotExistsTest(
+                                                           localhost, duthost, ptfhost, dash_config_info))
 
     yield testcases
 
@@ -1164,10 +1166,9 @@ def check_tcp_rst_dataplane(ptfadapter, testcases):
 
             return expected_rst_packet_to_sender
 
-
         _, pa_match_packet, _, expected_drop_packet = packets.inbound_vnet_packets(pkt.dash_config_info,
-                                                                              pkt.inner_extra_conf,
-                                                                              inner_packet_type='tcp')
+                                                                                   pkt.inner_extra_conf,
+                                                                                   inner_packet_type='tcp')
 
         sent_port = pkt.dash_config_info[REMOTE_PTF_INTF][-1]
         rec_port = pkt.dash_config_info[LOCAL_PTF_INTF]

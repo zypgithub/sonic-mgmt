@@ -9,7 +9,7 @@ from tests.common.helpers.assertions import pytest_assert
 from tests.common.utilities import wait_until
 from tests.common import config_reload
 from tests.conftest import get_testbed_metadata
-from tests.vxlan.vxlan_ecmp_utils import Ecmp_Utils as VxLAN_Ecmp_Utils
+from tests.common.vxlan_ecmp_utils import Ecmp_Utils as VxLAN_Ecmp_Utils
 from tests.common.dualtor.mux_simulator_control import toggle_all_simulator_ports  # noqa:F401
 from tests.common.dualtor.constants import UPPER_TOR
 
@@ -436,7 +436,7 @@ def get_asic_type(request):
     else:
         # Always get the asic type from the first dut
         dut_info = metadata[list(metadata.keys())[0]]
-        asic_type = dut_info['asic_type']
+        asic_type = dut_info.get('asic_type', "")
     return asic_type
 
 

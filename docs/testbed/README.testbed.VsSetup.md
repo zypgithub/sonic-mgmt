@@ -38,11 +38,31 @@ sudo -H ./setup-management-network.sh
 ## Download an VM image
 We currently support EOS-based or SONiC VMs to simulate neighboring devices in the virtual testbed, much like we do for physical testbeds. To do so, we need to download the image to our testbed host.
 
+**Prepare folder for image files on testbed host**
+
+The location for storing image files on the testbed host is specified by the `root_path` variable in the `ansible/group_vars/vm_host/main.yml` file. Please update this variable to reflect the location you have planned for the testbed host. You can use
+either an absolute path or a relative path. If you choose a relative path, it will be relative to the home directory of the user accessing the testbed host.
+
+For example, if `root_path` is set to `veos-vm`, the image location would be `/home/$USER/veos-vm/images/`. If `root_path` is set to `/data/veos-vm`, the image location would be `/data/veos-vm/images`.
+
+As you may have noticed, image files are usually stored under subfolder `images` of location determined by `root_path`.
+
+Example 1:
+``` yaml
+root_path: veos-vm
+```
+
+Example 2:
+```yaml
+root_path: /data/veos-vm
+```
+
 ### Option 1: vEOS (KVM-based) image
 1. Download the [vEOS image from Arista](https://www.arista.com/en/support/software-download)
-2. Copy below image files to `~/veos-vm/images` on your testbed host:
+2. Copy below image files to location determined by `root_path` on your testbed host:
    - `Aboot-veos-serial-8.0.0.iso`
    - `vEOS-lab-4.20.15M.vmdk`
+
 ### Option 2: cEOS (container-based) image (experimental)
 #### Option 2.1: Download and import cEOS image manually
 1. Download the [cEOS image from Arista](https://www.arista.com/en/support/software-download)
@@ -70,18 +90,31 @@ The actual image version that is needed in the installation process is defined i
 If you want to skip downloading the image when the cEOS image is not imported locally, set `skip_ceos_image_downloading` to `true` in `sonic-mgmt/ansible/group_vars/all/ceos.yml`. Then, when the cEOS image is not locally available, the scripts will not try to download it and will fail with an error message. Please use option 1 to download and import the cEOS image manually.
 
 ### Option 3: Use SONiC image as neighboring devices
-You need to prepare a sound SONiC image `sonic-vs.img` in `~/veos-vm/images/`. We don't support to download sound sonic image right now, but for testing, you can also follow the section [Download the sonic-vs image](##download-the-sonic-vs-image) to download an available image and put it into the directory `~/veos-vm/images`
+You need to create a valid SONiC image named `sonic-vs.img` in the `~/veos-vm/images/` directory. Currently, we don’t support downloading a pre-built SONiC image. However, for testing purposes, you can refer to the section Download the sonic-vs image to obtain an available image and place it in the `~/veos-vm/images/` directory.
 
 ## Download the sonic-vs image
-To run the tests with a virtual SONiC device, we need a virtual SONiC image. The simplest way to do so is to download the latest succesful build.
 
-1. Download the sonic-vs image from [here](https://sonic-build.azurewebsites.net/api/sonic/artifacts?branchName=master&platform=vs&target=target/sonic-vs.img.gz)
+### 1. To run the tests with a virtual SONiC device, we need a virtual SONiC image.
+
+#### Option 1: Download sonic-vs image
+
+The simplest way to do so is to download the latest succesful build. Download the sonic-vs image from [here](https://sonic-build.azurewebsites.net/api/sonic/artifacts?branchName=master&platform=vs&target=target/sonic-vs.img.gz)
 
 ```
 wget "https://sonic-build.azurewebsites.net/api/sonic/artifacts?branchName=master&platform=vs&target=target/sonic-vs.img.gz" -O sonic-vs.img.gz
 ```
 
-2. Unzip the image and copy it into `~/sonic-vm/images/` and also `~/veos-vm/images`
+#### Option 2: Build sonic-vpp image
+
+Follow the instructions from [sonic-platform-vpp](https://github.com/sonic-net/sonic-platform-vpp?tab=readme-ov-file#building-a-kvm-vm-image) and build a **kvm** vm image.
+
+__Note: make sure you rename the vpp image to `sonic-vs.img`.__
+
+```
+mv sonic-vpp.img.gz sonic-vs.img.gz
+```
+
+### 2. Unzip the image and copy it into `~/sonic-vm/images/` and also `~/veos-vm/images`
 
 ```
 gzip -d sonic-vs.img.gz
@@ -96,12 +129,25 @@ All testbed configuration steps and tests are run from a `sonic-mgmt` docker con
 
 1. Run the `setup-container.sh` in the root directory of the sonic-mgmt repository:
 
-```
+```bash
 cd sonic-mgmt
 ./setup-container.sh -n <container name> -d /data
 ```
 
-2. From now on, **all steps are running inside the sonic-mgmt docker**, unless otherwise specified.
+
+2. (Required for IPv6 test cases): Follow the steps [IPv6 for docker default bridge](https://docs.docker.com/config/daemon/ipv6/#use-ipv6-for-the-default-bridge-network) to enable IPv6 for container. For example, edit the Docker daemon configuration file located at `/etc/docker/daemon.json` with the following parameters to use ULA address if no special requirement. Then restart docker daemon by running `sudo systemctl restart docker` to take effect.
+
+```json
+{
+    "ipv6": true,
+    "fixed-cidr-v6": "fd00:1::1/64",
+    "experimental": true,
+    "ip6tables": true
+}
+```
+
+
+3. From now on, **all steps are running inside the sonic-mgmt docker**, unless otherwise specified.
 
 
 You can enter your sonic-mgmt container with the following command:
@@ -125,8 +171,8 @@ In order to configure the testbed on your host automatically, Ansible needs to b
 ```
      STR-ACS-VSERV-01:
        ansible_host: 172.17.0.1
-       ansible_user: use_own_value
-       vm_host_user: foo
+       ansible_user: foo
+       vm_host_user: use_own_value
 ```
 
 2. Modify `/data/sonic-mgmt/ansible/ansible.cfg` to uncomment the two lines:
@@ -136,7 +182,7 @@ become_user='root'
 become_ask_pass=False
 ```
 
-3. Modify `/data/sonic-mgmt/ansible/group_vars/vm_host/creds.yml` to use the username (e.g. `foo`) and password (e.g. `foo123`) you want to use to login to the host machine (this can be your username and sudo password on the host)
+3. Modify `/data/sonic-mgmt/ansible/group_vars/vm_host/creds.yml` to use the username (e.g. `foo`) and password (e.g. `foo123`) you want to use to login to the host machine (this can be your username and sudo password on the host). For more information about credentials variables, see: [credentials management configuration](https://github.com/sonic-net/sonic-mgmt/blob/master/docs/testbed/README.new.testbed.Configuration.md#credentials-management).
 
 ```
 vm_host_user: foo
@@ -175,18 +221,18 @@ index 029ab9a6..e00d3852 100644
 +vm_host_become_password: foo123
 
 diff --git a/ansible/veos_vtb b/ansible/veos_vtb
-index 3e7b3c4e..edabfc40 100644
+index 99727bcf3..2a9c36006 100644
 --- a/ansible/veos_vtb
 +++ b/ansible/veos_vtb
-@@ -258,7 +258,7 @@ vm_host_1:
+@@ -274,7 +274,7 @@ vm_host_1:
+   hosts:
      STR-ACS-VSERV-01:
        ansible_host: 172.17.0.1
-       ansible_user: use_own_value
--      vm_host_user: use_own_value
-+      vm_host_user: foo
+-      ansible_user: use_own_value
++      ansible_user: foo
+       vm_host_user: use_own_value
 
  vms_1:
-   hosts:
 ```
 
 2.  Create a dummy `password.txt` file under `/data/sonic-mgmt/ansible`
@@ -202,7 +248,9 @@ foo ALL=(ALL) NOPASSWD:ALL
 
 4. Verify that you can login into the **host** (e.g. `ssh foo@172.17.0.1`, if the default docker bridge IP is `172.18.0.1/16`, follow https://docs.docker.com/network/bridge/#configure-the-default-bridge-network to change it to `172.17.0.1/16`, delete the current `sonic-mgmt` docker using command `docker rm -f <sonic-mgmt_container_name>`, then start over from step 1 of section **Setup sonic-mgmt docker** ) from the `sonic-mgmt` **container** without any password prompt.
 
-5. Verify that you can use `sudo` without a password prompt inside the **host** (e.g. `sudo bash`).
+5. (Required for IPv6 test cases) Verify that you can login into the **host** via IPv6 (e.g. `ssh foo@fd00:1::1` if the default docker bridge is `fd00:1::1/64`) from the `sonic-mgmt` **container** without any password prompt.
+
+6. Verify that you can use `sudo` without a password prompt inside the **host** (e.g. `sudo bash`).
 
 ## Setup VMs on the server
 **(Skip this step if you are using cEOS - the containers will be automatically setup in a later step.)**
@@ -211,7 +259,7 @@ Now we need to spin up some VMs on the host to act as neighboring devices to our
 
 1. Start the VMs:
 ```
-./testbed-cli.sh -m veos_vtb -n 4 start-vms server_1 password.txt
+./testbed-cli.sh -m veos_vtb -n 4 -k veos start-vms server_1 password.txt
 ```
 If you use SONiC image as the neighbor devices (***Not DUT***), you need to add extra parameters `-k vsonic` so that this command is `./testbed-cli.sh -m veos_vtb -n 4 -k vsonic start-vms server_1 password.txt`. Of course, if you want to stop VMs, you also need to append these parameters after original command.
 
@@ -307,6 +355,8 @@ cd /data/sonic-mgmt/ansible
 
 ## Deploy minigraph on the DUT
 Once the topology has been created, we need to give the DUT an initial configuration.
+
+(Optional) The connectivity to the public internet is necessary during the setup, if the lab env of your organization requires http/https proxy server to reach out to the internet, you need to configure to use the proxy server. It will automatically be leveraged on required steps (e.g. Docker daemon config for image pulling, APT configuration for installing packages). You can configure it in [`ansible/group_vars/all/env.yml`](https://github.com/sonic-net/sonic-mgmt/blob/master/ansible/group_vars/all/env.yml)
 
 1. Deploy the `minigraph.xml` to the DUT and save the configuration:
 

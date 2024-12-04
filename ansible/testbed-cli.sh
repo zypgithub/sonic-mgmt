@@ -9,7 +9,7 @@ function usage
   echo "    $0 [options] (start-vms | stop-vms) <server-name> <vault-password-file>"
   echo "    $0 [options] (start-topo-vms | stop-topo-vms) <testbed-name> <vault-password-file>"
   echo "    $0 [options] (deploy-topo-with-cache) <testbed-name> <inventory> <vault-password-file>"
-  echo "    $0 [options] (add-topo | remove-topo | renumber-topo | connect-topo) <testbed-name> <vault-password-file>"
+  echo "    $0 [options] (add-topo | remove-topo | redeploy-topo | renumber-topo | connect-topo) <testbed-name> <vault-password-file>"
   echo "    $0 [options] refresh-dut <testbed-name> <vault-password-file>"
   echo "    $0 [options] (connect-vms | disconnect-vms) <testbed-name> <vault-password-file>"
   echo "    $0 [options] config-vm <testbed-name> <vm-name> <vault-password-file>"
@@ -18,11 +18,14 @@ function usage
   echo "    $0 [options] (config-y-cable) <testbed-name> <inventory> <vault-password-file>"
   echo "    $0 [options] (create-master | destroy-master) <k8s-server-name> <vault-password-file>"
   echo "    $0 [options] restart-ptf <testbed-name> <vault-password-file>"
+  echo "    $0 [options] set-l2 <testbed-name> <vault-password-file>"
+  echo "    $0 [options] install-image <testbed-name> <inventory> <image-url>"
+  echo "    $0 [options] collect-show-tech <testbed-name> <inventory> <vault-password-file>"
   echo
   echo "Options:"
-  echo "    -t <tbfile>     : testbed CSV file name (default: 'testbed.csv')"
+  echo "    -t <tbfile>     : testbed CSV file name (default: 'testbed.yaml')"
   echo "    -m <vmfile>     : virtual machine file name (default: 'veos')"
-  echo "    -k <vmtype>     : vm type (veos|ceos|vsonic) (default: 'veos')"
+  echo "    -k <vmtype>     : vm type (veos|ceos|vsonic|vcisco) (default: 'ceos')"
   echo "    -n <vm_num>     : vm num (default: 0)"
   echo "    -s <msetnumber> : master set identifier on specified <k8s-server-name> (default: 1)"
   echo "    -d <dir>        : sonic vm directory (default: $HOME/sonic-vm)"
@@ -33,6 +36,7 @@ function usage
   echo "    <testbed-name>        : Name of the target testbed"
   echo "    <inventory>           : Name of the Ansible inventory containing the DUT"
   echo "    <k8s-server-name>     : Server identifier in form k8s_server_{id}, corresponds to k8s_ubuntu inventory group name"
+  echo "    <image-url>           : Location of the image to be installed"
   echo
   echo "To start all VMs on a server: $0 start-vms 'server-name' ~/.password"
   echo "To restart a subset of VMs:"
@@ -66,12 +70,15 @@ function usage
   echo "        -e enable_data_plane_acl=true"
   echo "        -e enable_data_plane_acl=false"
   echo "        by default, data acl is enabled"
-  echo "To deploy topology with the help of the last cached deployed topology for the specified testbed on a server:"
-  echo "        $0 deploy-topo-with-cache 'testbed-name' 'inventory' ~/.password"
   echo "To config simulated y-cable driver for DUT in specified testbed: $0 config-y-cable 'testbed-name' 'inventory' ~/.password"
   echo "To create Kubernetes master on a server: $0 -m k8s_ubuntu create-master 'k8s-server-name'  ~/.password"
   echo "To destroy Kubernetes master on a server: $0 -m k8s_ubuntu destroy-master 'k8s-server-name' ~/.password"
   echo "To restart ptf of specified testbed: $0 restart-ptf 'testbed-name' ~/.password"
+  echo "To set DUT of specified testbed to l2 switch mode: $0 set-l2 'testbed-name' ~/.password"
+  echo "To install an image on all DUTs in a testbed: $0 install-image 'testbed-name' 'inventory' 'image-url'"
+  echo "To collect show techsupport result of a testbed: $0 collect-show-tech 'testbed-name' 'inventory' ~/.password"
+  echo "    collect-show-tech supports specify output path for dumped files"
+  echo "        -e output_path=<user-specified-path>"
   echo
   echo "You should define your testbed in testbed CSV file"
   echo
@@ -111,7 +118,7 @@ function read_csv
   vm_base=${line_arr[8]}
   dut=${line_arr[9]//;/,}
   duts=${dut//[\[\] ]/}
-  #inventory=${line_arr[10]}
+  inv_name=${line_arr[10]}
 }
 
 function read_yaml
@@ -130,12 +137,12 @@ function read_yaml
     echo "Find more than one testbed name in $tbfile"
     exit
   else
-    echo found topology $1
+    echo found testbed $1
   fi
 
   tb_line=${tb_lines[0]}
   line_arr=($1)
-  for attr in group-name topo ptf_image_name ptf ptf_ip ptf_ipv6 ptf_extra_mgmt_ip netns_mgmt_ip server vm_base dut comment;
+  for attr in group-name topo ptf_image_name ptf ptf_ip ptf_ipv6 ptf_extra_mgmt_ip netns_mgmt_ip server vm_base dut inv_name auto_recover comment;
   do
     value=$(python -c "from __future__ import print_function; tb=eval(\"$tb_line\"); print(tb.get('$attr', None))")
     [ "$value" == "None" ] && value=
@@ -157,7 +164,9 @@ function read_yaml
   vm_base=${line_arr[10]}
   dut=${line_arr[11]}
   duts=$(python -c "from __future__ import print_function; print(','.join(eval(\"$dut\")))")
-  #inventory=${line_arr[12]}
+  # Remove the dpu duts by the keyword 'dpu' in the dut name
+  duts=$(echo $duts | sed "s/,[^,]*dpu[^,]*//g")
+  inv_name=${line_arr[12]}
 }
 
 function read_file
@@ -176,7 +185,7 @@ function read_file
 function start_vms
 {
   if [[ $vm_type == ceos ]]; then
-    echo "VM type is ceos. No need to run start-vms. Please specify VM type using the -k option. Example: -k veos"
+    echo "VM type is ceos. No need to run start-vms. Please specify VM type using the -k option. Example: -k ceos"
     exit
   fi
   server=$1
@@ -192,7 +201,7 @@ function start_vms
 function stop_vms
 {
   if [[ $vm_type == ceos ]]; then
-    echo "VM type is ceos. No need to run stop-vms. Please specify VM type using the -k option. Example: -k veos"
+    echo "VM type is ceos. No need to run stop-vms. Please specify VM type using the -k option. Example: -k ceos"
     exit
   fi
   server=$1
@@ -207,7 +216,7 @@ function stop_vms
 function start_topo_vms
 {
   if [[ $vm_type == ceos ]]; then
-    echo "VM type is ceos. No need to run start-topo-vms. Please specify VM type using the -k option. Example: -k veos"
+    echo "VM type is ceos. No need to run start-topo-vms. Please specify VM type using the -k option. Example: -k ceos"
     exit
   fi
   testbed_name=$1
@@ -225,7 +234,7 @@ function start_topo_vms
 function stop_topo_vms
 {
   if [[ $vm_type == ceos ]]; then
-    echo "VM type is ceos. No need to run stop-topo-vms. Please specify VM type using the -k option. Example: -k veos"
+    echo "VM type is ceos. No need to run stop-topo-vms. Please specify VM type using the -k option. Example: -k ceos"
     exit
   fi
   testbed_name=$1
@@ -256,7 +265,11 @@ function add_topo
       ansible_options="-e sonic_vm_storage_location=$sonic_vm_dir"
   fi
 
-  ANSIBLE_SCP_IF_SSH=y ansible-playbook -i $vmfile testbed_add_vm_topology.yml --vault-password-file="${passwd}" -l "$server" \
+  if [[ $vm_type == vcisco ]]; then
+      ansible_options+=" -e eos_batch_size=1"
+  fi
+
+  ANSIBLE_SCP_IF_SSH=y ansible-playbook -i $vmfile -i ${inv_name} testbed_add_vm_topology.yml --vault-password-file="${passwd}" -l "$server" \
         -e testbed_name="$testbed_name" -e duts_name="$duts" -e VM_base="$vm_base" \
         -e ptf_ip="$ptf_ip" -e topo="$topo" -e vm_set_name="$vm_set_name" \
         -e ptf_imagename="$ptf_imagename" -e vm_type="$vm_type" -e ptf_ipv6="$ptf_ipv6" \
@@ -276,8 +289,8 @@ function add_topo
         echo "$topo" > $cache_files_path_value/${testbed_name%"-$topo"}
         chmod 666 $cache_files_path_value/${testbed_name%"-$topo"}
     else
-        echo "$topo", "$vm_type", "$hwsku" > $cache_files_path_value/$dut
-        chmod 666 $cache_files_path_value/$dut
+        echo "$topo", "$vm_type", "$hwsku" > $cache_files_path_value/$duts
+        chmod 666 $cache_files_path_value/$duts
     fi
   fi
 
@@ -307,7 +320,7 @@ function remove_topo
       ansible_options="-e sonic_vm_storage_location=$sonic_vm_dir"
   fi
 
-  ANSIBLE_SCP_IF_SSH=y ansible-playbook -i $vmfile testbed_remove_vm_topology.yml --vault-password-file="${passwd}" -l "$server" \
+  ANSIBLE_SCP_IF_SSH=y ansible-playbook -i $vmfile -i ${inv_name} testbed_remove_vm_topology.yml --vault-password-file="${passwd}" -l "$server" \
       -e testbed_name="$testbed_name" -e duts_name="$duts" -e VM_base="$vm_base" \
       -e ptf_ip="$ptf_ip" -e topo="$topo" -e vm_set_name="$vm_set_name" \
       -e ptf_imagename="$ptf_imagename" -e vm_type="$vm_type" -e ptf_ipv6="$ptf_ipv6" \
@@ -316,6 +329,14 @@ function remove_topo
       $ansible_options $@
 
   echo Done
+}
+
+function redeploy_topo()
+{
+    remove_topo $@ || true
+    echo "Sleep 60 seconds ..."
+    sleep 60
+    add_topo $@
 }
 
 function connect_topo
@@ -334,8 +355,8 @@ function connect_topo
                      -e duts_name="$duts" \
                      -e VM_base="$vm_base" -e ptf_ip="$ptf_ip" \
                      -e topo="$topo" -e vm_set_name="$vm_set_name" \
-                     -e ptf_imagename="$ptf_imagename" -e vm_type="$vm_type" \
-                     -e ptf_ipv6="$ptf_ipv6" -e ptf_extra_mgmt_ip="$ptf_extra_mgmt_ip" $@
+                     -e ptf_imagename="$ptf_imagename" -e vm_type="$vm_type" -e ptf_ipv6="$ptf_ipv6" \
+                     -e ptf_extra_mgmt_ip="$ptf_extra_mgmt_ip" $@
 
   ansible-playbook fanout_connect.yml -i $vmfile --limit "$server" --vault-password-file="${passwd}" -e "dut=$duts" $@
 
@@ -393,6 +414,10 @@ function refresh_dut
 
   if [ -n "$sonic_vm_dir" ]; then
       ansible_options="-e sonic_vm_storage_location=$sonic_vm_dir"
+  fi
+
+  if [[ $vm_type == vcisco ]]; then
+      ansible_options+=" -e eos_batch_size=1"
   fi
 
   ANSIBLE_SCP_IF_SSH=y ansible-playbook -i $vmfile testbed_add_vm_topology.yml --vault-password-file="${passwd}" -l "$server" \
@@ -516,6 +541,25 @@ function config_y_cable
   echo Done
 }
 
+function set_l2_mode
+{
+  testbed_name=$1
+  passfile=$2
+  shift
+  shift
+
+  read_file ${testbed_name}
+
+  echo "Set DUTs of testbed $testbed_name to l2 mode"
+  echo "Reference: https://github.com/sonic-net/SONiC/wiki/L2-Switch-mode"
+  if [[ $topo != t0* ]]; then
+    echo "Only topology type t0 is supported"
+    exit 1
+  fi
+
+  ansible-playbook -i "$inv_name" testbed_set_l2_mode.yml --vault-password-file="$passfile" -l "$duts" $@
+}
+
 function config_vm
 {
   echo "Configure VM $2"
@@ -525,54 +569,6 @@ function config_vm
   ansible-playbook -i $vmfile eos.yml --vault-password-file="$3" -l "$2" -e topo="$topo" -e VM_base="$vm_base"
 
   echo Done
-}
-
-function reset_topo
-{
-    dut=$1
-    topo=$2
-    passwd=$3
-    shift
-    shift
-    shift
-
-    echo "Resetting topology to '${topo}'"
-
-    if [ -f /tmp/topo-${dut} ]; then
-        if [ "$(cat /tmp/topo-${dut})" == "${topo}" ]; then
-            echo "Topo ${topo} already applied"
-            exit 0
-        fi
-
-        if [ "$(cat /tmp/topo-${dut})" != "" ]; then
-            remove_topo $(cat /tmp/topo-${dut}) ${passwd}
-        fi
-    else
-        echo "No saved topology found for ${dut}"
-    fi
-
-    add_topo ${topo} ${passwd}
-}
-
-function deploy
-{
-    dut=$1
-    topo=$2
-    image_url=$3
-    shift
-    shift
-    shift
-
-    ANSIBLE_SCP_IF_SSH=y ansible-playbook -i inventory --limit ${dut}-${topo} update_sonic.yml --tags update -b -e "image_url=${image_url}" -e "dut_minigraph=${dut}.${topo}.xml" -e topo="${topo}" -vvvvv
-}
-
-function connect_topo
-{
-  echo "Connect to Fanout"
-
-  read_file $1
-
-  ansible-playbook fanout_connect.yml -i $vmfile --limit "$server" --vault-password-file="$2" -e "dut=$duts"
 }
 
 function start_k8s_vms
@@ -624,6 +620,39 @@ function cleanup_vmhost
       --vault-password-file="${passwd}" -l "${server}" $@
 }
 
+function install_image
+{
+  testbed_name=$1
+  inventory=$2
+  image_url=$3
+  shift
+  shift
+  shift
+
+  echo "Upgrading image on '$testbed_name'"
+
+  ansible-playbook upgrade_sonic.yml -i "$inventory" -e testbed_name="$testbed_name" -e testbed_file=$tbfile -e upgrade_type=sonic -e image_url="$image_url"
+
+  echo Done
+}
+
+function collect_show_tech
+{
+  testbed_name=$1
+  inventory=$2
+  passfile=$3
+  shift
+  shift
+  shift
+
+  echo "Collect show techsupport result on testbed '$testbed_name'"
+
+  ansible-playbook -i "$inventory" collect_show_tech.yml --vault-password-file="$passfile" -e testbed_name="$testbed_name" -e testbed_file=$tbfile $@
+
+  echo Done
+
+}
+
 function read_topologies_from_csv_file
 {
   topologies_by_setup_name=$(cat $tbfile | grep $setup_name | awk 'BEGIN { FS = "," } ; {print $1}')
@@ -664,7 +693,8 @@ function is_cache_exist
 function deploy_topo_with_cache
 {
   testbed_name=$1
-  passwd=$2
+  inventory=$2
+  passwd=$3
 
   cache_files_path_value=$(is_cache_exist)
   if [[ -z $cache_files_path_value ]]; then
@@ -672,7 +702,7 @@ function deploy_topo_with_cache
   fi
 
   read_file ${testbed_name}
-  setup_name=$dut
+  setup_name=$duts
   if [[ "$setup_name" == "" ]]; then
       echo "No such testbed: $testbed_name, exiting..."
       exit
@@ -708,20 +738,21 @@ function deploy_topo_with_cache
   if [ "$remove_all_topologies" = true ]; then
       for topo in $setup_topologies
       do
-          remove_topo -k ceos $topo $passwd
+          remove_topo $topo $passwd
       done
   else
-      remove_topo -k ceos $cache_topo $passwd
+      remove_topo $cache_topo $passwd
   fi
 
   add_topo $testbed_name $passwd
+  deploy_minigraph $testbed_name $inventory $passwd
 
   echo "Done!"
 }
 
 vmfile=veos
-tbfile=testbed.csv
-vm_type=veos
+tbfile=testbed.yaml
+vm_type=ceos
 vm_num=0
 msetnumber=1
 sonic_vm_dir=""
@@ -772,15 +803,17 @@ case "${subcmd}" in
                ;;
   stop-topo-vms) stop_topo_vms $@
                ;;
-  deploy-topo-with-cache) deploy_topo_with_cache $@
-               ;;
   add-topo)    add_topo $@
                ;;
   remove-topo) remove_topo $@
                ;;
+  redeploy-topo) redeploy_topo $@
+               ;;
   renumber-topo) renumber_topo $@
                ;;
   connect-topo) connect_topo $@
+               ;;
+  deploy-topo-with-cache) deploy_topo_with_cache $@
                ;;
   refresh-dut) refresh_dut $@
                ;;
@@ -800,6 +833,8 @@ case "${subcmd}" in
                ;;
   config-y-cable) config_y_cable $@
                ;;
+  set-l2) set_l2_mode $@
+               ;;
   cleanup-vmhost) cleanup_vmhost $@
                ;;
   create-master) start_k8s_vms $@
@@ -809,7 +844,10 @@ case "${subcmd}" in
                ;;
   restart-ptf) restart_ptf $@
                ;;
+  install-image) install_image $@
+               ;;
+  collect-show-tech) collect_show_tech $@
+               ;;
   *)           usage
                ;;
 esac
-
