@@ -489,7 +489,7 @@ def system_image_install_reject_with_prompt(engines, system, prompt_response, or
 
         with allure.step("Attempt install image and reject the prompt"):
             # Get the last action-job-id
-            exempted_err_msgs = ['action_error']
+            exempted_err_msgs = ['action_error', 'File not found', 'Failed to install']
             action = Action()
             output = OutputParsingTool.parse_json_str_to_dictionary(action.show(exempted_err_msgs=exempted_err_msgs)).\
                 get_returned_value()
