@@ -857,14 +857,6 @@ dash/test_dash_crm.py::TestDashCRM::test_dash_crm_cleanup:
     conditions:
       - "https://redmine.mellanox.com/issues/4125251"
 
-platform_tests/test_advanced_reboot.py::test_warm_reboot:
-  xfail:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/3836756 and '2700' in platform or due to RM 3976522"
-    conditions_logical_operator: or
-    conditions:
-      - "https://redmine.mellanox.com/issues/3836756 and '2700' in platform"
-      - "https://redmine.mellanox.com/issues/3976522"
-
 dash/test_dash_vnet.py::test_outbound_vnet_direct:
   skip:
     reason: "Testcase ignored due to platform nvda_bf and RM issue: https://redmine.mellanox.com/issues/3634592"
@@ -1357,6 +1349,36 @@ arp/test_stress_arp.py:
     conditions:
       - "https://redmine.mellanox.com/issues/4172801"
       - "'4600c' in platform"
+
+arp/test_wr_arp.py:
+  skip:
+    reason: "The WR not supported on SN5600-C224O8, SN5600-C256S1 hwsku"
+    conditions:
+      - "hwsku in ['Mellanox-SN5600-C256S1', 'Mellanox-SN5600-C224O8']"
+
+platform_tests/test_advanced_reboot.py::test_warm_reboot:
+  skip:
+    reason: "The WR not supported on SN5600-C224O8, SN5600-C256S1 hwsku"
+    conditions:
+    - "hwsku in ['Mellanox-SN5600-C256S1', 'Mellanox-SN5600-C224O8']"
+
+platform_tests/test_advanced_reboot.py::test_fast_reboot:
+  skip:
+    reason: "The FR not supported on SN5600-C224O8, SN5600-C256S1 hwsku"
+    conditions:
+    - "hwsku in ['Mellanox-SN5600-C256S1', 'Mellanox-SN5600-C224O8']"
+
+platform_tests/test_service_warm_restart.py:
+  skip:
+    reason: "The FR not supported on SN5600-C224O8, SN5600-C256S1 hwsku"
+    conditions:
+    - "hwsku in ['Mellanox-SN5600-C256S1', 'Mellanox-SN5600-C224O8']"
+
+pfcwd/test_pfcwd_warm_reboot.py:
+  skip:
+    reason: "The WR not supported on SN5600-C224O8, SN5600-C256S1 hwsku"
+    conditions:
+    - "hwsku in ['Mellanox-SN5600-C256S1', 'Mellanox-SN5600-C224O8']"
 
 show_techsupport/test_auto_techsupport.py:
   skip:
