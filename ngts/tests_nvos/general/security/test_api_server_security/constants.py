@@ -23,4 +23,5 @@ class ApiConsts:
 
 
 TEST_CERTS = [TestCert.cert_valid_1, TestCert.cert_valid_2, TestCert.cert_valid_3]
+TEST_CERTS = [cert.copy(f'api-test-{cert.name}') for cert in TEST_CERTS]
 TEST_CACERT_NAMES = [cert.cacert_name for cert in TEST_CERTS]
