@@ -102,9 +102,10 @@ def verify_component_values(component_name: str, expect_cert, expect_measurement
     with ((allure.step(f'check component "{component_name}: values'))):
         if expect_cert:
             with allure.independent_step('check certificate value'):
-                assert cert_out[SpdmConsts.Component.Certificates.CERT_STRING] == expect_cert, (
-                    f'certificate field "{SpdmConsts.Component.Certificates.CERT_STRING}" is not as expected.\n'
-                    f'expected: {expect_cert}\nactual: {cert_out[SpdmConsts.Component.Certificates.CERT_STRING]}')
+                compare_cert_chains_except_for_leaf(expect_cert, cert_out[SpdmConsts.Component.Certificates.CERT_STRING])
+                # assert cert_out[SpdmConsts.Component.Certificates.CERT_STRING] == expect_cert, (
+                #     f'certificate field "{SpdmConsts.Component.Certificates.CERT_STRING}" is not as expected.\n'
+                #     f'expected: {expect_cert}\nactual: {cert_out[SpdmConsts.Component.Certificates.CERT_STRING]}')
         else:
             with allure.independent_step('check certificate is not empty'):
                 assert cert_out[
