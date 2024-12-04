@@ -5,6 +5,7 @@ from tests.common.helpers.snmp_helpers import get_snmp_facts
 from tests.platform_tests.counterpoll.counterpoll_helper import ConterpollHelper
 from tests.platform_tests.counterpoll.counterpoll_constants import CounterpollConstants
 from tests.ip.ip_util import parse_rif_counters
+from tests.common.utilities import wait_until
 
 pytestmark = [
     pytest.mark.topology('any'),
@@ -238,6 +239,40 @@ def verify_snmp_speed(facts, snmp_facts, results):
     return results
 
 
+def verify_snmp_counter(duthost, localhost, creds_all_duts, hostip, mg_facts, rif_interface, rif_counters,
+                        port_counters):
+    """
+    Verify correct correctness of snmp counter
+    """
+    snmp_facts = get_snmp_facts(
+        duthost, localhost, host=hostip, version="v2c",
+        community=creds_all_duts[duthost.hostname]["snmp_rocommunity"], wait=True)['ansible_facts']
+
+    minigraph_port_name_to_alias_map = mg_facts['minigraph_port_name_to_alias_map']
+    snmp_port_map = {snmp_facts['snmp_interfaces'][idx]['name']: idx for idx in snmp_facts['snmp_interfaces']}
+    interface = rif_interface if 'PortChannel' in rif_interface else minigraph_port_name_to_alias_map[rif_interface]
+    rif_snmp_facts = snmp_facts['snmp_interfaces'][snmp_port_map[interface]]
+
+    if (int(rif_snmp_facts['ifInDiscards']) != int(rif_counters[rif_interface]['rx_err']) +
+            int(port_counters['rx_drp'])):
+        logger.info(f"ifInDiscards value is {rif_snmp_facts['ifInDiscards']} but must be "
+                    f"{int(rif_counters[rif_interface]['rx_err']) + int(port_counters['rx_drp'])}")
+        return False
+    if (int(rif_snmp_facts['ifOutDiscards']) != int(rif_counters[rif_interface]['tx_err']) +
+            int(port_counters['tx_drp'])):
+        logger.info(f"ifOutDiscards value is {rif_snmp_facts['ifOutDiscards']} but must be "
+                    f"{int(rif_counters[rif_interface]['tx_err']) + int(port_counters['tx_drp'])}")
+        return False
+    if int(rif_snmp_facts['ifInErrors']) != COUNTER_VALUE:
+        logger.info(f"ifInErrors value is {rif_snmp_facts['ifInErrors']} but must be {COUNTER_VALUE}")
+        return False
+    if int(rif_snmp_facts['ifOutErrors']) != COUNTER_VALUE:
+        logger.info(f"ifOutErrors value is {rif_snmp_facts['ifOutErrors']} but must be {COUNTER_VALUE}")
+        return False
+
+    return True
+
+
 @pytest.mark.bsl
 def test_snmp_interfaces(localhost, creds_all_duts, duthosts, enum_rand_one_per_hwsku_hostname, enum_asic_index):
     """compare the snmp facts between observed states and target state"""
@@ -370,23 +405,5 @@ def test_snmp_interfaces_error_discard(duthosts, enum_rand_one_per_hwsku_hostnam
     assert int(port_counters['rx_drp']) == COUNTER_VALUE, \
         f"rx_drp value is {port_counters['rx_drp']} not set to {COUNTER_VALUE}"
 
-    snmp_facts = get_snmp_facts(
-        duthost, localhost, host=hostip, version="v2c",
-        community=creds_all_duts[duthost.hostname]["snmp_rocommunity"], wait=True)['ansible_facts']
-
-    minigraph_port_name_to_alias_map = mg_facts['minigraph_port_name_to_alias_map']
-    snmp_port_map = {snmp_facts['snmp_interfaces'][idx]['name']: idx for idx in snmp_facts['snmp_interfaces']}
-    rif_snmp_facts = snmp_facts['snmp_interfaces'][snmp_port_map[minigraph_port_name_to_alias_map[rif_interface]]]
-
-    assert (int(rif_snmp_facts['ifInDiscards']) == int(rif_counters[rif_interface]['rx_err']) +
-                                                    int(port_counters['rx_drp'])), \
-        (f"ifInDiscards value is {rif_snmp_facts['ifInDiscards']} but must be "
-         f"{int(rif_counters[rif_interface]['rx_err']) + int(port_counters['rx_drp'])}")
-    assert (int(rif_snmp_facts['ifOutDiscards']) == int(rif_counters[rif_interface]['tx_err']) +
-                                                     int(port_counters['tx_drp'])), \
-        (f"ifOutDiscards value is {rif_snmp_facts['ifOutDiscards']} but must be "
-         f"{int(rif_counters[rif_interface]['tx_err']) + int(port_counters['tx_drp'])}")
-    assert int(rif_snmp_facts['ifInErrors']) == COUNTER_VALUE, \
-        f"ifInErrors value is {rif_snmp_facts['ifInErrors']} but must be {COUNTER_VALUE}"
-    assert int(rif_snmp_facts['ifOutErrors']) == COUNTER_VALUE, \
-        f"ifOutErrors value is {rif_snmp_facts['ifOutErrors']} but must be {COUNTER_VALUE}"
+    pytest_assert(wait_until(60, 10, 0, verify_snmp_counter, duthost, localhost, creds_all_duts, hostip, mg_facts,
+                             rif_interface, rif_counters, port_counters), "SNMP counter validate Failure")
