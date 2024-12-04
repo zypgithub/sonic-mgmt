@@ -65,8 +65,11 @@ class DutUtilsTool:
                 output = device.reload_device(engine, list_commands)
                 logger.info(output)
 
-                error_list = ['aborted', 'aborting', 'error: action failed', 'command not found']
                 output_lower = output.lower()
+                if ('action succeeded' in output_lower) and ('reboot skipped' in output_lower):
+                    return ResultObj(result=True, info=output)
+
+                error_list = ['aborted', 'aborting', 'error: action failed', 'command not found']
                 for error in error_list:
                     if error in output_lower:
                         return ResultObj(result=False, info=output)

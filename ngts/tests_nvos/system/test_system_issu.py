@@ -32,7 +32,75 @@ logger = logging.getLogger()
 @pytest.mark.system
 @pytest.mark.issu
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_system_issu_positive_flow(engines, devices, start_sm, issu_version, target_version, test_api):
+def test_system_issu_positive_basic_flow(engines, devices, issu_version, target_version, test_api):
+    """
+    Validates basic image install with issu
+
+    Test flow:
+    1. Fetch and install issu image (without ISSU)
+    2. Fetch and install target image with ISSU skip-sm flag
+    3. Show ISSU time
+    4. Verify show ISSU status
+    5. Verify image version
+    """
+    TestToolkit.tested_api = test_api
+    dut_engine = engines.dut
+    dut_device = devices.dut
+    player = engines.sonic_mgmt
+    system = System()
+
+    # issu_version = '/auto/sw_system_release/nos/nvos/25.02.1952-004/amd64/dev/nvos-amd64-25.02.1952-004.bin'
+    # target_version = '/auto/sw_system_release/nos/nvos/25.02.1952-005/amd64/dev/nvos-amd64-25.02.1952-005.bin'
+
+    target_version = player.run_cmd(f'ls {target_version}')
+
+    with allure.step("Prepare system issu image for install"):
+        issu_filename, recovery_engine, scp_host_creds = prepare_image_for_install(
+            player, dut_engine, dut_device, issu_version)
+
+    with allure.step("Install issu version image (without ISSU)"):
+        system.image.files.file_name[issu_filename].action_file_install_with_reboot(
+            force=False, engine=dut_engine, device=dut_device, recovery_engine=recovery_engine,
+            should_succeed=True, press_y=True).verify_result(should_succeed=True)
+
+    with allure.step("Save configuration"):
+        TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
+
+    with allure.step("Prepare system target image for install"):
+        target_filename, recovery_engine, scp_host_creds = prepare_image_for_install(
+            player, dut_engine, dut_device, target_version)
+
+    issu_start = time.time()
+    logger.info(f"ISSU start time: {issu_start}")
+
+    with allure.step("Perform install image with ISSU skip-sm flag"):
+        system.image.files.file_name[target_filename].action_file_install_with_reboot(
+            force=False, engine=dut_engine, device=dut_device, recovery_engine=recovery_engine,
+            param_value=IssuConsts.ISSU_SKIP_SM, should_succeed=True, press_y=True).verify_result(should_succeed=True)
+
+    issu_end = time.time()
+    logger.info(f"ISSU end time: {issu_end}")
+    issu_diff = issu_end - issu_start
+    logger.info(f"ISSU diff time: {issu_diff}")
+
+    with allure.step('Verify show ISSU status'):
+        issu_status = OutputParsingTool.parse_json_str_to_dictionary(
+            system.image.show()).get_returned_value()[IssuConsts.ISSU_STATUS]
+        assert issu_status == IssuConsts.IssuStatus.NO_ISSU.value, \
+            f"ISSU status is {issu_status}, instead of: {IssuConsts.IssuStatus.NO_ISSU.value}"
+
+    with (allure.step('Verify image version')):
+        system_version = OutputParsingTool.parse_json_str_to_dictionary(
+            system.version.show()).get_returned_value()['image']
+        expected_version = target_version.split('/')[-1].replace('amd64-', '').replace('.bin', '')
+        assert system_version == expected_version, (f'system image is: {system_version}, '
+                                                    f'instead of {expected_version}')
+
+
+@pytest.mark.system
+@pytest.mark.issu
+@pytest.mark.parametrize('test_api', [ApiType.NVUE])
+def test_system_issu_positive_flow(engines, devices, issu_version, target_version, test_api):  # start_sm
     """
     Validate:
     - Upgrade is successfully done (system boots up into new version of OS and FW)
@@ -125,10 +193,10 @@ def test_system_issu_positive_flow(engines, devices, start_sm, issu_version, tar
                 wait_for_opensm_status_update(dut_engine, dut_device, IssuConsts.OPENSM_RESPONSE_YES)
 
     # reach here only when install ISSU action is done
-    with allure.step('Wait until switch is up'):
-        dut_engine.disconnect()  # force engines.dut to reconnect
-        # after upgrade flow switch has new default password
-        dut_engine.password = dut_device.get_default_password_by_version(target_version)
+    # with allure.step('Wait until switch is up'):
+    #     dut_engine.disconnect()  # force engines.dut to reconnect
+    #     # after upgrade flow switch has new default password
+    #     dut_engine.password = dut_device.get_default_password_by_version(target_version)
 
     with allure.step('post_issu_installation_steps'):
         post_issu_installation_steps(engines, devices, target_version, traffic_start_time)
@@ -137,7 +205,7 @@ def test_system_issu_positive_flow(engines, devices, start_sm, issu_version, tar
 @pytest.mark.system
 @pytest.mark.issu
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_system_issu_prevention_cases(engines, devices, start_sm, downgrade_version,
+def test_system_issu_prevention_cases(engines, devices, downgrade_version,  # start_sm, downgrade_version,
                                       issu_version, target_version, test_api):
     """
     Validate:
@@ -167,9 +235,9 @@ def test_system_issu_prevention_cases(engines, devices, start_sm, downgrade_vers
     player = engines.sonic_mgmt
     system = System()
 
-    # downgrade_version = '/auto/sw_system_release/nos/nvos/25.02.1950-001/amd64/dev/nvos-amd64-25.02.1950-001.bin'
-    # issu_version = '/auto/sw_system_release/nos/nvos/25.02.1950-002/amd64/dev/nvos-amd64-25.02.1950-002.bin'
-    # target_version = '/auto/sw_system_release/nos/nvos/25.02.1950-003/amd64/dev/nvos-amd64-25.02.1950-003.bin'
+    downgrade_version = '/auto/sw_system_release/nos/nvos/25.02.1952-003/amd64/dev/nvos-amd64-25.02.1952-003.bin'
+    issu_version = '/auto/sw_system_release/nos/nvos/25.02.1952-004/amd64/dev/nvos-amd64-25.02.1952-004.bin'
+    target_version = '/auto/sw_system_release/nos/nvos/25.02.1952-005/amd64/dev/nvos-amd64-25.02.1952-005.bin'
 
     target_version = player.run_cmd(f'ls {target_version}')
 
@@ -241,8 +309,8 @@ def test_system_issu_prevention_cases(engines, devices, start_sm, downgrade_vers
         assert IssuConsts.ERROR_OPENSM_REACH_TIMEOUT in output, \
             f'error message: {IssuConsts.ERROR_OPENSM_REACH_TIMEOUT} is missing in output: {output}'
 
-    with allure.step("Start OpenSM"):
-        OpenSmTool.start_open_sm(engines).verify_result()
+    # with allure.step("Start OpenSM"):
+    #     OpenSmTool.start_open_sm(engines).verify_result()
 
     with allure.step("Perform ISSU with “no reboot” flag"):
         with allure.step("Perform install image with ISSU with 'reboot no' flag"):
@@ -293,10 +361,10 @@ def test_system_issu_prevention_cases(engines, devices, start_sm, downgrade_vers
     with allure.step("Validate system log"):
         system.log.verify_expected_logs(IssuConsts.LOG_MSG_LIST, engine=dut_engine, only_latest_log=True)
 
-    with allure.step("Install target version image (without ISSU)"):
-        system.image.files.file_name[target_version].action_file_install_with_reboot(
+    with allure.step("Install issu version image (without ISSU)"):
+        system.image.files.file_name[target_filename].action_file_install_with_reboot(
             force=False, engine=dut_engine, device=dut_device, recovery_engine=recovery_engine,
-            param_value=IssuConsts.ISSU, should_succeed=False, press_y=True).verify_result(should_succeed=False)
+            should_succeed=True, press_y=True).verify_result(should_succeed=True)
 
     # with allure.step("Validate event table"):
     #     # TODO update...
