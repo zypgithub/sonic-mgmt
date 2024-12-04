@@ -19,7 +19,7 @@ from ngts.scripts.allure_reporter import predict_allure_report_link
 
 logger = logging.getLogger()
 PYTEST_RUN_CMD = 'pytest_run_cmd'
-
+PI_LINK = "https://app.powerbi.com/groups/9b79a1d8-7408-4848-90c5-9dd5dab8493d/reports/89874ebf-554e-45be-b941-f4966fdda0ae/ReportSectionbb345ebc8fb547a45dfd?experience=power-bi"
 
 def handle_log_analyzer_errors(cli_type, branch, test_name, duthost, log_analyzer_bug_metadata, testbed,
                                bug_handler_action, log_errors_dir_path=None, is_serial_log=False):
@@ -185,7 +185,8 @@ def log_analyzer_bug_handler(duthost, request, log_errors_dir_path=None, only_ch
                         'system_type': system_type,
                         'detected_in_version': log_analyzer_handler_info['version'],
                         'setup_name': setup_name,
-                        'report_url': allure_report_url}
+                        'report_url': allure_report_url,
+                        'powerbi_url': PI_LINK}
 
     if "components" in log_analyzer_handler_info:
         bug_handler_dict["components"] = log_analyzer_handler_info["components"]
@@ -246,6 +247,8 @@ def get_pytest_cmd(request, cli_type):
         cmd = request.session.config.cache.get(PYTEST_RUN_CMD, None)
         if "--bug_handler_params" not in cmd:
             cmd += " --bug_handler_params only_check"
+        if "test_check_errors_in_log_during_deploy_sonic_image" in request.node.name:
+            cmd = "****************Please run the deployment script before the pytest command****************\n" + cmd
         return cmd
     else:
        return " ".join(request.node.config.invocation_params.args)
