@@ -845,6 +845,12 @@ platform_tests/test_cpu_memory_usage.py::test_cpu_memory_usage:
     conditions:
       - "https://redmine.mellanox.com/issues/3754090 and 'nvda_bf-9009' in platform"
 
+platform_tests/test_cpu_memory_usage.py::test_cpu_memory_usage_counterpoll:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4198422"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4198422"
+
 dash/test_dash_crm.py::TestDashCRM::test_dash_crm_cleanup:
   skip:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4125251"
