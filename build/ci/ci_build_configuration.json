@@ -800,7 +800,7 @@
           "category": "Post Merge",
           "node": "SONIC_LITE",
           "parameters": {
-            "cmd": "cd ${WORKSPACE}/${PROJECT_NAME}; tar -zcvf ${nfs_dir}/${TARBALL_NAME} sonic-mgmt"
+            "cmd": "cd ${WORKSPACE}; tar -zcvf ${nfs_dir}/${TARBALL_NAME} ${PROJECT_NAME}"
           },
           "skip": false,
           "on_failure": "stop",
