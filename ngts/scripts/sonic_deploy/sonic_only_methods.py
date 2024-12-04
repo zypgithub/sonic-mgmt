@@ -427,6 +427,7 @@ class SonicInstallationSteps:
         :param reboot: reboot fixture
         :param additional_apps: additional_apps fixture
         :param setup_info: dictionary with setup info
+        :param dut_alias: alias of dut
         :param is_performance: True in case when setup is performance
         :param chip_type: the type of chip
         :param deploy_dpu: deploy dpu flag

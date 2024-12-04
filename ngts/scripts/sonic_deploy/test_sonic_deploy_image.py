@@ -55,8 +55,8 @@ def test_deploy_sonic_image(topology_obj, setup_name, sonic_topo, platform_param
             topology_obj=topology_obj, sonic_topo=sonic_topo, recover_by_reboot=True, setup_name=setup_name,
             platform_params=platform_params, apply_base_config=apply_base_config, target_version="",
             is_shutdown_bgp=False, reboot_after_install=False, deploy_only_target=False, fw_pkg_path="",
-            reboot="reboot", additional_apps="", setup_info=setup_info, chip_type=chip_type,
-            is_performance=is_performance)
+            reboot="reboot", additional_apps="", setup_info=setup_info, dut_alias=dut['dut_alias'],
+            is_performance=is_performance, chip_type=chip_type)
 
 
 def check_bgp_is_shutdown(dut_engine):
