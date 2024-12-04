@@ -235,9 +235,9 @@ def test_system_issu_prevention_cases(engines, devices, downgrade_version,  # st
     player = engines.sonic_mgmt
     system = System()
 
-    downgrade_version = '/auto/sw_system_release/nos/nvos/25.02.1952-003/amd64/dev/nvos-amd64-25.02.1952-003.bin'
-    issu_version = '/auto/sw_system_release/nos/nvos/25.02.1952-004/amd64/dev/nvos-amd64-25.02.1952-004.bin'
-    target_version = '/auto/sw_system_release/nos/nvos/25.02.1952-005/amd64/dev/nvos-amd64-25.02.1952-005.bin'
+    # downgrade_version = '/auto/sw_system_release/nos/nvos/25.02.1952-003/amd64/dev/nvos-amd64-25.02.1952-003.bin'
+    # issu_version = '/auto/sw_system_release/nos/nvos/25.02.1952-004/amd64/dev/nvos-amd64-25.02.1952-004.bin'
+    # target_version = '/auto/sw_system_release/nos/nvos/25.02.1952-005/amd64/dev/nvos-amd64-25.02.1952-005.bin'
 
     target_version = player.run_cmd(f'ls {target_version}')
 
@@ -380,7 +380,7 @@ def test_system_issu_prevention_cases(engines, devices, downgrade_version,  # st
 @pytest.mark.system
 @pytest.mark.issu
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_power_cycle_during_issu_process(topology_obj, engines, devices, test_api, base_version='', target_version=''):
+def test_power_cycle_during_issu_process(topology_obj, engines, devices, test_api, issu_version='', target_version=''):
     """
     Validate:
     - Power cycle during ISSU (system will go up correctly)
