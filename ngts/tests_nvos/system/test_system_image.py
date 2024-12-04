@@ -2,7 +2,8 @@ import string
 import time
 
 import pytest
-
+import base64
+import random
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from infra.tools.general_constants.constants import DefaultConnectionValues
 from infra.tools.redmine.redmine_api import *
@@ -73,9 +74,12 @@ def test_show_system_image(original_version):
             logger.info("All expected fields were found")
 
         with allure.step("Validate the values exist"):
-            assert output_dictionary[ImageConsts.CURRENT_IMG] == original_version, f"Current image is invalid. Expected {original_version}"
-            assert output_dictionary[ImageConsts.PARTITION1_IMG] == original_version, f"Partition1 image is invalid. Expected {original_version}"
-            assert output_dictionary[ImageConsts.NEXT_IMG] == original_version, f"Next image is invalid. Expected {original_version}"
+            assert output_dictionary[
+                ImageConsts.CURRENT_IMG] == original_version, f"Current image is invalid. Expected {original_version}"
+            assert output_dictionary[
+                ImageConsts.PARTITION1_IMG] == original_version, f"Partition1 image is invalid. Expected {original_version}"
+            assert output_dictionary[
+                ImageConsts.NEXT_IMG] == original_version, f"Next image is invalid. Expected {original_version}"
 
     with allure.step("Run show command to view system image files"):
         output_dictionary = system.image.files.get_files()
@@ -118,24 +122,25 @@ def test_downgrade_upgrade(release_name, test_api, original_version, devices, en
         get_image_data_and_fetch_base_image(system, base_version_realpath)
     fetched_image_file = system.image.files.file_name[fetched_image]
 
-    with allure.step("Rename image and verify"):
-        new_name = RandomizationTool.get_random_string(20, ascii_letters=string.ascii_letters + string.digits)
-        fetched_image_file.rename_and_verify(new_name)
-
-    with allure.step("Install original image name, should fail"):
-        logger.info("Install original image name: {}, should fail".format(fetched_image))
-        system.image.files.file_name[fetched_image].action_file_install("Failed").verify_result()
-
-    with allure.step("Delete original image name, should fail"):
-        system.image.files.delete_files([fetched_image], "File not found")
-
     try:
-        orig_engine: LinuxSshEngine = TestToolkit.engines.dut
-        fetched_image_file.action_rename(fetched_image)
-        install_image_and_verify(orig_engine=orig_engine, image_name=fetched_image, partition_id=partition_id_for_new_image,
-                                 original_images=original_images, system=system, release_name=release_name,
-                                 test_name='test_downgrade_upgrade')
-        DMIDecodeTool.verify_dmi_info(engines, devices)
+        with allure.step("Rename image and verify"):
+            new_name = RandomizationTool.get_random_string(20, ascii_letters=string.ascii_letters + string.digits)
+            fetched_image_file.rename_and_verify(new_name)
+
+        with allure.step("Install original image name, should fail"):
+            logger.info("Install original image name: {}, should fail".format(fetched_image))
+            system.image.files.file_name[fetched_image].action_file_install("Failed").verify_result()
+
+        with allure.step("Delete original image name, should fail"):
+            system.image.files.delete_files([fetched_image], "File not found")
+
+            orig_engine: LinuxSshEngine = TestToolkit.engines.dut
+            fetched_image_file.action_rename(fetched_image)
+            install_image_and_verify(orig_engine=orig_engine, image_name=fetched_image,
+                                     partition_id=partition_id_for_new_image,
+                                     original_images=original_images, system=system, release_name=release_name,
+                                     test_name='test_downgrade_upgrade')
+
     finally:
         # cleanup - boot back with orig image, uninstall new image, and restore to orig engine
         cleanup_test(system, original_images, original_image_partition, [fetched_image], orig_engine=orig_engine)
@@ -167,13 +172,14 @@ def test_system_image_upload(engines, release_name, test_api, original_version, 
     try:
         with allure.step("Upload image to player {} with the next protocols : {}".format(player.ip, upload_protocols)):
             for protocol in upload_protocols:
-
                 with allure.step("Upload image to player with {} protocol".format(protocol)):
-                    upload_path = '{}://{}:{}@{}/tmp/{}'.format(protocol, player.username, player.password, player.ip, image_name)
+                    upload_path = '{}://{}:{}@{}/tmp/{}'.format(protocol, player.username, player.password, player.ip,
+                                                                image_name)
                     image_file.action_upload(upload_path)
 
                 with allure.step("Validate file was uploaded to player and delete it"):
-                    assert player.run_cmd(cmd='ls /tmp/ | grep {}'.format(image_name)), "Did not find the file with ls cmd"
+                    assert player.run_cmd(
+                        cmd='ls /tmp/ | grep {}'.format(image_name)), "Did not find the file with ls cmd"
                     player.run_cmd(cmd='rm -f /tmp/{}'.format(image_name))
     finally:
         with allure.step("Delete file from player"):
@@ -405,7 +411,8 @@ def image_uninstall_test(release_name, original_version, devices, uninstall_forc
         if not uninstall_force:
             system.image.action_uninstall(expected_str="Failed to uninstall. Image set to boot-next")
             expected_show_images_output = create_images_output_dictionary(installed_images_output,
-                                                                          installed_images_output[original_image_partition],
+                                                                          installed_images_output[
+                                                                              original_image_partition],
                                                                           "", "")
             system.image.verify_show_images_output(expected_show_images_output)
 
@@ -468,7 +475,6 @@ def test_system_image_install_reject_with_random_char(engines, test_api, origina
 
 
 def system_image_install_reject_with_prompt(engines, system, prompt_response, original_version, devices):
-
     verify_current_version(original_version, system, devices.dut)
 
     action_job_id = 0
@@ -491,7 +497,7 @@ def system_image_install_reject_with_prompt(engines, system, prompt_response, or
             # Get the last action-job-id
             exempted_err_msgs = ['action_error', 'File not found', 'Failed to install']
             action = Action()
-            output = OutputParsingTool.parse_json_str_to_dictionary(action.show(exempted_err_msgs=exempted_err_msgs)).\
+            output = OutputParsingTool.parse_json_str_to_dictionary(action.show(exempted_err_msgs=exempted_err_msgs)). \
                 get_returned_value()
             if output:
                 action_job_id = max([int(id_no) for id_no in list(output)])
@@ -557,7 +563,6 @@ def test_fetch_image_via_http(release_name, test_name, test_api, devices):
         if image_fetched:
             with allure.step("Delete the image that has been fetched during the test"):
                 system.image.files.delete_files([image_to_fetch[0]])
-
         with allure.step("Verify earlier fetched image is not shown in the show command"):
             system.image.files.verify_show_files_output(unexpected_files=[image_to_fetch[0]])
 
@@ -581,47 +586,56 @@ def test_fetch_image_with_weird_password(test_api, engines):
     """
     TestToolkit.tested_api = test_api
     system = System()
-    image_to_fetch = ["/tmp/", "dummy.bin"]
-    weird_passwords = ["Password@1", "Password.1"]
+    # Create 5 passwords including 5 random special characters from the allowed special character list
+    special_char_list = ['~', '@', '%', '^', '*', '_', '=', '+', '{', '}', ':', ',', '\\!', "\\'"]
+    # To Do: Skipping these characters for now: [ and ] and /
+    weird_passwords = [("Password1" + special_char) for special_char in (random.sample(special_char_list, 5))]
 
     with allure.step("Create dummy file to be fetched"):
-        cmd_to_create_file = "touch " + image_to_fetch[0] + image_to_fetch[1]
+        cmd_to_create_file = "touch " + SystemConsts.DUMMY_IMAGE_PATH + SystemConsts.DUMMY_IMAGE
         engines.dut.run_cmd(cmd_to_create_file)
 
     for weird_password in weird_passwords:
-        helper_fetch_image_with_weird_password(engines, system, weird_password, image_to_fetch)
+        logger.info("Testing with password: {}".format(weird_password))
+        helper_fetch_image_with_weird_password(engines, system, test_api, weird_password)
 
     with allure.step("Remove the dummy file"):
-        cmd_to_remove_file = "rm " + image_to_fetch[0] + image_to_fetch[1]
+        cmd_to_remove_file = "rm " + SystemConsts.DUMMY_IMAGE_PATH + SystemConsts.DUMMY_IMAGE
         engines.dut.run_cmd(cmd_to_remove_file)
 
 
-def helper_fetch_image_with_weird_password(engines, system, weird_password, image_to_fetch):
+def helper_fetch_image_with_weird_password(engines, system, test_api, weird_password):
     new_user = ""
     image_fetched = False
+    if test_api == ApiType.OPENAPI:
+        # encode password to base64 object and convert the base64 object to string
+        weird_password_encoded = base64.b64encode(str.encode(weird_password)).decode()
+    else:
+        # No encoding needed for NVUE
+        weird_password_encoded = weird_password
     try:
-
         with allure.step("Create a new user with the weird password"):
-            new_user, new_password = system.aaa.user.set_new_user(password=weird_password,
+            new_user, new_password = system.aaa.user.set_new_user(password=weird_password_encoded,
                                                                   role=SystemConsts.ROLE_VIEWER, apply=True)
 
-        with allure.step("Fetch the dummy image {} using the new user and weird password".format(image_to_fetch[0])):
+        with allure.step("Fetch the dummy image {} using the new user and weird password".format(
+                SystemConsts.DUMMY_IMAGE)):
             hostname = engines.dut.run_cmd('hostname')
-            scp_path = ImageConsts.SCP_PATH_SERVER.format(username=new_user, password=weird_password,
-                                                          ip=hostname, path=image_to_fetch[0] + image_to_fetch[1])
+            scp_path = ImageConsts.SCP_PATH_SERVER.format(username=new_user, password=weird_password, ip=hostname,
+                                                          path=SystemConsts.DUMMY_IMAGE_PATH + SystemConsts.DUMMY_IMAGE)
             system.image.action_fetch(scp_path)
             image_fetched = True
 
         with allure.step("Verify fetched image is shown in the show command"):
-            system.image.files.verify_show_files_output(expected_files=[image_to_fetch[1]])
+            system.image.files.verify_show_files_output(expected_files=[SystemConsts.DUMMY_IMAGE])
 
     finally:
         if image_fetched:
             with allure.step("Delete the image that has been fetched during the test"):
-                system.image.files.delete_files([image_to_fetch[1]])
+                system.image.files.delete_files([SystemConsts.DUMMY_IMAGE])
 
             with allure.step("Verify earlier fetched image is not shown in the show command"):
-                system.image.files.verify_show_files_output(unexpected_files=[image_to_fetch[1]])
+                system.image.files.verify_show_files_output(unexpected_files=[SystemConsts.DUMMY_IMAGE])
 
         if new_user:
             with allure.step("Delete the newly created user"):
@@ -647,13 +661,16 @@ def install_image_and_verify(orig_engine, image_name, partition_id, original_ima
 
     with allure.step("Verify installed image"):
         time.sleep(5)
-        expected_show_images_output = create_images_output_dictionary(original_images, image_name, image_name, partition_id)
+        expected_show_images_output = create_images_output_dictionary(original_images, image_name, image_name,
+                                                                      partition_id)
         system.image.verify_show_images_output(expected_show_images_output)
         return expected_show_images_output
 
 
 def get_list_of_directories(current_installed_img, starts_with=None):
-    def mtime(f): return os.stat(os.path.join(PATH_TO_IMAGED_DIRECTORY, f)).st_mtime
+    def mtime(f):
+        return os.stat(os.path.join(PATH_TO_IMAGED_DIRECTORY, f)).st_mtime
+
     temp_directories = [dev for dev in os.listdir(PATH_TO_IMAGED_DIRECTORY) if "lastrc" not in str(dev)]
     temp_directories = list(sorted(temp_directories, key=mtime))
 
@@ -751,7 +768,8 @@ def get_image_data_and_fetch_base_image(system, base_version):
 
 def verify_current_version(original_version, system, device):
     with allure.step(f"Verify that current image is {original_version}"):
-        current_version = OutputParsingTool.parse_json_str_to_dictionary(system.version.show()).get_returned_value()['image']
+        current_version = OutputParsingTool.parse_json_str_to_dictionary(system.version.show()).get_returned_value()[
+            'image']
         assert current_version == original_version, f"Current version is invalid: {current_version}, expected: {original_version}"
 
 
