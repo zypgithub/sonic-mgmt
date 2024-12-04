@@ -57,7 +57,9 @@ SPC3_EXCEL_SPEED_COLUMN_TO_SPEED_ALIAS = {
 APPLICATIONS_DATA_BY_SFF_SPEC = {
     # Ethernet
     '1000BASE-CX':      {SPEED: 1, LANES: 1},
-    'XAUI':             {SPEED: 12, LANES: 4},
+    'XAUI':             {SPEED: 10, LANES: 4},
+    'XFI':              {SPEED: 10, LANES: 1},
+    'SFI':              {SPEED: 10, LANES: 1},
     '25GAUI':           {SPEED: 25, LANES: 1},
     'XLAUI':            {SPEED: 40, LANES: 4},
     'XLPPI':            {SPEED: 40, LANES: 4},
@@ -65,22 +67,30 @@ APPLICATIONS_DATA_BY_SFF_SPEC = {
     '50GAUI-2':         {SPEED: 50, LANES: 2},
     '50GAUI-1':         {SPEED: 50, LANES: 1},
     'CAUI-4':           {SPEED: 100, LANES: 4},
-    '100GAUI-4 C2M':    {SPEED: 100, LANES: 4},
+    '100GAUI-4':        {SPEED: 100, LANES: 4},
     '100GAUI-2':        {SPEED: 100, LANES: 2},
-    '100GAUI-1':        {SPEED: 100, LANES: 1},
+    '100GAUI-1-S':      {SPEED: 100, LANES: 1},
+    '100GAUI-1-L':      {SPEED: 100, LANES: 1},
     '200GAUI-8':        {SPEED: 200, LANES: 8},
     '200GAUI-4':        {SPEED: 200, LANES: 4},
-    '200GAUI-2':        {SPEED: 200, LANES: 2},
+    '200GAUI-2-S':      {SPEED: 200, LANES: 2},
+    '200GAUI-2-L':      {SPEED: 200, LANES: 2},
+    '200GAUI-1':        {SPEED: 200, LANES: 1},
     '400GAUI-16':       {SPEED: 400, LANES: 16},
     '400GAUI-8':        {SPEED: 400, LANES: 8},
     '400GAUI-4-S':      {SPEED: 400, LANES: 4},
     '400GAUI-4-L':      {SPEED: 400, LANES: 4},
+    '400GAUI-2':        {SPEED: 400, LANES: 2},
+    '800GAUI-8':        {SPEED: 800, LANES: 8},
+    '800GAUI-4':        {SPEED: 800, LANES: 4},
+    '1.6TAUI-16-S':     {SPEED: 1600, LANES: 16},
+    '1.6TAUI-16-L':     {SPEED: 1600, LANES: 16},
+    '1.6TAUI-8':        {SPEED: 1600, LANES: 8},
     '800G':             {SPEED: 800, LANES: 8},
-    # Reserved
-    '10GBASE-CX4':      {SPEED: 12, LANES: 4},
+    '10GBASE-CX4':      {SPEED: 10, LANES: 4},
     '25GBASE-CR':       {SPEED: 25, LANES: 1},
     '40GBASE-CR4':      {SPEED: 40, LANES: 4},
-    '50GBASE-CR2':      {SPEED: 50, LANES: 5},
+    '50GBASE-CR2':      {SPEED: 50, LANES: 2},
     '50GBASE-CR':       {SPEED: 50, LANES: 1},
     '100GBASE-CR10':    {SPEED: 100, LANES: 10},
     '100GBASE-CR4':     {SPEED: 100, LANES: 4},
@@ -91,6 +101,11 @@ APPLICATIONS_DATA_BY_SFF_SPEC = {
     '400G':             {SPEED: 400, LANES: 8},
     '400GBASE-CR4':     {SPEED: 400, LANES: 4},
     '800G-ETC-CR8':     {SPEED: 800, LANES: 8},
+    '1.6TB-CR16':       {SPEED: 1600, LANES: 16},
+    '200GBASE-CR1':     {SPEED: 200, LANES: 1},
+    '400GBASE-CR2':     {SPEED: 400, LANES: 2},
+    '800GBASE-CR4':     {SPEED: 800, LANES: 4},
+    '1.6TBASE-CR8':     {SPEED: 1600, LANES: 8}
 }
 
 PORTS_SI_PARAM_NAMES_EXCEL_TO_JSON = {
@@ -108,12 +123,12 @@ PORTS_SI_PARAM_NAMES_EXCEL_TO_JSON = {
         'regp_bfm1n': 'regn_bfm1n'
     },
     SPC4: {
-        'fir_amp': 'fir_amp',
-        'fir_pre1': 'fir_pre1',
-        'fir_pre2': 'fir_pre2',
-        'fir_pre3': 'fir_pre3',
-        'fir_main': 'fir_main',
-        'fir_post1': 'fir_post1'
+        'fir_amp': 'idriver',
+        'fir_pre1': 'pre1',
+        'fir_pre2': 'pre2',
+        'fir_pre3': 'pre3',
+        'fir_main': 'main',
+        'fir_post1': 'post1'
     }
 }
 
