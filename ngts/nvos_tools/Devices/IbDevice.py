@@ -1176,8 +1176,8 @@ class JulietScaleoutSwitch(JulietSwitch):
                                                       "model": "692-9K36F-00MV-JS0"})
 
     def sleep_after_system_reboot(self):
-        logger.info("Sleeping for 160 seconds - Reboot takes longer on juliet for now")
-        time.sleep(80)
+        logger.info("Sleeping for 140 seconds - Reboot takes longer on juliet for now")
+        time.sleep(140)
 
     def _relevant_config_filename_by_version(self, version: str) -> str:
         return 'nvos_config_nvl5.yml'
