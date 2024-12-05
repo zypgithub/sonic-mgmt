@@ -516,7 +516,7 @@ def get_hwsku(sonic_topo, dest_hwsku, setup_name):
             return hwsku_data[setup_name]['default_hwsku']
 
 
-if 'base-version=/auto/sw_system_release/sonic' in ' '.join(sys.argv):
+if 'base-version=/auto/sw_system_release/sonic' in ' '.join(sys.argv) and 'target_cli_type' not in ' '.join(sys.argv):
     from ngts.tests.nightly.sanity_checker.test_sanity_checker import platform_json_data, is_in_deploy_image_flow, \
         clear_file_inlcude_failed_sanity_check_case, test_device_asic_check, \
         test_cable_connection_for_canonical_check, test_more_then_2_fan_status_wrong_check, test_psu_status_check, \
