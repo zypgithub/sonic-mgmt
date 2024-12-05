@@ -3,7 +3,7 @@ import random
 import pytest
 
 from ngts.tests_nvos.checklist.erot_fw_upgrade.BaseFWUpgradeTest import BaseFWUpgradeTest
-from ngts.nvos_constants.constants_nvos import ApiType, PlatformConsts
+from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.tools.test_utils import allure_utils as allure
@@ -66,8 +66,9 @@ def test_erot_upgrade_fae(engines, devices, topology_obj, test_api, test_name, c
     """
     with allure.step('Create Test and system objects'):
         fae = Fae()
-        fae.platform.firmware.create_erot_components(devices.dut)
-        test = BaseFWUpgradeTest(firmware_component=fae.platform.firmware.erot_id)
+        erots_list = devices.dut.constants.erots
+        erot_name = random.choice(erots_list)
+        test = BaseFWUpgradeTest(firmware_component=fae.platform.firmware.erot_id[erot_name])
 
     with allure.step(f"Fetch, install and assert prev & curr versions (through {test_api})"):
-        test.test_list(engines=engines, topology_obj=topology_obj, test_api=test_api)
+        test.test_fae(engines=engines, switch=devices.dut, topology_obj=topology_obj, test_api=test_api)
