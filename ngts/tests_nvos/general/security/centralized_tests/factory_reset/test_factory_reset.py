@@ -55,7 +55,7 @@ KEEP_BASIC_CHECKERS: Dict[str, Generator[None, None, None]] = {
 KEEP_ALL_CONFIG_CHECKERS: Dict[str, Generator[None, None, None]] = {
     API_MTLS: api_mtls_factory_reset_keep_all_config_check(),
     SED_PASSWORD: sed_password_factory_reset_check(),
-    CERTS_MGMT: certs_mgmt_factory_reset_no_params_check(),
+    CERTS_MGMT: certs_mgmt_factory_reset_keep_only_files_check(),
 }
 
 KEEP_ONLY_FILES_CHECKERS: Dict[str, Generator[None, None, None]] = {
