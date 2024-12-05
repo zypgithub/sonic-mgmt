@@ -67,9 +67,10 @@ def test_cluster_state(engines, devices, test_api, has_loopbox):
                     # [NVOS - Design] Bug SW #3982533: [Functional] [NVL5 - NMX] | nmxc-conn field shows NONE value instead of empty string | Assignee: Oren Reiss | Status: Assigned
                     # assert output['nmxc-conn'] == state, f"nmxc-conn state is {output['nmxc-conn']} " \
                     #                                                   f"instead of {state}"
+
         with allure.step("Apply a non defined state"):
-            output = cluster.set(op_param_name="state", op_param_value=ClusterConsts.UNDEFINED_STATE)
-            output = output.info.split('\n')[1]
+            output = cluster.set(op_param_name="state", op_param_value=ClusterConsts.UNDEFINED_STATE).get_returned_value(should_succeed=False)
+            output = output.split('\n')[-1]
             assert output == ClusterConsts.UNDEFINED_STATE_DICT[test_api], f"Expected error message {ClusterConsts.UNDEFINED_STATE_DICT[test_api]}, " \
                 f"actual message received {output}"
 

@@ -127,6 +127,10 @@ def test_upgrade_with_nmx_enabled(test_api, devices, base_version,
                     assert current_config_content == expected_config_content, f"Config file was not loaded properly. Expected content {expected_config_content}, Actual content: {current_config_content}"
                     assert current_config_content != initial_config_contents[file_type], f"Current content has not changed, still same as in init state. init: {initial_config_contents[file_type]}, \ncurrent{current_config_content}"
 
+        if not standalone_system:
+            with allure.step("Creating Empty partition, then adding a GPU to it with no-reroute option"):
+                logger.info("After upgrade, empty partition should persist, but GPU added to it with no-reroute should be deleted")
+                uuid, location, _, partition_to_remove_from = ClusterTools.create_empty_partition_and_add_gpu(sdn, 'no-reroute')
         TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
 
         with allure.step("Performing upgrade:"):
@@ -154,6 +158,16 @@ def test_upgrade_with_nmx_enabled(test_api, devices, base_version,
                     f"{output[SystemConsts.STATE]}, Expected to be: " \
                     f"{NvosConst.ENABLED}"
 
+        if not standalone_system:
+            output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
+                                                                 output_format=output_format).get_returned_value()
+            assert ClusterConsts.EMPTY_PARTITION_ID in output.keys(), f'Partition {ClusterConsts.EMPTY_PARTITION_ID} was deleted, while its expected to be kept'
+            output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.partition_id[ClusterConsts.EMPTY_PARTITION_ID].show(output_format=output_format),
+                                                                 output_format=output_format).get_returned_value()
+            uuids, locations = ClusterTools.uuid_location_in_partition(sdn, partition_to_remove_from)
+            assert uuid not in uuids, f"uuid {uuid} was not deleted from {partition_to_remove_from} although it was removed with no-reroute, See current uuids: {uuids}"
+            assert location not in locations, f"uuid {uuid} was not deleted from {partition_to_remove_from} although it was removed with no-reroute. See current locations: {locations}"
+
         with allure.step("Validate apps are still running"):
             ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format)
         with allure.step("Check log level"):
@@ -177,6 +191,10 @@ def test_upgrade_with_nmx_enabled(test_api, devices, base_version,
                 assert current_config_content == expected_config_content, f"Config file was not loaded properly. Expected content {expected_config_content}, Actual content: {current_config_content}"
 
     finally:
+        if not standalone_system:
+            with allure.step("Running sdn factory reset"):
+                sdn.factory_default.action_reset(param='force')
+
         if not target_image_installed:
             NvosInstallationSteps.deploy_image(cli_obj, topology_obj, setup_name, platform_params_copy, target_version_url, 'onie',
                                                None, None, None, target_version_url)

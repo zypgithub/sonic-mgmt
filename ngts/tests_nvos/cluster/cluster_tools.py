@@ -4,6 +4,7 @@ import re
 import time
 from collections import defaultdict
 from functools import wraps
+import random
 
 from ngts.nvos_constants.constants_nvos import IbConsts, OutputFormat, SystemConsts
 from ngts.nvos_tools.ib.Ib import Ib
@@ -19,6 +20,7 @@ from ngts.nvos_tools.nmx.Sdn import Sdn
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 
 logger = logging.getLogger()
 
@@ -328,6 +330,99 @@ class ClusterTools:
                 output_format=output_format).get_returned_value()
             # Add assert on log level
             assert output['log-level'] == log_level, f"Expected log level: {log_level}, Actual log-level {output['log-level']}"
+
+    @staticmethod
+    def create_empty_partition(sdn, partitions_mapping, output_format=OutputFormat.json):
+        with allure.step("Create empty partition"):
+            resiliency_mode = random.choice(ClusterConsts.RESILIENCY_MODES)
+            mcast_limit = random.randint(ClusterConsts.MIN_MCAST, ClusterConsts.MAX_MCAST)
+            sdn.partition.partition_id[ClusterConsts.EMPTY_PARTITION_ID].action_create_partition_id(name=ClusterConsts.EMPTY_PARTITION_NAME, resiliency_mode=resiliency_mode, mcast_limit=mcast_limit)
+
+        with allure.step("Checking newly created partition"):
+            output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
+                                                                 output_format=output_format).get_returned_value()
+            assert ClusterConsts.EMPTY_PARTITION_ID in list(output.keys()), f'Partition {ClusterConsts.EMPTY_PARTITION_ID} was not created'
+            output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.partition_id[ClusterConsts.EMPTY_PARTITION_ID].show(output_format=output_format),
+                                                                 output_format=output_format).get_returned_value()
+            partitions_mapping[ClusterConsts.EMPTY_PARTITION_ID] = []
+            if not is_bug_active(4190587):
+                expected_output = {'health': 'healthy', 'locations': {}, 'mcast-limit': mcast_limit, 'name': ClusterConsts.EMPTY_PARTITION_NAME, 'num-gpus': 0, 'partition-type': '', 'resiliency-mode': resiliency_mode, 'uuids': {}}
+                ClusterTools.validate_partition_content(output, expected_output)
+
+    @staticmethod
+    def validate_partition_content(output, expected_output):
+        for key, val in expected_output.items():
+            if key in ['locations', 'uuids']:
+                assert set(output[key].keys()) == set(val.keys()), f'Expected values for {key:}: {set(val.keys())}, Actual values: {set(val.keys())}'
+            else:
+                assert output[key] == val, f'Expected value: {val}, Actual value:{output[key]}'
+
+    @staticmethod
+    def create_empty_partition_and_add_gpu(sdn, no_reroute='', output_format=OutputFormat.json):
+        mapping, original_partition_type = ClusterTools.get_partition_mapping(sdn)
+        valid_ids = [key for key, value in mapping.items() if len(value) > 0]
+        ClusterTools.create_empty_partition(sdn, mapping)
+        partition_type = random.choice(ClusterConsts.PARTITION_TYPES)
+        partition_to_remove_from = random.choice(valid_ids)
+        gpus_in_partition = mapping[partition_to_remove_from]
+        (uuid, location) = random.choice(gpus_in_partition)
+        with allure.step(f"Remove GPU from partition {partition_to_remove_from}"):
+            if original_partition_type == 'location_based':
+                sdn.partition.partition_id[partition_to_remove_from].location.location_id[location].action_restore_partition(reroute_param=no_reroute)
+            else:
+                sdn.partition.partition_id[partition_to_remove_from].uuid.uuid_value[uuid].action_restore_partition(reroute_param=no_reroute)
+
+        with allure.step(f"Add GPU {uuid} {location} to empty partition {ClusterConsts.EMPTY_PARTITION_ID}"):
+            empty_partition_type = random.choice(['uuid', 'location'])
+            if empty_partition_type == 'location':
+                sdn.partition.partition_id[ClusterConsts.EMPTY_PARTITION_ID].location.location_id[location].action_update_partition(reroute_param=no_reroute)
+            else:
+                sdn.partition.partition_id[ClusterConsts.EMPTY_PARTITION_ID].uuid.uuid_value[uuid].action_update_partition(reroute_param=no_reroute)
+        return uuid, location, ClusterConsts.EMPTY_PARTITION_ID, partition_to_remove_from
+
+    @staticmethod
+    def uuid_location_in_partition(sdn, partition_id):
+        output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.partition_id[partition_id].show(output_format=output_format),
+                                                             output_format=output_format).get_returned_value()
+        uuids = list((output['uuids']).keys())
+        locations = list((output['locations']).keys())
+        return uuids, locations
+
+    @staticmethod
+    def get_partition_mapping(sdn, output_format=OutputFormat.json):
+        mapping = {}
+        with allure.step("Show All Partitions - at the beginning its just the default partition"):
+            initial_partition_output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
+                                                                                   output_format=output_format).get_returned_value()
+            partition_ids = list(initial_partition_output.keys())
+            default_partition_id = partition_ids[-1]
+            default_partition_type = initial_partition_output[default_partition_id]['partition-type']
+        with allure.step("Show partition per partition id"):
+            for partition_id in partition_ids:
+                output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.partition_id[partition_id].show(output_format=output_format),
+                                                                     output_format=output_format).get_returned_value()
+                list_of_tuples = ClusterTools.get_partition_uuid_location_map(output)
+                mapping[partition_id] = list_of_tuples
+        return mapping, default_partition_type
+
+    @staticmethod
+    def get_partition_uuid_location_map(partition_output):
+        # TODO - Values are not ordered in show. so we need to retrieve from topology file once its available!
+        locations = list(partition_output["locations"].keys())
+        uuids = list(partition_output["uuids"].keys())
+        mapping_list = []
+        for uuid, location in zip(uuids, locations):
+            mapping_list.append((uuid, location))
+        return mapping_list
+
+    @staticmethod
+    def delete_empty_partition(sdn, partitions_mapping, output_format=OutputFormat.json):
+        with allure.step("Delete empty partition"):
+            sdn.partition.partition_id[ClusterConsts.EMPTY_PARTITION_ID].action_delete_partition()
+            output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
+                                                                 output_format=output_format).get_returned_value()
+            assert ClusterConsts.EMPTY_PARTITION_ID not in list(output.keys()), f'Partition {ClusterConsts.EMPTY_PARTITION_ID} was not deleted'
+        partitions_mapping.pop(ClusterConsts.EMPTY_PARTITION_ID)
 
     @staticmethod
     def verify_log_messages_log_level(log_level, system, test_api, cluster):

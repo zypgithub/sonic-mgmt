@@ -27,16 +27,16 @@ class LocationId(BaseComponent):
     def __init__(self, parent, location_id):
         super().__init__(parent=parent, path=f'/{location_id}')
 
-    def action_update_partition(self, engine=None, param_name='', param_value=''):
+    def action_update_partition(self, engine=None, reroute_param=''):
         engine = engine if engine else TestToolkit.engines.dut
         with allure.step('Update partition'):
-            return SendCommandTool.execute_command_expected_str(self._cli_wrapper.action_update,
+            return SendCommandTool.execute_command_expected_str(self._cli_wrapper.action_update_partition,
                                                                 "Action succeeded", engine,
-                                                                self.get_resource_path(), param_name, param_value)
+                                                                self.get_resource_path(), reroute_param)
 
-    def action_restore_partition(self, engine=None, param_name='', param_value=''):
+    def action_restore_partition(self, engine=None, reroute_param=''):
         engine = engine if engine else TestToolkit.engines.dut
         with allure.step('Restore partition'):
-            return SendCommandTool.execute_command_expected_str(self._cli_wrapper.action_restore_cluster,
+            return SendCommandTool.execute_command_expected_str(self._cli_wrapper.action_restore_partition,
                                                                 "Action succeeded", engine,
-                                                                self.get_resource_path(), param_name, param_value)
+                                                                self.get_resource_path(), reroute_param)

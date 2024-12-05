@@ -74,7 +74,23 @@ class NvueClusterCli(NvueBaseCli):
         if uuid != '':
             cmd += f' uuid {uuid}'
         if location != '':
-            cmd += f"location {location}"
+            cmd += f" location {location}"
+        logging.info("Running action cmd: '{cmd}' on dut using NVUE".format(cmd=cmd))
+        return engine.run_cmd(cmd)
+
+    @staticmethod
+    def action_restore_partition(engine, resource_path, reroute_param=''):
+        cmd = f"nv action restore {resource_path.replace('/', ' ')}"
+        if reroute_param != '':
+            cmd += f" {reroute_param}"
+        logging.info("Running action cmd: '{cmd}' on dut using NVUE".format(cmd=cmd))
+        return engine.run_cmd(cmd)
+
+    @staticmethod
+    def action_update_partition(engine, resource_path, reroute_param=''):
+        cmd = f"nv action update {resource_path.replace('/', ' ')}"
+        if reroute_param != '':
+            cmd += f" {reroute_param}"
         logging.info("Running action cmd: '{cmd}' on dut using NVUE".format(cmd=cmd))
         return engine.run_cmd(cmd)
 

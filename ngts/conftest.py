@@ -261,6 +261,16 @@ def has_loopbox(setup_name):
     return setup_name in Configurations.juliet_systems_with_loopbox
 
 
+@pytest.fixture(scope='session')
+def standalone_system(setup_name):
+    """
+    Method to check if system has loopbox.
+    :param setup_name: the setup name
+    :return: if setup has loopbox or not
+    """
+    return setup_name not in Configurations.non_standalone_systems
+
+
 @pytest.fixture(scope="session")
 def skip_weekend_cases(request):
     """

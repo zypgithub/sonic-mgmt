@@ -28,7 +28,7 @@ logger = logging.getLogger()
 @pytest.mark.timeout(35 * MINUTE, func_only=True)
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_cluster_default_factory_reset(engines, devices, test_api, has_loopbox):
+def test_cluster_default_factory_reset(engines, devices, test_api, has_loopbox, standalone_system):
 
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
@@ -49,6 +49,11 @@ def test_cluster_default_factory_reset(engines, devices, test_api, has_loopbox):
 
         # with allure.step('pre factory reset security checks'):
         #     pre_factory_reset_security_checks()
+        if not standalone_system:
+            initial_partition_output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
+                                                                                   output_format=output_format).get_returned_value()
+            with allure.step("Create Empty partition"):
+                ClusterTools.create_empty_partition(sdn, [])
 
         with allure.step("Run reset factory without params"):
             execute_reset_factory(engines, system, devices.dut.reset_factory, "", current_time)
@@ -77,6 +82,11 @@ def test_cluster_default_factory_reset(engines, devices, test_api, has_loopbox):
                 ClusterTools.verify_log_level(ClusterAppsLogLevels.NOTICE, app, output_format, cluster)
             verify_config_files_content_not_changed(sdn, initial_config_contents, engines)
             verify_apps_in_expected_state(cluster, 'ok', has_loopbox)
+
+            if not standalone_system:
+                output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
+                                                                     output_format=output_format).get_returned_value()
+                assert initial_partition_output == output, f'Partition was not restored to initial. initial: {initial_partition_output}\n current: {output}'
 
     finally:
         engines.sonic_mgmt.run_cmd(f"sudo rm -rf {ClusterConsts.INITIAL_CONFIGURATIONS_PATH + '/*'}")
@@ -115,6 +125,12 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name,
             username = add_verification_data(engines.dut, system)
         reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, system, sdn, all_state_files_paths, all_config_files_paths, output_format, initial_config_contents)
 
+        if not standalone_system:
+            initial_partition_output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
+                                                                                   output_format=output_format).get_returned_value()
+            with allure.step("Create Empty partition"):
+                ClusterTools.create_empty_partition(sdn, [])
+
         with allure.step("Run reset factory keep basic param"):
             execute_reset_factory(engines, system, devices.dut.reset_factory, "keep basic", current_time)
             ClusterTools.wait_for_apps_to_be_in_wanted_state()
@@ -138,6 +154,11 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name,
                 ClusterTools.verify_log_level(ClusterAppsLogLevels.NOTICE, app, output_format, cluster)
             verify_config_files_content_not_changed(sdn, initial_config_contents, engines)
             verify_apps_in_expected_state(cluster, 'ok', has_loopbox)
+
+            if not standalone_system:
+                output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
+                                                                     output_format=output_format).get_returned_value()
+                assert initial_partition_output == output, f'Partition was not restored to initial. initial: {initial_partition_output}\n current: {output}'
 
     finally:
         engines.sonic_mgmt.run_cmd(f"sudo rm -rf {ClusterConsts.INITIAL_CONFIGURATIONS_PATH + '/*'}")
@@ -173,6 +194,12 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name, 
             username = add_verification_data(engines.dut, system)
         reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, system, sdn, all_state_files_paths, all_config_files_paths, output_format, initial_config_contents)
 
+        if not standalone_system:
+            initial_partition_output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
+                                                                                   output_format=output_format).get_returned_value()
+            with allure.step("Create Empty partition"):
+                ClusterTools.create_empty_partition(sdn, [])
+
         with allure.step("Run reset factory with keep only-files param"):
             execute_reset_factory(engines, system, devices.dut.reset_factory, "keep only-files", current_time)
             ClusterTools.wait_for_apps_to_be_in_wanted_state()
@@ -196,6 +223,11 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name, 
                 ClusterTools.verify_log_level(ClusterAppsLogLevels.NOTICE, app, output_format, cluster)
             verify_config_files_content_not_changed(sdn, initial_config_contents, engines)
             verify_apps_in_expected_state(cluster, 'ok', has_loopbox)
+
+            if not standalone_system:
+                output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
+                                                                     output_format=output_format).get_returned_value()
+                assert initial_partition_output == output, f'Partition was not restored to initial. initial: {initial_partition_output}\n current: {output}'
 
     finally:
         engines.sonic_mgmt.run_cmd(f"sudo rm -rf {ClusterConsts.INITIAL_CONFIGURATIONS_PATH + '/*'}")
@@ -235,6 +267,10 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
 
         TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
 
+        if not standalone_system:
+            with allure.step("Create Empty partition"):
+                ClusterTools.create_empty_partition(sdn, [])
+
         with allure.step("Run reset factory with keep all-config param"):
             execute_reset_factory(engines, system, devices.dut.reset_factory, "keep all-config", current_time)
             ClusterTools.wait_for_apps_to_be_in_wanted_state()
@@ -263,7 +299,15 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
             verify_config_files_content_not_changed(sdn, initial_config_contents, engines)
             verify_apps_in_expected_state(cluster, 'ok', has_loopbox)  # Apps should be running
 
+            if not standalone_system:
+                output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
+                                                                     output_format=output_format).get_returned_value()
+                assert ClusterConsts.EMPTY_PARTITION_ID in output.keys(), f'Partition {ClusterConsts.EMPTY_PARTITION_ID} was deleted, while its expected to be kept'
     finally:
+        if not standalone_system:
+            with allure.step("Running sdn factory reset"):
+                sdn.factory_default.action_reset(param='force')
+
         engines.sonic_mgmt.run_cmd(f"sudo rm -rf {ClusterConsts.INITIAL_CONFIGURATIONS_PATH + '/*'}")
         for app in ClusterConsts.INITIAL_EXPECTED_APPS:
             cluster.apps.app_name[app].loglevel.action_restore_cluster()

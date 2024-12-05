@@ -28,7 +28,9 @@ INITIAL_EXPECTED_APPS = [NMX_CONTROLLER, NMX_TELEMETRY]
 START_APP_WHILE_CLUSTER_DISABLED_ERR_MSG = 'Output was expected to contain:\nApp has been successfully started\nBut the output is:\nAction executing ...\nError: Action failed with the following issue:\n  cluster is not enabled'
 STOP_APP_WHILE_CLUSTER_DISABLED_ERR_MSG = 'Output was expected to contain:\nAction succeeded\nBut the output is:\nAction executing ...\nError: Action failed with the following issue:\n  cluster is not enabled'
 CLUSTER_IS_NOT_ENABLED_MESSAGE = 'cluster is not enabled'
-INVALID_SHOW_EXPECTED_OUTPUT = 'Error: The requested item does not exist.'
+INVALID_SHOW_EXPECTED_OUTPUT_NVUE = 'Error: The requested item does not exist.'
+INVALID_SHOW_EXPECTED_OUTPUT_OPENAPI = 'Error: Request failed. Details: The requested item does not exist.'
+INVALID_SHOW_EXPECTED_OUTPUT = {'NVUE': INVALID_SHOW_EXPECTED_OUTPUT_NVUE, 'OpenApi': INVALID_SHOW_EXPECTED_OUTPUT_OPENAPI}
 
 
 @disabled_access_ports
@@ -183,15 +185,15 @@ def test_cluster_app_start_stop_disabled_cluster(engines, devices, test_api):
             output_format=output_format).get_returned_value()
         assert output == {}, f"Expected to get empty output, but instead received {output}"
 
-    with allure.step("Running 'nv show cluster apps <app-name>' command and parsing output"):
-        for app in INITIAL_EXPECTED_APPS:
+    for app in INITIAL_EXPECTED_APPS:
+        with allure.step(f"Running 'nv show cluster apps {app}' command and parsing output"):
             try:
                 output = OutputParsingTool.parse_show_output_to_dict(
                     cluster.apps.app_name[app].show(output_format=OutputFormat.json),
                     output_format=OutputFormat.json).get_returned_value()
             except Exception as e:
                 err = e.args[0].split('\n')[-1]
-                assert err == INVALID_SHOW_EXPECTED_OUTPUT, f"Expected {INVALID_SHOW_EXPECTED_OUTPUT}, but instead received {output}"
+                assert err == INVALID_SHOW_EXPECTED_OUTPUT[test_api], f"Expected {INVALID_SHOW_EXPECTED_OUTPUT[test_api]}, but instead received {output}"
 
     TestToolkit.tested_api = 'NVUE'
 

@@ -107,6 +107,36 @@ class OpenApiClusterCli(OpenApiBaseCli):
                                                    engine.ip, resource_path, params)
 
     @staticmethod
+    def action_restore_partition(engine, resource_path, reroute_param=''):
+        logging.info("Running action: 'create' on dut using OpenApi")
+        params = {
+            "state": "start",
+            "parameters": {
+            }
+        }
+
+        # Add optional parameters if provided
+        if reroute_param:
+            params["parameters"][reroute_param] = True
+        return OpenApiCommandHelper.execute_action(ActionType.CREATE, engine.engine.username, engine.engine.password,
+                                                   engine.ip, resource_path, params)
+
+    @staticmethod
+    def action_update_partition(engine, resource_path, reroute_param=''):
+        logging.info("Running action: 'create' on dut using OpenApi")
+        params = {
+            "state": "start",
+            "parameters": {
+            }
+        }
+        reroute_param = reroute_param.replace('-', '_')
+        # Add optional parameters if provided
+        if reroute_param:
+            params["parameters"][reroute_param] = True
+        return OpenApiCommandHelper.execute_action(ActionType.UPDATE, engine.engine.username, engine.engine.password,
+                                                   engine.ip, resource_path, params)
+
+    @staticmethod
     def action_update_cluster_manager_property(engine, resource_path, param_name='', param_val=''):
         logging.info(f'Run action import on: {resource_path} using OpenApi')
         parameters = {} if not param_name and not param_val else {param_name: param_val}

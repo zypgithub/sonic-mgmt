@@ -1033,7 +1033,7 @@ class JulietSwitch(NvLinkSwitch):
         self.temperature_sensors = [
             'ASIC1', 'ASIC2', 'Ambient-MNG-Temp', 'CPU-Pack-Temp', 'Drive-Temp', 'HSC-VinDC-Temp', 'PDB-Conv-1-Temp',
             'PDB-Conv-2-Temp', 'PDB-Conv-3-Temp', 'PDB-Conv-4-Temp', 'PMIC-1-Temp', 'PMIC-2-Temp', 'PMIC-3-Temp',
-            'PMIC-4-Temp', 'PMIC-5-Temp', 'PMIC-6-Temp', 'PMIC-7-Temp', 'PMIC-8-Temp', 'SODIMM-1-Temp',
+            'PMIC-4-Temp', 'PMIC-5-Temp', 'PMIC-6-Temp', 'PMIC-7-Temp', 'PMIC-8-Temp',
             'SWB-ASIC1-PCB-Temp', 'SWB-ASIC2-PCB-Temp']
 
     def _init_gnmi_consts(self):

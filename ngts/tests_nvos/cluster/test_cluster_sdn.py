@@ -71,7 +71,10 @@ def test_cluster_sdn(engines, devices, test_api, has_loopbox):
                 file_name = 'dummy_' + (initial_configs_paths_to_restore[file_type]).split('/')[-1]
                 dummy_file_path = ClusterConsts.INITIAL_CONFIGURATIONS_PATH + '/' + file_name
                 engines.sonic_mgmt.run_cmd("sudo cp {} {}".format(initial_configs_paths_to_restore[file_type], dummy_file_path))
-                engines.sonic_mgmt.run_cmd(f"sudo sh -c 'echo \"# This is dummy config file\" >> {dummy_file_path}'")
+
+                edit_cmd = ClusterConsts.CONFIG_FILES_CHANGE[file_type].format(file_path=dummy_file_path)
+                engines.sonic_mgmt.run_cmd(edit_cmd)
+
                 path_to_config[file_type] = dummy_file_path
                 config_file_name[file_type] = file_name
 
