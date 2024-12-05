@@ -20,7 +20,8 @@ community_develop_set_1_dbs = [
     'wjh.db',
     'fast_reboot.db',
     'warm_reboot.db',
-    'span.db'
+    'span.db',
+    'bsl.db'
 ]
 
 community_develop_rpc_dbs = [

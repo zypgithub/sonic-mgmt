@@ -17,11 +17,11 @@
 
     <case>
         <ignore>
-            <!-- daily case  -->
+            <!-- weekend case  -->
             <condition>
                 <key> skip_weekend_cases </key>
                 <op> == </op>
-                <value> no </value>
+                <value> yes </value>
             </condition>
         </ignore>
         <info> snmp_cpu  </info>
@@ -35,11 +35,11 @@
 
     <case>
         <ignore>
-            <!-- daily case  -->
+            <!-- weekend case  -->
             <condition>
                 <key> skip_weekend_cases </key>
                 <op> == </op>
-                <value> no </value>
+                <value> yes </value>
             </condition>
         </ignore>
         <info> snmp_interfaces </info>
@@ -53,11 +53,11 @@
 
     <case>
         <ignore>
-            <!-- daily case  -->
+            <!-- weekend case  -->
             <condition>
                 <key> skip_weekend_cases </key>
                 <op> == </op>
-                <value> no </value>
+                <value> yes </value>
             </condition>
         </ignore>
         <info> snmp_lldp </info>
@@ -71,11 +71,11 @@
 
     <case>
         <ignore>
-            <!-- daily case  -->
+            <!-- weekend case  -->
             <condition>
                 <key> skip_weekend_cases </key>
                 <op> == </op>
-                <value> no </value>
+                <value> yes </value>
             </condition>
         </ignore>
         <info> snmp_fdb </info>
@@ -89,11 +89,11 @@
 
     <case>
         <ignore>
-            <!-- daily case  -->
+            <!-- weekend case  -->
             <condition>
                 <key> skip_weekend_cases </key>
                 <op> == </op>
-                <value> no </value>
+                <value> yes </value>
             </condition>
         </ignore>
         <info> snmp_link_local </info>
@@ -107,11 +107,11 @@
 
     <case>
         <ignore>
-            <!-- daily case  -->
+            <!-- weekend case  -->
             <condition>
                 <key> skip_weekend_cases </key>
                 <op> == </op>
-                <value> no </value>
+                <value> yes </value>
             </condition>
         </ignore>
         <info> snmp_psu </info>

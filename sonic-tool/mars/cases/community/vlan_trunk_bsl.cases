@@ -15,11 +15,11 @@
 
     <case>
         <ignore>
-            <!-- daily case  -->
+            <!-- weekend case  -->
             <condition>
                 <key> skip_weekend_cases </key>
                 <op> == </op>
-                <value> no </value>
+                <value> yes </value>
             </condition>
         </ignore>
         <info> VLAN_Trunk Case </info>
