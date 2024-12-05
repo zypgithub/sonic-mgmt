@@ -1,3 +1,5 @@
+from time import sleep
+
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.infra.Tools import Tools
@@ -116,6 +118,7 @@ def test_interface_ipoib_ping_functionality(engines, devices, start_sm, players,
         validate_interface_ip_address('1.1.1.1/24', output_dictionary)
 
         HostMethods.host_ip_address_set(engines.ha, '1.1.1.2/24', interfaces.ha_dut_1)
+        sleep(5)
         ping_output = HostMethods.host_ping(engines.ha, '1.1.1.1', interfaces.ha_dut_1)
         assert '5 packets transmitted, 5 received' in ping_output, 'ping is not working'
 

@@ -25,12 +25,12 @@ class HostMethods:
     @staticmethod
     def host_ip_address_set(host_engine, ip_address, interface):
         with allure_step("Set ip address on host"):
-            return host_engine.run_cmd('sudo ip addr add {0} dev {1}'.format(ip_address, interface))
+            return host_engine.run_cmd('sudo ip addr add {0} dev {1}'.format(ip_address, interface), validate=True)
 
     @staticmethod
     def host_ip_address_unset(host_engine, ip_address, interface):
         with allure_step("Unset ip address on host"):
-            return host_engine.run_cmd('sudo ip addr del {0} dev {1}'.format(ip_address, interface))
+            return host_engine.run_cmd('sudo ip addr del {0} dev {1}'.format(ip_address, interface), validate=True)
 
     @staticmethod
     def host_ping(host_engine, ip_address, interface, count=5):
