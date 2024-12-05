@@ -18,7 +18,7 @@ from ngts.tests_nvos.general.security.security_test_tools.tool_classes.RemoteAaa
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
 from ngts.tests_nvos.general.security.tacacs.constants import TacacsDockerServer0
 from ngts.tests_nvos.general.security.test_aaa_ldap.ldap_servers_info import LdapServersP3
-from ngts.tests_nvos.system.gnmi.constants import ETC_HOSTS, GNMI_TEST_CERT, DUT_MOUNT_GNMI_CERT_DIR
+from ngts.tests_nvos.system.gnmi.constants import ETC_HOSTS, GNMI_TEST_CERT
 from ngts.tests_nvos.system.gnmi.helpers import get_scp_player, verify_gnmi_client_tools_installed
 from ngts.tools.test_utils.nvos_general_utils import generate_scp_uri_using_player
 
@@ -66,16 +66,6 @@ def add_etc_host_mapping_for_ipv4_cert_test(engines):
         remove_etc_host_mapping_to_dn(cert.dn)
 
 
-@pytest.fixture()
-def restore_gnmi_cert(engines):
-    yield
-    with allure.step('restore orig gnmi cert'):
-        engines.dut.run_cmd(f'sudo rm -f {DUT_MOUNT_GNMI_CERT_DIR}/*')
-    with allure.step('reload gnmi'):
-        System().gnmi_server.disable_gnmi_server(True)
-        System().gnmi_server.enable_gnmi_server(True)
-
-
 @pytest.fixture(scope='module')
 def import_required_test_certs(scp_player):
     system = System()
@@ -91,6 +81,8 @@ def import_required_test_certs(scp_player):
                         uri_bundle=generate_scp_uri_using_player(scp_player, cert.p12_bundle),
                         passphrase=cert.p12_password).verify_result()
     yield
+    with allure.step('unset gnmi cert'):
+        system.gnmi_server.unset(apply=True).verify_result()
     with allure.step('delete certs from the system'):
         current_certs = OutputParsingTool.parse_json_str_to_dictionary(
             system.security.certificate.show()).get_returned_value()
