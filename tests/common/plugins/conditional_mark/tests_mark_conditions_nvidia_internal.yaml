@@ -1386,6 +1386,13 @@ show_techsupport/test_auto_techsupport.py:
     conditions:
       - "https://redmine.mellanox.com/issues/4177148"
       - "'bf3comdpu' in platform"
+
+decap/test_subnet_decap.py:
+  skip:
+    reason: "The test is skipped due to https://github.com/sonic-net/sonic-mgmt/issues/15912"
+    conditions:
+      - "'t1' in topo_name"
+      - https://github.com/sonic-net/sonic-mgmt/issues/15912
 ########################## NVIDIA INTERNAL COMMUNITY IGNORE END ############################
 
 
