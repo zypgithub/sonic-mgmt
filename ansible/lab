@@ -18,6 +18,10 @@ mtvr-moose-07      ansible_host=10.245.20.48 ansible_hostv6="fe80::966d:aeff:fe8
 mtvr-moose-08      ansible_host=10.245.20.51 ansible_hostv6="fe80::966d:aeff:fe8e:3cdc" sonic_version=v2 hwsku="ACS-SN5600" iface_speed=200000  mgmt_subnet_mask_length=22 vm_base=VM0000
 mtvr-moose-09      ansible_host=10.245.20.56 ansible_hostv6="fe80::c670:bdff:fe9d:90f2" sonic_version=v2 hwsku="ACS-SN5600" iface_speed=200000  mgmt_subnet_mask_length=22 vm_base=VM0000
 mtvr-moose-10      ansible_host=10.245.21.100 ansible_hostv6="fe80::966d:aeff:fed9:a202" sonic_version=v2 hwsku="ACS-SN5600" iface_speed=200000  mgmt_subnet_mask_length=22 vm_base=VM0000
+mtvr-moose-16      ansible_host=10.245.21.123 ansible_hostv6="fe80::966d:aeff:fe8e:3cdc" sonic_version=v2 hwsku="ACS-SN5600" iface_speed=200000  mgmt_subnet_mask_length=22 vm_base=VM0000
+mtvr-moose-17      ansible_host=10.245.21.124 ansible_hostv6="fe80::c670:bdff:fe9d:90f2" sonic_version=v2 hwsku="ACS-SN5600" iface_speed=200000  mgmt_subnet_mask_length=22 vm_base=VM0000
+mtvr-moose-18      ansible_host=10.245.21.125 ansible_hostv6="fe80::966d:aeff:fed9:a202" sonic_version=v2 hwsku="ACS-SN5600" iface_speed=200000  mgmt_subnet_mask_length=22 vm_base=VM0000
+
 mtvr-tigon-05      ansible_host=10.245.21.6 ansible_hostv6="fe80::966d:aeff:fe88:2f0e" sonic_version=v2 hwsku="ACS-SN4600C" iface_speed=200000  mgmt_subnet_mask_length=22 vm_base=VM0000
 mtvr-tigon-06      ansible_host=10.245.21.7 ansible_hostv6="fe80::966d:aeff:fe88:2f0e" sonic_version=v2 hwsku="ACS-SN4600C" iface_speed=200000  mgmt_subnet_mask_length=22 vm_base=VM0000
 mtvr-tigon-07      ansible_host=10.245.21.8 ansible_hostv6="fe80::966d:aeff:fe88:2f0e" sonic_version=v2 hwsku="ACS-SN4600C" iface_speed=200000  mgmt_subnet_mask_length=22 vm_base=VM0000
