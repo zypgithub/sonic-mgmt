@@ -65,6 +65,10 @@ master:
     <<: *platform_defaults
     sx_sdk: 30
     syncd: 5
+  SN2700: # Panther
+    <<: *platform_defaults
+    sx_sdk: 30
+    syncd: 5
   MSN2700: # Simx Panther
     <<: *platform_defaults
     sx_sdk: 30
