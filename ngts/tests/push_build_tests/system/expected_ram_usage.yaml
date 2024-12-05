@@ -151,6 +151,10 @@ master:
     <<: *platform_defaults
     sx_sdk: 1500
     syncd: 350
+  SN5610N: # Gaur
+    <<: *platform_defaults
+    sx_sdk: 1500
+    syncd: 350
   SN5640: # Bison
     <<: *platform_defaults
     sx_sdk: 1500
