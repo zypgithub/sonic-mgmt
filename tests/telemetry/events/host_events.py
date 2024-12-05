@@ -9,6 +9,7 @@ from tests.common.helpers.dut_utils import is_container_running
 
 logger = logging.getLogger(__name__)
 tag = "sonic-events-host"
+SN4280_PLATFORMS = ['x86_64-nvidia_sn4280-r0']
 
 
 def test_event(duthost, gnxi_path, ptfhost, data_dir, validate_yang):
@@ -16,11 +17,15 @@ def test_event(duthost, gnxi_path, ptfhost, data_dir, validate_yang):
     run_test(duthost, gnxi_path, ptfhost, data_dir, validate_yang, trigger_kernel_event,
              "event_kernel.json", "sonic-events-host:event-kernel", tag, False)
     backup_monit_config(duthost)
+    cpu_threshold = "2"
+    if duthost.facts["platform"] in SN4280_PLATFORMS:
+        cpu_threshold = "1"
+
     customize_monit_config(
         duthost,
         [
             "> 90% for 10 times within 20 cycles then alert repeat every 1 cycles",
-            "> 2% for 1 times within 5 cycles then alert repeat every 1 cycles"
+            f"> {cpu_threshold}% for 1 times within 5 cycles then alert repeat every 1 cycles"
         ]
     )
     try:
