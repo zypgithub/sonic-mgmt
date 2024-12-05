@@ -112,7 +112,7 @@ def verify_ca_in_ssl_ca_pool(ca_name: str, ca_info: CertInfo, dut_engine: LinuxS
             filename = ''.join(random.choice(string.ascii_lowercase) for _ in range(10)) + '.pem'
             pem_file = f'/tmp/{filename}'
             dut_engine.run_cmd(f'echo """{content}""" > {pem_file}')
-            res_out = dut_engine.run_cmd(f'sudo openssl verify {pem_file}')
+            res_out = dut_engine.run_cmd(f'sudo openssl verify -CAfile {CA_POOL_FILE} {pem_file}')
             dut_engine.run_cmd(f'sudo rm -f {pem_file}')
             verify_success = f'{filename}: OK' in res_out
             assert verify_success == should_exist, f'open ssl verify (using default CAs pool) result not as expected\nexpected: {should_exist}\nactual: {verify_success}\n{res_out}'
