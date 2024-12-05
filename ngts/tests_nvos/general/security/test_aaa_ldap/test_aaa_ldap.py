@@ -2,7 +2,6 @@ import pytest
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from infra.tools.linux_tools.linux_tools import scp_file
-from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.constants import MAX_TEST_TIMEOUT
 from ngts.tests_nvos.general.security.password_hardening.PwhConsts import PwhConsts
 from ngts.tests_nvos.general.security.security_test_tools.generic_remote_aaa_testing.generic_remote_aaa_testing import *
@@ -66,7 +65,7 @@ def test_ldap_set_unset_show(test_api, engines):
             #     LdapShadowAttributes.UID: random_str
             # }
         },
-        server_conf={
+        hostname_conf={
             AaaConsts.PRIORITY: 2
         },
         default_confs={
@@ -90,7 +89,7 @@ def test_ldap_set_invalid_param(test_api, engines):
     ldap_obj = System().aaa.ldap
     global_ldap_fields = LdapConsts.LDAP_FIELDS
     ldap_ssl_fields = LdapConsts.SSL_FIELDS
-    ldap_server_fields = [AaaConsts.PRIORITY]
+    ldap_hostname_fields = [AaaConsts.PRIORITY]
     generic_aaa_test_set_invalid_param(
         test_api=test_api,
         field_is_numeric=LdapConsts.FIELD_IS_NUMERIC,
@@ -98,7 +97,7 @@ def test_ldap_set_invalid_param(test_api, engines):
         resources_and_fields={
             ldap_obj: global_ldap_fields,
             ldap_obj.ssl: ldap_ssl_fields,
-            ldap_obj.server.server_id['1.2.3.4']: ldap_server_fields
+            ldap_obj.hostname.hostname_id['1.2.3.4']: ldap_hostname_fields
         }
     )
 
@@ -142,6 +141,7 @@ def test_ldap_bad_port_error_flow(test_api, engines, topology_obj):
     """
     ldap_server = LdapServers.PHYSICAL_SERVER.copy()
     ldap_server.port = 6692
+    # RandomizationTool.select_random_value(LdapConsts.POSSIBLE_PORTS, [ldap_server.port]).get_returned_value()
     generic_aaa_test_bad_configured_server(test_api, engines, topology_obj,
                                            remote_aaa_type=RemoteAaaType.LDAP, remote_aaa_obj=System().aaa.ldap,
                                            bad_param_name=LdapConsts.PORT, bad_configured_server=ldap_server)
@@ -311,7 +311,7 @@ def test_cert_verify(test_flow, test_api, addressing_type, engines, devices, bac
     with allure.step('Configure ldap server that allows cert verify'):
         ldap_obj = System().aaa.ldap
         ldap_server_info = LdapServers.DOCKER_SERVER_DN_WITH_CERT
-        server_resource = ldap_obj.server.server_id[ldap_server_info.hostname]
+        server_resource = ldap_obj.hostname.hostname_id[ldap_server_info.hostname]
         ldap_server_info.configure(engines)
 
     with allure.step('Enable cert-verify'):
@@ -370,7 +370,6 @@ def test_ldap_filter_passwd(test_api, engines, request, topology_obj):
     """
     item = request.node
     TestToolkit.tested_api = test_api
-    skip_auth_mediums = []
 
     with allure.step('Set ldap configuration'):
         server = LdapServersP3.LDAP1_IPV4.copy()
@@ -392,7 +391,7 @@ def test_ldap_filter_passwd(test_api, engines, request, topology_obj):
     with allure.step(f'Verify user {test_user.username} can not auth'):
         with loganalyzer_ignore():  # supposed to be able to ignore LA here because failthrough enabled
             verify_user_auth(engines, topology_obj, test_user,
-                             expect_login_success=False, skip_auth_mediums=skip_auth_mediums)  # TODO: need all auth mediums?
+                             expect_login_success=False)  # TODO: need all auth mediums?
 
     with allure.step('Sanity: clear filter and check the opposite'):
         with allure.step('Clear passwd filter'):
@@ -401,7 +400,7 @@ def test_ldap_filter_passwd(test_api, engines, request, topology_obj):
         with allure.step(f'Verify user "{test_user.username}" exists in getent passwd'):
             check_ldap_user_with_getent_passwd(engine=engines.dut, username=test_user.username, user_should_exist=True)
         with allure.step(f'Verify user {test_user.username} can auth'):
-            verify_user_auth(engines, topology_obj, test_user, expect_login_success=True, verify_authorization=False, skip_auth_mediums=skip_auth_mediums)
+            verify_user_auth(engines, topology_obj, test_user, expect_login_success=True, verify_authorization=False)
 
 
 @pytest.mark.security
@@ -470,7 +469,6 @@ def test_ldap_filter_shadow(test_api, engines, request, topology_obj):
     """
     item = request.node
     TestToolkit.tested_api = test_api
-    skip_auth_mediums = []
 
     with allure.step('Set ldap configuration'):
         server = LdapServersP3.LDAP1_IPV4.copy()
@@ -492,7 +490,7 @@ def test_ldap_filter_shadow(test_api, engines, request, topology_obj):
     with allure.step(f'Verify user {test_user.username} can not auth'):
         with loganalyzer_ignore():  # supposed to be able to ignore LA here because failthrough enabled
             verify_user_auth(engines, topology_obj, test_user,
-                             expect_login_success=False, skip_auth_mediums=skip_auth_mediums)  # TODO: need all auth mediums?
+                             expect_login_success=False)  # TODO: need all auth mediums?
 
     with allure.step('Sanity: clear filter and check the opposite'):
         with allure.step('Clear shadow filter'):
@@ -501,7 +499,7 @@ def test_ldap_filter_shadow(test_api, engines, request, topology_obj):
         with allure.step(f'Verify user "{test_user.username}" exists in getent passwd'):
             check_ldap_user_with_getent_passwd(engine=engines.dut, username=test_user.username, user_should_exist=True)
         with allure.step(f'Verify user {test_user.username} can auth'):
-            verify_user_auth(engines, topology_obj, test_user, expect_login_success=True, verify_authorization=False, skip_auth_mediums=skip_auth_mediums)
+            verify_user_auth(engines, topology_obj, test_user, expect_login_success=True, verify_authorization=False)
 
 
 @pytest.mark.security
@@ -513,7 +511,6 @@ def test_ldap_filter_combo(test_api, engines, request, topology_obj):
     """
     item = request.node
     TestToolkit.tested_api = test_api
-    skip_auth_mediums = []
 
     with allure.step('Set ldap configuration'):
         server = LdapServersP3.LDAP1_IPV4.copy()
@@ -546,7 +543,7 @@ def test_ldap_filter_combo(test_api, engines, request, topology_obj):
                 with loganalyzer_ignore(
                         cond=not user_can_auth):  # supposed to be able to ignore LA here because failthrough enabled
                     verify_user_auth(engines, topology_obj, user, expect_login_success=user_can_auth,
-                                     verify_authorization=False, skip_auth_mediums=skip_auth_mediums)  # TODO: need all auth mediums?
+                                     verify_authorization=False)  # TODO: need all auth mediums?
 
         check_user_getent_and_auth(ldapadm1, adm1_exists, adm1_can_auth)
         with allure.step(
@@ -603,7 +600,6 @@ def test_ldap_map_passwd(test_api, engines, request, topology_obj):
     """
     item = request.node
     TestToolkit.tested_api = test_api
-    skip_auth_mediums = []
 
     with allure.step('Set ldap configuration'):
         server = LdapServersP3.LDAP1_IPV4.copy()
@@ -623,7 +619,7 @@ def test_ldap_map_passwd(test_api, engines, request, topology_obj):
         check_ldap_user_with_getent_passwd(engine=engines.dut, username=cn_test_user.username, user_should_exist=True)
 
     with allure.step(f'Verify user {cn_test_user.username} can auth'):
-        verify_user_auth(engines, topology_obj, cn_test_user, expect_login_success=True, verify_authorization=False, skip_auth_mediums=skip_auth_mediums)
+        verify_user_auth(engines, topology_obj, cn_test_user, expect_login_success=True, verify_authorization=False)
 
     with allure.step(f'Verify user {non_cn_test_user.username} does not exist in getent passwd'):
         check_ldap_user_with_getent_passwd(engine=engines.dut, username=non_cn_test_user.username,
@@ -631,7 +627,7 @@ def test_ldap_map_passwd(test_api, engines, request, topology_obj):
 
     with allure.step(f'Verify user {non_cn_test_user.username} can not auth'):
         with loganalyzer_ignore():  # supposed to be able to ignore LA here because failthrough enabled
-            verify_user_auth(engines, topology_obj, non_cn_test_user, expect_login_success=False, skip_auth_mediums=skip_auth_mediums)
+            verify_user_auth(engines, topology_obj, non_cn_test_user, expect_login_success=False)
 
     with allure.step('Sanity: clear filter and check the opposite'):
         with allure.step('Clear passwd map'):
@@ -642,7 +638,7 @@ def test_ldap_map_passwd(test_api, engines, request, topology_obj):
                                                user_should_exist=True)
         with allure.step(f'Verify user {non_cn_test_user.username} can auth'):
             verify_user_auth(engines, topology_obj, non_cn_test_user, expect_login_success=True,
-                             verify_authorization=False, skip_auth_mediums=skip_auth_mediums)
+                             verify_authorization=False)
 
 
 @pytest.mark.security

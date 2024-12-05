@@ -38,3 +38,27 @@ class LdapMap(BaseComponent):
         self.passwd = BaseComponent(self, path='/passwd')
         self.group = BaseComponent(self, path='/group')
         self.shadow = BaseComponent(self, path='/shadow')
+
+
+# class Ldap(BaseComponent):
+#     def __init__(self, parent_obj=None):
+#         BaseComponent.__init__(self, parent=parent_obj, path='/ldap')
+#         self.hostname = LdapHostname(self)
+#         self.ssl = BaseComponent(self, path='/ssl')
+#
+#
+# class LdapHostname(BaseComponent):
+#     def __init__(self, parent_obj=None):
+#         BaseComponent.__init__(self, parent=parent_obj, path='/hostname')
+#
+#     def set_priority(self, hostname, priority, apply=False, ask_for_confirmation=False):
+#         ldap_hostname = BaseComponent(self, path='/' + hostname)
+#         return ldap_hostname.set("priority", priority, apply=apply, ask_for_confirmation=ask_for_confirmation)
+#
+#     def unset_hostname(self, hostname, apply=False, ask_for_confirmation=False):
+#         ldap_hostname = BaseComponent(self, path='/' + hostname)
+#         return ldap_hostname.unset(apply=apply, ask_for_confirmation=ask_for_confirmation)
+#
+#     def show_hostname(self, hostname):
+#         ldap_hostname = BaseComponent(self, path='/' + hostname)
+#         return ldap_hostname.show()
