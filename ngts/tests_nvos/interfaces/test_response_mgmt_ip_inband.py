@@ -17,7 +17,7 @@ from ngts.tools.test_utils import allure_utils as allure
 
 @pytest.mark.interface
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_configure_feature_state(engines, devices, prepare_traffic, test_api):
+def test_configure_feature_state(engines, devices, start_sm, test_api):
     """
     Validate configuring feature state by using the fae commands:
     - show fae ib ufm-mad command
@@ -426,35 +426,47 @@ def verify_ufm_mad_configuration(fae, dut_engine, port_name, devices_dut, engine
 
     with allure.step("Verify ip addresses via: show command, MAD request from traffic server, and IBSNI register"):
         if ipv4:
-            assert ufm_mad_show[port_name][UfmMadConsts.IPV4_PREFIX] == ipv4, \
-                f"ipv4 should be {ipv4}, but it is {ufm_mad_show[port_name][UfmMadConsts.IPV4_PREFIX]}"
-            assert ipv4_res == ipv4.split('/')[0], f"ufm mad ipv4 response is: {ipv4_res}, " \
-                f"but expected: {ipv4.split('/')[0]}"
-            assert ipv4_reg == ipv4.split('/')[0], f"IBSNI ipv4 response is: {ipv4_reg}, " \
-                f"but expected: {ipv4.split('/')[0]}"
+            with allure.independent_step('verify ipv4'):
+                assert ufm_mad_show[port_name][UfmMadConsts.IPV4_PREFIX] == ipv4, \
+                    f"ipv4 should be {ipv4}, but it is {ufm_mad_show[port_name][UfmMadConsts.IPV4_PREFIX]}"
+            with allure.independent_step('verify ufm mad ipv4'):
+                assert ipv4_res == ipv4.split('/')[0], f"ufm mad ipv4 response is: {ipv4_res}, " \
+                    f"but expected: {ipv4.split('/')[0]}"
+            with allure.independent_step('verify IBSNI ipv4'):
+                assert ipv4_reg == ipv4.split('/')[0], f"IBSNI ipv4 response is: {ipv4_reg}, " \
+                    f"but expected: {ipv4.split('/')[0]}"
         else:
-            assert UfmMadConsts.IPV4_PREFIX not in ufm_mad_show[port_name].keys(), \
-                f"{UfmMadConsts.IPV4_PREFIX} should be empty, but it is: " \
-                f"{ufm_mad_show[port_name][UfmMadConsts.IPV4_PREFIX]}"
-            assert ipv4_res == UfmMadConsts.MAD_NO_IPV4, f"ufm mad ipv4 response is: {ipv4_res}, " \
-                f"but expected: {UfmMadConsts.MAD_NO_IPV4}"
-            assert ipv4_reg == UfmMadConsts.MAD_NO_IPV4, f"IBSNI ipv4 response is: {ipv4_reg}, " \
-                f"but expected: {UfmMadConsts.MAD_NO_IPV4}"
+            with allure.independent_step(f'verify {UfmMadConsts.IPV4_PREFIX}'):
+                assert UfmMadConsts.IPV4_PREFIX not in ufm_mad_show[port_name].keys(), \
+                    f"{UfmMadConsts.IPV4_PREFIX} should be empty, but it is: " \
+                    f"{ufm_mad_show[port_name][UfmMadConsts.IPV4_PREFIX]}"
+            with allure.independent_step('verify ufm mad ipv4 response'):
+                assert ipv4_res == UfmMadConsts.MAD_NO_IPV4, f"ufm mad ipv4 response is: {ipv4_res}, " \
+                    f"but expected: {UfmMadConsts.MAD_NO_IPV4}"
+            with allure.independent_step('verify IBSNI ipv4 response'):
+                assert ipv4_reg == UfmMadConsts.MAD_NO_IPV4, f"IBSNI ipv4 response is: {ipv4_reg}, " \
+                    f"but expected: {UfmMadConsts.MAD_NO_IPV4}"
         if ipv6:
-            assert ufm_mad_show[port_name][UfmMadConsts.IPV6_PREFIX] == ipv6, \
-                f"ipv6 should be {ipv6}, but it is {ufm_mad_show[port_name][UfmMadConsts.IPV6_PREFIX]}"
-            assert ipv6_res == ipv6.split('/')[0], f"ufm mad ipv6 response is: {ipv6_res}, " \
-                f"but expected: {ipv6.split('/')[0]}"
-            assert ipv6_reg == ipv6.split('/')[0], f"IBSNI ipv6 response is: {ipv6_reg}, " \
-                f"but expected: {ipv6.split('/')[0]}"
+            with allure.independent_step('verify ipv6'):
+                assert ufm_mad_show[port_name][UfmMadConsts.IPV6_PREFIX] == ipv6, \
+                    f"ipv6 should be {ipv6}, but it is {ufm_mad_show[port_name][UfmMadConsts.IPV6_PREFIX]}"
+            with allure.independent_step('verify ufm mad ipv6 response'):
+                assert ipv6_res == ipv6.split('/')[0], f"ufm mad ipv6 response is: {ipv6_res}, " \
+                    f"but expected: {ipv6.split('/')[0]}"
+            with allure.independent_step('verify IBSNI ipv6 response'):
+                assert ipv6_reg == ipv6.split('/')[0], f"IBSNI ipv6 response is: {ipv6_reg}, " \
+                    f"but expected: {ipv6.split('/')[0]}"
         else:
-            assert UfmMadConsts.IPV6_PREFIX not in ufm_mad_show[port_name].keys(), \
-                f"{UfmMadConsts.IPV6_PREFIX} should be empty, but it is: " \
-                f"{ufm_mad_show[port_name][UfmMadConsts.IPV6_PREFIX]}"
-            assert ipv6_res == UfmMadConsts.MAD_NO_IPV6, f"ufm mad ipv6 response is: {ipv6_res}, " \
-                f"but expected: {UfmMadConsts.MAD_NO_IPV6}"
-            assert ipv6_reg == UfmMadConsts.MAD_NO_IPV6, f"IBSNI ipv6 response is: {ipv6_reg}, " \
-                f"but expected: {UfmMadConsts.MAD_NO_IPV6}"
+            with allure.independent_step(f'verify {UfmMadConsts.IPV6_PREFIX}'):
+                assert UfmMadConsts.IPV6_PREFIX not in ufm_mad_show[port_name].keys(), \
+                    f"{UfmMadConsts.IPV6_PREFIX} should be empty, but it is: " \
+                    f"{ufm_mad_show[port_name][UfmMadConsts.IPV6_PREFIX]}"
+            with allure.independent_step('verify ufm mad ipv6 response'):
+                assert ipv6_res == UfmMadConsts.MAD_NO_IPV6, f"ufm mad ipv6 response is: {ipv6_res}, " \
+                    f"but expected: {UfmMadConsts.MAD_NO_IPV6}"
+            with allure.independent_step('verify IBSNI ipv6 response'):
+                assert ipv6_reg == UfmMadConsts.MAD_NO_IPV6, f"IBSNI ipv6 response is: {ipv6_reg}, " \
+                    f"but expected: {UfmMadConsts.MAD_NO_IPV6}"
 
 
 def verify_ufm_mad_db_table(engine, state, port_name, ipv4='', ipv6=''):
