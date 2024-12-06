@@ -36,6 +36,7 @@ class TestIndependentModuleFunctional:
         for port in self.im_port_list:
             sfp_show_eeprom = self.duthost.command(f"{CMD_INTERFACE_TRANSCEIVER} {port}")
             parsed_eeprom = parse_im_eeprom(sfp_show_eeprom["stdout"])
+            cleanup_placeholder(parsed_eeprom, "Vendor Date Code(YYYY-MM-DD Lot)")
             redis_output = parse_sfp_info_from_redis(self.duthost, CMD_REDIS_TRANSCEIVER_INFO,
                                                      self.enum_frontend_asic_index, [port])
 
@@ -50,6 +51,7 @@ class TestIndependentModuleFunctional:
         for port in self.im_port_list:
             sfp_show_eeprom = self.duthost.command(f"{CMD_SFPUTIL_EEPROM} -p {port}")
             parsed_eeprom = parse_im_eeprom(sfp_show_eeprom["stdout"])
+            cleanup_placeholder(parsed_eeprom, "Vendor Date Code(YYYY-MM-DD Lot)")
             redis_output = parse_sfp_info_from_redis(self.duthost, CMD_REDIS_TRANSCEIVER_INFO,
                                                      self.enum_frontend_asic_index, [port])
 

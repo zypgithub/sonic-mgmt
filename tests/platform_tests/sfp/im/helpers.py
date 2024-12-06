@@ -3,11 +3,14 @@ import os
 import json
 import re
 import pytest
+import logging
 
 from tests.common.platform.device_utils import __check_if_status as check_if_status
 from tests.common.utilities import wait_until
 from tests.common.platform.interface_utils import get_physical_port_indices
 from tests.common.helpers.assertions import pytest_assert
+
+logger = logging.getLogger()
 
 IM_ENABLED = 1
 
@@ -206,6 +209,10 @@ def parse_sfp_info_from_redis(duthost, cmd, asic_index, interfaces):
         split_by_2 = [port_xcvr_info[i * 2:(i + 1) * 2] for i in range((len(port_xcvr_info) + 2 - 1) // 2)]
         for item in split_by_2:
             redis_all_data_dict.update({item[0]: item[1].rstrip()})
+
+        # Clean up the placeholder (\x00 or \u0000) in vendor_date field
+        cleanup_placeholder(redis_all_data_dict, "vendor_date")
+
         result_dict.update({intf: redis_all_data_dict})
     return result_dict
 
@@ -361,3 +368,17 @@ def im_ms_sku(duthost):
     @return: list of IM ports supported
     """
     return any(item in duthost.facts['hwsku'] for item in PLATFORM_GENERATION)
+
+
+def cleanup_placeholder(parsed_eeprom, key):
+    """
+    Clean up the placeholder (\x00 or \u0000) in Vendor Date Code field
+
+    Args:
+        parsed_eeprom: Dictionary containing parsed EEPROM data
+        key: Key name for vendor date in the EEPROM dictionary
+    """
+    if key in parsed_eeprom:
+        logger.info(f"The current vendor date is [{parsed_eeprom[key]}]")
+        parsed_eeprom[key] = parsed_eeprom[key].split()[0]
+        logger.info(f"The vendor date after update is [{parsed_eeprom[key]}]")
