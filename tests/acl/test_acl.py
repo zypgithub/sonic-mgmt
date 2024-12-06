@@ -1300,11 +1300,11 @@ class TestAclWithReboot(TestBasicAcl):
 
         """
         dut.command("config save -y")
-        reboot(dut, localhost, wait=240)
+        up_bgp_neighbors = dut.get_bgp_neighbors_per_asic("established")
+        reboot(dut, localhost, safe_reboot=True, check_intf_up_ports=True)
         # We need some additional delay on e1031
         if dut.facts["platform"] == "x86_64-cel_e1031-r0":
             time.sleep(240)
-
         # We need additional delay and make sure ports are up for Nokia-IXR7250E-36x400G
         if dut.facts["hwsku"] == "Nokia-IXR7250E-36x400G":
             interfaces = conn_graph_facts["device_conn"][dut.hostname]
@@ -1316,6 +1316,12 @@ class TestAclWithReboot(TestBasicAcl):
                                 xcvr_skip_list)
             assert result, "Not all transceivers are detected or interfaces are up in {} seconds".format(
                 MAX_WAIT_TIME_FOR_INTERFACES)
+
+        pytest_assert(
+            wait_until(300, 10, 0, dut.check_bgp_session_state_all_asics, up_bgp_neighbors, "established"),
+            "All BGP sessions are not up after reboot, no point in continuing the test")
+        # Delay 10 seconds for route convergence
+        time.sleep(10)
 
         populate_vlan_arp_entries()
 
