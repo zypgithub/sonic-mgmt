@@ -4321,3 +4321,10 @@
     - '.* ERR syncd#SDK: \[SAI_UTILS.ERR\].*get_dispatch_attribs_handler:.*(INGRESS_SAMPLE_MIRROR_SESSION|EGRESS_SAMPLE_MIRROR_SESSION).*'
   Conditions:
     - Platform: sn2
+
+# Ignore errors based on analysis of RM issue 4159565
+- Errors_list:
+    - '.* NOTICE kernel:.*sxd_kernel: Health-Check.*Kernel thread error.*'
+  Conditions:
+    - Platform:
+        - simx
