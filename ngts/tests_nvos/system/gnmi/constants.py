@@ -1,7 +1,3 @@
-from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
-from ngts.tests_nvos.general.security.certificate.constants import TestCert
-
-
 class GnmiMode:
     ONCE = 'once'
     POLL = 'poll'
@@ -25,8 +21,6 @@ MAX_GNMI_CONNECTIVITY_TIME = 6
 
 CERTIFICATE = 'certificate'
 DEFAULT_CERTIFICATE = 'self-signed'
-
-GNMI_TEST_CERT: CertInfo = TestCert.cert_valid_1
 
 SERVER_REFLECTION_SUBSCRIBE_RESPONSE = '.gnmi.SubscribeResponse'
 

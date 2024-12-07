@@ -1,10 +1,8 @@
 import concurrent.futures
 import datetime
 import logging
-import os
 import random
 import smtplib
-import subprocess
 import time
 from email.mime.text import MIMEText
 from typing import Dict
@@ -26,7 +24,6 @@ from ngts.constants.constants import DbConstants, CliType, DebugKernelConsts, In
 from ngts.nvos_constants.constants_nvos import ApiType, OperationTimeConsts, OutputFormat, NvosConst, TestConsts
 from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
 from ngts.nvos_tools.Devices.DeviceFactory import DeviceFactory
-from ngts.nvos_tools.Devices.EthDevice import EthSwitch
 from ngts.nvos_tools.cli_coverage.nvue_cli_coverage import NVUECliCoverage
 from ngts.nvos_tools.ib.opensm.OpenSmTool import OpenSmTool
 from ngts.nvos_tools.infra import ExceptionTool
@@ -195,6 +192,15 @@ def engines(topology_obj, devices):
     TestToolkit.update_engines(engines_data)
     TestToolkit.update_topology_obj(topology_obj)
     return engines_data
+
+
+def get_dut_hostname(engines):
+    return engines.dut.run_cmd('hostname')
+
+
+@pytest.fixture(scope='session')
+def dut_hostname(engines):
+    return get_dut_hostname(engines)
 
 
 @pytest.fixture(scope='session')

@@ -1,25 +1,50 @@
 import random
 import time
 from subprocess import Popen
-from typing import List
+from typing import List, Dict
 
 import pytest
 
-import ngts.tools.test_utils.allure_utils as allure
 from ngts.constants.constants import GnmiConsts
 from ngts.nvos_constants.constants_nvos import TestFlowType
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.system.System import System
+from ngts.tests_nvos.general.security.conftest import cleanup_after_aaa
 from ngts.tests_nvos.general.security.conftest import local_adminuser
+from ngts.tests_nvos.general.security.radius.constants import RadiusVmServer
 from ngts.tests_nvos.general.security.security_test_tools.constants import AuthConsts, AaaConsts, AddressingType
 from ngts.tests_nvos.general.security.security_test_tools.generic_remote_aaa_testing.constants import RemoteAaaType
+from ngts.tests_nvos.general.security.security_test_tools.tool_classes.RemoteAaaServerInfo import RemoteAaaServerInfo
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
+from ngts.tests_nvos.general.security.tacacs.constants import TacacsDockerServer0
+from ngts.tests_nvos.general.security.test_aaa_ldap.ldap_servers_info import LdapServersP3
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
 from ngts.tests_nvos.system.gnmi.constants import GnmiMode, MAX_GNMI_SUBSCRIBERS, GnmicErr
 from ngts.tests_nvos.system.gnmi.helpers import verify_gnmi_client, change_interface_description, \
     verify_msg_in_out_or_err, verify_msg_not_in_out_or_err
+from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_general_utils import wait_for_ldap_nvued_restart_workaround
 from ngts.tools.test_utils.switch_recovery import generate_strong_password
+
+
+@pytest.fixture()
+def aaa_users(engines, cleanup_after_aaa) -> Dict[str, UserInfo]:
+    with allure.step('set AAA servers'):
+        with allure.step('set tacacs server'):
+            tac_server: RemoteAaaServerInfo = TacacsDockerServer0.SERVER_BY_ADDRESSING_TYPE[
+                random.choice(AddressingType.ALL_TYPES)]
+            tac_server.configure(engines)
+        with allure.step('set ldap server'):
+            ldap_server: RemoteAaaServerInfo = LdapServersP3.LDAP1_SERVERS[random.choice(AddressingType.ALL_TYPES)]
+            ldap_server.configure(engines)
+        with allure.step('set radius server'):
+            rad_server: RemoteAaaServerInfo = RadiusVmServer.SERVER_BY_ADDRESSING_TYPE[
+                random.choice([AddressingType.IPV4, AddressingType.DN])]
+            rad_server.configure(engines)
+        with allure.step('enable failthrough'):
+            System().aaa.authentication.set(AuthConsts.FAILTHROUGH, AaaConsts.ENABLED, apply=True).verify_result()
+    return {RemoteAaaType.TACACS: tac_server.users[0], RemoteAaaType.LDAP: ldap_server.users[0],
+            RemoteAaaType.RADIUS: rad_server.users[0], }  # servers config cleared in clear_conf hook func
 
 
 @pytest.mark.system

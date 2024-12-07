@@ -1,6 +1,8 @@
+import os.path
 import random
 import string
 import time
+from typing import Dict, List, Tuple
 
 import pytest
 
@@ -8,39 +10,65 @@ import ngts.tools.test_utils.allure_utils as allure
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.constants.constants import GnmiConsts
 from ngts.nvos_constants.constants_nvos import TestFlowType, ApiType
+from ngts.nvos_tools.infra.CmdRunner import CmdRunner
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.system.System import System
+from ngts.tests_nvos.conftest import get_dut_hostname
 from ngts.tests_nvos.constants import MINUTE
-from ngts.tests_nvos.general.security.certificate.constants import TestCert
+from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tests_nvos.general.security.certificate.helpers import import_certificates
 from ngts.tests_nvos.general.security.conftest import local_adminuser
-from ngts.tests_nvos.general.security.helpers import remove_etc_host_mapping_to_dn, add_etc_host_mapping_to_dn
+from ngts.tests_nvos.general.security.constants import TMP_TEST_CERTS_DIR
+from ngts.tests_nvos.general.security.helpers import remove_etc_host_mapping_to_dn, add_etc_host_mapping_to_dn, \
+    prepare_tmp_test_certs, import_certs_safely, delete_certs_safely, get_cert_with_ca_mismatch
 from ngts.tests_nvos.general.security.security_test_tools.constants import AddressingType
 from ngts.tests_nvos.helpers.pytest_helpers import get_cur_test_param_value
 from ngts.tests_nvos.system.gnmi.constants import CERTIFICATE, DEFAULT_CERTIFICATE, GnmicErr, \
-    GNMI_TEST_CERT, ETC_HOSTS
+    ETC_HOSTS
 from ngts.tests_nvos.system.gnmi.helpers import verify_gnmi_client, verify_gnmi_client_tools_installed, get_scp_player
 
 
+def setup_gnmi_cert_tests(engines, dut_hostname, scp_player) -> Tuple[str, List[CertInfo]]:
+    with allure.step('prepare temp test certs in shared location'):
+        certs_dirname = f'gnmi-{dut_hostname}-{random.randint(0, 9999)}'
+        tmp_certs_dir = os.path.join(TMP_TEST_CERTS_DIR, certs_dirname)
+        certs_names = ['gnmi-cert1', 'gnmi-cert2', 'gnmi-cert3']
+        certs_info: Dict[str, CertInfo] = prepare_tmp_test_certs(certs_names, tmp_certs_dir, engines, dut_hostname)
+        certs = list(certs_info.values())
+    with allure.step('import certs to dut'):
+        import_certs_safely(list(certs_info.values()), scp_player)
+
+    return tmp_certs_dir, certs
+
+
+def cleanup_gnmi_cert_tests(tmp_certs_dir: str, certs: List[CertInfo]):
+    with allure.step('unset gnmi config'):
+        System().gnmi_server.unset(apply=True).verify_result()
+    with allure.step('delete certs from dut'):
+        delete_certs_safely(certs)
+    with allure.step('remove temp test certs from shared location'):
+        CmdRunner().run_cmd(f'rm -rf {tmp_certs_dir}')
+
+
 @pytest.fixture(scope='module', autouse=True)
-def import_test_certs(import_required_test_certs):
-    pass
+def gnmi_certs(engines, dut_hostname, scp_player):
+    tmp_certs_dir, certs = setup_gnmi_cert_tests(engines, dut_hostname, scp_player)
+    yield certs
+    cleanup_gnmi_cert_tests(tmp_certs_dir, certs)
 
 
 @pytest.fixture()
-def add_etc_host_mapping_for_ipv6_cert_test(request, engines, dut_ipv6_addr):
+def add_etc_host_mapping_for_ipv6_cert_test(request, dut_ipv6_addr, dut_hostname):
     should_run = get_cur_test_param_value(request, 'addressing_type') == AddressingType.IPV6
-    cert = GNMI_TEST_CERT
     if should_run:
         with allure.step(f'add ipv6 mapping of new dut hostname to {ETC_HOSTS}'):
-            remove_etc_host_mapping_to_dn(cert.dn)
-            add_etc_host_mapping_to_dn(cert.dn, dut_ipv6_addr)
+            remove_etc_host_mapping_to_dn(dut_hostname)
+            add_etc_host_mapping_to_dn(dut_hostname, dut_ipv6_addr)
     yield
     if should_run:
-        with allure.step(f'remove ipv6 mapping of new dut hostname to {ETC_HOSTS} and restore ipv4 mapping'):
-            remove_etc_host_mapping_to_dn(cert.dn)
-            add_etc_host_mapping_to_dn(cert.dn, engines.dut.ip)
+        with allure.step(f'remove ipv6 mapping of new dut hostname to {ETC_HOSTS}'):
+            remove_etc_host_mapping_to_dn(dut_hostname)
 
 
 # @pytest.mark.system
@@ -68,7 +96,7 @@ def add_etc_host_mapping_for_ipv6_cert_test(request, engines, dut_ipv6_addr):
 #                            local_adminuser.password, False, GnmicErr.CERT_VERIFY_FAIL, cacert=test_cert.cacert)
 
 
-def check_gnmi_cert_cli(api):
+def check_gnmi_cert_cli(api, gnmi_certs: List[CertInfo]):
     """
     verify gnmi certificate related cli work properly
 
@@ -82,7 +110,7 @@ def check_gnmi_cert_cli(api):
     8. verify in show the default certificate value
     """
     TestToolkit.tested_api = api
-    cert = TestCert.cert_valid_1
+    cert: CertInfo = gnmi_certs[0]
 
     with allure.step('verify in show that certificate field exists and is set to default'):
         gnmi = System().gnmi_server
@@ -119,7 +147,7 @@ def check_gnmi_cert_cli(api):
 @pytest.mark.system
 @pytest.mark.gnmi
 @pytest.mark.parametrize('api', ApiType.ALL_TYPES)
-def test_gnmi_cert_cli(api):
+def test_gnmi_cert_cli(api, gnmi_certs):
     """
     verify gnmi certificate related cli work properly
 
@@ -132,13 +160,13 @@ def test_gnmi_cert_cli(api):
     7. unset gnmi (entire endpoint)
     8. verify in show the default certificate value
     """
-    check_gnmi_cert_cli(api)
+    check_gnmi_cert_cli(api, gnmi_certs)
 
 
 @pytest.mark.system
 @pytest.mark.gnmi
 @pytest.mark.parametrize('api', ApiType.ALL_TYPES)
-def test_gnmi_cert_cli_when_gnmi_disabled(api):
+def test_gnmi_cert_cli_when_gnmi_disabled(api, gnmi_certs):
     """
     verify gnmi certificate related cli work properly
 
@@ -155,14 +183,15 @@ def test_gnmi_cert_cli_when_gnmi_disabled(api):
     with allure.step('disable gnmi'):
         System().gnmi_server.set('state', 'disabled', apply=True).verify_result()
 
-    check_gnmi_cert_cli(api)
+    check_gnmi_cert_cli(api, gnmi_certs)
 
 
 @pytest.mark.system
 @pytest.mark.gnmi
 @pytest.mark.parametrize('test_flow', TestFlowType.ALL_TYPES)
 @pytest.mark.parametrize('addressing_type', [AddressingType.IPV4, AddressingType.IPV6])
-def test_gnmi_cert_set_cert(test_flow, addressing_type, local_adminuser, add_etc_host_mapping_for_ipv6_cert_test):
+def test_gnmi_cert_set_cert(test_flow, addressing_type, local_adminuser, gnmi_certs,
+                            add_etc_host_mapping_for_ipv6_cert_test):
     """
     verify that set command loads the certificate into gnmi,
         so clients with the right CA crt can communicate with gnmi with/out skip-verify flag
@@ -171,7 +200,8 @@ def test_gnmi_cert_set_cert(test_flow, addressing_type, local_adminuser, add_etc
     2. run client without skip-verify flag, using right CA crt - expect success
     3. run client with skip-verify flag - expect success
     """
-    cert = TestCert.cert_valid_1 if test_flow == TestFlowType.GOOD_FLOW else TestCert.cert_ca_mismatch
+
+    cert: CertInfo = gnmi_certs[0] if test_flow == TestFlowType.GOOD_FLOW else get_cert_with_ca_mismatch(gnmi_certs)
     with allure.step('set gnmi certificate'):
         System().gnmi_server.set(CERTIFICATE, cert.name, apply=True).verify_result()
     with allure.step(
@@ -185,7 +215,7 @@ def test_gnmi_cert_set_cert(test_flow, addressing_type, local_adminuser, add_etc
 
 @pytest.mark.system
 @pytest.mark.gnmi
-def test_gnmi_cert_set_non_existing_cert(engines, local_adminuser):
+def test_gnmi_cert_set_non_existing_cert(engines, local_adminuser, gnmi_certs):
     """
     verify that when trying to set gnmi certificate with id of non-existing certificate, there is failure
 
@@ -199,12 +229,12 @@ def test_gnmi_cert_set_non_existing_cert(engines, local_adminuser):
     with allure.step('run client without skip-verify flag, using some CA crt - expect fail'):
         verify_gnmi_client(TestFlowType.BAD_FLOW, engines.dut.ip, GnmiConsts.GNMI_DEFAULT_PORT,
                            local_adminuser.username, local_adminuser.password, False, GnmicErr.CERT_VERIFY_FAIL,
-                           cacert=TestCert.cert_valid_1.cacert)
+                           cacert=gnmi_certs[0].cacert)
 
 
 @pytest.mark.system
 @pytest.mark.gnmi
-def test_gnmi_cert_unset_cert(local_adminuser):
+def test_gnmi_cert_unset_cert(local_adminuser, gnmi_certs):
     """
     Verify that after unset gnmi certificate, client cannot communicate with gnmi using the CA that supports the cert
 
@@ -216,7 +246,7 @@ def test_gnmi_cert_unset_cert(local_adminuser):
     6.	Run client with CA cert that supports that cert
     7.	Expect fail
     """
-    cert = TestCert.cert_valid_1
+    cert: CertInfo = gnmi_certs[0]
     with allure.step('set gnmi certificate'):
         gnmi = System().gnmi_server
         gnmi.set(CERTIFICATE, cert.name, apply=True).verify_result()
@@ -238,7 +268,7 @@ def test_gnmi_cert_unset_cert(local_adminuser):
 
 @pytest.mark.system
 @pytest.mark.gnmi
-def test_gnmi_cert_set_cert_after_unset(local_adminuser):
+def test_gnmi_cert_set_cert_after_unset(local_adminuser, gnmi_certs):
     """
     Verify that can set certificate after unset, and that it works
 
@@ -247,7 +277,7 @@ def test_gnmi_cert_set_cert_after_unset(local_adminuser):
     3.	Run client with CA that supports that cert
     4.	Expect success
     """
-    cert = TestCert.cert_valid_1
+    cert: CertInfo = gnmi_certs[0]
     with allure.step('set gnmi certificate after unset'):
         with allure.step('set'):
             gnmi = System().gnmi_server
@@ -264,7 +294,7 @@ def test_gnmi_cert_set_cert_after_unset(local_adminuser):
 
 @pytest.mark.system
 @pytest.mark.gnmi
-def test_gnmi_delete_cert_in_use_by_gnmi():
+def test_gnmi_delete_cert_in_use_by_gnmi(gnmi_certs):
     """
     Verify that delete certificate that is in use by gnmi fails
 
@@ -272,7 +302,7 @@ def test_gnmi_delete_cert_in_use_by_gnmi():
     2.	delete that cert from the system
     3.	verify failure
     """
-    cert = TestCert.cert_valid_1
+    cert: CertInfo = gnmi_certs[0]
     with allure.step('set gnmi certificate'):
         system = System()
         system.gnmi_server.set(CERTIFICATE, cert.name, apply=True).verify_result()
@@ -285,7 +315,7 @@ def test_gnmi_delete_cert_in_use_by_gnmi():
 @pytest.mark.timeout(20 * MINUTE, func_only=True)
 @pytest.mark.system
 @pytest.mark.gnmi
-def test_gnmi_reboot_system(engines, local_adminuser):
+def test_gnmi_reboot_system(engines, local_adminuser, gnmi_certs):
     """
     Verify that gnmi keeps using certificate after reboot only after save
 
@@ -298,7 +328,7 @@ def test_gnmi_reboot_system(engines, local_adminuser):
     7.  verify cert appears in show
     8.  try using the cert - expect success
     """
-    cert = TestCert.cert_valid_1
+    cert: CertInfo = gnmi_certs[0]
     with allure.step(f'save config with test user "{local_adminuser.username}"'):
         NvueGeneralCli.save_config(engines.dut)
     try:
@@ -339,12 +369,14 @@ def test_gnmi_reboot_system(engines, local_adminuser):
 
 def gnmi_cert_upgrade_check():
     engines = TestToolkit.engines
-    cert = TestCert.cert_valid_1
     system = System()
     scp_engine = get_scp_player(engines)
     dut_engine = engines.dut
 
     with allure.step('setup'):
+        with allure.step('prepare gnmi test certs'):
+            tmp_certs_dir, gnmi_certs = setup_gnmi_cert_tests(engines, get_dut_hostname(engines), scp_engine)
+            cert: CertInfo = gnmi_certs[0]
         with allure.step('verify player has gnmi client tools'):
             verify_gnmi_client_tools_installed()
         with allure.step(f'import cert {cert.name}'):
@@ -366,13 +398,14 @@ def gnmi_cert_upgrade_check():
                     f'actual: {out[CERTIFICATE]}')
             with allure.independent_step('verify client can request using the certificate'):
                 time.sleep(5)
-                remove_etc_host_mapping_to_dn(cert.dn)
-                add_etc_host_mapping_to_dn(cert.dn, dut_engine.ip)
-                verify_gnmi_client(TestFlowType.GOOD_FLOW, cert.dn or cert.ip, GnmiConsts.GNMI_DEFAULT_PORT, dut_engine.username,
+                # remove_etc_host_mapping_to_dn(cert.dn)
+                # add_etc_host_mapping_to_dn(cert.dn, dut_engine.ip)
+                verify_gnmi_client(TestFlowType.GOOD_FLOW, cert.dn or cert.ip, GnmiConsts.GNMI_DEFAULT_PORT,
+                                   dut_engine.username,
                                    dut_engine.password, False, GnmicErr.CERT_VERIFY_FAIL, cacert=cert.cacert)
-                remove_etc_host_mapping_to_dn(cert.dn)
+                # remove_etc_host_mapping_to_dn(cert.dn)
     finally:
         with allure.step('cleanup'):
-            system.gnmi_server.unset(apply=True).verify_result()
+            cleanup_gnmi_cert_tests(tmp_certs_dir, gnmi_certs)
 
     yield  # to prevent StopIteration on the 2nd next() call
