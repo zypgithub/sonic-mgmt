@@ -14,7 +14,8 @@ class CertInfo:
         self.cacert: str = cacert
 
     def copy(self, new_name: str = '') -> 'CertInfo':
-        return CertInfo(new_name or self.name, self.info, self.private, self.public, self.p12_bundle, self.p12_password, self.dn, self.ip, self.cacert)
+        return CertInfo(new_name or self.name, self.info, self.private, self.public, self.p12_bundle, self.p12_password,
+                        self.dn, self.ip, self.cacert)
 
     @property
     def private_filename(self) -> str:
@@ -34,7 +35,7 @@ class CertInfo:
 
     @property
     def cacert_name(self) -> str:
-        return f'cacert-of-{self.name}'
+        return f'ca-of-{self.name}'
 
     def get_cert_content_str(self) -> str:
         with open(self.public, 'r') as cert_file:

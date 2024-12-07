@@ -1,9 +1,11 @@
 import pytest
 
-from ngts.nvos_tools.infra.CmdRunner import CmdRunner
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.system.System import System
-from ngts.tests_nvos.system.gnmi.constants import ETC_HOSTS, GNMI_TEST_CERT
+from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
+from ngts.tests_nvos.general.security.certificate.constants import TestCert
+from ngts.tests_nvos.general.security.helpers import add_etc_host_mapping_to_dn, remove_etc_host_mapping_to_dn
+from ngts.tests_nvos.system.gnmi.constants import ETC_HOSTS
 from ngts.tools.test_utils import allure_utils as allure
 
 
@@ -14,7 +16,8 @@ def clear_existing_certs():
         for cert in certs:
             system.security.certificate.cert_id[cert].action_delete().verify_result()
     with allure.step('delete imported ca-certificates'):
-        certs = OutputParsingTool.parse_json_str_to_dictionary(system.security.ca_certificate.show()).get_returned_value()
+        certs = OutputParsingTool.parse_json_str_to_dictionary(
+            system.security.ca_certificate.show()).get_returned_value()
         for cert in certs:
             system.security.ca_certificate.cert_id[cert].action_delete().verify_result()
 
@@ -32,11 +35,11 @@ def clear_certs_session():
 
 
 @pytest.fixture(scope='module', autouse=True)
-def curl_cert_hostname(engines):
-    cert = GNMI_TEST_CERT
-    with allure.step(f'add mapping of new dut hostname to {ETC_HOSTS}'):
-        cmd_runner = CmdRunner()
-        cmd_runner.run_cmd_in_process(f'echo "{engines.dut.ip} {cert.dn}" | sudo tee -a {ETC_HOSTS}')
+def etc_hosts_mapping(engines):
+    cert: CertInfo = TestCert.cert_valid_1
+    with allure.step(f'add ipv4 mapping of new dut hostname to {ETC_HOSTS}'):
+        remove_etc_host_mapping_to_dn(cert.dn)
+        add_etc_host_mapping_to_dn(cert.dn, engines.dut.ip)
     yield
-    with allure.step(f'remove hostname mapping fro {ETC_HOSTS}'):
-        cmd_runner.run_cmd_in_process(f"sudo sed -i '/{cert.dn}/d' {ETC_HOSTS}")
+    with allure.step(f'remove ipv4 mapping of new dut hostname to {ETC_HOSTS}'):
+        remove_etc_host_mapping_to_dn(cert.dn)
