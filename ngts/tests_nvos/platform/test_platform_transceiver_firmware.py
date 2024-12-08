@@ -2,6 +2,7 @@ import logging
 import pytest
 import time
 import re
+from typing import Type
 import random
 
 from ngts.tools.test_utils import allure_utils as allure
@@ -15,6 +16,8 @@ from ngts.nvos_constants.constants_nvos import ApiType, SystemConsts, PlatformCo
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
 from ngts.tests_nvos.platform.test_platform_transceiver import _get_ports_for_module
+from ngts.tests_nvos.platform.constants import *
+from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 
 logger = logging.getLogger()
 
@@ -97,7 +100,7 @@ def test_reset_transceiver_firmware_positive(engines, test_api, start_sm):
 @pytest.mark.platform
 @pytest.mark.transceiver
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_install_transceiver_firmware_positive(engines, devices, test_api, start_sm):
+def test_install_transceiver_firmware_positive(engines, devices, test_api, start_sm, test_name):
     """
     Test Flow:
         1. Fetch 2 module FW images. Save as <FW1>و <FW2>
@@ -132,34 +135,41 @@ def test_install_transceiver_firmware_positive(engines, devices, test_api, start
     default_fw = OutputParsingTool.parse_json_str_to_dictionary(
         platform.transceiver.show(random_transceiver + ' firmware')).verify_result()[PlatformConsts.FW_ACTUAL]
 
-    try:
-        with allure.step("Create interface object"):
-            interface = Interface(parent_obj=None, port_name=random_port)
+    with allure.step("Create interface object"):
+        interface = Interface(parent_obj=None, port_name=random_port)
 
-        with allure.step("Fetch 2 transceiver firmware files for {}, the actual firmware is {}".format(random_transceiver, default_fw)):
-            player_engine = engines['sonic_mgmt']
-            paths, bin_files = _find_transceiver_firmware_file_path(player=player_engine, default_fw=default_fw, number_of_files=2)
-            scp_path = 'scp://{}:{}@{}'.format(player_engine.username, player_engine.password, player_engine.ip)
-            fw_path_1 = f"{paths[0]}/{bin_files[0]}"
-            fw_path_2 = f"{paths[1]}/{bin_files[1]}"
-            platform.firmware.transceiver.action_fetch(fw_path_1, base_url=scp_path).verify_result()
-            platform.firmware.transceiver.action_fetch(fw_path_2, base_url=scp_path).verify_result()
+    with allure.step("Fetch 2 transceiver firmware files for {}, the actual firmware is {}".format(random_transceiver, default_fw)):
+        player_engine = engines['sonic_mgmt']
+        scp_path = 'scp://{}:{}@{}'.format(player_engine.username, player_engine.password, player_engine.ip)
+        transceiver_id = default_fw.split('.')[0]
+        transceiver_obj: Transceiver = TransceiversConsts.TRANSCEIVERS_DETAILS[transceiver_id]
+        downgrade_version_path = transceiver_obj.test_versions_path + transceiver_obj.downgrade_version_name
+        upgrade_version_path = transceiver_obj.test_versions_path + transceiver_obj.upgrade_version_name
 
-        with allure.step("run {} show link command".format(random_port)):
-            show_interface_before_install = OutputParsingTool.parse_json_str_to_dictionary(
-                interface.link.show()).verify_result()
+    with allure.step(f"try to downgrade amd upgrade firmware for transceiver of type {transceiver_obj.transceiver_type}"):
+        try:
+            with allure.independent_step("fetch and downgrade transceiver firmware"):
+                platform.firmware.transceiver.action_fetch(downgrade_version_path, base_url=scp_path).verify_result()
+                result_obj, duration = OperationTime.save_duration("transceiver firmware installation",
+                                                                   random_transceiver, test_name, platform.transceiver.action_install,
+                                                                   random_transceiver, transceiver_obj.downgrade_version_name)
+                OperationTime.verify_operation_time(duration, "transceiver firmware installation", transceiver_obj.installation_time).verify_result()
 
-        with allure.step("install new transceiver firmware - {}".format(bin_files[0])):
-            platform.transceiver.action_install(random_transceiver, bin_files[0]).verify_result()
+            with allure.step("run {} show link command".format(random_port)):
+                show_interface_before_install = OutputParsingTool.parse_json_str_to_dictionary(
+                    interface.link.show()).verify_result()
 
-        with allure.step("verify show commands after install"):
-            output_after_install = OutputParsingTool.parse_json_str_to_dictionary(platform.transceiver.show(random_transceiver + ' firmware')).verify_result()
-            _verify_expected_dict(command_output=output_after_install, default_fw=_get_firmware(bin_files[0]), status='OK', msg='N/A')
-            show_interface_after_install = OutputParsingTool.parse_json_str_to_dictionary(interface.link.show()).verify_result()
-            assert show_interface_before_install == show_interface_after_install, "at lease one of the link values has been change, output before install = {}, after install = {}".format(
-                show_interface_before_install, show_interface_after_install)
-    finally:
-        _cleanup_step(engines.dut, engines['sonic_mgmt'], platform, random_transceiver, default_fw)
+            with allure.step("verify show commands after install"):
+                output_after_install = OutputParsingTool.parse_json_str_to_dictionary(platform.transceiver.show(random_transceiver + ' firmware')).verify_result()
+                _verify_expected_dict(command_output=output_after_install, default_fw=transceiver_obj.downgrade_version_number, status='OK', msg='N/A')
+                show_interface_after_install = OutputParsingTool.parse_json_str_to_dictionary(interface.link.show()).verify_result()
+                link_output_before_reset = show_interface_before_install.pop('counters')
+                link_output_after_reset = show_interface_after_install.pop('counters')
+                check_counters(link_output_before_reset, link_output_after_reset)
+        finally:
+            with allure.independent_step("fetch and upgrade transceiver firmware"):
+                platform.firmware.transceiver.action_fetch(upgrade_version_path, base_url=scp_path).verify_result()
+                platform.transceiver.action_install(random_transceiver, transceiver_obj.upgrade_version_name).verify_result()
 
 
 @pytest.mark.platform
@@ -190,27 +200,21 @@ def test_install_reset_transceiver_firmware_negative_flow(engines, test_api):
         player_engine = engines['sonic_mgmt']
         scp_path = 'scp://{}:{}@{}'.format(player_engine.username, player_engine.password, player_engine.ip)
         platform.firmware.transceiver.action_fetch(invalid_fw_path, base_url=scp_path).verify_result()
-        default_fw = OutputParsingTool.parse_json_str_to_dictionary(
-            platform.transceiver.show(random_transceiver + ' firmware')).verify_result()[PlatformConsts.FW_ACTUAL]
 
-    try:
-        with allure.step("Create interface object"):
-            interface = Interface(parent_obj=None, port_name=random_port)
-            show_interface_before_install = OutputParsingTool.parse_json_str_to_dictionary(interface.link.show()).verify_result()
+    with allure.step("Create interface object"):
+        interface = Interface(parent_obj=None, port_name=random_port)
+        show_interface_before_install = OutputParsingTool.parse_json_str_to_dictionary(interface.link.show()).verify_result()
 
-        with allure.step("install new transceiver firmware - {}".format(invalid_file)):
-            platform.transceiver.action_install(random_transceiver, invalid_file, expected_str=expected_error_msg)
-            platform.transceiver.action_reset(random_transceiver)
+    with allure.step("install new transceiver firmware - {}".format(invalid_file)):
+        platform.transceiver.action_install(random_transceiver, invalid_file, expected_str=expected_error_msg)
+        platform.transceiver.action_reset(random_transceiver)
 
-        with allure.step("verify show commands after install"):
-            show_interface_after_install = OutputParsingTool.parse_json_str_to_dictionary(
-                interface.link.show()).verify_result()
-            output_after_install = OutputParsingTool.parse_json_str_to_dictionary(platform.transceiver.show(random_transceiver + ' firmware')).verify_result()
-            _verify_expected_dict(command_output=output_after_install, default_fw='N/A', status='Failed', msg=expected_error_msg)
-            assert show_interface_after_install == show_interface_before_install, "at least one of the link values has been change, before_install {} after install {}".format(show_interface_before_install, show_interface_after_install)
-
-    finally:
-        _cleanup_step(engines.dut, engines['sonic_mgmt'], platform, random_transceiver, default_fw)
+    with allure.step("verify show commands after install"):
+        show_interface_after_install = OutputParsingTool.parse_json_str_to_dictionary(
+            interface.link.show()).verify_result()
+        output_after_install = OutputParsingTool.parse_json_str_to_dictionary(platform.transceiver.show(random_transceiver + ' firmware')).verify_result()
+        _verify_expected_dict(command_output=output_after_install, default_fw='N/A', status='Failed', msg=expected_error_msg)
+        assert show_interface_after_install == show_interface_before_install, "at least one of the link values has been change, before_install {} after install {}".format(show_interface_before_install, show_interface_after_install)
 
 
 @pytest.mark.platform
@@ -283,64 +287,6 @@ def _verify_expected_dict(command_output, default_fw, status='N/A', msg='N/A'):
         assert command_output == expected_dict, "at least one of the values is not as expected {}".format(command_output)
 
 
-def _find_transceiver_firmware_file_path(player, default_fw, number_of_files=1):
-    """
-    :summary: example of transceiver firmware path:
-    <base_path>/46_Bagheera1_2/120_10_release/rel-46_120_10010/signed/sec_issu_46_120_10010_dev_signed.bin.
-
-    :param player:
-    :param default_fw: transceiver default fw
-    :param number_of_files:
-    :return:
-    """
-
-    with allure.step("find {} transceiver firmware files to support transceiver with default firmware {}".format(number_of_files, default_fw)):
-        base_path = "/.autodirect/sw/release/fwshared/linkx/mlnx_linkx_module_aoc_fw"
-
-        type_id, release_id, current_version = default_fw.split('.')
-        folder_name = _get_folder_name(engine=player, path=base_path, pattern=type_id, condition='S')
-        path = base_path + '/' + folder_name[0]
-        folder_name = _get_folder_name(player, path, release_id, 'S')
-        path += '/' + folder_name[0]
-        folder_name = _get_folder_name(player, path, 'rel', 'S', folders_count=number_of_files)
-        paths = [path + '/' + folder + '/' + 'signed/dev' for folder in folder_name]
-        bin_files = []
-        for path in paths:
-            bin_files.append(_get_folder_name(player, path, '.bin', 'E')[0])
-
-        return paths, bin_files
-
-
-def _get_folder_name(engine, path, pattern, condition, folders_count=1):
-    with allure.step("trying to find {} files from {} that includes {} under condition {}".format(folders_count, path, pattern, condition)):
-        types_list = engine.run_cmd('ls {}'.format(path))
-        split_string = re.split(r'\n|\t| ', types_list)
-        split_string = list(filter(None, split_string))
-        if condition is 'S':
-            matching_type_folders = [folder for folder in split_string if folder.startswith(pattern)]
-        else:
-            matching_type_folders = [folder for folder in split_string if folder.endswith(pattern)]
-
-        assert matching_type_folders, "No matching {} folder found".format(pattern)
-        assert len(matching_type_folders) >= folders_count, "only {} folders are exist, and we asked for {}".format(len(matching_type_folders), folders_count)
-
-        return matching_type_folders[-folders_count:]
-
-
-def _get_firmware(file_name):
-    with allure.step(""):
-        pattern = r"fw_(\d+)_(\d+)_(\d+)_dev_signed\.bin"
-        match = re.search(pattern, file_name)
-
-        if match:
-            version_numbers = match.groups()
-            version_numbers = [str(int(num)) if index == 2 else num for index, num in enumerate(version_numbers)]
-            version_string = ".".join(version_numbers)
-            return version_string
-        else:
-            return None
-
-
 def _get_random_optical_module_transceiver():
     """
 
@@ -369,34 +315,6 @@ def _get_random_optical_module_transceiver():
             random_port_name = random.choice(temp)
 
         return platform, random_transceiver, random_port_name.name
-
-
-def _cleanup_step(engine, player_engine, platform, transceiver_id, default_fw):
-    """
-    to delete all fetched files and reinstall default fw
-    - run nv show platform transceiver <transceiver_id> firmware
-    - if the firmware != default_fw, then we need to install the <default_fw>
-    - run nv action delete platform firmware transceiver files
-    :return:
-    """
-    with allure.step("cleanup steps"):
-        with allure.step("re-install default fw if needed"):
-            current_fw = OutputParsingTool.parse_json_str_to_dictionary(
-                platform.transceiver.show(transceiver_id + ' firmware')).verify_result()[PlatformConsts.FW_ACTUAL]
-            if current_fw != default_fw:
-                with allure.step("install the default fw {} because the current fw is {}".format(default_fw, current_fw)):
-                    default_fw_path, default_bin_file = _find_transceiver_firmware_file_path(player=player_engine, default_fw=default_fw, number_of_files=1)
-                    with allure.step("fetch file from {}".format(default_fw_path[0])):
-                        fw_path_1 = f"{default_fw_path[0]}/{default_bin_file[0]}"
-                        platform.firmware.transceiver.action_fetch(fw_path_1).verify_result()
-
-                    with allure.step("install new transceiver firmware - {}".format(default_bin_file[0])):
-                        platform.transceiver.action_install(transceiver_id, default_bin_file[0]).verify_result()
-                        platform.transceiver.action_reset(transceiver_id)
-
-        with allure.step("delete all fetched files"):
-            path = "/host/fw-images/module"
-            engine.run_cmd(f"sudo rm -f {path}/*")
 
 
 def check_counters(counters_before, counters_after):
