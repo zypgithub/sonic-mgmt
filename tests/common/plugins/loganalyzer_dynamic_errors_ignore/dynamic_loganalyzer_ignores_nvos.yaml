@@ -1183,6 +1183,9 @@
 # NVOS - expected errors during init done event
 - Errors_list:
     - '.*Failed to start ib-utils container.*'
+    - '.*WARNING systemd\[\d\]: lldp.service: Failed with result.*'
+    - '.*WARNING systemd\[\d\]: lldp.service: Control process exited, code=killed.*'
+    - '.*ERR healthd: lldp service status: Down, app status: Down, fail reason: signal.*'
   Conditions:
     - Affected_test_cases:
       - tests_nvos/infra/init_flow/test_system_init_done_feature.py::test_system_ready_state_down

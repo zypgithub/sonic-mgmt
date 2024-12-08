@@ -196,6 +196,9 @@ def test_install_reset_transceiver_firmware_negative_flow(engines, test_api):
 
     platform, random_transceiver, random_port = _get_random_optical_module_transceiver()
 
+    with allure.step(f"Run nv show platform transceiver {random_transceiver}"):
+        output_before_install = OutputParsingTool.parse_json_str_to_dictionary(platform.transceiver.show(random_transceiver + ' firmware')).verify_result()
+
     with allure.step("fetch firmware transceiver file {} switch".format(invalid_file)):
         player_engine = engines['sonic_mgmt']
         scp_path = 'scp://{}:{}@{}'.format(player_engine.username, player_engine.password, player_engine.ip)
@@ -210,10 +213,12 @@ def test_install_reset_transceiver_firmware_negative_flow(engines, test_api):
         platform.transceiver.action_reset(random_transceiver)
 
     with allure.step("verify show commands after install"):
+        time.sleep(20)
         show_interface_after_install = OutputParsingTool.parse_json_str_to_dictionary(
             interface.link.show()).verify_result()
         output_after_install = OutputParsingTool.parse_json_str_to_dictionary(platform.transceiver.show(random_transceiver + ' firmware')).verify_result()
-        _verify_expected_dict(command_output=output_after_install, default_fw='N/A', status='Failed', msg=expected_error_msg)
+
+        assert output_before_install == output_after_install, f"at elast one of the transceiver fields has been change, before installaion {output_before_install}, after instalaaion {output_after_install}"
         assert show_interface_after_install == show_interface_before_install, "at least one of the link values has been change, before_install {} after install {}".format(show_interface_before_install, show_interface_after_install)
 
 

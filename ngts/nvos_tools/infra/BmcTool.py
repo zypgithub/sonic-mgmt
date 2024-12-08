@@ -109,6 +109,7 @@ class BmcTool():
         ip_addresses = {}
         with allure.step("Get bmc ipv4 from noga"):
             bmc_ipv4_address = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific']['bmc_ip']
+            assert bmc_ipv4_address, "Could you please check the BMC IP box in NOGA? It appears to be empty"
             logger.info(f"the bmc IPv4 is {bmc_ipv4_address}")
             ip_addresses["IPv4"] = bmc_ipv4_address
 

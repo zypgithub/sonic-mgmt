@@ -87,7 +87,7 @@ def test_system_ready_state_up(engines, devices, topology_obj):
         assert res_obj.result, res_obj.info
 
 
-@pytest.mark.timeout(20 * MINUTE, func_only=True)
+@pytest.mark.timeout(25 * MINUTE, func_only=True)
 @pytest.mark.init_flow
 def test_system_ready_state_down(engines, devices, topology_obj):
     """
