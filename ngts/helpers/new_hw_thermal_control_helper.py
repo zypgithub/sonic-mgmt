@@ -89,7 +89,8 @@ class TC_CONST(object):
     # list of platforms without a link to TC_CONFIG_FILE (copy file instead of link)
     PLATFORMS_WITHOUT_TC_CONFIG_LINK = ["MQM9700", 'QM8790', 'QM3400']
     # list of Juliet platforms
-    JULIET_PLATFORMS = ['x86_64-nvidia_n5100_ld-r0', 'x86_64-nvidia_n5110_ld-r0', 'x86_64-nvidia_n5112_ld-r0']
+    JULIET_PLATFORMS = ['x86_64-nvidia_n5100_ld-r0', 'x86_64-nvidia_n5110_ld-r0', 'x86_64-nvidia_n5112_ld-r0',
+                        'x86_64-nvidia_n5200_ld-r0']
     # hw-management-thermal folder
     HW_MGMT_THERMAL_FOLDER = "/etc/hw-management-thermal"
 
