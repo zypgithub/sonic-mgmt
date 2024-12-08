@@ -86,7 +86,7 @@ def test_techsupport_expected_files(engines, devices, test_name):
                            'sai_sdk_dump0': devices.dut.constants.sdk_dump_files,
                            'log': devices.dut.constants.log_dump_files,
                            'log/nginx': devices.dut.constants.log_nginx_files,
-                           'log/nmx-c': devices.dut.constants.log_nmx_files,
+                           'log/nmx/nmx-c': devices.dut.constants.log_nmx_files,
                            'stats': devices.dut.constants.stats_dump_files,
                            'hw-mgmt': devices.dut.constants.hw_mgmt_files,
                            'etc': devices.dut.constants.etc_files}
