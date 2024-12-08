@@ -1,4 +1,3 @@
-import copy
 import logging
 import time
 import random
@@ -16,28 +15,20 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 logger = logging.getLogger()
 
 
-def verify_installation(erot_names, erot_name, expected_version):
-    platform = Platform()
-    with allure.step(f"Asserting install was successful"):
-        firmware_shown: Dict[str, str] = OutputParsingTool.parse_json_str_to_dictionary(
-            platform.firmware.erot_id[erot_name].show()).get_returned_value()
-        with allure.independent_step(f"Check actual firmware version matches expected {expected_version}"):
-            actual_firmware = firmware_shown[PlatformConsts.FW_ACTUAL]
-            assert actual_firmware == expected_version, \
-                f"Expected version: {expected_version}. Actual version: {actual_firmware}"
-        verify_erot_fields(erot_names)
-
-
-def verify_erot_fields(erot_names):
+def verify_installation(erot_names, expected_version):
     platform = Platform()
     fw_fields_to_check = [PlatformConsts.FW_ACTUAL, PlatformConsts.FW_BACKGROUND_COPY_STATUS,
                           PlatformConsts.FW_DEBUG_TOKEN_STATUS, PlatformConsts.FW_SLOT_STATUS_INACTIVE,
                           PlatformConsts.FW_SLOT_STATUS_ACTIVE]
-    with allure.step(f"Verifying erot fields are not N/A"):
+    with allure.step(f"Asserting install was successful"):
         for erot_name in erot_names:
+            firmware_shown: Dict[str, str] = OutputParsingTool.parse_json_str_to_dictionary(
+                platform.firmware.erot_id[erot_name].show()).get_returned_value()
+            with allure.independent_step(f"Check actual firmware version matches expected {expected_version}"):
+                actual_firmware = firmware_shown[PlatformConsts.FW_ACTUAL]
+                assert actual_firmware == expected_version, \
+                    f"Expected version: {expected_version}. Actual version: {actual_firmware}"
             with allure.independent_step(f"Verifying {erot_name} fields are not N/A"):
-                firmware_shown: Dict[str, str] = OutputParsingTool.parse_json_str_to_dictionary(
-                    platform.firmware.erot_id[erot_name].show()).get_returned_value()
                 for fw_field_name in fw_fields_to_check:
                     with allure.independent_step(f"Assert {fw_field_name} is not N/A for {erot_name}"):
                         field_state = firmware_shown[fw_field_name]
@@ -54,7 +45,7 @@ def get_active_inactive_slots(erot_name):
         return firmware_shown[active_field], firmware_shown[inactive_field]
 
 
-def fetch_and_install_erot_image(topology_obj, engines, fw_component, path, version, filename):
+def fetch_and_install_erot_image(fw_component, path, version, filename):
     with allure.step(f"Fetching image {version} from {filename}"):
         fw_component.action_fetch(path).verify_result()
 
@@ -95,19 +86,17 @@ class BaseFWUpgradeTest:
         try:
             active_slot, inactive_slot = get_active_inactive_slots(component_name)
 
-            fetch_and_install_erot_image(topology_obj, engines, fw_component, prev_path, prev_version, prev_filename)
+            fetch_and_install_erot_image(fw_component, prev_path, prev_version, prev_filename)
             with allure.step(f"Sleep for {MINUTE} so the bg-copy will finish"):
                 time.sleep(MINUTE)
             with allure.step(f"Verifying installation was successful for each erot component"):
-                for comp_name in fw_components_names:
-                    verify_installation(fw_components_names, comp_name, prev_version)
+                verify_installation(fw_components_names, prev_version)
                 # Has bug opened
                 # verify_active_inactive_slots(component_name, active_slot, inactive_slot)
         finally:
-            fetch_and_install_erot_image(topology_obj, engines, fw_component, curr_path, curr_version, curr_filename)
+            fetch_and_install_erot_image(fw_component, curr_path, curr_version, curr_filename)
             with allure.step(f"Verifying installation was successful for each erot component"):
-                for comp_name in fw_components_names:
-                    verify_installation(fw_components_names, comp_name, curr_version)
+                verify_installation(fw_components_names, curr_version)
             with allure.step('delete fetched firmware image files'):
                 fw_component.files.delete_all_existing_files()
 
@@ -116,21 +105,21 @@ class BaseFWUpgradeTest:
         prev_path, prev_filename, prev_version = BmcTool.get_fw_component_version_previous(FW_COMPONENT_EROT)
         curr_path, curr_filename, curr_version = BmcTool.get_fw_component_version_latest(FW_COMPONENT_EROT)
         fw_component = self._firmware_component
-        erot_names_set = set(switch.constants.erots[:])
+        erot_names = switch.constants.erots[:]
         component_name = fw_component.get_resource_basename()
 
         try:
-            fetch_and_install_erot_image(topology_obj, engines, fw_component, prev_path, prev_version, prev_filename)
+            fetch_and_install_erot_image(fw_component, prev_path, prev_version, prev_filename)
             with allure.step(f"Sleep for {MINUTE} so the bg-copy will finish"):
                 time.sleep(MINUTE)
             with allure.step(f"Verifying installation was successful only for {component_name}"):
-                verify_installation([component_name], component_name, prev_version)
-            erot_names_set.remove(component_name)
+                verify_installation([component_name], prev_version)
             with allure.step(f"Verifying installation was not performed for other erot components"):
-                verify_installation([erot_names_set], component_name, curr_version)
+                other_erot_names = [erot_name for erot_name in erot_names if erot_name != component_name]
+                verify_installation(other_erot_names, curr_version)
         finally:
-            fetch_and_install_erot_image(topology_obj, engines, fw_component, curr_path, curr_version, curr_filename)
+            fetch_and_install_erot_image(fw_component, curr_path, curr_version, curr_filename)
             with allure.step(f"Verifying installation was successful for {component_name}"):
-                verify_installation([component_name], component_name, curr_version)
+                verify_installation([component_name], curr_version)
             with allure.step('delete fetched firmware image files'):
                 fw_component.files.delete_all_existing_files()
