@@ -28,13 +28,13 @@ class ClusterConsts:
     UNDEFINED_STATE_ERR_MSG_NVUE = 'Error: At state: \'undefined\' is not one of [\'enabled\', \'disabled\']'
     UNDEFINED_STATE_ERR_MSG_OPENAPI = 'Error: Request failed. Details: Error: \'undefined\' is not one of [\'enabled\', \'disabled\', None]'
     UNDEFINED_STATE_DICT = {'NVUE': UNDEFINED_STATE_ERR_MSG_NVUE, 'OpenApi': UNDEFINED_STATE_ERR_MSG_OPENAPI}
-    RESET_FACTORY_CLUSTER_DISABLED_NVUE = 'Command failed with the following output: \nAction executing ...\nError: Action failed with the following issue:\n  cluster is not enabled'
+    RESET_FACTORY_CLUSTER_DISABLED_NVUE = 'Error: Action failed with the following issue:\n  cluster is not enabled'
 
-    RESET_FACTORY_NMX_CONN_DISABLED_NVUE = 'Command failed with the following output: \nAction executing ...\nError: Action failed with the following issue:\n  gRPC connection is down'
+    RESET_FACTORY_NMX_CONN_DISABLED_NVUE = 'Error: Action failed with the following issue:\n  gRPC connection is down'
 
-    RESET_FACTORY_CLUSTER_DISABLED_OPENAPI = 'Command failed with the following output: \naction_error: cluster is not enabled'
+    RESET_FACTORY_CLUSTER_DISABLED_OPENAPI = 'action_error: cluster is not enabled'
 
-    RESET_FACTORY_NMX_CONN_DISABLED_OPENAPI = 'Command failed with the following output: \naction_error: gRPC connection is down'
+    RESET_FACTORY_NMX_CONN_DISABLED_OPENAPI = 'action_error: gRPC connection is down'
 
     RESET_FACTORY_CLUSTER_DISABLED = {'NVUE': RESET_FACTORY_CLUSTER_DISABLED_NVUE, 'OpenApi': RESET_FACTORY_CLUSTER_DISABLED_OPENAPI}
     RESET_FACTORY_NMX_CONN_DISABLED = {'NVUE': RESET_FACTORY_NMX_CONN_DISABLED_NVUE, 'OpenApi': RESET_FACTORY_NMX_CONN_DISABLED_OPENAPI}

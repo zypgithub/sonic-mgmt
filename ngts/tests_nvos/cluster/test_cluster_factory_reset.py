@@ -433,7 +433,7 @@ def reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, s
             current_config_content = engines.dut.run_cmd("sudo cat {}".format(current_installed_config_path))
             expected_config_content = engines.sonic_mgmt.run_cmd("sudo cat {}".format(path_to_config[file_type]))
 
-            current_config_set = set(line.strip() for line in current_config_content[file_type].strip().split('\n') if line.strip())
+            current_config_set = set(line.strip() for line in current_config_content.strip().split('\n') if line.strip())
             expected_config_set = set(line.strip() for line in expected_config_content.strip().split('\n') if line.strip())
             assert current_config_set == expected_config_set, f"Configuration mismatch:\nCurrent: {current_config_set}\nExpected: {expected_config_set}"
 

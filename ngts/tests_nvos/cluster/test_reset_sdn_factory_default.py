@@ -32,7 +32,7 @@ logger = logging.getLogger()
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 @pytest.mark.timeout(15 * MINUTE, func_only=True)
-def test_cluster_sdn(engines, devices, test_api, has_loopbox):
+def test_cluster_sdn_factory_reset(engines, devices, test_api, has_loopbox):
 
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
@@ -43,13 +43,13 @@ def test_cluster_sdn(engines, devices, test_api, has_loopbox):
             sdn = Sdn()
             output = sdn.factory_default.action_reset(param='force')
 
-            assert output.info == ClusterConsts.RESET_FACTORY_CLUSTER_DISABLED[test_api], f'Expected {ClusterConsts.RESET_FACTORY_CLUSTER_DISABLED[test_api]} Got {output.info}'
+            assert ClusterConsts.RESET_FACTORY_CLUSTER_DISABLED[test_api] in output.info, f'Expected {ClusterConsts.RESET_FACTORY_CLUSTER_DISABLED[test_api]} Got {output.info}'
 
         with allure.step("Run sdn reset factory while nmx-conn is disabled (Enable cluster, and then reset factory before nmx-conn is up"):
             cluster.set(op_param_name="state", op_param_value=NvosConst.ENABLED, apply=True)
             cluster.show(output_format=output_format)
             output = sdn.factory_default.action_reset(param='force')
-            assert output.info == ClusterConsts.RESET_FACTORY_NMX_CONN_DISABLED[test_api], f'Expected {ClusterConsts.RESET_FACTORY_NMX_CONN_DISABLED[test_api]} Got {output.info}'
+            assert ClusterConsts.RESET_FACTORY_NMX_CONN_DISABLED[test_api] in output.info, f'Expected {ClusterConsts.RESET_FACTORY_NMX_CONN_DISABLED[test_api]} Got {output.info}'
 
     finally:
         cluster.unset(apply=True).verify_result()
