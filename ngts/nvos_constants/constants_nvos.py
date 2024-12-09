@@ -314,6 +314,7 @@ class SystemConsts:
     MAX_SYSTEM_DATE = MAX_SYSTEM_YEAR + "-12-31"
     MIN_SYSTEM_DATETIME = MIN_SYSTEM_DATE + " 00:00:00"
     MAX_SYSTEM_DATETIME = MAX_SYSTEM_DATE + " 23:59:59"
+    NBU_NFS_SERVER = "https://nbu-mtr-nfs.nvidia.com"
 
     PRE_LOGIN_MESSAGE = 'pre-login'
     POST_LOGIN_MESSAGE = 'post-login'
@@ -836,6 +837,7 @@ class ImageConsts:
     SCP_PATH = 'scp://{}:{}@{}'.format(NvosConst.ROOT_USER, NvosConst.ROOT_PASSWORD,
                                        'fit70')
     SCP_PATH_SERVER = 'scp://{username}:{password}@{ip}{path}'
+    NVOS_RELEASE_25_02_1000 = "25.02.1000"
 
 
 class TcpDumpConsts:
