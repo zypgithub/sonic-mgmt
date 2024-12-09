@@ -212,8 +212,8 @@ class CertificateGenerator:
         if ignore_stderr:
             if result.stderr:
                 assert 'error' not in result.stderr, f'error has occurred\nout: {result.stdout}\nerr: {result.stderr}'
-        elif result.stderr:
-            stdout_func("Errors:")
+        elif result.returncode != 0:
+            stdout_func("Returned code is not 0. Errors:")
             stdout_func(result.stderr)
             raise ValueError(f'error has occurred\nout: {result.stdout}\nerr: {result.stderr}')
 
