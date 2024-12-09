@@ -23,6 +23,7 @@ class NvueCli:
         self._interface = None
         self._im = None
         self._ip = None
+        self._performance = None
 
     @property
     def general(self):
