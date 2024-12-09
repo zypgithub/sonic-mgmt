@@ -441,6 +441,12 @@ tests/push_build_tests/L3/rocev2_acl_counter/test_rocev2_acl_counter_basic.py::T
     conditions:
       - "https://redmine.mellanox.com/issues/4179880 and ('simx' in platform)"
 
+tests/push_build_tests/L3/evpn_vxlan/test_evpn_vxlan.py::TestEvpnVxlan::test_evpn_vxlan_basic:
+  skip:
+    reason: "Skip due to bug of https://redmine.mellanox.com/issues/4200858"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4200858"
+
 ########################## NGTS IGNORE END ##########################
 
 
