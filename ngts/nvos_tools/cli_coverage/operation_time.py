@@ -52,9 +52,10 @@ class OperationTime:
             duration_time_dict[OperationTimeConsts.TEST_NAME_COL] = test_name
 
     @staticmethod
-    def verify_operation_time(duration, operation='') -> ResultObj:
+    def verify_operation_time(duration, operation='', threshold="") -> ResultObj:
         ret_val = ResultObj(True)
-        threshold = OperationTimeConsts.THRESHOLDS.get(operation)
+        if not threshold:
+            threshold = OperationTimeConsts.THRESHOLDS.get(operation)
         if threshold is not None and threshold < duration:
             err_msg = f"{operation} took {duration} seconds - more time than threshold of {threshold} seconds"
             logger.error(err_msg)
