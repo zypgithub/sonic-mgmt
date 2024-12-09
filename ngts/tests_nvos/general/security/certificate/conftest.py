@@ -22,8 +22,11 @@ def clear_existing_certs():
             system.security.ca_certificate.cert_id[cert].action_delete().verify_result()
 
 
-@pytest.fixture(scope='function', autouse=True)
+@pytest.fixture(scope='function')
 def clear_certs():
+    clear_existing_certs()
+    yield
+    System().api.unset(apply=True).verify_result()
     clear_existing_certs()
 
 
@@ -31,6 +34,7 @@ def clear_certs():
 def clear_certs_session():
     clear_existing_certs()
     yield
+    System().api.unset(apply=True).verify_result()
     clear_existing_certs()
 
 
