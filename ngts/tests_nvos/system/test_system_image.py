@@ -543,7 +543,7 @@ def system_image_install_reject_with_prompt(engines, system, prompt_response, or
 @pytest.mark.image
 @pytest.mark.system
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_fetch_image_via_http(release_name, test_name, test_api, devices):
+def test_fetch_image_via_http(test_api):
     """
     Install system image test
 
@@ -556,11 +556,16 @@ def test_fetch_image_via_http(release_name, test_name, test_api, devices):
     TestToolkit.tested_api = test_api
     system = System()
     image_fetched = False
+    image_to_fetch = []
+    # Selecting a random release to attempt image fetching
+    release_name = ImageConsts.NVOS_RELEASE_25_02_1000
 
     try:
         with allure.step("Get the image details to be fetched"):
             original_image = system.image.get_image_field_values()[ImageConsts.CURRENT_IMG]
-            image_to_fetch = get_images_to_fetch(release_name, original_image, 1)[0]
+            result = get_images_to_fetch(release_name, original_image, 1)
+            assert len(result) > 0, "Required images with release {} were not retrieved".format(release_name)
+            image_to_fetch = result[0]
 
         with allure.step("Fetch an image {}".format(SystemConsts.NBU_NFS_SERVER + image_to_fetch[1])):
             system.image.action_fetch(SystemConsts.NBU_NFS_SERVER + image_to_fetch[1])
@@ -573,8 +578,9 @@ def test_fetch_image_via_http(release_name, test_name, test_api, devices):
         if image_fetched:
             with allure.step("Delete the image that has been fetched during the test"):
                 system.image.files.delete_files([image_to_fetch[0]])
-        with allure.step("Verify earlier fetched image is not shown in the show command"):
-            system.image.files.verify_show_files_output(unexpected_files=[image_to_fetch[0]])
+
+            with allure.step("Verify earlier fetched image is not shown in the show command"):
+                system.image.files.verify_show_files_output(unexpected_files=[image_to_fetch[0]])
 
 
 @pytest.mark.checklist

@@ -970,6 +970,7 @@ class ImageConsts:
     SCP_PATH = 'scp://{}:{}@{}'.format(NvosConst.ROOT_USER, NvosConst.ROOT_PASSWORD,
                                        'fit70')
     SCP_PATH_SERVER = 'scp://{username}:{password}@{ip}{path}'
+    NVOS_RELEASE_25_02_1000 = "25.02.1000"
 
 
 class TcpDumpConsts:
