@@ -565,9 +565,9 @@ croc-simx-91-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_
 croc-simx-97-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,croc-simx-97,Mellanox MTR testbed
 croc-chipsim-62-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,croc-chipsim-62,Mellanox MTR testbed
 croc-chipsim-63-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,croc-chipsim-63,Mellanox MTR testbed
-gorilla-chipsim-64-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,gorilla-chipsim-64,Mellanox MTR testbed
-gorilla-chipsim-65-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,gorilla-chipsim-65,Mellanox MTR testbed
-gorilla-chipsim-66-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,gorilla-chipsim-66,Mellanox MTR testbed
+croc-chipsim-64-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,gorilla-chipsim-64,Mellanox MTR testbed
+croc-chipsim-65-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,gorilla-chipsim-65,Mellanox MTR testbed
+croc-chipsim-66-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,gorilla-chipsim-66,Mellanox MTR testbed
 croc-chipsim-67-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,croc-chipsim-67,Mellanox MTR testbed
 croc-chipsim-69-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,croc-chipsim-69,Mellanox MTR testbed
 croc-chipsim-71-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,croc-chipsim-71,Mellanox MTR testbed
