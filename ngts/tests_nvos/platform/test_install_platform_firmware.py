@@ -102,8 +102,7 @@ def get_asic_dict(fae):
 def install_new_image_fw(platform, test_name, fw_file_name):
     with allure.step('new fw image installation'):
         res_obj, duration = OperationTime.save_duration('reboot with new user FW', '', test_name,
-                                                        platform.firmware.asic.files.file_name[fw_file_name].action_file_install_with_reboot,
-                                                        system_is_ready_timeout=PlatformConsts.TIMEOUT_AFTER_FW_INSTALL)
+                                                        platform.firmware.asic.files.file_name[fw_file_name].action_file_install_with_reboot)
 
     return res_obj
 

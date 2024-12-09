@@ -957,7 +957,7 @@ class JulietSwitch(NvLinkSwitch):
         self.show_platform_chassis_location_output = {
             PlatformConsts.CHASSIS_LOCATION_TRAY_ID: ExpectedString(range_min=-1, range_max=9),
             PlatformConsts.CHASSIS_LOCATION_SLOT_ID: ExpectedString(range_min=4, range_max=18),
-            PlatformConsts.CHASSIS_LOCATION_CHAS_ID: "",
+            PlatformConsts.CHASSIS_LOCATION_CHAS_SN: "",
             PlatformConsts.CHASSIS_LOCATION_TOPO_ID: ExpectedString(regex=r"^(Loopback|GB200 NVL36|GB200 NVL72|\d+)$")
         }
         cluster_files = ['conf', 'nmx-controller', 'nmx-telemetry']

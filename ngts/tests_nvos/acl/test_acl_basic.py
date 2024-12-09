@@ -160,10 +160,7 @@ def test_rules_order(engines, test_api, topology_obj):
 
         with allure.step("Validate configuration with show commands"):
             acl_id_output = acl_id_obj.parse_show()
-            assert expected_acl_dict[acl_id] == acl_id_output, \
-                f'Got unexpected acl output after acl and rules configuration\n' \
-                f'expected: {expected_acl_dict[acl_id]}\n' \
-                f'but got: {acl_id_output}'
+            ValidationTool.compare_dictionaries(expected_acl_dict[acl_id], acl_id_output).verify_result()
 
     with allure.step("Attach ACL to mgmt interface"):
         mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
