@@ -26,6 +26,7 @@ def clear_existing_certs():
 def clear_certs():
     clear_existing_certs()
     yield
+    System().api.unset(apply=True).verify_result()
     clear_existing_certs()
 
 
@@ -33,6 +34,7 @@ def clear_certs():
 def clear_certs_session():
     clear_existing_certs()
     yield
+    System().api.unset(apply=True).verify_result()
     clear_existing_certs()
 
 
