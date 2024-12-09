@@ -12,7 +12,7 @@ logger = logging.getLogger()
 
 
 @allure.title('Configure Switch BIOS')
-def configure_bios(topology_obj, engines):
+def configure_bios(topology_obj):
     """
         Deploy SONiC/NVOS testing topology and configure BIOS on switch devices
         Flow:
@@ -27,7 +27,7 @@ def configure_bios(topology_obj, engines):
     """
     TestToolkit.tested_api = 'NVUE'
     dut_engine = None
-    nvue_cli_obj = NvueGeneralCli(engine=engines.dut, device=None)
+    nvue_cli_obj = NvueGeneralCli(engine=None, device=None)
     try:
         for host in topology_obj.players:
             if host in PlayersAliases.duts_list:

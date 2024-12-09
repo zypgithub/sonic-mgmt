@@ -19,9 +19,9 @@ def clear_files():
 
 
 @pytest.fixture(scope='module', autouse=True)
-def restore_bios(topology_obj, engines):
+def restore_bios(topology_obj):
     yield
-    configure_bios(topology_obj, engines)
+    configure_bios(topology_obj)
 
 
 @pytest.fixture(scope='function')
