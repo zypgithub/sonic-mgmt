@@ -258,7 +258,7 @@ def run_err_msg_bug_handler_tool(conf_path, redmine_project, branch, yaml_parsed
             conf_path, redmine_project, branch, yaml_parsed_file, user, bug_handler_path)
 
         action_mode = get_action_based_on_no_action_results(
-            bug_handler_file_result, branch, bug_handler_params, bug_handler_no_action)
+            bug_handler_file_result, branch, bug_handler_params, bug_handler_update_action)
 
         if action_mode == "no action":
             logger.info("To not fail case and attach file, need update the following 3 parameters")
@@ -334,7 +334,7 @@ def run_bug_handler_with_no_action(conf_path, redmine_project, branch, yaml_pars
     return bug_handler_file_result
 
 
-def get_action_based_on_no_action_results(bug_handler_file_result, branch, bug_handler_params, bug_handler_no_action):
+def get_action_based_on_no_action_results(bug_handler_file_result, branch, bug_handler_params, bug_handler_update_action):
 
     action_mode = "create or update_only"
 
@@ -365,7 +365,12 @@ def get_action_based_on_no_action_results(bug_handler_file_result, branch, bug_h
                 else:
                     logger.info("Bug is closed, but the current image not include bug fix. Not run bug handler again")
                     action_mode = "no action"
-
+        elif not bug_handler_update_action:
+            if "Closed" not in ticket_status:
+                # When the update is False, if ticket is closed, then need to reopen it, if ticket is not closed,
+                # then no need to update the ticket
+                logger.info("The current config is to not update the ticket")
+                action_mode = "no action"
     logger.info(f"get_action_mode :{action_mode} \n. bug_handler_file_result: {bug_handler_file_result}")
     return action_mode
 
