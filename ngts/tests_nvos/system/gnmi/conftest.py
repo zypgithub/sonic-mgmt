@@ -1,26 +1,9 @@
 import logging
-import random
-from typing import Dict
 
 import pytest
 
-import ngts.tools.test_utils.allure_utils as allure
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_tools.system.System import System
-from ngts.tests_nvos.general.security.certificate.constants import TestCert
-from ngts.tests_nvos.general.security.conftest import cleanup_after_aaa
-from ngts.tests_nvos.general.security.helpers import remove_etc_host_mapping_to_dn, add_etc_host_mapping_to_dn
-from ngts.tests_nvos.general.security.radius.constants import RadiusVmServer
-from ngts.tests_nvos.general.security.security_test_tools.constants import AddressingType, AuthConsts, AaaConsts
-from ngts.tests_nvos.general.security.security_test_tools.generic_remote_aaa_testing.constants import RemoteAaaType
-from ngts.tests_nvos.general.security.security_test_tools.tool_classes.RemoteAaaServerInfo import RemoteAaaServerInfo
-from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
-from ngts.tests_nvos.general.security.tacacs.constants import TacacsDockerServer0
-from ngts.tests_nvos.general.security.test_aaa_ldap.ldap_servers_info import LdapServersP3
-from ngts.tests_nvos.system.gnmi.constants import ETC_HOSTS, GNMI_TEST_CERT, DUT_MOUNT_GNMI_CERT_DIR
 from ngts.tests_nvos.system.gnmi.helpers import get_scp_player, verify_gnmi_client_tools_installed
-from ngts.tools.test_utils.nvos_general_utils import generate_scp_uri_using_player
 
 logger = logging.getLogger()
 
@@ -33,67 +16,3 @@ def scp_player(engines) -> LinuxSshEngine:
 @pytest.fixture(scope='session', autouse=True)
 def verify_gnmi_client_tools_installed_on_player():
     verify_gnmi_client_tools_installed()
-
-
-@pytest.fixture()
-def aaa_users(engines, cleanup_after_aaa) -> Dict[str, UserInfo]:
-    with allure.step('set AAA servers'):
-        with allure.step('set tacacs server'):
-            tac_server: RemoteAaaServerInfo = TacacsDockerServer0.SERVER_BY_ADDRESSING_TYPE[
-                random.choice(AddressingType.ALL_TYPES)]
-            tac_server.configure(engines)
-        with allure.step('set ldap server'):
-            ldap_server: RemoteAaaServerInfo = LdapServersP3.LDAP1_SERVERS[random.choice(AddressingType.ALL_TYPES)]
-            ldap_server.configure(engines)
-        with allure.step('set radius server'):
-            rad_server: RemoteAaaServerInfo = RadiusVmServer.SERVER_BY_ADDRESSING_TYPE[
-                random.choice([AddressingType.IPV4, AddressingType.DN])]
-            rad_server.configure(engines)
-        with allure.step('enable failthrough'):
-            System().aaa.authentication.set(AuthConsts.FAILTHROUGH, AaaConsts.ENABLED, apply=True).verify_result()
-    return {RemoteAaaType.TACACS: tac_server.users[0], RemoteAaaType.LDAP: ldap_server.users[0],
-            RemoteAaaType.RADIUS: rad_server.users[0], }  # servers config cleared in clear_conf hook func
-
-
-@pytest.fixture(scope='module', autouse=True)
-def add_etc_host_mapping_for_ipv4_cert_test(engines):
-    cert = GNMI_TEST_CERT
-    with allure.step(f'add ipv4 mapping of new dut hostname to {ETC_HOSTS}'):
-        remove_etc_host_mapping_to_dn(cert.dn)
-        add_etc_host_mapping_to_dn(cert.dn, engines.dut.ip)
-    yield
-    with allure.step(f'remove ipv4 mapping of new dut hostname to {ETC_HOSTS}'):
-        remove_etc_host_mapping_to_dn(cert.dn)
-
-
-@pytest.fixture()
-def restore_gnmi_cert(engines):
-    yield
-    with allure.step('restore orig gnmi cert'):
-        engines.dut.run_cmd(f'sudo rm -f {DUT_MOUNT_GNMI_CERT_DIR}/*')
-    with allure.step('reload gnmi'):
-        System().gnmi_server.disable_gnmi_server(True)
-        System().gnmi_server.enable_gnmi_server(True)
-
-
-@pytest.fixture(scope='module')
-def import_required_test_certs(scp_player):
-    system = System()
-    test_certs = [TestCert.cert_valid_1, TestCert.cert_ca_mismatch, TestCert.cert_valid_2]
-
-    with allure.step('import test certs'):
-        current_certs = OutputParsingTool.parse_json_str_to_dictionary(
-            system.security.certificate.show()).get_returned_value()
-        for cert in test_certs:
-            if cert.name not in current_certs:
-                with allure.step(f'import cert {cert.name}'):
-                    system.security.certificate.cert_id[cert.name].action_import(
-                        uri_bundle=generate_scp_uri_using_player(scp_player, cert.p12_bundle),
-                        passphrase=cert.p12_password).verify_result()
-    yield
-    with allure.step('delete certs from the system'):
-        current_certs = OutputParsingTool.parse_json_str_to_dictionary(
-            system.security.certificate.show()).get_returned_value()
-        for cert in current_certs:
-            with allure.step(f'delete cert {cert}'):
-                system.security.certificate.cert_id[cert].action_delete().verify_result()

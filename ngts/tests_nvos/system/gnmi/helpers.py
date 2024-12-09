@@ -201,7 +201,7 @@ def create_gnmi_and_redis_cmd_dict(redis_cmd_db_num, redis_cmd_table, redis_cmd_
 
 def get_infiniband_name_from_port_name(engine, port_name):
     output = Tools.DatabaseTool.sonic_db_cli_hget(engine=engine, asic="", db_name=DatabaseConst.APPL_DB_NAME,
-                                                  db_config=f"ALIAS_PORT_MAP:{port_name}", param="name")
+                                                  db_config=f"\"ALIAS_PORT_MAP:{port_name}\"", param="name")
     # output = engine.run_cmd(f"redis-cli -n 0 HGET \"ALIAS_PORT_MAP:{port_name}\" \"name\"")
     infiniband_name = output.replace("\"", "")
     return infiniband_name
@@ -317,7 +317,7 @@ def validate_redis_cli_and_gnmi_commands_results(engines, devices, gnmi_list, al
         gnmi_client_output = re.sub(r'(\\["\\n]+|\s+)', '', gnmi_client_output.split(":")[-1])
         redis_output = Tools.DatabaseTool.sonic_db_cli_hget(engine=engines.dut, asic="",
                                                             db_name=command[GnmiConsts.REDIS_CMD_DB_NAME],
-                                                            db_config=f"{command[GnmiConsts.REDIS_CMD_TABLE_NAME]}",
+                                                            db_config=f"\"{command[GnmiConsts.REDIS_CMD_TABLE_NAME]}\"",
                                                             param=command[GnmiConsts.REDIS_CMD_PARAM])
         if ',' in redis_output:
             redis_output = str(sorted(redis_output.split(',')))
@@ -401,7 +401,7 @@ def verify_gnmi_client(test_flow, server_host, server_port, username, password, 
             new_description = change_interface_description(selected_port)
 
     with allure.step('create gnmi client'):
-        client = GnmiClient(server_host, server_port, username, password, cacert=cacert, cmd_time=client_cmd_time or 10)
+        client = GnmiClient(server_host, server_port, username, password, cacert=cacert, cmd_time=client_cmd_time or 15)
     if test_flow == TestFlowType.GOOD_FLOW:
         with allure.step(f'good-flow: {log_msg}'):
             with allure.step('verify using capabilities command'):

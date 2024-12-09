@@ -172,6 +172,15 @@ def engines(topology_obj, devices):
     return engines_data
 
 
+def get_dut_hostname(engines):
+    return engines.dut.run_cmd('hostname')
+
+
+@pytest.fixture(scope='session')
+def dut_hostname(engines):
+    return get_dut_hostname(engines)
+
+
 @pytest.fixture(scope='session')
 def dut_ipv6_addr(engines, devices):
     dut_ipv6_addr = IpTool.get_dut_ipv6_addr_of_given_eth_interface_using_nv_cli(devices.dut.cur_mgmt_port_name, engines.dut)
