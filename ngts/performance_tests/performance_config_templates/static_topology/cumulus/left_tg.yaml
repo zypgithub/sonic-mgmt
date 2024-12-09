@@ -1,0 +1,2064 @@
+
+- header:
+    model: sn5600
+    nvue-api-version: nvue_v1
+    rev-id: 1.0
+    version: Cumulus Linux 5.11.0
+- set:
+    interface:
+      eth0:
+        ip:
+          address:
+            dhcp: {}
+          vrf: mgmt
+        type: eth
+      swp1:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp1s0:
+        bridge:
+          domain:
+            br_default:
+              access: 100
+              learning: off
+        type: swp
+      swp1s1:
+        bridge:
+          domain:
+            br_default:
+              access: 101
+              learning: off
+        type: swp
+      swp1s2:
+        bridge:
+          domain:
+            br_default:
+              access: 102
+              learning: off
+        type: swp
+      swp1s3:
+        bridge:
+          domain:
+            br_default:
+              access: 103
+              learning: off
+        type: swp
+      swp2:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp2s0:
+        bridge:
+          domain:
+            br_default:
+              access: 104
+              learning: off
+        type: swp
+      swp2s1:
+        bridge:
+          domain:
+            br_default:
+              access: 105
+              learning: off
+        type: swp
+      swp2s2:
+        bridge:
+          domain:
+            br_default:
+              access: 106
+              learning: off
+        type: swp
+      swp2s3:
+        bridge:
+          domain:
+            br_default:
+              access: 107
+              learning: off
+        type: swp
+      swp3:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp3s0:
+        bridge:
+          domain:
+            br_default:
+              access: 108
+              learning: off
+        type: swp
+      swp3s1:
+        bridge:
+          domain:
+            br_default:
+              access: 109
+              learning: off
+        type: swp
+      swp3s2:
+        bridge:
+          domain:
+            br_default:
+              access: 110
+              learning: off
+        type: swp
+      swp3s3:
+        bridge:
+          domain:
+            br_default:
+              access: 111
+              learning: off
+        type: swp
+      swp4:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp4s0:
+        bridge:
+          domain:
+            br_default:
+              access: 112
+              learning: off
+        type: swp
+      swp4s1:
+        bridge:
+          domain:
+            br_default:
+              access: 113
+              learning: off
+        type: swp
+      swp4s2:
+        bridge:
+          domain:
+            br_default:
+              access: 114
+              learning: off
+        type: swp
+      swp4s3:
+        bridge:
+          domain:
+            br_default:
+              access: 115
+              learning: off
+        type: swp
+      swp5:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp5s0:
+        bridge:
+          domain:
+            br_default:
+              access: 116
+              learning: off
+        type: swp
+      swp5s1:
+        bridge:
+          domain:
+            br_default:
+              access: 117
+              learning: off
+        type: swp
+      swp5s2:
+        bridge:
+          domain:
+            br_default:
+              access: 118
+              learning: off
+        type: swp
+      swp5s3:
+        bridge:
+          domain:
+            br_default:
+              access: 119
+              learning: off
+        type: swp
+      swp6:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp6s0:
+        bridge:
+          domain:
+            br_default:
+              access: 120
+              learning: off
+        type: swp
+      swp6s1:
+        bridge:
+          domain:
+            br_default:
+              access: 121
+              learning: off
+        type: swp
+      swp6s2:
+        bridge:
+          domain:
+            br_default:
+              access: 122
+              learning: off
+        type: swp
+      swp6s3:
+        bridge:
+          domain:
+            br_default:
+              access: 123
+              learning: off
+        type: swp
+      swp7:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp7s0:
+        bridge:
+          domain:
+            br_default:
+              access: 124
+              learning: off
+        type: swp
+      swp7s1:
+        bridge:
+          domain:
+            br_default:
+              access: 125
+              learning: off
+        type: swp
+      swp7s2:
+        bridge:
+          domain:
+            br_default:
+              access: 126
+              learning: off
+        type: swp
+      swp7s3:
+        bridge:
+          domain:
+            br_default:
+              access: 127
+              learning: off
+        type: swp
+      swp8:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp8s0:
+        bridge:
+          domain:
+            br_default:
+              access: 128
+              learning: off
+        type: swp
+      swp8s1:
+        bridge:
+          domain:
+            br_default:
+              access: 129
+              learning: off
+        type: swp
+      swp8s2:
+        bridge:
+          domain:
+            br_default:
+              access: 130
+              learning: off
+        type: swp
+      swp8s3:
+        bridge:
+          domain:
+            br_default:
+              access: 131
+              learning: off
+        type: swp
+      swp9:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp9s0:
+        bridge:
+          domain:
+            br_default:
+              access: 132
+              learning: off
+        type: swp
+      swp9s1:
+        bridge:
+          domain:
+            br_default:
+              access: 133
+              learning: off
+        type: swp
+      swp9s2:
+        bridge:
+          domain:
+            br_default:
+              access: 134
+              learning: off
+        type: swp
+      swp9s3:
+        bridge:
+          domain:
+            br_default:
+              access: 135
+              learning: off
+        type: swp
+      swp10:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp10s0:
+        bridge:
+          domain:
+            br_default:
+              access: 136
+              learning: off
+        type: swp
+      swp10s1:
+        bridge:
+          domain:
+            br_default:
+              access: 137
+              learning: off
+        type: swp
+      swp10s2:
+        bridge:
+          domain:
+            br_default:
+              access: 138
+              learning: off
+        type: swp
+      swp10s3:
+        bridge:
+          domain:
+            br_default:
+              access: 139
+              learning: off
+        type: swp
+      swp11:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp11s0:
+        bridge:
+          domain:
+            br_default:
+              access: 140
+              learning: off
+        type: swp
+      swp11s1:
+        bridge:
+          domain:
+            br_default:
+              access: 141
+              learning: off
+        type: swp
+      swp11s2:
+        bridge:
+          domain:
+            br_default:
+              access: 142
+              learning: off
+        type: swp
+      swp11s3:
+        bridge:
+          domain:
+            br_default:
+              access: 143
+              learning: off
+        type: swp
+      swp12:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp12s0:
+        bridge:
+          domain:
+            br_default:
+              access: 144
+              learning: off
+        type: swp
+      swp12s1:
+        bridge:
+          domain:
+            br_default:
+              access: 145
+              learning: off
+        type: swp
+      swp12s2:
+        bridge:
+          domain:
+            br_default:
+              access: 146
+              learning: off
+        type: swp
+      swp12s3:
+        bridge:
+          domain:
+            br_default:
+              access: 147
+              learning: off
+        type: swp
+      swp13:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp13s0:
+        bridge:
+          domain:
+            br_default:
+              access: 148
+              learning: off
+        type: swp
+      swp13s1:
+        bridge:
+          domain:
+            br_default:
+              access: 149
+              learning: off
+        type: swp
+      swp13s2:
+        bridge:
+          domain:
+            br_default:
+              access: 150
+              learning: off
+        type: swp
+      swp13s3:
+        bridge:
+          domain:
+            br_default:
+              access: 151
+              learning: off
+        type: swp
+      swp14:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp14s0:
+        bridge:
+          domain:
+            br_default:
+              access: 152
+              learning: off
+        type: swp
+      swp14s1:
+        bridge:
+          domain:
+            br_default:
+              access: 153
+              learning: off
+        type: swp
+      swp14s2:
+        bridge:
+          domain:
+            br_default:
+              access: 154
+              learning: off
+        type: swp
+      swp14s3:
+        bridge:
+          domain:
+            br_default:
+              access: 155
+              learning: off
+        type: swp
+      swp15:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp15s0:
+        bridge:
+          domain:
+            br_default:
+              access: 156
+              learning: off
+        type: swp
+      swp15s1:
+        bridge:
+          domain:
+            br_default:
+              access: 157
+              learning: off
+        type: swp
+      swp15s2:
+        bridge:
+          domain:
+            br_default:
+              access: 158
+              learning: off
+        type: swp
+      swp15s3:
+        bridge:
+          domain:
+            br_default:
+              access: 159
+              learning: off
+        type: swp
+      swp16:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp16s0:
+        bridge:
+          domain:
+            br_default:
+              access: 160
+              learning: off
+        type: swp
+      swp16s1:
+        bridge:
+          domain:
+            br_default:
+              access: 161
+              learning: off
+        type: swp
+      swp16s2:
+        bridge:
+          domain:
+            br_default:
+              access: 162
+              learning: off
+        type: swp
+      swp16s3:
+        bridge:
+          domain:
+            br_default:
+              access: 163
+              learning: off
+        type: swp
+      swp17:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp17s0:
+        bridge:
+          domain:
+            br_default:
+              access: 164
+              learning: off
+        type: swp
+      swp17s1:
+        bridge:
+          domain:
+            br_default:
+              access: 165
+              learning: off
+        type: swp
+      swp17s2:
+        bridge:
+          domain:
+            br_default:
+              access: 166
+              learning: off
+        type: swp
+      swp17s3:
+        bridge:
+          domain:
+            br_default:
+              access: 167
+              learning: off
+        type: swp
+      swp18:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp18s0:
+        bridge:
+          domain:
+            br_default:
+              access: 168
+              learning: off
+        type: swp
+      swp18s1:
+        bridge:
+          domain:
+            br_default:
+              access: 169
+              learning: off
+        type: swp
+      swp18s2:
+        bridge:
+          domain:
+            br_default:
+              access: 170
+              learning: off
+        type: swp
+      swp18s3:
+        bridge:
+          domain:
+            br_default:
+              access: 171
+              learning: off
+        type: swp
+      swp19:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp19s0:
+        bridge:
+          domain:
+            br_default:
+              access: 172
+              learning: off
+        type: swp
+      swp19s1:
+        bridge:
+          domain:
+            br_default:
+              access: 173
+              learning: off
+        type: swp
+      swp19s2:
+        bridge:
+          domain:
+            br_default:
+              access: 174
+              learning: off
+        type: swp
+      swp19s3:
+        bridge:
+          domain:
+            br_default:
+              access: 175
+              learning: off
+        type: swp
+      swp20:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp20s0:
+        bridge:
+          domain:
+            br_default:
+              access: 176
+              learning: off
+        type: swp
+      swp20s1:
+        bridge:
+          domain:
+            br_default:
+              access: 177
+              learning: off
+        type: swp
+      swp20s2:
+        bridge:
+          domain:
+            br_default:
+              access: 178
+              learning: off
+        type: swp
+      swp20s3:
+        bridge:
+          domain:
+            br_default:
+              access: 179
+              learning: off
+        type: swp
+      swp21:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp21s0:
+        bridge:
+          domain:
+            br_default:
+              access: 180
+              learning: off
+        type: swp
+      swp21s1:
+        bridge:
+          domain:
+            br_default:
+              access: 181
+              learning: off
+        type: swp
+      swp21s2:
+        bridge:
+          domain:
+            br_default:
+              access: 182
+              learning: off
+        type: swp
+      swp21s3:
+        bridge:
+          domain:
+            br_default:
+              access: 183
+              learning: off
+        type: swp
+      swp22:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp22s0:
+        bridge:
+          domain:
+            br_default:
+              access: 184
+              learning: off
+        type: swp
+      swp22s1:
+        bridge:
+          domain:
+            br_default:
+              access: 185
+              learning: off
+        type: swp
+      swp22s2:
+        bridge:
+          domain:
+            br_default:
+              access: 186
+              learning: off
+        type: swp
+      swp22s3:
+        bridge:
+          domain:
+            br_default:
+              access: 187
+              learning: off
+        type: swp
+      swp23:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp23s0:
+        bridge:
+          domain:
+            br_default:
+              access: 188
+              learning: off
+        type: swp
+      swp23s1:
+        bridge:
+          domain:
+            br_default:
+              access: 189
+              learning: off
+        type: swp
+      swp23s2:
+        bridge:
+          domain:
+            br_default:
+              access: 190
+              learning: off
+        type: swp
+      swp23s3:
+        bridge:
+          domain:
+            br_default:
+              access: 191
+              learning: off
+        type: swp
+      swp24:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp24s0:
+        bridge:
+          domain:
+            br_default:
+              access: 192
+              learning: off
+        type: swp
+      swp24s1:
+        bridge:
+          domain:
+            br_default:
+              access: 193
+              learning: off
+        type: swp
+      swp24s2:
+        bridge:
+          domain:
+            br_default:
+              access: 194
+              learning: off
+        type: swp
+      swp24s3:
+        bridge:
+          domain:
+            br_default:
+              access: 195
+              learning: off
+        type: swp
+      swp25:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp25s0:
+        bridge:
+          domain:
+            br_default:
+              access: 196
+              learning: off
+        type: swp
+      swp25s1:
+        bridge:
+          domain:
+            br_default:
+              access: 197
+              learning: off
+        type: swp
+      swp25s2:
+        bridge:
+          domain:
+            br_default:
+              access: 198
+              learning: off
+        type: swp
+      swp25s3:
+        bridge:
+          domain:
+            br_default:
+              access: 199
+              learning: off
+        type: swp
+      swp26:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp26s0:
+        bridge:
+          domain:
+            br_default:
+              access: 200
+              learning: off
+        type: swp
+      swp26s1:
+        bridge:
+          domain:
+            br_default:
+              access: 201
+              learning: off
+        type: swp
+      swp26s2:
+        bridge:
+          domain:
+            br_default:
+              access: 202
+              learning: off
+        type: swp
+      swp26s3:
+        bridge:
+          domain:
+            br_default:
+              access: 203
+              learning: off
+        type: swp
+      swp27:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp27s0:
+        bridge:
+          domain:
+            br_default:
+              access: 204
+              learning: off
+        type: swp
+      swp27s1:
+        bridge:
+          domain:
+            br_default:
+              access: 205
+              learning: off
+        type: swp
+      swp27s2:
+        bridge:
+          domain:
+            br_default:
+              access: 206
+              learning: off
+        type: swp
+      swp27s3:
+        bridge:
+          domain:
+            br_default:
+              access: 207
+              learning: off
+        type: swp
+      swp28:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp28s0:
+        bridge:
+          domain:
+            br_default:
+              access: 208
+              learning: off
+        type: swp
+      swp28s1:
+        bridge:
+          domain:
+            br_default:
+              access: 209
+              learning: off
+        type: swp
+      swp28s2:
+        bridge:
+          domain:
+            br_default:
+              access: 210
+              learning: off
+        type: swp
+      swp28s3:
+        bridge:
+          domain:
+            br_default:
+              access: 211
+              learning: off
+        type: swp
+      swp29:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp29s0:
+        bridge:
+          domain:
+            br_default:
+              access: 212
+              learning: off
+        type: swp
+      swp29s1:
+        bridge:
+          domain:
+            br_default:
+              access: 213
+              learning: off
+        type: swp
+      swp29s2:
+        bridge:
+          domain:
+            br_default:
+              access: 214
+              learning: off
+        type: swp
+      swp29s3:
+        bridge:
+          domain:
+            br_default:
+              access: 215
+              learning: off
+        type: swp
+      swp30:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp30s0:
+        bridge:
+          domain:
+            br_default:
+              access: 216
+              learning: off
+        type: swp
+      swp30s1:
+        bridge:
+          domain:
+            br_default:
+              access: 217
+              learning: off
+        type: swp
+      swp30s2:
+        bridge:
+          domain:
+            br_default:
+              access: 218
+              learning: off
+        type: swp
+      swp30s3:
+        bridge:
+          domain:
+            br_default:
+              access: 219
+              learning: off
+        type: swp
+      swp31:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp31s0:
+        bridge:
+          domain:
+            br_default:
+              access: 220
+              learning: off
+        type: swp
+      swp31s1:
+        bridge:
+          domain:
+            br_default:
+              access: 221
+              learning: off
+        type: swp
+      swp31s2:
+        bridge:
+          domain:
+            br_default:
+              access: 222
+              learning: off
+        type: swp
+      swp31s3:
+        bridge:
+          domain:
+            br_default:
+              access: 223
+              learning: off
+        type: swp
+      swp32:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp32s0:
+        bridge:
+          domain:
+            br_default:
+              access: 224
+              learning: off
+        type: swp
+      swp32s1:
+        bridge:
+          domain:
+            br_default:
+              access: 225
+              learning: off
+        type: swp
+      swp32s2:
+        bridge:
+          domain:
+            br_default:
+              access: 226
+              learning: off
+        type: swp
+      swp32s3:
+        bridge:
+          domain:
+            br_default:
+              access: 227
+              learning: off
+        type: swp
+      swp33:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp34:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp35:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp36:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp37:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp38:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp39:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp40:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp41:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp42:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp43:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp44:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp45:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp46:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp47:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp48:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp49:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp50:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp51:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp52:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp53:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp54:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp55:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp56:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp57:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp58:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp59:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp60:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp61:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp62:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp63:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      swp64:
+        link:
+          breakout:
+            4x: {}
+        type: swp
+      vlan100:
+        ip:
+          address:
+            12.0.0.2/24: {}
+        type: svi
+        vlan: 100
+      vlan101:
+        ip:
+          address:
+            12.1.0.2/24: {}
+        type: svi
+        vlan: 101
+      vlan102:
+        ip:
+          address:
+            12.2.0.2/24: {}
+        type: svi
+        vlan: 102
+      vlan103:
+        ip:
+          address:
+            12.3.0.2/24: {}
+        type: svi
+        vlan: 103
+      vlan104:
+        ip:
+          address:
+            12.4.0.2/24: {}
+        type: svi
+        vlan: 104
+      vlan105:
+        ip:
+          address:
+            12.5.0.2/24: {}
+        type: svi
+        vlan: 105
+      vlan106:
+        ip:
+          address:
+            12.6.0.2/24: {}
+        type: svi
+        vlan: 106
+      vlan107:
+        ip:
+          address:
+            12.7.0.2/24: {}
+        type: svi
+        vlan: 107
+      vlan108:
+        ip:
+          address:
+            12.8.0.2/24: {}
+        type: svi
+        vlan: 108
+      vlan109:
+        ip:
+          address:
+            12.9.0.2/24: {}
+        type: svi
+        vlan: 109
+      vlan110:
+        ip:
+          address:
+            12.10.0.2/24: {}
+        type: svi
+        vlan: 110
+      vlan111:
+        ip:
+          address:
+            12.11.0.2/24: {}
+        type: svi
+        vlan: 111
+      vlan112:
+        ip:
+          address:
+            12.12.0.2/24: {}
+        type: svi
+        vlan: 112
+      vlan113:
+        ip:
+          address:
+            12.13.0.2/24: {}
+        type: svi
+        vlan: 113
+      vlan114:
+        ip:
+          address:
+            12.14.0.2/24: {}
+        type: svi
+        vlan: 114
+      vlan115:
+        ip:
+          address:
+            12.15.0.2/24: {}
+        type: svi
+        vlan: 115
+      vlan116:
+        ip:
+          address:
+            12.16.0.2/24: {}
+        type: svi
+        vlan: 116
+      vlan117:
+        ip:
+          address:
+            12.17.0.2/24: {}
+        type: svi
+        vlan: 117
+      vlan118:
+        ip:
+          address:
+            12.18.0.2/24: {}
+        type: svi
+        vlan: 118
+      vlan119:
+        ip:
+          address:
+            12.19.0.2/24: {}
+        type: svi
+        vlan: 119
+      vlan120:
+        ip:
+          address:
+            12.20.0.2/24: {}
+        type: svi
+        vlan: 120
+      vlan121:
+        ip:
+          address:
+            12.21.0.2/24: {}
+        type: svi
+        vlan: 121
+      vlan122:
+        ip:
+          address:
+            12.22.0.2/24: {}
+        type: svi
+        vlan: 122
+      vlan123:
+        ip:
+          address:
+            12.23.0.2/24: {}
+        type: svi
+        vlan: 123
+      vlan124:
+        ip:
+          address:
+            12.24.0.2/24: {}
+        type: svi
+        vlan: 124
+      vlan125:
+        ip:
+          address:
+            12.25.0.2/24: {}
+        type: svi
+        vlan: 125
+      vlan126:
+        ip:
+          address:
+            12.26.0.2/24: {}
+        type: svi
+        vlan: 126
+      vlan127:
+        ip:
+          address:
+            12.27.0.2/24: {}
+        type: svi
+        vlan: 127
+      vlan128:
+        ip:
+          address:
+            12.28.0.2/24: {}
+        type: svi
+        vlan: 128
+      vlan129:
+        ip:
+          address:
+            12.29.0.2/24: {}
+        type: svi
+        vlan: 129
+      vlan130:
+        ip:
+          address:
+            12.30.0.2/24: {}
+        type: svi
+        vlan: 130
+      vlan131:
+        ip:
+          address:
+            12.31.0.2/24: {}
+        type: svi
+        vlan: 131
+      vlan132:
+        ip:
+          address:
+            12.32.0.2/24: {}
+        type: svi
+        vlan: 132
+      vlan133:
+        ip:
+          address:
+            12.33.0.2/24: {}
+        type: svi
+        vlan: 133
+      vlan134:
+        ip:
+          address:
+            12.34.0.2/24: {}
+        type: svi
+        vlan: 134
+      vlan135:
+        ip:
+          address:
+            12.35.0.2/24: {}
+        type: svi
+        vlan: 135
+      vlan136:
+        ip:
+          address:
+            12.36.0.2/24: {}
+        type: svi
+        vlan: 136
+      vlan137:
+        ip:
+          address:
+            12.37.0.2/24: {}
+        type: svi
+        vlan: 137
+      vlan138:
+        ip:
+          address:
+            12.38.0.2/24: {}
+        type: svi
+        vlan: 138
+      vlan139:
+        ip:
+          address:
+            12.39.0.2/24: {}
+        type: svi
+        vlan: 139
+      vlan140:
+        ip:
+          address:
+            12.40.0.2/24: {}
+        type: svi
+        vlan: 140
+      vlan141:
+        ip:
+          address:
+            12.41.0.2/24: {}
+        type: svi
+        vlan: 141
+      vlan142:
+        ip:
+          address:
+            12.42.0.2/24: {}
+        type: svi
+        vlan: 142
+      vlan143:
+        ip:
+          address:
+            12.43.0.2/24: {}
+        type: svi
+        vlan: 143
+      vlan144:
+        ip:
+          address:
+            12.44.0.2/24: {}
+        type: svi
+        vlan: 144
+      vlan145:
+        ip:
+          address:
+            12.45.0.2/24: {}
+        type: svi
+        vlan: 145
+      vlan146:
+        ip:
+          address:
+            12.46.0.2/24: {}
+        type: svi
+        vlan: 146
+      vlan147:
+        ip:
+          address:
+            12.47.0.2/24: {}
+        type: svi
+        vlan: 147
+      vlan148:
+        ip:
+          address:
+            12.48.0.2/24: {}
+        type: svi
+        vlan: 148
+      vlan149:
+        ip:
+          address:
+            12.49.0.2/24: {}
+        type: svi
+        vlan: 149
+      vlan150:
+        ip:
+          address:
+            12.50.0.2/24: {}
+        type: svi
+        vlan: 150
+      vlan151:
+        ip:
+          address:
+            12.51.0.2/24: {}
+        type: svi
+        vlan: 151
+      vlan152:
+        ip:
+          address:
+            12.52.0.2/24: {}
+        type: svi
+        vlan: 152
+      vlan153:
+        ip:
+          address:
+            12.53.0.2/24: {}
+        type: svi
+        vlan: 153
+      vlan154:
+        ip:
+          address:
+            12.54.0.2/24: {}
+        type: svi
+        vlan: 154
+      vlan155:
+        ip:
+          address:
+            12.55.0.2/24: {}
+        type: svi
+        vlan: 155
+      vlan156:
+        ip:
+          address:
+            12.56.0.2/24: {}
+        type: svi
+        vlan: 156
+      vlan157:
+        ip:
+          address:
+            12.57.0.2/24: {}
+        type: svi
+        vlan: 157
+      vlan158:
+        ip:
+          address:
+            12.58.0.2/24: {}
+        type: svi
+        vlan: 158
+      vlan159:
+        ip:
+          address:
+            12.59.0.2/24: {}
+        type: svi
+        vlan: 159
+      vlan160:
+        ip:
+          address:
+            12.60.0.2/24: {}
+        type: svi
+        vlan: 160
+      vlan161:
+        ip:
+          address:
+            12.61.0.2/24: {}
+        type: svi
+        vlan: 161
+      vlan162:
+        ip:
+          address:
+            12.62.0.2/24: {}
+        type: svi
+        vlan: 162
+      vlan163:
+        ip:
+          address:
+            12.63.0.2/24: {}
+        type: svi
+        vlan: 163
+      vlan164:
+        ip:
+          address:
+            12.64.0.2/24: {}
+        type: svi
+        vlan: 164
+      vlan165:
+        ip:
+          address:
+            12.65.0.2/24: {}
+        type: svi
+        vlan: 165
+      vlan166:
+        ip:
+          address:
+            12.66.0.2/24: {}
+        type: svi
+        vlan: 166
+      vlan167:
+        ip:
+          address:
+            12.67.0.2/24: {}
+        type: svi
+        vlan: 167
+      vlan168:
+        ip:
+          address:
+            12.68.0.2/24: {}
+        type: svi
+        vlan: 168
+      vlan169:
+        ip:
+          address:
+            12.69.0.2/24: {}
+        type: svi
+        vlan: 169
+      vlan170:
+        ip:
+          address:
+            12.70.0.2/24: {}
+        type: svi
+        vlan: 170
+      vlan171:
+        ip:
+          address:
+            12.71.0.2/24: {}
+        type: svi
+        vlan: 171
+      vlan172:
+        ip:
+          address:
+            12.72.0.2/24: {}
+        type: svi
+        vlan: 172
+      vlan173:
+        ip:
+          address:
+            12.73.0.2/24: {}
+        type: svi
+        vlan: 173
+      vlan174:
+        ip:
+          address:
+            12.74.0.2/24: {}
+        type: svi
+        vlan: 174
+      vlan175:
+        ip:
+          address:
+            12.75.0.2/24: {}
+        type: svi
+        vlan: 175
+      vlan176:
+        ip:
+          address:
+            12.76.0.2/24: {}
+        type: svi
+        vlan: 176
+      vlan177:
+        ip:
+          address:
+            12.77.0.2/24: {}
+        type: svi
+        vlan: 177
+      vlan178:
+        ip:
+          address:
+            12.78.0.2/24: {}
+        type: svi
+        vlan: 178
+      vlan179:
+        ip:
+          address:
+            12.79.0.2/24: {}
+        type: svi
+        vlan: 179
+      vlan180:
+        ip:
+          address:
+            12.80.0.2/24: {}
+        type: svi
+        vlan: 180
+      vlan181:
+        ip:
+          address:
+            12.81.0.2/24: {}
+        type: svi
+        vlan: 181
+      vlan182:
+        ip:
+          address:
+            12.82.0.2/24: {}
+        type: svi
+        vlan: 182
+      vlan183:
+        ip:
+          address:
+            12.83.0.2/24: {}
+        type: svi
+        vlan: 183
+      vlan184:
+        ip:
+          address:
+            12.84.0.2/24: {}
+        type: svi
+        vlan: 184
+      vlan185:
+        ip:
+          address:
+            12.85.0.2/24: {}
+        type: svi
+        vlan: 185
+      vlan186:
+        ip:
+          address:
+            12.86.0.2/24: {}
+        type: svi
+        vlan: 186
+      vlan187:
+        ip:
+          address:
+            12.87.0.2/24: {}
+        type: svi
+        vlan: 187
+      vlan188:
+        ip:
+          address:
+            12.88.0.2/24: {}
+        type: svi
+        vlan: 188
+      vlan189:
+        ip:
+          address:
+            12.89.0.2/24: {}
+        type: svi
+        vlan: 189
+      vlan190:
+        ip:
+          address:
+            12.90.0.2/24: {}
+        type: svi
+        vlan: 190
+      vlan191:
+        ip:
+          address:
+            12.91.0.2/24: {}
+        type: svi
+        vlan: 191
+      vlan192:
+        ip:
+          address:
+            12.92.0.2/24: {}
+        type: svi
+        vlan: 192
+      vlan193:
+        ip:
+          address:
+            12.93.0.2/24: {}
+        type: svi
+        vlan: 193
+      vlan194:
+        ip:
+          address:
+            12.94.0.2/24: {}
+        type: svi
+        vlan: 194
+      vlan195:
+        ip:
+          address:
+            12.95.0.2/24: {}
+        type: svi
+        vlan: 195
+      vlan196:
+        ip:
+          address:
+            12.96.0.2/24: {}
+        type: svi
+        vlan: 196
+      vlan197:
+        ip:
+          address:
+            12.97.0.2/24: {}
+        type: svi
+        vlan: 197
+      vlan198:
+        ip:
+          address:
+            12.98.0.2/24: {}
+        type: svi
+        vlan: 198
+      vlan199:
+        ip:
+          address:
+            12.99.0.2/24: {}
+        type: svi
+        vlan: 199
+      vlan200:
+        ip:
+          address:
+            12.100.0.2/24: {}
+        type: svi
+        vlan: 200
+      vlan201:
+        ip:
+          address:
+            12.101.0.2/24: {}
+        type: svi
+        vlan: 201
+      vlan202:
+        ip:
+          address:
+            12.102.0.2/24: {}
+        type: svi
+        vlan: 202
+      vlan203:
+        ip:
+          address:
+            12.103.0.2/24: {}
+        type: svi
+        vlan: 203
+      vlan204:
+        ip:
+          address:
+            12.104.0.2/24: {}
+        type: svi
+        vlan: 204
+      vlan205:
+        ip:
+          address:
+            12.105.0.2/24: {}
+        type: svi
+        vlan: 205
+      vlan206:
+        ip:
+          address:
+            12.106.0.2/24: {}
+        type: svi
+        vlan: 206
+      vlan207:
+        ip:
+          address:
+            12.107.0.2/24: {}
+        type: svi
+        vlan: 207
+      vlan208:
+        ip:
+          address:
+            12.108.0.2/24: {}
+        type: svi
+        vlan: 208
+      vlan209:
+        ip:
+          address:
+            12.109.0.2/24: {}
+        type: svi
+        vlan: 209
+      vlan210:
+        ip:
+          address:
+            12.110.0.2/24: {}
+        type: svi
+        vlan: 210
+      vlan211:
+        ip:
+          address:
+            12.111.0.2/24: {}
+        type: svi
+        vlan: 211
+      vlan212:
+        ip:
+          address:
+            12.112.0.2/24: {}
+        type: svi
+        vlan: 212
+      vlan213:
+        ip:
+          address:
+            12.113.0.2/24: {}
+        type: svi
+        vlan: 213
+      vlan214:
+        ip:
+          address:
+            12.114.0.2/24: {}
+        type: svi
+        vlan: 214
+      vlan215:
+        ip:
+          address:
+            12.115.0.2/24: {}
+        type: svi
+        vlan: 215
+      vlan216:
+        ip:
+          address:
+            12.116.0.2/24: {}
+        type: svi
+        vlan: 216
+      vlan217:
+        ip:
+          address:
+            12.117.0.2/24: {}
+        type: svi
+        vlan: 217
+      vlan218:
+        ip:
+          address:
+            12.118.0.2/24: {}
+        type: svi
+        vlan: 218
+      vlan219:
+        ip:
+          address:
+            12.119.0.2/24: {}
+        type: svi
+        vlan: 219
+      vlan220:
+        ip:
+          address:
+            12.120.0.2/24: {}
+        type: svi
+        vlan: 220
+      vlan221:
+        ip:
+          address:
+            12.121.0.2/24: {}
+        type: svi
+        vlan: 221
+      vlan222:
+        ip:
+          address:
+            12.122.0.2/24: {}
+        type: svi
+        vlan: 222
+      vlan223:
+        ip:
+          address:
+            12.123.0.2/24: {}
+        type: svi
+        vlan: 223
+      vlan224:
+        ip:
+          address:
+            12.124.0.2/24: {}
+        type: svi
+        vlan: 224
+      vlan225:
+        ip:
+          address:
+            12.125.0.2/24: {}
+        type: svi
+        vlan: 225
+      vlan226:
+        ip:
+          address:
+            12.126.0.2/24: {}
+        type: svi
+        vlan: 226
+      vlan227:
+        ip:
+          address:
+            12.127.0.2/24: {}
+        type: svi
+        vlan: 227
+    service:
+      ntp:
+        mgmt:
+          server:
+            0.cumulusnetworks.pool.ntp.org: {}
+            1.cumulusnetworks.pool.ntp.org: {}
+            2.cumulusnetworks.pool.ntp.org: {}
+            3.cumulusnetworks.pool.ntp.org: {}
+    system:
+      aaa:
+        class:
+          nvapply:
+            action: allow
+            command-path:
+              /:
+                permission: all
+          nvshow:
+            action: allow
+            command-path:
+              /:
+                permission: ro
+          sudo:
+            action: allow
+            command-path:
+              /:
+                permission: all
+        role:
+          nvue-admin:
+            class:
+              nvapply: {}
+          nvue-monitor:
+            class:
+              nvshow: {}
+          system-admin:
+            class:
+              nvapply: {}
+              sudo: {}
+        user:
+          cumulus:
+            full-name: cumulus,,,
+            hashed-password: $y$j9T$8zsfwM2wUFOqZ6Rf3R52N1$arVIQV7VMODDweBK.amymemQTvZmugDDW6rnEF.fHS3
+            role: system-admin
+      api:
+        state: enabled
+      config:
+        auto-save:
+          state: enabled
+      control-plane:
+        acl:
+          acl-default-dos:
+            inbound: {}
+          acl-default-whitelist:
+            inbound: {}
+      hostname: leftTg
+      reboot:
+        mode: cold
+      ssh-server:
+        state: enabled
+      wjh:
+        channel:
+          forwarding:
+            trigger:
+              l2: {}
+              l3: {}
+              tunnel: {}
+        enable: on
