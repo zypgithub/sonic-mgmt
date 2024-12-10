@@ -37,6 +37,8 @@ def configure_bios(topology_obj):
                     'switch type', '')
                 dut_engine = topology_obj.players[host]['engine']
                 bios_obj = BiosFactory.create_bios(switch_type, topology_obj, dut_engine, nvue_cli_obj, dut_ip)
+                logger.info('Executing remote reboot')
+                NvueGeneralCli(engine=dut_engine).remote_reboot(topology_obj, wait_till_alive=False)
                 bios_obj.config_flow()
 
     except Exception as err:

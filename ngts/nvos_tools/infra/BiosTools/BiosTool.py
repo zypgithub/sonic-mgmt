@@ -78,8 +78,6 @@ class BiosTool(ABC):
 
         logger.info("Initializing serial connection to device")
         serial_engine = nvue_cli_obj.enter_serial_connection_context(topology_obj)
-        logger.info('Executing remote reboot')
-        nvue_cli_obj.remote_reboot(topology_obj, wait_till_alive=False)
         logger.info("Waiting for enter BIOS prompt")
         serial_engine.run_cmd('', [BiosConsts.BIOS_START_REGEX], timeout=240, send_without_enter=True)
 
