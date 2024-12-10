@@ -17,3 +17,10 @@ def print_players_logs(players_info, players_list=PerfConsts.PERF_SETUP_PLAYERS_
             with open(log_path, 'r') as f:
                 print(f.read())
             print('-' * 40)  # Separator for each player's logs
+
+
+def remove_players_logs(players_list=PerfConsts.PERF_SETUP_PLAYERS_ALIASES):
+    for player in players_list:
+        log_path = os.path.join(BugHandlerConst.NGTS_PATH, "performance_tests", "log_files", f"{player}.log")
+        if os.path.exists(log_path):
+            os.remove(log_path)

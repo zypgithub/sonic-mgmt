@@ -32,7 +32,7 @@ class NvuePerformanceCli:
         logging.info(f"Configuration file was copied to {self.dut_alias}")
         full_path = os.path.join(dst_dir, "tmp.yaml")
         self.cli_obj.general.replace_config(self.engine, full_path, output_type="json")
-        self.cli_obj.apply_config(self.engine, option="-y")
+        self.cli_obj.general.apply_config(self.engine, option="-y")
         logging.info(f"The configuration file on {self.dut_alias} was applied successfully")
 
     def get_configuration_file_path(self, scenario, template_suite=PerfConsts.DEFAULT_PERF_TEMPLATES_DIR):

@@ -11,7 +11,7 @@ import allure
 from ngts.helpers.performance.performance_setup_helpers import (save_base_configuration,
                                                                 apply_test_configuration, stop_traffic,
                                                                 restore_basic_configuration)
-from ngts.helpers.performance.Performance_log_print import print_players_logs
+from ngts.helpers.performance.Performance_log_print import print_players_logs, remove_players_logs
 
 logger = logging.getLogger()
 
@@ -33,3 +33,4 @@ def basic_test_configuration(players):
             restore_basic_configuration(players)
         with allure.step(f"Attaching Players Logs to Allure"):
             print_players_logs(print_to_stdout=True, players_info=players)
+            remove_players_logs()
