@@ -680,6 +680,19 @@
   inv_name: lab
   comment: Mellanox MTR testbed
 
+- conf-name: r-leopard-58-t1-64-lag
+  group-name: vm-t1
+  topo: t1-64-lag
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-r-leopard-58
+  ptf_ip: 10.213.103.5/16
+  ptf_ipv6:
+  server: server_11
+  vm_base: VM1101
+  dut:
+    - r-leopard-58
+  comment: Mellanox MTR testbed
+
 - conf-name: r-leopard-58-ptf32
   group-name: vm-t1
   topo: ptf32
@@ -2511,6 +2524,19 @@
   dut:
     - r-leopard-01
   inv_name: lab
+  comment: Mellanox MTR testbed
+
+- conf-name: r-leopard-01-t1-64-lag
+  group-name: vm-t1
+  topo: t1-64-lag
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-r-leopard-01
+  ptf_ip: 10.215.22.61/16
+  ptf_ipv6:
+  server: server_15
+  vm_base: VM1501
+  dut:
+    - r-leopard-01
   comment: Mellanox MTR testbed
 
 - conf-name: r-leopard-01-ptf32

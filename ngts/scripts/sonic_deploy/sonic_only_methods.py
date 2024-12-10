@@ -467,7 +467,7 @@ class SonicInstallationSteps:
             hwskus = ['Mellanox-SN4600C-D24C52']
             need_gen_mingraph = True
         if "r-leopard-01" in setup_name or "r-leopard-58" in setup_name:
-            hwskus = ['Mellanox-SN4700-O32']
+            hwskus = ['Mellanox-SN4700-O32', 'Mellanox-SN4700-V64']
             need_gen_mingraph = True
         if "sonic-dual-tor-leopard" in setup_name:
             hwskus = ['Mellanox-SN4700-V64']
