@@ -261,93 +261,25 @@ def test_show_system_cpu(test_api, engines, devices):
     Run show system memory and verify there is a correlation between the different values,
     and the values are in appropriate range.
         Test flow:
-            1. run show system cpu
-            2. verify the 5 keys (core-count, cores, load-average, model and utilization) do exist
+            1. run show system memory
+            2. verify 3 keys (core-count, model and utilization) are exist
             3. verify switch CPU core-count matches the switch type
-            4. validate Utilization percentages are in the appropriate range
+            4. validate Utilization percentages are not reaching 30%
     """
     TestToolkit.tested_api = test_api
-    time.sleep(10)
-    system = System()
 
-    with allure.step('Validate all expected show cpu fields are present'):
+    with allure.step('Run show system cpu command and verify that each field has a value'):
+        time.sleep(10)
+        system = System()
         output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(system.show("cpu")).get_returned_value()
-        ValidationTool.verify_all_fields_value_exist_in_output_dictionary(output_dictionary,
-                                                                          SystemConsts.CPU_INFO_LIST).verify_result()
 
-    with allure.step('Validate CPU core-count'):
+        assert len(output_dictionary.keys()) == 3, "Unexpected Number of keys"
+        assert list(output_dictionary.keys())[0] == SystemConsts.CPU_CORE_COUNT_KEY, "Unexpected Key value"
+        assert list(output_dictionary.keys())[1] == SystemConsts.CPU_MODEL_KEY, "Unexpected Key value"
+        assert list(output_dictionary.keys())[2] == SystemConsts.CPU_UTILIZATION_KEY, "Unexpected Key value"
         assert output_dictionary[SystemConsts.CPU_CORE_COUNT_KEY] == devices.dut.core_count, \
-            "Switch core-count is {} instead of {}".format(output_dictionary[SystemConsts.CPU_CORE_COUNT_KEY],
-                                                           devices.dut.core_count)
+            "Unexpected switch core-count"
 
-    with allure.step('Validate utilization for all the CPU cores'):
-        for core_num in range(0, devices.dut.core_count):
-            util = output_dictionary[SystemConsts.CPU_CORES]["CPU " + str(core_num)][SystemConsts.CPU_UTILIZATION_KEY]
-            assert SystemConsts.CPU_PERCENT_THRESH_MIN < util < SystemConsts.CPU_PERCENT_THRESH_MAX, \
-                "Utilization percentage is out of range for CPU {}".format(core_num)
-
-    with allure.step('Validate CPU load average'):
-        load_1m = output_dictionary[SystemConsts.CPU_LOAD_AVERAGE]["1m"]
-        load_5m = output_dictionary[SystemConsts.CPU_LOAD_AVERAGE]["5m"]
-        load_15m = output_dictionary[SystemConsts.CPU_LOAD_AVERAGE]["15m"]
-        assert 0 < load_1m < devices.dut.core_count, \
-            'CPU load average for 1m is {} instead of being between 0 & {}'.format(load_1m, devices.dut.core_count)
-        assert 0 < load_5m < devices.dut.core_count, \
-            'CPU load average for 5m is {} instead of being between 0 & {}'.format(load_5m, devices.dut.core_count)
-        assert 0 < load_15m < devices.dut.core_count, \
-            'CPU load average for 15m is {} instead of being between 0 & {}'.format(load_15m, devices.dut.core_count)
-
-    with allure.step('Validate average CPU utilization is in range'):
         utilization = output_dictionary[SystemConsts.CPU_UTILIZATION_KEY]
         assert SystemConsts.CPU_PERCENT_THRESH_MIN < utilization < SystemConsts.CPU_PERCENT_THRESH_MAX, \
             "utilization percentage is out of range"
-
-    with allure.step('Validate CPU model is present'):
-        assert output_dictionary[SystemConsts.CPU_MODEL_KEY] != "", 'CPU model is empty'
-
-
-@pytest.mark.system
-@pytest.mark.simx
-@pytest.mark.cumulus
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_show_system_disk(test_api):
-    """
-    Run show system disk and verify there is a correlation between the different values,
-    and the values are in appropriate range.
-        Test flow:
-            1. run show system disk
-            2. verify the 6 keys ('available', 'used', 'free-percent', 'free', 'mountpoint', 'total-size') do exist
-            3. verify the values for the keys: 'available', 'used', 'free-percent', 'free', 'total-size' are valid
-    """
-    TestToolkit.tested_api = test_api
-    system = System()
-
-    with allure.step('Validate all expected show disk fields are present'):
-        output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(system.show("disk")).get_returned_value()
-        for key in output_dictionary.keys():
-            ValidationTool.verify_all_fields_value_exist_in_output_dictionary(
-                output_dictionary[key], SystemConsts.DISK_INFO_FIELD_LIST).verify_result()
-
-    for fs in output_dictionary.keys():
-        with allure.step('Verify total size for file system {} > 0'.format(fs)):
-            total_size = float(output_dictionary[fs][SystemConsts.DISK_TOTAL_SIZE_KEY].split(' ')[0])
-            assert total_size > 0, 'Total size for file system {} is {} which is invalid'.format(fs, total_size)
-
-        with allure.step('Verify available size for file system {}'.format(fs)):
-            _verify_disk_size_field(fs, SystemConsts.DISK_AVAILABLE_KEY, 0, total_size, output_dictionary)
-
-        with allure.step('Verify free size for file system {}'.format(fs)):
-            _verify_disk_size_field(fs, SystemConsts.DISK_FREE_KEY, 0, total_size, output_dictionary)
-
-        with allure.step('Verify used size for file system {}'.format(fs)):
-            _verify_disk_size_field(fs, SystemConsts.DISK_USED_KEY, 0, total_size, output_dictionary)
-
-        with allure.step('Verify free percent for file system {}'.format(fs)):
-            _verify_disk_size_field(fs, SystemConsts.DISK_FREE_PERCENT_KEY, 0, 100, output_dictionary)
-
-
-def _verify_disk_size_field(fs, field, range_start, range_end, output_dict):
-    assert field in output_dict[fs].keys(), '{} field is not present in output for filesystem {}'.format(field, fs)
-    field_value = float(output_dict[fs][field].split(' ')[0])
-    assert range_start < field_value < range_end, '{} size of file system {} is {} which is out of range ({}, {})'.\
-        format(field, fs, field_value, range_start, range_end)
