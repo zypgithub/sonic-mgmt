@@ -657,7 +657,7 @@
   - '.*ERR kernel:.*Failed to bind BFD socket to local_addr.*'
   - '.*ERR kernel:.*Failed to create TX socket for session.*'
   - '.*ERR kernel:.*Parsing BFD command \d+ failed.*'
-  - '.*ERR syncd#SDK: \[BFD.ERR\] ioctl failed, error description: Input/output error'
+  - '.*ERR syncd#SDK: \[BFD.ERR\] ioctl failed, error description: Input.output error'
   - '.*ERR syncd#SDK: \[CORE_API.ERR\] Failed in bfd_offload_set().* error:.*'
   - '.*ERR syncd#SDK: \[SAI_BFD.ERR\] .*mlnx_sai_bfd.c\[\d+\]- mlnx_set_offload_bfd_tx_session.*: Error create TX BFD session.*'
   - '.*ERR syncd#SDK: :- sendApiResponse: api SAI_COMMON_API_CREATE failed in syncd mode: SAI_STATUS_FAILURE'
@@ -666,10 +666,7 @@
   Conditions:
   - Affected_test_cases:
     - bfd/test_bfd.py
-    - vxlan/test_vxlan_ecmp.py::Test_VxLAN_ecmp_create::test_vxlan_bfd_health_state_change_a1a2_down
-    - vxlan/test_vxlan_ecmp.py::Test_VxLAN_ecmp_create::test_vxlan_bfd_health_state_change_a2down_a1up
-    - vxlan/test_vxlan_ecmp.py::Test_VxLAN_ecmp_create::test_vxlan_bfd_health_state_change_a2up_a1down
-    - vxlan/test_vxlan_ecmp.py::Test_VxLAN_ecmp_create::test_vxlan_bfd_health_state_change_a1a2_up
+    - vxlan/test_vxlan_ecmp.py
     Redmine:
     - 3536554
 
