@@ -539,9 +539,9 @@ platform_tests/sfp/test_show_intf_xcvr.py:
 
 platform_tests/sfp/test_sfputil.py::test_check_sfputil_error_status:
   skip:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4204539 on r-leopard-44"
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4204539"
     conditions:
-    - "https://redmine.mellanox.com/issues/4204539 and 'r-leopard-44' in testbed"
+    - "https://redmine.mellanox.com/issues/4204539"
 
 platform_tests/fw_utility/test_fwutil.py:
   skip:
