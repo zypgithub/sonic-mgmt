@@ -537,6 +537,12 @@ platform_tests/sfp/test_show_intf_xcvr.py:
     conditions:
     - "'simx' in platform"
 
+platform_tests/sfp/test_sfputil.py::test_check_sfputil_error_status:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4204539 on r-leopard-44"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4204539 and 'r-leopard-44' in testbed"
+
 platform_tests/fw_utility/test_fwutil.py:
   skip:
     reason: "Testcase ignored due to platform msn4"
