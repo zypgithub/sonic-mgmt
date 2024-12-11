@@ -83,7 +83,7 @@ def test_reload_configuration(duthosts, enum_rand_one_per_hwsku_hostname,
 
     logging.info("Wait some time for all the transceivers to be detected")
     max_wait_time_for_transceivers = 300
-    if duthost.facts["platform"] == "x86_64-cel_e1031-r0":
+    if duthost.facts["platform"] in ["x86_64-cel_e1031-r0", "x86_64-88_lc0_36fh_m-r0"]:
         max_wait_time_for_transceivers = 900
     assert wait_until(max_wait_time_for_transceivers, 20, 0, check_interface_method, *check_interface_method_args), \
         "Not all transceivers are detected in {} seconds".format(max_wait_time_for_transceivers)
@@ -174,7 +174,13 @@ def test_reload_configuration_checks(duthosts, enum_rand_one_per_hwsku_hostname,
         return
     ssh_port = \
         duthost.host.options['variable_manager']._hostvars[duthost.hostname].get('ansible_ssh_port', SONIC_SSH_PORT)
+
+    timeout = None
+    if duthost.get_facts().get("modular_chassis"):
+        timeout = 420
+
     reboot(duthost, localhost, reboot_type="cold", wait=5,
+           timeout=timeout,
            plt_reboot_ctrl_overwrite=False, port=ssh_port)
 
     # Check if all database containers have started
