@@ -86,13 +86,11 @@ class IpTool:
         return ipv6_address
 
     @staticmethod
-    def send_ufm_mad(host_obj, directory, lid, modifier='0'):
+    def send_ufm_mad(host_obj, directory, modifier='0'):
         """
         @Summary: This function will send a MAD from the host to the wanted asic by LID
         @param host_obj: Host object.
         @param directory: location to run nvmad
-        @param lid: LID assigned by SM. The mad will be sent to this lid value.
-            Host object.
         @param modifier: '0' for eth0, '1' for eth1
         @return: The MAD's output - > example:
             -I- received response length:256
@@ -131,13 +129,17 @@ class IpTool:
             hca = card[0]
             port_state = card[-1].strip('()')
 
-            if port_state != IpConsts.PORT_STATE_UP:
-                result_obj.result = False
-                result_obj.info = f"Host ib port state is {port_state} instead of {IpConsts.PORT_STATE_UP}"
-            else:
-                with allure.step("Sending MAD to lid: {}".format(lid)):
-                    result_obj.returned_value = host_obj.run_cmd(IpConsts.MAD_TEMPLATE.format(
-                        python_path=IpConsts.PYTHON_PATH, nvmad_path=directory, lid=lid, card=hca, modifier=modifier))
+        if port_state != IpConsts.PORT_STATE_UP:
+            result_obj.result = False
+            result_obj.info = f"Host ib port state is {port_state} instead of {IpConsts.PORT_STATE_UP}"
+        else:
+            with allure.step("find lid"):
+                # LID assigned by SM. The mad will be sent to this lid value
+                lid = host_obj.run_cmd(IbConsts.IBSWITCHES).split('lid')[-1].split()[0]
+
+            with allure.step("Sending MAD to lid: {}".format(lid)):
+                result_obj.returned_value = host_obj.run_cmd(IpConsts.MAD_TEMPLATE.format(
+                    python_path=IpConsts.PYTHON_PATH, nvmad_path=directory, lid=lid, card=hca, modifier=modifier))
 
         return result_obj
 

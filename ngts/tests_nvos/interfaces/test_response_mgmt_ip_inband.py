@@ -412,8 +412,7 @@ def verify_ufm_mad_configuration(fae, dut_engine, port_name, devices_dut, engine
             fae.ib.ufm_mad.show(UfmMadConsts.ADVERTISED_ADDRESSED, dut_engine=dut_engine)).get_returned_value()
 
     with (allure.step("Run MAD request from traffic server")):
-        output = IpTool.send_ufm_mad(engines_ha, UfmMadConsts.NVMAD_PATH, UfmMadConsts.LID,
-                                     port_name[-1]).get_returned_value()
+        output = IpTool.send_ufm_mad(engines_ha, UfmMadConsts.NVMAD_PATH, port_name[-1]).get_returned_value()
         mads_response = IpTool.parse_mad_output(output)
         ipv4_res = mads_response[IpConsts.IPV4]
         ipv6_res = mads_response[IpConsts.IPV6]

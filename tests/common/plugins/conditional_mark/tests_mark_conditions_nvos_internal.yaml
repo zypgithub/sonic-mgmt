@@ -263,12 +263,4 @@ tests_nvos/interfaces/test_interface_link_transceiver_diagnostics.py::test_inter
     conditions:
       - https://redmine.mellanox.com/issues/4135623
 
-tests_nvos/interfaces/test_response_mgmt_ip_inband.py:
-  skip:
-    reason: "#4041220:[Functional] [Crocodile] | Empty addresses in ufm-mad response"
-    conditions_logical_operator: and
-    conditions:
-      - "'croc' in testbed"
-      - https://redmine.mellanox.com/issues/4041220
-
 ########################## NVOS IGNORE END ##########################

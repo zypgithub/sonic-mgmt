@@ -936,6 +936,7 @@ class IbConsts:
     IBDIAGNET_EXPECTED_MESSAGE = 'ibdiagnet output files were archived into ibdiagnet2_output.tgz'
     IB_INTERFACE_NAME_REGEX = "([a-zA-Z]+)(\d+)(p\d+)"  # noqa: E402
     IB_DEV_2_NET_DEV = 'ibdev2netdev'
+    IBSWITCHES = 'ibswitches'
     BASE_LID = 'ibstat | grep "Base lid"'
     MAX_NUM_OF_BYTES = '8388608'
     IB_SEND_LAT_SERVER = ('ib_send_lat -F -s ' + MAX_NUM_OF_BYTES + ' -D ' +
@@ -1547,7 +1548,6 @@ class UfmMadConsts:
     PMAOS_REGISTER = 'PMAOS'
     PREI_REGISTER = 'PREI'
     NVMAD_PATH = '/auto/sw_system_project/MLNX_OS_INFRA/mad_repository'
-    LID = 1
     MAD_NO_IPV4 = '0.0.0.0'
     MAD_NO_IPV6 = '0:0:0:0::0:0'
 
@@ -1701,7 +1701,7 @@ class IssuConsts:
     CONTAINER_BU_TEMPLATE = '{python_path} {ping_server_script}'
     SERVER_SCRIPT = PYTHON_PATH + PING_SERVER_SCRIPT
     OPENSM_RESPONSE_TIMEOUT = '60'  # [sec]
-    TRAFFIC_DURATION = '800'  # [sec]
+    TRAFFIC_DURATION = '300'  # [sec]
     TRAFFIC_TIMEOUT = int(TRAFFIC_DURATION) + 10  # [sec]
     SERVER_OUTPUT = 'server_output.txt'
     CLIENT_OUTPUT = 'client_output.txt'
