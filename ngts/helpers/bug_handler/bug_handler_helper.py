@@ -16,7 +16,8 @@ from datetime import datetime, timedelta
 from ngts.constants.constants import BugHandlerConst, InfraConst
 from ngts.nvos_constants.constants_nvos import SystemConsts
 from infra.tools.redmine.redmine_api import get_issue_fixed_in_version_value, get_issues_status
-
+from ngts.scripts.collect_simx_logs_on_not_success import dump_simx_data
+from infra.tools.topology_tools.topology_setup_utils import get_topology_by_setup_name
 
 logger = logging.getLogger()
 
@@ -277,13 +278,10 @@ def run_err_msg_bug_handler_tool(conf_path, redmine_project, branch, yaml_parsed
 
     if is_attachment_needed(bug_handler_file_result, update_only, bug_handler_no_action, yaml_parsed_file):
         ticket_id = get_ticket_id(bug_handler_file_result)
-        logger.info(f"the RM ticket id is: {ticket_id}")
-        tar_file_path = get_tech_support_from_switch(bug_handler_params)
-
-        tar_file_path = handle_file_size_exceedance(tar_file_path)
-
+        tar_file_path_list = get_tech_support_from_switch(bug_handler_params)
+        tar_file_path_list = [handle_file_size_exceedance(tar_file_path) for tar_file_path in tar_file_path_list]
         upload_script = BugHandlerConst.BUG_HANDLER_UPLOAD_ATTACHMENT_SCRIPT
-        upload_cmd = f"env LOG_FORMAT_JSON=1 {upload_script} --bug_id {ticket_id}  --attachments {tar_file_path}"
+        upload_cmd = f"env LOG_FORMAT_JSON=1 {upload_script} --bug_id {ticket_id}  --attachments {' '.join(tar_file_path_list)}"
         logger.info(f"Running uploading attachment command: {upload_cmd}")
         upload_attachment_output = subprocess.run(upload_cmd, shell=True, capture_output=True).stdout
         logger.info(upload_attachment_output)
@@ -291,7 +289,7 @@ def run_err_msg_bug_handler_tool(conf_path, redmine_project, branch, yaml_parsed
         upload_attachment_result = json.loads(upload_attachment_output)
         if "error" in upload_attachment_result:
             logger.error(f"Failed to upload the file: {upload_attachment_result}")
-        bug_handler_file_result["file_name"] = tar_file_path
+        bug_handler_file_result["file_name"] = ",".join(tar_file_path_list)
     return bug_handler_file_result
 
 
@@ -431,8 +429,19 @@ def get_tech_support_from_switch(bug_handler_params):
     testbed = bug_handler_params['testbed']
     session_id = bug_handler_params['session_id']
     cli_type = bug_handler_params['cli_type']
-
+    dumps_folder = os.environ.get(InfraConst.ENV_LOG_FOLDER)
+    if not dumps_folder:  # default value is empty string, defined in steps file
+        dumps_folder = create_result_dir(testbed, session_id, InfraConst.CASES_DUMPS_DIR)
+    dumps_files = []
     if cli_type == "Sonic":
+        platform = duthost.shell("show platform summary | grep Platform | awk '{print $2}'")['stdout']
+        if "_simx" in platform:
+            setup_name = "sonic_simx_" + duthost.hostname
+            try:
+                topology_obj = get_topology_by_setup_name(setup_name=setup_name, slow_cli=True)
+                dumps_files.extend(dump_simx_data(topology_obj, dumps_folder))
+            except Exception as e:
+                logger.error(f"Exception while collecting the simx dump {str(e)}")
         tar_file_path_on_switch = _generate_sonic_techsupport(duthost)
     elif cli_type == "NVUE":
         tar_file_path_on_switch = _generate_nvue_techsupport(duthost)
@@ -440,14 +449,10 @@ def get_tech_support_from_switch(bug_handler_params):
         raise Exception(f"No such cli_type: {cli_type}")
 
     tar_file_name = tar_file_path_on_switch.split('/')[-1]
-    dumps_folder = os.environ.get(InfraConst.ENV_LOG_FOLDER)
-    if not dumps_folder:  # default value is empty string, defined in steps file
-        dumps_folder = create_result_dir(testbed, session_id, InfraConst.CASES_DUMPS_DIR)
-
     tar_file_path = dumps_folder + '/'
-
     duthost.fetch(src=tar_file_path_on_switch, dest=tar_file_path, flat=True)
-    return os.path.join(dumps_folder, tar_file_name)
+    dumps_files.append(os.path.join(dumps_folder, tar_file_name))
+    return dumps_files
 
 
 def create_result_dir(testbed, session_id, suffix_path_name):
