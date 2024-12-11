@@ -648,6 +648,13 @@
     - Affected_test_cases:
         - tests_nvos/system/test_techsupport_feature.py::test_techsupport_with_dockers_down
 
+# NVOS Errors which should be ignored in tests which disable the lldp
+- Errors_list:
+    - '.* ERR health-statsd#health_history: lldp: Container .* is not running.*'
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/interfaces/lldp/test_lldp.py::test_lldp_disabled
+
 # NVOS Security
 - Errors_list:
     - '.*ERR sonic-installer: Error: Failed verify image signature.*'

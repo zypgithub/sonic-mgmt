@@ -4,14 +4,13 @@ import re
 
 import pytest
 
-
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.nvos_tools.nmx.Sdn import Sdn
-from ngts.nvos_constants.constants_nvos import ApiType, OutputFormat
+from ngts.nvos_constants.constants_nvos import ApiType, OutputFormat, PlatformConsts
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
@@ -43,9 +42,9 @@ def test_cluster_chassis_id(engines, devices, test_api):
 
     with allure.step("Get chassis-id"):
         output = platform.chassis_location.show()
-        chassis_id_serial = OutputParsingTool.parse_show_output_to_dict(output).get_returned_value()['chassis-id']
+        chassis_id_serial = OutputParsingTool.parse_show_output_to_dict(output).get_returned_value()[PlatformConsts.CHASSIS_LOCATION_CHAS_SN]
         if chassis_id_serial == 'N/A':
-            pytest.skip("no chassis-id serial available")
+            pytest.skip("no serial number available")
 
     with allure.step("Update chassis-id mapping with invalid number - should fail"):
         invalid_mapping_ids = [-1, 1000]
