@@ -187,6 +187,14 @@
         "default_hwsku": "Mellanox-SN4700-O28",
         "support_hwsku": ["Mellanox-SN4700-O28"]
     },
+    "mtvr-bison-02_setup": {
+        "default_hwsku": "Mellanox-SN5610N-C256S2",
+        "support_hwsku": ["Mellanox-SN5610N-C256S2", "Mellanox-SN5610N-C224O8"]
+    },
+    "mtvr-bison-03_setup": {
+        "default_hwsku": "Mellanox-SN5610N-C256S2",
+        "support_hwsku": ["Mellanox-SN5610N-C256S2", "Mellanox-SN5610N-C224O8"]
+    },
     "mtvr-bobcat-03_setup": {
         "default_hwsku": "Mellanox-SN4280-O28",
         "support_hwsku": ["Mellanox-SN4280-O28"]

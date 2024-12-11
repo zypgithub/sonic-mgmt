@@ -145,6 +145,12 @@ MTVR-R740-07_1 ansible_host=mtvr-r740-07
 [vm_host_83]
 MTVR-R740-07_2 ansible_host=mtvr-r740-07
 
+[vm_host_84]
+MTVR-DL360-02_1 ansible_host=mtvr-dl360-02
+
+[vm_host_85]
+MTVR-R730-06 ansible_host=mtvr-r730-06
+
 [vm_host_86]
 MTVR-DL360-04_1 ansible_host=mtvr-dl360-04
 
@@ -201,6 +207,8 @@ vm_host_80
 vm_host_81
 vm_host_82
 vm_host_83
+vm_host_84
+vm_host_85
 vm_host_86
 vm_host_87
 
@@ -1684,6 +1692,63 @@ VM4830 ansible_host=10.245.40.66
 VM4831 ansible_host=10.245.40.67
 VM4832 ansible_host=10.245.40.68
 
+[vms_84]
+VM4901 ansible_host=10.245.38.64
+VM4902 ansible_host=10.245.38.65
+VM4903 ansible_host=10.245.38.66
+VM4904 ansible_host=10.245.38.67
+VM4905 ansible_host=10.245.38.68
+VM4906 ansible_host=10.245.38.69
+VM4907 ansible_host=10.245.38.70
+VM4908 ansible_host=10.245.38.71
+VM4909 ansible_host=10.245.38.72
+VM4910 ansible_host=10.245.38.73
+VM4911 ansible_host=10.245.38.74
+VM4912 ansible_host=10.245.38.75
+VM4913 ansible_host=10.245.38.76
+VM4914 ansible_host=10.245.38.77
+VM4915 ansible_host=10.245.38.78
+VM4916 ansible_host=10.245.38.79
+VM4917 ansible_host=10.245.38.80
+VM4918 ansible_host=10.245.38.81
+VM4919 ansible_host=10.245.38.82
+VM4920 ansible_host=10.245.38.83
+VM4921 ansible_host=10.245.38.84
+VM4922 ansible_host=10.245.38.85
+VM4923 ansible_host=10.245.38.86
+VM4924 ansible_host=10.245.38.87
+
+[vms_85]
+VM4925 ansible_host=10.245.44.63
+VM4926 ansible_host=10.245.44.64
+VM4927 ansible_host=10.245.44.65
+VM4928 ansible_host=10.245.44.66
+VM4929 ansible_host=10.245.44.65
+VM4930 ansible_host=10.245.44.66
+VM4931 ansible_host=10.245.44.67
+VM4932 ansible_host=10.245.44.68
+VM4933 ansible_host=10.245.44.69
+VM4934 ansible_host=10.245.44.70
+VM4935 ansible_host=10.245.44.71
+VM4936 ansible_host=10.245.44.72
+VM4937 ansible_host=10.245.44.73
+VM4938 ansible_host=10.245.44.74
+VM4939 ansible_host=10.245.44.75
+VM4940 ansible_host=10.245.44.76
+VM4941 ansible_host=10.245.44.77
+VM4942 ansible_host=10.245.44.78
+VM4943 ansible_host=10.245.44.79
+VM4944 ansible_host=10.245.44.80
+VM4945 ansible_host=10.245.44.81
+VM4946 ansible_host=10.245.44.82
+VM4947 ansible_host=10.245.44.83
+VM4948 ansible_host=10.245.44.84
+VM4949 ansible_host=10.245.44.85
+VM4950 ansible_host=10.245.44.86
+VM4951 ansible_host=10.245.44.87
+VM4952 ansible_host=10.245.44.88
+VM4953 ansible_host=10.245.44.89
+
 [vms_86]
 VM5101 ansible_host=10.245.44.123
 VM5102 ansible_host=10.245.44.124
@@ -1786,6 +1851,8 @@ vms_80
 vms_81
 vms_82
 vms_83
+vms_84
+vms_85
 vms_86
 vms_87
 
@@ -2258,6 +2325,28 @@ host_var_file=host_vars/MTVR-R740-07_2.yml
 host_var_file=host_vars/MTVR-R740-07_2.yml
 mgmt_prefixlen=16
 
+[server_84:children]
+vm_host_84
+vms_84
+
+[server_84:vars]
+host_var_file=host_vars/MTVR-DL360-02_1.yml
+
+[vms_84:vars]
+host_var_file=host_vars/MTVR-DL360-02_1.yml
+mgmt_prefixlen=20
+
+[server_85:children]
+vm_host_85
+vms_85
+
+[server_85:vars]
+host_var_file=host_vars/MTVR-R730-06.yml
+
+[vms_85:vars]
+host_var_file=host_vars/MTVR-R730-06.yml
+mgmt_prefixlen=20
+
 [server_86:children]
 vm_host_86
 vms_86
@@ -2331,6 +2420,8 @@ server_80
 server_81
 server_82
 server_83
+server_84
+server_85
 server_86
 server_87
 
