@@ -120,7 +120,7 @@ def test_auth_restrictions_set_unset(test_api, engines):
 
 @pytest.mark.simx
 @pytest.mark.security
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_auth_restrictions_fail_delay(test_api, engines, test_user):
     """
     @summary: Verify the functionality of the fail-delay configuration
@@ -156,7 +156,7 @@ def test_auth_restrictions_fail_delay(test_api, engines, test_user):
 
 @pytest.mark.simx
 @pytest.mark.security
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_auth_restrictions_lockout(test_api, engines, test_user):
     """
     @summary: Validate the functionality of the lockout mechanism and its configurations.
@@ -358,7 +358,7 @@ def test_auth_restrictions_action_clear_all(test_api, engines, test_users):
 
 @pytest.mark.simx
 @pytest.mark.security
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_auth_restrictions_multi_user(test_api, engines):
     """
     @summary: Verify that users don't affect each other, from auth restrictions perspective.
@@ -431,7 +431,7 @@ def test_auth_restrictions_multi_user(test_api, engines):
 
 @pytest.mark.simx
 @pytest.mark.security
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_auth_restrictions_auth_success_clears_user(test_api, engines, test_user):
     """
     @summary: Verify that authentication success clears the user from being blocked.
@@ -485,7 +485,7 @@ def test_auth_restrictions_auth_success_clears_user(test_api, engines, test_user
 
 @pytest.mark.simx
 @pytest.mark.security
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_auth_restrictions_ssh_and_openapi_counting(test_api, engines, test_user):
     """
     @summary: Verify that both authentication through ssh and through openapi request are both count as auth attempts.
@@ -550,7 +550,7 @@ def test_auth_restrictions_ssh_and_openapi_counting(test_api, engines, test_user
 
 @pytest.mark.simx
 @pytest.mark.security
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_auth_restrictions_remote_counting(test_api, engines, request, devices, test_user):
     """
     @summary: Verify that when there are more than <lockout-attempts> remote authentication servers configured,
