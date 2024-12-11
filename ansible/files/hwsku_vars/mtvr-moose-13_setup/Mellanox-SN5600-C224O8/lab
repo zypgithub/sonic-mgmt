@@ -15,4 +15,4 @@ fanout
 mgmt_subnet_mask_length="24"
 
 [fanout]
-mtvr-leopard-05       ansible_host=10.245.20.247 os=sonic
+mtvr-moose-19       ansible_host=10.245.20.247 os=sonic
