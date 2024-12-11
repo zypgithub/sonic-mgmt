@@ -1434,12 +1434,16 @@ class QosSaiBase(QosBase):
             updateFeatureState(lower_tor_host, "mux", "disabled")
 
         src_services = [
+            {"docker": src_asic.get_docker_name("lldp"), "service": "lldp-syncd"},
+            {"docker": src_asic.get_docker_name("lldp"), "service": "lldpd"},
             {"docker": src_asic.get_docker_name("radv"), "service": "radvd"},
             {"docker": src_asic.get_docker_name("swss"), "service": "arp_update"}
         ]
         dst_services = []
         if src_asic != dst_asic:
             dst_services = [
+                {"docker": dst_asic.get_docker_name("lldp"), "service": "lldp-syncd"},
+                {"docker": dst_asic.get_docker_name("lldp"), "service": "lldpd"},
                 {"docker": dst_asic.get_docker_name("radv"), "service": "radvd"},
                 {"docker": dst_asic.get_docker_name("swss"), "service": "arp_update"}
             ]
