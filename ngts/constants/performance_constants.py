@@ -66,3 +66,9 @@ class PerfConsts:
     FW_BURN_PATH = "/auto/mswg/projects/sx_mlnx_os/sx_fit_regression/libs/scripts/sdk_fw_burn.py"
     DVS_CLI_TYPE = "DVS"
     DVS_WELCOME_MESSAGE = "Welcome to the NVIDIA Switch Development System"
+    PACKET_SIZE_TO_MAX_BW_DICT = {
+        '1500': 65,
+        '2000': 85,
+        '4000': 99
+    }
+    CONFIGURATION_TYPE_LIST = ['split_configuration', 'unsplit_configuration']

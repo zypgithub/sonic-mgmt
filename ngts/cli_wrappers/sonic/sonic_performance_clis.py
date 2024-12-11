@@ -24,8 +24,8 @@ class SonicPerformanceCli:
         with open(full_path, 'w') as f:
             json.dump(config_db_json, f)
 
-    def apply_configuration_file(self, scenario, dst_dir="/tmp"):
-        src_file = self.get_configuration_file_path(scenario)
+    def apply_configuration_file(self, scenario, template_suite=PerfConsts.DEFAULT_PERF_TEMPLATES_DIR, dst_dir="/tmp"):
+        src_file = self.get_configuration_file_path(scenario, template_suite)
         logging.info("Applying the configuration_file onto the dut after copying")
         self.engine.copy_file(source_file=src_file, file_system=dst_dir, dest_file="config.json",
                               overwrite_file=True, verify_file=False)

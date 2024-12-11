@@ -1,19 +1,10 @@
 import logging
-import math
-import importlib.util
-import tempfile
-import threading
-import jinja2
-import yaml
-import pprint
 import os
 
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 from ngts.constants.constants import BugHandlerConst
 from ngts.constants.performance_constants import PerfConsts
-
-PATH = importlib.util.find_spec("ngts").submodule_search_locations[0]
 
 
 class NvuePerformanceCli:
@@ -24,8 +15,8 @@ class NvuePerformanceCli:
         self.dut_alias = dut_alias
         self.cli_obj = cli_obj
 
-    def apply_configuration_file(self, scenario, dst_dir=PerfConsts.CL_HOME_DIR):
-        src_file = self.get_configuration_file_path(scenario)
+    def apply_configuration_file(self, scenario, template_suite=PerfConsts.DEFAULT_PERF_TEMPLATES_DIR, dst_dir=PerfConsts.CL_HOME_DIR):
+        src_file = self.get_configuration_file_path(scenario, template_suite)
         logging.info(f"Applying configuration file on {self.dut_alias}")
         self.engine.copy_file(source_file=src_file, file_system=dst_dir,
                               dest_file="tmp.yaml", overwrite_file=True, verify_file=False)

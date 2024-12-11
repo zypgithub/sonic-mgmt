@@ -75,8 +75,8 @@ class DvsPerformance:
             json_dict = json.loads(json_str)
         return json_dict["sdk_test_name"]
 
-    def apply_configuration_file(self, scenario, dst_dir=None):
-        test_name = self.get_configuration_file_path(scenario)
+    def apply_configuration_file(self, scenario, template_suite=PerfConsts.DEFAULT_PERF_TEMPLATES_DIR, dst_dir=None):
+        test_name = self.get_configuration_file_path(scenario, template_suite)
         logging.info(f"Configuration to be run {test_name}")
         logging.info(f"Applying the configuration on {self.dut_alias}")
         cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names {test_name}"

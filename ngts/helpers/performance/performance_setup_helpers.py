@@ -61,14 +61,15 @@ def restore_basic_configuration(players, step="basic_test_configuration - tear-d
         parse_threads_exceptions_at_join(threads_list, players, step)
 
 
-def run_traffic(players, scenario, step="Running Traffic - Test body"):
+def run_traffic(players, scenario, packet_size=4000, num_packets=8, is_ipv6=False, step="Running Traffic - Test body"):
     config_root_logger()
+    packet_size = int(packet_size)
     threads_list = []
     for player_alias in PerfConsts.PERF_SETUP_TG_ALIASES:
         player_cli_obj = players[player_alias]['cli']
         with allure.step(f"Running Traffic on Player {player_alias}"):
             thread = CatchExceptionThread(target=redirect_thread_stdout,
-                                          args=(player_cli_obj.performance.run_traffic, (scenario,)),
+                                          args=(player_cli_obj.performance.run_traffic, (scenario, packet_size, num_packets, is_ipv6, )),
                                           name=player_alias)
             threads_list.append(thread)
 
@@ -101,3 +102,38 @@ def validate_traffic_results(players, scenario):
     dut_cli_object = players['dut']['cli']
     with allure.step(f"Validating Traffic on DUT"):
         dut_cli_object.performance.validate_traffic(scenario)
+
+
+def traffic_validation(players, scenario, b_w_threshold, port_list=None, time_duration=60):
+    '''
+    Implementation pending
+    '''
+    pass
+
+
+def set_ibm(players, ibm_mode=True):
+    '''
+    Implementation pending
+    '''
+    pass
+
+
+def set_port(players, port_list, shutdown=True):
+    '''
+    Implementation pending
+    '''
+    pass
+
+
+def reboot_dut(players, system_check=False):
+    '''
+    Implementation pending
+    '''
+    pass
+
+
+def get_ports_from_dut(cli_object):
+    '''
+    Implementation pending
+    '''
+    pass
