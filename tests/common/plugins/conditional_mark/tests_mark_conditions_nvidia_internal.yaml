@@ -201,6 +201,12 @@ tests/nightly/show_techsupport/test_techsupport.py::test_techsupport_validate_ap
     conditions:
     - "'simx' in platform"
 
+tests/push_build_tests:
+  skip:
+    reason: "Testcase is skipped due to RM 4205976 on physical SPC4"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4205976 and 'sn5' in platform and 'simx' not in platform"
+
 tests/push_build_tests/general/wjh/test_wjh.py::test_buffer:
   skip:
     reason: "Testcase is not supported on simx"
