@@ -1,0 +1,2186 @@
+{
+    "PORT": {
+        "Ethernet0": {
+            "admin_status": "up"
+        },
+        "Ethernet2": {
+            "admin_status": "up"
+        },
+        "Ethernet4": {
+            "admin_status": "up"
+        },
+        "Ethernet6": {
+            "admin_status": "up"
+        },
+        "Ethernet8": {
+            "admin_status": "up"
+        },
+        "Ethernet10": {
+            "admin_status": "up"
+        },
+        "Ethernet12": {
+            "admin_status": "up"
+        },
+        "Ethernet14": {
+            "admin_status": "up"
+        },
+        "Ethernet16": {
+            "admin_status": "up"
+        },
+        "Ethernet18": {
+            "admin_status": "up"
+        },
+        "Ethernet20": {
+            "admin_status": "up"
+        },
+        "Ethernet22": {
+            "admin_status": "up"
+        },
+        "Ethernet24": {
+            "admin_status": "up"
+        },
+        "Ethernet26": {
+            "admin_status": "up"
+        },
+        "Ethernet28": {
+            "admin_status": "up"
+        },
+        "Ethernet30": {
+            "admin_status": "up"
+        },
+        "Ethernet32": {
+            "admin_status": "up"
+        },
+        "Ethernet34": {
+            "admin_status": "up"
+        },
+        "Ethernet36": {
+            "admin_status": "up"
+        },
+        "Ethernet38": {
+            "admin_status": "up"
+        },
+        "Ethernet40": {
+            "admin_status": "up"
+        },
+        "Ethernet42": {
+            "admin_status": "up"
+        },
+        "Ethernet44": {
+            "admin_status": "up"
+        },
+        "Ethernet46": {
+            "admin_status": "up"
+        },
+        "Ethernet48": {
+            "admin_status": "up"
+        },
+        "Ethernet50": {
+            "admin_status": "up"
+        },
+        "Ethernet52": {
+            "admin_status": "up"
+        },
+        "Ethernet54": {
+            "admin_status": "up"
+        },
+        "Ethernet56": {
+            "admin_status": "up"
+        },
+        "Ethernet58": {
+            "admin_status": "up"
+        },
+        "Ethernet60": {
+            "admin_status": "up"
+        },
+        "Ethernet62": {
+            "admin_status": "up"
+        },
+        "Ethernet64": {
+            "admin_status": "up"
+        },
+        "Ethernet66": {
+            "admin_status": "up"
+        },
+        "Ethernet68": {
+            "admin_status": "up"
+        },
+        "Ethernet70": {
+            "admin_status": "up"
+        },
+        "Ethernet72": {
+            "admin_status": "up"
+        },
+        "Ethernet74": {
+            "admin_status": "up"
+        },
+        "Ethernet76": {
+            "admin_status": "up"
+        },
+        "Ethernet78": {
+            "admin_status": "up"
+        },
+        "Ethernet80": {
+            "admin_status": "up"
+        },
+        "Ethernet82": {
+            "admin_status": "up"
+        },
+        "Ethernet84": {
+            "admin_status": "up"
+        },
+        "Ethernet86": {
+            "admin_status": "up"
+        },
+        "Ethernet88": {
+            "admin_status": "up"
+        },
+        "Ethernet90": {
+            "admin_status": "up"
+        },
+        "Ethernet92": {
+            "admin_status": "up"
+        },
+        "Ethernet94": {
+            "admin_status": "up"
+        },
+        "Ethernet96": {
+            "admin_status": "up"
+        },
+        "Ethernet98": {
+            "admin_status": "up"
+        },
+        "Ethernet100": {
+            "admin_status": "up"
+        },
+        "Ethernet102": {
+            "admin_status": "up"
+        },
+        "Ethernet104": {
+            "admin_status": "up"
+        },
+        "Ethernet106": {
+            "admin_status": "up"
+        },
+        "Ethernet108": {
+            "admin_status": "up"
+        },
+        "Ethernet110": {
+            "admin_status": "up"
+        },
+        "Ethernet112": {
+            "admin_status": "up"
+        },
+        "Ethernet114": {
+            "admin_status": "up"
+        },
+        "Ethernet116": {
+            "admin_status": "up"
+        },
+        "Ethernet118": {
+            "admin_status": "up"
+        },
+        "Ethernet120": {
+            "admin_status": "up"
+        },
+        "Ethernet122": {
+            "admin_status": "up"
+        },
+        "Ethernet124": {
+            "admin_status": "up"
+        },
+        "Ethernet126": {
+            "admin_status": "up"
+        },
+        "Ethernet128": {
+            "admin_status": "up"
+        },
+        "Ethernet130": {
+            "admin_status": "up"
+        },
+        "Ethernet132": {
+            "admin_status": "up"
+        },
+        "Ethernet134": {
+            "admin_status": "up"
+        },
+        "Ethernet136": {
+            "admin_status": "up"
+        },
+        "Ethernet138": {
+            "admin_status": "up"
+        },
+        "Ethernet140": {
+            "admin_status": "up"
+        },
+        "Ethernet142": {
+            "admin_status": "up"
+        },
+        "Ethernet144": {
+            "admin_status": "up"
+        },
+        "Ethernet146": {
+            "admin_status": "up"
+        },
+        "Ethernet148": {
+            "admin_status": "up"
+        },
+        "Ethernet150": {
+            "admin_status": "up"
+        },
+        "Ethernet152": {
+            "admin_status": "up"
+        },
+        "Ethernet154": {
+            "admin_status": "up"
+        },
+        "Ethernet156": {
+            "admin_status": "up"
+        },
+        "Ethernet158": {
+            "admin_status": "up"
+        },
+        "Ethernet160": {
+            "admin_status": "up"
+        },
+        "Ethernet162": {
+            "admin_status": "up"
+        },
+        "Ethernet164": {
+            "admin_status": "up"
+        },
+        "Ethernet166": {
+            "admin_status": "up"
+        },
+        "Ethernet168": {
+            "admin_status": "up"
+        },
+        "Ethernet170": {
+            "admin_status": "up"
+        },
+        "Ethernet172": {
+            "admin_status": "up"
+        },
+        "Ethernet174": {
+            "admin_status": "up"
+        },
+        "Ethernet176": {
+            "admin_status": "up"
+        },
+        "Ethernet178": {
+            "admin_status": "up"
+        },
+        "Ethernet180": {
+            "admin_status": "up"
+        },
+        "Ethernet182": {
+            "admin_status": "up"
+        },
+        "Ethernet184": {
+            "admin_status": "up"
+        },
+        "Ethernet186": {
+            "admin_status": "up"
+        },
+        "Ethernet188": {
+            "admin_status": "up"
+        },
+        "Ethernet190": {
+            "admin_status": "up"
+        },
+        "Ethernet192": {
+            "admin_status": "up"
+        },
+        "Ethernet194": {
+            "admin_status": "up"
+        },
+        "Ethernet196": {
+            "admin_status": "up"
+        },
+        "Ethernet198": {
+            "admin_status": "up"
+        },
+        "Ethernet200": {
+            "admin_status": "up"
+        },
+        "Ethernet202": {
+            "admin_status": "up"
+        },
+        "Ethernet204": {
+            "admin_status": "up"
+        },
+        "Ethernet206": {
+            "admin_status": "up"
+        },
+        "Ethernet208": {
+            "admin_status": "up"
+        },
+        "Ethernet210": {
+            "admin_status": "up"
+        },
+        "Ethernet212": {
+            "admin_status": "up"
+        },
+        "Ethernet214": {
+            "admin_status": "up"
+        },
+        "Ethernet216": {
+            "admin_status": "up"
+        },
+        "Ethernet218": {
+            "admin_status": "up"
+        },
+        "Ethernet220": {
+            "admin_status": "up"
+        },
+        "Ethernet222": {
+            "admin_status": "up"
+        },
+        "Ethernet224": {
+            "admin_status": "up"
+        },
+        "Ethernet226": {
+            "admin_status": "up"
+        },
+        "Ethernet228": {
+            "admin_status": "up"
+        },
+        "Ethernet230": {
+            "admin_status": "up"
+        },
+        "Ethernet232": {
+            "admin_status": "up"
+        },
+        "Ethernet234": {
+            "admin_status": "up"
+        },
+        "Ethernet236": {
+            "admin_status": "up"
+        },
+        "Ethernet238": {
+            "admin_status": "up"
+        },
+        "Ethernet240": {
+            "admin_status": "up"
+        },
+        "Ethernet242": {
+            "admin_status": "up"
+        },
+        "Ethernet244": {
+            "admin_status": "up"
+        },
+        "Ethernet246": {
+            "admin_status": "up"
+        },
+        "Ethernet248": {
+            "admin_status": "up"
+        },
+        "Ethernet250": {
+            "admin_status": "up"
+        },
+        "Ethernet252": {
+            "admin_status": "up"
+        },
+        "Ethernet254": {
+            "admin_status": "up"
+        },
+        "Ethernet256": {
+            "admin_status": "up"
+        },
+        "Ethernet258": {
+            "admin_status": "up"
+        },
+        "Ethernet260": {
+            "admin_status": "up"
+        },
+        "Ethernet262": {
+            "admin_status": "up"
+        },
+        "Ethernet264": {
+            "admin_status": "up"
+        },
+        "Ethernet266": {
+            "admin_status": "up"
+        },
+        "Ethernet268": {
+            "admin_status": "up"
+        },
+        "Ethernet270": {
+            "admin_status": "up"
+        },
+        "Ethernet272": {
+            "admin_status": "up"
+        },
+        "Ethernet274": {
+            "admin_status": "up"
+        },
+        "Ethernet276": {
+            "admin_status": "up"
+        },
+        "Ethernet278": {
+            "admin_status": "up"
+        },
+        "Ethernet280": {
+            "admin_status": "up"
+        },
+        "Ethernet282": {
+            "admin_status": "up"
+        },
+        "Ethernet284": {
+            "admin_status": "up"
+        },
+        "Ethernet286": {
+            "admin_status": "up"
+        },
+        "Ethernet288": {
+            "admin_status": "up"
+        },
+        "Ethernet290": {
+            "admin_status": "up"
+        },
+        "Ethernet292": {
+            "admin_status": "up"
+        },
+        "Ethernet294": {
+            "admin_status": "up"
+        },
+        "Ethernet296": {
+            "admin_status": "up"
+        },
+        "Ethernet298": {
+            "admin_status": "up"
+        },
+        "Ethernet300": {
+            "admin_status": "up"
+        },
+        "Ethernet302": {
+            "admin_status": "up"
+        },
+        "Ethernet304": {
+            "admin_status": "up"
+        },
+        "Ethernet306": {
+            "admin_status": "up"
+        },
+        "Ethernet308": {
+            "admin_status": "up"
+        },
+        "Ethernet310": {
+            "admin_status": "up"
+        },
+        "Ethernet312": {
+            "admin_status": "up"
+        },
+        "Ethernet314": {
+            "admin_status": "up"
+        },
+        "Ethernet316": {
+            "admin_status": "up"
+        },
+        "Ethernet318": {
+            "admin_status": "up"
+        },
+        "Ethernet320": {
+            "admin_status": "up"
+        },
+        "Ethernet322": {
+            "admin_status": "up"
+        },
+        "Ethernet324": {
+            "admin_status": "up"
+        },
+        "Ethernet326": {
+            "admin_status": "up"
+        },
+        "Ethernet328": {
+            "admin_status": "up"
+        },
+        "Ethernet330": {
+            "admin_status": "up"
+        },
+        "Ethernet332": {
+            "admin_status": "up"
+        },
+        "Ethernet334": {
+            "admin_status": "up"
+        },
+        "Ethernet336": {
+            "admin_status": "up"
+        },
+        "Ethernet338": {
+            "admin_status": "up"
+        },
+        "Ethernet340": {
+            "admin_status": "up"
+        },
+        "Ethernet342": {
+            "admin_status": "up"
+        },
+        "Ethernet344": {
+            "admin_status": "up"
+        },
+        "Ethernet346": {
+            "admin_status": "up"
+        },
+        "Ethernet348": {
+            "admin_status": "up"
+        },
+        "Ethernet350": {
+            "admin_status": "up"
+        },
+        "Ethernet352": {
+            "admin_status": "up"
+        },
+        "Ethernet354": {
+            "admin_status": "up"
+        },
+        "Ethernet356": {
+            "admin_status": "up"
+        },
+        "Ethernet358": {
+            "admin_status": "up"
+        },
+        "Ethernet360": {
+            "admin_status": "up"
+        },
+        "Ethernet362": {
+            "admin_status": "up"
+        },
+        "Ethernet364": {
+            "admin_status": "up"
+        },
+        "Ethernet366": {
+            "admin_status": "up"
+        },
+        "Ethernet368": {
+            "admin_status": "up"
+        },
+        "Ethernet370": {
+            "admin_status": "up"
+        },
+        "Ethernet372": {
+            "admin_status": "up"
+        },
+        "Ethernet374": {
+            "admin_status": "up"
+        },
+        "Ethernet376": {
+            "admin_status": "up"
+        },
+        "Ethernet378": {
+            "admin_status": "up"
+        },
+        "Ethernet380": {
+            "admin_status": "up"
+        },
+        "Ethernet382": {
+            "admin_status": "up"
+        },
+        "Ethernet384": {
+            "admin_status": "up"
+        },
+        "Ethernet386": {
+            "admin_status": "up"
+        },
+        "Ethernet388": {
+            "admin_status": "up"
+        },
+        "Ethernet390": {
+            "admin_status": "up"
+        },
+        "Ethernet392": {
+            "admin_status": "up"
+        },
+        "Ethernet394": {
+            "admin_status": "up"
+        },
+        "Ethernet396": {
+            "admin_status": "up"
+        },
+        "Ethernet398": {
+            "admin_status": "up"
+        },
+        "Ethernet400": {
+            "admin_status": "up"
+        },
+        "Ethernet402": {
+            "admin_status": "up"
+        },
+        "Ethernet404": {
+            "admin_status": "up"
+        },
+        "Ethernet406": {
+            "admin_status": "up"
+        },
+        "Ethernet408": {
+            "admin_status": "up"
+        },
+        "Ethernet410": {
+            "admin_status": "up"
+        },
+        "Ethernet412": {
+            "admin_status": "up"
+        },
+        "Ethernet414": {
+            "admin_status": "up"
+        },
+        "Ethernet416": {
+            "admin_status": "up"
+        },
+        "Ethernet418": {
+            "admin_status": "up"
+        },
+        "Ethernet420": {
+            "admin_status": "up"
+        },
+        "Ethernet422": {
+            "admin_status": "up"
+        },
+        "Ethernet424": {
+            "admin_status": "up"
+        },
+        "Ethernet426": {
+            "admin_status": "up"
+        },
+        "Ethernet428": {
+            "admin_status": "up"
+        },
+        "Ethernet430": {
+            "admin_status": "up"
+        },
+        "Ethernet432": {
+            "admin_status": "up"
+        },
+        "Ethernet434": {
+            "admin_status": "up"
+        },
+        "Ethernet436": {
+            "admin_status": "up"
+        },
+        "Ethernet438": {
+            "admin_status": "up"
+        },
+        "Ethernet440": {
+            "admin_status": "up"
+        },
+        "Ethernet442": {
+            "admin_status": "up"
+        },
+        "Ethernet444": {
+            "admin_status": "up"
+        },
+        "Ethernet446": {
+            "admin_status": "up"
+        },
+        "Ethernet448": {
+            "admin_status": "up"
+        },
+        "Ethernet450": {
+            "admin_status": "up"
+        },
+        "Ethernet452": {
+            "admin_status": "up"
+        },
+        "Ethernet454": {
+            "admin_status": "up"
+        },
+        "Ethernet456": {
+            "admin_status": "up"
+        },
+        "Ethernet458": {
+            "admin_status": "up"
+        },
+        "Ethernet460": {
+            "admin_status": "up"
+        },
+        "Ethernet462": {
+            "admin_status": "up"
+        },
+        "Ethernet464": {
+            "admin_status": "up"
+        },
+        "Ethernet466": {
+            "admin_status": "up"
+        },
+        "Ethernet468": {
+            "admin_status": "up"
+        },
+        "Ethernet470": {
+            "admin_status": "up"
+        },
+        "Ethernet472": {
+            "admin_status": "up"
+        },
+        "Ethernet474": {
+            "admin_status": "up"
+        },
+        "Ethernet476": {
+            "admin_status": "up"
+        },
+        "Ethernet478": {
+            "admin_status": "up"
+        },
+        "Ethernet480": {
+            "admin_status": "up"
+        },
+        "Ethernet482": {
+            "admin_status": "up"
+        },
+        "Ethernet484": {
+            "admin_status": "up"
+        },
+        "Ethernet486": {
+            "admin_status": "up"
+        },
+        "Ethernet488": {
+            "admin_status": "up"
+        },
+        "Ethernet490": {
+            "admin_status": "up"
+        },
+        "Ethernet492": {
+            "admin_status": "up"
+        },
+        "Ethernet494": {
+            "admin_status": "up"
+        },
+        "Ethernet496": {
+            "admin_status": "up"
+        },
+        "Ethernet498": {
+            "admin_status": "up"
+        },
+        "Ethernet500": {
+            "admin_status": "up"
+        },
+        "Ethernet502": {
+            "admin_status": "up"
+        },
+        "Ethernet504": {
+            "admin_status": "up"
+        },
+        "Ethernet506": {
+            "admin_status": "up"
+        },
+        "Ethernet508": {
+            "admin_status": "up"
+        },
+        "Ethernet510": {
+            "admin_status": "up"
+        }
+    },
+    "VLAN": {
+        "Vlan100": {
+            "vlanid": "100"
+        },
+        "Vlan101": {
+            "vlanid": "101"
+        },
+        "Vlan102": {
+            "vlanid": "102"
+        },
+        "Vlan103": {
+            "vlanid": "103"
+        },
+        "Vlan104": {
+            "vlanid": "104"
+        },
+        "Vlan105": {
+            "vlanid": "105"
+        },
+        "Vlan106": {
+            "vlanid": "106"
+        },
+        "Vlan107": {
+            "vlanid": "107"
+        },
+        "Vlan108": {
+            "vlanid": "108"
+        },
+        "Vlan109": {
+            "vlanid": "109"
+        },
+        "Vlan110": {
+            "vlanid": "110"
+        },
+        "Vlan111": {
+            "vlanid": "111"
+        },
+        "Vlan112": {
+            "vlanid": "112"
+        },
+        "Vlan113": {
+            "vlanid": "113"
+        },
+        "Vlan114": {
+            "vlanid": "114"
+        },
+        "Vlan115": {
+            "vlanid": "115"
+        },
+        "Vlan116": {
+            "vlanid": "116"
+        },
+        "Vlan117": {
+            "vlanid": "117"
+        },
+        "Vlan118": {
+            "vlanid": "118"
+        },
+        "Vlan119": {
+            "vlanid": "119"
+        },
+        "Vlan120": {
+            "vlanid": "120"
+        },
+        "Vlan121": {
+            "vlanid": "121"
+        },
+        "Vlan122": {
+            "vlanid": "122"
+        },
+        "Vlan123": {
+            "vlanid": "123"
+        },
+        "Vlan124": {
+            "vlanid": "124"
+        },
+        "Vlan125": {
+            "vlanid": "125"
+        },
+        "Vlan126": {
+            "vlanid": "126"
+        },
+        "Vlan127": {
+            "vlanid": "127"
+        },
+        "Vlan128": {
+            "vlanid": "128"
+        },
+        "Vlan129": {
+            "vlanid": "129"
+        },
+        "Vlan130": {
+            "vlanid": "130"
+        },
+        "Vlan131": {
+            "vlanid": "131"
+        },
+        "Vlan132": {
+            "vlanid": "132"
+        },
+        "Vlan133": {
+            "vlanid": "133"
+        },
+        "Vlan134": {
+            "vlanid": "134"
+        },
+        "Vlan135": {
+            "vlanid": "135"
+        },
+        "Vlan136": {
+            "vlanid": "136"
+        },
+        "Vlan137": {
+            "vlanid": "137"
+        },
+        "Vlan138": {
+            "vlanid": "138"
+        },
+        "Vlan139": {
+            "vlanid": "139"
+        },
+        "Vlan140": {
+            "vlanid": "140"
+        },
+        "Vlan141": {
+            "vlanid": "141"
+        },
+        "Vlan142": {
+            "vlanid": "142"
+        },
+        "Vlan143": {
+            "vlanid": "143"
+        },
+        "Vlan144": {
+            "vlanid": "144"
+        },
+        "Vlan145": {
+            "vlanid": "145"
+        },
+        "Vlan146": {
+            "vlanid": "146"
+        },
+        "Vlan147": {
+            "vlanid": "147"
+        },
+        "Vlan148": {
+            "vlanid": "148"
+        },
+        "Vlan149": {
+            "vlanid": "149"
+        },
+        "Vlan150": {
+            "vlanid": "150"
+        },
+        "Vlan151": {
+            "vlanid": "151"
+        },
+        "Vlan152": {
+            "vlanid": "152"
+        },
+        "Vlan153": {
+            "vlanid": "153"
+        },
+        "Vlan154": {
+            "vlanid": "154"
+        },
+        "Vlan155": {
+            "vlanid": "155"
+        },
+        "Vlan156": {
+            "vlanid": "156"
+        },
+        "Vlan157": {
+            "vlanid": "157"
+        },
+        "Vlan158": {
+            "vlanid": "158"
+        },
+        "Vlan159": {
+            "vlanid": "159"
+        },
+        "Vlan160": {
+            "vlanid": "160"
+        },
+        "Vlan161": {
+            "vlanid": "161"
+        },
+        "Vlan162": {
+            "vlanid": "162"
+        },
+        "Vlan163": {
+            "vlanid": "163"
+        },
+        "Vlan164": {
+            "vlanid": "164"
+        },
+        "Vlan165": {
+            "vlanid": "165"
+        },
+        "Vlan166": {
+            "vlanid": "166"
+        },
+        "Vlan167": {
+            "vlanid": "167"
+        },
+        "Vlan168": {
+            "vlanid": "168"
+        },
+        "Vlan169": {
+            "vlanid": "169"
+        },
+        "Vlan170": {
+            "vlanid": "170"
+        },
+        "Vlan171": {
+            "vlanid": "171"
+        },
+        "Vlan172": {
+            "vlanid": "172"
+        },
+        "Vlan173": {
+            "vlanid": "173"
+        },
+        "Vlan174": {
+            "vlanid": "174"
+        },
+        "Vlan175": {
+            "vlanid": "175"
+        },
+        "Vlan176": {
+            "vlanid": "176"
+        },
+        "Vlan177": {
+            "vlanid": "177"
+        },
+        "Vlan178": {
+            "vlanid": "178"
+        },
+        "Vlan179": {
+            "vlanid": "179"
+        },
+        "Vlan180": {
+            "vlanid": "180"
+        },
+        "Vlan181": {
+            "vlanid": "181"
+        },
+        "Vlan182": {
+            "vlanid": "182"
+        },
+        "Vlan183": {
+            "vlanid": "183"
+        },
+        "Vlan184": {
+            "vlanid": "184"
+        },
+        "Vlan185": {
+            "vlanid": "185"
+        },
+        "Vlan186": {
+            "vlanid": "186"
+        },
+        "Vlan187": {
+            "vlanid": "187"
+        },
+        "Vlan188": {
+            "vlanid": "188"
+        },
+        "Vlan189": {
+            "vlanid": "189"
+        },
+        "Vlan190": {
+            "vlanid": "190"
+        },
+        "Vlan191": {
+            "vlanid": "191"
+        },
+        "Vlan192": {
+            "vlanid": "192"
+        },
+        "Vlan193": {
+            "vlanid": "193"
+        },
+        "Vlan194": {
+            "vlanid": "194"
+        },
+        "Vlan195": {
+            "vlanid": "195"
+        },
+        "Vlan196": {
+            "vlanid": "196"
+        },
+        "Vlan197": {
+            "vlanid": "197"
+        },
+        "Vlan198": {
+            "vlanid": "198"
+        },
+        "Vlan199": {
+            "vlanid": "199"
+        },
+        "Vlan200": {
+            "vlanid": "200"
+        },
+        "Vlan201": {
+            "vlanid": "201"
+        },
+        "Vlan202": {
+            "vlanid": "202"
+        },
+        "Vlan203": {
+            "vlanid": "203"
+        },
+        "Vlan204": {
+            "vlanid": "204"
+        },
+        "Vlan205": {
+            "vlanid": "205"
+        },
+        "Vlan206": {
+            "vlanid": "206"
+        },
+        "Vlan207": {
+            "vlanid": "207"
+        },
+        "Vlan208": {
+            "vlanid": "208"
+        },
+        "Vlan209": {
+            "vlanid": "209"
+        },
+        "Vlan210": {
+            "vlanid": "210"
+        },
+        "Vlan211": {
+            "vlanid": "211"
+        },
+        "Vlan212": {
+            "vlanid": "212"
+        },
+        "Vlan213": {
+            "vlanid": "213"
+        },
+        "Vlan214": {
+            "vlanid": "214"
+        },
+        "Vlan215": {
+            "vlanid": "215"
+        },
+        "Vlan216": {
+            "vlanid": "216"
+        },
+        "Vlan217": {
+            "vlanid": "217"
+        },
+        "Vlan218": {
+            "vlanid": "218"
+        },
+        "Vlan219": {
+            "vlanid": "219"
+        },
+        "Vlan220": {
+            "vlanid": "220"
+        },
+        "Vlan221": {
+            "vlanid": "221"
+        },
+        "Vlan222": {
+            "vlanid": "222"
+        },
+        "Vlan223": {
+            "vlanid": "223"
+        },
+        "Vlan224": {
+            "vlanid": "224"
+        },
+        "Vlan225": {
+            "vlanid": "225"
+        },
+        "Vlan226": {
+            "vlanid": "226"
+        },
+        "Vlan227": {
+            "vlanid": "227"
+        }
+    },
+    "VLAN_INTERFACE": {
+        "Vlan100": {},
+        "Vlan100|12.0.0.2/24": {},
+        "Vlan101": {},
+        "Vlan101|12.1.0.2/24": {},
+        "Vlan102": {},
+        "Vlan102|12.2.0.2/24": {},
+        "Vlan103": {},
+        "Vlan103|12.3.0.2/24": {},
+        "Vlan104": {},
+        "Vlan104|12.4.0.2/24": {},
+        "Vlan105": {},
+        "Vlan105|12.5.0.2/24": {},
+        "Vlan106": {},
+        "Vlan106|12.6.0.2/24": {},
+        "Vlan107": {},
+        "Vlan107|12.7.0.2/24": {},
+        "Vlan108": {},
+        "Vlan108|12.8.0.2/24": {},
+        "Vlan109": {},
+        "Vlan109|12.9.0.2/24": {},
+        "Vlan110": {},
+        "Vlan110|12.10.0.2/24": {},
+        "Vlan111": {},
+        "Vlan111|12.11.0.2/24": {},
+        "Vlan112": {},
+        "Vlan112|12.12.0.2/24": {},
+        "Vlan113": {},
+        "Vlan113|12.12.0.2/24": {},
+        "Vlan114": {},
+        "Vlan114|12.14.0.2/24": {},
+        "Vlan115": {},
+        "Vlan115|12.15.0.2/24": {},
+        "Vlan116": {},
+        "Vlan116|12.16.0.2/24": {},
+        "Vlan117": {},
+        "Vlan117|12.17.0.2/24": {},
+        "Vlan118": {},
+        "Vlan118|12.18.0.2/24": {},
+        "Vlan119": {},
+        "Vlan119|12.19.0.2/24": {},
+        "Vlan120": {},
+        "Vlan120|12.20.0.2/24": {},
+        "Vlan121": {},
+        "Vlan121|12.21.0.2/24": {},
+        "Vlan122": {},
+        "Vlan122|12.22.0.2/24": {},
+        "Vlan123": {},
+        "Vlan123|12.23.0.2/24": {},
+        "Vlan124": {},
+        "Vlan124|12.24.0.2/24": {},
+        "Vlan125": {},
+        "Vlan125|12.25.0.2/24": {},
+        "Vlan126": {},
+        "Vlan126|12.26.0.2/24": {},
+        "Vlan127": {},
+        "Vlan127|12.27.0.2/24": {},
+        "Vlan128": {},
+        "Vlan128|12.28.0.2/24": {},
+        "Vlan129": {},
+        "Vlan129|12.29.0.2/24": {},
+        "Vlan130": {},
+        "Vlan130|12.30.0.2/24": {},
+        "Vlan131": {},
+        "Vlan131|12.31.0.2/24": {},
+        "Vlan132": {},
+        "Vlan132|12.32.0.2/24": {},
+        "Vlan133": {},
+        "Vlan133|12.33.0.2/24": {},
+        "Vlan134": {},
+        "Vlan134|12.34.0.2/24": {},
+        "Vlan135": {},
+        "Vlan135|12.35.0.2/24": {},
+        "Vlan136": {},
+        "Vlan136|12.36.0.2/24": {},
+        "Vlan137": {},
+        "Vlan137|12.37.0.2/24": {},
+        "Vlan138": {},
+        "Vlan138|12.38.0.2/24": {},
+        "Vlan139": {},
+        "Vlan139|12.39.0.2/24": {},
+        "Vlan140": {},
+        "Vlan140|12.40.0.2/24": {},
+        "Vlan141": {},
+        "Vlan141|12.41.0.2/24": {},
+        "Vlan142": {},
+        "Vlan142|12.42.0.2/24": {},
+        "Vlan143": {},
+        "Vlan143|12.43.0.2/24": {},
+        "Vlan144": {},
+        "Vlan144|12.44.0.2/24": {},
+        "Vlan145": {},
+        "Vlan145|12.45.0.2/24": {},
+        "Vlan146": {},
+        "Vlan146|12.46.0.2/24": {},
+        "Vlan147": {},
+        "Vlan147|12.47.0.2/24": {},
+        "Vlan148": {},
+        "Vlan148|12.48.0.2/24": {},
+        "Vlan149": {},
+        "Vlan149|12.49.0.2/24": {},
+        "Vlan150": {},
+        "Vlan150|12.50.0.2/24": {},
+        "Vlan151": {},
+        "Vlan151|12.51.0.2/24": {},
+        "Vlan152": {},
+        "Vlan152|12.52.0.2/24": {},
+        "Vlan153": {},
+        "Vlan153|12.53.0.2/24": {},
+        "Vlan154": {},
+        "Vlan154|12.54.0.2/24": {},
+        "Vlan155": {},
+        "Vlan155|12.55.0.2/24": {},
+        "Vlan156": {},
+        "Vlan156|12.56.0.2/24": {},
+        "Vlan157": {},
+        "Vlan157|12.57.0.2/24": {},
+        "Vlan158": {},
+        "Vlan158|12.58.0.2/24": {},
+        "Vlan159": {},
+        "Vlan159|12.59.0.2/24": {},
+        "Vlan160": {},
+        "Vlan160|12.60.0.2/24": {},
+        "Vlan161": {},
+        "Vlan161|12.61.0.2/24": {},
+        "Vlan162": {},
+        "Vlan162|12.62.0.2/24": {},
+        "Vlan163": {},
+        "Vlan163|12.63.0.2/24": {},
+        "Vlan164": {},
+        "Vlan164|12.64.0.2/24": {},
+        "Vlan165": {},
+        "Vlan165|12.65.0.2/24": {},
+        "Vlan166": {},
+        "Vlan166|12.66.0.2/24": {},
+        "Vlan167": {},
+        "Vlan167|12.67.0.2/24": {},
+        "Vlan168": {},
+        "Vlan168|12.68.0.2/24": {},
+        "Vlan169": {},
+        "Vlan169|12.69.0.2/24": {},
+        "Vlan170": {},
+        "Vlan170|12.70.0.2/24": {},
+        "Vlan171": {},
+        "Vlan171|12.71.0.2/24": {},
+        "Vlan172": {},
+        "Vlan172|12.72.0.2/24": {},
+        "Vlan173": {},
+        "Vlan173|12.73.0.2/24": {},
+        "Vlan174": {},
+        "Vlan174|12.74.0.2/24": {},
+        "Vlan175": {},
+        "Vlan175|12.75.0.2/24": {},
+        "Vlan176": {},
+        "Vlan176|12.76.0.2/24": {},
+        "Vlan177": {},
+        "Vlan177|12.77.0.2/24": {},
+        "Vlan178": {},
+        "Vlan178|12.78.0.2/24": {},
+        "Vlan179": {},
+        "Vlan179|12.79.0.2/24": {},
+        "Vlan180": {},
+        "Vlan180|12.80.0.2/24": {},
+        "Vlan181": {},
+        "Vlan181|12.81.0.2/24": {},
+        "Vlan182": {},
+        "Vlan182|12.82.0.2/24": {},
+        "Vlan183": {},
+        "Vlan183|12.83.0.2/24": {},
+        "Vlan184": {},
+        "Vlan184|12.84.0.2/24": {},
+        "Vlan185": {},
+        "Vlan185|12.85.0.2/24": {},
+        "Vlan186": {},
+        "Vlan186|12.86.0.2/24": {},
+        "Vlan187": {},
+        "Vlan187|12.87.0.2/24": {},
+        "Vlan188": {},
+        "Vlan188|12.88.0.2/24": {},
+        "Vlan189": {},
+        "Vlan189|12.89.0.2/24": {},
+        "Vlan190": {},
+        "Vlan190|12.90.0.2/24": {},
+        "Vlan191": {},
+        "Vlan191|12.91.0.2/24": {},
+        "Vlan192": {},
+        "Vlan192|12.92.0.2/24": {},
+        "Vlan193": {},
+        "Vlan193|12.93.0.2/24": {},
+        "Vlan194": {},
+        "Vlan194|12.94.0.2/24": {},
+        "Vlan195": {},
+        "Vlan195|12.95.0.2/24": {},
+        "Vlan196": {},
+        "Vlan196|12.96.0.2/24": {},
+        "Vlan197": {},
+        "Vlan197|12.97.0.2/24": {},
+        "Vlan198": {},
+        "Vlan198|12.98.0.2/24": {},
+        "Vlan199": {},
+        "Vlan199|12.99.0.2/24": {},
+        "Vlan200": {},
+        "Vlan200|12.100.0.2/24": {},
+        "Vlan201": {},
+        "Vlan201|12.101.0.2/24": {},
+        "Vlan202": {},
+        "Vlan202|12.102.0.2/24": {},
+        "Vlan203": {},
+        "Vlan203|12.103.0.2/24": {},
+        "Vlan204": {},
+        "Vlan204|12.104.0.2/24": {},
+        "Vlan205": {},
+        "Vlan205|12.105.0.2/24": {},
+        "Vlan206": {},
+        "Vlan206|12.106.0.2/24": {},
+        "Vlan207": {},
+        "Vlan207|12.107.0.2/24": {},
+        "Vlan208": {},
+        "Vlan208|12.108.0.2/24": {},
+        "Vlan209": {},
+        "Vlan209|12.109.0.2/24": {},
+        "Vlan210": {},
+        "Vlan210|12.110.0.2/24": {},
+        "Vlan211": {},
+        "Vlan211|12.111.0.2/24": {},
+        "Vlan212": {},
+        "Vlan212|12.112.0.2/24": {},
+        "Vlan213": {},
+        "Vlan213|12.113.0.2/24": {},
+        "Vlan214": {},
+        "Vlan214|12.114.0.2/24": {},
+        "Vlan215": {},
+        "Vlan215|12.115.0.2/24": {},
+        "Vlan216": {},
+        "Vlan216|12.116.0.2/24": {},
+        "Vlan217": {},
+        "Vlan217|12.117.0.2/24": {},
+        "Vlan218": {},
+        "Vlan218|12.118.0.2/24": {},
+        "Vlan219": {},
+        "Vlan219|12.119.0.2/24": {},
+        "Vlan220": {},
+        "Vlan220|12.120.0.2/24": {},
+        "Vlan221": {},
+        "Vlan221|12.121.0.2/24": {},
+        "Vlan222": {},
+        "Vlan222|12.122.0.2/24": {},
+        "Vlan223": {},
+        "Vlan223|12.123.0.2/24": {},
+        "Vlan224": {},
+        "Vlan224|12.124.0.2/24": {},
+        "Vlan225": {},
+        "Vlan225|12.125.0.2/24": {},
+        "Vlan226": {},
+        "Vlan226|12.126.0.2/24": {},
+        "Vlan227": {},
+        "Vlan227|12.127.0.2/24": {}
+    },
+    "VLAN_MEMBER": {
+        "Vlan100|Ethernet0": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan100|Ethernet256": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan101|Ethernet2": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan101|Ethernet258": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan102|Ethernet4": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan102|Ethernet260": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan103|Ethernet6": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan103|Ethernet262": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan104|Ethernet8": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan104|Ethernet264": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan105|Ethernet10": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan105|Ethernet266": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan106|Ethernet12": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan106|Ethernet268": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan107|Ethernet14": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan107|Ethernet270": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan108|Ethernet16": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan108|Ethernet272": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan109|Ethernet18": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan109|Ethernet274": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan110|Ethernet20": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan110|Ethernet276": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan111|Ethernet22": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan111|Ethernet278": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan112|Ethernet24": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan112|Ethernet280": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan113|Ethernet26": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan113|Ethernet282": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan114|Ethernet28": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan114|Ethernet284": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan115|Ethernet30": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan115|Ethernet286": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan116|Ethernet32": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan116|Ethernet288": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan117|Ethernet34": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan117|Ethernet290": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan118|Ethernet36": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan118|Ethernet292": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan119|Ethernet38": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan119|Ethernet294": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan120|Ethernet40": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan120|Ethernet296": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan121|Ethernet42": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan121|Ethernet298": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan122|Ethernet44": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan122|Ethernet300": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan123|Ethernet46": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan123|Ethernet302": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan124|Ethernet48": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan124|Ethernet304": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan125|Ethernet50": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan125|Ethernet306": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan126|Ethernet52": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan126|Ethernet308": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan127|Ethernet54": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan127|Ethernet310": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan128|Ethernet56": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan128|Ethernet312": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan129|Ethernet58": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan129|Ethernet314": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan130|Ethernet60": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan130|Ethernet316": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan131|Ethernet62": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan131|Ethernet318": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan132|Ethernet64": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan132|Ethernet320": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan133|Ethernet66": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan133|Ethernet322": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan134|Ethernet68": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan134|Ethernet324": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan135|Ethernet70": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan135|Ethernet326": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan136|Ethernet72": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan136|Ethernet328": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan137|Ethernet74": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan137|Ethernet330": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan138|Ethernet76": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan138|Ethernet332": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan139|Ethernet78": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan139|Ethernet334": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan140|Ethernet80": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan140|Ethernet336": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan141|Ethernet82": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan141|Ethernet338": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan142|Ethernet84": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan142|Ethernet340": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan143|Ethernet86": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan143|Ethernet342": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan144|Ethernet88": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan144|Ethernet344": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan145|Ethernet90": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan145|Ethernet346": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan146|Ethernet92": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan146|Ethernet348": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan147|Ethernet94": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan147|Ethernet350": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan148|Ethernet96": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan148|Ethernet352": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan149|Ethernet98": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan149|Ethernet354": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan150|Ethernet100": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan150|Ethernet356": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan151|Ethernet102": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan151|Ethernet358": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan152|Ethernet104": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan152|Ethernet360": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan153|Ethernet106": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan153|Ethernet362": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan154|Ethernet108": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan154|Ethernet364": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan155|Ethernet110": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan155|Ethernet366": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan156|Ethernet112": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan156|Ethernet368": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan157|Ethernet114": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan157|Ethernet370": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan158|Ethernet116": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan158|Ethernet372": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan159|Ethernet118": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan159|Ethernet374": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan160|Ethernet120": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan160|Ethernet376": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan161|Ethernet122": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan161|Ethernet378": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan162|Ethernet124": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan162|Ethernet380": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan163|Ethernet126": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan163|Ethernet382": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan164|Ethernet128": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan164|Ethernet384": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan165|Ethernet130": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan165|Ethernet386": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan166|Ethernet132": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan166|Ethernet388": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan167|Ethernet134": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan167|Ethernet390": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan168|Ethernet136": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan168|Ethernet392": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan169|Ethernet138": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan169|Ethernet394": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan170|Ethernet140": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan170|Ethernet396": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan171|Ethernet142": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan171|Ethernet398": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan172|Ethernet144": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan172|Ethernet400": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan173|Ethernet146": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan173|Ethernet402": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan174|Ethernet148": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan174|Ethernet404": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan175|Ethernet150": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan175|Ethernet406": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan176|Ethernet152": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan176|Ethernet408": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan177|Ethernet154": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan177|Ethernet410": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan178|Ethernet156": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan178|Ethernet412": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan179|Ethernet158": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan179|Ethernet414": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan180|Ethernet160": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan180|Ethernet416": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan181|Ethernet162": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan181|Ethernet418": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan182|Ethernet164": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan182|Ethernet420": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan183|Ethernet166": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan183|Ethernet422": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan184|Ethernet168": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan184|Ethernet424": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan185|Ethernet170": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan185|Ethernet426": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan186|Ethernet172": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan186|Ethernet428": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan187|Ethernet174": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan187|Ethernet430": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan188|Ethernet176": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan188|Ethernet432": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan189|Ethernet178": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan189|Ethernet434": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan190|Ethernet180": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan190|Ethernet436": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan191|Ethernet182": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan191|Ethernet438": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan192|Ethernet184": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan192|Ethernet440": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan193|Ethernet186": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan193|Ethernet442": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan194|Ethernet188": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan194|Ethernet444": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan195|Ethernet190": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan195|Ethernet446": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan196|Ethernet192": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan196|Ethernet448": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan197|Ethernet194": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan197|Ethernet450": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan198|Ethernet196": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan198|Ethernet452": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan199|Ethernet198": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan199|Ethernet454": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan200|Ethernet200": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan200|Ethernet456": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan201|Ethernet202": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan201|Ethernet458": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan202|Ethernet204": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan202|Ethernet460": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan203|Ethernet206": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan203|Ethernet462": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan204|Ethernet208": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan204|Ethernet464": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan205|Ethernet210": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan205|Ethernet466": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan206|Ethernet212": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan206|Ethernet468": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan207|Ethernet214": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan207|Ethernet470": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan208|Ethernet216": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan208|Ethernet472": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan209|Ethernet218": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan209|Ethernet474": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan210|Ethernet220": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan210|Ethernet476": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan211|Ethernet222": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan211|Ethernet478": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan212|Ethernet224": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan212|Ethernet480": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan213|Ethernet226": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan213|Ethernet482": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan214|Ethernet228": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan214|Ethernet484": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan215|Ethernet230": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan215|Ethernet486": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan216|Ethernet232": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan216|Ethernet488": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan217|Ethernet234": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan217|Ethernet490": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan218|Ethernet236": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan218|Ethernet492": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan219|Ethernet238": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan219|Ethernet494": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan220|Ethernet240": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan220|Ethernet496": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan221|Ethernet242": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan221|Ethernet498": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan222|Ethernet244": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan222|Ethernet500": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan223|Ethernet246": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan223|Ethernet502": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan224|Ethernet248": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan224|Ethernet504": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan225|Ethernet250": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan225|Ethernet506": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan226|Ethernet252": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan226|Ethernet508": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan227|Ethernet254": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan227|Ethernet510": {
+            "tagging_mode": "untagged"
+        }
+    }
+}
