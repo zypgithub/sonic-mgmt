@@ -51,10 +51,11 @@ tests/nightly/runtime/test_runtime.py:
     - "'simx' in platform"
 tests/nightly/auto_negotition:
   skip:
-    reason: "Testcase not supported on current platform"
+    reason: "Testcase not supported on simx and 3800 platform. Skipped due to RM 4200667 on sn5610n"
     conditions_logical_operator: or
     conditions:
     - "'simx' in platform or '3800' in platform"
+    - "https://redmine.mellanox.com/issues/4200667 and 'sn5610n' in platform"
 
 tests/nightly/dynamic_port_breakout:
   skip:
