@@ -1,0 +1,2 @@
+
+MAX_SPIFFE_LEN = 10

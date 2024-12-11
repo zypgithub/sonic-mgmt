@@ -2,7 +2,7 @@ import logging
 import os
 import subprocess
 import tempfile
-from typing import Union
+from typing import Union, List
 
 YEAR = 365
 DEFAULT_DN = 'NVOS'
@@ -14,7 +14,7 @@ class CertificateGenerator:
     @classmethod
     def generate_cert(cls, cert_location: str, cert_name: str, ip: str = '', dn: str = '',
                       new_ca_path: str = '', new_ca_name: str = '', p12_pass: str = '', existing_ca_public: str = '',
-                      existing_ca_private: str = '', expiration_years: int = 10, stdout_func=logging.info):
+                      existing_ca_private: str = '', expiration_years: int = 10, san_uris: List[str] = [], stdout_func=logging.info):
         """
         create new x509 ca/cert with given properties
 
@@ -27,11 +27,12 @@ class CertificateGenerator:
         CERT_FILENAME="cert"
         P12_PASS="mypass"
         EXP=3650
+        SPIFFE="spiffe://myspiffe.org/example"
 
         openssl genrsa -out $CA_FILENAME.key 2048
         openssl req -new -x509 -days $EXP -key $CA_FILENAME.key -subj /C=CN/ST=GD/L=SZ-Inc/CN=$CA_CN -out $CA_FILENAME.crt
         openssl req -newkey rsa:2048 -nodes -keyout $CERT_FILENAME.key -subj /C=CN/ST=GD/L=SZ-Inc/CN=$CERT_DN -out $CERT_FILENAME.csr
-        openssl x509 -req -in $CERT_FILENAME.csr -CA $CA_FILENAME.crt -CAkey $CA_FILENAME.key -CAcreateserial -out $CERT_FILENAME.crt -days $EXP -extfile <(printf "subjectAltName=DNS:$CERT_DN,IP:$CERT_IP")
+        openssl x509 -req -in $CERT_FILENAME.csr -CA $CA_FILENAME.crt -CAkey $CA_FILENAME.key -CAcreateserial -out $CERT_FILENAME.crt -days $EXP -extfile <(printf "subjectAltName=DNS:$CERT_DN,IP:$CERT_IP,URI:$SPIFFE")
         openssl x509 -in $CERT_FILENAME.crt -out $CERT_FILENAME.pem -outform PEM
         openssl pkcs12 -export -out $CERT_FILENAME.p12 -in $CERT_FILENAME.pem -inkey $CERT_FILENAME.key -passout pass:$P12_PASS
 
@@ -71,7 +72,7 @@ class CertificateGenerator:
         # Generate and sign cert using CA
         cert_csr_path, cert_private_path = cls.__gen_cert_csr_and_private_key(cert_location, cert_name, dn, stdout_func)
         cert_crt_public_path = cls.__issue_and_sign_public_cert(ca_private_path, ca_public_path, cert_csr_path,
-                                                                cert_location, cert_name, dn, expiration, ip,
+                                                                cert_location, cert_name, dn, expiration, ip, san_uris,
                                                                 stdout_func)
         stdout_func('verify generated cert crt with CA')
         cls.__openssl_verify_cert_with_ca(ca_public_path, cert_crt_public_path, stdout_func)
@@ -140,13 +141,21 @@ class CertificateGenerator:
 
     @classmethod
     def __issue_and_sign_public_cert(cls, ca_private_path, ca_public_path, cert_csr_path, cert_location, cert_name, dn,
-                                     expiration, ip, stdout_func):
+                                     expiration, ip, san_uris, stdout_func):
         stdout_func('generate and sign/issue the public certificate')
         cert_public_filename = f'{cert_name}.crt'
         cert_public_path = os.path.join(cert_location, cert_public_filename)
-        target_device_props = {'DNS': dn, 'IP': ip}
-        target_device_props = {k: v for k, v in target_device_props.items() if v}
-        subject_alt_name = ','.join([f'{k}:{v}' for k, v in target_device_props.items()])
+
+        # target_device_props = {'DNS': dn, 'IP': ip, 'URI': spiffe}
+        # target_device_props = {k: v for k, v in target_device_props.items() if v}
+        # subject_alt_name = ','.join([f'{k}:{v}' for k, v in target_device_props.items()])
+
+        target_device_props = [('DNS', dn), ('IP', ip)]
+        for uri in san_uris:
+            target_device_props.append(('URI', uri))
+        target_device_props = [tupl for tupl in target_device_props if tupl[1]]
+        subject_alt_name = ','.join([f'{tupl[0]}:{tupl[1]}' for tupl in target_device_props])
+
         with tempfile.NamedTemporaryFile(mode='w', delete=False) as tmp_file:
             tmp_file.write(f'subjectAltName={subject_alt_name}')
             tmp_file.flush()
@@ -217,19 +226,20 @@ class CertificateGenerator:
 
 def __try_generator():
     # TODO: configure as desired
-    cert_location: str = '/auto/sw_system_project/NVOS_INFRA/security/verification/certs/test_certs/cert4/cert'
-    cert_name: str = 'cert'
-    ip: str = '10.7.148.126'
-    dn: str = 'juliet-126'
+    cert_location: str = '/auto/sysgwork/alonn/playground/certs/spiffe/spif1/cert'
+    cert_name: str = 'cert-with-2-spifs'
+    ip: str = '10.7.144.58'
+    dn: str = 'gorilla-58'
     expiration_years: int = 10
-    new_ca_path: str = '/auto/sw_system_project/NVOS_INFRA/security/verification/certs/test_certs/cert4/ca'
-    new_ca_name: str = 'ca'
-    existing_ca_public: str = ''
-    existing_ca_private: str = ''
-    p12_pass: str = 'secret'
+    new_ca_path: str = ''  # '/auto/sysgwork/alonn/playground/certs/spiffe/spif1/ca'
+    new_ca_name: str = ''  # 'ca'
+    existing_ca_public: str = '/auto/sysgwork/alonn/playground/certs/spiffe/spif1/ca/ca.crt'
+    existing_ca_private: str = '/auto/sysgwork/alonn/playground/certs/spiffe/spif1/ca/ca.key'
+    p12_pass: str = 'secret2'
+    san_uris: List[str] = ['spiffe://alon-trusted.domain/users/ceos/alon', 'spiffe://alon-trusted.domain/users/ceos/lital']
 
     CertificateGenerator.generate_cert(cert_location, cert_name, ip, dn, new_ca_path, new_ca_name, p12_pass,
-                                       existing_ca_public, existing_ca_private, expiration_years, print)
+                                       existing_ca_public, existing_ca_private, expiration_years, san_uris, print)
 
 
 if __name__ == '__main__':

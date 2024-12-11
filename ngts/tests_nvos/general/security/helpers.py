@@ -10,7 +10,21 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tests_nvos.general.security.constants import ETC_HOSTS
+from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
 from ngts.tools.test_utils.nvos_general_utils import generate_scp_uri_using_player
+
+
+def set_new_random_users(num_users: int, role: str, apply=False) -> List[UserInfo]:
+    system = System()
+    users = []
+    with allure.step(f'set {num_users} new random local {role} users'):
+        for _ in range(num_users):
+            username, password = system.aaa.user.set_new_user(role=role)
+            users.append(UserInfo(username, password, role))
+    if apply:
+        with allure.step('apply users'):
+            system._cli_wrapper.apply_config(verify_execution=True)
+    return users
 
 
 def add_etc_host_mapping_to_dn(dn, address, cmd_runner=None):
