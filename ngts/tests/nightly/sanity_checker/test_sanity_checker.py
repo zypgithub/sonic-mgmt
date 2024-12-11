@@ -11,7 +11,6 @@ from ngts.helpers.secure_boot_helper import SonicSecureBootHelper
 from ngts.tests.conftest import get_dut_loopbacks
 from ngts.constants.constants import FILE_INCLUDE_FAILED_SANITY_CHECKER_CASE
 from ngts.tests.nightly.sanity_checker.analyze_sanity_checker_result_and_take_action import write_failed_sanity_checker_cases_to_file
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 pytestmark = [
     pytest.mark.disable_loganalyzer
@@ -286,9 +285,6 @@ def test_more_then_2_fan_status_wrong_check(topology_obj):
     fan_status_info = topology_obj.players['dut']['cli'].chassis.show_platform_fan()
     broken_fan_number = 0
     fail_case_threshold_for_broken_fan_number = 2
-    dut_name = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Common']['Name']
-    if dut_name == 'r-bison-04' and is_redmine_issue_active([4193845])[0]:
-        fail_case_threshold_for_broken_fan_number = 3
     for fan_name, status_info in fan_status_info.items():
         if status_info["Status"].lower() != "ok":
             broken_fan_number += 1
