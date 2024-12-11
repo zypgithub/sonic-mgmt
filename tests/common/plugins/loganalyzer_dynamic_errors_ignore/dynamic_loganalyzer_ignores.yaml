@@ -455,6 +455,15 @@
     - master
 
 - Errors_list:
+    - '.*ERR pmon#thermalctld: Thermal sysfs \/run\/hw-management\/thermal\/comex_amb.* does not exist.*'
+    - '.*ERR pmon#thermalctld: Thermal sysfs \/run\/hw-management\/thermal\/sodimm1_temp.* does not exist.*'
+  Conditions:
+    - Redmine:
+        - 4200835
+      Platform:
+        - x86_64-nvidia_sn5610n-r0
+
+- Errors_list:
   - '.* WARNING syncd#SDK: :- discover: skipping since it causes crash: SAI_STP_ATTR_BRIDGE_ID'
   Conditions:
   - Affected_test_cases:
@@ -1807,3 +1816,9 @@
   Conditions:
     - Platform:
         - simx
+
+- Errors_list:
+    - '.*ERR healthd: FEATURE table is not fully ready:*'
+  Conditions:
+    - Redmine:
+        - 3943532

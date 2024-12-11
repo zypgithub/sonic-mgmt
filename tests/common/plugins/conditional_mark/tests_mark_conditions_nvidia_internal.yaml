@@ -13,6 +13,12 @@ scripts/test_verify_secure_boot_enabled.py:
     - "'sn4' in platform"
     - "https://redmine.mellanox.com/issues/4115256 and 'sn5' in platform"
 
+platform_tests/test_secure_upgrade.py:
+  skip:
+    reason: "Testcase ignored on r-bison-04 testbed"
+    conditions:
+      - "'r-bison-04' in testbed"
+
 tests/nightly/rocev2_acl_counter:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4051905"
@@ -59,11 +65,12 @@ tests/nightly/auto_negotition:
 
 tests/nightly/dynamic_port_breakout:
   skip:
-    reason: "Test is not supported on simx and 3800"
+    reason: "Test is not supported on simx and 3800  and on sn5610n due to RM 4196681"
     conditions_logical_operator: or
     conditions:
     - "https://redmine.mellanox.com/issues/2885961 and 'simx' in platform"
     - "'3800' in platform"
+    - "https://redmine.mellanox.com/issues/4196681 and 'sn5610n' in platform"
 
 tests/nightly/copp/test_copp.py::test_copp_policer[LLDP_Reboot]:
   skip:
@@ -149,11 +156,12 @@ tests/push_build_tests/L3/dhcp_relay/test_dhcp_relay.py::TestDHCPRelay::test_dhc
 
 tests/nightly/adaptive_routing:
   skip:
-    reason: "Adaptive Routing is not supported on SimX Platform or on ACS-SN5400 hwsku(AR is not supported on Hippos due to missing SAI_HOSTIF_OPER_STATUS_UPDATE_BY_APP=1 in sai.profile)"
+    reason: "AR is not supported on SimX Platform or on SN5610N or on ACS-SN5400 hwsku(AR is not supported on Hippos due to missing SAI_HOSTIF_OPER_STATUS_UPDATE_BY_APP=1 in sai.profile)"
     conditions_logical_operator: or
     conditions:
     - "'simx' in platform"
     - "'ACS-SN5400' in hwsku"
+    - "'sn5610n' in platform"
 
 tests/nightly/fec/test_fec.py::TestFec::test_negative_fec:
   skip:
@@ -176,11 +184,12 @@ tests/nightly/fec/test_fec.py::TestFec::test_fec_capabilities_hosts_ports:
 
 tests/nightly/show_techsupport/test_techsupport.py::test_techsupport_fw_stuck_dump:
   skip:
-    reason: "Testcase ignored due to platform SPC2/3 or simx. The leaks reported by ASAN during test are not real leaks, test should not run on ASAN image."
+    reason: "Ignored on simx. The leaks reported by ASAN during test are not real leaks, test should not run on ASAN image. Ignored on sn5610n due to RM 4196824"
     conditions_logical_operator: or
     conditions:
     - "'simx' in platform"
     - "'ASAN' in build_version"
+    - "https://redmine.mellanox.com/issues/4196824 and 'sn5610n' in platform"
 
 tests/nightly/show_techsupport/test_techsupport.py::test_techsupport_mellanox_sdk_dump[PLL_LOCK_EVENT-syncd]:
   skip:
@@ -190,10 +199,11 @@ tests/nightly/show_techsupport/test_techsupport.py::test_techsupport_mellanox_sd
 
 tests/nightly/show_techsupport/test_techsupport.py::test_techsupport_mellanox_sdk_dump:
   skip:
-    reason: "Testcase ignored due to platform SIMX"
+    reason: "Testcase ignored due to platform SIMX. Ignored on sn5610n due to RM 4196824"
     conditions_logical_operator: or
     conditions:
     - "'simx' in platform"
+    - "https://redmine.mellanox.com/issues/4196824 and 'sn5610n' in platform"
 
 tests/nightly/show_techsupport/test_techsupport.py::test_techsupport_validate_api_sniffer_dumps:
   skip:
@@ -216,11 +226,12 @@ tests/push_build_tests/general/wjh/test_wjh.py::test_buffer:
 
 tests/push_build_tests/general/doroce/test_doroce.py:
   skip:
-    reason: "Testcase ignored on simx or due to SPC1 or due to RM issue 3769105 on SPC4 and SPC3"
+    reason: "Testcase ignored on simx or due to SPC1 or due to RM issue 3769105 on SPC4 and SPC3 or due to RM issue 4037241 on sn5600 or on sn5610n"
     conditions_logical_operator: or
     conditions:
     - "'simx' in platform"
     - "'sn2' in platform or 'msn2700a1' in platform"
+    - "'sn5610n' in platform"
 
 tests/nightly/rj45/test_rj45.py:
   skip:
@@ -312,6 +323,12 @@ tests/push_build_tests/system/test_cpu_ram_hdd_usage.py::TestCpuRamHddUsage::tes
     conditions:
     - "'simx' in platform"
 
+tests/push_build_tests/system/test_cpu_ram_hdd_usage.py::TestCpuRamHddUsage::test_hdd_usage:
+  skip:
+    reason: "Ignored on sn5610n due to RM 4197042"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4197042 and 'sn5610n' in platform"
+
 tests/push_build_tests/system/test_cpu_ram_hdd_usage.py::TestCpuRamHddUsage::test_ram_usage:
   skip:
     reason: "The test is related to performance, no meaningful to run it on simx platform "
@@ -330,6 +347,11 @@ tests/push_build_tests/L3/evpn_vxlan/test_evpn_vxlan.py::TestEvpnVxlan::test_evp
     conditions:
       - "https://redmine.mellanox.com/issues/4200858"
 
+tests/nightly/sanity_checker/test_sanity_checker.py::test_cpld_version_check:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4202758"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4202758 and 'sn5610n' in platform"
 ########################## NGTS IGNORE END ##########################
 
 
@@ -518,10 +540,11 @@ platform_tests/api/test_sfp.py:
 
 platform_tests/mellanox/test_check_sfp_eeprom.py:
   skip:
-    reason: "QSFP eeprom emulation is not supported currently. Target POR 2023.Rel.2"
+    reason: "Testcase ignored on sn5610n due to RM 3891669 and on simx;QSFP eeprom emulation is not supported currently. Target POR 2023.Rel.2"
     conditions_logical_operator: or
     conditions:
     - "'simx' in platform"
+    - "https://redmine.mellanox.com/issues/3891669 and 'sn5610n' in platform"
 
 platform_tests/mellanox/test_check_sfp_presence.py:
   skip:
@@ -574,10 +597,11 @@ ecmp/inner_hashing:
 
 platform_tests/test_sensors.py::test_sensors:
   skip:
-    reason: "Testcase ignored due to RM issue 3816778 on r-anaconda-15"
+    reason: "Testcase ignored due to RM issue 3816778 on r-anaconda-15  or due to RM issue 4137145 on bobcat or due to RM 4205069 on sn5610n"
     conditions_logical_operator: or
     conditions:
     - "https://redmine.mellanox.com/issues/3816778 and 'r-anaconda-15' in testbed"
+    - "https://redmine.mellanox.com/issues/4205069 and 'sn5610n' in platform"
 
 qos/test_qos_sai_dual_tor.py:
   skip:
@@ -876,6 +900,42 @@ vlan/test_autostate_disabled.py:
     reason: "The test is skipped due to https://redmine.mellanox.com/issues/4203725"
     conditions:
     - "https://redmine.mellanox.com/issues/4203725"
+
+platform_tests/api/test_chassis.py::TestChassisApi::test_thermals:
+  skip:
+    reason: "Skipped due to RM issue https://redmine.mellanox.com/issues/4195003"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4195003 and 'sn5610n' in platform"
+
+platform_tests/api/test_thermal.py::TestThermalApi::test_get_name:
+  skip:
+    reason: "Skipped due to RM issue https://redmine.mellanox.com/issues/4195003"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4195003 and 'sn5610n' in platform"
+
+pfcwd/test_pfcwd_timer_accuracy.py:
+  skip:
+    reason: "Skip due to https://redmine.mellanox.com/issues/4198717"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4198717 and 'sn5610n' in platform"
+
+pfcwd/test_pfcwd_function.py:
+  skip:
+    reason: "Skip due to https://redmine.mellanox.com/issues/4198795"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4198795 and 'sn5610n' in platform"
+
+generic_config_updater/test_dynamic_acl.py::test_gcu_acl_scale_rules:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4189136 on 'sn5600' platform"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4189136 and ('sn5600' in platform or 'sn5610n' in platform)"
+
+generic_config_updater/test_pfcwd_interval.py::test_pfcwd_interval_config_updates[False-nonexistent-replace]:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4204545 on 'sn5610n' platform"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4204545 and 'sn5610n' in platform"
 
 ########################## NVIDIA INTERNAL COMMUNITY IGNORE END ############################
 
