@@ -27,24 +27,26 @@ def test_fwutil_show(duthost):
     assert show_fw_comp_set == platform_comp_set
 
 
-def test_fwutil_install_file(duthost, localhost, pdu_controller, component, fw_pkg):
+def test_fwutil_install_file(request, duthost, localhost, pdu_controller, component, fw_pkg):
     """Tests manually installing firmware to a component from a file."""
-    assert call_fwutil(duthost,
-                       localhost,
-                       pdu_controller,
-                       fw_pkg,
-                       component=component,
-                       basepath=os.path.join(DEVICES_PATH, duthost.facts['platform']))
+    call_fwutil(request,
+                duthost,
+                localhost,
+                pdu_controller,
+                fw_pkg,
+                component=component,
+                basepath=os.path.join(DEVICES_PATH, duthost.facts['platform']))
 
 
-def test_fwutil_install_url(duthost, localhost, pdu_controller, component, fw_pkg, host_firmware):
+def test_fwutil_install_url(request, duthost, localhost, pdu_controller, component, fw_pkg, host_firmware):
     """Tests manually installing firmware to a component from a URL."""
-    assert call_fwutil(duthost,
-                       localhost,
-                       pdu_controller,
-                       fw_pkg,
-                       component=component,
-                       basepath=host_firmware)
+    call_fwutil(request,
+                duthost,
+                localhost,
+                pdu_controller,
+                fw_pkg,
+                component=component,
+                basepath=host_firmware)
 
 
 def test_fwutil_install_bad_name(duthost):
@@ -62,23 +64,25 @@ def test_fwutil_install_bad_path(duthost, component):
     assert find_pattern(out['stderr_lines'], pattern)
 
 
-def test_fwutil_update_current(duthost, localhost, pdu_controller, component, fw_pkg):
+def test_fwutil_update_current(request, duthost, localhost, pdu_controller, component, fw_pkg):
     """Tests updating firmware from current image using fwutil update"""
-    assert call_fwutil(duthost,
-                       localhost,
-                       pdu_controller,
-                       fw_pkg,
-                       component=component)
+    call_fwutil(request,
+                duthost,
+                localhost,
+                pdu_controller,
+                fw_pkg,
+                component=component)
 
 
-def test_fwutil_update_next(duthost, localhost, pdu_controller, component, next_image, fw_pkg):
+def test_fwutil_update_next(request, duthost, localhost, pdu_controller, component, next_image, fw_pkg):
     """Tests updating firmware from the "next" image using fwutil update"""
-    assert call_fwutil(duthost,
-                       localhost,
-                       pdu_controller,
-                       fw_pkg,
-                       component=component,
-                       next_image=next_image)
+    call_fwutil(request,
+                duthost,
+                localhost,
+                pdu_controller,
+                fw_pkg,
+                component=component,
+                next_image=next_image)
 
 
 def test_fwutil_update_bad_config(duthost, component):
@@ -120,10 +124,11 @@ def test_fwutil_update_bad_config(duthost, component):
 
 
 @pytest.mark.parametrize("reboot_type", ["none", "cold"])
-def test_fwutil_auto(duthost, localhost, pdu_controller, fw_pkg, reboot_type):
+def test_fwutil_auto(request, duthost, localhost, pdu_controller, fw_pkg, reboot_type):
     """Tests fwutil update all command ability to properly select firmware for install based on boot type."""
-    assert call_fwutil(duthost,
-                       localhost,
-                       pdu_controller,
-                       fw_pkg,
-                       boot=reboot_type)
+    call_fwutil(request,
+                duthost,
+                localhost,
+                pdu_controller,
+                fw_pkg,
+                boot=reboot_type)

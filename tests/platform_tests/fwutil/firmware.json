@@ -440,13 +440,8 @@
 				],
 				"CPLD2": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4280/FUI000307/FUI000307.mpfa",
-						"version": "CPLD060387_REV0104",
-						"reboot": ["power off", "cold"]
-					},
-					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4280/FUI000295/FUI000295.mpfa",
-						"version": "CPLD000387_REV0103",
+						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4280/FUI000306/FUI000306.mpfa",
+						"version": "CPLD000387_REV0104",
 						"reboot": ["power off", "cold"]
 					}
 				],
@@ -454,11 +449,6 @@
 					{
 						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4280/ISP000472/ISP000472.mpfa",
 						"version": "FPGA000375_REV0006",
-						"reboot": ["power off", "cold"]
-					},
-					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4280/ISP000005/ISP000005.mpfa",
-						"version": "FPGA000375_REV0005",
 						"reboot": ["power off", "cold"]
 					}
 				]
@@ -761,6 +751,38 @@
 					{
 						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN5600/FUI000240/FUI000240.mpfa",
 						"version": "CPLD000330_REV0700",
+						"reboot": ["power off", "cold"]
+					}
+				]
+			}
+		},
+		"r-bobcat-01": {
+			"component": {
+				"CPLD2": [
+					{
+						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4280/FUI000307/FUI000307.mpfa",
+						"version": "CPLD060387_REV0104",
+						"reboot": ["power off", "cold"]
+					},
+					{
+						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4280/FUI000295/FUI000295.mpfa",
+						"version": "CPLD000387_REV0103",
+						"reboot": ["power off", "cold"]
+					}
+				]
+			}
+		},
+		"r-bobcat-03": {
+			"component": {
+				"CPLD2": [
+					{
+						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4280/FUI000307/FUI000307.mpfa",
+						"version": "CPLD060387_REV0104",
+						"reboot": ["power off", "cold"]
+					},
+					{
+						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4280/FUI000295/FUI000295.mpfa",
+						"version": "CPLD000387_REV0103",
 						"reboot": ["power off", "cold"]
 					}
 				]
