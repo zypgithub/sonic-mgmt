@@ -546,9 +546,11 @@ platform_tests/sfp/test_show_intf_xcvr.py:
 
 platform_tests/sfp/test_sfputil.py::test_check_sfputil_error_status:
   skip:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4204539"
+    reason: "Testcase ignored due to RM issue: 4204539 or due to RM 4205722"
+    conditions_logical_operator: or
     conditions:
     - "https://redmine.mellanox.com/issues/4204539"
+    - "https://redmine.mellanox.com/issues/4205722"
 
 platform_tests/fw_utility/test_fwutil.py:
   skip:
