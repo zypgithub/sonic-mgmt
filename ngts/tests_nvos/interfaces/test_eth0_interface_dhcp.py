@@ -411,7 +411,8 @@ def test_interface_eth0_dhcp_hostname(engines, topology_obj, serial_engine):
         system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
 
         dhcp_hostname = noga_query_data['Specific']['dhcp_hostname']
-        dhcp_hostname = dhcp_hostname if dhcp_hostname in system_output['hostname'] else noga_query_data['Common']['Name']
+        dhcp_hostname = dhcp_hostname if dhcp_hostname else noga_query_data['Common']['Name']
+        assert dhcp_hostname, "No dhcp_hostname received from noga"
 
         Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
                                                           field_name='has-lease',
@@ -501,7 +502,7 @@ def test_interface_eth0_dhcp_hostname(engines, topology_obj, serial_engine):
                                                           expected_value='enabled').verify_result()
 
     with allure.step('Check hostname received by dhcp'):
-        system.unset(op_param=SystemConsts.HOSTNAME, apply=True, ask_for_confirmation=True)
+        system.unset(op_param=SystemConsts.HOSTNAME, apply=True, ask_for_confirmation=True, dut_engine=serial_engine)
         wait_for_hostname_changed(system, dhcp_hostname)
 
 

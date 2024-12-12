@@ -19,7 +19,7 @@ def verify_installation(erot_names, expected_version):
     platform = Platform()
     fw_fields_to_check = [PlatformConsts.FW_ACTUAL, PlatformConsts.FW_BACKGROUND_COPY_STATUS,
                           PlatformConsts.FW_DEBUG_TOKEN_STATUS, PlatformConsts.FW_SLOT_STATUS_INACTIVE,
-                          PlatformConsts.FW_SLOT_STATUS_ACTIVE]
+                          PlatformConsts.FW_SLOT_STATUS_ACTIVE, PlatformConsts.FW_AP_BOOT_STATUS]
     with allure.step(f"Asserting install was successful"):
         for erot_name in erot_names:
             firmware_shown: Dict[str, str] = OutputParsingTool.parse_json_str_to_dictionary(
