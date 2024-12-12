@@ -153,10 +153,41 @@ def test_rules_order(engines, test_api, topology_obj):
             rule_dict[AclConsts.ACTION] = AclConsts.PERMIT
             config_rule(engines.dut, acl_id_obj, rule_id_2, rule_dict)
 
-            expected_acl_dict[acl_id][AclConsts.RULE].update({rule_id_1: {AclConsts.ACTION: {AclConsts.DENY: {}}, AclConsts.MATCH:
-                                                                          {AclConsts.IP: {AclConsts.SOURCE_IP: 'ANY', AclConsts.PROTOCOL: 'icmp', AclConsts.ICMP_TYPE: 'echo-request'}}}})
-            expected_acl_dict[acl_id][AclConsts.RULE].update({rule_id_2: {AclConsts.ACTION: {AclConsts.PERMIT: {}}, AclConsts.MATCH:
-                                                                          {AclConsts.IP: {AclConsts.SOURCE_IP: 'ANY', AclConsts.PROTOCOL: 'icmp', AclConsts.ICMP_TYPE: 'echo-request'}}}})
+            # temp workaround due to - https://redmine.mellanox.com/issues/4203639 - add MAC masking
+            expected_acl_dict[acl_id][AclConsts.RULE].update({
+                rule_id_1: {
+                    AclConsts.ACTION: {AclConsts.DENY: {}},
+                    AclConsts.MATCH: {
+                        AclConsts.IP: {
+                            AclConsts.SOURCE_IP: 'ANY',
+                            AclConsts.PROTOCOL: 'icmp',
+                            AclConsts.ICMP_TYPE: 'echo-request'
+                        },
+                        AclConsts.MAC: {
+                            AclConsts.DEST_MAC_MASK: "ff:ff:ff:ff:ff:ff",
+                            AclConsts.SOURCE_MAC_MASK: "ff:ff:ff:ff:ff:ff"
+                        }
+                    }
+                }
+            })
+
+            # temp workaround due to - https://redmine.mellanox.com/issues/4203639 - add MAC masking
+            expected_acl_dict[acl_id][AclConsts.RULE].update({
+                rule_id_2: {
+                    AclConsts.ACTION: {AclConsts.PERMIT: {}},
+                    AclConsts.MATCH: {
+                        AclConsts.IP: {
+                            AclConsts.SOURCE_IP: 'ANY',
+                            AclConsts.PROTOCOL: 'icmp',
+                            AclConsts.ICMP_TYPE: 'echo-request'
+                        },
+                        AclConsts.MAC: {
+                            AclConsts.DEST_MAC_MASK: "ff:ff:ff:ff:ff:ff",
+                            AclConsts.SOURCE_MAC_MASK: "ff:ff:ff:ff:ff:ff"
+                        }
+                    }
+                }
+            })
 
         with allure.step("Validate configuration with show commands"):
             acl_id_output = acl_id_obj.parse_show()

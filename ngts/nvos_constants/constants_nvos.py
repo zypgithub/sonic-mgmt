@@ -1476,6 +1476,7 @@ class AclConsts:
     LOG_PREFIX = 'log-prefix'
     MATCH = 'match'
     IP = 'ip'
+    MAC = 'mac'
     TYPE = 'type'
     RULE = 'rule'
     RULE_ID = 'rule_id'
