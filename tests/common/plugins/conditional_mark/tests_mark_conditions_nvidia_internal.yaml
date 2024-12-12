@@ -871,6 +871,12 @@ pfcwd/test_pfcwd_warm_reboot.py:
     conditions:
     - "hwsku in ['Mellanox-SN5600-C256S1', 'Mellanox-SN5600-C224O8']"
 
+vlan/test_autostate_disabled.py:
+  skip:
+    reason: "The test is skipped due to https://redmine.mellanox.com/issues/4203725"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4203725"
+
 ########################## NVIDIA INTERNAL COMMUNITY IGNORE END ############################
 
 
