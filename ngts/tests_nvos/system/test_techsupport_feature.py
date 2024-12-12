@@ -107,8 +107,9 @@ def test_techsupport_expected_files(engines, devices, test_name):
 
             with allure.independent_step('validate files sizes'):
                 for folder in expected_files_dict.keys():
-                    files_list = system.techsupport.get_techsupport_empty_files(engines.dut, folder)
-                    verify_techsupport_files_sizes(files_list, folder)
+                    if expected_files_dict[folder]:  # skip empty folders if files are not expected for a specific system
+                        files_list = system.techsupport.get_techsupport_empty_files(engines.dut, folder)
+                        verify_techsupport_files_sizes(files_list, folder)
     finally:
         system.techsupport.cleanup(engines.dut)
         if system.techsupport.file_name:
