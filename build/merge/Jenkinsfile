@@ -5,7 +5,7 @@ pipeline {
         buildDiscarder logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '30', numToKeepStr: '150')
     }
     environment {
-        GENERIC_CI_GIT_BRANCH = '5.0.3-76'
+        GENERIC_CI_GIT_BRANCH = '5.0.4-28'
         MAIN_NODE = 'SONIC_LITE'
         JSON_FILE = 'build/merge/merge_build_configuration.json'
     }
