@@ -18,7 +18,7 @@ DPU_INFO = {
 @pytest.fixture(scope="session")
 def enable_dpu_mgmt_forwarding(duthost):
     # Enable the dpu mgmt forwarding if the dut is smartswitch
-    duthost.shell('sudo sonic-dpu-mgmt-traffic.sh -e')
+    duthost.shell('sudo sonic-dpu-mgmt-traffic.sh outbound -e')
 
 
 @pytest.fixture(scope="session", autouse=True)
