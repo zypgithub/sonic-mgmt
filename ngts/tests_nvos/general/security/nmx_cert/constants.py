@@ -2,6 +2,8 @@ from typing import Dict
 
 from ngts.nvos_constants.constants_nvos import ClusterApps
 
+CLUSTER_ENABLE_WAIT_TIME = 10
+
 NA = 'N/A'
 STATE = 'state'
 

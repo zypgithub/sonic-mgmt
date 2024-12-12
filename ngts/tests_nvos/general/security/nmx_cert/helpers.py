@@ -1,4 +1,5 @@
 import logging
+import time
 from typing import Union, Dict
 
 import ngts.tools.test_utils.allure_utils as allure
@@ -11,10 +12,20 @@ from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tests_nvos.general.security.nmx_cert.constants import FieldsInShowOf, CERTIFICATE, CA_CERTIFICATE, ENCRYPTION, \
-    FILE_NOT_EXIST_ERR, STATE, APP_CONSTS, ClusterAppConsts, NMX_C_CONSTS, NMX_T_CONSTS, ITEM_NOT_EXIST_ERR
+    FILE_NOT_EXIST_ERR, STATE, APP_CONSTS, ClusterAppConsts, NMX_C_CONSTS, NMX_T_CONSTS, ITEM_NOT_EXIST_ERR, ENABLED, \
+    CLUSTER_ENABLE_WAIT_TIME
 from ngts.tests_nvos.general.security.nmx_cert.grpc.config import GrpcConfig, GrpcServerConfig, GrpcClientConfig
 from ngts.tests_nvos.general.security.nmx_cert.grpc.nmx_c.client.NmxControllerClientApp import run_nmx_c_grpc_client
 from ngts.tests_nvos.general.security.nmx_cert.grpc.nmx_t.client.NmxTelemetryClientApp import run_nmx_t_grpc_client
+
+
+def enable_cluster():
+    with allure.step('enable cluster'):
+        res: ResultObj = Cluster().set(STATE, ENABLED, apply=True)
+        if res.result and 'applied' in res.returned_value:
+            with allure.step(f'wait {CLUSTER_ENABLE_WAIT_TIME} seconds after cluster enabled'):
+                time.sleep(CLUSTER_ENABLE_WAIT_TIME)
+        res.verify_result()
 
 
 def verify_component_show(component: BaseComponent, required_fields,
