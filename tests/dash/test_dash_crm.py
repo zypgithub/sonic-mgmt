@@ -23,15 +23,13 @@ pytestmark = [
 ]
 
 
-DASH_CRM_RES_LIST = ["dram", "dash_vnet", "dash_eni", "dash_eni_ether_address_map", "dash_ipv4_inbound_routing",
+DASH_CRM_RES_LIST = ["dash_vnet", "dash_eni", "dash_eni_ether_address_map", "dash_ipv4_inbound_routing",
                      "dash_ipv6_inbound_routing", "dash_ipv4_outbound_routing", "dash_ipv6_outbound_routing",
                      "dash_ipv4_pa_validation", "dash_ipv6_pa_validation", "dash_ipv4_outbound_ca_to_pa",
                      "dash_ipv6_outbound_ca_to_pa", "dash_ipv4_acl_group", "dash_ipv6_acl_group"]
 DASH_CRM_ACL_RULES_LIST = ["dash_ipv4_acl_rule", "dash_ipv6_acl_rule"]
 DEFAULT_LOW_THR = defaultdict(lambda: 70)
-DEFAULT_LOW_THR["dram"] = 90
 DEFAULT_HIGH_THR = defaultdict(lambda: 85)
-DEFAULT_HIGH_THR["dram"] = 95
 DEFAULT_THR_TYPE = "percentage"
 DEFAULT_CRM_POLLING_INTERVAL = 300
 
@@ -502,45 +500,6 @@ class TestDashCRM:
             verify_thresholds(self.dpuhost, res_name=crm_table_res_name,
                               crm_used=used, crm_avail=avail)
 
-    def test_crm_dram_counters(self):
-        with allure.step('Get the DRAM crm counters'):
-            crm_facts = get_crm_facts(self.dpuhost)
-            used_count = crm_facts["resources"]["dram"]["used"]
-            available_count = crm_facts["resources"]["dram"]["available"]
-        with allure.step('Consume the memory by 1024M at maximum'):
-            memory_size_to_consume = min(1024, available_count // 2 // 1024)
-            cmd = f"sudo dd if=/dev/zero of=/dev/shm/memtest bs=1M count={memory_size_to_consume}"
-            self.dpuhost.shell(cmd)
-        with allure.step('Check the DRAM crm counters'):
-            pytest_assert(wait_until(10, 1, 0, check_dram_crm_stats, self.dpuhost,
-                                     origin_used_count=used_count,
-                                     origin_available_count=available_count,
-                                     used_increment=memory_size_to_consume * 1024),
-                          "The validation for DRAM crm counters is failed, please check the test log.")
-        with allure.step('Get the new DRAM crm counters'):
-            crm_facts = get_crm_facts(self.dpuhost)
-            used_count = crm_facts["resources"]["dram"]["used"]
-            available_count = crm_facts["resources"]["dram"]["available"]
-        with allure.step('Free the memory'):
-            self.dpuhost.shell("rm -f /dev/shm/memtest")
-        with allure.step('Check the DRAM crm counters again'):
-            pytest_assert(wait_until(10, 1, 0, check_dram_crm_stats, self.dpuhost,
-                                     origin_used_count=used_count,
-                                     origin_available_count=available_count,
-                                     used_increment=-memory_size_to_consume * 1024),
-                          "The validation for DRAM crm counters is failed, please check the test log.")
-
-    def test_crm_dram_thresholds(self):
-        with allure.step('Set the thresholds to 100% to clear existing alarms'):
-            self.dpuhost.shell("crm config thresholds dram high 100")
-            self.duthost.shell("crm config thresholds dram low 100")
-            time.sleep(CRM_UPDATE_TIME)
-        with allure.step('Verify the thresholds for DRAM'):
-            crm_facts = get_crm_facts(self.dpuhost)
-            dram_used = crm_facts["resources"]["dram"]["used"]
-            dram_avail = crm_facts["resources"]["dram"]["available"]
-            verify_thresholds(self.dpuhost, res_name="dram", thr_verify_cmds=THR_VERIFY_CMDS,
-                              crm_used=dram_used, crm_avail=dram_avail)
 
     def test_dash_crm_cleanup(self):
         """
@@ -552,8 +511,6 @@ class TestDashCRM:
 
         time.sleep(CRM_UPDATE_TIME)
         crm_facts = get_crm_facts(self.dpuhost)
-        crm_facts["resources"].pop('dram')
-        self.default_crm_facts["resources"].pop('dram')
         assert crm_facts["resources"] == self.default_crm_facts["resources"], \
             "CRM resources after cleanup not equal to CRM resources before apply configuration.\nCRM resources " \
             "before apply config: {}\nCRM resources after cleanup: {}\n".format(self.default_crm_facts["resources"],
@@ -606,13 +563,6 @@ def verify_thresholds(dpuhost, **kwargs):
     loganalyzer = LogAnalyzer(ansible_host=dpuhost, marker_prefix='dash_crm_test')
     thr_verify_cmds = kwargs.get("thr_verify_cmds", DASH_THR_VERIFY_CMDS)
 
-    if kwargs["res_name"] == "dram":
-        kwargs["dram_margin"] = 204800
-        dram_percent_margin = 10
-    else:
-        kwargs["dram_margin"] = 0
-        dram_percent_margin = 0
-
     for key, value in list(thr_verify_cmds.items()):
         with allure.step("Verifying CRM threshold '{}'".format(key)):
             template = Template(value)
@@ -634,12 +584,12 @@ def verify_thresholds(dpuhost, **kwargs):
             if "percentage" in key:
                 used_percent = get_used_percent(kwargs["crm_used"], kwargs["crm_avail"])
                 if key == "exceeded_percentage":
-                    kwargs["th_lo"] = max(used_percent - 1 - dram_percent_margin * 2, 0)
-                    kwargs["th_hi"] = max(used_percent - dram_percent_margin, 0)
+                    kwargs["th_lo"] = max(used_percent - 1, 0)
+                    kwargs["th_hi"] = max(used_percent, 0)
                     loganalyzer.expect_regex = [EXPECT_EXCEEDED]
                 elif key == "clear_percentage":
-                    kwargs["th_lo"] = min(used_percent + dram_percent_margin, 100)
-                    kwargs["th_hi"] = min(used_percent + 1 + dram_percent_margin * 2, 100)
+                    kwargs["th_lo"] = min(used_percent, 100)
+                    kwargs["th_hi"] = min(used_percent + 1, 100)
                     loganalyzer.expect_regex = [EXPECT_CLEAR]
 
             kwargs["crm_cli_res"] = get_dash_cli_crm_res_path(kwargs["res_name"])
@@ -673,29 +623,3 @@ def get_dash_cli_crm_res_path(res_name):
         cli_res_path = res_name.replace("_", " ")
 
     return cli_res_path
-
-
-def check_dram_crm_stats(dpuhost, tolerance_percent=0.2, **kwargs):
-    origin_used_count = kwargs['origin_used_count']
-    origin_available_count = kwargs['origin_available_count']
-    used_increment = kwargs['used_increment']
-    crm_facts = get_crm_facts(dpuhost)
-    current_used_count = crm_facts["resources"]["dram"]["used"]
-    current_available_count = crm_facts["resources"]["dram"]["available"]
-    tolerance = abs(used_increment * tolerance_percent)
-
-    if abs(current_used_count - origin_used_count - used_increment) > tolerance:
-        logger.error(f"The DRAM crm used count is not changed as expected:\n"
-                     f"origin: {origin_used_count}\n"
-                     f"current: {current_used_count}\n"
-                     f"expected increment: {used_increment}\n"
-                     f"tolerance: {tolerance}")
-        return False
-    if abs(origin_available_count - current_available_count - used_increment) > tolerance:
-        logger.error(f"The DRAM crm available count is not changed as expected:\n"
-                     f"origin: {origin_used_count}\n"
-                     f"current: {current_used_count}\n"
-                     f"expected increment: {used_increment}\n"
-                     f"tolerance: {tolerance}")
-        return False
-    return True
