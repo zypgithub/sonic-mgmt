@@ -99,7 +99,22 @@ class NvueSystemCli(NvueBaseCli):
 
     @staticmethod
     @check_output
-    def action_reboot(engine, device, resource_path, op_param="", should_wait_till_system_ready=True, recovery_engine=None, topology_obj=None):
+    def action_import_tpm_oiak(engine, resource_path, data='', remote_url=''):
+        path = resource_path.replace('/', ' ').strip()
+        cmd = f'nv action import {path}'
+        if data:
+            cmd += f' data {data}'
+            return engine.run_cmd(cmd)
+        if remote_url:
+            cmd += f' remote-url {remote_url}'
+        cmd = ' '.join(cmd.split())
+        logging.info(f"Running '{cmd}' on dut using NVUE")
+        return engine.run_cmd(cmd)
+
+    @staticmethod
+    @check_output
+    def action_reboot(engine, device, resource_path, op_param="", should_wait_till_system_ready=True,
+                      recovery_engine=None, topology_obj=None, system_is_ready_timeout=None):
         """
         Rebooting the switch
         """
@@ -109,7 +124,7 @@ class NvueSystemCli(NvueBaseCli):
         logging.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
         return DutUtilsTool.reload(engine=engine, device=device, command=cmd,
                                    should_wait_till_system_ready=should_wait_till_system_ready,
-                                   confirm=True, recovery_engine=recovery_engine, topology_obj=topology_obj).verify_result()
+                                   confirm=True, recovery_engine=recovery_engine, topology_obj=topology_obj, system_is_ready_timeout=system_is_ready_timeout).verify_result()
 
     @staticmethod
     @check_output

@@ -139,10 +139,6 @@ def test_platform_firmware_image_rename(engines, devices, topology_obj, clear_as
         logging.info("Delete original image name, should fail")
         platform.firmware.asic.files.file_name[fetched_image_name].action_delete(should_succeed=False)
 
-    with allure.step("Install new image name"):
-        logging.info("Install new image name: {}".format(new_name))
-        fetched_image_file.action_file_install_with_reboot(force=True).verify_result(should_succeed=True)
-
 
 @pytest.mark.checklist
 @pytest.mark.simx

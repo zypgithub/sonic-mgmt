@@ -18,7 +18,7 @@ class Reboot(BaseComponent):
     def __init__(self, parent_obj=None):
         BaseComponent.__init__(self, parent=parent_obj, path='/reboot')
 
-    def action_reboot(self, engine=None, device=None, params="", should_wait_till_system_ready=True, recovery_engine=None, topology_obj=None):
+    def action_reboot(self, engine=None, device=None, params="", should_wait_till_system_ready=True, recovery_engine=None, topology_obj=None, system_is_ready_timeout=None):
         with allure.step('Execute action for {resource_path}'.format(resource_path=self.get_resource_path())):
             if not engine:
                 engine = TestToolkit.engines.dut
@@ -29,7 +29,7 @@ class Reboot(BaseComponent):
             start_time = time.time()
             res_obj = SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].action_reboot,
                                                       engine, device, self.get_resource_path().replace('/reboot', ' '),
-                                                      params, should_wait_till_system_ready, recovery_engine, topology_obj)
+                                                      params, should_wait_till_system_ready, recovery_engine, topology_obj, system_is_ready_timeout)
             end_time = time.time()
             duration = end_time - start_time
 

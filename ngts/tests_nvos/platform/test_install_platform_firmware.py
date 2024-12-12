@@ -37,7 +37,7 @@ def test_install_platform_firmware(engines, devices, test_name, topology_obj, cl
     platform = Platform()
     fae = Fae()
     component_name = 'asic'
-    test_image_name = "test_image.mfa"
+    test_image_name = "test_fw_asic.mfa"
     fw_has_changed = False
     fw_file, filename, version_name = BmcTool.get_fw_component_version_latest(component_name)
 
@@ -58,13 +58,15 @@ def test_install_platform_firmware(engines, devices, test_name, topology_obj, cl
                     player_engine = engines['sonic_mgmt']
                     scp_path = 'scp://{}:{}@{}'.format(player_engine.username, player_engine.password, player_engine.ip)
                     platform.firmware.asic.action_fetch(fw_file, base_url=scp_path).verify_result()
+                    fetched_image_file = platform.firmware.asic.files.file_name[filename]
+                    fetched_image_file.action_rename(test_image_name, expected_str="", rewrite_file_name=False)
 
                 with allure.step("Install firmware and verify"):
                     platform.firmware.asic.set(PlatformConsts.FW_SOURCE, PlatformConsts.FW_SOURCE_CUSTOM, apply=True)
                     NvueGeneralCli.save_config(engines.dut)
                     res_obj, duration = OperationTime.save_duration('install user FW', 'include reboot', test_name,
                                                                     install_new_image_fw, platform, test_name,
-                                                                    filename)
+                                                                    test_image_name)
                 with allure.step('Verify the firmware installed successfully'):
                     verify_firmware_with_platform_and_fae_cmd(platform, fae, version_name, version_name)
                     validate_all_asics_have_same_info()
