@@ -31,21 +31,21 @@ class TransceiversConsts:
             transceiver_type='Xodin',
             last_release_path=f"{TRANSCEIVERS_FIRMWARES_PATH}39_Xodin/{TRANSCEIVERS_RELEASE}",
             test_versions_path=f"{TRANSCEIVERS_APPROVED_FIRMWARES_PATH}Xodin/",
-            upgrade_version_name="fw_39_230_00019_dev_signed.bin",
+            upgrade_version_name="fw_39_230_00020_dev_signed.bin",
             downgrade_version_name="fw_39_230_00018_dev_signed.bin",
-            upgrade_version_number="39.230.19",
+            upgrade_version_number="39.230.20",
             downgrade_version_number="39.230.18",
-            installation_time=90
+            installation_time=180
         ),
         '70': Transceiver(
             transceiver_type='Wolverine',
             last_release_path=f"{TRANSCEIVERS_FIRMWARES_PATH}70_Wolverine/{TRANSCEIVERS_RELEASE}",
             test_versions_path=f"{TRANSCEIVERS_APPROVED_FIRMWARES_PATH}Wolverine/",
-            upgrade_version_name="fw_70_230_00013_dev_signed_WOLVERINE_DK.bin",
-            downgrade_version_name="fw_70_220_01076_dev_signed_WOLVERINE_DK.bin",
-            upgrade_version_number="70.230.013",
-            downgrade_version_number="70.220.1076",
-            installation_time=200
+            upgrade_version_name="fw_70_220_01073_dev_signed_WOLVERINE_DK.bin",
+            downgrade_version_name="fw_70_220_01070_dev_signed_WOLVERINE_DK.bin",
+            upgrade_version_number="70.220.1073",
+            downgrade_version_number="70.220.1070",
+            installation_time=360
         ),
         '46': Transceiver(
             transceiver_type='Bagheera',

@@ -76,6 +76,10 @@ def test_system_remarkable_requested_logs(engines, devices):
     fae = Fae()
     system = System()
 
+    with allure.step(f"rotate logs and make sure demon can send request to save logs"):
+        system.log.rotate_logs()
+        engines.dut.run_cmd("sudo ls /var/log/remarkable_logs_1/")
+
     try:
         with allure.step(f"configure requested by demon logs {RemarkableLogsConsts.REQUESTED_BY_DAEMON_LOGS}"):
             fae.system.log.remarkable_logs.set(op_param_name=f"{RemarkableLogsConsts.REQUESTED_BY_DAEMON_LOGS}", op_param_value=5, apply=True)
