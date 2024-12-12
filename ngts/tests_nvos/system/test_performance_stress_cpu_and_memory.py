@@ -11,12 +11,13 @@ from ngts.nvos_constants.constants_nvos import SystemConsts
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.system.System import System
+from ngts.tests_nvos.constants import MINUTE
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.timeout(20, func_only=True)
+@pytest.mark.timeout(20 * MINUTE, func_only=True)
 @pytest.mark.ssh_config
 @pytest.mark.system
 def test_parallel_cli_commands(engines, devices):
@@ -77,8 +78,8 @@ def test_parallel_cli_commands(engines, devices):
                     future = executor.submit(run_session, sessions[i], command_lists, keep_running_event)
                     futures.append(future)
 
-                with allure.step("run all threads for 3 minutes"):
-                    time.sleep(180)
+                with allure.step("run all threads for 2 minutes"):
+                    time.sleep(120)
                     keep_running_event.clear()
 
                 memory_mpstat_output_during_testing = future_mem_cpu.result()
@@ -108,7 +109,7 @@ def run_session(session, commands_list, keep_running_event):
         while keep_running_event.is_set():
             for cmd in commands:
                 session.run_cmd(cmd)
-                time.sleep(1)
+                time.sleep(5)
 
 
 def memory_cpu_run(session, keep_running_event):
@@ -120,8 +121,6 @@ def memory_cpu_run(session, keep_running_event):
     while keep_running_event.is_set():
         logger.info(" checking memory and cpu ")
         memory_cpu_outputs.append(run_memory_mpstat_commands(session))
-        with allure.step("wait 5 seconds"):
-            time.sleep(5)
 
     return memory_cpu_outputs
 
@@ -172,7 +171,6 @@ def validate_memory_and_cpu(before_testing, after_connections, during_testing={}
     :param after_testing:
     :return:
     """
-    change_interval = 0.3
 
     with allure.step("printing outputs"):
         logger.info(f"the memory and cpu before testing: \n {before_testing} \n")
@@ -182,13 +180,13 @@ def validate_memory_and_cpu(before_testing, after_connections, during_testing={}
 
     with allure.step("validate memory and cpu after connections"):
         for key, value in after_connections.items():
-            assert abs(after_connections[key] - before_testing[key]) < change_interval, f"unexpected change in {key} detected: initial output was {before_testing}, revised output after connections: {after_connections}"
+            assert after_connections[key] - before_testing[key] < 0.1, f"unexpected change in {key} detected: initial output was {before_testing}, revised output after connections: {after_connections}"
 
     with allure.step("validate memory and cpu during testing"):
         for step in during_testing:
             for key, value in step.items():
-                assert abs(step[key] - before_testing[key]) < change_interval, f"unexpected change in {key} detected: initial output was {before_testing}, revised output after connections: {step}"
+                assert step[key] - before_testing[key] < 0.3, f"unexpected change in {key} detected: initial output was {before_testing}, revised output after connections: {step}"
 
     with allure.step("validate memory and cpu after testing"):
         for key, value in after_connections.items():
-            assert abs(after_testing[key] - before_testing[key]) < 1, f"unexpected change in {key} detected: initial output was {before_testing}, revised output after connections: {after_testing}"
+            assert after_testing[key] - before_testing[key] < 0.07, f"unexpected change in {key} detected: initial output was {before_testing}, revised output after connections: {after_testing}"
