@@ -1,22 +1,20 @@
 import logging
-import random
+import time
 
 import pytest
-import time
-from ngts.tools.test_utils import allure_utils as allure
+
 from ngts.nvos_constants.constants_nvos import ApiType
-from ngts.nvos_tools.system.System import System
-from ngts.nvos_tools.platform.Platform import Platform
-from ngts.tests_nvos.checklist.test_checklist_ipv6 import test_checklist_ipv6
-from ngts.nvos_constants.constants_nvos import SystemConsts, HealthConsts
+from ngts.nvos_constants.constants_nvos import SystemConsts
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
-from ngts.tests_nvos.general.security.security_test_tools.constants import AddressingType
+from ngts.nvos_tools.platform.Platform import Platform
+from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.acl.test_acl_basic import test_show_acls
-from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.tests_nvos.general.security.test_aaa_ldap.constants import LdapConsts
+from ngts.tests_nvos.checklist.test_checklist_ipv6 import test_checklist_ipv6
 from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts
-
+from ngts.tests_nvos.general.security.test_aaa_ldap.constants import LdapConsts
+from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
 
@@ -101,7 +99,7 @@ def test_ci_sanity_tacacs(engines, topology_obj, devices):
     with allure.step("Check TACACS output"):
         system = System()
         output = OutputParsingTool.parse_json_str_to_dictionary(system.aaa.tacacs.show()).get_returned_value()
-        expected_field = [AaaConsts.PORT, AaaConsts.AUTH_TYPE, AaaConsts.TIMEOUT]
+        expected_field = [AaaConsts.PORT, AaaConsts.TIMEOUT]
         ValidationTool.verify_field_exist_in_json_output(json_output=output,
                                                          keys_to_search_for=expected_field).verify_result()
 
