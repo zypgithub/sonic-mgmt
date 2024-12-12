@@ -106,20 +106,20 @@ def generic_aaa_test_accounting_basic(test_api, engines, topology_obj, request, 
                                  switch_hostname=switch_hostname)
 
 
-def generic_aaa_test_accounting_top_server_only(test_api, engines, topology_obj, request, switch_hostname: str,
-                                                local_adminuser: UserInfo,
-                                                remote_aaa_type: str, remote_aaa_obj: RemoteAaaResource,
-                                                server1: RemoteAaaServerInfo, server2: RemoteAaaServerInfo,
-                                                skip_local_users: bool = True,
-                                                skip_auth_mediums: List[str] = None):
+def generic_aaa_test_accounting_lowest_server_only(test_api, engines, topology_obj, request, switch_hostname: str,
+                                                   local_adminuser: UserInfo,
+                                                   remote_aaa_type: str, remote_aaa_obj: RemoteAaaResource,
+                                                   lowest_server: RemoteAaaServerInfo, highest_server: RemoteAaaServerInfo,
+                                                   skip_local_users: bool = True,
+                                                   skip_auth_mediums: List[str] = None):
     """
-    @summary: Verify that accounting logs are sent to top server only
+    @summary: Verify that accounting logs are sent to lowest server only
 
         Steps:
         1. configure remote-aaa with 2 servers
         2. enable accounting
         3. enable remote-aaa
-        4. verify accounting logs on top server only for remote-aaa users events
+        4. verify accounting logs on lowest server only for remote-aaa users events
 
     @param test_api: run commands with NVUE / OpenApi
     @param engines: engines object
@@ -128,8 +128,8 @@ def generic_aaa_test_accounting_top_server_only(test_api, engines, topology_obj,
     @param remote_aaa_type: name of he remote Aaa type (tacacs, ldap, radius)
     @param local_adminuser: info of local admin user
     @param remote_aaa_obj: BaseComponent object representing the feature resource
-    @param server1: object containing top remote server info
-    @param server2: object containing 2nd remote server info
+    @param lowest_server: object containing lowest remote server info
+    @param highest_server: object containing 2nd remote server info
     """
     assert remote_aaa_type in RemoteAaaType.ALL_TYPES, f'{remote_aaa_type} is not one of {RemoteAaaType.ALL_TYPES}'
     assert test_api in ApiType.ALL_TYPES, f'{test_api} is not one of {ApiType.ALL_TYPES}'
@@ -138,8 +138,8 @@ def generic_aaa_test_accounting_top_server_only(test_api, engines, topology_obj,
     item = request.node
 
     with allure.step(f'Configure {remote_aaa_type} servers'):
-        server1.configure(engines, set_explicit_priority=True)
-        server2.configure(engines, set_explicit_priority=True)
+        lowest_server.configure(engines, set_explicit_priority=True)
+        highest_server.configure(engines, set_explicit_priority=True)
 
     with allure.step(f'Set {remote_aaa_type} accounting enabled'):
         remote_aaa_obj.accounting.set(AccountingFields.STATE, AaaConsts.ENABLED)
@@ -150,44 +150,44 @@ def generic_aaa_test_accounting_top_server_only(test_api, engines, topology_obj,
             wait_for_ldap_nvued_restart_workaround(item, engine_to_use=engines.dut)
 
     with allure.step(
-            f'Verify accounting logs appear for {remote_aaa_type} users on 1st server ({server1.hostname}) only'):
+            f'Verify accounting logs appear for {remote_aaa_type} users on 1st server ({lowest_server.hostname}) only'):
         with allure.step(f'Verify logs exist for {remote_aaa_type}1 user'):
-            server1_user: UserInfo = random.choice(server1.users)
-            verify_user_auth(engines, topology_obj, server1_user, True, verify_authorization=False,
-                             accounting_servers=[server1, server2], expect_accounting_logs=[True, False],
+            lowest_server_user: UserInfo = random.choice(lowest_server.users)
+            verify_user_auth(engines, topology_obj, lowest_server_user, True, verify_authorization=False,
+                             accounting_servers=[lowest_server, highest_server], expect_accounting_logs=[True, False],
                              skip_auth_mediums=skip_auth_mediums, switch_hostname=switch_hostname)
 
         if remote_aaa_type != RemoteAaaType.LDAP:  # with LDAP - 2nd server user cant auth even with failthrough enabled
             with allure.step(f'Verify logs exist for {remote_aaa_type}2 user'):
-                server2_user: UserInfo = random.choice(server2.users)
-                verify_user_auth(engines, topology_obj, server2_user, True, verify_authorization=False,
-                                 accounting_servers=[server1, server2], expect_accounting_logs=[True, False],
+                highest_server_user: UserInfo = random.choice(highest_server.users)
+                verify_user_auth(engines, topology_obj, highest_server_user, True, verify_authorization=False,
+                                 accounting_servers=[lowest_server, highest_server], expect_accounting_logs=[True, False],
                                  skip_auth_mediums=skip_auth_mediums, switch_hostname=switch_hostname)
 
         if not skip_local_users:
             with allure.step(f'Verify no logs for local user'):
                 verify_user_auth(engines, topology_obj, local_adminuser, True, verify_authorization=False,
-                                 accounting_servers=[server1, server2], expect_accounting_logs=[False, False],
+                                 accounting_servers=[lowest_server, highest_server], expect_accounting_logs=[False, False],
                                  skip_auth_mediums=skip_auth_mediums, switch_hostname=switch_hostname)
 
 
-def generic_aaa_test_accounting_unreachable_top_server(test_api, engines, topology_obj, request, switch_hostname: str,
-                                                       local_adminuser: UserInfo,
-                                                       remote_aaa_type: str, remote_aaa_obj: RemoteAaaResource,
-                                                       server1: RemoteAaaServerInfo, server2: RemoteAaaServerInfo,
-                                                       skip_local_users: bool = True,
-                                                       skip_auth_mediums: List[str] = None):
+def generic_aaa_test_accounting_unreachable_lowest_server(test_api, engines, topology_obj, request, switch_hostname: str,
+                                                          local_adminuser: UserInfo,
+                                                          remote_aaa_type: str, remote_aaa_obj: RemoteAaaResource,
+                                                          lowest_server: RemoteAaaServerInfo, highest_server: RemoteAaaServerInfo,
+                                                          skip_local_users: bool = True,
+                                                          skip_auth_mediums: List[str] = None):
     """
-    @summary: Verify that when top server becomes unreachable, accounting logs are sent to next available server only
+    @summary: Verify that when lowest server becomes unreachable, accounting logs are sent to next available server only
 
         Steps:
-        1. configure remote-aaa with several top unreachable servers
+        1. configure remote-aaa with several lowest unreachable servers
         2. configure also reachable server with lower priority
         3. enable accounting
         4. enable remote-aaa
-        5. verify accounting logs on top available server only for remote-aaa users events
+        5. verify accounting logs on lowest available server only for remote-aaa users events
         6. make unreachable server reachable
-        7. verify accounting logs now on the top reachable server
+        7. verify accounting logs now on the lowest reachable server
 
     @param test_api: run commands with NVUE / OpenApi
     @param engines: engines object
@@ -196,8 +196,8 @@ def generic_aaa_test_accounting_unreachable_top_server(test_api, engines, topolo
     @param remote_aaa_type: name of he remote Aaa type (tacacs, ldap, radius)
     @param local_adminuser: info of local admin user
     @param remote_aaa_obj: BaseComponent object representing the feature resource
-    @param server1: object containing top remote server info
-    @param server2: object containing 2nd remote server info
+    @param lowest_server: object containing lowest remote server info
+    @param highest_server: object containing 2nd remote server info
     """
     assert remote_aaa_type in RemoteAaaType.ALL_TYPES, f'{remote_aaa_type} is not one of {RemoteAaaType.ALL_TYPES}'
     assert test_api in ApiType.ALL_TYPES, f'{test_api} is not one of {ApiType.ALL_TYPES}'
@@ -206,15 +206,15 @@ def generic_aaa_test_accounting_unreachable_top_server(test_api, engines, topolo
     item = request.node
 
     with allure.step(f'Configure 2 real {remote_aaa_type} below several unreachable servers'):
-        server2.priority = 1
-        server1.priority = 2
+        lowest_server.priority = 1
+        highest_server.priority = 2
         remote_aaa_obj.set(AaaConsts.SECRET, 'secret')
         # remote_aaa_obj.hostname.hostname_id['3.3.3.3'].set(AaaConsts.PRIORITY, 3)
         # remote_aaa_obj.hostname.hostname_id['4.4.4.4'].set(AaaConsts.PRIORITY, 4)
         # remote_aaa_obj.hostname.hostname_id['5.5.5.5'].set(AaaConsts.PRIORITY, 5)
         # remote_aaa_obj.hostname.hostname_id['6.6.6.6'].set(AaaConsts.PRIORITY, 6)
-        server1.configure(engines, set_explicit_priority=True)
-        server2.configure(engines, set_explicit_priority=True)
+        lowest_server.configure(engines, set_explicit_priority=True)
+        highest_server.configure(engines, set_explicit_priority=True)
 
     with allure.step(f'Set {remote_aaa_type} accounting enabled'):
         remote_aaa_obj.accounting.set(AccountingFields.STATE, AaaConsts.ENABLED)
@@ -225,69 +225,69 @@ def generic_aaa_test_accounting_unreachable_top_server(test_api, engines, topolo
             wait_for_ldap_nvued_restart_workaround(item, engine_to_use=engines.dut)
 
     with allure.step(
-            f'Verify accounting logs appear for {remote_aaa_type} users on 1st available server ({server1.hostname}) only'):
+            f'Verify accounting logs appear for {remote_aaa_type} users on 1st available server ({lowest_server.hostname}) only'):
         with allure.step(f'Verify logs exist for {remote_aaa_type}1 user'):
-            server1_user: UserInfo = random.choice(server1.users)
-            verify_user_auth(engines, topology_obj, server1_user, True, verify_authorization=False,
-                             accounting_servers=[server1, server2], expect_accounting_logs=[True, False],
+            lowest_server_user: UserInfo = random.choice(lowest_server.users)
+            verify_user_auth(engines, topology_obj, lowest_server_user, True, verify_authorization=False,
+                             accounting_servers=[lowest_server, highest_server], expect_accounting_logs=[True, False],
                              skip_auth_mediums=skip_auth_mediums, switch_hostname=switch_hostname)
 
         if remote_aaa_type != RemoteAaaType.LDAP:  # with LDAP - 2nd server user cant auth even with failthrough enabled
             with allure.step(f'Verify logs exist for {remote_aaa_type}2 user'):
-                server2_user: UserInfo = random.choice(server2.users)
-                verify_user_auth(engines, topology_obj, server2_user, True, verify_authorization=False,
-                                 accounting_servers=[server1, server2], expect_accounting_logs=[True, False],
+                highest_server_user: UserInfo = random.choice(highest_server.users)
+                verify_user_auth(engines, topology_obj, highest_server_user, True, verify_authorization=False,
+                                 accounting_servers=[lowest_server, highest_server], expect_accounting_logs=[True, False],
                                  skip_auth_mediums=skip_auth_mediums, switch_hostname=switch_hostname)
 
         if not skip_local_users:
             with allure.step(f'Verify no logs for local user'):
                 verify_user_auth(engines, topology_obj, local_adminuser, True, verify_authorization=False,
-                                 accounting_servers=[server1, server2], expect_accounting_logs=[False, False],
+                                 accounting_servers=[lowest_server, highest_server], expect_accounting_logs=[False, False],
                                  skip_auth_mediums=skip_auth_mediums, switch_hostname=switch_hostname)
 
-    with allure.step(f'Make server1 ({server1.hostname}) also unreachable'):
-        server1.make_unreachable(engines, apply=True)
+    with allure.step(f'Make lowest_server ({lowest_server.hostname}) also unreachable'):
+        lowest_server.make_unreachable(engines, apply=True)
         if remote_aaa_type == RemoteAaaType.LDAP:
             wait_for_ldap_nvued_restart_workaround(item, engine_to_use=engines.dut)
 
     with allure.step(
-            f'Verify accounting logs appear for {remote_aaa_type} users on 1st available server ({server2.hostname}) only'):
+            f'Verify accounting logs appear for {remote_aaa_type} users on 1st available server ({highest_server.hostname}) only'):
         with allure.step(f'Verify logs exist for {remote_aaa_type}2 user'):
-            server2_user: UserInfo = random.choice(server2.users)
-            verify_user_auth(engines, topology_obj, server2_user, True, verify_authorization=False,
-                             accounting_servers=[server1, server2], expect_accounting_logs=[False, True],
+            highest_server_user: UserInfo = random.choice(highest_server.users)
+            verify_user_auth(engines, topology_obj, highest_server_user, True, verify_authorization=False,
+                             accounting_servers=[lowest_server, highest_server], expect_accounting_logs=[False, True],
                              skip_auth_mediums=skip_auth_mediums, switch_hostname=switch_hostname)
 
         if not skip_local_users:
             with allure.step(f'Verify no logs for local user'):
                 verify_user_auth(engines, topology_obj, local_adminuser, True, verify_authorization=False,
-                                 accounting_servers=[server1, server2], expect_accounting_logs=[False, False],
+                                 accounting_servers=[lowest_server, highest_server], expect_accounting_logs=[False, False],
                                  skip_auth_mediums=skip_auth_mediums, switch_hostname=switch_hostname)
 
-    with allure.step(f'Make server1 ({server1.hostname}) reachable again'):
-        server1.make_reachable(engines, apply=True)
+    with allure.step(f'Make lowest_server ({lowest_server.hostname}) reachable again'):
+        lowest_server.make_reachable(engines, apply=True)
         if remote_aaa_type == RemoteAaaType.LDAP:
             wait_for_ldap_nvued_restart_workaround(item, engine_to_use=engines.dut)
 
     with allure.step(
-            f'Verify accounting logs appear for {remote_aaa_type} users on 1st available server ({server1.hostname}) only'):
+            f'Verify accounting logs appear for {remote_aaa_type} users on 1st available server ({lowest_server.hostname}) only'):
         with allure.step(f'Verify logs exist for {remote_aaa_type}1 user'):
-            server1_user: UserInfo = random.choice(server1.users)
-            verify_user_auth(engines, topology_obj, server1_user, True, verify_authorization=False,
-                             accounting_servers=[server1, server2], expect_accounting_logs=[True, False],
+            lowest_server_user: UserInfo = random.choice(lowest_server.users)
+            verify_user_auth(engines, topology_obj, lowest_server_user, True, verify_authorization=False,
+                             accounting_servers=[lowest_server, highest_server], expect_accounting_logs=[True, False],
                              skip_auth_mediums=skip_auth_mediums, switch_hostname=switch_hostname)
 
         if remote_aaa_type != RemoteAaaType.LDAP:  # with LDAP - 2nd server user cant auth even with failthrough enabled
             with allure.step(f'Verify logs exist for {remote_aaa_type}2 user'):
-                server2_user: UserInfo = random.choice(server2.users)
-                verify_user_auth(engines, topology_obj, server2_user, True, verify_authorization=False,
-                                 accounting_servers=[server1, server2], expect_accounting_logs=[True, False],
+                highest_server_user: UserInfo = random.choice(highest_server.users)
+                verify_user_auth(engines, topology_obj, highest_server_user, True, verify_authorization=False,
+                                 accounting_servers=[lowest_server, highest_server], expect_accounting_logs=[True, False],
                                  skip_auth_mediums=skip_auth_mediums, switch_hostname=switch_hostname)
 
         if not skip_local_users:
             with allure.step(f'Verify no logs for local user'):
                 verify_user_auth(engines, topology_obj, local_adminuser, True, verify_authorization=False,
-                                 accounting_servers=[server1, server2], expect_accounting_logs=[False, False],
+                                 accounting_servers=[lowest_server, highest_server], expect_accounting_logs=[False, False],
                                  skip_auth_mediums=skip_auth_mediums, switch_hostname=switch_hostname)
 
 

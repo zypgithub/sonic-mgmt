@@ -13,9 +13,11 @@ class AaaConsts:
     LOCALMONITOR = 'localmonitor'
     STRONG_PASSWORD = 'Your_password1'
 
-    HOSTNAME = 'hostname'
+    SERVER = 'server'
     TIMEOUT = 'timeout'
     AUTH_TYPE = 'auth-type'
+    AUTHENTICATION_MODE = 'mode'
+    SERVER_AUTH_MODE = 'auth-mode'
     SECRET = 'secret'
     PORT = 'port'
     RETRANSMIT = 'retransmit'
@@ -95,6 +97,13 @@ class AuthType:
     PAP = 'pap'
     CHAP = 'chap'
     # MSCHAPV2 = 'mschapv2'
+    LOGIN = 'login'
+    ALL_TYPES = [PAP, CHAP, LOGIN]
+
+
+class AuthMode:
+    PAP = 'pap'
+    CHAP = 'chap'
     LOGIN = 'login'
     ALL_TYPES = [PAP, CHAP, LOGIN]
 

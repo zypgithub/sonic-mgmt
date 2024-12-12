@@ -9,7 +9,7 @@ class RadiusConsts:
     AUTH_TYPES = [AaaConsts.PAP, AaaConsts.CHAP, AaaConsts.MSCHAPV2]
 
     VALID_VALUES = {
-        AaaConsts.HOSTNAME: str,
+        AaaConsts.SERVER: str,
         AaaConsts.TIMEOUT: list(range(1, 61)),
         AaaConsts.AUTH_TYPE: AUTH_TYPES,
         AaaConsts.SECRET: str,
@@ -21,7 +21,7 @@ class RadiusConsts:
 
     DEFAULT_RADIUS_CONF = {
         AaaConsts.AUTH_TYPE: AaaConsts.MSCHAPV2,
-        AaaConsts.HOSTNAME: {},
+        AaaConsts.SERVER: {},
         AaaConsts.PORT: 1812,
         AaaConsts.SECRET: '*',
         AaaConsts.RETRANSMIT: 0,
@@ -39,7 +39,7 @@ class RadiusConsts:
     }
 
     FIELD_IS_NUMERIC = {
-        AaaConsts.HOSTNAME: False,
+        AaaConsts.SERVER: False,
         AaaConsts.TIMEOUT: True,
         AaaConsts.AUTH_TYPE: False,
         AaaConsts.SECRET: False,
