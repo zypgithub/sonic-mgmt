@@ -23,7 +23,7 @@ logger = logging.getLogger()
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 @pytest.mark.timeout(25 * MINUTE, func_only=True)
-def test_cluster_app_log_level(engines, devices, test_api, has_loopbox):
+def test_cluster_app_log_level(engines, devices, test_api, has_loopbox, standalone_system, setup_name):
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
 
@@ -32,14 +32,14 @@ def test_cluster_app_log_level(engines, devices, test_api, has_loopbox):
             cluster = Cluster()
             system = System()
             logger.info("Setting cluster state to enabled")
-            ClusterTools.start_cluster(cluster, output_format)
+            ClusterTools.start_cluster(cluster, setup_name, output_format)
         with allure.step("Validate initial log level"):
             for app in ClusterConsts.INITIAL_EXPECTED_APPS:
                 ClusterTools.verify_log_level(ClusterConsts.DEFAULT_LOG_LEVEL, app, output_format, cluster)
             _rotate_logs(system)
             logger.info(f"Sleeping for {ClusterConsts.SLEEP_AFTER_LOG_ROTATE} seconds to gather log messages and verify its level")
             time.sleep(ClusterConsts.SLEEP_AFTER_LOG_ROTATE)
-            ClusterTools.verify_log_messages_log_level(ClusterConsts.DEFAULT_LOG_LEVEL, system, test_api, cluster)
+            ClusterTools.verify_log_messages_log_level(ClusterConsts.DEFAULT_LOG_LEVEL, system, test_api, cluster, setup_name)
 
         with allure.step("Set log level to undefined log level"):
             for app in ClusterConsts.INITIAL_EXPECTED_APPS:
@@ -49,7 +49,7 @@ def test_cluster_app_log_level(engines, devices, test_api, has_loopbox):
             _rotate_logs(system)
             logger.info(f"Sleeping for {ClusterConsts.SLEEP_AFTER_LOG_ROTATE} seconds to gather log messages and verify its level")
             time.sleep(ClusterConsts.SLEEP_AFTER_LOG_ROTATE)
-            ClusterTools.verify_log_messages_log_level(ClusterConsts.DEFAULT_LOG_LEVEL, system, test_api, cluster)
+            ClusterTools.verify_log_messages_log_level(ClusterConsts.DEFAULT_LOG_LEVEL, system, test_api, cluster, setup_name)
 
         with allure.step("Choose random log level, and set cluster app log level to"):
             log_level = random.choice(ClusterConsts.ClusterAppsLogLevelsList)
@@ -59,7 +59,7 @@ def test_cluster_app_log_level(engines, devices, test_api, has_loopbox):
             _rotate_logs(system)
             logger.info(f"Sleeping for {ClusterConsts.SLEEP_AFTER_LOG_ROTATE} seconds to gather log messages and verify its level")
             time.sleep(ClusterConsts.SLEEP_AFTER_LOG_ROTATE)
-            ClusterTools.verify_log_messages_log_level(log_level, system, test_api, cluster)
+            ClusterTools.verify_log_messages_log_level(log_level, system, test_api, cluster, setup_name)
 
     finally:
         TestToolkit.tested_api = 'NVUE'
@@ -76,14 +76,14 @@ def test_cluster_app_log_level(engines, devices, test_api, has_loopbox):
         _rotate_logs(system)
         logger.info(f"Sleeping for {ClusterConsts.SLEEP_AFTER_LOG_ROTATE} seconds to gather log messages and verify its level")
         time.sleep(ClusterConsts.SLEEP_AFTER_LOG_ROTATE)
-        ClusterTools.verify_log_messages_log_level(ClusterConsts.DEFAULT_LOG_LEVEL, system, test_api, cluster)
+        ClusterTools.verify_log_messages_log_level(ClusterConsts.DEFAULT_LOG_LEVEL, system, test_api, cluster, setup_name)
 
 
 @disabled_access_ports
 @pytest.mark.nmx
 @pytest.mark.timeout(30 * MINUTE, func_only=True)
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_cluster_app_log_level_under_stress(engines, devices, test_api, test_name, has_loopbox):
+def test_cluster_app_log_level_under_stress(engines, devices, test_api, test_name, has_loopbox, standalone_system, setup_name):
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
 
@@ -93,7 +93,7 @@ def test_cluster_app_log_level_under_stress(engines, devices, test_api, test_nam
             system = System()
             logger.info("Setting cluster state to enabled")
             installed_packages = []
-            ClusterTools.start_cluster(cluster, output_format)
+            ClusterTools.start_cluster(cluster, setup_name, output_format)
 
             installed_packages = StressResourcesTool.stress_cpu_and_memory(engines, devices.dut.core_count)
             timeout = 300  # for example, 300 seconds
@@ -113,7 +113,7 @@ def test_cluster_app_log_level_under_stress(engines, devices, test_api, test_nam
                 _rotate_logs(system)
                 logger.info(f"Sleeping for {ClusterConsts.SLEEP_AFTER_LOG_ROTATE} seconds to gather log messages and verify its level")
                 time.sleep(ClusterConsts.SLEEP_AFTER_LOG_ROTATE)
-                ClusterTools.verify_log_messages_log_level(log_level, system, test_api, cluster)
+                ClusterTools.verify_log_messages_log_level(log_level, system, test_api, cluster, setup_name)
     finally:
         if installed_packages:
             StressResourcesTool.delete_packages(engines, installed_packages)
@@ -133,7 +133,7 @@ def test_cluster_app_log_level_under_stress(engines, devices, test_api, test_nam
         _rotate_logs(system)
         logger.info(f"Sleeping for {ClusterConsts.SLEEP_AFTER_LOG_ROTATE} seconds to gather log messages and verify its level")
         time.sleep(ClusterConsts.SLEEP_AFTER_LOG_ROTATE)
-        ClusterTools.verify_log_messages_log_level(ClusterConsts.DEFAULT_LOG_LEVEL, system, test_api, cluster)
+        ClusterTools.verify_log_messages_log_level(ClusterConsts.DEFAULT_LOG_LEVEL, system, test_api, cluster, setup_name)
 
 
 def _rotate_logs(system):

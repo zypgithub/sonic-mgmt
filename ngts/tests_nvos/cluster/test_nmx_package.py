@@ -26,9 +26,9 @@ def clear_cluster_package_files():
 
 
 @pytest.fixture(scope='session', autouse=True)
-def enable_cluster_and_stop_apps():
+def enable_cluster_and_stop_apps(setup_name):
     cluster = Cluster()
-    ClusterTools.start_cluster(cluster, OutputFormat.json)
+    ClusterTools.start_cluster(cluster, setup_name, OutputFormat.json)
     for app in ClusterConsts.INITIAL_EXPECTED_APPS:
         cluster.apps.app_name[app].action_stop_cluster_app().verify_result()
     yield

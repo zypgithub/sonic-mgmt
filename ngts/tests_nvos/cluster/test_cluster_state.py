@@ -25,7 +25,7 @@ logger = logging.getLogger()
 @pytest.mark.nvl_ci
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 @pytest.mark.timeout(30 * MINUTE, func_only=True)
-def test_cluster_state(engines, devices, test_api, has_loopbox):
+def test_cluster_state(engines, devices, test_api, has_loopbox, standalone_system, setup_name):
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
 
@@ -111,7 +111,7 @@ def test_cluster_state(engines, devices, test_api, has_loopbox):
 @pytest.mark.timeout(45 * MINUTE, func_only=True)
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_stress_cluster_state(engines, devices, test_api, test_name, has_loopbox):
+def test_stress_cluster_state(engines, devices, test_api, test_name, has_loopbox, standalone_system, setup_name):
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
 
@@ -122,7 +122,7 @@ def test_stress_cluster_state(engines, devices, test_api, test_name, has_loopbox
         with allure.step("Stress testing cluster state"):
             for i in range(10):
                 logger.info(f"Starting iteration {i}")
-                result_obj, duration = OperationTime.save_duration('start stop cluster', '', test_name, ClusterTools.start_stop_cluster, cluster, output_format)
+                result_obj, duration = OperationTime.save_duration('start stop cluster', '', test_name, ClusterTools.start_stop_cluster, cluster, setup_name, output_format)
                 OperationTime.verify_operation_time(duration, 'start stop cluster').verify_result()
 
     finally:
@@ -133,7 +133,7 @@ def test_stress_cluster_state(engines, devices, test_api, test_name, has_loopbox
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 @pytest.mark.timeout(30 * MINUTE, func_only=True)
-def test_cluster_state_with_stressed_resources(engines, devices, test_api, test_name, has_loopbox):
+def test_cluster_state_with_stressed_resources(engines, devices, test_api, test_name, has_loopbox, standalone_system, setup_name):
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
 
@@ -151,7 +151,7 @@ def test_cluster_state_with_stressed_resources(engines, devices, test_api, test_
 
             # Loop until the timeout is reached
             while time.time() - start_time < timeout:
-                result_obj, duration = OperationTime.save_duration('start stop cluster stressed resources', '', test_name, ClusterTools.start_stop_cluster, cluster, output_format)
+                result_obj, duration = OperationTime.save_duration('start stop cluster stressed resources', '', test_name, ClusterTools.start_stop_cluster, cluster, setup_name, output_format)
                 OperationTime.verify_operation_time(duration, 'start stop cluster stressed resources').verify_result()
     finally:
         if installed_packages:

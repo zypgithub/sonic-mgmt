@@ -22,9 +22,9 @@ logger = logging.getLogger()
 
 
 @pytest.fixture(scope='module', autouse=True)
-def enable_stop_cluster():
+def enable_stop_cluster(setup_name):
     cluster = Cluster()
-    ClusterTools.start_cluster(cluster, OutputFormat.json)
+    ClusterTools.start_cluster(cluster, setup_name, OutputFormat.json)
     yield
     ClusterTools.stop_cluster(cluster, OutputFormat.json)
 

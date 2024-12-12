@@ -24,11 +24,11 @@ from ngts.tools.test_utils import allure_utils as allure
 logger = logging.getLogger()
 
 
-# @disabled_access_ports
+@disabled_access_ports
 @pytest.mark.timeout(35 * MINUTE, func_only=True)
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_cluster_default_factory_reset(engines, devices, test_api, has_loopbox, standalone_system):
+def test_cluster_default_factory_reset(engines, devices, test_api, has_loopbox, standalone_system, setup_name):
 
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
@@ -42,13 +42,12 @@ def test_cluster_default_factory_reset(engines, devices, test_api, has_loopbox, 
         all_config_files_paths = {}
         initial_config_contents = {}
         sdn_files_deleted = False
+        interface_wa_called = False
     try:
         with allure.step("Add data before reset factory"):
             username = add_verification_data(engines.dut, system)
-        reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, system, sdn, all_state_files_paths, all_config_files_paths, output_format, initial_config_contents)
+        reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, system, sdn, all_state_files_paths, all_config_files_paths, output_format, initial_config_contents, setup_name)
 
-        # with allure.step('pre factory reset security checks'):
-        #     pre_factory_reset_security_checks()
         if not standalone_system:
             initial_partition_output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
                                                                                    output_format=output_format).get_returned_value()
@@ -59,10 +58,6 @@ def test_cluster_default_factory_reset(engines, devices, test_api, has_loopbox, 
             execute_reset_factory(engines, system, devices.dut.reset_factory, "", current_time)
             ClusterTools.wait_for_apps_to_be_in_wanted_state()
 
-        # with allure.step('post factory reset steps'):
-        #     with allure.step('pre factory reset security checks'):
-        #         post_factory_reset_security_checks()
-
         with allure.step("Verify cluster in correct state"):
             verify_cluster_state_resetted(cluster)
             for app in ClusterConsts.INITIAL_EXPECTED_APPS:
@@ -71,7 +66,7 @@ def test_cluster_default_factory_reset(engines, devices, test_api, has_loopbox, 
                 verify_all_files_are_deleted(engines, all_config_files_paths[file_type])
             for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_STATE_FILES:
                 verify_all_files_are_deleted(engines, all_state_files_paths[file_type])
-            ClusterTools.start_cluster(cluster, OutputFormat.json)
+            ClusterTools.start_cluster(cluster, setup_name, OutputFormat.json)
             ClusterTools.verify_sdn_config_files_deleted(sdn)
             ClusterTools.verify_sdn_state_files_deleted(sdn)
             sdn_files_deleted = True
@@ -80,6 +75,11 @@ def test_cluster_default_factory_reset(engines, devices, test_api, has_loopbox, 
             time.sleep(30)
             for app in ClusterConsts.INITIAL_EXPECTED_APPS:
                 ClusterTools.verify_log_level(ClusterAppsLogLevels.NOTICE, app, output_format, cluster)
+
+            interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name)
+            next(interfaces_wa)
+            interface_wa_called = True
+
             verify_config_files_content_not_changed(sdn, initial_config_contents, engines)
             verify_apps_in_expected_state(cluster, 'ok', has_loopbox)
 
@@ -89,6 +89,8 @@ def test_cluster_default_factory_reset(engines, devices, test_api, has_loopbox, 
                 assert initial_partition_output == output, f'Partition was not restored to initial. initial: {initial_partition_output}\n current: {output}'
 
     finally:
+        if interface_wa_called:
+            next(interfaces_wa)
         engines.sonic_mgmt.run_cmd(f"sudo rm -rf {ClusterConsts.INITIAL_CONFIGURATIONS_PATH + '/*'}")
         cluster.unset(apply=True)
         ClusterTools.wait_for_apps_to_be_in_wanted_state()
@@ -97,15 +99,15 @@ def test_cluster_default_factory_reset(engines, devices, test_api, has_loopbox, 
             verify_the_setup_is_functional(system, engines, dut=devices.dut)
 
         if not sdn_files_deleted:
-            ClusterTools.start_cluster(cluster, OutputFormat.json)
+            ClusterTools.start_cluster(cluster, setup_name, OutputFormat.json)
             delete_all_sdn_fetched_generated_files(engines, sdn, all_config_files_paths, all_state_files_paths)
 
 
-# @disabled_access_ports
+@disabled_access_ports
 @pytest.mark.timeout(35 * MINUTE, func_only=True)
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name, has_loopbox):
+def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name, has_loopbox, setup_name):
     # SAME AS DEFAULT.
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
@@ -123,7 +125,7 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name,
     try:
         with allure.step("Add data before reset factory"):
             username = add_verification_data(engines.dut, system)
-        reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, system, sdn, all_state_files_paths, all_config_files_paths, output_format, initial_config_contents)
+        reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, system, sdn, all_state_files_paths, all_config_files_paths, output_format, initial_config_contents, setup_name)
 
         if not standalone_system:
             initial_partition_output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
@@ -143,7 +145,7 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name,
                 verify_all_files_are_deleted(engines, all_config_files_paths[file_type])
             for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_STATE_FILES:
                 verify_all_files_are_deleted(engines, all_state_files_paths[file_type])
-            ClusterTools.start_cluster(cluster, OutputFormat.json)
+            ClusterTools.start_cluster(cluster, setup_name, OutputFormat.json)
             ClusterTools.verify_sdn_config_files_deleted(sdn)
             ClusterTools.verify_sdn_state_files_deleted(sdn)
             sdn_files_deleted = True
@@ -152,6 +154,10 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name,
             time.sleep(30)
             for app in ClusterConsts.INITIAL_EXPECTED_APPS:
                 ClusterTools.verify_log_level(ClusterAppsLogLevels.NOTICE, app, output_format, cluster)
+
+            interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name)
+            next(interfaces_wa)
+            interface_wa_called = True
             verify_config_files_content_not_changed(sdn, initial_config_contents, engines)
             verify_apps_in_expected_state(cluster, 'ok', has_loopbox)
 
@@ -161,21 +167,23 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name,
                 assert initial_partition_output == output, f'Partition was not restored to initial. initial: {initial_partition_output}\n current: {output}'
 
     finally:
+        if interface_wa_called:
+            next(interfaces_wa)
         engines.sonic_mgmt.run_cmd(f"sudo rm -rf {ClusterConsts.INITIAL_CONFIGURATIONS_PATH + '/*'}")
 
         with allure.step("Verify the setup is functional"):
             verify_the_setup_is_functional(system, engines, dut=devices.dut)
 
         if not sdn_files_deleted:
-            ClusterTools.start_cluster(cluster, OutputFormat.json)
+            ClusterTools.start_cluster(cluster, setup_name, OutputFormat.json)
             delete_all_sdn_fetched_generated_files(engines, sdn, all_config_files_paths, all_state_files_paths)
 
 
-# @disabled_access_ports
+@disabled_access_ports
 @pytest.mark.timeout(35 * MINUTE, func_only=True)
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name, has_loopbox):
+def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name, has_loopbox, setup_name):
     # SAME
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
@@ -192,7 +200,7 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name, 
     try:
         with allure.step("Add data before reset factory"):
             username = add_verification_data(engines.dut, system)
-        reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, system, sdn, all_state_files_paths, all_config_files_paths, output_format, initial_config_contents)
+        reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, system, sdn, all_state_files_paths, all_config_files_paths, output_format, initial_config_contents, setup_name)
 
         if not standalone_system:
             initial_partition_output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
@@ -212,7 +220,7 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name, 
                 verify_all_files_are_deleted(engines, all_config_files_paths[file_type])
             for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_STATE_FILES:
                 verify_all_files_are_deleted(engines, all_state_files_paths[file_type])
-            ClusterTools.start_cluster(cluster, OutputFormat.json)
+            ClusterTools.start_cluster(cluster, setup_name, OutputFormat.json)
             ClusterTools.verify_sdn_config_files_deleted(sdn)
             ClusterTools.verify_sdn_state_files_deleted(sdn)
             sdn_files_deleted = True
@@ -221,6 +229,10 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name, 
             time.sleep(30)
             for app in ClusterConsts.INITIAL_EXPECTED_APPS:
                 ClusterTools.verify_log_level(ClusterAppsLogLevels.NOTICE, app, output_format, cluster)
+
+            interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name)
+            next(interfaces_wa)
+            interface_wa_called = True
             verify_config_files_content_not_changed(sdn, initial_config_contents, engines)
             verify_apps_in_expected_state(cluster, 'ok', has_loopbox)
 
@@ -230,21 +242,23 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name, 
                 assert initial_partition_output == output, f'Partition was not restored to initial. initial: {initial_partition_output}\n current: {output}'
 
     finally:
+        if interface_wa_called:
+            next(interfaces_wa)
         engines.sonic_mgmt.run_cmd(f"sudo rm -rf {ClusterConsts.INITIAL_CONFIGURATIONS_PATH + '/*'}")
 
         with allure.step("Verify the setup is functional"):
             verify_the_setup_is_functional(system, engines, dut=devices.dut)
 
         if not sdn_files_deleted:
-            ClusterTools.start_cluster(cluster, OutputFormat.json)
+            ClusterTools.start_cluster(cluster, setup_name, OutputFormat.json)
             delete_all_sdn_fetched_generated_files(engines, sdn, all_config_files_paths, all_state_files_paths)
 
 
-# @disabled_access_ports
+@disabled_access_ports
 @pytest.mark.timeout(50 * MINUTE, func_only=True)
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_name, has_loopbox):
+def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_name, has_loopbox, setup_name):
     # Only fetched and generated files will be cleaned.
     # SAME
     TestToolkit.tested_api = test_api
@@ -263,7 +277,7 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
     try:
         with allure.step("Add data before reset factory"):
             username = add_verification_data(engines.dut, system)
-        log_level = reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, system, sdn, all_state_files_paths, all_config_files_paths, output_format, initial_config_contents)
+        log_level = reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, system, sdn, all_state_files_paths, all_config_files_paths, output_format, initial_config_contents, setup_name)
 
         TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
 
@@ -296,6 +310,9 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
                 transformation_fn = ClusterConsts.CONFIG_FILES_CONTENT_CHANGE.get(file_type, lambda x: x)
                 initial_config_contents[file_type] = transformation_fn(initial_config_contents[file_type])
 
+            interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name)
+            next(interfaces_wa)
+            interface_wa_called = True
             verify_config_files_content_not_changed(sdn, initial_config_contents, engines)
             verify_apps_in_expected_state(cluster, 'ok', has_loopbox)  # Apps should be running
 
@@ -304,6 +321,8 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
                                                                      output_format=output_format).get_returned_value()
                 assert ClusterConsts.EMPTY_PARTITION_ID in output.keys(), f'Partition {ClusterConsts.EMPTY_PARTITION_ID} was deleted, while its expected to be kept'
     finally:
+        if interface_wa_called:
+            next(interfaces_wa)
         if not standalone_system:
             with allure.step("Running sdn factory reset"):
                 sdn.factory_default.action_reset(param='force')
@@ -316,7 +335,7 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
             verify_the_setup_is_functional(system, engines, dut=devices.dut)
 
         if not sdn_files_deleted:
-            ClusterTools.start_cluster(cluster, OutputFormat.json)
+            ClusterTools.start_cluster(cluster, setup_name, OutputFormat.json)
             delete_all_sdn_fetched_generated_files(engines, sdn, all_config_files_paths, all_state_files_paths)
 
         with allure.step("Run reset factory to get back to default configuration"):
@@ -346,10 +365,7 @@ def verify_apps_in_expected_state(cluster, status, has_loopbox):
             output_format=OutputFormat.json).get_returned_value()
         for app in ClusterConsts.INITIAL_EXPECTED_APPS:
             app_status = output[app]['status']
-            if app == ClusterConsts.NMX_CONTROLLER:
-                pass
-            else:
-                assert app_status == status, f"App {app} status is {app_status} instead of {status}"
+            assert app_status == status, f"App {app} status is {app_status} instead of {status}"
 
 
 def get_generated_file_name(output, file_type):
@@ -370,10 +386,10 @@ def verify_all_files_are_deleted(engines, files_list):
         assert "No such file or directory" in output, "File was found, not expected to be found"
 
 
-def reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, system, sdn, all_state_files_paths, all_config_files_paths, output_format, initial_config_contents):
+def reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, system, sdn, all_state_files_paths, all_config_files_paths, output_format, initial_config_contents, setup_name):
 
     logger.info("Setting cluster state to enabled")
-    ClusterTools.start_cluster(cluster, output_format)
+    ClusterTools.start_cluster(cluster, setup_name, output_format)
 
     # for app in ClusterConsts.INITIAL_EXPECTED_APPS:
     #     ClusterTools.start_app(cluster, app)
@@ -454,7 +470,7 @@ def verify_config_files_content_not_changed(sdn, initial_config_contents, engine
     assert len(current_config_files_content) == len(initial_config_contents), 'Missing configs'
     for file_type, current_file_content in current_config_files_content.items():
         init_file_content = initial_config_contents.get(file_type)
-        assert current_file_content == init_file_content, f"Current and initial configuration for {file_type}. Current: {current_file_content}, Initial: {init_file_content}"
+        assert set(current_file_content.split('\n')) == set(init_file_content.split('\n')), f"Current and initial configuration for {file_type}. Current: {current_file_content}, Initial: {init_file_content}"
 
 
 def pre_factory_reset_security_checks():

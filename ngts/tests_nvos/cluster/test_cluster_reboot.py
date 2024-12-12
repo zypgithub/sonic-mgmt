@@ -23,7 +23,7 @@ logger = logging.getLogger()
 @pytest.mark.nmx
 @pytest.mark.timeout(35 * MINUTE, func_only=True)
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_reboot_command(engines, devices, test_name, test_api, has_loopbox, standalone_system):
+def test_reboot_command(engines, devices, test_name, test_api, has_loopbox, standalone_system, setup_name):
     """
     Test flow:
         1. Enabled Cluster
@@ -38,7 +38,7 @@ def test_reboot_command(engines, devices, test_name, test_api, has_loopbox, stan
     TestToolkit.tested_api = test_api
     try:
         logger.info("Setting cluster state to enabled")
-        ClusterTools.start_cluster(cluster, output_format)
+        ClusterTools.start_cluster(cluster, setup_name, output_format)
         TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
 
         if not standalone_system:

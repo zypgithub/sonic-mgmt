@@ -13,7 +13,7 @@ from ngts.nvos_tools.Devices.IbDevice import JulietSwitch
 
 
 @disabled_access_ports
-def factory_reset_no_params_pre_steps(engines, platform_params, system, devices, has_loopbox):
+def factory_reset_no_params_pre_steps(engines, platform_params, system, devices, has_loopbox, setup_name):
     port_type = devices.dut.switch_type.lower()
     init_cluster_status = None
     with allure.step('Create System object'):
@@ -49,7 +49,7 @@ def factory_reset_no_params_pre_steps(engines, platform_params, system, devices,
                 cluster = Cluster()
                 # Enable cluster and validate its enabled.
                 init_cluster_status = ClusterTools.check_cluster_state(cluster, output_format=OutputFormat.json)
-                ClusterTools.reverse_cluster_state(cluster, output_format=OutputFormat.json)
+                ClusterTools.reverse_cluster_state(cluster, setup_name, output_format=OutputFormat.json)
 
     with allure.step('Validate ports description'):
         validate_port_description(engines.dut, apply_and_save_port, description)

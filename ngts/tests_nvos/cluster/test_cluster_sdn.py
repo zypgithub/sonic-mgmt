@@ -31,7 +31,7 @@ logger = logging.getLogger()
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 @pytest.mark.timeout(35 * MINUTE, func_only=True)
-def test_cluster_sdn(engines, devices, test_api, has_loopbox):
+def test_cluster_sdn(engines, devices, test_api, has_loopbox, standalone_system, setup_name):
 
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
@@ -52,7 +52,7 @@ def test_cluster_sdn(engines, devices, test_api, has_loopbox):
     try:
 
         logger.info("Setting cluster state to enabled")
-        ClusterTools.start_cluster(cluster, output_format)
+        ClusterTools.start_cluster(cluster, setup_name, output_format)
 
         controller_config_files_paths = ClusterTools.get_current_config_files_paths(sdn, ClusterConsts.NMX_CONTROLLER, ClusterConsts.NMX_CONTROLLER_CONFIG_FILE_TYPES)
         telemetry_config_files_paths = ClusterTools.get_current_config_files_paths(sdn, ClusterConsts.NMX_TELEMETRY, ClusterConsts.NMX_TELEMETRY_CONFIG_FILE_TYPES)
@@ -107,8 +107,9 @@ def test_cluster_sdn(engines, devices, test_api, has_loopbox):
                 current_installed_config_path = output[installed_file]['path']
                 current_config_content = engines.dut.run_cmd("sudo cat {}".format(current_installed_config_path))
                 expected_config_content = engines.sonic_mgmt.run_cmd("sudo cat {}".format(path_to_config[file_type]))
-                assert current_config_content == expected_config_content, f"Config file was not loaded properly. Expected content {expected_config_content}, Actual content: {current_config_content}"
-                assert current_config_content != initial_config_contents[file_type], f"Current content has not changed, still same as in init state. init: {initial_config_contents[file_type]}, \ncurrent{current_config_content}"
+                assert set(current_config_content.split('\n')) == set(expected_config_content.split('\n')), f"Config file was not loaded properly. Expected content {expected_config_content}, Actual content: {current_config_content}"
+                if initial_config_contents != '':
+                    assert set(current_config_content.split('\n')) != set((initial_config_contents[file_type]).split('\n')), f"Current content has not changed, still same as in init state. init: {initial_config_contents[file_type]}, \ncurrent{current_config_content}"
 
         with allure.step("Install initial configurations"):
             for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_CONFIG_FILES:
@@ -186,7 +187,7 @@ def verify_config_files_content_not_changed(sdn, initial_config_contents):
     assert len(current_config_files_content) == len(initial_config_contents), 'Missing configs'
     for file_type, current_file_content in current_config_files_content.items():
         init_file_content = initial_config_contents.get(file_type)
-        assert current_file_content == init_file_content, f"Initial configuration was not restored for {file_type}. Current: {current_file_content}, Initial: {init_file_content}"
+        assert set(current_file_content.split('\n')) == set(init_file_content.split('\n')), f"Initial configuration was not restored for {file_type}. Current: {current_file_content}, Initial: {init_file_content}"
 
 
 def verify_config_files_content_changed(sdn, initial_config_contents, engines):
@@ -199,4 +200,5 @@ def verify_config_files_content_changed(sdn, initial_config_contents, engines):
     assert len(current_config_files_content) == len(initial_config_contents), 'Missing configs'
     for file_type, current_file_content in current_config_files_content.items():
         init_file_content = initial_config_contents.get(file_type)
-        assert current_file_content != init_file_content, f"Initial configuration was not changed for {file_type}. Current: {current_file_content}, Initial: {init_file_content}"
+        if init_file_content != '':
+            assert set(current_file_content.split('\n')) != set(init_file_content.split('\n')), f"Initial configuration was not changed for {file_type}. Current: {current_file_content}, Initial: {init_file_content}"

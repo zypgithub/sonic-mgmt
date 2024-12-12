@@ -60,7 +60,7 @@ def test_cluster_sdn_factory_reset(engines, devices, test_api, has_loopbox):
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
 @pytest.mark.timeout(25 * MINUTE, func_only=True)
-def test_sdn_reset_factory(engines, devices, test_api, has_loopbox, test_name):
+def test_sdn_reset_factory(engines, devices, test_api, has_loopbox, test_name, setup_name):
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
     with allure.step("Create Cluster object"):
@@ -72,7 +72,7 @@ def test_sdn_reset_factory(engines, devices, test_api, has_loopbox, test_name):
         initial_configuration_restored = False
     try:
         logger.info("Setting cluster state to enabled")
-        ClusterTools.start_cluster(cluster, output_format)
+        ClusterTools.start_cluster(cluster, setup_name, output_format)
         TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
 
         config_files_paths = get_current_config_files_paths(sdn)

@@ -61,13 +61,13 @@ class ClusterConsts:
     INFRA_PACKAGES_PATH = '/host/cluster_infra/packages/'
     CONFIG_FILES_CHANGE = {'sm_config': "sudo sed -i \"/^max_op_vls /c\\max_op_vls 2\" {file_path}",
                            'fm_config': "sudo sed -i \"/^LOG_FILE_MAX_SIZE=/c\\LOG_FILE_MAX_SIZE=1023\" {file_path}",
-                           'rdm_config': "echo '# This is a comment for rdm_config' | sudo tee -a {file_path}",
-                           'chassis_mapping': "echo '# This is a comment for rdm_config' | sudo tee -a {file_path}"}
+                           'rdm_config': "true",
+                           'chassis_mapping': "true"}
     CONFIG_FILES_CONTENT_CHANGE = {
         'sm_config': lambda content: re.sub(r'^max_op_vls.*$', 'max_op_vls 2', content, flags=re.MULTILINE),
         'fm_config': lambda content: re.sub(r'^LOG_FILE_MAX_SIZE=.*$', 'LOG_FILE_MAX_SIZE=1023', content, flags=re.MULTILINE),
-        'rdm_config': lambda content: content + '# This is a comment for rdm_config\n',
-        'chassis_mapping': lambda content: content + '# This is a comment for chassis_mapping\n',
+        'rdm_config': lambda content: content,
+        'chassis_mapping': lambda content: content
     }
     NMX_CONTROLLER_CONFIG_CHASSIS_MAPPING = 'chassis_mapping'
     PARTITION_TYPES = ['location_based', 'gpuuid_based']

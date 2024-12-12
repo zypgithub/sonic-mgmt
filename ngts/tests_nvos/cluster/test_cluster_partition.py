@@ -29,6 +29,7 @@ from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 logger = logging.getLogger()
 
 
+@disabled_access_ports
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_cluster_partition(engines, devices, test_api, has_loopbox, setup_name, standalone_system):
@@ -52,7 +53,7 @@ def test_cluster_partition(engines, devices, test_api, has_loopbox, setup_name, 
         partitions_mapping = {}  # key: partition_id, value: list of tuples, each index is (uuid, location)
     try:
         with allure.step("Enable cluster"):
-            ClusterTools().start_cluster(cluster, output_format)
+            ClusterTools().start_cluster(cluster, setup_name, output_format)
 
         with allure.step("Show All Partitions - at the beginning its just the default partition"):
             initial_partition_output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
@@ -105,7 +106,7 @@ def test_cluster_partition(engines, devices, test_api, has_loopbox, setup_name, 
 @disabled_access_ports
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_cluster_partition_bad_flow(engines, devices, test_api, has_loopbox, standalone_system):
+def test_cluster_partition_bad_flow(engines, devices, test_api, has_loopbox, standalone_system, setup_name):
 
     if standalone_system:
         pytest.skip("Skipping test - supported only for non standalone systems.")
@@ -127,7 +128,7 @@ def test_cluster_partition_bad_flow(engines, devices, test_api, has_loopbox, sta
         partitions_mapping = {}  # key: partition_id, value: list of tuples, each index is (uuid, location)
     try:
         with allure.step("Enable cluster"):
-            ClusterTools().start_cluster(cluster, output_format)
+            ClusterTools().start_cluster(cluster, setup_name, output_format)
         with allure.step("Show All Partitions - at the beginning its just the default partition"):
             initial_partition_output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
                                                                                    output_format=output_format).get_returned_value()
