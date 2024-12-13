@@ -100,10 +100,11 @@ class AnsibleLogAnalyzer:
         return logger
     # ---------------------------------------------------------------------
 
-    def __init__(self, run_id, verbose, start_marker=None):
+    def __init__(self, run_id, verbose, start_marker=None, end_marker=None):
         self.run_id = run_id
         self.verbose = verbose
         self.start_marker = start_marker
+        self.end_marker = end_marker
     # ---------------------------------------------------------------------
 
     def print_diagnostic_message(self, message):
@@ -141,7 +142,10 @@ class AnsibleLogAnalyzer:
     # ---------------------------------------------------------------------
 
     def create_end_marker(self):
-        return self.end_marker_prefix + "-" + self.run_id
+        if self.end_marker:
+            return self.end_marker
+        else:
+            return self.end_marker_prefix + "-" + self.run_id
     # ---------------------------------------------------------------------
 
     def create_start_ignore_marker(self):

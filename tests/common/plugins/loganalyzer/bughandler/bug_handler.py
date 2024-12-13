@@ -168,13 +168,47 @@ def get_log_files(options):
                 raise(f"The value of the log_files is not correct, please double check: {log_file}")
     elif options.dut:
         print("==============Get the syslog from the dut==============")
-        dump = get_dump_from_dut(options)
-        print("==============Start to extract the syslog from the dump file {dump}==============")
-        log_file_list.extend(get_syslog_from_compressed_file(dump))
+        log_file_list = extract_log_from_dut(options)
     else:
         raise("No syslog to analyze, please specify either the log files or the dut name, for the usage of the option please check with -h|--help")
     
     return log_file_list
+
+
+def extract_log_from_dut(options):
+    if not (options.start_marker and options.end_marker):
+        raise("End marker and start marker could not be empty")
+
+    dut = options.dut
+    username = options.username if options.username else os.getenv("DUT_USERNAME")
+    password = options.password if options.password else os.getenv("DUT_PASSWORD")
+
+    sonic = LinuxSshEngine(ip=dut, username=username, password=password, ssh_port=22)
+
+    timestamp = options.time_stamp_start
+    find_syslog_cmd = f"sudo find /var/log -newermt \'{timestamp}\' | grep syslog"
+    log_files = sonic.run_cmd(find_syslog_cmd).split('\n')
+
+    os.makedirs(TMP_SYSLOG_FOLDER, exist_ok=True)
+    print(f"All syslog files found: {log_files}")
+    for log_file in log_files:
+        if not log_file:
+            continue
+        sonic.run_cmd(f"sudo cp {log_file} /tmp/")
+        log_file_name = log_file.split("/")[-1]
+        tmp_log_file = f"/tmp/{log_file_name}"
+        dest_syslog_file = f"{TMP_SYSLOG_FOLDER}/{log_file_name}"
+        sonic.run_cmd(f"sudo chmod 777 {tmp_log_file}")
+        sonic.copy_file(source_file=tmp_log_file, dest_file=dest_syslog_file, file_system="", direction='get')
+    for fname in os.listdir(TMP_SYSLOG_FOLDER):
+        if "gz" in fname:
+            fname = f"{TMP_SYSLOG_FOLDER}/{fname}"
+            tofile = fname.strip('.gz')
+            with open(fname, 'rb') as inf, open(tofile, 'w', encoding='utf8') as tof:
+                decom_str = gzip.decompress(inf.read()).decode('utf-8')
+                tof.write(decom_str)
+            os.system(f"rm -rf {fname}")
+    return [os.path.join(TMP_SYSLOG_FOLDER, f) for f in os.listdir(TMP_SYSLOG_FOLDER)]
 
 def get_dump_from_dut(options):
     dut = options.dut
@@ -199,7 +233,6 @@ def get_dump_from_dut(options):
     sonic.copy_file(source_file=tar_file, dest_file=tarball_file_name,  file_system="", direction='get')
     sonic.run_cmd("sudo rm -rf {}".format(tar_file))
     return tarball_file_name
-    
 
 def get_syslog_from_compressed_file(compressed_file):
     if "tar.gz" in compressed_file:
@@ -233,9 +266,17 @@ def get_syslog_from_compressed_file(compressed_file):
 def run_loganalyzer(options, regex_file_path):
     tokenizer = ','
     run_id = "bug_handler"
-    start_marker = None
-    analyzer = AnsibleLogAnalyzer(run_id, options.verbose)
+    start_marker = options.start_marker
+    end_marker = options.end_marker
+
+    if not (options.start_marker and options.end_marker):
+        raise Exception("End marker and start marker could not be empty")
+
+    analyzer = AnsibleLogAnalyzer(run_id, options.verbose, start_marker=start_marker, end_marker=end_marker)
     log_file_list = get_log_files(options)
+    if not log_file_list:
+        print("No syslog files found, skipping running the loganalyzer")
+        return
     match_file_list = [os.path.join(regex_file_path, f) for f in DEFAULT_MATCH_FILE_LIST]
     expect_file_list = [os.path.join(regex_file_path, f) for f in DEFAULT_EXPECT_FILE_LIST]
 
@@ -252,7 +293,8 @@ def run_loganalyzer(options, regex_file_path):
     messages_regex_e.extend(options.expect_err_list)
     ignore_messages_regex = get_ignore_regex(analyzer, options, regex_file_path)
 
-    print("Start to run loganayzer ...")
+
+    print(f"Start to run loganayzer: {log_file_list}")
     result = analyzer.analyze_file_list(log_file_list, match_messages_regex,
                                         ignore_messages_regex, expect_messages_regex, require_marker=False)
     return result
@@ -338,11 +380,13 @@ def init_parser():
     parser.add_argument("-g", "--ignore_err_list", dest="ignore_err_list", nargs='*', default="", help="a list of  err msg regex that used to match the err msgs that need to be ignored.") 
     
     # TODO: support the start stop timestamp            
-    #parser.add_argument("-s", "--time_stamp_start",  dest="time_stamp_start", default="", help="the timestamp of the syslog that the tool start from where to do the analysis, it is not supported till now") 
+    parser.add_argument("-t", "--time_stamp_start",  dest="time_stamp_start", default="", help="the timestamp used to collect the syslog file from DUT, the tool will collect the syslog files only newer than the timestamp, it could be like: '12/7/2024 11:45:05', '1/7/2025 15:49:05'")
 
     #parser.add_argument("-n", "--time_stamp_end", dest="time_stamp_end", default="",  help=" the timestamp of the syslog that the tool till where to stop to do the analysis, it is not supported till now") 
     parser.add_argument("-b", "--branch", dest='branch', default="develop", help='the sonic-mgmt branch that used to get the skip yaml file')
-    parser.add_argument("-v", "--verbose", action="store_true", dest="verbose",   default=False,  help="show details info") 
+    parser.add_argument("-v", "--verbose", action="store_true", dest="verbose",   default=False,  help="show details info")
+    parser.add_argument("--start-marker", dest="start_marker", default="", help="It is the marker that you want to start to analyze the results, if could not find the marker in syslog, then will analyze all the content of the syslog")
+    parser.add_argument("--end-marker", dest="end_marker", default="", help="It is the marker that you want to end to analyze the results, if could not find the marker in syslog, then will analyze all the content of the syslog")
 
     arguments, unknown = parser.parse_known_args()
     if unknown:
@@ -359,7 +403,8 @@ def main():
     try:
         regex_file_path = prepare_files_for_regex(args.branch)
         result = run_loganalyzer(args, regex_file_path)
-
+        if not result:
+            return
         result_log_errors = []
         for key, value in list(result.items()):
             matching_lines, expecting_lines = value

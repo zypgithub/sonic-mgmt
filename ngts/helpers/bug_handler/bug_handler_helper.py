@@ -251,22 +251,21 @@ def run_err_msg_bug_handler_tool(conf_path, redmine_project, branch, yaml_parsed
     update_only = not bug_handler_action["create"] and bug_handler_action["update"]
     update_only_mode = '--update_only' if update_only else ''
 
-    action_mode = ""
     if bug_handler_params.get("cli_type", '') == "Sonic":
 
         bug_handler_file_result = run_bug_handler_with_no_action(
             conf_path, redmine_project, branch, yaml_parsed_file, user, bug_handler_path)
+        if not bug_handler_no_action:
+            action_mode = get_action_based_on_no_action_results(
+                bug_handler_file_result, branch, bug_handler_params, bug_handler_update_action)
 
-        action_mode = get_action_based_on_no_action_results(
-            bug_handler_file_result, branch, bug_handler_params, bug_handler_update_action)
+            if action_mode == "no action" and not bug_handler_no_action:
+                logger.info("To not fail case and attach file, need update the following 3 parameters")
+                bug_handler_file_result["action"] = BugHandlerConst.BUG_HANDLER_DECISION_UPDATE
+                bug_handler_file_result["status"] = "done"
+                bug_handler_no_action = True
 
-        if action_mode == "no action":
-            logger.info("To not fail case and attach file, need update the following 3 parameters")
-            bug_handler_file_result["action"] = BugHandlerConst.BUG_HANDLER_DECISION_UPDATE
-            bug_handler_file_result["status"] = "done"
-            bug_handler_no_action = True
-
-    if action_mode != "no action" or bug_handler_params.get("cli_type", '') != "Sonic":
+    if not bug_handler_no_action or bug_handler_params.get("cli_type", '') != "Sonic":
         bug_handler_cmd = f"env LOG_FORMAT_JSON=1 {bug_handler_path} --cfg {conf_path} --project {redmine_project} " \
             f"--user {user} --branch {branch} --debug_level 2 " \
             f"--parsed_data '{yaml_parsed_file}' {no_action} {update_only_mode}"
