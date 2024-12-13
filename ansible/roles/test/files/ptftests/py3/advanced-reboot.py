@@ -1107,7 +1107,7 @@ class ReloadTest(BaseTest):
         self.finalizer_state = self.get_warmboot_finalizer_state()
         self.log('warmboot finalizer service state {}'.format(self.finalizer_state))
         count = 0
-        while self.finalizer_state == 'activating':
+        while self.finalizer_state == 'activating' or self.finalizer_state == '':
             try:
                 self.finalizer_state = self.get_warmboot_finalizer_state()
             except Exception:
