@@ -90,15 +90,18 @@ class MultiAsicSonicHost(object):
         if self.get_facts().get("modular_chassis"):
             # Update the asic service based on feature table state and asic flag
             for service in list(self.sonichost.DEFAULT_ASIC_SERVICES):
-                if service == 'teamd' and config_facts['DEVICE_METADATA']['localhost'].get('switch_type', '') == 'dpu':
-                    logger.info("Removing teamd from default services for switch_type DPU")
-                    self.sonichost.DEFAULT_ASIC_SERVICES.remove(service)
-                    continue
                 if service in config_facts['FEATURE'].keys():
                     if config_facts['FEATURE'][service]['has_per_asic_scope'] == "False":
                         self.sonichost.DEFAULT_ASIC_SERVICES.remove(service)
                     if config_facts['FEATURE'][service]['state'] == "disabled":
                         self.sonichost.DEFAULT_ASIC_SERVICES.remove(service)
+
+        if config_facts['DEVICE_METADATA']['localhost'].get('switch_type', '') == 'dpu':
+            logger.info("Removing teamd from default services for switch_type DPU")
+            service = 'teamd'
+            if service in self.sonichost.DEFAULT_ASIC_SERVICES:
+                self.sonichost.DEFAULT_ASIC_SERVICES.remove(service)
+
         for asic in active_asics:
             service_list += asic.get_critical_services()
         self.sonichost.reset_critical_services_tracking_list(service_list)
