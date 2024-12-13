@@ -407,11 +407,101 @@ def test_ztp_json_complex(engines, devices):
         system.ztp.action_run_ztp()
 
 
+@pytest.mark.ztp
+@pytest.mark.system
+def test_ztp_provisioning_script_negative(engines, devices):
+    """
+    Test flow:
+        1. Check default values for ztp
+        2. Apply json file with script with interactive commands
+        3. Apply json file with negative provisioning script
+        4. Apply json file with script bad extension
+        5. Apply json file with loop and timeout
+    """
+    system = System(None)
+
+    try:
+        with allure.step("Run nv action run system ztp"):
+            system.ztp.action_run_ztp()
+
+        _wait_until_ztp_values_fields_changed(system, SystemConsts.ZTP_OUTPUT_FIELDS, SystemConsts.ZTP_DEFAULT_VALUES)
+
+        with allure.step("Download provisioning script with interactive commands"):
+            _download_file_and_run_ztp(engines, system, SystemConsts.SCRIPT_INTERACTIVE,
+                                       '01-provisioning-script', SystemConsts.ZTP_STATUS_FAILED)
+
+        with allure.step("Download negative provisioning script"):
+            _download_file_and_run_ztp(engines, system, SystemConsts.SCRIPT_NEGATIVE,
+                                       '01-provisioning-script', SystemConsts.ZTP_STATUS_FAILED)
+
+        with allure.step("Download provisioning with bad extension"):
+            _download_file_and_run_ztp(engines, system, SystemConsts.SCRIPT_BAD_FILE,
+                                       '01-provisioning-script', SystemConsts.ZTP_STATUS_FAILED)
+
+        with allure.step("Download provisioning script with loop and timeout"):
+            _download_file_and_run_ztp(engines, system, SystemConsts.SCRIPT_LOOP_TIMEOUT,
+                                       '01-provisioning-script', SystemConsts.ZTP_STATUS_FAILED)
+
+    except Exception as e:
+        logger.info("Received Exception during test_ztp_connectivity_check: {}".format(e))
+        raise e
+    finally:
+        system.ztp.action_abort_ztp()
+        engines.dut.run_cmd('sudo rm -f /host/ztp/ztp_data_local.json')
+        system.ztp.action_run_ztp()
+
+
+@pytest.mark.ztp
+@pytest.mark.system
+def test_ztp_provisioning_script_positive(engines, devices):
+    """
+    Test flow:
+        1. Check default values for ztp
+        2. Apply json file with positive script
+        3. Apply json file with python script
+    """
+    system = System(None)
+
+    try:
+        with allure.step("Run nv action run system ztp"):
+            system.ztp.action_run_ztp()
+
+        _wait_until_ztp_values_fields_changed(system, SystemConsts.ZTP_OUTPUT_FIELDS, SystemConsts.ZTP_DEFAULT_VALUES)
+
+        with allure.step("Running positive ztp provisioning script"):
+            _download_file_and_run_ztp(engines, system, SystemConsts.SCRIPT_POSITIVE,
+                                       '01-provisioning-script', SystemConsts.ZTP_STATUS_SUCCESS)
+
+        with allure.step("Download provisioning python script"):
+            _download_file_and_run_ztp(engines, system, SystemConsts.SCRIPT_POSITIVE_PYTHON,
+                                       '01-provisioning-script', SystemConsts.ZTP_STATUS_SUCCESS)
+
+    except Exception as e:
+        logger.info("Received Exception during test_ztp_connectivity_check: {}".format(e))
+        raise e
+    finally:
+        system.ztp.action_abort_ztp()
+        engines.dut.run_cmd('sudo rm -f /host/ztp/ztp_data_local.json')
+        system.ztp.action_run_ztp()
+
+
 def _download_ztp_json_config(engines, json=''):
     engines.dut.run_cmd('sudo rm -f /host/ztp/ztp_data_local.json')
     return engines.dut.run_cmd(
         f'sudo curl {SystemConsts.HTTP_SERVER}{SystemConsts.VERIFICATION_ZTP_PATH}{json} '
         f'-o /host/ztp/ztp_data_local.json')
+
+
+def _download_file_and_run_ztp(engines, system, file='', step='', status_code=''):
+    with allure.step("Download json file"):
+        _download_ztp_json_config(engines, file)
+
+    with allure.step("Run nv action run system ztp"):
+        system.ztp.action_run_ztp()
+
+        with allure.step("Check ztp status"):
+            _wait_until_ztp_step_status(system, step, status_code)
+            _wait_until_ztp_status(system, status_code)
 
 
 def _validate_ztp_log_file(engines, string_to_validate=''):
