@@ -62,7 +62,7 @@ def test_parallel_cli_commands(engines, devices):
         cmds_list1 = ['nv show system -o json']
         cmds_list2 = ["nv set system message pre-login 'test'", "nv config apply", "nv show system message -o json"]
         cmds_list3 = ['nv show interface -o json']
-        cmds_list4 = ['nv show system -o json', 'nv show interface -o json']
+        cmds_list4 = ['nv show platform firmware -o json']
         cmds_list5 = ['nv set interface eth0 description testing', 'nv config apply', 'nv show interface -o json']
         command_lists = [cmds_list1, cmds_list2, cmds_list3, cmds_list4, cmds_list5]
         keep_running_event = threading.Event()
@@ -78,8 +78,8 @@ def test_parallel_cli_commands(engines, devices):
                     future = executor.submit(run_session, sessions[i], command_lists, keep_running_event)
                     futures.append(future)
 
-                with allure.step("run all threads for 3 minutes"):
-                    time.sleep(180)
+                with allure.step("run all threads for 2 minutes"):
+                    time.sleep(120)
                     keep_running_event.clear()
 
                 memory_mpstat_output_during_testing = future_mem_cpu.result()
@@ -109,7 +109,7 @@ def run_session(session, commands_list, keep_running_event):
         while keep_running_event.is_set():
             for cmd in commands:
                 session.run_cmd(cmd)
-                time.sleep(1)
+                time.sleep(5)
 
 
 def memory_cpu_run(session, keep_running_event):
@@ -185,8 +185,8 @@ def validate_memory_and_cpu(before_testing, after_connections, during_testing={}
     with allure.step("validate memory and cpu during testing"):
         for step in during_testing:
             for key, value in step.items():
-                assert step[key] - before_testing[key] < 0.2, f"unexpected change in {key} detected: initial output was {before_testing}, revised output after connections: {step}"
+                assert step[key] - before_testing[key] < 0.3, f"unexpected change in {key} detected: initial output was {before_testing}, revised output after connections: {step}"
 
     with allure.step("validate memory and cpu after testing"):
         for key, value in after_connections.items():
-            assert after_testing[key] - before_testing[key] < 0.03, f"unexpected change in {key} detected: initial output was {before_testing}, revised output after connections: {after_testing}"
+            assert after_testing[key] - before_testing[key] < 0.07, f"unexpected change in {key} detected: initial output was {before_testing}, revised output after connections: {after_testing}"

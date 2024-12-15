@@ -7,7 +7,6 @@ from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import NvosConst, PlatformConsts, HealthConsts, ImageConsts
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.FWComponentsTool import FWComponentsTool
-from ngts.nvos_tools.infra.Fae import Fae
 from ngts.tests_nvos.constants import MINUTE
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
@@ -20,7 +19,7 @@ logger = logging.getLogger()
 
 @pytest.mark.checklist
 @pytest.mark.platform
-@pytest.mark.timeout(25 * MINUTE, func_only=True)
+@pytest.mark.timeout(20 * MINUTE, func_only=True)
 def test_install_platform_firmware(engines, devices, test_name, topology_obj, clear_asic_files):
     """
     Install platform firmware test
@@ -34,6 +33,7 @@ def test_install_platform_firmware(engines, devices, test_name, topology_obj, cl
     system = System()
     platform = Platform()
     component_name = ImageConsts.ASIC
+    test_image_name = "test_fw_asic.mfa"
     fw_has_changed = False
     fw_file, filename, version_name = FWComponentsTool.get_fw_component_version_latest(component_name)
 
@@ -48,23 +48,23 @@ def test_install_platform_firmware(engines, devices, test_name, topology_obj, cl
     try:
         with allure.step("Install system firmware file - " + fw_file):
             with allure.step("fetch firmware file to switch"):
-                player_engine = engines['sonic_mgmt']
-                scp_path = 'scp://{}:{}@{}'.format(player_engine.username, player_engine.password, player_engine.ip)
-                platform.firmware.asic.action_fetch(fw_file, base_url=scp_path).verify_result()
+                platform.firmware.asic.action_fetch(fw_file, base_url=ImageConsts.SCP_PATH).verify_result()
+                fetched_image_file = platform.firmware.asic.files.file_name[filename]
+                fetched_image_file.action_rename(test_image_name, expected_str="", rewrite_file_name=False)
 
             with allure.step("Install firmware and verify"):
                 platform.firmware.asic.set(PlatformConsts.FW_SOURCE, PlatformConsts.FW_SOURCE_CUSTOM, apply=True)
                 NvueGeneralCli.save_config(engines.dut)
                 res_obj, duration = OperationTime.save_duration('install user FW', 'include reboot', test_name,
                                                                 install_new_image_fw, platform, test_name,
-                                                                filename)
+                                                                test_image_name)
             with allure.step('Verify the firmware installed successfully'):
-                verify_firmware_with_platform_and_fae_cmd(platform, version_name)
+                verify_firmware_with_platform_cmd(platform, version_name)
                 system.validate_health_status(HealthConsts.OK)
                 fw_has_changed = True
 
-            with allure.step('Verify operation time'):
-                OperationTime.verify_operation_time(duration, 'install user FW').verify_result()
+        with allure.step('Verify operation time'):
+            OperationTime.verify_operation_time(duration, 'install user FW').verify_result()
 
     finally:
         with allure.step("cleanup steps"):
@@ -76,7 +76,7 @@ def test_install_platform_firmware(engines, devices, test_name, topology_obj, cl
                                         system, test_name, fw_has_changed)
 
         with allure.step('Verify the firmware installed successfully'):
-            verify_firmware_with_platform_and_fae_cmd(platform, actual_firmware)
+            verify_firmware_with_platform_cmd(platform, actual_firmware)
             validate_all_asics_have_same_info()
             system.validate_health_status(HealthConsts.OK)
 
@@ -95,8 +95,7 @@ def get_asic_dict(platform):
 def install_new_image_fw(platform, test_name, fw_file_name):
     with allure.step('new fw image installation'):
         res_obj, duration = OperationTime.save_duration('reboot with new user FW', '', test_name,
-                                                        platform.firmware.asic.files.file_name[fw_file_name].action_file_install_with_reboot,
-                                                        system_is_ready_timeout=PlatformConsts.TIMEOUT_AFTER_FW_INSTALL)
+                                                        platform.firmware.asic.files.file_name[fw_file_name].action_file_install_with_reboot)
 
     return res_obj
 
@@ -113,25 +112,6 @@ def install_default_image_fw(system, test_name, fw_has_changed):
             res = system.reboot.action_reboot()
 
         return res
-
-
-def install_new_user_fw(system, platform, new_fw_to_install, actual_firmware, engines, test_name):
-    platform.firmware.asic.files.file_name[new_fw_to_install].action_file_install_with_reboot(
-        force=False, deny_reboot=True)
-    platform.firmware.asic.set(PlatformConsts.FW_SOURCE, PlatformConsts.FW_SOURCE_CUSTOM, apply=True)
-
-    with allure.step("Verify new installed file can be found in show output"):
-        verify_firmware_with_platform_and_fae_cmd(platform, actual_firmware)
-        validate_all_asics_have_same_info()
-        NvueGeneralCli.save_config(engines.dut)
-
-    with allure.step('Rebooting the dut after image installation'):
-        logging.info("Rebooting dut")
-        res, duration = OperationTime.save_duration('reboot with new user FW', '',
-                                                    test_name, system.reboot.action_reboot)
-        OperationTime.verify_operation_time(duration, 'reboot with new user FW').verify_result()
-
-    return res
 
 
 def get_original_fw_path(engines, original_fw):
@@ -159,7 +139,7 @@ def validate_all_asics_have_same_info():
                 assert asic_info == output_dictionary[asic], "ASICs are different"
 
 
-def verify_firmware_with_platform_and_fae_cmd(platform, actual_fw):
+def verify_firmware_with_platform_cmd(platform, actual_fw):
     output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(platform.firmware.asic.show()).get_returned_value()
     verify_field_value_in_output_for_each_asic(output_dictionary, "actual-firmware", actual_fw)
     asic_dictionary = get_asic_dict(platform)

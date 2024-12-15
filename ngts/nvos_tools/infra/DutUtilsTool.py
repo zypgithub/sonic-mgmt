@@ -55,8 +55,6 @@ class DutUtilsTool:
             if any(sub in output.lower() for sub in DutUtilsTool.invalid_output_list):
                 return ResultObj(result=False, info=output)
 
-            res_obj = DutUtilsTool.wait_on_system_reboot(engine, recovery_engine, None, should_wait_till_system_ready,
-                                                         device, False, True, topology_obj, system_is_ready_timeout, track_boot_intervals)
             if not should_wait_till_system_ready:
                 time.sleep(40)
                 return res_obj
@@ -67,11 +65,17 @@ class DutUtilsTool:
                 output = device.reload_device(engine, list_commands)
                 logger.info(output)
 
-                if 'aborted' in output.lower() or 'aborting' in output.lower():
-                    return ResultObj(result=False, info=output)
+                output_lower = output.lower()
+                if ('action succeeded' in output_lower) and ('reboot skipped' in output_lower):
+                    return ResultObj(result=True, info=output)
+
+                error_list = ['aborted', 'aborting', 'error: action failed', 'command not found']
+                for error in error_list:
+                    if error in output_lower:
+                        return ResultObj(result=False, info=output)
 
                 res_obj = DutUtilsTool.wait_on_system_reboot(engine, recovery_engine, None, should_wait_till_system_ready,
-                                                             device, False, True, topology_obj)
+                                                             device, False, True, topology_obj, system_is_ready_timeout)
                 if not should_wait_till_system_ready:
                     time.sleep(40)
                     return res_obj
@@ -153,7 +157,7 @@ class DutUtilsTool:
                         if system_is_ready_timeout:
                             DutUtilsTool.wait_for_system_ready_in_serial(topology_obj, wait_timeout=system_is_ready_timeout)
                         elif device:
-                            DutUtilsTool.wait_for_system_ready_in_serial(topology_obj, wait_timeout=device.system_is_ready_wait_timeout)
+                            DutUtilsTool.wait_for_system_ready_in_serial(topology_obj, wait_timeout=device.timeout_system_is_ready)
                         else:
                             DutUtilsTool.wait_for_system_ready_in_serial(topology_obj)
                         if track_boot_intervals:

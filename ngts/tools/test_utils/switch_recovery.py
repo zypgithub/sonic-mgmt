@@ -3,6 +3,8 @@ import random
 import socket
 import string
 import time
+import subprocess
+import shlex
 
 from netmiko.ssh_exception import NetmikoAuthenticationException
 
@@ -139,3 +141,23 @@ def check_switch_connectivity(topology_obj, engines):
                 return
     with allure.step(f'Got {res} error. Try recover with remote reboot to dut'):
         recover_dut_with_remote_reboot(topology_obj, engines)
+
+
+def remote_reboot_dut(topology_obj):
+    with allure.step("Remote reboot DUT"):
+        cmd = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific']['remote_reboot']
+        cmd.replace('/auto', '/.autodirect')
+        logging.info(f"Running cmd: {cmd}")
+        p = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        try:
+            p.communicate(timeout=60)
+            rc = p.returncode
+        except subprocess.TimeoutExpired:
+            logger.debug('Process is not responding. Sending SIGKILL.')
+            p.kill()
+            std_out, std_err = p.communicate()
+            rc = p.returncode
+            std_out = str(std_out.decode('utf-8') or '')
+            std_err = str(std_err.decode('utf-8') or '')
+            logging.info(f"std_out = {std_out}, std_err = {std_err}")
+        return rc == 0

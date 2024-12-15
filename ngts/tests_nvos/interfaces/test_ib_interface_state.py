@@ -56,10 +56,14 @@ def test_ib_interface_state(test_name, test_api):
 
 def toggle_port_state(selected_port, port_state, test_name=''):
     selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True).verify_result()
+    wait_for_port_state(selected_port, port_state, test_name=test_name)
+
+
+def wait_for_port_state(selected_port, port_state, logical_state=None, test_name=''):
     with allure.step("Wait till port {} is {}".format(selected_port, port_state)):
         res_obj, duration = OperationTime.save_duration('port goes {}'.format(port_state), '', test_name,
                                                         selected_port.interface.wait_for_port_state, port_state,
-                                                        sleep_time=0.2)
+                                                        sleep_time=0.2, logical_state=logical_state)
         res_obj.verify_result()
         OperationTime.verify_operation_time(duration, 'port goes {}'.format(port_state)).verify_result()
 
@@ -137,7 +141,6 @@ def test_ib_interface_state_unset(engines, test_api):
 
 @pytest.mark.ib_interfaces
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-@pytest.mark.skip(reason="https://redmine.mellanox.com/issues/4107460")
 def test_ib_interface_state_up_once(engines, devices, test_api, asic_conf_dict):
 
     with allure.step('set up system objects'):

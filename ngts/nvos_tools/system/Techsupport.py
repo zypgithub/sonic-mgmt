@@ -41,7 +41,7 @@ class TechSupport(BaseComponent):
             cmd_out, duration = OperationTime.save_duration('generate tech-support', option, test_name, SendCommandTool.execute_command,
                                                             self.api_obj[TestToolkit.tested_api].action_generate_techsupport, engine,
                                                             self.get_resource_path().replace('/files', ' '), option, since_time)
-            if 'Command failed' in cmd_out.info:
+            if 'failed' in cmd_out.info:
                 return cmd_out.info, duration
             self.parse_techsupport_folder_name(cmd_out)
             return SystemConsts.TECHSUPPORT_FILES_PATH + self.file_name, duration

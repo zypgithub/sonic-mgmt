@@ -137,10 +137,12 @@ class TrafficGeneratorTool:
             host_b.run_cmd(IbConsts.IB_SEND_LAT_CLIENT.format(traffic_duration=traffic_duration, server_ip=host_a.ip,
                                                               ib_device=hb_device, client_output=client_output))
         # return traffic start time
-        return time.time()
+        start_time = time.time()
+        logger.info(f"start traffic time: {start_time}")
+        return start_time
 
     @staticmethod
-    def stop_traffic_between_2_hosts(host_a, host_b, traffic_start_time, traffic_timeout, server_output, client_output):
+    def stop_traffic_between_2_hosts(host_a, host_b, traffic_start_time, traffic_timeout, server_file, client_file):
         with allure.step('Verify traffic results from Host A to Host B'):
             with allure.step('Wait for traffic send completion'):
                 while True:
@@ -148,19 +150,22 @@ class TrafficGeneratorTool:
                     job_client = host_b.run_cmd(IbConsts.GET_JOB_IB)
                     time_diff = time.time() - traffic_start_time
                     if not (job_server or job_client) or (time_diff > traffic_timeout):
+                        logger.info(f"job_server: {job_server}, job_client: {job_client}, diff time: {time_diff}")
                         break
 
             with allure.step('Get traffic client and server results'):
-                server_output = host_a.run_cmd('cat ' + server_output)
-                client_output = host_b.run_cmd('cat ' + client_output)
+                server_output = host_a.run_cmd('cat ' + server_file)
+                client_output = host_b.run_cmd('cat ' + client_file)
+                logger.info(f"server_output: {server_output}")
+                logger.info(f"client_output: {client_output}")
 
             with allure.step('Delete output files'):
-                host_a.run_cmd('rm -f ' + server_output)
-                host_b.run_cmd('rm -f ' + client_output)
+                host_a.run_cmd('rm -f ' + server_file)
+                host_b.run_cmd('rm -f ' + client_file)
 
             with allure.step('Verify traffic results'):
                 assert client_output and ('error' not in client_output) and ('loss' not in client_output), \
-                    f'server output failed: {client_output}'
+                    f'client output failed: {client_output}'
                 assert server_output and ('error' not in server_output) and ('loss' not in server_output), \
                     f'server output failed: {server_output}'
 

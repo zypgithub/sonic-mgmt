@@ -21,6 +21,10 @@ from ngts.nvos_tools.system.Spdm import SPDMComponents
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts
 from ngts.tools.test_utils.nvos_general_utils import get_version_info
+from ngts.tools.test_utils.nvos_config_utils import clear_conf
+from ngts.tools.test_utils import allure_utils as allure
+from infra.tools.linux_tools.linux_tools import scp_file
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 
 logger = logging.getLogger()
 
@@ -29,8 +33,8 @@ class IbSwitch(BaseSwitch):
     ErotFirmwareImagesTestConsts = namedtuple('ErotFirmwareImagesTestConsts',
                                               ('previous_image_path', 'current_image_path', 'version_names'))
 
-    def __init__(self, asic_amount, switch_type=NvosConst.IB_SWITCH_TYPE):
-        super().__init__(switch_type=switch_type, asic_amount=asic_amount)
+    def __init__(self, asic_amount, switch_type=NvosConst.IB_SWITCH_TYPE, switch_class=NvosConst.IB_SWITCH_TYPE):
+        super().__init__(switch_type=switch_type, asic_amount=asic_amount, switch_class=switch_class)
         self.documents_path = None
         self.documents_files = None
         self._init_sensors_dict()
@@ -85,6 +89,50 @@ class IbSwitch(BaseSwitch):
                                                    value[IbInterfaceConsts.LINK][IbInterfaceConsts.DHCP_STATE].keys())
 
         return ResultObj(False, err_msg) if err_msg else ResultObj(True, "", "")
+
+    def clear_config(self, dut_engine, markers=None, default_yml_path=None, root_dir=""):
+        clear_conf(dut_engine, self, default_yml_path, root_dir)
+
+    def handle_exception(self, dut_engine):
+        try:
+            logging.info("Handle ib exception")
+            dut_engine.run_cmd("docker ps")
+            dut_engine.run_cmd("systemctl --type=service")
+            dut_engine.run_cmd("nv show system version")
+        except BaseException as err:
+            logging.warning(err)
+
+    def get_default_config_yml(self, engine, root_dir):
+        try:
+            with allure.step("Get default yml file"):
+                default_config_name = NvosConst.DEFAULT_CONFIG_FILE_NAME
+                path_to_config_ymls = f"{root_dir}/{NvosConst.DEFAULT_CONFIG_PATH}"
+
+                for file_name in os.listdir(path_to_config_ymls):
+                    if self.switch_class in file_name:
+                        default_config_name = file_name
+                    if TestToolkit.dut_eth0_ip in file_name:
+                        default_config_name = file_name
+                        break
+
+            with allure.step(f"Copy {default_config_name} to the switch"):
+                scp_file(player=engine,
+                         src_path=f"{path_to_config_ymls}{default_config_name}",
+                         dst_path=NvosConst.PATH_TO_TMP_ON_DUT,
+                         download_from_remote=False, print_output=True)
+
+            tmp_file_path = f"{NvosConst.PATH_TO_TMP_ON_DUT}/{default_config_name}"
+            yml_file_path = f"{NvosConst.PATH_TO_CONFIG_FILES_ON_DUT}/{default_config_name}"
+
+            with allure.step(f"Copy {tmp_file_path} to {yml_file_path}"):
+                engine.run_cmd(f"sudo cp {tmp_file_path} {yml_file_path}")
+
+            logging.info(f"Using default yml file: {yml_file_path}")
+            return yml_file_path
+
+        except BaseException as ex:
+            print(f"SCP command failed - error output: {ex}")
+            return ""
 
     def _init_ib_speeds(self):
         self.invalid_ib_speeds = {'qdr': '40G'}
@@ -424,7 +472,7 @@ class IbSwitch(BaseSwitch):
 class GorillaSwitch(IbSwitch):
 
     def __init__(self, asic_amount=1):
-        super().__init__(asic_amount=asic_amount)
+        super().__init__(asic_amount=asic_amount, switch_class=NvosConst.GORILLA_SWITCH)
 
     def _init_constants(self):
         IbSwitch._init_constants(self)
@@ -490,15 +538,16 @@ class GorillaSwitch(IbSwitch):
             "state": FansConsts.STATE_OK, "direction": None, "current-speed": None,
             "min-speed": ExpectedString(range_min=2000, range_max=10000),
             "max-speed": ExpectedString(range_min=20000, range_max=40000)}
-        self.platform_environment_absent_fan_values = {
-            "state": FansConsts.STATE_ABSENT, "direction": "N/A", "current-speed": "N/A",
-            "min-speed": "N/A", "max-speed": "N/A"}
         self.platform_inventory_switch_values.update({"hardware-version": None,
                                                       "model": ExpectedString(regex="MQM9700.*")})
 
     def _init_eth0_speeds(self):
         super()._init_eth0_speeds()
         self.supported_eth0_speeds += ['10M']
+
+    def _init_boot_time_timeouts(self):
+        super()._init_boot_time_timeouts()
+        self.timeout_system_is_ready = 10 * MINUTE
 
 
 # -------------------------- Gorilla BF3 Switch ----------------------------
@@ -509,7 +558,6 @@ class GorillaSwitchBF3(GorillaSwitch):
 
     def _init_constants(self):
         super()._init_constants()
-        self.system_is_ready_wait_timeout = 10 * MINUTE
         self.constants.firmware.remove(PlatformConsts.FW_BIOS)
         self.ib_ports_num = 64
         self.core_count = 16
@@ -527,12 +575,11 @@ class GorillaSwitchBF3(GorillaSwitch):
 class BlackMambaSwitch(IbSwitch):
 
     def __init__(self):
-        super().__init__(asic_amount=4)
+        super().__init__(asic_amount=4, switch_class=NvosConst.BLACK_MAMBA_SWITCH)
 
     def _init_constants(self):
         self.asic_amount = 4
         super()._init_constants()
-        self.system_is_ready_wait_timeout = 15 * MINUTE
         self.ib_ports_num = 2 * 72
         self.core_count = 4
         self.asic_type = NvosConst.QTM3
@@ -568,6 +615,9 @@ class BlackMambaSwitch(IbSwitch):
         self.stats_fan_header_num_of_lines = 17
         self.stats_cpu_header_num_of_lines = 12
         self.stats_temperature_header_num_of_lines = 104
+        self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/black_mamba_versions.json"
+        self.allow_cpld_update = True
+        self.mst_dev_name = '/dev/mst/mt54004_pciconf2'
 
     def get_mgmt_ports(self) -> List[str]:
         return self.mgmt_ports
@@ -587,8 +637,13 @@ class BlackMambaSwitch(IbSwitch):
 
     def _init_temperature(self):
         super()._init_temperature()
-        self.temperature_sensors += ["ASIC2", "ASIC3", "ASIC4", "PSU-7-Temp", "SODIMM-2-Temp"]
-        self.temperature_sensors.remove("PSU-1-Temp")
+        self.temperature_sensors = [
+            'ASIC1', 'ASIC2', 'ASIC3', 'ASIC4', 'Ambient-Fan-Side-Temp', 'Ambient-Port-Side-Temp', 'PCH-Temp',
+            'CPU-Core-0-Temp', 'CPU-Core-1-Temp', 'CPU-Core-2-Temp', 'CPU-Core-3-Temp', 'CPU-Pack-Temp', 'Drive-Temp',
+            'PMIC-1-Temp', 'PMIC-2-Temp', 'PMIC-3-Temp', 'PMIC-4-Temp', 'PMIC-5-Temp', 'PMIC-6-Temp', 'PMIC-7-Temp',
+            'PMIC-8-Temp', 'PMIC-9-Temp', 'PMIC-10-Temp', 'PMIC-11-Temp', 'PMIC-12-Temp', 'PMIC-13-Temp',
+            'PSU-1-Temp', 'PSU-2-Temp', 'PSU-3-Temp', 'PSU-4-Temp', 'PSU-5-Temp', 'PSU-6-Temp', 'PSU-7-Temp', 'PSU-8-Temp',
+            'SODIMM-1-Temp', 'SODIMM-2-Temp']
 
     def _init_platform_lists(self):
         super()._init_platform_lists()
@@ -621,17 +676,21 @@ class BlackMambaSwitch(IbSwitch):
 
     def _init_ib_speeds(self):
         super()._init_ib_speeds()
-        self.supported_ib_speeds = ("sdr", "hdr", "ndr", "xdr")
+        self.supported_ib_speeds = ("xdr",)
 
     def _relevant_config_filename_by_version(self, version: str) -> str:
         return 'nvos_config_xdr.yml'
+
+    def _init_boot_time_timeouts(self):
+        super()._init_boot_time_timeouts()
+        self.timeout_system_is_ready = 15 * MINUTE
 
 
 # -------------------------- Crocodile Switch ----------------------------
 class CrocodileSwitch(IbSwitch):
 
     def __init__(self):
-        super().__init__(asic_amount=2)
+        super().__init__(asic_amount=2, switch_class=NvosConst.CROCODILE_SWITCH)
 
     def _init_constants(self):
         super()._init_constants()
@@ -639,7 +698,6 @@ class CrocodileSwitch(IbSwitch):
         self.core_count = 4
         self.split_ports_supported = True
         self.asic_type = NvosConst.QTM3
-        self.system_is_ready_wait_timeout = 10 * MINUTE
         self.platform_file_path = MultiPlanarConsts.PLATFORM_FILE_FULL_PATH.format("x86_64-nvidia_qm3400-r0")
         self.show_platform_output.update({
             "product-name": "QM3400",
@@ -665,26 +723,8 @@ class CrocodileSwitch(IbSwitch):
         self.stats_cpu_header_num_of_lines = 12
         self.stats_power_header_num_of_lines = 17
         self.stats_temperature_header_num_of_lines = 69
-        self.previous_cpld_version = BaseSwitch.CpldImageConsts(
-            burn_image_path="/auto/sw_system_project/NVOS_INFRA/verification_files/cpld_fw/OLD/FUI000273_BURN_CROCODILE_CPLD000232_REV0802_CPLD000357_REV0103_CPLD000358_REV0203_CPLD000359_REV0100.vme",
-            refresh_image_path="/auto/sw_system_project/NVOS_INFRA/verification_files/cpld_fw/OLD/FUI000273_REFRESH_CROCODILE_CPLD000232_REV0802_CPLD000357_REV0103_CPLD000358_REV0203_CPLD000359_REV0100.vme",
-            version_names={
-                "CPLD1": "CPLD000232_REV0802",
-                "CPLD2": "CPLD000357_REV0103",
-                "CPLD3": "CPLD000358_REV0203",
-                "CPLD4": "CPLD000359_REV0100",
-            }
-        )
-        self.current_cpld_version = BaseSwitch.CpldImageConsts(
-            burn_image_path="/auto/sw_system_project/NVOS_INFRA/verification_files/cpld_fw/FUI000274_BURN_CROCODILE_CPLD000232_REV0802_CPLD000357_REV0104_CPLD000358_REV0203_CPLD000339_REV0100.vme",
-            refresh_image_path="/auto/sw_system_project/NVOS_INFRA/verification_files/cpld_fw/FUI000274_REFRESH_CROCODILE_CPLD000232_REV0802_CPLD000357_REV0104_CPLD000358_REV0203_CPLD000339_REV0100.vme",
-            version_names={
-                "CPLD1": "CPLD000232_REV0802",
-                "CPLD2": "CPLD000357_REV0104",
-                "CPLD3": "CPLD000358_REV0203",
-                "CPLD4": "CPLD000359_REV0100",
-            }
-        )
+        self.allow_cpld_update = True
+        self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/crocodile_versions.json"
         self.fnm_link_speed = '800G'
         self.interface_list = ['eth0', 'eth1', 'fnm1', 'ib0', 'lo', 'swA10p1', 'swA10p2', 'swA11p1', 'swA11p2',
                                'swA12p1', 'swA12p2', 'swA13p1', 'swA13p2', 'swA14p1', 'swA14p2', 'swA15p1', 'swA15p2',
@@ -801,23 +841,24 @@ class CrocodileSwitch(IbSwitch):
         self.interface_active_internal_fnm_ports = {'fnma0p1', 'fnma1p1'}
         self.default_port = 'swA1p1'
 
-    def _init_ib_speeds(self):
-        super()._init_ib_speeds()
-        self.supported_ib_speeds = ("sdr", "hdr", "ndr", "xdr")
+    def _init_boot_time_timeouts(self):
+        super()._init_boot_time_timeouts()
+        self.timeout_system_is_ready = 10 * MINUTE
 
 
 # -------------------------- Crocodile Simx Switch ----------------------------
 class CrocodileSimxSwitch(IbSwitch):
 
     def __init__(self):
-        super().__init__(asic_amount=1)
+        super().__init__(asic_amount=1, switch_class=NvosConst.CROCODILE_SWITCH)
 
 
 # -------------------------- NvLink Switch ----------------------------
 class NvLinkSwitch(IbSwitch):
 
     def __init__(self, asic_amount):
-        super().__init__(switch_type=NvosConst.NVL_SWITCH_TYPE, asic_amount=asic_amount)
+        super().__init__(switch_type=NvosConst.NVL_SWITCH_TYPE, asic_amount=asic_amount,
+                         switch_class=NvosConst.JULIET_SWITCH)
 
     def _init_constants(self):
         super()._init_constants()
@@ -828,6 +869,7 @@ class NvLinkSwitch(IbSwitch):
         self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
             "x86_64-mlnx_mqm9700-r0")
         self.platform_file_path = MultiPlanarConsts.PLATFORM_FILE_FULL_PATH.format("x86_64-mlnx_mqm9700-r0")
+        self.unset_all_command += "; nv unset cluster"
 
     def get_mgmt_ports(self) -> List[str]:
         return self.mgmt_ports
@@ -847,7 +889,6 @@ class JulietSwitch(NvLinkSwitch):
     def _init_constants(self):
         super()._init_constants()
 
-        self.system_is_ready_wait_timeout = 20 * MINUTE
         self.category_list = ['temperature', 'cpu', 'disk', 'fan', 'mgmt-interface', 'voltage']
         self.category_disabled_dict = {
             self.category_list[0]: self.category_default_disabled_dict,
@@ -954,6 +995,11 @@ class JulietSwitch(NvLinkSwitch):
                 return available_erots
         logging.info(f'no available ERoTs found for {setup_name}')
         return []
+
+    def _init_boot_time_timeouts(self):
+        super()._init_boot_time_timeouts()
+        self.timeout_system_is_ready = 20 * MINUTE
+        self.timeout_reboot_to_grub_menu = 5 * MINUTE
 
 
 # -------------------------- JulietScaleout Switch ----------------------------

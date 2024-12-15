@@ -1,5 +1,6 @@
 from ngts.tools.topology_tools.topology_by_setup import get_topology_by_setup_name_and_aliases
 from ngts.tools.infra import update_sys_path_by_community_plugins_path
+from ngts.tools.infra import get_topology_from_noga
 
 update_sys_path_by_community_plugins_path()
 
@@ -28,6 +29,6 @@ def pytest_sessionstart(session):
     session.config.option.allure_server_port = ''
 
     if not ansible_host_pattern_param_already_loaded(session):
-        topology = get_topology_by_setup_name_and_aliases(session.config.option.setup_name, slow_cli=False)
+        topology = get_topology_from_noga(session)
         dut_name = topology.players['dut']['attributes'].noga_query_data['attributes']['Common']['Name']
         session.config.option.ansible_host_pattern = dut_name

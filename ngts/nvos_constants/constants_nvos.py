@@ -61,9 +61,19 @@ class CumulusConsts:
     ETH_SWITCH_TYPE = "ETH"
 
 
+class TestConsts:
+    PASSED = "passed"
+    FAILED = "failed"
+    SKIPPED = "skipped"
+
+
 class NvosConst:
     IB_SWITCH_TYPE = "IB"
     NVL_SWITCH_TYPE = "NVL"
+    JULIET_SWITCH = "JULIET"
+    CROCODILE_SWITCH = "CROCODILE"
+    BLACK_MAMBA_SWITCH = "BLACK_MAMBA"
+    GORILLA_SWITCH = "GORILLA"
     QTM2 = "Quantum2"
     QTM3 = "Quantum3"
     NVL5 = "NVLink-5 switch"
@@ -81,6 +91,11 @@ class NvosConst:
     DISABLED = 'disabled'
     NOT_AVAILABLE = 'N/A'
     ALL = 'all'
+    DEFAULT_CONFIG_FILE_NAME = "nvos_default_config_IB.yml"
+    DEFAULT_CONFIG_PATH = "/tools/test_utils/nvos_resources/clear_config/"
+    SCP_PATH_SWITCH = 'scp {path} {username}@{ip}:{dest_path}'
+    PATH_TO_CONFIG_FILES_ON_DUT = "/host/config_files"
+    PATH_TO_TMP_ON_DUT = "/tmp/"
 
     DOCKERS_LIST = ['pmon', 'syncd-ibv0', 'swss-ibv0', 'database']
     DOCKER_PER_ASIC_LIST = ['syncd-ibv0', 'swss-ibv0', 'database']
@@ -328,6 +343,7 @@ class ConfState:
     OPERATIONAL = 'operational'
     APPLIED = 'applied'
     STARTUP = 'startup'
+    SAVED = 'saved'
 
 
 class OpenApiReqType:
@@ -474,6 +490,7 @@ class SystemConsts:
     SNMP_DEFAULT_REFRESH_INTERVAL = 60
     SNMP_DEFAULT_LISTENING_ADDRESS = {}
     SNMP_DEFAULT_READONLY_COMMUNITY = {}
+    SNMP_ENABLED_DEFAULT_LISTENING_ADDRESS = {'all': {'port': 161}}
     SNMP_DEFAULT_VALUES = [SNMP_DEFAULT_LISTENING_ADDRESS,
                            SNMP_DEFAULT_READONLY_COMMUNITY, SNMP_DEFAULT_STATE]
 
@@ -571,22 +588,11 @@ class SystemConsts:
     MEMORY_PERCENT_THRESH_MIN = 0.0
     MEMORY_PERCENT_THRESH_MAX = 70.0
 
-    CPU_PERCENT_THRESH_MIN = 0.0
-    CPU_PERCENT_THRESH_MAX = 60.0
     CPU_CORE_COUNT_KEY = 'core-count'
-    CPU_CORES = 'cores'
-    CPU_LOAD_AVERAGE = 'load-average'
     CPU_MODEL_KEY = 'model'
     CPU_UTILIZATION_KEY = 'utilization'
-    CPU_INFO_LIST = [CPU_CORE_COUNT_KEY, CPU_CORES, CPU_LOAD_AVERAGE, CPU_MODEL_KEY, CPU_UTILIZATION_KEY]
-    DISK_AVAILABLE_KEY = 'available'
-    DISK_USED_KEY = 'used'
-    DISK_FREE_PERCENT_KEY = 'free-percent'
-    DISK_FREE_KEY = 'free'
-    DISK_MOUNT_KEY = 'mount-point'
-    DISK_TOTAL_SIZE_KEY = 'total-size'
-    DISK_INFO_FIELD_LIST = [DISK_AVAILABLE_KEY, DISK_USED_KEY, DISK_FREE_PERCENT_KEY, DISK_FREE_KEY, DISK_MOUNT_KEY,
-                            DISK_TOTAL_SIZE_KEY]
+    CPU_PERCENT_THRESH_MIN = 0.0
+    CPU_PERCENT_THRESH_MAX = 60.0
 
     HEALTH_STATUS = "health-status"
 
@@ -635,6 +641,7 @@ class SystemConsts:
     NEGATIVE_HALT_ON_FAILURE_JSON = 'negative_halt_on_failure.json'
     NEGATIVE_RESTART_ON_FAILURE_JSON = 'negative_restart_on_failure.json'
     IMAGE_JSON = 'uninstall.json'
+    IMAGE_PROD_JSON = 'uninstall_prod.json'
     STARTUP_FILE_WRONG_IP = 'startup_wrong_ip.json'
     STARTUP_FILE_CLEAR_CONFIG_FALSE = 'startup_file_clear_config_false.json'
     STARTUP_FILE_CLEAR_CONFIG_TRUE = 'startup_file_clear_config.json'
@@ -643,9 +650,9 @@ class SystemConsts:
     CONNECTIVITY_IPV4_IPV6 = 'ping_ipv4_ipv6.json'
     NEGATIVE_CONNECTIVITY = 'negative_connectivity.json'
     COMPLEX = 'complex.json'
+    COMPLEX_PROD = 'complex_prod.json'
     ZTP_STATUS_RUNNING = 'running'
     ZTP_STATUS_SUCCESS = 'success'
-    ZTP_STATUS_FAILED = 'failed'
     HTTP_SERVER = 'http://nbu-nfs.mellanox.com'
     VERIFICATION_ZTP_PATH = '/auto/sw_system_project/NVOS_INFRA/ztp/'
 
@@ -687,8 +694,6 @@ class SystemConsts:
     DUMMY_IMAGE_PATH = "/tmp/"
 
     SYSTEM_LAST_EVENT = 'last'
-    CONTACT = "contact"
-    LOCATION = "location"
 
 
 class DocumentsConsts:
@@ -869,6 +874,7 @@ class PlatformConsts:
     ASIC_CONF_FILE_PATH = "/usr/share/sonic/device/{}/asic.conf"
     INV_FAILED = 'failed'
     TIMEOUT_AFTER_FW_INSTALL = 600
+    TIMEOUT_AFTER_BIOS_INSTALL = 720
 
 
 class FansConsts:
@@ -930,6 +936,7 @@ class IbConsts:
     IBDIAGNET_EXPECTED_MESSAGE = 'ibdiagnet output files were archived into ibdiagnet2_output.tgz'
     IB_INTERFACE_NAME_REGEX = "([a-zA-Z]+)(\d+)(p\d+)"  # noqa: E402
     IB_DEV_2_NET_DEV = 'ibdev2netdev'
+    IBSWITCHES = 'ibswitches'
     BASE_LID = 'ibstat | grep "Base lid"'
     MAX_NUM_OF_BYTES = '8388608'
     IB_SEND_LAT_SERVER = ('ib_send_lat -F -s ' + MAX_NUM_OF_BYTES + ' -D ' +
@@ -953,6 +960,7 @@ class ImageConsts:
     SCP_PATH = 'scp://{}:{}@{}'.format(NvosConst.ROOT_USER, NvosConst.ROOT_PASSWORD,
                                        'fit70')
     SCP_PATH_SERVER = 'scp://{username}:{password}@{ip}{path}'
+    NVOS_RELEASE_25_02_1000 = "25.02.1000"
 
 
 class TcpDumpConsts:
@@ -1540,7 +1548,6 @@ class UfmMadConsts:
     PMAOS_REGISTER = 'PMAOS'
     PREI_REGISTER = 'PREI'
     NVMAD_PATH = '/auto/sw_system_project/MLNX_OS_INFRA/mad_repository'
-    LID = 1
     MAD_NO_IPV4 = '0.0.0.0'
     MAD_NO_IPV6 = '0:0:0:0::0:0'
 
@@ -1570,6 +1577,7 @@ class BiosConsts:
     ENTER_CURRENT_PASSWORD = "Enter Current Password"
     NVLINK_ENTER_CURRENT_PASSWORD = "Enter Current Administrator Password"
     CLEAR_OLD_PASSWORD = "Clear Old Password"
+    NVLINK_CLEAR_OLD_PASSWORD = "Clear Old Administrator Password"
     ENABLED_SELECTED = "[1;37;47m[Enabled]"
     DISABLED_SELECTED = "[1;37;47m[Disabled]"
     KEY_STROKE_SLEEP = 0.5
@@ -1578,6 +1586,7 @@ class BiosConsts:
     SELECTED_LINE_VAL_REGEX = "\\x1b[[1];37;47m[[]([^\\\\*?)[]]\\x1b"
     SELECTED_OPTION_LINE_REGEX = "\\x1b[[]1;37;40m([^\\[\\]]*?)\\x1b"
     BIOS_MENU_PAGES = ["Main", "Advanced", "Chipset", "Security", "Boot", "Save & Exit", "Event Logs"]
+    NVLINK_BIOS_MENU_PAGES = ["Main", "Advanced", "Chipset", "Security", "Boot", "Save & Exit", "Event Logs", "Server Mgmt"]
     MISSING_PAGE_ERR = "Target page {} not found in the BIOS setting pages list {}"
     MAX_SELECTIONS_PER_PAGE = 30
     PEXPECT_TIMEOUT = 2
@@ -1668,8 +1677,8 @@ class PtpConsts:
 
 class IssuConsts:
     class IssuStatus(Enum):
-        NO_ISSU = 'no_issu'
-        IN_PROGRESS = 'in_progress'
+        NO_ISSU = 'no-issu'
+        IN_PROGRESS = 'in-progress'
         FAILED = 'failed'
         DONE = 'done'
 
@@ -1687,14 +1696,12 @@ class IssuConsts:
     OPENSM_RESPONSE_ABORT = 'abort'
     # DB_OPENSM_TIMEOUT = 'TBD'  # Currently not needed (constant 60 secs)
     OLD_IMAGE = "/auto/sw_system_release/nos/nvos/25.02.1930-007/amd64/dev/nvos-amd64-25.02.1930-007.bin"
-    LOG_MSG_REACH_TO = "reach timeout..."  # TODO [L.A] update message once receiving 1st drop
-    LOG_MSG_LIST = [LOG_MSG_REACH_TO]  # TODO [L.A] add all log error messages
     PYTHON_PATH = 'PYTHONPATH=/ngts_venv/ /ngts_venv/bin/python'
     PING_SERVER_SCRIPT = '/sonic-mgmt/ngts/tests_nvos/system/ping_server.py'
     CONTAINER_BU_TEMPLATE = '{python_path} {ping_server_script}'
     SERVER_SCRIPT = PYTHON_PATH + PING_SERVER_SCRIPT
     OPENSM_RESPONSE_TIMEOUT = '60'  # [sec]
-    TRAFFIC_DURATION = '120'  # [sec]
+    TRAFFIC_DURATION = '300'  # [sec]
     TRAFFIC_TIMEOUT = int(TRAFFIC_DURATION) + 10  # [sec]
     SERVER_OUTPUT = 'server_output.txt'
     CLIENT_OUTPUT = 'client_output.txt'
@@ -1702,14 +1709,16 @@ class IssuConsts:
                                   '  Configuration must be saved before performing ISSU')
     ERROR_SYSTEM_MUST_BE_REBOOTED = ('Error: Action failed with the following issue:\n'
                                      '  System must be rebooted during ISSU')
-    ERROR_OPENSM_NO_PERMISSION = ('Error: Action failed with the following issue:\n'
-                                  '  No permission from OpenSM')  # TODO: update message
     ERROR_OPENSM_REACH_TIMEOUT = ('Error: Action failed with the following issue:\n'
                                   '  No permission to perform ISSU from the SM')
     ERROR_DOWNGRADE_NOT_ALLOWED = ('Error: Action failed with the following issue:\n'
-                                   '  Downgrade image is not allowed')  # TODO: update message
-    ERROR_ANY_ERROR = 'Error: Action failed with the following issue:'
+                                   '  ISSU does not support downgrade')
+    LOG_MSG_LIST = ['issue: No permission to perform ISSU from the SM',
+                    'issue: System must be rebooted during ISSU',
+                    'issue: Configuration must be saved before performing ISSU',
+                    'issue: ISSU does not support downgrade']
     SNMP_READ_ONLY_COMMUNITY = 'qwerty12'
+    REDUCED_TIMEOUT = '20'  # [sec]
 
 
 class RemarkableLogsConsts:

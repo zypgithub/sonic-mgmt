@@ -14,6 +14,7 @@ from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.nvos_tools.infra.SerialConsoleTool import SerialConsoleTool
 from ngts.tests_nvos.general.post_upgrade_switch.constants import InstallSteps
 from ngts.tests_nvos.general.post_upgrade_switch.install_steps_timer import InstallStepsTimer
+from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tests_nvos.general.security.test_secure_boot.constants import SecureBootConsts
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tools.test_utils import allure_utils as allure
@@ -193,7 +194,7 @@ class NvueGeneralCli(SonicGeneralCliDefault):
         with allure.step('Ping switch until back alive'):
             ping_till_alive(should_be_alive=True, destination_host=engine.ip)
         with allure.step('wait for System is ready in serial'):
-            DutUtilsTool.wait_for_system_ready_in_serial(topology_obj, serial_engine, self.device.system_is_ready_wait_timeout)
+            DutUtilsTool.wait_for_system_ready_in_serial(topology_obj, serial_engine, self.device.timeout_system_is_ready)
             InstallStepsTimer.add_timestamp(InstallSteps.SYSTEM_IS_READY_AFTER_MANUFACTURE)
         with allure.step('Wait until switch is up'):
             engine.disconnect()  # force engines.dut to reconnect
@@ -241,7 +242,7 @@ class NvueGeneralCli(SonicGeneralCliDefault):
 
     @staticmethod
     def apply_config(engine, ask_for_confirmation=False, option='', validate_apply_message='', rev_id="",
-                     skip_no_config_diff_err=True, verify_execution=False):
+                     skip_no_config_diff_err=True, verify_execution=False, client_certs_after_apply: CertInfo = None):
         """
         Apply configuration
         :param option: could be [-y, --assume-yes, --assume-no, --confirm-yes, --confirm-no, --confirm-status]
@@ -249,8 +250,8 @@ class NvueGeneralCli(SonicGeneralCliDefault):
         :param ask_for_confirmation: True or False
         """
         if verify_execution:
-            SendCommandTool.execute_command(NvueGeneralCli._apply_config, engine, ask_for_confirmation, option,
-                                            validate_apply_message, rev_id, skip_no_config_diff_err).verify_result()
+            return SendCommandTool.execute_command(NvueGeneralCli._apply_config, engine, ask_for_confirmation, option,
+                                                   validate_apply_message, rev_id, skip_no_config_diff_err).verify_result()
         else:
             return NvueGeneralCli._apply_config(engine, ask_for_confirmation, option, validate_apply_message, rev_id, skip_no_config_diff_err)
 

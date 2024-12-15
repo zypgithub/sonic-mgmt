@@ -33,8 +33,8 @@ class Configurations:
     # List of all ports connected to traffic servers
     traffic_ports = {
         # Black Mamba
-        "10.7.148.112": ['sw38p1', 'sw53p1'],
-        "10.7.148.113": ['sw38p1', 'sw53p1'],
+        "10.7.148.112": ['sw53p1'],
+        "10.7.148.113": ['sw53p1'],
 
         # Crocodile
         "10.7.148.94": ['swA1p1', 'swA2p1'],
@@ -52,10 +52,7 @@ class Configurations:
                                               'nv config apply -y'],
                              }
 
-    devices_missing_psus = {
-        MTVR_MAMBA_06_0, MTVR_MAMBA_06_1, MTVR_CROC_19_0, MTVR_CROC_19_1, MTVR_CROC_50_0, MTVR_CROC_50_1,
-    }
-
+    devices_missing_psus = {}
     devices_to_configure_ndr_ports = ndr_ports.keys()
 
     default_conf = NvosConst.DEFAULT_CONFIG
@@ -148,7 +145,8 @@ class RegressionConfigurations:
     @staticmethod
     def configure_ps_redundancy_policy(engine: LinuxSshEngine):
         if engine.ip in Configurations.devices_missing_psus:
-            Platform().ps_redundancy.set(PlatformConsts.PS_REDUNDANCY_POLICY, PlatformConsts.PS_REDUNDANCY_NO)
+            Platform().ps_redundancy.set(PlatformConsts.PS_REDUNDANCY_POLICY, PlatformConsts.PS_REDUNDANCY_NO,
+                                         dut_engine=engine)
 
     @staticmethod
     def configure_ports_to_legacy(engine, apply=True, throw_exception=True, wait_till_port_up=False):

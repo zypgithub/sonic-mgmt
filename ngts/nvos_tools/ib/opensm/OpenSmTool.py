@@ -1,6 +1,8 @@
 import pytest
 import time
 import logging
+
+from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.nvos_tools.ib.Ib import Ib
 from ngts.nvos_constants.constants_nvos import IbConsts
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
@@ -12,6 +14,7 @@ from retry import retry
 logger = logging.getLogger()
 
 OPEN_SM_PATH = "opensm"
+OPEN_SM_CFG_PATH = "/auto/sw_system_project/NVOS_INFRA/verification/issu/opensm.cfg"
 MISSING_HFNM_MESSAGE = "HA and HFNM can't be found in topology"
 
 
@@ -59,7 +62,10 @@ class OpenSmTool:
                 return ResultObj(False, "Failed to find GUID to start OpenSM")
 
         with allure.step("Start OpenSM"):
-            engines.hfnm.run_cmd(f"{OPEN_SM_PATH} -g {guid} -B")
+            if hasattr(engines, "hfnm") and is_redmine_issue_active([4178112]):
+                # todo: remove when we get opensm 5.22 or later
+                OPEN_SM_PATH = '/labhome/juliav/workspace/sm_regression/sources/SM_MASTER/usr/sbin/opensm'
+            engines.hfnm.run_cmd(f"{OPEN_SM_PATH} -F {OPEN_SM_CFG_PATH} -g {guid} -B")
             time.sleep(5)
 
         with allure.step("Verify OpenSM is running"):

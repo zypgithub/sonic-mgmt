@@ -13,7 +13,6 @@ from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.constants.constants import GnmiConsts
 from ngts.nvos_constants.constants_nvos import NvosConst, DatabaseConst, ApiType, ActionConsts, SystemConsts
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
-from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.system.System import System
@@ -377,7 +376,6 @@ def test_gnmi_events_overload(engines, devices):
     pattern = "(\\d{2}:\\d{2}:\\d{2} (?:AM|PM) ) (.{3})(.*)(\\d{2}\\.\\d{2})"
     regex = re.compile(pattern)
     system = System()
-    fae = Fae()
     client = GnmiClient(engines.dut.ip, GnmiConsts.GNMI_DEFAULT_PORT, devices.dut.default_username,
                         devices.dut.default_password)
 
@@ -403,8 +401,8 @@ def test_gnmi_events_overload(engines, devices):
                     subscriber_monitor_process.start()
 
         with allure.step('Set system events table-size to maximum ie {}'.format(SystemConsts.EVENTS_TABLE_SIZE_MAX)):
-            fae.system.events.set(op_param_name='table-size', op_param_value=SystemConsts.EVENTS_TABLE_SIZE_MAX,
-                                  apply=True, dut_engine=engines.dut).verify_result()
+            system.events.set(op_param_name='table-size', op_param_value=SystemConsts.EVENTS_TABLE_SIZE_MAX,
+                              apply=True, dut_engine=engines.dut).verify_result()
 
         with allure.step('Clear system events'):
             system.events.action(ActionConsts.CLEAR).verify_result()
@@ -433,7 +431,7 @@ def test_gnmi_events_overload(engines, devices):
 
     finally:
         with allure.step('Unset system events table-size to make it default'):
-            fae.system.events.unset(apply=True, dut_engine=engines.dut).verify_result()
+            system.events.unset(apply=True, dut_engine=engines.dut).verify_result()
 
         with allure.step('Clear system events'):
             system.events.action(ActionConsts.CLEAR)

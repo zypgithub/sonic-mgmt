@@ -15,6 +15,9 @@ DUT_IMPORTED_CACERTS_DIR = '/etc/ssl/certs'
 
 class CertMsgs:
     SSL_CERTIFICATE_PROBLEM = 'SSL certificate problem'
+    SSL_CERTIFICATE_ERROR = 'SSL certificate error'
+    NO_REQUIRED_SSL_CERT_SENT = 'No required SSL certificate was sent'
+    ALL_ERRORS = [SSL_CERTIFICATE_PROBLEM, SSL_CERTIFICATE_ERROR, NO_REQUIRED_SSL_CERT_SENT]
 
 
 class TestCert:
@@ -62,6 +65,18 @@ class TestCert:
         public=f'{TEST_CERTS}/cert-from-ca1-long-pass/service.pem',
         p12_bundle=f'{TEST_CERTS}/cert-from-ca1-long-pass/service.p12',
         p12_password='6RLTILPOCQKNMOUWC38WWXFHOQR24YN441EM0QB255L1OG53E0QPM94LLA0VV8J17XV20BLKU5X1HWI2UVMCYMVLT',
+        dn='nvos-dut',
+        ip=None,
+        cacert=f'{TEST_CERTS}/ca1/ca.crt'
+    )
+
+    cert_valid_1_no_passphrase = CertInfo(
+        name='valid-cert-1-no-pass',
+        info='valid certificate for test with no passphrase - from ca1',
+        private=f'{TEST_CERTS}/cert-from-ca1-no-pass/service.key',
+        public=f'{TEST_CERTS}/cert-from-ca1-no-pass/service.pem',
+        p12_bundle=f'{TEST_CERTS}/cert-from-ca1-no-pass/service.p12',
+        p12_password='',
         dn='nvos-dut',
         ip=None,
         cacert=f'{TEST_CERTS}/ca1/ca.crt'
@@ -116,3 +131,29 @@ class TestCert:
     )
 
     all_certs: List[CertInfo] = [cert_valid_1, cert_valid_2, cert_private_public_mismatch, cert_ca_mismatch]
+
+
+class CertShowFields:
+    INSTALLED = 'installed'
+    SERIAL_NUMBER = 'serial-number'
+    VALID_FROM = 'valid-from'
+    VALID_TO = 'valid-to'
+    ALL_FIELDS = [INSTALLED, SERIAL_NUMBER, VALID_FROM, VALID_TO]
+
+
+CERT_PRIVATE_KEY_LOCATION = '/etc/nvue/certificates/private'
+CERT_PUBLIC_KEY_LOCATION = '/etc/nvue/certificates/public'
+
+
+class CaShowFields:
+    COUNT = 'count'
+    INSTALLED = 'installed'
+    SERIAL_NUMBER = 'serial-number'
+    VALID_FROM = 'valid-from'
+    VALID_TO = 'valid-to'
+    ALL_FIELDS = [COUNT, INSTALLED, SERIAL_NUMBER, VALID_FROM, VALID_TO]
+
+
+CA_PEM_FILE_LOCATION = '/etc/ssl/certs'
+CA_CRT_FILE_LOCATION = '/usr/local/share/ca-certificates/nvue'
+CA_POOL_FILE = '/etc/ssl/certs/ca-certificates.crt'

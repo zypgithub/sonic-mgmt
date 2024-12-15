@@ -21,6 +21,12 @@ class MgmtPort(BaseComponent):
         self.name_in_redis = ''
         self.interface = Interface(self, name)
 
+    def __str__(self):
+        return f"{self.__class__.__name__}('{self.name}')"
+
+    def __repr__(self):
+        return str(self)
+
     def update_output_dictionary(self):
         """
         Execute "show" command and create the output dictionary for the mgmt-port

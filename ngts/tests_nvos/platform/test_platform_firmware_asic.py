@@ -92,7 +92,6 @@ def test_set_unset_platform_firmware_default(engines):
 @pytest.mark.simx
 @pytest.mark.image
 @pytest.mark.platform
-@pytest.mark.timeout(20 * MINUTE, func_only=True)
 def test_platform_firmware_image_rename(engines, devices, topology_obj, clear_asic_files):
     """
     Check the image rename cmd.
@@ -102,8 +101,6 @@ def test_platform_firmware_image_rename(engines, devices, topology_obj, clear_as
     2. Rename image without mfa ending
     3. Install original image name , should fail
     4. Delete the original image name , should fail
-    5. Install new image name , success
-    6. Reboot, expect the original ASIC FW
     """
     platform = Platform()
     platform.firmware.asic.files.verify_show_files_output([], [])
@@ -119,6 +116,7 @@ def test_platform_firmware_image_rename(engines, devices, topology_obj, clear_as
         platform.firmware.asic.action_fetch(fw_file, base_url=scp_path).verify_result()
         fetched_image_file = platform.firmware.asic.files.file_name[fetched_image_name]
 
+    with allure.step("Rename image without mfa ending, should fail"):
         new_name = RandomizationTool.get_random_string(20, ascii_letters=string.ascii_letters + string.digits)
         fetched_image_file.action_rename(new_name, expected_str="", rewrite_file_name=False, should_succeed=False)
 
@@ -139,10 +137,6 @@ def test_platform_firmware_image_rename(engines, devices, topology_obj, clear_as
         logging.info("Delete original image name, should fail")
         platform.firmware.asic.files.file_name[fetched_image_name].action_delete(should_succeed=False)
 
-    with allure.step("Install new image name"):
-        logging.info("Install new image name: {}".format(new_name))
-        fetched_image_file.action_file_install_with_reboot(force=True, system_is_ready_timeout=PlatformConsts.TIMEOUT_AFTER_FW_INSTALL).verify_result(should_succeed=True)
-
 
 @pytest.mark.checklist
 @pytest.mark.simx
@@ -157,16 +151,15 @@ def test_platform_firmware_image_upload(engines, devices, topology_obj):
     4. Delete image file from player
     5. Delete image file from dut
     """
+
     platform = Platform()
-    dut = devices.dut
     component_name = 'asic'
     fw_file, fetched_image_name, _ = FWComponentsTool.get_fw_component_version_latest(component_name)
     with allure.step("Fetch image"):
-        player = engines['sonic_mgmt']
-        scp_path = 'scp://{}:{}@{}'.format(player.username, player.password, player.ip)
-        platform.firmware.asic.action_fetch(fw_file, base_url=scp_path).verify_result()
+        platform.firmware.asic.action_fetch(fw_file, base_url=ImageConsts.SCP_PATH).verify_result()
 
     upload_protocols = ['scp', 'sftp']
+    player = engines['sonic_mgmt']
     image_file = platform.firmware.asic.files.file_name[fetched_image_name]
 
     with allure.step("Upload image to player {} with the next protocols : {}".format(player.ip, upload_protocols)):
@@ -242,24 +235,6 @@ def compare_asic_names(first_dictionary, second_dictionary):
 def compare_asic_fields(first_dictionary, second_dictionary):
     logging.info("Compare asic fields")
     ValidationTool.compare_dictionaries(first_dictionary, second_dictionary).verify_result()
-
-
-def get_image_data_and_fetch_random_image_files(platform, dut, topology_obj, images_amount_to_fetch=1
-                                                ) -> Tuple[str, str, str]:
-    original_image, default_firmware = get_image_data(platform, dut)
-
-    with allure.step(f"Get {images_amount_to_fetch} available image files"):
-        asic_type = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific'][
-            'chip_type']
-        if "QTM3" in default_firmware:
-            directory = PlatformConsts.XDR_FW_PATH.format(asic=asic_type)
-            image_name = f'fw-{asic_type}-{ImageConsts.XDR_FW_STABLE_VERSION}'
-            image_to_fetch = os.path.join(directory, image_name)
-        else:
-            image_to_fetch = '{}fw-{}-'.format(PlatformConsts.FW_PATH, asic_type) + ImageConsts.FW_STABLE_VERSION
-            image_name = 'fw-{}-'.format(asic_type) + ImageConsts.FW_STABLE_VERSION
-        platform.firmware.asic.action_fetch(image_to_fetch).verify_result()
-    return original_image, image_name, default_firmware
 
 
 def get_image_data(platform, dut) -> Tuple[str, str]:

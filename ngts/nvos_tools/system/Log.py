@@ -36,17 +36,23 @@ class Log(BaseComponent):
             return SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].action_rotate_logs,
                                                    TestToolkit.engines.dut).get_returned_value()
 
-    def verify_expected_logs(self, logs_to_find, engine=None):
+    def verify_expected_logs(self, logs_to_find, engine=None, only_latest_log=False):
         """
-
         :param logs_to_find: list of logs to find
+        :param engine: system engine
+        :param only_latest_log: verify in only latest log file, instead of all in log files.
         :return:
         """
         with allure.step('Verify expected logs'):
             log_search_errors: Dict[str, str] = {log: f'log "{log}" was not found' for log in logs_to_find}
-
-            log_files = OutputParsingTool.parse_json_str_to_dictionary(self.files.show()).get_returned_value().keys()
             grep_logs = '|'.join(logs_to_find)
+
+            if only_latest_log:
+                log_files = ['syslog']
+            else:
+                log_files = OutputParsingTool.parse_json_str_to_dictionary(
+                    self.files.show()).get_returned_value().keys()
+
             for log_file in log_files:
                 if not log_search_errors:
                     break

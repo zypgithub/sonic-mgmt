@@ -22,6 +22,7 @@ class TestToolkit:
     GeneralApi = {ApiType.NVUE: NvueGeneralCli, ApiType.OPENAPI: OpenApiGeneralCli}
     loganalyzer_duts = None
     topology_obj = None
+    dut_eth0_ip = ""
 
     @staticmethod
     def update_tested_ports(tested_ports):
@@ -42,6 +43,10 @@ class TestToolkit:
     def update_engines(engines):
         with allure.step("Update engines object in TestTookit"):
             TestToolkit.engines = engines
+
+    @staticmethod
+    def update_dut_eth0_ip(ip):
+        TestToolkit.dut_eth0_ip = ip
 
     @staticmethod
     def update_devices(devices):

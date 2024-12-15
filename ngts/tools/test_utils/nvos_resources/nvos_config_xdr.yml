@@ -8,3 +8,8 @@
       message:
         post-login: yoavpost
         pre-login: yoavpre123
+    interface:
+      swA1p1,swA2p1:
+        link:
+          connection-mode: ndr
+        type: ib

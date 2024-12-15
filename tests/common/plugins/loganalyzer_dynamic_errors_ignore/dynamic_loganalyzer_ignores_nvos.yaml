@@ -661,6 +661,12 @@
     - Affected_test_cases:
         - tests_nvos/general/security/test_aaa_ldap/test_aaa_ldap.py
 
+- Errors_list:
+    - '.*WARNING sed_pw_recovery_service.sh: Password used from TPM Bank 2 not passing authentication.*'
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/general/security/sed/test_sed_password.py::test_back_new_pass
+
 ## NVOS - commented the ignore for debug
 #- Errors_list:
 #    - '.* ERR auditd\[\d+\]: queue to plugins is full - dropping event.*'
@@ -765,6 +771,8 @@
 # NVOS - TACACS - invalid secret - expected errors
 - Errors_list:
     - '.*ERR ker process: tac_authen_read: inconsistent reply body, incorrect key\?.*'
+    - '.*ERR service_checker: tac_authen_read: inconsistent reply body, incorrect key\?.*'
+    - '.*ERR nvued: tac_authen_read: inconsistent reply body, incorrect key\?.*'
   Conditions:
     - Affected_test_cases:
       - tests_nvos/general/security/tacacs/test_aaa_tacacs.py::test_tacacs_bad_secret
@@ -1366,6 +1374,21 @@
     - Affected_test_cases:
         - tests_nvos/system/test_system_health.py::test_simulate_health_problem_with_hw_simulator
         - tests_nvos/system/test_system_health.py::test_simulate_fan_speed_fault
+
+# NVOS Security
+- Errors_list:
+    - '.*ERR nvued:   ERROR: lifecycle\.py:.* user_config\.json data: {.*} does not contain the encryption mode required.*'
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/general/security/nmx_cert/test_nmx_cert.py::test_restore_cert_when_in_encryption_mode
+
+# NVOS Security
+- Errors_list:
+    - '.*ERR .*: PAM-tacplus: auth failed: 2.*'
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/system/gnmi/test_gnmi_pam.py::test_gnmi_auth_failthrough
+        - tests_nvos/system/gnmi/test_gnmi_pam.py::test_gnmi_authentication[ipv4-BadFlow]
 
 # NVOS tacacs bad flow
 - Errors_list:

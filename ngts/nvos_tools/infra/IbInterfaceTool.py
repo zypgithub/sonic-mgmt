@@ -1,5 +1,6 @@
 import logging
 import time
+import re
 
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.nvos_constants.constants_nvos import LinkDetectionConsts
@@ -73,86 +74,89 @@ class IbInterfaceTool:
             return mst_dev_name
 
     @staticmethod
-    def get_local_port_hex(engine, input_str):
-        """
-        Retrieves the local port's hexadecimal value corresponding to a given input format.
+    def get_local_port_hex(engine, port_name):
+        docker = "syncd-ibv01" if 'B' in port_name else "syncd-ibv00"
+        cmd = f"docker exec {docker} sx_api_ports_mapping_dump.py"
+        table_output = engine.run_cmd(cmd)
+        local_port, lane_bmap = get_local_port_and_lane_bmap(port_name)
+        return get_log_port(table_output, local_port, lane_bmap)
 
-        The function parses an input string in the format 'sw<label_port>p<port_index>'
-        (e.g., 'sw18p1', 'swA1p1', 'swB3p2') and uses it to look up a table (provided as a string of port data)
-        to find the corresponding local port's value. The local port's value is returned in hexadecimal.
 
-        Args:
-            input_str (str): Input in the format 'sw<label_port>p<port_index>',
-                             where <label_port> is the port label number and <port_index> is the port index.
-                             Example: 'sw18p1' refers to label port 18, first local port, and
-                             'swA1p1' refers to label port A1, first local port.
-            ports_data_str (str): A multi-line string containing port mappings in tabular format.
-                                  Each row of the table includes local_port, label_port, and other info.
+def get_local_port_and_lane_bmap(port_name):
+    """
+    Extracts the switch number and port number from a port name.
 
-        Returns:
-            str: Hexadecimal representation of the local port value corresponding to the input.
-                 Returns error messages for invalid inputs or if no matching local_port is found.
+    Args:
+        port_name (str): The port name string (e.g., 'swA11p1', 'port swB15p1', 'sw11p1').
 
-        Example:
-            Given the port data string:
-            ports_data_str = '''
-            =====================================================================================
-            |  log_port|local_port|slot|label_port|      mode| width| lane_bmap| swid|
-            =====================================================================================
-            |   0x10001|         1|   0|        18|   ENABLED|     4|      0x0F|    0|
-            |   0x10002|         2|   0|         0|  DISABLED|     0|      0x00|  255|
-            |   0x10003|         3|   0|        18|   ENABLED|     4|      0xF0|    0|
-            |   0x10004|         4|   0|         0|  DISABLED|     0|      0x00|  255|
-            ...
+    Returns:
+        tuple: A tuple containing the switch number and port number as integers (e.g., (11, 1)).
+    """
+    # Update regex to make 'A' or 'B' optional and match the switch and port number
+    match = re.search(r'[sS][wW]([A-Za-z]?)\s*(\d+)p(\d+)', port_name)
 
-            Example usage:
-                get_local_port_hex('sw18p1', ports_data_str)  # Returns '0x1'
-                get_local_port_hex('sw18p2', ports_data_str)  # Returns '0x3'
-        """
-        cmd = "docker exec syncd-ibv00 sx_api_ports_mapping_dump.py"
-        ports_data_str = engine.run_cmd(cmd)
-        # Parse the input string (e.g., 'sw18p1' -> label_port: 18, port_index: 1)
-        if not input_str.startswith('sw') or 'p' not in input_str:
-            return "Invalid input format"
+    if match:
+        switch_letter = match.group(1)  # This can be empty or 'A' or 'B'
+        port_number = int(match.group(2))
+        local_port = int(match.group(3))
 
+        if switch_letter.lower() in ['a', 'b'] and local_port == 2:
+            lane_bmap = '0x80'
+        elif local_port == 2:
+            lane_bmap = '0x10'
+        elif local_port == 1:
+            lane_bmap = '0x01'
+        else:
+            raise ValueError(f"Unsupported local_port value: {local_port}")
+
+        return port_number, lane_bmap
+
+    # Return None or raise an exception if the port name doesn't match the expected pattern
+    raise ValueError(f"Invalid port name format: {port_name}")
+
+
+def get_log_port(table: str, label_port: int, lane_bmap: str):
+    """
+    Fetches the log_port value based on label_port and lane_bmap values from a given table.
+    Returns only the last two digits of log_port after removing the '0x100' prefix.
+
+    Args:
+        table (str): The table as a multiline string.
+        label_port (int): The switch number (label_port).
+        lane_bmap (str): The lane_bmap value (either '0x01' or '0x80').
+
+    Returns:
+        str: The corresponding log_port value without the '0x100' prefix, e.g., '09'.
+
+    Raises:
+        ValueError: If the specified label_port and lane_bmap combination are not found in the table.
+    """
+
+    # Split the table into rows
+    rows = table.splitlines()
+    header = rows[1]  # Header row with column names
+
+    # Identify column indexes based on the header
+    columns = header.split("|")
+    col_indexes = {
+        "log_port": columns.index("  log_port"),
+        "label_port": columns.index("label_port"),
+        "lane_bmap": columns.index(" lane_bmap")
+    }
+
+    # Parse rows and find the matching row based on label_port and lane_bmap
+    for row in rows[3:]:  # Data rows start after the separator line
+        cols = row.split("|")
         try:
-            # Extract label_port and port_index from input string
-            label_port = int(input_str[2:input_str.index('p')])  # Extract the number after 'sw'
-            port_index = int(input_str[input_str.index('p') + 1:])  # Extract the number after 'p'
+            row_label_port = int(cols[col_indexes["label_port"]].strip())
+            row_lane_bmap = cols[col_indexes["lane_bmap"]].strip()
+
+            # Match the given label_port and lane_bmap
+            if row_label_port == label_port and row_lane_bmap == lane_bmap:
+                # Extract the last two digits of log_port, remove the "0x100" prefix
+                log_port_value = cols[col_indexes["log_port"]].strip()
+                return log_port_value[-2:]  # Return the last two characters
         except ValueError:
-            return "Invalid input format"
+            continue  # Skip rows with non-numeric values in relevant columns
 
-        lines = ports_data_str.splitlines()
-        matching_ports = []
-
-        # Process each line and extract relevant data
-        for line in lines:
-            # Skip lines that are part of the header or separator lines
-            if not line.startswith("|") or "log_port" in line:
-                continue
-
-            # Extract values from the columns (split by '|')
-            columns = line.split('|')
-            if len(columns) < 5:
-                continue  # Skip malformed lines
-
-            # Get the relevant values from the columns
-            try:
-                local_port = int(columns[2].strip())  # local_port is in column 2
-                label_port_value = int(columns[4].strip())  # label_port is in column 4
-            except ValueError:
-                continue  # Skip lines that don't have valid integer values
-
-            # Check if this line matches the requested label_port
-            if label_port_value == label_port:
-                matching_ports.append(local_port)
-
-        # Check if we found any matching ports
-        if not matching_ports or len(matching_ports) < port_index:
-            return "No matching local_port found"
-
-        # Get the correct local_port based on the port index (1-indexed)
-        local_port = matching_ports[port_index - 1]
-
-        # Return the local_port as a hexadecimal value
-        return hex(local_port)
+    raise ValueError(f"Entry not found for label_port={label_port}, lane_bmap={lane_bmap}")

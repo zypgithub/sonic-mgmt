@@ -14,6 +14,8 @@ from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 
 logger = logging.getLogger()
 
+PORT_UPDATE_SLEEP_TIME = 5
+
 
 @pytest.mark.ib_interfaces
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
@@ -66,7 +68,7 @@ def test_ib_interface_mtu(engines, players, interfaces, start_sm, test_api):
     with allure.step("Set mtu '{}' for port '{}".format(selected_mtu_value, selected_port.name)):
         selected_port.interface.link.set(op_param_name='mtu', op_param_value=selected_mtu_value,
                                          apply=True, ask_for_confirmation=True).verify_result()
-        sleep(2)
+        sleep(PORT_UPDATE_SLEEP_TIME)
 
         with allure.step("Verify the mtu value updated to: {}".format(selected_mtu_value)):
             wait_for_port_to_become_active(selected_port)
@@ -76,6 +78,7 @@ def test_ib_interface_mtu(engines, players, interfaces, start_sm, test_api):
 
     with allure.step("Unset MTU for port {}".format(selected_port.name)):
         selected_port.interface.link.unset(op_param='mtu', apply=True, ask_for_confirmation=True).verify_result()
+        sleep(PORT_UPDATE_SLEEP_TIME)
 
         with allure.step("Verify the MTU is updated to default: {}".format(IbInterfaceConsts.DEFAULT_MTU)):
             wait_for_port_to_become_active(selected_port)
@@ -87,6 +90,7 @@ def test_ib_interface_mtu(engines, players, interfaces, start_sm, test_api):
         with allure.step("Restore original mtu value ({})".format(origin_mtu_value)):
             selected_port.interface.link.set(op_param_name='mtu', op_param_value=origin_mtu_value,
                                              apply=True, ask_for_confirmation=True).verify_result()
+            sleep(PORT_UPDATE_SLEEP_TIME)
 
             with allure.step("Verify the mtu value was restored to: {}".format(origin_mtu_value)):
                 wait_for_port_to_become_active(selected_port)
@@ -119,6 +123,8 @@ def test_ib_interface_speed(engines, players, interfaces, devices, start_sm, tes
     10.Send traffic -> Verify the traffic passes successfully
     """
     TestToolkit.tested_api = test_api
+    if len(devices.dut.supported_ib_speeds) <= 1:
+        pytest.skip(f"{type(devices.dut).__name__} has only one supported ib-speed: {devices.dut.supported_ib_speeds[0]}")
 
     with allure.step("Get a random active port"):
         selected_port = Tools.RandomizationTool.get_random_traffic_port().get_returned_value()[0]
@@ -153,7 +159,7 @@ def test_ib_interface_speed(engines, players, interfaces, devices, start_sm, tes
                                          apply=True, ask_for_confirmation=True).verify_result()
 
         with allure.step("Verify the ib-speed value updated to: {}".format(selected_ib_speed_value)):
-            sleep(2)
+            sleep(PORT_UPDATE_SLEEP_TIME)
             wait_for_port_to_become_active(selected_port)
             current_link_dict = OutputParsingTool.parse_json_str_to_dictionary(
                 selected_port.interface.link.show()).get_returned_value()
@@ -171,7 +177,7 @@ def test_ib_interface_speed(engines, players, interfaces, devices, start_sm, tes
     with allure.step("Unset ib_speed for port {}".format(selected_port.name)):
         selected_port.interface.link.unset(op_param='ib-speed', apply=True,
                                            ask_for_confirmation=True).verify_result()
-        sleep(2)
+        sleep(PORT_UPDATE_SLEEP_TIME)
         wait_for_port_to_become_active(selected_port)
         verify_speed_values(devices, selected_port)
 
@@ -180,7 +186,7 @@ def test_ib_interface_speed(engines, players, interfaces, devices, start_sm, tes
                                          apply=True, ask_for_confirmation=True).verify_result()
 
         with allure.step("Verify the ib-speed value updated to: {}".format(origin_ib_speed_value)):
-            sleep(2)
+            sleep(PORT_UPDATE_SLEEP_TIME)
             wait_for_port_to_become_active(selected_port)
             current_link_dict = OutputParsingTool.parse_json_str_to_dictionary(
                 selected_port.interface.link.show()).get_returned_value()
@@ -359,6 +365,7 @@ def test_ib_interface_vls(engines, players, interfaces, start_sm, test_api):
     with allure.step("Set op_vls to '{}' for port '{}".format(selected_op_vls, selected_port.name)):
         selected_port.interface.link.set(op_param_name='op-vls', op_param_value=selected_op_vls,
                                          apply=True, ask_for_confirmation=True).verify_result()
+        sleep(PORT_UPDATE_SLEEP_TIME)
 
         with allure.step("Verify vl-capabilities value updated to: {}".format(selected_op_vls)):
             wait_for_port_to_become_active(selected_port)
@@ -370,6 +377,7 @@ def test_ib_interface_vls(engines, players, interfaces, start_sm, test_api):
 
     with allure.step("Unset op_vls for port {}".format(selected_port.name)):
         selected_port.interface.link.unset(op_param='op-vls', apply=True, ask_for_confirmation=True).verify_result()
+        sleep(PORT_UPDATE_SLEEP_TIME)
 
         with allure.step("Verify the op_vls is updated to default: {}".format(IbInterfaceConsts.DEFAULT_VLS)):
             wait_for_port_to_become_active(selected_port)

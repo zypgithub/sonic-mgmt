@@ -43,7 +43,8 @@ class OpenApiBaseCli:
 
     @staticmethod
     def action(engine, device=None, action_type='', resource_path='', suffix="", param_name="", param_value="",
-               output_format=None, expect_reboot=False, recovery_engine=None, topology_obj=None, should_succeed=True, system_is_ready_timeout=None, track_boot_intervals=False, deny_reboot=False):
+               output_format=None, expect_reboot=False, recovery_engine=None, topology_obj=None, should_succeed=True,
+               system_is_ready_timeout=None, track_boot_intervals=False, deny_reboot=False, press_y=False):
         """See documentation of BaseComponent.action"""
         if not action_type:
             raise ValueError("action_type must be non-empty")
@@ -58,7 +59,10 @@ class OpenApiBaseCli:
             OpenApiBaseCli._action_key(action_type), engine.engine.username, engine.engine.password, engine.ip,
             url, data)
 
-        if ((expect_reboot or any(msg in result for msg in SystemConsts.REBOOT_RESPONSE_MESSAGES)) and
+        if deny_reboot:
+            return result
+
+        elif ((expect_reboot or any(msg in result for msg in SystemConsts.REBOOT_RESPONSE_MESSAGES)) and
                 "abort" not in result):
 
             DutUtilsTool.wait_on_system_reboot(engine, recovery_engine, topology_obj=topology_obj, system_is_ready_timeout=system_is_ready_timeout, track_boot_intervals=track_boot_intervals)

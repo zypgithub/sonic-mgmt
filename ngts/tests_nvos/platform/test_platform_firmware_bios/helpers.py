@@ -1,19 +1,5 @@
-import time
-import re
-import logging
-import string
-from typing import Tuple
-import string
-import pytest
-
-
-from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from infra.tools.redmine.redmine_api import *
 from ngts.nvos_constants.constants_nvos import ImageConsts, PlatformConsts
-from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
-from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.tests_nvos.constants import MINUTE
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.infra.Tools import Tools
@@ -65,7 +51,7 @@ def fetch_and_install_bios(platform, path, name, filename, topology_obj, system_
         platform.firmware.bios.action_fetch(path).verify_result()
 
     with allure.step(f'installing Bios image {name}'):
-        platform.firmware.bios.files.file_name[filename].action_file_install_with_reboot(topology_obj=topology_obj, system_is_ready_timeout=system_is_ready_timeout)
+        platform.firmware.bios.files.file_name[filename].action_file_install_with_reboot(topology_obj=topology_obj, system_is_ready_timeout=system_is_ready_timeout).verify_result()
 
 
 def get_bios_info_from_device(device, version):

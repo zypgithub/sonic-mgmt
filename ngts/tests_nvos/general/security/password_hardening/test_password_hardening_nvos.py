@@ -844,7 +844,7 @@ def test_password_hardening_history_with_reboot(engines, devices, topology_obj):
         with allure.step('Ping switch until shutting down'):
             ping_till_alive(should_be_alive=False, destination_host=serial_engine.ip)
         with allure.step('wait for System is ready'):
-            DutUtilsTool.wait_for_system_ready_in_serial(topology_obj, serial_engine, devices.dut.system_is_ready_wait_timeout)
+            DutUtilsTool.wait_for_system_ready_in_serial(topology_obj, serial_engine, devices.dut.timeout_system_is_ready)
 
     with allure.step('reset admin password'):
         system.aaa.user.user_id['admin'].unset(apply=True).verify_result()

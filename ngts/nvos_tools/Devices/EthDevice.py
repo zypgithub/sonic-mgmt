@@ -8,6 +8,7 @@ from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.ValidationTool import ExpectedString
 from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts
+from ngts.tools.test_utils.nvos_config_utils import clear_cl_conf
 
 logger = logging.getLogger()
 
@@ -50,6 +51,9 @@ class EthSwitch(BaseSwitch):
         }
         res = [f'{title.upper()}:\n{output}\n' for title, output in outputs.items()]
         return '\n'.join(res)
+
+    def clear_config(self, dut_engine, markers=None, default_yml_path=None):
+        clear_cl_conf(dut_engine, markers, self)
 
     def _init_constants(self):
         super()._init_constants()
@@ -453,9 +457,6 @@ class Mlx5600Switch(EthSwitch):
 
     def _init_fan_list(self):
         self.fan_list = ["FAN1/1", "FAN1/2", "FAN2/1", "FAN2/2", "FAN3/1", "FAN3/2", "FAN4/1", "FAN4/2"]
-
-    def _init_led_list(self):
-        self.led_list = ["FAN1", "FAN2", "FAN3", "FAN4", "PSU", "SYSTEM"]
 
     def _init_led_list(self):
         self.led_list = ["FAN1", "FAN2", "FAN3", "FAN4", "PSU", "SYSTEM"]

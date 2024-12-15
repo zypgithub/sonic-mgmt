@@ -35,6 +35,7 @@ from ngts.tools.allure_report.allure_report_attacher import add_fixture_end_tag,
 from ngts.tools.infra import get_platform_info, get_devinfo, is_deploy_run, get_chip_type
 from ngts.tools.topology_tools.topology_by_setup import get_topology_by_setup_name_and_aliases
 from ngts.tools.test_utils.nvos_general_utils import get_switch_type
+from ngts.tools.infra import get_topology_from_noga
 
 logger = logging.getLogger()
 
@@ -50,7 +51,7 @@ def pytest_sessionstart(session):
 
 
 def pytest_collection(session):
-    topology = get_topology_by_setup_name_and_aliases(session.config.option.setup_name, slow_cli=False)
+    topology = get_topology_from_noga(session)
     logger.debug('Get switch devdescription from Noga')
     switch_attributes = topology.players['dut']['attributes'].noga_query_data['attributes']
     devinfo = get_devinfo(switch_attributes)
@@ -94,6 +95,8 @@ def pytest_addoption(parser):
     parser.addoption('--setup_name', action='store', required=True, default=None,
                      help='Setup name, example: sonic_tigris_r-tigris-06')
     parser.addoption('--base_version', action='store', default=None, help='Path to base SONiC version')
+    parser.addoption('--downgrade_version', action='store', default=None, help='Path to downgrade SONiC version')
+    parser.addoption('--issu_version', action='store', default=None, help='Path to issu SONiC version')
     parser.addoption('--target_version', action='store', default=None, help='Path to target SONiC version')
     parser.addoption('--wjh_deb_url', action='store', default=None, help='URL path to WJH deb package')
     parser.addoption("--session_id", action="store", default=None, help="Number of mars session id.")
@@ -226,6 +229,26 @@ def base_version(request):
 
 
 @pytest.fixture(scope="session")
+def downgrade_version(request):
+    """
+    Method for getting base version from pytest arguments
+    :param request: pytest builtin
+    :return: downgrade_version argument value
+    """
+    return request.config.getoption('--downgrade_version')
+
+
+@pytest.fixture(scope="session")
+def issu_version(request):
+    """
+    Method for getting base version from pytest arguments
+    :param request: pytest builtin
+    :return: issu_version argument value
+    """
+    return request.config.getoption('--issu_version')
+
+
+@pytest.fixture(scope="session")
 def target_version(request):
     """
     Method for getting target version from pytest arguments
@@ -284,7 +307,7 @@ def topology_obj(setup_name, request):
     """
     with allure.step('Creating topology object'):
         cli_type = target_cli_type(request)
-        topology = get_topology_by_setup_name_and_aliases(setup_name, slow_cli=False, override_type=cli_type)
+        topology = get_topology_from_noga(request.session, slow_cli=False, override_type=cli_type)
 
     with allure.step("Update branch in topology according to the current SONiC branch"):
         branch = request.session.config.cache.get(PytestConst.CUSTOM_TEST_SKIP_BRANCH_NAME, None)

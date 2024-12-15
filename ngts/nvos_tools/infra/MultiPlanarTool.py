@@ -1,5 +1,8 @@
+from typing import Tuple
+
 from ngts.nvos_constants.constants_nvos import MultiPlanarConsts
 from ngts.nvos_tools.Devices.IbDevice import CrocodileSwitch
+from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.infra.Fae import Fae
@@ -51,9 +54,9 @@ class MultiPlanarTool:
                 system.reboot.action_reboot(params='force').verify_result()
 
     @staticmethod
-    def select_random_aggregated_port(devices):
+    def select_random_aggregated_port(device):
         with allure.step("Select a random aggregated port"):
-            if isinstance(devices.dut, CrocodileSwitch):
+            if isinstance(device, CrocodileSwitch):
                 port_name = 'swA10p1'
             else:
                 port_name = RandomizationTool.select_random_port(
@@ -72,13 +75,23 @@ class MultiPlanarTool:
         return selected_fae_fnm_port
 
     @staticmethod
-    def select_random_plane_port(devices, fae_aggregated_port, num_of_planes):
+    def select_random_plane_port(fae_aggregated_port, num_of_planes):
         with allure.step("Choose a random plane port (of the aggregated port)"):
             plane_num = str(random.randint(1, num_of_planes))
             plane_port_name = fae_aggregated_port.port.name + 'pl' + plane_num
             selected_fae_plane_port = Fae(port_name=plane_port_name)
         allure.attach(f"Selected port: {plane_port_name}")
         return selected_fae_plane_port
+
+    @staticmethod
+    def select_random_port_and_plane(device) -> Tuple[MgmtPort, MgmtPort, MgmtPort]:
+        with allure.step("Select a random aggregated port (connected in loop back to another port)"):
+            selected_fae_aggregated_port = MultiPlanarTool.select_random_aggregated_port(device)
+            selected_aggregated_port = MgmtPort(selected_fae_aggregated_port.port.name)
+        with allure.step("Select a random plane port"):
+            selected_fae_plane_port = MultiPlanarTool.select_random_plane_port(selected_fae_aggregated_port,
+                                                                               device.num_of_plane_ports)
+        return selected_aggregated_port, selected_fae_aggregated_port.port, selected_fae_plane_port.port
 
     @staticmethod
     @retry(Exception, tries=4, delay=2)

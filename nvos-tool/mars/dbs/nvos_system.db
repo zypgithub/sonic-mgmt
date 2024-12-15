@@ -62,9 +62,6 @@
 		<cases> sonic-mgmt/nvos-tool/mars/cases/system/nvos_system_log_commands.cases </cases>
 	</test>
 	<test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/system/nvos_system_health.cases </cases>
-	</test>
-	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/system/nvos_system_ntp.cases </cases>
     </test>
 	<test>
@@ -100,9 +97,6 @@
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/system/nvos_system_power_button.cases </cases>
 		<ignore><condition> <key>dut_type:(None)</key> <op> not in </op> <value>[juliet]</value> </condition></ignore>
-	</test>
-	<test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/system/nvos_system_ztp.cases </cases>
 	</test>
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/system/nvos_system_ztp.cases </cases>

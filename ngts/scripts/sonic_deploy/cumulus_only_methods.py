@@ -10,7 +10,6 @@ from ngts.constants.constants import LinuxConsts
 from ngts.tests_nvos.general.security.authentication_restrictions.constants import RestrictionsConsts
 from ngts.tests_nvos.system.clock.ClockConsts import ClockConsts
 from ngts.nvos_tools.system.System import System
-from ngts.tools.test_utils.nvos_general_utils import set_base_configurations_cl
 from ngts.cli_wrappers.nvue.nvue_system_clis import NvueSystemCli
 from infra.tools.linux_tools.linux_tools import scp_file
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool

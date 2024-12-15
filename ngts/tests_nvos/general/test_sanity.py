@@ -3,6 +3,7 @@ import time
 
 import pytest
 
+from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.nvos_constants.constants_nvos import SystemConsts
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit

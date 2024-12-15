@@ -31,19 +31,18 @@ def test_save_reboot(engines, devices):
             6. Run 'nv system contact "contact_info_2"' and apply config
             7. Run 'nv system location "location_info_2"' and apply config
             8. run nv set interface eth0 description <new_description> with apply
-            9. Run 'nv set fae fast-recovery trigger credit-watchdog event warning' and apply config
+            9. Run 'nv set fast-recovery trigger credit-watchdog event warning' and apply config
             10. run nv action reboot system
             11. run nv show system after reload
             12. verify hostname is new_hostname
-            13. Verify fae fast-recovery state is Disabled
+            13. Verify fast-recovery state is Disabled
             14. Run nv show interface eth0
             15. Verify the applied description value is ''
             16. Verify that applied system contact is "contact_info_1"
             17. Verify that applied system location is "location_info_1"
-            18. Verify fae fast-recovery trigger event for trigger-id is Error
+            18. Verify fast-recovery trigger event for trigger-id is Error
             19. cleanup - run nv unset system hostname & reboot
     """
-    fae = Fae()
 
     with allure.step('Run show system command and verify that each field has a value'):
         system = System()
@@ -57,9 +56,9 @@ def test_save_reboot(engines, devices):
                                   FastRecoveryConsts.STATE_DISABLED, apply=True, dut_engine=engines.dut)'''
 
         with allure.step('Set system events table-size to 600 and validate'):
-            fae.system.events.set(op_param_name='table-size', op_param_value=600, apply=True, dut_engine=engines.dut).\
+            system.events.set(op_param_name='table-size', op_param_value=600, apply=True, dut_engine=engines.dut).\
                 verify_result()
-            output = OutputParsingTool.parse_json_str_to_dictionary(fae.system.events.show()).get_returned_value()
+            output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show()).get_returned_value()
             ValidationTool.verify_field_value_in_output(output, SystemConsts.EVENTS_TABLE_SIZE, '600').verify_result()
 
         with allure.step('Simulate 10 system events'):
@@ -115,7 +114,7 @@ def test_save_reboot(engines, devices):
                                                             new_hostname_value).verify_result()
 
             with allure.step('Verify that system events table-size config was saved'):
-                output = OutputParsingTool.parse_json_str_to_dictionary(fae.system.events.show()).get_returned_value()
+                output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show()).get_returned_value()
                 ValidationTool.verify_field_value_in_output(output, SystemConsts.EVENTS_TABLE_SIZE, '600').\
                     verify_result()
 

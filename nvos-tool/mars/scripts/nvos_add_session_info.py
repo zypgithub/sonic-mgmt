@@ -125,6 +125,9 @@ class NvosAddSessionInfo(SessionAddInfo):
             - http://abc.com/a/b/c/25.01.3001-123.bin -> '25.01.3001', '123'
             - 25.01.3001 -> '25.01.3001', ''
         """
+        if 'nvos_ci' in version:
+            return 'nvos_ci-' + version.split('nvos_ci/')[1].split('/')[0]
+
         pattern = r'(\d+\.\d+\.\d+)(?:-(\d+))?(?:\.bin)?$'
         match = re.search(pattern, version)
         if match and match.group(0):

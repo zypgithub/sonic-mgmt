@@ -1,6 +1,9 @@
 import allure
 import logging
+
+from ngts.nvos_constants.constants_nvos import PlatformConsts
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.platform.Voltage import Voltage
@@ -21,3 +24,9 @@ class Environment(BaseComponent):
 
     def set(self, op_param_name="", op_param_value={}):
         raise Exception("set is not implemented")
+
+    def get_available_psus(self, invert=False):
+        """Returns a list of all PSUs (as strings) whose status is 'ok'. If invert=True return all other PSUs instead"""
+        output = OutputParsingTool.parse_json_str_to_dictionary(self.psu.show()).get_returned_value()
+        return list(psu for psu, fields in output.items() if (
+            fields[PlatformConsts.INV_STATE] == PlatformConsts.INV_OK) != invert)

@@ -14,5 +14,12 @@ def acl_cleanup(engines):
     """
     yield
     with allure.step("ACL cleanup"):
-        Acl().unset()
-        MgmtPort('').interface.unset(apply=True, ask_for_confirmation=True)
+        try:
+            Acl().unset()
+            MgmtPort('').interface.unset(apply=True, ask_for_confirmation=True)
+        except ValueError as e:
+            if 'Unable to find prompt' in str(e):
+                logger.info("Killing SSH session (which was terminated by the ACL rule change)")
+                engines.dut.disconnect()
+            else:
+                raise

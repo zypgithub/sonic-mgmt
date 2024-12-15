@@ -342,7 +342,7 @@ class GeneralCliCommon(GeneralCliInterface):
                         format(self.engine.username, self.engine.password))
             return False
 
-    def remote_reboot(self, topology_obj, dut_alias='dut', boot_into_onie=False):
+    def remote_reboot(self, topology_obj, dut_alias='dut', boot_into_onie=False, wait_till_alive=True):
         ip = self.engine.ip
         port = self.engine.ssh_port
         logger.info('Executing remote reboot')
@@ -352,7 +352,8 @@ class GeneralCliCommon(GeneralCliInterface):
         if rc == InfraConst.RC_SUCCESS:
             if boot_into_onie:
                 self.boot_into_onie_by_serial_on_remote_reboot(topology_obj, dut_alias)
-            check_port_status_till_alive(should_be_alive=True, destination_host=ip, destination_port=port)
+            if wait_till_alive:
+                check_port_status_till_alive(should_be_alive=True, destination_host=ip, destination_port=port)
         else:
             raise Exception('Remote reboot rc is other then 0')
 

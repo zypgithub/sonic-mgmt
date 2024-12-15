@@ -47,7 +47,7 @@ def test_snmp_default_values_fields(engines):
     with allure.step('Verify fields and values after snmp enabled'):
         listening_address_output = OutputParsingTool.parse_json_str_to_dictionary(
             system.snmp_server.listening_address.show()).get_returned_value()
-        ValidationTool.compare_values(listening_address_output, {'all': {'port': 161, 'vrf': ''}}).verify_result()
+        ValidationTool.compare_values(listening_address_output, SystemConsts.SNMP_ENABLED_DEFAULT_LISTENING_ADDRESS).verify_result()
         read_only_community_output = OutputParsingTool.parse_json_str_to_dictionary(
             system.snmp_server.readonly_community.show()).get_returned_value()
         assert 'qwerty12' not in read_only_community_output, 'snmp community not encrypted'
@@ -61,7 +61,7 @@ def test_snmp_default_values_fields(engines):
                                                          SystemConsts.SNMP_LISTENING_ADDRESS],
                                                         [SystemConsts.SNMP_DEFAULT_REFRESH_INTERVAL,
                                                          SystemConsts.SNMP_ENABLED_STATE,
-                                                         {'all': {'port': 161, 'vrf': ''}}],
+                                                         SystemConsts.SNMP_ENABLED_DEFAULT_LISTENING_ADDRESS],
                                                         system_snmp_output).verify_result()
         logging.info("All expected fields were found")
 

@@ -2,7 +2,6 @@ import logging
 
 import pytest
 
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_constants.constants_nvos import CertificateFiles, SyslogConsts, OpenApiReqType, ApiType, SystemConsts, \
     TestFlowType
 from ngts.nvos_tools.infra.CurlTool import CurlTool
@@ -10,21 +9,17 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.certificate.constants import TestCert, GET_SYSTEM_VERSION_PATH, CertMsgs
+from ngts.tests_nvos.system.gnmi.helpers import get_scp_player
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_general_utils import generate_scp_uri_using_player
 
 logger = logging.getLogger()
 
 
-def get_scp_player(engines):
-    # return engines['sonic_mgmt']
-    return LinuxSshEngine('10.237.38.139', 'root', '12345')
-
-
 @pytest.mark.system
 @pytest.mark.certificate
 @pytest.mark.parametrize('test_api, test_flow', [(ApiType.NVUE, TestFlowType.GOOD_FLOW), (ApiType.NVUE, TestFlowType.BAD_FLOW), (ApiType.OPENAPI, TestFlowType.GOOD_FLOW)])
-def test_certificate_commands(engines, test_api, test_flow):
+def test_certificate_commands(engines, test_api, test_flow, clear_certs):
     """
     Test certificate mgmt commands:
         1. nv action import system security certificate <cert-id_1> uri-bundle <https://URI>
@@ -94,7 +89,7 @@ def test_certificate_commands(engines, test_api, test_flow):
 @pytest.mark.system
 @pytest.mark.certificate
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_ca_certificate_commands(engines, test_api):
+def test_ca_certificate_commands(engines, test_api, clear_certs):
     TestToolkit.tested_api = test_api
     system = System()
     player = get_scp_player(engines)
@@ -119,7 +114,7 @@ def test_ca_certificate_commands(engines, test_api):
 @pytest.mark.certificate
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
 @pytest.mark.parametrize('test_flow', [TestFlowType.GOOD_FLOW])
-def test_import_certificate_with_long_passphrase(test_api, test_flow, engines):
+def test_import_certificate_with_long_passphrase(test_api, test_flow, engines, clear_certs):
     """
     test that users able to import certificate bundle with long passphrase
     """

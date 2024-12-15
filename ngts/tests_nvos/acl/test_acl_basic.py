@@ -4,6 +4,7 @@ from retry import retry
 
 from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
+from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.acl.acl import Acl
 from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
@@ -74,7 +75,7 @@ def test_can_ping_from_eth1(engines, devices):
         pytest.skip("Device does not have eth1 mgmt-port")
 
     try:
-        ping_from_switch(engines.dut, engines.sonic_mgmt.ip, "eth1")
+        ping_from_switch(engines.dut, engines.sonic_mgmt.ip, "eth1").verify_result()
         logger.info("Successfully pinged sonic-mgmt through eth1")
     except Exception:
         logger.error(f"Could not ping sonic-mgmt through eth1. Fixing...")
@@ -256,7 +257,7 @@ def test_acl_order(engines, test_api, topology_obj):
 
 @pytest.mark.acl
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_acl_ipv6(engines, test_api, topology_obj):
+def test_acl_ipv6(engines, test_api, topology_obj, sonic_mgmt_ipv6_addr):
     """
     Validate ACLs rules over ipv6.
     steps:
@@ -270,9 +271,9 @@ def test_acl_ipv6(engines, test_api, topology_obj):
         acl_type = 'ipv6'
         mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
         mgmt_port = MgmtPort(mgmt_port_name)
-        ipv6_prefix_or_netmask = IPV6_ADDR + '/64'
+        ipv6_prefix_or_netmask = sonic_mgmt_ipv6_addr + '/64'
         rule_id = '1'
-        rule_configuration_dict = {AclConsts.ACTION: AclConsts.DENY, AclConsts.SOURCE_IP: IPV6_ADDR}
+        rule_configuration_dict = {AclConsts.ACTION: AclConsts.DENY, AclConsts.SOURCE_IP: sonic_mgmt_ipv6_addr}
 
         acl_id_1 = "AA_TEST_ACL_IPV6"
         acl_id_1_obj = config_acl_with_rule_attached_to_interface(engines.dut, acl_id_1, acl_type, rule_id,
@@ -284,7 +285,7 @@ def test_acl_ipv6(engines, test_api, topology_obj):
         time.sleep(5)
         rule_packets_1_before = get_rule_packets(mgmt_port, acl_id_1)
         with allure.step("Ping"):
-            ping_packet = IPv6(dst=switch_ipv6_addr, src=IPV6_ADDR) / ICMPv6EchoRequest()
+            ping_packet = IPv6(dst=switch_ipv6_addr, src=sonic_mgmt_ipv6_addr) / ICMPv6EchoRequest()
             send(ping_packet)
         rule_packets_1_after = get_rule_packets(mgmt_port, acl_id_1)
         assert rule_packets_1_after[rule_id] > rule_packets_1_before[rule_id], \
@@ -295,7 +296,7 @@ def test_acl_ipv6(engines, test_api, topology_obj):
                     {AclConsts.ACTION: AclConsts.DENY, AclConsts.SOURCE_IP: ipv6_prefix_or_netmask})
         time.sleep(5)
         rule_packets_1_before = get_rule_packets(mgmt_port, acl_id_1)
-        ping_packet = IPv6(dst=switch_ipv6_addr, src=IPV6_ADDR) / ICMPv6EchoRequest()
+        ping_packet = IPv6(dst=switch_ipv6_addr, src=sonic_mgmt_ipv6_addr) / ICMPv6EchoRequest()
         send(ping_packet)
         rule_packets_1_after = get_rule_packets(mgmt_port, acl_id_1)
         assert rule_packets_1_after[rule_id] > rule_packets_1_before[rule_id], \
@@ -485,7 +486,7 @@ def test_inbound_outbound_counters(engines, test_api, topology_obj):
         sleep()
         rule_packets_1_before = get_rule_packets(mgmt_port, acl_id_inbound_match_dest_ip, rule_id_match_dest_ip, rule_direction=AclConsts.INBOUND)
         rule_packets_2_before = get_rule_packets(mgmt_port, acl_id_outbound_match_dest_ip, rule_id_match_dest_ip, rule_direction=AclConsts.OUTBOUND)
-        ping_from_switch(engines.dut, sonic_mgmt_ip, mgmt_port_name)
+        ping_from_switch(engines.dut, sonic_mgmt_ip, mgmt_port_name).verify_result()
         rule_packets_1_after = get_rule_packets(mgmt_port, acl_id_inbound_match_dest_ip, rule_id_match_dest_ip, rule_direction=AclConsts.INBOUND)
         rule_packets_2_after = get_rule_packets(mgmt_port, acl_id_outbound_match_dest_ip, rule_id_match_dest_ip, rule_direction=AclConsts.OUTBOUND)
         assert rule_packets_1_after[rule_id_match_dest_ip] == rule_packets_1_before[rule_id_match_dest_ip], \
@@ -532,7 +533,7 @@ def test_inbound_outbound_counters(engines, test_api, topology_obj):
 
 @pytest.mark.acl
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_acl_match_dest_ip(engines, test_api, topology_obj):
+def test_acl_match_dest_ip(engines, test_api, topology_obj, sonic_mgmt_ipv6_addr):
     """
     Validate ACL match dest-ip rules.
     steps:
@@ -551,8 +552,8 @@ def test_acl_match_dest_ip(engines, test_api, topology_obj):
         dest_ip_test(engines, mgmt_port, 'ipv4', "AA_TEST_ACL_IPV4", dest_ip_list, ipv4_addr)
 
     with allure.step("ACL type ipv6 test"):
-        dest_ip_list = [IPV6_ADDR, IPV6_ADDR + '/64']
-        dest_ip_test(engines, mgmt_port, 'ipv6', "AA_TEST_ACL_IPV6", dest_ip_list, IPV6_ADDR)
+        dest_ip_list = [sonic_mgmt_ipv6_addr, sonic_mgmt_ipv6_addr + '/64']
+        dest_ip_test(engines, mgmt_port, 'ipv6', "AA_TEST_ACL_IPV6", dest_ip_list, sonic_mgmt_ipv6_addr)
 
 
 @pytest.mark.acl
@@ -903,7 +904,7 @@ def test_acl_hashlimit(engines, test_api, topology_obj):
     with allure.step(f"Validate counters increased"):
         rule_packets_before = get_rule_packets(mgmt_port, acl_id, rule_id, rule_direction=AclConsts.OUTBOUND)
         packets_amount = 3 * rand_burst
-        ping_from_switch(engines.dut, dest_addr, mgmt_port_name, count=packets_amount, optional_params="-i 0.2")
+        ping_from_switch(engines.dut, dest_addr, mgmt_port_name, count=packets_amount, optional_params="-i 0.2").verify_result()
         time.sleep(5)
         rule_packets_after = get_rule_packets(mgmt_port, acl_id, rule_id, rule_direction=AclConsts.OUTBOUND)
         assert int(rule_packets_after[rule_id]) - int(rule_packets_before[rule_id]) >= (packets_amount - rand_burst - 1), \
@@ -1125,7 +1126,7 @@ def test_override_default_rule(engines, topology_obj):
 
     finally:
         with allure.step("unset acl - should return all the default rules"):
-            acl_obj.unset(apply=True)
+            acl_obj.unset(apply=True, ask_for_confirmation=True)
 
             with allure.step("Validate"):
                 added_field_output = acl_obj.rule.parse_show(default_rule_to_add_field)
@@ -1162,7 +1163,8 @@ def config_rule(engine, acl_id_obj, rule_id, rule_config_dict):
         for key, value in rule_config_dict.items():
             RULE_CONFIG_FUNCTION[key](rule_id_obj, value).verify_result()
 
-        result_obj = SendCommandTool.execute_command(TestToolkit.GeneralApi[TestToolkit.tested_api].apply_config, engine)
+        result_obj = SendCommandTool.execute_command(TestToolkit.GeneralApi[TestToolkit.tested_api].apply_config,
+                                                     engine, True)
         sleep()
         return result_obj
 
@@ -1200,14 +1202,14 @@ def validate_counters_after_traffic(engine, rule_direction, mgmt_port, acl_id, r
         if packet:
             scapy_send_packet(engine, packet, interface=mgmt_port.name)
         elif ping_dest:
-            ping_from_switch(engine, ping_dest, mgmt_port.name)
+            ping_from_switch(engine, ping_dest, mgmt_port.name).verify_result()
         time.sleep(5)
         rule_packets_after = get_rule_packets(mgmt_port, acl_id, rule_id, rule_direction=rule_direction)
         assert int(rule_packets_after[rule_id]) > int(rule_packets_before[rule_id]), \
             "expect to see difference in the counters after the ping"
 
 
-def ping_from_switch(engine: ProxySshEngine, dest: str, source_interface, count=2, optional_params="") -> str:
+def ping_from_switch(engine: ProxySshEngine, dest: str, source_interface, count=2, optional_params="") -> ResultObj:
     with allure.step(f"Ping from switch through {source_interface} to {dest}"):
         cmd = f"ping {dest} -c {count}"
         if source_interface:
@@ -1216,8 +1218,9 @@ def ping_from_switch(engine: ProxySshEngine, dest: str, source_interface, count=
             cmd += " " + optional_params
         ping_output = engine.run_cmd(cmd)
         if "100% packet loss" in ping_output:
-            raise Exception("Failed to ping")
-        return ping_output
+            return ResultObj(False, f"Failed to ping {dest}", ping_output)
+
+        return ResultObj(True, "", ping_output)
 
 
 def ping_from_sonic_mgmt(dst: Union[str, Packet], src=None) -> Packet:
@@ -1270,6 +1273,7 @@ def match_ip_port_test(engines, mgmt_port, acl_type, acl_id, port_list, dest_add
 
     for port in port_list:
         with allure.step(f"{port=}"):
+            src_addr = engine_send_packet.ip
             rule_configuration_dict = {AclConsts.ACTION: AclConsts.PERMIT, AclConsts.IP_PROTOCOL: 'tcp', port_direction: port}
             acl_obj = config_acl_with_rule_attached_to_interface(engines.dut, acl_id, acl_type, rule_id,
                                                                  rule_configuration_dict, mgmt_port, AclConsts.INBOUND,
@@ -1277,6 +1281,6 @@ def match_ip_port_test(engines, mgmt_port, acl_type, acl_id, port_list, dest_add
             if port == 'ANY':
                 port = 1234
             port = port if isinstance(port, int) else f"\"{port}\""
-            packet = f"IP(dst=\"{dest_addr}\") / TCP(sport={port}, dport={port})"
+            packet = f"IP(src=\"{src_addr}\", dst=\"{dest_addr}\") / TCP(sport={port}, dport={port})"
             validate_counters_after_traffic(engine_send_packet, AclConsts.INBOUND, mgmt_port, acl_id, rule_id, dest_addr, packet=packet)
             rule_id = str(int(rule_id) - 1)
