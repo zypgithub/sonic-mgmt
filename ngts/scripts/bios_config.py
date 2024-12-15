@@ -7,7 +7,7 @@ from ngts.nvos_tools.infra.BiosTools.BiosFactory import BiosFactory
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-
+from ngts.tools.test_utils.switch_recovery import remote_reboot_dut
 logger = logging.getLogger()
 
 
@@ -37,13 +37,12 @@ def configure_bios(topology_obj):
                     'switch type', '')
                 dut_engine = topology_obj.players[host]['engine']
                 bios_obj = BiosFactory.create_bios(switch_type, topology_obj, dut_engine, nvue_cli_obj, dut_ip)
-                logger.info('Executing remote reboot')
-                NvueGeneralCli(engine=dut_engine).remote_reboot(topology_obj, wait_till_alive=False)
+                remote_reboot_dut(topology_obj)
                 bios_obj.config_flow()
 
     except Exception as err:
         logger.info("BIOS configuration failed on error and will now remote reboot machine:\n{}".format(err))
-        nvue_cli_obj.remote_reboot(topology_obj)
+        remote_reboot_dut(topology_obj)
         raise AssertionError(err)
     finally:
         if dut_engine:
