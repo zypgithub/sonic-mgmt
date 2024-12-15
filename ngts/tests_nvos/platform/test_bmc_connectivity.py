@@ -4,6 +4,7 @@ from ngts.nvos_tools.infra.BmcTool import BmcTool
 from infra.tools.validations.traffic_validations.ping.send import ping_till_alive
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.tests_nvos.acl.test_acl_basic import ping_from_switch
 
 logger = logging.getLogger()
 
@@ -22,7 +23,7 @@ def test_bmc_ping(engines, devices, topology_obj):
     with allure.step("Try to ping via all addresses"):
         for address_type, address in ip_addresses.items():
             with allure.independent_step(f"try to ping using {address_type}: {address}"):
-                ping_till_alive(should_be_alive=True, destination_host=address, tries=5)
+                ping_from_switch(engines.dut, address, "eth0").verify_result()
 
 
 def test_bmc_curl_request_via_ipv6(engines, devices, topology_obj):
