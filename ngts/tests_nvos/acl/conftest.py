@@ -19,7 +19,9 @@ def acl_cleanup(engines):
             MgmtPort('').interface.unset(apply=True, ask_for_confirmation=True)
         except ValueError as e:
             if 'Unable to find prompt' in str(e):
-                logger.info("Killing SSH session (which was terminated by the ACL rule change)")
-                engines.dut.disconnect()
+                pass  # the connection died because of the rule-change. we do engine.disconnect() anyway.
             else:
                 raise
+
+        logger.info("Killing SSH session (which was terminated by the ACL rule change)")
+        engines.dut.disconnect()
