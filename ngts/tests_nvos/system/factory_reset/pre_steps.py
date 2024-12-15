@@ -13,7 +13,7 @@ from ngts.nvos_tools.Devices.IbDevice import JulietSwitch
 
 
 @disabled_access_ports
-def factory_reset_no_params_pre_steps(engines, platform_params, system, devices, has_loopbox, setup_name):
+def factory_reset_no_params_pre_steps(engines, platform_params, system, devices, has_loopbox, setup_name, standalone_system):
     port_type = devices.dut.switch_type.lower()
     init_cluster_status = None
     with allure.step('Create System object'):

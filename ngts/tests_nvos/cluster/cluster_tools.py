@@ -40,14 +40,14 @@ class ClusterTools:
                         ClusterTools.verify_lid_value(devices)
                         ClusterTools.verify_interface_up(devices, has_loopbox, setup_name)
                 with allure.step("Running 'nv show cluster apps running' command and verifying output"):
-                    # if app == ClusterConsts.NMX_CONTROLLER:
-                    #     pass
-                    # else:
-                    output = OutputParsingTool.parse_show_output_to_dict(
-                        cluster.apps.running.show(output_format=OutputFormat.json),
-                        output_format=OutputFormat.json).get_returned_value()
-                    app_status = output[app]['status']
-                    assert app_status == 'ok', f"App {app} status is {app_status} instead of 'ok"
+                    if app == ClusterConsts.NMX_CONTROLLER and is_bug_active(4207869):
+                        pass
+                    else:
+                        output = OutputParsingTool.parse_show_output_to_dict(
+                            cluster.apps.running.show(output_format=OutputFormat.json),
+                            output_format=OutputFormat.json).get_returned_value()
+                        app_status = output[app]['status']
+                        assert app_status == 'ok', f"App {app} status is {app_status} instead of 'ok"
                 with allure.step(f"Stop app {app} and validate its down"):
                     cluster.apps.app_name[app].action_stop_cluster_app()
                     ClusterTools.wait_for_apps_to_be_in_wanted_state()
@@ -63,14 +63,14 @@ class ClusterTools:
                     ClusterTools.verify_lid_value(devices)
                     ClusterTools.verify_interface_up(devices, has_loopbox, setup_name)
                 with allure.step("Running 'nv show cluster apps running' command and verifying output"):
-                    # if app == ClusterConsts.NMX_CONTROLLER:
-                    #     pass
-                    # else:
-                    output = OutputParsingTool.parse_show_output_to_dict(
-                        cluster.apps.running.show(output_format=OutputFormat.json),
-                        output_format=OutputFormat.json).get_returned_value()
-                    app_status = output[app]['status']
-                    assert app_status == 'ok', f"App {app} status is {app_status} instead of 'ok"
+                    if app == ClusterConsts.NMX_CONTROLLER and is_bug_active(4207869):
+                        pass
+                    else:
+                        output = OutputParsingTool.parse_show_output_to_dict(
+                            cluster.apps.running.show(output_format=OutputFormat.json),
+                            output_format=OutputFormat.json).get_returned_value()
+                        app_status = output[app]['status']
+                        assert app_status == 'ok', f"App {app} status is {app_status} instead of 'ok"
 
             return ResultObj(result=True)
 
@@ -271,7 +271,7 @@ class ClusterTools:
                     cluster.apps.running.show(output_format=output_format),
                     output_format=output_format).get_returned_value()
                 app_status = output[app]['status']
-                if app == ClusterConsts.NMX_CONTROLLER:
+                if app == ClusterConsts.NMX_CONTROLLER and is_bug_active(4207869):
                     pass
                 else:
                     assert app_status == expected_state, f"App {app} status is {app_status} instead of {expected_state}"
@@ -291,15 +291,15 @@ class ClusterTools:
         with allure.step(f"Start app {app}"):
             cluster.apps.app_name[app].action_start_cluster_app()
             ClusterTools.wait_for_apps_to_be_in_wanted_state()
-            # if app == ClusterConsts.NMX_CONTROLLER:
-            #     pass
-            # else:
-            with allure.step("Running 'nv show cluster apps running' command and verifying output"):
-                output = OutputParsingTool.parse_show_output_to_dict(
-                    cluster.apps.running.show(output_format=OutputFormat.json),
-                    output_format=OutputFormat.json).get_returned_value()
-                app_status = output[app]['status']
-                assert app_status == 'ok', f"App {app} status is {app_status} instead of 'ok"
+            if app == ClusterConsts.NMX_CONTROLLER and is_bug_active(4207869):
+                pass
+            else:
+                with allure.step("Running 'nv show cluster apps running' command and verifying output"):
+                    output = OutputParsingTool.parse_show_output_to_dict(
+                        cluster.apps.running.show(output_format=OutputFormat.json),
+                        output_format=OutputFormat.json).get_returned_value()
+                    app_status = output[app]['status']
+                    assert app_status == 'ok', f"App {app} status is {app_status} instead of 'ok"
 
     @staticmethod
     def stop_app(cluster, app):
