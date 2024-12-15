@@ -31,7 +31,7 @@ logger = logging.getLogger()
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
 @pytest.mark.timeout(55 * MINUTE, func_only=True)
 def test_upgrade_with_nmx_enabled(test_api, devices, base_version,
-                                  target_version, topology_obj, setup_name, platform_params, engines, release_name, test_name, has_loopbox):
+                                  target_version, topology_obj, setup_name, platform_params, engines, release_name, test_name, has_loopbox, standalone_system):
     '''
     Test will install a base version (Taken from regression).
     On base version perform the following:

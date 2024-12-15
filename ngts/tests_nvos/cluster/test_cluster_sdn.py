@@ -108,7 +108,7 @@ def test_cluster_sdn(engines, devices, test_api, has_loopbox, standalone_system,
                 current_config_content = engines.dut.run_cmd("sudo cat {}".format(current_installed_config_path))
                 expected_config_content = engines.sonic_mgmt.run_cmd("sudo cat {}".format(path_to_config[file_type]))
                 assert set(current_config_content.split('\n')) == set(expected_config_content.split('\n')), f"Config file was not loaded properly. Expected content {expected_config_content}, Actual content: {current_config_content}"
-                if initial_config_contents != '':
+                if initial_config_contents[file_type] != '':
                     assert set(current_config_content.split('\n')) != set((initial_config_contents[file_type]).split('\n')), f"Current content has not changed, still same as in init state. init: {initial_config_contents[file_type]}, \ncurrent{current_config_content}"
 
         with allure.step("Install initial configurations"):

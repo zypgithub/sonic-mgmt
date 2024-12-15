@@ -1182,7 +1182,7 @@ class OperationTimeConsts:
                   'julietscaleout generate_tech_support': 120,
                   'start stop cluster app': 375,
                   'start stop cluster app with loopbox': 720,
-                  'start stop cluster': 170,
+                  'start stop cluster': 250,
                   'cluster update log level': 5,
                   'install bmc': 900,
                   'install fpga': 900,
