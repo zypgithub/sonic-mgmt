@@ -2,6 +2,8 @@ import logging
 import re
 import pytest
 import random
+
+from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.infra.Tools import Tools
@@ -84,31 +86,24 @@ def test_database_platform_environment_voltage(engines, devices):
         logger.info("the sensors from switch's CLI are: {}".format(cli_sensors_list))
 
     with allure.step("get all the tabled with SENSOR in STATE_DB"):
-        raw_database_output = Tools.DatabaseTool.sonic_db_cli_get_keys(engine=engines.dut, asic="",
-                                                                       db_name=DatabaseConst.STATE_DB_NAME,
-                                                                       grep_str="VOLTAGE").splitlines()
-        database_output = [re.sub(r"PMIC-\d+ ", "", sensor_str) for sensor_str in raw_database_output]
+        database_output = Tools.DatabaseTool.sonic_db_cli_get_keys(engine=engines.dut, asic="",
+                                                                   db_name=DatabaseConst.STATE_DB_NAME,
+                                                                   grep_str="VOLTAGE").splitlines()
 
     with allure.step("Check the Sensors output from CLI and db tables"):
+        # since sensor names are formatted differently in DB vs. CLI, we normalize them to the same form by removing all
+        # spaces and other non-alphanumeric characters
+        def normalization(s): return re.sub(r'[^a-z0-9]', '', s.lower())
+
         with allure.independent_step("Verify for every sensor in sensors_dict[VOLTAGE], it exist in nv show platform environment voltage"):
-            err_mes = compare_sensors(devices.dut.sensors_dict["VOLTAGE"], cli_sensors_list)
-            assert not err_mes, f"This sensors are missing: {err_mes}"
+            ValidationTool.validate_equal_with_normalization(cli_sensors_list, devices.dut.sensors_dict["VOLTAGE"],
+                                                             normalization).verify_result()
 
         with allure.independent_step("Verify for every sensor: VOLTAGE_INFO|<sensor_name> table exist in STATE_DB"):
-            err_mes = compare_sensors(sensors_list, database_output)
-            assert not err_mes, f"This sensors are missing: {err_mes}"
-
-
-def compare_sensors(expected_sensors_list, actual_sensors_list):
-    expected = set([re.sub(r'[^a-z0-9]', '', s.lower()) for s in expected_sensors_list])
-    actual = set([re.sub(r'[^a-z0-9]', '', s.lower()) for s in actual_sensors_list])
-    missing = expected - actual
-    excess = actual - expected
-    result = excess.union(missing)
-    psu_found = [key for key in result if 'psu' in key]
-    assert len(psu_found) < 4, f"Found more than 4 missing psu {psu_found}"
-    result.difference_update(psu_found)
-    return result
+            ValidationTool.validate_equal_with_normalization(
+                database_output, sensors_list, normalization,
+                lambda s: normalization("VOLTAGE_INFO|" + s.replace('+Volt', '').replace('+Vol', ''))
+            ).verify_result()
 
 
 def get_random_sensor_max_min(sensors_dic):

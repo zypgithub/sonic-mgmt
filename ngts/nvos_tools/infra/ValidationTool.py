@@ -1,5 +1,6 @@
 import logging
 import re
+from collections import defaultdict
 from enum import Enum
 from typing import Iterable, Dict
 
@@ -390,6 +391,35 @@ class ValidationTool:
         excess = actual - expected
         equal = not (missing or excess)
         return ResultObj((equal == should_be_equal), f"Missing fields: {missing}\nUnexpected fields: {excess}")
+
+    @staticmethod
+    def validate_equal_with_normalization(actual: Iterable, expected: Iterable, normalization,
+                                          normalization_expected=None, should_be_equal=True) -> ResultObj:
+        """
+        Tests whether two lists of strings are identical up to normalization. Each list should contain no duplicates.
+        `normalization` is a string -> string function to be applied to all items in `actual`.
+        `normalization_expected` is applied to all items in `expected`; if this argument is missing, `normalization` is
+        used instead.
+        """
+        def normalize(a, f):
+            """Returns {f(s): s for s in a} and asserts that no two strings have the same normalized form."""
+            output = defaultdict(list)
+            for x in a:
+                output[f(x)].append(x)
+            collisions = {key for key, value in output.items() if len(value) > 1}
+            if collisions:
+                raise ValueError(f"Invalid normalization: multiple items normalize to the same output:\n" +
+                                 '\n'.join(f'{output[k]} --> {k}' for k in collisions))
+            return {k: v[0] for k, v in output.items()}
+
+        actual = normalize(actual, normalization)
+        expected = normalize(expected, normalization_expected or normalization)
+        missing = expected.keys() - actual.keys()
+        excess = actual.keys() - expected.keys()
+        equal = not (missing or excess)
+        return ResultObj((equal == should_be_equal), (
+            f"Missing fields: {[f'{k} ({v})' for k, v in expected.items() if k in missing]}\n"
+            f"Unexpected fields: {[f'{k} ({v})' for k, v in actual.items() if k in excess]}"))
 
     @staticmethod
     def validate_output_of_show(actual: Dict, expected: Dict, should_be_valid=True, allow_extra_fields=False) -> ResultObj:
