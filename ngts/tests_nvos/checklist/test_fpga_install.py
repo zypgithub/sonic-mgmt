@@ -47,10 +47,14 @@ def test_fpga_install(engines, devices, topology_obj, test_api, platform_compone
 
     platform = Platform()
     platform_output = OutputParsingTool.parse_show_output_to_dict(platform.show()).get_returned_value()
-    # 692-9K36F-A5MV-JQS has encrypted fpga
-    part_number = platform_output[PlatformConsts.FW_PART_NUMBER].strip()
-    if part_number == "692-9K36F-A5MV-JQS" or part_number == "920-9K36F-00MV-QS1":
-        component_name = f"{component_name}_encrypted"
+
+    with allure.step("Check whether device has non encrypted FPGA"):
+        encrypted_fpga = '_encrypted'
+        non_encrypted_fpga_pns = {"692-9K36F-A5MV-JS0", "692-9K36F-00MV-JSL", "920-9K36F-00MV-ES1"}
+        part_number = platform_output[PlatformConsts.FW_PART_NUMBER].strip()
+        if part_number in non_encrypted_fpga_pns:
+            encrypted_fpga = ''
+        component_name = f'{component_name}{encrypted_fpga}'
 
     try:
         path, filename, version_name = BmcTool.get_fw_component_version_previous(component_name)

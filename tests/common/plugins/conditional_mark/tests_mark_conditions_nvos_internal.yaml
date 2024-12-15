@@ -427,6 +427,12 @@ tests_nvos/platform/test_platform_firmware_bios/test_platform_firmware_bios.py:
     conditions:
       - "'juliet' in testbed"
 
+tests_nvos/interfaces/test_eth0_interface_dhcp:test_interface_eth0_speed_duplex_autoneg:
+  skip:
+    reason: "Testcase skipped on Juliet systems, Juliet does not support half duplex"
+    conditions:
+      - "'juliet' in testbed"
+
 tests_nvos/checklist/erot_fw_upgrade/test_erot_upgrade.py:
   skip:
     reason: "Testcase skipped on non Juliet systems, Juliet feature only (as a part of Uberon)"
