@@ -311,7 +311,7 @@ def _get_random_optical_module_transceiver():
 
         with allure.step("pick random connected optical module"):
             show_transceiver = OutputParsingTool.parse_json_str_to_dictionary(
-                platform.transceiver.show()).verify_result()
+                platform.transceiver.show_detailed()).verify_result()
             random_transceiver = \
                 RandomizationTool.select_random_transceiver(transceivers_output=show_transceiver, field_name=PlatformConsts.TRANSCEIVER_CABLE_TYPE,
                                                             expected_value='Optical module', number_of_transceiver_to_select=1)
