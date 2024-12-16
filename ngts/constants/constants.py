@@ -181,7 +181,7 @@ class InfraConst:
     CASES_DUMPS_DIR = 'cases_dumps'
     CASES_SYSLOG_DIR = 'cases_syslog'
     STM_IP = "10.209.104.53"
-    SELECTED__DPUS = 'selected_dpus'
+    SELECTED_DPUS = 'selected_dpus'
 
 
 class LinuxConsts:
