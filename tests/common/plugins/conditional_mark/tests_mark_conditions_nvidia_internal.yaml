@@ -948,6 +948,18 @@ generic_config_updater/test_pfcwd_interval.py::test_pfcwd_interval_config_update
     conditions:
       - "https://redmine.mellanox.com/issues/4204545 and 'sn5610n' in platform"
 
+everflow/test_everflow_testbed.py::TestEverflowV4EgressAclEgressMirror::test_everflow_dscp_with_policer:
+  skip:
+    reason: "Testcase ignored due to https://github.com/sonic-net/sonic-mgmt/issues/16087"
+    conditions:
+      - https://github.com/sonic-net/sonic-mgmt/issues/16087
+
+everflow/test_everflow_testbed.py::TestEverflowV4IngressAclIngressMirror::test_everflow_dscp_with_policer:
+  skip:
+    reason: "Testcase ignored due to https://github.com/sonic-net/sonic-mgmt/issues/16087"
+    conditions:
+      - https://github.com/sonic-net/sonic-mgmt/issues/16087
+
 ########################## NVIDIA INTERNAL COMMUNITY IGNORE END ############################
 
 
