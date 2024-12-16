@@ -108,7 +108,7 @@ def test_cluster_sdn(engines, devices, test_api, has_loopbox, standalone_system,
                 current_config_content = engines.dut.run_cmd("sudo cat {}".format(current_installed_config_path))
                 expected_config_content = engines.sonic_mgmt.run_cmd("sudo cat {}".format(path_to_config[file_type]))
                 assert set(current_config_content.split('\n')) == set(expected_config_content.split('\n')), f"Config file was not loaded properly. Expected content {expected_config_content}, Actual content: {current_config_content}"
-                if initial_config_contents[file_type] != '':
+                if ClusterConsts.CONFIG_FILES_CHANGE[file_type] != 'true':
                     assert set(current_config_content.split('\n')) != set((initial_config_contents[file_type]).split('\n')), f"Current content has not changed, still same as in init state. init: {initial_config_contents[file_type]}, \ncurrent{current_config_content}"
 
         with allure.step("Install initial configurations"):
@@ -188,17 +188,3 @@ def verify_config_files_content_not_changed(sdn, initial_config_contents):
     for file_type, current_file_content in current_config_files_content.items():
         init_file_content = initial_config_contents.get(file_type)
         assert set(current_file_content.split('\n')) == set(init_file_content.split('\n')), f"Initial configuration was not restored for {file_type}. Current: {current_file_content}, Initial: {init_file_content}"
-
-
-def verify_config_files_content_changed(sdn, initial_config_contents, engines):
-    current_config_files_content = {}
-    controller_config_files_paths = ClusterTools.get_current_config_files_paths(sdn, ClusterConsts.NMX_CONTROLLER, ClusterConsts.NMX_CONTROLLER_CONFIG_FILE_TYPES)
-    telemetry_config_files_paths = ClusterTools.get_current_config_files_paths(sdn, ClusterConsts.NMX_TELEMETRY, ClusterConsts.NMX_TELEMETRY_CONFIG_FILE_TYPES)
-    config_files_paths = dict(list(controller_config_files_paths.items()) + list(telemetry_config_files_paths.items()))
-    for file_type, file_path in config_files_paths.items():
-        current_config_files_content[file_type] = engines.dut.run_cmd("sudo cat {}".format(file_path))
-    assert len(current_config_files_content) == len(initial_config_contents), 'Missing configs'
-    for file_type, current_file_content in current_config_files_content.items():
-        init_file_content = initial_config_contents.get(file_type)
-        if init_file_content != '':
-            assert set(current_file_content.split('\n')) != set(init_file_content.split('\n')), f"Initial configuration was not changed for {file_type}. Current: {current_file_content}, Initial: {init_file_content}"

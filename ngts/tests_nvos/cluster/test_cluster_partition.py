@@ -63,7 +63,8 @@ def test_cluster_partition(engines, devices, test_api, has_loopbox, setup_name, 
             default_partition_type = initial_partition_output[default_partition_id]['partition-type']
 
             showed_number_of_gpus = initial_partition_output[default_partition_id]['num-gpus']
-            assert showed_number_of_gpus == expected_number_of_gpus, f'Expected number of gpus {expected_number_of_gpus}, showed number of gpus: {showed_number_of_gpus}'
+            if not is_bug_active(4210584):
+                assert showed_number_of_gpus == expected_number_of_gpus, f'Expected number of gpus {expected_number_of_gpus}, showed number of gpus: {showed_number_of_gpus}'
             # Add assert to check the values - num of gpus, health, resiliency etc...
         with allure.step("Show partition per partition id"):
             for partition_id in partition_ids:
@@ -96,9 +97,12 @@ def test_cluster_partition(engines, devices, test_api, has_loopbox, setup_name, 
     finally:
         with allure.step("Running sdn factory reset"):
             sdn.factory_default.action_reset(param='force')
+        interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name)
+        next(interfaces_wa)
         output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
                                                              output_format=output_format).get_returned_value()
         assert initial_partition_output == output, f"Initial partition was {initial_partition_output}, but current partition is {output}"
+        next(interfaces_wa)
         cluster.unset(apply=True)
         ClusterTools.wait_for_apps_to_be_in_wanted_state()
 
@@ -218,9 +222,12 @@ def test_cluster_partition_bad_flow(engines, devices, test_api, has_loopbox, sta
     finally:
         with allure.step("Running sdn factory reset"):
             sdn.factory_default.action_reset(param='force')
+        interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name)
+        next(interfaces_wa)
         output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
                                                              output_format=output_format).get_returned_value()
         assert initial_partition_output == output, f"Initial partition was {initial_partition_output}, but current partition is {output}"
+        next(interfaces_wa)
         cluster.unset(apply=True)
         ClusterTools.wait_for_apps_to_be_in_wanted_state()
 

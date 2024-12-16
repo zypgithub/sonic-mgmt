@@ -11,8 +11,8 @@ class ClusterConsts:
     CONTROLLER_SERVICES = ['nmxc-sdn', 'nmxc-fib', 'redis']
     ClusterAppsLogLevelsList = [ClusterAppsLogLevels.DEBUG, ClusterAppsLogLevels.INFO, ClusterAppsLogLevels.NOTICE, ClusterAppsLogLevels.WARNING, ClusterAppsLogLevels.ERROR, ClusterAppsLogLevels.CRITICAL]
     NMX_CONTROLLER_CONFIG_FILE_TYPES = ['fm_config', 'sm_config', 'rdm_config', 'chassis_mapping']
-    NMX_CONTROLLER_STATE_FILE_TYPES = ['sm_dump', 'topology']
-    NMX_TELEMETRY_CONFIG_FILE_TYPES = []  # Once added make sure to adjust CONFIG_FILES_CHANGE
+    NMX_CONTROLLER_STATE_FILE_TYPES = ['sm_dump', 'topology', 'conn_info']
+    NMX_TELEMETRY_CONFIG_FILE_TYPES = ['telemetry']  # Once added make sure to adjust CONFIG_FILES_CHANGE
     NMX_TELEMETRY_STATE_FILE_TYPES = []
     CONTROLLER_AND_TELEMETRY_CONFIG_FILES = NMX_CONTROLLER_CONFIG_FILE_TYPES + NMX_TELEMETRY_CONFIG_FILE_TYPES
     CONTROLLER_AND_TELEMETRY_STATE_FILES = NMX_CONTROLLER_STATE_FILE_TYPES + NMX_TELEMETRY_STATE_FILE_TYPES
@@ -62,12 +62,14 @@ class ClusterConsts:
     CONFIG_FILES_CHANGE = {'sm_config': "sudo sed -i \"/^max_op_vls /c\\max_op_vls 2\" {file_path}",
                            'fm_config': "sudo sed -i \"/^LOG_FILE_MAX_SIZE=/c\\LOG_FILE_MAX_SIZE=1023\" {file_path}",
                            'rdm_config': "true",
-                           'chassis_mapping': "true"}
+                           'chassis_mapping': "true",
+                           'telemetry': "true"}
     CONFIG_FILES_CONTENT_CHANGE = {
         'sm_config': lambda content: re.sub(r'^max_op_vls.*$', 'max_op_vls 2', content, flags=re.MULTILINE),
         'fm_config': lambda content: re.sub(r'^LOG_FILE_MAX_SIZE=.*$', 'LOG_FILE_MAX_SIZE=1023', content, flags=re.MULTILINE),
         'rdm_config': lambda content: content,
-        'chassis_mapping': lambda content: content
+        'chassis_mapping': lambda content: content,
+        'telemetry': lambda content: content
     }
     NMX_CONTROLLER_CONFIG_CHASSIS_MAPPING = 'chassis_mapping'
     PARTITION_TYPES = ['location_based', 'gpuuid_based']
