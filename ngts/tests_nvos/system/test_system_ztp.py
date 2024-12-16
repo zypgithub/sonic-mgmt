@@ -9,6 +9,7 @@ from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from retry import retry
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.nvos_tools.infra.SecureBootTool import SecureBootTool
 
 logger = logging.getLogger()
 
@@ -186,7 +187,9 @@ def test_ztp_image(engines, devices):
             _wait_until_ztp_values_fields_changed(system, SystemConsts.ZTP_OUTPUT_FIELDS, SystemConsts.ZTP_DEFAULT_VALUES, tries=5, delay=2)
 
         with allure.step("Download image json file"):
-            _download_ztp_json_config(engines, SystemConsts.IMAGE_JSON)
+            image_json = devices.dut.ztp_dev_json if SecureBootTool.is_dev_system(
+                TestToolkit.engines.dut) else devices.dut.ztp_prod_json
+            _download_ztp_json_config(engines, image_json)
 
             with allure.step("Run nv action run system ztp"):
                 system.ztp.action_run_ztp()
@@ -379,7 +382,9 @@ def test_ztp_json_complex(engines, devices):
             _wait_until_ztp_values_fields_changed(system, SystemConsts.ZTP_OUTPUT_FIELDS, SystemConsts.ZTP_DEFAULT_VALUES, tries=5, delay=2)
 
         with allure.step("Download complex json file"):
-            _download_ztp_json_config(engines, SystemConsts.COMPLEX)
+            image_json = devices.dut.ztp_complex_dev_json if SecureBootTool.is_dev_system(
+                TestToolkit.engines.dut) else devices.dut.ztp_complex_prod_json
+            _download_ztp_json_config(engines, image_json)
 
             with allure.step("Run nv action run system ztp"):
                 system.ztp.action_run_ztp()

@@ -535,6 +535,10 @@ class BlackMambaSwitch(IbSwitch):
             version="35.2014.2012",
             filename="fw-QTM3-rel-35_2014_2012.mfa"
         )
+        self.ztp_prod_json = 'uninstall_prod.json'
+        self.ztp_dev_json = 'uninstall.json'
+        self.ztp_complex_prod_json = 'complex_prod.json'
+        self.ztp_complex_dev_json = 'complex.json'
         self.voltage_sensors = ["PMIC-1+12V_VDD_ASIC1+Vol+In+1", "PMIC-1+ASIC1_VDD+Vol+Out+1",
                                 "PMIC-2+12V_HVDD_DVDD_ASIC1+Vol+In+1", "PMIC-2+ASIC1_DVDD_PL0+Vol+Out+2",
                                 "PMIC-2+ASIC1_HVDD_PL0+Vol+Out+1", "PMIC-3+12V_HVDD_DVDD_ASIC1+Vol+In+1",
@@ -757,6 +761,10 @@ class CrocodileSwitch(IbSwitch):
             filename="fw-QTM3-rel-35_2014_2012.mfa"
         )
         self.mst_dev_name = '/dev/mst/mt54004_pciconf0'  # TODO update
+        self.ztp_prod_json = 'uninstall_prod.json'
+        self.ztp_dev_json = 'uninstall.json'
+        self.ztp_complex_prod_json = 'complex_prod.json'
+        self.ztp_complex_dev_json = 'complex.json'
         self.voltage_sensors = ['PMIC-1-12V-VDD-ASIC1-In-1', 'PMIC-1-ASIC1-VDD-Out-1',
                                 'PMIC-2-12V-HVDD-DVDD-ASIC1-In-1', 'PMIC-2-ASIC1-DVDD-PL0-Out-2',
                                 'PMIC-2-ASIC1-HVDD-PL0-Out-1', 'PMIC-3-12V-HVDD-DVDD-ASIC1-In-1',
@@ -954,6 +962,10 @@ class JulietSwitch(NvLinkSwitch):
         self.has_nmx = True
         self.has_bmc = True
         self.is_standalone = True
+        self.ztp_prod_json = 'uninstall_juliet_prod.json'
+        self.ztp_dev_json = 'uninstall_juliet.json'
+        self.ztp_complex_prod_json = 'complex_prod_juliet.json'
+        self.ztp_complex_dev_json = 'complex_juliet.json'
         self.show_platform_chassis_location_output = {
             PlatformConsts.CHASSIS_LOCATION_TRAY_ID: ExpectedString(range_min=-1, range_max=9),
             PlatformConsts.CHASSIS_LOCATION_SLOT_ID: ExpectedString(range_min=4, range_max=18),
