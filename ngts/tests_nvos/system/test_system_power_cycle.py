@@ -69,9 +69,9 @@ def _test_command_supported(engines, devices, test_name, test_api, force_str):
         reboot_time = ClockTools.parse_datetime(output["gentime"])
         assert reboot_time >= system_time, \
             f"power-cycle command sent at {system_time.strftime('%H:%M:%S')} but 'show system reboot' shows {output}"
-        # todo assert output["reason"] == action power cycle (currently it shows reason unknown, needs newer CPLD)
-        # https://redmine.mellanox.com/issues/4031927
-        # https://redmine.mellanox.com/issues/4030950
+        if not is_redmine_issue_active([4031927, 4030950])[0]:
+            assert output["reason"] == 'power-cycle'
+            assert output["user"] == 'admin'
 
     with allure.step("Assert power-cycle duration was not too long"):
         OperationTime.verify_operation_time(duration, devices.dut.power_cycle_type).verify_result()
