@@ -1769,9 +1769,9 @@
   - Affected_test_cases:
     - tests/nightly/show_techsupport/test_techsupport.py::test_techsupport_health_event_sdk_dump
 
-# Ignore errors based on analysis of RM issue 3944005
+# Ignore errors based on analysis of RM issue 3944005 and 4207130
 - Errors_list:
-  - '.*ERR \(udev-worker\)\[\d+\]: could not read from ''\/sys\/module\/intel_cstate\/initstate'': No such device.*'
+  - '.*ERR \(udev-worker\)\[\d+\]: could not read from ''\/sys\/module\/.*\/initstate'': No such device.*'
   Conditions:
   - Platform:
     - simx
