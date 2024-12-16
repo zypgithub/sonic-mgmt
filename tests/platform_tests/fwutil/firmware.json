@@ -714,9 +714,9 @@
 				],
 				"ONIE": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0013-rc2/115200/onie-updater-x86_64-mlnx_x86-r0",
+						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0013-rc4/115200/onie-updater-x86_64-mlnx_x86-r0",
 						"force_reboot": true,
-						"version": "2023.11-5.3.0013-rc2-115200",
+						"version": "2024.08-5.3.0013-rc4-115200",
 						"reboot": ["cold"]
 					}
 				],
