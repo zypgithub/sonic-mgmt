@@ -16,6 +16,7 @@ class ChassisConst:
     HIPPO = 'hippo'
     BOBCAT = 'bobcat'
     BISON = 'bison'
+    GAUR = 'gaur'
     '''
     the MAIN_FRU_DIC conatains all the information about a new machine and is orgzinized as such-
     MAIN_FRU_DIC[ChassisConst.<system_type>] = {'fru': list of the FRUs of the system type, with and without initials
@@ -103,6 +104,11 @@ class ChassisConst:
                            'port_number': 64,
                            'chip_type': "SPC5"
                            }
+
+    MAIN_FRU_DIC[GAUR] = {'fru': ['5610N'],
+                        'port_number': 64,
+                        'chip_type': "SPC4"
+                        }
 
 
     '''
