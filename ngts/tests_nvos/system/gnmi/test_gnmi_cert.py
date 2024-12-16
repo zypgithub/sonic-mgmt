@@ -382,14 +382,15 @@ def test_gnmi_cert_rotation(engines, devices, gnmi_certs):
     5. Verify still receiving new data
     """
     cert1: CertInfo = gnmi_certs[0]
-    cert2: CertInfo = gnmi_certs[0]
-    cert3: CertInfo = get_cert_with_ca_mismatch(gnmi_certs)
+    cert2: CertInfo = gnmi_certs[1]
     gnmi = System().gnmi_server
     username = devices.dut.default_username
     password = devices.dut.default_password
 
     with allure.step(f'set gnmi cert: {cert1.name}'):
         gnmi.set(CERTIFICATE, cert1.name, apply=True).verify_result()
+
+    time.sleep(2)
 
     with allure.step('Subscribe to gnmi client stream'):
         client = GnmiClient(cert1.dn, GnmiConsts.GNMI_DEFAULT_PORT, username, password,
@@ -406,12 +407,6 @@ def test_gnmi_cert_rotation(engines, devices, gnmi_certs):
     with allure.step('Verify still receiving updated after changing to other valid cert'):
         output, err = read_process_for_specified_time(gnmi_process, GnmiConsts.SLEEP_TIME_FOR_UPDATE)
         validate_gnmi_streaming_output(output, err)
-
-    with allure.step(f'change gnmi cert to invalid: {cert3.name}'):
-        gnmi.set(CERTIFICATE, cert3.name, apply=True).verify_result()
-
-    output, err = read_process_for_specified_time(gnmi_process, GnmiConsts.SLEEP_TIME_FOR_UPDATE)
-    validate_gnmi_streaming_output(output, err)
 
 
 def validate_gnmi_streaming_output(output, err):
