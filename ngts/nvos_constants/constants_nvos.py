@@ -465,6 +465,9 @@ class SystemConsts:
 
     REBOOT_HISTORY = 'history'
     REBOOT_REASON = 'reason'
+    REBOOT_REASON_REBOOT = 'reboot'
+    REBOOT_REASON_POWER_LOSS = 'Power Loss'
+    REBOOT_REASON_POWER_BUTTON = 'power button'
 
     VERSION_BUILD_DATE = 'build-date'
     # VERSION_BUILT_BY = 'built-by'

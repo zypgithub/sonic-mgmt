@@ -8,6 +8,8 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.system.System import System
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.switch_recovery import recover_dut_with_remote_reboot
+from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from ngts.nvos_constants.constants_nvos import SystemConsts
 
 logger = logging.getLogger()
 
@@ -22,6 +24,7 @@ def test_system_power_button(engines, topology_obj):
             3. check reboot reason
     """
     system = System()
+    expected_reboot_reason = SystemConsts.REBOOT_REASON_POWER_BUTTON
 
     try:
         with allure.step('Simulate power button and check switch is down'):
@@ -38,6 +41,11 @@ def test_system_power_button(engines, topology_obj):
                     .get_returned_value()
                 assert "power button" in reboot_output['reason'], \
                     "Expected reason: power button is not observed: {0}".format(reboot_output['reason'])
+
+            with allure.step("Check reboot reason event in system events"):
+                reboot_reason = OutputParsingTool.get_reboot_reason_system_events(system)
+                assert expected_reboot_reason in reboot_reason, 'Reboot reason is {} instead of {}'.\
+                    format(reboot_reason, expected_reboot_reason)
 
 
 def _simulate_power_button_press(engines):

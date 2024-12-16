@@ -277,6 +277,13 @@ class DutUtilsTool:
             raise Exception("Got invalid response: " + output)
         return dockers
 
+    @staticmethod
+    def dut_psu_control(engines, skip_str='', psu_state='', dhcp_hostname=''):
+        player = engines['sonic_mgmt']
+        with allure.step("Reboot {} the PSUs using reboot script".format(psu_state)):
+            reboot_cmd = skip_str + '/.autodirect/mswg/utils/bin/rreboot ' + dhcp_hostname + ' ' + psu_state
+            player.run_cmd(reboot_cmd)
+
 
 def ping_device(ip_add):
     try:

@@ -13,6 +13,8 @@ from ngts.tests_nvos.system.factory_reset.pre_steps import (factory_reset_no_par
                                                             factory_reset_keep_basic_pre_steps,
                                                             factory_reset_general_pre_steps)
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.nvos_constants.constants_nvos import SystemConsts
 
 
 @pytest.mark.timeout(50 * MINUTE)
@@ -40,6 +42,7 @@ def test_reset_factory_without_params(engines, devices, topology_obj, platform_p
     TestToolkit.tested_api = test_api
     system = System()
     cluster = Cluster()
+    expected_reboot_reason = SystemConsts.REBOOT_REASON_REBOOT
 
     with allure.step('pre factory reset steps'):
         apply_and_save_port, current_time, just_apply_port, health_status, machine_type, not_apply_port, \
@@ -60,6 +63,11 @@ def test_reset_factory_without_params(engines, devices, topology_obj, platform_p
 
     with allure.step("Verify the setup is functional"):
         verify_the_setup_is_functional(system, engines)
+
+    with allure.step("Check reboot reason event in system events"):
+        reboot_reason = OutputParsingTool.get_reboot_reason_system_events(system)
+        assert expected_reboot_reason in reboot_reason, 'Reboot reason is {} instead of {}'.\
+            format(reboot_reason, expected_reboot_reason)
 
     cluster.unset(apply=True)
 

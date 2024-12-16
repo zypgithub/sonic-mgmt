@@ -564,3 +564,16 @@ class OutputParsingTool:
                     result = {k: v[ConfState.OPERATIONAL] for k, v in result.items()}
                 logger.info(f"Returned dict:\n{result}")
                 return ResultObj(True, "", result)
+
+    @staticmethod
+    def get_reboot_reason_system_events(system):
+        events = OutputParsingTool.parse_json_str_to_dictionary(system.events.show('last 10')).get_returned_value()
+        latest_reboot_event_id = '-1'
+        reboot_events = [event_id for event_id in events if 'System reboot occured' in events[event_id]['text']]
+        for event_id in reboot_events:
+            if int(event_id) > int(latest_reboot_event_id):
+                latest_reboot_event_id = event_id
+        if latest_reboot_event_id == '-1':
+            return ''
+        reboot_reason = events[latest_reboot_event_id]['text'].split(',')[0].split(':')[1]
+        return reboot_reason
