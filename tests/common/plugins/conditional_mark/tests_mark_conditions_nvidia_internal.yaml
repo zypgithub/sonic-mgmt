@@ -961,6 +961,12 @@ everflow/test_everflow_testbed.py::TestEverflowV4IngressAclIngressMirror::test_e
     conditions:
       - https://github.com/sonic-net/sonic-mgmt/issues/16087
 
+bfd/test_bfd.py::test_bfd_multihop:
+  xfail:
+    reason: "Testcase can fails due to RM 4212393"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4212393"
+
 ########################## NVIDIA INTERNAL COMMUNITY IGNORE END ############################
 
 
