@@ -24,27 +24,22 @@ class TestSPCXRA_x2Split_400G:
         self.cli_object = self.players['dut']['cli']
         self.scenario = "spcx_ra/split_x2_400G_configuration"
 
-    @allure.title('spcx_ra')
-    def test_spcx_ra(self):
-        """
-        This test will SPCX_RA
-        :return: raise assertion error if output is not there.
-        """
-        run_traffic(self.players, self.scenario)
-        validate_traffic_results(self.players, self.scenario)
-
-    @pytest.mark.parameterize("packet_size", PACKET_SIZE_LIST)
+    @pytest.mark.parametrize("packet_size", PACKET_SIZE_LIST)
     @allure.title('test_ar_perf_max_bandwidth')
     @allure.description('Calculate the port utilization on the DUT with AR enabled, with various packet sizes (1500, 2000, 4000) and default AR profile.')
-    def test_ar_perf_max_bandwidth(self, packet_size):
+    def test_ar_perf_max_bandwidth(self, request, packet_size):
 
         with allure.step(f"Run {packet_size}B packet Traffic on all the ports"):
-            run_traffic(self.players, self.scenario, packet_size)
-
+            run_traffic(self.players, self.scenario, packet_size=packet_size,
+                        num_packets=PerfConsts.PACKET_SIZE_TO_PACKET_NUM_DICT[packet_size])
+        test_name = request.node.nodeid.split("::")[-1]
         with allure.step(f"Verifying the traffic for packet size {packet_size}"):
-            traffic_validation(self.players, self.scenario, b_w_threshold=PACKET_SIZE_TO_MAX_BW_DICT[packet_size])
+            traffic_validation(players=self.players, test_name=test_name, scenario=self.scenario,
+                               bw_threshold=PACKET_SIZE_TO_MAX_BW_DICT[packet_size],
+                               samples_params_dict=PerfConsts.SAMPLES_PARAMS,
+                               tc_occ_threshold=PerfConsts.OCC_AVG_TH)
 
-    @pytest.mark.parameterize("packet_size", PACKET_SIZE_LIST)
+    @pytest.mark.parametrize("packet_size", PACKET_SIZE_LIST)
     @allure.title('test_ar_perf_max_bandwidth_ibm')
     @allure.description('Calculate the port utilization on the DUT with AR enabled, with various packet sizes (1500, 2000, 4000) and IBM enabled')
     def test_ar_perf_max_bandwidth_ibm(self, packet_size, ibm_fixture):
