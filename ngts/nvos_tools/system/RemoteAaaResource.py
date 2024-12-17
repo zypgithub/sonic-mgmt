@@ -1,4 +1,3 @@
-from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
@@ -38,16 +37,14 @@ class CLRemoteAaaResource(AbstractRemoteAaaResource):
         authentication: BaseComponent = self.parent_obj.authentication
 
         if self._api_to_use == ApiType.NVUE:
-            authentication.set("1", self._remote_aaa_type_name, dut_engine=engine)
-            authentication.set("2", AuthConsts.LOCAL, dut_engine=engine)
+            authentication.set("1", self._remote_aaa_type_name, dut_engine=engine).verify_result()
+            res = authentication.set("2", AuthConsts.LOCAL, dut_engine=engine, apply=apply)
         else:
-            authentication.set('1', {self._remote_aaa_type_name: {}}, dut_engine=engine)  # TODO: check if 1 is sub-resource of /authentication-order
-            authentication.set('2', {AuthConsts.LOCAL: {}}, dut_engine=engine)
+            authentication.set('1', {self._remote_aaa_type_name: {}}, dut_engine=engine).verify_result()  # TODO: check if 1 is sub-resource of /authentication-order
+            res = authentication.set('2', {AuthConsts.LOCAL: {}}, dut_engine=engine, apply=apply)
 
-        if apply:
-            res = NvueGeneralCli.apply_config(engine or TestToolkit.engines.dut, option='-y', verify_execution=True)
-            if verify_res:
-                res.verify_result()
+        if verify_res:
+            res.verify_result()
 
 
 resource_class_by_is_eth = {
