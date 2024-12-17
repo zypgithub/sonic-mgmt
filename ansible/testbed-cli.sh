@@ -167,6 +167,8 @@ function read_yaml
   # Remove the dpu duts by the keyword 'dpu' in the dut name
   duts=$(echo $duts | sed "s/,[^,]*dpu[^,]*//g")
   inv_name=${line_arr[12]}
+  # Remove the dpu duts by the keyword 'dpu' in the dut name
+  duts=$(echo $duts | sed "s/,[^,]*dpu[^,]*//g")
 }
 
 function read_file
