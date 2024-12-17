@@ -181,7 +181,7 @@ class CertificateGenerator:
     @classmethod
     def __openssl_verify_cert_with_ca(cls, ca_file, cert_file, stdout_func):
         verify_cmd = f'openssl verify -CAfile {ca_file} {cert_file}'
-        cls.__run_cmd_popen(verify_cmd, stdout_func, 'OK')
+        cls.__run_cmd_popen(verify_cmd, stdout_func)
 
     @classmethod
     def __verify_file(cls, file, purpose, is_dir=False):
@@ -197,7 +197,7 @@ class CertificateGenerator:
         cls.__run_cmd_popen(chmod_cmd, stdout_func)
 
     @classmethod
-    def __run_cmd_popen(cls, cmd: Union[str, list], stdout_func, expect='.*', ignore_stderr=False):
+    def __run_cmd_popen(cls, cmd: Union[str, list], stdout_func):
         cmd_str, cmd_list = (cmd, cmd.split(' ')) if isinstance(cmd, str) else (
             ' '.join([str(item) for item in cmd]), cmd)
 
@@ -209,10 +209,7 @@ class CertificateGenerator:
         stdout_func(result.stdout)
 
         # Print any error messages
-        if ignore_stderr:
-            if result.stderr:
-                assert 'error' not in result.stderr, f'error has occurred\nout: {result.stdout}\nerr: {result.stderr}'
-        elif result.returncode != 0:
+        if result.returncode != 0:
             stdout_func("Returned code is not 0. Errors:")
             stdout_func(result.stderr)
             raise ValueError(f'error has occurred\nout: {result.stdout}\nerr: {result.stderr}')
