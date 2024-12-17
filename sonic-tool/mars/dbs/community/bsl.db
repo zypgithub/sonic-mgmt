@@ -10,7 +10,14 @@
 
             <!-- OPTIONAL TAGS -->
             <tags> SNMP, FDB, VLAN </tags>
-
+            <ignore>
+                <!-- weekend case  -->
+                <condition>
+                    <key> skip_weekend_cases </key>
+                    <op> == </op>
+                    <value> yes </value>
+                </condition>
+            </ignore>
             <!-- pre db commands - executed once before DB run -->
             <pre>
                 <name> Deploy L2 mode </name>
