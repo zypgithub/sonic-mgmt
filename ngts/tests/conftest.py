@@ -352,56 +352,69 @@ def config_check(engines, cli_objects, topology_obj, request, sonic_version):
     Check if the running config (from redis db) is modified after the test case running.
     If so, we will reload the running config after test case running.
     """
-    dut_engine = engines.dut
-    dut_hostname = cli_objects.dut.chassis.get_hostname()
+    is_skynet = request.config.getoption("skynet")
+    if is_skynet:
+        logger.info("config check is disabled on Skynet systems to prevent system reload")
+    else:
+        dut_engine = engines.dut
+        dut_hostname = cli_objects.dut.chassis.get_hostname()
 
-    module_name = request.node.name
+        module_name = request.node.name
 
-    dut_data = {}
+        dut_data = {}
 
-    logger.info("Collecting running config before test on {}".format(dut_hostname))
+        logger.info("Collecting running config before test on {}".format(dut_hostname))
 
-    dut_data["pre_running_config"] = json.loads(dut_engine.run_cmd("sonic-cfggen -d --print-data"))
+        dut_data["pre_running_config"] = json.loads(dut_engine.run_cmd("sonic-cfggen -d --print-data"))
 
-    yield dut_data
+        yield dut_data
 
-    logger.info("Collecting running config after test on {}".format(dut_hostname))
-    dut_data["cur_running_config"] = json.loads(dut_engine.run_cmd("sonic-cfggen -d --print-data"))
+        logger.info("Collecting running config after test on {}".format(dut_hostname))
+        dut_data["cur_running_config"] = json.loads(dut_engine.run_cmd("sonic-cfggen -d --print-data"))
 
-    pre_only_config = {}
-    cur_only_config = {}
-    inconsistent_config = {}
+        pre_only_config = {}
+        cur_only_config = {}
+        inconsistent_config = {}
 
-    # Ignore the following keys in the comparison as they are expected and are not considered as stale configurations.
-    exclude_config_table_names = {"LOGGER"}
+        # Ignore the following keys in the comparison as they are expected and are not considered as stale configurations.
+        exclude_config_table_names = {"LOGGER"}
 
-    pre_running_config = dut_data["pre_running_config"]
-    cur_running_config = dut_data["cur_running_config"]
-    pre_running_config_keys = set(pre_running_config.keys())
-    cur_running_config_keys = set(cur_running_config.keys())
+        pre_running_config = dut_data["pre_running_config"]
+        cur_running_config = dut_data["cur_running_config"]
+        pre_running_config_keys = set(pre_running_config.keys())
+        cur_running_config_keys = set(cur_running_config.keys())
 
-    # Check if there are extra keys in pre running config
-    pre_config_extra_keys = list(pre_running_config_keys - cur_running_config_keys - exclude_config_table_names)
-    for key in pre_config_extra_keys:
-        pre_only_config.update({key: pre_running_config[key]})
+        # Check if there are extra keys in pre running config
+        pre_config_extra_keys = list(pre_running_config_keys - cur_running_config_keys - exclude_config_table_names)
+        for key in pre_config_extra_keys:
+            pre_only_config.update({key: pre_running_config[key]})
 
-    # Check if there are extra keys in cur running config
-    cur_config_extra_keys = list(cur_running_config_keys - pre_running_config_keys - exclude_config_table_names)
-    for key in cur_config_extra_keys:
-        cur_only_config.update({key: cur_running_config[key]})
+        # Check if there are extra keys in cur running config
+        cur_config_extra_keys = list(cur_running_config_keys - pre_running_config_keys - exclude_config_table_names)
+        for key in cur_config_extra_keys:
+            cur_only_config.update({key: cur_running_config[key]})
 
-    # Get common keys in pre running config and cur running config
-    common_config_keys = list(pre_running_config_keys & cur_running_config_keys - exclude_config_table_names)
+        # Get common keys in pre running config and cur running config
+        common_config_keys = list(pre_running_config_keys & cur_running_config_keys - exclude_config_table_names)
 
-    # Check if the running config is modified after module running
-    for key in common_config_keys:
-        # TODO: remove these code when solve the problem of "FLEX_COUNTER_DELAY_STATUS"
-        if key == "FLEX_COUNTER_TABLE":
-            for sub_key, sub_value in list(pre_running_config[key].items()):
-                try:
-                    pre_value = pre_running_config[key][sub_key]
-                    cur_value = cur_running_config[key][sub_key]
-                    if pre_value["FLEX_COUNTER_STATUS"] != cur_value["FLEX_COUNTER_STATUS"]:
+        # Check if the running config is modified after module running
+        for key in common_config_keys:
+            # TODO: remove these code when solve the problem of "FLEX_COUNTER_DELAY_STATUS"
+            if key == "FLEX_COUNTER_TABLE":
+                for sub_key, sub_value in list(pre_running_config[key].items()):
+                    try:
+                        pre_value = pre_running_config[key][sub_key]
+                        cur_value = cur_running_config[key][sub_key]
+                        if pre_value["FLEX_COUNTER_STATUS"] != cur_value["FLEX_COUNTER_STATUS"]:
+                            inconsistent_config.update(
+                                {
+                                    key: {
+                                        "pre_value": pre_running_config[key],
+                                        "cur_value": cur_running_config[key]
+                                    }
+                                }
+                            )
+                    except KeyError:
                         inconsistent_config.update(
                             {
                                 key: {
@@ -410,53 +423,44 @@ def config_check(engines, cli_objects, topology_obj, request, sonic_version):
                                 }
                             }
                         )
-                except KeyError:
-                    inconsistent_config.update(
-                        {
-                            key: {
-                                "pre_value": pre_running_config[key],
-                                "cur_value": cur_running_config[key]
-                            }
+            elif not compare_running_config(pre_running_config[key], cur_running_config[key]):
+                inconsistent_config.update(
+                    {
+                        key: {
+                            "pre_value": pre_running_config[key],
+                            "cur_value": cur_running_config[key]
                         }
-                    )
-        elif not compare_running_config(pre_running_config[key], cur_running_config[key]):
-            inconsistent_config.update(
-                {
-                    key: {
-                        "pre_value": pre_running_config[key],
-                        "cur_value": cur_running_config[key]
                     }
+                )
+
+        if pre_only_config or cur_only_config or inconsistent_config:
+            check_result = {
+                "config_db_check": {
+                    "pass": False,
+                    "pre_only_config": pre_only_config,
+                    "cur_only_config": cur_only_config,
+                    "inconsistent_config": inconsistent_config
                 }
-            )
-
-    if pre_only_config or cur_only_config or inconsistent_config:
-        check_result = {
-            "config_db_check": {
-                "pass": False,
-                "pre_only_config": pre_only_config,
-                "cur_only_config": cur_only_config,
-                "inconsistent_config": inconsistent_config
             }
-        }
 
-        config_check_error_message = (f"Config check failed for {module_name}, "
-                                      f"diff summary: {DeepDiff(pre_running_config, cur_running_config)}\n "
-                                      f"full results: {check_result}")
-        logger.warning(config_check_error_message)
-        logger.info(f"DUT contains stale configurations after running {module_name}, reloading DUT to configurations "
-                    f"before the test")
-        save_config_db_json(dut_engine, dut_data["pre_running_config"])
-        cli_objects.dut.general.reload_flow(topology_obj=topology_obj, reload_force=True)
-        # This list contains of known modules that lead to stale configurations, and need to be analyzed.
-        config_check_problematic_modules = ["test_app_extension_upgrade.py", "test_app_extension_install_uninstall.py",
-                                            "test_dpb_speeds.py", "test_dpb_negative.py", "test_dpb_all_ports.py",
-                                            "tests/push_build_tests/general/doroce/test_doroce.py", "test_wjh.py"]
-        if is_redmine_issue_active([4119542])[0] and module_name in config_check_problematic_modules:
-            logger.error(f"There are known stale configurations, details in RM Issue #4119542.")
+            config_check_error_message = (f"Config check failed for {module_name}, "
+                                          f"diff summary: {DeepDiff(pre_running_config, cur_running_config)}\n "
+                                          f"full results: {check_result}")
+            logger.warning(config_check_error_message)
+            logger.info(f"DUT contains stale configurations after running {module_name}, reloading DUT to configurations "
+                        f"before the test")
+            save_config_db_json(dut_engine, dut_data["pre_running_config"])
+            cli_objects.dut.general.reload_flow(topology_obj=topology_obj, reload_force=True)
+            # This list contains of known modules that lead to stale configurations, and need to be analyzed.
+            config_check_problematic_modules = ["test_app_extension_upgrade.py", "test_app_extension_install_uninstall.py",
+                                                "test_dpb_speeds.py", "test_dpb_negative.py", "test_dpb_all_ports.py",
+                                                "tests/push_build_tests/general/doroce/test_doroce.py", "test_wjh.py"]
+            if is_redmine_issue_active([4119542])[0] and module_name in config_check_problematic_modules:
+                logger.error(f"There are known stale configurations, details in RM Issue #4119542.")
+            else:
+                raise Exception(config_check_error_message)
         else:
-            raise Exception(config_check_error_message)
-    else:
-        logger.info("Config check passed for {}".format(module_name))
+            logger.info("Config check passed for {}".format(module_name))
 
 
 def compare_running_config(pre_running_config, cur_running_config):
