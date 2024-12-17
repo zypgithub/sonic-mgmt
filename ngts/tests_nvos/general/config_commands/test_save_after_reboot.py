@@ -7,7 +7,6 @@ from ngts.nvos_constants.constants_nvos import FastRecoveryConsts
 from ngts.nvos_constants.constants_nvos import SystemConsts, NvosConst, ApiType
 from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
-from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
@@ -37,7 +36,6 @@ def test_save_reboot(engines, devices):
             12. Verify fae fast-recovery trigger event for trigger-id is Error
             13. cleanup - run nv unset system hostname & reboot
     """
-    fae = Fae()
 
     with allure.step('Run show system command and verify that each field has a value'):
         system = System()
@@ -51,9 +49,9 @@ def test_save_reboot(engines, devices):
                                   FastRecoveryConsts.STATE_DISABLED, apply=True, dut_engine=engines.dut)'''
 
         with allure.step('Set system events table-size to 600 and validate'):
-            fae.system.events.set(op_param_name='table-size', op_param_value=600, apply=True, dut_engine=engines.dut). \
+            system.events.set(op_param_name='table-size', op_param_value=600, apply=True, dut_engine=engines.dut). \
                 verify_result()
-            output = OutputParsingTool.parse_json_str_to_dictionary(fae.system.events.show()).get_returned_value()
+            output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show()).get_returned_value()
             ValidationTool.verify_field_value_in_output(output, SystemConsts.EVENTS_TABLE_SIZE, '600').verify_result()
 
         with allure.step('Simulate 10 system events'):
@@ -109,7 +107,7 @@ def test_save_reboot(engines, devices):
                                                             new_hostname_value).verify_result()
 
             with allure.step('Verify that system events table-size config was saved'):
-                output = OutputParsingTool.parse_json_str_to_dictionary(fae.system.events.show()).get_returned_value()
+                output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show()).get_returned_value()
                 ValidationTool.verify_field_value_in_output(output, SystemConsts.EVENTS_TABLE_SIZE, '600'). \
                     verify_result()
 

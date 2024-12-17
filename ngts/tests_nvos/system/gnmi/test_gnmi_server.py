@@ -1,11 +1,12 @@
+import ast
 import logging
 import os
 import random
-import signal
-import ast
-import time
 import re
+import signal
+import time
 from multiprocessing import Process
+
 import pytest
 
 import ngts.tools.test_utils.allure_utils as allure
@@ -13,13 +14,13 @@ from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.constants.constants import GnmiConsts
 from ngts.nvos_constants.constants_nvos import NvosConst, DatabaseConst, ApiType, ActionConsts, SystemConsts
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
+from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.system.System import System
-from ngts.nvos_tools.infra.Fae import Fae
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
 from ngts.tests_nvos.system.gnmi.constants import GnmiMode, MAX_GNMI_SUBSCRIBERS, GnmicErr
-from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.tests_nvos.system.gnmi.helpers import gnmi_basic_flow, validate_gnmi_is_running_and_stream_updates, \
     validate_show_gnmi, validate_gnmi_server_in_health_issues, run_gnmi_client_in_the_background, \
     verify_description_value, run_gnmi_client_and_parse_output, validate_gnmi_enabled_and_running, \
@@ -211,9 +212,8 @@ def test_gnmi_bad_flow(test_api, engines, devices):
     with allure.step("Subscribe to the gnmi server for data that is not supported"):
         xpath = f'interfaces/interface[name={devices.dut.default_port}]/state/counters/in-broadcast-pkts'
         gnmi_stream_updates = run_gnmi_client_and_parse_output(engines, devices, xpath, engines.dut.ip)
-        gnmi_stream_updates_value = list(gnmi_stream_updates.values())[0]
-        assert gnmi_stream_updates_value == '0', f'{xpath} is unsupported field,' \
-            f' so we expect to have 0, but got {gnmi_stream_updates_value}'
+        gnmi_stream_updates_value = list(gnmi_stream_updates.values())
+        assert not gnmi_stream_updates_value, f'{xpath} is unsupported field, so we expect to have none, but got {gnmi_stream_updates_value}'
 
     with allure.step("Subscribe to the gnmi server with bad xpath"):
         xpath = f'/{Tools.RandomizationTool.get_random_string(5)}/{Tools.RandomizationTool.get_random_string(5)}'
