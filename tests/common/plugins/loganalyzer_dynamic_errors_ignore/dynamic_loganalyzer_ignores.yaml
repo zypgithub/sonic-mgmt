@@ -1822,3 +1822,9 @@
   Conditions:
     - Redmine:
         - 3943532
+
+- Errors_list:
+  - '.*ERR kernel:.*sxd_kernel:.*Fails to access MCIA, module.*'
+  Conditions:
+  - Redmine:
+    - 4208973
