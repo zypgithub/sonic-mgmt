@@ -95,10 +95,8 @@ class SwitchTopologyEntity(TopologyEntityInterface):
         """
         for switch_type, fru_list in ChassisConst.CHASSIS_TO_TYPE_DICT.items():
             for fru in fru_list:
-                # Remove most common used HWSKU prefixes, to simplify string
-                interim = self.HwSKU.replace("ACS", "").replace("-", "").replace("MSN", "")
-                # Get FRU part. Ex. from ACS-MSN4600C get 4600C
-                current_hwsku_fru = re.findall("\d.+", interim, re.IGNORECASE)[0]
+                # Get FRU part. Ex. from ACS-MSN4600C get 4600C, Mellanox-SN4280-O28 get 4280
+                current_hwsku_fru = re.search("SN(\d[^-]+)", self.HwSKU).group(1)
                 if fru.lower() == current_hwsku_fru.lower():
                     logger.info('switch type found: {}'.format(switch_type))
                     self.system_type = switch_type

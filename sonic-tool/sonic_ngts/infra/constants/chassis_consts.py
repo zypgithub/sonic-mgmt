@@ -96,7 +96,7 @@ class ChassisConst:
                            }
 
     MAIN_FRU_DIC[BOBCAT] = {'fru': ['4280'],
-                           'port_number': 32,
+                           'port_number': 28,
                            'chip_type': "SPC3"
                            }
 
