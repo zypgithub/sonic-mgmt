@@ -131,7 +131,7 @@ class CertificateGenerator:
         cert_private_path = os.path.join(cert_location, cert_private_filename)
         cn = dn or DEFAULT_DN
         gen_cert_key_cmd = f'openssl req -newkey rsa:2048 -nodes -keyout {cert_private_path} -subj /C=CN/ST=GD/L=SZ-Inc/CN={cn} -out {cert_csr_path}'
-        cls.__run_cmd_popen(gen_cert_key_cmd, stdout_func, ignore_stderr=True)
+        cls.__run_cmd_popen(gen_cert_key_cmd, stdout_func)
         cls.__verify_file(cert_csr_path, 'generated certificate csr')
         cls.__verify_file(cert_private_path, 'generated certificate key')
         cls.__chmod_for_reading(cert_csr_path, stdout_func)
@@ -151,7 +151,7 @@ class CertificateGenerator:
             tmp_file.write(f'subjectAltName={subject_alt_name}')
             tmp_file.flush()
             gen_and_issue_cert_public_cmd = f'openssl x509 -req -in {cert_csr_path} -CA {ca_public_path} -CAkey {ca_private_path} -CAcreateserial -out {cert_public_path} -days {expiration} -extfile {tmp_file.name}'
-        cls.__run_cmd_popen(gen_and_issue_cert_public_cmd, stdout_func, ignore_stderr=True)
+        cls.__run_cmd_popen(gen_and_issue_cert_public_cmd, stdout_func)
         cls.__verify_file(cert_public_path, 'generated certificate crt')
         cls.__chmod_for_reading(cert_public_path, stdout_func)
         return cert_public_path
@@ -162,7 +162,7 @@ class CertificateGenerator:
         cert_public_pem_filename = f'{cert_name}.pem'
         cert_public_pem_path = os.path.join(cert_location, cert_public_pem_filename)
         convert_crt_to_pem_cmd = f'openssl x509 -in {cert_crt_public_path} -out {cert_public_pem_path} -outform PEM'
-        cls.__run_cmd_popen(convert_crt_to_pem_cmd, stdout_func, ignore_stderr=True)
+        cls.__run_cmd_popen(convert_crt_to_pem_cmd, stdout_func)
         cls.__verify_file(cert_public_pem_path, 'generated certificate crt')
         cls.__chmod_for_reading(cert_public_pem_path, stdout_func)
         return cert_public_pem_path
@@ -174,14 +174,14 @@ class CertificateGenerator:
         p12_bundle_filename = f'{cert_name}.p12'
         p12_bundle_path = os.path.join(cert_location, p12_bundle_filename)
         create_p12_bundle_cmd = f'openssl pkcs12 -export -out {p12_bundle_path} -in {cert_public_pem_path} -inkey {cert_private_path} -passout pass:{p12_pass}'
-        cls.__run_cmd_popen(create_p12_bundle_cmd, stdout_func, ignore_stderr=True)
+        cls.__run_cmd_popen(create_p12_bundle_cmd, stdout_func)
         cls.__verify_file(p12_bundle_path, 'generated certificate crt')
         cls.__chmod_for_reading(p12_bundle_path, stdout_func)
 
     @classmethod
     def __openssl_verify_cert_with_ca(cls, ca_file, cert_file, stdout_func):
         verify_cmd = f'openssl verify -CAfile {ca_file} {cert_file}'
-        cls.__run_cmd_popen(verify_cmd, stdout_func, 'OK')
+        cls.__run_cmd_popen(verify_cmd, stdout_func)
 
     @classmethod
     def __verify_file(cls, file, purpose, is_dir=False):
@@ -197,7 +197,7 @@ class CertificateGenerator:
         cls.__run_cmd_popen(chmod_cmd, stdout_func)
 
     @classmethod
-    def __run_cmd_popen(cls, cmd: Union[str, list], stdout_func, expect='.*', ignore_stderr=False):
+    def __run_cmd_popen(cls, cmd: Union[str, list], stdout_func):
         cmd_str, cmd_list = (cmd, cmd.split(' ')) if isinstance(cmd, str) else (
             ' '.join([str(item) for item in cmd]), cmd)
 
@@ -209,10 +209,7 @@ class CertificateGenerator:
         stdout_func(result.stdout)
 
         # Print any error messages
-        if ignore_stderr:
-            if result.stderr:
-                assert 'error' not in result.stderr, f'error has occurred\nout: {result.stdout}\nerr: {result.stderr}'
-        elif result.returncode != 0:
+        if result.returncode != 0:
             stdout_func("Returned code is not 0. Errors:")
             stdout_func(result.stderr)
             raise ValueError(f'error has occurred\nout: {result.stdout}\nerr: {result.stderr}')

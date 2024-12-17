@@ -206,10 +206,10 @@ def test_gnmi_cert_set_cert(test_flow, addressing_type, local_adminuser, gnmi_ce
         System().gnmi_server.set(CERTIFICATE, cert.name, apply=True).verify_result()
     with allure.step(
             f'run client without skip-verify flag, using right CA crt - expect {"success" if test_flow == TestFlowType.GOOD_FLOW else "fail"}'):
-        verify_gnmi_client(test_flow, cert.dn or cert.ip, GnmiConsts.GNMI_DEFAULT_PORT, local_adminuser.username,
+        verify_gnmi_client(test_flow, cert.ip, GnmiConsts.GNMI_DEFAULT_PORT, local_adminuser.username,
                            local_adminuser.password, False, GnmicErr.CERT_VERIFY_FAIL, cacert=cert.cacert)
     with allure.step('run client with skip-verify flag - expect success'):
-        verify_gnmi_client(TestFlowType.GOOD_FLOW, cert.dn or cert.ip, GnmiConsts.GNMI_DEFAULT_PORT,
+        verify_gnmi_client(TestFlowType.GOOD_FLOW, cert.ip, GnmiConsts.GNMI_DEFAULT_PORT,
                            local_adminuser.username, local_adminuser.password, True, GnmicErr.CERT_VERIFY_FAIL)
 
 
@@ -400,7 +400,7 @@ def gnmi_cert_upgrade_check():
                 time.sleep(5)
                 # remove_etc_host_mapping_to_dn(cert.dn)
                 # add_etc_host_mapping_to_dn(cert.dn, dut_engine.ip)
-                verify_gnmi_client(TestFlowType.GOOD_FLOW, cert.dn or cert.ip, GnmiConsts.GNMI_DEFAULT_PORT,
+                verify_gnmi_client(TestFlowType.GOOD_FLOW, cert.ip, GnmiConsts.GNMI_DEFAULT_PORT,
                                    dut_engine.username,
                                    dut_engine.password, False, GnmicErr.CERT_VERIFY_FAIL, cacert=cert.cacert)
                 # remove_etc_host_mapping_to_dn(cert.dn)
