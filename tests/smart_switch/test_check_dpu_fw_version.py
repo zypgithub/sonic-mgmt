@@ -18,9 +18,9 @@ def test_check_dpu_fw_version(dpuhosts, localhost):
         sonic_version_output = dpuhosts[0].shell('show ver | grep "Software Version"')['stdout']
         sonic_image_hash = re.search(r'([a-z0-9]{9,})($|_)', sonic_version_output).group(1)
         nfs_path = "/auto/sw_system_release/sonic/sonic_dpu"
-        image_path = localhost.shell(f"ls {nfs_path} | grep {sonic_image_hash}")['stdout']
+        image_path = localhost.shell(f"ls {nfs_path} | grep {sonic_image_hash}")['stdout_lines'][-1]
         readme_path = nfs_path + '/' + image_path + '/dev/README'
-        fw_version_output = localhost.shell(f"cat {readme_path} | grep FW_VERSION")['stdout']
+        fw_version_output = localhost.shell(f"cat {readme_path} | grep FW_VERSION_DPU")['stdout']
         fw_version_pattern = r'\d{2}\.\d{2}\.\d{4}'
         expected_fw_version = re.search(fw_version_pattern, fw_version_output).group()
     with allure.step("Check fw versions of all the DPUs"):
