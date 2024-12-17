@@ -28,8 +28,8 @@ r-leopard-01,Ethernet104,r-leopard-20,Ethernet104,400000,126,Access,True
 r-leopard-01,Ethernet112,r-leopard-20,Ethernet112,400000,127,Access,True
 r-leopard-01,Ethernet120,r-leopard-20,Ethernet120,400000,128,Access,True
 r-leopard-01,Ethernet128,r-leopard-20,Ethernet128,400000,129,Access,True
-r-leopard-01,Ethernet136,r-leopard-20,Ethernet136,400000,130,Access,False
-r-leopard-01,Ethernet144,r-leopard-20,Ethernet144,400000,131,Access,False
+r-leopard-01,Ethernet136,r-leopard-20,Ethernet136,400000,130,Access,True
+r-leopard-01,Ethernet144,r-leopard-20,Ethernet144,400000,131,Access,True
 r-leopard-01,Ethernet152,r-leopard-20,Ethernet152,400000,132,Access,True
 r-leopard-01,Ethernet160,r-leopard-20,Ethernet160,100000,133,Access,True
 r-leopard-01,Ethernet164,r-leopard-20,Ethernet164,100000,134,Access,True
