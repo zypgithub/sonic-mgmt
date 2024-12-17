@@ -4,6 +4,7 @@ import time
 import pytest
 import base64
 import random
+from urllib.parse import quote
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from infra.tools.general_constants.constants import DefaultConnectionValues
 from infra.tools.redmine.redmine_api import *
@@ -593,8 +594,7 @@ def test_fetch_image_with_weird_password(test_api, engines):
     TestToolkit.tested_api = test_api
     system = System()
     # Create 5 passwords including 5 random special characters from the allowed special character list
-    special_char_list = ['~', '@', '%', '^', '*', '_', '=', '+', '{', '}', ':', ',', '\\!', "\\'"]
-    # To Do: Skipping these characters for now: [ and ] and /
+    special_char_list = ['~', '@', '%', '^', '*', '_', '=', '+', '{', '}', ':', ',', '[', ']', '/', '!', "'"]
     weird_passwords = [("Password1" + special_char) for special_char in (random.sample(special_char_list, 5))]
 
     with allure.step("Create dummy file to be fetched"):
@@ -613,21 +613,30 @@ def test_fetch_image_with_weird_password(test_api, engines):
 def helper_fetch_image_with_weird_password(engines, system, test_api, weird_password):
     new_user = ""
     image_fetched = False
+
+    # For nv action fetch command, passwords with special chars need to be url encoded
+    if "'" in weird_password:
+        # Adding exception for apostrophe
+        if test_api == ApiType.NVUE:
+            weird_password = "Password1\\'"
+        weird_password_urlencoded = weird_password
+    else:
+        weird_password_urlencoded = quote(weird_password, safe='')
+
     if test_api == ApiType.OPENAPI:
         # encode password to base64 object and convert the base64 object to string
-        weird_password_encoded = base64.b64encode(str.encode(weird_password)).decode()
-    else:
-        # No encoding needed for NVUE
-        weird_password_encoded = weird_password
+        weird_password = base64.b64encode(str.encode(weird_password)).decode()
+
     try:
         with allure.step("Create a new user with the weird password"):
-            new_user, new_password = system.aaa.user.set_new_user(password=weird_password_encoded,
+            new_user, new_password = system.aaa.user.set_new_user(password=weird_password,
                                                                   role=SystemConsts.ROLE_VIEWER, apply=True)
 
         with allure.step("Fetch the dummy image {} using the new user and weird password".format(
                 SystemConsts.DUMMY_IMAGE)):
             hostname = engines.dut.run_cmd('hostname')
-            scp_path = ImageConsts.SCP_PATH_SERVER.format(username=new_user, password=weird_password, ip=hostname,
+            scp_path = ImageConsts.SCP_PATH_SERVER.format(username=new_user,
+                                                          password=weird_password_urlencoded, ip=hostname,
                                                           path=SystemConsts.DUMMY_IMAGE_PATH + SystemConsts.DUMMY_IMAGE)
             system.image.action_fetch(scp_path)
             image_fetched = True

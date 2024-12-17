@@ -564,6 +564,9 @@ class SystemConsts:
     # list of all api types
     DNS_SERVER_IDS = {"ipv4": DNS_SERVER_IPV4, "ipv6": DNS_SERVER_IPV6}
 
+    DUMMY_IMAGE_PATH = '/tmp/'
+    DUMMY_IMAGE = 'dummy.bin'
+
 
 class DocumentsConsts:
     MIN_FILES_SIZE = 30000
