@@ -1,4 +1,5 @@
 import logging
+import time
 
 import pytest
 
@@ -41,22 +42,18 @@ def test_bmc_creds_flow(engines, devices, topology_obj):
         BmcUsers.admin.another_password = admin_password_from_tpm
 
     with allure.step('factory reset the bmc'):
-        with allure.step("run factory reset to bmc"):
-            client = CurlTool(server_host=PlatformConsts.BMC_INTERNAL_IP, username=BmcUsers.root.username,
-                              password=BmcUsers.root.another_password)
-            client.change_root_password(password=BmcUsers.root.default_password)
-            client.reset_bmc_to_factory()  # Causes switch to reboot
-            dut.disconnect()
-            DutUtilsTool.wait_on_system_reboot(dut, topology_obj=TestToolkit.topology_obj)
-            client.change_root_password(password=BmcUsers.root.default_password)
+        client = CurlTool(server_host=PlatformConsts.BMC_INTERNAL_IP, username=BmcUsers.root.username,
+                          password=BmcUsers.root.another_password)
+        client.change_root_password(password=BmcUsers.root.default_password)
+        client.reset_bmc_to_factory()
+        with allure.independent_step("Wait for BMC to boot after factory reset"):
+            time.sleep(120)
+        client.change_root_password(password=BmcUsers.root.default_password)
 
     with allure.step(f'verify bmc user "{BmcUsers.admin.username}" can login only with TPM password'):
-        with allure.step(f'curl with user "{BmcUsers.admin.username}" + default password - expect fail'):
+        with allure.independent_step(f'curl with user "{BmcUsers.admin.username}" + default password - expect fail'):
             check_auth_with_curl(dut, BmcUsers.admin.username, BmcUsers.admin.default_password, False)
-        with allure.step("Run nv command to restore admin password"):
-            Platform().firmware.show().verify_result()
-        with allure.step(f'curl with user "{BmcUsers.admin.username}" + password from tpm cipher - expect success'):
+        with allure.independent_step("Run nv command to restore admin password"):
+            Platform().firmware.show()
+        with allure.independent_step(f'curl with user "{BmcUsers.admin.username}" + password from tpm cipher - expect success'):
             check_auth_with_curl(dut, BmcUsers.admin.username, BmcUsers.admin.another_password, True)
-
-    with allure.step('cleanup - after bmc factory reset - enable mctp-pcie-ctrl service'):
-        enable_mctp_pcie_ctrl_service_in_bmc(dut)
