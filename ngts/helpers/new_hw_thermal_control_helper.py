@@ -450,8 +450,9 @@ def get_tested_sensor_list(sensors_counter, dut, cli_object_dut):
             sensor_temperature_test_list.remove("asic")
 
         if platform in TC_CONST.JULIET_PLATFORMS:
-            sensor_temperature_test_list.remove("ambient")
-            sensor_temperature_test_list.remove("module")
+            for sensor in ["ambient", "module"]:
+                if sensor in sensor_temperature_test_list:
+                    sensor_temperature_test_list.remove(sensor)
 
     if not sensor_temperature_test_list:
         raise Exception("No sensor is available for testing ")
@@ -776,8 +777,9 @@ def get_sensor_read_error_test_data(cli_objects):
             sensor_read_error_test_sensors.append("module")
     platform = cli_objects.dut.chassis.get_platform()
     if platform in TC_CONST.JULIET_PLATFORMS:
-        sensor_read_error_test_sensors.remove("ambient")
-        sensor_read_error_test_sensors.remove("module")
+        for sensor in ["ambient", "module"]:
+            if sensor in sensor_read_error_test_sensors:
+                sensor_read_error_test_sensors.remove(sensor)
     sensor_type = random.choice(sensor_read_error_test_sensors)
     sensor_temperature_file = get_sensor_read_err_file(sensor_type)
     return sensor_type, sensor_temperature_file
