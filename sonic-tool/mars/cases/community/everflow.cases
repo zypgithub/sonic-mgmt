@@ -38,6 +38,12 @@
                 <op> == </op>
                 <value> no </value>
             </condition>
+            <!-- Case only for main hwsku, skip this case if it is non-main hwsku -->
+            <condition>
+                <key> skip_main_hwsku_only_cases </key>
+                <op> == </op>
+                <value> yes </value>
+            </condition>
         </ignore>
         <info> Everflow IPv4 Case with policer </info>
         <name> Everflow IPv4 Case with policer </name>
@@ -73,6 +79,12 @@
                 <key> skip_weekend_cases </key>
                 <op> == </op>
                 <value> no </value>
+            </condition>
+            <!-- Case only for main hwsku, skip this case if it is non-main hwsku -->
+            <condition>
+                <key> skip_main_hwsku_only_cases </key>
+                <op> == </op>
+                <value> yes </value>
             </condition>
         </ignore>
         <info> Everflow Per Interface Case </info>

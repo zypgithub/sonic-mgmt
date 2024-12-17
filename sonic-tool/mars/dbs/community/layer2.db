@@ -61,6 +61,14 @@
 
     <test>
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/mtu.cases </cases>
+        <ignore>
+            <!-- Case only for main hwsku, skip this case if it is non-main hwsku -->
+            <condition>
+                <key> skip_main_hwsku_only_cases </key>
+                <op> == </op>
+                <value> yes </value>
+            </condition>
+        </ignore>
     </test>
 
     <test>
@@ -73,6 +81,14 @@
 
     <test>
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/wr_arp.cases </cases>
+        <ignore>
+            <!-- Case only for main hwsku, skip this case if it is non-main hwsku -->
+            <condition>
+                <key> skip_main_hwsku_only_cases </key>
+                <op> == </op>
+                <value> yes </value>
+            </condition>
+        </ignore>
     </test>
 
     <test>
@@ -81,5 +97,13 @@
 
     <test>
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/bum_traffic.cases </cases>
+        <ignore>
+            <!-- Case only for main hwsku, skip this case if it is non-main hwsku -->
+            <condition>
+                <key> skip_main_hwsku_only_cases </key>
+                <op> == </op>
+                <value> yes </value>
+            </condition>
+        </ignore>
     </test>
 </DBDEF>

@@ -50,6 +50,14 @@
     </global>
     <test>
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/bgp_allow_list.cases </cases>
+        <ignore>
+            <!-- Case only for main hwsku, skip this case if it is non-main hwsku -->
+            <condition>
+                <key> skip_main_hwsku_only_cases </key>
+                <op> == </op>
+                <value> yes </value>
+            </condition>
+        </ignore>
     </test>
 
     <test>
@@ -62,30 +70,86 @@
 
     <test>
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/bgp_slb.cases </cases>
+        <ignore>
+            <!-- Case only for main hwsku, skip this case if it is non-main hwsku -->
+            <condition>
+                <key> skip_main_hwsku_only_cases </key>
+                <op> == </op>
+                <value> yes </value>
+            </condition>
+        </ignore>
     </test>
 
     <test>
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/bgp_multipath_relax.cases </cases>
+        <ignore>
+            <!-- Case only for main hwsku, skip this case if it is non-main hwsku -->
+            <condition>
+                <key> skip_main_hwsku_only_cases </key>
+                <op> == </op>
+                <value> yes </value>
+            </condition>
+        </ignore>
     </test>
 
     <test>
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/bgp_gr_helper.cases </cases>
+        <ignore>
+            <!-- Case only for main hwsku, skip this case if it is non-main hwsku -->
+            <condition>
+                <key> skip_main_hwsku_only_cases </key>
+                <op> == </op>
+                <value> yes </value>
+            </condition>
+        </ignore>
     </test>
 
     <test>
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/bgp_bbr.cases </cases>
+        <ignore>
+            <!-- Case only for main hwsku, skip this case if it is non-main hwsku -->
+            <condition>
+                <key> skip_main_hwsku_only_cases </key>
+                <op> == </op>
+                <value> yes </value>
+            </condition>
+        </ignore>
     </test>
 
     <test>
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/bgp_bounce.cases </cases>
+        <ignore>
+            <!-- Case only for main hwsku, skip this case if it is non-main hwsku -->
+            <condition>
+                <key> skip_main_hwsku_only_cases </key>
+                <op> == </op>
+                <value> yes </value>
+            </condition>
+        </ignore>
     </test>
 
     <test>
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/bgp_shutdown.cases </cases>
+        <ignore>
+            <!-- Case only for main hwsku, skip this case if it is non-main hwsku -->
+            <condition>
+                <key> skip_main_hwsku_only_cases </key>
+                <op> == </op>
+                <value> yes </value>
+            </condition>
+        </ignore>
     </test>
 
     <test>
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/bgp_monitor.cases </cases>
+        <ignore>
+            <!-- Case only for main hwsku, skip this case if it is non-main hwsku -->
+            <condition>
+                <key> skip_main_hwsku_only_cases </key>
+                <op> == </op>
+                <value> yes </value>
+            </condition>
+        </ignore>
     </test>
 
     <test>
@@ -94,14 +158,38 @@
 
     <test>
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/bgp_suppress_fib_pending.cases </cases>
+        <ignore>
+            <!-- Case only for main hwsku, skip this case if it is non-main hwsku -->
+            <condition>
+                <key> skip_main_hwsku_only_cases </key>
+                <op> == </op>
+                <value> yes </value>
+            </condition>
+        </ignore>
     </test>
 
     <test>
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/bgp_session_flap.cases </cases>
+        <ignore>
+            <!-- Case only for main hwsku, skip this case if it is non-main hwsku -->
+            <condition>
+                <key> skip_main_hwsku_only_cases </key>
+                <op> == </op>
+                <value> yes </value>
+            </condition>
+        </ignore>
     </test>
 
     <test>
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/bgp_dual_asn.cases </cases>
+        <ignore>
+            <!-- Case only for main hwsku, skip this case if it is non-main hwsku -->
+            <condition>
+                <key> skip_main_hwsku_only_cases </key>
+                <op> == </op>
+                <value> yes </value>
+            </condition>
+        </ignore>
     </test>
 
     <test>
@@ -110,10 +198,26 @@
 
     <test>
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/bgp_update_timer.cases </cases>
+        <ignore>
+            <!-- Case only for main hwsku, skip this case if it is non-main hwsku -->
+            <condition>
+                <key> skip_main_hwsku_only_cases </key>
+                <op> == </op>
+                <value> yes </value>
+            </condition>
+        </ignore>
     </test>
 
     <test>
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/bgp_sentinel.cases </cases>
+        <ignore>
+            <!-- Case only for main hwsku, skip this case if it is non-main hwsku -->
+            <condition>
+                <key> skip_main_hwsku_only_cases </key>
+                <op> == </op>
+                <value> yes </value>
+            </condition>
+        </ignore>
     </test>
 
 </DBDEF>
