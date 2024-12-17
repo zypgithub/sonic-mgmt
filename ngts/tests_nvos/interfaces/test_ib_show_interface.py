@@ -31,8 +31,10 @@ def test_ib_show_interface(engines, devices, test_api):
     3. Verify the required fields are presented in the output
     """
     TestToolkit.tested_api = test_api
-
-    selected_port = Tools.RandomizationTool.select_random_port(requested_ports_type=devices.dut.switch_type.lower()).get_returned_value()
+    try:
+        selected_port = Tools.RandomizationTool.select_random_port(requested_ports_type=devices.dut.switch_type.lower()).get_returned_value()
+    except Exception:
+        pytest.skip("Device does not have any connectivity")
 
     TestToolkit.update_tested_ports([selected_port])
 
@@ -183,7 +185,10 @@ def test_ib_show_interface_name_link(engines, devices, test_api):
     """
     TestToolkit.tested_api = test_api
 
-    selected_port = Tools.RandomizationTool.select_random_port(requested_ports_type=devices.dut.switch_type.lower()).get_returned_value()
+    try:
+        selected_port = Tools.RandomizationTool.select_random_port(requested_ports_type=devices.dut.switch_type.lower()).get_returned_value()
+    except Exception:
+        pytest.skip("Device does not have any connectivity")
 
     TestToolkit.update_tested_ports([selected_port])
 
@@ -208,7 +213,10 @@ def test_ib_show_interface_name_stats(engines, devices, test_api):
     2. Run 'nv show interface <name> link stats' on selected port
     3. Verify the required fields are presented in the output
     """
-    selected_port = Tools.RandomizationTool.select_random_port(requested_ports_type=devices.dut.switch_type.lower()).get_returned_value()
+    try:
+        selected_port = Tools.RandomizationTool.select_random_port(requested_ports_type=devices.dut.switch_type.lower()).get_returned_value()
+    except Exception:
+        pytest.skip("Device does not have any connectivity")
 
     TestToolkit.update_tested_ports([selected_port])
 

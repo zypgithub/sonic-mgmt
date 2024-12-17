@@ -1046,7 +1046,7 @@ class JulietSwitch(NvLinkSwitch):
             'ASIC1', 'ASIC2', 'Ambient-MNG-Temp', 'CPU-Pack-Temp', 'Drive-Temp', 'HSC-VinDC-Temp', 'PDB-Conv-1-Temp',
             'PDB-Conv-2-Temp', 'PDB-Conv-3-Temp', 'PDB-Conv-4-Temp', 'PMIC-1-Temp', 'PMIC-2-Temp', 'PMIC-3-Temp',
             'PMIC-4-Temp', 'PMIC-5-Temp', 'PMIC-6-Temp', 'PMIC-7-Temp', 'PMIC-8-Temp',
-            'SWB-ASIC1-PCB-Temp', 'SWB-ASIC2-PCB-Temp']
+            'SWB-ASIC1-PCB-Temp', 'SWB-ASIC2-PCB-Temp', 'SODIMM-1-Temp']
 
     def _init_gnmi_consts(self):
         super()._init_gnmi_consts()
@@ -1256,6 +1256,65 @@ class JulietAriel(JulietTTMSwitch):
         self.platform_inventory_switch_values.update({"model": "692-9K36F-A5MV-JQS"})
 
 
+# -------------------------- ArielPS Switch ----------------------------
+
+
+class JulietArielPS(JulietTTMSwitch):
+
+    def __init__(self):
+        super().__init__()
+
+    def _init_constants(self):
+        super()._init_constants()
+        # TODO - Need to be changed to correct values for Ariel. Double check with tamuz.
+        self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
+            "x86_64-nvidia_n5112_ld-r0")
+        self.show_platform_output.update({
+            "product-name": "N5112_LD",
+            "asic-model": self.asic_type,
+        })
+
+        self.voltage_sensors = ['HSC-VinDC-In', 'HSC-VinDC-Out', 'PDB-1-Conv-In-1', 'PDB-1-Conv-Out-1',
+                                'PDB-2-Conv-In-1',
+                                'PDB-2-Conv-Out-1', 'PMIC-1-12V-VDD-ASIC1-In-1', 'PMIC-1-ASIC1-VDD-Out-1',
+                                'PMIC-2-12V-HVDD-DVDD-ASIC1-In-1',
+                                'PMIC-2-ASIC1-DVDD-PL0-Out-2', 'PMIC-2-ASIC1-HVDD-PL0-Out-1',
+                                'PMIC-3-12V-HVDD-DVDD-ASIC1-In-1',
+                                'PMIC-3-ASIC1-DVDD-PL1-Out-2', 'PMIC-3-ASIC1-HVDD-PL1-Out-1',
+                                'PMIC-4-12V-VDD-ASIC2-In-1',
+                                'PMIC-4-ASIC2-VDD-Out-1', 'PMIC-5-12V-HVDD-DVDD-ASIC2-In-1',
+                                'PMIC-5-ASIC2-DVDD-PL0-Out-2',
+                                'PMIC-5-ASIC2-HVDD-PL0-Out-1', 'PMIC-6-12V-HVDD-DVDD-ASIC2-In-1',
+                                'PMIC-6-ASIC2-DVDD-PL1-Out-2',
+                                'PMIC-6-ASIC2-HVDD-PL1-Out-1', 'PMIC-7-12V-MAIN-In-1', 'PMIC-7-CEX-VDD-Out-1',
+                                'PMIC-8-COMEX-VDD-MEM-In-1', 'PMIC-8-COMEX-VDD-MEM-Out-1']
+
+        self.nvl5_access_ports_list = ['acp1', 'acp2', 'acp3', 'acp4', 'acp5', 'acp6',
+                                       'acp7', 'acp8', 'acp9', 'acp10', 'acp11', 'acp12', 'acp13', 'acp14',
+                                       'acp15', 'acp16', 'acp17', 'acp18', 'acp19', 'acp20',
+                                       'acp21', 'acp22', 'acp23', 'acp24', 'acp25', 'acp26',
+                                       'acp27', 'acp28', 'acp29', 'acp30', 'acp31', 'acp32',
+                                       'acp33', 'acp34', 'acp35', 'acp36', 'acp37', 'acp38', 'acp39', 'acp40',
+                                       'acp41', 'acp42', 'acp43', 'acp44', 'acp45', 'acp46',
+                                       'acp47', 'acp48', 'acp49', 'acp50', 'acp51', 'acp52',
+                                       'acp53', 'acp54', 'acp55', 'acp56', 'acp57', 'acp58',
+                                       'acp59', 'acp60', 'acp61', 'acp62', 'acp63', 'acp64',
+                                       'acp65', 'acp66', 'acp67', 'acp68', 'acp69', 'acp70',
+                                       'acp71', 'acp72']
+
+        self.all_nvl5_ports_list = self.nvl5_access_ports_list + self.nvl5_trunk_ports_list + self.network_ports
+
+    def _init_temperature(self):
+        super()._init_temperature()
+        sensors_to_remove = ['PDB-Conv-3-Temp', 'PDB-Conv-4-Temp']
+        for sensor in sensors_to_remove:
+            self.temperature_sensors.remove(sensor)
+
+    def _init_platform_lists(self):
+        super()._init_platform_lists()
+        self.platform_inventory_switch_values.update({"model": "692-9K36F-A5MV-JQS"})
+
+
 # -------------------------- JulietNonScaleoutSwitch Switch ----------------------------
 
 
@@ -1394,7 +1453,7 @@ class JulietNonScaleoutSwitchNoNCI(JulietNonScaleoutSwitch):
 
     def _init_temperature(self):
         super()._init_temperature()
-        sensors_to_remove = ['PDB-Conv-3-Temp', 'Ambient-MNG-Temp', 'PDB-Conv-4-Temp']
+        sensors_to_remove = ['PDB-Conv-3-Temp', 'SODIMM-1-Temp', 'PDB-Conv-4-Temp']
         for sensor in sensors_to_remove:
             self.temperature_sensors.remove(sensor)
 
