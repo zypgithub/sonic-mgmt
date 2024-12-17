@@ -355,6 +355,7 @@ def config_check(engines, cli_objects, topology_obj, request, sonic_version):
     is_skynet = request.config.getoption("skynet")
     if is_skynet:
         logger.info("config check is disabled on Skynet systems to prevent system reload")
+        yield None
     else:
         dut_engine = engines.dut
         dut_hostname = cli_objects.dut.chassis.get_hostname()
