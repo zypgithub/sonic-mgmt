@@ -989,7 +989,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         self.update_config_db_metadata_router(setup_name, config_db_file_name)
         self.update_config_db_metadata_mgmt_port(setup_name, config_db_file_name)
         self.update_config_db_metadata_hwsku(setup_name, hwsku, config_db_file_name)
-        self.update_config_db_features(setup_name, hwsku, platform, config_db_file_name, branch)
+        self.update_config_db_features(setup_name, hwsku, platform, config_db_file_name)
         self.update_config_db_feature_config(setup_name, "database", "auto_restart", "always_enabled",
                                              config_db_file_name)
         default_mtu = "9100"
@@ -1015,27 +1015,31 @@ class SonicGeneralCliDefault(GeneralCliCommon):
 
             return self.create_extended_config_db_file(setup_name, config_db_json, file_name=config_db_json_file_name)
 
-    def update_config_db_features(self, setup_name, hwsku, platform, config_db_json_file_name, branch):
+    def remove_config_db_unsupported_features(self, current_features, image_supported_features,
+                                              auto_techsupport_features):
+        image_unsupported_features = [feature for feature in current_features if feature not in image_supported_features]
+        for feature in image_unsupported_features:
+            del current_features[feature]
+            auto_techsupport_features.pop(feature, None)
+
+    def update_config_db_features(self, setup_name, hwsku, platform, config_db_json_file_name):
         init_config_db_json = self.get_init_config_db_json_obj(hwsku, platform, setup_name)
         config_db_json = self.get_config_db_json_obj(setup_name, config_db_json_file_name=config_db_json_file_name)
         image_supported_features = init_config_db_json[ConfigDbJsonConst.FEATURE]
         current_features = config_db_json[ConfigDbJsonConst.FEATURE]
+        auto_techsupport_features = config_db_json.get(ConfigDbJsonConst.AUTO_TECHSUPPORT_FEATURE, {})
         for feature, feature_properties in image_supported_features.items():
             if feature not in current_features:
                 current_features[feature] = feature_properties
             has_timer_value = current_features[feature].pop("has_timer", None)
             if has_timer_value:
                 current_features[feature]["delayed"] = has_timer_value
-        if branch not in ['202205', '202211', '202305']:
-            # since 202311 telemetry feature was replaced by gnmi, so we update config_db.json accordingly
-            telemetry_feature = current_features.pop(ConfigDbJsonConst.TELEMETRY, None)
-            if telemetry_feature and ConfigDbJsonConst.GNMI not in current_features:
-                current_features[ConfigDbJsonConst.GNMI] = telemetry_feature
-            auto_techsupport_features = config_db_json.get(ConfigDbJsonConst.AUTO_TECHSUPPORT_FEATURE)
-            if auto_techsupport_features:
-                telemetry_auto_techsupport_feature = auto_techsupport_features.pop(ConfigDbJsonConst.TELEMETRY, None)
-                if telemetry_auto_techsupport_feature and ConfigDbJsonConst.GNMI not in auto_techsupport_features:
-                    auto_techsupport_features[ConfigDbJsonConst.GNMI] = telemetry_auto_techsupport_feature
+
+        self.remove_config_db_unsupported_features(current_features, image_supported_features, auto_techsupport_features)
+
+        if 'doai' not in current_features:
+            config_db_json.pop('AR_GLOBAL', None)
+
         return self.create_extended_config_db_file(setup_name, config_db_json, file_name=config_db_json_file_name)
 
     def update_config_db_metadata_router(self, setup_name, config_db_json_file_name):
