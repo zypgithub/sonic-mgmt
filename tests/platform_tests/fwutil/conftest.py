@@ -82,29 +82,13 @@ def extract_fw_data(fw_pkg_path):
     return fw_data
 
 
-@pytest.fixture(scope='function', params=["CPLD", "ONIE", "BIOS", "FPGA"])
-def component(request, duthost, fw_pkg):
-    component_type = request.param
-    chassis = list(show_firmware(duthost)["chassis"].keys())[0]
-    available_components = list(fw_pkg["chassis"].get(chassis, {}).get("component", {}).keys())
-    cpld_components = [com for com in available_components if "CPLD" in com]
-    # if in the host section, the CPLD defined is different, then need to use the one defined for this host.
-    # For example: if the CPLD2 is defined for the SN3700c, and CPLD1 defined for the r-anaconda-15, then when run
-    # test for the r-anaconda-15, it will take the CPLD1 instead of CPLD2 as on of the component
-    if "host" in fw_pkg and duthost.hostname in fw_pkg["host"]:
-        host_components = list(fw_pkg["host"].get(duthost.hostname, {}).get("component", []).keys())
-        cpld_host_components = [com for com in host_components if "CPLD" in com]
-        if cpld_host_components:
-            available_components = list(set(available_components) ^ set(cpld_components) | set(host_components))
-        else:
-            available_components = list(set(available_components) | set(host_components))
-
-    if len(available_components) > 0:
-        for component in available_components:
-            if component_type in component:
-                return component
-    pytest.skip(f"No suitable components found in config file for "
-                f"platform {duthost.facts['platform']}, firmware type {component_type}.")
+@pytest.fixture(scope='function')
+def random_component(duthost, fw_pkg):
+    chass = list(show_firmware(duthost)["chassis"].keys())[0]
+    components = list(fw_pkg["chassis"].get(chass, {}).get("component", {}).keys())
+    if len(components) == 0:
+        pytest.skip("No suitable components found in config file for platform {}.".format(duthost.facts['platform']))
+    return components[randrange(len(components))]
 
 
 @pytest.fixture(scope='function')
