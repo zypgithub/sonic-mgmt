@@ -872,6 +872,8 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                 self.cli_obj.ip.apply_dns_servers_into_resolv_conf(
                     is_air_setup=platform_params.setup_name.startswith('air'))
 
+        if 'bison-simx' in setup_name and is_redmine_issue_active([4156055])[0]:
+            self.cli_obj.qos.clear_qos()
         self.cli_obj.general.save_configuration()
 
     def get_chip_gen(self, platform_params):
