@@ -38,10 +38,10 @@ class CLRemoteAaaResource(AbstractRemoteAaaResource):
 
         if self._api_to_use == ApiType.NVUE:
             authentication.set("1", self._remote_aaa_type_name, dut_engine=engine).verify_result()
-            res = authentication.set("2", AuthConsts.LOCAL, dut_engine=engine, apply=apply)
+            res = authentication.set("2", AuthConsts.LOCAL, dut_engine=engine, apply=apply, ask_for_confirmation='-y')
         else:
             authentication.set('1', {self._remote_aaa_type_name: {}}, dut_engine=engine).verify_result()  # TODO: check if 1 is sub-resource of /authentication-order
-            res = authentication.set('2', {AuthConsts.LOCAL: {}}, dut_engine=engine, apply=apply)
+            res = authentication.set('2', {AuthConsts.LOCAL: {}}, dut_engine=engine, apply=apply, ask_for_confirmation='-y')
 
         if verify_res:
             res.verify_result()

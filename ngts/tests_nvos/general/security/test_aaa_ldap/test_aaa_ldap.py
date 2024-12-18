@@ -1,6 +1,7 @@
 import pytest
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
 from infra.tools.linux_tools.linux_tools import scp_file
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.constants import MAX_TEST_TIMEOUT
@@ -36,7 +37,6 @@ def test_ldap_set_unset_show(test_api, engines):
             LdapConsts.VERSION: random.choice(LdapConsts.VALID_VALUES[LdapConsts.VERSION])
         },
         ldap_obj.ssl: {
-            LdapConsts.SSL_CA_LIST: random.choice(LdapConsts.VALID_VALUES_SSL[LdapConsts.SSL_CA_LIST]),
             LdapConsts.SSL_CERT_VERIFY: random.choice(LdapConsts.VALID_VALUES_SSL[LdapConsts.SSL_CERT_VERIFY]),
             LdapConsts.SSL_MODE: random.choice(LdapConsts.VALID_VALUES_SSL[LdapConsts.SSL_MODE]),
             LdapConsts.SSL_PORT: random.choice(LdapConsts.VALID_VALUES_SSL[LdapConsts.SSL_PORT]),

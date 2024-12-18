@@ -76,8 +76,8 @@ class SshAuthVerifier(AuthVerifier):
         super().__init__(username, password, engines, topology_obj)
 
     def _authenticate(self, expect_success):
-        with allure.step('For SSH - run empty command on engine to trigger authentication'):
-            self.engine.run_cmd('')
+        with allure.step('For SSH - run some linux command on engine to trigger authentication'):
+            self.engine.run_cmd('id')
 
 
 class OpenApiAuthVerifier(AuthVerifier):

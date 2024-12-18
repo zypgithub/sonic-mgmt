@@ -20,7 +20,6 @@ class LdapConsts:
     VERSION = 'version'
     # phase 2 show cmd fields
     SSL = 'ssl'
-    SSL_CA_LIST = 'ca-list'
     SSL_CERT_VERIFY = 'cert-verify'
     SSL_MODE = 'mode'
     SSL_PORT = 'port'
@@ -43,7 +42,7 @@ class LdapConsts:
     MEMBER = 'member'
 
     LDAP_FIELDS = [PORT, BASE_DN, BIND_DN, SECRET, TIMEOUT_BIND, TIMEOUT, VERSION]
-    SSL_FIELDS = [SSL_CA_LIST, SSL_CERT_VERIFY, SSL_MODE, SSL_PORT, SSL_TLS_CIPHERS]
+    SSL_FIELDS = [SSL_CERT_VERIFY, SSL_MODE, SSL_PORT, SSL_TLS_CIPHERS]
 
     # possible values
     NONE = 'none'
@@ -76,7 +75,6 @@ class LdapConsts:
     }
 
     VALID_VALUES_SSL = {
-        SSL_CA_LIST: [DEFAULT, NONE],
         SSL_CERT_VERIFY: [ENABLED, DISABLED],
         SSL_CRL_LIST: [DEFAULT, NONE],
         SSL_MODE: [NONE, START_TLS, SSL],
@@ -101,7 +99,6 @@ class LdapConsts:
         TIMEOUT: 5,
         VERSION: 3,
         # ssl defaults
-        SSL_CA_LIST: DEFAULT,
         SSL_CERT_VERIFY: ENABLED,
         SSL_MODE: NONE,
         SSL_PORT: 636,
@@ -119,7 +116,6 @@ class LdapConsts:
         VERSION: True,
         PRIORITY: True,
         # ssl defaults
-        SSL_CA_LIST: False,
         SSL_CERT_VERIFY: False,
         SSL_CRL_LIST: False,
         SSL_MODE: False,
@@ -399,7 +395,6 @@ class LdapDefaults:
     }
 
     SSL_DEFAULTS = {
-        LdapConsts.SSL_CA_LIST: LdapConsts.DEFAULT,
         LdapConsts.SSL_CERT_VERIFY: LdapConsts.ENABLED,
         LdapConsts.SSL_MODE: LdapConsts.NONE,
         LdapConsts.SSL_PORT: 636,

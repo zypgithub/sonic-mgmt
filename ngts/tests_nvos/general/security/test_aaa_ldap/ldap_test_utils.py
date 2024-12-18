@@ -1,11 +1,7 @@
-import logging
 import time
 
-from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
 from ngts.nvos_tools.system.Server import ServerId
-from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts
 from ngts.tests_nvos.general.security.security_test_tools.resource_utils import configure_resource
-from ngts.tests_nvos.general.security.security_test_tools.security_test_utils import find_server_admin_user
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.RemoteAaaServerInfo import RemoteAaaServerInfo, \
     LdapServerInfo
 from ngts.tests_nvos.general.security.test_aaa_ldap.constants import LdapConsts, LdapEncryptionModes
@@ -76,25 +72,3 @@ def add_ldap_server_certificate_to_switch(dut_engine):
     with allure.step('Restart nslcd service'):
         dut_engine.run_cmd('sudo service nslcd restart')
         time.sleep(3)
-
-
-def get_active_dut_engine(engines):
-    with allure.step('Get active engine'):
-        with allure.step(f'Check active ldap server from LdapTestActiveServer'):
-            ldap_server_info = LdapTestTool.active_ldap_server
-
-        if not ldap_server_info:
-            logging.info('Active engine to use: default dut engine')
-            active_engine = engines.dut
-        else:
-            logging.info('Active engine to use: New engine with ldap admin user')
-            with allure.step(f'Find admin user in ldap server {ldap_server_info[LdapConsts.HOSTNAME]}'):
-                ldap_admin_user_info = find_server_admin_user(ldap_server_info)
-                logging.info(f'Found admin user: {ldap_admin_user_info[AaaConsts.USERNAME]}')
-
-            with allure.step(f"Creating engine to switch with username: {ldap_admin_user_info[AaaConsts.USERNAME]}"):
-                active_engine = ProxySshEngine(device_type=engines.dut.device_type,
-                                               ip=engines.dut.ip,
-                                               username=ldap_admin_user_info[AaaConsts.USERNAME],
-                                               password=ldap_admin_user_info[AaaConsts.PASSWORD])
-        return active_engine
