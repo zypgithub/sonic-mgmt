@@ -60,15 +60,25 @@ def parse_readme_versions(sonic_image):
     with open(readme_path) as f:
         image_readme_content = f.read()
     readme_versions_dict = dict()
-    # Pattern to match version pattern in readme file
-    readme_version_pattern = re.compile(r"(?P<component>\w+)_VERSION:\s*(?P<version>[^\s]+)")
+
+    # First match the version with the suffix "_VERSION_SWITCH"
+    # Then match the version with the suffix "_VERSION"
+    patterns = [
+        re.compile(r"(?P<component>\w+)_VERSION_SWITCH:\s*(?P<version>[^\s]+)"),
+        re.compile(r"(?P<component>\w+)_VERSION:\s*(?P<version>[^\s]+)")
+    ]
+
     for line in image_readme_content.strip().split('\n'):
-        match = readme_version_pattern.match(line)
-        if match:
-            component = str(match.group('component').strip())
-            version = str(match.group('version').strip())
-            if component in README_COVERED_COMPONENTS:
-                readme_versions_dict[component] = version
+        for pattern in patterns:
+            match = pattern.match(line)
+            if match:
+                component = str(match.group('component').strip())
+                # Add only if the component is in the README_COVERED_COMPONENTS and not stored in readme_versions_dict
+                if component in README_COVERED_COMPONENTS and component not in readme_versions_dict:
+                    version = str(match.group('version').strip())
+                    readme_versions_dict[component] = version
+                break
+
     logger.info(f"Parsed components from {readme_path} are:\n {readme_versions_dict}")
     return readme_versions_dict
 
