@@ -495,8 +495,7 @@ class SonicInstallationSteps:
                 f"sudo sonic-cfggen --preset t1 -p -H "
                 f"-k {platform_params['hwsku']} > {SonicConst.SONIC_CONFIG_FOLDER}{SonicConst.CONFIG_DB_JSON}")
 
-        if ("r-moose-01" in setup_name or "mtvr-moose-13" in setup_name or
-                "mtvr-moose-14" in setup_name):
+        if ("r-moose-01" in setup_name or "mtvr-moose-14" in setup_name):
             v256 = "Mellanox-SN5600-V256"
             if os.path.exists(f'{sonic_mgmt_hwsku_path}/{v256}/port_config.ini'):
                 execute_script(f'sed -i "s/200000/100000/g" {sonic_mgmt_hwsku_path}/{v256}/port_config.ini',
