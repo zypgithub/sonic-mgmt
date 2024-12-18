@@ -1828,3 +1828,10 @@
   Conditions:
   - Redmine:
     - 4208973
+
+- Errors_list:
+  - '.*ERR kernel:.*sxd_kernel.*SDK main monitor thread does not respond.*'
+  - '.*ERR kernel.*sxd_kernel.*Health-Check.+stopping further device monitoring.*'
+  Conditions:
+  - Redmine:
+    - 4206176
