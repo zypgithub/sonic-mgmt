@@ -8,5 +8,5 @@ s Root filesystem is busy; re-trying
 s No such file or directory
 s target is busy
 s An error occurred
-s oops
+r (?<![a-z])oops(?![a-z])
 s -E-

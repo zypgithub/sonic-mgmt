@@ -125,7 +125,7 @@ class IpTool:
         result_obj = ResultObj(True, "")
 
         with allure.step("find card to host - e.g. mlx5_8"):
-            card = host_obj.run_cmd(IbConsts.IB_DEV_2_NET_DEV).split()
+            card = host_obj.run_cmd(IbConsts.IB_DEV_2_NET_DEV, validate=True).split()
             hca = card[0]
             port_state = card[-1].strip('()')
 
@@ -135,11 +135,13 @@ class IpTool:
         else:
             with allure.step("find lid"):
                 # LID assigned by SM. The mad will be sent to this lid value
-                lid = host_obj.run_cmd(IbConsts.IBSWITCHES).split('lid')[-1].split()[0]
+                lid = host_obj.run_cmd(IbConsts.IBSWITCHES, validate=True).split('lid')[-1].split()[0]
 
             with allure.step("Sending MAD to lid: {}".format(lid)):
-                result_obj.returned_value = host_obj.run_cmd(IpConsts.MAD_TEMPLATE.format(
-                    python_path=IpConsts.PYTHON_PATH, nvmad_path=directory, lid=lid, card=hca, modifier=modifier))
+                result_obj.returned_value = host_obj.run_cmd(
+                    IpConsts.MAD_TEMPLATE.format(python_path=IpConsts.PYTHON_PATH, nvmad_path=directory, lid=lid,
+                                                 card=hca, modifier=modifier),
+                    validate=True)
 
         return result_obj
 

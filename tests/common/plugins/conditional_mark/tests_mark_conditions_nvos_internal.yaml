@@ -229,9 +229,7 @@ tests_nvos/multi_asic/test_interface_ipoib.py::test_interface_ipoib_mapping_basi
 
 tests_nvos/checklist/test_cpld_upgrade.py::test_cpld_upgrade:
   skip:
-    reason: "Until we get updated CPLD versions"
-    conditions:
-      - "'mamba' in testbed"
+    reason: "Test destroys switch: https://redmine.mellanox.com/issues/4202348 . Probably downgrade-version is bad."
 
 tests_nvos/system/test_techsupport_feature.py::test_techsupport_bmc_badflow:
   skip:

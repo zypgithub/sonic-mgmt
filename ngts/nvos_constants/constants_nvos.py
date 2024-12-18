@@ -1040,7 +1040,7 @@ class NtpConsts:
     TRUSTED = 'trusted'
     SERVER_ID = 'server-id'
     KEY_1 = '6'
-    KEY_2 = '09876'
+    KEY_2 = '9876'
     KEY_VALUE = 'v1234'
     KEY1_VALUE = 'temp_value'
     KEY2_VALUE = 'temp_value123'
@@ -1086,13 +1086,13 @@ class NtpConsts:
     INVALID_SERVER_TRUSTED = 'server2'
     INVALID_SERVER_VERSION = '5'
 
-    LOG_MSG_UNSET_NTP = "NtpCfg: Set global config: {'authentication': 'disabled', 'dhcp': 'disabled', " \
-                        "'server_role': 'disabled', 'src_intf': 'eth0', 'state': 'disabled', 'vrf': 'default'}"
-    LOG_MSG_SERVER_CONFIG = "servers: {'10.7.77.134': {'association_type': 'server', 'iburst': 'off', " \
-                            "'resolve_as': '10.7.77.134', 'state': 'enabled', 'trusted': 'no', 'version': '4'}}"
-    LOG_MSG_SERVER_CONFIG_UPDATE = "servers: {'10.7.77.134': {'association_type': 'server', 'iburst': 'off', " \
-                                   "'key': '6', 'resolve_as': '10.7.77.134', 'state': 'disabled', " \
-                                   "'trusted': 'yes', 'version': '3'}}"
+    LOG_MSG_UNSET_NTP = "NtpCfg: Set global config: {'admin_state': 'disabled', 'authentication': 'disabled', " \
+                        "'dhcp': 'disabled', 'server_role': 'disabled', 'src_intf': 'eth0', 'vrf': 'default'}"
+    LOG_MSG_SERVER_CONFIG = "servers: {'10.7.77.134': {'admin_state': 'enabled', 'association_type': 'server', " \
+                            "'iburst': 'off', 'resolve_as': '10.7.77.134', 'trusted': 'no', 'version': '4'}}"
+    LOG_MSG_SERVER_CONFIG_UPDATE = "servers: {'10.7.77.134': {'admin_state': 'disabled', " \
+                                   "'association_type': 'server', 'iburst': 'off', 'key': '6', " \
+                                   "'resolve_as': '10.7.77.134', 'trusted': 'yes', 'version': '3'}}"
     LOG_MSG_SERVER_CONFIG_KEY = "NtpCfg: Set keys: {'6': {'trusted': 'yes', 'type': 'SHA1'}}"
 
     LOG_MSG_LIST = [LOG_MSG_UNSET_NTP, LOG_MSG_SERVER_CONFIG, LOG_MSG_SERVER_CONFIG_UPDATE, LOG_MSG_SERVER_CONFIG_KEY]
