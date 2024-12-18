@@ -43,22 +43,22 @@ def apply_dpu_basic_config(dpuhost, apply_switch_basic_config):
     dpuhost.shell(cmd_add_data_port_ip)
 
     logger.info("Add ip to Loopback0")
-    cmd_add_l0_ip = f"sudo config interface ip  add Loopback0 {pl.SIP}/255.255.255.255"
+    cmd_add_l0_ip = f"sudo config interface ip  add Loopback0 {pl.APPLIANCE_VIP}/255.255.255.255"
     dpuhost.shell(cmd_add_l0_ip)
 
     logger.info("Add ip underlay route via Ethernet0")
-    cmd_add_npu_neig_route = f"sudo ip route add {pl.OUTBOUND_UNDERLAY_IP}/32 via {dpuhost.npu_data_port_ip} dev Ethernet0"
+    cmd_add_npu_neig_route = f"sudo ip route add {pl.PE_PA}/32 via {dpuhost.npu_data_port_ip} dev Ethernet0"
     dpuhost.shell(cmd_add_npu_neig_route)
 
     yield
 
     if not is_redmine_issue_active([4125251])[0]:
         logger.info("Remove ip default route via Ethernet0")
-        cmd_del_npu_neig_route = f"sudo ip route del {pl.OUTBOUND_UNDERLAY_IP}/32 via {dpuhost.npu_data_port_ip} dev Ethernet0"
+        cmd_del_npu_neig_route = f"sudo ip route del {pl.PE_PA}/32 via {dpuhost.npu_data_port_ip} dev Ethernet0"
         dpuhost.shell(cmd_del_npu_neig_route)
 
         logger.info("Remove the ip of Loopback0")
-        cmd_remove_l0_ip = f"sudo config interface ip  remove Loopback0 {pl.SIP}/255.255.255.255"
+        cmd_remove_l0_ip = f"sudo config interface ip  remove Loopback0 {pl.APPLIANCE_VIP}/255.255.255.255"
         dpuhost.shell(cmd_remove_l0_ip)
 
         logger.info("Remove ip of Ethernet0")
@@ -70,11 +70,11 @@ def apply_dpu_basic_config(dpuhost, apply_switch_basic_config):
 def add_static_route_from_npu_to_dpu(duthost, dpuhost, apply_dpu_basic_config, common_setup_teardown):
     remote_pa_ip = "10.0.0.1"
     logger.info("Add npu to dpu VIP route")
-    cmd = f"ip route replace {pl.SIP}/32 via {dpuhost.dpu_data_port_ip}"
+    cmd = f"ip route replace {pl.APPLIANCE_VIP}/32 via {dpuhost.dpu_data_port_ip}"
     duthost.shell(cmd)
 
     logger.info("Add underlay outbound to ptf route")
-    underlay_outbound_to_ptf_route_subnet = ip_network(f'{pl.OUTBOUND_UNDERLAY_IP}/32').supernet(prefixlen_diff=8)
+    underlay_outbound_to_ptf_route_subnet = ip_network(f'{pl.PE_PA}/32').supernet(prefixlen_diff=8)
     cmd_add_underlay_outbound_to_ptf_route = f"ip route add {underlay_outbound_to_ptf_route_subnet} via {remote_pa_ip}"
     duthost.shell(cmd_add_underlay_outbound_to_ptf_route)
 
@@ -85,31 +85,34 @@ def add_static_route_from_npu_to_dpu(duthost, dpuhost, apply_dpu_basic_config, c
     duthost.shell(cmd_del_underlay_outboud_to_ptf_route)
 
     logger.info("Remove npu to dpu VIP route")
-    duthost.shell(f"ip route del {pl.SIP}")
+    duthost.shell(f"ip route del {pl.APPLIANCE_VIP}")
 
 
 @pytest.fixture(scope="module")
 def common_setup_teardown(localhost, duthost, ptfhost, dpuhost, eni_counter_setup):
+
     logger.info(pl.ROUTING_TYPE_PL_CONFIG)
-    apply_messages(localhost, duthost, ptfhost, pl.ROUTING_TYPE_PL_CONFIG, dpuhost.dpu_index)
-    messages1 = {
+    base_config_messages = {
         **pl.APPLIANCE_CONFIG,
+        **pl.ROUTING_TYPE_PL_CONFIG,
         **pl.VNET_CONFIG,
         **pl.ENI_CONFIG,
-        **pl.VNET_MAPPING_CONFIG,
+        **pl.PE_VNET_MAPPING_CONFIG,
         **pl.ROUTE_GROUP1_CONFIG
     }
+    logger.info(base_config_messages)
 
-    logger.info(messages1)
-    apply_messages(localhost, duthost, ptfhost, messages1, dpuhost.dpu_index)
+    apply_messages(localhost, duthost, ptfhost, base_config_messages, dpuhost.dpu_index)
 
-    messages2 = {
-        **pl.ROUTE_VNET_CONFIG,
-        **pl.ENI_ROUTE_GROUP1_CONFIG
+    route_messages = {
+        **pl.PE_SUBNET_ROUTE_CONFIG,
+        **pl.VM_SUBNET_ROUTE_CONFIG
     }
+    logger.info(route_messages)
+    apply_messages(localhost, duthost, ptfhost, route_messages, dpuhost.dpu_index)
 
-    logger.info(messages2)
-    apply_messages(localhost, duthost, ptfhost, messages2, dpuhost.dpu_index)
+    logger.info(pl.ENI_ROUTE_GROUP1_CONFIG)
+    apply_messages(localhost, duthost, ptfhost, pl.ENI_ROUTE_GROUP1_CONFIG, dpuhost.dpu_index)
 
     yield
 
@@ -117,14 +120,14 @@ def common_setup_teardown(localhost, duthost, ptfhost, dpuhost, eni_counter_setu
         config_reload(dpuhost, safe_reload=True)
     else:
 
-        logger.info(f"recover messages2: {messages2}")
-        apply_messages(localhost, duthost, ptfhost, messages2, dpuhost.dpu_index, set=False)
+        logger.info(f"recover messages2: {pl.ENI_ROUTE_GROUP1_CONFIG}")
+        apply_messages(localhost, duthost, ptfhost, pl.ENI_ROUTE_GROUP1_CONFIG, dpuhost.dpu_index, set_db=False)
 
-        logger.info(f"recover messages1: {messages1}")
-        apply_messages(localhost, duthost, ptfhost, messages1, dpuhost.dpu_index, set=False)
+        logger.info(f"recover messages1: {route_messages}")
+        apply_messages(localhost, duthost, ptfhost, route_messages, dpuhost.dpu_index, set_db=False)
 
-        logger.info(f"recover pl.ROUTING_TYPE_PL_CONFIG: {pl.ROUTING_TYPE_PL_CONFIG}")
-        apply_messages(localhost, duthost, ptfhost, pl.ROUTING_TYPE_PL_CONFIG, dpuhost.dpu_index, set=False)
+        logger.info(f"recover pl.ROUTING_TYPE_PL_CONFIG: {base_config_messages}")
+        apply_messages(localhost, duthost, ptfhost, base_config_messages, dpuhost.dpu_index, set_db=False)
 
 
 class TestEniCounter:
@@ -173,7 +176,7 @@ class TestEniCounter:
                                         "SAI_ENI_STAT_RX_BYTES": packet_len * packet_number
                                         }
 
-        pkt, exp_pkt = outbound_pl_packets(dash_pl_config, inner_packet_type='tcp')
+        pkt, exp_pkt = outbound_pl_packets(dash_pl_config, outer_encap='gre', inner_packet_type='tcp')
         self.send_packet_and_verify_dash_eni_counter(
             dash_pl_config, eni_counter_check_point_dict, packet_number, pkt, exp_pkt)
 
@@ -190,8 +193,8 @@ class TestEniCounter:
         """
         packet_number = 1
         eni_counter_check_point_dict = {"SAI_ENI_STAT_OUTBOUND_ROUTING_ENTRY_MISS_DROP_PACKETS": packet_number}
-        pkt, _ = outbound_pl_packets(dash_pl_config)
-        pkt['VXLAN']['IP'].dst = "10.2.3.4"
+        pkt, _ = outbound_pl_packets(dash_pl_config, outer_encap='gre')
+        pkt['GRE']['IP'].dst = "10.3.3.4"
         self.send_packet_and_verify_dash_eni_counter(
             dash_pl_config, eni_counter_check_point_dict, packet_number, pkt)
 
@@ -206,9 +209,9 @@ class TestEniCounter:
         """
         packet_number = 1
         eni_counter_check_point_dict = {"SAI_ENI_STAT_OUTBOUND_CA_PA_ENTRY_MISS_DROP_PACKETS": packet_number}
-        pkt, _ = outbound_pl_packets(dash_pl_config)
-        ip_with_same_outbound_route_prefix1 = format(IPv4Address(pl.VNET_MAP_IP1) + 1)
-        pkt['VXLAN']['IP'].dst = ip_with_same_outbound_route_prefix1
+        pkt, _ = outbound_pl_packets(dash_pl_config, outer_encap='gre')
+        ip_with_same_outbound_route_prefix1 = format(IPv4Address(pl.PE_CA) + 1)
+        pkt['GRE']['IP'].dst = ip_with_same_outbound_route_prefix1
 
         self.send_packet_and_verify_dash_eni_counter(
             dash_pl_config, eni_counter_check_point_dict, packet_number, pkt)
@@ -231,13 +234,13 @@ class TestEniCounter:
             flow_created_counter = 1
         eni_counter_check_point_dict = {"SAI_ENI_STAT_FLOW_CREATED": flow_created_counter}
 
-        pkt, exp_pkt = outbound_pl_packets(dash_pl_config, inner_packet_type='tcp')
+        pkt, exp_pkt = outbound_pl_packets(dash_pl_config, outer_encap='gre', inner_packet_type='tcp')
 
         with allure.step("Send 1 TCP SYN packet on eni1"):
             self.send_packet_and_verify_dash_eni_counter(
                 dash_pl_config, eni_counter_check_point_dict, packet_number, pkt, exp_pkt)
 
-        pkt["VXLAN"]["TCP"].flags = "F"
+        pkt["GRE"]["TCP"].flags = "F"
 
         # The code below will be removed once the issue is fixed
         if is_redmine_issue_active([4173779])[0]:

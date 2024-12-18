@@ -1,13 +1,14 @@
+import json
 import logging
+import time
 from ipaddress import ip_interface, ip_network
 
 import configs.privatelink_config as pl
 import ptf.testutils as testutils
 import pytest
-from constants import LOCAL_PTF_INTF
+from constants import LOCAL_PTF_INTF, LOCAL_DUT_INTF, REMOTE_DUT_INTF, REMOTE_PTF_RECV_INTF, REMOTE_PTF_SEND_INTF
 from gnmi_utils import apply_messages
-from packets import outbound_pl_packets
-from tests.smart_switch.conftest import SMARTSWITCH_PLATFORMS, copy_proxy_ssh, skip_unsupported_platform, platform # noqa F401
+from packets import outbound_pl_packets, inbound_pl_packets
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from tests.common import config_reload
 
@@ -15,147 +16,151 @@ logger = logging.getLogger(__name__)
 
 pytestmark = [
     pytest.mark.topology('t1'),
-    pytest.mark.usefixtures('copy_proxy_ssh'),
     pytest.mark.skip_check_dut_health
 ]
 
 
+"""
+Test prerequisites:
+- DPU needs the Appliance VIP configured as its loopback IP
+- Assign IPs to DPU-NPU dataplane interfaces
+- Default route on DPU to NPU
+"""
+
+
+def get_dpu_dataplane_port(duthost, dpu_index):
+    platform = duthost.facts["platform"]
+    platform_json = json.loads(duthost.shell(f"cat /usr/share/sonic/device/{platform}/platform.json")["stdout"])
+    try:
+        interface = list(platform_json["DPUS"][f"dpu{dpu_index}"]["interface"].keys())[0]
+    except KeyError:
+        interface = f"Ethernet-BP{dpu_index}"
+
+    logger.info(f"DPU dataplane interface: {interface}")
+    return interface
+
+
+def get_interface_ip(duthost, interface):
+    cmd = f"ip addr show {interface} | grep -w inet | awk '{{print $2}}'"
+    output = duthost.shell(cmd)["stdout"].strip()
+    return ip_interface(output)
+
+
+@pytest.fixture(scope="module", autouse=True)
+def add_npu_static_routes(duthost, dash_pl_config, dpu_index, apply_switch_basic_config, apply_dpu_basic_config, dpuhosts, skip_config, skip_cleanup):
+    dpuhost = dpuhosts[dpu_index]
+    if not skip_config:
+        cmds = []
+        vm_nexthop_ip = get_interface_ip(duthost, dash_pl_config[LOCAL_DUT_INTF]).ip + 1
+        pe_nexthop_ip = get_interface_ip(duthost, dash_pl_config[REMOTE_DUT_INTF]).ip + 1
+        cmds.append(f"ip route replace {pl.APPLIANCE_VIP}/32 via {dpuhost.dpu_data_port_ip}")
+        cmds.append(f"ip route replace {pl.VM1_PA}/32 via {vm_nexthop_ip}")
+        cmds.append(f"ip route replace {pl.PE_PA}/32 via {pe_nexthop_ip}")
+        logger.info(f"Adding static routes: {cmds}")
+        duthost.shell_cmds(cmds=cmds)
+
+    yield
+
+    if not skip_config and not skip_cleanup:
+        cmds = []
+        cmds.append(f"ip route del {pl.APPLIANCE_VIP}/32 via {dpuhost.dpu_data_port_ip}")
+        cmds.append(f"ip route del {pl.VM1_PA}/32 via {vm_nexthop_ip}")
+        cmds.append(f"ip route del {pl.PE_PA}/32 via {pe_nexthop_ip}")
+        logger.info(f"Removing static routes: {cmds}")
+        duthost.shell_cmds(cmds=cmds)
+
+
+@pytest.fixture(autouse=True, scope="module")
+def common_setup_teardown(localhost, duthost, ptfhost, dpu_index, dpuhosts, skip_config):
+    if skip_config:
+        return
+    dpuhost = dpuhosts[dpu_index]
+    logger.info(pl.ROUTING_TYPE_PL_CONFIG)
+    base_config_messages = {
+        **pl.APPLIANCE_CONFIG,
+        **pl.ROUTING_TYPE_PL_CONFIG,
+        **pl.VNET_CONFIG,
+        **pl.ENI_CONFIG,
+        **pl.PE_VNET_MAPPING_CONFIG,
+        **pl.ROUTE_GROUP1_CONFIG
+    }
+    logger.info(base_config_messages)
+
+    apply_messages(localhost, duthost, ptfhost, base_config_messages, dpuhost.dpu_index)
+
+    route_messages = {
+        **pl.PE_SUBNET_ROUTE_CONFIG,
+        **pl.VM_SUBNET_ROUTE_CONFIG
+    }
+    logger.info(route_messages)
+    apply_messages(localhost, duthost, ptfhost, route_messages, dpuhost.dpu_index)
+
+    logger.info(pl.ENI_ROUTE_GROUP1_CONFIG)
+    apply_messages(localhost, duthost, ptfhost, pl.ENI_ROUTE_GROUP1_CONFIG, dpuhost.dpu_index)
+
+    yield
+
+    config_reload(dpuhost, safe_reload=True)
+
+
+
+# added by nvidia
 @pytest.fixture(scope="module")
-def apply_switch_basic_config(duthost, dpuhost, npu_interface_ip):
+def apply_switch_basic_config(duthost, dpuhosts, dpu_index):
+    dpuhost = dpuhosts[dpu_index]
     logger.info("Add ip to npu dpu data port")
-    cmd_add_npu_dpu_port_ip = f'sudo config interface ip add {dpuhost.data_port_on_npu} {npu_interface_ip}/31'
+    cmd_add_npu_dpu_port_ip = f'sudo config interface ip add {dpuhost.data_port_on_npu} {dpuhost.npu_data_port_ip}/31'
     duthost.shell(cmd_add_npu_dpu_port_ip)
 
     yield
 
     logger.info("Remove the ip of npu dpu data port")
-    cmd_remove_npu_dpu_port_ip = f'sudo config interface ip Remove {dpuhost.data_port_on_npu} {npu_interface_ip}/31'
+    cmd_remove_npu_dpu_port_ip = f'sudo config interface ip Remove {dpuhost.data_port_on_npu} {dpuhost.npu_data_port_ip}/31'
     duthost.shell(cmd_remove_npu_dpu_port_ip)
 
 
 @pytest.fixture(scope="module")
-def apply_dpu_basic_config(dpuhost, dpu_ip, npu_interface_ip, apply_switch_basic_config):
+def apply_dpu_basic_config(dpuhost, apply_switch_basic_config, dpuhosts, dpu_index):
+    dpuhost = dpuhosts[dpu_index]
     logger.info("Add ip to Ethernet0")
-    cmd_add_data_port_ip = f"sudo config interface ip  add Ethernet0 {dpu_ip}/31"
+    cmd_add_data_port_ip = f"sudo config interface ip  add Ethernet0 {dpuhost.dpu_data_port_ip}/31"
     dpuhost.shell(cmd_add_data_port_ip)
 
     logger.info("Add ip to Loopback0")
-    cmd_add_l0_ip = f"sudo config interface ip  add Loopback0 {pl.SIP}/255.255.255.255"
+    cmd_add_l0_ip = f"sudo config interface ip  add Loopback0 {pl.APPLIANCE_VIP}/255.255.255.255"
     dpuhost.shell(cmd_add_l0_ip)
 
-    logger.info("Add ip default route via Ethernet0")
-    cmd_add_npu_neig_route = f"sudo ip route add {pl.OUTBOUND_UNDERLAY_IP}/32 via {npu_interface_ip} dev Ethernet0"
+    logger.info("Add ip underlay route via Ethernet0")
+    cmd_add_npu_neig_route = f"sudo ip route add {pl.PE_PA}/32 via {dpuhost.npu_data_port_ip} dev Ethernet0"
     dpuhost.shell(cmd_add_npu_neig_route)
 
     yield
 
     if not is_redmine_issue_active([4125251])[0]:
-        if is_redmine_issue_active([4129123])[0]:
-            config_reload(dpuhost, safe_reload=True)
-        else:
-            logger.info("Remove ip default route via Ethernet0")
-            cmd_del_npu_neig_route = f"sudo ip route del default via {npu_interface_ip} dev Ethernet0"
-            dpuhost.shell(cmd_del_npu_neig_route)
+        logger.info("Remove ip default route via Ethernet0")
+        cmd_del_npu_neig_route = f"sudo ip route del {pl.PE_PA}/32 via {dpuhost.npu_data_port_ip} dev Ethernet0"
+        dpuhost.shell(cmd_del_npu_neig_route)
 
-            logger.info("Remove the ip of Loopback0")
-            cmd_remove_l0_ip = f"sudo config interface ip  remove Loopback0 {pl.SIP}/255.255.255.255"
-            dpuhost.shell(cmd_remove_l0_ip)
+        logger.info("Remove the ip of Loopback0")
+        cmd_remove_l0_ip = f"sudo config interface ip  remove Loopback0 {pl.APPLIANCE_VIP}/255.255.255.255"
+        dpuhost.shell(cmd_remove_l0_ip)
 
-            logger.info("Remove ip of Ethernet0")
-            cmd_remove_data_port_ip = f"sudo config interface ip  remove Ethernet0 {dpu_ip}/31"
-            dpuhost.shell(cmd_remove_data_port_ip)
+        logger.info("Remove ip of Ethernet0")
+        cmd_remove_data_port_ip = f"sudo config interface ip  remove Ethernet0 {dpuhost.dpu_data_port_ip}/31"
+        dpuhost.shell(cmd_remove_data_port_ip)
 
 
-@pytest.fixture(scope="module")
-def dpu_ip(npu_interface_ip):
-    dpu_ip = ip_interface(npu_interface_ip)
-    return dpu_ip.ip + 1
-
-
-@pytest.fixture(scope="module")
-def npu_interface_ip(duthost):
-    npu_interface_ip = ip_interface("10.0.0.74")
-    return npu_interface_ip.ip
-
-
-@pytest.fixture(scope="module", autouse=True)
-def add_dpu_static_route(duthost, dpu_ip, apply_switch_basic_config, apply_dpu_basic_config):
-    remote_pa_ip = "10.0.0.1"
-    logger.info("Add npu to dpu VIP route")
-    cmd = f"ip route replace {pl.SIP}/32 via {dpu_ip}"
-    duthost.shell(cmd)
-
-    logger.info("Add underlay outbound to ptf route")
-    underlay_outbound_to_ptf_route_subnet = ip_network(f'{pl.OUTBOUND_UNDERLAY_IP}/32').supernet(prefixlen_diff=8)
-    cmd_add_underlay_outbound_to_ptf_route = f"ip route add {underlay_outbound_to_ptf_route_subnet} via {remote_pa_ip}"
-    duthost.shell(cmd_add_underlay_outbound_to_ptf_route)
-
-    yield
-
-    logger.info("Remove underlay outbound to ptf route")
-    cmd_del_underlay_outboud_to_ptf_route = f"ip route del {underlay_outbound_to_ptf_route_subnet} via {remote_pa_ip}"
-    duthost.shell(cmd_del_underlay_outboud_to_ptf_route)
-
-    logger.info("Remove npu to dpu VIP route")
-    duthost.shell(f"ip route del {pl.SIP}")
-
-
-@pytest.fixture(autouse=True)
-def common_setup_teardown(localhost, duthost, ptfhost, dpuhost):
-    logger.info(pl.ROUTING_TYPE_PL_CONFIG)
-    apply_messages(localhost, duthost, ptfhost, pl.ROUTING_TYPE_PL_CONFIG, dpuhost.dpu_index)
-    messages1 = {
-        **pl.APPLIANCE_CONFIG,
-        **pl.VNET_CONFIG,
-        **pl.ENI_CONFIG,
-        **pl.VNET_MAPPING_CONFIG,
-        **pl.ROUTE_GROUP1_CONFIG
-    }
-
-    logger.info(messages1)
-    apply_messages(localhost, duthost, ptfhost, messages1, dpuhost.dpu_index)
-
-    messages2 = {
-        **pl.ROUTE_VNET_CONFIG,
-        **pl.ENI_ROUTE_GROUP1_CONFIG
-    }
-
-    logger.info(messages2)
-    apply_messages(localhost, duthost, ptfhost, messages2, dpuhost.dpu_index)
-
-    yield
-
-    if is_redmine_issue_active([4125251])[0]:
-        config_reload(dpuhost, safe_reload=True)
-    else:
-
-        logger.info(f"recover messages2: {messages2}")
-        apply_messages(localhost, duthost, ptfhost, messages2, dpuhost.dpu_index, set=False)
-
-
-        logger.info(f"recover messages1: {messages1}")
-        apply_messages(localhost, duthost, ptfhost, messages1, dpuhost.dpu_index, set=False)
-
-        logger.info(f"recover pl.ROUTING_TYPE_PL_CONFIG: {pl.ROUTING_TYPE_PL_CONFIG}")
-        apply_messages(localhost, duthost, ptfhost, pl.ROUTING_TYPE_PL_CONFIG, dpuhost.dpu_index, set=False)
-
-
+@pytest.mark.parametrize("encap_proto", ["vxlan", "gre"])
 def test_privatelink_basic_transform(
     ptfadapter,
     dash_pl_config,
-    minigraph_facts,
-    config_facts,
+    encap_proto
 ):
-    pc_member_config = config_facts["PORTCHANNEL_MEMBER"]
-    member_ports = []
-    for member_config in pc_member_config.values():
-        for member in member_config:
-            member_ports.append(member)
+    vm_to_dpu_pkt, exp_dpu_to_pe_pkt = outbound_pl_packets(dash_pl_config, outer_encap=encap_proto)
+    pe_to_dpu_pkt, exp_dpu_to_vm_pkt = inbound_pl_packets(dash_pl_config)
 
-    expected_ptf_ports = [minigraph_facts["minigraph_ptf_indices"][port] for port in member_ports]
-    logger.info(f"Expecting transformed packet on PTF ports: {expected_ptf_ports}")
-    pkt, exp_pkt = outbound_pl_packets(dash_pl_config)
     ptfadapter.dataplane.flush()
-    testutils.send(ptfadapter, dash_pl_config[LOCAL_PTF_INTF], pkt, 10)
-    testutils.verify_packet_any_port(ptfadapter, exp_pkt, expected_ptf_ports)
-    #(index, rcv_pkt, received) = testutils.verify_packet_any_port(ptfadapter, exp_pkt, None)
+    testutils.send(ptfadapter, dash_pl_config[LOCAL_PTF_INTF], vm_to_dpu_pkt, 1)
+    testutils.verify_packet_any_port(ptfadapter, exp_dpu_to_pe_pkt, dash_pl_config[REMOTE_PTF_RECV_INTF])
+    testutils.send(ptfadapter, dash_pl_config[REMOTE_PTF_SEND_INTF], pe_to_dpu_pkt, 1)
+    testutils.verify_packet(ptfadapter, exp_dpu_to_vm_pkt, dash_pl_config[LOCAL_PTF_INTF])

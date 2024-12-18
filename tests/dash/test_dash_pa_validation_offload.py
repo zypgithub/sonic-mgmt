@@ -38,12 +38,12 @@ def dpu_duts(dpuhosts, dpuhost):
 def apply_basic_config(duthost, dpu_duts):
     ptf_gateway_ip = "10.0.0.1"
     for index, dpuhost in enumerate(dpu_duts):
-        loopback0_ip = eval(f"pl_config_eni{index}").SIP
+        loopback0_ip = eval(f"pl_config_eni{index}").APPLIANCE_VIP
         npu_data_port_ip = dpuhost.npu_data_port_ip
         dpu_data_port_ip = dpuhost.dpu_data_port_ip
         dataplane_mask_length = dpuhost.dataplane_mask_length
         dpu_npu_port_name = dpuhost.data_port_on_npu
-        outbound_underlay_ip = eval(f"pl_config_eni{index}").OUTBOUND_UNDERLAY_IP
+        outbound_underlay_ip = eval(f"pl_config_eni{index}").PE_PA
         underlay_outbound_to_ptf_route_subnet = ip_network(f'{outbound_underlay_ip}/32').supernet(
             prefixlen_diff=8)
 
@@ -65,7 +65,7 @@ def apply_basic_config(duthost, dpu_duts):
         logger.info("Add ip default route via Ethernet0")
         pl_config = eval(f"pl_config_eni{index}")
         dpuhost.shell(
-            f"sudo ip route add {pl_config.OUTBOUND_UNDERLAY_IP}/32 via {npu_data_port_ip} dev Ethernet0")
+            f"sudo ip route add {pl_config.PE_PA}/32 via {npu_data_port_ip} dev Ethernet0")
 
     yield
 
@@ -74,12 +74,12 @@ def apply_basic_config(duthost, dpu_duts):
         return
 
     for index, dpuhost in enumerate(dpu_duts):
-        loopback0_ip = eval(f"pl_config_eni{index}").SIP
+        loopback0_ip = eval(f"pl_config_eni{index}").APPLIANCE_VIP
         npu_data_port_ip = dpuhost.npu_data_port_ip
         dpu_data_port_ip = dpuhost.dpu_data_port_ip
         dataplane_mask_length = dpuhost.dataplane_mask_length
         dpu_npu_port_name = dpuhost.data_port_on_npu
-        outbound_underlay_ip = eval(f"pl_config_eni{index}").OUTBOUND_UNDERLAY_IP
+        outbound_underlay_ip = eval(f"pl_config_eni{index}").PE_PA
         underlay_outbound_to_ptf_route_subnet = ip_network(f'{outbound_underlay_ip}/32').supernet(
             prefixlen_diff=8)
 
@@ -112,13 +112,13 @@ def apply_pl_config(localhost, duthost, ptfhost, dpu_index, pl_config):
         **pl_config.APPLIANCE_CONFIG,
         **pl_config.VNET_CONFIG,
         **pl_config.ENI_CONFIG,
-        **pl_config.VNET_MAPPING_CONFIG,
+        **pl_config.PE_VNET_MAPPING_CONFIG,
         **pl_config.ROUTE_GROUP1_CONFIG
     }
     logger.info(messages1)
     apply_messages(localhost, duthost, ptfhost, messages1, dpu_index)
     messages2 = {
-        **pl_config.ROUTE_VNET_CONFIG,
+        **pl_config.PE_SUBNET_ROUTE_CONFIG,
         **pl_config.ENI_ROUTE_GROUP1_CONFIG
     }
     logger.info(messages2)
@@ -128,9 +128,9 @@ def apply_pl_config(localhost, duthost, ptfhost, dpu_index, pl_config):
         **pl_config.APPLIANCE_CONFIG,
         **pl_config.VNET_CONFIG,
         **pl_config.ENI_CONFIG,
-        **pl_config.VNET_MAPPING_CONFIG,
+        **pl_config.PE_VNET_MAPPING_CONFIG,
         **pl_config.ROUTE_GROUP1_CONFIG,
-        **pl_config.ROUTE_VNET_CONFIG,
+        **pl_config.PE_SUBNET_ROUTE_CONFIG,
         **pl_config.ENI_ROUTE_GROUP1_CONFIG,
     }
     return messages_applied
@@ -146,7 +146,7 @@ def common_setup_teardown(localhost, duthost, ptfhost, dpu_duts, apply_basic_con
     if is_redmine_issue_active([4125251, 4129123])[0]:
         config_reload_dpu_and_switch(duthost, dpu_duts)
     else:
-        apply_messages(localhost, duthost, ptfhost, messages, dpu_duts[0].dpu_index, set=False)
+        apply_messages(localhost, duthost, ptfhost, messages, dpu_duts[0].dpu_index, set_db=False)
 
 
 def toggle_dpu_control_plane_state(duthost, state, dpu_index_list):
@@ -209,7 +209,7 @@ def clean_pa_validation_entries(localhost, duthost, ptfhost, dpu_index, vni=pl_c
         }
     }
     logger.info(pa_validation_config)
-    apply_messages(localhost, duthost, ptfhost, pa_validation_config, dpu_index, set=False)
+    apply_messages(localhost, duthost, ptfhost, pa_validation_config, dpu_index, set_db=False)
 
 
 def check_acl_entries_in_db(duthost, dpu_index, pa_count):
@@ -240,11 +240,11 @@ def test_pa_validation_single_dpu_single_vni(ptfadapter, dash_pl_config, localho
                                              duthost, ptfhost, expected_ptf_ports):
     dpu_index = dpu_duts[0].dpu_index
     with allure.step("Add pa validation entries"):
-        add_pa_validation_entries(localhost, duthost, ptfhost, dpu_index, [pl_config_eni0.INBOUND_UNDERLAY_IP])
+        add_pa_validation_entries(localhost, duthost, ptfhost, dpu_index, [pl_config_eni0.VM1_PA])
     with allure.step("Check the ACL entries in db"):
         check_acl_entries_in_db(duthost, dpu_index, 1)
     with allure.step("Send the pa matched packet and check it is received by ptf"):
-        pa_matched_pkt, exp_pkt = outbound_pl_packets(dash_pl_config)
+        pa_matched_pkt, exp_pkt = outbound_pl_packets(dash_pl_config, outer_encap='vxlan')
         ptfadapter.dataplane.flush()
         testutils.send(ptfadapter, dash_pl_config[LOCAL_PTF_INTF], pa_matched_pkt, 1)
         testutils.verify_packet_any_port(ptfadapter, exp_pkt, ports=expected_ptf_ports)
@@ -269,7 +269,7 @@ def test_pa_validation_single_dpu_single_vni(ptfadapter, dash_pl_config, localho
         testutils.send(ptfadapter, dash_pl_config[LOCAL_PTF_INTF], pa_unmatched_pkt, 1)
         testutils.verify_packet_any_port(ptfadapter, exp_pkt, ports=expected_ptf_ports)
     with allure.step("Add the pa validation entry for the matched IP address again"):
-        add_pa_validation_entries(localhost, duthost, ptfhost, dpu_index, [pl_config_eni0.INBOUND_UNDERLAY_IP])
+        add_pa_validation_entries(localhost, duthost, ptfhost, dpu_index, [pl_config_eni0.VM1_PA])
     with allure.step("Send the matched and unmatched packets again and check the result"):
         testutils.send(ptfadapter, dash_pl_config[LOCAL_PTF_INTF], pa_matched_pkt, 1)
         testutils.verify_packet_any_port(ptfadapter, exp_pkt, ports=expected_ptf_ports)
@@ -281,12 +281,12 @@ def test_pa_validation_single_dpu_multi_vni(ptfadapter, dash_pl_config, dpu_duts
                                             localhost, duthost, ptfhost, expected_ptf_ports):
     dpu_index = dpu_duts[0].dpu_index
     with allure.step("Add pa validation entries for 2 VNIs on a same DPU"):
-        add_pa_validation_entries(localhost, duthost, ptfhost, dpu_index, [pl_config_eni0.INBOUND_UNDERLAY_IP])
+        add_pa_validation_entries(localhost, duthost, ptfhost, dpu_index, [pl_config_eni0.VM1_PA])
         dummy_vni = 66666
         add_pa_validation_entries(localhost, duthost, ptfhost, dpu_index,
-                                  [pl_config_eni0.INBOUND_UNDERLAY_IP], vni=dummy_vni)
+                                  [pl_config_eni0.VM1_PA], vni=dummy_vni)
     with allure.step("Send the pa matched packet and check it is received by ptf"):
-        pa_matched_pkt, exp_pkt = outbound_pl_packets(dash_pl_config)
+        pa_matched_pkt, exp_pkt = outbound_pl_packets(dash_pl_config, outer_encap='vxlan')
         ptfadapter.dataplane.flush()
         testutils.send(ptfadapter, dash_pl_config[LOCAL_PTF_INTF], pa_matched_pkt, 1)
         testutils.verify_packet_any_port(ptfadapter, exp_pkt, ports=expected_ptf_ports)
@@ -306,7 +306,7 @@ def test_pa_validation_single_dpu_multi_vni(ptfadapter, dash_pl_config, dpu_duts
         testutils.verify_no_packet_any(ptfadapter, exp_pkt, ports=expected_ptf_ports)
     with allure.step("Remove the pa validation entry for the real vni and add it again"):
         clean_pa_validation_entries(localhost, duthost, ptfhost, dpu_index)
-        add_pa_validation_entries(localhost, duthost, ptfhost, dpu_index, [pl_config_eni0.INBOUND_UNDERLAY_IP])
+        add_pa_validation_entries(localhost, duthost, ptfhost, dpu_index, [pl_config_eni0.VM1_PA])
     with allure.step("Send the pa matched packet and check it is received by ptf"):
         testutils.send(ptfadapter, dash_pl_config[LOCAL_PTF_INTF], pa_matched_pkt, 1)
         testutils.verify_packet_any_port(ptfadapter, exp_pkt, ports=expected_ptf_ports)
@@ -323,20 +323,21 @@ def test_pa_validation_multi_dpu(ptfadapter, dash_pl_config, dpu_duts,
         messages = apply_pl_config(localhost, duthost, ptfhost, another_dpu_index, pl_config_eni1)
     with allure.step("Apply the pa validation entries for both ENIs"):
         add_pa_validation_entries(
-            localhost, duthost, ptfhost, dpu_index, [pl_config_eni0.INBOUND_UNDERLAY_IP])
+            localhost, duthost, ptfhost, dpu_index, [pl_config_eni0.VM1_PA])
         add_pa_validation_entries(
-            localhost, duthost, ptfhost, another_dpu_index, [pl_config_eni1.INBOUND_UNDERLAY_IP])
+            localhost, duthost, ptfhost, another_dpu_index, [pl_config_eni1.VM1_PA])
     try:
         with allure.step("Check the ACL table and rule for ENI0 and ENI1"):
             check_acl_entries_in_db(duthost, dpu_index, 1)
             check_acl_entries_in_db(duthost, another_dpu_index, 1)
         with allure.step("Send the pa matched packets for both ENIs and check they are received by ptf"):
-            eni0_pa_matched_pkt, eni0_exp_pkt = outbound_pl_packets(dash_pl_config)
+            eni0_pa_matched_pkt, eni0_exp_pkt = outbound_pl_packets(dash_pl_config, outer_encap='vxlan')
             eni1_pa_matched_pkt,  = eni0_pa_matched_pkt.copy()
             eni1_exp_pkt = deepcopy(eni0_exp_pkt)
             eni1_pa_matched_pkt['VXLAN']['Ether'].src = eni1_exp_pkt.exp_pkt['GRE']['Ether'].src = \
                 pl_config_eni1.ENI_MAC
-            eni1_pa_matched_pkt['IP'].dst = eni1_exp_pkt.exp_pkt['IP'].src = pl_config_eni1.SIP
+            eni1_pa_matched_pkt['IP'].dst = eni1_exp_pkt.exp_pkt['IP'].src = pl_config_eni1.APPLIANCE_VIP
+            eni1_exp_pkt.exp_pkt['IP'].dst = pl_config_eni1.PE_PA
             ptfadapter.dataplane.flush()
             testutils.send(ptfadapter, dash_pl_config[LOCAL_PTF_INTF], eni0_pa_matched_pkt, 1)
             testutils.verify_packet_any_port(ptfadapter, eni0_exp_pkt, ports=expected_ptf_ports)
@@ -364,7 +365,7 @@ def test_pa_validation_multi_dpu(ptfadapter, dash_pl_config, dpu_duts,
         with allure.step("Remove the ENI1 pa validation entry for the unmatched source IP address"):
             clean_pa_validation_entries(localhost, duthost, ptfhost, another_dpu_index)
             add_pa_validation_entries(
-                localhost, duthost, ptfhost, another_dpu_index, [pl_config_eni1.INBOUND_UNDERLAY_IP])
+                localhost, duthost, ptfhost, another_dpu_index, [pl_config_eni1.VM1_PA])
         with allure.step("Add a the pa validation entry for the unmatched source IP address for ENI0"):
             add_pa_validation_entries(localhost, duthost, ptfhost, dpu_index, [eni0_unmatched_pa_ip])
         with allure.step("Send the pa unmatched packets for ENI0 and check it is received by ptf"):
@@ -378,15 +379,15 @@ def test_pa_validation_multi_dpu(ptfadapter, dash_pl_config, dpu_duts,
             if is_redmine_issue_active([4125251])[0]:
                 config_reload(dpu_duts[1], safe_reload=True)
             else:
-                apply_messages(localhost, duthost, ptfhost, messages, another_dpu_index, set=False)
+                apply_messages(localhost, duthost, ptfhost, messages, another_dpu_index, set_db=False)
 
 
 def test_pa_validation_dpu_shutdown(localhost, duthost, ptfhost, dpu_duts):
     dpu_index = dpu_duts[0].dpu_index
     another_dpu_index = dpu_duts[1].dpu_index
     with allure.step("Add the pa validation entry for two DPUs"):
-        add_pa_validation_entries(localhost, duthost, ptfhost, dpu_index, [pl_config_eni0.INBOUND_UNDERLAY_IP])
-        add_pa_validation_entries(localhost, duthost, ptfhost, another_dpu_index, [pl_config_eni1.INBOUND_UNDERLAY_IP])
+        add_pa_validation_entries(localhost, duthost, ptfhost, dpu_index, [pl_config_eni0.VM1_PA])
+        add_pa_validation_entries(localhost, duthost, ptfhost, another_dpu_index, [pl_config_eni1.VM1_PA])
     with allure.step("Check the ACL table and rule"):
         check_acl_entries_in_db(duthost, dpu_index, 1)
         check_acl_entries_in_db(duthost, another_dpu_index, 1)

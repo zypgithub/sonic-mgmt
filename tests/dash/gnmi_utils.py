@@ -193,8 +193,6 @@ def apply_gnmi_cert(duthost, ptfhost):
     dut_command += "--ca_crt %s%s " % (env.gnmi_cert_path, env.gnmi_ca_cert)
     if env.enable_zmq:
         dut_command += " -zmq_address=tcp://127.0.0.1:8100 "
-        if duthost.facts['asic_type'] == 'mellanox':
-            dut_command += "-zmq_dpu_proxy_address_base=127.0.10.10 "
     dut_command += "-gnmi_native_write=true -v=10 >/root/gnmi.log 2>&1 &\""
     duthost.shell(dut_command)
     time.sleep(env.gnmi_server_start_wait_time)
@@ -334,7 +332,7 @@ def apply_messages(
     ptfhost,
     messages,
     dpu_index,
-    set=True,
+    set_db=True,
     wait_after_apply=5,
     max_updates_in_single_cmd=1024,
 ):
@@ -347,7 +345,7 @@ def apply_messages(
         gnmi_key = keys[0] + "[key=" + keys[1] + "]"
         filename = f"update{i}"
 
-        if set:
+        if set_db:
             if proto_utils.ENABLE_PROTO:
                 path = f"/APPL_DB/dpu{dpu_index}/{gnmi_key}:$/root/{filename}"
             else:
