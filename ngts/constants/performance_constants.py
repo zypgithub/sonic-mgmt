@@ -37,11 +37,11 @@ class PerfConsts:
     CONFIG_FILES_DICT = {LEFT_TG_ALIAS: CONFIG_FILES_LIST_LEFT_TG, RIGHT_TG_ALIAS: CONFIG_FILES_LIST_RIGHT_TG}
     DEFAULT_SAMPLE_TIME_IN_SEC = 20
     EXTENDED_SAMPLE_TIME_IN_SEC = 60
-    PACKET_SIZE_LIST = [1500, 2000, 4000, 8000]
-    PACKET_SIZE_TO_PACKET_NUM_DICT = {1500: 32, 2000: 16, 4000: 8, 8000: 8}
+    PACKET_SIZE_LIST = [1500, 2000, 4000]
+    PACKET_SIZE_TO_PACKET_NUM_DICT = {1500: 32, 2000: 16, 4000: 8}
     TG_TX_UTIL_TH = 95
-    DUT_TX_UTIL_TH_DICT = {1500: 64, 2000: 80, 4000: 92, 8000: 93}
-    DUT_TX_UTIL_W_IBM_TH_DICT = {1500: 64, 2000: 80, 4000: 96, 8000: 95}
+    DUT_TX_UTIL_TH_DICT = {1500: 64, 2000: 80, 4000: 92}
+    DUT_TX_UTIL_W_IBM_TH_DICT = {1500: 64, 2000: 80, 4000: 96}
     VALUE_INDEX = 0
     TIMESTAMP_INDEX = 1
     LOG_PORT_LEFT_TG = 0x10001
@@ -66,9 +66,3 @@ class PerfConsts:
     FW_BURN_PATH = "/auto/mswg/projects/sx_mlnx_os/sx_fit_regression/libs/scripts/sdk_fw_burn.py"
     DVS_CLI_TYPE = "DVS"
     DVS_WELCOME_MESSAGE = "Welcome to the NVIDIA Switch Development System"
-    PACKET_SIZE_TO_MAX_BW_DICT = {
-        '1500': 65,
-        '2000': 85,
-        '4000': 99
-    }
-    CONFIGURATION_TYPE_LIST = ['split_configuration', 'unsplit_configuration']

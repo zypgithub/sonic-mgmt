@@ -6,16 +6,15 @@ import random
 
 from ngts.helpers.performance.performance_setup_helpers import (run_traffic, traffic_validation, set_ibm,
                                                                 set_port, reboot_dut, get_ports_from_dut,
-                                                                validate_traffic_results, apply_test_configuration)
+                                                                validate_traffic_results)
 from ngts.constants.performance_constants import PerfConsts
 logger = logging.getLogger()
 
-PACKET_SIZE_TO_MAX_BW_DICT = PerfConsts.PACKET_SIZE_TO_MAX_BW_DICT
+PACKET_SIZE_TO_MAX_BW_DICT = PerfConsts.DUT_TX_UTIL_TH_DICT
 PACKET_SIZE_LIST = PerfConsts.PACKET_SIZE_LIST
-CONFIGURATION_TYPE_LIST = PerfConsts.CONFIGURATION_TYPE_LIST
 
 
-class TestSPCXRA:
+class TestSPCXRA_x2Split_400G:
 
     @pytest.fixture(autouse=True)
     def setup(self, topology_obj, players, engines):
@@ -23,7 +22,7 @@ class TestSPCXRA:
         self.players = players
         self.engines = engines
         self.cli_object = self.players['dut']['cli']
-        self.scenario = "spcx_ra"
+        self.scenario = "spcx_ra/split_x2_400G_configuration"
 
     @allure.title('spcx_ra')
     def test_spcx_ra(self):
@@ -31,18 +30,13 @@ class TestSPCXRA:
         This test will SPCX_RA
         :return: raise assertion error if output is not there.
         """
-        with allure.step("Apply Test configuration on all Players"):
-            apply_test_configuration(self.players, scenario="spcx_ra")
         run_traffic(self.players, self.scenario)
         validate_traffic_results(self.players, self.scenario)
 
-    @pytest.mark.parameterize("configuration", CONFIGURATION_TYPE_LIST)
     @pytest.mark.parameterize("packet_size", PACKET_SIZE_LIST)
     @allure.title('test_ar_perf_max_bandwidth')
     @allure.description('Calculate the port utilization on the DUT with AR enabled, with various packet sizes (1500, 2000, 4000) and default AR profile.')
-    def test_ar_perf_max_bandwidth(self, configuration, packet_size):
-        with allure.step("Apply Test configuration on all Players"):
-            apply_test_configuration(self.players, scenario=f"spcx_ra/{configuration}")
+    def test_ar_perf_max_bandwidth(self, packet_size):
 
         with allure.step(f"Run {packet_size}B packet Traffic on all the ports"):
             run_traffic(self.players, self.scenario, packet_size)
@@ -53,12 +47,7 @@ class TestSPCXRA:
     @pytest.mark.parameterize("packet_size", PACKET_SIZE_LIST)
     @allure.title('test_ar_perf_max_bandwidth_ibm')
     @allure.description('Calculate the port utilization on the DUT with AR enabled, with various packet sizes (1500, 2000, 4000) and IBM enabled')
-    def test_ar_perf_max_bandwidth_ibm(self, packet_size):
-        with allure.step("Apply Test configuration on all Players"):
-            apply_test_configuration(self.players, scenario="spcx_ra/split_configuration")
-
-        with allure.step("Set IBM to true"):
-            set_ibm(self.players, ibm_mode=True)  # reload of switchd/docker/process should be done in the cli_wrapper.
+    def test_ar_perf_max_bandwidth_ibm(self, packet_size, ibm_fixture):
 
         with allure.step(f"Run {packet_size}B packet Traffic on all the ports"):
             run_traffic(self.players, self.scenario, packet_size)
@@ -69,8 +58,6 @@ class TestSPCXRA:
     @allure.title('test_ar_perf_link_flap')
     @allure.description('With full line rate traffic, verify that traffic converges to the initial state after an interface flap.')
     def test_ar_perf_link_flap(self, packet_size=4000):
-        with allure.step("Apply Test configuration on all Players"):
-            apply_test_configuration(self.players, scenario="spcx_ra/split_configuration")
 
         with allure.step("Run 4000B packet Traffic on all the ports"):
             run_traffic(self.players, self.scenario, packet_size)
@@ -92,8 +79,6 @@ class TestSPCXRA:
     @allure.title('test_ar_perf_reload_reboot')
     @allure.description('With full line rate traffic, verify that traffic converges to the initial state after cold reboot/reload.')
     def test_ar_perf_reload_reboot(self, packet_size=4000):
-        with allure.step("Apply Test configuration on all Players"):
-            apply_test_configuration(self.players, scenario="spcx_ra/split_configuration")
 
         with allure.step("Run 4000B packet Traffic on all the ports"):
             run_traffic(self.players, self.scenario, packet_size)  # add packet size as a parameter in this function
