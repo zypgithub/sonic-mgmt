@@ -6193,6 +6193,10 @@
   vm_base: VM0000
   dut:
     - mtvr-bobcat-05
+    - mtvr-bobcat-05-dpu-0
+    - mtvr-bobcat-05-dpu-1
+    - mtvr-bobcat-05-dpu-2
+    - mtvr-bobcat-05-dpu-3
   inv_name: lab
   comment: Mellanox MTR testbed
 
