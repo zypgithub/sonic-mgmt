@@ -460,6 +460,10 @@ def run_cli_coverage_flow(clear_config, request):
         logging.warning(f"CLI coverage flow failed- {err}")
 
 
+def eth_handle_exception():
+    logging.info("Handle eth exception")
+
+
 @pytest.fixture(scope="function", autouse=True)
 def list_of_executed_commands(engines, run_cli_coverage_flow, request):
     pytest.s_time = time.time()

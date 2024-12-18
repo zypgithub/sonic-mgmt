@@ -349,6 +349,12 @@ def test_ntp_system_authentication(engines, test_api):
             prev_time = GeneralCliCommon(TestToolkit.engines.dut).get_utc_time()
             GeneralCliCommon(TestToolkit.engines.dut).set_time(NtpConsts.OLD_DATE)
 
+        with allure.step("Create authentication key"):
+            logging.info("Create authentication key")
+            system.ntp.keys.set_resource(NtpConsts.KEY_1).verify_result()
+            system.ntp.keys.resources_dict[NtpConsts.KEY_1].set(
+                op_param_name=NtpConsts.VALUE, op_param_value=NtpConsts.KEY_VALUE, apply=True).verify_result()
+
         with allure.step("Configure ntp server and key"):
             logging.info("Configure ntp server and key")
             system.ntp.servers.set_resource(server_name).verify_result()
@@ -356,12 +362,6 @@ def test_ntp_system_authentication(engines, test_api):
                 op_param_name=NtpConsts.KEY, op_param_value=NtpConsts.KEY_1).verify_result()
             system.ntp.servers.resources_dict[server_name].set(
                 op_param_name=NtpConsts.TRUSTED, op_param_value=NtpConsts.Trusted.YES.value, apply=True).verify_result()
-
-        with allure.step("Create authentication key"):
-            logging.info("Create authentication key")
-            system.ntp.keys.set_resource(NtpConsts.KEY_1).verify_result()
-            system.ntp.keys.resources_dict[NtpConsts.KEY_1].set(
-                op_param_name=NtpConsts.VALUE, op_param_value=NtpConsts.KEY_VALUE, apply=True).verify_result()
 
         with allure.step("Validate show system ntp key output"):
             logging.info("Validate show system ntp key output")
@@ -473,6 +473,8 @@ def test_ntp_system_authentication(engines, test_api):
 
         with allure.step("Remove the first authenticated key"):
             logging.info("Remove the first authenticated key")
+            system.ntp.servers.resources_dict[server_name].unset(op_param=NtpConsts.KEY + ' ' + NtpConsts.KEY_1,
+                                                                 apply=True).verify_result()
             system.ntp.keys.unset_resource(NtpConsts.KEY_1, apply=True).verify_result()
 
         with allure.step("Validate show system ntp key output"):
@@ -1154,6 +1156,6 @@ def get_hostname_from_ip(ip):
 
 
 def create_ntp_server(player_engine):
-    player_engine.run_cmd("apt-get install ntp")
+    player_engine.run_cmd("apt-get install ntp; y")
     player_engine.run_cmd(f"cp {NtpConsts.NTP_SERVER_FILES} /etc/")
     player_engine.run_cmd("service ntp restart")
