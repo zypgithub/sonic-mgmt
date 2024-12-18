@@ -1107,13 +1107,14 @@ class ReloadTest(BaseTest):
         self.finalizer_state = self.get_warmboot_finalizer_state()
         self.log('warmboot finalizer service state {}'.format(self.finalizer_state))
         count = 0
-        while self.finalizer_state == 'activating' or self.finalizer_state == '':
+        while self.finalizer_state != 'inactive':
             try:
                 self.finalizer_state = self.get_warmboot_finalizer_state()
             except Exception:
                 traceback_msg = traceback.format_exc()
                 self.log("Exception happened during get warmboot finalizer service state: {}".format(traceback_msg))
                 raise
+
             self.log('warmboot finalizer service state {}'.format(self.finalizer_state))
             time.sleep(10)
             if count * 10 > int(self.test_params['warm_up_timeout_secs']):
@@ -1550,6 +1551,8 @@ class ReloadTest(BaseTest):
         if stderr:
             self.fails['dut'].add("Error collecting teamd state. stderr: {}, stdout:{}".format(
                 str(stderr), str(stdout)))
+            self.log("Error collecting teamd state. stderr: {}, stdout:{}".format(
+                str(stderr), str(stdout)))
             raise Exception("Error collecting teamd state. stderr: {}, stdout:{}".format(
                 str(stderr), str(stdout)))
         if not stdout:
@@ -1574,7 +1577,12 @@ class ReloadTest(BaseTest):
 
         while teamd_state == 'active':
             time.sleep(1)
-            dut_datetime_during_shutdown = self.get_now_time()
+            try:
+                dut_datetime_during_shutdown = self.get_now_time()
+            except Exception:
+                traceback_msg = traceback.format_exc()
+                self.log("Exception happened during get dut time: {}".format(traceback_msg))
+                continue
             time_passed = float(dut_datetime_during_shutdown.strftime(
                 "%s")) - float(dut_datetime.strftime("%s"))
             if time_passed > teamd_shutdown_timeout:
