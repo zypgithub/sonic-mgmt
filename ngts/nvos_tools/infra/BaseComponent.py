@@ -83,8 +83,12 @@ class BaseComponent:
                                                                   self.get_resource_path(), param_name, param_value)
         if result_obj.result and apply:
             with allure.step("Applying set configuration"):
+                option = ''
+                if ask_for_confirmation == '-y':
+                    option = '-y'
+                    ask_for_confirmation = False
                 result_obj = SendCommandTool.execute_command(self._general_cli_wrapper.apply_config, dut_engine,
-                                                             ask_for_confirmation, client_certs_after_apply=client_certs_after_apply)
+                                                             ask_for_confirmation, option, client_certs_after_apply=client_certs_after_apply)
         return result_obj
 
     def set(self, op_param_name="", op_param_value={}, expected_str='', apply=False, ask_for_confirmation=False,

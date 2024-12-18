@@ -56,9 +56,9 @@ def test_ssh_config_good_flow(engines, devices, rand_ssh_port):
     with allure.step("Validating login authentication-retries"):
         auth_retries = random.randint(SshConfigConsts.MIN_AUTH_RETRIES, SshConfigConsts.MAX_AUTH_RETRIES)
 
-        with allure.step("Configuring {} as number of authentication-retries".format(auth_retries)):
-            system.ssh_server.set(SshConfigConsts.AUTH_RETRIES, auth_retries,
-                                  apply=True, ask_for_confirmation=True).verify_result()
+        with allure.step(f"Configuring {auth_retries} as number of authentication-retries"):
+            system.ssh_server.set(SshConfigConsts.AUTH_RETRIES, auth_retries, apply=True, ask_for_confirmation='-y').verify_result()
+            time.sleep(3)
 
         with allure.step(f'verify configuration: authentication-retries -> {auth_retries}'):
             with allure.independent_step('verify in show'):
