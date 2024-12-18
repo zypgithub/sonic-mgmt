@@ -214,6 +214,12 @@ tests/nightly/show_techsupport/test_techsupport.py::test_techsupport_validate_ap
     conditions:
     - "'simx' in platform"
 
+tests/nightly/secure:
+  skip:
+    reason: "Skipped on bison testbeds"
+    conditions:
+    - "'r-bison-04' in testbed or 'mtvr-bison-02' in testbed or 'mtvr-bison-03' in testbed"
+
 tests/push_build_tests:
   skip:
     reason: "Testcase is skipped due to RM 4205976 on physical SPC4"
