@@ -175,7 +175,7 @@ def test_reload_configuration_checks(duthosts, enum_rand_one_per_hwsku_hostname,
     ssh_port = \
         duthost.host.options['variable_manager']._hostvars[duthost.hostname].get('ansible_ssh_port', SONIC_SSH_PORT)
 
-    timeout = None
+    timeout = 0
     if duthost.get_facts().get("modular_chassis"):
         timeout = 420
 
