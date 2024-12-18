@@ -168,6 +168,7 @@ nvidia-arm-orion      ansible_host=10.210.24.241 ansible_hostv6="" sonic_version
 bm-bu-bsp      ansible_host=10.7.144.155 ansible_hostv6="" sonic_version=v2 hwsku="ACS-QM3000" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 mamba-44      ansible_host=10.7.145.44 ansible_hostv6="" sonic_version=v2 hwsku="ACS-QM3000" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 mamba-112      ansible_host=10.7.148.112 ansible_hostv6="" sonic_version=v2 hwsku="ACS-QM3000" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
+mamba-248      ansible_host=10.7.148.248 ansible_hostv6="" sonic_version=v2 hwsku="ACS-QM3000" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 mamba-150      ansible_host=10.7.148.150 ansible_hostv6="" sonic_version=v2 hwsku="ACS-QM3000" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 mtvr-q3400-06      ansible_host=10.245.21.54 ansible_hostv6="" sonic_version=v2 hwsku="ACS-QM3000" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 mtvr-q3400-05      ansible_host=10.245.23.5 ansible_hostv6="" sonic_version=v2 hwsku="ACS-QM3000" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
