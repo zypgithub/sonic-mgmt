@@ -151,7 +151,7 @@ def test_ecmp_hash(rand_selected_dut, tbinfo, ptfhost, fine_params, mg_facts, gl
     with allure.step('Randomly select an ecmp hash field to test and configure the global ecmp and lag hash'):
         lag_hash_fields = global_hash_capabilities['lag']
         lag_hash_fields = lag_hash_fields[:]
-        lag_hash_fields.remove(ecmp_test_hash_field)
+        lag_hash_fields.remove(ecmp_test_hash_field) if ecmp_test_hash_field in lag_hash_fields else None
         # Config the hash fields
         rand_selected_dut.set_switch_hash_global('ecmp', [ecmp_test_hash_field])
         rand_selected_dut.set_switch_hash_global('lag', lag_hash_fields)
@@ -211,7 +211,7 @@ def test_lag_hash(rand_selected_dut, ptfhost, tbinfo, fine_params, mg_facts, res
     with allure.step('Randomly select a lag hash field to test and configure the global ecmp and lag hash'):
         ecmp_hash_fields = global_hash_capabilities['ecmp']
         ecmp_hash_fields = ecmp_hash_fields[:]
-        ecmp_hash_fields.remove(lag_test_hash_field)
+        ecmp_hash_fields.remove(lag_test_hash_field) if lag_test_hash_field in ecmp_hash_fields else None
         # Get the interfaces for the test, downlink interface is selected randomly
         uplink_interfaces, downlink_interfaces = get_interfaces_for_test(rand_selected_dut, mg_facts,
                                                                          lag_test_hash_field)
