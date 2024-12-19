@@ -330,9 +330,7 @@ def generic_aaa_test_bad_configured_server(test_api, engines, topology_obj, remo
         bad_configured_server.configure(engines)
 
     with allure.step(f'Enable {remote_aaa_type}'):
-        aaa = remote_aaa_obj.parent_obj
-        aaa.authentication.set(AuthConsts.ORDER,
-                               f'{remote_aaa_type},{AuthConsts.LOCAL}', apply=True).verify_result()
+        remote_aaa_obj.enable(apply=True, verify_res=True)
 
     with allure.step(f'Verify auth with {remote_aaa_type} user. Expect fail'):
         verify_auth(TestFlowType.BAD_FLOW, engines, topology_obj,

@@ -11,6 +11,7 @@ from ngts.nvos_constants.constants_nvos import PlatformConsts
 from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
 from ngts.nvos_tools.infra.CurlTool import CurlTool
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.SecureBootTool import SecureBootTool
 from ngts.nvos_tools.infra.TpmTool import TpmTool
@@ -63,6 +64,7 @@ class NvosInstallationSteps:
             cli_obj: NvueGeneralCli = setup_info['duts'][0]['cli_obj']
             dut_device = cli_obj.device
             dut_engine = cli_obj.engine
+            TestToolkit.is_eth_dut(dut_device)  # initialize this field in TestToolkit global object
             assert NvosInstallationSteps.wait_for_nvos_to_become_functional(dut_engine), \
                 "Timeout occurred while waiting for NVOS to complete the initialization "
 

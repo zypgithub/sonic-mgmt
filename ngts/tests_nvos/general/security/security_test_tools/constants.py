@@ -42,7 +42,7 @@ class AaaConsts:
     PHYSICAL_AAA_SERVER_DN = 'fit-def-20'
     VM_AAA_SERVER_IPV4_ADDR = '10.237.0.86'
     VM_AAA_SERVER_IPV6_ADDR = 'fdfd:fdfd:10:237:250:56ff:fe1b:56'
-    VM_AAA_SERVER_DN = 'fit-l-vrt-60-086'
+    VM_AAA_SERVER_DN = 'fit-l-vrt-60-086.mtl.labs.mlnx'
 
     ENABLED = 'enabled'
     DISABLED = 'disabled'

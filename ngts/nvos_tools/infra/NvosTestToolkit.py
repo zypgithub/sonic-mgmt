@@ -9,7 +9,7 @@ import pytest
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.cli_wrappers.openapi.openapi_command_builder import OpenApiCommandHelper
 from ngts.cli_wrappers.openapi.openapi_general_clis import OpenApiGeneralCli
-from ngts.nvos_constants.constants_nvos import ApiType, NvosConst
+from ngts.nvos_constants.constants_nvos import ApiType, NvosConst, CumulusConsts
 
 logger = logging.getLogger()
 
@@ -23,6 +23,7 @@ class TestToolkit:
     loganalyzer_duts = None
     topology_obj = None
     dut_eth0_ip = ""
+    is_dut_eth = None
 
     @staticmethod
     def update_tested_ports(tested_ports):
@@ -188,3 +189,10 @@ class TestToolkit:
             logging.info('End Loganalyzer ignore')
             for loganalyzer_dut in TestToolkit.loganalyzer_duts.values():
                 loganalyzer_dut.add_end_ignore_mark()
+
+    @staticmethod
+    def is_eth_dut(dut_device=None) -> bool:
+        if TestToolkit.is_dut_eth is None:
+            dut_device = dut_device or TestToolkit.devices.dut
+            TestToolkit.is_dut_eth = (dut_device.switch_type == CumulusConsts.ETH_SWITCH_TYPE)
+        return TestToolkit.is_dut_eth
