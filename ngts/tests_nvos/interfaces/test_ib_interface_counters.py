@@ -140,7 +140,7 @@ def test_range_clear_counters_positive(engines, devices, players, interfaces, st
 
     with allure.step("Run clear counters using range for p1 or p2 only"):
         with allure.step('Run clear counter command'):
-            interface.action_clear_counter_for_interface(engine=ssh_connection,
+            interface.action_clear_counter_for_interface(dut_engine=ssh_connection,
                                                          interface_name='sw{first}-{last}p{p_number}-{p_number},{random_port}'.format(
                                                              p_number=p_number, first=second_range_first_point,
                                                              last=second_range_last_point, random_port=random_port)
@@ -157,7 +157,7 @@ def test_range_clear_counters_positive(engines, devices, players, interfaces, st
     with allure.step("Run clear counters using range and multiple ports and verify results"):
 
         with allure.step('Run clear counter command'):
-            interface.action_clear_counter_for_interface(engine=ssh_connection,
+            interface.action_clear_counter_for_interface(dut_engine=ssh_connection,
                                                          interface_name='sw{first}-{last}p1-2,{random_port}'.format(
                                                              first=first_range_first_point, last=first_range_last_point,
                                                              random_port=random_port)).verify_result()

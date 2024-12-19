@@ -999,6 +999,21 @@ class ImageConsts:
     NVOS_RELEASE_25_02_1000 = "25.02.1000"
 
 
+class RbacConsts:
+    ALLOW = 'allow'
+    DENY = 'deny'
+    PERMISSION = 'permission'
+    READ_ONLY = 'ro'
+    READ_WRITE = 'rw'
+    ACTION = 'act'
+    ALL = 'all'
+    PERMISSION_LEVELS = ["ro", "rw", "act", "all"]
+    CONFLICT_ERR_MSG = 'Cannot have more allow permissions than parent'
+    USED_ROLE_MSG = 'being modified is already part of'
+    CLASS_LIMIT = 64
+    ROLE = 'role'
+
+
 class TcpDumpConsts:
     LLDP_CHASIS_ID = "chasis_id"
     LLDP_PORT_ID = "port_id"

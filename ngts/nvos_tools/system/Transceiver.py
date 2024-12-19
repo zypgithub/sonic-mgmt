@@ -6,7 +6,7 @@ from ngts.nvos_tools.system.Files import Files
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.tools.test_utils import allure_utils as allure
-from ngts.nvos_constants.constants_nvos import ActionConsts, PlatformConsts
+from ngts.nvos_constants.constants_nvos import ActionConsts, PlatformConsts, ApiType
 
 logger = logging.getLogger()
 
@@ -17,15 +17,16 @@ class Transceiver(BaseComponent):
         self.files = Files(self)
 
     def show_detailed(self):
-        return self.show(op_param='detail')
+        op_param = "" if self._api_to_use == ApiType.OPENAPI else 'detail'
+        return self.show(op_param=op_param)
 
     def action_reset(self, transceiver_name, expected_str="", dut_engine=None):
         """nv action install platform transceiver firmware files <file-name> """
-        return self.action(ActionConsts.RESET, transceiver_name, expected_output=expected_str)
+        return self.action(ActionConsts.RESET, transceiver_name, expected_output=expected_str, dut_engine=dut_engine)
 
     def action_install(self, transceiver_name, file_name, expected_str="", dut_engine=None):
         """nv action install platform transceiver firmware files <file-name> """
-        return self.action(ActionConsts.INSTALL, transceiver_name + ' firmware files ' + file_name, expected_output=expected_str)
+        return self.action(ActionConsts.INSTALL, transceiver_name + ' firmware files ' + file_name, expected_output=expected_str, dut_engine=dut_engine)
 
     def get_dict_of_transceivers(self, cable_type):
         """

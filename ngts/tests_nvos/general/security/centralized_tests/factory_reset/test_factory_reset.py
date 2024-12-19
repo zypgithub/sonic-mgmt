@@ -18,6 +18,7 @@ from ngts.tests_nvos.general.security.sed.helpers import sed_password_factory_re
 from ngts.tests_nvos.general.security.test_api_server_security.test_api_mtls import \
     api_mtls_factory_reset_no_params_check, api_mtls_factory_reset_keep_all_config_check, \
     api_mtls_factory_reset_keep_only_files_check
+from ngts.tests_nvos.general.security.rbac.rbac_factory_reset import rbac_factory_reset_no_params_check, rbac_factory_reset_keep_roles
 from ngts.tests_nvos.general.security.tpm_attestation.helpers import tpm_attestation_factory_reset_no_params_check
 from ngts.tests_nvos.system.factory_reset.helpers import update_timezone
 from ngts.tests_nvos.system.gnmi.helpers import gnmi_cert_factory_reset_no_params_check
@@ -32,6 +33,7 @@ API_MTLS = 'API mTLS'
 SED_PASSWORD = 'SED password'
 SSH_PKA = 'SSH PKA'
 CERTS_MGMT = 'Certificates management'
+RBAC = 'RBAC'
 
 CHECKERS_SKIP_RULES: Dict[str, CheckerSkipRule] = {
     NMX_CERT: SkipCheckerBySetup(['juliet'], False),
@@ -47,6 +49,7 @@ NO_PARAMS_CHECKERS: Dict[str, Generator[None, None, None]] = {
     # SSH_PKA: ssh_pka_factory_reset_no_params_check(), # FIXME: remove expected param
     SED_PASSWORD: sed_password_factory_reset_check(),
     CERTS_MGMT: certs_mgmt_factory_reset_no_params_check(),
+    RBAC: rbac_factory_reset_no_params_check(),
 }
 
 KEEP_BASIC_CHECKERS: Dict[str, Generator[None, None, None]] = {
@@ -54,18 +57,21 @@ KEEP_BASIC_CHECKERS: Dict[str, Generator[None, None, None]] = {
     # SSH_PKA: ssh_pka_factory_reset__keep_basic_check(),   # FIXME: remove expected param
     SED_PASSWORD: sed_password_factory_reset_check(),
     CERTS_MGMT: certs_mgmt_factory_reset_no_params_check(),
+    RBAC: rbac_factory_reset_keep_roles(),
 }
 
 KEEP_ALL_CONFIG_CHECKERS: Dict[str, Generator[None, None, None]] = {
     API_MTLS: api_mtls_factory_reset_keep_all_config_check(),
     SED_PASSWORD: sed_password_factory_reset_check(),
     CERTS_MGMT: certs_mgmt_factory_reset_keep_only_files_check(),
+    RBAC: rbac_factory_reset_keep_roles(),
 }
 
 KEEP_ONLY_FILES_CHECKERS: Dict[str, Generator[None, None, None]] = {
     API_MTLS: api_mtls_factory_reset_keep_only_files_check(),
     SED_PASSWORD: sed_password_factory_reset_check(),
     CERTS_MGMT: certs_mgmt_factory_reset_keep_only_files_check(),
+    RBAC: rbac_factory_reset_no_params_check(),
 }
 
 FACTORY_RESET_TYPE_TO_CHECKER_FUNCTIONS: Dict[str, Dict[str, Generator[None, None, None]]] = {
