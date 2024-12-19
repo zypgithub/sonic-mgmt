@@ -1312,7 +1312,7 @@ class JulietArielPS(JulietTTMSwitch):
 
     def _init_platform_lists(self):
         super()._init_platform_lists()
-        self.platform_inventory_switch_values.update({"model": "692-9K36F-A5MV-JQS"})
+        self.platform_inventory_switch_values.update({"model": "692-9K36F-A5MV-JCR"})
 
 
 # -------------------------- JulietNonScaleoutSwitch Switch ----------------------------
