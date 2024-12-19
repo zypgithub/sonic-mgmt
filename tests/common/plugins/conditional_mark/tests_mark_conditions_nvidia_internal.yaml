@@ -162,6 +162,7 @@ tests/nightly/adaptive_routing:
     conditions:
     - "'simx' in platform"
     - "'ACS-SN5400' in hwsku"
+    - "hwsku not in ['Mellanox-SN5600-O128']"
     - "'sn5610n' in platform"
 
 tests/nightly/fec/test_fec.py::TestFec::test_negative_fec:
