@@ -429,6 +429,26 @@ def find_longest_matches(nodeid, conditions):
         else:
             match = nodeid.startswith(condition_entry)
         if match:
+            all_matches.append(condition)
+
+    for match in all_matches:
+        case_starting_substring = list(match.keys())[0]
+        length = len(case_starting_substring)
+        marks = match[case_starting_substring].keys()
+        for mark in marks:
+            if mark in conditional_marks:
+                if length >= max_length:
+                    conditional_marks.update({
+                        mark: {
+                            case_starting_substring: {
+                                mark: match[case_starting_substring][mark]}
+                        }})
+                    max_length = length
+            else:
+                match = None
+        else:
+            match = nodeid.startswith(condition_entry)
+        if match:
             length = len(condition)
             if length > max_length:
                 max_length = length
