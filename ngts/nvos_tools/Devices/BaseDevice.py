@@ -122,6 +122,7 @@ class BaseDevice(ABC):
 
     def _init_security_lists(self):
         self.kex_algorithms = []
+        self.aaa_cleanup_cmds = []
 
     def _init_password_hardening_lists(self):
         self.local_test_users = []
@@ -280,6 +281,14 @@ class BaseDevice(ABC):
 
     @abstractmethod
     def show_setup_versions(self, dut_engine: LinuxSshEngine = None):
+        raise Exception(f"Not implemented for this switch {self.__class__.__name__}")
+
+    @abstractmethod
+    def setup_base_aaa_config(self, dut_engine: LinuxSshEngine):
+        raise Exception(f"Not implemented for this switch {self.__class__.__name__}")
+
+    @abstractmethod
+    def cleanup_base_aaa_config(self, dut_engine: LinuxSshEngine):
         raise Exception(f"Not implemented for this switch {self.__class__.__name__}")
 
 # -------------------------- Base Appliance ----------------------------

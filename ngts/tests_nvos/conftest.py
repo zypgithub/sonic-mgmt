@@ -382,13 +382,24 @@ def security_cleanup(ssh_session: PexpectTool) -> bool:
         return success
     with allure.step('Security cleanup'):
         with allure.step('check session still connected to switch'):
+            session_is_live = False
             ssh_session.sendline('nv show system')
-            i = ssh_session.expect(DefaultConnectionValues.DEFAULT_PROMPTS)
-            session_is_live = i < len(DefaultConnectionValues.DEFAULT_PROMPTS) and 'nvos' in ssh_session.last_output
+
+            while True:
+                try:
+                    i = ssh_session.expect(DefaultConnectionValues.DEFAULT_PROMPTS, timeout=15)
+                    if i < len(DefaultConnectionValues.DEFAULT_PROMPTS) and ('product-name' in ssh_session.last_output):
+                        session_is_live = True
+                        logging.info("Session is live")
+                        break
+
+                except pexpect.exceptions.TIMEOUT:
+                    logging.info("No more output detected due to timeout.")
+                    break
+
         if session_is_live:
-            cmds = ['nv unset system aaa authentication order', 'nv unset system aaa authentication failthrough',
-                    'nv config apply -y']
             with allure.step('unset authentication config to allow local connection'):
+                cmds = TestToolkit.devices.dut.aaa_cleanup_cmds
                 expect_timeout = 60
                 ssh_session.sendline(' ; '.join(cmds))
                 i = ssh_session.expect(DefaultConnectionValues.DEFAULT_PROMPTS, timeout=expect_timeout, raise_exception_for_timeout=False)
