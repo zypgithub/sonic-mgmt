@@ -18,7 +18,7 @@ def device_type(request):
 def dut_host(engines, request, device_type):
     if device_type == 'dpu':
         if "dpu0" in engines:
-            dpu_index = random.randint(0, 4)
+            dpu_index = random.randint(0, 3)
             dpu_name = f'dpu{dpu_index}'
             os.environ[InfraConst.SELECTED_DPUS] = dpu_name
             return engines[dpu_name]

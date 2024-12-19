@@ -12,7 +12,7 @@ IP_ADDRESS_LIST = {"ACS-SN4280": ["169.254.200.1", "169.254.200.2", "169.254.200
 logger = logging.getLogger(__name__)
 
 pytestmark = [
-    pytest.mark.topology('t1'),
+    pytest.mark.topology('any'),
     pytest.mark.skip_check_dut_health,
     pytest.mark.usefixtures('copy_proxy_ssh')
 ]

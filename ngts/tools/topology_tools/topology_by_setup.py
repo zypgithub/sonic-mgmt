@@ -6,7 +6,7 @@ logger = logging.getLogger()
 
 def get_topology_by_setup_name_and_aliases(setup_name, slow_cli, override_type=False):
     topology = get_topology_by_setup_name(setup_name, slow_cli, override_type)
-    if 'bobcat' in setup_name:
+    if 'bobcat' in setup_name or 'CI_sonic_SS' in setup_name:
         add_dpu_player(topology, slow_cli, override_type)
 
     return update_dut_alias(topology)
