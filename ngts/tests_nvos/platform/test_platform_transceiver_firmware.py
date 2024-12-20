@@ -312,7 +312,7 @@ def _get_random_optical_module_transceiver():
                     RandomizationTool.select_random_transceiver(transceivers_output=show_transceiver,
                                                                 field_name=PlatformConsts.HARDWARE_TRANCEIVER_DIAGNOSTIC_STATUS,
                                                                 expected_value='Diagnostic Data Available',
-                                                                number_of_transceiver_to_select=1).verify_result()[0]
+                                                                number_of_transceiver_to_select=1)
 
             if not random_transceiver.result:
                 pytest.skip(f"No optical modules available for the setup")
