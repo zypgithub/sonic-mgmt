@@ -22,16 +22,3 @@ SONIC_BAT_ONLY:
 SONIC_COMMUNITY_BAT_ONLY:
   - tests
   - ansible/roles/test/files/ptftests
-
-SONIC_COMMUNITY_BF3_BAT:
-  - tests/platform_tests
-  - tests/common/plugins
-  - sonic-tool
-  - ngts
-  - ansible
-  - tests/common/devices
-  - tests/common/fixtures
-  - tests/common/platform
-  - tests/conftest.py
-  - tests/dash
-  - tests/bgp/test_bgp_fact.py
