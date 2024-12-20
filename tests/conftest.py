@@ -4,7 +4,6 @@ import json
 import logging
 import getpass
 import random
-import re
 from concurrent.futures import as_completed
 
 import pytest
@@ -53,7 +52,7 @@ from tests.common.utilities import str2bool
 from tests.common.utilities import safe_filename
 from tests.common.utilities import get_duts_from_host_pattern
 from tests.common.utilities import get_dut_current_passwd
-from tests.common.helpers.dut_utils import is_supervisor_node, is_frontend_node, create_duthost_console, creds_on_dut
+from tests.common.helpers.dut_utils import is_supervisor_node, is_frontend_node, create_duthost_console, creds_on_dut, create_duthost_console, creds_on_dut
 from tests.common.cache import FactsCache
 from tests.common.config_reload import config_reload
 from tests.common.helpers.assertions import pytest_assert as pt_assert
