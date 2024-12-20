@@ -1819,6 +1819,7 @@
 
 - Errors_list:
     - '.*ERR healthd: FEATURE table is not fully ready:*'
+    - ".*ERR featured: Unexpected state value 'None' for feature .*"
   Conditions:
     - Redmine:
         - 3943532
