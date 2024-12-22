@@ -833,7 +833,7 @@ class CrocodileSwitch(IbSwitch):
         self.supported_eth0_speeds += ['10M']
 
     def _relevant_config_filename_by_version(self, version: str) -> str:
-        return 'nvos_config_xdr.yml'
+        return 'nvos_config_xdr_crocodile.yml'
 
     def _init_platform_lists(self):
         super()._init_platform_lists()

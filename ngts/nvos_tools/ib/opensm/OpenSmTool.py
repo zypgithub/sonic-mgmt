@@ -61,11 +61,13 @@ class OpenSmTool:
             if not guid:
                 return ResultObj(False, "Failed to find GUID to start OpenSM")
 
-        with allure.step("Start OpenSM"):
-            if hasattr(engines, "hfnm") and is_redmine_issue_active([4178112]):
+        with (allure.step("Start OpenSM")):
+            if hasattr(engines, "hfnm") and is_redmine_issue_active([4178112]) and engines.dut.ip == '10.7.148.112':
                 # todo: remove when we get opensm 5.22 or later
-                OPEN_SM_PATH = '/labhome/juliav/workspace/sm_regression/sources/SM_MASTER/usr/sbin/opensm'
-            engines.hfnm.run_cmd(f"{OPEN_SM_PATH} -F {OPEN_SM_CFG_PATH} -g {guid} -B")
+                engines.hfnm.run_cmd(f"/labhome/juliav/workspace/sm_regression/sources/SM_MASTER/usr/sbin/opensm"
+                                     f" -g {guid} -B")
+            else:
+                engines.hfnm.run_cmd(f"{OPEN_SM_PATH} -F {OPEN_SM_CFG_PATH} -g {guid} -B")
             time.sleep(5)
 
         with allure.step("Verify OpenSM is running"):

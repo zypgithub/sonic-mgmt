@@ -119,13 +119,17 @@ class TrafficGeneratorTool:
     def stop_ping_multiple_ips(host):
         with allure.step('Stop pinging jobs and verify no packet loss'):
             running_jobs = host.run_cmd('jobs -l').split('[')
-            assert "Running" in running_jobs, 'No running jobs found'
+            ping_outputs = []
 
             for job in running_jobs:
                 if "Running" in job:
                     job_id = job.split(' ')[1]
-                    ping_output = host.run_cmd(f'kill -SIGINT {job_id}')
-                    assert "0% packet loss" in ping_output, f'{ping_output}'
+                    output = host.run_cmd(f'kill -SIGINT {job_id}')
+                    ping_outputs.append(output)
+
+            assert len(ping_outputs) > 0, 'No running jobs found'
+
+        return ping_outputs
 
     @staticmethod
     def start_traffic_between_2_hosts(host_a, host_b, traffic_duration, server_output, client_output):

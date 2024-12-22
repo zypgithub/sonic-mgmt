@@ -1709,6 +1709,7 @@ class IssuConsts:
     OPENSM_RESPONSE_TIMEOUT = '60'  # [sec]
     TRAFFIC_DURATION = '300'  # [sec]
     TRAFFIC_TIMEOUT = int(TRAFFIC_DURATION) + 10  # [sec]
+    CPU_MAX_DOWNTIME = 70  # [sec]
     SERVER_OUTPUT = 'server_output.txt'
     CLIENT_OUTPUT = 'client_output.txt'
     ERROR_CONFIG_MUST_BE_SAVED = ('Error: Action failed with the following issue:\n'

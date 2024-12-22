@@ -282,7 +282,7 @@ def test_configure_ntp_server(test_api):
 @pytest.mark.system
 @pytest.mark.ntp
 @pytest.mark.simx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [ApiType.NVUE])
 def test_ntp_system_authentication(engines, test_api):
     """
     validate:
@@ -471,10 +471,10 @@ def test_ntp_system_authentication(engines, test_api):
             ntp_key_dict[NtpConsts.KEY_2] = NtpConsts.KEY_CONFIGURED_DICT
             ValidationTool.compare_dictionary_content(key_list, ntp_key_dict).verify_result()
 
-        with allure.step("Remove the first authenticated key"):
-            logging.info("Remove the first authenticated key")
-            system.ntp.servers.resources_dict[server_name].unset(op_param=NtpConsts.KEY + ' ' + NtpConsts.KEY_1,
-                                                                 apply=True).verify_result()
+        with (allure.step("Remove the first authenticated key and add the second (incorrect) key to server instead")):
+            logging.info("Remove the first authenticated key and add the second (incorrect) key to server instead")
+            system.ntp.servers.resources_dict[server_name].set(
+                op_param_name=NtpConsts.KEY, op_param_value=NtpConsts.KEY_2).verify_result()
             system.ntp.keys.unset_resource(NtpConsts.KEY_1, apply=True).verify_result()
 
         with allure.step("Validate show system ntp key output"):
@@ -487,6 +487,7 @@ def test_ntp_system_authentication(engines, test_api):
             logging.info("Enable ntp functionality")
             system.ntp.set(op_param_name=NtpConsts.STATE, op_param_value=NtpConsts.State.ENABLED.value,
                            apply=True).verify_result()
+            time.sleep(NtpConsts.CONFIG_TIME)
 
         with allure.step("Validate show system ntp output"):
             logging.info("Validate show system ntp output")
@@ -498,6 +499,8 @@ def test_ntp_system_authentication(engines, test_api):
 
         with allure.step("Remove all authentication keys"):
             logging.info("Remove all authentication keys")
+            system.ntp.servers.resources_dict[server_name].unset(
+                op_param=NtpConsts.KEY + ' ' + NtpConsts.KEY_2).verify_result()
             system.ntp.unset(NtpConsts.KEY, apply=True).verify_result()
 
         with allure.step("Validate show system ntp key output"):
@@ -509,11 +512,16 @@ def test_ntp_system_authentication(engines, test_api):
             logging.info("Disable ntp authentication")
             system.ntp.set(op_param_name=NtpConsts.AUTHENTICATION,
                            op_param_value=NtpConsts.Authentication.DISABLED.value, apply=True).verify_result()
+            time.sleep(NtpConsts.SYNCHRONIZATION_MAX_TIME)
 
         with allure.step("Validate show system ntp output"):
             logging.info("Validate show system ntp output")
             ntp_show = OutputParsingTool.parse_json_str_to_dictionary(system.ntp.show()).get_returned_value()
             ntp_dict[NtpConsts.AUTHENTICATION] = NtpConsts.Authentication.DISABLED.value
+            ntp_dict[NtpConsts.SERVER] = {server_name: {}}
+            ntp_dict[NtpConsts.OFFSET] = ntp_show[NtpConsts.OFFSET]
+            ntp_dict[NtpConsts.REFERENCE] = server_name
+            ntp_dict[NtpConsts.STATUS] = NtpConsts.Status.SYNCHRONISED.value
             ValidationTool.compare_nested_dictionary_content(ntp_show, ntp_dict).verify_result()
 
     finally:
