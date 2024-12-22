@@ -11,7 +11,7 @@ class ClusterConsts:
     CONTROLLER_SERVICES = ['nmxc-sdn', 'nmxc-fib', 'redis']
     ClusterAppsLogLevelsList = [ClusterAppsLogLevels.DEBUG, ClusterAppsLogLevels.INFO, ClusterAppsLogLevels.NOTICE, ClusterAppsLogLevels.WARNING, ClusterAppsLogLevels.ERROR, ClusterAppsLogLevels.CRITICAL]
     NMX_CONTROLLER_CONFIG_FILE_TYPES = ['fm_config', 'sm_config', 'rdm_config', 'chassis_mapping']
-    NMX_CONTROLLER_STATE_FILE_TYPES = ['sm_dump', 'topology', 'conn_info']
+    NMX_CONTROLLER_STATE_FILE_TYPES = ['sm_dump', 'topology']
     NMX_TELEMETRY_CONFIG_FILE_TYPES = ['telemetry']  # Once added make sure to adjust CONFIG_FILES_CHANGE
     NMX_TELEMETRY_STATE_FILE_TYPES = []
     CONTROLLER_AND_TELEMETRY_CONFIG_FILES = NMX_CONTROLLER_CONFIG_FILE_TYPES + NMX_TELEMETRY_CONFIG_FILE_TYPES

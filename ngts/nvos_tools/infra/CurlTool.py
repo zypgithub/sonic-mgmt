@@ -74,10 +74,15 @@ class CurlTool:
                                         path='/Managers/BMC_0/Actions/Manager.ResetToDefaults',
                                         username=username, password=password)
 
-    def change_root_password(self, username='', password='', dut_engine=None):
-        return self.run_redfish_command(rest_op='PATCH', data='{"Password": "ABYX12#14artb"}',
-                                        path='/AccountService/Accounts/root',
-                                        username=username, password=password, dut_engine=dut_engine)
+    def change_root_password(self, username='', password='', dut_engine=None, new_password='ABYX12#14artb'):
+        return self.run_redfish_command(
+            rest_op='PATCH',
+            data=f'{{"Password": "{new_password}"}}',
+            path='/AccountService/Accounts/root',
+            username=username,
+            password=password,
+            dut_engine=dut_engine
+        )
 
     def run_redfish_command(self, rest_op: str, data: str = '', username: str = '',
                             password: str = '', path: str = '', dut_engine=None):
