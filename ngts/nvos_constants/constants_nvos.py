@@ -724,6 +724,7 @@ class PlatformConsts:
     BMC_COMPONENT_VERSION_PATTERN = r'"Version":\s*"([^"]+)"'
     BMC_LOGIN = 'admin'
     BMC_INTERNAL_IP = '10.0.1.1'
+    BMC_DEFAULT_ROOT_PASSWORD_AFTER_RESET_VIA_NOS = '0penBmcTempPass!'
 
     PSU_STATE = 'state'
     PS_REDUNDANCY_POLICY = 'policy'

@@ -10,6 +10,7 @@ from ngts.nvos_tools.platform.Software import Software
 from ngts.nvos_tools.system.Firmware import Firmware
 from ngts.nvos_tools.system.Transceiver import Transceiver
 from ngts.nvos_tools.platform.PSRedundancy import PSRedundancy
+from ngts.nvos_tools.platform.Bmc_password import Bmc_password
 
 logger = logging.getLogger()
 
@@ -26,6 +27,7 @@ class Platform(BaseComponent):
         self.ps_redundancy = PSRedundancy(self)
         self.transceiver = Transceiver(self)
         self.chassis_location = BaseComponent(self, path='/chassis-location')
+        self.bmc_password = Bmc_password(self)
 
     def set(self, op_param_name="", op_param_value=""):
         raise Exception("set is not implemented for /platform")
