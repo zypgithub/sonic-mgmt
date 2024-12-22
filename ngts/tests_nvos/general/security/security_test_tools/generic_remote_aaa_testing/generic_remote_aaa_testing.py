@@ -23,7 +23,6 @@ from ngts.tests_nvos.general.security.security_test_tools.security_test_utils im
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.RemoteAaaServerInfo import RemoteAaaServerInfo, \
     update_active_aaa_server
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
-from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_general_utils import wait_for_ldap_nvued_restart_workaround
 
@@ -81,14 +80,11 @@ def generic_aaa_test_set_unset_show(test_api, engines, remote_aaa_type: str, mai
         server_conf[AaaConsts.PRIORITY] = 4
         configure_resource(engines, main_resource_obj.server.server_id[server4], server_conf, apply=True)
         non_default_servers = [server2, server3]
-        if remote_aaa_type == RemoteAaaType.LDAP or (not is_bug_active(3880238)):
-            # TODO: remove cond once bug #3880238 closed
-            non_default_servers.append(server4)
 
     with allure.step('Verify general configurations'):
         for resource, expected_conf in confs.items():
             with allure.step(f'Verify {resource.get_resource_path()} configuration'):
-                cur_conf = show_and_parse(resource)
+                cur_conf = show_and_parse(resource, ConfState.APPLIED)
                 if AaaConsts.SECRET in expected_conf.keys():
                     expected_conf[AaaConsts.SECRET] = '*'
                 ValidationTool.validate_fields_values_in_output(expected_fields=expected_conf.keys(),
