@@ -261,9 +261,6 @@ class TestEvpnVxlan:
                                           VxlanConstants.HEX_500200,
                                           VxlanConstants.HEX_20_0_0_3))
 
-    @pytest.mark.build
-    @pytest.mark.physical_coverage
-    @pytest.mark.push_gate
     def test_evpn_vxlan_basic(self, cli_objects, interfaces, skip_if_upgrade):
         """
         This test will check basic EVPN VXLAN functionality.

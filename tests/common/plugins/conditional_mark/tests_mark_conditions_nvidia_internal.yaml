@@ -234,13 +234,7 @@ tests/push_build_tests/general/wjh/test_wjh.py::test_buffer:
 
 tests/push_build_tests/general/doroce/test_doroce.py:
   skip:
-    reason: "Testcase ignored on simx or due to SPC1 or due to RM issue 3769105 on SPC4 and SPC3 or due to RM issue 4037241 on sn5600 or on sn5610n"
-    conditions_logical_operator: or
-    conditions:
-    - "'simx' in platform"
-    - "'sn2' in platform or 'msn2700a1' in platform"
-    - "'sn5610n' in platform"
-    - "https://redmine.mellanox.com/issues/4217321 and 'sn5600' in platform"
+    reason: "DoRoCE is not supported on 202411 and greater releases"
 
 tests/nightly/rj45/test_rj45.py:
   skip:
@@ -299,6 +293,19 @@ tests/nightly/evpn_vxlan/test_evpn_vxlan_type5/test_evpn_vxlan_type5.py::TestEvp
     reason: "Testcase ignored due to vxlan is not supported fully on SPC1 A0 chipset, SPC1 A0 is not a production chip and we won't support vxlan on it"
     conditions:
     - "'r-bulldog-02' in testbed"
+
+tests/nightly/evpn_vxlan:
+  skip:
+    reason: "EVPN VXLAN is not supported in 202411 and greater releases"
+
+tests/nightly/dynamic_port_breakout:
+  skip:
+    reason: "DPB is not supported in 202411 and greater releases"
+
+tests/nightly/adaptive_routing:
+  skip:
+    reason: "adaptive routing is not supported in 202411 and greater releases"
+
 
 tests/nightly/auto_negotition/test_auto_neg_scale.py::TestAutoNegScale::test_scale:
   skip:
@@ -589,6 +596,18 @@ platform_tests/fw_utility/test_fwutil.py:
     reason: "Testcase ignored due to platform msn4"
     conditions:
     - "'msn4' in platform"
+
+sub_port_interfaces/:
+  skip:
+    reason: "Sub port interfaces is not supported on 202411 and greater releases"
+
+vrf/:
+  skip:
+    reason: "VRF is not supported on 202411 and greater releases"
+
+mvrf/:
+  skip:
+    reason: "Mgmt-VRF is not supported on 202411 and greater releases"
 
 mvrf/test_mgmtvrf.py:
   skip:
@@ -895,9 +914,7 @@ platform_tests/test_advanced_reboot.py::test_fast_reboot:
 
 platform_tests/test_service_warm_restart.py:
   skip:
-    reason: "The FR not supported on SN5600-C224O8, SN5600-C256S1 hwsku"
-    conditions:
-    - "hwsku in ['Mellanox-SN5600-C256S1', 'Mellanox-SN5600-C224O8']"
+    reason: "The warm service restart is not supported on 202411 and greater releases"
 
 pfcwd/test_pfcwd_warm_reboot.py:
   skip:

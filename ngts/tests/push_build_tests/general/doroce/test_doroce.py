@@ -94,8 +94,6 @@ def doroce_conf_dict(cli_objects):
     return doroce_conf_dict
 
 
-@pytest.mark.physical_coverage
-@pytest.mark.build
 @pytest.mark.doroce
 @pytest.mark.parametrize("configuration", DoroceConsts.BUFFER_CONFIGURATIONS)
 @allure.title('DoRoCE test case')

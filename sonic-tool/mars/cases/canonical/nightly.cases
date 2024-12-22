@@ -138,41 +138,7 @@
     </cmd>
   </case>
 
-  <case>
-    <ignore>
-      <!-- daily case  -->
-      <condition>
-        <key> skip_weekend_cases </key>
-        <op> == </op>
-        <value> no </value>
-      </condition>
-    </ignore>
-    <name> Dynamic Port Breakout </name>
-    <info> </info>
-    <cmd>
-      <params>
-          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests/nightly/dynamic_port_breakout --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --clean-alluredir --alluredir=/tmp/allure-results --showlocals --timeout 3600 --session-timeout 7200 -k=\"not TestDPBOnAllPorts\"\'"</static_args>
-      </params>
-    </cmd>
-  </case>
 
-  <case>
-    <ignore>
-      <!-- weekend case  -->
-      <condition>
-        <key> skip_weekend_cases </key>
-        <op> == </op>
-        <value> yes </value>
-      </condition>
-    </ignore>
-    <name> Dynamic Port Breakout weekend</name>
-    <info> </info>
-    <cmd>
-      <params>
-          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests/nightly/dynamic_port_breakout --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --clean-alluredir --alluredir=/tmp/allure-results --showlocals --timeout 5400 --session-timeout 5400 -k=\"TestDPBOnAllPorts\"\'"</static_args>
-      </params>
-    </cmd>
-  </case>
 
  <case>
     <ignore>
@@ -472,91 +438,7 @@
       </params>
     </cmd>
   </case>
-  <case>
-    <ignore>
-      <!-- daily case  -->
-      <condition>
-        <key> skip_weekend_cases </key>
-        <op> == </op>
-        <value> no </value>
-      </condition>
-    </ignore>
-    <name> Evpn Vxlan </name>
-    <info> </info>
-    <cmd>
-      <params>
-          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests/nightly/evpn_vxlan/test_evpn_vxlan  --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --clean-alluredir --alluredir=/tmp/allure-results --showlocals --timeout 3600 --session-timeout 7200\'"</static_args>
-      </params>
-    </cmd>
-  </case>
-  <case>
-    <ignore>
-      <!-- daily case  -->
-      <condition>
-        <key> skip_weekend_cases </key>
-        <op> == </op>
-        <value> no </value>
-      </condition>
-    </ignore>
-    <name> Evpn Vxlan type5 </name>
-    <info> </info>
-    <cmd>
-      <params>
-          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests/nightly/evpn_vxlan/test_evpn_vxlan_type5  --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --clean-alluredir --alluredir=/tmp/allure-results --showlocals --timeout 3600 --session-timeout 7200\'"</static_args>
-      </params>
-    </cmd>
-  </case>
-  <case>
-    <ignore>
-      <!-- daily case  -->
-      <condition>
-        <key> skip_weekend_cases </key>
-        <op> == </op>
-        <value> no </value>
-      </condition>
-    </ignore>
-    <name> Evpn Vxlan underlay ecmp </name>
-    <info> </info>
-    <cmd>
-      <params>
-          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests/nightly/evpn_vxlan/underlay_ecmp  --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --clean-alluredir --alluredir=/tmp/allure-results --showlocals --timeout 3600 --session-timeout 3600\'"</static_args>
-      </params>
-    </cmd>
-  </case>
-  <case>
-    <ignore>
-      <!-- weekend case  -->
-      <condition>
-        <key> skip_weekend_cases </key>
-        <op> == </op>
-        <value> yes </value>
-      </condition>
-    </ignore>
-    <name> Evpn Vxlan config changes</name>
-    <info> </info>
-    <cmd>
-      <params>
-          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests/nightly/evpn_vxlan/config_changes  --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --clean-alluredir --alluredir=/tmp/allure-results --showlocals --timeout 3600 --session-timeout 3600\'"</static_args>
-      </params>
-    </cmd>
-  </case>
-  <case>
-    <ignore>
-      <!-- weekend case  -->
-      <condition>
-        <key> skip_weekend_cases </key>
-        <op> == </op>
-        <value> yes </value>
-      </condition>
-    </ignore>
-    <name> Evpn Vxlan tech support</name>
-    <info> </info>
-    <cmd>
-      <params>
-          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests/nightly/evpn_vxlan/tech_support  --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --clean-alluredir --alluredir=/tmp/allure-results --showlocals --timeout 3600 --session-timeout 3600\'"</static_args>
-      </params>
-    </cmd>
-  </case>
+
   <case>
     <ignore>
       <!-- daily case  -->
@@ -622,23 +504,6 @@
     <cmd>
       <params>
           <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests/nightly/rocev2_acl_counter --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --clean-alluredir --alluredir=/tmp/allure-results --showlocals --timeout 3600 --session-timeout 3600\'"</static_args>
-      </params>
-    </cmd>
-  </case>
-  <case>
-    <ignore>
-      <!-- daily case  -->
-      <condition>
-        <key> skip_weekend_cases </key>
-        <op> == </op>
-        <value> no </value>
-      </condition>
-    </ignore>
-    <name> Adaptive Routing </name>
-    <info> </info>
-    <cmd>
-      <params>
-          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests/nightly/adaptive_routing/test_adaptive_routing.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --clean-alluredir --alluredir=/tmp/allure-results --showlocals --timeout 5400 --session-timeout 5400\'"</static_args>
       </params>
     </cmd>
   </case>
