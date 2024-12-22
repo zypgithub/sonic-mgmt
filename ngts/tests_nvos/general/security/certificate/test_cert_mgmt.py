@@ -14,6 +14,7 @@ from ngts.tests_nvos.general.security.certificate.helpers import verify_cert_in_
     send_curl_with_and_verify
 from ngts.tests_nvos.general.security.nmx_cert.constants import EncryptionMode
 from ngts.tests_nvos.general.security.test_api_server_security.constants import CERTIFICATE
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tests_nvos.system.gnmi.conftest import scp_player
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_general_utils import generate_scp_uri_using_player
@@ -81,11 +82,12 @@ def test_cert_mgmt_cert_cli(test_api, engines, scp_player, clear_certs):
             security.certificate.cert_id[cert5.name].action_import(uri_bundle=bundle_uri,
                                                                    passphrase=cert5.p12_password).verify_result()
             certs.append(cert5)
-        with allure.independent_step('Import cert6 using bundle URI + long pass (customer bug)'):
-            bundle_uri = generate_scp_uri_using_player(scp_player, cert6.p12_bundle)
-            security.certificate.cert_id[cert6.name].action_import(uri_bundle=bundle_uri,
-                                                                   passphrase=cert6.p12_password).verify_result()
-            certs.append(cert6)
+        if not is_bug_active(4222041):
+            with allure.independent_step('Import cert6 using bundle URI + long pass (customer bug)'):
+                bundle_uri = generate_scp_uri_using_player(scp_player, cert6.p12_bundle)
+                security.certificate.cert_id[cert6.name].action_import(uri_bundle=bundle_uri,
+                                                                       passphrase=cert6.p12_password).verify_result()
+                certs.append(cert6)
     with allure.step('Show certs – expect all imported certs in output'):
         out = OutputParsingTool.parse_json_str_to_dictionary(security.certificate.show()).get_returned_value()
         assert all(cert.name in out for cert in

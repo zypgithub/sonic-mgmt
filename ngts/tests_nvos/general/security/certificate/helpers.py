@@ -100,7 +100,7 @@ def verify_ca_in_ssl_ca_pool(ca_name: str, ca_info: CertInfo, dut_engine: LinuxS
     with allure.step('verify default CAs pool'):
         content = ca_info.get_ca_content_str()
         with allure.independent_step(f'verify content in SSL CAs pool file'):
-            ssl_ca_pool_content = dut_engine.run_cmd(f'sudo cat {CA_POOL_FILE}')
+            ssl_ca_pool_content = dut_engine.run_cmd(f'sudo cat {CA_POOL_FILE}', print_output=False)
             given_ca_in_ssl_ca_pool = content in ssl_ca_pool_content
             assert given_ca_in_ssl_ca_pool == should_exist, (
                 f'content of given CA "{ca_name}" existence in SSL CAs pool is not as expected\n'
