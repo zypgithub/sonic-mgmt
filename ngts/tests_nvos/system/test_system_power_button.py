@@ -2,13 +2,12 @@ import logging
 
 import pytest
 
-from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.system.System import System
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.switch_recovery import recover_dut_with_remote_reboot
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
-
 
 logger = logging.getLogger()
 
@@ -31,7 +30,7 @@ def test_system_power_button(engines, topology_obj):
 
     finally:
         with allure.step('Recover system with remote reboot'):
-            recover_dut_with_remote_reboot(topology_obj, engines, should_clear_config=False)
+            recover_dut_with_remote_reboot(topology_obj, engines)
 
         if not is_redmine_issue_active([4003176][0]):
             with allure.step('Check reboot reason'):

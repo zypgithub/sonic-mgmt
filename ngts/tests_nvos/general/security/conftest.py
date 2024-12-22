@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.fixture()
-def cleanup_after_aaa(topology_obj, engines, request):
+def cleanup_after_aaa(topology_obj, engines, request, devices):
     dut: LinuxSshEngine = engines.dut
 
     with allure.step('ssh the switch with long logout time'):
@@ -46,7 +46,7 @@ def cleanup_after_aaa(topology_obj, engines, request):
 
     if engines and topology_obj and not skip_rr:
         with allure.step('try recover with remote reboot'):
-            recover_dut_with_remote_reboot(topology_obj, engines)
+            recover_dut_with_remote_reboot(topology_obj, engines)  # TODO: there was another clear config (try without for now)
 
 
 def create_ssh_login_engine(dut_ip, username, port=22, custom_ssh_options=None):

@@ -102,7 +102,7 @@ def _install_image(fae, image_filename, expected_version, engines, topology_obj,
             image_filename, switch, expect_reboot=False)
         result.verify_result()
         OperationTime.verify_operation_time(duration, 'install bmc')
-        recover_dut_with_remote_reboot(topology_obj, engines, should_clear_config=False)
+        recover_dut_with_remote_reboot(topology_obj, engines)
 
     with allure.step(f"With {TestToolkit.tested_api} again"):
         with allure.step("Asserting install was successful"):

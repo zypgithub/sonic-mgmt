@@ -1,42 +1,38 @@
 import logging
 import random
+import shlex
 import socket
 import string
-import time
 import subprocess
-import shlex
+import time
 
 from netmiko.ssh_exception import NetmikoAuthenticationException
 
 import ngts.tools.test_utils.allure_utils as allure
 from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
 from infra.tools.general_constants.constants import DefaultConnectionValues
+from infra.tools.validations.traffic_validations.ping.send import ping_till_alive
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.PexpectTool import PexpectTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.system.System import System
-from ngts.tests_nvos.conftest import clear_config
 
 logger = logging.getLogger(__name__)
 
 
-def recover_dut_with_remote_reboot(topology_obj, engines, should_clear_config: bool = True, wait_after_rr=None):
+def recover_dut_with_remote_reboot(topology_obj, engines, wait_after_rr=None):
     with allure.step('Execute remote reboot'):
-        NvueGeneralCli(engines.dut).remote_reboot(topology_obj)
+        NvueGeneralCli(engines.dut).remote_reboot_nvue(topology_obj)
     if wait_after_rr:
         with allure.step(f'sleep {wait_after_rr} seconds'):
             time.sleep(wait_after_rr)
+    with allure.step('Ping switch until shutting down'):
+        ping_till_alive(should_be_alive=False, destination_host=engines.dut.ip)
     with allure.step('Wait for switch to be up'):
+        DutUtilsTool.wait_for_system_ready_in_serial(topology_obj)
         engines.dut.disconnect()
         DutUtilsTool.wait_for_nvos_to_become_functional(engines.dut).verify_result()
-    if should_clear_config:
-        with allure.step('Clear config again'):
-            clear_config()
-        #     NvosInstallationSteps.clear_conf(engines.dut)
-        # with allure.step('Set base conf again'):
-        #     set_base_configurations(dut_engine=engines.dut, timezone=LinuxConsts.JERUSALEM_TIMEZONE, apply=True,
-        #                             save_conf=True)
 
 
 def generate_strong_password(n: int = 10) -> str:

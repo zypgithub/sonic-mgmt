@@ -1,10 +1,12 @@
 import logging
 import os.path
+import time
 from typing import Dict, List
+
 import pytest
 import requests
-import time
 
+from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.nvos_constants.constants_nvos import ApiType, PlatformConsts
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
@@ -15,7 +17,6 @@ from ngts.nvos_tools.platform.Platform import Platform
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.switch_recovery import recover_dut_with_remote_reboot
-from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 
 logger = logging.getLogger()
 
@@ -109,7 +110,7 @@ def _firmware_install_test(devices, platform: Platform, image_details, engines, 
                         check_port_status_till_alive(True, engine.ip, engine.ssh_port)
                         DutUtilsTool.wait_for_nvos_to_become_functional(engine)
             else:
-                recover_dut_with_remote_reboot(topology_obj, engines, should_clear_config=False)
+                recover_dut_with_remote_reboot(topology_obj, engines)
 
             with allure.step(f"Asserting install was successful"):
                 firmware_shown = OutputParsingTool.parse_json_str_to_dictionary(platform.firmware.show()).get_returned_value()

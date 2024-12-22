@@ -1,12 +1,13 @@
 import copy
 import logging
 import os
-import allure
 import os.path
 from typing import Tuple
 
+import allure
+
 from ngts.nvos_constants.constants_nvos import PlatformConsts
-from ngts.nvos_tools.Devices.IbDevice import JulietSwitch, IbSwitch
+from ngts.nvos_tools.Devices.IbDevice import IbSwitch
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
@@ -83,7 +84,7 @@ class BaseFWUpgradeTest:
             fetched_image_file = fw_component.files.file_name[prev_filename]
             fetched_image_file.action_file_install(force=False)
 
-            recover_dut_with_remote_reboot(topology_obj, engines, should_clear_config=False)
+            recover_dut_with_remote_reboot(topology_obj, engines)
 
             for comp_name in fw_components_names:
                 verify_installation(fae, comp_name, image_consts, filename=prev_filename)
@@ -96,7 +97,7 @@ class BaseFWUpgradeTest:
             fetched_image_file = fw_component.files.file_name[curr_filename]
             fetched_image_file.action_file_install(force=False)
 
-            recover_dut_with_remote_reboot(topology_obj, engines, should_clear_config=False)
+            recover_dut_with_remote_reboot(topology_obj, engines)
 
             for comp_name in fw_components_names:
                 verify_installation(fae, comp_name, image_consts, filename=curr_filename)
@@ -128,7 +129,7 @@ class BaseFWUpgradeTest:
                 fetched_image_file = component.files.file_name[prev_filename]
                 fetched_image_file.action_file_install().verify_result()
 
-            recover_dut_with_remote_reboot(topology_obj, engines, should_clear_config=False)
+            recover_dut_with_remote_reboot(topology_obj, engines)
 
             for comp_name in erots.keys():
                 verify_installation(fae, comp_name, image_consts, filename=prev_filename)
@@ -144,7 +145,7 @@ class BaseFWUpgradeTest:
                 fetched_image_file = component.files.file_name[curr_filename]
                 fetched_image_file.action_file_install().verify_result()
 
-            recover_dut_with_remote_reboot(topology_obj, engines, should_clear_config=False)
+            recover_dut_with_remote_reboot(topology_obj, engines)
 
             for comp_name in erots.keys():
                 verify_installation(fae, comp_name, image_consts, filename=curr_filename)

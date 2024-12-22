@@ -5,6 +5,7 @@ from collections import namedtuple
 from typing import List, Dict
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from infra.tools.linux_tools.linux_tools import scp_file
 from ngts.nvos_constants.constants_nvos import MultiPlanarConsts, PlatformConsts, HealthConsts, ClusterConsts, \
     ActionConsts
 from ngts.nvos_constants.constants_nvos import (NvosConst, DatabaseConst, IbConsts, StatsConsts, FansConsts,
@@ -13,6 +14,7 @@ from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.infra.Tools import Tools
@@ -20,11 +22,9 @@ from ngts.nvos_tools.infra.ValidationTool import ExpectedString
 from ngts.nvos_tools.system.Spdm import SPDMComponents
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts
-from ngts.tools.test_utils.nvos_general_utils import get_version_info
-from ngts.tools.test_utils.nvos_config_utils import clear_conf
 from ngts.tools.test_utils import allure_utils as allure
-from infra.tools.linux_tools.linux_tools import scp_file
-from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.tools.test_utils.nvos_config_utils import clear_conf
+from ngts.tools.test_utils.nvos_general_utils import get_version_info
 
 logger = logging.getLogger()
 
@@ -158,7 +158,7 @@ class IbSwitch(BaseSwitch):
         super()._init_security_lists()
         self.kex_algorithms = ['curve25519-sha256', 'curve25519-sha256@libssh.org', 'diffie-hellman-group16-sha512',
                                'diffie-hellman-group18-sha512', 'diffie-hellman-group14-sha256']
-        self.aaa_cleanup_cmds = ['nv unset system aaa authentication order',
+        self.aaa_cleanup_cmds = ['nv config detach', 'nv unset system aaa authentication order',
                                  'nv unset system aaa authentication failthrough', 'nv config apply -y']
 
     def _init_password_hardening_lists(self):
