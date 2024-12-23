@@ -50,8 +50,10 @@ tests/nightly/component_versions/test_component_versions.py:
 tests/nightly/fec/test_fec.py::TestFec::test_fec_bug_2705016:
   skip:
     reason: "Testcase not supported on current platform"
+    conditions_logical_operator: or
     conditions:
     - "'simx' in platform or '2201' in platform"
+    - "https://redmine.mellanox.com/issues/4222701 and 'r-panther-13' in testbed"
   xfail:
     reason: "May fail due to RM 3971501 on r-leopard-56 or due to RM 3969985 on SPC4"
     conditions_logical_operator: or
