@@ -59,7 +59,7 @@ class Configurations:
 
     ports_to_disable = {'NVOS_juliet_10_7_148_148': ['acp17-20', 'acp69-72']}
 
-    oberon_num_of_gpus = {'NVOS_juliet_10_7_148_148': 8}
+    oberon_num_of_gpus = {'NVOS_juliet_10_7_148_148': '8'}
 
     post_install_commands = {"10.7.144.153": ['nv set acl ACL_MGMT_INBOUND_CP_DEFAULT rule 120 match ip recent-list hit-count 3000',
                                               'nv config apply -y'],

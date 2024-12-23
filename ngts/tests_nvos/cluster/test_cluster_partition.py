@@ -25,12 +25,14 @@ from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
 from ngts.nvos_tools.infra.RegressionConfigurations import Configurations
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
+from ngts.tests_nvos.constants import MINUTE
 
 logger = logging.getLogger()
 
 
 @disabled_access_ports
 @pytest.mark.nmx
+@pytest.mark.timeout(30 * MINUTE, func_only=True)
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_cluster_partition(engines, devices, test_api, has_loopbox, setup_name, standalone_system):
     if standalone_system:
@@ -109,6 +111,7 @@ def test_cluster_partition(engines, devices, test_api, has_loopbox, setup_name, 
 
 @disabled_access_ports
 @pytest.mark.nmx
+@pytest.mark.timeout(30 * MINUTE, func_only=True)
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_cluster_partition_bad_flow(engines, devices, test_api, has_loopbox, standalone_system, setup_name):
 
@@ -260,7 +263,7 @@ def remove_gpu_from_partition_and_add_to_existing_partition(sdn, original_partit
         uuids_dict, locations_dict = build_uuid_location_dicts(partitions_mapping, target_partition_id)
         number_of_gpus = len(partitions_mapping[target_partition_id])
         # TODO - location/uuid as sets. When do not have guarantee on order.
-        if not is_bug_active(4190587):
+        if not is_bug_active(4209873):
             expected_output = {'health': 'healthy', 'locations': locations_dict, 'mcast-limit': mcast_limit, 'name': target_partition_name, 'num-gpus': number_of_gpus, 'partition-type': '', 'resiliency-mode': resiliency_mode, 'uuids': uuids_dict}
             ClusterTools.validate_partition_content(output, expected_output)
 

@@ -355,7 +355,7 @@ class ClusterTools:
             output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.partition_id[ClusterConsts.EMPTY_PARTITION_ID].show(output_format=output_format),
                                                                  output_format=output_format).get_returned_value()
             partitions_mapping[ClusterConsts.EMPTY_PARTITION_ID] = []
-            if not is_bug_active(4190587):
+            if not is_bug_active(4209873):
                 expected_output = {'health': 'healthy', 'locations': {}, 'mcast-limit': mcast_limit, 'name': ClusterConsts.EMPTY_PARTITION_NAME, 'num-gpus': 0, 'partition-type': '', 'resiliency-mode': resiliency_mode, 'uuids': {}}
                 ClusterTools.validate_partition_content(output, expected_output)
 
