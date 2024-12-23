@@ -62,7 +62,7 @@ def check_sonic_version(duthost, target_version):
 
 def install_sonic_image(duthost, **kwargs):
     try:
-        return duthost.reduce_and_add_sonic_images(kwargs)
+        return duthost.reduce_and_add_sonic_images(**kwargs)
     except RunAnsibleModuleFail as err:
         migration_err_regexp = r"Traceback.*migrate_sonic_packages.*SonicRuntimeException"
         msg = err.results['msg'].replace('\n', '')
