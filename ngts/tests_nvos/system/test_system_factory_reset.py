@@ -197,11 +197,11 @@ def test_reset_factory_keep_only_files(engines, devices, test_api):
     with allure.step('Create System object'):
         system = System()
 
-    with ((allure.step('pre factory reset steps'))):
+    with allure.step('pre factory reset steps'):
         health_status, current_time, apply_and_save_port, description, just_apply_port, \
             not_apply_port, username = factory_reset_general_pre_steps(engines, devices, system)
 
-    with allure.step("Run reset factory without params"):
+    with allure.step("Run reset factory keep only-files"):
         execute_reset_factory(engines, system, devices.dut.reset_factory, "keep only-files", current_time)
 
     update_timezone(system)
