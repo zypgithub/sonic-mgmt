@@ -351,8 +351,8 @@ tests/push_build_tests/system/test_cpu_ram_hdd_usage.py::TestCpuRamHddUsage::tes
     conditions:
     - "'simx' in platform"
 
-? tests/push_build_tests/L3/rocev2_acl_counter/test_rocev2_acl_counter_basic.py::TestRocev2AclCounter::test_rocev2_acl_counter_basic
-: skip:
+tests/push_build_tests/L3/rocev2_acl_counter/test_rocev2_acl_counter_basic.py::TestRocev2AclCounter::test_rocev2_acl_counter_basic:
+ skip:
     reason: "Skip due to bug of https://redmine.mellanox.com/issues/4179880 in simx platforms"
     conditions:
     - "https://redmine.mellanox.com/issues/4179880 and ('simx' in platform)"
