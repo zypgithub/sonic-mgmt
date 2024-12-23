@@ -748,6 +748,12 @@ platform_tests/test_sensors.py::test_sensors:
     - "https://redmine.mellanox.com/issues/4205069 and 'sn5610n' in platform"
     - "https://redmine.mellanox.com/issues/4261914 and 'sn5640_simx' in platform"
 
+qos/test_qos_sai.py:
+  skip:
+    reason: "Skipped due to github issue https://github.com/sonic-net/sonic-mgmt/issues/16200 at dualtor aa setup"
+    conditions:
+      - "https://github.com/sonic-net/sonic-mgmt/issues/16200 and 'dualtor-aa' in topo_name"
+
 qos/test_qos_sai_dual_tor.py:
   skip:
     reason: "test_qos_sai_dual_tor tests only support on Mellanox-SN4600C-C64 and Mellanox-SN2700-D48C8"
