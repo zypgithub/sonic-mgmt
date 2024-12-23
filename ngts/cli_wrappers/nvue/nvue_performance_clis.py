@@ -22,9 +22,20 @@ class NvuePerformanceCli:
                               dest_file="tmp.yaml", overwrite_file=True, verify_file=False)
         logging.info(f"Configuration file was copied to {self.dut_alias}")
         full_path = os.path.join(dst_dir, "tmp.yaml")
-        self.cli_obj.general.replace_config(self.engine, full_path, output_type="json")
-        self.cli_obj.general.apply_config(self.engine, option="-y")
+        self.cli_obj.general.replace_config(self.engine, full_path, output_type="json", verify_execution=True)
+        self.cli_obj.general.apply_config(self.engine, option="-y", verify_execution=True)
         logging.info(f"The configuration file on {self.dut_alias} was applied successfully")
+
+    def save_basic_configuration(self, players, dst_dir=PerfConsts.CL_HOME_DIR):
+        logging.info(f"Saving the basic configuration on {self.dut_alias}")
+        self.cli_obj.general.save_config(self.engine)
+        self.engine.run_cmd(f"cp /etc/nvue.d/startup.yaml {dst_dir} ")
+
+    def restore_basic_configuration(self, file_name="startup.yaml", config_directory=PerfConsts.CL_HOME_DIR):
+        logging.info("Replacing the basic configuration on the device")
+        full_path = config_directory + "/" + file_name
+        self.cli_obj.general.replace_config(self.engine, full_path, output_type="json", verify_execution=True)
+        self.cli_obj.general.apply_config(self.engine, option="-y", verify_execution=True)
 
     def get_configuration_file_path(self, scenario, template_suite=PerfConsts.DEFAULT_PERF_TEMPLATES_DIR):
         full_path = os.path.join(BugHandlerConst.NGTS_PATH, "performance_tests",

@@ -1,0 +1,2172 @@
+- header:
+    model: sn5600
+    nvue-api-version: nvue_v1
+    rev-id: 1.0
+    version: Cumulus Linux 5.11.0
+- set:
+    bridge:
+      domain: {}
+    interface:
+      swp1:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp1s0:
+        ip:
+          address:
+            172.16.1.2/24: {}
+            172::1:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp1s1:
+        ip:
+          address:
+            172.16.2.2/24: {}
+            172::2:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp2:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp2s0:
+        ip:
+          address:
+            172.16.3.2/24: {}
+            172::3:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp2s1:
+        ip:
+          address:
+            172.16.4.2/24: {}
+            172::4:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp3:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp3s0:
+        ip:
+          address:
+            172.16.5.2/24: {}
+            172::5:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp3s1:
+        ip:
+          address:
+            172.16.6.2/24: {}
+            172::6:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp4:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp4s0:
+        ip:
+          address:
+            172.16.7.2/24: {}
+            172::7:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp4s1:
+        ip:
+          address:
+            172.16.8.2/24: {}
+            172::8:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp5:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp5s0:
+        ip:
+          address:
+            172.16.9.2/24: {}
+            172::9:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp5s1:
+        ip:
+          address:
+            172.16.10.2/24: {}
+            172::a:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp6:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp6s0:
+        ip:
+          address:
+            172.16.11.2/24: {}
+            172::b:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp6s1:
+        ip:
+          address:
+            172.16.12.2/24: {}
+            172::c:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp7:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp7s0:
+        ip:
+          address:
+            172.16.13.2/24: {}
+            172::d:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp7s1:
+        ip:
+          address:
+            172.16.14.2/24: {}
+            172::e:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp8:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp8s0:
+        ip:
+          address:
+            172.16.15.2/24: {}
+            172::f:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp8s1:
+        ip:
+          address:
+            172.16.16.2/24: {}
+            172::10:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp9:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp9s0:
+        ip:
+          address:
+            172.16.17.2/24: {}
+            172::11:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp9s1:
+        ip:
+          address:
+            172.16.18.2/24: {}
+            172::12:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp10:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp10s0:
+        ip:
+          address:
+            172.16.19.2/24: {}
+            172::13:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp10s1:
+        ip:
+          address:
+            172.16.20.2/24: {}
+            172::14:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp11:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp11s0:
+        ip:
+          address:
+            172.16.21.2/24: {}
+            172::15:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp11s1:
+        ip:
+          address:
+            172.16.22.2/24: {}
+            172::16:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp12:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp12s0:
+        ip:
+          address:
+            172.16.23.2/24: {}
+            172::17:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp12s1:
+        ip:
+          address:
+            172.16.24.2/24: {}
+            172::18:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp13:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp13s0:
+        ip:
+          address:
+            172.16.25.2/24: {}
+            172::19:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp13s1:
+        ip:
+          address:
+            172.16.26.2/24: {}
+            172::1a:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp14:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp14s0:
+        ip:
+          address:
+            172.16.27.2/24: {}
+            172::1b:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp14s1:
+        ip:
+          address:
+            172.16.28.2/24: {}
+            172::1c:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp15:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp15s0:
+        ip:
+          address:
+            172.16.29.2/24: {}
+            172::1d:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp15s1:
+        ip:
+          address:
+            172.16.30.2/24: {}
+            172::1e:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp16:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp16s0:
+        ip:
+          address:
+            172.16.31.2/24: {}
+            172::1f:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp16s1:
+        ip:
+          address:
+            172.16.32.2/24: {}
+            172::20:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp17:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp17s0:
+        ip:
+          address:
+            172.16.33.2/24: {}
+            172::21:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp17s1:
+        ip:
+          address:
+            172.16.34.2/24: {}
+            172::22:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp18:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp18s0:
+        ip:
+          address:
+            172.16.35.2/24: {}
+            172::23:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp18s1:
+        ip:
+          address:
+            172.16.36.2/24: {}
+            172::24:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp19:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp19s0:
+        ip:
+          address:
+            172.16.37.2/24: {}
+            172::25:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp19s1:
+        ip:
+          address:
+            172.16.38.2/24: {}
+            172::26:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp20:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp20s0:
+        ip:
+          address:
+            172.16.39.2/24: {}
+            172::27:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp20s1:
+        ip:
+          address:
+            172.16.40.2/24: {}
+            172::28:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp21:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp21s0:
+        ip:
+          address:
+            172.16.41.2/24: {}
+            172::29:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp21s1:
+        ip:
+          address:
+            172.16.42.2/24: {}
+            172::2a:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp22:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp22s0:
+        ip:
+          address:
+            172.16.43.2/24: {}
+            172::2b:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp22s1:
+        ip:
+          address:
+            172.16.44.2/24: {}
+            172::2c:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp23:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp23s0:
+        ip:
+          address:
+            172.16.45.2/24: {}
+            172::2d:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp23s1:
+        ip:
+          address:
+            172.16.46.2/24: {}
+            172::2e:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp24:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp24s0:
+        ip:
+          address:
+            172.16.47.2/24: {}
+            172::2f:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp24s1:
+        ip:
+          address:
+            172.16.48.2/24: {}
+            172::30:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp25:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp25s0:
+        ip:
+          address:
+            172.16.49.2/24: {}
+            172::31:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp25s1:
+        ip:
+          address:
+            172.16.50.2/24: {}
+            172::32:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp26:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp26s0:
+        ip:
+          address:
+            172.16.51.2/24: {}
+            172::33:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp26s1:
+        ip:
+          address:
+            172.16.52.2/24: {}
+            172::34:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp27:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp27s0:
+        ip:
+          address:
+            172.16.53.2/24: {}
+            172::35:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp27s1:
+        ip:
+          address:
+            172.16.54.2/24: {}
+            172::36:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp28:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp28s0:
+        ip:
+          address:
+            172.16.55.2/24: {}
+            172::37:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp28s1:
+        ip:
+          address:
+            172.16.56.2/24: {}
+            172::38:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp29:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp29s0:
+        ip:
+          address:
+            172.16.57.2/24: {}
+            172::39:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp29s1:
+        ip:
+          address:
+            172.16.58.2/24: {}
+            172::3a:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp30:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp30s0:
+        ip:
+          address:
+            172.16.59.2/24: {}
+            172::3b:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp30s1:
+        ip:
+          address:
+            172.16.60.2/24: {}
+            172::3c:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp31:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp31s0:
+        ip:
+          address:
+            172.16.61.2/24: {}
+            172::3d:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp31s1:
+        ip:
+          address:
+            172.16.62.2/24: {}
+            172::3e:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp32:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp32s0:
+        ip:
+          address:
+            172.16.63.2/24: {}
+            172::3f:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp32s1:
+        ip:
+          address:
+            172.16.64.2/24: {}
+            172::40:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp33:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp33s0:
+        ip:
+          address:
+            192.168.1.2/24: {}
+            192::1:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp33s1:
+        ip:
+          address:
+            192.168.2.2/24: {}
+            192::2:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp34:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp34s0:
+        ip:
+          address:
+            192.168.3.2/24: {}
+            192::3:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp34s1:
+        ip:
+          address:
+            192.168.4.2/24: {}
+            192::4:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp35:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp35s0:
+        ip:
+          address:
+            192.168.5.2/24: {}
+            192::5:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp35s1:
+        ip:
+          address:
+            192.168.6.2/24: {}
+            192::6:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp36:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp36s0:
+        ip:
+          address:
+            192.168.7.2/24: {}
+            192::7:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp36s1:
+        ip:
+          address:
+            192.168.8.2/24: {}
+            192::8:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp37:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp37s0:
+        ip:
+          address:
+            192.168.9.2/24: {}
+            192::9:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp37s1:
+        ip:
+          address:
+            192.168.10.2/24: {}
+            192::a:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp38:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp38s0:
+        ip:
+          address:
+            192.168.11.2/24: {}
+            192::b:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp38s1:
+        ip:
+          address:
+            192.168.12.2/24: {}
+            192::c:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp39:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp39s0:
+        ip:
+          address:
+            192.168.13.2/24: {}
+            192::d:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp39s1:
+        ip:
+          address:
+            192.168.14.2/24: {}
+            192::e:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp40:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp40s0:
+        ip:
+          address:
+            192.168.15.2/24: {}
+            192::f:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp40s1:
+        ip:
+          address:
+            192.168.16.2/24: {}
+            192::10:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp41:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp41s0:
+        ip:
+          address:
+            192.168.17.2/24: {}
+            192::11:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp41s1:
+        ip:
+          address:
+            192.168.18.2/24: {}
+            192::12:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp42:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp42s0:
+        ip:
+          address:
+            192.168.19.2/24: {}
+            192::13:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp42s1:
+        ip:
+          address:
+            192.168.20.2/24: {}
+            192::14:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp43:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp43s0:
+        ip:
+          address:
+            192.168.21.2/24: {}
+            192::15:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp43s1:
+        ip:
+          address:
+            192.168.22.2/24: {}
+            192::16:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp44:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp44s0:
+        ip:
+          address:
+            192.168.23.2/24: {}
+            192::17:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp44s1:
+        ip:
+          address:
+            192.168.24.2/24: {}
+            192::18:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp45:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp45s0:
+        ip:
+          address:
+            192.168.25.2/24: {}
+            192::19:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp45s1:
+        ip:
+          address:
+            192.168.26.2/24: {}
+            192::1a:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp46:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp46s0:
+        ip:
+          address:
+            192.168.27.2/24: {}
+            192::1b:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp46s1:
+        ip:
+          address:
+            192.168.28.2/24: {}
+            192::1c:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp47:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp47s0:
+        ip:
+          address:
+            192.168.29.2/24: {}
+            192::1d:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp47s1:
+        ip:
+          address:
+            192.168.30.2/24: {}
+            192::1e:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp48:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp48s0:
+        ip:
+          address:
+            192.168.31.2/24: {}
+            192::1f:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp48s1:
+        ip:
+          address:
+            192.168.32.2/24: {}
+            192::20:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp49:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp49s0:
+        ip:
+          address:
+            192.168.33.2/24: {}
+            192::21:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp49s1:
+        ip:
+          address:
+            192.168.34.2/24: {}
+            192::22:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp50:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp50s0:
+        ip:
+          address:
+            192.168.35.2/24: {}
+            192::23:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp50s1:
+        ip:
+          address:
+            192.168.36.2/24: {}
+            192::24:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp51:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp51s0:
+        ip:
+          address:
+            192.168.37.2/24: {}
+            192::25:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp51s1:
+        ip:
+          address:
+            192.168.38.2/24: {}
+            192::26:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp52:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp52s0:
+        ip:
+          address:
+            192.168.39.2/24: {}
+            192::27:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp52s1:
+        ip:
+          address:
+            192.168.40.2/24: {}
+            192::28:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp53:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp53s0:
+        ip:
+          address:
+            192.168.41.2/24: {}
+            192::29:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp53s1:
+        ip:
+          address:
+            192.168.42.2/24: {}
+            192::2a:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp54:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp54s0:
+        ip:
+          address:
+            192.168.43.2/24: {}
+            192::2b:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp54s1:
+        ip:
+          address:
+            192.168.44.2/24: {}
+            192::2c:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp55:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp55s0:
+        ip:
+          address:
+            192.168.45.2/24: {}
+            192::2d:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp55s1:
+        ip:
+          address:
+            192.168.46.2/24: {}
+            192::2e:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp56:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp56s0:
+        ip:
+          address:
+            192.168.47.2/24: {}
+            192::2f:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp56s1:
+        ip:
+          address:
+            192.168.48.2/24: {}
+            192::30:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp57:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp57s0:
+        ip:
+          address:
+            192.168.49.2/24: {}
+            192::31:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp57s1:
+        ip:
+          address:
+            192.168.50.2/24: {}
+            192::32:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp58:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp58s0:
+        ip:
+          address:
+            192.168.51.2/24: {}
+            192::33:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp58s1:
+        ip:
+          address:
+            192.168.52.2/24: {}
+            192::34:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp59:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp59s0:
+        ip:
+          address:
+            192.168.53.2/24: {}
+            192::35:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp59s1:
+        ip:
+          address:
+            192.168.54.2/24: {}
+            192::36:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp60:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp60s0:
+        ip:
+          address:
+            192.168.55.2/24: {}
+            192::37:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp60s1:
+        ip:
+          address:
+            192.168.56.2/24: {}
+            192::38:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp61:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp61s0:
+        ip:
+          address:
+            192.168.57.2/24: {}
+            192::39:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp61s1:
+        ip:
+          address:
+            192.168.58.2/24: {}
+            192::3a:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp62:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp62s0:
+        ip:
+          address:
+            192.168.59.2/24: {}
+            192::3b:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp62s1:
+        ip:
+          address:
+            192.168.60.2/24: {}
+            192::3c:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp63:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp63s0:
+        ip:
+          address:
+            192.168.61.2/24: {}
+            192::3d:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp63s1:
+        ip:
+          address:
+            192.168.62.2/24: {}
+            192::3e:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp64:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp64s0:
+        ip:
+          address:
+            192.168.63.2/24: {}
+            192::3f:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      swp64s1:
+        ip:
+          address:
+            192.168.64.2/24: {}
+            192::40:2/120: {}
+        link: {}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+    platform: {}
+    qos:
+      pfc:
+        default-global:
+          port-buffer: 20200
+          switch-priority:
+            '3': {}
+          xoff-threshold: 65000
+          xon-threshold: 65000
+      roce:
+        enable: on
+        mode: lossless
+    router:
+      adaptive-routing:
+        enable: on
+    system:
+      aaa:
+        user:
+          cumulus:
+            hashed-password: $y$j9T$Iytj2XM4L1RUT82vS6gge1$APrp2ETA6tsxOVDzNkq3Li478VgZIexe3ToFDYBqb/.
+            role: system-admin
+      config:
+        snippet: {}
+      control-plane:
+        acl:
+          acl-default-dos:
+            inbound: {}
+          acl-default-whitelist:
+            inbound: {}
+      hostname: mlx-5600-12
+      ssh-server:
+        max-sessions-per-connection: 30
+        max-unauthenticated:
+          throttle-start: 30
+        permit-root-login: enabled
+    vrf:
+      default:
+        router:
+          static:
+            110.110.110.0/24:
+              address-family: ipv4-unicast
+              via:
+                192.168.1.1:
+                  type: ipv4-address
+                192.168.2.1:
+                  type: ipv4-address
+                192.168.3.1:
+                  type: ipv4-address
+                192.168.4.1:
+                  type: ipv4-address
+                192.168.5.1:
+                  type: ipv4-address
+                192.168.6.1:
+                  type: ipv4-address
+                192.168.7.1:
+                  type: ipv4-address
+                192.168.8.1:
+                  type: ipv4-address
+                192.168.9.1:
+                  type: ipv4-address
+                192.168.10.1:
+                  type: ipv4-address
+                192.168.11.1:
+                  type: ipv4-address
+                192.168.12.1:
+                  type: ipv4-address
+                192.168.13.1:
+                  type: ipv4-address
+                192.168.14.1:
+                  type: ipv4-address
+                192.168.15.1:
+                  type: ipv4-address
+                192.168.16.1:
+                  type: ipv4-address
+                192.168.17.1:
+                  type: ipv4-address
+                192.168.18.1:
+                  type: ipv4-address
+                192.168.19.1:
+                  type: ipv4-address
+                192.168.20.1:
+                  type: ipv4-address
+                192.168.21.1:
+                  type: ipv4-address
+                192.168.22.1:
+                  type: ipv4-address
+                192.168.23.1:
+                  type: ipv4-address
+                192.168.24.1:
+                  type: ipv4-address
+                192.168.25.1:
+                  type: ipv4-address
+                192.168.26.1:
+                  type: ipv4-address
+                192.168.27.1:
+                  type: ipv4-address
+                192.168.28.1:
+                  type: ipv4-address
+                192.168.29.1:
+                  type: ipv4-address
+                192.168.30.1:
+                  type: ipv4-address
+                192.168.31.1:
+                  type: ipv4-address
+                192.168.32.1:
+                  type: ipv4-address
+                192.168.33.1:
+                  type: ipv4-address
+                192.168.34.1:
+                  type: ipv4-address
+                192.168.35.1:
+                  type: ipv4-address
+                192.168.36.1:
+                  type: ipv4-address
+                192.168.37.1:
+                  type: ipv4-address
+                192.168.38.1:
+                  type: ipv4-address
+                192.168.39.1:
+                  type: ipv4-address
+                192.168.40.1:
+                  type: ipv4-address
+                192.168.41.1:
+                  type: ipv4-address
+                192.168.42.1:
+                  type: ipv4-address
+                192.168.43.1:
+                  type: ipv4-address
+                192.168.44.1:
+                  type: ipv4-address
+                192.168.45.1:
+                  type: ipv4-address
+                192.168.46.1:
+                  type: ipv4-address
+                192.168.47.1:
+                  type: ipv4-address
+                192.168.48.1:
+                  type: ipv4-address
+                192.168.49.1:
+                  type: ipv4-address
+                192.168.50.1:
+                  type: ipv4-address
+                192.168.51.1:
+                  type: ipv4-address
+                192.168.52.1:
+                  type: ipv4-address
+                192.168.53.1:
+                  type: ipv4-address
+                192.168.54.1:
+                  type: ipv4-address
+                192.168.55.1:
+                  type: ipv4-address
+                192.168.56.1:
+                  type: ipv4-address
+                192.168.57.1:
+                  type: ipv4-address
+                192.168.58.1:
+                  type: ipv4-address
+                192.168.59.1:
+                  type: ipv4-address
+                192.168.60.1:
+                  type: ipv4-address
+                192.168.61.1:
+                  type: ipv4-address
+                192.168.62.1:
+                  type: ipv4-address
+                192.168.63.1:
+                  type: ipv4-address
+                192.168.64.1:
+                  type: ipv4-address
+            110::/120:
+              address-family: ipv6-unicast
+              via:
+                192::1:1:
+                  type: ipv6-address
+                192::1a:1:
+                  type: ipv6-address
+                192::1b:1:
+                  type: ipv6-address
+                192::1c:1:
+                  type: ipv6-address
+                192::1d:1:
+                  type: ipv6-address
+                192::1e:1:
+                  type: ipv6-address
+                192::1f:1:
+                  type: ipv6-address
+                192::2:1:
+                  type: ipv6-address
+                192::2a:1:
+                  type: ipv6-address
+                192::2b:1:
+                  type: ipv6-address
+                192::2c:1:
+                  type: ipv6-address
+                192::2d:1:
+                  type: ipv6-address
+                192::2e:1:
+                  type: ipv6-address
+                192::2f:1:
+                  type: ipv6-address
+                192::3:1:
+                  type: ipv6-address
+                192::3a:1:
+                  type: ipv6-address
+                192::3b:1:
+                  type: ipv6-address
+                192::3c:1:
+                  type: ipv6-address
+                192::3d:1:
+                  type: ipv6-address
+                192::3e:1:
+                  type: ipv6-address
+                192::3f:1:
+                  type: ipv6-address
+                192::4:1:
+                  type: ipv6-address
+                192::5:1:
+                  type: ipv6-address
+                192::6:1:
+                  type: ipv6-address
+                192::7:1:
+                  type: ipv6-address
+                192::8:1:
+                  type: ipv6-address
+                192::9:1:
+                  type: ipv6-address
+                192::10:1:
+                  type: ipv6-address
+                192::11:1:
+                  type: ipv6-address
+                192::12:1:
+                  type: ipv6-address
+                192::13:1:
+                  type: ipv6-address
+                192::14:1:
+                  type: ipv6-address
+                192::15:1:
+                  type: ipv6-address
+                192::16:1:
+                  type: ipv6-address
+                192::17:1:
+                  type: ipv6-address
+                192::18:1:
+                  type: ipv6-address
+                192::19:1:
+                  type: ipv6-address
+                192::20:1:
+                  type: ipv6-address
+                192::21:1:
+                  type: ipv6-address
+                192::22:1:
+                  type: ipv6-address
+                192::23:1:
+                  type: ipv6-address
+                192::24:1:
+                  type: ipv6-address
+                192::25:1:
+                  type: ipv6-address
+                192::26:1:
+                  type: ipv6-address
+                192::27:1:
+                  type: ipv6-address
+                192::28:1:
+                  type: ipv6-address
+                192::29:1:
+                  type: ipv6-address
+                192::30:1:
+                  type: ipv6-address
+                192::31:1:
+                  type: ipv6-address
+                192::32:1:
+                  type: ipv6-address
+                192::33:1:
+                  type: ipv6-address
+                192::34:1:
+                  type: ipv6-address
+                192::35:1:
+                  type: ipv6-address
+                192::36:1:
+                  type: ipv6-address
+                192::37:1:
+                  type: ipv6-address
+                192::38:1:
+                  type: ipv6-address
+                192::39:1:
+                  type: ipv6-address
+                192::40:1:
+                  type: ipv6-address
+                192::a:1:
+                  type: ipv6-address
+                192::b:1:
+                  type: ipv6-address
+                192::c:1:
+                  type: ipv6-address
+                192::d:1:
+                  type: ipv6-address
+                192::e:1:
+                  type: ipv6-address
+                192::f:1:
+                  type: ipv6-address
+            130.130.130.0/24:
+              address-family: ipv4-unicast
+              via:
+                172.16.1.1:
+                  type: ipv4-address
+                172.16.2.1:
+                  type: ipv4-address
+                172.16.3.1:
+                  type: ipv4-address
+                172.16.4.1:
+                  type: ipv4-address
+                172.16.5.1:
+                  type: ipv4-address
+                172.16.6.1:
+                  type: ipv4-address
+                172.16.7.1:
+                  type: ipv4-address
+                172.16.8.1:
+                  type: ipv4-address
+                172.16.9.1:
+                  type: ipv4-address
+                172.16.10.1:
+                  type: ipv4-address
+                172.16.11.1:
+                  type: ipv4-address
+                172.16.12.1:
+                  type: ipv4-address
+                172.16.13.1:
+                  type: ipv4-address
+                172.16.14.1:
+                  type: ipv4-address
+                172.16.15.1:
+                  type: ipv4-address
+                172.16.16.1:
+                  type: ipv4-address
+                172.16.17.1:
+                  type: ipv4-address
+                172.16.18.1:
+                  type: ipv4-address
+                172.16.19.1:
+                  type: ipv4-address
+                172.16.20.1:
+                  type: ipv4-address
+                172.16.21.1:
+                  type: ipv4-address
+                172.16.22.1:
+                  type: ipv4-address
+                172.16.23.1:
+                  type: ipv4-address
+                172.16.24.1:
+                  type: ipv4-address
+                172.16.25.1:
+                  type: ipv4-address
+                172.16.26.1:
+                  type: ipv4-address
+                172.16.27.1:
+                  type: ipv4-address
+                172.16.28.1:
+                  type: ipv4-address
+                172.16.29.1:
+                  type: ipv4-address
+                172.16.30.1:
+                  type: ipv4-address
+                172.16.31.1:
+                  type: ipv4-address
+                172.16.32.1:
+                  type: ipv4-address
+                172.16.33.1:
+                  type: ipv4-address
+                172.16.34.1:
+                  type: ipv4-address
+                172.16.35.1:
+                  type: ipv4-address
+                172.16.36.1:
+                  type: ipv4-address
+                172.16.37.1:
+                  type: ipv4-address
+                172.16.38.1:
+                  type: ipv4-address
+                172.16.39.1:
+                  type: ipv4-address
+                172.16.40.1:
+                  type: ipv4-address
+                172.16.41.1:
+                  type: ipv4-address
+                172.16.42.1:
+                  type: ipv4-address
+                172.16.43.1:
+                  type: ipv4-address
+                172.16.44.1:
+                  type: ipv4-address
+                172.16.45.1:
+                  type: ipv4-address
+                172.16.46.1:
+                  type: ipv4-address
+                172.16.47.1:
+                  type: ipv4-address
+                172.16.48.1:
+                  type: ipv4-address
+                172.16.49.1:
+                  type: ipv4-address
+                172.16.50.1:
+                  type: ipv4-address
+                172.16.51.1:
+                  type: ipv4-address
+                172.16.52.1:
+                  type: ipv4-address
+                172.16.53.1:
+                  type: ipv4-address
+                172.16.54.1:
+                  type: ipv4-address
+                172.16.55.1:
+                  type: ipv4-address
+                172.16.56.1:
+                  type: ipv4-address
+                172.16.57.1:
+                  type: ipv4-address
+                172.16.58.1:
+                  type: ipv4-address
+                172.16.59.1:
+                  type: ipv4-address
+                172.16.60.1:
+                  type: ipv4-address
+                172.16.61.1:
+                  type: ipv4-address
+                172.16.62.1:
+                  type: ipv4-address
+                172.16.63.1:
+                  type: ipv4-address
+                172.16.64.1:
+                  type: ipv4-address
+            130::/120:
+              address-family: ipv6-unicast
+              via:
+                172::1:1:
+                  type: ipv6-address
+                172::1a:1:
+                  type: ipv6-address
+                172::1b:1:
+                  type: ipv6-address
+                172::1c:1:
+                  type: ipv6-address
+                172::1d:1:
+                  type: ipv6-address
+                172::1e:1:
+                  type: ipv6-address
+                172::1f:1:
+                  type: ipv6-address
+                172::2:1:
+                  type: ipv6-address
+                172::2a:1:
+                  type: ipv6-address
+                172::2b:1:
+                  type: ipv6-address
+                172::2c:1:
+                  type: ipv6-address
+                172::2d:1:
+                  type: ipv6-address
+                172::2e:1:
+                  type: ipv6-address
+                172::2f:1:
+                  type: ipv6-address
+                172::3:1:
+                  type: ipv6-address
+                172::3a:1:
+                  type: ipv6-address
+                172::3b:1:
+                  type: ipv6-address
+                172::3c:1:
+                  type: ipv6-address
+                172::3d:1:
+                  type: ipv6-address
+                172::3e:1:
+                  type: ipv6-address
+                172::3f:1:
+                  type: ipv6-address
+                172::4:1:
+                  type: ipv6-address
+                172::5:1:
+                  type: ipv6-address
+                172::6:1:
+                  type: ipv6-address
+                172::7:1:
+                  type: ipv6-address
+                172::8:1:
+                  type: ipv6-address
+                172::9:1:
+                  type: ipv6-address
+                172::10:1:
+                  type: ipv6-address
+                172::11:1:
+                  type: ipv6-address
+                172::12:1:
+                  type: ipv6-address
+                172::13:1:
+                  type: ipv6-address
+                172::14:1:
+                  type: ipv6-address
+                172::15:1:
+                  type: ipv6-address
+                172::16:1:
+                  type: ipv6-address
+                172::17:1:
+                  type: ipv6-address
+                172::18:1:
+                  type: ipv6-address
+                172::19:1:
+                  type: ipv6-address
+                172::20:1:
+                  type: ipv6-address
+                172::21:1:
+                  type: ipv6-address
+                172::22:1:
+                  type: ipv6-address
+                172::23:1:
+                  type: ipv6-address
+                172::24:1:
+                  type: ipv6-address
+                172::25:1:
+                  type: ipv6-address
+                172::26:1:
+                  type: ipv6-address
+                172::27:1:
+                  type: ipv6-address
+                172::28:1:
+                  type: ipv6-address
+                172::29:1:
+                  type: ipv6-address
+                172::30:1:
+                  type: ipv6-address
+                172::31:1:
+                  type: ipv6-address
+                172::32:1:
+                  type: ipv6-address
+                172::33:1:
+                  type: ipv6-address
+                172::34:1:
+                  type: ipv6-address
+                172::35:1:
+                  type: ipv6-address
+                172::36:1:
+                  type: ipv6-address
+                172::37:1:
+                  type: ipv6-address
+                172::38:1:
+                  type: ipv6-address
+                172::39:1:
+                  type: ipv6-address
+                172::40:1:
+                  type: ipv6-address
+                172::a:1:
+                  type: ipv6-address
+                172::b:1:
+                  type: ipv6-address
+                172::c:1:
+                  type: ipv6-address
+                172::d:1:
+                  type: ipv6-address
+                172::e:1:
+                  type: ipv6-address
+                172::f:1:
+                  type: ipv6-address

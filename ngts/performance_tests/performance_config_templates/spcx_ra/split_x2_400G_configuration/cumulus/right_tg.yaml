@@ -1,0 +1,1258 @@
+- header:
+    model: sn5600
+    nvue-api-version: nvue_v1
+    rev-id: 1.0
+    version: Cumulus Linux 5.11.0
+- set:
+    acl:
+      acl-drop-arp:
+        rule:
+          '1':
+            action:
+              deny: {}
+            match:
+              mac:
+                protocol: arp
+          '2':
+            action:
+              deny: {}
+            match:
+              ip:
+                protocol: 1
+              mac:
+                protocol: ipv4
+          '3':
+            action:
+              deny: {}
+            match:
+              ip:
+                protocol: 58
+              mac:
+                protocol: ipv6
+          '4':
+            action:
+              permit: {}
+        type: mac
+    bridge:
+      domain:
+        br_default:
+          stp:
+            state:
+              down: {}
+          vlan:
+            10-74: {}
+    interface:
+      swp1:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp1s0:
+        bridge:
+          domain:
+            br_default:
+              access: 10
+              learning: off
+        link: {}
+        type: swp
+      swp1s1:
+        bridge:
+          domain:
+            br_default:
+              access: 11
+              learning: off
+        link: {}
+        type: swp
+      swp2:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp2s0:
+        bridge:
+          domain:
+            br_default:
+              access: 12
+              learning: off
+        link: {}
+        type: swp
+      swp2s1:
+        bridge:
+          domain:
+            br_default:
+              access: 13
+              learning: off
+        link: {}
+        type: swp
+      swp3:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp3s0:
+        bridge:
+          domain:
+            br_default:
+              access: 14
+              learning: off
+        link: {}
+        type: swp
+      swp3s1:
+        bridge:
+          domain:
+            br_default:
+              access: 15
+              learning: off
+        link: {}
+        type: swp
+      swp4:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp4s0:
+        bridge:
+          domain:
+            br_default:
+              access: 16
+              learning: off
+        link: {}
+        type: swp
+      swp4s1:
+        bridge:
+          domain:
+            br_default:
+              access: 17
+              learning: off
+        link: {}
+        type: swp
+      swp5:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp5s0:
+        bridge:
+          domain:
+            br_default:
+              access: 18
+              learning: off
+        link: {}
+        type: swp
+      swp5s1:
+        bridge:
+          domain:
+            br_default:
+              access: 19
+              learning: off
+        link: {}
+        type: swp
+      swp6:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp6s0:
+        bridge:
+          domain:
+            br_default:
+              access: 20
+              learning: off
+        link: {}
+        type: swp
+      swp6s1:
+        bridge:
+          domain:
+            br_default:
+              access: 21
+              learning: off
+        link: {}
+        type: swp
+      swp7:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp7s0:
+        bridge:
+          domain:
+            br_default:
+              access: 22
+              learning: off
+        link: {}
+        type: swp
+      swp7s1:
+        bridge:
+          domain:
+            br_default:
+              access: 23
+              learning: off
+        link: {}
+        type: swp
+      swp8:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp8s0:
+        bridge:
+          domain:
+            br_default:
+              access: 24
+              learning: off
+        link: {}
+        type: swp
+      swp8s1:
+        bridge:
+          domain:
+            br_default:
+              access: 25
+              learning: off
+        link: {}
+        type: swp
+      swp9:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp9s0:
+        bridge:
+          domain:
+            br_default:
+              access: 26
+              learning: off
+        link: {}
+        type: swp
+      swp9s1:
+        bridge:
+          domain:
+            br_default:
+              access: 27
+              learning: off
+        link: {}
+        type: swp
+      swp10:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp10s0:
+        bridge:
+          domain:
+            br_default:
+              access: 28
+              learning: off
+        link: {}
+        type: swp
+      swp10s1:
+        bridge:
+          domain:
+            br_default:
+              access: 29
+              learning: off
+        link: {}
+        type: swp
+      swp11:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp11s0:
+        bridge:
+          domain:
+            br_default:
+              access: 30
+              learning: off
+        link: {}
+        type: swp
+      swp11s1:
+        bridge:
+          domain:
+            br_default:
+              access: 31
+              learning: off
+        link: {}
+        type: swp
+      swp12:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp12s0:
+        bridge:
+          domain:
+            br_default:
+              access: 32
+              learning: off
+        link: {}
+        type: swp
+      swp12s1:
+        bridge:
+          domain:
+            br_default:
+              access: 33
+              learning: off
+        link: {}
+        type: swp
+      swp13:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp13s0:
+        bridge:
+          domain:
+            br_default:
+              access: 34
+              learning: off
+        link: {}
+        type: swp
+      swp13s1:
+        bridge:
+          domain:
+            br_default:
+              access: 35
+              learning: off
+        link: {}
+        type: swp
+      swp14:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp14s0:
+        bridge:
+          domain:
+            br_default:
+              access: 36
+              learning: off
+        link: {}
+        type: swp
+      swp14s1:
+        bridge:
+          domain:
+            br_default:
+              access: 37
+              learning: off
+        link: {}
+        type: swp
+      swp15:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp15s0:
+        bridge:
+          domain:
+            br_default:
+              access: 38
+              learning: off
+        link: {}
+        type: swp
+      swp15s1:
+        bridge:
+          domain:
+            br_default:
+              access: 39
+              learning: off
+        link: {}
+        type: swp
+      swp16:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp16s0:
+        bridge:
+          domain:
+            br_default:
+              access: 40
+              learning: off
+        link: {}
+        type: swp
+      swp16s1:
+        bridge:
+          domain:
+            br_default:
+              access: 41
+              learning: off
+        link: {}
+        type: swp
+      swp17:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp17s0:
+        bridge:
+          domain:
+            br_default:
+              access: 42
+              learning: off
+        link: {}
+        type: swp
+      swp17s1:
+        bridge:
+          domain:
+            br_default:
+              access: 43
+              learning: off
+        link: {}
+        type: swp
+      swp18:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp18s0:
+        bridge:
+          domain:
+            br_default:
+              access: 44
+              learning: off
+        link: {}
+        type: swp
+      swp18s1:
+        bridge:
+          domain:
+            br_default:
+              access: 45
+              learning: off
+        link: {}
+        type: swp
+      swp19:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp19s0:
+        bridge:
+          domain:
+            br_default:
+              access: 46
+              learning: off
+        link: {}
+        type: swp
+      swp19s1:
+        bridge:
+          domain:
+            br_default:
+              access: 47
+              learning: off
+        link: {}
+        type: swp
+      swp20:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp20s0:
+        bridge:
+          domain:
+            br_default:
+              access: 48
+              learning: off
+        link: {}
+        type: swp
+      swp20s1:
+        bridge:
+          domain:
+            br_default:
+              access: 49
+              learning: off
+        link: {}
+        type: swp
+      swp21:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp21s0:
+        bridge:
+          domain:
+            br_default:
+              access: 50
+              learning: off
+        link: {}
+        type: swp
+      swp21s1:
+        bridge:
+          domain:
+            br_default:
+              access: 51
+              learning: off
+        link: {}
+        type: swp
+      swp22:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp22s0:
+        bridge:
+          domain:
+            br_default:
+              access: 52
+              learning: off
+        link: {}
+        type: swp
+      swp22s1:
+        bridge:
+          domain:
+            br_default:
+              access: 53
+              learning: off
+        link: {}
+        type: swp
+      swp23:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp23s0:
+        bridge:
+          domain:
+            br_default:
+              access: 54
+              learning: off
+        link: {}
+        type: swp
+      swp23s1:
+        bridge:
+          domain:
+            br_default:
+              access: 55
+              learning: off
+        link: {}
+        type: swp
+      swp24:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp24s0:
+        bridge:
+          domain:
+            br_default:
+              access: 56
+              learning: off
+        link: {}
+        type: swp
+      swp24s1:
+        bridge:
+          domain:
+            br_default:
+              access: 57
+              learning: off
+        link: {}
+        type: swp
+      swp25:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp25s0:
+        bridge:
+          domain:
+            br_default:
+              access: 58
+              learning: off
+        link: {}
+        type: swp
+      swp25s1:
+        bridge:
+          domain:
+            br_default:
+              access: 59
+              learning: off
+        link: {}
+        type: swp
+      swp26:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp26s0:
+        bridge:
+          domain:
+            br_default:
+              access: 60
+              learning: off
+        link: {}
+        type: swp
+      swp26s1:
+        bridge:
+          domain:
+            br_default:
+              access: 61
+              learning: off
+        link: {}
+        type: swp
+      swp27:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp27s0:
+        bridge:
+          domain:
+            br_default:
+              access: 62
+              learning: off
+        link: {}
+        type: swp
+      swp27s1:
+        bridge:
+          domain:
+            br_default:
+              access: 63
+              learning: off
+        link: {}
+        type: swp
+      swp28:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp28s0:
+        bridge:
+          domain:
+            br_default:
+              access: 64
+              learning: off
+        link: {}
+        type: swp
+      swp28s1:
+        bridge:
+          domain:
+            br_default:
+              access: 65
+              learning: off
+        link: {}
+        type: swp
+      swp29:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp29s0:
+        bridge:
+          domain:
+            br_default:
+              access: 66
+              learning: off
+        link: {}
+        type: swp
+      swp29s1:
+        bridge:
+          domain:
+            br_default:
+              access: 67
+              learning: off
+        link: {}
+        type: swp
+      swp30:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp30s0:
+        bridge:
+          domain:
+            br_default:
+              access: 68
+              learning: off
+        link: {}
+        type: swp
+      swp30s1:
+        bridge:
+          domain:
+            br_default:
+              access: 69
+              learning: off
+        link: {}
+        type: swp
+      swp31:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp31s0:
+        bridge:
+          domain:
+            br_default:
+              access: 70
+              learning: off
+        link: {}
+        type: swp
+      swp31s1:
+        bridge:
+          domain:
+            br_default:
+              access: 71
+              learning: off
+        link: {}
+        type: swp
+      swp32:
+        link:
+          breakout:
+            2x: {}
+        type: swp
+      swp32s0:
+        bridge:
+          domain:
+            br_default:
+              access: 72
+              learning: off
+        link: {}
+        type: swp
+      swp32s1:
+        bridge:
+          domain:
+            br_default:
+              access: 73
+              learning: off
+        link: {}
+        type: swp
+      vlan10:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.1.1/24: {}
+            172::1:1/120: {}
+        type: svi
+        vlan: 10
+      vlan11:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.2.1/24: {}
+            172::2:1/120: {}
+        type: svi
+        vlan: 11
+      vlan12:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.3.1/24: {}
+            172::3:1/120: {}
+        type: svi
+        vlan: 12
+      vlan13:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.4.1/24: {}
+            172::4:1/120: {}
+        type: svi
+        vlan: 13
+      vlan14:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.5.1/24: {}
+            172::5:1/120: {}
+        type: svi
+        vlan: 14
+      vlan15:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.6.1/24: {}
+            172::6:1/120: {}
+        type: svi
+        vlan: 15
+      vlan16:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.7.1/24: {}
+            172::7:1/120: {}
+        type: svi
+        vlan: 16
+      vlan17:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.8.1/24: {}
+            172::8:1/120: {}
+        type: svi
+        vlan: 17
+      vlan18:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.9.1/24: {}
+            172::9:1/120: {}
+        type: svi
+        vlan: 18
+      vlan19:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.10.1/24: {}
+            172::a:1/120: {}
+        type: svi
+        vlan: 19
+      vlan20:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.11.1/24: {}
+            172::b:1/120: {}
+        type: svi
+        vlan: 20
+      vlan21:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.12.1/24: {}
+            172::c:1/120: {}
+        type: svi
+        vlan: 21
+      vlan22:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.13.1/24: {}
+            172::d:1/120: {}
+        type: svi
+        vlan: 22
+      vlan23:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.14.1/24: {}
+            172::e:1/120: {}
+        type: svi
+        vlan: 23
+      vlan24:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.15.1/24: {}
+            172::f:1/120: {}
+        type: svi
+        vlan: 24
+      vlan25:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.16.1/24: {}
+            172::10:1/120: {}
+        type: svi
+        vlan: 25
+      vlan26:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.17.1/24: {}
+            172::11:1/120: {}
+        type: svi
+        vlan: 26
+      vlan27:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.18.1/24: {}
+            172::12:1/120: {}
+        type: svi
+        vlan: 27
+      vlan28:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.19.1/24: {}
+            172::13:1/120: {}
+        type: svi
+        vlan: 28
+      vlan29:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.20.1/24: {}
+            172::14:1/120: {}
+        type: svi
+        vlan: 29
+      vlan30:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.21.1/24: {}
+            172::15:1/120: {}
+        type: svi
+        vlan: 30
+      vlan31:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.22.1/24: {}
+            172::16:1/120: {}
+        type: svi
+        vlan: 31
+      vlan32:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.23.1/24: {}
+            172::17:1/120: {}
+        type: svi
+        vlan: 32
+      vlan33:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.24.1/24: {}
+            172::18:1/120: {}
+        type: svi
+        vlan: 33
+      vlan34:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.25.1/24: {}
+            172::19:1/120: {}
+        type: svi
+        vlan: 34
+      vlan35:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.26.1/24: {}
+            172::1a:1/120: {}
+        type: svi
+        vlan: 35
+      vlan36:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.27.1/24: {}
+            172::1b:1/120: {}
+        type: svi
+        vlan: 36
+      vlan37:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.28.1/24: {}
+            172::1c:1/120: {}
+        type: svi
+        vlan: 37
+      vlan38:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.29.1/24: {}
+            172::1d:1/120: {}
+        type: svi
+        vlan: 38
+      vlan39:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.30.1/24: {}
+            172::1e:1/120: {}
+        type: svi
+        vlan: 39
+      vlan40:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.31.1/24: {}
+            172::1f:1/120: {}
+        type: svi
+        vlan: 40
+      vlan41:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.32.1/24: {}
+            172::20:1/120: {}
+        type: svi
+        vlan: 41
+      vlan42:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.33.1/24: {}
+            172::21:1/120: {}
+        type: svi
+        vlan: 42
+      vlan43:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.34.1/24: {}
+            172::22:1/120: {}
+        type: svi
+        vlan: 43
+      vlan44:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.35.1/24: {}
+            172::23:1/120: {}
+        type: svi
+        vlan: 44
+      vlan45:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.36.1/24: {}
+            172::24:1/120: {}
+        type: svi
+        vlan: 45
+      vlan46:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.37.1/24: {}
+            172::25:1/120: {}
+        type: svi
+        vlan: 46
+      vlan47:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.38.1/24: {}
+            172::26:1/120: {}
+        type: svi
+        vlan: 47
+      vlan48:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.39.1/24: {}
+            172::27:1/120: {}
+        type: svi
+        vlan: 48
+      vlan49:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.40.1/24: {}
+            172::28:1/120: {}
+        type: svi
+        vlan: 49
+      vlan50:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.41.1/24: {}
+            172::29:1/120: {}
+        type: svi
+        vlan: 50
+      vlan51:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.42.1/24: {}
+            172::2a:1/120: {}
+        type: svi
+        vlan: 51
+      vlan52:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.43.1/24: {}
+            172::2b:1/120: {}
+        type: svi
+        vlan: 52
+      vlan53:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.44.1/24: {}
+            172::2c:1/120: {}
+        type: svi
+        vlan: 53
+      vlan54:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.45.1/24: {}
+            172::2d:1/120: {}
+        type: svi
+        vlan: 54
+      vlan55:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.46.1/24: {}
+            172::2e:1/120: {}
+        type: svi
+        vlan: 55
+      vlan56:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.47.1/24: {}
+            172::2f:1/120: {}
+        type: svi
+        vlan: 56
+      vlan57:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.48.1/24: {}
+            172::30:1/120: {}
+        type: svi
+        vlan: 57
+      vlan58:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.49.1/24: {}
+            172::31:1/120: {}
+        type: svi
+        vlan: 58
+      vlan59:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.50.1/24: {}
+            172::32:1/120: {}
+        type: svi
+        vlan: 59
+      vlan60:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.51.1/24: {}
+            172::33:1/120: {}
+        type: svi
+        vlan: 60
+      vlan61:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.52.1/24: {}
+            172::34:1/120: {}
+        type: svi
+        vlan: 61
+      vlan62:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.53.1/24: {}
+            172::35:1/120: {}
+        type: svi
+        vlan: 62
+      vlan63:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.54.1/24: {}
+            172::36:1/120: {}
+        type: svi
+        vlan: 63
+      vlan64:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.55.1/24: {}
+            172::37:1/120: {}
+        type: svi
+        vlan: 64
+      vlan65:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.56.1/24: {}
+            172::38:1/120: {}
+        type: svi
+        vlan: 65
+      vlan66:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.57.1/24: {}
+            172::39:1/120: {}
+        type: svi
+        vlan: 66
+      vlan67:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.58.1/24: {}
+            172::3a:1/120: {}
+        type: svi
+        vlan: 67
+      vlan68:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.59.1/24: {}
+            172::3b:1/120: {}
+        type: svi
+        vlan: 68
+      vlan69:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.60.1/24: {}
+            172::3c:1/120: {}
+        type: svi
+        vlan: 69
+      vlan70:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.61.1/24: {}
+            172::3d:1/120: {}
+        type: svi
+        vlan: 70
+      vlan71:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.62.1/24: {}
+            172::3e:1/120: {}
+        type: svi
+        vlan: 71
+      vlan72:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.63.1/24: {}
+            172::3f:1/120: {}
+        type: svi
+        vlan: 72
+      vlan73:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.64.1/24: {}
+            172::40:1/120: {}
+        type: svi
+        vlan: 73
+      vlan74:
+        base-interface: br_default
+        ip:
+          address:
+            172.16.65.1/24: {}
+            172::41:1/120: {}
+        type: svi
+        vlan: 74
+    platform: {}
+    system:
+      aaa:
+        user:
+          cumulus:
+            hashed-password: $y$j9T$Iytj2XM4L1RUT82vS6gge1$APrp2ETA6tsxOVDzNkq3Li478VgZIexe3ToFDYBqb/.
+            role: system-admin
+      config:
+        snippet: {}
+      control-plane:
+        acl:
+          acl-default-dos:
+            inbound: {}
+          acl-default-whitelist:
+            inbound: {}
+      hostname: mlx-5600-13
+      ssh-server:
+        max-sessions-per-connection: 30
+        max-unauthenticated:
+          throttle-start: 30
+        permit-root-login: enabled
+    vrf: {}
