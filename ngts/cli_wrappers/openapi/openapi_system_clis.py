@@ -195,8 +195,17 @@ class OpenApiSystemCli(OpenApiBaseCli):
         if param:
             params["parameters"]["keep"] = param
 
-        return OpenApiCommandHelper.execute_action(ActionType.RESET, engine.engine.username, engine.engine.password,
-                                                   engine.ip, "/system/{}".format(comp), params)
+        result = OpenApiCommandHelper.execute_action(ActionType.RESET, engine.engine.username, engine.engine.password,
+                                                     engine.ip, "/system/{}".format(comp), params)
+
+        if any(msg in result for msg in SystemConsts.REBOOT_RESPONSE_MESSAGES):
+            logger.info("Waiting for switch shutdown after reload command")
+            check_port_status_till_alive(False, engine.ip, engine.ssh_port)
+            engine.disconnect()
+            logger.info("Waiting for switch to be ready")
+            check_port_status_till_alive(True, engine.ip, engine.ssh_port)
+
+        return result
 
     @staticmethod
     def action_rotate_logs(engine):
