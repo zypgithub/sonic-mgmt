@@ -37,7 +37,7 @@ class Configurations:
 
     ports_to_disable = {'NVOS_juliet_10_7_148_148': ['acp17-20', 'acp69-72']}
 
-    oberon_num_of_gpus = {'NVOS_juliet_10_7_148_148': 8}
+    oberon_num_of_gpus = {'NVOS_juliet_10_7_148_148': '8'}
 
     ports_by_rate = {"ndr": ndr_ports, "xdr": xdr_ports}
 

@@ -107,7 +107,7 @@ def test_cluster_default_factory_reset(engines, devices, test_api, has_loopbox, 
 @pytest.mark.timeout(35 * MINUTE, func_only=True)
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name, has_loopbox, setup_name):
+def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name, has_loopbox, setup_name, standalone_system):
     # SAME AS DEFAULT.
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
@@ -121,7 +121,7 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name,
         all_config_files_paths = {}
         initial_config_contents = {}
         sdn_files_deleted = False
-
+        interface_wa_called = False
     try:
         with allure.step("Add data before reset factory"):
             username = add_verification_data(engines.dut, system)
@@ -183,7 +183,7 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name,
 @pytest.mark.timeout(35 * MINUTE, func_only=True)
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name, has_loopbox, setup_name):
+def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name, has_loopbox, setup_name, standalone_system):
     # SAME
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
@@ -197,6 +197,7 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name, 
         all_config_files_paths = {}
         initial_config_contents = {}
         sdn_files_deleted = False
+        interface_wa_called = False
     try:
         with allure.step("Add data before reset factory"):
             username = add_verification_data(engines.dut, system)
@@ -258,7 +259,7 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name, 
 @pytest.mark.timeout(50 * MINUTE, func_only=True)
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_name, has_loopbox, setup_name):
+def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_name, has_loopbox, setup_name, standalone_system):
     # Only fetched and generated files will be cleaned.
     # SAME
     TestToolkit.tested_api = test_api
@@ -274,6 +275,7 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
         log_level = ''
         initial_config_contents = {}
         sdn_files_deleted = False
+        interface_wa_called = False
     try:
         with allure.step("Add data before reset factory"):
             username = add_verification_data(engines.dut, system)

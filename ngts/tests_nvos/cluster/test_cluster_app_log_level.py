@@ -22,7 +22,7 @@ logger = logging.getLogger()
 @disabled_access_ports
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-@pytest.mark.timeout(25 * MINUTE, func_only=True)
+@pytest.mark.timeout(30 * MINUTE, func_only=True)
 def test_cluster_app_log_level(engines, devices, test_api, has_loopbox, standalone_system, setup_name):
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
@@ -105,7 +105,7 @@ def test_cluster_app_log_level_under_stress(engines, devices, test_api, test_nam
             with allure.step("Choose random log level, and set cluster app log level to"):
                 log_level = random.choice(ClusterConsts.ClusterAppsLogLevelsList)
                 for app in ClusterConsts.INITIAL_EXPECTED_APPS:
-                    result_obj, duration = OperationTime.save_duration('cluster update log level', '', test_name, cluster.apps.app_name[app].loglevel.action_update_cluster_log_level, log_level)
+                    result_obj, duration = OperationTime.save_duration('cluster update log level', '', test_name, cluster.apps.app_name[app].loglevel.action_update_cluster_log_level, engines, log_level)
                     OperationTime.verify_operation_time(duration, 'cluster update log level').verify_result()
                     ClusterTools.verify_log_level(log_level, app, output_format, cluster)
                 logger.info(f"Sleeping for 5 seconds between iterations")

@@ -32,7 +32,7 @@ logger = logging.getLogger()
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 @pytest.mark.timeout(15 * MINUTE, func_only=True)
-def test_cluster_sdn_factory_reset(engines, devices, test_api, has_loopbox):
+def test_cluster_sdn_factory_reset_nmx_down(engines, devices, test_api, has_loopbox):
 
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
@@ -104,6 +104,7 @@ def test_sdn_reset_factory(engines, devices, test_api, has_loopbox, test_name, s
 
 
 def verify_current_config_equals_given_config(sdn, engines, initial_config_contents, output_format):
+    errors_list = []
     with allure.step("Verify config files content restored to initial"):
         for file_type in ClusterConsts.NMX_CONTROLLER_CONFIG_FILE_TYPES:
             output = sdn.config.app.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].action_generate_sdn()
@@ -115,7 +116,9 @@ def verify_current_config_equals_given_config(sdn, engines, initial_config_conte
             sdn.config.app.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].files.file_name[installed_file].action_delete()
             initial_config_set = set(line.strip() for line in initial_config_contents[file_type].strip().split('\n') if line.strip())
             current_config_set = set(line.strip() for line in current_config_content.strip().split('\n') if line.strip())
-            assert initial_config_set == current_config_set, f"Configuration mismatch:\nInitial: {initial_config_set}\nCurrent: {current_config_set}"
+            if initial_config_set != current_config_set:
+                errors_list.append(f"Configuration mismatch in file {file_type}:\nInitial: {initial_config_set}\nCurrent: {current_config_set}")
+        assert not errors_list, "\n\n".join(errors_list)
 
 
 def execute_reset_factory(engines, system, operation, flag, current_time):

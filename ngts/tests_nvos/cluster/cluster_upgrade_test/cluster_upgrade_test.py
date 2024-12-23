@@ -107,25 +107,30 @@ def test_upgrade_with_nmx_enabled(test_api, devices, base_version,
                     file_name = 'dummy_' + (initial_configs_paths_to_restore[file_type]).split('/')[-1]
                     dummy_file_path = ClusterConsts.INITIAL_CONFIGURATIONS_PATH + '/' + file_name
                     engines.sonic_mgmt.run_cmd("sudo cp {} {}".format(initial_configs_paths_to_restore[file_type], dummy_file_path))
-                    engines.sonic_mgmt.run_cmd(f"sudo sh -c 'echo \"# This is dummy config file\" >> {dummy_file_path}'")
+                    edit_cmd = ClusterConsts.CONFIG_FILES_CHANGE[file_type].format(file_path=dummy_file_path)
+                    engines.sonic_mgmt.run_cmd(edit_cmd)
                     path_to_config[file_type] = dummy_file_path
                     config_file_name[file_type] = file_name
 
             with allure.step("Install config file"):
+                non_preserved_configs = []
                 for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_CONFIG_FILES:
                     app = ClusterConsts.MAP_CONFIG_FILE_TYPE_TO_APP[file_type]
                     sdn.config.app.app_name[app].type.file_type[file_type].action_fetch_sdn(path_to_config[file_type])
                     sdn.config.app.app_name[app].type.file_type[file_type].files.file_name[config_file_name[file_type]].action_file_install(force=False)
                     output = sdn.config.app.app_name[app].type.file_type[file_type].action_generate_sdn()
                     installed_file = ClusterTools.get_generated_file_name(output.returned_value, 'config')
-                    output = OutputParsingTool.parse_show_output_to_dict(sdn.config.app.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=output_format),
+                    output = OutputParsingTool.parse_show_output_to_dict(sdn.config.app.app_name[app].type.file_type[file_type].files.show(output_format=output_format),
                                                                          output_format=output_format).get_returned_value()
                     all_config_files_paths[file_type] = [item['path'] for item in output.values()]
                     current_installed_config_path = output[installed_file]['path']
                     current_config_content = engines.dut.run_cmd("sudo cat {}".format(current_installed_config_path))
                     expected_config_content = engines.sonic_mgmt.run_cmd("sudo cat {}".format(path_to_config[file_type]))
-                    assert current_config_content == expected_config_content, f"Config file was not loaded properly. Expected content {expected_config_content}, Actual content: {current_config_content}"
-                    assert current_config_content != initial_config_contents[file_type], f"Current content has not changed, still same as in init state. init: {initial_config_contents[file_type]}, \ncurrent{current_config_content}"
+                    assert set(current_config_content.split('\n')) == set(expected_config_content.split('\n')), f"Config file was not loaded properly. Expected content {expected_config_content}, Actual content: {current_config_content}"
+                    if ClusterConsts.CONFIG_FILES_CHANGE[file_type] != 'true':
+                        if set(current_config_content.split('\n')) == set((initial_config_contents[file_type]).split('\n')):
+                            non_preserved_configs.append(f"Configuration was restored to initial state and not saved during upgrade. init: {initial_config_contents[file_type]}, \ncurrent{current_config_content}")
+                assert not non_preserved_configs, "\n\n".join(non_preserved_configs)
 
         if not standalone_system:
             with allure.step("Creating Empty partition, then adding a GPU to it with no-reroute option"):

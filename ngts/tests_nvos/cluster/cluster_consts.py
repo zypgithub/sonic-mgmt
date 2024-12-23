@@ -8,7 +8,7 @@ class ClusterConsts:
     INITIAL_EXPECTED_APPS = [NMX_CONTROLLER, NMX_TELEMETRY]
     START_APP_WHILE_CLUSTER_DISABLED_ERR_MSG = 'Output was expected to contain:\nAction succeeded\nBut the output is:\nAction executing ...\nError: Action failed with the following issue:\n  cluster is not enabled'
     TELEMETRY_SERVICES = ['nmx-telemetry']
-    CONTROLLER_SERVICES = ['nmxc-sdn', 'nmxc-fib', 'redis']
+    CONTROLLER_SERVICES = ['nmxc-rel', 'redis']
     ClusterAppsLogLevelsList = [ClusterAppsLogLevels.DEBUG, ClusterAppsLogLevels.INFO, ClusterAppsLogLevels.NOTICE, ClusterAppsLogLevels.WARNING, ClusterAppsLogLevels.ERROR, ClusterAppsLogLevels.CRITICAL]
     NMX_CONTROLLER_CONFIG_FILE_TYPES = ['fm_config', 'sm_config', 'rdm_config', 'chassis_mapping']
     NMX_CONTROLLER_STATE_FILE_TYPES = ['sm_dump', 'topology']
@@ -18,7 +18,7 @@ class ClusterConsts:
     CONTROLLER_AND_TELEMETRY_STATE_FILES = NMX_CONTROLLER_STATE_FILE_TYPES + NMX_TELEMETRY_STATE_FILE_TYPES
     MAP_CONFIG_FILE_TYPE_TO_APP = {}
     MAP_CONFIG_FILE_TYPE_TO_APP.update({file_type: 'nmx-controller' for file_type in ['fm_config', 'sm_config', 'rdm_config', 'chassis_mapping']})
-    MAP_CONFIG_FILE_TYPE_TO_APP.update({file_type: 'nmx-telemetry' for file_type in []})
+    MAP_CONFIG_FILE_TYPE_TO_APP.update({file_type: 'nmx-telemetry' for file_type in ['telemetry']})
     MAP_STATE_FILE_TYPE_TO_APP = {}
     MAP_STATE_FILE_TYPE_TO_APP.update({file_type: 'nmx-controller' for file_type in ['sm_dump', 'topology']})
     MAP_STATE_FILE_TYPE_TO_APP.update({file_type: 'nmx-telemetry' for file_type in []})

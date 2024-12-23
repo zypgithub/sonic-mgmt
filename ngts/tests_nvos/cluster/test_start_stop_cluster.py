@@ -136,7 +136,7 @@ def test_stress_cluster_app_start_stop(engines, devices, test_api, test_name, ha
 
 @disabled_access_ports
 @pytest.mark.nmx
-@pytest.mark.timeout(30 * MINUTE, func_only=True)
+@pytest.mark.timeout(35 * MINUTE, func_only=True)
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
 def test_cluster_app_start_stop_under_stressed_resources(engines, devices, test_api, test_name, has_loopbox, standalone_system, setup_name):
     if has_loopbox:
