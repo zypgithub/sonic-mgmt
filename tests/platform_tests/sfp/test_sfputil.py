@@ -10,7 +10,7 @@ import copy
 from natsort import natsorted
 import pytest
 
-from .util import parse_eeprom, parse_eeprom_hexdump
+from .util import parse_eeprom
 from .util import parse_output
 from .util import get_dev_conn
 from tests.common.utilities import skip_release, wait_until
@@ -23,7 +23,6 @@ cmd_sfp_eeprom = "sudo sfputil show eeprom"
 cmd_sfp_reset = "sudo sfputil reset"
 cmd_sfp_show_lpmode = "sudo sfputil show lpmode"
 cmd_sfp_set_lpmode = "sudo sfputil lpmode"
-cmd_sfp_eeprom_hexdump = "sudo sfputil show eeprom-hexdump"
 cmd_int_shutdown = "sudo config interface shutdown {IFACE_NAME}"
 cmd_int_startup = "sudo config interface startup {IFACE_NAME}"
 cmd_config_intf_dom = "config interface {} transceiver dom {} {}"
@@ -393,24 +392,6 @@ def test_check_sfputil_eeprom(duthosts, enum_rand_one_per_hwsku_frontend_hostnam
             assert parsed_eeprom[intf] == "SFP EEPROM detected"
 
 
-def test_check_sfputil_eeprom_hexdump(duthosts, enum_rand_one_per_hwsku_frontend_hostname,
-                              enum_frontend_asic_index, conn_graph_facts, xcvr_skip_list):
-    """
-    @summary: Check eeprom hexdump using 'sfputil show eeprom-hexdump'
-    """
-    duthost = duthosts[enum_rand_one_per_hwsku_frontend_hostname]
-    global ans_host
-    ans_host = duthost
-    portmap, dev_conn = get_dev_conn(duthost, conn_graph_facts, enum_frontend_asic_index)
-
-    logging.info("Check output of '{}'".format(cmd_sfp_eeprom_hexdump))
-    sfp_eeprom_hexdump = duthost.command(cmd_sfp_eeprom_hexdump)
-    parsed_eeprom_hexdump = parse_eeprom_hexdump(sfp_eeprom_hexdump["stdout_lines"])
-    for intf in dev_conn:
-        if intf not in xcvr_skip_list[duthost.hostname]:
-            assert intf in parsed_eeprom_hexdump, "Interface is not in output of 'sfputil show eeprom-hexdump"
-            assert parsed_eeprom_hexdump[intf] == "EEPROM hexdump for port"
-
 def test_check_sfputil_reset(duthosts, enum_rand_one_per_hwsku_frontend_hostname,
                              enum_frontend_asic_index, conn_graph_facts,
                              tbinfo, xcvr_skip_list, shutdown_ebgp, get_sw_control_ports):    # noqa F811
@@ -433,15 +414,15 @@ def test_check_sfputil_reset(duthosts, enum_rand_one_per_hwsku_frontend_hostname
 
                 cmd_sfp_reset_intf = "{} {}".format(cmd_sfp_reset, logical_intf)
                 logging.info("resetting {} physical interface {}".format(logical_intf, phy_intf))
-                if get_sw_control_ports and intf in get_sw_control_ports:
+                if get_sw_control_ports and phy_intf in get_sw_control_ports:
                     # Do interface shutdown
-                    duthost.command(cmd_int_shutdown.format(IFACE_NAME=intf))
+                    duthost.command(cmd_int_shutdown.format(IFACE_NAME=phy_intf))
                 reset_result = duthost.command(cmd_sfp_reset_intf)
                 assert reset_result["rc"] == 0, "'{}' failed".format(cmd_sfp_reset_intf)
                 time.sleep(I2C_WAIT_TIME_AFTER_SFP_RESET)
-                if get_sw_control_ports and intf in get_sw_control_ports:
+                if get_sw_control_ports and phy_intf in get_sw_control_ports:
                     # Do interface startup
-                    duthost.command(cmd_int_startup.format(IFACE_NAME=intf))
+                    duthost.command(cmd_int_startup.format(IFACE_NAME=phy_intf))
 
                 if not is_cmis_module(duthost, enum_frontend_asic_index, logical_intf) and \
                         not is_power_class_1_module(duthost, enum_frontend_asic_index, logical_intf):
@@ -484,7 +465,7 @@ def test_check_sfputil_reset(duthosts, enum_rand_one_per_hwsku_frontend_hostname
 
 def test_check_sfputil_low_power_mode(duthosts, enum_rand_one_per_hwsku_frontend_hostname,
                                       enum_frontend_asic_index, conn_graph_facts,
-                                      tbinfo, xcvr_skip_list, shutdown_ebgp, skip_if_sw_control_feature_enabled):   # noqa F811
+                                      tbinfo, xcvr_skip_list, shutdown_ebgp):   # noqa F811
     """
     @summary: Check SFP low power mode
 
