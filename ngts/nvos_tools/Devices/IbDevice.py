@@ -1453,7 +1453,7 @@ class JulietNonScaleoutSwitchNoNCI(JulietNonScaleoutSwitch):
 
     def _init_temperature(self):
         super()._init_temperature()
-        sensors_to_remove = ['PDB-Conv-3-Temp', 'SODIMM-1-Temp', 'PDB-Conv-4-Temp']
+        sensors_to_remove = ['PDB-Conv-3-Temp', 'PDB-Conv-4-Temp']
         for sensor in sensors_to_remove:
             self.temperature_sensors.remove(sensor)
 
