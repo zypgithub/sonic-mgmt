@@ -1,5 +1,11 @@
 ########################## NVOS IGNORE START ##########################
 
+tests_nvos/general/security/certificate/test_certificate_mgmt.py::test_import_certificate_with_long_passphrase:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4222041"
+    conditions:
+      - https://redmine.mellanox.com/issues/4222041
+
 tests_nvos/general/security/centralized_tests/factory_reset/test_factory_reset.py::test_reset_factory:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4213351"
