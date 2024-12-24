@@ -19,7 +19,7 @@ ENDPOINT_URL_TEMPLATE = 'https://{ip}:{port_num}/nvue_v1'
 REQ_HEADER = {"Content-Type": "application/json"}
 SSL_ERRORS = ['No required SSL certificate was sent']
 ERRORS_TO_RETRY_APPLY_CHECK = ['Internal Server Error', 'Authentication service temporarily unavailable.']
-INVALID_RESPONSE = ["ays_fail", "invalid", "Bad Request", "Not Found", "Forbidden"] + ERRORS_TO_RETRY_APPLY_CHECK + SSL_ERRORS
+INVALID_RESPONSE = ["ays_fail", "invalid", "Bad Request", "Not Found", "Forbidden", 'The requested item does not exist.'] + ERRORS_TO_RETRY_APPLY_CHECK + SSL_ERRORS
 PENDING_RESPONSE = "pending"
 APPLIED_RESPONSES = ["applied", "applied_and_saved"]
 

@@ -17,8 +17,8 @@ logger = logging.getLogger()
 def clear_system_messages(system, engines):
     """
     Method to unset the system messages for pre-login, post-login and post-logout
+    :param engines: Engines object
     :param system:  System object
-           engines: Engines object
     """
     with allure.step('Run unset system message and apply config'):
         system.message.unset(op_param="", apply=True, dut_engine=engines.dut).verify_result()
@@ -27,7 +27,8 @@ def clear_system_messages(system, engines):
 @pytest.mark.banner
 @pytest.mark.system
 @pytest.mark.simx
-def test_show_system_message(engines, devices):
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_show_system_message(engines, devices, test_api):
     """
     Run show/set/unset system message command and verify the required pre-login message
         Test flow:
@@ -38,6 +39,7 @@ def test_show_system_message(engines, devices):
             5. Run 'nv show system message'
             6. Verify that all messages have default values
     """
+    TestToolkit.tested_api = test_api
     system = System()
     clear_system_messages(system, engines)
 
@@ -66,9 +68,11 @@ def test_show_system_message(engines, devices):
                                  apply=True, dut_engine=engines.dut).verify_result()
 
         with allure.step('Verify post-login changed to default in show system'):
+            TestToolkit.tested_api = ApiType.NVUE
             message_output = OutputParsingTool.parse_json_str_to_dictionary(system.message.show()).get_returned_value()
             ValidationTool.verify_field_value_in_output(message_output, SystemConsts.POST_LOGIN_MESSAGE,
                                                         devices.dut.post_login_message).verify_result()
+            TestToolkit.tested_api = test_api
 
         with allure.step('Run unset system message post-logout command and apply config'):
             system.message.unset(op_param=SystemConsts.POST_LOGOUT_MESSAGE,
@@ -86,7 +90,8 @@ def test_show_system_message(engines, devices):
 @pytest.mark.banner
 @pytest.mark.system
 @pytest.mark.simx
-def test_set_system_message_pre_login(engines, devices):
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_set_system_message_pre_login(engines, devices, test_api):
     """
     Run show/set/unset system message command and verify the required pre-login message
         Test flow:
@@ -101,6 +106,7 @@ def test_set_system_message_pre_login(engines, devices):
             9. Verify pre-login changed to default upon connecting via SSH
             10. Verify pre-login changed to default upon connecting via Serial
     """
+    TestToolkit.tested_api = test_api
     new_pre_login_msg = "Testing PRE LOGIN MESSAGE"
     system = System()
 
@@ -124,8 +130,11 @@ def test_set_system_message_pre_login(engines, devices):
                 "Failed to set pre-login message to {pre_login}".format(pre_login=pre_login_output)
 
         with allure.step('Verify post-login did not change in show system'):
+            TestToolkit.tested_api = ApiType.NVUE
+            message_output = OutputParsingTool.parse_json_str_to_dictionary(system.message.show()).get_returned_value()
             ValidationTool.verify_field_value_in_output(message_output, SystemConsts.POST_LOGIN_MESSAGE,
                                                         devices.dut.post_login_message).verify_result()
+            TestToolkit.tested_api = test_api
 
         with allure.step('Verify post-logout did not change in show system'):
             ValidationTool.verify_field_value_in_output(message_output, SystemConsts.POST_LOGOUT_MESSAGE,
@@ -155,7 +164,8 @@ def test_set_system_message_pre_login(engines, devices):
 @pytest.mark.banner
 @pytest.mark.system
 @pytest.mark.simx
-def test_set_system_message_post_login(engines, devices):
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_set_system_message_post_login(engines, devices, test_api):
     """
     Run show/set/unset system message command and verify the required pre-login message
         Test flow:
@@ -170,6 +180,7 @@ def test_set_system_message_post_login(engines, devices):
             9. Verify post-login changed to default upon connecting via SSH
             10. Verify pre-login changed to default upon connecting via Serial
     """
+    TestToolkit.tested_api = test_api
     new_post_login_msg = "Testing POST LOGIN MESSAGE"
     system = System()
 
@@ -201,9 +212,11 @@ def test_set_system_message_post_login(engines, devices):
                                  apply=True, dut_engine=engines.dut).verify_result()
 
         with allure.step('Verify post-login changed to default in show system'):
+            TestToolkit.tested_api = ApiType.NVUE
             message_output = OutputParsingTool.parse_json_str_to_dictionary(system.message.show()).get_returned_value()
             ValidationTool.verify_field_value_in_output(message_output, SystemConsts.POST_LOGIN_MESSAGE,
                                                         devices.dut.post_login_message).verify_result()
+            TestToolkit.tested_api = test_api
 
         # TBA : SSH test for default post-login message
 
@@ -214,7 +227,8 @@ def test_set_system_message_post_login(engines, devices):
 @pytest.mark.banner
 @pytest.mark.system
 @pytest.mark.simx
-def test_set_system_message_post_logout(engines, devices):
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_set_system_message_post_logout(engines, devices, test_api):
     """
     Run show/set/unset system message command and verify the required post-login message
         Test flow:
@@ -229,6 +243,7 @@ def test_set_system_message_post_logout(engines, devices):
             9. Verify post-login changed to default upon connecting via SSH
             10. Verify post-login changed to default upon connecting via Serial
     """
+    TestToolkit.tested_api = test_api
     new_post_logout_msg = "Testing POST LOGOUT MESSAGE"
     system = System()
 
@@ -250,8 +265,11 @@ def test_set_system_message_post_logout(engines, devices):
                                                         devices.dut.pre_login_message).verify_result()
 
         with allure.step('Verify post-login did not change in show system'):
+            TestToolkit.tested_api = ApiType.NVUE
+            message_output = OutputParsingTool.parse_json_str_to_dictionary(system.message.show()).get_returned_value()
             ValidationTool.verify_field_value_in_output(message_output, SystemConsts.POST_LOGIN_MESSAGE,
                                                         devices.dut.post_login_message).verify_result()
+            TestToolkit.tested_api = test_api
 
         with allure.step('Run unset system message post-logout command and apply config'):
             system.message.unset(op_param=SystemConsts.POST_LOGOUT_MESSAGE,
@@ -271,7 +289,8 @@ def test_set_system_message_post_logout(engines, devices):
 @pytest.mark.banner
 @pytest.mark.system
 @pytest.mark.simx
-def test_factory_reset_for_system_message(engines, devices):
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_factory_reset_for_system_message(engines, devices, test_api):
     """
     Run factory reset system message command and verify the system messages are changed to default
         Test flow:
@@ -282,6 +301,7 @@ def test_factory_reset_for_system_message(engines, devices):
             5. Run system factory reset
             6. Run 'nv show system message' and verify systems messages are set to defaults
     """
+    TestToolkit.tested_api = test_api
     new_pre_login_msg = "Testing PRE LOGIN MESSAGE"
     new_post_login_msg = "Testing POST LOGIN MESSAGE"
     new_post_logout_msg = "Testing POST LOGOUT MESSAGE"
@@ -313,6 +333,7 @@ def test_factory_reset_for_system_message(engines, devices):
             system.message.unset(apply=True, dut_engine=engines.dut).verify_result()
 
         with allure.step('Verify system messages are changed to default in show system'):
+            TestToolkit.tested_api = ApiType.NVUE
             message_output = OutputParsingTool.parse_json_str_to_dictionary(system.message.show()).get_returned_value()
             ValidationTool.verify_field_value_in_output(message_output, SystemConsts.PRE_LOGIN_MESSAGE,
                                                         devices.dut.pre_login_message).verify_result()
@@ -320,6 +341,7 @@ def test_factory_reset_for_system_message(engines, devices):
                                                         devices.dut.post_login_message).verify_result()
             ValidationTool.verify_field_value_in_output(message_output, SystemConsts.POST_LOGOUT_MESSAGE,
                                                         SystemConsts.POST_LOGOUT_MESSAGE_DEFAULT_VALUE).verify_result()
+            TestToolkit.tested_api = test_api
 
     finally:
         clear_system_messages(system, engines)
@@ -328,7 +350,8 @@ def test_factory_reset_for_system_message(engines, devices):
 @pytest.mark.banner
 @pytest.mark.system
 @pytest.mark.simx
-def test_system_reload_for_system_message(engines, devices):
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_system_reload_for_system_message(engines, devices, test_api):
     """
     Run reload system  command and verify the system messages are changed to default
         Test flow:
@@ -339,6 +362,7 @@ def test_system_reload_for_system_message(engines, devices):
             5. Run system reload
             6. Run 'nv show system message' and verify systems messages are set to defaults
     """
+    TestToolkit.tested_api = test_api
     new_pre_login_msg = "Testing PRE LOGIN MESSAGE"
     new_post_login_msg = "Testing POST LOGIN MESSAGE"
     new_post_logout_msg = "Testing POST LOGOUT MESSAGE"
@@ -375,6 +399,7 @@ def test_system_reload_for_system_message(engines, devices):
             ssh_connection = ConnectionTool.create_ssh_conn(engines.dut.ip, engines.dut.username, engines.dut.password).get_returned_value()
 
         with allure.step('Verify system messages are changed to default in show system'):
+            TestToolkit.tested_api = ApiType.NVUE
             message_output = OutputParsingTool.parse_json_str_to_dictionary(system.message.show()).get_returned_value()
             ValidationTool.verify_field_value_in_output(message_output, SystemConsts.PRE_LOGIN_MESSAGE,
                                                         devices.dut.pre_login_message).verify_result()
@@ -382,56 +407,7 @@ def test_system_reload_for_system_message(engines, devices):
                                                         devices.dut.post_login_message).verify_result()
             ValidationTool.verify_field_value_in_output(message_output, SystemConsts.POST_LOGOUT_MESSAGE,
                                                         SystemConsts.POST_LOGOUT_MESSAGE_DEFAULT_VALUE).verify_result()
+            TestToolkit.tested_api = test_api
 
     finally:
         clear_system_messages(system, engines)
-
-
-# ------------ Open API tests -----------------
-
-@pytest.mark.openapi
-@pytest.mark.system
-@pytest.mark.simx
-def test_system_show_message_openapi(engines, devices):
-    TestToolkit.tested_api = ApiType.OPENAPI
-    test_show_system_message(engines, devices)
-
-
-@pytest.mark.openapi
-@pytest.mark.system
-@pytest.mark.simx
-def test_set_system_message_pre_login_openapi(engines, devices):
-    TestToolkit.tested_api = ApiType.OPENAPI
-    test_set_system_message_pre_login(engines, devices)
-
-
-@pytest.mark.openapi
-@pytest.mark.system
-@pytest.mark.simx
-def test_set_system_message_post_login_openapi(engines, devices):
-    TestToolkit.tested_api = ApiType.OPENAPI
-    test_set_system_message_post_login(engines, devices)
-
-
-@pytest.mark.openapi
-@pytest.mark.system
-@pytest.mark.simx
-def test_set_system_message_post_logout_openapi(engines, devices):
-    TestToolkit.tested_api = ApiType.OPENAPI
-    test_set_system_message_post_logout(engines, devices)
-
-
-@pytest.mark.openapi
-@pytest.mark.system
-@pytest.mark.simx
-def test_factory_reset_for_system_message_openapi(engines, devices):
-    TestToolkit.tested_api = ApiType.OPENAPI
-    test_set_system_message_post_logout(engines, devices)
-
-
-@pytest.mark.openapi
-@pytest.mark.system
-@pytest.mark.simx
-def test_system_reload_for_system_message_openapi(engines, devices):
-    TestToolkit.tested_api = ApiType.OPENAPI
-    test_set_system_message_post_logout(engines, devices)

@@ -76,7 +76,7 @@ class NvosConst:
     GORILLA_SWITCH = "GORILLA"
     QTM2 = "Quantum2"
     QTM3 = "Quantum3"
-    NVL5 = "NVLink-5 switch"
+    NVL5 = 'NVLink-5 switch'
     DESCRIPTION = 'description'
     PORT_STATUS_UP = 'up'
     PORT_STATUS_DOWN = 'down'
@@ -333,6 +333,12 @@ class RebootTestFlowType:
     ALL_TYPES = [WITH_SAVE, NO_SAVE]
 
 
+class CacertType:
+    GLOBAL = 'global'
+    EXTERNAL = 'external'
+    ALL_TYPES = [GLOBAL, EXTERNAL]
+
+
 class OutputFormat:
     auto = 'auto'
     json = 'json'
@@ -494,6 +500,7 @@ class SystemConsts:
     SNMP_DEFAULT_VALUES = [SNMP_DEFAULT_LISTENING_ADDRESS,
                            SNMP_DEFAULT_READONLY_COMMUNITY, SNMP_DEFAULT_STATE]
 
+    SSH_CONFIG_PKA_ONLY = 'pka-only'
     SSH_CONFIG_AUTH_RETRIES = 'authentication-retries'
     SSH_CONFIG_INACTIVE_TIMEOUT = 'inactive-timeout'
     SSH_CONFIG_LOGIN_TIMEOUT = 'login-timeout'
@@ -617,6 +624,7 @@ class SystemConsts:
 
     ZTP_SERVICE = 'service'
     ZTP_STATUS = 'status'
+    ZTP_STATE = 'state'
     ZTP_CONFIG_SAVE = 'config-save'
     ZTP_OUTPUT_FIELDS = [ZTP_SERVICE, ZTP_STATUS, ZTP_CONFIG_SAVE]
     ZTP_DEFAULT_SERVICE = 'enabled'
@@ -658,7 +666,9 @@ class SystemConsts:
     SCRIPT_POSITIVE_PYTHON = 'ztp_provisioning_python.json'
     SCRIPT_BAD_FILE = 'ztp_provisioning_bad_file.json'
     ZTP_STATUS_RUNNING = 'running'
+    ZTP_STATUS_IN_PROGRESS = 'in-progress'
     ZTP_STATUS_SUCCESS = 'success'
+    ZTP_STATUS_FAILED = 'failed'
     HTTP_SERVER = 'http://nbu-nfs.mellanox.com'
     VERIFICATION_ZTP_PATH = '/auto/sw_system_project/NVOS_INFRA/ztp/'
 
@@ -700,6 +710,16 @@ class SystemConsts:
     DUMMY_IMAGE_PATH = "/tmp/"
 
     SYSTEM_LAST_EVENT = 'last'
+
+    DNS_SERVER = 'server'
+    DNS_SERVER_IPV4 = "8.8.8.8"
+    DNS_SERVER_IPV6 = "2001:4860:4860::8888"
+    DNS_SERVER_LIST = [DNS_SERVER_IPV4, DNS_SERVER_IPV6]
+    # list of all api types
+    DNS_SERVER_IDS = {"ipv4": DNS_SERVER_IPV4, "ipv6": DNS_SERVER_IPV6}
+
+    DUMMY_IMAGE_PATH = '/tmp/'
+    DUMMY_IMAGE = 'dummy.bin'
 
 
 class DocumentsConsts:
@@ -781,6 +801,9 @@ class PlatformConsts:
     FW_BMC = "BMC"
     FW_FIELD_NAME_DICT = {"Actual FW": "actual-firmware"}
     FW_ACTUAL = "actual-firmware"
+    FW_BACKGROUND_COPY_STATUS = 'background-copy-status'
+    FW_DEBUG_TOKEN_STATUS = 'debug-token-status'
+    FW_AP_BOOT_STATUS = 'ap-boot-status'
     FW_UPGRADE_STATUS = 'fw-upgrade-status'
     FW_UPGRADE_ERROR_MSG = 'fw-upgrade-error-msg'
     FW_PART_NUMBER = 'part-number'
@@ -792,7 +815,9 @@ class PlatformConsts:
     FW_SPECTRUM2 = "Spectrum-2"
     FW_SPECTRUM3 = "Spectrum-3"
     FW_SPECTRUM4 = "Spectrum-4"
-    FW_FIELDS = [FW_ACTUAL, FW_PART_NUMBER, FW_AUTO_UPDATE, FW_SOURCE]
+    FW_SLOT_STATUS_ACTIVE = 'active'
+    FW_SLOT_STATUS_INACTIVE = 'inactive'
+    FW_FIELDS = [FW_ACTUAL, FW_PART_NUMBER, FW_SOURCE, FW_BACKGROUND_COPY_STATUS, FW_DEBUG_TOKEN_STATUS, FW_SLOT_STATUS_ACTIVE, FW_SLOT_STATUS_INACTIVE]
     HARDWARE_TRANCEIVER_DIAGNOSTIC_STATUS = "diagnostics-status"
     HARDWARE_TRANCEIVER_NOT_EXIST = "Non present module"
     HARDWARE_TRANCEIVER_NOT_DDMI = "No Diagnostic Data Available. Module is not DDMI capable"
@@ -845,6 +870,11 @@ class PlatformConsts:
     BMC_FIRMWARE_INVENTORY_LINK = '/UpdateService/FirmwareInventory'
     BMC_FIRMWARE_BMC_LINK = 'MGX_FW_BMC_0'
     BMC_FIRMWARE_EROT_LINK = 'MGX_FW_ERoT_BMC_0'
+    EROT_BMC_PATH_NAME = 'EROT-BMC'
+    EROT_CPU_PATH_NAME = 'EROT-CPU'
+    EROT_FPGA_PATH_NAME = 'EROT-FPGA'
+    EROT_ASIC1_PATH_NAME = 'EROT-ASIC1'
+    EROT_ASIC2_PATH_NAME = 'EROT-ASIC2'
     BMC_INVENTORY_PATTERN = r'/redfish/v1/UpdateService/FirmwareInventory/([^"]+)'
     BMC_COMPONENT_VERSION_PATTERN = r'"Version":\s*"([^"]+)"'
     BMC_LOGIN = 'admin'
@@ -866,12 +896,12 @@ class PlatformConsts:
     TRANSCEIVER_CABLE_OPTICAL_MODULE = 'Optical module'
     TRANSCEIVER_CABLE_COPPER_CABLE = 'Copper cable'
     CHASSIS_LOCATION_TRAY_ID = 'tray-index'
-    CHASSIS_LOCATION_SLOT_ID = 'slot-index'
-    CHASSIS_LOCATION_CHAS_ID = 'chassis-id'
+    CHASSIS_LOCATION_SLOT_ID = 'slot-number'
+    CHASSIS_LOCATION_CHAS_SN = 'chassis-sn'
     CHASSIS_LOCATION_TOPO_ID = 'topology-id'
     CHASSIS_LOCATION_STANDALONE_DICT = {CHASSIS_LOCATION_TRAY_ID: '0',
                                         CHASSIS_LOCATION_SLOT_ID: '0',
-                                        CHASSIS_LOCATION_CHAS_ID: 'N/A',
+                                        CHASSIS_LOCATION_CHAS_SN: 'N/A',
                                         CHASSIS_LOCATION_TOPO_ID: 'Loopback'}
     EROTS_LIST = ['ERoT_BMC_0', 'ERoT_CPU_0', 'ERoT_FPGA_0', 'ERoT_NVSwitch_0', 'ERoT_NVSwitch_1']
 
@@ -879,8 +909,8 @@ class PlatformConsts:
     INV_OK = 'ok'
     ASIC_CONF_FILE_PATH = "/usr/share/sonic/device/{}/asic.conf"
     INV_FAILED = 'failed'
-    TIMEOUT_AFTER_FW_INSTALL = 600
     TIMEOUT_AFTER_BIOS_INSTALL = 720
+    TIMEOUT_AFTER_FW_INSTALL = 1200
 
 
 class FansConsts:
@@ -1222,11 +1252,17 @@ class ClusterAppsLogLevels:
     DEBUG = 'debug'
 
 
+class ClusterApps:
+    NMX_CONTROLLER = 'nmx-controller'
+    NMX_TELEMETRY = 'nmx-telemetry'
+    ALL_APPS = [NMX_CONTROLLER, NMX_TELEMETRY]
+
+
 class ClusterConsts:
     APP_VERSION = 'app-ver'
     APP_NAME = 'app-name'
-    NMX_CONTROLLER = 'nmx-controller'
-    NMX_TELEMETRY = 'nmx-telemetry'
+    NMX_CONTROLLER = ClusterApps.NMX_CONTROLLER
+    NMX_TELEMETRY = ClusterApps.NMX_TELEMETRY
     NMX_CONTROLLER_PREFIX = 'nmx-c'
     NMX_TELEMETRY_PREFIX = 'nmx-t'
     TELEMETRY_SERVICES = ['nmx-connector', 'ib-telemetry']
@@ -1303,8 +1339,8 @@ class OperationTimeConsts:
     DATE_COL = 'date'
     THRESHOLDS = {'reboot': 250 if is_bug_active(4074566) else 220,     # TODO: revert once bug closed
                   'julietscaleout_reboot': 505,  # Currently there is a bug on this. Time needs to be decreased once fixed.
-                  'julietscaleout reset factory': 550,  # Currently there is a bug on this. Time needs to be decreased once fixed.
-                  'reset factory': 500,
+                  'julietscaleout reset factory': 560,  # Currently there is a bug on this. Time needs to be decreased once fixed.
+                  'reset factory': 260,
                   'install user FW': 450,
                   'install default fw': 360,
                   'port goes up': 30,
@@ -1313,9 +1349,10 @@ class OperationTimeConsts:
                   'reboot with new user FW': 450,
                   'set hostname': 12,
                   'generate tech-support': 75,
-                  'julietscaleout generate_tech_support': 100,
-                  'start stop cluster app': 170,
-                  'start stop cluster': 125,
+                  'julietscaleout generate_tech_support': 120,
+                  'start stop cluster app': 375,
+                  'start stop cluster app with loopbox': 720,
+                  'start stop cluster': 250,
                   'cluster update log level': 5,
                   'install bmc': 900,
                   'install fpga': 900,
@@ -1323,6 +1360,7 @@ class OperationTimeConsts:
                   'juliet-power-cycle': 445
                   }
     THRESHOLDS['start stop cluster app stressed resources'] = THRESHOLDS['start stop cluster app'] * 1.1
+    THRESHOLDS['start stop cluster app stressed resources with loopbox'] = THRESHOLDS['start stop cluster app with loopbox'] * 1.1
     THRESHOLDS['start stop cluster stressed resources'] = THRESHOLDS['start stop cluster'] * 1.1
 
 
@@ -1607,12 +1645,15 @@ class AclConsts:
     LOG_PREFIX = 'log-prefix'
     MATCH = 'match'
     IP = 'ip'
+    MAC = 'mac'
     TYPE = 'type'
     RULE = 'rule'
     RULE_ID = 'rule_id'
     MATCH_IP = 'match_ip'
     SOURCE_IP = 'source-ip'
     DEST_IP = 'dest-ip'
+    TCP = "tcp"
+    DEST_PORT = "dest-port"
     TCP_SOURCE_PORT = 'tcp-source-port'
     UDP_SOURCE_PORT = 'udp-source-port'
     TCP_DEST_PORT = 'tcp-dest-port'

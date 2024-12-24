@@ -1,48 +1,37 @@
+import copy
 import logging
 import random
-import pytest
-import copy
 import time
 
+import pytest
+
+from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
+from ngts.nvos_constants.constants_nvos import SystemConsts, OutputFormat, ApiType, NvosConst, ImageConsts
+from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_tools.infra.ValidationTool import ValidationTool
-from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.nvos_tools.nmx.Sdn import Sdn
-from ngts.nvos_constants.constants_nvos import PlatformConsts, SystemConsts, OutputFormat, ApiType, IbConsts, NvosConst, ClusterAppsLogLevels, ImageConsts
-from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.nvos_tools.ib.Ib import Ib
-from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports
-from ngts.scripts.sonic_deploy.nvos_only_methods import NvosInstallationSteps
-from ngts.scripts.sonic_deploy.image_preparetion_methods import get_real_paths, prepare_images
-from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from ngts.nvos_tools.Devices.DeviceFactory import DeviceFactory
 from ngts.nvos_tools.system.System import System
-from ngts.scripts.sonic_deploy.test_deploy_and_upgrade import get_target_version_url, get_base_version_url, prepare_images_to_install
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
-
-
-ClusterAppsLogLevelsList = [ClusterAppsLogLevels.DEBUG, ClusterAppsLogLevels.INFO, ClusterAppsLogLevels.NOTICE, ClusterAppsLogLevels.WARNING, ClusterAppsLogLevels.ERROR, ClusterAppsLogLevels.CRITICAL]
-
-NMX_CONTROLLER_CONFIG_FILE_TYPES = ['fm_config', 'sm_config']  # Todo - add rdm_config once bug is fixed [NVOS - Design] Bug SW #4047277: [Functional] [NMX -Juliet] | Cannot generate SDN rdm_config config file | Assignee: Oren Reiss | Status: Assigned
-NMX_CONTROLLER_STATE_FILE_TYPES = ['sm_dump', 'topology']
-INITIAL_CONFIGURATIONS_PATH = '/auto/sw_system_project/NVOS_INFRA/verification_files/cluster/uploaded_control_plane_files'
-
+from ngts.scripts.sonic_deploy.image_preparetion_methods import get_real_paths
+from ngts.scripts.sonic_deploy.nvos_only_methods import NvosInstallationSteps
+from ngts.scripts.sonic_deploy.test_deploy_and_upgrade import get_target_version_url, get_base_version_url, \
+    prepare_images_to_install
+from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
+from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports
+from ngts.tests_nvos.constants import MINUTE
+from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
-NMX_CONTROLLER = 'nmx-controller'
-NMX_TELEMETRY = 'nmx-telemetry'
-INITIAL_EXPECTED_APPS = [NMX_CONTROLLER, NMX_TELEMETRY]
-UNDEFINED_STATE = 'undefined'
-UNDEFINED_STATE_ERR_MSG = 'Error: At state: \'undefined\' is not one of [\'enabled\', \'disabled\']'
 
 
-@disabled_access_ports
+# @disabled_access_ports
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
+@pytest.mark.timeout(55 * MINUTE, func_only=True)
 def test_upgrade_with_nmx_enabled(test_api, devices, base_version,
-                                  target_version, topology_obj, setup_name, platform_params, engines, release_name, test_name):
+                                  target_version, topology_obj, setup_name, platform_params, engines, release_name, test_name, has_loopbox, standalone_system):
     '''
     Test will install a base version (Taken from regression).
     On base version perform the following:
@@ -81,8 +70,8 @@ def test_upgrade_with_nmx_enabled(test_api, devices, base_version,
         initial_configs_paths_to_restore = {}
         log_levels = {}
         initial_configuration_restored = False
-        path_to_config = {config_type: '' for config_type in NMX_CONTROLLER_CONFIG_FILE_TYPES}
-        config_file_name = {config_type: '' for config_type in NMX_CONTROLLER_CONFIG_FILE_TYPES}
+        path_to_config = {config_type: '' for config_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_CONFIG_FILES}
+        config_file_name = {config_type: '' for config_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_CONFIG_FILES}
     try:
         with allure.step("Running 'nv show cluster' command and parsing output"):
             output = OutputParsingTool.parse_show_output_to_dict(
@@ -94,38 +83,42 @@ def test_upgrade_with_nmx_enabled(test_api, devices, base_version,
                     f"{NvosConst.DISABLED}"
 
         with allure.step("Enable cluster and perform configurations"):
-            ClusterTools.start_cluster(cluster, output_format)
+            ClusterTools.start_cluster(cluster, setup_name, output_format, verify_nmx_c=False)  # remove verify=False once base version for regression is different than 1638.
             with allure.step("Choose random log level, and set cluster app log level to"):
-                for app in INITIAL_EXPECTED_APPS:
-                    log_level = random.choice(ClusterAppsLogLevelsList)
-                    cluster.apps.apps_name[app].loglevel.action_update_cluster_log_level(level=log_level)
+                for app in ClusterConsts.INITIAL_EXPECTED_APPS:
+                    log_level = random.choice(ClusterConsts.ClusterAppsLogLevelsList)
+                    cluster.apps.app_name[app].loglevel.action_update_cluster_log_level(level=log_level)
                     log_levels[app] = log_level
 
-            config_files_paths = ClusterTools.get_current_config_files_paths(sdn)
+            controller_config_files_paths = ClusterTools.get_current_config_files_paths(sdn, ClusterConsts.NMX_CONTROLLER, ClusterConsts.NMX_CONTROLLER_CONFIG_FILE_TYPES)
+            telemetry_config_files_paths = ClusterTools.get_current_config_files_paths(sdn, ClusterConsts.NMX_TELEMETRY, ClusterConsts.NMX_TELEMETRY_CONFIG_FILE_TYPES)
+            config_files_paths = dict(list(controller_config_files_paths.items()) + list(telemetry_config_files_paths.items()))
             for file_type, file_path in config_files_paths.items():
                 initial_config_contents[file_type] = engines.dut.run_cmd("sudo cat {}".format(file_path))
 
             with allure.step('Upload initial configurations'):
-                for file_type in NMX_CONTROLLER_CONFIG_FILE_TYPES:
-                    sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.file_name[config_files_paths[file_type].split('/')[-1]].action_upload(ImageConsts.SCP_PATH + INITIAL_CONFIGURATIONS_PATH)
-                    initial_configs_paths_to_restore[file_type] = INITIAL_CONFIGURATIONS_PATH + '/' + config_files_paths[file_type].split('/')[-1]
+                for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_CONFIG_FILES:
+                    app = ClusterConsts.MAP_CONFIG_FILE_TYPE_TO_APP[file_type]
+                    sdn.config.app.app_name[app].type.file_type[file_type].files.file_name[config_files_paths[file_type].split('/')[-1]].action_upload(ImageConsts.SCP_PATH + ClusterConsts.INITIAL_CONFIGURATIONS_PATH)
+                    initial_configs_paths_to_restore[file_type] = ClusterConsts.INITIAL_CONFIGURATIONS_PATH + '/' + config_files_paths[file_type].split('/')[-1]
                     logger.info(f"Uploading files: {initial_configs_paths_to_restore[file_type]}")
 
                     # Create a dummy config file.
                     file_name = 'dummy_' + (initial_configs_paths_to_restore[file_type]).split('/')[-1]
-                    dummy_file_path = INITIAL_CONFIGURATIONS_PATH + '/' + file_name
+                    dummy_file_path = ClusterConsts.INITIAL_CONFIGURATIONS_PATH + '/' + file_name
                     engines.sonic_mgmt.run_cmd("sudo cp {} {}".format(initial_configs_paths_to_restore[file_type], dummy_file_path))
                     engines.sonic_mgmt.run_cmd(f"sudo sh -c 'echo \"# This is dummy config file\" >> {dummy_file_path}'")
                     path_to_config[file_type] = dummy_file_path
                     config_file_name[file_type] = file_name
 
             with allure.step("Install config file"):
-                for file_type in NMX_CONTROLLER_CONFIG_FILE_TYPES:
-                    sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].action_fetch_sdn(path_to_config[file_type])
-                    sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.file_name[config_file_name[file_type]].action_file_install(force=False)
-                    output = sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].action_generate_sdn()
+                for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_CONFIG_FILES:
+                    app = ClusterConsts.MAP_CONFIG_FILE_TYPE_TO_APP[file_type]
+                    sdn.config.app.app_name[app].type.file_type[file_type].action_fetch_sdn(path_to_config[file_type])
+                    sdn.config.app.app_name[app].type.file_type[file_type].files.file_name[config_file_name[file_type]].action_file_install(force=False)
+                    output = sdn.config.app.app_name[app].type.file_type[file_type].action_generate_sdn()
                     installed_file = ClusterTools.get_generated_file_name(output.returned_value, 'config')
-                    output = OutputParsingTool.parse_show_output_to_dict(sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=output_format),
+                    output = OutputParsingTool.parse_show_output_to_dict(sdn.config.app.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=output_format),
                                                                          output_format=output_format).get_returned_value()
                     all_config_files_paths[file_type] = [item['path'] for item in output.values()]
                     current_installed_config_path = output[installed_file]['path']
@@ -134,6 +127,10 @@ def test_upgrade_with_nmx_enabled(test_api, devices, base_version,
                     assert current_config_content == expected_config_content, f"Config file was not loaded properly. Expected content {expected_config_content}, Actual content: {current_config_content}"
                     assert current_config_content != initial_config_contents[file_type], f"Current content has not changed, still same as in init state. init: {initial_config_contents[file_type]}, \ncurrent{current_config_content}"
 
+        if not standalone_system:
+            with allure.step("Creating Empty partition, then adding a GPU to it with no-reroute option"):
+                logger.info("After upgrade, empty partition should persist, but GPU added to it with no-reroute should be deleted")
+                uuid, location, _, partition_to_remove_from = ClusterTools.create_empty_partition_and_add_gpu(sdn, 'no-reroute')
         TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
 
         with allure.step("Performing upgrade:"):
@@ -161,20 +158,31 @@ def test_upgrade_with_nmx_enabled(test_api, devices, base_version,
                     f"{output[SystemConsts.STATE]}, Expected to be: " \
                     f"{NvosConst.ENABLED}"
 
+        if not standalone_system:
+            output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
+                                                                 output_format=output_format).get_returned_value()
+            assert ClusterConsts.EMPTY_PARTITION_ID in output.keys(), f'Partition {ClusterConsts.EMPTY_PARTITION_ID} was deleted, while its expected to be kept'
+            output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.partition_id[ClusterConsts.EMPTY_PARTITION_ID].show(output_format=output_format),
+                                                                 output_format=output_format).get_returned_value()
+            uuids, locations = ClusterTools.uuid_location_in_partition(sdn, partition_to_remove_from)
+            assert uuid not in uuids, f"uuid {uuid} was not deleted from {partition_to_remove_from} although it was removed with no-reroute, See current uuids: {uuids}"
+            assert location not in locations, f"uuid {uuid} was not deleted from {partition_to_remove_from} although it was removed with no-reroute. See current locations: {locations}"
+
         with allure.step("Validate apps are still running"):
             ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format)
         with allure.step("Check log level"):
-            for app in INITIAL_EXPECTED_APPS:
+            for app in ClusterConsts.INITIAL_EXPECTED_APPS:
                 _rotate_logs(system)
                 logger.info("Sleeping for 30 seconds to gather log messages and verify its level")
                 time.sleep(30)
                 ClusterTools.verify_log_level(log_levels[app], app, output_format, cluster)
 
         with allure.step("Make sure config is saved"):
-            for file_type in NMX_CONTROLLER_CONFIG_FILE_TYPES:
-                output = sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].action_generate_sdn()
+            for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_CONFIG_FILES:
+                app = ClusterConsts.MAP_CONFIG_FILE_TYPE_TO_APP[file_type]
+                output = sdn.config.app.app_name[app].type.file_type[file_type].action_generate_sdn()
                 installed_file = ClusterTools.get_generated_file_name(output.returned_value, 'config')
-                output = OutputParsingTool.parse_show_output_to_dict(sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=output_format),
+                output = OutputParsingTool.parse_show_output_to_dict(sdn.config.app.app_name[app].type.file_type[file_type].files.show(output_format=output_format),
                                                                      output_format=output_format).get_returned_value()
                 all_config_files_paths[file_type] = [item['path'] for item in output.values()]
                 current_installed_config_path = output[installed_file]['path']
@@ -183,26 +191,32 @@ def test_upgrade_with_nmx_enabled(test_api, devices, base_version,
                 assert current_config_content == expected_config_content, f"Config file was not loaded properly. Expected content {expected_config_content}, Actual content: {current_config_content}"
 
     finally:
+        if not standalone_system:
+            with allure.step("Running sdn factory reset"):
+                sdn.factory_default.action_reset(param='force')
+
         if not target_image_installed:
             NvosInstallationSteps.deploy_image(cli_obj, topology_obj, setup_name, platform_params_copy, target_version_url, 'onie',
                                                None, None, None, target_version_url)
         with allure.step("Install initial configurations"):
-            for file_type in NMX_CONTROLLER_CONFIG_FILE_TYPES:
-                sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].action_fetch_sdn(initial_configs_paths_to_restore[file_type])
+            for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_CONFIG_FILES:
+                app = ClusterConsts.MAP_CONFIG_FILE_TYPE_TO_APP[file_type]
+                sdn.config.app.app_name[app].type.file_type[file_type].action_fetch_sdn(initial_configs_paths_to_restore[file_type])
                 conf_file_name = initial_configs_paths_to_restore[file_type].split('/')[-1]
-                sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.file_name[conf_file_name].action_file_install(force=False)
+                sdn.config.app.app_name[app].type.file_type[file_type].files.file_name[conf_file_name].action_file_install(force=False)
 
         with allure.step("Delete state/config Files"):
-            for file_type in NMX_CONTROLLER_CONFIG_FILE_TYPES:
+            for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_CONFIG_FILES:
                 if all_config_files_paths[file_type]:
                     for file in all_config_files_paths[file_type]:
+                        app = ClusterConsts.MAP_CONFIG_FILE_TYPE_TO_APP[file_type]
                         file = file.split('/')[-1]
-                        sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.file_name[file].action_delete()
+                        sdn.config.app.app_name[app].type.file_type[file_type].files.file_name[file].action_delete()
                         engines.sonic_mgmt.run_cmd(f"sudo rm -rf {initial_configs_paths_to_restore[file_type]}")
-                engines.sonic_mgmt.run_cmd(f"sudo rm -rf {INITIAL_CONFIGURATIONS_PATH}/*")
+                engines.sonic_mgmt.run_cmd(f"sudo rm -rf {ClusterConsts.INITIAL_CONFIGURATIONS_PATH}/*")
 
         with allure.step("Restore log level"):
-            cluster.apps.apps_name[app].loglevel.action_restore_cluster()
+            cluster.apps.app_name[app].loglevel.action_restore_cluster()
 
         cluster.unset(apply=True)
         ClusterTools.wait_for_apps_to_be_in_wanted_state()

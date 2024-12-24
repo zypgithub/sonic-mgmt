@@ -329,13 +329,15 @@ class NvueSystemCli(NvueBaseCli):
 
     @staticmethod
     @check_output
-    def action_import_ca_certificate(engine, resource_path, data=None, uri=None):
+    def action_import_ca_certificate(engine, resource_path, data=None, uri=None, external: bool = False):
         path = resource_path.replace('/', ' ').strip()
         cmd = f'nv action import {path}'
         if data is not None:
             cmd += f' data """{data}"""'
         if uri is not None:
             cmd += f' uri {uri}' if uri != '' else ' uri ""'
+        if external:
+            cmd += f' external_ca'
         logging.info(f"Running action cmd: '{cmd}' on dut using NVUE")
         return engine.run_cmd(cmd)
 

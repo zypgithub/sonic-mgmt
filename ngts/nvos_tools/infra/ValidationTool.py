@@ -225,22 +225,45 @@ class ValidationTool:
         @param ignore_double_quotes_in_values: if True - ignore double quotes in value comparison
             e.g: if True, { "key" = val } and { "key": "val" } are the same.
         """
-        if set(first_dictionary.keys()) == set(second_dictionary.keys()):
-            for key in first_dictionary.keys():
-                if first_dictionary[key] != second_dictionary[key]:
-                    if ignore_double_quotes_in_values:
-                        v1, v2 = str(first_dictionary[key]), str(second_dictionary[key])
-                        v1 = v1[1:-1] if v1.startswith('\"') and v1.endswith('\"') else v1
-                        v2 = v2[1:-1] if v2.startswith('\"') and v2.endswith('\"') else v2
-                        if v1 != v2:
-                            return ResultObj(False, "'{}' are not equal for both dictionaries.\nvalue1: {}\tvalue2: {}"
-                                             .format(key, first_dictionary[key], second_dictionary[key]))
+        mismatches = []
+
+        def compare_nested_dicts(d1, d2, path=""):
+            all_keys = set(d1.keys()) | set(d2.keys())
+            for key in all_keys:
+                current_path = f"{path}.{key}" if path else key
+                if key not in d1:
+                    mismatches.append({"key": current_path, "reason": "Missing in first dictionary", "value2": d2[key]})
+                elif key not in d2:
+                    mismatches.append({"key": current_path, "reason": "Missing in second dictionary", "value1": d1[key]})
+                else:
+                    v1, v2 = d1[key], d2[key]
+                    if isinstance(v1, dict) and isinstance(v2, dict):
+                        compare_nested_dicts(v1, v2, current_path)
                     else:
-                        return ResultObj(False, "'{}' are not equal for both dictionaries.\nvalue1: {}\tvalue2: {}"
-                                         .format(key, first_dictionary[key], second_dictionary[key]))
+                        if ignore_double_quotes_in_values:
+                            v1 = str(v1).strip('"')
+                            v2 = str(v2).strip('"')
+                        if v1 != v2:
+                            mismatches.append({
+                                "key": current_path,
+                                "reason": "Values not equal",
+                                "value1": v1,
+                                "value2": v2
+                            })
+
+        compare_nested_dicts(first_dictionary, second_dictionary)
+
+        if not mismatches:
             return ResultObj(True, "The dictionaries are equal")
-        return ResultObj(False, f"The dictionaries have different keys.\nDict1: {first_dictionary.keys()}\n"
-                         f"Dict2: {second_dictionary.keys()}")
+        else:
+            message = f"Found {len(mismatches)} mismatches between the dictionaries:\n"
+            for i, mismatch in enumerate(mismatches, 1):
+                message += f"{i}. Key: '{mismatch['key']}', Reason: {mismatch['reason']}\n"
+                if 'value1' in mismatch:
+                    message += f"   Value in first dict: {mismatch['value1']}\n"
+                if 'value2' in mismatch:
+                    message += f"   Value in second dict: {mismatch['value2']}\n"
+            return ResultObj(False, message)
 
     @staticmethod
     def verify_substring_in_output(output, substring, err_message_in_case_of_failure, should_be_found=False):

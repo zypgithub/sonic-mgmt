@@ -398,10 +398,13 @@ class NvueGeneralCli(SonicGeneralCliDefault):
                 b. if the ONIE grub menu appears just do nothing (the install entry will be marked and after 5 secs it
                 will enter the install mode)
         '''
-        logger.info("Initializing serial connection to device")
-        serial_engine = self.enter_serial_connection_context(topology_obj, dut_alias)
-        logger.info('Executing remote reboot')
-        self.remote_reboot_nvue(topology_obj, dut_alias)
+
+        with allure.step("Initializing serial connection to device"):
+            serial_engine = self.enter_serial_connection_context(topology_obj, dut_alias)
+
+        with allure.step('Executing remote reboot'):
+            self.remote_reboot_nvue(topology_obj, dut_alias)
+
         with allure.step('wait for NVOS/ONIE grub menu'):
             # Set timeout based on the active status of Redmine issue #4028150
             to = 360 if is_bug_active(4028150) else 240

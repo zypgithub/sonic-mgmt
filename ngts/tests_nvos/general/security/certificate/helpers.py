@@ -10,7 +10,8 @@ from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tests_nvos.general.security.certificate.constants import DUT_IMPORTED_CERTS_PRIVATE_DIR, \
     DUT_IMPORTED_CERTS_PUBLIC_DIR, DUT_IMPORTED_CACERTS_DIR, CERT_PRIVATE_KEY_LOCATION, CERT_PUBLIC_KEY_LOCATION, \
-    CA_PEM_FILE_LOCATION, CA_CRT_FILE_LOCATION, CA_POOL_FILE, GET_SYSTEM_VERSION_PATH, CertMsgs
+    GLOBAL_CA_PEM_FILE_LOCATION, GLOBAL_CA_CRT_FILE_LOCATION, CA_POOL_FILE, GET_SYSTEM_VERSION_PATH, CertMsgs, \
+    EXTERNAL_CA_CRT_FILE_LOCATION
 from ngts.tests_nvos.general.security.nmx_cert.constants import EncryptionMode
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_general_utils import generate_scp_uri_using_player
@@ -40,7 +41,7 @@ def get_path_of_imported_cacert_public_file(cacert_id, dut_engine: LinuxSshEngin
 
 
 def import_certificates(scp_player: LinuxSshEngine, dut_engine: LinuxSshEngine, certs: List[CertInfo],
-                        ca: bool = False):
+                        ca: bool = False, external_ca: bool = False):
     security_obj = System(force_api=ApiType.NVUE).security
     cert_obj = security_obj.ca_certificate if ca else security_obj.certificate
 
@@ -52,7 +53,7 @@ def import_certificates(scp_player: LinuxSshEngine, dut_engine: LinuxSshEngine, 
                 with allure.step(f'import {"ca" if ca else ""}cert {name}'):
                     if ca:
                         with allure.step('import cacert'):
-                            cert_obj.cert_id[name].action_import(uri=generate_scp_uri_using_player(scp_player, cert.cacert)).verify_result()
+                            cert_obj.cert_id[name].action_import(uri=generate_scp_uri_using_player(scp_player, cert.cacert), external=external_ca).verify_result()
                         # with allure.step('scp cacert data into switch'):
                         #     scp_file(dut_engine, cert.cacert, '/tmp/')
                         # with allure.step('import cacert data'):
@@ -76,9 +77,9 @@ def delete_certificates(ca: bool = False):
                 cert_obj.cert_id[cert_name].action_delete().verify_result()
 
 
-def import_test_certs(scp_player: LinuxSshEngine, dut_engine: LinuxSshEngine, certs: List[CertInfo]):
+def import_test_certs(scp_player: LinuxSshEngine, dut_engine: LinuxSshEngine, certs: List[CertInfo], external_cas=False):
     import_certificates(scp_player, dut_engine, certs)
-    import_certificates(scp_player, dut_engine, certs, True)
+    import_certificates(scp_player, dut_engine, certs, True, external_cas)
 
 
 def verify_file_exists_in_dut(path: str, dut_engine: LinuxSshEngine, should_exist=True):
@@ -105,7 +106,7 @@ def verify_ca_in_ssl_ca_pool(ca_name: str, ca_info: CertInfo, dut_engine: LinuxS
             assert given_ca_in_ssl_ca_pool == should_exist, (
                 f'content of given CA "{ca_name}" existence in SSL CAs pool is not as expected\n'
                 f'expected: {should_exist}\nactual: {given_ca_in_ssl_ca_pool}')
-            verify_file_exists_in_dut(f'{CA_CRT_FILE_LOCATION}/{ca_name}.crt', dut_engine, should_exist)
+            verify_file_exists_in_dut(f'{GLOBAL_CA_CRT_FILE_LOCATION}/{ca_name}.crt', dut_engine, should_exist)
         with allure.independent_step(f'verify SSL can{"" if should_exist else "not"} validate the given ca certificate'):
             # verify the ca itself using ssl pool. only if the ca is in the pool it would be ok (ca verifies itself)
             filename = ''.join(random.choice(string.ascii_lowercase) for _ in range(10)) + '.pem'
@@ -117,15 +118,19 @@ def verify_ca_in_ssl_ca_pool(ca_name: str, ca_info: CertInfo, dut_engine: LinuxS
             assert verify_success == should_exist, f'open ssl verify (using default CAs pool) result not as expected\nexpected: {should_exist}\nactual: {verify_success}\n{res_out}'
 
 
-def verify_ca_in_expected_locations(ca_name: str, ca_info: CertInfo, dut_engine: LinuxSshEngine, should_exist=True):
-    with allure.step(f'verify ca "{ca_name}" {"exists" if should_exist else "does not exist"} in expected locations'):
-        with allure.independent_step(f'verify pem'):
-            verify_file_exists_in_dut(f'{CA_PEM_FILE_LOCATION}/{ca_name}.pem', dut_engine, should_exist)
-        with allure.independent_step(f'verify crt'):
-            verify_file_exists_in_dut(f'{CA_CRT_FILE_LOCATION}/{ca_name}.crt', dut_engine, should_exist)
+def verify_ca_in_expected_locations(ca_name: str, ca_info: CertInfo, dut_engine: LinuxSshEngine, external: bool = False, should_exist=True):
+    with allure.step(f'verify ca "{ca_name}" ({"external" if external else "global"}) existence in expected locations'):
+        with allure.independent_step(f'verify in global locations. expect: {should_exist and not external}'):
+            with allure.independent_step(f'verify pem'):
+                verify_file_exists_in_dut(f'{GLOBAL_CA_PEM_FILE_LOCATION}/{ca_name}.pem', dut_engine, should_exist and not external)
+            with allure.independent_step(f'verify crt'):
+                verify_file_exists_in_dut(f'{GLOBAL_CA_CRT_FILE_LOCATION}/{ca_name}.crt', dut_engine, should_exist and not external)
+        with allure.independent_step(f'verify in external locations. expect: {should_exist and external}'):
+            with allure.independent_step(f'verify crt'):
+                verify_file_exists_in_dut(f'{EXTERNAL_CA_CRT_FILE_LOCATION}/{ca_name}.crt', dut_engine, should_exist and external)
         if ca_info:
-            with allure.independent_step('verify default CAs pool'):
-                verify_ca_in_ssl_ca_pool(ca_name, ca_info, dut_engine, should_exist)
+            with allure.independent_step(f'verify in default linux SSL CAs pool. expect: {should_exist and not external}'):
+                verify_ca_in_ssl_ca_pool(ca_name, ca_info, dut_engine, should_exist and not external)
 
 
 def send_curl_with_and_verify(server_host, username, password, secure_mode, client_ca: CertInfo = None, client_cert: CertInfo = None, should_succeed: bool = True):

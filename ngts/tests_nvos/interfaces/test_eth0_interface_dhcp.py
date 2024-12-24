@@ -416,7 +416,8 @@ def test_interface_eth0_dhcp_hostname(engines, topology_obj, serial_engine):
         system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
 
         dhcp_hostname = noga_query_data['Specific']['dhcp_hostname']
-        dhcp_hostname = dhcp_hostname if dhcp_hostname in system_output['hostname'] else noga_query_data['Common']['Name']
+        dhcp_hostname = dhcp_hostname if dhcp_hostname else noga_query_data['Common']['Name']
+        assert dhcp_hostname, "No dhcp_hostname received from noga"
 
         Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
                                                           field_name='has-lease',
@@ -506,7 +507,7 @@ def test_interface_eth0_dhcp_hostname(engines, topology_obj, serial_engine):
                                                           expected_value='enabled').verify_result()
 
     with allure.step('Check hostname received by dhcp'):
-        system.unset(op_param=SystemConsts.HOSTNAME, apply=True, ask_for_confirmation=True)
+        system.unset(op_param=SystemConsts.HOSTNAME, apply=True, ask_for_confirmation=True, dut_engine=serial_engine)
         wait_for_hostname_changed(system, dhcp_hostname)
 
 
@@ -601,4 +602,6 @@ def wait_for_mtu_changed(port_obj, mtu_to_verify):
 def wait_for_hostname_changed(system, dhcp_hostname):
     with (allure.step("Waiting for system hostname changed to {}".format(dhcp_hostname))):
         system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
-        assert dhcp_hostname in system_output[SystemConsts.HOSTNAME], f'expected hostname - {dhcp_hostname} not in system output - {system_output[SystemConsts.HOSTNAME]}'
+        assert dhcp_hostname in [system_output[SystemConsts.HOSTNAME],
+                                 f'{system_output[SystemConsts.HOSTNAME]}-{SystemConsts.MGMT2_HOSTNAME}'], \
+            "hostname wasn't changed"

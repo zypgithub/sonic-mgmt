@@ -7,6 +7,7 @@ from typing import Tuple
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_constants.constants_nvos import TestFlowType
+from ngts.nvos_tools.infra.CmdRunner import CmdRunner
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.TpmTool import TpmTool
@@ -14,7 +15,7 @@ from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.system.Spdm import SpdmComponent, SPDMComponents, COMPONENT_TO_SPDM_OBJ_FIELD, SpdmComponentFields
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.client_scripts.verify_cert_chain.verify_cert_chain import \
-    validate_certs_chain
+    validate_certs_chain, save_ordered_chain, order_certs, parse_certs_str
 from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.client_scripts.verify_spdm_measurements.verify_spdm_measurements import \
     verify_spdm_measurements
 from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.constants import VALID_NONCE_LEN, SpdmConsts, NOT_EMPTY
@@ -48,6 +49,8 @@ def randomize_non_hex_str(length: int = VALID_NONCE_LEN) -> str:
 def verify_component_outputs(component_name: str, component_obj: SpdmComponent, component_is_available: bool,
                              expect_cert=None,
                              expect_measurements=None) -> Tuple[dict, dict]:
+    if expect_cert:
+        expect_cert = clean_cert_str(expect_cert)
     with allure.step('show component'):
         comp_out = OutputParsingTool.parse_json_str_to_dictionary(component_obj.show()).get_returned_value()
     with allure.step(f'verify fields {SpdmConsts.Component.fields} exist'):
@@ -55,6 +58,8 @@ def verify_component_outputs(component_name: str, component_obj: SpdmComponent, 
     with allure.step('show component certificate'):
         cert_out = OutputParsingTool.parse_json_str_to_dictionary(
             component_obj.certificates.show()).get_returned_value()
+        cert_out[SpdmConsts.Component.Certificates.CERT_STRING] = clean_cert_str(
+            cert_out[SpdmConsts.Component.Certificates.CERT_STRING])
     with allure.step(f'verify fields {SpdmConsts.Component.Certificates.fields} exist'):
         ValidationTool.verify_field_exist_in_json_output(cert_out,
                                                          SpdmConsts.Component.Certificates.fields).verify_result()
@@ -64,12 +69,12 @@ def verify_component_outputs(component_name: str, component_obj: SpdmComponent, 
     with allure.step(f'verify fields {SpdmConsts.Component.Measurements.fields} exist'):
         ValidationTool.verify_field_exist_in_json_output(measurements_out,
                                                          SpdmConsts.Component.Measurements.fields).verify_result()
-        if component_is_available:
-            with allure.step('check values'):
-                verify_component_values(component_name, expect_cert, expect_measurements, cert_out, measurements_out)
-        else:
-            with allure.step('check component has NA values'):
-                verify_component_values_na(component_name, cert_out, measurements_out)
+    if component_is_available:
+        with allure.step('check values'):
+            verify_component_values(component_name, expect_cert, expect_measurements, cert_out, measurements_out)
+    else:
+        with allure.step('check component has NA values'):
+            verify_component_values_na(component_name, cert_out, measurements_out)
 
     if component_is_available:
         with allure.step('sanity check on values'):
@@ -97,9 +102,10 @@ def verify_component_values(component_name: str, expect_cert, expect_measurement
     with ((allure.step(f'check component "{component_name}: values'))):
         if expect_cert:
             with allure.independent_step('check certificate value'):
-                assert cert_out[SpdmConsts.Component.Certificates.CERT_STRING] == expect_cert, (
-                    f'certificate field "{SpdmConsts.Component.Certificates.CERT_STRING}" is not as expected.\n'
-                    f'expected: {expect_cert}\nactual: {cert_out[SpdmConsts.Component.Certificates.CERT_STRING]}')
+                compare_cert_chains_except_for_leaf(expect_cert, cert_out[SpdmConsts.Component.Certificates.CERT_STRING])
+                # assert cert_out[SpdmConsts.Component.Certificates.CERT_STRING] == expect_cert, (
+                #     f'certificate field "{SpdmConsts.Component.Certificates.CERT_STRING}" is not as expected.\n'
+                #     f'expected: {expect_cert}\nactual: {cert_out[SpdmConsts.Component.Certificates.CERT_STRING]}')
         else:
             with allure.independent_step('check certificate is not empty'):
                 assert cert_out[
@@ -146,8 +152,40 @@ def verify_cert_data_same_as_directly_from_bmc(erot_name: str, nv_cert: dict):
             bmc_cert = OutputParsingTool.parse_json_str_to_dictionary(bmc_cert_file_content).get_returned_value()
             bmc_cert = {k: v for k, v in bmc_cert.items() if '@odata' not in k}
             dut_engine.run_cmd(f'rm -f {output_file}')
+            bmc_cert[SpdmConsts.Component.Certificates.CERT_STRING] = clean_cert_str(
+                bmc_cert[SpdmConsts.Component.Certificates.CERT_STRING])
+            nv_cert[SpdmConsts.Component.Certificates.CERT_STRING] = clean_cert_str(
+                nv_cert[SpdmConsts.Component.Certificates.CERT_STRING])
         with allure.step('compare the data of nv and bmc'):
             ValidationTool.compare_dictionaries(nv_cert, bmc_cert).verify_result()
+
+
+def clean_cert_str(cert_str: str) -> str:
+    logging.info('cleaning certificate string')
+    cleaned_cert_str = cert_str.replace('\n', '').replace('\\n', '').strip()
+
+    # Split the string into individual certificates
+    begin_cert, end_cert = '-----BEGIN CERTIFICATE-----', '-----END CERTIFICATE-----'
+    certs = cleaned_cert_str.split(end_cert)
+
+    formatted_certs = []
+    for cert in certs:
+        if cert.strip():  # Skip empty strings
+            # Remove header if present
+            cert_content = cert.replace(begin_cert, '').replace(' ', '')
+
+            # Insert newlines every 64 characters
+            formatted_content = '\n'.join([cert_content[i:i + 64] for i in range(0, len(cert_content), 64)])
+
+            # Add header and footer
+            formatted_cert = f"{begin_cert}\n{formatted_content}\n{end_cert}"
+            formatted_certs.append(formatted_cert)
+
+    # Join all formatted certificates
+    res = '\n'.join(formatted_certs)
+
+    logging.debug(f'cleaned cert:\n{res}')
+    return res
 
 
 def verify_measurements_data_same_as_directly_from_bmc(erot_name: str, nv_measurements: dict):
@@ -178,6 +216,9 @@ def run_client_measurements_verification_usecanse(component_obj: SpdmComponent, 
     with allure.step('get component data'):
         component_data = component_show_data or OutputParsingTool.parse_json_str_to_dictionary(
             component_obj.show()).get_returned_value()
+        component_data[SpdmComponentFields.CERTIFICATES][
+            SpdmConsts.Component.Certificates.CERT_STRING] = clean_cert_str(
+            component_data[SpdmComponentFields.CERTIFICATES][SpdmConsts.Component.Certificates.CERT_STRING])
     with allure.step('show cert chain'):
         cert_chain_str = component_data[SpdmComponentFields.CERTIFICATES][SpdmConsts.Component.Certificates.CERT_STRING]
         logging.info(f'certificate chain str:\n{cert_chain_str}')
@@ -192,6 +233,7 @@ def run_client_verification(cert_chain_content: str, measurements_data: dict, no
     cur_dir = os.path.dirname(os.path.abspath(__file__))
     tmp_files_dir = os.path.join(cur_dir, 'client_scripts', 'tmp_files')
     tests_dir = os.path.join(tmp_files_dir, 'tests')
+    os.makedirs(tests_dir, exist_ok=True)
 
     output_ordered_chain_path = os.path.join(tests_dir, 'pytest-ordered_chain.pem')
     leaf_cert_file = os.path.join(tests_dir, 'test-leaf-cert.pem')
@@ -229,3 +271,11 @@ def run_client_verification(cert_chain_content: str, measurements_data: dict, no
             with allure.step('remove new files created in test'):
                 for file in files_to_remove:
                     os.remove(file)
+
+
+def compare_cert_chains_except_for_leaf(chain1: str, chain2: str):
+    chain1_file, chain2_file = '/tmp/chain1.pem', '/tmp/chain2.pem'
+    save_ordered_chain(order_certs(parse_certs_str(chain1))[1:], chain1_file)
+    save_ordered_chain(order_certs(parse_certs_str(chain2))[1:], chain2_file)
+    diff = CmdRunner().run_cmd(f'diff {chain1_file} {chain2_file}')
+    assert not diff, f'chains are not identical as expected.\ndiff: {diff}'

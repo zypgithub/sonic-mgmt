@@ -4,7 +4,7 @@ import time
 import re
 from typing import Type
 import random
-
+from ngts.nvos_tools.Devices.IbDevice import JulietSwitch
 from ngts.tools.test_utils import allure_utils as allure
 from retry import retry
 from ngts.nvos_constants.constants_nvos import DatabaseConst
@@ -23,7 +23,6 @@ from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 logger = logging.getLogger()
 
 
-@pytest.mark.timeout(5 * MINUTE, func_only=True)
 @pytest.mark.platform
 @pytest.mark.transceiver
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
@@ -39,8 +38,13 @@ def test_transceiver_database_tables(engines, devices, test_api):
     with allure.step("Create platform object"):
         platform = Platform()
         transceivers_tables_name = "TRANSCEIVER_FIRMWARE_INFO"
-        transceivers_list = list(OutputParsingTool.parse_json_str_to_dictionary(platform.transceiver.show_detailed()).get_returned_value().keys())
-        number_of_transceivers = sum(2 if transceiver.startswith('sw') else 1 for transceiver in transceivers_list)  # swA3 -> swA3p1, swA3p2
+        # TODO: solve this properly
+        if isinstance(devices.dut, JulietSwitch):
+            transceivers_list = list(OutputParsingTool.parse_json_str_to_dictionary(platform.transceiver.show()).returned_value.keys())
+            number_of_transceivers = len(transceivers_list) * 4
+        else:
+            transceivers_list = list(OutputParsingTool.parse_json_str_to_dictionary(platform.transceiver.show_detailed()).get_returned_value().keys())
+            number_of_transceivers = sum(2 if transceiver.startswith('sw') else 1 for transceiver in transceivers_list)  # swA3 -> swA3p1, swA3p2
         with allure.step("Validate for each transceiver out of {} transceivers we have the table in STATE_DB".format(number_of_transceivers)):
             tables_in_database = Tools.DatabaseTool.sonic_db_cli_get_keys(engine=engines.dut, asic="",
                                                                           db_name=DatabaseConst.STATE_DB_NAME,
@@ -50,7 +54,6 @@ def test_transceiver_database_tables(engines, devices, test_api):
                                                                                                                 len(tables_in_database))
 
 
-@pytest.mark.timeout(10 * MINUTE, func_only=True)
 @pytest.mark.platform
 @pytest.mark.transceiver
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
@@ -102,7 +105,6 @@ def test_reset_transceiver_firmware_positive(engines, test_api, start_sm):
             check_counters(link_output_before_reset, link_output_after_reset)
 
 
-@pytest.mark.timeout(10 * MINUTE, func_only=True)
 @pytest.mark.platform
 @pytest.mark.transceiver
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
@@ -178,7 +180,6 @@ def test_install_transceiver_firmware_positive(engines, devices, test_api, start
                 platform.transceiver.action_install(random_transceiver, transceiver_obj.upgrade_version_name).verify_result()
 
 
-@pytest.mark.timeout(10 * MINUTE, func_only=True)
 @pytest.mark.platform
 @pytest.mark.transceiver
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
@@ -229,7 +230,6 @@ def test_install_reset_transceiver_firmware_negative_flow(engines, test_api):
         assert show_interface_after_install == show_interface_before_install, "at least one of the link values has been change, before_install {} after install {}".format(show_interface_before_install, show_interface_after_install)
 
 
-@pytest.mark.timeout(5 * MINUTE, func_only=True)
 @pytest.mark.platform
 @pytest.mark.transceiver
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)

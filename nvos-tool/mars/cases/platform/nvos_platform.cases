@@ -82,6 +82,17 @@
   </case>
 
   <case>
+    <name> Platform PMPE </name>
+    <info> </info>
+    <tout> 10800 </tout>
+    <cmd>
+      <params>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/platform/test_platform_transceiver.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir  --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>
+      </params>
+    </cmd>
+  </case>
+
+  <case>
     <name> Platform Firmware BIOS </name>
     <info> </info>
     <tout> 10800 </tout>
@@ -105,7 +116,7 @@
       <condition>
         <key>dut_hwsku</key>
         <op> in </op>
-        <value>[MQM9700 - Gorilla, N5110_LD - JulietScaleout, N5112_LD - JulietAriel, N5110_LD - JulietTTM, N5100_LD - JulietNonScaleout]</value>
+        <value>[MQM9700 - Gorilla, N5110_LD - JulietScaleout, N5112_LD - JulietAriel, N5110_LD - JulietTTM, N5100_LD - JulietNonScaleout, N5200_LD - JulietNonScaleoutSwitchNoNCI]</value>
       </condition>
     </ignore>
   </case>

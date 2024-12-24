@@ -189,6 +189,7 @@ def test_set_system_events_table_size(test_api, engines):
         with allure.step('Set system events table-size to 600'):
             system.events.set(op_param_name='table-size', op_param_value=600,
                               apply=True, dut_engine=engines.dut).verify_result()
+            time.sleep(10)
 
         with allure.step('Validate system events table-size is set to 600'):
             retry_call(_verify_field_in_show_output, [system.events, SystemConsts.EVENTS_TABLE_SIZE, 600],

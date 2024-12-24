@@ -6,7 +6,6 @@ from datetime import datetime
 from ngts.constants.constants import LinuxConsts
 from ngts.nvos_constants.constants_nvos import HealthConsts, NvosConst, ApiType, SystemConsts
 from ngts.nvos_tools.ib.opensm.OpenSmTool import OpenSmTool
-from ngts.nvos_tools.Devices.IbDevice import JulietSwitch
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.system.System import System
@@ -269,6 +268,8 @@ def verify_cleanup_done(engine, current_time, system, username, param=''):
         if param != KEEP_ONLY_FILES:
             logging.info("Check running dockers")
             for docker_name, orig_create_time in running_dockers.items():
+                if docker_name.startswith('nmx'):
+                    continue
                 output = engine.run_cmd(r"docker inspect -f \{\{'.Created'\}\} " + docker_name)
                 if "Error" in output:
                     create_time = ""

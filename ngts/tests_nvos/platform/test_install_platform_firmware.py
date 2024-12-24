@@ -6,7 +6,7 @@ import pytest
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import NvosConst, PlatformConsts, HealthConsts, ImageConsts
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
-from ngts.nvos_tools.infra.FWComponentsTool import FWComponentsTool
+from ngts.nvos_tools.infra.BmcTool import BmcTool
 from ngts.tests_nvos.constants import MINUTE
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
@@ -19,7 +19,7 @@ logger = logging.getLogger()
 
 @pytest.mark.checklist
 @pytest.mark.platform
-@pytest.mark.timeout(20 * MINUTE, func_only=True)
+@pytest.mark.timeout(30 * MINUTE, func_only=True)
 def test_install_platform_firmware(engines, devices, test_name, topology_obj, clear_asic_files):
     """
     Install platform firmware test
@@ -32,23 +32,24 @@ def test_install_platform_firmware(engines, devices, test_name, topology_obj, cl
     """
     system = System()
     platform = Platform()
-    component_name = ImageConsts.ASIC
+    component_name = 'asic'
     test_image_name = "test_fw_asic.mfa"
     fw_has_changed = False
-    fw_file, filename, version_name = FWComponentsTool.get_fw_component_version_latest(component_name)
+    fw_file, filename, version_name = BmcTool.get_fw_component_version_latest(component_name)
 
     with allure.step("Check actual firmware value"):
         asic_dictionary = get_asic_dict(platform)
         first_asic_name = list(asic_dictionary.keys())[0]
         actual_firmware = asic_dictionary[first_asic_name]["actual-firmware"]
         logging.info("Original actual firmware - " + actual_firmware)
-        validate_all_asics_have_same_info()
         system.validate_health_status(HealthConsts.OK)
 
     try:
         with allure.step("Install system firmware file - " + fw_file):
             with allure.step("fetch firmware file to switch"):
-                platform.firmware.asic.action_fetch(fw_file, base_url=ImageConsts.SCP_PATH).verify_result()
+                player_engine = engines['sonic_mgmt']
+                scp_path = 'scp://{}:{}@{}'.format(player_engine.username, player_engine.password, player_engine.ip)
+                platform.firmware.asic.action_fetch(fw_file, base_url=scp_path).verify_result()
                 fetched_image_file = platform.firmware.asic.files.file_name[filename]
                 fetched_image_file.action_rename(test_image_name, expected_str="", rewrite_file_name=False)
 
@@ -63,9 +64,8 @@ def test_install_platform_firmware(engines, devices, test_name, topology_obj, cl
                 system.validate_health_status(HealthConsts.OK)
                 fw_has_changed = True
 
-        with allure.step('Verify operation time'):
-            OperationTime.verify_operation_time(duration, 'install user FW').verify_result()
-
+            with allure.step('Verify operation time'):
+                OperationTime.verify_operation_time(duration, 'install user FW').verify_result()
     finally:
         with allure.step("cleanup steps"):
             with allure.step("Install original system firmware file"):

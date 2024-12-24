@@ -1,14 +1,15 @@
 import logging
-import re
+
 from dotted_dict import DottedDict
 
-from ngts.nvos_tools.Devices.EthDevice import Mlx2410Switch, Mlx4600Switch, Mlx4600cSwitch, Mlx4700Switch, Mlx5600Switch, \
-    Mlx5400Switch, Mlx4410Switch, Mlx3750sxSwitch, Mlx3700csSwitch, Mlx3700cSwitch, Mlx3420Switch, Mlx2700Switch, Mlx2201Switch, Mlx2100Switch, \
+from ngts.nvos_tools.Devices.EthDevice import Mlx2410Switch, Mlx4600Switch, Mlx4600cSwitch, Mlx4700Switch, \
+    Mlx5600Switch, \
+    Mlx5400Switch, Mlx4410Switch, Mlx3750sxSwitch, Mlx3700csSwitch, Mlx3700cSwitch, Mlx3420Switch, Mlx2700Switch, \
+    Mlx2201Switch, Mlx2100Switch, \
     Mlx2010Switch, Mlx3700Switch
-
 from ngts.nvos_tools.Devices.IbDevice import GorillaSwitch, \
-    MarlinSwitch, GorillaSwitchBF3, CrocodileSwitch, BlackMambaSwitch, CrocodileSimxSwitch, JulietScaleoutSwitch, JulietTTMSwitch, JulietNonScaleoutSwitch, JulietAriel
-
+    MarlinSwitch, GorillaSwitchBF3, CrocodileSwitch, BlackMambaSwitch, JulietScaleoutSwitch, JulietTTMSwitch, \
+    JulietNonScaleoutSwitch, JulietAriel, JulietNonScaleoutSwitchNoNCI, JulietArielPS
 
 logger = logging.getLogger()
 
@@ -50,7 +51,9 @@ class DeviceFactory:
             'N5110_LD - JulietScaleout': JulietScaleoutSwitch,
             'N5110_LD - JulietTTM': JulietTTMSwitch,
             'N5100_LD - JulietNonScaleout': JulietNonScaleoutSwitch,
-            'N5112_LD - JulietAriel': JulietAriel
+            'N5112_LD - JulietAriel': JulietAriel,
+            'N5200_LD - JulietNonScaleoutSwitchNoNCI': JulietNonScaleoutSwitchNoNCI,
+            'N5112_LD - JulietArielPS': JulietArielPS
         }
 
     @staticmethod

@@ -1,3 +1,6 @@
+from ngts.nvos_tools.infra.IpTool import IpTool
+
+
 class SshCmdBuilder:
     SSH_CMD_TEMPLATE = 'ssh {opts} -p {port} -l {usr} {host}'
 
@@ -9,6 +12,9 @@ class SshCmdBuilder:
 
     def build(self) -> str:
         self.options.strip()
+        if IpTool.is_address_ipv6(self.host):
+            self.options = f'-6 {self.options}'
+            self.host = f'{self.host}'
         return SshCmdBuilder.SSH_CMD_TEMPLATE.format(opts=self.options, port=self.port, usr=self.user,
                                                      host=self.host).strip()
 
@@ -75,6 +81,10 @@ class SshCmdBuilder:
 
     def ServerAliveCountMax(self, num_intervals) -> 'SshCmdBuilder':
         self.options += f' -o ServerAliveCountMax={num_intervals}'
+        return self
+
+    def use_auth_key(self, key_path) -> 'SshCmdBuilder':
+        self.options += f' -i {key_path}'
         return self
 
     def set_ssn(self) -> 'SshCmdBuilder':

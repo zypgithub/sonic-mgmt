@@ -1,7 +1,6 @@
 import pytest
 
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
-from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.scripts.bios_config import configure_bios
 from ngts.nvos_tools.platform.Platform import Platform
