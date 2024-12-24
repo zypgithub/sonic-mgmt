@@ -1,15 +1,15 @@
 import logging
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
+from ngts.nvos_constants.constants_nvos import LinkDetectionConsts, PlatformConsts
+from ngts.nvos_constants.constants_nvos import NvosConst
+from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
+from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
 from ngts.nvos_tools.infra import ExceptionTool
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.tools.test_utils import allure_utils as allure
-from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
-from ngts.nvos_constants.constants_nvos import LinkDetectionConsts, PlatformConsts
-from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from ngts.nvos_constants.constants_nvos import NvosConst
-from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
 
 logger = logging.getLogger()
 
@@ -47,6 +47,19 @@ class Configurations:
         "10.7.144.154": ['sw1p1', 'sw1p2'],
         "10.7.144.58": ['sw1p1', 'sw1p2', 'sw2p1'],
     }
+
+    juliet_systems_with_loopbox = ["NVOS_juliet_10_7_148_142", "NVOS_juliet_10_7_148_130", "NVOS_juliet_10_7_148_146",
+                                   "NVOS_juliet_10_7_148_160"]
+
+    non_standalone_systems = ['NVOS_juliet_10_7_148_148']
+
+    compute_nodes_per_system = {
+        'NVOS_juliet_10_7_148_148': [{'ip_address': '10.7.34.145', 'username': 'nvidia', 'password': 'nvidia'},
+                                     {'ip_address': '10.7.34.192', 'username': 'nvidia', 'password': 'nvidia'}]}
+
+    ports_to_disable = {'NVOS_juliet_10_7_148_148': ['acp17-20', 'acp69-72']}
+
+    oberon_num_of_gpus = {'NVOS_juliet_10_7_148_148': 8}
 
     post_install_commands = {"10.7.144.153": ['nv set acl ACL_MGMT_INBOUND_CP_DEFAULT rule 120 match ip recent-list hit-count 3000',
                                               'nv config apply -y'],

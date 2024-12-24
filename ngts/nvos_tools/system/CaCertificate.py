@@ -24,11 +24,11 @@ class CaCertId(BaseComponent):
         BaseComponent.__init__(self, parent, path=f'/{cert_id}')
         self.dump = BaseComponent(self, path='/dump')
 
-    def action_import(self, data=None, uri=None, dut_engine=None) -> ResultObj:
+    def action_import(self, data=None, uri=None, dut_engine=None, external: bool = False) -> ResultObj:
         with allure.step(f'Execute action import for {self.get_resource_path()}'):
             engine = dut_engine or TestToolkit.engines.dut
             return SendCommandTool.execute_command(self._cli_wrapper.action_import_ca_certificate, engine,
-                                                   self.get_resource_path(), data, uri)
+                                                   self.get_resource_path(), data, uri, external)
 
     def action_delete(self, dut_engine=None) -> ResultObj:
         with allure.step(f'Execute action import for {self.get_resource_path()}'):

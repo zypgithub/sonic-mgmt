@@ -19,23 +19,24 @@ class Uuid(BaseComponent):
         super().__init__(parent=parent_obj,
                          api={ApiType.NVUE: NvueClusterCli, ApiType.OPENAPI: OpenApiClusterCli},
                          path='/uuid')
-        self.uuid_value: Dict[str, UuidVal] = DefaultDict(lambda uuid_value: UuidVal(parent=self, uuid_value=uuid_value))
+        self.uuid_value: Dict[str, UuidVal] = DefaultDict(
+            lambda uuid_value: UuidVal(parent=self, uuid_value=uuid_value))
 
 
 class UuidVal(BaseComponent):
     def __init__(self, parent, uuid_value):
         super().__init__(parent=parent, path=f'/{uuid_value}')
 
-    def action_update_partition(self, engine=None):
+    def action_update_partition(self, engine=None, reroute_param=''):
         engine = engine if engine else TestToolkit.engines.dut
         with allure.step('Update partition'):
-            return SendCommandTool.execute_command_expected_str(self._cli_wrapper.action_update,
+            return SendCommandTool.execute_command_expected_str(self._cli_wrapper.action_update_partition,
                                                                 "Action succeeded", engine,
-                                                                self.get_resource_path())
+                                                                self.get_resource_path(), reroute_param)
 
-    def action_restore_partition(self, engine=None):
+    def action_restore_partition(self, engine=None, reroute_param=''):
         engine = engine if engine else TestToolkit.engines.dut
         with allure.step('Restore partition'):
-            return SendCommandTool.execute_command_expected_str(self._cli_wrapper.action_restore_cluster,
+            return SendCommandTool.execute_command_expected_str(self._cli_wrapper.action_restore_partition,
                                                                 "Action succeeded", engine,
-                                                                self.get_resource_path())
+                                                                self.get_resource_path(), reroute_param)

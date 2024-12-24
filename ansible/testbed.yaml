@@ -7240,6 +7240,114 @@
   inv_name: lab
   comment: Mellanox MTR testbed
 
+- conf-name: juliet-152-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+    - juliet-152
+  inv_name: lab
+  comment: Mellanox MTR testbed
+
+- conf-name: juliet-154-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+    - juliet-154
+  inv_name: lab
+  comment: Mellanox MTR testbed
+
+- conf-name: juliet-156-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+    - juliet-156
+  inv_name: lab
+  comment: Mellanox MTR testbed
+
+- conf-name: juliet-158-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+    - juliet-158
+  inv_name: lab
+  comment: Mellanox MTR testbed
+
+- conf-name: juliet-152-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+    - juliet-152
+  comment: Mellanox MTR testbed
+
+- conf-name: juliet-154-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+    - juliet-154
+  comment: Mellanox MTR testbed
+
+- conf-name: juliet-156-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+    - juliet-156
+  comment: Mellanox MTR testbed
+
+- conf-name: juliet-158-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+    - juliet-158
+  comment: Mellanox MTR testbed
+
 - conf-name: juliet-142-ptf-any
   group-name: vm-t1
   topo: ptf-any
@@ -7310,6 +7418,19 @@
   inv_name: lab
   comment: Mellanox MTR testbed
 
+- conf-name: juliet-52-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+    - juliet-52
+  comment: Mellanox MTR testbed
+
 - conf-name: juliet-54-ptf-any
   group-name: vm-t1
   topo: ptf-any
@@ -7321,6 +7442,20 @@
   vm_base: VM0000
   dut:
     - juliet-54
+  inv_name: lab
+  comment: Mellanox MTR testbed
+
+- conf-name: juliet-52-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+    - juliet-52
   inv_name: lab
   comment: Mellanox MTR testbed
 

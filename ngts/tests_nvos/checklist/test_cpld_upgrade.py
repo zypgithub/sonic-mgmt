@@ -1,7 +1,7 @@
 import logging
 import os.path
 import time
-from typing import Dict, List
+from typing import Dict
 
 import pytest
 import requests
@@ -9,8 +9,8 @@ import requests
 from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.nvos_constants.constants_nvos import ApiType, PlatformConsts
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
+from ngts.nvos_tools.infra.BmcTool import BmcTool
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
-from ngts.nvos_tools.infra.FWComponentsTool import FWComponentsTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.platform.Platform import Platform
@@ -21,7 +21,7 @@ from ngts.tools.test_utils.switch_recovery import recover_dut_with_remote_reboot
 logger = logging.getLogger()
 
 
-@pytest.mark.timeout(45 * MINUTE, func_only=True)
+@pytest.mark.timeout(30 * MINUTE, func_only=True)
 @pytest.mark.cpld
 def test_cpld_upgrade(engines, devices, topology_obj):
     """
@@ -46,18 +46,18 @@ def test_cpld_upgrade(engines, devices, topology_obj):
 
     device = devices.dut
 
-    if not hasattr(device, 'fw_versions_json_file_path'):
-        pytest.skip("Should ignore test, no designated file for fw comps")
+    if not device.allow_cpld_update:
+        pytest.skip("Not a crocodile, nor Juliet TTM... Should ignore test.")
 
     try:
         TestToolkit.tested_api = ApiType.NVUE
         with allure.step(f"Fetch, install and assert old CPLD version (through {TestToolkit.tested_api})"):
-            image_previous_details = FWComponentsTool.get_fw_component_version_dict("cpld", "previous")
+            image_previous_details = BmcTool.get_fw_component_version_dict("cpld", "previous")
             _firmware_install_test(devices, platform, image_previous_details, engines, topology_obj)
     finally:
         TestToolkit.tested_api = ApiType.OPENAPI
         with allure.step(f"Cleanup: Fetch, install and assert original CPLD version (through {TestToolkit.tested_api})"):
-            image_details = FWComponentsTool.get_fw_component_version_dict("cpld", "latest")
+            image_details = BmcTool.get_fw_component_version_dict("cpld", "latest")
             _firmware_install_test(devices, platform, image_details, engines, topology_obj)
 
 
@@ -88,17 +88,20 @@ def _firmware_install_test(devices, platform: Platform, image_details, engines, 
         assert set(file_list) == set(initial_files) | file_names, \
             f"Expected new files {file_names} but the old file list is {initial_files} " \
             f"and the new one is {file_list}"
+
     try:
         with allure.step(f"Installing BURN image {burn_filename}"):
             result, _ = OperationTime.save_duration(
                 "nv action install platform firmware CPLD files (BURN)", burn_filename, test_cpld_upgrade.__name__,
-                platform.firmware.cpld.files.file_name[burn_filename].action_file_install_with_reboot, force=False, deny_reboot=True)
+                platform.firmware.cpld.files.file_name[burn_filename].action_file_install,
+                dut_engine=engines.dut, force=False)
+            result.verify_result()
 
             if has_refresh_image:
                 try:
                     with allure.step(f"Installing REFRESH image (and rebooting) {refresh_filename}"):
                         platform.firmware.cpld.files.file_name[refresh_filename].action_file_install_with_reboot(
-                            system_is_ready_timeout=PlatformConsts.TIMEOUT_AFTER_FW_INSTALL)
+                            device=devices.dut, topology_obj=topology_obj).verify_result()
 
                 except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout):
                     logger.info(f"GET request failed as expected because of switch reboot")
@@ -114,8 +117,7 @@ def _firmware_install_test(devices, platform: Platform, image_details, engines, 
 
             with allure.step(f"Asserting install was successful"):
                 firmware_shown = OutputParsingTool.parse_json_str_to_dictionary(platform.firmware.show()).get_returned_value()
-                errors = validate_firmware_versions(firmware_shown, image_details)
-                assert not errors, f"{len(errors)} firmware version mismatches found:\n" + '\n'.join(errors)
+                validate_firmware_versions(firmware_shown, image_details)
 
     finally:
         for file_name in file_names:
@@ -129,13 +131,9 @@ def _firmware_install_test(devices, platform: Platform, image_details, engines, 
                 f"{initial_files}\nAnd at the end of the test the list is:\n{final_file_list}")
 
 
-def validate_firmware_versions(firmware_shown, image_details: Dict[str, Dict[str, str]]) -> List[str]:
-    errors = []
-    for cpld_number, expected_version in image_details['version_name'].items():
-        with allure.step(f"Checking {cpld_number}"):
-            actual_firmware = firmware_shown[cpld_number][PlatformConsts.FW_ACTUAL]
-            if actual_firmware != expected_version:
-                errors.append(
-                    f"{cpld_number} version mismatch: Expected '{expected_version}', Got '{actual_firmware}'")
-
-    return errors
+def validate_firmware_versions(firmware_shown, image_details: Dict[str, Dict[str, str]]):
+    with allure.step('validate cpld firmware versions'):
+        for cpld_number, expected_version in image_details['version_name'].items():
+            with allure.independent_step(f"Checking {cpld_number}"):
+                actual_firmware = firmware_shown[cpld_number][PlatformConsts.FW_ACTUAL]
+                assert actual_firmware == expected_version, f"{cpld_number} version mismatch: Expected '{expected_version}', Got '{actual_firmware}'"

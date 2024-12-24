@@ -133,17 +133,45 @@ def test_rules_order(engines, test_api, topology_obj):
             rule_dict[AclConsts.ACTION] = AclConsts.PERMIT
             config_rule(engines.dut, acl_id_obj, rule_id_2, rule_dict)
 
-            expected_acl_dict[acl_id][AclConsts.RULE].update({rule_id_1: {AclConsts.ACTION: {AclConsts.DENY: {}}, AclConsts.MATCH:
-                                                                          {AclConsts.IP: {AclConsts.SOURCE_IP: 'ANY', AclConsts.PROTOCOL: 'icmp', AclConsts.ICMP_TYPE: 'echo-request'}}}})
-            expected_acl_dict[acl_id][AclConsts.RULE].update({rule_id_2: {AclConsts.ACTION: {AclConsts.PERMIT: {}}, AclConsts.MATCH:
-                                                                          {AclConsts.IP: {AclConsts.SOURCE_IP: 'ANY', AclConsts.PROTOCOL: 'icmp', AclConsts.ICMP_TYPE: 'echo-request'}}}})
+            # temp workaround due to - https://redmine.mellanox.com/issues/4203639 - add MAC masking
+            expected_acl_dict[acl_id][AclConsts.RULE].update({
+                rule_id_1: {
+                    AclConsts.ACTION: {AclConsts.DENY: {}},
+                    AclConsts.MATCH: {
+                        AclConsts.IP: {
+                            AclConsts.SOURCE_IP: 'ANY',
+                            AclConsts.PROTOCOL: 'icmp',
+                            AclConsts.ICMP_TYPE: 'echo-request'
+                        },
+                        AclConsts.MAC: {
+                            AclConsts.DEST_MAC_MASK: "ff:ff:ff:ff:ff:ff",
+                            AclConsts.SOURCE_MAC_MASK: "ff:ff:ff:ff:ff:ff"
+                        }
+                    }
+                }
+            })
+
+            # temp workaround due to - https://redmine.mellanox.com/issues/4203639 - add MAC masking
+            expected_acl_dict[acl_id][AclConsts.RULE].update({
+                rule_id_2: {
+                    AclConsts.ACTION: {AclConsts.PERMIT: {}},
+                    AclConsts.MATCH: {
+                        AclConsts.IP: {
+                            AclConsts.SOURCE_IP: 'ANY',
+                            AclConsts.PROTOCOL: 'icmp',
+                            AclConsts.ICMP_TYPE: 'echo-request'
+                        },
+                        AclConsts.MAC: {
+                            AclConsts.DEST_MAC_MASK: "ff:ff:ff:ff:ff:ff",
+                            AclConsts.SOURCE_MAC_MASK: "ff:ff:ff:ff:ff:ff"
+                        }
+                    }
+                }
+            })
 
         with allure.step("Validate configuration with show commands"):
             acl_id_output = acl_id_obj.parse_show()
-            assert expected_acl_dict[acl_id] == acl_id_output, \
-                f'Got unexpected acl output after acl and rules configuration\n' \
-                f'expected: {expected_acl_dict[acl_id]}\n' \
-                f'but got: {acl_id_output}'
+            ValidationTool.compare_dictionaries(expected_acl_dict[acl_id], acl_id_output).verify_result()
 
     with allure.step("Attach ACL to mgmt interface"):
         mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
@@ -1087,15 +1115,14 @@ def test_override_default_rule(engines, topology_obj):
         rule_packets_after = get_rule_packets(mgmt_port, default_chosen_acl, default_rule_to_override_field)
         assert rule_packets_after[default_rule_to_override_field] == rule_packets_before[default_rule_to_override_field], \
             f'the rule should not catch this packet cause it is different dest port'
-
-    with allure.step("save default rules output"):
-        default_rule_to_add_field_output = acl_obj.rule.parse_show(default_rule_to_add_field)
-        default_rule_to_override_field_output = acl_obj.rule.parse_show(default_rule_to_override_field)
-
     try:
-        with ((allure.step("override default rules - add new field"))):
-            config_rule(engines.dut, acl_obj, default_rule_to_add_field, {AclConsts.SOURCE_IP: src_ip})
-            if not is_redmine_issue_active([3955725])[0]:
+        with allure.step("save default rules output"):
+            default_rule_to_add_field_output = acl_obj.rule.parse_show(default_rule_to_add_field)
+            default_rule_to_override_field_output = acl_obj.rule.parse_show(default_rule_to_override_field)
+
+        if not is_redmine_issue_active([4138944])[0]:
+            with ((allure.step("override default rules - add new field"))):
+                config_rule(engines.dut, acl_obj, default_rule_to_add_field, {AclConsts.SOURCE_IP: src_ip})
                 with allure.step("validate with show command"):
                     rule_output = acl_obj.rule.parse_show(default_rule_to_add_field)
                     assert AclConsts.SOURCE_IP in rule_output[AclConsts.MATCH][AclConsts.IP].keys(), \
@@ -1104,25 +1131,25 @@ def test_override_default_rule(engines, topology_obj):
                         (f"{AclConsts.SOURCE_IP} = {rule_output[AclConsts.MATCH][AclConsts.IP][AclConsts.SOURCE_IP]}, "
                          f"expected - {src_ip}")
 
-            with allure.step("Validate ACL counters"):
-                rule_packets_before = get_rule_packets(mgmt_port, default_chosen_acl, default_rule_to_add_field)
-                scapy_send_packet(engines.sonic_mgmt, packet_tcp)
-                rule_packets_after = get_rule_packets(mgmt_port, default_chosen_acl, default_rule_to_add_field)
-                assert rule_packets_after[default_rule_to_add_field] == rule_packets_before[default_rule_to_add_field], \
-                    f'the rule should not catch this packet because we override it with src ip that not exist in this setup'
+                with allure.step("Validate ACL counters"):
+                    rule_packets_before = get_rule_packets(mgmt_port, default_chosen_acl, default_rule_to_add_field)
+                    scapy_send_packet(engines.sonic_mgmt, packet_tcp)
+                    rule_packets_after = get_rule_packets(mgmt_port, default_chosen_acl, default_rule_to_add_field)
+                    assert rule_packets_after[default_rule_to_add_field] == rule_packets_before[default_rule_to_add_field], \
+                        f'the rule should not catch this packet because we override it with src ip that not exist in this setup'
 
-        with allure.step("override default rules - change existing field"):
-            config_rule(engines.dut, acl_obj, default_rule_to_override_field, {AclConsts.UDP_DEST_PORT: '52'})
-            with allure.step("validate with show command"):
-                rule_output = acl_obj.rule.parse_show(default_rule_to_override_field)
-                assert '52' in rule_output[AclConsts.MATCH][AclConsts.IP]['udp']['dest-port'].keys()
+            with allure.step("override default rules - change existing field"):
+                config_rule(engines.dut, acl_obj, default_rule_to_override_field, {AclConsts.UDP_DEST_PORT: '52'})
+                with allure.step("validate with show command"):
+                    rule_output = acl_obj.rule.parse_show(default_rule_to_override_field)
+                    assert '52' in rule_output[AclConsts.MATCH][AclConsts.IP]['udp']['dest-port'].keys()
 
-            with allure.step("Validate ACL counters"):
-                rule_packets_1_before = get_rule_packets(mgmt_port, default_chosen_acl, default_rule_to_override_field)
-                scapy_send_packet(engines.sonic_mgmt, packet_udp)
-                rule_packets_1_after = get_rule_packets(mgmt_port, default_chosen_acl, default_rule_to_override_field)
-                assert int(rule_packets_1_after[default_rule_to_override_field]) > int(rule_packets_1_before[default_rule_to_override_field]), \
-                    f'the rule should catch this packet because we override it'
+                with allure.step("Validate ACL counters"):
+                    rule_packets_1_before = get_rule_packets(mgmt_port, default_chosen_acl, default_rule_to_override_field)
+                    scapy_send_packet(engines.sonic_mgmt, packet_udp)
+                    rule_packets_1_after = get_rule_packets(mgmt_port, default_chosen_acl, default_rule_to_override_field)
+                    assert int(rule_packets_1_after[default_rule_to_override_field]) > int(rule_packets_1_before[default_rule_to_override_field]), \
+                        f'the rule should catch this packet because we override it'
 
     finally:
         with allure.step("unset acl - should return all the default rules"):
@@ -1135,7 +1162,46 @@ def test_override_default_rule(engines, topology_obj):
                 assert override_field_output == default_rule_to_override_field_output, "should return to default values after unset"
 
 
+@pytest.mark.acl
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_nmx_ports(engines, devices, test_api):
+    """
+    Check if device has acl rules for nmx
+    steps:
+    1. Check device has nmx support
+    2. Parse acl rules show
+    3. Find nmx related rule
+        * If no nmx rule found -> fail
+    4. Verify nmx ports 9351, 9352, 9353, 9370 are open for tcp
+    """
+
+    with allure.step("Check if device has nmx"):
+        if not devices.dut.has_nmx:
+            pytest.skip("This setup doesn't have nmx")
+
+    with allure.step("Show ACL rules and verify nmx ports are open"):
+        TestToolkit.tested_api = test_api
+
+        default_chosen_acl = 'ACL_MGMT_INBOUND_CP_DEFAULT'
+        acl_obj = Acl().acl_id[default_chosen_acl]
+        acl_rules = OutputParsingTool.parse_show_output_to_dict(acl_obj.show()).get_returned_value()[AclConsts.RULE]
+        assert acl_rules, "No ACL rules were found"
+
+        nmx_rule = None
+        for rule_id, rule in acl_rules.items():
+            if "nmx" in rule.get(AclConsts.REMARK, ""):
+                nmx_rule = rule
+                break
+        assert nmx_rule, "No acl rule was found for nmx"
+        assert AclConsts.PERMIT in nmx_rule[AclConsts.ACTION], "The acl action is not permit"
+
+    ports_to_check = {"9351", "9352", "9353", "9370"}
+    with allure.step(f"Verify ports for nmx are open {ports_to_check}"):
+        nmx_open_ports = nmx_rule[AclConsts.MATCH][AclConsts.IP][AclConsts.TCP][AclConsts.DEST_PORT]
+        assert ports_to_check <= nmx_open_ports.keys(), "Not all nmx ports are open"
+
 # ------------------- functions -------------------
+
 
 def sleep():
     logger.info(f"sleep {SLEEP_TIME}")

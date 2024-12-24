@@ -116,12 +116,16 @@ class File(BaseComponent):
         device = device if device else TestToolkit.devices.dut
         topology_obj = topology_obj or TestToolkit.topology_obj
         resource_path = self.get_resource_path()
+        no_force = ''
+        if 'platform' in resource_path:
+            no_force = 'skip-reboot'
         with allure.step(f"Install file: {resource_path}"):
             return SendCommandTool.execute_command_expected_str(
                 self._cli_wrapper.action, expected_str,
-                engine, device, action_type='install', resource_path=resource_path, param_name='force' if force else '',
-                param_value=param_value, expect_reboot=with_reboot, recovery_engine=recovery_engine,
-                topology_obj=topology_obj, should_succeed=should_succeed, system_is_ready_timeout=system_is_ready_timeout, track_boot_intervals=track_boot_intervals, deny_reboot=deny_reboot, press_y=press_y)
+                engine, device, action_type='install', resource_path=resource_path,
+                param_name='force' if force else no_force,
+                expect_reboot=with_reboot, recovery_engine=recovery_engine, deny_reboot=deny_reboot,
+                topology_obj=topology_obj, track_boot_intervals=track_boot_intervals)
 
     def rename_and_verify(self, new_name, expected_str="", dut_engine=None):
         original_name = self.file_name

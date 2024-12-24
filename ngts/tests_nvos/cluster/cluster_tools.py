@@ -1,78 +1,81 @@
-import logging
-import time
-import re
 import inspect
-from collections import namedtuple
+import logging
+import re
+import time
+from collections import defaultdict
 from functools import wraps
+import random
 
-from ngts.tools.test_utils import allure_utils as allure
-from ngts.nvos_tools.infra.ResultObj import ResultObj
-from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_constants.constants_nvos import PlatformConsts, IbConsts, ApiType, OutputFormat, SystemConsts, ClusterAppsLogLevels, ClusterConsts, NvosConst
+from ngts.nvos_constants.constants_nvos import IbConsts, OutputFormat, SystemConsts
 from ngts.nvos_tools.ib.Ib import Ib
-from ngts.nvos_tools.infra.Tools import Tools
-from ngts.nvos_tools.infra.ValidationTool import ValidationTool
+from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.nvos_tools.infra.ResultObj import ResultObj
+from ngts.nvos_tools.infra.Tools import Tools
+from ngts.nvos_tools.infra.ValidationTool import ValidationTool
+from ngts.nvos_tools.nmx.Cluster import Cluster
+from ngts.nvos_tools.nmx.Sdn import Sdn
+from ngts.nvos_tools.platform.Platform import Platform
+from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
+from ngts.tools.test_utils import allure_utils as allure
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
+from ngts.nvos_tools.infra.RegressionConfigurations import Configurations
+from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 
 logger = logging.getLogger()
-
-NMX_CONTROLLER = 'nmx-controller'
-NMX_TELEMETRY = 'nmx-telemetry'
-TELEMETRY_SERVICES = ['nmx-connector', 'ib-telemetry']
-CONTROLLER_SERVICES = ['nmxc-sdn', 'nmxc-fib', 'redis']
-INITIAL_EXPECTED_APPS = [NMX_CONTROLLER, NMX_TELEMETRY]
-NMX_CONTROLLER_CONFIG_FILE_TYPES = ['fm_config', 'sm_config', 'rdm_config', 'chassis_mapping']
-NMX_CONTROLLER_STATE_FILE_TYPES = ['sm_dump', 'topology']
-ClusterAppsLogLevelsList = [ClusterAppsLogLevels.DEBUG, ClusterAppsLogLevels.INFO, ClusterAppsLogLevels.NOTICE, ClusterAppsLogLevels.WARNING, ClusterAppsLogLevels.ERROR, ClusterAppsLogLevels.CRITICAL]
-NMX_LOG_MESSAGES_TAGS = ['nmxc-sm', 'nmxc-fm', 'nmxc-fib', 'nmxc-gw_api', 'nmxc-rest', 'nmxc-config_daemon']
-WAIT_FOR_APPS_RUNNING = 15
-NMXC_CONN = 'nmxc-conn'
-NMXC_CONN_STATE_PER_CLUSTER_STATE = {NvosConst.ENABLED: 'up', NvosConst.DISABLED: 'down'}
 
 
 class ClusterTools:
 
     @staticmethod
-    def stop_start_app(cluster, engines, devices):
+    def stop_start_app(cluster, engines, devices, has_loopbox, setup_name):
         with allure.step("Stop/Start apps"):
-            for app in INITIAL_EXPECTED_APPS:
+            for app in ClusterConsts.INITIAL_EXPECTED_APPS:
                 with allure.step(f"Validate app {app} is up"):
+                    ClusterTools.reboot_compute_nodes_gpus(setup_name)
                     ClusterTools.verify_app_is_up(engines, app)
-                    if app == NMX_CONTROLLER:
+                    if app == ClusterConsts.NMX_CONTROLLER:
                         ClusterTools.verify_lid_value(devices)
-                        ClusterTools.verify_interface_up(devices)
+                        ClusterTools.verify_interface_up(devices, has_loopbox, setup_name)
                 with allure.step("Running 'nv show cluster apps running' command and verifying output"):
-                    output = OutputParsingTool.parse_show_output_to_dict(
-                        cluster.apps.running.show(output_format=OutputFormat.json),
-                        output_format=OutputFormat.json).get_returned_value()
-                    app_status = output[app]['status']
-                    assert app_status == 'ok', f"App {app} status is {app_status} instead of 'ok"
+                    if app == ClusterConsts.NMX_CONTROLLER and is_bug_active(4207869):
+                        pass
+                    else:
+                        output = OutputParsingTool.parse_show_output_to_dict(
+                            cluster.apps.running.show(output_format=OutputFormat.json),
+                            output_format=OutputFormat.json).get_returned_value()
+                        app_status = output[app]['status']
+                        assert app_status == 'ok', f"App {app} status is {app_status} instead of 'ok"
                 with allure.step(f"Stop app {app} and validate its down"):
-                    cluster.apps.apps_name[app].action_stop_cluster_apps()
+                    cluster.apps.app_name[app].action_stop_cluster_app()
                     ClusterTools.wait_for_apps_to_be_in_wanted_state()
                     # TBD -- once "running" is working, use it to verify app is not running
                     ClusterTools.verify_app_is_down(engines, app)
 
                 with allure.step(f"Start app again {app} and validate its up"):
-                    output = cluster.apps.apps_name[app].action_start_cluster_apps()
+                    output = cluster.apps.app_name[app].action_start_cluster_app()
                     ClusterTools.wait_for_apps_to_be_in_wanted_state()
+                    ClusterTools.reboot_compute_nodes_gpus(setup_name)
                 ClusterTools.verify_app_is_up(engines, app)
-                if app == NMX_CONTROLLER:
+                if app == ClusterConsts.NMX_CONTROLLER:
                     ClusterTools.verify_lid_value(devices)
-                    ClusterTools.verify_interface_up(devices)
+                    ClusterTools.verify_interface_up(devices, has_loopbox, setup_name)
                 with allure.step("Running 'nv show cluster apps running' command and verifying output"):
-                    output = OutputParsingTool.parse_show_output_to_dict(
-                        cluster.apps.running.show(output_format=OutputFormat.json),
-                        output_format=OutputFormat.json).get_returned_value()
-                    app_status = output[app]['status']
-                    assert app_status == 'ok', f"App {app} status is {app_status} instead of 'ok"
+                    if app == ClusterConsts.NMX_CONTROLLER and is_bug_active(4207869):
+                        pass
+                    else:
+                        output = OutputParsingTool.parse_show_output_to_dict(
+                            cluster.apps.running.show(output_format=OutputFormat.json),
+                            output_format=OutputFormat.json).get_returned_value()
+                        app_status = output[app]['status']
+                        assert app_status == 'ok', f"App {app} status is {app_status} instead of 'ok"
 
             return ResultObj(result=True)
 
     @staticmethod
-    def start_cluster(cluster, output_format=OutputFormat.json):
+    def start_cluster(cluster, setup_name, output_format=OutputFormat.json, verify_nmx_c=True):
         with allure.step("Start cluster"):
             output = OutputParsingTool.parse_show_output_to_dict(
                 cluster.show(output_format=output_format),
@@ -82,6 +85,7 @@ class ClusterTools:
                 cluster.set(op_param_name="state", op_param_value='enabled', apply=True)
 
             ClusterTools.wait_for_apps_to_be_in_wanted_state()
+            ClusterTools.reboot_compute_nodes_gpus(setup_name)
             output = OutputParsingTool.parse_show_output_to_dict(
                 cluster.show(output_format=output_format),
                 output_format=output_format).get_returned_value()
@@ -90,15 +94,32 @@ class ClusterTools:
                 assert output[SystemConsts.STATE] == 'enabled', f"Cluster state is , " \
                     f"{output[SystemConsts.STATE]}, Expected to be: " \
                     f"enabled"
-                assert NMXC_CONN in output, f"{NMXC_CONN} was not found in {output}"
-                expected_nmxc_state = NMXC_CONN_STATE_PER_CLUSTER_STATE[output[SystemConsts.STATE]]
-                Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output,
-                                                                  field_name=NMXC_CONN,
-                                                                  expected_value=expected_nmxc_state).verify_result()
-                assert output[NMXC_CONN] == expected_nmxc_state, f"{NMXC_CONN} state was expected to be {expected_nmxc_state} but instead it was {output[NMXC_CONN]}"
+                assert ClusterConsts.NMXC_CONN in output, f"{ClusterConsts.NMXC_CONN} was not found in {output}"
+                if verify_nmx_c:
+                    expected_nmxc_state = ClusterConsts.NMXC_CONN_STATE_PER_CLUSTER_STATE[output[SystemConsts.STATE]]
+                    Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output,
+                                                                      field_name=ClusterConsts.NMXC_CONN,
+                                                                      expected_value=expected_nmxc_state).verify_result()
 
     @staticmethod
-    def check_cluster_state(cluster, output_format):
+    def validate_cluster_enabled(cluster, output_format=OutputFormat.json):
+        output = OutputParsingTool.parse_show_output_to_dict(
+            cluster.show(output_format=output_format),
+            output_format=output_format).get_returned_value()
+
+        with allure.step("Validate state is enabled"):
+            assert output[SystemConsts.STATE] == 'enabled', f"Cluster state is , " \
+                f"{output[SystemConsts.STATE]}, Expected to be: " \
+                f"enabled"
+            assert ClusterConsts.NMXC_CONN in output, f"{ClusterConsts.NMXC_CONN} was not found in {output}"
+            expected_nmxc_state = ClusterConsts.NMXC_CONN_STATE_PER_CLUSTER_STATE[output[SystemConsts.STATE]]
+            Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output,
+                                                              field_name=ClusterConsts.NMXC_CONN,
+                                                              expected_value=expected_nmxc_state).verify_result()
+            assert output[ClusterConsts.NMXC_CONN] == expected_nmxc_state, f"{ClusterConsts.NMXC_CONN} state was expected to be {expected_nmxc_state} but instead it was {output[ClusterConsts.NMXC_CONN]}"
+
+    @staticmethod
+    def check_cluster_state(cluster, output_format=OutputFormat.json):
         with allure.step("Check cluster state"):
             output = OutputParsingTool.parse_show_output_to_dict(
                 cluster.show(output_format=output_format),
@@ -106,11 +127,11 @@ class ClusterTools:
             return output[SystemConsts.STATE]
 
     @staticmethod
-    def reverse_cluster_state(cluster, output_format):
+    def reverse_cluster_state(cluster, setup_name, output_format):
         if ClusterTools.check_cluster_state(cluster, output_format) == 'enabled':
             ClusterTools.stop_cluster(cluster, output_format)
         else:
-            ClusterTools.start_cluster(cluster, output_format)
+            ClusterTools.start_cluster(cluster, setup_name, output_format=output_format)
 
     @staticmethod
     def stop_cluster(cluster, output_format=OutputFormat.json):
@@ -134,9 +155,9 @@ class ClusterTools:
                 assert output[SystemConsts.STATE] == 'disabled', f"State state is , " \
                     f"{output[SystemConsts.STATE]}, Expected to be: " \
                     f"disabled"
-                assert NMXC_CONN in output, f"{NMXC_CONN} was not found in {output}"
-                expected_nmxc_state = NMXC_CONN_STATE_PER_CLUSTER_STATE[output[SystemConsts.STATE]]
-                assert output[NMXC_CONN] == expected_nmxc_state, f"{NMXC_CONN} state was expected to be {expected_nmxc_state} but instead it was {output[NMXC_CONN]}"
+                assert ClusterConsts.NMXC_CONN in output, f"{ClusterConsts.NMXC_CONN} was not found in {output}"
+                expected_nmxc_state = ClusterConsts.NMXC_CONN_STATE_PER_CLUSTER_STATE[output[SystemConsts.STATE]]
+                assert output[ClusterConsts.NMXC_CONN] == expected_nmxc_state, f"{ClusterConsts.NMXC_CONN} state was expected to be {expected_nmxc_state} but instead it was {output[ClusterConsts.NMXC_CONN]}"
 
     @staticmethod
     def verify_app_is_up(engines, app):
@@ -144,7 +165,7 @@ class ClusterTools:
             output = engines.dut.run_cmd('docker ps | grep -i nmx')
             assert output != '', f"nmx docker is still down, {output}"
             output = output.split('\n')
-            expected_services = CONTROLLER_SERVICES if app == NMX_CONTROLLER else TELEMETRY_SERVICES
+            expected_services = ClusterConsts.CONTROLLER_SERVICES if app == ClusterConsts.NMX_CONTROLLER else ClusterConsts.TELEMETRY_SERVICES
             all_services_present = all(any(service in line for line in output) for service in expected_services)
             assert all_services_present, f"Missing services - expected services {expected_services}, actual: {output}"
 
@@ -153,7 +174,7 @@ class ClusterTools:
         with allure.step("Checking if service is down using docker ps | grep -i nmx"):
             output = engines.dut.run_cmd('docker ps | grep -i nmx')
             output = output.split('\n')
-            expected_services = CONTROLLER_SERVICES if app == NMX_CONTROLLER else TELEMETRY_SERVICES
+            expected_services = ClusterConsts.CONTROLLER_SERVICES if app == ClusterConsts.NMX_CONTROLLER else ClusterConsts.TELEMETRY_SERVICES
             none_services_present = all(not any(service in line for line in output) for service in expected_services)
             assert none_services_present, f"nmx docker is still up, {output}"
 
@@ -183,10 +204,14 @@ class ClusterTools:
                     assert dev_output['lid'] > 0, "Invalid number of lid"
 
     @staticmethod
-    def verify_interface_up(devices):
-        for interface_type in ['sw', 'fnm']:
-            if devices.dut.nvl5_trunk_ports_list == [] and interface_type == 'sw':
-                continue
+    def verify_interface_up(devices, has_loopbox, setup_name):
+        if setup_name in Configurations.non_standalone_systems:
+            interface_types = ['acp']
+        if setup_name not in Configurations.non_standalone_systems and has_loopbox:
+            interface_types = ['fnm']
+        else:
+            interface_types = []
+        for interface_type in interface_types:
             port_type = 'fnm' if interface_type == 'fnm' else ''
             selected_port = Tools.RandomizationTool.select_random_port(requested_ports_logical_state=NvosConsts.LINK_LOG_STATE_ACTIVE, requested_ports_type=port_type, interface_type=interface_type).get_returned_value()
             output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
@@ -201,36 +226,55 @@ class ClusterTools:
                                                               field_name=IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE,
                                                               expected_value=IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE_LINK_UP).verify_result()
 
-    # @staticmethod
-    # def verify_interface_down(devices, selected_port):
-    #     port_type = devices.dut.switch_type.lower()
-    #     output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
-    #         selected_port.interface.link.show()).get_returned_value()
-    #     Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
-    #                                                       field_name=IbInterfaceConsts.LINK_STATE,
-    #                                                       expected_value=NvosConsts.LINK_STATE_DOWN).verify_result()
-    #     Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
-    #                                                       field_name=IbInterfaceConsts.LINK_LOGICAL_PORT_STATE,
-    #                                                       expected_value=IbInterfaceConsts.LINK_LOGICAL_PORT_STATE_DOWN).verify_result()
-    #     Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
-    #                                                       field_name=IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE,
-    #                                                       expected_value=IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE_POLLING).verify_result()
+        with allure.step("Verify switch ports state - that are connected to transceivers"):
+            ClusterTools().verify_external_interfaces_state_up_and_active(devices)
 
     @staticmethod
-    def start_stop_cluster(cluster, output_format):
-        ClusterTools.start_cluster(cluster, output_format)
+    def get_all_interfaces_with_transceivers(devices):
+        interfaces = []
+        platform = Platform()
+        present_transceivers = platform.transceiver.get_list_of_connected_transceivers()
+
+        for transceiver in present_transceivers:
+            interfaces.extend([interface for interface in devices.dut.nvl5_trunk_ports_list if interface.startswith(transceiver)])
+        return interfaces
+
+    @staticmethod
+    def verify_external_interfaces_state_up_and_active(devices):
+        interfaces = ClusterTools().get_all_interfaces_with_transceivers(devices)
+        for interface in interfaces:
+            selected_port = Port(interface, "", "")
+            # Verify fields.
+            output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
+                selected_port.interface.link.show()).get_returned_value()
+            Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
+                                                              field_name=IbInterfaceConsts.LINK_STATE,
+                                                              expected_value=NvosConsts.LINK_STATE_UP).verify_result()
+            Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
+                                                              field_name=IbInterfaceConsts.LINK_LOGICAL_PORT_STATE,
+                                                              expected_value=IbInterfaceConsts.LINK_LOGICAL_PORT_STATE_ACTIVE).verify_result()
+            Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
+                                                              field_name=IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE,
+                                                              expected_value=IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE_LINK_UP).verify_result()
+
+    @staticmethod
+    def start_stop_cluster(cluster, setup_name, output_format):
+        ClusterTools.start_cluster(cluster, setup_name, output_format)
         ClusterTools.stop_cluster(cluster, output_format)
         return ResultObj(result=True)
 
     @staticmethod
     def verify_apps_running(engines, devices, cluster, expected_state, output_format):
         with allure.step("Running 'nv show cluster apps running' command and verifying output"):
-            for app in INITIAL_EXPECTED_APPS:
+            for app in ClusterConsts.INITIAL_EXPECTED_APPS:
                 output = OutputParsingTool.parse_show_output_to_dict(
                     cluster.apps.running.show(output_format=output_format),
                     output_format=output_format).get_returned_value()
                 app_status = output[app]['status']
-                assert app_status == expected_state, f"App {app} status is {app_status} instead of {expected_state}"
+                if app == ClusterConsts.NMX_CONTROLLER and is_bug_active(4207869):
+                    pass
+                else:
+                    assert app_status == expected_state, f"App {app} status is {app_status} instead of {expected_state}"
                 ClusterTools.verify_app_is_up(engines, app)
             ClusterTools.verify_lid_value(devices)
 
@@ -243,31 +287,34 @@ class ClusterTools:
                 f"Expected {app} version: {expected_version}. Actual version: {output[app][ClusterConsts.APP_VERSION]}"
 
     @staticmethod
-    def start_app(cluster, app):
+    def start_app(cluster, app, has_loopbox):
         with allure.step(f"Start app {app}"):
-            cluster.apps.apps_name[app].action_start_cluster_apps()
+            cluster.apps.app_name[app].action_start_cluster_app()
             ClusterTools.wait_for_apps_to_be_in_wanted_state()
-            with allure.step("Running 'nv show cluster apps running' command and verifying output"):
-                output = OutputParsingTool.parse_show_output_to_dict(
-                    cluster.apps.running.show(output_format=OutputFormat.json),
-                    output_format=OutputFormat.json).get_returned_value()
-                app_status = output[app]['status']
-                assert app_status == 'ok', f"App {app} status is {app_status} instead of 'ok"
+            if app == ClusterConsts.NMX_CONTROLLER and is_bug_active(4207869):
+                pass
+            else:
+                with allure.step("Running 'nv show cluster apps running' command and verifying output"):
+                    output = OutputParsingTool.parse_show_output_to_dict(
+                        cluster.apps.running.show(output_format=OutputFormat.json),
+                        output_format=OutputFormat.json).get_returned_value()
+                    app_status = output[app]['status']
+                    assert app_status == 'ok', f"App {app} status is {app_status} instead of 'ok"
 
     @staticmethod
     def stop_app(cluster, app):
         with allure.step(f"Stop app {app}"):
-            cluster.apps.apps_name[app].action_stop_cluster_apps()
+            cluster.apps.app_name[app].action_stop_cluster_app()
             ClusterTools.wait_for_apps_to_be_in_wanted_state()
 
     @staticmethod
-    def get_current_config_files_paths(sdn):
+    def get_current_config_files_paths(sdn, app, files_types):
         files_dict = {}
         with allure.step("Fetch & Generate config files"):
-            for file_type in NMX_CONTROLLER_CONFIG_FILE_TYPES:
-                output = sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].action_generate_sdn()
+            for file_type in files_types:
+                output = sdn.config.app.app_name[app].type.file_type[file_type].action_generate_sdn()
                 installed_file = ClusterTools().get_generated_file_name(output.returned_value, 'config')
-                output = OutputParsingTool.parse_show_output_to_dict(sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=OutputFormat.json),
+                output = OutputParsingTool.parse_show_output_to_dict(sdn.config.app.app_name[app].type.file_type[file_type].files.show(output_format=OutputFormat.json),
                                                                      output_format=OutputFormat.json).get_returned_value()
                 current_installed_config_path = output[installed_file]['path']
                 files_dict[file_type] = current_installed_config_path
@@ -289,28 +336,121 @@ class ClusterTools:
     def verify_log_level(log_level, app, output_format, cluster):
         with allure.step(f"Verifying log level is updated to {log_level}"):
             output = OutputParsingTool.parse_show_output_to_dict(
-                cluster.apps.apps_name[app].loglevel.show(output_format=output_format),
+                cluster.apps.app_name[app].loglevel.show(output_format=output_format),
                 output_format=output_format).get_returned_value()
             # Add assert on log level
             assert output['log-level'] == log_level, f"Expected log level: {log_level}, Actual log-level {output['log-level']}"
 
     @staticmethod
-    def verify_log_messages_log_level(log_level, system, test_api, cluster):
+    def create_empty_partition(sdn, partitions_mapping, output_format=OutputFormat.json):
+        with allure.step("Create empty partition"):
+            resiliency_mode = random.choice(ClusterConsts.RESILIENCY_MODES)
+            mcast_limit = random.randint(ClusterConsts.MIN_MCAST, ClusterConsts.MAX_MCAST)
+            sdn.partition.partition_id[ClusterConsts.EMPTY_PARTITION_ID].action_create_partition_id(name=ClusterConsts.EMPTY_PARTITION_NAME, resiliency_mode=resiliency_mode, mcast_limit=mcast_limit)
+
+        with allure.step("Checking newly created partition"):
+            output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
+                                                                 output_format=output_format).get_returned_value()
+            assert ClusterConsts.EMPTY_PARTITION_ID in list(output.keys()), f'Partition {ClusterConsts.EMPTY_PARTITION_ID} was not created'
+            output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.partition_id[ClusterConsts.EMPTY_PARTITION_ID].show(output_format=output_format),
+                                                                 output_format=output_format).get_returned_value()
+            partitions_mapping[ClusterConsts.EMPTY_PARTITION_ID] = []
+            if not is_bug_active(4190587):
+                expected_output = {'health': 'healthy', 'locations': {}, 'mcast-limit': mcast_limit, 'name': ClusterConsts.EMPTY_PARTITION_NAME, 'num-gpus': 0, 'partition-type': '', 'resiliency-mode': resiliency_mode, 'uuids': {}}
+                ClusterTools.validate_partition_content(output, expected_output)
+
+    @staticmethod
+    def validate_partition_content(output, expected_output):
+        for key, val in expected_output.items():
+            if key in ['locations', 'uuids']:
+                assert set(output[key].keys()) == set(val.keys()), f'Expected values for {key:}: {set(val.keys())}, Actual values: {set(val.keys())}'
+            else:
+                assert output[key] == val, f'Expected value: {val}, Actual value:{output[key]}'
+
+    @staticmethod
+    def create_empty_partition_and_add_gpu(sdn, no_reroute='', output_format=OutputFormat.json):
+        mapping, original_partition_type = ClusterTools.get_partition_mapping(sdn)
+        valid_ids = [key for key, value in mapping.items() if len(value) > 0]
+        ClusterTools.create_empty_partition(sdn, mapping)
+        partition_type = random.choice(ClusterConsts.PARTITION_TYPES)
+        partition_to_remove_from = random.choice(valid_ids)
+        gpus_in_partition = mapping[partition_to_remove_from]
+        (uuid, location) = random.choice(gpus_in_partition)
+        with allure.step(f"Remove GPU from partition {partition_to_remove_from}"):
+            if original_partition_type == 'location_based':
+                sdn.partition.partition_id[partition_to_remove_from].location.location_id[location].action_restore_partition(reroute_param=no_reroute)
+            else:
+                sdn.partition.partition_id[partition_to_remove_from].uuid.uuid_value[uuid].action_restore_partition(reroute_param=no_reroute)
+
+        with allure.step(f"Add GPU {uuid} {location} to empty partition {ClusterConsts.EMPTY_PARTITION_ID}"):
+            empty_partition_type = random.choice(['uuid', 'location'])
+            if empty_partition_type == 'location':
+                sdn.partition.partition_id[ClusterConsts.EMPTY_PARTITION_ID].location.location_id[location].action_update_partition(reroute_param=no_reroute)
+            else:
+                sdn.partition.partition_id[ClusterConsts.EMPTY_PARTITION_ID].uuid.uuid_value[uuid].action_update_partition(reroute_param=no_reroute)
+        return uuid, location, ClusterConsts.EMPTY_PARTITION_ID, partition_to_remove_from
+
+    @staticmethod
+    def uuid_location_in_partition(sdn, partition_id):
+        output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.partition_id[partition_id].show(output_format=output_format),
+                                                             output_format=output_format).get_returned_value()
+        uuids = list((output['uuids']).keys())
+        locations = list((output['locations']).keys())
+        return uuids, locations
+
+    @staticmethod
+    def get_partition_mapping(sdn, output_format=OutputFormat.json):
+        mapping = {}
+        with allure.step("Show All Partitions - at the beginning its just the default partition"):
+            initial_partition_output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
+                                                                                   output_format=output_format).get_returned_value()
+            partition_ids = list(initial_partition_output.keys())
+            default_partition_id = partition_ids[-1]
+            default_partition_type = initial_partition_output[default_partition_id]['partition-type']
+        with allure.step("Show partition per partition id"):
+            for partition_id in partition_ids:
+                output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.partition_id[partition_id].show(output_format=output_format),
+                                                                     output_format=output_format).get_returned_value()
+                list_of_tuples = ClusterTools.get_partition_uuid_location_map(output)
+                mapping[partition_id] = list_of_tuples
+        return mapping, default_partition_type
+
+    @staticmethod
+    def get_partition_uuid_location_map(partition_output):
+        # TODO - Values are not ordered in show. so we need to retrieve from topology file once its available!
+        locations = list(partition_output["locations"].keys())
+        uuids = list(partition_output["uuids"].keys())
+        mapping_list = []
+        for uuid, location in zip(uuids, locations):
+            mapping_list.append((uuid, location))
+        return mapping_list
+
+    @staticmethod
+    def delete_empty_partition(sdn, partitions_mapping, output_format=OutputFormat.json):
+        with allure.step("Delete empty partition"):
+            sdn.partition.partition_id[ClusterConsts.EMPTY_PARTITION_ID].action_delete_partition()
+            output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
+                                                                 output_format=output_format).get_returned_value()
+            assert ClusterConsts.EMPTY_PARTITION_ID not in list(output.keys()), f'Partition {ClusterConsts.EMPTY_PARTITION_ID} was not deleted'
+        partitions_mapping.pop(ClusterConsts.EMPTY_PARTITION_ID)
+
+    @staticmethod
+    def verify_log_messages_log_level(log_level, system, test_api, cluster, setup_name):
         ClusterTools().stop_cluster(cluster)
-        ClusterTools().start_cluster(cluster)
+        ClusterTools().start_cluster(cluster, setup_name)
         TestToolkit.tested_api = 'NVUE'
         lines_checked = 0
         # Get the index of the current log level
-        current_level_index = ClusterAppsLogLevelsList.index(log_level)
+        current_level_index = ClusterConsts.ClusterAppsLogLevelsList.index(log_level)
 
         # Define the expected log levels based on the current log level
-        expected_log_levels = ClusterAppsLogLevelsList[current_level_index:]
-        unexpected_log_levels = ClusterAppsLogLevelsList[0:current_level_index]
+        expected_log_levels = ClusterConsts.ClusterAppsLogLevelsList[current_level_index:]
+        unexpected_log_levels = ClusterConsts.ClusterAppsLogLevelsList[0:current_level_index]
         # Convert expected log levels to uppercase
         expected_log_levels_upper = [level.upper() for level in expected_log_levels]
         unexpected_log_levels = [level.upper() for level in unexpected_log_levels]
 
-        show_output = system.log.show_log(param=f"| grep -E \"{'|'.join(NMX_LOG_MESSAGES_TAGS)}\"").split('\n')[1:]
+        show_output = system.log.show_log(param=f"| grep -E \"{'|'.join(ClusterConsts.NMX_LOG_MESSAGES_TAGS)}\"").split('\n')[1:]
         for line in show_output:
             if ":~$" in line:  # Symbolizes start of prompt line, no need to check.
                 continue
@@ -323,24 +463,122 @@ class ClusterTools:
 
     @staticmethod
     def wait_for_apps_to_be_in_wanted_state():
-        time.sleep(WAIT_FOR_APPS_RUNNING)
-        logger.info(f'Sleeping for {WAIT_FOR_APPS_RUNNING} seconds until apps are running')
+        time.sleep(ClusterConsts.WAIT_FOR_APPS_RUNNING)
+        logger.info(f'Sleeping for {ClusterConsts.WAIT_FOR_APPS_RUNNING} seconds until apps are running')
 
     @staticmethod
     def verify_sdn_config_files_deleted(sdn):
         with allure.step("Running nv show sdn config app <app> type <type> files and make sure files are deleted"):
-            for file_type in NMX_CONTROLLER_CONFIG_FILE_TYPES:
-                files = OutputParsingTool.parse_show_output_to_dict(sdn.config.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=OutputFormat.json),
+            for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_CONFIG_FILES:
+                app = ClusterConsts.MAP_CONFIG_FILE_TYPE_TO_APP[file_type]
+                files = OutputParsingTool.parse_show_output_to_dict(sdn.config.app.app_name[app].type.file_type[file_type].files.show(output_format=OutputFormat.json),
                                                                     output_format=OutputFormat.json).get_returned_value()
                 assert not files, f"Expected to get empty output, but instead received {output}"
 
     @staticmethod
     def verify_sdn_state_files_deleted(sdn):
         with allure.step("Running nv show sdn state app <app> type <type> files and make sure files are deleted"):
-            for file_type in NMX_CONTROLLER_STATE_FILE_TYPES:
-                files = OutputParsingTool.parse_show_output_to_dict(sdn.state.app.app_name[NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=OutputFormat.json),
+            for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_STATE_FILES:
+                app = ClusterConsts.MAP_STATE_FILE_TYPE_TO_APP[file_type]
+                files = OutputParsingTool.parse_show_output_to_dict(sdn.state.app.app_name[app].type.file_type[file_type].files.show(output_format=OutputFormat.json),
                                                                     output_format=OutputFormat.json).get_returned_value()
                 assert not files, f"Expected to get empty output, but instead received {output}"
+
+    @staticmethod
+    def reboot_compute_nodes_gpus(setup_name):
+        if setup_name in list(Configurations.compute_nodes_per_system.keys()):
+            for node in Configurations.compute_nodes_per_system[setup_name]:
+                ip_address = node['ip_address']
+                username = node['username']
+                password = node['password']
+                new_engine = LinuxSshEngine(ip_address, username, password)
+                new_engine.run_cmd(f"echo {password} | sudo -S nvidia-smi -r ; sleep 1")
+                new_engine.run_cmd(f"{password}")
+            time.sleep(10)
+
+    @staticmethod
+    def wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name):
+        fm_config = ClusterConsts.NMX_CONTROLLER_CONFIG_FILE_TYPES[0]
+        output = sdn.config.app.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[fm_config].action_generate_sdn().get_returned_value()
+        generated_file_name = ClusterTools().get_generated_sdn_file(output, 'config')
+        output_format = OutputFormat.json
+        output = OutputParsingTool.parse_show_output_to_dict(sdn.config.app.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[fm_config].files.show(output_format=output_format),
+                                                             output_format=output_format).get_returned_value()
+        path_to_generated_file = output[generated_file_name]['path']
+        original_content = engines.dut.run_cmd(f"cat {path_to_generated_file}")
+        logger.info("Adjusted fm_config file content.")  # TODO ADD A PROPER COMMENTnuadnjsandsndasfg
+        engines.dut.run_cmd(
+            f"""
+            sudo sed -i '/^MNNVL_TOPOLOGY=/c\\MNNVL_TOPOLOGY=gb200_nvl36r1_c2g4_topology' {path_to_generated_file} && \
+            sudo grep -q '^MNNVL_TOPOLOGY=' {path_to_generated_file} || echo 'MNNVL_TOPOLOGY=gb200_nvl36r1_c2g4_topology' | sudo tee -a {path_to_generated_file} && \
+            sudo sed -i '/^MNNVL_PARTIALLY_POPULATED_TOPOLOGY=/c\\MNNVL_PARTIALLY_POPULATED_TOPOLOGY=1' {path_to_generated_file} && \
+            sudo grep -q '^MNNVL_PARTIALLY_POPULATED_TOPOLOGY=' {path_to_generated_file} || echo 'MNNVL_PARTIALLY_POPULATED_TOPOLOGY=1' | sudo tee -a {path_to_generated_file}
+            """
+        )
+
+        sdn.config.app.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[fm_config].files.file_name[generated_file_name].action_file_install(force=False)
+
+        ClusterTools().stop_app(cluster, ClusterConsts.NMX_CONTROLLER)
+        ClusterTools().start_app(cluster, ClusterConsts.NMX_CONTROLLER, has_loopbox)
+
+        ClusterTools.reboot_compute_nodes_gpus(setup_name)
+
+        ClusterTools().validate_cluster_enabled(cluster)
+        yield
+        if ClusterTools.check_cluster_state(cluster, output_format) == 'disabled':
+            ClusterTools.start_cluster(cluster, setup_name, output_format=output_format)
+        cleanup_command = f"echo '{original_content}' | sudo tee {path_to_generated_file} > /dev/null"
+        engines.dut.run_cmd(cleanup_command)
+
+        sdn.config.app.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[fm_config].files.file_name[generated_file_name].action_file_install(force=False)
+        sdn.config.app.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[fm_config].files.file_name[generated_file_name].action_delete()
+
+    @staticmethod
+    def get_generated_sdn_file(output, file_type):
+        # Use a regular expression to capture the filename
+        match = re.search(fr"App {file_type} file (\S+)", output)
+        if match:
+            filename = match.group(1)
+            return filename
+        else:
+            return None
+
+
+def summarize_switch_ports(ports_list):
+    # Dictionary to store ranges for each prefix
+    segments = defaultdict(set)
+
+    # Regex to match any prefix followed by numbers (e.g., "sw1", "p1", "s1")
+    pattern = re.compile(r'([a-zA-Z]+)(\d+)')
+
+    for port in ports_list:
+        # Find all (prefix, number) pairs in each port string
+        matches = pattern.findall(port)
+        for prefix, num in matches:
+            segments[prefix].add(int(num))  # Collect numbers for each prefix
+
+    # Build the summary string
+    summary_parts = []
+    for prefix, numbers in segments.items():
+        min_num, max_num = min(numbers), max(numbers)
+        summary_parts.append(f"{prefix}{min_num}-{max_num}")
+
+    # Join the parts into the final string
+    return ''.join(summary_parts)
+
+
+def refresh_switch_ports(ports_list, engines):
+    TestToolkit.tested_api = 'NVUE'
+    port_name = summarize_switch_ports(ports_list)
+    selected_port = Port(port_name, "", "")
+    port_state = NvosConsts.LINK_STATE_DOWN
+    selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True).verify_result()
+    TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
+    time.sleep(30)
+    port_state = NvosConsts.LINK_STATE_UP
+    selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True).verify_result()
+    TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
+    time.sleep(30)
 
 
 def disabled_access_ports(func):
@@ -354,17 +592,38 @@ def disabled_access_ports(func):
         # Access 'devices' from bound arguments
         devices = bound_args.arguments.get('devices', None)
         engines = bound_args.arguments.get('engines', None)
+        has_loopbox = bound_args.arguments.get('has_loopbox', None)
+        standalone_system = bound_args.arguments.get('standalone_system', None)
+        setup_name = bound_args.arguments.get('setup_name', None)
         has_access_ports = True
+        interface_wa_called = False
         try:
             TestToolkit.tested_api = 'NVUE'
-            if not devices or not devices.dut or not hasattr(devices.dut, 'nvl5_access_ports_list'):
+            if not hasattr(devices.dut, 'nvl5_access_ports_list'):
                 has_access_ports = False
-            if has_access_ports:
+            if has_access_ports and standalone_system:
                 port_name = summarize_ports(devices.dut.nvl5_access_ports_list)
                 selected_port = Port(port_name, "", "")
                 port_state = NvosConsts.LINK_STATE_DOWN
                 selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True).verify_result()
                 TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
+            if not standalone_system:
+                for port in Configurations.ports_to_disable[setup_name]:
+                    selected_port = Port(port, "", "")
+                    port_state = NvosConsts.LINK_STATE_DOWN
+                    selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True).verify_result()
+                TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
+
+            cluster = Cluster()
+            sdn = Sdn()
+            ClusterTools().stop_cluster(cluster)
+            ClusterTools().start_cluster(cluster, setup_name)
+            interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name)
+            next(interfaces_wa)
+            interface_wa_called = True
+            with allure.step("Unset Cluster before test starts to run, to make sure we are at the correct init state"):
+                cluster.unset(apply=True)
+                ClusterTools.wait_for_apps_to_be_in_wanted_state()
             # Execute the test function
             return func(*args, **kwargs)
         finally:
@@ -374,6 +633,18 @@ def disabled_access_ports(func):
                 port_state = NvosConsts.LINK_STATE_UP
                 selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True).verify_result()
                 TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
+
+            if interface_wa_called:
+                try:
+                    next(interfaces_wa)
+                except StopIteration:
+                    pass  # Or handle it if necessary
+            if hasattr(devices.dut, 'nvl5_trunk_ports_list') and devices.dut.nvl5_trunk_ports_list:
+                refresh_switch_ports(devices.dut.nvl5_trunk_ports_list, engines)
+            with allure.step("Reset cluster state"):
+                if ClusterTools.check_cluster_state(cluster, OutputFormat.json) == 'enabled':
+                    cluster.unset(apply=True)
+                    ClusterTools.wait_for_apps_to_be_in_wanted_state()
     return wrapper
 
 

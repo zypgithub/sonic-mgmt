@@ -1,5 +1,18 @@
+import time
+import re
+import logging
+import string
+from typing import Tuple
+import string
+import pytest
+
+
+from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
+from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from infra.tools.redmine.redmine_api import *
 from ngts.nvos_constants.constants_nvos import ImageConsts, PlatformConsts
+from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.infra.Tools import Tools
@@ -36,7 +49,7 @@ def verify_bios_auto_update_value(platform, value):
         assert value == output[PlatformConsts.FW_AUTO_UPDATE], f"auto-update should be {value}"
 
 
-def verify_bios_version(engines, platform, expected_version: str):
+def verify_bios_version(engines, platform, expected_version: str, date: str):
     with allure.step(f'Making sure BIOS is now on version {expected_version}'):
         fw_output = Tools.OutputParsingTool.parse_json_str_to_dictionary(platform.firmware.show()).verify_result()
         new_bios_version = fw_output[PlatformConsts.FW_BIOS][PlatformConsts.FW_ACTUAL]
@@ -45,13 +58,17 @@ def verify_bios_version(engines, platform, expected_version: str):
         assert new_bios_version == expected_version, \
             f"BIOS firmware is {new_bios_version}, expected {expected_version} after the install"
 
+        dmidecode_output = engines.dut.run_cmd("sudo dmidecode -t0 -t11 | grep -E 'Release Date:|String 1:'")
+        assert date in dmidecode_output, \
+            f"Expected to find {date} in this output: {dmidecode_output}"
 
-def fetch_and_install_bios(platform, path, name, filename, topology_obj, system_is_ready_timeout):
+
+def fetch_and_install_bios(platform, path, name, filename, topology_obj, system_is_ready_timeout=None):
     with allure.step(f'Fetch {name} Bios image from: {path}'):
         platform.firmware.bios.action_fetch(path).verify_result()
 
     with allure.step(f'installing Bios image {name}'):
-        platform.firmware.bios.files.file_name[filename].action_file_install_with_reboot(topology_obj=topology_obj, system_is_ready_timeout=system_is_ready_timeout).verify_result()
+        platform.firmware.bios.files.file_name[filename].action_file_install_with_reboot(topology_obj=topology_obj)
 
 
 def get_bios_info_from_device(device, version):

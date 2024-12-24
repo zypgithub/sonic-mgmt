@@ -184,7 +184,7 @@ class BiosTool(ABC):
                                            send_without_enter=True)
         time.sleep(BiosConsts.KEY_STROKE_SLEEP)
 
-        if respond == 0:
+        if respond in [0, 3]:
             logger.info('No password is configured, returning to main Security Page')
             self.bios_go_back(serial_engine)
         else:
@@ -193,10 +193,10 @@ class BiosTool(ABC):
                 serial_engine.run_cmd(char, '.*', timeout=BiosConsts.PEXPECT_TIMEOUT, send_without_enter=True)
                 time.sleep(BiosConsts.KEY_STROKE_SLEEP)
 
-            serial_engine.run_cmd(BiosConsts.ENTER, self.CREATE_NEW_PASSWORD, timeout=BiosConsts.PEXPECT_TIMEOUT,
+            serial_engine.run_cmd(BiosConsts.ENTER, [self.CREATE_NEW_PASSWORD, BiosConsts.NVLINK_CREATE_NEW_PASSWORD], timeout=BiosConsts.PEXPECT_TIMEOUT,
                                   send_without_enter=True)
             time.sleep(BiosConsts.KEY_STROKE_SLEEP)
-            serial_engine.run_cmd(BiosConsts.ENTER, self.CLEAR_OLD_PASSWORD, timeout=BiosConsts.PEXPECT_TIMEOUT,
+            serial_engine.run_cmd(BiosConsts.ENTER, [self.CLEAR_OLD_PASSWORD, BiosConsts.NVLINK_CLEAR_OLD_PASSWORD], timeout=BiosConsts.PEXPECT_TIMEOUT,
                                   send_without_enter=True)
             time.sleep(BiosConsts.KEY_STROKE_SLEEP)
             serial_engine.run_cmd(BiosConsts.ENTER, '.*', timeout=BiosConsts.PEXPECT_TIMEOUT, send_without_enter=True)

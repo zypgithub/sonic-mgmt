@@ -639,6 +639,13 @@
     - Affected_test_cases:
         - tests_nvos/system/test_techsupport_feature.py::test_techsupport_with_dockers_down
 
+# NVOS Errors which should be ignored in tests which disable the lldp
+- Errors_list:
+    - '.* ERR health-statsd#health_history: lldp: Container .* is not running.*'
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/interfaces/lldp/test_lldp.py::test_lldp_disabled
+
 # NVOS Security
 - Errors_list:
     - '.*ERR sonic-installer: Error: Failed verify image signature.*'
@@ -777,6 +784,15 @@
     - Affected_test_cases:
       - tests_nvos/general/security/tacacs/test_aaa_tacacs.py::test_tacacs_bad_secret
       - tests_nvos/general/security/tacacs/test_aaa_tacacs.py::test_tacacs_timeout
+
+# NVOS SECURITY
+- Errors_list:
+    - '.*ERR nvued:.*ERROR:.*Something went wrong in fetching the X\.509.*certificate.*URI.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests_nvos/general/security/certificate/test_cacert_mgmt.py::test_cacert_mgmt_import_ca_uri_bad_param
+      - tests_nvos/general/security/certificate/test_cert_mgmt.py::test_cert_mgmt_import_cert_uri_bad_param
+      - tests_nvos/general/security/certificate/test_cert_mgmt.py::test_cert_mgmt_import_cert_bundle_bad_param
 
 - Errors_list:
     - '.*ERR service_checker: nss_tacplus: failed to connect TACACS\+ server.*Transport endpoint is not connected.*'
@@ -1166,6 +1182,9 @@
 # NVOS - expected errors during init done event
 - Errors_list:
     - '.*Failed to start ib-utils container.*'
+    - '.*WARNING systemd\[\d\]: lldp.service: Failed with result.*'
+    - '.*WARNING systemd\[\d\]: lldp.service: Control process exited, code=killed.*'
+    - '.*ERR healthd: lldp service status: Down, app status: Down, fail reason: signal.*'
   Conditions:
     - Affected_test_cases:
       - tests_nvos/infra/init_flow/test_system_init_done_feature.py::test_system_ready_state_down
@@ -1738,7 +1757,7 @@
     - '.*ERR clusterd\[\d+\]: gRPC client error.*'
   Conditions:
     - Affected_test_cases:
-      - tests_nvos/fae/test_nmx_package.py
+      - tests_nvos/cluster/test_nmx_package.py
 
 # NVOS
 - Errors_list:

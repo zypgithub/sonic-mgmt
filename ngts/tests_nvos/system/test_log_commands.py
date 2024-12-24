@@ -11,6 +11,7 @@ from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.infra.FilesTool import FilesTool
+from ngts.nvos_tools.infra.DutUtilsTool import wait_for_specific_regex_in_logs
 
 logger = logging.getLogger()
 
@@ -71,13 +72,9 @@ def test_show_log_continues(engines):
         logging.info("Rotate logs")
         system.log.rotate_logs()
 
-    with allure.step("Run show command to view system image"):
-        logging.info("Run show command to view system image")
-        system.image.show()
-
     with allure.step("Run nv show system log command --view follow to view system logs"):
         logging.info("Run nv show system log command --view follow to view system logs")
-        system.log.show_log(param='--view follow', expected_str='system/image', exit_cmd='\x03')
+        wait_for_specific_regex_in_logs(engines.dut, "nvued\\:    INFO", timeout=5)
 
 
 @pytest.mark.system

@@ -19,13 +19,13 @@ from dotted_dict import DottedDict
 from paramiko.ssh_exception import SSHException
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from ngts.cli_wrappers.dvs.dvs_cli import DvsCli
 from ngts.cli_wrappers.linux.linux_cli import LinuxCli, LinuxCliStub
 from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
 from ngts.cli_wrappers.sonic.sonic_cli import SonicCli, SonicCliStub
-from ngts.cli_wrappers.dvs.dvs_cli import DvsCli
 from ngts.cli_wrappers.sonic.sonic_general_clis import SonicGeneralCliDefault
-from ngts.constants.constants import PytestConst, NvosCliTypes, DebugKernelConsts, SerialLoggerConst
-from ngts.constants.constants import PytestConst, NvosCliTypes, DebugKernelConsts, PlayersAliases, CliType
+from ngts.constants.constants import PytestConst, NvosCliTypes, DebugKernelConsts, CliType
+from ngts.constants.constants import SerialLoggerConst
 from ngts.helpers.general_helper import get_all_setups, get_dut_cli_obj_from_topo_obj
 from ngts.helpers.sonic_branch_helper import get_sonic_branch, update_branch_in_topology, update_sanitizer_in_topology, \
     get_sonic_image
@@ -33,9 +33,8 @@ from ngts.tests.nightly.app_extension.app_extension_helper import APP_INFO
 from ngts.tools.allure_report.allure_report_attacher import add_fixture_end_tag, add_fixture_name, \
     clean_stored_cmds_with_fixture_scope, update_fixture_scope_list, enable_record_cmds
 from ngts.tools.infra import get_platform_info, get_devinfo, is_deploy_run, get_chip_type
-from ngts.tools.topology_tools.topology_by_setup import get_topology_by_setup_name_and_aliases
-from ngts.tools.test_utils.nvos_general_utils import get_switch_type
 from ngts.tools.infra import get_topology_from_noga
+from ngts.tools.test_utils.nvos_general_utils import get_switch_type
 
 logger = logging.getLogger()
 
@@ -286,6 +285,26 @@ def setup_name(request):
     :return: setup name
     """
     return request.config.getoption('--setup_name')
+
+
+@pytest.fixture(scope='session')
+def has_loopbox(setup_name):
+    """
+    Method to check if system has loopbox.
+    :param setup_name: the setup name
+    :return: if setup has loopbox or not
+    """
+    return setup_name in Configurations.juliet_systems_with_loopbox
+
+
+@pytest.fixture(scope='session')
+def standalone_system(setup_name):
+    """
+    Method to check if system has loopbox.
+    :param setup_name: the setup name
+    :return: if setup has loopbox or not
+    """
+    return setup_name not in Configurations.non_standalone_systems
 
 
 @pytest.fixture(scope="session")
@@ -586,7 +605,7 @@ def platform_params(show_platform_summary, setup_name, topology_obj):
     platform_data = DottedDict()
     platform_data.platform = show_platform_summary['platform']
     platform_data.filtered_platform = re.search(
-        r"(msn\d{4}a\w?|msn\d{4}c|msn\d{4}|sn\d{4}[a-z]?|qm\d{4}|q\d{4}|mqm\d{4}|mbf.*c|900.*a|bf.*dpu|N5110_LD|N5100_LD|N5112_LD)",
+        r"(msn\d{4}a\w?|msn\d{4}c|msn\d{4}|sn\d{4}[a-z]?|qm\d{4}|q\d{4}|mqm\d{4}|mbf.*c|900.*a|bf.*dpu|N5110_LD|N5100_LD|N5112_LD|N5200_LD)",
         show_platform_summary['platform'], re.IGNORECASE).group(1)
     platform_data.hwsku = show_platform_summary['hwsku']
     platform_data.setup_name = setup_name

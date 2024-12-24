@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+message KeyValPair {
+  string key = 1;
+  string value = 2;
+}
+
+enum ProtoMsgMajorVersion {
+    PROTO_MSG_MAJOR_VERSION_UNDEFIND = 0;
+    PROTO_MSG_MAJOR_VERSION = 1;
+}
+
+enum ProtoMsgMinorVersion {
+    PROTO_MSG_MINOR_VERSION_UNDEFIND = 0;
+    PROTO_MSG_MINOR_VERSION = 1;
+}
+
+enum ST_ReturnCode {
+    ST_UNDEFINED = 0;
+    ST_SUCCESS = 1;
+    ST_BADPARAM = 2;
+    ST_GENERIC_ERROR = 3;
+    ST_NOT_SUPPORTED = 4;
+    ST_UNINITIALIZED = 5;
+    ST_TIMEOUT = 6;
+    ST_VERSION_MISMATCH = 7;
+    ST_IN_USE = 8;
+    ST_NOT_CONFIGURED = 9;
+    ST_CONNECTION_NOT_VALID = 10;
+    ST_NVLINK_ERROR = 11;
+}
+
+message ServerHeader {
+    string domain_uuid = 1;
+    string app_uuid = 2;
+    string app_ver = 3;
+    ST_ReturnCode returnCode = 4;
+}
+
+message ClientHello {
+    string gatewayId = 1;
+    ProtoMsgMajorVersion major_version = 2;
+    ProtoMsgMinorVersion minor_version = 3;
+}
+
+message ServerHello {
+    ServerHeader serverHeader = 1;
+    repeated KeyValPair components_ver = 2; // Add nmx_version as one of the params
+    repeated string capabilities = 3;
+    string host_os_details = 4;
+    ProtoMsgMajorVersion major_version = 5;
+    ProtoMsgMinorVersion minor_version = 6;
+}
+
+// The RPCs are independent by design. As discussed with NMX-M, there is no requirement to track the clients state.
+// Therefore no restrictions in the RPC call order.
+service TelemetryService {
+  rpc Hello(ClientHello) returns (ServerHello);
+}

@@ -15,10 +15,10 @@ class SonicHwMgmtCli:
         :return: hw_version
         """
         hw_version_output = self.engine.run_cmd("sudo dpkg -l | grep hw-m")
-        reg_hw_version = r".*ii  hw-management.*mlnx.(?P<hw_version>\d+.\d+.\d+)\s+amd64.*"
+        reg_hw_version = r".*ii  hw-management.*mlnx.(?P<hw_version>\d+.\d+.*)\s+amd64.*"
         res_hw_version = re.search(reg_hw_version, hw_version_output)
         if res_hw_version:
-            hw_version = res_hw_version.groupdict()["hw_version"]
+            hw_version = re.sub(r'[a-zA-Z-\s]', '', res_hw_version.groupdict()["hw_version"])
             logger.info(f"hw_version is :{hw_version}")
             return hw_version
         else:

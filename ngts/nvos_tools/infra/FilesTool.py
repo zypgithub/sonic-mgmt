@@ -6,9 +6,6 @@ from datetime import datetime
 from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
 from ngts.tools.test_utils import allure_utils as allure
 
-from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
-from ngts.tools.test_utils import allure_utils as allure
-
 logger = logging.getLogger()
 
 

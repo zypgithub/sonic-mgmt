@@ -1,14 +1,17 @@
+import re
+
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from ngts.nvos_tools.infra.CurlTool import CurlTool
+from ngts.nvos_tools.infra.BmcTool import BmcTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.nvos_tools.infra.TpmTool import TpmTool
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_constants.constants_nvos import SystemConsts, PlatformConsts
+from ngts.nvos_constants.constants_nvos import SystemConsts, OutputFormat
+from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
+from ngts.nvos_tools.nmx.Cluster import Cluster
+from ngts.tests_nvos.constants import MINUTE
 from ngts.tools.test_utils import allure_utils as allure
 import logging
 import pytest
-import time
 
 logger = logging.getLogger()
 
@@ -61,6 +64,7 @@ def test_techsupport_with_dockers_down(engines, dockers_list=['gnmi-server']):
 
 @pytest.mark.general
 @pytest.mark.tech_support
+@pytest.mark.timeout(20 * MINUTE, func_only=True)
 def test_techsupport_expected_files(engines, devices, test_name):
     """
     Run nv show system tech-support files command and verify the required fields are exist
@@ -76,23 +80,36 @@ def test_techsupport_expected_files(engines, devices, test_name):
     """
 
     system = System()
-    cluster_files = getattr(devices.dut.constants, 'cluster_files', None)
-    bmc_dump_files = getattr(devices.dut.constants, 'bmc_dump_files', None)
     expected_files_dict = {'dump': devices.dut.constants.dump_files,
                            'sai_sdk_dump0': devices.dut.constants.sdk_dump_files,
                            'log': devices.dut.constants.log_dump_files,
                            'log/nginx': devices.dut.constants.log_nginx_files,
-                           'log/nmx-c': devices.dut.constants.log_nmx_files,
                            'stats': devices.dut.constants.stats_dump_files,
-                           'hw-mgmt': devices.dut.constants.hw_mgmt_files}
+                           'hw-mgmt': devices.dut.constants.hw_mgmt_files,
+                           'etc': devices.dut.constants.etc_files}
 
-    if cluster_files:
-        expected_files_dict['cluster'] = cluster_files
+    if devices.dut.has_nmx:
+        cluster_files = getattr(devices.dut.constants, 'cluster_files', None)
+        expected_files_dict['log/nmx/nmx-c'] = devices.dut.constants.log_nmx_files
+        if cluster_files:
+            expected_files_dict['cluster'] = cluster_files
 
-    if bmc_dump_files:
+    if devices.dut.has_bmc:
+        bmc_dump_files = getattr(devices.dut.constants, 'bmc_dump_files', None)
         expected_files_dict['bmc'] = bmc_dump_files
 
     try:
+        if devices.dut.has_nmx:
+            cluster = Cluster()
+            with allure.step("Start cluster"):
+                output = OutputParsingTool.parse_show_output_to_dict(
+                    cluster.show(output_format=OutputFormat.json),
+                    output_format=OutputFormat.json).get_returned_value()
+
+                if output[SystemConsts.STATE] == 'disabled':
+                    cluster.set(op_param_name="state", op_param_value='enabled', apply=True)
+                    ClusterTools.wait_for_apps_to_be_in_wanted_state()
+
         with allure.step('Run nv action generate system tech-support and validate dump files'):
             tech_support_folder, duration = system.techsupport.action_generate(test_name=test_name)
             with allure.step("Tech-support generation takes: {} seconds".format(duration)):
@@ -111,6 +128,9 @@ def test_techsupport_expected_files(engines, devices, test_name):
                         files_list = system.techsupport.get_techsupport_empty_files(engines.dut, folder)
                         verify_techsupport_files_sizes(files_list, folder)
     finally:
+        if devices.dut.has_nmx:
+            Cluster().unset(apply=True)
+            ClusterTools.wait_for_apps_to_be_in_wanted_state()
         system.techsupport.cleanup(engines.dut)
         if system.techsupport.file_name:
             system.techsupport.action_delete(system.techsupport.file_name)
@@ -136,16 +156,8 @@ def test_techsupport_bmc_badflow(engines, test_name):
     system = System()
     try:
         dut_engine: LinuxSshEngine = TestToolkit.engines.dut
-        with allure.step('compare certificates data from nv show to data received directly from BMC'):
-            with allure.step('get nvos password to bmc from tpm'):
-                tpm = TpmTool(dut_engine)
-                bmc_password = tpm.get_bmc_admin_password_from_tpm()
-
         with allure.step('gracefully restart bmc via redfish'):
-            client = CurlTool(server_host=PlatformConsts.BMC_INTERNAL_IP, username=PlatformConsts.BMC_LOGIN,
-                              password=bmc_password)
-            output = client.graceful_restart_bmc()
-            assert 'The request completed successfully.' in output, f"Failed to reboot bmc via redfish.\nGot: {output}"
+            BmcTool.reset(dut_engine)
 
         with allure.step('Run nv action generate system tech-support'):
             tech_support_folder, duration = system.techsupport.action_generate(test_name=test_name)
@@ -159,9 +171,9 @@ def test_techsupport_bmc_badflow(engines, test_name):
             assert not files_list, f'bmc folder is not empty and got: {files_list}'
 
         with allure.step('verify error msg in logs'):
-            output = engines.dut.run_cmd("cat /var/log/syslog | grep 'bmc'")
-            assert 'Failed to extract BMC debug log dump' in output, f"Expected to find 'Failed' in out. Got: {output}"
-
+            output = engines.dut.run_cmd("cat /var/log/syslog | grep 'bmc_techsupport.py'")
+            assert re.search(r'Failed to (extract|collect) BMC debug log dump',
+                             output), f"Expected to find 'Failed to extract/collect BMC debug log dump' in output. Got: {output}"
     finally:
         engines.dut.run_cmd("sudo ifup usb0")
         system.techsupport.cleanup(engines.dut)

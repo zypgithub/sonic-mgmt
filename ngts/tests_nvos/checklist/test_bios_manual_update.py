@@ -1,29 +1,31 @@
 import logging
 import random
+import time
 
 import pytest
 
+from ngts.nvos_tools.infra.BmcTool import BmcTool
+from ngts.nvos_tools.infra.DMIDecodeTool import DMIDecodeTool
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.tests_nvos.platform.test_platform_firmware_bios.helpers import get_bios_info_from_device, fetch_and_install_bios, verify_bios_version
-from ngts.nvos_tools.platform.Platform import Platform
 from ngts.scripts.bios_config import configure_bios
 from ngts.tests_nvos.constants import MINUTE
 
 logger = logging.getLogger()
 
 
-@pytest.fixture(scope='module', autouse=True)
+@pytest.fixture(scope='module')
 def restore_bios(topology_obj):
     yield
     configure_bios(topology_obj)
 
 
-@pytest.mark.timeout(20 * MINUTE, func_only=True)
+@pytest.mark.timeout(30 * MINUTE, func_only=True)
 @pytest.mark.bios
 @pytest.mark.parametrize('test_api', random.sample(ApiType.ALL_TYPES, 1))
-def test_bios_manual_update(engines, devices, topology_obj, test_api):
+@pytest.mark.parametrize("platform_component_with_clear", ["bios"], indirect=True)
+def test_bios_manual_update(engines, devices, topology_obj, test_api, platform_component_with_clear, test_name):
     """
     Test flow:
         1. fetch alternate BIOS version
@@ -40,20 +42,22 @@ def test_bios_manual_update(engines, devices, topology_obj, test_api):
     Currently, only Juliet systems are supported.
 
     """
-
     TestToolkit.tested_api = test_api
-
-    with allure.step('Create System object'):
-        platform = Platform()
+    component_name = platform_component_with_clear.get_resource_basename().lower()
 
     try:
-        path, filename, version_name, date = get_bios_info_from_device(devices.dut, 'alternate_version')
-        fetch_and_install_bios(platform=platform, path=path, name=version_name, filename=filename,
-                               topology_obj=topology_obj)
-        verify_bios_version(engines, platform, version_name, date)
-
+        path, filename, version_name = BmcTool.get_fw_component_version_previous(component_name)
+        BmcTool.fetch_and_install_platform_component(platform_component=platform_component_with_clear, path=path,
+                                                     name=version_name, filename=filename, topology_obj=topology_obj,
+                                                     test_name=test_name)
+        BmcTool.verify_platform_component_version(platform_component_with_clear, version_name)
+        DMIDecodeTool.verify_dmi_info(engines, devices)
+        with allure.step(f"Sleep for {2 * MINUTE} seconds so background-copy will finish"):
+            time.sleep(2 * MINUTE)
     finally:
-        path, filename, version_name, date = get_bios_info_from_device(devices.dut, 'current_version')
-        fetch_and_install_bios(platform=platform, path=path, name=version_name, filename=filename,
-                               topology_obj=topology_obj)
-        verify_bios_version(engines, platform, version_name, date)
+        path, filename, version_name = BmcTool.get_fw_component_version_latest(component_name)
+        BmcTool.fetch_and_install_platform_component(platform_component=platform_component_with_clear, path=path,
+                                                     name=version_name, filename=filename, topology_obj=topology_obj,
+                                                     test_name=test_name)
+        BmcTool.verify_platform_component_version(platform_component_with_clear, version_name)
+        DMIDecodeTool.verify_dmi_info(engines, devices)
