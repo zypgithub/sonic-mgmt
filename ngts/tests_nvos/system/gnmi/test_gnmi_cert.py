@@ -44,7 +44,8 @@ def setup_gnmi_cert_tests(engines, dut_hostname, scp_player) -> Tuple[str, List[
 
 def cleanup_gnmi_cert_tests(tmp_certs_dir: str, certs: List[CertInfo]):
     with allure.step('unset gnmi config'):
-        System().gnmi_server.unset(apply=True).verify_result()
+        gnmi = System().gnmi_server
+        gnmi.unset(apply=True).verify_result()
     with allure.step('delete certs from dut'):
         delete_certs_safely(certs)
     with allure.step('remove temp test certs from shared location'):
@@ -229,7 +230,7 @@ def test_gnmi_cert_set_non_existing_cert(engines, local_adminuser, gnmi_certs):
     with allure.step('run client without skip-verify flag, using some CA crt - expect fail'):
         verify_gnmi_client(TestFlowType.BAD_FLOW, engines.dut.ip, GnmiConsts.GNMI_DEFAULT_PORT,
                            local_adminuser.username, local_adminuser.password, False, GnmicErr.CERT_VERIFY_FAIL,
-                           cacert=gnmi_certs[0].cacert)
+                           cacert=gnmi_certs[1].cacert)
 
 
 @pytest.mark.system
