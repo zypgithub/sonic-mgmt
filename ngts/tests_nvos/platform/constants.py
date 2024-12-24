@@ -51,11 +51,11 @@ class TransceiversConsts:
             transceiver_type='Bagheera',
             last_release_path=f"{TRANSCEIVERS_FIRMWARES_PATH}46_Bagheera1_2/{TRANSCEIVERS_RELEASE}",
             test_versions_path=f"{TRANSCEIVERS_APPROVED_FIRMWARES_PATH}Bagheera/",
-            upgrade_version_name="",
-            downgrade_version_name="",
-            upgrade_version_number="",
-            downgrade_version_number="",
-            installation_time=90
+            upgrade_version_name="fw_46_230_00018_dev_signed.bin",
+            downgrade_version_name="fw_46_230_00014_dev_signed.bin",
+            upgrade_version_number="46.230.18",
+            downgrade_version_number="46.230.14",
+            installation_time=180
         ),
         '47': Transceiver(
             transceiver_type='Louie',
