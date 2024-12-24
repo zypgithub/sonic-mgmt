@@ -57,13 +57,13 @@ def get_ports_with_config_exceed_max_headroom(duthost):
     config_db_info = DutDbInfo(duthost).get_config_db()
     map_port_to_cable_len = config_db_info.get("CABLE_LENGTH|AZURE").get("value")
     ports_with_config_exceed_max_headroom_ports = {}
-    speed_cable_len_exceed_mac_headroom = {"speed": 400000, "cable_len": 200}
+    speed_cable_len_exceed_max_headroom = {"speed": 400000, "cable_len": 200}
 
     for port, cable_len in map_port_to_cable_len.items():
         port_speed = config_db_info.get(f"PORT|{port}").get("value").get("speed")
         if port_speed and cable_len:
-            if int(port_speed) >= speed_cable_len_exceed_mac_headroom["speed"] and\
-                    int(cable_len.split("m")[0]) >= speed_cable_len_exceed_mac_headroom["cable_len"]:
+            if int(port_speed) >= speed_cable_len_exceed_max_headroom["speed"] and\
+                    int(cable_len.split("m")[0]) >= speed_cable_len_exceed_max_headroom["cable_len"]:
                 ports_with_config_exceed_max_headroom_ports.update({port: cable_len})
     return ports_with_config_exceed_max_headroom_ports, map_port_to_cable_len
 
@@ -73,7 +73,7 @@ def change_ports_cable_len(duthost, port_cable_info):
     with open(os.path.join(PORT_CABLE_LEN_JSON_TEMPLATE_PATH, ports_cable_len_j2_file_name)) as template_file:
         t = Template(template_file.read())
 
-    content = t.render(ports_cable_info=port_cable_info, ports_cable_info_len=len(port_cable_info) )
+    content = t.render(ports_cable_info=port_cable_info, ports_cable_info_len=len(port_cable_info))
     logger.info(f"port cable len json content is {port_cable_info}")
     ports_cable_len_config_json_file_name = "ports_cable_len_config.json"
 
