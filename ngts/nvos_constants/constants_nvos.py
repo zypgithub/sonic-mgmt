@@ -1315,15 +1315,7 @@ class HealthConsts:
 
     FATAL = "FATAL"
     ASIC_HEALTH_ISSUE_FATAL = "Switch ASIC in fatal mode."
-    FATAL_PROMPT = "[System_Fatal_State]"
-    FATAL_FILE = "/etc/system_fatal"
-    FATAL_HEALTH_EVENT_SIMULATION = {
-        4: "echo health_check_trigger  sx_dbg_test_fw_assert {asic} > /proc/mlx_sx/sx_core",
-        5: "echo health_check_trigger  sx_dbg_test_fw_fatal_cause {asic} > /proc/mlx_sx/sx_core",
-        # todo: more events and warnings
-        "warning": "echo health_check_trigger catas {asic} > /proc/mlx_sx/sx_core",
-    }
-    FATAL_EVENT_IDS = (4, 5)
+    # more constants found at test_fatal_mode.py
 
 
 class OperationTimeConsts:

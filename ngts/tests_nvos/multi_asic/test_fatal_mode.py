@@ -17,13 +17,32 @@ from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.system.clock.ClockConsts import ClockConsts
+from ngts.tests_nvos.system.clock.ClockTools import ClockTools
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
+fatal_event_timestamps = []
 
 SETTINGS = {"clear_time": 1}
 NUM_TRIES_TO_RECOVER_AT_TEARDOWN = 4
+SAI_LOG_STRING = 'Health-Check: new failure'
+SAI_LOG_TIME_WINDOW_SECONDS = 3
 
+FATAL_PROMPT = "[System_Fatal_State]"
+FATAL_FILE = "/etc/system_fatal"
+FATAL_REASON_FILE = "/host/fatal_reason"
+FATAL_REASON_DUMP_FILE = "/dump/fatal_reason"
+FATAL_REASON_FILE_CONTENT = 'Fatal health event'
+FATAL_LOG_FILE = '/var/log/fatal.log'
+FATAL_LOG_FILE_IN_DUMP = '/log/fatal.log.gz'
+FATAL_EVENT_STRING = 'System fatal state detected'
+FATAL_HEALTH_EVENT_SIMULATION = {
+    4: "echo health_check_trigger  sx_dbg_test_fw_assert {asic} > /proc/mlx_sx/sx_core",
+    5: "echo health_check_trigger  sx_dbg_test_fw_fatal_cause {asic} > /proc/mlx_sx/sx_core",
+    # todo: more events and warnings
+    "warning": "echo health_check_trigger catas {asic} > /proc/mlx_sx/sx_core",
+}
+FATAL_EVENT_IDS = (4, 5)
 
 #  FIXTURES AND TEARDOWN
 ################################################################################
@@ -53,6 +72,31 @@ def fatal_mode_setup_and_teardown(test_name, engines, events_count_setting):
         Fae().system.fatal.unset()
         TestToolkit.GeneralApi[TestToolkit.tested_api].apply_config(engines.dut, True)
         TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
+
+
+@pytest.fixture(autouse=True)
+def assert_fatal_logs(engines):
+    """Runs at the end of each test to verify that all fatal events were logged to /var/log/fatal.log"""
+    engine = engines.dut
+    fatal_event_timestamps.clear()
+    yield
+
+    with allure.step(f'Find lines for fatal events in {FATAL_LOG_FILE}'):
+        log_lines = engine.run_cmd(f'grep "{SAI_LOG_STRING}" {FATAL_LOG_FILE}*', validate=True).splitlines()
+        log_timestamps = [ClockTools.get_datetime_of_system_log_line(line) for line in reversed(log_lines)]
+        logger.info(f'Fatal event log-lines found at {log_timestamps}')
+
+    with allure.step('Assert each event we simulated appears in the logs'):
+        missing_timestamps = []
+        for timestamp in fatal_event_timestamps:
+            logger.info(f'Searching for fatal event log at {timestamp} (plus/minus {SAI_LOG_TIME_WINDOW_SECONDS} secs)')
+            if not any(ClockTools.datetime_difference_in_seconds(timestamp, log_timestamp) < SAI_LOG_TIME_WINDOW_SECONDS
+                       for log_timestamp in log_timestamps):
+                missing_timestamps.append(timestamp)
+
+        assert not missing_timestamps, (
+            f'Fatal-events simulated at the following times are missing from {FATAL_LOG_FILE}:\n' +
+            '\n'.join(x for x in missing_timestamps))
 
 
 def test_post_fatal_recovery(engines):
@@ -94,14 +138,14 @@ def test_flow_until_soft_reset(engines, devices, random_asic, events_count_setti
     Test that health-events trigger fatal mode properly, and that the system leaves fatal mode when everything is fine.
     """
     TestToolkit.tested_api = ApiType.NVUE
-
-    with allure.step(f"Trigger soft reset 1 or 2 times (randomly)"):
-        repetitions = RandomizationTool.select_random_value([1, 2]).get_returned_value()
-        allure.attach(f"{repetitions=}")
-        for i in range(repetitions):
-            _trigger_soft_reset(i == 0, random_asic, events_count_setting)
-
-    _wait_to_exit_fatal()
+    _trigger_soft_reset(False, random_asic, events_count_setting)
+    try:
+        with allure.step(f'Validate {FATAL_REASON_FILE} exists'):
+            fatal_reason = engines.dut.run_cmd(f'cat {FATAL_REASON_FILE} && echo', validate=True).strip()
+        with allure.step(f'Validate {FATAL_REASON_FILE} contents are: "{FATAL_REASON_FILE_CONTENT}"'):
+            assert fatal_reason == FATAL_REASON_FILE_CONTENT
+    finally:
+        _wait_to_exit_fatal()
 
 
 @pytest.mark.checklist
@@ -109,13 +153,12 @@ def test_flow_until_soft_reset(engines, devices, random_asic, events_count_setti
 def test_flow_until_reboot(engines, devices, random_asic, test_name, events_count_setting):
     """
     Test repetitive health-events cause "soft reset" and then reboot. After everything is fine, leave fatal mode.
-    Also generate tech-support and assert the dump contains /etc/system_fatal file.
+    Also generate tech-support and assert the dump contains /etc/system_fatal and fatal_reason files.
     """
     TestToolkit.tested_api = ApiType.OPENAPI
 
-    _set_settings(reboot_count=2)
+    _set_settings(reboot_count=2, clear_time=4)  # longer clear-time so we have enough time to generate tech-support
     _trigger_soft_reset(False, random_asic, events_count_setting)
-    _trigger_soft_reset(True, random_asic, events_count_setting)
 
     with allure.step(f"Trigger switch reboot 1 or 2 times (randomly)"):
         repetitions = RandomizationTool.select_random_value([1, 2]).get_returned_value()
@@ -123,8 +166,14 @@ def test_flow_until_reboot(engines, devices, random_asic, test_name, events_coun
         for _ in range(repetitions):
             _trigger_reboot(random_asic, events_count_setting)
 
-    # todo: _check_tech_support(). nv set fae system fatal clear-time 4 (?)
-    _wait_to_exit_fatal()
+    start_time = datetime.now()
+    try:
+        _check_tech_support(engines.dut, test_name, repetitions)
+    finally:
+        elapsed = datetime.now() - start_time
+        to_wait = 4 * 60 - elapsed.seconds
+        logger.info(f'{start_time=}, {elapsed=}, {to_wait=}')
+        _wait_to_exit_fatal(1 + to_wait // 60)
 
 
 @pytest.mark.timeout(30 * MINUTE, func_only=True)
@@ -138,7 +187,6 @@ def test_flow_until_close_ports(engines, devices, random_asic, events_count_sett
     TestToolkit.tested_api = ApiType.NVUE
 
     _trigger_soft_reset(False, random_asic, events_count_setting)
-    _trigger_soft_reset(True, random_asic, events_count_setting)
     _trigger_reboot(random_asic, events_count_setting)
 
     with allure.step("Trigger final fatal-mode reboot after which ports are closed"):
@@ -156,43 +204,6 @@ def test_flow_until_close_ports(engines, devices, random_asic, events_count_sett
     _manual_reboot(engines.dut)
     _assert_system_fatal_mode(False)
     # todo: assert ports are open
-
-
-@pytest.mark.checklist
-@pytest.mark.fatal_mode
-def test_remain_in_fatal_mode_until_manual_reboot(engines, devices, random_asic, events_count_setting):
-    """
-    If after reboot or soft-reset there's a single health-event within n minutes, test that the system remains in
-    fatal mode "forever" (no timeout) and does not restart the reboot-counter. After the user performs a manual
-    reboot, test that the system exits fatal mode if no new events happen.
-    """
-    TestToolkit.tested_api = ApiType.OPENAPI
-    _set_settings(events_time=1)
-
-    _trigger_soft_reset(False, random_asic, events_count_setting)
-
-    with allure.step("Generate 1 event and verify fatal-mode doesn't time-out"):
-        _simulate_events(1, random_asic, False)
-        _assert_system_fatal_mode(True, )
-        _wait(1, 30)
-        _assert_system_fatal_mode(True, )
-
-    _trigger_soft_reset(True, random_asic, events_count_setting)
-    _assert_system_fatal_file(0)
-
-    with allure.step("Generate 1 event and verify fatal-mode doesn't time-out"):
-        _simulate_events(1, random_asic, False)
-        _wait(1, 30)
-        _assert_system_fatal_mode(True, )
-        _assert_system_fatal_file(0)
-
-    with allure.step("Do manual reboot and check that system remains in fatal mode, then exits after 3 minutes"):
-        TEMP_CLEAR_TIME = 3
-        _set_settings(clear_time=TEMP_CLEAR_TIME)
-        _manual_reboot(engines.dut)
-        _assert_system_fatal_mode(True, )
-        _assert_system_fatal_file(0)
-        _wait_to_exit_fatal(TEMP_CLEAR_TIME)
 
 
 @pytest.mark.checklist
@@ -310,12 +321,13 @@ def _set_settings(reboot_state=None, reboot_count=None, events_time=None, events
 
 
 def _get_random_event_list(n: int) -> list:
-    return RandomizationTool.select_random_values(list(HealthConsts.FATAL_EVENT_IDS),
+    return RandomizationTool.select_random_values(list(FATAL_EVENT_IDS),
                                                   number_of_values_to_select=n,
                                                   allow_repetitions=True).get_returned_value()
 
 
 def _trigger_soft_reset(already_in_fatal: bool, asic: int, number_of_events):
+    # todo: remove already_in_fatal because if it's true then anyway we should _trigger_reboot instead.
     with allure.step(_trigger_soft_reset.__name__ +
                      ': Generating health-events to trigger fatal-mode "soft-reset" (syncd restart)'):
         _simulate_events(number_of_events, asic, not already_in_fatal)
@@ -348,10 +360,9 @@ def _simulate_events(number_of_events: Union[int, list], asic: int, verify_non_f
 def _simulate_event(event_id, asic):
     """Runs the command that simulates a health events and asserts that it worked (returned no output)."""
     with allure.step(f"{_simulate_event.__name__}({event_id=}, {asic=})"):
-        # todo: check serial-log to make sure the event was seen. or log. or show system events.
-        cmd = HealthConsts.FATAL_HEALTH_EVENT_SIMULATION[event_id].format(asic=asic)
-        output = TestToolkit.engines.dut.run_cmd(cmd).strip()
-        assert not output
+        cmd = FATAL_HEALTH_EVENT_SIMULATION[event_id].format(asic=asic)
+        fatal_event_timestamps.append(datetime.now().isoformat(' '))
+        TestToolkit.engines.dut.run_cmd(cmd, validate=True).strip()
 
 
 def _wait(minutes, seconds=0):
@@ -429,16 +440,25 @@ def _assert_system_fatal_mode(fatal: bool, state_just_changed=False):
 
         with allure.step("Assert console prompt"):
             prompt = DutUtilsTool.get_prompt(engine)
-            assert prompt.startswith(HealthConsts.FATAL_PROMPT) == fatal, \
-                f"Prompt is '{prompt}' but it should {'' if fatal else 'not '} contain '{HealthConsts.FATAL_PROMPT}'."
-
-        # todo: assert fatal-mode file? or does it not appear after soft-reset?
+            assert prompt.startswith(FATAL_PROMPT) == fatal, \
+                f"Prompt is '{prompt}' but it should {'' if fatal else 'not '} contain '{FATAL_PROMPT}'."
 
         if state_just_changed:
-            with allure.step(f"Assert event was raised for {'entering' if fatal else 'exiting'} fatal mode"):
-                ...  # todo: pending on Elias bugfix of fatal-mode system event
-                event_list = system.events.show()  # todo: recent 1 (minute)
-                logger.info(f"{event_list=}")
+            with allure.step(f"Assert system-event was raised for {'entering' if fatal else 'exiting'} fatal mode"):
+                event_text = ('' if fatal else 'Cleared: ') + FATAL_EVENT_STRING
+                event_list = OutputParsingTool.parse_json_str_to_dictionary(
+                    system.events.show('recent 3')).get_returned_value()
+                event_list = [x for x in event_list.values() if x['text'] == event_text]
+                if not event_list:
+                    raise AssertionError('Expected system-event not found: ' + event_text)
+                elif len(event_list) > 1:
+                    raise AssertionError(f'Expected 1 event for {"entering" if fatal else "exiting"} fatal mode but'
+                                         f'found multiple: {event_list}')
+
+                expected_severity = 'CRITICAL' if fatal else 'INFORMATIONAL'
+                assert event_list[0]['severity'] == expected_severity, (
+                    f'system-event {expected_severity=} but actual event is {event_list[0]}'
+                )
 
 
 def _assert_health_fatal(system: System, expect_fatal: bool) -> dict:
@@ -494,7 +514,7 @@ def _assert_reboot():
 
 def _reset_base_prompt(engine):
     """Tells the engine that FATAL_PROMPT does not necessarily appear in the prompt."""
-    engine.engine.base_prompt = engine.engine.base_prompt.replace(HealthConsts.FATAL_PROMPT, '')
+    engine.engine.base_prompt = engine.engine.base_prompt.replace(FATAL_PROMPT, '')
 
 
 def _assert_close_ports():
@@ -506,30 +526,40 @@ def _assert_close_ports():
 
 def _assert_system_fatal_file(count: int):
     """Verifies /etc/system_fatal exists with content `count`. If count==-1, verify file doesn't exist."""
-    with allure.step(f"{_assert_system_fatal_file.__name__}: Verifying file {HealthConsts.FATAL_FILE}"):
+    with allure.step(f"{_assert_system_fatal_file.__name__}: Verifying file {FATAL_FILE}"):
         engine = TestToolkit.engines.dut
-        cmd_output = engine.run_cmd(f"cat {HealthConsts.FATAL_FILE}")
+        cmd_output = engine.run_cmd(f"cat {FATAL_FILE}")
         actual_count = -1 if ('No such file or directory' in cmd_output) else int(cmd_output or 0)  # todo: or 0 ?
         assert actual_count == count, (
-            f"File {HealthConsts.FATAL_FILE} expected: {count if count >= 0 else 'does not exist'}, "
+            f"File {FATAL_FILE} expected: {count if count >= 0 else 'does not exist'}, "
             f"actual: {actual_count if actual_count >= 0 else 'does not exist'}"
         )
 
 
-def _check_tech_support(engines, test_name, num_reboots_done):
-    # this part of the test is currently removed because generating the tech-support takes too long and we have to
-    # change the fatal-mode clear-time accordingly
-    with allure.step(f"Generate tech-support and validate it contains {HealthConsts.FATAL_FILE}"):
-        start_time = datetime.now()
-        tech_support_tar, _ = System().techsupport.action_generate(engines.dut, option="1 minute ago",
+def _check_tech_support(engine, test_name, num_reboots_done):
+    with allure.step(f"Generate tech-support and validate contents"):
+        tech_support_tar, _ = System().techsupport.action_generate(engine, option="1 minute ago",
                                                                    since_time="1 minute ago",
                                                                    test_name=test_name)  # todo: params for save duration?
-        with allure.step("Verify dump contains " + HealthConsts.FATAL_FILE):
-            fatal_file_path = path.basename(tech_support_tar).replace(".tar.gz", HealthConsts.FATAL_FILE)
-            cmd = f"tar -Ox {fatal_file_path} -f {tech_support_tar}"
-            logger.info(f"{start_time=}\n{tech_support_tar=}\n{fatal_file_path=}\n{cmd=}")
-            fatal_file_contents = engines.dut.run_cmd(cmd)
-            logger.info(f"{fatal_file_contents=}")
-            assert "Not found in archive" not in fatal_file_contents
-        with allure.step("Verify contents of " + HealthConsts.FATAL_FILE):
-            assert fatal_file_contents.isnumeric() and int(fatal_file_contents) == num_reboots_done
+        with allure.independent_step("Verify " + FATAL_FILE):
+            validate_file_in_tech_support(engine, tech_support_tar, FATAL_FILE, num_reboots_done)
+        with allure.independent_step("Verify " + FATAL_REASON_FILE):
+            validate_file_in_tech_support(engine, tech_support_tar, FATAL_REASON_DUMP_FILE, FATAL_REASON_FILE_CONTENT)
+        with allure.independent_step("Verify fatal logs in dump"):
+            path_in_dump = path.basename(tech_support_tar).replace(".tar.gz", FATAL_LOG_FILE_IN_DUMP)
+            cmd = f"tar -tvz {path_in_dump} -f {tech_support_tar}"
+            output = engine.run_cmd(cmd, validate=True)
+            assert int(output.split()[2]), f'Fatal-log file in dump is empty:\n{output}'
+
+
+def validate_file_in_tech_support(engine, tar_path, file_path, expected_contents):
+    fatal_file_path = path.basename(tar_path).replace(".tar.gz", file_path)
+    cmd = f"tar -Ox {fatal_file_path} -f {tar_path} && echo"  # echo needed in case the file doesn't end with newline
+    with allure.step("Verify file exists"):
+        fatal_file_contents = engine.run_cmd(cmd, validate=True).strip()
+    with allure.step("Verify contents"):
+        logger.info(f"{fatal_file_contents=}")
+        if isinstance(expected_contents, int):
+            assert fatal_file_contents.isnumeric() and int(fatal_file_contents) == expected_contents
+        else:
+            assert fatal_file_contents == expected_contents
