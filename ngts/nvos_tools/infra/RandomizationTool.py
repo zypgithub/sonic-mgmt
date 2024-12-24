@@ -176,7 +176,7 @@ class RandomizationTool:
         :return: list of random selected values
         """
         with allure.step('Select random values from provided list of values'):
-            list_of_values = list(list_of_values)
+            list_of_values = list(list_of_values)  # in case variable is not a list but some other iterable
             forbidden_values = None if forbidden_values is None else forbidden_values.copy()
 
             result_obj = ResultObj(False, "")
