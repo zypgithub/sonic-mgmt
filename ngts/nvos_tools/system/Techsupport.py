@@ -1,13 +1,12 @@
 import logging
 import re
 
-from ngts.tools.test_utils import allure_utils as allure
-from ngts.nvos_tools.infra.BaseComponent import BaseComponent
-from ngts.cli_wrappers.nvue.nvue_system_clis import NvueSystemCli
-from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.nvos_constants.constants_nvos import SystemConsts
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
+from ngts.nvos_tools.infra.BaseComponent import BaseComponent
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
+from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
 
@@ -41,7 +40,7 @@ class TechSupport(BaseComponent):
             cmd_out, duration = OperationTime.save_duration('generate tech-support', option, test_name, SendCommandTool.execute_command,
                                                             self.api_obj[TestToolkit.tested_api].action_generate_techsupport, engine,
                                                             self.get_resource_path().replace('/files', ' '), option, since_time)
-            if 'failed' in cmd_out.info:
+            if 'failed' in cmd_out.info or 'error' in cmd_out.info:
                 return cmd_out.info, duration
             self.parse_techsupport_folder_name(cmd_out)
             return SystemConsts.TECHSUPPORT_FILES_PATH + self.file_name, duration

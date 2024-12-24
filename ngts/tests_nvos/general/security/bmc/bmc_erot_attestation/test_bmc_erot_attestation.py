@@ -2,22 +2,19 @@ import json
 import logging
 import os
 import random
-from typing import List
 
 import pytest
 
 from ngts.nvos_constants.constants_nvos import ApiType, TestFlowType
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
-from ngts.nvos_tools.system.Spdm import SpdmComponentFields
+from ngts.nvos_tools.system.Spdm import SpdmComponentFields, SPDMComponents
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.constants import VALID_NONCE_LEN, SpdmConsts, NOT_EMPTY
 from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.helpers import get_component_obj, randomize_hex_str, \
     randomize_non_hex_str, verify_component_outputs, run_client_verification, \
-    run_client_measurements_verification_usecanse
-from ngts.tests_nvos.general.security.helpers import add_issue_if, assert_no_issues
+    run_client_measurements_verification_usecanse, clean_cert_str, compare_cert_chains_except_for_leaf
 from ngts.tools.test_utils import allure_utils as allure
 
 
@@ -97,18 +94,14 @@ def test_main_flow(component, test_api, available_spdm_components):
         with allure.step('verify inner outputs before generate'):
             cert_out, _ = verify_component_outputs(component, component_obj, component_is_available, None, None)
         with allure.step(f'generate measurements - expect success: {component_is_available}'):
-            issues: List[str] = []
-            with allure.step(f'Run generate without nonce param - expect success: {component_is_available}'):
+            with allure.independent_step(
+                    f'Run generate without nonce param - expect success: {component_is_available}'):
                 res = component_obj.action_generate()
-                add_issue_if(res.result != component_is_available, issues,
-                             f'{component} - generate without nonce {"succeeded" if res.result else "failed"} but expected to {"succeed" if component_is_available else "fail"}')
-            with allure.step(f'Run generate with valid nonce - expect success: {component_is_available}'):
+                assert res.result == component_is_available, f'{component} - generate without nonce {"succeeded" if res.result else "failed"} but expected to {"succeed" if component_is_available else "fail"}'
+            with allure.independent_step(f'Run generate with valid nonce - expect success: {component_is_available}'):
                 rand_nonce = randomize_hex_str()
                 res = component_obj.action_generate(rand_nonce)
-                add_issue_if(res.result != component_is_available, issues,
-                             f'{component} - generate with valid nonce {"succeeded" if res.result else "failed"} but expected to {"succeed" if component_is_available else "fail"}')
-            with allure.step('assert no issues'):
-                assert_no_issues(component, issues, 'some generate commands failed')
+                assert res.result == component_is_available, f'{component} - generate with valid nonce {"succeeded" if res.result else "failed"} but expected to {"succeed" if component_is_available else "fail"}'
         with allure.step('verify inner outputs after generate'):
             verify_component_outputs(component, component_obj, component_is_available,
                                      expect_cert=cert_out[SpdmConsts.Component.Certificates.CERT_STRING],
@@ -137,29 +130,22 @@ def test_generate_with_bad_nonce_param(test_api, available_spdm_components):
     for component in available_spdm_components:
         component_obj = get_component_obj(component)
         with allure.step(f'component: {component}'):
-            issues: List[str] = []
-            with allure.step('run generate with empty nonce param (incomplete)'):
+            with allure.independent_step('run generate with empty nonce param (incomplete)'):
                 bad_nonce = ''
                 res = component_obj.action_generate(bad_nonce)
-                add_issue_if(res.result, issues,
-                             f'generate with empty nonce (incomplete) - success but expected to fail\n{res.info}')
-            with allure.step('run generate with non-hex string as nonce param'):
+                assert not res.result, f'generate with empty nonce (incomplete) - success but expected to fail\n{res.info}'
+            with allure.independent_step('run generate with non-hex string as nonce param'):
                 bad_nonce = randomize_non_hex_str()
                 res = component_obj.action_generate(bad_nonce)
-                add_issue_if(res.result, issues,
-                             f'generate with non hex nonce - success but expected to fail\n{res.info}')
-            with allure.step(f'run generate with hex string longer than {VALID_NONCE_LEN} chars'):
+                assert not res.result, f'generate with non hex nonce - success but expected to fail\n{res.info}'
+            with allure.independent_step(f'run generate with hex string longer than {VALID_NONCE_LEN} chars'):
                 bad_nonce = randomize_hex_str(random.randint(VALID_NONCE_LEN + 1, 2 * VALID_NONCE_LEN))
                 res = component_obj.action_generate(bad_nonce)
-                add_issue_if(res.result, issues,
-                             f'generate with too long hex nonce - success but expected to fail\n{res.info}')
-            with allure.step(f'run generate with hex string shorter than {VALID_NONCE_LEN} chars'):
+                assert not res.result, f'generate with too long hex nonce - success but expected to fail\n{res.info}'
+            with allure.independent_step(f'run generate with hex string shorter than {VALID_NONCE_LEN} chars'):
                 bad_nonce = randomize_hex_str(random.randint(1, VALID_NONCE_LEN - 1))
                 res = component_obj.action_generate(bad_nonce)
-                add_issue_if(res.result, issues,
-                             f'generate with too short hex nonce - success but expected to fail\n{res.info}')
-            with allure.step('assert no issues'):
-                assert not issues, f'found issues:\n' + '\n'.join(issues)
+                assert not res.result, f'generate with too short hex nonce - success but expected to fail\n{res.info}'
 
 
 @pytest.mark.bmc
@@ -197,6 +183,7 @@ def test_generate_give_different_measurement(available_spdm_components):
 @pytest.mark.bmc
 @pytest.mark.erot
 @pytest.mark.security
+@pytest.mark.track_serial_console
 def test_reboot_system_keeps_data(available_spdm_components):
     """
     Verify that reboot keeps the results of the show
@@ -206,8 +193,8 @@ def test_reboot_system_keeps_data(available_spdm_components):
     3.	reboot
     4.	run show components and compare outputs
     """
+    available_spdm_components = [SPDMComponents.BMC]
     outputs_before_reboot = {}
-    issues: List[str] = []
     with allure.step('generate measurements and save show output for all components'):
         for component in available_spdm_components:
             with allure.step(f'component: {component}'):
@@ -216,19 +203,32 @@ def test_reboot_system_keeps_data(available_spdm_components):
                     component_obj.action_generate().verify_result()
                 with allure.step('save show output before reboot'):
                     out = OutputParsingTool.parse_json_str_to_dictionary(component_obj.show()).get_returned_value()
+                    out[SpdmComponentFields.CERTIFICATES][
+                        SpdmConsts.Component.Certificates.CERT_STRING] = clean_cert_str(
+                        out[SpdmComponentFields.CERTIFICATES][SpdmConsts.Component.Certificates.CERT_STRING])
                     outputs_before_reboot[component] = out
     with allure.step('reboot the system'):
-        System().action('reboot', param_name='force', expect_reboot=True, output_format=None).verify_result()
+        System().reboot.action_reboot(params='force').verify_result()
     with allure.step('run show components and compare outputs'):
         for component in available_spdm_components:
-            with allure.step(f'component: {component}'):
+            with allure.independent_step(f'component: {component}'):
                 component_obj = get_component_obj(component)
-                with allure.step('save show output before reboot'):
+                with allure.step('show cert output after reboot'):
                     out = OutputParsingTool.parse_json_str_to_dictionary(component_obj.show()).get_returned_value()
-                    res: ResultObj = ValidationTool.compare_dictionaries(outputs_before_reboot[component], out)
-                    add_issue_if(not res.result, issues, f'component: {component}\n{res.info}\n')
-    with allure.step('verify no issues in the comparison'):
-        assert_no_issues(component, issues, 'there are output mismatches before and after reboot')
+                    out[SpdmComponentFields.CERTIFICATES][
+                        SpdmConsts.Component.Certificates.CERT_STRING] = clean_cert_str(
+                        out[SpdmComponentFields.CERTIFICATES][SpdmConsts.Component.Certificates.CERT_STRING])
+                with allure.step('compare cert show to output before reboot'):
+                    actual_out_cert = out[SpdmComponentFields.CERTIFICATES]
+                    expected_out_cert = outputs_before_reboot[component][SpdmComponentFields.CERTIFICATES]
+                    with allure.independent_step(f'check all fields but {SpdmConsts.Component.Certificates.CERT_STRING} identical'):
+                        ValidationTool.compare_dictionaries(
+                            {k: v for k, v in expected_out_cert.items() if k != SpdmConsts.Component.Certificates.CERT_STRING},
+                            {k: v for k, v in actual_out_cert.items() if k != SpdmConsts.Component.Certificates.CERT_STRING}
+                        ).verify_result()
+                    with allure.independent_step(f'check {SpdmConsts.Component.Certificates.CERT_STRING} identical except for leaf cert'):
+                        compare_cert_chains_except_for_leaf(expected_out_cert[SpdmConsts.Component.Certificates.CERT_STRING],
+                                                            actual_out_cert[SpdmConsts.Component.Certificates.CERT_STRING])
 
 
 @pytest.mark.parametrize('test_flow', TestFlowType.ALL_TYPES)

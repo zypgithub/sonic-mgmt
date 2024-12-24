@@ -12,7 +12,8 @@ from ngts.tests_nvos.general.security.centralized_tests.helpers.checker_skip_rul
 from ngts.tests_nvos.general.security.certificate.helpers import delete_certificates
 from ngts.tests_nvos.general.security.certificate.test_cert_cacert_mgmt import certs_mgmt_factory_reset_no_params_check, \
     certs_mgmt_factory_reset_keep_only_files_check
-from ngts.tests_nvos.general.security.nmx_cert.test_nmx_cert import nmx_cert_factory_reset_no_params_check
+from ngts.tests_nvos.general.security.nmx_cert.test_cluster_app_mngr_security import \
+    cluster_app_mngr_security_factory_reset_no_params_check
 from ngts.tests_nvos.general.security.sed.helpers import sed_password_factory_reset_check
 from ngts.tests_nvos.general.security.test_api_server_security.test_api_mtls import \
     api_mtls_factory_reset_no_params_check, api_mtls_factory_reset_keep_all_config_check, \
@@ -29,6 +30,7 @@ GNMI_CERT = 'GNMI cert'
 NMX_CERT = 'NMX cert'
 API_MTLS = 'API mTLS'
 SED_PASSWORD = 'SED password'
+SSH_PKA = 'SSH PKA'
 CERTS_MGMT = 'Certificates management'
 
 CHECKERS_SKIP_RULES: Dict[str, CheckerSkipRule] = {
@@ -40,14 +42,16 @@ CHECKERS_SKIP_RULES: Dict[str, CheckerSkipRule] = {
 NO_PARAMS_CHECKERS: Dict[str, Generator[None, None, None]] = {
     TPM_ATTESTATION: tpm_attestation_factory_reset_no_params_check(),
     GNMI_CERT: gnmi_cert_factory_reset_no_params_check(),
-    NMX_CERT: nmx_cert_factory_reset_no_params_check(),
+    NMX_CERT: cluster_app_mngr_security_factory_reset_no_params_check(),
     API_MTLS: api_mtls_factory_reset_no_params_check(),
+    # SSH_PKA: ssh_pka_factory_reset_no_params_check(), # FIXME: remove expected param
     SED_PASSWORD: sed_password_factory_reset_check(),
     CERTS_MGMT: certs_mgmt_factory_reset_no_params_check(),
 }
 
 KEEP_BASIC_CHECKERS: Dict[str, Generator[None, None, None]] = {
     API_MTLS: api_mtls_factory_reset_no_params_check(),
+    # SSH_PKA: ssh_pka_factory_reset__keep_basic_check(),   # FIXME: remove expected param
     SED_PASSWORD: sed_password_factory_reset_check(),
     CERTS_MGMT: certs_mgmt_factory_reset_no_params_check(),
 }

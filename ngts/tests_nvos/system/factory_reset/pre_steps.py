@@ -7,10 +7,12 @@ from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports
 from ngts.tests_nvos.system.factory_reset.helpers import *
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.nvos_tools.Devices.IbDevice import JulietSwitch
 
 
 @disabled_access_ports
-def factory_reset_no_params_pre_steps(engines, platform_params, system, devices):
+def factory_reset_no_params_pre_steps(engines, platform_params, system, devices, has_loopbox, setup_name, standalone_system):
+    port_type = devices.dut.switch_type.lower()
     init_cluster_status = None
     port_type = devices.dut.switch_type.lower()
 
@@ -39,17 +41,15 @@ def factory_reset_no_params_pre_steps(engines, platform_params, system, devices)
     with allure.step(f'Set description to {port_type} port'):
         not_apply_port.interface.set(NvosConst.DESCRIPTION, description, apply=False).verify_result()
 
-    with allure.step('Check is Juliet Device'):
-        if not isinstance(devices.dut, JulietSwitch):
-            # pytest.skip("It's not a Juliet Switch. Skipping NMX configuration")
-            init_cluster_status = None
-            pass    # TODO: use Devices OM to do this!
+        if devices.dut.has_nmx:
+            with allure.step('Juliet Device Check'):
+                with allure.step("Config A reverse cluster state than configured"):
+                    cluster = Cluster()
+                    # Enable cluster and validate its enabled.
+                    init_cluster_status = ClusterTools.check_cluster_state(cluster, output_format=OutputFormat.json)
+                    ClusterTools.reverse_cluster_state(cluster, setup_name, output_format=OutputFormat.json)
         else:
-            with allure.step("Config A reverse cluster state than configured"):
-                cluster = Cluster()
-                # Enable cluster and validate its enabled.
-                init_cluster_status = ClusterTools.check_cluster_state(cluster, output_format=OutputFormat.json)
-                ClusterTools.reverse_cluster_state(cluster, output_format=OutputFormat.json)
+            init_cluster_status = None
 
     with allure.step('Validate ports description'):
         validate_port_description(engines.dut, apply_and_save_port, description)

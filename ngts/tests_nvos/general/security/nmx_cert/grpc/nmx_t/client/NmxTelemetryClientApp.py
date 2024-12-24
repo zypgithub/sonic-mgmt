@@ -2,18 +2,19 @@ import time
 
 import grpc
 
-import ngts.tests_nvos.general.security.nmx_cert.grpc.proto.nmx_m_nmx_c_pb2 as pb
-import ngts.tests_nvos.general.security.nmx_cert.grpc.proto.nmx_m_nmx_c_pb2_grpc as pb_grpc
+import ngts.tests_nvos.general.security.nmx_cert.grpc.nmx_t.proto.nmx_telemetry_pb2 as pb
+import ngts.tests_nvos.general.security.nmx_cert.grpc.nmx_t.proto.nmx_telemetry_pb2_grpc as pb_grpc
 from ngts.tests_nvos.general.security.certificate.constants import TestCert
 from ngts.tests_nvos.general.security.helpers import remove_etc_host_mapping_to_dn, add_etc_host_mapping_to_dn
-from ngts.tests_nvos.general.security.nmx_cert.constants import EncryptionMode, DEFAULT_NMX_C_MGMT_PORT
-from ngts.tests_nvos.general.security.nmx_cert.grpc.config import CONFIG, GrpcConfig, GrpcServerConfig, GrpcClientConfig
+from ngts.tests_nvos.general.security.nmx_cert.constants import EncryptionMode, DEFAULT_NMX_T_MGMT_PORT
+from ngts.tests_nvos.general.security.nmx_cert.grpc.config import NMX_T_CONFIG, GrpcConfig, GrpcServerConfig, \
+    GrpcClientConfig
 from ngts.tests_nvos.general.security.nmx_cert.grpc.utils.logs import standalone_logger
 
 
-class ClientApp:
+class NmxTelemetryClientApp:
     def __init__(self, config: GrpcConfig, logger=standalone_logger):
-        self.name = 'CLIENT'
+        self.name = 'NMX-T CLIENT'
         self.config = config
         self.logger = logger or standalone_logger
 
@@ -26,7 +27,7 @@ class ClientApp:
             self._log('created channel')
 
             # Create a stub (client)
-            client = pb_grpc.NMX_ControllerStub(channel)
+            client = pb_grpc.TelemetryServiceStub(channel)
             self._log('created grpc client')
 
             for i in range(self.config.client.num_requests):
@@ -84,18 +85,19 @@ class ClientApp:
 
 
 def run_grpc_client_app(config: GrpcConfig, logger=None) -> str:
-    return ClientApp(config, logger).run()
+    return NmxTelemetryClientApp(config, logger).run()
 
 
-def run_grpc_client(config, remote_host_addr='127.0.0.1', logger=None):
-    remove_etc_host_mapping_to_dn(config.server.address)
-    add_etc_host_mapping_to_dn(config.server.address, remote_host_addr)
+def run_nmx_t_grpc_client(config, remote_host_addr='127.0.0.1', logger=None, skip_etc_mapping=False):
+    if not skip_etc_mapping:
+        remove_etc_host_mapping_to_dn(config.server.address)
+        add_etc_host_mapping_to_dn(config.server.address, remote_host_addr)
 
     return run_grpc_client_app(config, logger)
 
 
 def local_main():
-    run_grpc_client(CONFIG)
+    run_nmx_t_grpc_client(NMX_T_CONFIG)
 
 
 def main_with_switch():
@@ -103,23 +105,23 @@ def main_with_switch():
     config = GrpcConfig(
         server=GrpcServerConfig(
             address='nvos-dut',
-            port=DEFAULT_NMX_C_MGMT_PORT,
-            tls_mode=EncryptionMode.TLS,
+            port=DEFAULT_NMX_T_MGMT_PORT,
+            tls_mode=EncryptionMode.MTLS,
             cert=TestCert.cert_valid_1,
             cacert=TestCert.cert_valid_2,
             max_workers=10
         ),
         client=GrpcClientConfig(
             address='nvos-dut',
-            tls_mode=EncryptionMode.MTLS,
+            tls_mode=EncryptionMode.TLS,
             cert=TestCert.cert_valid_2,
             cacert=TestCert.cert_valid_1,
-            num_requests=3,
+            num_requests=2,
             delay_between_requests=1
         )
     )
 
-    run_grpc_client(config, switch_ip)
+    run_nmx_t_grpc_client(config, switch_ip)
 
 
 if __name__ == '__main__':

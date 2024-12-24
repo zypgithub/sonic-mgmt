@@ -2,13 +2,13 @@ from concurrent import futures
 
 import grpc
 
-import ngts.tests_nvos.general.security.nmx_cert.grpc.proto.nmx_m_nmx_c_pb2_grpc as pb_grpc
-from ngts.tests_nvos.general.security.nmx_cert.grpc.config import CONFIG, EncryptionMode, GrpcConfig
-from ngts.tests_nvos.general.security.nmx_cert.grpc.server.NMX_ControllerServicer import NMX_ControllerServicer
+import ngts.tests_nvos.general.security.nmx_cert.grpc.nmx_c.proto.nmx_m_nmx_c_pb2_grpc as pb_grpc
+from ngts.tests_nvos.general.security.nmx_cert.grpc.config import NMX_C_CONFIG, EncryptionMode, GrpcConfig
+from ngts.tests_nvos.general.security.nmx_cert.grpc.nmx_c.server.NMX_ControllerServicer import NMX_ControllerServicer
 from ngts.tests_nvos.general.security.nmx_cert.grpc.utils.logs import standalone_logger
 
 
-class ServerApp:
+class NmxControllerServerApp:
     def __init__(self, config, logger=standalone_logger):
         self.name = 'SERVER'
         self.config = config
@@ -68,8 +68,8 @@ class ServerApp:
 
 
 def run_grpc_server_app(config: GrpcConfig, logger=None):
-    ServerApp(config, logger).run()
+    NmxControllerServerApp(config, logger).run()
 
 
 if __name__ == '__main__':
-    run_grpc_server_app(CONFIG)
+    run_grpc_server_app(NMX_C_CONFIG)

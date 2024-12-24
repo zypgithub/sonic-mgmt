@@ -15,7 +15,6 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
-from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.system.test_system_health import verify_health_status_and_led
@@ -620,7 +619,7 @@ def fan_error_context(fan: str, device, engine):
             cmd_output = engine.run_cmd(f"sudo ln -sf {tmp_file.path} {fan_fault_file}")
             if cmd_output:
                 raise Exception("Test failure. See command and output above.")
-            time.sleep(5)
+            time.sleep(10)
             try:
                 fan_output = platform.environment.fan.show(fan)
                 assert (OutputParsingTool.parse_json_str_to_dictionary(fan_output).get_returned_value()
@@ -631,7 +630,7 @@ def fan_error_context(fan: str, device, engine):
                 cmd_output = engine.run_cmd(f"sudo ln -sf {fan_fault_original_target} {fan_fault_file}")
                 if cmd_output:
                     raise Exception("Test failure. See command and output above.")
-                time.sleep(5)
+                time.sleep(10)
                 fan_output = platform.environment.fan.show(fan)
                 assert (OutputParsingTool.parse_json_str_to_dictionary(fan_output).get_returned_value()
                         [PlatformConsts.ENV_TEMP_STATE_PROP] == PlatformConsts.ENV_TEMP_STATE_OK), \

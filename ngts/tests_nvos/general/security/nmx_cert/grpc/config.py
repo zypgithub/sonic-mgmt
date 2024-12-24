@@ -1,6 +1,7 @@
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tests_nvos.general.security.certificate.constants import TestCert
-from ngts.tests_nvos.general.security.nmx_cert.constants import EncryptionMode, DEFAULT_NMX_C_MGMT_PORT
+from ngts.tests_nvos.general.security.nmx_cert.constants import EncryptionMode, DEFAULT_NMX_C_MGMT_PORT, \
+    DEFAULT_NMX_T_MGMT_PORT
 
 
 class Printable:
@@ -47,7 +48,7 @@ class GrpcConfig:
 #######################################################
 
 
-CONFIG = GrpcConfig(
+NMX_C_CONFIG = GrpcConfig(
     server=GrpcServerConfig(
         address='nvos-dut',
         port=DEFAULT_NMX_C_MGMT_PORT,
@@ -62,6 +63,25 @@ CONFIG = GrpcConfig(
         cert=TestCert.cert_valid_2,
         cacert=TestCert.cert_valid_1,
         num_requests=3,
+        delay_between_requests=1
+    )
+)
+
+NMX_T_CONFIG = GrpcConfig(
+    server=GrpcServerConfig(
+        address='nvos-dut',
+        port=DEFAULT_NMX_T_MGMT_PORT,
+        tls_mode=EncryptionMode.TLS,
+        cert=TestCert.cert_valid_1,
+        cacert=TestCert.cert_valid_2,
+        max_workers=10
+    ),
+    client=GrpcClientConfig(
+        address='nvos-dut',
+        tls_mode=EncryptionMode.TLS,
+        cert=TestCert.cert_valid_2,
+        cacert=TestCert.cert_valid_1,
+        num_requests=10,
         delay_between_requests=1
     )
 )

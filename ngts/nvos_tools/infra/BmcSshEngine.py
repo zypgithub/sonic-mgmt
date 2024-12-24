@@ -49,7 +49,7 @@ class BmcSshEngine:
     def connect(self):
         #   TODO: handle: "There were too many logins for 'admin'." ?
         with allure.step(self._msg('connect bmc session')):
-            passwords = [self.bmc_default_password, self.bmc_another_password, BACKUP_PW]
+            passwords = [BACKUP_PW, self.bmc_default_password, self.bmc_another_password]
             for pw in passwords:
                 try:
                     with allure.step(self._msg(f'ssh bmc using user: {self.bmc_username} , password: {pw}')):

@@ -1,12 +1,14 @@
-import time
-import logging
-import re
-import allure
-import json
-import random
-import os
 import datetime
+import json
+import logging
+import os
+import random
+import re
+import time
+
+import allure
 from retry import retry
+
 from ngts.common.checkers import is_ver1_greater_or_equal_ver2
 
 logger = logging.getLogger()
@@ -88,6 +90,9 @@ class TC_CONST(object):
     TC_CONFIG_FILE = f"{HW_MGMT_FOLDER}/config/tc_config.json"
     # list of platforms without a link to TC_CONFIG_FILE (copy file instead of link)
     PLATFORMS_WITHOUT_TC_CONFIG_LINK = ["MQM9700", 'QM8790', 'QM3400']
+    # list of Juliet platforms
+    JULIET_PLATFORMS = ['x86_64-nvidia_n5100_ld-r0', 'x86_64-nvidia_n5110_ld-r0', 'x86_64-nvidia_n5112_ld-r0',
+                        'x86_64-nvidia_n5200_ld-r0']
     # hw-management-thermal folder
     HW_MGMT_THERMAL_FOLDER = "/etc/hw-management-thermal"
 
@@ -441,14 +446,15 @@ def get_tested_sensor_list(sensors_counter, dut, cli_object_dut):
             sensor_temperature_test_list.remove("module")
 
     if hasattr(cli_object_dut.chassis, 'get_platform'):
-        not_support_asic_platform_list = ["x86_64-nvidia_sn4280_simx-r0", "x86_64-nvidia_n5110_ld-r0"]
+        not_support_asic_platform_list = ["x86_64-nvidia_sn4280_simx-r0"] + TC_CONST.JULIET_PLATFORMS
         platform = cli_object_dut.chassis.get_platform()
         if platform in not_support_asic_platform_list:
             sensor_temperature_test_list.remove("asic")
 
-        if platform in ['x86_64-nvidia_n5110_ld-r0']:
-            sensor_temperature_test_list.remove("ambient")
-            sensor_temperature_test_list.remove("module")
+        if platform in TC_CONST.JULIET_PLATFORMS:
+            for sensor in ["ambient", "module"]:
+                if sensor in sensor_temperature_test_list:
+                    sensor_temperature_test_list.remove(sensor)
 
     if not sensor_temperature_test_list:
         raise Exception("No sensor is available for testing ")
@@ -772,9 +778,10 @@ def get_sensor_read_error_test_data(cli_objects):
         else:
             sensor_read_error_test_sensors.append("module")
     platform = cli_objects.dut.chassis.get_platform()
-    if platform in ['x86_64-nvidia_n5110_ld-r0']:
-        sensor_read_error_test_sensors.remove("ambient")
-        sensor_read_error_test_sensors.remove("module")
+    if platform in TC_CONST.JULIET_PLATFORMS:
+        for sensor in ["ambient", "module"]:
+            if sensor in sensor_read_error_test_sensors:
+                sensor_read_error_test_sensors.remove(sensor)
     sensor_type = random.choice(sensor_read_error_test_sensors)
     sensor_temperature_file = get_sensor_read_err_file(sensor_type)
     return sensor_type, sensor_temperature_file
@@ -792,7 +799,7 @@ def get_sensor_err_test_data(sensor_err_type, mock_sensor, tc_config_dict, cli_o
     sensor_temperature_file = os.path.join(TC_CONST.HW_THERMAL_FOLDER, sensor_temperature_file)
 
     platform = cli_objects.dut.chassis.get_platform()
-    if platform not in ['x86_64-nvidia_n5110_ld-r0']:
+    if platform not in TC_CONST.JULIET_PLATFORMS:
         # For all sensor errors, we all use min(port_amb, fan_abm) as the key to get the expected pwm from dmin table
         temperature_port = mock_sensor.read_value(f"{TC_CONST.HW_THERMAL_FOLDER}/port_amb")
         temperature_fan = mock_sensor.read_value(f"{TC_CONST.HW_THERMAL_FOLDER}/fan_amb")

@@ -13,15 +13,6 @@ from ngts.tests_nvos.general.security.constants import ETC_HOSTS
 from ngts.tools.test_utils.nvos_general_utils import generate_scp_uri_using_player
 
 
-def add_issue_if(issue_cond, issues: List[str], issue_msg: str):
-    if issue_cond:
-        issues.append(issue_msg)
-
-
-def assert_no_issues(header_prefix: str, issues: List[str], err_msg_header: str = ''):
-    assert not issues, f'{header_prefix} - {err_msg_header}\nissues found:\n\t* ' + '\n\t* '.join(issues)
-
-
 def add_etc_host_mapping_to_dn(dn, address, cmd_runner=None):
     cmd_runner = cmd_runner or CmdRunner()
     cmd_runner.run_cmd(f'echo "{address} {dn}" | sudo tee -a {ETC_HOSTS}')

@@ -7,9 +7,8 @@ import pytest
 
 from ngts.nvos_constants.constants_nvos import ImageConsts, NvosConst
 from ngts.nvos_constants.constants_nvos import PlatformConsts
-from ngts.nvos_tools.infra.FWComponentsTool import FWComponentsTool
-from ngts.tests_nvos.constants import MINUTE
-
+from ngts.nvos_tools.infra.BmcTool import BmcTool
+from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
@@ -105,7 +104,8 @@ def test_platform_firmware_image_rename(engines, devices, topology_obj, clear_as
     platform = Platform()
     platform.firmware.asic.files.verify_show_files_output([], [])
     component_name = 'asic'
-    fw_file, fetched_image_name, version_name = FWComponentsTool.get_fw_component_version_latest(component_name)
+    fw_has_changed = False
+    fw_file, fetched_image_name, version_name = BmcTool.get_fw_component_version_latest(component_name)
 
     with allure.step("Fetch image 1st try"):
         player_engine = engines['sonic_mgmt']
@@ -154,7 +154,7 @@ def test_platform_firmware_image_upload(engines, devices, topology_obj):
 
     platform = Platform()
     component_name = 'asic'
-    fw_file, fetched_image_name, _ = FWComponentsTool.get_fw_component_version_latest(component_name)
+    fw_file, fetched_image_name, _ = BmcTool.get_fw_component_version_latest(component_name)
     with allure.step("Fetch image"):
         platform.firmware.asic.action_fetch(fw_file, base_url=ImageConsts.SCP_PATH).verify_result()
 

@@ -24,6 +24,7 @@ class Reboot(BaseComponent):
                 engine = TestToolkit.engines.dut
             if not device:
                 device = TestToolkit.devices.dut
+            topology_obj = topology_obj or TestToolkit.topology_obj
 
             start_time = time.time()
             res_obj = SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].action_reboot,

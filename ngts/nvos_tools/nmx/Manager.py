@@ -15,8 +15,9 @@ class Manager(BaseComponent):
     def action_update(self, state: str = '', dut_engine=None) -> ResultObj:
         with allure.step(f'Execute action update for {self.get_resource_path()}'):
             engine = dut_engine or TestToolkit.engines.dut
-            return SendCommandTool.execute_command(self._cli_wrapper.action_update_cluster_manager_property, engine,
-                                                   self.get_resource_path(), 'state', state)
+            res = SendCommandTool.execute_command(self._cli_wrapper.action_update_cluster_manager_property, engine,
+                                                  self.get_resource_path(), 'state', state)
+            return res
 
     def action_restore(self, dut_engine=None) -> ResultObj:
         with allure.step(f'Execute action restore for {self.get_resource_path()}'):

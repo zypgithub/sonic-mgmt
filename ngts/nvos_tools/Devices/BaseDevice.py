@@ -90,6 +90,7 @@ class BaseDevice(ABC):
         self.supported_commands = []
         self.supports_tpm_testing = True
         self.unset_all_command = "nv unset acl; nv unset interface; nv unset platform; nv unset system"
+        self.allow_cpld_update = False
 
     def _init_fan_list(self):
         self.fan_list = []
@@ -308,8 +309,8 @@ class BaseSwitch(BaseDevice):
     __metaclass__ = ABCMeta
 
     Constants = namedtuple('Constants', ['system', 'dump_files', 'sdk_dump_files', 'firmware',
-                                         'log_dump_files', 'log_nginx_files', 'log_nmx_files', 'stats_dump_files', 'hw_mgmt_files',
-                                         'cluster_files', 'bmc_dump_files', 'erots'])
+                                         'log_dump_files', 'log_nginx_files', 'log_nmx_files', 'stats_dump_files',
+                                         'hw_mgmt_files', 'etc_files', 'cluster_files', 'bmc_dump_files', 'erots'])
     CpldImageConsts = namedtuple('CpldImageConsts', ('burn_image_path', 'refresh_image_path', 'version_names'))
     SsdImageConsts = namedtuple('SsdImageConsts', ('file', 'current_version', 'alternate_version'))
     BiosImagesConsts = namedtuple('BiosImagesConsts', ('current_version', 'alternate_version'))
@@ -375,6 +376,7 @@ class BaseSwitch(BaseDevice):
                             "mgmt-interface.csv.gz", "temperature.csv.gz", "voltage.csv.gz"]
         hw_mgmt_files = ['hw-mgmt-dump.tar.gz']
         log_nmx_files = []
+        etc_files = ["resolv.conf"]
 
         bmc_dump_files = None
         cluster_files = None
@@ -383,15 +385,14 @@ class BaseSwitch(BaseDevice):
                     PlatformConsts.FW_CPLD + '1', PlatformConsts.FW_CPLD + '2', PlatformConsts.FW_CPLD + '3']
         erots = []
         self.constants = BaseSwitch.Constants(system_dic, dump_files, sdk_dump_files, firmware, log_dump_files,
-                                              log_nginx_files, log_nmx_files, stats_dump_files, hw_mgmt_files, cluster_files,
+                                              log_nginx_files, log_nmx_files, stats_dump_files, hw_mgmt_files, etc_files, cluster_files,
                                               bmc_dump_files, erots)
 
         self.current_bios_version_name = ""
         self.current_bios_version_path = ""
         self.previous_bios_version_name = ""
         self.previous_bios_version_path = ""
-        self.current_cpld_version = None
-        self.previous_cpld_version = None
+        self.fw_versions_json_file_path = None
         self.show_platform_output = {
             "system-mac": ExpectedString(regex=r"([\dA-F]{2}:){5}[\dA-F]{2}"),
             "manufacturer": "Nvidia",
