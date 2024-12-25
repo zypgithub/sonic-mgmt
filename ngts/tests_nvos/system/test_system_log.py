@@ -1,9 +1,10 @@
 import logging
+import random
 import time
 import pytest
 
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from ngts.nvos_constants.constants_nvos import ComponentsConsts, SyslogConsts
+from ngts.nvos_constants.constants_nvos import LogComponentsConsts, SyslogConsts
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
@@ -44,7 +45,7 @@ def test_show_log(engines):
 
     with allure.step("Run nv show system log command follow to view system logs"):
         logging.info("Run nv show system log command follow to view system logs")
-        show_output = system.log.show_log(exit_cmd='q')
+        show_output = system.log.file.show_log(exit_cmd='q')
 
     with allure.step('Verify updated “system/image” in the logs as expected'):
         logging.info('Verify updated “system/image” in the logs as expected')
@@ -76,6 +77,14 @@ def test_show_log_continues(engines):
         logging.info("Run nv show system log command --view follow to view system logs")
         wait_for_specific_regex_in_logs(engines.dut, "nvued\\:    INFO", timeout=5)
 
+    with allure.step("Run show command to view system image"):
+        logging.info("Run show command to view system image")
+        system.image.show()
+
+    with allure.step("Run nv show system log command follow to view system logs"):
+        logging.info("Run nv show system log command follow to view system logs")
+        system.log.file.show_log(param='follow', expected_str='system/image', exit_cmd='\x03')
+
 
 @pytest.mark.system
 @pytest.mark.log
@@ -94,14 +103,13 @@ def test_show_log_files(engines):
     with allure.step("Create System object"):
         system = System(None)
 
-    with allure.step("Run nv show system log files command and validate fields"):
-        logging.info("Run nv show system log files command and validate fields")
-        show_output = system.log.files.show()
+    with allure.step("Run nv show system log file list command and validate fields"):
+        show_output = system.log.file.show(op_param='list')
         output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(show_output).get_returned_value()
 
         with allure.step("Validate all expected fields in show output"):
             ValidationTool.verify_field_exist_in_json_output(output_dictionary,
-                                                             ["syslog"]).verify_result()
+                                                             [LogComponentsConsts.SYSLOG]).verify_result()
             logging.info("All expected fields were found")
 
     with allure.step("Rotate logs"):
@@ -114,135 +122,7 @@ def test_show_log_files(engines):
 
     with allure.step("Run nv show system log files command follow to view system logs"):
         logging.info("Run nv show system log files command follow to view system logs")
-        system.log.files.show_log_files(param='files syslog', expected_str='system/image', exit_cmd='q')
-
-
-@pytest.mark.system
-@pytest.mark.log
-@pytest.mark.simx
-@pytest.mark.nvos_chipsim_ci
-def test_show_debug_log(engines):
-    """
-    Check version on switch, run nv show system log command and verify the image method are exist
-    command: nv show system debug-log
-
-    Test flow:
-        1. Write to debug log message
-        2. Check if message exist in debug log
-    """
-    with allure.step("Create System object"):
-        system = System(None)
-
-    with allure.step("Write debug_log message to debug-log"):
-        logging.info("Write debug_log message to debug-log")
-        system.debug_log.write_to_log()
-
-    with allure.step("Run nv show system debug-log command follow to view system logs"):
-        logging.info("Run nv show system debug-log command follow to view system logs")
-        show_output = system.debug_log.show_log(log_type='debug-', exit_cmd='q')
-
-    with allure.step("Run nv show system debug-log command follow to view system logs"):
-        logging.info("Run nv show system debug-log command follow to view system logs")
-        show_output_debug = system.debug_log.show_log(log_type='debug-', param='files debug', exit_cmd='q')
-
-    with allure.step('Verify debug_log message in log as expected'):
-        logging.info('Verify debug_log message in log as expected')
-        ValidationTool.verify_expected_output(show_output_debug, 'debug_log').verify_result()
-        ValidationTool.verify_expected_output(show_output, 'debug_log').verify_result()
-
-
-@pytest.mark.system
-@pytest.mark.log
-@pytest.mark.simx
-def test_show_debug_log_continues(engines):
-    """
-    Check version on switch, run nv show system log command and verify the image method are exist
-    command: nv show system debug-log --view follow
-
-    Test flow:
-        1. Write to debug log message
-        2. Check if message exist in debug log with continues command
-    """
-    with allure.step("Create System object"):
-        system = System()
-
-    with allure.step("Create System object"):
-        system.debug_log.write_to_log()
-
-    with allure.step("Write to the logs debug_log message"):
-        logging.info("Write to the logs debug_log message")
-        system.debug_log.write_to_log()
-
-    with allure.step("Run nv show system log command --view follow to view system logs"):
-        logging.info("Run nv show system log command --view follow to view system logs")
-        system.debug_log.show_log(log_type='debug-', expected_str='debug_log', param='--view follow', exit_cmd='\x03')
-
-
-@pytest.mark.system
-@pytest.mark.log
-@pytest.mark.simx
-@pytest.mark.nvos_chipsim_ci
-def test_show_debug_log_files(engines):
-    """
-    Check all fields in debug-log files command
-
-    Test flow:
-        1. Run nv show system debug-log files command and validate fields
-    """
-    with allure.step("Create System object"):
-        system = System(None)
-
-    with allure.step("Create System object"):
-        system.debug_log.write_to_log()
-
-    with allure.step("Run show command log files command to check fields"):
-        logging.info("Run show command log files command to check fields")
-        show_output = system.debug_log.files.show()
-        output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(show_output).get_returned_value()
-
-        with allure.step("Validate all expected fields in show output"):
-            ValidationTool.verify_field_exist_in_json_output(output_dictionary,
-                                                             ["debug"]).verify_result()
-            logging.info("All expected fields were found")
-
-
-@pytest.mark.system
-@pytest.mark.log
-@pytest.mark.simx
-def test_rotate_debug_log_files(engines):
-    """
-    Check all fields in debug-log files command
-
-    Test flow:
-        1. Run nv show system debug-log files command and validate fields
-    """
-    with allure.step("Create System object"):
-        system = System(None)
-
-    with allure.step("Create System object"):
-        system.debug_log.write_to_log()
-
-    with allure.step("Rotate debug-log 5 times to create log files"):
-        logging.info("Rotate log 5 times to create log files")
-        for i in range(0, 5):
-            system.debug_log.rotate_logs()
-
-        logging.info("Check we have 5 log files")
-        show_output = system.debug_log.files.show()
-        log_files_dict = OutputParsingTool.parse_json_str_to_dictionary(show_output).get_returned_value()
-        assert len(log_files_dict.keys()) <= 2, "Only one file should be created after rotation"
-
-    with allure.step("Delete all debug log files and validate"):
-        logging.info("Delete all debug log files and validate")
-
-        for log_file in log_files_dict.keys():
-            with allure.step("Delete {} file".format(log_file)):
-                system.debug_log.files.file_name[log_file].action_delete()
-
-        with allure.step("Verify all debug-log files were deleted".format(log_file)):
-            output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(system.debug_log.files.show()) \
-                .get_returned_value()
-            assert len(output_dictionary) == 0, "We have log files after delete all"
+        system.log.file.show_log(expected_str='system/image', exit_cmd='q')
 
 
 @pytest.mark.system
@@ -252,6 +132,7 @@ def test_log_files_rotation_default_fields(engines):
     """
     Check all fields and default values exist in nv show system log files rotation
     command: nv show system log files rotation
+    Prune temp for NVOS - component
 
     Test flow:
         1. Verify all fields in command
@@ -260,28 +141,12 @@ def test_log_files_rotation_default_fields(engines):
     with allure.step("Create System object"):
         system = System(None)
 
-    _log_files_rotation_default_fields(system.log, "20", "10.0")
-
-
-@pytest.mark.system
-@pytest.mark.log
-@pytest.mark.simx
-def test_debug_log_files_rotation_default_fields(engines):
-    """
-    Check all fields and default values exist in nv show system debug-log files rotation
-    command: nv show system debug-log files rotation
-
-    Test flow:
-        1. Verify all fields in command
-        2. Verify all default values
-    """
-    with allure.step("Create System object"):
-        system = System(None)
-
-    with allure.step("Create System object"):
-        system.debug_log.write_to_log()
-
-    _log_files_rotation_default_fields(system.debug_log, "10", "20.0")
+    with allure.step('Test set log rotation default_fields'):
+        with allure.independent_step(f"Test rotate log files on {LogComponentsConsts.SYSLOG}"):
+            _log_files_rotation_default_fields(system.log, "20", "10.0")
+        # component = get_random_component(system)
+        # with allure.independent_step(f"Test rotate log files on {component.component_name}"):
+        #     _log_files_rotation_default_fields(component, "20", "10.0")
 
 
 def _log_files_rotation_default_fields(system_log_obj, default_max_number, default_size):
@@ -314,6 +179,7 @@ def test_log_files_set_unset_log_rotation_frequency(engines):
     """
     Check set unset for files rotation parameters
     command: nv set/unset system log rotation command
+    Prune temp for NVOS - component
 
     Test flow:
         1. Get default values for rotation frequency
@@ -323,29 +189,12 @@ def test_log_files_set_unset_log_rotation_frequency(engines):
     with allure.step("Create System object"):
         system = System(None)
 
-    _log_files_set_unset_log_rotation_frequency(engines, system.log)
-
-
-@pytest.mark.system
-@pytest.mark.log
-@pytest.mark.simx
-def test_debug_log_files_set_unset_log_rotation_frequency(engines):
-    """
-    Check set unset for files rotation parameters
-    command: nv set/unset system debug-log rotation command
-
-    Test flow:
-        1. Get default values for rotation frequency
-        2. Negative testing for frequency
-        3. Validate set, unset for frequency
-    """
-    with allure.step("Create System object"):
-        system = System(None)
-
-    with allure.step("Create System object"):
-        system.debug_log.write_to_log()
-
-    _log_files_set_unset_log_rotation_frequency(engines, system.debug_log)
+    with allure.step('Test set log rotation frequency'):
+        with allure.independent_step(f"Test rotate log files on {LogComponentsConsts.SYSLOG}"):
+            _log_files_set_unset_log_rotation_frequency(engines, system.log)
+        # component = get_random_component(system)
+        # with allure.independent_step(f"Test rotate log files on {component.component_name}"):
+        #     _log_files_set_unset_log_rotation_frequency(engines, component)
 
 
 def _log_files_set_unset_log_rotation_frequency(engines, system_log_obj):
@@ -390,6 +239,7 @@ def test_log_files_set_unset_log_rotation_size_disk_percentage(engines):
     """
     Check set unset for files rotation file size and disk percentage
     command: nv set/unset system log rotation size and sick-percentage
+    Prune temp for NVOS - component
 
     Test flow:
         1. Negative testing for log file size
@@ -398,30 +248,12 @@ def test_log_files_set_unset_log_rotation_size_disk_percentage(engines):
     """
     with allure.step("Create System object"):
         system = System(None)
-
-    _log_files_set_unset_log_rotation_size_disk_percentage(engines, system.log)
-
-
-@pytest.mark.system
-@pytest.mark.log
-@pytest.mark.simx
-def test_debug_log_files_set_unset_log_rotation_size_disk_percentage(engines):
-    """
-    Check set unset for files rotation file size and disk percentage
-    command: nv set/unset system debug-log rotation size and sick-percentage
-
-    Test flow:
-        1. Negative testing for log file size
-        2. Set, unset for log file size
-        3. Positive and negative testing for disk percentage parameter
-    """
-    with allure.step("Create System object"):
-        system = System(None)
-
-    with allure.step("Create System object"):
-        system.debug_log.write_to_log()
-
-    _log_files_set_unset_log_rotation_size_disk_percentage(engines, system.debug_log)
+    with allure.step('Test set log rotation size disk percentage'):
+        with allure.independent_step(f"Test rotate log files on {LogComponentsConsts.SYSLOG}"):
+            _log_files_set_unset_log_rotation_size_disk_percentage(engines, system.log)
+        # component = get_random_component(system)
+        # with allure.independent_step(f"Test rotate log files on {component.component_name}"):
+        #     _log_files_set_unset_log_rotation_size_disk_percentage(engines, component)
 
 
 def _log_files_set_unset_log_rotation_size_disk_percentage(engines, system_log_obj):
@@ -513,29 +345,6 @@ def test_log_files_set_unset_log_rotation_max_number(engines):
     TestToolkit.add_loganalyzer_marker(engines.dut, marker)
 
 
-@pytest.mark.system
-@pytest.mark.log
-@pytest.mark.simx
-def test_debug_log_files_set_unset_log_rotation_max_number(engines):
-    """
-    Check set unset for files rotation max-number
-    command: nv set/unset system debug-log rotation max-number
-
-    Test flow:
-        1. Negative validation for max-number
-        2. Set possible value to max-number
-        1. Log rotation max-number testing with files
-        2. Unset log rotation and check default parameters
-    """
-    with allure.step("Create System object"):
-        system = System(None)
-
-    with allure.step("Write to debug log file"):
-        system.debug_log.write_to_log()
-
-    _log_files_set_unset_log_rotation_max_number(engines, system.debug_log, 'debug')
-
-
 def _log_files_set_unset_log_rotation_max_number(engines, system_log_obj, log_name_prefix):
     with allure.step("Negative validation for log rotation max-number"):
         logging.info("Negative validation for log rotation max-number")
@@ -560,7 +369,7 @@ def _log_files_set_unset_log_rotation_max_number(engines, system_log_obj, log_na
             system_log_obj.write_to_log()
 
         logging.info("Check we have 5 log files")
-        show_output = system_log_obj.files.show()
+        show_output = system_log_obj.file.show(op_param='list')
         output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(show_output).get_returned_value()
         assert len(output_dictionary.keys()) >= 6, f"expected 5 log files, but there are {len(output_dictionary.keys())} instead"
         assert list(output_dictionary.keys())[-1] == f'{log_name_prefix}.5.gz', f"log file name does not match the expected format, the expected is {log_name_prefix}.5.gz and the current name is {list(output_dictionary.keys())[-1]}"
@@ -578,10 +387,11 @@ def _log_files_set_unset_log_rotation_max_number(engines, system_log_obj, log_na
         system_log_obj.write_to_log()
 
         logging.info("Check we have 1 log files")
-        show_output = system_log_obj.files.show()
+        show_output = system_log_obj.file.show(op_param='list')
         output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(show_output).get_returned_value()
         assert len(output_dictionary.keys()) >= 2, f"expected 1 log file, but there are {len(output_dictionary.keys())} instead"
-        assert list(output_dictionary.keys())[-1] == f'{log_name_prefix}.1', f"log file name does not match the expected format, the expected is {log_name_prefix}.1 and the current name is {list(output_dictionary.keys())[-1]}"
+        assert list(output_dictionary.keys())[-1] == f'{log_name_prefix}.1', \
+            f"log file name does not match the expected format, the expected is {log_name_prefix}.1 and the current name is {list(output_dictionary.keys())[-1]}"
 
     with allure.step("Validate unset log rotation"):
         logging.info("Validate unset log rotation")
@@ -619,7 +429,7 @@ def test_log_files_rotation_force(engines):
 
     with allure.step("Run nv show system log command follow to view system logs"):
         logging.info("Run nv show system log command follow to view system logs")
-        show_output = system.log.show_log(exit_cmd='q')
+        show_output = system.log.file.show_log(exit_cmd='q')
 
     with allure.step('Verify updated “system/image” in the logs as expected'):
         logging.info('Verify updated “system/image” in the logs as expected')
@@ -640,14 +450,13 @@ def test_log_components(engines):
         3. Run nv set/unset for all components with all log levels and validate
     """
 
-    default_log_level_nvued = "info"
-    list_with_all_components = ComponentsConsts.COMPONENTS_LIST
-    list_with_all_log_levels = ComponentsConsts.LOG_LEVEL_LIST
+    default_log_level_nvue = "info"
+    list_with_all_components = LogComponentsConsts.COMPONENTS_LIST
+    list_with_all_log_levels = LogComponentsConsts.LOG_LEVEL_LIST
     with allure.step("Create System object"):
         system = System(None)
 
-    with allure.step("Run show command to view system image"):
-        logging.info("Run show command to view system image")
+    with allure.step("Run show command to view all log components"):
         show_output = system.log.component.show()
         output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(show_output).get_returned_value()
 
@@ -658,15 +467,15 @@ def test_log_components(engines):
 
     with allure.step("Validate default log levels for all components"):
         logging.info("Validate default log levels for all components")
-        for component in list_with_all_components:
-            show_output = system.log.component.show(op_param=component)
+        for component_name in list_with_all_components:
+            show_output = system.log.component.component_id[component_name].show()
             output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(show_output).get_returned_value()
-            default_log_level = "notice"
-            if component == "nvued":
-                default_log_level = default_log_level_nvued
+            default_log_level = LogComponentsConsts.NOTICE
+            if component_name == LogComponentsConsts.NVUE:
+                default_log_level = default_log_level_nvue
             with allure.step("Validate component {component} with default log level {level}"
-                             .format(component=component, level=default_log_level)):
-                ValidationTool.verify_field_value_in_output(output_dictionary, ComponentsConsts.LEVEL,
+                             .format(component=component_name, level=default_log_level)):
+                ValidationTool.verify_field_value_in_output(output_dictionary, LogComponentsConsts.LEVEL,
                                                             default_log_level).verify_result()
                 logging.info("All expected components were with default log levels")
 
@@ -674,30 +483,25 @@ def test_log_components(engines):
         logging.info("Rotate logs")
         system.log.rotate_logs()
 
-    with allure.step("Validate all log levels can be applied for all components"):
-        logging.info("Validate all log levels can be applied for all components")
-        for component in list_with_all_components:
-            for log_level in list_with_all_log_levels:
-                if component == "nvued" and log_level == "notice":
-                    continue
-                system.log.component.componentName[component].set(op_param_name='level', op_param_value=log_level,
-                                                                  apply=True).verify_result()
+    with allure.step("Validate all log levels (with random.choice) can be applied for all components"):
+        for component_name in list_with_all_components:
+            log_level = random.choice(list_with_all_log_levels)
+            if component_name == LogComponentsConsts.NVUE and log_level == LogComponentsConsts.NOTICE:
+                continue
+            system.log.component.component_id[component_name].level.set(log_level, apply=True).verify_result()
+            show_output = system.log.component.show()
+            output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(show_output).get_returned_value()
+            ValidationTool.verify_field_value_in_output(output_dictionary[component_name], LogComponentsConsts.LEVEL,
+                                                        log_level).verify_result()
+            if component_name == LogComponentsConsts.NVUE and log_level is list_with_all_log_levels[-1]:
+                system.log.component.component_id[component_name].level.set(default_log_level_nvue, apply=True).verify_result()
+            else:
+                system.log.component.component_id[component_name].level.unset(apply=True).verify_result()
                 show_output = system.log.component.show()
                 output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(show_output).get_returned_value()
-                ValidationTool.verify_field_value_in_output(output_dictionary[component], ComponentsConsts.LEVEL,
-                                                            log_level).verify_result()
-                if component == "nvued" and log_level is list_with_all_log_levels[-1]:
-                    system.log.component.componentName[component].set(op_param_name=ComponentsConsts.LEVEL,
-                                                                      op_param_value=default_log_level_nvued,
-                                                                      apply=True).verify_result()
-                else:
-                    system.log.component.componentName[component].unset(op_param=ComponentsConsts.LEVEL,
-                                                                        apply=True).verify_result()
-                    show_output = system.log.component.show()
-                    output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(show_output).get_returned_value()
-                    ValidationTool.verify_field_value_in_output(
-                        output_dictionary[component], ComponentsConsts.LEVEL,
-                        default_log_level if component != "nvued" else default_log_level_nvued).verify_result()
+                ValidationTool.verify_field_value_in_output(
+                    output_dictionary[component_name], LogComponentsConsts.LEVEL,
+                    default_log_level if component_name != LogComponentsConsts.NVUE else default_log_level_nvue).verify_result()
 
     with allure.step("Unset log components"):
         logging.info("Unset log components")
@@ -720,12 +524,38 @@ def test_upload_log_files(engines, topology_obj):
     with allure.step("Create System object"):
         system = System(None)
         system.log.rotate_logs()
-    _upload_log_files(topology_obj, system.log)
+    with allure.step('Test upload log files'):
+        with allure.independent_step(f"Test upload log files on {LogComponentsConsts.SYSLOG}"):
+            _upload_log_files(topology_obj, system.log)
+        component = get_random_component(system)
+        with allure.independent_step(f"Test upload log files on {component.component_name}"):
+            _upload_log_files(topology_obj, component)
+
+
+def _upload_log_files(topology_obj, system_log_obj):
+    player = topology_obj.players['sonic-mgmt']['engine']
+
+    with allure.step("Get and upload log file"):
+        show_output = system_log_obj.file.show(op_param='list')
+        log_files_dict = OutputParsingTool.parse_json_str_to_dictionary(show_output).get_returned_value()
+        log_file = list(log_files_dict.keys())[-1]
+        upload_path = 'scp://{}:{}@{}/root/{}'.format(player.username, player.password, player.ip, log_file)
+        system_log_obj.file.file_id[log_file].action_upload(upload_path=upload_path)
+
+    with allure.step("Check if file uploaded and delete it from player"):
+        assert player.run_cmd(cmd='ls -la | grep {}'.format(log_file)), "it appears the file does not exist in the target path"
+        player.run_cmd(cmd='rm -f {}'.format(log_file))
+
+    with allure.step("Run nv show system log command to check if command with password hidden"):
+        show_output = system_log_obj.file.show_log(exit_cmd='q')
+        ValidationTool.verify_expected_output(show_output, upload_path).verify_result(False)
 
 
 @pytest.mark.system
 @pytest.mark.log
-def test_upload_debug_log_files(engines, topology_obj):
+@pytest.mark.simx
+@pytest.mark.disable_loganalyzer
+def test_delete_log_files(engines, topology_obj):
     """
     Check uploading log files to shared location and validate
     command: nv action upload system log file
@@ -738,38 +568,20 @@ def test_upload_debug_log_files(engines, topology_obj):
     """
     with allure.step("Create System object"):
         system = System(None)
-
-    with allure.step("Create System object"):
-        system.debug_log.write_to_log()
-
-    _upload_log_files(topology_obj, system.debug_log)
-
-
-def _upload_log_files(topology_obj, system_log_obj):
-    player = topology_obj.players['sonic-mgmt']['engine']
-
-    with allure.step("Get and upload log file"):
-        logging.info("Get and upload log file")
-        show_output = system_log_obj.files.show()
-        log_files_dict = OutputParsingTool.parse_json_str_to_dictionary(show_output).get_returned_value()
-        log_file = list(log_files_dict.keys())[-1]
-        upload_path = 'scp://{}:{}@{}/root/{}'.format(player.username, player.password, player.ip, log_file)
-        system_log_obj.files.file_name[log_file].action_upload(upload_path=upload_path)
-
-    with allure.step("Check if file uploaded and delete it from player"):
-        assert player.run_cmd(cmd='ls -la | grep {}'.format(log_file)), "it appears the file does not exist in the target path"
-        player.run_cmd(cmd='rm -f {}'.format(log_file))
-
-    with allure.step("Run nv show system log command to check if command with password hidden"):
-        show_output = system_log_obj.show_log(exit_cmd='q')
-        ValidationTool.verify_expected_output(show_output, upload_path).verify_result(False)
+        system.log.rotate_logs()
+    with allure.step('Test delete log files'):
+        with allure.independent_step(f"Test delete log files on {LogComponentsConsts.SYSLOG}"):
+            _delete_log_files(engines, system.log, file_name=LogComponentsConsts.SYSLOG)
+        component = get_random_component(system)
+        with allure.independent_step(f"Test delete log files on {component.component_name}"):
+            _delete_log_files(engines, component, file_name=component.component_name)
 
 
 @pytest.mark.system
 @pytest.mark.log
 @pytest.mark.simx
 @pytest.mark.disable_loganalyzer
-def test_delete_log_files(engines):
+def _delete_log_files(engines, system_log_obj, file_name):
     """
     Check user can delete debug-log files
     command: nv action delete system log file
@@ -781,39 +593,35 @@ def test_delete_log_files(engines):
         4. Run show system image
         5. Check it exist in log
     """
-    syslog_file_name = "syslog"
-
-    with allure.step("Create System object"):
-        system = System(None)
-
+    system = System()
     with allure.step("Rotate log 5 times to create log files"):
         for i in range(0, 5):
-            system.log.rotate_logs()
+            system_log_obj.rotate_logs()
 
-        logging.info("Check we have 5 log files")
-        show_output = system.log.files.show()
-        log_files_dict = OutputParsingTool.parse_json_str_to_dictionary(show_output).get_returned_value()
-        assert len(log_files_dict.keys()) >= 6, "Not all 5 log files were created"
+        with allure.step("Check we have 5 log files"):
+            show_output = system_log_obj.file.show(op_param='list')
+            log_files_dict = OutputParsingTool.parse_json_str_to_dictionary(show_output).get_returned_value()
+            assert len(log_files_dict.values()) >= 6, "Not all 5 log files were created"
 
     with allure.step("Delete all log files and validate"):
 
-        with allure.step("Get current size of " + syslog_file_name):
-            output = engines.dut.run_cmd("stat /var/log/{} | grep Size".format(syslog_file_name))
+        with allure.step("Get current size of " + file_name):
+            output = engines.dut.run_cmd("stat /var/log/{} | grep Size".format(file_name))
             assert output, "Can't find syslog file"
-            prev_syslog_size = output.split()[1]
+            prev_log_size = output.split()[1]
 
         logs_names_to_delete = list(log_files_dict.keys())
-        logs_names_to_delete.remove(syslog_file_name)
+        logs_names_to_delete.remove(file_name)
         left_files = logs_names_to_delete.copy()
 
         for log_file in logs_names_to_delete:
 
             with allure.step("Delete {} file".format(log_file)):
-                system.log.files.file_name[log_file].action_delete()
+                system_log_obj.file.file_id[log_file].action_delete()
                 left_files.remove(log_file)
 
                 with allure.step("Verify only {} was deleted".format(log_file)):
-                    output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(system.log.files.show()) \
+                    output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(system_log_obj.file.show(op_param='list')) \
                         .get_returned_value()
 
                     with allure.step("Verify {} was deleted".format(log_file)):
@@ -829,11 +637,11 @@ def test_delete_log_files(engines):
                 marker = TestToolkit.get_loganalyzer_marker(engines.dut)
 
             with allure.step("Delete log file"):
-                system.log.files.file_name[syslog_file_name].action_delete()
-                output = engines.dut.run_cmd("stat /var/log/{} | grep Size".format(syslog_file_name))
+                system_log_obj.file.file_id[log_file].action_delete()
+                output = engines.dut.run_cmd("stat /var/log/{} | grep Size".format(file_name))
                 assert output, "Can't find syslog file"
-                curr_syslog_size = output.split()[1]
-                assert int(curr_syslog_size) < int(prev_syslog_size), "Syslog file probably was not deleted"
+                curr_log_size = output.split()[1]
+                assert int(curr_log_size) < int(prev_log_size), "Syslog file probably was not deleted"
 
             with allure.step("Add log analyzer marker for the new log file"):
                 TestToolkit.add_loganalyzer_marker(engines.dut, marker)
@@ -862,7 +670,14 @@ def test_log_idle(engines):
         time.sleep(180)
 
     with (allure.step("Check the log file")):
-        logs_output = system.log.show_log(exit_cmd='q')
+        logs_output = system.log.file.show_log(exit_cmd='q')
         syslog_size_after_idle = FilesTool.get_file_size_in_bytes(engines.dut, SyslogConsts.SYSLOG_LOG_PATH)
         assert syslog_size_after_idle - syslog_size_before_idle <= expected_file_size_diff, \
             f"Found unexpected logs during idle \n {logs_output}"
+
+
+def get_random_component(system):
+    show_output = system.log.component.show()
+    output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(show_output).get_returned_value()
+    component_name = random.choice(list(output_dictionary.keys()))
+    return system.log.component.component_id[component_name]

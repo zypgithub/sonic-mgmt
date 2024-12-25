@@ -6,8 +6,7 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
-from ngts.nvos_tools.system.Files import Files
-from ngts.nvos_tools.system.Component import Component
+from ngts.nvos_tools.infra.DefaultDict import DefaultDict
 
 logger = logging.getLogger()
 
@@ -15,16 +14,9 @@ logger = logging.getLogger()
 class Log(BaseComponent):
     def __init__(self, parent_obj=None):
         BaseComponent.__init__(self, parent=parent_obj, path='/log')
-        self.files = Files(self)
+        self.file = File(self)
         self.component = Component(self)
         self.rotation = BaseComponent(self, path='/rotation')
-
-    def show_log(self, log_type='', param='', exit_cmd='', expected_str=''):
-        with allure.step('Execute nv show system {type}log {param} and exit cmd {exit_cmd}'.
-                         format(type=log_type, param=param, exit_cmd=exit_cmd)):
-            return SendCommandTool.execute_command_expected_str(self.api_obj[TestToolkit.tested_api].show_log,
-                                                                expected_str, TestToolkit.engines.dut, log_type,
-                                                                param, exit_cmd).get_returned_value()
 
     def write_to_log(self):
         with allure.step('Write content to logs'):
@@ -51,14 +43,14 @@ class Log(BaseComponent):
                 log_files = ['syslog']
             else:
                 log_files = OutputParsingTool.parse_json_str_to_dictionary(
-                    self.files.show()).get_returned_value().keys()
+                    self.file.show()).get_returned_value().keys()
 
             for log_file in log_files:
                 if not log_search_errors:
                     break
 
-                output = self.files.file_name[log_file].show(op_param=f'| grep -E "{grep_logs}"', output_format='',
-                                                             dut_engine=engine)
+                output = self.file.file_id[log_file].show(op_param=f'| grep -E "{grep_logs}"', output_format='',
+                                                          dut_engine=engine)
                 if output:
                     for log in logs_to_find:
                         if log in output and log in log_search_errors:
@@ -66,3 +58,56 @@ class Log(BaseComponent):
 
             err = ',\n'.join(list(log_search_errors.values()))
             assert not log_search_errors, f"The following logs weren't found:\n{err}"
+
+
+class File(BaseComponent):
+    def __init__(self, parent_obj=None):
+        super().__init__(parent=parent_obj, path='/file')
+        self.file_id: Dict[str, FileId] = DefaultDict(
+            lambda file_id: FileId(parent=self, file_id=file_id))
+
+    def show_log(self, log_type='', param='', exit_cmd='', expected_str=''):
+        with allure.step('Execute nv show system {type}log {param} and exit cmd {exit_cmd}'.
+                         format(type=log_type, param=param, exit_cmd=exit_cmd)):
+            return SendCommandTool.execute_command_expected_str(self.api_obj[TestToolkit.tested_api].show_log,
+                                                                expected_str, TestToolkit.engines.dut, log_type,
+                                                                param, exit_cmd).get_returned_value()
+
+
+class FileId(BaseComponent):
+    def __init__(self, parent, file_id):
+        super().__init__(parent=parent, path=f'/{file_id}')
+        self.filename = file_id
+
+    def action_upload(self, upload_path, expected_str="", dut_engine=None, should_succeed=True) -> bool:
+        engine = dut_engine if dut_engine else TestToolkit.engines.dut
+        resource_path = self.get_resource_path()
+        with allure.step(f"Upload file {resource_path} to '{upload_path}'"):
+            return SendCommandTool.execute_command_expected_str(
+                self._cli_wrapper.action, expected_str,
+                engine, action_type='upload', resource_path=resource_path,
+                param_name='remote-url', param_value=upload_path).get_returned_value(should_succeed)
+
+    def action_delete(self, expected_str="", dut_engine=None, should_succeed=True) -> bool:
+        engine = dut_engine if dut_engine else TestToolkit.engines.dut
+        resource_path = self.get_resource_path()
+        with allure.step(f"Delete file: {resource_path}"):
+            return SendCommandTool.execute_command_expected_str(
+                self._cli_wrapper.action, expected_str,
+                engine, action_type='delete', resource_path=resource_path).get_returned_value(should_succeed)
+
+
+class Component(BaseComponent):
+    def __init__(self, parent_obj=None):
+        super().__init__(parent=parent_obj, path='/component')
+        self.component_id: Dict[str, ComponentId] = DefaultDict(
+            lambda component_id: ComponentId(parent=self, component_id=component_id))
+
+
+class ComponentId(BaseComponent):
+    def __init__(self, parent, component_id):
+        super().__init__(parent=parent, path=f'/{component_id}')
+        self.component_name = component_id
+        self.file = File(self)
+        self.rotation = BaseComponent(self, path='/rotation')
+        self.level = BaseComponent(self, path='/level')

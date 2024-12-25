@@ -216,7 +216,7 @@ class NvueSystemCli(NvueBaseCli):
     @staticmethod
     @check_output
     def show_log(engine, log_type='', param='', exit_cmd=''):
-        cmd = "nv show system {type}log {param}".format(type=log_type, param=param)
+        cmd = "nv show system {type}log file {param}".format(type=log_type, param=param)
         logging.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
         return engine.run_cmd_after_cmd([cmd, exit_cmd])
 

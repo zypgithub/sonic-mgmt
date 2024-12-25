@@ -1564,10 +1564,14 @@ class FastRecoveryConsts:
     SEVERITY_WARNING = 'warning'
 
 
-class ComponentsConsts:
-    COMPONENTS_LIST = ["nvued", "orchagent", "portsyncd", "sai_api_port", "sai_api_switch", "syncd"]
+class LogComponentsConsts:
+    COMPONENTS_LIST = ["nvue", "orchagent", "portsyncd", "sai_api_port", "sai_api_switch", "syncd"]
     LOG_LEVEL_LIST = ["critical", "debug", "error", "info", "notice", "warn"]
     LEVEL = 'level'
+    NOTICE = 'notice'
+    NVUE = 'nvue'
+    FILE = 'file'
+    SYSLOG = 'syslog'
 
 
 class UfmMadConsts:

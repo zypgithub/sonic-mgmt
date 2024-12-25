@@ -342,5 +342,5 @@ def wait_for_specific_regex_in_logs(engine, regex, timeout=70):
               'password': engine.password, 'timeout': timeout}
     with allure.step(f"wait for {timeout} seconds to see '{regex}' in logs"):
         connection = ConnectHandler(**device)
-        connection.send_command('nv show system log follow', expect_string=regex)
+        connection.send_command('nv show system log file follow', expect_string=regex)
         return
