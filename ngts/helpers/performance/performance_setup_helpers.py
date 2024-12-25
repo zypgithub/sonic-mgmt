@@ -1,8 +1,10 @@
 import logging
 import logging.config
 import allure
+import os
 import json
 from ngts.constants.performance_constants import PerfConsts
+from ngts.constants.constants import BugHandlerConst
 from ngts.helpers.thread_log_filter import redirect_thread_stdout, config_root_logger
 from ngts.helpers.custom_catch_exception_thread import CatchExceptionThread, parse_threads_exceptions_at_join
 from infra.tools.exceptions.test_issue import TestIssue
@@ -16,7 +18,6 @@ def apply_test_configuration(players, scenario, step="basic_test_configuration -
                                            action="apply test configuration",
                                            performance_clis_function_name="apply_configuration_file",
                                            performance_clis_function_args=(scenario,), step=step)
-    configure_mloops(players)
 
 
 def configure_mloops(players, step="basic_test_configuration - set-up"):
@@ -46,6 +47,17 @@ def run_traffic(players, scenario, packet_size=4000, num_packets=8, is_ipv6=Fals
                                            performance_clis_function_name="run_traffic",
                                            performance_clis_function_args=(scenario, packet_size, num_packets, is_ipv6),
                                            step=step)
+    attach_json_traffic_to_allure(players, tg_players_aliases=PerfConsts.PERF_SETUP_TG_ALIASES,
+                                  scenario=scenario, packet_size=packet_size)
+
+
+def attach_json_traffic_to_allure(players, tg_players_aliases, scenario, packet_size):
+    for alias in tg_players_aliases:
+        full_path = os.path.join(BugHandlerConst.NGTS_PATH, "performance_tests", "traffic_packets_json_files",
+                                 scenario, f"{alias}_{scenario.replace('/', '_')}_{packet_size}.json")
+        cli_obj = players[alias]['cli']
+        hostname = cli_obj.chassis.get_hostname()
+        attach_json_to_allure(full_path, f'Traffic JSON configuration on {alias} - {hostname}')
 
 
 def stop_traffic(players, step="Stopping Traffic - Tear down"):
@@ -56,32 +68,59 @@ def stop_traffic(players, step="Stopping Traffic - Tear down"):
                                            step=step)
 
 
-def validate_traffic_results(players, test_name, scenario, samples_params_dict):
-    config_root_logger()
-    # only on dut
-    dut_cli_object = players['dut']['cli']
-    dut_hostname = dut_cli_object.chassis.get_hostname()
-    with allure.step(f"Validating Traffic on DUT"):
-        full_path = dut_cli_object.performance.validate_traffic(test_name, scenario, samples_params_dict)
-    with open(full_path) as f:
-        allure.attach(f.read(), f'Traffic Validation JSON results on dut - {dut_hostname}', allure.attachment_type.JSON)
-        traffic_json = json.load(f)
-    return traffic_json
+def validate_traffic_results(players, test_name, scenario, samples_params_dict,
+                             players_to_be_validated=PerfConsts.PERF_SETUP_DUT_ALIASES):
+    traffic_validation_jsons_list = []
+    for player_alias in players_to_be_validated:
+        cli_object = players[player_alias]['cli']
+        hostname = cli_object.chassis.get_hostname()
+        full_path = os.path.join(BugHandlerConst.NGTS_PATH, "performance_tests",
+                                 "traffic_validation_json_files",
+                                 scenario, f"{player_alias}_{hostname}_{test_name}_TrafficValidator.json")
+        call_performance_function_with_threads(players, players_aliases=[player_alias],
+                                               action="run traffic validator",
+                                               performance_clis_function_name="validate_traffic",
+                                               performance_clis_function_args=(full_path, samples_params_dict),
+                                               step="Test Body")
+        traffic_json = attach_json_to_allure(full_path,
+                                             f'Traffic Validation JSON results on {player_alias} - {hostname}')
+        traffic_validation_jsons_list.append(traffic_json)
+    return traffic_validation_jsons_list
+
+
+def attach_json_to_allure(json_path, attachment_name):
+    with open(json_path) as f:
+        json_str = f.read()
+        allure.attach(json_str, attachment_name, allure.attachment_type.JSON)
+        json_obj = json.loads(json_str)
+    return json_obj
 
 
 def traffic_validation(players, test_name, scenario, bw_threshold,
                        samples_params_dict=PerfConsts.SAMPLES_PARAMS,
                        tc_occ_threshold=PerfConsts.OCC_AVG_TH, port_list=None):
-    traffic_json = validate_traffic_results(players, test_name, scenario, samples_params_dict)
-    validate_bw(traffic_json, bw_threshold)
-    validate_tc(traffic_json, tc_occ_threshold)
+    with allure.step("Run traffic validation on Json results"):
+        traffic_validation_jsons_list = validate_traffic_results(players, test_name, scenario, samples_params_dict)
+
+        for traffic_json in traffic_validation_jsons_list:
+            violations_list = []
+            validate_bw(traffic_json, bw_threshold, violations_list)
+            validate_tc(traffic_json, tc_occ_threshold, violations_list)
+            if violations_list:
+                raise TestIssue("\n".join(violations_list))
 
 
-def set_ibm(players, ibm_mode=True):
-    '''
-    Implementation pending
-    '''
-    pass
+def set_ibm(players, scenario, ibm_mode=True, step="Test Body", reload_conf=False):
+    call_performance_function_with_threads(players, players_aliases=PerfConsts.PERF_SETUP_DUT_ALIASES,
+                                           action=f"set ingress buffer mode to {ibm_mode}",
+                                           performance_clis_function_name="set_ibm",
+                                           performance_clis_function_args=(ibm_mode,),
+                                           step=step)
+    if reload_conf:
+        call_performance_function_with_threads(players, players_aliases=PerfConsts.PERF_SETUP_DUT_ALIASES,
+                                               action="apply test configuration",
+                                               performance_clis_function_name="apply_configuration_file",
+                                               performance_clis_function_args=(scenario,), step=step)
 
 
 def set_port(players, port_list, shutdown=True):

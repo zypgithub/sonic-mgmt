@@ -1,6 +1,7 @@
 import logging
 import os
 import json
+import allure
 from ngts.constants.constants import BugHandlerConst
 from ngts.constants.performance_constants import PerfConsts
 from infra.tools.exceptions.test_issue import TestIssue
@@ -49,26 +50,23 @@ class PerformanceCommon:
         cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names {PerfConsts.DVS_TG_NAME}"
         self.execute_cmd(cmd)
 
-    def validate_traffic(self, test_name, scenario, samples_params_dict=None,
-                         template_suite="traffic_packets_json_files", dst_dut_dir="/tmp"):
+    def validate_traffic(self, json_path, samples_params_dict, dst_dut_dir="/tmp"):
         logging.info("Running traffic validator on the dut")
         for env_var_name, param_val in samples_params_dict.items():
             set_interval_cmd = f"export {env_var_name}={param_val}"
             self.execute_cmd(set_interval_cmd)
         cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names {PerfConsts.DVS_TG_VALIDATOR_NAME}"
         self.execute_cmd(cmd)
-        full_path = os.path.join(BugHandlerConst.NGTS_PATH, "performance_tests", template_suite,
-                                 scenario, f"{self.dut_alias}_{test_name}_TrafficValidator.json")
-        self.engine.copy_file(source_file="TrafficValidator.json", file_system=dst_dut_dir, dest_file=full_path,
+        self.engine.copy_file(source_file="TrafficValidator.json", file_system=dst_dut_dir, dest_file=json_path,
                               overwrite_file=True, verify_file=False, direction='get')
-        return full_path
 
     def stop_traffic(self):
         logging.info(f"Remove Mloop configuration from {self.dut_alias}")
         cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names {PerfConsts.DVS_TG_REMOVE_MLOOP_CONFIGURATION}"
         self.execute_cmd(cmd)
 
-    def generate_traffic_json(self, scenario, pkt_size, num_packets, is_ipv6, fan_ports=None, template_suite="traffic_packets_json_files"):
+    def generate_traffic_json(self, scenario, pkt_size, num_packets, is_ipv6, fan_ports=None,
+                              template_suite="traffic_packets_json_files"):
         fan_ports = self.get_tg_ports(scenario) if not fan_ports else fan_ports
         full_path = os.path.join(BugHandlerConst.NGTS_PATH, "performance_tests", template_suite,
                                  scenario, f"{self.dut_alias}_{scenario.replace('/', '_')}_{pkt_size}.json")

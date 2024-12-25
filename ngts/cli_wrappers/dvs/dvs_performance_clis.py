@@ -85,4 +85,10 @@ class DvsPerformance(PerformanceCommon):
         pass
 
     def restore_basic_configuration(self):
-        self.cli_obj.general.dvs_restart()
+        restart_cmd = "dvs_stop.sh && dvs_start.sh --sdk_bridge_mode=HYBRID"
+        self.execute_cmd(restart_cmd)
+
+    def set_ibm(self, ibm_mode=True):
+        self.restore_basic_configuration()
+        set_ibm_mode_cmd = f"export BUFFER_AUTO_MODE={not (ibm_mode)}"
+        self.execute_cmd(set_ibm_mode_cmd)

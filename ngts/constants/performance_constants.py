@@ -6,6 +6,7 @@ from ngts.constants.constants import NvosCliTypes, DVSCliTypes, BugHandlerConst
 class PerfConsts:
     PERF_SETUP_PLAYERS_ALIASES = ['left_tg', 'dut', 'right_tg']
     PERF_SETUP_TG_ALIASES = ['left_tg', 'right_tg']
+    PERF_SETUP_DUT_ALIASES = ['dut']
     # TODO: remove DUT_PKT_INFO / TG_ALIASES_PKT_INFO once traffic generator is not static
     DUT_PKT_INFO = {
         "MAC": '00:01:02:03:04:05',
@@ -19,9 +20,9 @@ class PerfConsts:
     }
     SAMPLES_PARAMS = {
         "SAMPLE_DURATION": 60,
-        "BW_SAMPLE_INTERVAL": 5,
-        "TC_SAMPLE_INTERVAL": 1,
-        "COUNTERS_SAMPLE_INTERVAL": 1
+        "BW_SAMPLE_DELAY": 5,
+        "TC_SAMPLE_DELAY": 1,
+        "COUNTERS_SAMPLE_DELAY": 1
     }
     OCC_AVG_TH = 400
     CL_HOME_DIR = "/home/cumulus"
@@ -59,10 +60,10 @@ class PerfConsts:
     DEFAULT_SAMPLE_TIME_IN_SEC = 20
     EXTENDED_SAMPLE_TIME_IN_SEC = 60
     PACKET_SIZE_LIST = [1536, 2048, 4096]
-    PACKET_SIZE_TO_PACKET_NUM_DICT = {1536: 32, 2048: 16, 4096: 8}
+    PACKET_SIZE_TO_PACKET_NUM_DICT = {1536: 60, 2048: 48, 4096: 8}
     TG_TX_UTIL_TH = 95
-    DUT_TX_UTIL_TH_DICT = {1536: 64, 2048: 80, 4096: 92}
-    DUT_TX_UTIL_W_IBM_TH_DICT = {1536: 64, 2048: 80, 4096: 96}
+    DUT_TX_UTIL_AUTO_TH_DICT = {1536: 0.48, 2048: 0.62, 4096: 0.92}
+    DUT_TX_UTIL_IBM_TH_DICT = {1536: 0.5, 2048: 0.65, 4096: 0.96}
     VALUE_INDEX = 0
     TIMESTAMP_INDEX = 1
     LOG_PORT_LEFT_TG = 0x10001
