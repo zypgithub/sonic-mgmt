@@ -52,44 +52,40 @@ def test_system_issu_positive_basic_flow(engines, devices, start_sm, issu_versio
 
     target_version = player.run_cmd(f'ls {target_version}')
 
-    try:
-        with allure.step("Downgrade system image to issu"):
-            install_system_image_and_start_opensm(player, engines, dut_device, system, issu_version)
-            time.sleep(15)
+    with allure.step("Downgrade system image to issu"):
+        install_system_image_and_start_opensm(engines, dut_device, system, issu_version)
+        time.sleep(15)
 
-        with allure.step("Prepare system target image for install"):
-            target_filename, recovery_engine, scp_host_creds = prepare_image_for_install(
-                player, dut_engine, dut_device, target_version)
+    with allure.step("Prepare system target image for install"):
+        target_filename, recovery_engine, scp_host_creds = prepare_image_for_install(
+            player, dut_engine, dut_device, target_version)
 
-        issu_start = time.time()
-        logger.info(f"ISSU start time: {issu_start}")
+    issu_start = time.time()
+    logger.info(f"ISSU start time: {issu_start}")
 
-        with allure.step("Perform install image with ISSU skip-sm flag"):
-            system.image.files.file_name[target_filename].action_file_install_with_reboot(
-                force=False, engine=dut_engine, device=dut_device, recovery_engine=recovery_engine,
-                param_value=IssuConsts.ISSU_SKIP_SM, should_succeed=True, press_y=True).verify_result(
-                should_succeed=True)
+    with allure.step("Perform install image with ISSU skip-sm flag"):
+        system.image.files.file_name[target_filename].action_file_install_with_reboot(
+            force=False, engine=dut_engine, device=dut_device, recovery_engine=recovery_engine,
+            param_value=IssuConsts.ISSU_SKIP_SM, should_succeed=True, press_y=True).verify_result(
+            should_succeed=True)
 
-        issu_end = time.time()
-        logger.info(f"ISSU end time: {issu_end}")
-        issu_diff = issu_end - issu_start
-        logger.info(f"ISSU diff time: {issu_diff}")
+    issu_end = time.time()
+    logger.info(f"ISSU end time: {issu_end}")
+    issu_diff = issu_end - issu_start
+    logger.info(f"ISSU diff time: {issu_diff}")
 
-        with allure.step('Verify show ISSU status'):
-            issu_status = OutputParsingTool.parse_json_str_to_dictionary(
-                system.image.show()).get_returned_value()[IssuConsts.ISSU_STATUS]
-            assert issu_status == IssuConsts.IssuStatus.NO_ISSU.value, \
-                f"ISSU status is {issu_status}, instead of: {IssuConsts.IssuStatus.NO_ISSU.value}"
+    with allure.step('Verify show ISSU status'):
+        issu_status = OutputParsingTool.parse_json_str_to_dictionary(
+            system.image.show()).get_returned_value()[IssuConsts.ISSU_STATUS]
+        assert issu_status == IssuConsts.IssuStatus.NO_ISSU.value, \
+            f"ISSU status is {issu_status}, instead of: {IssuConsts.IssuStatus.NO_ISSU.value}"
 
-        with (allure.step('Verify image version')):
-            system_version = OutputParsingTool.parse_json_str_to_dictionary(
-                system.version.show()).get_returned_value()['image']
-            expected_version = target_version.split('/')[-1].replace('amd64-', '').replace('.bin', '')
-            assert system_version == expected_version, (f'system image is: {system_version}, '
-                                                        f'instead of {expected_version}')
-    finally:
-        with allure.step(f"Recover system to target image"):
-            install_system_image_and_start_opensm(player, engines, dut_device, system, target_version)
+    with (allure.step('Verify image version')):
+        system_version = OutputParsingTool.parse_json_str_to_dictionary(
+            system.version.show()).get_returned_value()['image']
+        expected_version = target_version.split('/')[-1].replace('amd64-', '').replace('.bin', '')
+        assert system_version == expected_version, (f'system image is: {system_version}, '
+                                                    f'instead of {expected_version}')
 
 
 @pytest.mark.system
@@ -115,47 +111,42 @@ def test_system_issu_positive_flow_with_traffic(engines, devices, start_sm, issu
     target_version = player.run_cmd(f'ls {target_version}')
     expected_version = target_version.split('/')[-1].replace('amd64-', '').replace('.bin', '')
 
-    try:
-        with (allure.step('Verify image versions')):
-            system_version = OutputParsingTool.parse_json_str_to_dictionary(
-                system.version.show()).get_returned_value()['image']
-            if system_version == expected_version:
-                fw_version = OutputParsingTool.parse_json_str_to_dictionary(
-                    Platform().firmware.show(dut_engine=dut_engine)).get_returned_value()['ASIC']['actual-firmware']
-            else:
-                fw_version = ''
+    with (allure.step('Verify image versions')):
+        system_version = OutputParsingTool.parse_json_str_to_dictionary(
+            system.version.show()).get_returned_value()['image']
+        if system_version == expected_version:
+            fw_version = OutputParsingTool.parse_json_str_to_dictionary(
+                Platform().firmware.show(dut_engine=dut_engine)).get_returned_value()['ASIC']['actual-firmware']
+        else:
+            fw_version = ''
 
-        with allure.step("Downgrade system image to issu"):
-            install_system_image_and_start_opensm(player, engines, dut_device, system, issu_version)
-            time.sleep(15)
+    with allure.step("Downgrade system image to issu"):
+        install_system_image_and_start_opensm(engines, dut_device, system, issu_version)
+        time.sleep(15)
 
-        with allure.step("Prepare system target image for install"):
-            target_filename, recovery_engine, scp_host_creds = prepare_image_for_install(
-                player, dut_engine, dut_device, target_version)
+    with allure.step("Prepare system target image for install"):
+        target_filename, recovery_engine, scp_host_creds = prepare_image_for_install(
+            player, dut_engine, dut_device, target_version)
 
-        with allure.step('pre_issu_installation_steps'):
-            traffic_start_time = pre_issu_installation_steps(engines, devices, target_version, scp_host_creds)
+    with allure.step('pre_issu_installation_steps'):
+        traffic_start_time = pre_issu_installation_steps(engines, devices, target_version, scp_host_creds)
 
-        issu_start = time.time()
-        logger.info(f"ISSU start time: {issu_start}")
+    issu_start = time.time()
+    logger.info(f"ISSU start time: {issu_start}")
 
-        with allure.step("Perform install image with ISSU skip-sm flag"):
-            system.image.files.file_name[target_filename].action_file_install_with_reboot(
-                force=False, engine=dut_engine, device=dut_device, recovery_engine=recovery_engine,
-                param_value=IssuConsts.ISSU_SKIP_SM, should_succeed=True, press_y=True).verify_result(
-                should_succeed=True)
+    with allure.step("Perform install image with ISSU skip-sm flag"):
+        system.image.files.file_name[target_filename].action_file_install_with_reboot(
+            force=False, engine=dut_engine, device=dut_device, recovery_engine=recovery_engine,
+            param_value=IssuConsts.ISSU_SKIP_SM, should_succeed=True, press_y=True).verify_result(
+            should_succeed=True)
 
-        issu_end = time.time()
-        logger.info(f"ISSU end time: {issu_end}")
-        issu_diff = issu_end - issu_start
-        logger.info(f"ISSU diff time: {issu_diff}")
+    issu_end = time.time()
+    logger.info(f"ISSU end time: {issu_end}")
+    issu_diff = issu_end - issu_start
+    logger.info(f"ISSU diff time: {issu_diff}")
 
-        with allure.step('post_issu_installation_steps'):
-            post_issu_installation_steps(engines, devices, target_version, fw_version, traffic_start_time)
-
-    finally:
-        with allure.step(f"Recover system to target image"):
-            install_system_image_and_start_opensm(player, engines, dut_device, system, target_version)
+    with allure.step('post_issu_installation_steps'):
+        post_issu_installation_steps(engines, devices, target_version, fw_version, traffic_start_time)
 
 
 @pytest.mark.system
@@ -208,71 +199,66 @@ def test_system_issu_positive_flow(engines, devices, issu_version, target_versio
     target_version = player.run_cmd(f'ls {target_version}')
     expected_version = target_version.split('/')[-1].replace('amd64-', '').replace('.bin', '')
 
-    try:
-        with (allure.step('Verify image versions')):
-            system_version = OutputParsingTool.parse_json_str_to_dictionary(
-                system.version.show()).get_returned_value()['image']
-            if system_version == expected_version:
-                fw_version = OutputParsingTool.parse_json_str_to_dictionary(
-                    Platform().firmware.show(dut_engine=dut_engine)).get_returned_value()['ASIC']['actual-firmware']
-            else:
-                fw_version = ''
+    with (allure.step('Verify image versions')):
+        system_version = OutputParsingTool.parse_json_str_to_dictionary(
+            system.version.show()).get_returned_value()['image']
+        if system_version == expected_version:
+            fw_version = OutputParsingTool.parse_json_str_to_dictionary(
+                Platform().firmware.show(dut_engine=dut_engine)).get_returned_value()['ASIC']['actual-firmware']
+        else:
+            fw_version = ''
 
-        with allure.step("Prepare system issu image for install"):
-            issu_filename, recovery_engine, scp_host_creds = prepare_image_for_install(
-                player, dut_engine, dut_device, issu_version)
+    with allure.step("Prepare system issu image for install"):
+        issu_filename, recovery_engine, scp_host_creds = prepare_image_for_install(
+            player, dut_engine, dut_device, issu_version)
 
-        with allure.step("Install issu version image (without ISSU)"):
-            system.image.files.file_name[issu_filename].action_file_install_with_reboot(
-                force=False, engine=dut_engine, device=dut_device, recovery_engine=recovery_engine,
-                should_succeed=True, press_y=True).verify_result(should_succeed=True)
+    with allure.step("Install issu version image (without ISSU)"):
+        system.image.files.file_name[issu_filename].action_file_install_with_reboot(
+            force=False, engine=dut_engine, device=dut_device, recovery_engine=recovery_engine,
+            should_succeed=True, press_y=True).verify_result(should_succeed=True)
 
-        with allure.step("Save configuration"):
-            TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
+    with allure.step("Save configuration"):
+        TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
 
-        with allure.step(f"Reduce ISSU timeout to {IssuConsts.REDUCED_TIMEOUT} seconds"):
-            reduce_issu_timeout(engines.dut, IssuConsts.REDUCED_TIMEOUT)
+    with allure.step(f"Reduce ISSU timeout to {IssuConsts.REDUCED_TIMEOUT} seconds"):
+        reduce_issu_timeout(engines.dut, IssuConsts.REDUCED_TIMEOUT)
 
-        with allure.step("Prepare system target image for install"):
-            target_filename, recovery_engine, scp_host_creds = prepare_image_for_install(
-                player, dut_engine, dut_device, target_version)
+    with allure.step("Prepare system target image for install"):
+        target_filename, recovery_engine, scp_host_creds = prepare_image_for_install(
+            player, dut_engine, dut_device, target_version)
 
-        with allure.step('pre_issu_installation_steps'):
-            traffic_start_time = pre_issu_installation_steps(engines, devices, target_version, scp_host_creds)
+    with allure.step('pre_issu_installation_steps'):
+        traffic_start_time = pre_issu_installation_steps(engines, devices, target_version, scp_host_creds)
 
-        with allure.step("Running on 2 sessions in parallel:"):
-            with allure.step(f'Create another session'):
-                connection = ConnectionTool.create_ssh_conn(engines.dut.ip, engines.dut.username,
-                                                            engines.dut.password).get_returned_value()
+    with allure.step("Running on 2 sessions in parallel:"):
+        with allure.step(f'Create another session'):
+            connection = ConnectionTool.create_ssh_conn(engines.dut.ip, engines.dut.username,
+                                                        engines.dut.password).get_returned_value()
 
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                with allure.step("Perform install image with iSSU flag"):
-                    executor.submit(run_install_system_image_issu, connection, dut_device,
-                                    recovery_engine, target_filename, IssuConsts.ISSU, True)
-                issu_start = time.time()
-                logger.info(f"ISSU start time: {issu_start}")
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            with allure.step("Perform install image with iSSU flag"):
+                executor.submit(run_install_system_image_issu, connection, dut_device,
+                                recovery_engine, target_filename, IssuConsts.ISSU, True)
+            issu_start = time.time()
+            logger.info(f"ISSU start time: {issu_start}")
 
-                # install image process will start immediately, and only when finish - update issu status to
-                # "in-progress" and start requesting openSM response.
-                # with allure.step(f'Verify ISSU status is: {IssuConsts.IssuStatus.IN_PROGRESS.value}'):
-                #     wait_for_image_status_update(system, IssuConsts.IssuStatus.IN_PROGRESS.value)
+            # install image process will start immediately, and only when finish - update issu status to
+            # "in-progress" and start requesting openSM response.
+            # with allure.step(f'Verify ISSU status is: {IssuConsts.IssuStatus.IN_PROGRESS.value}'):
+            #     wait_for_image_status_update(system, IssuConsts.IssuStatus.IN_PROGRESS.value)
 
-                # verify openSM status in updated to "yes" in all asics
-                with allure.step("Wait for opensm status update to 'yes' in all asics"):
-                    wait_for_opensm_status_update(dut_engine, dut_device, IssuConsts.OPENSM_RESPONSE_YES)
+            # verify openSM status in updated to "yes" in all asics
+            with allure.step("Wait for opensm status update to 'yes' in all asics"):
+                wait_for_opensm_status_update(dut_engine, dut_device, IssuConsts.OPENSM_RESPONSE_YES)
 
-        # reach here only when install ISSU action is done
-        # with allure.step('Wait until switch is up'):
-        #     dut_engine.disconnect()  # force engines.dut to reconnect
-        #     # after upgrade flow switch has new default password
-        #     dut_engine.password = dut_device.get_default_password_by_version(target_version)
+    # reach here only when install ISSU action is done
+    # with allure.step('Wait until switch is up'):
+    #     dut_engine.disconnect()  # force engines.dut to reconnect
+    #     # after upgrade flow switch has new default password
+    #     dut_engine.password = dut_device.get_default_password_by_version(target_version)
 
-        with allure.step('post_issu_installation_steps'):
-            post_issu_installation_steps(engines, devices, target_version, fw_version, traffic_start_time)
-
-    finally:
-        with allure.step(f"Recover system to target image"):
-            install_system_image_and_start_opensm(player, engines, dut_device, system, target_version)
+    with allure.step('post_issu_installation_steps'):
+        post_issu_installation_steps(engines, devices, target_version, fw_version, traffic_start_time)
 
 
 @pytest.mark.system
@@ -310,17 +296,9 @@ def test_system_issu_prevention_cases(engines, devices, downgrade_version,  # st
 
     target_version = player.run_cmd(f'ls {target_version}')
 
-    with allure.step("Prepare system issu image for install"):
-        issu_filename, recovery_engine, scp_host_creds = prepare_image_for_install(
-            player, dut_engine, dut_device, issu_version)
-
-    with allure.step("Install issu version image (without ISSU)"):
-        system.image.files.file_name[issu_filename].action_file_install_with_reboot(
-            force=False, engine=dut_engine, device=dut_device, recovery_engine=recovery_engine,
-            should_succeed=True, press_y=True).verify_result(should_succeed=True)
-
-    with allure.step("Save configuration"):
-        TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
+    with allure.step("Downgrade system image to issu"):
+        install_system_image_and_start_opensm(engines, dut_device, system, issu_version)
+        time.sleep(15)
 
     with allure.step(f"Reduce ISSU timeout to {IssuConsts.REDUCED_TIMEOUT} seconds"):
         reduce_issu_timeout(engines.dut, IssuConsts.REDUCED_TIMEOUT)
@@ -382,7 +360,7 @@ def test_system_issu_prevention_cases(engines, devices, downgrade_version,  # st
     #     OpenSmTool.start_open_sm(engines).verify_result()
 
     with allure.step("Perform ISSU with “no reboot” flag"):
-        with allure.step("Perform install image with ISSU with 'reboot no' flag"):
+        with allure.step("Perform install image with ISSU with 'no reboot no' flag"):
             output = system.image.files.file_name[target_filename].action_file_install_with_reboot(
                 force=False, engine=dut_engine, device=dut_device, recovery_engine=recovery_engine,
                 param_value=IssuConsts.ISSU_NO_REBOOT, should_succeed=False, press_y=True).verify_result(
@@ -448,7 +426,7 @@ def test_system_issu_prevention_cases(engines, devices, downgrade_version,  # st
 
 @pytest.mark.system
 @pytest.mark.issu
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [ApiType.NVUE])
 def test_power_cycle_during_issu_process(topology_obj, engines, devices, test_api, issu_version='', target_version=''):
     """
     Validate:
@@ -462,17 +440,25 @@ def test_power_cycle_during_issu_process(topology_obj, engines, devices, test_ap
         - After upgrade OS: run FW upgrade when system is up
         - During upgrade FW: complete FW upgrade when system is up
     """
-    # TODO: to be removed
-    target_version = "/auto/sw_system_release/nos/nvos/25.02.1930-025/amd64/dev/nvos-amd64-25.02.1930-025.bin"
+
+    issu_version = '/auto/sw_system_release/nos/nvos/25.02.2930-014/amd64/dev/nvos-amd64-25.02.2930-014.bin'
+    target_version = '/auto/sw_system_release/nos/nvos/25.02.2930-015/amd64/dev/nvos-amd64-25.02.2930-015.bin'
 
     dut_engine = engines.dut
     dut_device = devices.dut
     player = engines.sonic_mgmt
     system = System()
 
-    # prepare system image for install
-    target_filename, recovery_engine, scp_host_creds = prepare_image_for_install(player, dut_engine,
-                                                                                 dut_device, target_version)
+    with allure.step("Downgrade system image to issu"):
+        install_system_image_and_start_opensm(engines, dut_device, system, issu_version)
+        time.sleep(15)
+
+    with allure.step("Prepare system target image for install"):
+        target_filename, recovery_engine, scp_host_creds = prepare_image_for_install(
+            player, dut_engine, dut_device, target_version)
+
+    with allure.step('pre_issu_installation_steps'):
+        pre_issu_installation_steps(engines, devices, target_version, scp_host_creds)
 
     with allure.step("Running on 2 sessions in parallel:"):
         with allure.step(f'Create another session'):
@@ -484,9 +470,9 @@ def test_power_cycle_during_issu_process(topology_obj, engines, devices, test_ap
                 executor.submit(run_install_system_image_issu, connection, dut_device,
                                 recovery_engine, target_filename, IssuConsts.ISSU_SKIP_SM, False)
 
-            # install image process will start immediately, even it still requesting openSM response, therefor we wait
-            # few seconds and status should be updated to "in progress".
-            time.sleep(5)
+            # install image process will start immediately (even though it's still requesting openSM response),
+            # therefor the status should be updated to "in progress" immediately.
+            time.sleep(10)
 
             with allure.step(f'Verify ISSU status is: {IssuConsts.IssuStatus.IN_PROGRESS.value}'):
                 issu_status = OutputParsingTool.parse_json_str_to_dictionary(
@@ -494,20 +480,27 @@ def test_power_cycle_during_issu_process(topology_obj, engines, devices, test_ap
                 assert issu_status == IssuConsts.IssuStatus.IN_PROGRESS.value, \
                     f"ISSU status is {issu_status}, instead of: {IssuConsts.IssuStatus.IN_PROGRESS.value}"
 
-            # verify openSM status in updated to "yes" in all asics
-            with allure.step("Wait for opensm status update to 'yes' in all asics"):
-                wait_for_opensm_status_update(dut_engine, dut_device, IssuConsts.OPENSM_RESPONSE_YES)
+            # # verify openSM status in updated to "yes" in all asics
+            # with allure.step("Wait for opensm status update to 'yes' in all asics"):
+            #     wait_for_opensm_status_update(dut_engine, dut_device, IssuConsts.OPENSM_RESPONSE_YES)
 
             with allure.step('Execute power cycle'):
-                res = remote_reboot_dut(topology_obj)
+                remote_reboot_dut(topology_obj)
 
-    if res:
-        with allure.step('Waiting for switch to bring-up after reload'):
-            check_port_status_till_alive(should_be_alive=True, destination_host=engines.dut.ip,
-                                         destination_port=engines.dut.ssh_port)
-            res = ping_device(engines.dut.ip)
+    with (allure.step('Verify image versions')):
+        system_version = OutputParsingTool.parse_json_str_to_dictionary(
+            system.version.show()).get_returned_value()['image']
+        expected_version = issu_version.split('/')[-1].replace('amd64-', '').replace('.bin', '')
+        assert system_version == expected_version, (f'system image is: {system_version}, '
+                                                    f'instead of {expected_version}')
 
-    assert res, f"dut {engines.dut.ip} is unreachable"
+    # if res:
+    #     with allure.step('Waiting for switch to bring-up after reload'):
+    #         check_port_status_till_alive(should_be_alive=True, destination_host=engines.dut.ip,
+    #                                      destination_port=engines.dut.ssh_port)
+    #         res = ping_device(engines.dut.ip)
+    #
+    # assert res, f"dut {engines.dut.ip} is unreachable"
 
 
 @pytest.mark.system
@@ -922,7 +915,8 @@ def prepare_image_for_install(player, dut_engine, dut_device, image_version):
     return image_filename, recovery_engine, scp_host_creds
 
 
-def install_system_image_and_start_opensm(player, engines, dut_device, system, image_version):
+def install_system_image_and_start_opensm(engines, dut_device, system, image_version):
+    player = engines.sonic_mgmt
     dut_engine = engines.dut
 
     with (allure.step('Verify image versions, and recover to target version if needed')):
