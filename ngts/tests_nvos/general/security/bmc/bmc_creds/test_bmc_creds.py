@@ -53,7 +53,5 @@ def test_bmc_creds_flow(engines, devices, topology_obj):
     with allure.step(f'verify bmc user "{BmcUsers.admin.username}" can login only with TPM password'):
         with allure.independent_step(f'curl with user "{BmcUsers.admin.username}" + default password - expect fail'):
             check_auth_with_curl(dut, BmcUsers.admin.username, BmcUsers.admin.default_password, False)
-        with allure.independent_step("Run nv command to restore admin password"):
-            Platform().firmware.show()
-        with allure.independent_step(f'curl with user "{BmcUsers.admin.username}" + password from tpm cipher - expect success'):
+        with allure.independent_step(f'curl with user "{BmcUsers.admin.username}" + password from tpm - expect success'):
             check_auth_with_curl(dut, BmcUsers.admin.username, BmcUsers.admin.another_password, True)
