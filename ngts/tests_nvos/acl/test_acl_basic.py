@@ -17,6 +17,7 @@ from scapy.layers.inet6 import IPv6, ICMPv6EchoRequest
 from scapy.all import *
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
+from ngts.nvos_tools.Devices.IbDevice import JulietSwitch
 
 logger = logging.getLogger()
 
@@ -124,7 +125,7 @@ def test_show_acls(engines, test_api):
 
 @pytest.mark.acl
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_rules_order(engines, test_api, topology_obj):
+def test_rules_order(devices, engines, test_api, topology_obj):
     """
     Validate acl rules order by priority of rules order.
     the first rule that match the packet should apply even if the next rule also match but the action is different.
@@ -153,7 +154,6 @@ def test_rules_order(engines, test_api, topology_obj):
             rule_dict[AclConsts.ACTION] = AclConsts.PERMIT
             config_rule(engines.dut, acl_id_obj, rule_id_2, rule_dict)
 
-            # temp workaround due to - https://redmine.mellanox.com/issues/4203639 - add MAC masking
             expected_acl_dict[acl_id][AclConsts.RULE].update({
                 rule_id_1: {
                     AclConsts.ACTION: {AclConsts.DENY: {}},
@@ -163,15 +163,10 @@ def test_rules_order(engines, test_api, topology_obj):
                             AclConsts.PROTOCOL: 'icmp',
                             AclConsts.ICMP_TYPE: 'echo-request'
                         },
-                        AclConsts.MAC: {
-                            AclConsts.DEST_MAC_MASK: "ff:ff:ff:ff:ff:ff",
-                            AclConsts.SOURCE_MAC_MASK: "ff:ff:ff:ff:ff:ff"
-                        }
                     }
                 }
             })
 
-            # temp workaround due to - https://redmine.mellanox.com/issues/4203639 - add MAC masking
             expected_acl_dict[acl_id][AclConsts.RULE].update({
                 rule_id_2: {
                     AclConsts.ACTION: {AclConsts.PERMIT: {}},
@@ -181,13 +176,16 @@ def test_rules_order(engines, test_api, topology_obj):
                             AclConsts.PROTOCOL: 'icmp',
                             AclConsts.ICMP_TYPE: 'echo-request'
                         },
-                        AclConsts.MAC: {
-                            AclConsts.DEST_MAC_MASK: "ff:ff:ff:ff:ff:ff",
-                            AclConsts.SOURCE_MAC_MASK: "ff:ff:ff:ff:ff:ff"
-                        }
                     }
                 }
             })
+        # temp workaround due to - https://redmine.mellanox.com/issues/4203639 - add MAC masking
+        if is_redmine_issue_active([4203639])[0] and isinstance(devices.dut, JulietSwitch):
+            for rule_id in [rule_id_1, rule_id_2]:
+                expected_acl_dict[acl_id][AclConsts.RULE][rule_id][AclConsts.MATCH][AclConsts.MAC] = {
+                    AclConsts.DEST_MAC_MASK: "ff:ff:ff:ff:ff:ff",
+                    AclConsts.SOURCE_MAC_MASK: "ff:ff:ff:ff:ff:ff",
+                }
 
         with allure.step("Validate configuration with show commands"):
             acl_id_output = acl_id_obj.parse_show()
@@ -377,7 +375,7 @@ def test_acl_loopback(engines, test_api):
 
 @pytest.mark.acl
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_show_acl_commands(engines, test_api, topology_obj):
+def test_show_acl_commands(devices, engines, test_api, topology_obj):
     """
     Validate acl show commands.
     steps:
@@ -399,30 +397,77 @@ def test_show_acl_commands(engines, test_api, topology_obj):
             rule_id_1 = '1'
             config_rule(engines.dut, acl_id_obj, rule_id_1, {AclConsts.ACTION: AclConsts.DENY, AclConsts.REMARK: "description", AclConsts.SOURCE_IP: 'ANY',
                                                              AclConsts.IP_PROTOCOL: 'icmp', AclConsts.ICMP_TYPE: 'echo-request'})
-            expected_acl_dict[acl_id][AclConsts.RULE].update(
-                {rule_id_1: {AclConsts.ACTION: {AclConsts.DENY: {}}, AclConsts.REMARK: "description", AclConsts.MATCH:
-                             {AclConsts.IP: {AclConsts.SOURCE_IP: 'ANY', AclConsts.PROTOCOL: 'icmp', AclConsts.ICMP_TYPE: 'echo-request'}}}})
-
+            expected_acl_dict[acl_id][AclConsts.RULE].update({
+                rule_id_1: {
+                    AclConsts.ACTION: {AclConsts.DENY: {}},
+                    AclConsts.REMARK: "description",
+                    AclConsts.MATCH: {
+                        AclConsts.IP: {
+                            AclConsts.SOURCE_IP: 'ANY',
+                            AclConsts.PROTOCOL: 'icmp',
+                            AclConsts.ICMP_TYPE: 'echo-request',
+                        },
+                    },
+                }
+            })
             rule_id_2 = '2'
             config_rule(engines.dut, acl_id_obj, rule_id_2, {AclConsts.ACTION: AclConsts.PERMIT, AclConsts.IP_PROTOCOL: 'tcp',
                                                              AclConsts.TCP_DEST_PORT: 'snmp', AclConsts.ECN_FLAGS: 'tcp-ece', AclConsts.ECN_IP_ECT: 2})
-            expected_acl_dict[acl_id][AclConsts.RULE].update(
-                {rule_id_2: {AclConsts.ACTION: {AclConsts.PERMIT: {}}, AclConsts.MATCH:
-                             {AclConsts.IP: {AclConsts.PROTOCOL: 'tcp', 'tcp': {'dest-port': {'snmp': {}}},
-                                             'ecn': {AclConsts.FLAGS: {'tcp-ece': {}}, AclConsts.IP_ECT: 2}}}}})
-
+            expected_acl_dict[acl_id][AclConsts.RULE].update({
+                rule_id_2: {
+                    AclConsts.ACTION: {AclConsts.PERMIT: {}},
+                    AclConsts.MATCH: {
+                        AclConsts.IP: {
+                            AclConsts.PROTOCOL: 'tcp',
+                            'tcp': {
+                                'dest-port': {
+                                    'snmp': {},
+                                },
+                            },
+                            'ecn': {
+                                AclConsts.FLAGS: {
+                                    'tcp-ece': {},
+                                },
+                                AclConsts.IP_ECT: 2,
+                            },
+                        },
+                    },
+                }
+            })
             rule_id_3 = '3'
             config_rule(engines.dut, acl_id_obj, rule_id_3,
                         {AclConsts.ACTION: AclConsts.LOG, AclConsts.IP_PROTOCOL: 'tcp', AclConsts.TCP_FLAGS: 'syn', AclConsts.TCP_MASK: 'syn'})
-            expected_acl_dict[acl_id][AclConsts.RULE].update(
-                {rule_id_3: {AclConsts.ACTION: {AclConsts.LOG: {}}, AclConsts.MATCH:
-                             {AclConsts.IP: {AclConsts.PROTOCOL: 'tcp', 'tcp':
-                                             {AclConsts.FLAGS: {'syn': {}}, AclConsts.MASK: {'syn': {}}}}}}})
+            expected_acl_dict[acl_id][AclConsts.RULE].update({
+                rule_id_3: {
+                    AclConsts.ACTION: {AclConsts.LOG: {}},
+                    AclConsts.MATCH: {
+                        AclConsts.IP: {
+                            AclConsts.PROTOCOL: 'tcp',
+                            'tcp': {
+                                AclConsts.FLAGS: {
+                                    'syn': {},
+                                },
+                                AclConsts.MASK: {
+                                    'syn': {},
+                                },
+                            },
+                        },
+                    },
+                }
+            })
+
+        # temp workaround due to - https://redmine.mellanox.com/issues/4203639 - add MAC masking
+        if is_redmine_issue_active([4203639])[0] and isinstance(devices.dut, JulietSwitch):
+            for rule_id in [rule_id_1, rule_id_2, rule_id_3]:
+                expected_acl_dict[acl_id][AclConsts.RULE][rule_id][AclConsts.MATCH][AclConsts.MAC] = {
+                    AclConsts.DEST_MAC_MASK: "ff:ff:ff:ff:ff:ff",
+                    AclConsts.SOURCE_MAC_MASK: "ff:ff:ff:ff:ff:ff",
+                }
 
         with allure.step("Validate configuration with show commands"):
             rule_id_1_obj = acl_id_obj.rule.rule_id[rule_id_1]
             acl_id_output = acl_id_obj.parse_show()
-            assert expected_acl_dict[acl_id] == acl_id_output
+            ValidationTool.compare_dictionaries(expected_acl_dict[acl_id], acl_id_output).verify_result()
 
             rule_output = acl_id_obj.rule.parse_show()
             assert expected_acl_dict[acl_id][AclConsts.RULE] == rule_output
