@@ -48,8 +48,8 @@ def test_bios_auto_update_disabled(devices, engines, topology_obj, test_api, ori
                                topology_obj=topology_obj, test_name=test_name)
         verify_bios_version(engines, platform, version_name)
 
-        with allure.step(f'reboot with BIOS version {version_name}'):
-            res, duration = OperationTime.save_duration('reboot with BIOS 004', '',
+        with allure.step(f'reboot with BIOS version {version_name=}'):
+            res, duration = OperationTime.save_duration(f'reboot with BIOS {version_name}', '',
                                                         test_name, system.reboot.action_reboot, topology_obj=topology_obj)
 
         verify_bios_version(engines, platform, version_name)
@@ -72,16 +72,16 @@ def test_bios_auto_update_enabled(devices, engines, topology_obj, test_api, orig
         2. reboot
         3. validate BIOS version was updated in nv show platform firmware
     """
-    try:
-        TestToolkit.tested_api = test_api
-        with allure.step('Create System objects'):
-            platform = Platform()
-            system = System()
-            component_name = 'bios'
+    TestToolkit.tested_api = test_api
+    with allure.step('Create System objects'):
+        platform = Platform()
+        system = System()
+        component_name = 'bios'
+        path, filename, version_name = FWComponentsTool.get_fw_component_version_previous(component_name)
 
+    try:
         verify_current_version(original_version, system)
         verify_bios_auto_update_value(platform, NvosConst.ENABLED)
-        path, filename, version_name = FWComponentsTool.get_fw_component_version_previous(component_name)
 
         if get_bios_version(platform) != version_name:
             platform.firmware.bios.set(op_param_name=PlatformConsts.FW_AUTO_UPDATE,
@@ -93,21 +93,10 @@ def test_bios_auto_update_enabled(devices, engines, topology_obj, test_api, orig
             platform.firmware.bios.set(op_param_name=PlatformConsts.FW_AUTO_UPDATE, op_param_value=NvosConst.ENABLED,
                                        apply=True).verify_result()
             TestToolkit.GeneralApi[test_api].save_config(engine=engines.dut)
-
-        verify_bios_version(engines, platform, version_name)
-        with allure.step(f'Installation and reboot with BIOS version {version_name}'):
-            res, duration = OperationTime.save_duration(f'install BIOS {version_name}', '',
+    finally:
+        with allure.step(f'Installation and reboot with latest BIOS version '):
+            res, duration = OperationTime.save_duration(f'install BIOS 006', '',
                                                         test_name, system.reboot.action_reboot, topology_obj=topology_obj, system_is_ready_timeout=PlatformConsts.TIMEOUT_AFTER_BIOS_INSTALL)
 
         path, filename, version_name = FWComponentsTool.get_fw_component_version_latest(component_name)
-        verify_bios_version(engines, platform, version_name)
-
-    finally:
-        # Return to BIOS 0ACQF_06.01.006
-        path = "/auto/sw_system_release/sx_mlnx_bios/CoffeeLake/0ACQF_06.01.x06/Release/0ACQF.cab"
-        filename = "0ACQF.cab"
-        version_name = "0ACQF_06.01.006"
-
-        fetch_and_install_bios(platform=platform, path=path, name=version_name, filename=filename,
-                               topology_obj=topology_obj, test_name=test_name)
         verify_bios_version(engines, platform, version_name)

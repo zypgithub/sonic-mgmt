@@ -99,4 +99,8 @@
     <test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_centralized_flows.cases </cases>
     </test>
+    <test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_rbac.cases </cases>
+        <ignore><condition> <key>dut_type</key> <op> in </op> <value>[juliet]</value> </condition></ignore>
+    </test>
 </DBDEF>
