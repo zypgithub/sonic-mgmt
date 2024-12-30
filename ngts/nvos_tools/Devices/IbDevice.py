@@ -298,17 +298,6 @@ class IbSwitch(BaseSwitch):
         self.category_disk_interval_default = '30'
         self.system_profile_default_values = ['enabled', '2048', 'disabled', 'disabled', '1']
         self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/crocodile_versions.json"
-        self.bios_image_info = BaseSwitch.BiosImagesConsts(
-            current_version={
-                'path': "/auto/sw_system_release/sx_mlnx_bios/CoffeeLake/0ACQF_06.01.x05_rc1/Release/0ACQF.cab",
-                'filename': '0ACQF.cab',
-                'version_name': '0ACQF_06.01.005',
-                'date': '04/28/2024'},
-            alternate_version={
-                'path': '/auto/sw_system_release/sx_mlnx_bios/CoffeeLake/0ACQF_06.01.x04_rc1/Release/0ACQF.cab',
-                'filename': '0ACQF.cab',
-                'version_name': '0ACQF_06.01.004',
-                'date': '11/12/2023'})
         self.erot_fw_image_info = self.ErotFirmwareImagesTestConsts(
             current_image_path='auto/sw_system_release/erot/juliet/01.03.0202.000/sign/n04/dev/cec1736-ecfw-01.03.0202.0000-n04-dev-initial.bin',
             previous_image_path='auto/sw_system_release/erot/juliet/01.03.0183.000/sign/n04/dev/cec1736-ecfw-01.03.0183.0000-n04-dev-initial.bin',
@@ -975,17 +964,6 @@ class JulietSwitch(NvLinkSwitch):
             version="35.2014.1492",
             filename="fw-QTM3-rel-35_2014_1492.mfa"
         )
-        self.bios_image_info = BaseSwitch.BiosImagesConsts(
-            current_version={
-                'path': '/auto/sw_system_release/sx_mlnx_bios/SnowyOwl/0ACTV_00.00.018/Release/erot_sign_debug/cec1736-apfw-0000012.fwpkg',
-                'filename': 'cec1736-apfw-0000012.fwpkg',
-                'version_name': '0ACTV_00.00.018d',
-                'date': '08/21/2024'},
-            alternate_version={
-                'path': '/auto/sw_system_release/sx_mlnx_bios/SnowyOwl/0ACTV_00.00.018/Release/erot_sign_debug/cec1736-apfw-0000012.fwpkg',
-                'filename': 'cec1736-apfw-0000012.fwpkg',
-                'version_name': '0ACTV_00.00.018d',
-                'date': '08/21/2024'})
 
         self.power_cycle_type = 'juliet-power-cycle'
         self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/juliet_versions.json"
