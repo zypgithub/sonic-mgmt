@@ -4,7 +4,7 @@ import pytest
 import sys
 import logging
 
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from pathlib import Path
 
 sys.path.append('/devts/tests/skynet')
@@ -81,7 +81,7 @@ class TestCpuRamHddUsage:
         :param partition_usage: dictionary with partition name and expected usage: {'partition': '/', 'max_usage': 6000}
         """
         if partition_usage['partition'] == '/var/log/':
-            if is_redmine_issue_active([3454585]):
+            if is_bug_active(3454585):
                 partition_usage['max_usage'] = 1000
             platform_hwsku = platform_params.hwsku
             if re.search('SN5', platform_hwsku):

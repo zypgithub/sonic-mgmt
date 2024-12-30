@@ -10,7 +10,7 @@ from multiprocessing import Process
 import pytest
 
 import ngts.tools.test_utils.allure_utils as allure
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.constants.constants import GnmiConsts
 from ngts.nvos_constants.constants_nvos import NvosConst, DatabaseConst, ApiType, ActionConsts, SystemConsts
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
@@ -176,7 +176,7 @@ def test_updates_on_gnmi_stream_mode(engines, devices):
             selected_port.update_output_dictionary()
             verify_description_value(selected_port.show_output_dictionary, port_description)
 
-        if not is_redmine_issue_active([3727441]):
+        if not is_bug_active(3727441):
             with allure.step('Kill gnmi client command and verify updates'):
                 logger.info(f"sleep {GnmiConsts.SLEEP_TIME_FOR_UPDATE} sec until verify gnmi updates")
                 time.sleep(GnmiConsts.SLEEP_TIME_FOR_UPDATE)

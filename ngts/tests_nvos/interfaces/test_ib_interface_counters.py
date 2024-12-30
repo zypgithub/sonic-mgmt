@@ -6,7 +6,7 @@ import re
 import random
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.nvos_tools.Devices.IbDevice import CrocodileSwitch
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port, PortRequirements
@@ -332,7 +332,7 @@ def get_port_range(first: int, last: int, p1_2=0) -> List[str]:
 
 
 def verify_files_created(ssh_connection: LinuxSshEngine, directory: str, ports: List[str]):
-    if is_redmine_issue_active([4079803]):
+    if is_bug_active(4079803):
         logger.error("Won't check files due to https://redmine.mellanox.com/issues/4079803")
     else:
         with allure.step('verify that a clear file is added to each port'):

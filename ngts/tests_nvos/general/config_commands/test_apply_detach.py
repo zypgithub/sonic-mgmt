@@ -1,11 +1,12 @@
 import pytest
+
 from ngts.tools.test_utils import allure_utils as allure
 import re
 import logging
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.ConfigTool import ConfigTool
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_constants.constants_nvos import SystemConsts, ConfigConsts
@@ -143,7 +144,7 @@ def test_apply_rev_id(engines):
             ValidationTool.verify_field_value_in_output(message_output, SystemConsts.PRE_LOGIN_MESSAGE, "TESTING_002").verify_result()
         assert 'applied' in apply_output, "failed to apply using ref"
 
-    if not is_redmine_issue_active([3553769]):
+    if not is_bug_active(3553769):
         with allure.step('run nv config history'):
             history_output = OutputParsingTool.parse_config_history(
                 TestToolkit.GeneralApi[TestToolkit.tested_api].history_config(engines.dut)).get_returned_value()
