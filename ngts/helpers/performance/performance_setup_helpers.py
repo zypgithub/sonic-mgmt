@@ -110,11 +110,11 @@ def traffic_validation(players, test_name, scenario, bw_threshold,
                 raise TestIssue("\n".join(violations_list))
 
 
-def set_ibm(players, scenario, ibm_mode=True, step="Test Body", reload_conf=False):
+def set_ibm(players, scenario, ibm_mode=True, run_fw_latency_optimization=False, step="Test Body", reload_conf=False):
     call_performance_function_with_threads(players, players_aliases=PerfConsts.PERF_SETUP_DUT_ALIASES,
                                            action=f"set ingress buffer mode to {ibm_mode}",
                                            performance_clis_function_name="set_ibm",
-                                           performance_clis_function_args=(ibm_mode,),
+                                           performance_clis_function_args=(ibm_mode, run_fw_latency_optimization),
                                            step=step)
     if reload_conf:
         call_performance_function_with_threads(players, players_aliases=PerfConsts.PERF_SETUP_DUT_ALIASES,

@@ -1,10 +1,10 @@
 import allure
+import json
 from ngts.helpers.performance.packet_json_generator import PacketGenerator
 from ngts.constants.performance_constants import PerfConsts
-from infra.tools.exceptions.test_issue import TestIssue
 
 
-def create_json_traffic_file(player_alias, tg_ports, packet_size, num_packets, is_ipv6, json_path):
+def create_json_traffic_stream(player_alias, tg_ports, packet_size, num_packets, is_ipv6, stream_name):
     ip_key = "IPv6" if is_ipv6 else "IP"
     packet = PacketGenerator(ports=tg_ports, packet_size=packet_size, num_packets=num_packets)
     packet.add_ether_header(src=PerfConsts.DUT_PKT_INFO["MAC"],
@@ -12,7 +12,25 @@ def create_json_traffic_file(player_alias, tg_ports, packet_size, num_packets, i
     packet.add_ip_header(src=PerfConsts.DUT_PKT_INFO[ip_key],
                          dst=PerfConsts.TG_ALIASES_PKT_INFO[ip_key][player_alias])
     packet.add_payload_header(player_alias)
-    packet.to_json(json_path)
+    stream = packet.get_json()
+    stream["name"] = stream_name
+    return stream
+
+
+def create_json_traffic_file(player_alias, tg_ports, packet_size, num_packets, is_ipv6, json_path):
+    stream = create_json_traffic_stream(player_alias, tg_ports, packet_size,
+                                        num_packets, is_ipv6, f"spcx_ra_{player_alias}_main_stream")
+    traffic_json = {
+        "port_groups": [
+            {
+                "name": f"spcx_ra_{player_alias}",
+                "ports": tg_ports,
+                "stream_list": [stream]
+            }
+        ]
+    }
+    with open(json_path, 'w') as json_file:
+        json.dump(traffic_json, json_file, indent=3)
 
 
 def validate_bw(traffic_json, bw_threshold, violations_list):

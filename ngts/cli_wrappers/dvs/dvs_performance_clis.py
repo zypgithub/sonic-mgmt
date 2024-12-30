@@ -88,7 +88,11 @@ class DvsPerformance(PerformanceCommon):
         restart_cmd = "dvs_stop.sh && dvs_start.sh --sdk_bridge_mode=HYBRID"
         self.execute_cmd(restart_cmd)
 
-    def set_ibm(self, ibm_mode=True):
+    def set_ibm(self, ibm_mode=True, run_fw_latency_optimization=False):
         self.restore_basic_configuration()
         set_ibm_mode_cmd = f"export BUFFER_AUTO_MODE={not (ibm_mode)}"
         self.execute_cmd(set_ibm_mode_cmd)
+        if run_fw_latency_optimization:
+            # TODO: replace calling the script with calling the SDK api
+            fw_latency_optimization_cmd = f"python /root/sys_sdk/sx_sdk_py_tests/tools/multi_nos/dqs_to_glc.py 5 24"
+            self.execute_cmd(fw_latency_optimization_cmd)

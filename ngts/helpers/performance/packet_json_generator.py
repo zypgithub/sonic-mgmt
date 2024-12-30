@@ -29,11 +29,9 @@ class PacketGenerator:
         self.headers = {}
         self.num_packets = num_packets
 
-    def to_json(self, filename: str) -> None:
+    def get_json(self) -> dict:
         """
-        Exports the packet data to a JSON file.
-        Args:
-            filename: The name of the JSON file where the packet data will be saved.
+        returns the packet data JSON obj.
         """
         packet_data = {
             "ports": self.ports,
@@ -41,8 +39,7 @@ class PacketGenerator:
             "packet_size": self.packet_size,
             "headers": self.headers,
         }
-        with open(filename, 'w') as json_file:
-            json.dump(packet_data, json_file, indent=3)
+        return packet_data
 
     def add_ip_header(self, src: str, dst: str, ttl: int = 64) -> None:
         """

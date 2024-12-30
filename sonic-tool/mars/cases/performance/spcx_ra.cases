@@ -15,11 +15,20 @@
     </Case>
   </global>
   <case>
-    <name> Performance </name>
+    <name> test_spcx_ra_split_x2_400G </name>
     <info> </info>
     <cmd>
       <params>
-          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/performance_tests/spcx_ra/split_x2_400G_configuration/test_spcx_ra_split_x2_400G.py::TestSPCXRA_x2Split_400G::test_ar_perf_max_bandwidth --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --clean-alluredir --alluredir=/tmp/allure-results --target_cli_type=[[conf:extra_info.target_cli_type]] --showlocals\'"</static_args>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/performance_tests/spcx_ra/split_x2_400G_configuration/test_spcx_ra_split_x2_400G.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --clean-alluredir --alluredir=/tmp/allure-results --target_cli_type=[[conf:extra_info.target_cli_type]] --showlocals\'"</static_args>
+      </params>
+    </cmd>
+  </case>
+  <case>
+    <name> test_spcx_ra_split_x2_400G_fw_latency_optimization </name>
+    <info> </info>
+    <cmd>
+      <params>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/performance_tests/spcx_ra/split_x2_400G_fw_latency_optimization_configuration/test_spcx_ra_split_x2_400G_fw_latency_optimization.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --clean-alluredir --alluredir=/tmp/allure-results --target_cli_type=[[conf:extra_info.target_cli_type]] --showlocals\'"</static_args>
       </params>
     </cmd>
   </case>
