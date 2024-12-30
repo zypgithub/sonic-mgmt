@@ -96,7 +96,7 @@ def test_system_ready_state_down(engines, devices, topology_obj):
         1. Run nv action reboot system (using engine.dut)
         2. kill one of the dockers
         3. validate we can not run CLI and also the system status table is not exist
-        4. verify expected logs after waiting 10 minuets
+        4. verify expected logs after waiting 10 minutes
         5. start docker as a cleanup step
     """
     with allure.step('pick a docker to kill'):
