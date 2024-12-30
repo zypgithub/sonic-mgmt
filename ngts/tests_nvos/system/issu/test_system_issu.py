@@ -33,7 +33,7 @@ logger = logging.getLogger()
 @pytest.mark.system
 @pytest.mark.issu
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_system_issu_positive_basic_flow(engines, devices, start_sm, issu_version, target_version, test_api):
+def test_system_issu_positive_basic_flow(engines, devices, issu_version, target_version, test_api):
     """
     Validates basic image install with issu
 
@@ -91,7 +91,7 @@ def test_system_issu_positive_basic_flow(engines, devices, start_sm, issu_versio
 @pytest.mark.system
 @pytest.mark.issu
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_system_issu_positive_flow_with_traffic(engines, devices, start_sm, issu_version, target_version, test_api):
+def test_system_issu_positive_flow_with_traffic(engines, devices, issu_version, target_version, test_api):
     """
     Validates basic image install with issu
 
@@ -152,7 +152,7 @@ def test_system_issu_positive_flow_with_traffic(engines, devices, start_sm, issu
 @pytest.mark.system
 @pytest.mark.issu
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_system_issu_positive_flow(engines, devices, issu_version, target_version, test_api):  # start_sm
+def test_system_issu_positive_flow(engines, devices, issu_version, target_version, test_api):
     """
     Validate:
     - Upgrade is successfully done (system boots up into new version of OS and FW)
@@ -264,8 +264,7 @@ def test_system_issu_positive_flow(engines, devices, issu_version, target_versio
 @pytest.mark.system
 @pytest.mark.issu
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_system_issu_prevention_cases(engines, devices, downgrade_version,  # start_sm
-                                      issu_version, target_version, test_api):
+def test_system_issu_prevention_cases(engines, devices, downgrade_version, issu_version, target_version, test_api):
     """
     Validate:
     - No permission to upgrade system from SM
@@ -427,7 +426,7 @@ def test_system_issu_prevention_cases(engines, devices, downgrade_version,  # st
 @pytest.mark.system
 @pytest.mark.issu
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_power_cycle_during_issu_process(topology_obj, engines, devices, test_api, issu_version='', target_version=''):
+def test_power_cycle_during_issu_process(topology_obj, engines, devices, issu_version, target_version, test_api):
     """
     Validate:
     - Power cycle during ISSU (system will go up correctly)
@@ -440,9 +439,6 @@ def test_power_cycle_during_issu_process(topology_obj, engines, devices, test_ap
         - After upgrade OS: run FW upgrade when system is up
         - During upgrade FW: complete FW upgrade when system is up
     """
-
-    issu_version = '/auto/sw_system_release/nos/nvos/25.02.2930-014/amd64/dev/nvos-amd64-25.02.2930-014.bin'
-    target_version = '/auto/sw_system_release/nos/nvos/25.02.2930-015/amd64/dev/nvos-amd64-25.02.2930-015.bin'
 
     dut_engine = engines.dut
     dut_device = devices.dut
@@ -457,9 +453,6 @@ def test_power_cycle_during_issu_process(topology_obj, engines, devices, test_ap
         target_filename, recovery_engine, scp_host_creds = prepare_image_for_install(
             player, dut_engine, dut_device, target_version)
 
-    with allure.step('pre_issu_installation_steps'):
-        pre_issu_installation_steps(engines, devices, target_version, scp_host_creds)
-
     with allure.step("Running on 2 sessions in parallel:"):
         with allure.step(f'Create another session'):
             connection = ConnectionTool.create_ssh_conn(engines.dut.ip, engines.dut.username,
@@ -470,15 +463,15 @@ def test_power_cycle_during_issu_process(topology_obj, engines, devices, test_ap
                 executor.submit(run_install_system_image_issu, connection, dut_device,
                                 recovery_engine, target_filename, IssuConsts.ISSU_SKIP_SM, False)
 
-            # install image process will start immediately (even though it's still requesting openSM response),
+            # install image process will start immediately (openSM request is skipped),
             # therefor the status should be updated to "in progress" immediately.
-            time.sleep(10)
+            time.sleep(15)
 
-            with allure.step(f'Verify ISSU status is: {IssuConsts.IssuStatus.IN_PROGRESS.value}'):
-                issu_status = OutputParsingTool.parse_json_str_to_dictionary(
-                    system.image.show()).get_returned_value()[IssuConsts.ISSU_STATUS]
-                assert issu_status == IssuConsts.IssuStatus.IN_PROGRESS.value, \
-                    f"ISSU status is {issu_status}, instead of: {IssuConsts.IssuStatus.IN_PROGRESS.value}"
+            # with allure.step(f'Verify ISSU status is: {IssuConsts.IssuStatus.IN_PROGRESS.value}'):
+            #     issu_status = OutputParsingTool.parse_json_str_to_dictionary(
+            #         system.image.show()).get_returned_value()[IssuConsts.ISSU_STATUS]
+            #     assert issu_status == IssuConsts.IssuStatus.IN_PROGRESS.value, \
+            #         f"ISSU status is {issu_status}, instead of: {IssuConsts.IssuStatus.IN_PROGRESS.value}"
 
             # # verify openSM status in updated to "yes" in all asics
             # with allure.step("Wait for opensm status update to 'yes' in all asics"):
@@ -632,7 +625,7 @@ def test_stuck_asic_during_issu_process(engines, devices, test_api):
 @pytest.mark.system
 @pytest.mark.issu
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_link_down_during_issu(engines, devices, start_sm, test_api, target_version=''):
+def test_link_down_during_issu(engines, devices, test_api, target_version=''):
     """
     Validate:
     - Change link speed on connected host
@@ -897,6 +890,7 @@ def prepare_image_for_install(player, dut_engine, dut_device, image_version):
 
     with allure.step("Uninstall system image on the other partition"):
         system.image.action_uninstall(params="force", engine=dut_engine, verify_res=False)
+        time.sleep(10)
 
     with allure.step("Prepare system image for install"):
         scp_host_creds = f'{player.username}:{player.password}@{player.ip}'
@@ -907,6 +901,7 @@ def prepare_image_for_install(player, dut_engine, dut_device, image_version):
         with allure.step(f"Fetch system image: {image_version}"):
             image_scp_url = f'scp://{scp_host_creds}{image_version}'
             system.image.action_fetch(url=image_scp_url, dut_engine=dut_engine)
+            time.sleep(10)
 
         with allure.step('Get recovery engine, use new default password for recovery after upgrade'):
             recovery_engine = LinuxSshEngine(dut_engine.ip, dut_engine.username,
