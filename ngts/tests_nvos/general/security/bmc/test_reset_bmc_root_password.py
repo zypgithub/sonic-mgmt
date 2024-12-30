@@ -140,7 +140,7 @@ def test_reset_bmc_root_password_while_bmc_down(engines, devices, topology_obj, 
             with allure.independent_step("Wait for BMC to boot after factory reset"):
                 with allure.step("Try To reset bmc root password while BMC is down"):
                     output = platform.bmc_password.action_reset().verify_result(should_succeed=False)
-                    failed_to_connect_err = "Failed to reset password: Can't log in to BMC"
+                    failed_to_connect_err = "Failed to reset password: Can't connect to BMC"
                     assert failed_to_connect_err in output, f'output expected to contain {failed_to_connect_err}, but instead got {output}'
                 with allure.step('Ping BMC until back alive'):
                     ping_till_alive(should_be_alive=True, destination_host=bmc_ip_address)
