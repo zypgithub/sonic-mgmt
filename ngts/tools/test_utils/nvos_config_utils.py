@@ -218,9 +218,11 @@ def clear_cl_conf(dut_engine, markers=None, dut=None):
                     # unset system aaa components
                     unset_cli_cmd += " ".join([f"{unset_system_cli} {NvosConst.SYSTEM_AAA} {aaa_comp}; " for
                                                aaa_comp in aaa_config.keys() if
+                                               aaa_comp != "authentication-order" and
                                                aaa_comp != NvosConst.SYSTEM_AAA_USER and
                                                aaa_comp != NvosConst.SYSTEM_AAA_CLASS and
                                                aaa_comp != NvosConst.SYSTEM_AAA_ROLE])
+                    unset_cli_cmd += f"{unset_system_cli} {NvosConst.SYSTEM_AAA} authentication-order;"
 
                     # unset other system components
                     unset_cli_cmd += " ".join([f"{unset_system_cli} {set_comp_name}; " for set_comp_name in

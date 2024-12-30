@@ -52,7 +52,7 @@ class EthSwitch(BaseSwitch):
         res = [f'{title.upper()}:\n{output}\n' for title, output in outputs.items()]
         return '\n'.join(res)
 
-    def clear_config(self, dut_engine, markers=None, default_yml_path=None):
+    def clear_config(self, dut_engine, markers=None, default_yml_path=None, root_dir=""):
         clear_cl_conf(dut_engine, markers, self)
 
     def _init_constants(self):
