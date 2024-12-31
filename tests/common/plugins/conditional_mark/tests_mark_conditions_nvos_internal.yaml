@@ -556,4 +556,16 @@ tests_nvos/general/security/bmc/bmc_creds/test_bmc_creds.py::test_bmc_creds_flow
     conditions:
       - https://redmine.mellanox.com/issues/4146744
 
+tests_nvos/system/test_system_ztp.py::test_ztp_nmx_negative:
+  skip:
+    reason: "Testcase skipped on non Juliet systems due to lack of nmx support"
+    conditions:
+      - "'juliet' not in testbed"
+
+tests_nvos/system/test_system_ztp.py::test_ztp_nmx_positive:
+  skip:
+    reason: "Testcase skipped on non Juliet systems due to lack of nmx support"
+    conditions:
+      - "'juliet' not in testbed"
+
 ########################## NVOS IGNORE END ##########################
