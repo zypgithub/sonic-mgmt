@@ -998,8 +998,6 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         # TODO: WA for the PR: https://github.com/sonic-net/sonic-buildimage/pull/16116,
         #  after the PR merged, it can be removed
         self.update_database_version(setup_name, config_db_file_name)
-        if branch not in ['202205', '202211', '202305']:
-            self.remove_syslog_telemetry_entry(setup_name, config_db_file_name)
         self.update_config_db_simx_setup_metadata_mac(setup_name, config_db_file_name)
         self.restore_container_autorestart(setup_name, config_db_file_name)
         return config_db_file_name
@@ -1015,12 +1013,23 @@ class SonicGeneralCliDefault(GeneralCliCommon):
 
             return self.create_extended_config_db_file(setup_name, config_db_json, file_name=config_db_json_file_name)
 
-    def remove_config_db_unsupported_features(self, current_features, image_supported_features,
+    @staticmethod
+    def get_image_unsupported_features(current_features, image_supported_features):
+        image_unsupported_features = [feature for feature in current_features if
+                                      feature not in image_supported_features]
+        logger.info(f"image_unsupported_features: {image_unsupported_features}")
+        return image_unsupported_features
+
+    @staticmethod
+    def remove_config_db_unsupported_features(current_features, image_unsupported_features,
                                               auto_techsupport_features):
-        image_unsupported_features = [feature for feature in current_features if feature not in image_supported_features]
         for feature in image_unsupported_features:
             del current_features[feature]
             auto_techsupport_features.pop(feature, None)
+
+    def remove_unsupported_features_from_syslog_config_feature(self, config_db_json_data, image_unsupported_features):
+        for feature in image_unsupported_features:
+            self.remove_feature_from_syslog_config_feature(config_db_json_data, feature)
 
     def update_config_db_features(self, setup_name, hwsku, platform, config_db_json_file_name):
         init_config_db_json = self.get_init_config_db_json_obj(hwsku, platform, setup_name)
@@ -1035,7 +1044,10 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             if has_timer_value:
                 current_features[feature]["delayed"] = has_timer_value
 
-        self.remove_config_db_unsupported_features(current_features, image_supported_features, auto_techsupport_features)
+        image_unsupported_features = self.get_image_unsupported_features(current_features, image_supported_features)
+        self.remove_config_db_unsupported_features(
+            current_features, image_unsupported_features, auto_techsupport_features)
+        self.remove_unsupported_features_from_syslog_config_feature(config_db_json, image_unsupported_features)
 
         if 'doai' not in current_features:
             config_db_json.pop('AR_GLOBAL', None)
@@ -1110,13 +1122,13 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             config_db_json['VERSIONS']['DATABASE']["VERSION"] = "version_2_0_0"
         return self.create_extended_config_db_file(setup_name, config_db_json, file_name=config_db_json_file_name)
 
-    def remove_syslog_telemetry_entry(self, setup_name, config_db_json_file_name):
-        config_db_json = self.get_config_db_json_obj(setup_name, config_db_json_file_name=config_db_json_file_name)
+    @staticmethod
+    def remove_feature_from_syslog_config_feature(config_db_json_data, feature_name):
         syslog_config_key = "SYSLOG_CONFIG_FEATURE"
-        if syslog_config_key in config_db_json:
-            if "telemetry" in config_db_json[syslog_config_key]:
-                config_db_json[syslog_config_key].pop("telemetry")
-        return self.create_extended_config_db_file(setup_name, config_db_json, file_name=config_db_json_file_name)
+        if syslog_config_key in config_db_json_data:
+            if feature_name in config_db_json_data[syslog_config_key]:
+                config_db_json_data[syslog_config_key].pop(feature_name)
+                logger.info(f"Remove {feature_name} from SYSLOG_CONFIG_FEATURE")
 
     def restore_container_autorestart(self, setup_name, config_db_json_file_name):
         config_db_json = self.get_config_db_json_obj(setup_name, config_db_json_file_name=config_db_json_file_name)
