@@ -108,6 +108,7 @@ class CliType:
     SONIC = 'Sonic'
     SHELL = 'SHELL'
     DVS = 'DVS'
+    CUMULUS = 'CUMULUS'
     MLNX_OS = 'MLNX_OS'
     SKYNET = 'skynet'
     SONIC_SWITCH_TYPE = 'MLNX_SWITCH'

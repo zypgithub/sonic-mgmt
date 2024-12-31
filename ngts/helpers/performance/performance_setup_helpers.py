@@ -3,12 +3,17 @@ import logging.config
 import allure
 import os
 import json
+import pytest
+from datetime import datetime
 from ngts.constants.performance_constants import PerfConsts
-from ngts.constants.constants import BugHandlerConst
+from ngts.constants.constants import BugHandlerConst, CliType
 from ngts.helpers.thread_log_filter import redirect_thread_stdout, config_root_logger
 from ngts.helpers.custom_catch_exception_thread import CatchExceptionThread, parse_threads_exceptions_at_join
 from infra.tools.exceptions.test_issue import TestIssue
 from ngts.helpers.performance.traffic_helpers import validate_bw, validate_tc
+from ngts.cli_wrappers.dvs.dvs_cli import DvsCli
+from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
+from ngts.cli_wrappers.sonic.sonic_cli import SonicCli
 
 logger = logging.getLogger()
 
@@ -74,9 +79,11 @@ def validate_traffic_results(players, test_name, scenario, samples_params_dict,
     for player_alias in players_to_be_validated:
         cli_object = players[player_alias]['cli']
         hostname = cli_object.chassis.get_hostname()
+        time_now = datetime.now()
+        hour_str = time_now.strftime("%H:%M:%S")
         full_path = os.path.join(BugHandlerConst.NGTS_PATH, "performance_tests",
                                  "traffic_validation_json_files",
-                                 scenario, f"{player_alias}_{hostname}_{test_name}_TrafficValidator.json")
+                                 scenario, f"{hour_str}_{player_alias}_{hostname}_{test_name}_TrafficValidator.json")
         call_performance_function_with_threads(players, players_aliases=[player_alias],
                                                action="run traffic validator",
                                                performance_clis_function_name="validate_traffic",
@@ -104,8 +111,10 @@ def traffic_validation(players, test_name, scenario, bw_threshold,
 
         for traffic_json in traffic_validation_jsons_list:
             violations_list = []
-            validate_bw(traffic_json, bw_threshold, violations_list)
-            validate_tc(traffic_json, tc_occ_threshold, violations_list)
+            if bw_threshold:
+                validate_bw(traffic_json, bw_threshold, violations_list)
+            if tc_occ_threshold:
+                validate_tc(traffic_json, tc_occ_threshold, violations_list)
             if violations_list:
                 raise TestIssue("\n".join(violations_list))
 
@@ -123,21 +132,15 @@ def set_ibm(players, scenario, ibm_mode=True, run_fw_latency_optimization=False,
                                                performance_clis_function_args=(scenario,), step=step)
 
 
-def set_port(players, port_list, shutdown=True):
-    '''
-    Implementation pending
-    '''
-    pass
+def set_ports_admin_state(players, port_list, port_state="up", step="Test Body"):
+    call_performance_function_with_threads(players, players_aliases=PerfConsts.PERF_SETUP_DUT_ALIASES,
+                                           action=f"set ports: {port_list} to {port_state}",
+                                           performance_clis_function_name="set_ports",
+                                           performance_clis_function_args=(port_list, port_state),
+                                           step=step)
 
 
 def reboot_dut(players, system_check=False):
-    '''
-    Implementation pending
-    '''
-    pass
-
-
-def get_ports_from_dut(cli_object):
     '''
     Implementation pending
     '''
@@ -174,3 +177,12 @@ def get_obj_method(cli_obj, method_name):
             return method
     raise TestIssue(f"Failed to find a callable function with name \"{method_name}\" "
                     f"in {cli_obj.__class__.__name__}")
+
+
+def skip_test_on_unsupported_os(cli_obj, unsupported_os):
+    if unsupported_os == CliType.NVUE and isinstance(cli_obj, NvueCli):
+        pytest.skip(f"This test is not supported in {CliType.NVUE}, no support for reboot")
+    elif unsupported_os == CliType.DVS and isinstance(cli_obj, DvsCli):
+        pytest.skip(f"This test is not supported in {CliType.DVS}, no support for reboot")
+    elif unsupported_os == CliType.SONIC and isinstance(cli_obj, SonicCli):
+        pytest.skip(f"This test is not supported in {CliType.SONIC}, no support for reboot")

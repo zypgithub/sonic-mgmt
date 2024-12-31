@@ -81,3 +81,7 @@ def get_dut_cli_obj_from_topo_obj(topology_obj):
     host = 'dut'
     cli_type, dut_alias, dut_ip, dut_name, engine, switch_type = extract_host_details_from_topo_obj(topology_obj, host)
     return get_cli_obj(topology_obj, cli_type, switch_type, engine, host, dut_alias)
+
+
+def get_pytest_test_name(request):
+    return request.node.nodeid.split("::")[-1]

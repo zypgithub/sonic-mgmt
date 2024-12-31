@@ -94,5 +94,30 @@ class DvsPerformance(PerformanceCommon):
         self.execute_cmd(set_ibm_mode_cmd)
         if run_fw_latency_optimization:
             # TODO: replace calling the script with calling the SDK api
-            fw_latency_optimization_cmd = f"python /root/sys_sdk/sx_sdk_py_tests/tools/multi_nos/dqs_to_glc.py 5 24"
+            fw_latency_optimization_cmd = f"python {PerfConsts.DVS_CONF_FW_LATENCY_OPT} 5 24"
             self.execute_cmd(fw_latency_optimization_cmd)
+
+    def set_ports(self, ports_list, port_state):
+        for port in ports_list:
+            set_port_cmd = f"echo y |  sx_api_port_state_set.py --log_port {hex(port)} --state {port_state}"
+            self.execute_cmd(set_port_cmd)
+
+    def get_player_ports(self, scenario, template_suite="traffic_packets_json_files", dst_dut_dir="/tmp"):
+        logging.info("Getting the traffic generator ports")
+        get_player_ports_cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names {PerfConsts.DVS_GET_PORTS}"
+        self.execute_cmd(get_player_ports_cmd)
+        get_ports_output = os.path.join(BugHandlerConst.NGTS_PATH, "performance_tests", template_suite,
+                                        scenario, f"{self.dut_alias}_{scenario.replace('/', '_')}_ports.json")
+        self.engine.copy_file(source_file="tg_ports.json", file_system=dst_dut_dir, dest_file=get_ports_output,
+                              overwrite_file=True, verify_file=False, direction='get')
+        with open(get_ports_output) as f:
+            player_ports = json.load(f)
+        return player_ports
+
+    def get_tg_unconnected_ports(self, scenario):
+        player_ports = self.get_player_ports(scenario)
+        return player_ports["unconnected_ports"]
+
+    def get_dut_ports(self, scenario):
+        player_ports = self.get_player_ports(scenario)
+        return player_ports["connected_ports"]

@@ -1,0 +1,4 @@
+{
+"sdk_test_path": "sx_sdk_py_tests/tests/multi_os_tests/spcx_tests/spx_ra_tg.py",
+"sdk_test_name": "SpcxTG800G"
+}

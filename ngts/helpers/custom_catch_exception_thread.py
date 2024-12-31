@@ -1,6 +1,9 @@
 import threading
+import logging
 from infra.tools.exceptions.test_issue import TestIssue
 from ngts.helpers.performance.Performance_log_print import print_players_logs
+
+logger = logging.getLogger()
 
 
 class CatchExceptionThread(threading.Thread):
@@ -32,6 +35,7 @@ def parse_threads_exceptions_at_join(threads_list, players_info, step):
         try:
             th.join()
         except Exception as e:
+            logger.error(f"{th.name} - failed with Exception: {e}")
             players.append(th.name)
             player_hostname = players_info[th.name]['cli'].chassis.get_hostname()
             exceptions.append(f"{th.name} - {player_hostname} failed with Exception,please check thread logs\n")
