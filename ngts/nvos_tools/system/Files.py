@@ -125,7 +125,7 @@ class File(BaseComponent):
                 engine, device, action_type='install', resource_path=resource_path,
                 param_name='force' if force else no_force,
                 expect_reboot=with_reboot, recovery_engine=recovery_engine, deny_reboot=deny_reboot,
-                topology_obj=topology_obj, track_boot_intervals=track_boot_intervals)
+                topology_obj=topology_obj, track_boot_intervals=track_boot_intervals, system_is_ready_timeout=system_is_ready_timeout)
 
     def rename_and_verify(self, new_name, expected_str="", dut_engine=None):
         original_name = self.file_name

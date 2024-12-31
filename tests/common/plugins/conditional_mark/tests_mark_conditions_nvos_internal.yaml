@@ -199,12 +199,6 @@ tests_nvos/checklist/test_bios_manual_update.py:
     conditions:
       - "'juliet' not in testbed"
 
-tests_nvos/platform/test_platform_firmware_bios/test_platform_firmware_bios.py:
-  skip:
-    reason: "Testcase skipped on Juliet systems, feature is pruned in Juliet"
-    conditions:
-      - "'juliet' in testbed"
-
 tests_nvos/interfaces/test_ib_interface_configuration.py::test_ib_interface_lanes:
   skip:
     reason: "Testcase skipped on XDR systems"
@@ -544,12 +538,6 @@ tests_nvos/interfaces/test_eth0_interface_dhcp.py::test_interface_eth0_speed_dup
     reason: "Testcase skipped on Juliet systems, Juliet does not support half duplex"
     conditions:
       - "'juliet' in testbed"
-
-tests_nvos/checklist/test_bios_upgrade.py::test_bios_manual_update:
-  skip:
-    reason: "Testcase skipped on non Juliet systems since they has 'auto-update' which changes the upgrade's flow"
-    conditions:
-      - "'juliet' not in testbed"
 
 tests_nvos/interfaces/test_port_split.py:
   skip:

@@ -59,9 +59,10 @@ def verify_bios_version(engines, platform, expected_version: str):
             f"BIOS firmware is {new_bios_version}, expected {expected_version} after the install"
 
 
-def fetch_and_install_bios(platform, path, name, filename, topology_obj, system_is_ready_timeout=None):
+def fetch_and_install_bios(platform, path, name, filename, topology_obj, test_name):
     with allure.step(f'Fetch {name} Bios image from: {path}'):
         platform.firmware.bios.action_fetch(path).verify_result()
 
     with allure.step(f'installing Bios image {name}'):
-        platform.firmware.bios.files.file_name[filename].action_file_install_with_reboot(topology_obj=topology_obj)
+        res, duration = OperationTime.save_duration(f'install BIOS {name}', '',
+                                                    test_name, platform.firmware.bios.files.file_name[filename].action_file_install_with_reboot, topology_obj=topology_obj)
