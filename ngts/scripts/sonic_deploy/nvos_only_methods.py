@@ -41,7 +41,7 @@ class NvosInstallationSteps:
 
     @staticmethod
     def post_installation_steps(topology_obj, workspace_path, setup_info, serial_log_analyzer,
-                                base_version='', target_version='', verify_secure_boot: bool = True):
+                                root_dir, base_version='', target_version='', verify_secure_boot: bool = True):
         """
         Post-installation steps for NVOS NOS
         :return:
@@ -89,7 +89,7 @@ class NvosInstallationSteps:
                 #   apply & save it, and upgrade to the given target_version, which is the one that will be used for testing
                 with serial_log_analyzer.stage(SerialLoggerConst.UPGRADE_STAGE):
                     NvosInstallationSteps.upgrade_with_saved_config_flow(topology_obj, dut_engine, dut_device,
-                                                                         base_version, target_version)
+                                                                         root_dir, base_version, target_version)
         else:
             logger.info('NVOS: Argument "base-version" was not given. therefore not running the upgrade with saved '
                         'configuration scenario')
@@ -113,10 +113,12 @@ class NvosInstallationSteps:
         logger.info('========== NVOS - Post installation steps Done ==========')
 
     @staticmethod
-    def upgrade_with_saved_config_flow(topology_obj, dut_engine, dut_device, base_version='', target_version=''):
+    def upgrade_with_saved_config_flow(topology_obj, dut_engine, dut_device, root_dir, base_version='',
+                                       target_version=''):
         with allure.step('Upgrade to target version with saved configuration'):
             NvosInstallationSteps.upgrade_version_with_saved_configuration(dut_engine, dut_device,
-                                                                           topology_obj, target_version, base_version)
+                                                                           topology_obj, target_version,
+                                                                           base_version, root_dir)
         with allure.step('Show system and firmware version after upgrade'):
             system = System()
             platform = Platform()
@@ -125,7 +127,7 @@ class NvosInstallationSteps:
 
     @staticmethod
     def upgrade_version_with_saved_configuration(dut_engine: ProxySshEngine, dut_device: BaseDevice,
-                                                 topology_obj, target_version_path: str, base_version: str):
+                                                 topology_obj, target_version_path: str, base_version: str, root_dir):
         with allure.step('Strings preparation'):
             config_file_path, config_filename = dut_device.get_test_config_file_by_version(base_version)
             system = System()
@@ -152,7 +154,7 @@ class NvosInstallationSteps:
             NvosInstallationSteps.verify_config_after_upgrade(config_file_path, dut_engine)
 
         with allure.step('Clear tested configuration for the tests'):
-            clear_conf(engine=dut_engine, device=dut_device)
+            clear_conf(engine=dut_engine, device=dut_device, config_yml=None, root_dir=root_dir)
             NvueGeneralCli.show_config(dut_engine)
 
         with allure.step('Clear fetched files for the tests'):

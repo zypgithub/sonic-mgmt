@@ -18,7 +18,9 @@ logger = logging.getLogger()
 @pytest.mark.disable_loganalyzer
 @pytest.mark.no_log_test_wrapper
 @pytest.mark.no_cli_coverage_run
-def test_post_checker(engines, topology_obj, dumps_folder, setup_name, security_post_checker):
+def test_post_checker(engines, topology_obj,
+                      devices, default_config_yml_path, root_dir,
+                      dumps_folder, setup_name, security_post_checker):
     """
     Post checker flow:
         1. Check if ssh port is open and we can connect to it
@@ -43,7 +45,8 @@ def test_post_checker(engines, topology_obj, dumps_folder, setup_name, security_
 
             if res_obj.result:
                 with allure.step("Clear config"):
-                    clear_conf(engines.dut)
+                    clear_conf(engine=engines.dut, device=devices.dut,
+                               config_yml=default_config_yml_path, root_dir=root_dir)
             else:
                 logging.info("Try to clear the config using serial console")
 
@@ -55,7 +58,8 @@ def test_post_checker(engines, topology_obj, dumps_folder, setup_name, security_
                     generate_techsupport(dumps_folder, system, serial_engine)
 
                 with allure.step("Clear config using serial console"):
-                    clear_conf(serial_engine)
+                    clear_conf(engine=serial_engine, device=devices.dut,
+                               config_yml=default_config_yml_path, root_dir=root_dir)
 
                 with allure.step('Check connection and perform reboot if needed'):
                     logger.info('Check port status, should be up after cleanup')

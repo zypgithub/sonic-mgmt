@@ -268,7 +268,8 @@ def post_installation_steps(topology_obj, sonic_topo, recover_by_reboot, deploy_
         CumulusInstallationSteps.post_installation_steps(setup_info)
     elif isinstance(dut_cli_obj, NvueGeneralCli):
         NvosInstallationSteps.post_installation_steps(topology_obj, workspace_path, setup_info,
-                                                      serial_log_analyzers[dut_cli_obj.engine.ip], base_version,
+                                                      serial_log_analyzers[dut_cli_obj.engine.ip],
+                                                      request.config.rootdir, base_version,
                                                       target_version, verify_secure_boot)
 
     elif isinstance(dut_cli_obj, DvsGeneralCli):
