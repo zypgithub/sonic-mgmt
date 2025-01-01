@@ -431,18 +431,6 @@ tests_nvos/interfaces/multi_planar/test_multi_planar_sym_mgr_and_aport.py::test_
   skip:
     reason: "Testcase skipped due to inability to force update of DB values"
 
-tests_nvos/interfaces/test_response_mgmt_ip_inband.py::test_interface_shutdown:
-  skip:
-    reason: "Should run only on xdr Black Mamba system"
-    conditions:
-      - "'gorilla' or 'marlin' in testbed"
-
-tests_nvos/interfaces/test_response_mgmt_ip_inband.py::test_dhcp_shutdown:
-  skip:
-    reason: "Should run only on xdr Black Mamba system"
-    conditions:
-      - "'gorilla' or 'marlin' in testbed"
-
 tests_nvos/interfaces/multi_planar/test_multi_planar_sym_mgr_and_aport.py::test_fae_interface_commands:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3795750"

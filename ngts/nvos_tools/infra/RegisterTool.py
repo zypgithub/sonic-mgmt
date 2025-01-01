@@ -13,7 +13,7 @@ class RegisterTool:
         return engine.run_cmd('sudo mst status', validate=True)
 
     @staticmethod
-    def get_mst_register_value(engine, mst_dev_name, reg_name, additional_params="", grep_pattern=""):
+    def get_mst_register_value(engine, mst_dev_name, reg_name, additional_params="", grep_pattern='""'):
         logging.info(f'Get {reg_name} value {additional_params}')
         return engine.run_cmd(f'sudo mlxreg -d {mst_dev_name} -g --reg_name {reg_name} {additional_params} | grep {grep_pattern}',
                               validate=True)

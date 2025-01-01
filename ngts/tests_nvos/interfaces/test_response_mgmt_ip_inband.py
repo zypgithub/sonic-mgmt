@@ -42,6 +42,11 @@ def test_configure_feature_state(engines, devices, start_sm, test_api):
     fae = Fae()
 
     try:
+        with allure.step("Renew interface eth0 and eth1 ip dhcp-client6"):
+            engines_dut.run_cmd('nv action renew interface eth0 ip dhcp-client6')
+            engines_dut.run_cmd('nv action renew interface eth1 ip dhcp-client6')
+            time.sleep(30)
+
         with allure.step("Choose mgmt port (eth0|eth1) and get its addresses"):
             mgmt_port, mgmt_ip_dict, port_name = choose_mgmt_port(engines_dut, devices_dut)
 
