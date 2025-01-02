@@ -42,7 +42,7 @@ def parse_eeprom_hexdump(data):
     regex = re.compile(
         r"EEPROM hexdump for port (\S+)\n"  # Capture port name
         r"(?:\s+)?"  # Match and skip intermediate lines
-        r"((Lower|Upper) page \S+)\n"  # Capture page type and identifier
+        r"((?:Lower|Upper) page \S+|\S+ dump)\n"  # Capture full page type string
         r"((?:\s+[0-9a-fA-F]{8}(?: [0-9a-fA-F]{2}){8} (?: [0-9a-fA-F]{2}){8} .*\n)+)"  # Capture hex data block
     )
     # Dictionary to store parsed results
@@ -50,7 +50,7 @@ def parse_eeprom_hexdump(data):
 
     # Find all matches in the data
     matches = regex.findall(data)
-    for port, page_full, page_type, hex_data in matches:
+    for port, page_type, hex_data in matches:
         if port not in parsed_data:
             parsed_data[port] = {}
 
@@ -62,7 +62,7 @@ def parse_eeprom_hexdump(data):
             for value in line[9:56].split()  # Extract hex bytes from columns 9-56
         ]
 
-        parsed_data[port][page_full] = hex_values
+        parsed_data[port][page_type] = hex_values
 
     return parsed_data
 
