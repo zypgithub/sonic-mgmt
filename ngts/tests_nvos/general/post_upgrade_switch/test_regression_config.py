@@ -16,12 +16,12 @@ def test_regression_config(engines):
 
             for command in commands_list:
                 with allure.step(f"Running command '{command}'"):
-                    if command == 'nv action reboot system':
-                        with allure.step("Perform system reboot"):
-                            System().reboot.action_reboot(params='force').verify_result()
-                    else:
-                        engines.dut.run_cmd(command)
+                    engines.dut.run_cmd(command)
 
         if engines.dut.ip in Configurations.devices_missing_psus:
             Platform().ps_redundancy.set('policy', 'no-redundancy', apply=True)
             NvueGeneralCli.save_config(engines.dut)
+
+        if engines.dut.ip in Configurations.devices_requested_factory_reset:
+            with allure.step("Running system factory-default reset"):
+                System().factory_default.action_reset(param='force').verify_result()

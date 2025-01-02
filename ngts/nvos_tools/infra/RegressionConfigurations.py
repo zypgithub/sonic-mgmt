@@ -65,12 +65,12 @@ class Configurations:
                                               'nv config apply -y'],
                              "10.7.148.248": ['sudo cp /usr/share/sonic/device/x86_64-nvidia_q3450_ld-r0/platform.json /usr/share/sonic/device/x86_64-nvidia_q3400_ra-r0/platform.json',
                                               'sudo cp /usr/share/sonic/device/x86_64-nvidia_q3450_ld-r0/co_optics_modules.json /usr/share/sonic/device/x86_64-nvidia_q3400_ra-r0/co_optics_modules.json',
-                                              'sudo sed -i \'s/"sfp_count"[[:space:]]*:[[:space:]]*"[0-9]*",/"sfp_count":"73",/\' /usr/share/sonic/device/x86_64-nvidia_q3400_ra-r0/platform.json',
-                                              'nv action reboot system']
+                                              'sudo sed -i \'s/"sfp_count"[[:space:]]*:[[:space:]]*"[0-9]*",/"sfp_count":"73",/\' /usr/share/sonic/device/x86_64-nvidia_q3400_ra-r0/platform.json']
                              }
 
     devices_missing_psus = {}
     devices_to_configure_ndr_ports = ndr_ports.keys()
+    devices_requested_factory_reset = ['10.7.148.248']
 
     default_conf = NvosConst.DEFAULT_CONFIG
     default_conf["interface"] = {
