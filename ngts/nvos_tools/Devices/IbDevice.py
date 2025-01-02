@@ -1016,6 +1016,7 @@ class JulietSwitch(NvLinkSwitch):
         self.power_cycle_type = 'juliet-power-cycle'
         self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/juliet_versions.json"
         self.valid_ports_count = 144
+        self.module_offset = 10
 
     def _init_fan_list(self):
         super()._init_fan_list()
