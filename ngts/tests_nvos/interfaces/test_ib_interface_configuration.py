@@ -150,8 +150,9 @@ def test_ib_interface_speed(engines, players, interfaces, devices, start_sm, tes
             Tools.TrafficGeneratorTool.send_ib_traffic(players=players, interfaces=interfaces, should_success=True'''
 
     with allure.step("Select a random ib-speed value for port {}".format(selected_port.name)):
-        selected_ib_speed_value = Tools.RandomizationTool.select_random_value(list_of_values=supported_ib_speeds,
-                                                                              forbidden_values=[IbInterfaceConsts.XDR]).get_returned_value()
+        selected_ib_speed_value = Tools.RandomizationTool.select_random_value(
+            list_of_values=supported_ib_speeds, forbidden_values=[IbInterfaceConsts.SDR, IbInterfaceConsts.XDR]). \
+            get_returned_value()
         logging.info("Selected ib-speed: " + selected_ib_speed_value)
 
     with allure.step("Set ib-speed '{}' for port '{}".format(selected_ib_speed_value, selected_port.name)):

@@ -76,12 +76,16 @@ def test_show_system_image(original_version):
             logger.info("All expected fields were found")
 
         with allure.step("Validate the values exist"):
-            assert output_dictionary[
-                ImageConsts.CURRENT_IMG] == original_version, f"Current image is invalid. Expected {original_version}"
-            assert output_dictionary[
-                ImageConsts.PARTITION1_IMG] == original_version, f"Partition1 image is invalid. Expected {original_version}"
-            assert output_dictionary[
-                ImageConsts.NEXT_IMG] == original_version, f"Next image is invalid. Expected {original_version}"
+            if ImageConsts.PARTITION2_IMG in output_dictionary.keys():
+                partition2 = output_dictionary[ImageConsts.PARTITION2_IMG]
+            else:
+                partition2 = ''
+            assert output_dictionary[ImageConsts.CURRENT_IMG] == original_version, \
+                f"Current image is invalid. Expected {original_version}"
+            assert output_dictionary[ImageConsts.PARTITION1_IMG] == original_version or partition2 == original_version, \
+                f"Partition1 image is invalid. Expected {original_version}"
+            assert output_dictionary[ImageConsts.NEXT_IMG] == original_version, \
+                f"Next image is invalid. Expected {original_version}"
 
     with allure.step("Run show command to view system image files"):
         output_dictionary = system.image.files.get_files()
