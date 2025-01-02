@@ -13,12 +13,14 @@ from ngts.scripts.code_coverage.code_coverage_consts import SharedConsts, NvosCo
 from ngts.nvos_constants.constants_nvos import NvosConst
 from ngts.nvos_tools.infra.HostMethods import HostMethods
 from ngts.nvos_tools.Devices.DeviceFactory import DeviceFactory
+from ngts.tests_nvos.constants import MINUTE
 
 logger = logging.getLogger()
 
 
 @pytest.mark.disable_loganalyzer
 @allure.title('Extract Python Coverage')
+@pytest.mark.timeout(17 * MINUTE, func_only=True)
 def test_extract_python_coverage(topology_obj, dest, engines):
     """
     Extracts code coverage collected by the Coverage.py tool for Python scripts.

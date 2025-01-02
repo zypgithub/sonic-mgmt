@@ -25,7 +25,6 @@ from ngts.tests_nvos.general.post_upgrade_switch.install_steps_timer import Inst
 from ngts.tests_nvos.general.security.bmc.bmc_creds.constants import BmcUsers
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tools.test_utils import allure_utils as allure
-from ngts.tools.test_utils.nvos_config_utils import clear_conf, set_base_configurations
 
 logger = logging.getLogger()
 
@@ -60,19 +59,11 @@ class NvosInstallationSteps:
             except BaseException:
                 logger.warning("Failed to replace minigraph_facts.py in ansible path. Community tests will fail.")
 
-        with allure.step('Waiting till NVOS become functional'):
+        with allure.step('Initialize engine and device objects'):
             cli_obj: NvueGeneralCli = setup_info['duts'][0]['cli_obj']
             dut_device = cli_obj.device
             dut_engine = cli_obj.engine
             TestToolkit.is_eth_dut(dut_device)  # initialize this field in TestToolkit global object
-            assert NvosInstallationSteps.wait_for_nvos_to_become_functional(dut_engine), \
-                "Timeout occurred while waiting for NVOS to complete the initialization "
-
-        with allure.step('Show system and firmware version'):
-            system = System()
-            platform = Platform()
-            system.version.show(dut_engine=dut_engine)
-            platform.firmware.show(dut_engine=dut_engine)
 
         if dut_device.has_bmc:
             with allure.step('reset password of bmc root user'):
@@ -98,14 +89,11 @@ class NvosInstallationSteps:
             allure.attach('install flow intervals', InstallStepsTimer.analyze_saved_timestamps())
 
         with allure.step('Set base configuration for tests after the install phase'):
+            dut_device.clear_config(dut_engine=dut_engine, default_yml_path=None, root_dir=root_dir)
             try:
-                set_base_configurations(dut_engine=dut_engine, timezone=LinuxConsts.JERUSALEM_TIMEZONE, apply=True,
-                                        save_conf=True)
-
                 with allure.step('Set timezone using timedatectl command'):
                     logger.info("Configuring same time zone for dut and local engine to {}"
                                 .format(LinuxConsts.JERUSALEM_TIMEZONE))
-                    logger.info('Set timezone using linux command')
                     os.popen('sudo timedatectl set-timezone {}'.format(LinuxConsts.JERUSALEM_TIMEZONE))
             except BaseException as ex:
                 logger.warning('Failed to configure timezone')
@@ -154,7 +142,7 @@ class NvosInstallationSteps:
             NvosInstallationSteps.verify_config_after_upgrade(config_file_path, dut_engine)
 
         with allure.step('Clear tested configuration for the tests'):
-            clear_conf(engine=dut_engine, device=dut_device, config_yml=None, root_dir=root_dir)
+            dut_device.clear_config(dut_engine=dut_engine, default_yml_path=None, root_dir=root_dir)
             NvueGeneralCli.show_config(dut_engine)
 
         with allure.step('Clear fetched files for the tests'):

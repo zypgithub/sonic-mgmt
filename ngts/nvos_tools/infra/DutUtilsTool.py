@@ -208,8 +208,13 @@ class DutUtilsTool:
             with allure.step('wait until the CLI is up'):
                 wait_until_cli_is_up(engine)
 
-            with allure.step('Wait until systemctl status is "running"'):
-                wait_on_systemctl_initialization(engine)
+            try:
+                with allure.step('Wait until systemctl status is "running"'):
+                    wait_on_systemctl_initialization(engine)
+            except BaseException as ex:
+                logging.error("System is not ready according to systemctl status")
+                engine.run_cmd("nv show system health")
+                raise ex
 
             return ResultObj(result=True, info="System Is Ready", issue_type=IssueType.PossibleBug)
 
@@ -314,7 +319,6 @@ def wait_for_system_table_to_exist(engine):
 def wait_until_cli_is_up(engine):
     logger.info('Checking the status of nvued')
     output = engine.run_cmd('nv show system')
-    logger.info(output)
     if 'CLI is unavailable' in output:
         raise Exception("Waiting for NVUE to become functional")
 

@@ -196,9 +196,6 @@ class NvueGeneralCli(SonicGeneralCliDefault):
         with allure.step('wait for System is ready in serial'):
             DutUtilsTool.wait_for_system_ready_in_serial(topology_obj, serial_engine, self.device.timeout_system_is_ready)
             InstallStepsTimer.add_timestamp(InstallSteps.SYSTEM_IS_READY_AFTER_MANUFACTURE)
-        with allure.step('Wait until switch is up'):
-            engine.disconnect()  # force engines.dut to reconnect
-            DutUtilsTool.wait_for_nvos_to_become_functional(engine=engine)
 
     @staticmethod
     def diff_config(engine, revision_1='', revision_2='', output_type='json'):

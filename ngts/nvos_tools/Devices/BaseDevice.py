@@ -139,7 +139,7 @@ class BaseDevice(ABC):
     def handle_exception(self, dut_engine):
         logging.info("Handle exception")
 
-    def clear_config(self, dut_engine, markers=None, default_yml_path=None):
+    def clear_config(self, dut_engine, markers=None, default_yml_path=None, root_dir=""):
         pass
 
     @abstractmethod

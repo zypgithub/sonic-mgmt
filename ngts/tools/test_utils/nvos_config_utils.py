@@ -88,35 +88,36 @@ def set_base_configurations(dut_engine, timezone=LinuxConsts.JERUSALEM_TIMEZONE,
 
 def clear_conf(engine, device, config_yml, root_dir):
     try:
-        if config_yml and not FilesTool.file_exists(engine, config_yml):
+        if not config_yml or not FilesTool.file_exists(engine, config_yml):
             with allure.step("Config file is empty or can't be found. Trying to copy default yml again"):
                 config_yml = device.get_default_config_yml(engine, root_dir)
 
-        if not config_yml:
+        if config_yml:
+            with allure.step("Replace config"):
+                with allure.step("Replace action"):
+                    allure.attach("Selected config yml", config_yml)
+                    output = NvueGeneralCli.replace_config(engine, config_yml)
+                    assert "Error" not in output, "Failed to replace config"
+                with allure.step("Config diff"):
+                    output = NvueGeneralCli.diff_config(engine)
+                    if output:
+                        allure.attach("Config diff", output)
+                        with allure.step("Apply config"):
+                            output = NvueGeneralCli.apply_config(engine=engine, option='-y', verify_execution=True)
+                            allure.attach("Apply output", output)
+                            assert ConfState.APPLIED in output, "Failed to apply config"
+                        with allure.step("Save config"):
+                            output = NvueGeneralCli.save_config(engine)
+                            allure.attach("Save output", output)
+                            assert ConfState.SAVED in output, "Failed to save config"
+                        with allure.step("Wait till nvue is functional"):
+                            wait_until_cli_is_up(engine)
+                    else:
+                        with allure.step("Config diff is empty, no need to apply and save (detaching config)"):
+                            NvueGeneralCli.detach_config(engine)
+        else:
             with allure.step("Clear config using unset commands"):
                 clear_config_using_unset(engine, device)
-
-        with allure.step("Replace config"):
-            with allure.step("Replace action"):
-                allure.attach("Selected config yml", config_yml)
-                output = NvueGeneralCli.replace_config(engine, config_yml)
-                assert "Error" not in output, "Failed to replace config"
-            with allure.step("Config diff"):
-                output = NvueGeneralCli.diff_config(engine)
-                if output:
-                    allure.attach("Config diff", output)
-                    with allure.step("Apply config"):
-                        output = NvueGeneralCli.apply_config(engine=engine, option='-y', verify_execution=True)
-                        allure.attach("Apply output", output)
-                        assert ConfState.APPLIED in output, "Failed to apply config"
-                    with allure.step("Save config"):
-                        output = NvueGeneralCli.save_config(engine)
-                        allure.attach("Save output", output)
-                        assert ConfState.SAVED in output, "Failed to save config"
-                    with allure.step("Wait till nvue is functional"):
-                        wait_until_cli_is_up(engine)
-                else:
-                    allure.attach("Empty config diff", "Config diff is empty, no need to apply and save")
 
     except BaseException as ex:
         allure.attach("Exception", str(ex))
