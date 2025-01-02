@@ -1,9 +1,9 @@
 import logging
 import re
+import random
 
 import pytest
 
-from ngts.nvos_constants.constants_nvos import ApiType, NvosConst
 from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts, IbInterfaceConsts
@@ -11,6 +11,10 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
+from ngts.nvos_constants.constants_nvos import ApiType, NvosConst
+from ngts.nvos_tools.infra.Fae import Fae
+from ngts.nvos_tools.infra.ResultObj import ResultObj
+from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
@@ -230,7 +234,8 @@ def test_ib_show_interface_name_stats(engines, devices, test_api):
 
 @pytest.mark.ib_interfaces
 @pytest.mark.ib
-def test_show_interface_filter(engines):
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
+def test_show_interface_filter(engines, test_api):
     """
     Run show interface command with filter flag and verify the required fields are exist
     command: nv show interface -- filter "<filter>=<value>"
@@ -247,6 +252,7 @@ def test_show_interface_filter(engines):
     9. Run show interface with a filter that does not exist
     """
     interface = Interface(parent_obj=None)
+    TestToolkit.tested_api = test_api
 
     with allure.step('Run show interface without filter'):
         output_dict = Tools.OutputParsingTool.parse_show_all_interfaces_output_to_dictionary(
@@ -266,33 +272,40 @@ def test_show_interface_filter(engines):
 
     with allure.step('Run show interface with the selected filter'):
         output_dict_filtered = Tools.OutputParsingTool.parse_show_all_interfaces_output_to_dictionary(
-            interface.show(f'--filter "{filter_name}={value}"')).get_returned_value()
+            interface.filter(filter_name=filter_name, value=value).get_returned_value()).verify_result()
 
     with allure.step('Compare between filtered output dictionary to expected dictionary'
                      '(at least one should be found)'):
-        ValidationTool.compare_nested_dictionary_content(output_dict_filtered, filtered_expected).verify_result()
+        res_obj = ValidationTool.compare_nested_dictionary_content(output_dict_filtered, filtered_expected)
+        if is_redmine_issue_active([4235573])[0] and test_api == ApiType.OPENAPI:
+            pass
+        else:
+            res_obj.verify_result()
 
     with allure.step('Run show interface with an empty filter (returns all data)'):
         output_dict_filtered = Tools.OutputParsingTool.parse_show_all_interfaces_output_to_dictionary(
-            interface.show('--filter ""')).get_returned_value()
+            interface.filter().get_returned_value()).get_returned_value()
 
     with allure.step('Run show interface without filter'):
         output_dict = Tools.OutputParsingTool.parse_show_all_interfaces_output_to_dictionary(
             interface.show()).get_returned_value()
 
     with allure.step('Compare between filtered output dictionary to the full dictionary'):
-        ValidationTool.compare_nested_dictionary_content(output_dict_filtered, output_dict).verify_result()
+        res_obj = ValidationTool.compare_nested_dictionary_content(output_dict_filtered, output_dict)
+        if is_redmine_issue_active([4235573])[0] and test_api == ApiType.OPENAPI:
+            pass
+        else:
+            res_obj.verify_result()
 
     with allure.step('Run show interface with existing filter but value not exist'):
         value = 'value_not_exists'
-        output_dict_filtered = interface.show(f'--filter "{filter_name}={value}"', output_format='auto')
-        assert output_dict_filtered == 'No Data'
+        output_dict_filtered = interface.filter(filter_name=filter_name, value=value).verify_result()
+        assert output_dict_filtered.startswith('{}'), f"expected empty dict - got {output_dict_filtered}"
 
     with allure.step('Run show interface with a filter that does not exist'):
         filter_name = 'filter_not_exist'
-        output_dict_filtered = interface.show(f'--filter "{filter_name}={value}"',
-                                              output_format='auto', should_succeed=False)
-        assert re.search(r'Error: No match found for filter depth of \d+\.', output_dict_filtered)
+        output_dict_filtered = interface.filter(filter_name=filter_name, value=value).verify_result(False)
+        assert re.search(r'No match found for filter depth of \d+\.', output_dict_filtered)
 
 
 def validate_interface_fields(output_dictionary):

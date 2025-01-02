@@ -114,6 +114,15 @@ class Interface(BaseComponent):
                                                          self.mgmt_path, interface_name, fae_param)
             return result_obj
 
+    def filter(self, dut_engine=None, filter_name="", value=""):
+        with allure.step(f"filter using {filter_name}={value}"):
+            if not dut_engine:
+                dut_engine = TestToolkit.engines.dut
+            cli_wrapper = self.port_obj._cli_wrapper if self.port_obj else self._cli_wrapper
+            result_obj = SendCommandTool.execute_command_expected_str(
+                cli_wrapper.filter, "", dut_engine, filter_name, value)
+            return result_obj
+
     def get_sorted_interfaces_list(self):
         with allure.step("get sorted interfaces list"):
             output_list = list(OutputParsingTool.parse_show_output_to_dict(self.show()).get_returned_value().keys())
