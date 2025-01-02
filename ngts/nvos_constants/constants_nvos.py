@@ -1,6 +1,7 @@
 import os
 from enum import Enum
 
+from ngts.tests_nvos.general.security.bmc.bmc_creds.constants import ADMIN
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 
 
@@ -234,6 +235,7 @@ class ActionType:
     INSTALL = '@install'
     REBOOT = '@reboot'
     RENEW = '@renew'
+    RUN = '@run'
     ROTATE = '@rotate'
     TURNOFF = '@turn-off'
     TURNON = '@turn-on'
@@ -722,7 +724,7 @@ class PlatformConsts:
     EROT_ASIC2_PATH_NAME = 'EROT-ASIC2'
     BMC_INVENTORY_PATTERN = r'/redfish/v1/UpdateService/FirmwareInventory/([^"]+)'
     BMC_COMPONENT_VERSION_PATTERN = r'"Version":\s*"([^"]+)"'
-    BMC_LOGIN = 'admin'
+    BMC_LOGIN = ADMIN
     BMC_INTERNAL_IP = '10.0.1.1'
     BMC_DEFAULT_ROOT_PASSWORD_AFTER_RESET_VIA_NOS = '0penBmcTempPass!'
 

@@ -9,6 +9,7 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.SecureBootTool import SecureBootTool
 from ngts.nvos_tools.infra.TpmTool import TpmTool
 from ngts.tests_nvos.constants import PRODUCTION, DEVELOPMENT
+from ngts.tests_nvos.general.security.bmc.bmc_creds.constants import ADMIN
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_constants.constants_nvos import DatabaseConst
@@ -18,7 +19,7 @@ logger = logging.getLogger()
 
 class BmcTool():
     BASE_URL = "https://10.0.1.1/redfish/v1/"
-    USER_NAME = "admin"
+    USER_NAME = ADMIN
     PLATFORM_COMPONENTS_DICT = dict()
 
     @staticmethod
