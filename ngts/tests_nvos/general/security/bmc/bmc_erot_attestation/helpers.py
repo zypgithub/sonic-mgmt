@@ -14,6 +14,7 @@ from ngts.nvos_tools.infra.TpmTool import TpmTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.system.Spdm import SpdmComponent, SPDMComponents, COMPONENT_TO_SPDM_OBJ_FIELD, SpdmComponentFields
 from ngts.nvos_tools.system.System import System
+from ngts.tests_nvos.general.security.bmc.bmc_creds.constants import ADMIN
 from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.client_scripts.verify_cert_chain.verify_cert_chain import \
     validate_certs_chain, save_ordered_chain, order_certs, parse_certs_str
 from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.client_scripts.verify_spdm_measurements.verify_spdm_measurements import \
@@ -146,7 +147,7 @@ def verify_cert_data_same_as_directly_from_bmc(erot_name: str, nv_cert: dict):
             output_file = '/tmp/bmc-certs'
             redfish_erot_name = f'MGX_{erot_name}'
             dut_engine.run_cmd(
-                f'curl -k -u admin:{bmc_password} -H "Content-Type: application/json" -X GET https://10.0.1.1/redfish/v1/Chassis/{redfish_erot_name}/Certificates/CertChain > {output_file}')
+                f'curl -k -u {ADMIN}:{bmc_password} -H "Content-Type: application/json" -X GET https://10.0.1.1/redfish/v1/Chassis/{redfish_erot_name}/Certificates/CertChain > {output_file}')
             dut_engine.run_cmd(f'echo "" >> {output_file}')
             bmc_cert_file_content = dut_engine.run_cmd(f'cat {output_file}')
             bmc_cert = OutputParsingTool.parse_json_str_to_dictionary(bmc_cert_file_content).get_returned_value()
@@ -198,7 +199,7 @@ def verify_measurements_data_same_as_directly_from_bmc(erot_name: str, nv_measur
             output_file = '/tmp/bmc-measurements'
             redfish_erot_name = f'MGX_{erot_name}'
             dut_engine.run_cmd(
-                f'curl -k -u admin:{bmc_password} -H "Content-Type: application/json" -X GET https://10.0.1.1/redfish/v1/ComponentIntegrity/{redfish_erot_name}/Actions/ComponentIntegrity.SPDMGetSignedMeasurements/data > {output_file}')
+                f'curl -k -u {ADMIN}:{bmc_password} -H "Content-Type: application/json" -X GET https://10.0.1.1/redfish/v1/ComponentIntegrity/{redfish_erot_name}/Actions/ComponentIntegrity.SPDMGetSignedMeasurements/data > {output_file}')
             dut_engine.run_cmd(f'echo "" >> {output_file}')
             bmc_measurements_file_content = dut_engine.run_cmd(f'cat {output_file}')
             bmc_measurements = OutputParsingTool.parse_json_str_to_dictionary(
