@@ -82,7 +82,7 @@ def test_transceiver_status_unplug(engines, devices, test_api, asic_conf_dict):
 
     try:
         _verify_transceiver_status(platform, transceiver_id=module_under_test, expected_module_status='Inserted')
-        IbInterfaceTool.simulate_unplug_module_event(engines.dut, devices.dut, module_index, mst_dev_name, 5)
+        IbInterfaceTool.simulate_unplug_module_event(engines.dut, devices.dut, module_index, mst_dev_name, 8)
         _verify_link_state_down(ports)
         _verify_transceiver_status(platform, transceiver_id=module_under_test, expected_module_status='Removed')
 
@@ -125,7 +125,7 @@ def test_transceiver_status_with_reboot(engines, devices, test_api, asic_conf_di
     try:
         _verify_transceiver_status(platform, transceiver_id=module_under_test, expected_module_status='Inserted')
 
-        IbInterfaceTool.simulate_unplug_module_event(engines.dut, devices.dut, module_index, mst_dev_name, 5)
+        IbInterfaceTool.simulate_unplug_module_event(engines.dut, devices.dut, module_index, mst_dev_name, 8)
         _verify_link_state_down(ports)
         _verify_transceiver_status(platform, transceiver_id=module_under_test, expected_module_status='Removed')
 
@@ -219,8 +219,9 @@ def _get_ports_for_module(module_name):
 
 
 def _count_module_index(module_name, device):
-    offset = 1
     module_index = int(''.join(c for c in module_name if c.isdigit()))
-    if module_index >= 10 and device.module_offset:
+    module_index -= 1
+    if device.module_offset:
         offset = device.module_offset
-    return module_index - offset
+        module_index %= offset
+    return module_index
