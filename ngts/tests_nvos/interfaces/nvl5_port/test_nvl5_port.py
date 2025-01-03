@@ -14,6 +14,7 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 # from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts [TBD]
 from ngts.tools.test_utils.allure_utils import step as allure_step
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
@@ -256,12 +257,13 @@ def test_nvl5_negative(engines, devices, test_api):
         selected_port = MgmtPort(port_name)
 
     try:
-        with allure_step("Negative testing with split nvl5 {} port".format(selected_port.name)):
-            selected_port.interface.link.set(op_param_name='breakout', op_param_value='2x-ndr', apply=True,
-                                             ask_for_confirmation=True).verify_result(False)
-            selected_port.interface.link.set(op_param_name='breakout', op_param_value='2x-hdr', apply=True,
-                                             ask_for_confirmation=True).verify_result(False)
-            NvueGeneralCli.detach_config(TestToolkit.engines.dut)
+        if not is_bug_active(4209873):
+            with allure_step("Negative testing with split nvl5 {} port".format(selected_port.name)):
+                selected_port.interface.link.set(op_param_name='breakout', op_param_value='2x-ndr', apply=True,
+                                                 ask_for_confirmation=True).verify_result(False)
+                selected_port.interface.link.set(op_param_name='breakout', op_param_value='2x-hdr', apply=True,
+                                                 ask_for_confirmation=True).verify_result(False)
+                NvueGeneralCli.detach_config(TestToolkit.engines.dut)
 
         with allure_step("Negative testing with configure nvl5 port params"):
             selected_port.interface.link.set(op_param_name='op-vls', op_param_value='1X', apply=True,
