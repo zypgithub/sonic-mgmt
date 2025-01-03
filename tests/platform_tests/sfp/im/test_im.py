@@ -1,11 +1,10 @@
 import pytest
-import logging
 
 from tests.platform_tests.sfp.im.helpers import *
 from tests.platform_tests.sfp.util import get_sfp_type, get_dev_conn, read_eeprom_by_page_and_byte,\
     write_eeprom_by_page_and_byte, DICT_WRITABLE_BYTE_FOR_PAGE_0
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
-from tests.common.platform.transceiver_utils import parse_sfp_eeprom_infos, is_passive_cable, get_passive_cable_port_list
+from tests.common.platform.transceiver_utils import get_passive_cable_port_list
 
 
 pytestmark = [
