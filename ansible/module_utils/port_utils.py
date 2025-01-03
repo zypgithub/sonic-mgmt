@@ -178,6 +178,19 @@ def get_port_alias_to_name_map(hwsku, asic_name=None):
             for i in s100G_ports:
                 alias = "etp%d" % (i / 4 + 1)
                 port_alias_to_name_map[alias] = "Ethernet%d" % i
+        elif hwsku in ["Mellanox-SN2700-C28D8", "Mellanox-SN2700-A1-C28D8"]:
+            # 50G ports
+            s50G_ports = [x for x in range(112, 127, 2)]
+
+            # 100G ports
+            s100G_ports = [x for x in range(0, 109, 4)]
+
+            for i in s50G_ports:
+                alias = "etp%d" % (i / 4 + 1) + ("a" if i % 4 == 0 else "b")
+                port_alias_to_name_map[alias] = "Ethernet%d" % i
+            for i in s100G_ports:
+                alias = "etp%d" % (i / 4 + 1)
+                port_alias_to_name_map[alias] = "Ethernet%d" % i
         elif hwsku == "Mellanox-SN3800-D112C8":
             x_ports = [x for x in range(0, 95, 2)]
             for i in x_ports:
