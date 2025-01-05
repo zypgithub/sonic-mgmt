@@ -54,7 +54,7 @@ def test_cacert_mgmt_cacert_cli(test_api, engines, scp_player, clear_certs):
 
     ca1_is_external = random.choice([True, False])
     ca1 = TestCert.cert_valid_1.copy(f'ca1-{"external" if ca1_is_external else "global"}')
-    ca2 = TestCert.cert_valid_2.copy(f'ca2-{"external" if ca1_is_external else "global"}')
+    ca2 = TestCert.cert_valid_2.copy(f'ca2-{"external" if not ca1_is_external else "global"}')
 
     external_info = {
         ca1.name: ca1_is_external,

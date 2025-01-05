@@ -2,7 +2,7 @@ import pytest
 
 from ngts.tests_nvos.general.security.constants import MAX_TEST_TIMEOUT
 from ngts.tests_nvos.general.security.security_test_tools.constants import AccountingConsts, \
-    AuthType, AaaConsts
+    AuthType
 from ngts.tests_nvos.general.security.security_test_tools.generic_remote_aaa_testing.generic_aaa_accounting_testing import *
 from ngts.tests_nvos.general.security.security_test_tools.generic_remote_aaa_testing.generic_remote_aaa_testing import *
 from ngts.tests_nvos.general.security.security_test_tools.resource_utils import configure_resource
@@ -254,6 +254,7 @@ def test_tacacs_accounting_basic(test_api, addressing_type, engines, topology_ob
         5. enable accounting
         6. verify accounting logs on server only for tacacs users events
     """
+    skip_auth_mediums = []
     test_server = TacacsDockerServer1.SERVER_BY_ADDRESSING_TYPE[addressing_type].copy()
     test_server.auth_type = random.choice(AuthType.ALL_TYPES)
     test_server.users = TacacsDockerServer1.USERS_BY_AUTH_TYPE[test_server.auth_type]
@@ -261,7 +262,7 @@ def test_tacacs_accounting_basic(test_api, addressing_type, engines, topology_ob
     generic_aaa_test_accounting_basic(test_api, engines, topology_obj, request, switch_hostname, local_adminuser,
                                       remote_aaa_type=RemoteAaaType.TACACS,
                                       remote_aaa_obj=System().aaa.tacacs,
-                                      server=test_server)
+                                      server=test_server, skip_auth_mediums=skip_auth_mediums)
 
 
 @pytest.mark.security
