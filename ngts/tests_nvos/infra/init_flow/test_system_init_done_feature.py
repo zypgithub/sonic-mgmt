@@ -3,7 +3,6 @@ from ngts.nvos_constants.constants_nvos import *
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.nvos_tools.infra.SerialConsoleTool import SerialConsoleTool
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
-from ngts.nvos_tools.infra.SerialConsoleTool import SerialConsoleTool
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.general.security.conftest import *
@@ -97,7 +96,7 @@ def test_system_ready_state_down(engines, devices, topology_obj):
         1. Run nv action reboot system (using engine.dut)
         2. kill one of the dockers
         3. validate we can not run CLI and also the system status table is not exist
-        4. verify expected logs after waiting 10 minuets
+        4. verify expected logs after waiting 10 minutes
         5. start docker as a cleanup step
     """
     with allure.step('pick a docker to kill'):
@@ -163,5 +162,5 @@ def connect_before_ssh(topology_obj, engine):
             serial = SerialConsoleTool.get_serial_console_session(topology_obj)
         with allure.step('exit existing login'):
             SerialConsoleTool.exit_existing_login(serial)
-        SerialConsoleTool.login_nos(serial_engine=serial, username=engine.username, password=engine.password, handle_change_password_prompt=False)
+        SerialConsoleTool.login_nos(serial_engine=serial, username=engine.username, password=engine.password, start_login_tries=10, handle_change_password_prompt=False)
         return serial
