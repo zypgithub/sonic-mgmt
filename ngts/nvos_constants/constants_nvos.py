@@ -556,8 +556,8 @@ class SystemConsts:
     ROLE_VIEWER = 'monitor'
     ROLE_GROUPS = 'groups'
     ROLE_PERMISSIONS = 'permissions'
-    ROLE_CONFIGURATOR_DEFAULT_GROUPS = 'nvapply,nvset,nvshow'
-    ROLE_VIEWER_DEFAULT_GROUPS = 'nvshow'
+    ROLE_CONFIGURATOR_DEFAULT_GROUPS = 'adm,docker,nvaction,nvapply,redis,sudo'
+    ROLE_VIEWER_DEFAULT_GROUPS = 'adm,nvshow'
     USERNAME_MAX_LEN = 32
     USERNAME_PASSWORD_HARDENING_HISTORY_COUNT = 'history-cnt'
     USERNAME_PASSWORD_HARDENING_STATE = 'state'

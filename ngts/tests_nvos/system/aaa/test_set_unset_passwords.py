@@ -30,8 +30,8 @@ def test_set_password(engines):
         system = System(force_api=ApiType.NVUE)
         new_password = generate_strong_password()
     with allure.step('creating two user with different roles'):
-        viewer_name, viewer_password = system.aaa.user.set_new_user(role=SystemConsts.ROLE_VIEWER)
-        configurator_name, configurator_password = system.aaa.user.set_new_user(role=SystemConsts.ROLE_VIEWER, apply=True)
+        viewer_name, viewer_password = system.aaa.user.set_new_user()
+        configurator_name, configurator_password = system.aaa.user.set_new_user(role=SystemConsts.ROLE_CONFIGURATOR, apply=True)
     with allure.step('try to set the password of two user to a new valid password'):
         system.aaa.user.user_id[configurator_name].set(SystemConsts.USER_PASSWORD, new_password).verify_result()
         system.aaa.user.user_id[viewer_name].set(SystemConsts.USER_PASSWORD, new_password, apply=True).verify_result()

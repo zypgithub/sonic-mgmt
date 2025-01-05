@@ -27,8 +27,8 @@ def test_capability_functionality(engines):
             6. validate all fields have values
     """
     system = System(None)
-    adminuser, adminpassword = system.aaa.user.set_new_user()
-    monitoruser, monitorpassword = system.aaa.user.set_new_user(role=SystemConsts.DEFAULT_USER_MONITOR, apply=True)
+    adminuser, adminpassword = system.aaa.user.set_new_user(role=SystemConsts.DEFAULT_USER_ADMIN)
+    monitoruser, monitorpassword = system.aaa.user.set_new_user(apply=True)
     is_monitor(monitoruser, monitorpassword, engines)
     is_admin(adminuser, adminpassword, engines)
 
