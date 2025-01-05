@@ -708,7 +708,7 @@ def test_ldap_map_group(test_api, engines, request, topology_obj):
         check_ldap_user_groups_with_id(engine=engines.dut, username=test_user.username, groupname=test_groups,
                                        group_should_exist=False)
 
-    with allure.step('Sanity: clear filter and check the opposite'):
+    with allure.step('Sanity: clear map and check the opposite'):
         with allure.step('Clear group map'):
             ldap.map.group.unset(apply=True).verify_result()
             wait_for_ldap_nvued_restart_workaround(item)
