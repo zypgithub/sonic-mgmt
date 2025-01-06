@@ -248,6 +248,19 @@ class OpenApiSystemCli(OpenApiBaseCli):
                                                    engine.ip, resource_path, params)
 
     @staticmethod
+    def action_run(engine, device, resource_path, params_dict=None):
+        logging.info("Running action: 'run' on dut using OpenApi, resource: {rsrc}".format(rsrc=resource_path))
+
+        params = \
+            {
+                "state": "start",
+                "parameters": params_dict
+            }
+
+        return OpenApiCommandHelper.execute_action(ActionType.RUN, engine.engine.username, engine.engine.password,
+                                                   engine.ip, resource_path, params)
+
+    @staticmethod
     def show_health_report(engine, resource_path, param='', exit_cmd=""):
         logging.info("Running GET method on dut using openApi for {}".format(param))
         response = OpenApiCommandHelper.execute_script(engine.engine.username, engine.engine.password,

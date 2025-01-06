@@ -159,6 +159,17 @@ class NvueSystemCli(NvueBaseCli):
 
     @staticmethod
     @check_output
+    def action_run(engine, device, resource_path, op_param="", force=False):
+        path = resource_path.replace('/', ' ')
+        cmd = "nv action run {path} {op_param}".format(path=path, op_param=op_param)
+        cmd = " ".join(cmd.split())
+        if force:
+            cmd += " force"
+        logging.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
+        return engine.run_cmd(cmd)
+
+    @staticmethod
+    @check_output
     def action_abort_ztp(engine, device, resource_path, op_param=""):
         """
         Ztp abort
