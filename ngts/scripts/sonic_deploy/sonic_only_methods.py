@@ -851,7 +851,7 @@ def get_cached_hwsku(dut_name):
 def enable_nat_from_dut_mgmt_to_dpu_mgmt_intf(engine):
     enable_nat_cmds = [
         "sudo su",
-        "sudo  sed -i 's/#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/g' /etc/sysctl.conf",
+        "sudo sed -i 's/#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/g' /etc/sysctl.conf",
         "sudo echo net.ipv4.conf.eth0.forwarding=1 >> /etc/sysctl.conf",
         "sudo sysctl -p",
         "sudo iptables -t nat -A POSTROUTING -s 169.254.200.0/24 -o eth0 -j MASQUERADE",
@@ -860,7 +860,8 @@ def enable_nat_from_dut_mgmt_to_dpu_mgmt_intf(engine):
         "sudo iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 5023 -j DNAT --to-destination 169.254.200.3:22",
         "sudo iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 5024 -j DNAT --to-destination 169.254.200.4:22",
         "sudo iptables -t nat -L",
-        "sudo iptables-save > /etc/iptables/rules.v4"
+        "sudo iptables-save > /etc/iptables/rules.v4",
+        "exit"
     ]
     engine.run_cmd_set(enable_nat_cmds)
 
