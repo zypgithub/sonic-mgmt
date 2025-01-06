@@ -139,7 +139,7 @@ def test_ib_show_interface_all_state_up(engines, devices, start_sm, test_api):
 @pytest.mark.ib_interfaces
 @pytest.mark.simx
 @pytest.mark.nvos_chipsim_ci
-def test_ib_show_interface_all_state_down(engines, devices):
+def test_ib_show_interface_all_state_down(engines, devices, has_loopbox, setup_name):
     """
     Run show interface command and verify the required fields are exist
     command: nv show interface
@@ -149,6 +149,10 @@ def test_ib_show_interface_all_state_down(engines, devices):
     2. Select a random port from the output in 'down' state
     3. Verify the required fields are presented in the output
     """
+
+    if not has_loopbox and 'juliet' in setup_name:
+        pytest.skip("Cannot run test for Juliet system without loopbox")
+
     output_dictionary = Tools.OutputParsingTool.parse_show_all_interfaces_output_to_dictionary(
         Port.show_interface()).get_returned_value()
 
