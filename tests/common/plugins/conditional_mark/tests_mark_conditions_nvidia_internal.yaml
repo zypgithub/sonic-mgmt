@@ -399,6 +399,7 @@ platform_tests.cli.test_show_platform.py::test_show_platform_ssdhealth:
     conditions:
     - "'simx' in platform"
     - "https://redmine.mellanox.com/issues/4172759 and 'bf3comdpu' in platform"
+    - "https://redmine.mellanox.com/issues/4175083 and '4280' in platform"
 
 passw_hardening/test_passw_hardening.py:
   skip:
