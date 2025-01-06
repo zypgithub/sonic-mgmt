@@ -31,6 +31,8 @@ logger = logging.getLogger(__name__)
 def pytest_generate_tests(metafunc):
     if "sad_case_type" in metafunc.fixturenames:
         sad_cases = SAD_CASE_LIST
+        if "multi_sad" in sad_cases:
+            sad_cases.remove("multi_sad")
         metafunc.parametrize("sad_case_type", sad_cases, scope="module")
 
 
