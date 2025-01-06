@@ -3,6 +3,7 @@ import pytest
 from retry import retry
 
 from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
+from ngts.nvos_tools.Devices.IbDevice import JulietSwitch
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.tools.test_utils import allure_utils as allure
@@ -159,7 +160,7 @@ def test_rules_order(devices, engines, test_api, topology_obj):
                 }
             })
         # temp workaround due to - https://redmine.mellanox.com/issues/4203639 - add MAC masking
-        if is_redmine_issue_active([4203639])[0]:
+        if is_redmine_issue_active([4203639])[0] and isinstance(devices.dut, JulietSwitch):
             for rule_id in [rule_id_1, rule_id_2]:
                 expected_acl_dict[acl_id][AclConsts.RULE][rule_id][AclConsts.MATCH][AclConsts.MAC] = {
                     AclConsts.DEST_MAC_MASK: "ff:ff:ff:ff:ff:ff",
@@ -436,7 +437,7 @@ def test_show_acl_commands(devices, engines, test_api, topology_obj):
             })
 
         # temp workaround due to - https://redmine.mellanox.com/issues/4203639 - add MAC masking
-        if is_redmine_issue_active([4203639])[0]:
+        if is_redmine_issue_active([4203639])[0] and isinstance(devices.dut, JulietSwitch):
             for rule_id in [rule_id_1, rule_id_2, rule_id_3]:
                 expected_acl_dict[acl_id][AclConsts.RULE][rule_id][AclConsts.MATCH][AclConsts.MAC] = {
                     AclConsts.DEST_MAC_MASK: "ff:ff:ff:ff:ff:ff",

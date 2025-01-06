@@ -46,6 +46,7 @@ def test_bios_auto_update_disabled(devices, engines, topology_obj, test_api, ori
         path, filename, version_name = FWComponentsTool.get_fw_component_version_previous(component_name)
         fetch_and_install_bios(platform=platform, path=path, name=version_name, filename=filename,
                                topology_obj=topology_obj, test_name=test_name)
+
         verify_bios_version(engines, platform, version_name)
 
         with allure.step(f'reboot with BIOS version {version_name=}'):

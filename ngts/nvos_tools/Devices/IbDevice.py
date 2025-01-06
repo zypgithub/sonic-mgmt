@@ -630,6 +630,10 @@ class BlackMambaSwitch(IbSwitch):
         self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/black_mamba_versions.json"
         self.allow_cpld_update = True
         self.mst_dev_name = '/dev/mst/mt54004_pciconf2'
+        self.ztp_prod_json = 'uninstall_prod.json'
+        self.ztp_dev_json = 'uninstall.json'
+        self.ztp_complex_prod_json = 'complex_prod.json'
+        self.ztp_complex_dev_json = 'complex.json'
 
     def get_mgmt_ports(self) -> List[str]:
         return self.mgmt_ports

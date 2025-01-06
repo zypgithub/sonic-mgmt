@@ -117,7 +117,7 @@ def test_ztp_json(engines, devices):
                 system.ztp.action_run_ztp()
 
             with allure.step("Run show ztp and verify default values"):
-                _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_IN_PROGRESS)
+                _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_RUNNING)
                 _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_SUCCESS)
 
         with allure.step("Download negative ping json file"):
@@ -127,7 +127,7 @@ def test_ztp_json(engines, devices):
                 system.ztp.action_run_ztp()
 
             with allure.step("Run show ztp and verify default values"):
-                _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_IN_PROGRESS)
+                _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_RUNNING)
                 _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_FAILED)
 
         with allure.step("Download json file with halt on failure parameter"):
@@ -137,7 +137,7 @@ def test_ztp_json(engines, devices):
                 system.ztp.action_run_ztp()
 
             with allure.step("Run show ztp and verify default values"):
-                _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_IN_PROGRESS)
+                _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_RUNNING)
                 _wait_until_ztp_step_status(system, '01-connectivity-check', SystemConsts.ZTP_STATUS_FAILED)
                 _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_FAILED)
 
@@ -148,7 +148,7 @@ def test_ztp_json(engines, devices):
                 system.ztp.action_run_ztp()
 
             with allure.step("Run show ztp and verify default values"):
-                _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_IN_PROGRESS)
+                _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_RUNNING)
                 _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_FAILED)
 
             with allure.step("Run nv show system log command and check ztp logs inside"):
@@ -247,7 +247,7 @@ def test_ztp_startup_file_commands_list(engines, devices):
                 system.ztp.action_run_ztp()
 
                 with allure.step("Check ztp status"):
-                    _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_IN_PROGRESS)
+                    _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_RUNNING)
                     _wait_until_ztp_step_status(system, '01-startup-file', SystemConsts.ZTP_STATUS_FAILED)
 
         with allure.step('Run show command on selected port and verify that description field is set'):
@@ -262,7 +262,7 @@ def test_ztp_startup_file_commands_list(engines, devices):
                 system.ztp.action_run_ztp()
 
                 with allure.step("Check ztp status"):
-                    _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_IN_PROGRESS)
+                    _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_RUNNING)
                     _wait_until_ztp_step_status(system, '01-startup-file', SystemConsts.ZTP_STATUS_SUCCESS)
 
                 with allure.step('Check interface description exist'):
@@ -276,7 +276,7 @@ def test_ztp_startup_file_commands_list(engines, devices):
                 system.ztp.action_run_ztp()
 
                 with allure.step("Check ztp status"):
-                    _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_IN_PROGRESS)
+                    _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_RUNNING)
                     _wait_until_ztp_step_status(system, '01-startup-file', SystemConsts.ZTP_STATUS_SUCCESS)
 
                 with allure.step('Check interface description exist'):
@@ -290,7 +290,7 @@ def test_ztp_startup_file_commands_list(engines, devices):
                 system.ztp.action_run_ztp()
 
                 with allure.step("Check ztp status"):
-                    _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_IN_PROGRESS)
+                    _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_RUNNING)
                     _wait_until_ztp_step_status(system, '01-startup-file', SystemConsts.ZTP_STATUS_SUCCESS)
 
         with allure.step("Download clear config true startup json file"):
@@ -300,7 +300,7 @@ def test_ztp_startup_file_commands_list(engines, devices):
                 system.ztp.action_run_ztp()
 
                 with allure.step("Check ztp status"):
-                    _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_IN_PROGRESS)
+                    _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_RUNNING)
                     _wait_until_ztp_step_status(system, '01-startup-file', SystemConsts.ZTP_STATUS_FAILED)
 
         with allure.step("Run nv abort run system ztp and delete json file"):
@@ -350,7 +350,7 @@ def test_ztp_connectivity_check(engines, devices):
                 system.ztp.action_run_ztp()
 
                 with allure.step("Check ztp status"):
-                    _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_IN_PROGRESS)
+                    _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_RUNNING)
                     _wait_until_ztp_step_status(system, '01-connectivity-check', SystemConsts.ZTP_STATUS_FAILED)
                     _wait_until_ztp_step_status(system, '02-commands-list', SystemConsts.ZTP_STATUS_SUCCESS)
                     _wait_until_ztp_step_status(system, '03-connectivity-check', SystemConsts.ZTP_STATUS_FAILED)
@@ -390,7 +390,7 @@ def test_ztp_json_complex(engines, devices):
                 system.ztp.action_run_ztp()
 
                 with allure.step("Check ztp status"):
-                    _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_IN_PROGRESS)
+                    _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_RUNNING)
                     _wait_until_ztp_step_status(system, '01-image', SystemConsts.ZTP_STATUS_SUCCESS, tries=90)
                     _wait_until_ztp_step_status(system, '02-image', SystemConsts.ZTP_STATUS_SUCCESS)
                     _wait_until_ztp_step_status(system, '03-connectivity-check', SystemConsts.ZTP_STATUS_SUCCESS)

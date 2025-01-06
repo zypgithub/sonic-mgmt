@@ -15,7 +15,7 @@ from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.nvos_tools.system.System import System
-from ngts.nvos_constants.constants_nvos import ApiType, IbConsts
+from ngts.nvos_constants.constants_nvos import ApiType, IbConsts, SystemConsts
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.tools.test_utils import allure_utils as allure
 logger = logging.getLogger()
@@ -312,7 +312,7 @@ def create_invalid_ranges(port_name):
 def create_new_user(engine):
     with allure.step("Create a new user"):
         system = System(force_api=ApiType.NVUE)
-        user_name, password = system.aaa.user.set_new_user(apply=True)
+        user_name, password = system.aaa.user.set_new_user(role=SystemConsts.DEFAULT_USER_ADMIN, apply=True)
         user_id = system.aaa.user.get_lslogins(engine=engine, username=user_name)["UID"]
         file_name = "/tmp/cache/portstat-{}".format(user_id)
         logging.info("User created: \nuser_name: {} \npassword: {} \nUID: {}".format(user_name, password, user_id))
