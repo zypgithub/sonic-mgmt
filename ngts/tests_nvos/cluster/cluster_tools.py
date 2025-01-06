@@ -312,9 +312,9 @@ class ClusterTools:
         files_dict = {}
         with allure.step("Fetch & Generate config files"):
             for file_type in files_types:
-                output = sdn.config.app.app_name[app].type.file_type[file_type].action_generate_sdn()
+                output = sdn.config.apps.app_name[app].type.file_type[file_type].action_generate_sdn()
                 installed_file = ClusterTools().get_generated_file_name(output.returned_value, 'config')
-                output = OutputParsingTool.parse_show_output_to_dict(sdn.config.app.app_name[app].type.file_type[file_type].files.show(output_format=OutputFormat.json),
+                output = OutputParsingTool.parse_show_output_to_dict(sdn.config.apps.app_name[app].type.file_type[file_type].files.show(output_format=OutputFormat.json),
                                                                      output_format=OutputFormat.json).get_returned_value()
                 current_installed_config_path = output[installed_file]['path']
                 files_dict[file_type] = current_installed_config_path
@@ -471,7 +471,7 @@ class ClusterTools:
         with allure.step("Running nv show sdn config app <app> type <type> files and make sure files are deleted"):
             for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_CONFIG_FILES:
                 app = ClusterConsts.MAP_CONFIG_FILE_TYPE_TO_APP[file_type]
-                files = OutputParsingTool.parse_show_output_to_dict(sdn.config.app.app_name[app].type.file_type[file_type].files.show(output_format=OutputFormat.json),
+                files = OutputParsingTool.parse_show_output_to_dict(sdn.config.apps.app_name[app].type.file_type[file_type].files.show(output_format=OutputFormat.json),
                                                                     output_format=OutputFormat.json).get_returned_value()
                 assert not files, f"Expected to get empty output, but instead received {output}"
 
@@ -480,7 +480,7 @@ class ClusterTools:
         with allure.step("Running nv show sdn state app <app> type <type> files and make sure files are deleted"):
             for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_STATE_FILES:
                 app = ClusterConsts.MAP_STATE_FILE_TYPE_TO_APP[file_type]
-                files = OutputParsingTool.parse_show_output_to_dict(sdn.state.app.app_name[app].type.file_type[file_type].files.show(output_format=OutputFormat.json),
+                files = OutputParsingTool.parse_show_output_to_dict(sdn.state.apps.app_name[app].type.file_type[file_type].files.show(output_format=OutputFormat.json),
                                                                     output_format=OutputFormat.json).get_returned_value()
                 assert not files, f"Expected to get empty output, but instead received {output}"
 
@@ -499,10 +499,10 @@ class ClusterTools:
     @staticmethod
     def wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name):
         fm_config = ClusterConsts.NMX_CONTROLLER_CONFIG_FILE_TYPES[0]
-        output = sdn.config.app.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[fm_config].action_generate_sdn().get_returned_value()
+        output = sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[fm_config].action_generate_sdn().get_returned_value()
         generated_file_name = ClusterTools().get_generated_sdn_file(output, 'config')
         output_format = OutputFormat.json
-        output = OutputParsingTool.parse_show_output_to_dict(sdn.config.app.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[fm_config].files.show(output_format=output_format),
+        output = OutputParsingTool.parse_show_output_to_dict(sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[fm_config].files.show(output_format=output_format),
                                                              output_format=output_format).get_returned_value()
         path_to_generated_file = output[generated_file_name]['path']
         original_content = engines.dut.run_cmd(f"cat {path_to_generated_file}")
@@ -516,7 +516,7 @@ class ClusterTools:
             """
         )
 
-        sdn.config.app.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[fm_config].files.file_name[generated_file_name].action_file_install(force=False)
+        sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[fm_config].files.file_name[generated_file_name].action_file_install(force=False)
 
         ClusterTools().stop_app(cluster, ClusterConsts.NMX_CONTROLLER)
         ClusterTools().start_app(cluster, ClusterConsts.NMX_CONTROLLER, has_loopbox)
@@ -530,8 +530,8 @@ class ClusterTools:
         cleanup_command = f"echo '{original_content}' | sudo tee {path_to_generated_file} > /dev/null"
         engines.dut.run_cmd(cleanup_command)
 
-        sdn.config.app.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[fm_config].files.file_name[generated_file_name].action_file_install(force=False)
-        sdn.config.app.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[fm_config].files.file_name[generated_file_name].action_delete()
+        sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[fm_config].files.file_name[generated_file_name].action_file_install(force=False)
+        sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[fm_config].files.file_name[generated_file_name].action_delete()
 
     @staticmethod
     def get_generated_sdn_file(output, file_type):
