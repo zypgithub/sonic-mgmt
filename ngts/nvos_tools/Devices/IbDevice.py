@@ -1050,6 +1050,10 @@ class JulietScaleoutSwitch(JulietSwitch):
             'nmx-controller': {key: value for key, value in self.cluster_app_nmx_controller.items() if key not in []},
             'nmx-telemetry': {key: value for key, value in self.cluster_app_nmx_telemetry.items() if key not in []}
         }
+        self.cluster_app_installed = {
+            'nmx-controller': {key: value for key, value in self.cluster_app_nmx_controller.items() if key not in ['reason', 'status', 'addition-info']},
+            'nmx-telemetry': {key: value for key, value in self.cluster_app_nmx_telemetry.items() if key not in ['reason', 'status', 'addition-info']}
+        }
         # self.cluster_app = {'nmx-controller': self.cluster_app_nmx_controller, 'nmx-telemetry': self.cluster_app_nmx_telemetry}
         self.core_count = 8
         self.reboot_type = 'julietscaleout_reboot'
