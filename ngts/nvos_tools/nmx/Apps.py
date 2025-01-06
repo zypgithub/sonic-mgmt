@@ -12,6 +12,7 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.nvos_tools.nmx.Loglevel import Loglevel
 from ngts.nvos_tools.nmx.Manager import Manager
+from ngts.nvos_tools.nmx.Type import Type
 
 logger = logging.getLogger()
 
@@ -32,6 +33,7 @@ class ClusterApp(BaseComponent):
         super().__init__(parent=parent, path=f'/{app_name}')
         self.loglevel = Loglevel(self)
         self.manager = Manager(self)
+        self.type = Type(self)
 
     def action_start_cluster_app(self, engine=None):
         engine = engine if engine else TestToolkit.engines.dut

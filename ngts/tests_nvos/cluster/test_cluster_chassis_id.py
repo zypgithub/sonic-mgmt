@@ -57,12 +57,12 @@ def test_cluster_chassis_id(engines, devices, test_api):
 
     try:
         with allure.step(f"Generate {ClusterConsts.NMX_CONTROLLER_CONFIG_CHASSIS_MAPPING} file"):
-            output = sdn.config.app.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].action_generate_sdn().get_returned_value()
+            output = sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].action_generate_sdn().get_returned_value()
             filename = get_name_from_generate_config_file(output)
 
         with allure.step("Verify content of config file is as expected"):
             dict_output = OutputParsingTool.parse_show_output_to_dict(
-                sdn.config.app.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[
+                sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[
                     file_type].files.show()).get_returned_value()
             path = dict_output[filename]['path']
             current_config_content = engines.dut.run_cmd(f"sudo cat {path} | grep chassis")
@@ -71,7 +71,7 @@ def test_cluster_chassis_id(engines, devices, test_api):
 
     finally:
         with allure.step("Delete config file"):
-            sdn.config.app.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].files.file_name[filename].action_delete()
+            sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].files.file_name[filename].action_delete()
 
 
 def get_name_from_generate_config_file(output):

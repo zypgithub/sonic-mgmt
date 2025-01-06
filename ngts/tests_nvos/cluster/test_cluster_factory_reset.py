@@ -411,7 +411,7 @@ def reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, s
 
     for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_CONFIG_FILES:
         app = ClusterConsts.MAP_CONFIG_FILE_TYPE_TO_APP[file_type]
-        sdn.config.app.app_name[app].type.file_type[file_type].files.file_name[config_files_paths[file_type].split('/')[-1]].action_upload(ImageConsts.SCP_PATH + ClusterConsts.INITIAL_CONFIGURATIONS_PATH)
+        sdn.config.apps.app_name[app].type.file_type[file_type].files.file_name[config_files_paths[file_type].split('/')[-1]].action_upload(ImageConsts.SCP_PATH + ClusterConsts.INITIAL_CONFIGURATIONS_PATH)
         initial_configs_paths_to_restore[file_type] = ClusterConsts.INITIAL_CONFIGURATIONS_PATH + '/' + config_files_paths[file_type].split('/')[-1]
         logger.info(f"Uploading files: {initial_configs_paths_to_restore[file_type]}")
 
@@ -426,25 +426,25 @@ def reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, s
     with allure.step("Fetch & Generate config files"):
         for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_CONFIG_FILES:
             app = ClusterConsts.MAP_CONFIG_FILE_TYPE_TO_APP[file_type]
-            sdn.config.app.app_name[app].type.file_type[file_type].action_fetch_sdn(path_to_config[file_type])
-            output = sdn.config.app.app_name[app].type.file_type[file_type].action_generate_sdn()
+            sdn.config.apps.app_name[app].type.file_type[file_type].action_fetch_sdn(path_to_config[file_type])
+            output = sdn.config.apps.app_name[app].type.file_type[file_type].action_generate_sdn()
 
     with allure.step("Generate state files"):
         for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_STATE_FILES:
             app = ClusterConsts.MAP_STATE_FILE_TYPE_TO_APP[file_type]
-            output = sdn.state.app.app_name[app].type.file_type[file_type].action_generate_sdn()
-            output = OutputParsingTool.parse_show_output_to_dict(sdn.state.app.app_name[app].type.file_type[file_type].files.show(output_format=output_format),
+            output = sdn.state.apps.app_name[app].type.file_type[file_type].action_generate_sdn()
+            output = OutputParsingTool.parse_show_output_to_dict(sdn.state.apps.app_name[app].type.file_type[file_type].files.show(output_format=output_format),
                                                                  output_format=output_format).get_returned_value()
             all_state_files_paths[file_type] = [item['path'] for item in output.values()]
 
     with allure.step("Install config file"):
         for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_CONFIG_FILES:
             app = ClusterConsts.MAP_CONFIG_FILE_TYPE_TO_APP[file_type]
-            sdn.config.app.app_name[app].type.file_type[file_type].action_fetch_sdn(path_to_config[file_type])
-            sdn.config.app.app_name[app].type.file_type[file_type].files.file_name[config_file_name[file_type]].action_file_install(force=False)
-            output = sdn.config.app.app_name[app].type.file_type[file_type].action_generate_sdn()
+            sdn.config.apps.app_name[app].type.file_type[file_type].action_fetch_sdn(path_to_config[file_type])
+            sdn.config.apps.app_name[app].type.file_type[file_type].files.file_name[config_file_name[file_type]].action_file_install(force=False)
+            output = sdn.config.apps.app_name[app].type.file_type[file_type].action_generate_sdn()
             installed_file = ClusterTools.get_generated_file_name(output.returned_value, 'config')
-            output = OutputParsingTool.parse_show_output_to_dict(sdn.config.app.app_name[app].type.file_type[file_type].files.show(output_format=output_format),
+            output = OutputParsingTool.parse_show_output_to_dict(sdn.config.apps.app_name[app].type.file_type[file_type].files.show(output_format=output_format),
                                                                  output_format=output_format).get_returned_value()
             all_config_files_paths[file_type] = [item['path'] for item in output.values()]
             current_installed_config_path = output[installed_file]['path']
@@ -497,7 +497,7 @@ def delete_all_sdn_fetched_generated_files(engines, sdn, all_config_files_paths,
                     app = ClusterConsts.MAP_CONFIG_FILE_TYPE_TO_APP[file_type]
                     file = file.split('/')[-1]
                     try:
-                        sdn.config.app.app_name[app].type.file_type[file_type].files.file_name[file].action_delete()
+                        sdn.config.apps.app_name[app].type.file_type[file_type].files.file_name[file].action_delete()
                     except Exception as e:
                         logger.info("File Already Deleted")
             engines.sonic_mgmt.run_cmd(f"sudo rm -rf {initial_configs_paths_to_restore[file_type]}")
@@ -507,6 +507,6 @@ def delete_all_sdn_fetched_generated_files(engines, sdn, all_config_files_paths,
                     app = ClusterConsts.MAP_STATE_FILE_TYPE_TO_APP[file_type]
                     file = file.split('/')[-1]
                     try:
-                        sdn.state.app.app_name[app].type.file_type[file_type].files.file_name[file].action_delete()
+                        sdn.state.apps.app_name[app].type.file_type[file_type].files.file_name[file].action_delete()
                     except Exception as e:
                         logger.info("File Already Deleted")

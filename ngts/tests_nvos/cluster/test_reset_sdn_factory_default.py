@@ -87,7 +87,7 @@ def test_sdn_reset_factory(engines, devices, test_api, has_loopbox, test_name, s
         with allure.step("Install modified configurations"):
             for file_type in ClusterConsts.NMX_CONTROLLER_CONFIG_FILE_TYPES:
                 file_name = config_files_paths[file_type].split('/')[-1]
-                sdn.config.app.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].files.file_name[file_name].action_file_install(force=False)
+                sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].files.file_name[file_name].action_file_install(force=False)
 
         with allure.step("Running sdn factory reset"):
             sdn.factory_default.action_reset(param='force')
@@ -107,13 +107,13 @@ def verify_current_config_equals_given_config(sdn, engines, initial_config_conte
     errors_list = []
     with allure.step("Verify config files content restored to initial"):
         for file_type in ClusterConsts.NMX_CONTROLLER_CONFIG_FILE_TYPES:
-            output = sdn.config.app.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].action_generate_sdn()
+            output = sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].action_generate_sdn()
             installed_file = ClusterTools.get_generated_file_name(output.returned_value, 'config')
-            output = OutputParsingTool.parse_show_output_to_dict(sdn.config.app.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=output_format),
+            output = OutputParsingTool.parse_show_output_to_dict(sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=output_format),
                                                                  output_format=output_format).get_returned_value()
             current_installed_config_path = output[installed_file]['path']
             current_config_content = engines.dut.run_cmd("sudo cat {}".format(current_installed_config_path))
-            sdn.config.app.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].files.file_name[installed_file].action_delete()
+            sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].files.file_name[installed_file].action_delete()
             initial_config_set = set(line.strip() for line in initial_config_contents[file_type].strip().split('\n') if line.strip())
             current_config_set = set(line.strip() for line in current_config_content.strip().split('\n') if line.strip())
             if initial_config_set != current_config_set:
@@ -130,9 +130,9 @@ def get_current_config_files_paths(sdn):
     files_dict = {}
     with allure.step("Fetch & Generate config files"):
         for file_type in ClusterConsts.NMX_CONTROLLER_CONFIG_FILE_TYPES:
-            output = sdn.config.app.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].action_generate_sdn()
+            output = sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].action_generate_sdn()
             installed_file = ClusterTools.get_generated_file_name(output.returned_value, 'config')
-            output = OutputParsingTool.parse_show_output_to_dict(sdn.config.app.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=OutputFormat.json),
+            output = OutputParsingTool.parse_show_output_to_dict(sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=OutputFormat.json),
                                                                  output_format=OutputFormat.json).get_returned_value()
             current_installed_config_path = output[installed_file]['path']
             files_dict[file_type] = current_installed_config_path
