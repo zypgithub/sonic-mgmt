@@ -13,6 +13,9 @@ from ngts.nvos_constants.constants_nvos import SystemConsts, ApiType
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port, PortRequirements
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts, IbInterfaceConsts
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.nvos_tools.infra.RegressionConfigurations import RegressionLinks
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from .RegressionConfigurations import Configurations
 from .ResultObj import ResultObj
 
@@ -354,3 +357,44 @@ class RandomizationTool:
     def shuffle_in_place(items: MutableSequence) -> None:
         random.shuffle(items)
         allure.attach("Shuffle result", str(items))
+
+    @staticmethod
+    def get_random_transceiver_and_port(engine, setup_name, transceiver_type="", is_loopback="", connected_to="",
+                                        requested_ports_state=None,
+                                        requested_ports_logical_state=None):
+        """
+        Get a random transceiver and its port based on the given filters.
+
+        :param engine: LinuxSshEngine instance
+        :param setup_name: The setup name to filter connections by
+        :param transceiver_type: Filter by the transceiver type (optional)
+        :param is_loopback: Filter by loopback status (optional)
+        :param connected_to: Filter by connected entity (server/setup) and its name (optional)
+        :param requested_ports_state:
+        :param requested_ports_logical_state:
+        :return: A random (transceiver, ports_list) tuple
+
+        """
+        with allure.step(f'Get random transceiver and ports for {setup_name}'):
+            filtered_connections = RegressionLinks.get_filtered_transceivers_and_ports(setup_name, transceiver_type,
+                                                                                       is_loopback, connected_to)
+            transceiver_to_remove = []
+            output_dictionary = OutputParsingTool.parse_show_interface_output_to_dictionary(Port.show_interface(engine)).verify_result()
+            if requested_ports_state or requested_ports_logical_state:
+                for transceiver, ports_list in filtered_connections.items():
+                    filtered_ports_list = [port for port in ports_list if ValidationTool.validate_port_link(output_dictionary[port], requested_ports_state, requested_ports_logical_state)]
+                    if not filtered_ports_list:
+                        logger.info("non of the ports have the requested state")
+                        transceiver_to_remove.append(transceiver)
+                    filtered_connections[transceiver] = filtered_ports_list
+
+            for transceiver in transceiver_to_remove:
+                del filtered_connections[transceiver]
+
+            if filtered_connections:
+                random_transceiver = random.choice(list(filtered_connections.keys()))
+                random_port = random.choice(filtered_connections[random_transceiver])
+                return random_transceiver, random_port
+            else:
+                raise Exception(f'No port found with given requirements: {transceiver_type=}, {is_loopback=}, '
+                                f'{connected_to=}')

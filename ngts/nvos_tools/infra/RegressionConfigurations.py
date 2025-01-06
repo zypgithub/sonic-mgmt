@@ -1,4 +1,6 @@
+import random
 import logging
+import json
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
@@ -195,3 +197,84 @@ class RegressionConfigurations:
                 raise
             else:
                 ExceptionTool.log_exception(ex)
+
+
+class RegressionLinksConsts:
+    SYSTEM_LINKS_PATH = "/auto/sw_system_project/NVOS_INFRA/verification_files/links_by_system/"
+    TRANSCEIVER_TYPE = "transceiver_type"
+    PORTS_LIST = "ports_list"
+    IS_LOOPBACK = "is_loopback"
+    CONNECTED_TO = "connected_to"
+    CONNECTED_TO_SYSTEM_TYPE = "type"
+    CONNECTED_TO_SYSTEM_NAME = "system"
+    CONNECTED_TO_PORTS = "ports_list"
+    TYPE_OPTICAL = "optical"
+    TYPE_COPPER = "copper"
+    TYPE_ACTIVE = "active"
+
+
+class RegressionLinks:
+    @staticmethod
+    def _get_setup_links(setup_name):
+        links_path = RegressionLinksConsts.SYSTEM_LINKS_PATH + setup_name + ".json"
+        with allure.step(f'Read {setup_name} links info from json {links_path}'):
+            with open(links_path, 'r') as file:
+                connections_dict = json.load(file)
+            return connections_dict
+
+    @staticmethod
+    def get_filtered_transceivers(setup_name, transceiver_type="", is_loopback=None, connected_to=""):
+        """
+        Get filtered transceivers based on the given parameters.
+
+        :param setup_name: The setup name to filter connections by
+        :param transceiver_type: Filter by the transceiver type (optional)
+        :param is_loopback: Filter by loopback status (optional)
+        :param connected_to: Filter by connected entity (server/setup) and its name (optional)
+        :return: A list of filtered transceivers
+        """
+        with allure.step(f'Get filtered transceivers for {setup_name}'):
+            connections = RegressionLinks._get_setup_links(setup_name)
+            filtered = []
+
+            for transceiver, transceiver_data in connections.items():
+                if transceiver_type and transceiver_data[RegressionLinksConsts.TRANSCEIVER_TYPE] != transceiver_type:
+                    continue
+                if is_loopback is not None and transceiver_data[RegressionLinksConsts.IS_LOOPBACK] != is_loopback:
+                    continue
+                if connected_to:
+                    system_type = transceiver_data[RegressionLinksConsts.CONNECTED_TO][
+                        RegressionLinksConsts.CONNECTED_TO_SYSTEM_TYPE]
+                    system_name = transceiver_data[RegressionLinksConsts.CONNECTED_TO][
+                        RegressionLinksConsts.CONNECTED_TO_SYSTEM_NAME]
+                    if connected_to not in [system_type, system_name]:
+                        continue
+
+                with allure.step(f"add {transceiver_data} to the filtered list"):
+                    filtered.append(transceiver)
+
+            allure.attach('filtered transceivers', filtered)
+            return filtered
+
+    @staticmethod
+    def get_filtered_transceivers_and_ports(setup_name, transceiver_type="", is_loopback="", connected_to=""):
+        """
+        Get filtered transceivers and the ports connected to them based on the given parameters.
+
+        :param engine: LinuxSshEngine instance
+        :param setup_name: The setup name to filter connections by
+        :param transceiver_type: Filter by the transceiver type (optional)
+        :param is_loopback: Filter by loopback status (optional)
+        :param connected_to: Filter by connected entity (server/setup) and its name (optional)
+        :return: A list of tuples with (transceiver, ports)
+        """
+        with allure.step(f'Get filtered transceivers and ports for {setup_name}'):
+            filtered_with_ports = {}
+            connections = RegressionLinks._get_setup_links(setup_name)
+            filtered_transceivers = RegressionLinks.get_filtered_transceivers(setup_name, transceiver_type, is_loopback,
+                                                                              connected_to)
+            for transceiver in filtered_transceivers:
+                if transceiver in connections:
+                    filtered_with_ports[transceiver] = connections[transceiver][RegressionLinksConsts.PORTS_LIST]
+
+            return filtered_with_ports

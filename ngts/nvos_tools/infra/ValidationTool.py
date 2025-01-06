@@ -9,6 +9,7 @@ from .ResultObj import ResultObj, IssueType
 from retry import retry
 
 from ...nvos_constants.constants_nvos import NvosConst
+from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
 
 logger = logging.getLogger()
 
@@ -531,3 +532,24 @@ class ExpectedString:
                 return ResultObj(True, ExpectedString.Result.SUCCESS)
         else:
             return self._validate_range(s)
+
+    @staticmethod
+    def validate_port_link(output_dictionary, expected_ports_state, expected_ports_logical_state):
+        """
+
+        :param output_dictionary:
+        :param expected_ports_state:
+        :param expected_ports_logical_state:
+        :return: True if the state of the port is as expected
+        """
+        result_obj = ResultObj(True, "port state is as expected", True)
+        with allure.step("Validate Port Status"):
+            link_state = output_dictionary[IbInterfaceConsts.LINK][IbInterfaceConsts.LINK_STATE]
+            logical_state = output_dictionary[IbInterfaceConsts.LINK][IbInterfaceConsts.LINK_LOGICAL_PORT_STATE]
+            if expected_ports_state and not expected_ports_logical_state and link_state == expected_ports_state:
+                return result_obj
+            if expected_ports_logical_state and not expected_ports_state and logical_state == expected_ports_logical_state:
+                return result_obj
+            if expected_ports_state and expected_ports_logical_state and link_state == expected_ports_state and logical_state == expected_ports_logical_state:
+                return result_obj
+            return ResultObj(False, f"the port state is {link_state} not {expected_ports_state} as expected, and logical state is {logical_state} not {expected_ports_logical_state} as expected", False)
