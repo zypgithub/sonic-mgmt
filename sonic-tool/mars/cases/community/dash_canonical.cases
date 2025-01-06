@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CASEDEF>
+    <global>
+        <Test>
+            <info> DASH Test </info>
+            <name> dash_test </name>
+            <owner> </owner>
+            <pre>
+                <type> reg_exec_cmd </type>
+                <name> replace_host_a_and_b_with_ptf_container </name>
+                <tout> 300 </tout>
+                <players_selection>
+                    <ep_targets> SONIC_MGMT </ep_targets>
+                </players_selection>
+                <params>
+                    <exec> /ngts_venv/bin/python3.8 /devts/scripts/docker/containers_bringup.py --setup_name [[conf:extra_info.setup_name]]  --smartswitch_setup </exec>
+                </params>
+            </pre>
+        </Test>
+        <Case>
+            <tags> DASH </tags>
+            <wrapper> [[run_time:db_tests_path]]/sonic-mgmt/sonic-tool/mars/scripts/community_mars_pytest_runner.py  </wrapper>
+            <tout> 55555 </tout>
+        </Case>
+    </global>
+
+    <case>
+        <ignore>
+            <!-- daily case  -->
+            <condition>
+                <key> skip_weekend_cases </key>
+                <op> == </op>
+                <value> no </value>
+            </condition>
+        </ignore>
+        <info> DASH Private link Case</info>
+        <name> dash_private_link </name>
+        <cmd>
+             <params>
+                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals -v --clean-alluredir --alluredir=/tmp/allure-results --timeout 1500 --session-timeout 1500 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts dash/canonical/  </static_args>
+             </params>
+        </cmd>
+    </case>
+</CASEDEF>

@@ -185,6 +185,15 @@ def replace_conn_graph_facts(sonic_mgmt_path):
     shutil.copyfile(stub_mgmt_conn_graph_facts_path, mgmt_conn_graph_facts_path)
 
 
+def replace_ptfadapter_init_py(sonic_mgmt_path):
+    stub_ptfadapater_init_py_path = '{}/sonic-tool/sonic_ngts/scripts/ptfadapter/__init__.py'.format(sonic_mgmt_path)
+    mgmt_ptfadapater_init_py_community_path = '{}/tests/common/plugins/ptfadapter/__init__.py'.format(
+        sonic_mgmt_path)
+
+    logger.info('Copying: {} to {}'.format(stub_ptfadapater_init_py_path, mgmt_ptfadapater_init_py_community_path))
+    shutil.copyfile(stub_ptfadapater_init_py_path, mgmt_ptfadapater_init_py_community_path)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dut", help="DUT name", type=str, required=True)
@@ -209,6 +218,11 @@ if __name__ == "__main__":
     # Replace "ansible/library/conn_graph_facts.py" with "sonic-tool/sonic_ngts/scripts/conn_graph_facts.py"
     logger.info('Replace "ansible/library/conn_graph_facts.py" with "sonic-tool/sonic_ngts/scripts/conn_graph_facts.py"')
     replace_conn_graph_facts(mgmt_repo)
+
+    # This step is for running dash case on CI
+    logger.info('Replace "tests/common/plugins/ptfadapter/__init__.py" '
+                'with "sonic-tool/sonic_ngts/scripts/ptfadapter/__init__.py"')
+    replace_ptfadapter_init_py(mgmt_repo)
 
     if testbed_yaml.entry_exists(dut_name=dut_name):
         logger.warning(f"{conf_files.testbed_yaml} - Entry for '{dut_name}' DUT already exists. Skip configuration.")
