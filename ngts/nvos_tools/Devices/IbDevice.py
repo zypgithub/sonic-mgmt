@@ -626,7 +626,7 @@ class BlackMambaSwitch(IbSwitch):
 
         self.stats_fan_header_num_of_lines = 17
         self.stats_cpu_header_num_of_lines = 12
-        self.stats_temperature_header_num_of_lines = 104
+        self.stats_temperature_header_num_of_lines = 45
         self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/black_mamba_versions.json"
         self.allow_cpld_update = True
         self.mst_dev_name = '/dev/mst/mt54004_pciconf2'
@@ -742,7 +742,7 @@ class CrocodileSwitch(IbSwitch):
         self.system_profile_default_values = ['enabled', '1792', 'enabled', 'disabled', '1']
         self.stats_cpu_header_num_of_lines = 12
         self.stats_power_header_num_of_lines = 17
-        self.stats_temperature_header_num_of_lines = 69
+        self.stats_temperature_header_num_of_lines = 32
         self.allow_cpld_update = True
         self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/crocodile_versions.json"
         self.fnm_link_speed = '800G'
