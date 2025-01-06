@@ -38,42 +38,6 @@
 		</Case>
 	</global>
 	<test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_ssh_hardening.cases </cases>
-	</test>
-	<test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_ssh_config.cases </cases>
-	</test>
-	<test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_login_ssh_notification.cases </cases>
-	</test>
-	<test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_authentication_restrictions.cases </cases>
-	</test>
-	<test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_password_hardening.cases </cases>
-	</test>
-	<test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_tpm_attestation.cases </cases>
-        <ignore><condition> <key>dut_type</key> <op> in </op> <value>[gorilla]</value> </condition></ignore>
-	</test>
-    <test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_bmc.cases </cases>
-        <ignore><condition> <key>dut_type</key> <op> not in </op> <value>[juliet]</value> </condition></ignore>
-    </test>
-    <test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_nmx.cases </cases>
-        <ignore><condition> <key>dut_type</key> <op> not in </op> <value>[juliet]</value> </condition></ignore>
-    </test>
-	<test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_ldap.cases </cases>
-	</test>
-	<test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_tacacs.cases </cases>
-	</test>
-	<test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_radius.cases </cases>
-	</test>
-	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_gnmi.cases </cases>
 	</test>
     <test>

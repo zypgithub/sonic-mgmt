@@ -1,4 +1,4 @@
-nvos_security_centralized_flows.db<?xml version='1.0' encoding='UTF-8'?>
+<?xml version='1.0' encoding='UTF-8'?>
 <DBDEF>
 	<global>
 		<default_params_type> extended_setup_step_params </default_params_type>
