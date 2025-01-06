@@ -1003,6 +1003,15 @@
     - 3580534
 
 - Errors_list:
+  - '.*ERR neighbor_advertiser: The request failed.*'
+  - '.*ERR neighbor_advertiser: Failed to set up neighbor advertiser slice.*'
+  Conditions:
+  - Affected_test_cases:
+    - decap/test_decap.py::test_decap
+    GitHub:
+    - https://github.com/sonic-net/sonic-mgmt/issues/14707
+
+- Errors_list:
   - '.* ERR syncd#SDK: \[SAI_INTERFACE_QUERY_ETH.ERR\] mlnx_sai_interfacequery_eth.c\[\d+\]- sai_dbg_generate_dump_ext: Failed to lock DFW semaphore - Connection timed out'
   - '.* ERR syncd#SDK: \[SX_API_DBG.ERR\] dump generation failed'
   - '.* ERR syncd#SDK: \[SX_API_DBG.ERR\] Cr space dump failed#\d+'
