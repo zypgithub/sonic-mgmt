@@ -28,3 +28,13 @@ default_values_dict = {
         }
     }
 }
+
+
+class RevisionStatus:
+    CREATED = "created"
+    APPLIED = "applied"
+    ATTACHED = "attached"
+    DETACHED = "detached"
+    INVALID = "invalid"
+    SAVED = "saved"
+    DELETED = "deleted"

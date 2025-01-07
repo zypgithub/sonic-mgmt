@@ -302,6 +302,24 @@ class NvueGeneralCli(SonicGeneralCliDefault):
         return output
 
     @staticmethod
+    def attach_config(engine, rev_id):
+        logging.info(f"Running 'nv -y config attach {rev_id}' on dut")
+        output = engine.run_cmd(f'nv -y config attach {rev_id}')
+        return output
+
+    @staticmethod
+    def delete_config(engine, rev_id):
+        logging.info(f"Running 'nv config delete {rev_id}' on dut")
+        output = engine.run_cmd(f'nv config delete {rev_id}')
+        return output
+
+    @staticmethod
+    def revision_config(engine, output_type='json'):
+        logging.info(f"Running 'nv config revision' on dut")
+        output = engine.run_cmd(f'nv config revision -o {output_type}')
+        return output
+
+    @staticmethod
     def apply_empty_config(engine):
         logging.info("Running 'nv config apply empty' on dut")
         output = engine.run_cmd_set(['nv config apply empty', 'y'],
