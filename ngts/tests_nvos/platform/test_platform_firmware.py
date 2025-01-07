@@ -1,6 +1,7 @@
 import logging
 import pytest
 
+from ngts.nvos_tools.Devices.IbDevice import JulietSwitch
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.tools.test_utils import allure_utils as allure
@@ -8,6 +9,7 @@ from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_constants.constants_nvos import PlatformConsts, NvosConst, ImageConsts
 from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 
 logger = logging.getLogger()
 
@@ -27,11 +29,17 @@ def test_show_platform_firmware(engines, devices, test_api, output_format):
         all_output = OutputParsingTool.parse_show_output_to_dict(
             platform.firmware.show(output_format=output_format),
             output_format=output_format, field_name_dict=PlatformConsts.FW_FIELD_NAME_DICT).get_returned_value()
-        ValidationTool.validate_set_equal(all_output.keys(), firmware_items)
+        result = ValidationTool.validate_set_equal(all_output.keys(), firmware_items)
+        if not isinstance(devices.dut, JulietSwitch) and is_bug_active(4262203):
+            result.ignore_result()
+            expected_info = "Missing fields: set()\nUnexpected fields: {'EROT'}"
+            assert result.info == expected_info, result._get_fail_message()
+        else:
+            result.verify_result()
 
     with allure.step("Test specific firmware components"):
         errors = {}
-        for component in firmware_items:
+        for component in set(firmware_items) - {'transceiver'}:
             try:
                 with allure.step(f"Test output of nv show platform firmware {component}"):
                     output = OutputParsingTool.parse_show_output_to_dict(

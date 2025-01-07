@@ -121,7 +121,7 @@ class NVUECliCoverage:
                     result_cmds.info.join("\n With exception : {}".format(exc))
                     # if file was created by other user, chmod would fail. just ignore
                     pass
-                result_cmds = ResultObj(True, '', commands)
+                result_cmds.update(True, '', commands)
         else:
             with allure.step("Create a list of commands according to existing commands_list file"):
                 logging.info("Create a list of commands according to existing commands_list file")
@@ -131,7 +131,7 @@ class NVUECliCoverage:
                         re_cli = cls.build_regex(command)
                         if re_cli:
                             commands.append((command, module, classification, re_cli))
-            result_cmds = ResultObj(True, '', commands)
+            result_cmds.update(True, '', commands)
         return result_cmds
 
     @classmethod
@@ -140,9 +140,7 @@ class NVUECliCoverage:
         collect the nv commands from a device history,
         save the commands that we have used in cls.nvue_clis and normalize them.
         """
-        result_obj = ResultObj(False, 'Unable to run nv config show command')
         run_out = SendCommandTool.execute_command(LinuxGeneralCli(engine).get_history).get_returned_value()
-
         with allure.step("Create commands dictionary for the commands that we used"):
             logging.info("Create commands dictionary for the commands that we used")
             for line in run_out.splitlines():
@@ -290,12 +288,12 @@ class NVUECliCoverage:
                         try:
                             with open(file_path, 'w') as fp:
                                 json.dump(data, fp, indent=4)
-                                result_obj = ResultObj(True)
+                                result_obj.update(True)
                         except (PermissionError, OSError) as ex:
                             logging.warning("Unable to write JSON file: {}".format(ex))
         else:
             logging.info("did not create the hit list file, because has no commands")
-            result_obj = ResultObj(True)
+            result_obj.update(True)
         return result_obj
 
     @classmethod

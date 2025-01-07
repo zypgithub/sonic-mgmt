@@ -37,6 +37,7 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.PexpectTool import PexpectTool
 from ngts.nvos_tools.infra.RegressionConfigurations import RegressionConfigurations
+from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.nvos_tools.infra.SerialConsoleTool import SerialConsoleTool
 from ngts.nvos_tools.infra.TrafficGeneratorTool import TrafficGeneratorTool
@@ -777,3 +778,12 @@ def test_api(request):
 @pytest.fixture(scope='module')
 def nv_command():
     return NvCommand()
+
+
+@pytest.fixture(autouse=True)
+def verify_result_objects():
+    yield
+    errors = [obj._get_fail_message() for obj in ResultObj._pop_all_instances() if not obj.result]
+    if errors:
+        raise Exception(f'There are {len(errors)} ResultObj instances that contain a failed result (see documentation '
+                        f'of ResultObj class):\n\n' + ('\n' + '-' * 80 + '\n\n').join(errors))

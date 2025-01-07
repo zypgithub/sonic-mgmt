@@ -319,6 +319,7 @@ class OpenApiRequest:
             OpenApiRequest.print_request(r.request, request_data)
             OpenApiRequest.print_response(r, OpenApiReqType.PATCH)
             res = OpenApiRequest._validate_response(r, OpenApiReqType.PATCH)
+            res.ignore_result()  # todo: maybe this function should return ResultObj instead of str?
             return res.info
 
     @staticmethod
@@ -366,6 +367,7 @@ class OpenApiRequest:
             OpenApiRequest.print_response(r, OpenApiReqType.ACTION)
 
             validation_res = OpenApiRequest._check_action_post_response(r)
+            validation_res.ignore_result()  # todo: maybe this function should return ResultObj instead of str?
             if not validation_res.result:
                 return validation_res.info
 

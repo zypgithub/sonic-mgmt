@@ -374,6 +374,8 @@ class IbSwitch(BaseSwitch):
             for asic_num in range(0, self.asic_amount):
                 self.constants.dump_files.append(dump_file.format(asic_num))
 
+        self.constants.firmware.append('transceiver')
+
         for dump_file in dump_files_to_add_for_each_asic:
             for asic_num in range(0, self.asic_amount):
                 self.constants.dump_files.append(dump_file.format(asic_num))
@@ -641,6 +643,8 @@ class BlackMambaSwitch(IbSwitch):
         self.ztp_complex_prod_json = 'complex_prod.json'
         self.ztp_complex_dev_json = 'complex.json'
 
+        self.constants.firmware.append('CPLD4', 'CPLD5', 'CPLD6')
+
     def get_mgmt_ports(self) -> List[str]:
         return self.mgmt_ports
 
@@ -824,6 +828,8 @@ class CrocodileSwitch(IbSwitch):
                                    'swB9p1pl2', 'swB9p1pl3', 'swB9p1pl4', 'swB9p2', 'swB9p2pl1', 'swB9p2pl2',
                                    'swB9p2pl3', 'swB9p2pl4']
 
+        self.constants.firmware.append('CPLD4')
+
     def get_mgmt_ports(self) -> List[str]:
         return self.mgmt_ports
 
@@ -948,6 +954,7 @@ class JulietSwitch(NvLinkSwitch):
             PlatformConsts.CHASSIS_LOCATION_TOPO_ID: ExpectedString(regex=r"^(Loopback|GB200 NVL36|GB200 NVL72|\d+)$")
         }
         cluster_files = ['conf', 'nmx-controller', 'nmx-telemetry']
+        self.constants.firmware.append('CPLD4')
         self.constants = self.constants._replace(cluster_files=cluster_files)
         bmc_dump_files = ['bmc_debug_log_dump.tar']
         self.constants = self.constants._replace(bmc_dump_files=bmc_dump_files)

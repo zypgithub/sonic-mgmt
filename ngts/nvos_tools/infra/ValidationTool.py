@@ -165,7 +165,6 @@ class ValidationTool:
         :param should_equal: True of False
         :return: ResultObj - while ResultObj.returned_value = True if the values are equal, False - otherwise
         """
-        result_obj = ResultObj(False, "")
         if value1 == value2:
             result_obj = ResultObj(True, "The values are equal", True) if should_equal else \
                 ResultObj(False, f"The values are equal while they shouldn't\n both values: {value1}", False)
@@ -551,4 +550,7 @@ class ExpectedString:
                 return result_obj
             if expected_ports_state and expected_ports_logical_state and link_state == expected_ports_state and logical_state == expected_ports_logical_state:
                 return result_obj
-            return ResultObj(False, f"the port state is {link_state} not {expected_ports_state} as expected, and logical state is {logical_state} not {expected_ports_logical_state} as expected", False)
+            result_obj.update(False, f"the port state is {link_state} not {expected_ports_state} as expected, and "
+                              f"logical state is {logical_state} not {expected_ports_logical_state} as expected",
+                              False)
+            return result_obj
