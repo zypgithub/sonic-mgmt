@@ -6,9 +6,9 @@ import logging
 
 workspace_dir = os.environ['WORKSPACE']
 sys.path.append(os.path.join(workspace_dir, 'sonic-mgmt'))
+
 from ngts.tools.mars_test_cases_results.Connect_to_MSSQL import ConnectMSSQL
 from ngts.constants.constants import DbConstants, CliType
-
 
 logger = logging.getLogger(__name__)
 
@@ -131,10 +131,33 @@ CASES_FILE_REBOOT_WITH_UPGRADE_TESTCASE_TEMPLATE = '''<case>
 </case>
 '''
 
+CASES_FILE_REBOOT_WITH_MULTI_HOP_UPGRADE_TESTCASE_TEMPLATE = '''<case>
+    <info> Multi Hop Upgrade Case </info>
+    <name> Multi Hop Upgrade </name>
+    <tout> {timeout} </tout>
+    <cmd>
+         <params>
+             <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\\\'--neighbor_type [[conf:extra_info.neighbor_type]] --log-cli-level debug --downgrade_type=onie --show-capture=no -ra --showlocals --upgrade_type={test_type} --multi_hop_upgrade_path={multi_hop_upgrade_path} --restore_to_image={target_version} --clean-alluredir --alluredir=/tmp/allure-results --allure_server_project_id=\\\"\\\" --allure_server_addr=\\\"10.215.11.120\\\"\\\'" --test-scripts upgrade_path/test_multi_hop_upgrade_path.py </static_args>
+         </params>
+    </cmd>
+</case>
+'''
+
 CASES_FILE_END_LINE_TEMPLATE = '''
 </CASEDEF>
 
 '''
+
+
+def get_test_name(r_type, is_upgrade_test):
+    test_name = '{} Reboot'.format(r_type.upper())
+    if is_upgrade_test:
+        test_name = test_name + ' with Upgrade'
+        if "sad" in upgrade_testcase:
+            test_name = "Sad " + test_name
+        if "double" in upgrade_testcase:
+            test_name = "Double " + test_name
+    return test_name
 
 
 def prepare_db_files(reboot_types_list, is_upgrade_test=False):
@@ -142,9 +165,7 @@ def prepare_db_files(reboot_types_list, is_upgrade_test=False):
     Prepare DB files and store them into sonic-mgmt folder
     """
     for r_type in reboot_types_list:
-        test_name = '{} Reboot'.format(r_type.upper())
-        if is_upgrade_test:
-            test_name = test_name + ' with Upgrade'
+        test_name = get_test_name(r_type, is_upgrade_test)
 
         db_file_name = '{}_reboot.db'.format(r_type)
         sonic_mgmt_path = os.path.dirname(os.path.abspath(__file__)).split('sonic-tool')[0]
@@ -159,24 +180,29 @@ def prepare_cases_files(reboot_type_iterations_dict, reboot_type_base_ver_images
     Prepare CASES files and store them into sonic-mgmt folder
     """
     for r_type, iterations_number in reboot_type_iterations_dict.items():
-        test_name = '{} Reboot'.format(r_type.upper())
-        base_ver_images = reboot_type_base_ver_images[r_type]
-        if base_ver_images and target_ver:
-            test_name = test_name + ' with Upgrade'
 
+        base_ver_images = reboot_type_base_ver_images[r_type]
+        is_upgrade_test = base_ver_images and target_ver
+        test_name = get_test_name(r_type, is_upgrade_test)
         cases_file_name = '{}_reboot.cases'.format(r_type)
         file_data = CASES_FILE_HEADER_TEMPLATE.format(test_name=test_name)
         for _ in range(iterations_number):
-            if base_ver_images and target_ver:
-                for base_ver in base_ver_images.split(','):
-                    file_data += CASES_FILE_REBOOT_WITH_UPGRADE_TESTCASE_TEMPLATE.format(test_name=test_name,
-                                                                                         test_type=r_type,
-                                                                                         base_versions_list=base_ver,
-                                                                                         target_version=target_ver,
-                                                                                         upgrade_testcase=upgrade_testcase,
-                                                                                         timeout=case_timeout)
+            if upgrade_testcase == "test_multi_hop_upgrade_path":
+                file_data += CASES_FILE_REBOOT_WITH_MULTI_HOP_UPGRADE_TESTCASE_TEMPLATE.format(test_type=r_type,
+                                                                                               multi_hop_upgrade_path=base_ver_images,
+                                                                                               target_version=target_ver,
+                                                                                               timeout=case_timeout)
             else:
-                file_data += CASES_FILE_REBOOT_TESTCASE_TEMPLATE.format(test_name=test_name, test_type=r_type)
+                if base_ver_images and target_ver:
+                    for base_ver in base_ver_images.split(','):
+                        file_data += CASES_FILE_REBOOT_WITH_UPGRADE_TESTCASE_TEMPLATE.format(test_name=test_name,
+                                                                                             test_type=r_type,
+                                                                                             base_versions_list=base_ver,
+                                                                                             target_version=target_ver,
+                                                                                             upgrade_testcase=upgrade_testcase,
+                                                                                             timeout=case_timeout)
+                else:
+                    file_data += CASES_FILE_REBOOT_TESTCASE_TEMPLATE.format(test_name=test_name, test_type=r_type)
         file_data += CASES_FILE_END_LINE_TEMPLATE
 
         sonic_mgmt_path = os.path.dirname(os.path.abspath(__file__)).split('sonic-tool')[0]
@@ -206,7 +232,6 @@ def do_preparation_steps():
         reboot_types_list.append('cold')
         reboot_type_iterations_dict['cold'] = int(cold_reboot_iterations_number)
         reboot_type_base_version_dict['cold'] = cold_base_version
-
 
     if not reboot_types_list:
         raise Exception('Looks like setups which will run fast/warm/cold reboot tests did not provided. '
@@ -482,7 +507,6 @@ def get_results_for_session(session_id, setup_name):
     sort_results_by_execution_date(setup_name, results_dict)
 
     update_average_loss(setup_name, results_dict)
-
 
     with open(tests_results_file_path, 'w') as data_file_obj:
         json.dump(results_dict, data_file_obj, default=str)
