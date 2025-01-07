@@ -80,6 +80,10 @@
     </test>
 
     <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/l2.cases </cases>
+    </test>
+
+    <test>
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/wr_arp.cases </cases>
         <ignore>
             <!-- Case only for main hwsku, skip this case if it is non-main hwsku -->

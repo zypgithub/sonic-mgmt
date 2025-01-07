@@ -180,6 +180,30 @@
         </ignore>
     </test>
 
+     <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/bgp_session.cases </cases>
+        <ignore>
+            <!-- Case only for main hwsku, skip this case if it is non-main hwsku -->
+            <condition>
+                <key> skip_main_hwsku_only_cases </key>
+                <op> == </op>
+                <value> yes </value>
+            </condition>
+        </ignore>
+    </test>
+
+     <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/bgp_stress.cases </cases>
+        <ignore>
+            <!-- Case only for main hwsku, skip this case if it is non-main hwsku -->
+            <condition>
+                <key> skip_main_hwsku_only_cases </key>
+                <op> == </op>
+                <value> yes </value>
+            </condition>
+        </ignore>
+    </test>
+
     <test>
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/bgp_dual_asn.cases </cases>
         <ignore>
