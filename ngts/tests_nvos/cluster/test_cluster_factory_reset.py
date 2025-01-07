@@ -401,7 +401,10 @@ def reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, s
         for app in ClusterConsts.INITIAL_EXPECTED_APPS:
             cluster.apps.app_name[app].loglevel.action_update_cluster_log_level(level=log_level)
 
-    config_files_paths = ClusterTools.get_current_config_files_paths(sdn, ClusterConsts.NMX_CONTROLLER, ClusterConsts.NMX_CONTROLLER_CONFIG_FILE_TYPES)
+    controller_config_files_paths = ClusterTools.get_current_config_files_paths(sdn, ClusterConsts.NMX_CONTROLLER, ClusterConsts.NMX_CONTROLLER_CONFIG_FILE_TYPES)
+    telemetry_config_files_paths = ClusterTools.get_current_config_files_paths(sdn, ClusterConsts.NMX_TELEMETRY, ClusterConsts.NMX_TELEMETRY_CONFIG_FILE_TYPES)
+    config_files_paths = dict(list(controller_config_files_paths.items()) + list(telemetry_config_files_paths.items()))
+
     for file_type, file_path in config_files_paths.items():
         initial_config_contents[file_type] = engines.dut.run_cmd("sudo cat {}".format(file_path))
 
@@ -492,7 +495,7 @@ def post_factory_reset_security_checks():
 def delete_all_sdn_fetched_generated_files(engines, sdn, all_config_files_paths, all_state_files_paths):
     with allure.step("Delete state/config Files"):
         for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_CONFIG_FILES:
-            if all_config_files_paths[file_type]:
+            if file_type in all_config_files_paths and all_config_files_paths[file_type]:
                 for file in all_config_files_paths[file_type]:
                     app = ClusterConsts.MAP_CONFIG_FILE_TYPE_TO_APP[file_type]
                     file = file.split('/')[-1]
@@ -502,7 +505,7 @@ def delete_all_sdn_fetched_generated_files(engines, sdn, all_config_files_paths,
                         logger.info("File Already Deleted")
             engines.sonic_mgmt.run_cmd(f"sudo rm -rf {initial_configs_paths_to_restore[file_type]}")
         for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_STATE_FILES:
-            if all_state_files_paths[file_type]:
+            if file_type in all_state_files_paths and all_state_files_paths[file_type]:
                 for file in all_state_files_paths[file_type]:
                     app = ClusterConsts.MAP_STATE_FILE_TYPE_TO_APP[file_type]
                     file = file.split('/')[-1]
