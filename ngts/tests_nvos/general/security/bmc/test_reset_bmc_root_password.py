@@ -143,13 +143,16 @@ def test_reset_bmc_root_password_while_bmc_down(engines, devices, topology_obj, 
                     failed_to_connect_err = "Failed to reset password: Can't connect to BMC"
                     assert failed_to_connect_err in output, f'output expected to contain {failed_to_connect_err}, but instead got {output}'
                 with allure.step('Ping BMC until back alive'):
-                    ping_till_alive(should_be_alive=True, destination_host=bmc_ip_address)
-                time.sleep(10)
+                    time.sleep(15)
+                    output = engines.sonic_mgmt.run_cmd(f"timeout 3 telnet {bmc_ip_address} 22")
+                    while "Connected to" not in output:
+                        output = engines.sonic_mgmt.run_cmd(f"timeout 3 telnet {bmc_ip_address} 22")
+                    time.sleep(15)
 
             with allure.step("Reset BMC Password to default - using nvos command"):
                 output = platform.bmc_password.action_reset().verify_result()
                 root_password = PlatformConsts.BMC_DEFAULT_ROOT_PASSWORD_AFTER_RESET_VIA_NOS
-                log.info("Verify login is available with default bmc password for reset bmc root password")
+                logger.info("Verify login is available with default bmc password for reset bmc root password")
                 bmc_engine = LinuxSshEngine(ip=bmc_ip_address, username='root', password=root_password)
                 output = bmc_engine.run_cmd('whoami')
 
