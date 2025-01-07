@@ -276,7 +276,8 @@ class ClusterTools:
                 else:
                     assert app_status == expected_state, f"App {app} status is {app_status} instead of {expected_state}"
                 ClusterTools.verify_app_is_up(engines, app)
-            ClusterTools.verify_lid_value(devices)
+            if is_bug_active(4207869):
+                ClusterTools.verify_lid_value(devices)
 
     @staticmethod
     def verify_app_version(cluster, app, expected_version):

@@ -26,7 +26,7 @@ from ngts.tools.test_utils import allure_utils as allure
 logger = logging.getLogger()
 
 
-# @disabled_access_ports
+@disabled_access_ports
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
 @pytest.mark.timeout(55 * MINUTE, func_only=True)
