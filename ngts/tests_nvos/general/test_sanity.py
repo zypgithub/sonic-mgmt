@@ -42,7 +42,6 @@ def test_ci_sanity_acl(engines, topology_obj, devices):
 
 @pytest.mark.simx
 @pytest.mark.nvos_chipsim_ci
-@pytest.mark.nvos_ci
 def test_ci_sanity_ipv6(engines, topology_obj, devices):
     with allure.step("Test IPV6"):
         test_checklist_ipv6(engines)

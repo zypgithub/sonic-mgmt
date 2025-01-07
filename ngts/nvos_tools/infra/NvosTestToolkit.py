@@ -193,6 +193,9 @@ class TestToolkit:
     @staticmethod
     def is_eth_dut(dut_device=None) -> bool:
         if TestToolkit.is_dut_eth is None:
-            dut_device = dut_device or TestToolkit.devices.dut
-            TestToolkit.is_dut_eth = (dut_device.switch_type == CumulusConsts.ETH_SWITCH_TYPE)
+            if not dut_device and not TestToolkit.devices:
+                TestToolkit.is_dut_eth = False
+            else:
+                dut_device = dut_device or TestToolkit.devices.dut
+                TestToolkit.is_dut_eth = (dut_device.switch_type == CumulusConsts.ETH_SWITCH_TYPE)
         return TestToolkit.is_dut_eth
