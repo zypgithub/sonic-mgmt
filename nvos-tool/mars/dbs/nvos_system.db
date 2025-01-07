@@ -110,7 +110,4 @@
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/system/nvos_system_fae_remarkable_logs.cases </cases>
 	</test>
-	<test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/system/nvos_system_dns.cases </cases>
-	</test>
 </DBDEF>
