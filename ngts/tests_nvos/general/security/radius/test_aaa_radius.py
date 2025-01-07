@@ -85,6 +85,7 @@ def test_radius_auth(test_flow, test_api, addressing_type, engines, topology_obj
             - verify auth with radius user - expect success
             - verify auth with local user - expect fail
     """
+    skip_auth_mediums = []
     radius = System().aaa.radius
 
     # our vm radius server does not support mschapv2 - all auth types will be tested only on physical server
@@ -101,7 +102,7 @@ def test_radius_auth(test_flow, test_api, addressing_type, engines, topology_obj
                           remote_aaa_obj=radius,
                           server_by_addr_type=server_by_addr_type,
                           test_param=test_params,
-                          test_param_update_func=update_radius_server_auth_type)
+                          test_param_update_func=update_radius_server_auth_type, skip_auth_mediums=skip_auth_mediums)
 
 
 @pytest.mark.security
