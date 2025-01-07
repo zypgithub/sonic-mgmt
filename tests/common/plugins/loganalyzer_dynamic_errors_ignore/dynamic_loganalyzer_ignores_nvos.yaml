@@ -1810,6 +1810,8 @@
     - '.*ERR health-statsd#health_history: PSU\d\/FAN: speed is out of range.*'
     - '.*ERR health-statsd#health_history: PSU\d\/FAN: Invalid fan speed data.*'
     - '.*ERR health-statsd#health_history: FAN\d\/\d: speed is out of range.*'
+    - '.*ERR health-statsd#health_history: PSU\d: is missing - Unpopulated PSU slot'
+    - '.*ERR healthd: Invalid fan speed data obtained from DB for psu\d_fan\d*'
   Conditions:
     - Affected_test_cases:
         - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm.py::TestNewTc::test_temperature_sweep
