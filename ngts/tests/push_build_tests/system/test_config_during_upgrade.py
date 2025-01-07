@@ -73,11 +73,12 @@ def compare_dut_configs(base_config, target_config, base_ver, target_ver, allowe
                     target_branch = target
                     break
     if not (base_branch and target_branch):
-        raise AssertionError('Can not find base and target branch in yaml file with upgrade diff')
+        allowed_diff_for_our_branch = {'dictionary_item_added': []}
+    else:
+        allowed_diff_for_our_branch = allowed_diff_keys[base_branch][target_branch]
 
     diff = DeepDiff(base_dict, target_dict)
 
-    allowed_diff_for_our_branch = allowed_diff_keys[base_branch][target_branch]
     for key, value in diff.items():
         logger.info('Found next difference in config_db.json after upgrade: {} \n {}'.format(key, diff[key]))
         for diff_item in value:
