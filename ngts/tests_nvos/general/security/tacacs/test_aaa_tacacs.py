@@ -240,6 +240,13 @@ def test_tacacs_auth_error(test_flow, test_api, engines, topology_obj, local_adm
 
 # -------------------- FEATURE SPECIFIC TESTS ---------------------
 
+"""
+NOTES:
+* for accounting - timestamps in accounting files don't include the year, so tests may fail when new year begins.
+    therefore, make sure to clean accounting file in the tacacs servers:
+    ```docker exec <server-docker-name> bash -c "echo '' > /var/log/tac.acct"```
+"""
+
 
 @pytest.mark.security
 @pytest.mark.simx_security
