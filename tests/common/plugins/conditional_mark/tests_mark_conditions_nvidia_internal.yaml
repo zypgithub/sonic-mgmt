@@ -555,6 +555,14 @@ platform_tests/api/test_sfp.py:
     conditions:
     - "'simx' in platform"
 
+platform_tests/api/test_sfp.py::TestSfpApi::test_get_error_description:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4220524"
+    conditions_logical_operator: or
+    conditions:
+    - "https://redmine.mellanox.com/issues/4220524 and ('sn5610n' in platform or 'sn5600' in platform)"
+    - "https://redmine.mellanox.com/issues/4205722"
+
 platform_tests/mellanox/test_check_sfp_eeprom.py:
   skip:
     reason: "Testcase ignored on sn5610n due to RM 3891669 and on simx;QSFP eeprom emulation is not supported currently. Target POR 2023.Rel.2"
