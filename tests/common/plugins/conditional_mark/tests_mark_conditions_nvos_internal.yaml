@@ -568,4 +568,10 @@ tests_nvos/system/test_system_ztp.py::test_ztp_nmx_positive:
     conditions:
       - "'juliet' not in testbed"
 
+tests_nvos/fae/test_asic_error_injection.py::test_asic_error_injection:
+  skip:
+    reason: "Testcase skipped on non Juliet systems"
+    conditions:
+      - "'juliet' not in testbed"
+
 ########################## NVOS IGNORE END ##########################
