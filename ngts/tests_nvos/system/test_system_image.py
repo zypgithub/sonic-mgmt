@@ -4,6 +4,7 @@ import time
 import pytest
 import base64
 import random
+from urllib.parse import quote
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from infra.tools.general_constants.constants import DefaultConnectionValues
 from infra.tools.redmine.redmine_api import *
@@ -13,6 +14,7 @@ from ngts.nvos_constants.constants_nvos import SystemConsts, NvosConst
 from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
 from ngts.nvos_tools.actions.Actions import Action
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
+from ngts.nvos_tools.infra.DMIDecodeTool import DMIDecodeTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
@@ -74,12 +76,16 @@ def test_show_system_image(original_version):
             logger.info("All expected fields were found")
 
         with allure.step("Validate the values exist"):
-            assert output_dictionary[
-                ImageConsts.CURRENT_IMG] == original_version, f"Current image is invalid. Expected {original_version}"
-            assert output_dictionary[
-                ImageConsts.PARTITION1_IMG] == original_version, f"Partition1 image is invalid. Expected {original_version}"
-            assert output_dictionary[
-                ImageConsts.NEXT_IMG] == original_version, f"Next image is invalid. Expected {original_version}"
+            if ImageConsts.PARTITION2_IMG in output_dictionary.keys():
+                partition2 = output_dictionary[ImageConsts.PARTITION2_IMG]
+            else:
+                partition2 = ''
+            assert output_dictionary[ImageConsts.CURRENT_IMG] == original_version, \
+                f"Current image is invalid. Expected {original_version}"
+            assert output_dictionary[ImageConsts.PARTITION1_IMG] == original_version or partition2 == original_version, \
+                f"Partition1 image is invalid. Expected {original_version}"
+            assert output_dictionary[ImageConsts.NEXT_IMG] == original_version, \
+                f"Next image is invalid. Expected {original_version}"
 
     with allure.step("Run show command to view system image files"):
         output_dictionary = system.image.files.get_files()
@@ -94,9 +100,9 @@ def test_show_system_image(original_version):
 @pytest.mark.simx
 @pytest.mark.image
 @pytest.mark.system
-@pytest.mark.timeout(25 * MINUTE, func_only=True)
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_downgrade_upgrade(release_name, test_api, original_version, devices, base_version):
+@pytest.mark.timeout(25 * MINUTE, func_only=True)
+def test_downgrade_upgrade(release_name, test_api, original_version, devices, engines, base_version_realpath):
     """
     Check the image rename cmd.
     Validate that install and delete commands will success with the new name
@@ -109,7 +115,8 @@ def test_downgrade_upgrade(release_name, test_api, original_version, devices, ba
     6. Uninstall image
     7. Delete the new image name , success
     """
-    if not base_version:
+
+    if not base_version_realpath:
         pytest.skip("Cannot run test because base_version parameter is missing from the setup file")
 
     TestToolkit.tested_api = test_api
@@ -117,8 +124,9 @@ def test_downgrade_upgrade(release_name, test_api, original_version, devices, ba
     verify_current_version(original_version, system, devices.dut)
 
     original_images, _, original_image_partition, partition_id_for_new_image, fetched_image = \
-        get_image_data_and_fetch_base_image(system, base_version)
+        get_image_data_and_fetch_base_image(system, base_version_realpath)
     fetched_image_file = system.image.files.file_name[fetched_image]
+
     try:
         with allure.step("Rename image and verify"):
             new_name = RandomizationTool.get_random_string(20, ascii_letters=string.ascii_letters + string.digits)
@@ -137,6 +145,7 @@ def test_downgrade_upgrade(release_name, test_api, original_version, devices, ba
                                      partition_id=partition_id_for_new_image,
                                      original_images=original_images, system=system, release_name=release_name,
                                      test_name='test_downgrade_upgrade')
+
     finally:
         # cleanup - boot back with orig image, uninstall new image, and restore to orig engine
         cleanup_test(system, original_images, original_image_partition, [fetched_image], orig_engine=orig_engine)
@@ -147,7 +156,7 @@ def test_downgrade_upgrade(release_name, test_api, original_version, devices, ba
 @pytest.mark.image
 @pytest.mark.system
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_system_image_upload(engines, release_name, test_api, original_version, devices):
+def test_system_image_upload(engines, release_name, test_api, original_version, devices, base_version_realpath):
     """
     Uploading image file to player and validate.
     1. Fetch random image
@@ -160,12 +169,10 @@ def test_system_image_upload(engines, release_name, test_api, original_version, 
     system = System()
 
     verify_current_version(original_version, system, devices.dut)
-
-    _, _, _, _, image_names = get_image_data_and_fetch_random_image_files(release_name, system)
-    image_name = image_names[0]
+    _, _, _, _, image_name = get_image_data_and_fetch_base_image(system, base_version_realpath)
+    image_file = system.image.files.file_name[image_name]
     upload_protocols = ['scp', 'sftp']
     player = engines['sonic_mgmt']
-    image_file = system.image.files.file_name[image_name]
 
     try:
         with allure.step("Upload image to player {} with the next protocols : {}".format(player.ip, upload_protocols)):
@@ -191,7 +198,7 @@ def test_system_image_upload(engines, release_name, test_api, original_version, 
 @pytest.mark.system
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 @pytest.mark.timeout(25 * MINUTE, func_only=True)
-def test_image_uninstall(release_name, test_api, original_version, test_name, devices, base_version):
+def test_image_uninstall(release_name, test_api, original_version, test_name, devices, base_version_realpath):
     """
      Will check the uninstall commands
 
@@ -202,19 +209,16 @@ def test_image_uninstall(release_name, test_api, original_version, test_name, de
     4. Set the original image to be booted next
     5. Validate that uninstall will success
     """
-    if not base_version:
-        pytest.skip("Cannot run test because base_version parameter is missing from the setup file")
-
     TestToolkit.tested_api = test_api
-    image_uninstall_test(release_name, original_version, devices, uninstall_force="", test_name=test_name,
-                         base_version=base_version)
+    image_uninstall_test(release_name, original_version, devices, uninstall_force="", test_name=test_name, base_version=base_version_realpath)
 
 
 @pytest.mark.checklist
 @pytest.mark.simx
 @pytest.mark.image
 @pytest.mark.system
-def test_image_uninstall_force(release_name, original_version, test_name, devices, base_version):
+@pytest.mark.timeout(25 * MINUTE, func_only=True)
+def test_image_uninstall_force(release_name, original_version, test_name, devices, base_version_realpath):
     """
      Will check the uninstall force commands
 
@@ -225,11 +229,7 @@ def test_image_uninstall_force(release_name, original_version, test_name, device
     4. Set the original image to be booted next
     5. Validate that uninstall force will success
     """
-    if not base_version:
-        pytest.skip("Cannot run test because base_version parameter is missing from the setup file")
-
-    image_uninstall_test(release_name, original_version, devices, uninstall_force="force", test_name=test_name,
-                         base_version=base_version)
+    image_uninstall_test(release_name, original_version, devices, uninstall_force="force", test_name=test_name, base_version=base_version_realpath)
 
 
 @pytest.mark.checklist
@@ -237,7 +237,7 @@ def test_image_uninstall_force(release_name, original_version, test_name, device
 @pytest.mark.image
 @pytest.mark.system
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_system_image_bad_flow(engines, test_api, sonic_mgmt_ipv6_addr, base_version_realpath, release_name, original_version):
+def test_system_image_bad_flow(engines, release_name, test_api, original_version, sonic_mgmt_ipv6_addr, base_version_realpath):
     """
     Check bad flow scenarios:
     -	Fetch something that doesn’t / already exist
@@ -298,7 +298,7 @@ def test_system_image_bad_flow(engines, test_api, sonic_mgmt_ipv6_addr, base_ver
 
     with allure.step("Upload bad flows"):
         player = engines['sonic_mgmt']
-        upload_path = 'scp://{}:{}@{}/tmp/'.format(player.username, player.password, player.ip)
+        upload_path = ImageConsts.SCP_PATH_SERVER.format(username=player.username, password=player.password, ip=player.ip, path='/tmp')
         with allure.step("Upload image file that does not exist"):
             file_rand_name.action_upload(upload_path, "File not found")
         with allure.step("Upload the same image twice"):
@@ -505,7 +505,7 @@ def system_image_install_reject_with_prompt(engines, system, prompt_response, or
 
         with allure.step("Attempt install image and reject the prompt"):
             # Get the last action-job-id
-            exempted_err_msgs = ['action_error']
+            exempted_err_msgs = ['action_error', 'File not found', 'Failed to install']
             action = Action()
             output = OutputParsingTool.parse_json_str_to_dictionary(action.show(exempted_err_msgs=exempted_err_msgs)). \
                 get_returned_value()
@@ -603,8 +603,7 @@ def test_fetch_image_with_weird_password(test_api, engines):
     TestToolkit.tested_api = test_api
     system = System()
     # Create 5 passwords including 5 random special characters from the allowed special character list
-    special_char_list = ['~', '@', '%', '^', '*', '_', '=', '+', '{', '}', ':', ',', '\\!', "\\'"]
-    # To Do: Skipping these characters for now: [ and ] and /
+    special_char_list = ['~', '@', '%', '^', '*', '_', '=', '+', '{', '}', ':', ',', '[', ']', '/', '!', "'"]
     weird_passwords = [("Password1" + special_char) for special_char in (random.sample(special_char_list, 5))]
 
     with allure.step("Create dummy file to be fetched"):
@@ -623,21 +622,30 @@ def test_fetch_image_with_weird_password(test_api, engines):
 def helper_fetch_image_with_weird_password(engines, system, test_api, weird_password):
     new_user = ""
     image_fetched = False
+
+    # For nv action fetch command, passwords with special chars need to be url encoded
+    if "'" in weird_password:
+        # Adding exception for apostrophe
+        if test_api == ApiType.NVUE:
+            weird_password = "Password1\\'"
+        weird_password_urlencoded = weird_password
+    else:
+        weird_password_urlencoded = quote(weird_password, safe='')
+
     if test_api == ApiType.OPENAPI:
         # encode password to base64 object and convert the base64 object to string
-        weird_password_encoded = base64.b64encode(str.encode(weird_password)).decode()
-    else:
-        # No encoding needed for NVUE
-        weird_password_encoded = weird_password
+        weird_password = base64.b64encode(str.encode(weird_password)).decode()
+
     try:
         with allure.step("Create a new user with the weird password"):
-            new_user, new_password = system.aaa.user.set_new_user(password=weird_password_encoded,
+            new_user, new_password = system.aaa.user.set_new_user(password=weird_password,
                                                                   role=SystemConsts.ROLE_VIEWER, apply=True)
 
         with allure.step("Fetch the dummy image {} using the new user and weird password".format(
                 SystemConsts.DUMMY_IMAGE)):
             hostname = engines.dut.run_cmd('hostname')
-            scp_path = ImageConsts.SCP_PATH_SERVER.format(username=new_user, password=weird_password, ip=hostname,
+            scp_path = ImageConsts.SCP_PATH_SERVER.format(username=new_user,
+                                                          password=weird_password_urlencoded, ip=hostname,
                                                           path=SystemConsts.DUMMY_IMAGE_PATH + SystemConsts.DUMMY_IMAGE)
             system.image.action_fetch(scp_path)
             image_fetched = True

@@ -4,7 +4,7 @@ from ngts.constants.constants import CliType
 
 EXPECTED_MLNX_VERSION = "3.10.4206"
 EXPECTED_SONIC_VERSION_LIST = ["202311_RC.101-7a2264a36_Internal", "202405_RC.15-1b6cdc9ce_Internal",
-                               "202405_RC.54-f4c156aaf_Internal"]
+                               "202405_RC.54-f4c156aaf_Internal", "202405_RC.55-f4c156aaf_Internal"]
 
 logger = logging.getLogger()
 

@@ -63,8 +63,8 @@ def test_set_unset_full_name_newuser(engines):
     """
     with allure.step('Set new admin and monitor users'):
         system = System(force_api=ApiType.NVUE)
-        admin_username, admin_password = system.aaa.user.set_new_user()
-        monitor_username, monitor_password = system.aaa.user.set_new_user(role=SystemConsts.ROLE_VIEWER, apply=True)
+        admin_username, admin_password = system.aaa.user.set_new_user(role=SystemConsts.DEFAULT_USER_ADMIN)
+        monitor_username, monitor_password = system.aaa.user.set_new_user(apply=True)
         admin_user = system.aaa.user.user_id[admin_username]
         monitor_user = system.aaa.user.user_id[monitor_username]
 
@@ -104,8 +104,8 @@ def test_set_unset_state(engines):
     """
     with allure.step('Set new admin and monitor users'):
         system = System(force_api=ApiType.NVUE)
-        admin_username, admin_password = system.aaa.user.set_new_user()
-        monitor_username, monitor_password = system.aaa.user.set_new_user(role=SystemConsts.ROLE_VIEWER, apply=True)
+        admin_username, admin_password = system.aaa.user.set_new_user(role=SystemConsts.DEFAULT_USER_ADMIN)
+        monitor_username, monitor_password = system.aaa.user.set_new_user(apply=True)
         admin_user = system.aaa.user.user_id[admin_username]
         monitor_user = system.aaa.user.user_id[monitor_username]
 
@@ -145,8 +145,8 @@ def test_set_unset_capability(engines):
     """
     with allure.step('Set new admin and monitor users'):
         system = System(None)
-        viewer_name, viewer_password = system.aaa.user.set_new_user(role=SystemConsts.ROLE_VIEWER)
-        configurator_name, configurator_password = system.aaa.user.set_new_user(apply=True)
+        viewer_name, viewer_password = system.aaa.user.set_new_user()
+        configurator_name, configurator_password = system.aaa.user.set_new_user(role=SystemConsts.DEFAULT_USER_ADMIN, apply=True)
     with allure.step('Verify role of the users'):
         system.aaa.user.user_id[viewer_name].verify_user_field(SystemConsts.USER_ROLE, SystemConsts.ROLE_VIEWER)
         system.aaa.user.user_id[configurator_name].verify_user_field(SystemConsts.USER_ROLE, SystemConsts.ROLE_CONFIGURATOR)

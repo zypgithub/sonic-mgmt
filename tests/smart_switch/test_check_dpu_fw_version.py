@@ -21,7 +21,7 @@ def test_check_dpu_fw_version(dpuhosts, localhost):
         image_path = localhost.shell(f"ls {nfs_path} | grep {sonic_image_hash}")['stdout_lines'][-1]
         readme_path = nfs_path + '/' + image_path + '/dev/README'
         fw_version_output = localhost.shell(f"cat {readme_path} | grep FW_VERSION_DPU")['stdout']
-        fw_version_pattern = r'\d{2}\.\d{2}\.\d{4}'
+        fw_version_pattern = r'\d{2}\.\d{4}'
         expected_fw_version = re.search(fw_version_pattern, fw_version_output).group()
     with allure.step("Check fw versions of all the DPUs"):
         for dpuhost in dpuhosts:

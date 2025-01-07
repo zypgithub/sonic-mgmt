@@ -21,6 +21,10 @@ def set_bat_skip(name, skip_list) {
                 NGCITools().ciTools.insert_test_result_to_matrix(name, "ETH", "SPC4", "Skipped=status")
                 env.SKIP_SONIC_HW_SPC4_BAT = "true"
                 break
+            case "SS_HW":
+                NGCITools().ciTools.insert_test_result_to_matrix(name, "SMARTSWITCH", "SPC3/BF3", "Skipped=status")
+                env.SKIP_SONIC_HW_SS_BAT = "true"
+                break
             case "SPC_SIMX":
                 NGCITools().ciTools.insert_test_result_to_matrix(name, "SIMX", "SPC", "Skipped=status")
                 env.SKIP_SONIC_SIMX_SPC_BAT = "true"
@@ -36,10 +40,6 @@ def set_bat_skip(name, skip_list) {
             case "SPC4_SIMX":
                 NGCITools().ciTools.insert_test_result_to_matrix(name, "SIMX", "SPC4", "Skipped=status")
                 env.SKIP_SONIC_SIMX_SPC4_BAT = "true"
-                break
-            case "BF3":
-                NGCITools().ciTools.insert_test_result_to_matrix(name, "DPU", "BF3", "Skipped=status")
-                env.SKIP_DPU_BAT = "true"
                 break
             case "QTM2":
                 NGCITools().ciTools.insert_test_result_to_matrix(name, "IB", "QTM2", "Skipped=status")
@@ -59,11 +59,10 @@ def pre(name) {
 
 
 def run_step(name) {
-    def SONIC_CANONICAL_HW_BAT = ["SPC_HW", "SPC2_HW", "SPC3_HW", "SPC4_HW"]
+    def SONIC_CANONICAL_HW_BAT = ["SPC_HW", "SPC2_HW", "SPC3_HW", "SPC4_HW", "SS_HW"]
     def SONIC_CANONICAL_SIMX_BAT = ["SPC_SIMX", "SPC2_SIMX", "SPC3_SIMX", "SPC4_SIMX"]
-    def SONIC_CANONICAL_DPU_BAT = ["BF3"]
     def SONIC_CANONICAL_BAT = SONIC_CANONICAL_HW_BAT + SONIC_CANONICAL_SIMX_BAT
-    def SONIC_COMMUNITY_BAT = SONIC_CANONICAL_DPU_BAT +["ETH_COMMUNITY"]
+    def SONIC_COMMUNITY_BAT = ["ETH_COMMUNITY"]
     def NVOS_BAT = ["QTM2"]
     try {
         print "Component match = ${env.CHANGED_COMPONENTS}"
@@ -83,12 +82,6 @@ def run_step(name) {
                 && !env.CHANGED_COMPONENTS.contains("COMMON_BAT_ONLY") && !env.CHANGED_COMPONENTS.contains("NoMatch"))){
             print "'SONIC Canonical' BAT are skipped"
             set_bat_skip(name, SONIC_CANONICAL_BAT)
-        }
-
-        //If no change in DPU related files, skip BF3 BAT
-        if (env.CHANGED_COMPONENTS && (!env.CHANGED_COMPONENTS.contains("SONIC_COMMUNITY_BF3_BAT"))){
-            print "'SONIC Community BF3' BAT is skipped"
-            set_bat_skip(name, SONIC_CANONICAL_DPU_BAT)
         }
 
         //If only yaml changed, only run SONIC SIMX SPC BAT
@@ -117,7 +110,7 @@ def run_step(name) {
             if (env.CHECK_YAML_ONLY == "true"){
                 print "The changes are only in the error/skip yaml files, run only the yaml validation test on SPC SIMX."
                 // Only run one SPC SIMX setup
-                set_bat_skip(name, SONIC_CANONICAL_BAT + SONIC_CANONICAL_DPU_BAT + NVOS_BAT - "SPC_SIMX")
+                set_bat_skip(name, SONIC_CANONICAL_BAT + NVOS_BAT - "SPC_SIMX")
                 env.SIMX_NONE_BLOCKER = "false"
             }
         }

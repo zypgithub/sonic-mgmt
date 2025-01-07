@@ -31,6 +31,12 @@
                     <op> == </op>
                     <value> yes </value>
                 </condition>
+                <!-- Case only for main hwsku, skip this case if it is non-main hwsku -->
+                <condition>
+                    <key> skip_main_hwsku_only_cases </key>
+                    <op> == </op>
+                    <value> yes </value>
+                </condition>
             </ignore>
             <post></post>
         </DB>

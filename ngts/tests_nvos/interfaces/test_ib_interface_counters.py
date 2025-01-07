@@ -6,7 +6,7 @@ import re
 import random
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.nvos_tools.Devices.IbDevice import CrocodileSwitch
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port, PortRequirements
@@ -15,7 +15,7 @@ from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.nvos_tools.system.System import System
-from ngts.nvos_constants.constants_nvos import ApiType, IbConsts
+from ngts.nvos_constants.constants_nvos import ApiType, IbConsts, SystemConsts
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.tools.test_utils import allure_utils as allure
 logger = logging.getLogger()
@@ -140,7 +140,7 @@ def test_range_clear_counters_positive(engines, devices, players, interfaces, st
 
     with allure.step("Run clear counters using range for p1 or p2 only"):
         with allure.step('Run clear counter command'):
-            interface.action_clear_counter_for_interface(engine=ssh_connection,
+            interface.action_clear_counter_for_interface(dut_engine=ssh_connection,
                                                          interface_name='sw{first}-{last}p{p_number}-{p_number},{random_port}'.format(
                                                              p_number=p_number, first=second_range_first_point,
                                                              last=second_range_last_point, random_port=random_port)
@@ -157,7 +157,7 @@ def test_range_clear_counters_positive(engines, devices, players, interfaces, st
     with allure.step("Run clear counters using range and multiple ports and verify results"):
 
         with allure.step('Run clear counter command'):
-            interface.action_clear_counter_for_interface(engine=ssh_connection,
+            interface.action_clear_counter_for_interface(dut_engine=ssh_connection,
                                                          interface_name='sw{first}-{last}p1-2,{random_port}'.format(
                                                              first=first_range_first_point, last=first_range_last_point,
                                                              random_port=random_port)).verify_result()
@@ -312,7 +312,7 @@ def create_invalid_ranges(port_name):
 def create_new_user(engine):
     with allure.step("Create a new user"):
         system = System(force_api=ApiType.NVUE)
-        user_name, password = system.aaa.user.set_new_user(apply=True)
+        user_name, password = system.aaa.user.set_new_user(role=SystemConsts.DEFAULT_USER_ADMIN, apply=True)
         user_id = system.aaa.user.get_lslogins(engine=engine, username=user_name)["UID"]
         file_name = "/tmp/cache/portstat-{}".format(user_id)
         logging.info("User created: \nuser_name: {} \npassword: {} \nUID: {}".format(user_name, password, user_id))
@@ -332,7 +332,7 @@ def get_port_range(first: int, last: int, p1_2=0) -> List[str]:
 
 
 def verify_files_created(ssh_connection: LinuxSshEngine, directory: str, ports: List[str]):
-    if is_redmine_issue_active([4079803]):
+    if is_bug_active(4079803):
         logger.error("Won't check files due to https://redmine.mellanox.com/issues/4079803")
     else:
         with allure.step('verify that a clear file is added to each port'):

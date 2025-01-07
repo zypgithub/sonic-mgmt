@@ -425,6 +425,7 @@ class ReloadTest(BaseTest):
             # TimeoutError and Exception's from func
             # captured here
             signal.set()
+            self.log("{}: {}".format(message, traceback_msg))
             raise type(err)("{}: {}".format(message, traceback_msg))
         return res
 
@@ -496,7 +497,9 @@ class ReloadTest(BaseTest):
                 for vm_key in self.vm_dut_map.keys():
                     if member in self.vm_dut_map[vm_key]['dut_ports']:
                         self.vm_dut_map[vm_key]['dut_portchannel'] = str(key)
-                        self.vm_dut_map[vm_key]['neigh_portchannel'] = 'Port-Channel1'
+                        neigh_portchannel = "PortChannel1" if self.test_params['neighbor_type'] == "sonic" \
+                                            else "Port-Channel1"
+                        self.vm_dut_map[vm_key]['neigh_portchannel'] = neigh_portchannel
                         if self.is_dualtor:
                             self.peer_vm_dut_map[vm_key]['dut_portchannel'] = str(key)
                         break
@@ -741,15 +744,34 @@ class ReloadTest(BaseTest):
             port.socket.setsockopt(
                 socket.SOL_SOCKET, socket.SO_RCVBUF, self.SOCKET_RECV_BUFFER_SIZE)
 
-        self.dataplane.flush()
-        if config["log_dir"] is not None:
-            filename = os.path.join(config["log_dir"], str(self)) + ".pcap"
-            self.dataplane.start_pcap(filename)
+        self.start_background_pcap()
 
         self.log("Enabling arp_responder")
         self.cmd(["supervisorctl", "restart", "arp_responder"])
 
         return
+
+    def start_background_pcap(self):
+        if self.vmhost_external_port:
+            self.background_pcap = '/tmp/' + f"{str(self)}.{self.test_params['dut_hostname']}.vmhost" + ".pcap"
+            cmd = f"sudo nohup tcpdump -i {self.vmhost_external_port} -w {self.background_pcap}"
+            self.vmhost_connection.execCommand(cmd + " > /dev/null 2>&1 &")
+            self.log(f'Background tcpdump is started on vmhost port, pcap file: {self.background_pcap}')
+        elif config["log_dir"] is not None:
+            self.dataplane.flush()
+            self.background_pcap = \
+                os.path.join(config["log_dir"], str(self)) + ".pcap"
+            self.dataplane.start_pcap(self.background_pcap)
+            self.log(f'Background tcpdump is started on ptf, pcap file: {self.background_pcap}')
+
+    def stop_background_pcap(self):
+        if self.vmhost_external_port:
+            cmd = f"sudo nohup tcpdump -i {self.vmhost_external_port} -w {self.background_pcap}"
+            self.vmhost_connection.execCommand(f'sudo pkill -f "{cmd}"')
+            self.vmhost_connection.fetch(self.background_pcap, self.background_pcap)
+        elif config["log_dir"] is not None:
+            self.dataplane.stop_pcap()
+        self.log(f'Background tcpdump is stopped')
 
     def setup_fdb(self):
         """ simulate traffic generated from servers to help populate FDB """
@@ -784,8 +806,7 @@ class ReloadTest(BaseTest):
         # Stop watching DUT
         self.watching = False
 
-        if config["log_dir"] is not None:
-            self.dataplane.stop_pcap()
+        self.stop_background_pcap()
         self.log_fp.close()
 
     def get_if(self, iff, cmd):
@@ -980,11 +1001,13 @@ class ReloadTest(BaseTest):
         time.sleep(5)
 
     def get_warmboot_finalizer_state(self):
+        self.log("get the finalizer_state with: 'sudo systemctl is-active warmboot-finalizer.service'")
         stdout, stderr, _ = self.dut_connection.execCommand(
             'sudo systemctl is-active warmboot-finalizer.service')
         if stderr:
             self.fails['dut'].add("Error collecting Finalizer state. stderr: {}, stdout:{}".format(
                 str(stderr), str(stdout)))
+            self.log("Error collecting Finalizer state. stderr: {}, stdout:{}".format(str(stderr), str(stdout)))
             raise Exception("Error collecting Finalizer state. stderr: {}, stdout:{}".format(
                 str(stderr), str(stdout)))
         if not stdout:
@@ -992,6 +1015,7 @@ class ReloadTest(BaseTest):
             return ''
 
         finalizer_state = stdout[0].strip()
+        self.log("The returned finalizer_state is {}".format(finalizer_state))
         return finalizer_state
 
     def get_now_time(self):
@@ -1023,6 +1047,7 @@ class ReloadTest(BaseTest):
             if time_passed > finalizer_timeout:
                 self.fails['dut'].add(
                     'warmboot-finalizer never reached state "activating"')
+                self.log('TimeoutError: warmboot-finalizer never reached state "activating"')
                 raise TimeoutError
             self.finalizer_state = self.get_warmboot_finalizer_state()
 
@@ -1037,6 +1062,7 @@ class ReloadTest(BaseTest):
             if count * 10 > int(self.test_params['warm_up_timeout_secs']):
                 self.fails['dut'].add(
                     'warmboot-finalizer.service did not finish')
+                self.log('TimeoutError: warmboot-finalizer.service did not finish')
                 raise TimeoutError
             count += 1
         self.log('warmboot-finalizer service finished')
@@ -1495,6 +1521,7 @@ class ReloadTest(BaseTest):
             if time_passed > teamd_shutdown_timeout:
                 self.fails['dut'].add(
                     'Teamd service did not go down')
+                self.log('TimeoutError: Teamd service did not go down')
                 raise TimeoutError
             teamd_state = self.get_teamd_state()
 

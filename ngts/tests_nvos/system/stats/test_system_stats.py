@@ -5,7 +5,7 @@ import csv
 import os
 
 from datetime import datetime, timedelta
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.nvos_constants.constants_nvos import ApiType, NvosConst, StatsConsts
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
@@ -871,7 +871,7 @@ def test_system_stats_big_files(engines, devices, test_api):
         with allure.step("Delete uploaded file"):
             engine.run_cmd(cmd='rm -f {}'.format(file_path))
 
-        if not is_redmine_issue_active([3938803]):
+        if not is_bug_active(3938803):
             with allure.step("Replace internal file with a huge file"):
                 file_name = 'temperature.csv'
                 file_path = StatsConsts.HUGE_FILE_PATH + file_name
@@ -967,7 +967,7 @@ def test_validate_category_file_values(engines, devices, test_api):
                 get_returned_value()
 
             for file_name in stats_files_show:
-                if file_name == 'voltage' and not is_redmine_issue_active([3987851]):
+                if file_name == 'voltage' and not is_bug_active(3987851):
                     with allure.step("Upload stats file to URL"):
                         validate_upload_stats_file(engines, system, file_name, False)
 

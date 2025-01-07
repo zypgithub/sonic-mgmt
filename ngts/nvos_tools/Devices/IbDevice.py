@@ -6,7 +6,7 @@ from typing import List, Dict
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from infra.tools.linux_tools.linux_tools import scp_file
-from ngts.nvos_constants.constants_nvos import MultiPlanarConsts, PlatformConsts, HealthConsts, ClusterConsts, \
+from ngts.nvos_constants.constants_nvos import MultiPlanarConsts, PlatformConsts, HealthConsts, \
     ActionConsts
 from ngts.nvos_constants.constants_nvos import (NvosConst, DatabaseConst, IbConsts, StatsConsts, FansConsts,
                                                 DocumentsConsts)
@@ -20,6 +20,7 @@ from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.infra.ValidationTool import ExpectedString
 from ngts.nvos_tools.system.Spdm import SPDMComponents
+from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts
 from ngts.tools.test_utils import allure_utils as allure
@@ -38,6 +39,7 @@ class IbSwitch(BaseSwitch):
         self.documents_path = None
         self.documents_files = None
         self._init_sensors_dict()
+        self._init_gnmi_consts()
         self.open_api_port = "443"
         self.default_password = os.environ["NVU_SWITCH_NEW_PASSWORD"]
         self.default_username = os.environ["NVU_SWITCH_USER"]
@@ -109,9 +111,11 @@ class IbSwitch(BaseSwitch):
                 path_to_config_ymls = f"{root_dir}/{NvosConst.DEFAULT_CONFIG_PATH}"
 
                 for file_name in os.listdir(path_to_config_ymls):
+                    logging.info(f"switch_class:{self.switch_class}")
                     if self.switch_class in file_name:
                         default_config_name = file_name
-                    if TestToolkit.dut_eth0_ip in file_name:
+                    logging.info(f"eth0_ip:{TestToolkit.dut_eth0_ip}")
+                    if TestToolkit.dut_eth0_ip and TestToolkit.dut_eth0_ip in file_name:
                         default_config_name = file_name
                         break
 
@@ -260,6 +264,16 @@ class IbSwitch(BaseSwitch):
         super()._init_dependent_services()
         self.dependent_services.append(NvosConst.SYM_MGR_SERVICES)
 
+    def _init_gnmi_consts(self):
+        self.version_xpath = 'platform-general/versions/state/nos-version'
+        self.bios_xpath = "platform-general/versions/state/fw-version-bios"
+        self.cpld1_xpath = 'platform-general/versions/fw-versions-cpld/fw-version-cpld[id=1]/state/fw-version'
+        self.cpld2_xpath = 'platform-general/versions/fw-versions-cpld/fw-version-cpld[id=1]/state/fw-version'
+        self.cpld3_xpath = 'platform-general/versions/fw-versions-cpld/fw-version-cpld[id=3]/state/fw-version'
+        self.cpld4_xpath = 'platform-general/versions/fw-versions-cpld/fw-version-cpld[id=4]/state/fw-version'
+        self.components_gnmi_xpath = [self.bios_xpath, self.cpld1_xpath, self.cpld2_xpath,
+                                      self.cpld3_xpath, self.cpld4_xpath]
+
     def _init_dockers(self):
         super()._init_dockers()
         self.available_dockers.extend(('database', 'gnmi-server'))  # TODO: Add lldp container check
@@ -286,17 +300,6 @@ class IbSwitch(BaseSwitch):
         self.category_disk_interval_default = '30'
         self.system_profile_default_values = ['enabled', '2048', 'disabled', 'disabled', '1']
         self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/crocodile_versions.json"
-        self.bios_image_info = BaseSwitch.BiosImagesConsts(
-            current_version={
-                'path': "/auto/sw_system_release/sx_mlnx_bios/CoffeeLake/0ACQF_06.01.x05_rc1/Release/0ACQF.cab",
-                'filename': '0ACQF.cab',
-                'version_name': '0ACQF_06.01.005',
-                'date': '04/28/2024'},
-            alternate_version={
-                'path': '/auto/sw_system_release/sx_mlnx_bios/CoffeeLake/0ACQF_06.01.x04_rc1/Release/0ACQF.cab',
-                'filename': '0ACQF.cab',
-                'version_name': '0ACQF_06.01.004',
-                'date': '11/12/2023'})
         self.erot_fw_image_info = self.ErotFirmwareImagesTestConsts(
             current_image_path='auto/sw_system_release/erot/juliet/01.03.0202.000/sign/n04/dev/cec1736-ecfw-01.03.0202.0000-n04-dev-initial.bin',
             previous_image_path='auto/sw_system_release/erot/juliet/01.03.0183.000/sign/n04/dev/cec1736-ecfw-01.03.0183.0000-n04-dev-initial.bin',
@@ -623,10 +626,14 @@ class BlackMambaSwitch(IbSwitch):
 
         self.stats_fan_header_num_of_lines = 17
         self.stats_cpu_header_num_of_lines = 12
-        self.stats_temperature_header_num_of_lines = 104
+        self.stats_temperature_header_num_of_lines = 45
         self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/black_mamba_versions.json"
         self.allow_cpld_update = True
         self.mst_dev_name = '/dev/mst/mt54004_pciconf2'
+        self.ztp_prod_json = 'uninstall_prod.json'
+        self.ztp_dev_json = 'uninstall.json'
+        self.ztp_complex_prod_json = 'complex_prod.json'
+        self.ztp_complex_dev_json = 'complex.json'
 
     def get_mgmt_ports(self) -> List[str]:
         return self.mgmt_ports
@@ -717,6 +724,10 @@ class CrocodileSwitch(IbSwitch):
             filename="fw-QTM3-rel-35_2014_2012.mfa"
         )
         self.mst_dev_name = '/dev/mst/mt54004_pciconf0'  # TODO update
+        self.ztp_prod_json = 'uninstall_prod.json'
+        self.ztp_dev_json = 'uninstall.json'
+        self.ztp_complex_prod_json = 'complex_prod.json'
+        self.ztp_complex_dev_json = 'complex.json'
         self.voltage_sensors = ['PMIC-1-12V-VDD-ASIC1-In-1', 'PMIC-1-ASIC1-VDD-Out-1',
                                 'PMIC-2-12V-HVDD-DVDD-ASIC1-In-1', 'PMIC-2-ASIC1-DVDD-PL0-Out-2',
                                 'PMIC-2-ASIC1-HVDD-PL0-Out-1', 'PMIC-3-12V-HVDD-DVDD-ASIC1-In-1',
@@ -731,7 +742,7 @@ class CrocodileSwitch(IbSwitch):
         self.system_profile_default_values = ['enabled', '1792', 'enabled', 'disabled', '1']
         self.stats_cpu_header_num_of_lines = 12
         self.stats_power_header_num_of_lines = 17
-        self.stats_temperature_header_num_of_lines = 69
+        self.stats_temperature_header_num_of_lines = 32
         self.allow_cpld_update = True
         self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/crocodile_versions.json"
         self.fnm_link_speed = '800G'
@@ -920,10 +931,14 @@ class JulietSwitch(NvLinkSwitch):
         self.has_nmx = True
         self.has_bmc = True
         self.is_standalone = True
+        self.ztp_prod_json = 'uninstall_juliet_prod.json'
+        self.ztp_dev_json = 'uninstall_juliet.json'
+        self.ztp_complex_prod_json = 'complex_prod_juliet.json'
+        self.ztp_complex_dev_json = 'complex_juliet.json'
         self.show_platform_chassis_location_output = {
             PlatformConsts.CHASSIS_LOCATION_TRAY_ID: ExpectedString(range_min=-1, range_max=9),
             PlatformConsts.CHASSIS_LOCATION_SLOT_ID: ExpectedString(range_min=4, range_max=18),
-            PlatformConsts.CHASSIS_LOCATION_CHAS_ID: "",
+            PlatformConsts.CHASSIS_LOCATION_CHAS_SN: "",
             PlatformConsts.CHASSIS_LOCATION_TOPO_ID: ExpectedString(regex=r"^(Loopback|GB200 NVL36|GB200 NVL72|\d+)$")
         }
         cluster_files = ['conf', 'nmx-controller', 'nmx-telemetry']
@@ -931,42 +946,34 @@ class JulietSwitch(NvLinkSwitch):
         bmc_dump_files = ['bmc_debug_log_dump.tar']
         self.constants = self.constants._replace(bmc_dump_files=bmc_dump_files)
         self.constants.dump_files.append('BMCeeprom')
+        self.constants.dump_files.remove('hdparm')
         self.constants.log_nmx_files.extend(['fabricmanager.log.gz', 'gwapi.log.gz', 'nvlsm.log.gz'])
-        self.constants.erots.extend(['ERoT_BMC_0', 'ERoT_CPU_0', 'ERoT_FPGA_0', 'ERoT_NVSwitch_0', 'ERoT_NVSwitch_1'])
-        self.erot_fw_image_info = self.ErotFirmwareImagesTestConsts(
-            current_image_path='/auto/sw_system_release/erot/juliet/01.03.0216.0000/dev/cec1736-ecfw-01.03.0216.0000-n04-dev-initial.fwpkg',
-            previous_image_path='/auto/sw_system_release/erot/juliet/01.03.0202.000/sign/n04/dev/cec1736-ecfw-01.03.0202.0000-n04-dev-initial.fwpkg',
-            version_names={'cec1736-ecfw-01.03.0202.0000-n04-dev-initial.fwpkg': '01.03.0202.0000_n04',
-                           'cec1736-ecfw-01.03.0216.0000-n04-dev-initial.fwpkg': '01.03.0216.0000_n04'})
+        stats_dump_files = ["cpu.csv.gz", "disk.csv.gz", "fan.csv.gz",
+                            "mgmt-interface.csv.gz", "temperature.csv.gz", "voltage.csv.gz"]
+        self.constants = self.constants._replace(stats_dump_files=stats_dump_files)
+        self.constants.erots.extend(
+            [PlatformConsts.EROT_BMC_PATH_NAME, PlatformConsts.EROT_CPU_PATH_NAME, PlatformConsts.EROT_FPGA_PATH_NAME,
+             PlatformConsts.EROT_ASIC1_PATH_NAME, PlatformConsts.EROT_ASIC2_PATH_NAME])
 
         self.nmx_cluster_apps_versions = self.NmxClusterAppsConsts(
             burn_path={
-                ClusterConsts.NMX_CONTROLLER: "/auto/sw/release/NMX/NMX-controller/package/0.6.0/nmx-c-nvlink_0.6.0_2024-08-27_17-17.tar.gz",
+                ClusterConsts.NMX_CONTROLLER: "/auto/sw/release/NMX/NMX-controller/package/0.6.1/nmx-c-nvlink_0.6.1_2024-10-22_19-40.tar.gz",
                 ClusterConsts.NMX_TELEMETRY: "/auto/sw/release/NMX/NMX-telemetry/nmx-telemetry_0.6.2_2024-08-20.tgz"
             },
             burn_version_names={
-                ClusterConsts.NMX_CONTROLLER: "0.6.0",
+                ClusterConsts.NMX_CONTROLLER: "0.6.1",
                 ClusterConsts.NMX_TELEMETRY: "0.6.2"
             }
         )
         self.supported_commands.extend([ActionConsts.POWER_CYCLE])
         self.asic_version = BaseSwitch.AsicImageConsts(
-            version="35.2014.1482",
-            filename="fw-QTM3-rel-35_2014_1482.mfa"
+            version="35.2014.1492",
+            filename="fw-QTM3-rel-35_2014_1492.mfa"
         )
-        self.bios_image_info = BaseSwitch.BiosImagesConsts(
-            current_version={
-                'path': '/auto/sw_system_release/sx_mlnx_bios/SnowyOwl/0ACTV_01.00.002/Release/erot_sign_debug/cec1736-apfw-0100002.fwpkg',
-                'filename': 'cec1736-apfw-0100002.fwpkg',
-                'version_name': '01.00.002',
-                'date': '10/07/2024'},
-            alternate_version={
-                'path': '/auto/sw_system_release/sx_mlnx_bios/SnowyOwl/0ACTV_00.00.018/Release/erot_sign_debug/cec1736-apfw-0000012.fwpkg',
-                'filename': 'cec1736-apfw-0000012.fwpkg',
-                'version_name': '00.00.018',
-                'date': '08/21/2024'})
 
         self.power_cycle_type = 'juliet-power-cycle'
+        self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/juliet_versions.json"
+        self.valid_ports_count = 144
 
     def _init_fan_list(self):
         super()._init_fan_list()
@@ -990,6 +997,27 @@ class JulietSwitch(NvLinkSwitch):
             "BMC": {"Manufacturer": "NVIDIA", "Model": None, "PartNumber": ExpectedString(r"[-\d]+"),
                     "SerialNumber": ExpectedString.number_and_string(""), "State": "Enabled"}
         }
+
+    def _init_temperature(self):
+        super()._init_temperature()
+        self.temperature_sensors = [
+            'ASIC1', 'ASIC2', 'Ambient-MNG-Temp', 'CPU-Pack-Temp', 'Drive-Temp', 'HSC-VinDC-Temp', 'PDB-Conv-1-Temp',
+            'PDB-Conv-2-Temp', 'PDB-Conv-3-Temp', 'PDB-Conv-4-Temp', 'PMIC-1-Temp', 'PMIC-2-Temp', 'PMIC-3-Temp',
+            'PMIC-4-Temp', 'PMIC-5-Temp', 'PMIC-6-Temp', 'PMIC-7-Temp', 'PMIC-8-Temp',
+            'SWB-ASIC1-PCB-Temp', 'SWB-ASIC2-PCB-Temp', 'SODIMM-1-Temp']
+
+    def _init_gnmi_consts(self):
+        super()._init_gnmi_consts()
+        self.bmc_xpath = "platform-general/versions/state/fw-version-bmc"
+        self.erot_xpath = "platform-general/versions/state/fw-version-erot"
+        self.fpga_xpath = "platform-general/versions/state/fw-version-fpga"
+        self.components_gnmi_xpath = [self.bmc_xpath, self.bios_xpath, self.erot_xpath, self.fpga_xpath,
+                                      self.cpld1_xpath, self.cpld2_xpath, self.cpld3_xpath, self.cpld4_xpath]
+
+    def _init_boot_time_timeouts(self):
+        super()._init_boot_time_timeouts()
+        self.timeout_system_is_ready = 20 * MINUTE
+        self.timeout_reboot_to_grub_menu = 5 * MINUTE
 
     def get_available_erot_names(self, setup_name: str) -> List[str]:
         available_erots_per_juliet_number: Dict[str, List[str]] = {
@@ -1020,11 +1048,15 @@ class JulietScaleoutSwitch(JulietSwitch):
     def _init_constants(self):
         super()._init_constants()
         self.asic_type = NvosConst.NVL5
-        self.cluster_app_nmx_controller = {'app-id': 'nmx-c-nvos', 'app-ver': None, 'capabilities': 'sm, gfm, fib, gw-api', 'components-ver': None, 'reason': '', 'status': 'ok'}
-        self.cluster_app_nmx_telemetry = {'app-id': 'nmx-telemetry', 'app-ver': None, 'capabilities': 'ib-telemetry', 'components-ver': None, 'reason': '', 'status': 'ok'}
+        self.cluster_app_nmx_controller = {'addition-info': ExpectedString(regex=".*"), 'app-id': 'nmx-c-nvos', 'app-ver': None, 'capabilities': 'sm, gfm, fib, gw-api', 'components-ver': None, 'reason': '', 'status': 'ok'}
+        self.cluster_app_nmx_telemetry = {'addition-info': ExpectedString(regex=".*"), 'app-id': 'nmx-telemetry', 'app-ver': None, 'capabilities': 'nvl telemetry, gnmi aggregation, syslog aggregation', 'components-ver': None, 'reason': '', 'status': 'ok'}
         self.cluster_app = {
-            'nmx-controller': {key: value for key, value in self.cluster_app_nmx_controller.items() if key not in ['reason', 'status']},
-            'nmx-telemetry': {key: value for key, value in self.cluster_app_nmx_telemetry.items() if key not in ['reason', 'status']}
+            'nmx-controller': {key: value for key, value in self.cluster_app_nmx_controller.items() if key not in []},
+            'nmx-telemetry': {key: value for key, value in self.cluster_app_nmx_telemetry.items() if key not in []}
+        }
+        self.cluster_app_installed = {
+            'nmx-controller': {key: value for key, value in self.cluster_app_nmx_controller.items() if key not in ['reason', 'status', 'addition-info']},
+            'nmx-telemetry': {key: value for key, value in self.cluster_app_nmx_telemetry.items() if key not in ['reason', 'status', 'addition-info']}
         }
         # self.cluster_app = {'nmx-controller': self.cluster_app_nmx_controller, 'nmx-telemetry': self.cluster_app_nmx_telemetry}
         self.core_count = 8
@@ -1051,29 +1083,10 @@ class JulietScaleoutSwitch(JulietSwitch):
             "asic-model": self.asic_type,
         })
 
-        self.current_cpld_version = BaseSwitch.CpldImageConsts(
-            burn_image_path="/auto/sw_system_project/NVOS_INFRA/verification_files/cpld_fw/FUI000299_BURN_JULIET_CPLD000370_REV0104_CPLD000371_REV0107_CPLD000373_REV0100_CPLD000372_REV0004.vme",
-            refresh_image_path="",
-            version_names={
-                "CPLD1": "CPLD000370_REV0104",
-                "CPLD2": "CPLD000371_REV0107",
-                "CPLD3": "CPLD000373_REV0100",
-                "CPLD4": "CPLD000372_REV0004"
-            }
-        )
-        self.previous_cpld_version = BaseSwitch.CpldImageConsts(
-            burn_image_path="/auto/sw_system_project/NVOS_INFRA/verification_files/cpld_fw/OLD/FUI000287_BURN_JULIET_CPLD000370_REV0010_CPLD000371_REV0010_CPLD000373_REV0010_CPLD000372_REV0003.vme",
-            refresh_image_path="",
-            version_names={
-                "CPLD1": "CPLD000370_REV0010",
-                "CPLD2": "CPLD000371_REV0010",
-                "CPLD3": "CPLD000373_REV0010",
-                "CPLD4": "CPLD000372_REV0003"
-            }
-        )
         self.stats_fan_header_num_of_lines = 21
         self.stats_cpu_header_num_of_lines = 12
         self.stats_temperature_header_num_of_lines = 48
+        self.allow_cpld_update = True
 
         # Port 1-36 is from asic1/ Port 37-72 is from asic2
         self.nvl5_access_ports_list = ['acp1', 'acp2', 'acp3', 'acp4', 'acp5', 'acp6',
@@ -1110,7 +1123,8 @@ class JulietScaleoutSwitch(JulietSwitch):
                                       ]
         self.network_ports = ['eth0', 'eth1', 'lo']
         self.all_nvl5_ports_list = self.nvl5_access_ports_list + self.nvl5_trunk_ports_list + self.network_ports
-        self.nvl5_fnm_ports = ['fnm1', 'fnm2', 'fnma0p1', 'fnma1p1']
+        self.nvl5_fnm_ports = ['fnm1', 'fnm2']
+        self.nvl5_internal_fnm_ports = ['fnma0p1', 'fnma1p1']
         self.all_fae_nvl5_ports_list = self.all_nvl5_ports_list + self.nvl5_fnm_ports
         self.nvl5_port = ['sw1p1s1']
         self.nvl5_port_speed = '400G'
@@ -1118,14 +1132,6 @@ class JulietScaleoutSwitch(JulietSwitch):
         self.fnm_fae_link_speed = '100G'
         self.nvl5_port_type = 'nvl'
         # will be updated
-
-    def _init_temperature(self):
-        super()._init_temperature()
-        self.temperature_sensors = [
-            'ASIC1', 'ASIC2', 'Ambient-Fan-Side-Temp', 'CPU-Pack-Temp', 'Drive-Temp', 'HSC-VinDC-Temp', 'PDB-Conv-1-Temp',
-            'PDB-Conv-2-Temp', 'PDB-Conv-3-Temp', 'PDB-Conv-4-Temp', 'PMIC-1-Temp', 'PMIC-2-Temp', 'PMIC-3-Temp',
-            'PMIC-4-Temp', 'PMIC-5-Temp', 'PMIC-6-Temp', 'PMIC-7-Temp', 'PMIC-8-Temp', 'SODIMM-1-Temp',
-            'SWB-ASIC1-PCB-Temp', 'SWB-ASIC2-PCB-Temp']
 
     def _init_fan_list(self):
         super()._init_fan_list()
@@ -1149,8 +1155,8 @@ class JulietScaleoutSwitch(JulietSwitch):
                                                       "model": "692-9K36F-00MV-JS0"})
 
     def sleep_after_system_reboot(self):
-        logger.info("Sleeping for 80 seconds - Reboot takes longer on juliet for now")
-        time.sleep(80)
+        logger.info("Sleeping for 140 seconds - Reboot takes longer on juliet for now")
+        time.sleep(140)
 
     def _relevant_config_filename_by_version(self, version: str) -> str:
         return 'nvos_config_nvl5.yml'
@@ -1165,26 +1171,7 @@ class JulietTTMSwitch(JulietScaleoutSwitch):
 
     def _init_constants(self):
         super()._init_constants()
-        self.current_cpld_version = BaseSwitch.CpldImageConsts(
-            burn_image_path="/auto/sw_system_project/NVOS_INFRA/verification_files/cpld_fw/FUI000319_BURN_JULIET_TTM_CPLD000370_REV0104_CPLD000377_REV0104_CPLD000373_REV0100_CPLD000390_REV0100_IPN.vme",
-            refresh_image_path="",
-            version_names={
-                "CPLD1": "CPLD000370_REV0104",
-                "CPLD2": "CPLD000377_REV0104",
-                "CPLD3": "CPLD000373_REV0100",
-                "CPLD4": "CPLD000390_REV0100"
-            }
-        )
-        self.previous_cpld_version = BaseSwitch.CpldImageConsts(
-            burn_image_path="/auto/sw_system_project/NVOS_INFRA/verification_files/cpld_fw/OLD/FUI000314_BURN_JULIET_TTM_CPLD000370_REV0104_CPLD000377_REV0102_CPLD000373_REV0100_CPLD000390_REV0100_IPN.vme",
-            refresh_image_path="",
-            version_names={
-                "CPLD1": "CPLD000370_REV0104",
-                "CPLD2": "CPLD000377_REV0102",
-                "CPLD3": "CPLD000373_REV0100",
-                "CPLD4": "CPLD000390_REV0100"
-            }
-        )
+        self.allow_cpld_update = True
 
     def _init_fan_list(self):
         super()._init_fan_list()
@@ -1209,26 +1196,6 @@ class JulietAriel(JulietTTMSwitch):
     def _init_constants(self):
         super()._init_constants()
         # TODO - Need to be changed to correct values for Ariel. Double check with tamuz.
-        self.current_cpld_version = BaseSwitch.CpldImageConsts(
-            burn_image_path="/auto/sw_system_project/NVOS_INFRA/verification_files/cpld_fw/FUI000319_BURN_JULIET_TTM_CPLD000370_REV0104_CPLD000377_REV0104_CPLD000373_REV0100_CPLD000390_REV0100_IPN.vme",
-            refresh_image_path="",
-            version_names={
-                "CPLD1": "CPLD000370_REV0104",
-                "CPLD2": "CPLD000377_REV0104",
-                "CPLD3": "CPLD000373_REV0100",
-                "CPLD4": "CPLD000390_REV0100"
-            }
-        )
-        self.previous_cpld_version = BaseSwitch.CpldImageConsts(
-            burn_image_path="/auto/sw_system_project/NVOS_INFRA/verification_files/cpld_fw/OLD/FUI000314_BURN_JULIET_TTM_CPLD000370_REV0104_CPLD000377_REV0102_CPLD000373_REV0100_CPLD000390_REV0100_IPN.vme",
-            refresh_image_path="",
-            version_names={
-                "CPLD1": "CPLD000370_REV0104",
-                "CPLD2": "CPLD000377_REV0102",
-                "CPLD3": "CPLD000373_REV0100",
-                "CPLD4": "CPLD000390_REV0100"
-            }
-        )
         self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
             "x86_64-nvidia_n5112_ld-r0")
         self.show_platform_output.update({
@@ -1253,7 +1220,66 @@ class JulietAriel(JulietTTMSwitch):
 
     def _init_platform_lists(self):
         super()._init_platform_lists()
-        self.platform_inventory_switch_values.update({"model": "692-9K36F-A5MV-JS0"})
+        self.platform_inventory_switch_values.update({"model": "692-9K36F-A5MV-JQS"})
+
+
+# -------------------------- ArielPS Switch ----------------------------
+
+
+class JulietArielPS(JulietTTMSwitch):
+
+    def __init__(self):
+        super().__init__()
+
+    def _init_constants(self):
+        super()._init_constants()
+        # TODO - Need to be changed to correct values for Ariel. Double check with tamuz.
+        self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
+            "x86_64-nvidia_n5112_ld-r0")
+        self.show_platform_output.update({
+            "product-name": "N5112_LD",
+            "asic-model": self.asic_type,
+        })
+
+        self.voltage_sensors = ['HSC-VinDC-In', 'HSC-VinDC-Out', 'PDB-1-Conv-In-1', 'PDB-1-Conv-Out-1',
+                                'PDB-2-Conv-In-1',
+                                'PDB-2-Conv-Out-1', 'PMIC-1-12V-VDD-ASIC1-In-1', 'PMIC-1-ASIC1-VDD-Out-1',
+                                'PMIC-2-12V-HVDD-DVDD-ASIC1-In-1',
+                                'PMIC-2-ASIC1-DVDD-PL0-Out-2', 'PMIC-2-ASIC1-HVDD-PL0-Out-1',
+                                'PMIC-3-12V-HVDD-DVDD-ASIC1-In-1',
+                                'PMIC-3-ASIC1-DVDD-PL1-Out-2', 'PMIC-3-ASIC1-HVDD-PL1-Out-1',
+                                'PMIC-4-12V-VDD-ASIC2-In-1',
+                                'PMIC-4-ASIC2-VDD-Out-1', 'PMIC-5-12V-HVDD-DVDD-ASIC2-In-1',
+                                'PMIC-5-ASIC2-DVDD-PL0-Out-2',
+                                'PMIC-5-ASIC2-HVDD-PL0-Out-1', 'PMIC-6-12V-HVDD-DVDD-ASIC2-In-1',
+                                'PMIC-6-ASIC2-DVDD-PL1-Out-2',
+                                'PMIC-6-ASIC2-HVDD-PL1-Out-1', 'PMIC-7-12V-MAIN-In-1', 'PMIC-7-CEX-VDD-Out-1',
+                                'PMIC-8-COMEX-VDD-MEM-In-1', 'PMIC-8-COMEX-VDD-MEM-Out-1']
+
+        self.nvl5_access_ports_list = ['acp1', 'acp2', 'acp3', 'acp4', 'acp5', 'acp6',
+                                       'acp7', 'acp8', 'acp9', 'acp10', 'acp11', 'acp12', 'acp13', 'acp14',
+                                       'acp15', 'acp16', 'acp17', 'acp18', 'acp19', 'acp20',
+                                       'acp21', 'acp22', 'acp23', 'acp24', 'acp25', 'acp26',
+                                       'acp27', 'acp28', 'acp29', 'acp30', 'acp31', 'acp32',
+                                       'acp33', 'acp34', 'acp35', 'acp36', 'acp37', 'acp38', 'acp39', 'acp40',
+                                       'acp41', 'acp42', 'acp43', 'acp44', 'acp45', 'acp46',
+                                       'acp47', 'acp48', 'acp49', 'acp50', 'acp51', 'acp52',
+                                       'acp53', 'acp54', 'acp55', 'acp56', 'acp57', 'acp58',
+                                       'acp59', 'acp60', 'acp61', 'acp62', 'acp63', 'acp64',
+                                       'acp65', 'acp66', 'acp67', 'acp68', 'acp69', 'acp70',
+                                       'acp71', 'acp72']
+
+        self.all_nvl5_ports_list = self.nvl5_access_ports_list + self.nvl5_trunk_ports_list + self.network_ports
+
+    def _init_temperature(self):
+        super()._init_temperature()
+        sensors_to_remove = ['PDB-Conv-3-Temp', 'PDB-Conv-4-Temp']
+        for sensor in sensors_to_remove:
+            self.temperature_sensors.remove(sensor)
+
+    def _init_platform_lists(self):
+        super()._init_platform_lists()
+        self.platform_inventory_switch_values.update({"model": "692-9K36F-A5MV-JQS"})
 
 
 # -------------------------- JulietNonScaleoutSwitch Switch ----------------------------
@@ -1295,7 +1321,8 @@ class JulietNonScaleoutSwitch(JulietScaleoutSwitch):
         self.nvl5_trunk_ports_list = []
         self.network_ports = ['eth0', 'eth1', 'lo']
         self.all_nvl5_ports_list = self.nvl5_access_ports_list + self.nvl5_trunk_ports_list + self.network_ports
-        self.nvl5_fnm_ports = ['fnm1', 'fnm2', 'fnma0p1', 'fnma1p1']
+        self.nvl5_fnm_ports = ['fnm1', 'fnm2']
+        self.nvl5_internal_fnm_ports = ['fnma0p1', 'fnma1p1']
         self.all_fae_nvl5_ports_list = self.all_nvl5_ports_list + self.nvl5_fnm_ports
         self.nvl5_port = ['sw1p1s1']
         self.nvl5_port_speed = '400G'
@@ -1322,6 +1349,89 @@ class JulietNonScaleoutSwitch(JulietScaleoutSwitch):
             "max-speed": ExpectedString(range_min=20000, range_max=40000)}
         self.platform_inventory_switch_values.update({"hardware-version": None,
                                                       "model": ExpectedString(regex="692-9K36F-00MV-JS0")})
+
+
+# -------------------------- JulietNonScaleoutNoNCISwitch Switch ----------------------------
+
+
+class JulietNonScaleoutSwitchNoNCI(JulietNonScaleoutSwitch):
+
+    def __init__(self):
+        super().__init__()
+
+    def _init_constants(self):
+        super()._init_constants()
+        self.nvl5_access_ports_list = [
+            'acp1', 'acp2', 'acp3', 'acp4', 'acp5', 'acp6',
+            'acp7', 'acp8', 'acp9', 'acp10', 'acp11', 'acp12',
+            'acp13', 'acp14', 'acp15', 'acp16', 'acp17', 'acp18',
+            'acp19', 'acp20', 'acp21', 'acp22', 'acp23', 'acp24',
+            'acp25', 'acp26', 'acp27', 'acp28', 'acp29', 'acp30',
+            'acp31', 'acp32', 'acp33', 'acp34', 'acp35', 'acp36',
+            'acp37', 'acp38', 'acp39', 'acp40', 'acp41', 'acp42',
+            'acp43', 'acp44', 'acp45', 'acp46', 'acp47', 'acp48',
+            'acp49', 'acp50', 'acp51', 'acp52', 'acp53', 'acp54',
+            'acp55', 'acp56', 'acp57', 'acp58', 'acp59', 'acp60',
+            'acp61', 'acp62', 'acp63', 'acp64', 'acp65', 'acp66',
+            'acp67', 'acp68', 'acp69', 'acp70', 'acp71', 'acp72',
+            'acp73', 'acp74', 'acp75', 'acp76', 'acp77', 'acp78',
+            'acp79', 'acp80', 'acp81', 'acp82', 'acp83', 'acp84',
+            'acp85', 'acp86', 'acp87', 'acp88', 'acp89', 'acp90',
+            'acp91', 'acp92', 'acp93', 'acp94', 'acp95', 'acp96',
+            'acp97', 'acp98', 'acp99', 'acp100', 'acp101', 'acp102',
+            'acp103', 'acp104', 'acp105', 'acp106', 'acp107', 'acp108',
+            'acp109', 'acp110', 'acp111', 'acp112', 'acp113', 'acp114',
+            'acp115', 'acp116', 'acp117', 'acp118', 'acp119', 'acp120',
+            'acp121', 'acp122', 'acp123', 'acp124', 'acp125', 'acp126',
+            'acp127', 'acp128', 'acp129', 'acp130', 'acp131', 'acp132',
+            'acp133', 'acp134', 'acp135', 'acp136', 'acp137', 'acp138',
+            'acp139', 'acp140', 'acp141', 'acp142', 'acp143', 'acp144'
+        ]
+        self.nvl5_trunk_ports_list = []
+        self.network_ports = ['eth0', 'eth1', 'lo']
+        self.all_nvl5_ports_list = self.nvl5_access_ports_list + self.nvl5_trunk_ports_list + self.network_ports
+        self.nvl5_fnm_ports = ['fnm1', 'fnm2']
+        self.nvl5_internal_fnm_ports = ['fnma0p1', 'fnma1p1']
+        self.all_fae_nvl5_ports_list = self.all_nvl5_ports_list + self.nvl5_fnm_ports
+        self.nvl5_port = ['sw1p1s1']
+        self.nvl5_port_speed = '400G'
+        self.fnm_link_speed = '100G'
+        self.fnm_fae_link_speed = '100G'
+        self.nvl5_port_type = 'nvl'
+        # will be updated
+        self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
+            "x86_64-nvidia_n5200_ld-r0")
+        self.show_platform_output.update({
+            "product-name": "N5200_LD",
+            "asic-model": self.asic_type,
+        })
+        self.voltage_sensors = ['HSC-VinDC-In', 'HSC-VinDC-Out', 'PDB-1-Conv-In-1', 'PDB-1-Conv-Out-1', 'PDB-2-Conv-In-1',
+                                'PDB-2-Conv-Out-1', 'PMIC-1-12V-VDD-ASIC1-In-1', 'PMIC-1-ASIC1-VDD-Out-1', 'PMIC-2-12V-HVDD-DVDD-ASIC1-In-1',
+                                'PMIC-2-ASIC1-DVDD-PL0-Out-2', 'PMIC-2-ASIC1-HVDD-PL0-Out-1', 'PMIC-3-12V-HVDD-DVDD-ASIC1-In-1',
+                                'PMIC-3-ASIC1-DVDD-PL1-Out-2', 'PMIC-3-ASIC1-HVDD-PL1-Out-1', 'PMIC-4-12V-VDD-ASIC2-In-1',
+                                'PMIC-4-ASIC2-VDD-Out-1', 'PMIC-5-12V-HVDD-DVDD-ASIC2-In-1', 'PMIC-5-ASIC2-DVDD-PL0-Out-2',
+                                'PMIC-5-ASIC2-HVDD-PL0-Out-1', 'PMIC-6-12V-HVDD-DVDD-ASIC2-In-1', 'PMIC-6-ASIC2-DVDD-PL1-Out-2',
+                                'PMIC-6-ASIC2-HVDD-PL1-Out-1', 'PMIC-7-12V-MAIN-In-1', 'PMIC-7-CEX-VDD-Out-1',
+                                'PMIC-8-COMEX-VDD-MEM-In-1', 'PMIC-8-COMEX-VDD-MEM-Out-1']
+
+    def _init_fan_list(self):
+        self.fan_list = ["FAN1/1", "FAN1/2", "FAN2/1", "FAN2/2", "FAN3/1", "FAN3/2", "FAN4/1", "FAN4/2"]
+        self.fan_led_list = []
+
+    def _init_temperature(self):
+        super()._init_temperature()
+        sensors_to_remove = ['PDB-Conv-3-Temp', 'PDB-Conv-4-Temp']
+        for sensor in sensors_to_remove:
+            self.temperature_sensors.remove(sensor)
+
+    def _init_platform_lists(self):
+        super()._init_platform_lists()
+        self.platform_environment_fan_values = {
+            "state": FansConsts.STATE_OK, "direction": None, "current-speed": None,
+            "min-speed": ExpectedString(range_min=2000, range_max=10000),
+            "max-speed": ExpectedString(range_min=20000, range_max=40000)}
+        self.platform_inventory_switch_values.update({"hardware-version": None,
+                                                      "model": ExpectedString(regex="692-96099-00MV-JS0")})
 
 
 # -------------------------- Caiman Switch ----------------------------

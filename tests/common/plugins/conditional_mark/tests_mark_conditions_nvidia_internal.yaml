@@ -399,6 +399,7 @@ platform_tests.cli.test_show_platform.py::test_show_platform_ssdhealth:
     conditions:
     - "'simx' in platform"
     - "https://redmine.mellanox.com/issues/4172759 and 'bf3comdpu' in platform"
+    - "https://redmine.mellanox.com/issues/4175083 and '4280' in platform"
 
 passw_hardening/test_passw_hardening.py:
   skip:
@@ -553,6 +554,14 @@ platform_tests/api/test_sfp.py:
     conditions_logical_operator: or
     conditions:
     - "'simx' in platform"
+
+platform_tests/api/test_sfp.py::TestSfpApi::test_get_error_description:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4220524"
+    conditions_logical_operator: or
+    conditions:
+    - "https://redmine.mellanox.com/issues/4220524 and ('sn5610n' in platform or 'sn5600' in platform)"
+    - "https://redmine.mellanox.com/issues/4205722"
 
 platform_tests/mellanox/test_check_sfp_eeprom.py:
   skip:
@@ -991,6 +1000,12 @@ bfd/test_bfd.py::test_bfd_multihop:
     reason: "Testcase can fails due to RM 4212393"
     conditions:
     - "https://redmine.mellanox.com/issues/4212393"
+
+ipfwd/test_nhop_group.py::test_nhop_group_interface_flap:
+  skip:
+    reason: "Testcase ignored due to GitHub issue https://github.com/sonic-net/sonic-mgmt/issues/16218"
+    conditions:
+      - https://github.com/sonic-net/sonic-mgmt/issues/16218
 
 ########################## NVIDIA INTERNAL COMMUNITY IGNORE END ############################
 

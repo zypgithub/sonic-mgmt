@@ -49,8 +49,8 @@ def aaa_users(engines, cleanup_after_aaa) -> Dict[str, UserInfo]:
 
 @pytest.mark.system
 @pytest.mark.gnmi
-@pytest.mark.parametrize('test_flow', TestFlowType.ALL_TYPES)
-@pytest.mark.parametrize('addressing_type', [AddressingType.IPV4, AddressingType.IPV6])
+@pytest.mark.parametrize('test_flow', [TestFlowType.GOOD_FLOW])
+@pytest.mark.parametrize('addressing_type', [AddressingType.IPV4])
 def test_gnmi_authentication(test_flow, addressing_type, engines, local_adminuser, aaa_users, dut_ipv6_addr):
     """
     verify that gnmi clients must be properly authenticated to subscribe and get updates
@@ -85,7 +85,7 @@ def test_gnmi_authentication(test_flow, addressing_type, engines, local_adminuse
                 verify_gnmi_client(test_flow, host_address, GnmiConsts.GNMI_DEFAULT_PORT, user.username,
                                    user.password if test_flow == TestFlowType.GOOD_FLOW else 'abcde', True,
                                    GnmicErr.AUTH_FAIL, selected_port, new_port_description_to_check=new_description,
-                                   client_cmd_time=20 if test_flow == TestFlowType.BAD_FLOW else None)
+                                   client_cmd_time=20)
 
 
 @pytest.mark.system

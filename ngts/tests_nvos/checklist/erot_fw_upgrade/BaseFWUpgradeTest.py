@@ -1,158 +1,125 @@
-import copy
 import logging
-import os
-import os.path
-from typing import Tuple
+import time
+import random
+from typing import Dict
 
-import allure
+from ngts.nvos_tools.platform.Platform import Platform
+from ngts.tests_nvos.constants import MINUTE, FW_COMPONENT_EROT
+from ngts.tools.test_utils import allure_utils as allure
 
-from ngts.nvos_constants.constants_nvos import PlatformConsts
-from ngts.nvos_tools.Devices.IbDevice import IbSwitch
-from ngts.nvos_tools.infra.Fae import Fae
+from ngts.nvos_constants.constants_nvos import PlatformConsts, NvosConst
+from ngts.nvos_tools.infra.BmcTool import BmcTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.tools.test_utils.switch_recovery import recover_dut_with_remote_reboot
 
 logger = logging.getLogger()
 
 
-def verify_installation(fae, firmware_component, image_consts, filename):
+def verify_installation(erot_names, expected_version):
+    platform = Platform()
+    fw_fields_to_check = [PlatformConsts.FW_ACTUAL, PlatformConsts.FW_BACKGROUND_COPY_STATUS,
+                          PlatformConsts.FW_DEBUG_TOKEN_STATUS, PlatformConsts.FW_SLOT_STATUS_INACTIVE,
+                          PlatformConsts.FW_SLOT_STATUS_ACTIVE, PlatformConsts.FW_AP_BOOT_STATUS]
     with allure.step(f"Asserting install was successful"):
-        firmware_shown = OutputParsingTool.parse_json_str_to_dictionary(
-            fae.platform.firmware.show()).get_returned_value()
-        expected_version = image_consts.version_names[filename]
-        actual_firmware = firmware_shown[firmware_component][PlatformConsts.FW_ACTUAL]
-        assert actual_firmware == expected_version, \
-            f"Expected {filename} version: {expected_version}. Actual version: {actual_firmware}"
+        for erot_name in erot_names:
+            firmware_shown: Dict[str, str] = OutputParsingTool.parse_json_str_to_dictionary(
+                platform.firmware.erot_id[erot_name].show()).get_returned_value()
+            with allure.independent_step(f"Check actual firmware version matches expected {expected_version}"):
+                actual_firmware = firmware_shown[PlatformConsts.FW_ACTUAL]
+                assert actual_firmware == expected_version, \
+                    f"Expected version: {expected_version}. Actual version: {actual_firmware}"
+            with allure.independent_step(f"Verifying {erot_name} fields are not N/A"):
+                for fw_field_name in fw_fields_to_check:
+                    with allure.independent_step(f"Assert {fw_field_name} is not N/A for {erot_name}"):
+                        field_state = firmware_shown[fw_field_name]
+                        assert field_state != NvosConst.NOT_AVAILABLE, f"The {fw_field_name} should not be N/A"
 
 
-def set_firmware_property(firmware_component, property, value):
-    logging.info(f"Set firmware {property} to {value}")
-    firmware_component.set(property, value, apply=True)
+def get_active_inactive_slots(erot_name):
+    platform = Platform()
+    with allure.step("Get active and inactive slot values"):
+        firmware_shown: Dict[str, str] = OutputParsingTool.parse_json_str_to_dictionary(
+            platform.firmware.erot_id[erot_name].show()).get_returned_value()
+        active_field = PlatformConsts.FW_SLOT_STATUS_ACTIVE
+        inactive_field = PlatformConsts.FW_SLOT_STATUS_INACTIVE
+        return firmware_shown[active_field], firmware_shown[inactive_field]
 
 
-def get_image_names(switch: IbSwitch) -> Tuple[str, str]:
-    image_consts = switch.erot_fw_image_info
-    prev_filename = os.path.basename(image_consts.previous_image_path)
-    curr_filename = os.path.basename(image_consts.current_image_path)
-    return prev_filename, curr_filename
+def fetch_and_install_erot_image(fw_component, path, version, filename):
+    with allure.step(f"Fetching image {version} from {filename}"):
+        fw_component.action_fetch(path).verify_result()
+
+    fw_component.files.verify_show_files_output(expected_files=[filename])
+
+    fetched_image_file = fw_component.files.file_name[filename]
+    with allure.step(f"Installing image {version} from {filename} with reboot"):
+        fetched_image_file.action_file_install_with_reboot().verify_result()
+
+
+def verify_active_inactive_slots(erot_name, active_slot, inactive_slot):
+    platform = Platform()
+    with allure.step(f"Verifying active and inactive slots for {erot_name}"):
+        firmware_shown: Dict[str, str] = OutputParsingTool.parse_json_str_to_dictionary(
+            platform.firmware.erot_id[erot_name].show()).get_returned_value()
+        active_field = PlatformConsts.FW_SLOT_STATUS_ACTIVE
+        inactive_field = PlatformConsts.FW_SLOT_STATUS_INACTIVE
+        with allure.independent_step(f"Check active slot for {erot_name}"):
+            assert firmware_shown[
+                active_field] == inactive_slot, "The active slot should have changed to inactive value"
+        with allure.independent_step(f"Check inactive slot for {erot_name}"):
+            assert firmware_shown[
+                inactive_field] == active_slot, "The inactive slot should have changed to active value"
 
 
 class BaseFWUpgradeTest:
 
     def __init__(self, firmware_component):
-        if isinstance(firmware_component, dict):
-            self._firmware_components = firmware_component
-            self._firmware_component = None
-        else:
-            self._firmware_component = firmware_component
-            self._firmware_components = None
-
-    def test_badflow(self, engines, switch, topology_obj, test_api, force):
-        TestToolkit.tested_api = test_api
-        filename, _ = get_image_names(switch)
-        fw_component = self._firmware_component
-        image_consts = switch.erot_fw_image_info
-
-        with allure.step(f"Fetching PREVIOUS image"):
-            fw_component.action_fetch(image_consts.previous_image_path).verify_result()
-
-        fw_component.files.file_name[filename].action_delete()
-        with allure.step("Trying to delete non-existing image"):
-            fw_component.files.file_name[filename].action_delete(should_succeed=False)
-
-        fetched_image_file = fw_component.files.file_name[filename]
-        with allure.step("Trying to install non-existing image"):
-            fetched_image_file.action_file_install(force=force).verify_result(False)
+        self._firmware_component = firmware_component
 
     def test(self, engines, switch, topology_obj, test_api):
         TestToolkit.tested_api = test_api
-        prev_filename, curr_filename = get_image_names(switch)
         fw_component = self._firmware_component
-        image_consts = switch.erot_fw_image_info
-        fae = Fae()
-        fw_components_names = switch.constants.erots.copy()
-        fw_components_names.remove('ERoT_BMC_0')  # Bad BMC erot fw - hardware limitation, therefore removing 'ERoT_BMC_0' from install verification
+        prev_path, prev_filename, prev_version = BmcTool.get_fw_component_version_previous(FW_COMPONENT_EROT)
+        curr_path, curr_filename, curr_version = BmcTool.get_fw_component_version_latest(FW_COMPONENT_EROT)
+        fw_components_names = switch.constants.erots[:]
+        component_name = random.choice(fw_components_names)
         try:
-            with allure.step(f"Fetching PREVIOUS image"):
-                fw_component.action_fetch(image_consts.previous_image_path).verify_result()
+            active_slot, inactive_slot = get_active_inactive_slots(component_name)
 
-            fw_component.files.verify_show_files_output(expected_files=[prev_filename])
-
-            set_firmware_property(fw_component, PlatformConsts.FW_SOURCE, PlatformConsts.FW_SOURCE_CUSTOM)
-
-            fetched_image_file = fw_component.files.file_name[prev_filename]
-            fetched_image_file.action_file_install(force=False)
-
-            recover_dut_with_remote_reboot(topology_obj, engines)
-
-            for comp_name in fw_components_names:
-                verify_installation(fae, comp_name, image_consts, filename=prev_filename)
-
-            with allure.step(f"Fetching CURRENT image"):
-                fw_component.action_fetch(image_consts.current_image_path).verify_result()
-
-            fw_component.files.verify_show_files_output(expected_files=[prev_filename, curr_filename])
-
-            fetched_image_file = fw_component.files.file_name[curr_filename]
-            fetched_image_file.action_file_install(force=False)
-
-            recover_dut_with_remote_reboot(topology_obj, engines)
-
-            for comp_name in fw_components_names:
-                verify_installation(fae, comp_name, image_consts, filename=curr_filename)
-
+            fetch_and_install_erot_image(fw_component, prev_path, prev_version, prev_filename)
+            with allure.step(f"Sleep for {MINUTE} so the bg-copy will finish"):
+                time.sleep(MINUTE)
+            with allure.step(f"Verifying installation was successful for each erot component"):
+                verify_installation(fw_components_names, prev_version)
+                # Has bug opened
+                # verify_active_inactive_slots(component_name, active_slot, inactive_slot)
         finally:
+            fetch_and_install_erot_image(fw_component, curr_path, curr_version, curr_filename)
+            with allure.step(f"Verifying installation was successful for each erot component"):
+                verify_installation(fw_components_names, curr_version)
+            with allure.step('delete fetched firmware image files'):
+                fw_component.files.delete_all_existing_files()
 
-            set_firmware_property(fw_component, PlatformConsts.FW_SOURCE, PlatformConsts.FW_SOURCE_DEFAULT)
-            with allure.step("Deleting fw image files"):
-                fw_component.files.delete_files([prev_filename, curr_filename])
-                fw_component.files.verify_show_files_output()
-
-    def test_list(self, engines, switch, topology_obj, test_api, fae):
+    def test_fae(self, engines, switch, topology_obj, test_api):
         TestToolkit.tested_api = test_api
-        prev_filename, curr_filename = get_image_names(switch)
-        image_consts = switch.erot_fw_image_info
-        erots = copy.deepcopy(self._firmware_components)
-        del erots['ERoT_BMC_0']  # Bad BMC erot fw - hardware limitation, therefore removing 'ERoT_BMC_0' from install verification
+        prev_path, prev_filename, prev_version = BmcTool.get_fw_component_version_previous(FW_COMPONENT_EROT)
+        curr_path, curr_filename, curr_version = BmcTool.get_fw_component_version_latest(FW_COMPONENT_EROT)
+        fw_component = self._firmware_component
+        erot_names = switch.constants.erots[:]
+        component_name = fw_component.get_resource_basename()
 
         try:
-            for comp_name, component in erots.items():
-
-                with allure.step(f"Fetching PREVIOUS image for {comp_name}"):
-                    component.action_fetch(image_consts.previous_image_path).verify_result()
-
-                component.files.verify_show_files_output(expected_files=[prev_filename])
-
-                set_firmware_property(component, PlatformConsts.FW_SOURCE, PlatformConsts.FW_SOURCE_CUSTOM)
-
-                fetched_image_file = component.files.file_name[prev_filename]
-                fetched_image_file.action_file_install().verify_result()
-
-            recover_dut_with_remote_reboot(topology_obj, engines)
-
-            for comp_name in erots.keys():
-                verify_installation(fae, comp_name, image_consts, filename=prev_filename)
-
-            for comp_name, component in erots.items():
-                with allure.step(f"Fetching CURRENT image for {comp_name}"):
-                    component.action_fetch(image_consts.current_image_path).verify_result()
-
-                component.files.verify_show_files_output(expected_files=[prev_filename, curr_filename])
-
-                set_firmware_property(component, PlatformConsts.FW_SOURCE, PlatformConsts.FW_SOURCE_CUSTOM)
-
-                fetched_image_file = component.files.file_name[curr_filename]
-                fetched_image_file.action_file_install().verify_result()
-
-            recover_dut_with_remote_reboot(topology_obj, engines)
-
-            for comp_name in erots.keys():
-                verify_installation(fae, comp_name, image_consts, filename=curr_filename)
-
+            fetch_and_install_erot_image(fw_component, prev_path, prev_version, prev_filename)
+            with allure.step(f"Sleep for {MINUTE} so the bg-copy will finish"):
+                time.sleep(MINUTE)
+            with allure.step(f"Verifying installation was successful only for {component_name}"):
+                verify_installation([component_name], prev_version)
+            with allure.step(f"Verifying installation was not performed for other erot components"):
+                other_erot_names = [erot_name for erot_name in erot_names if erot_name != component_name]
+                verify_installation(other_erot_names, curr_version)
         finally:
-            for comp_name, component in erots.items():
-                with allure.step(f"Deleting fw image files of {comp_name}"):
-                    set_firmware_property(component, PlatformConsts.FW_SOURCE, PlatformConsts.FW_SOURCE_DEFAULT)
-                    component.files.delete_files([prev_filename, curr_filename])
-                    component.files.verify_show_files_output()
+            fetch_and_install_erot_image(fw_component, curr_path, curr_version, curr_filename)
+            with allure.step(f"Verifying installation was successful for {component_name}"):
+                verify_installation([component_name], curr_version)
+            with allure.step('delete fetched firmware image files'):
+                fw_component.files.delete_all_existing_files()

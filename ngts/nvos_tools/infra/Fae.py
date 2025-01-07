@@ -1,33 +1,33 @@
 import logging
 import time
-from typing import List
 from typing import Dict
-import requests
+from typing import List
 
+import requests
 
 from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.cli_wrappers.nvue.nvue_base_clis import NvueBaseCli
+from ngts.cli_wrappers.nvue.nvue_cluster_clis import NvueClusterCli
 from ngts.cli_wrappers.nvue.nvue_platform_clis import NvuePlatformCli
 from ngts.cli_wrappers.nvue.nvue_system_clis import NvueSystemCli
 from ngts.cli_wrappers.openapi.openapi_base_clis import OpenApiBaseCli
+from ngts.cli_wrappers.openapi.openapi_cluster_clis import OpenApiClusterCli
 from ngts.cli_wrappers.openapi.openapi_platform_clis import OpenApiPlatformCli
 from ngts.cli_wrappers.openapi.openapi_system_clis import OpenApiSystemCli
-from ngts.cli_wrappers.nvue.nvue_cluster_clis import NvueClusterCli
-from ngts.cli_wrappers.openapi.openapi_cluster_clis import OpenApiClusterCli
-from ngts.nvos_tools.infra.DefaultDict import DefaultDict
 from ngts.nvos_constants.constants_nvos import ApiType, ActionConsts
 from ngts.nvos_tools.fae.Debug import Debug
 from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
 from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
+from ngts.nvos_tools.infra.DefaultDict import DefaultDict
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
+from ngts.nvos_tools.infra.ErotComponent import ErotComponent
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.PortFastRecovery import PortFastRecovery
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.nvos_tools.system.Files import Files
-from ngts.nvos_tools.system.Firmware import Firmware
 from ngts.nvos_tools.system.Health import Health
 from ngts.tools.test_utils import allure_utils as allure
 
@@ -39,7 +39,6 @@ class Fae(BaseComponent):
         super().__init__(parent=parent_obj,
                          api={ApiType.NVUE: NvueBaseCli, ApiType.OPENAPI: OpenApiBaseCli}, path='/fae')
         self.system = FaeSystem(self)
-        self.firmware = Firmware(self)
         self.ipoibmapping = BaseComponent(self, path='/ipoib-mapping')
         self.health = Health(self)
         self.port = MgmtPort(port_name, self)
@@ -79,13 +78,13 @@ class FaeApps(BaseComponent):
         super().__init__(parent=parent_obj,
                          api={ApiType.NVUE: NvueClusterCli, ApiType.OPENAPI: OpenApiClusterCli},
                          path='/apps')
-        self.apps_name: Dict[str, FaeAppsName] = DefaultDict(
-            lambda apps_name: FaeAppsName(parent=self, apps_name=apps_name))
+        self.app_name: Dict[str, FaeClusterApp] = DefaultDict(
+            lambda app_name: FaeClusterApp(parent=self, app_name=app_name))
 
 
-class FaeAppsName(BaseComponent):
-    def __init__(self, parent, apps_name):
-        super().__init__(parent=parent, path=f'/{apps_name}')
+class FaeClusterApp(BaseComponent):
+    def __init__(self, parent, app_name):
+        super().__init__(parent=parent, path=f'/{app_name}')
 
     def action_uninstall(self, expect_reboot=False) -> ResultObj:
         """nv action uninstall fae cluster apps <app_name> [force]"""
@@ -96,6 +95,7 @@ class Ib(BaseComponent):
     def __init__(self, parent_obj=None):
         super().__init__(parent=parent_obj, path='/ib')
         self.ufm_mad = BaseComponent(self, path='/ufm-m')  # [L.A] temporary change ('/ufm-mad')
+        self.link_low_power = BaseComponent(self, path='/link-low-power')
 
 
 class SonicCli(BaseComponent):
@@ -132,7 +132,7 @@ class FaeFirmware(BaseComponent):
         self.ssd = FaePlatformComponent(self, 'SSD')
         self.bmc = FaePlatformComponent(self, 'BMC')  # TODO: Fix after bug closed https://redmine.mellanox.com/issues/3955495
         self.fpga = FaePlatformComponent(self, 'FPGA')
-        self.erots: Dict[str, ErotComponent] = DefaultDict(lambda erot_name: ErotComponent(self, erot_name=erot_name))
+        self.erot_id: Dict[str, ErotComponent] = DefaultDict(lambda erot_id: ErotComponent(self, erot_name=erot_id))
 
     def install_bios_firmware(self, bios_image_path, device, topology_obj=None):
         with allure.step("installing bios firmware from {action_type}".format(action_type=bios_image_path)):
@@ -145,7 +145,7 @@ class FaeFirmware(BaseComponent):
         erots_names = switch.constants.erots.copy()
 
         for erot in erots_names:
-            self.erots[erot] = ErotComponent(self, erot)
+            self.erot_id[erot] = ErotComponent(self, erot)
 
 
 class FaeBiosComponent(BaseComponent):
@@ -208,12 +208,6 @@ class FaeSystem(BaseComponent):
     def ssd_cleanup(self, expected_str="", dut_engine=None):
         """nv action run fae system ssd-cleanup """
         return self.action(ActionConsts.RUN, 'ssd-cleanup', expected_output=expected_str)
-
-
-class ErotComponent(BaseComponent):
-    def __init__(self, parent_obj=None, erot_name=None):
-        super().__init__(parent=parent_obj, path=f"/{erot_name}")
-        self.files = Files(self)
 
 
 class FaeLog(BaseComponent):

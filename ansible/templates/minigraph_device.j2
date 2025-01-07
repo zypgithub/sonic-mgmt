@@ -23,7 +23,9 @@
 {% elif (inventory_hostname == "arc-switch1004" or inventory_hostname == "arc-switch1025" or inventory_hostname == "mtbc-sonic-03-2700" or inventory_hostname == "c-panther-01" or inventory_hostname == "r-panther-23") and index == 43 %}
           <Speed>10000</Speed>
 {% else %}
-    {%- if port_alias[index] in port_speed and port_speed[port_alias[index]] != ""  %}
+    {% if device_conn[inventory_hostname][port_alias_map[port_alias[index]]] is defined %}
+          <Speed>{{ device_conn[inventory_hostname][port_alias_map[port_alias[index]]]['speed'] }}</Speed>
+    {%- elif port_alias[index] in port_speed and port_speed[port_alias[index]] != ""  %}
           <Speed>{{ port_speed[port_alias[index]] }}</Speed>
     {%- else %}
         {%- if (inventory_hostname == "r-anaconda-81" or inventory_hostname == "arc-switch1025" or inventory_hostname == "mts-sonic-dut") and index >= 30 %}

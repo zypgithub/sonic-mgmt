@@ -41,15 +41,18 @@ class ConnectionTool:
             return result_obj
 
     @staticmethod
-    def is_connected(engine):
+    def is_connected(engine, username_to_check=None):
         """
         for me: using  lslogins cmd parser -> running processes label value
         :param engine:
         :return:
         """
-        with allure.step('check number of running processes for {username} on {ip}'.format(username=engine.username, ip=engine.ip)):
+        if not username_to_check:
+            username_to_check = engine.username
+
+        with allure.step(f'check number of running processes for {username_to_check} on {engine.ip}'):
             running_processes = OutputParsingTool.parse_lslogins_cmd(engine.run_cmd('lslogins {username}'.format(
-                username=engine.username))).verify_result()[SystemConsts.PASSWORD_HARDENING_RUNNING_PROCESSES]
+                username=username_to_check))).verify_result()[SystemConsts.PASSWORD_HARDENING_RUNNING_PROCESSES]
 
             return ResultObj(running_processes, "", "connected to {number}".format(number=running_processes))
 

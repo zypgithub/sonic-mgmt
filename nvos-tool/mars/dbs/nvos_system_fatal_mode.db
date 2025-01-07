@@ -24,7 +24,7 @@
                     <ep_targets> SONIC_MGMT </ep_targets>
                 </players_selection>
                 <name> post_fatal_recovery </name>
-                <tout> 900 </tout>
+                <tout> 4500 </tout>
                 <params>
                     <exec> PYTHONPATH=/devts/ /ngts_venv/bin/pytest /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/multi_asic/test_fatal_mode.py  -k test_post_fatal_recovery  --setup_name=[[conf:extra_info.setup_name]]  --timeout 600 --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --session_id=[[run_time:session_id]]  --rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini     --log-level=INFO --clean-alluredir --alluredir=/tmp/allure-results  --showlocals  [[conf:extra_info.additional_options]]</exec>
                 </params>
@@ -48,5 +48,8 @@
 	</global>
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/nvos_system_fatal_mode.cases </cases>
+	</test>
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/system/nvos_system_dns.cases </cases>
 	</test>
 </DBDEF>

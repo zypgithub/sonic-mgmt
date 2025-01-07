@@ -8,6 +8,7 @@ from ngts.constants.constants import InterfacesTypeConstants, PlatformTypesConst
 from ngts.tests.conftest import get_dut_loopbacks, get_dut_host_loopbacks
 from ngts.helpers.interface_helpers import get_lb_mutual_speed, speed_string_to_int_in_mb
 from ngts.cli_util.cli_parsers import parse_show_interfaces_transceiver_eeprom
+from infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 logger = logging.getLogger()
 

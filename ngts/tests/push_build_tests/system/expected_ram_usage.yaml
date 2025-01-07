@@ -142,20 +142,25 @@ master:
     <<: *platform_defaults
     sx_sdk: 1500
     syncd: 350
+    thermalctld: 60
   # SPC4
   SN5400: # Hippo
     <<: *platform_defaults
     sx_sdk: 1100
     syncd: 300
+    thermalctld: 60
   SN5600: # Moose/Albatross
     <<: *platform_defaults
     sx_sdk: 1500
     syncd: 350
+    thermalctld: 80
   SN5610N: # Gaur
     <<: *platform_defaults
     sx_sdk: 1500
     syncd: 350
+    thermalctld: 80
   SN5640: # Bison
     <<: *platform_defaults
     sx_sdk: 1500
     syncd: 350
+    thermalctld: 80

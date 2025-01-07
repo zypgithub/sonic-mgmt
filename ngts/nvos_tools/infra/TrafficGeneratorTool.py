@@ -125,6 +125,7 @@ class TrafficGeneratorTool:
                 if "Running" in job:
                     job_id = job.split(' ')[1]
                     output = host.run_cmd(f'kill -SIGINT {job_id}')
+                    time.sleep(5)
                     ping_outputs.append(output)
 
             assert len(ping_outputs) > 0, 'No running jobs found'

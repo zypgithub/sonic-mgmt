@@ -164,24 +164,19 @@ def prepare_scp(engines):
     @summary: Upload a dummy text file to the switch, that will be used in tests for scp verification
     """
     admin_monitor_mutual_group = 'adm'
-    # admins_group = 'admin'
+    admins_group = 'nvapply'
 
     logging.info('Prepare directory for admin users only')
-    engines.dut.run_cmd(f'mkdir -p {AuthConsts.SWITCH_SCP_TEST_DIR}')
     engines.dut.run_cmd(f'mkdir -p {AuthConsts.SWITCH_ADMINS_DIR}')
-    # engines.dut.run_cmd(f'chgrp {admins_group} {AuthConsts.SWITCH_ADMINS_DIR}')
-    engines.dut.run_cmd(f'chmod 770 {AuthConsts.SWITCH_ADMINS_DIR}')
     engines.dut.run_cmd(f'echo "Alon The King" > {AuthConsts.SWITCH_ADMIN_SCP_DOWNLOAD_TEST_FILE}')
-    # engines.dut.run_cmd(f'chgrp {admins_group} {AuthConsts.SWITCH_ADMIN_SCP_DOWNLOAD_TEST_FILE}')
-    engines.dut.run_cmd(f'chmod 770 {AuthConsts.SWITCH_ADMIN_SCP_DOWNLOAD_TEST_FILE}')
+    engines.dut.run_cmd(f'chgrp -R {admins_group} {AuthConsts.SWITCH_ADMINS_DIR}')
+    engines.dut.run_cmd(f'chmod -R 770 {AuthConsts.SWITCH_ADMINS_DIR}')
 
     logging.info('Prepare non-privileged directory')
     engines.dut.run_cmd(f'mkdir -p {AuthConsts.SWITCH_MONITORS_DIR}')
-    engines.dut.run_cmd(f'sudo chgrp {admin_monitor_mutual_group} {AuthConsts.SWITCH_MONITORS_DIR}')
-    engines.dut.run_cmd(f'chmod 770 {AuthConsts.SWITCH_MONITORS_DIR}')
     engines.dut.run_cmd(f'echo "Alon The King" > {AuthConsts.SWITCH_MONITOR_SCP_DOWNLOAD_TEST_FILE}')
-    engines.dut.run_cmd(f'sudo chgrp {admin_monitor_mutual_group} {AuthConsts.SWITCH_MONITOR_SCP_DOWNLOAD_TEST_FILE}')
-    engines.dut.run_cmd(f'chmod 770 {AuthConsts.SWITCH_MONITOR_SCP_DOWNLOAD_TEST_FILE}')
+    engines.dut.run_cmd(f'chgrp -R {admin_monitor_mutual_group} {AuthConsts.SWITCH_MONITORS_DIR}')
+    engines.dut.run_cmd(f'chmod -R 770 {AuthConsts.SWITCH_MONITORS_DIR}')
 
     yield
 

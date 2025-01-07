@@ -84,6 +84,7 @@ class UserId(BaseComponent):
         super().__init__(parent=parent, path=f'/{user_id}')
         self.username = user_id
         self.ssh = Ssh(self)
+        self.role = BaseComponent(self, path='/role')
 
     def action_disconnect(self, engine=None):
         engine = engine if engine else TestToolkit.engines.dut

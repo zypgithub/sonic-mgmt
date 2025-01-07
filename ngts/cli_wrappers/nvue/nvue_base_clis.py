@@ -43,6 +43,7 @@ class NvueBaseCli:
         if output_format:
             cmd = f'{cmd} --output {output_format}'
         cmd = " ".join(cmd.split())
+        cmd = cmd.replace('%2F', '/')
         logging.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
         return engine.run_cmd(cmd)
 
@@ -57,6 +58,7 @@ class NvueBaseCli:
         cmd = "nv set {path} {param_name} {param_value}". \
             format(path=path, param_name=op_param_name, param_value=op_param_value)
         cmd = " ".join(cmd.split())
+        cmd = cmd.replace('%2F', '/')
         logging.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
         return engine.run_cmd(cmd)
 
@@ -71,6 +73,7 @@ class NvueBaseCli:
         cmd = "nv unset {path} {params}". \
             format(path=path, params=op_param)
         cmd = " ".join(cmd.split())
+        cmd = cmd.replace('%2F', '/')
         logging.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
         return engine.run_cmd(cmd)
 

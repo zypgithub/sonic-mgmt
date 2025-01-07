@@ -1,15 +1,17 @@
+import random
 import logging
+import json
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
+from ngts.nvos_constants.constants_nvos import LinkDetectionConsts, PlatformConsts
+from ngts.nvos_constants.constants_nvos import NvosConst
+from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
+from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
 from ngts.nvos_tools.infra import ExceptionTool
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.tools.test_utils import allure_utils as allure
-from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
-from ngts.nvos_constants.constants_nvos import LinkDetectionConsts, PlatformConsts
-from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from ngts.nvos_constants.constants_nvos import NvosConst
-from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
 
 logger = logging.getLogger()
 
@@ -48,12 +50,29 @@ class Configurations:
         "10.7.144.58": ['sw1p1', 'sw1p2', 'sw2p1'],
     }
 
+    juliet_systems_with_loopbox = ["NVOS_juliet_10_7_148_142", "NVOS_juliet_10_7_148_130", "NVOS_juliet_10_7_148_146",
+                                   "NVOS_juliet_10_7_148_160"]
+
+    non_standalone_systems = ['NVOS_juliet_10_7_148_148']
+
+    compute_nodes_per_system = {
+        'NVOS_juliet_10_7_148_148': [{'ip_address': '10.7.34.145', 'username': 'nvidia', 'password': 'nvidia'},
+                                     {'ip_address': '10.7.34.192', 'username': 'nvidia', 'password': 'nvidia'}]}
+
+    ports_to_disable = {'NVOS_juliet_10_7_148_148': ['acp17-20', 'acp69-72']}
+
+    oberon_num_of_gpus = {'NVOS_juliet_10_7_148_148': '8'}
+
     post_install_commands = {"10.7.144.153": ['nv set acl ACL_MGMT_INBOUND_CP_DEFAULT rule 120 match ip recent-list hit-count 3000',
                                               'nv config apply -y'],
+                             "10.7.148.248": ['sudo cp /usr/share/sonic/device/x86_64-nvidia_q3450_ld-r0/platform.json /usr/share/sonic/device/x86_64-nvidia_q3400_ra-r0/platform.json',
+                                              'sudo cp /usr/share/sonic/device/x86_64-nvidia_q3450_ld-r0/co_optics_modules.json /usr/share/sonic/device/x86_64-nvidia_q3400_ra-r0/co_optics_modules.json',
+                                              'sudo sed -i \'s/"sfp_count"[[:space:]]*:[[:space:]]*"[0-9]*",/"sfp_count":"73",/\' /usr/share/sonic/device/x86_64-nvidia_q3400_ra-r0/platform.json']
                              }
 
     devices_missing_psus = {}
     devices_to_configure_ndr_ports = ndr_ports.keys()
+    devices_requested_factory_reset = ['10.7.148.248']
 
     default_conf = NvosConst.DEFAULT_CONFIG
     default_conf["interface"] = {
@@ -178,3 +197,84 @@ class RegressionConfigurations:
                 raise
             else:
                 ExceptionTool.log_exception(ex)
+
+
+class RegressionLinksConsts:
+    SYSTEM_LINKS_PATH = "/auto/sw_system_project/NVOS_INFRA/verification_files/links_by_system/"
+    TRANSCEIVER_TYPE = "transceiver_type"
+    PORTS_LIST = "ports_list"
+    IS_LOOPBACK = "is_loopback"
+    CONNECTED_TO = "connected_to"
+    CONNECTED_TO_SYSTEM_TYPE = "type"
+    CONNECTED_TO_SYSTEM_NAME = "system"
+    CONNECTED_TO_PORTS = "ports_list"
+    TYPE_OPTICAL = "optical"
+    TYPE_COPPER = "copper"
+    TYPE_ACTIVE = "active"
+
+
+class RegressionLinks:
+    @staticmethod
+    def _get_setup_links(setup_name):
+        links_path = RegressionLinksConsts.SYSTEM_LINKS_PATH + setup_name + ".json"
+        with allure.step(f'Read {setup_name} links info from json {links_path}'):
+            with open(links_path, 'r') as file:
+                connections_dict = json.load(file)
+            return connections_dict
+
+    @staticmethod
+    def get_filtered_transceivers(setup_name, transceiver_type="", is_loopback=None, connected_to=""):
+        """
+        Get filtered transceivers based on the given parameters.
+
+        :param setup_name: The setup name to filter connections by
+        :param transceiver_type: Filter by the transceiver type (optional)
+        :param is_loopback: Filter by loopback status (optional)
+        :param connected_to: Filter by connected entity (server/setup) and its name (optional)
+        :return: A list of filtered transceivers
+        """
+        with allure.step(f'Get filtered transceivers for {setup_name}'):
+            connections = RegressionLinks._get_setup_links(setup_name)
+            filtered = []
+
+            for transceiver, transceiver_data in connections.items():
+                if transceiver_type and transceiver_data[RegressionLinksConsts.TRANSCEIVER_TYPE] != transceiver_type:
+                    continue
+                if is_loopback is not None and transceiver_data[RegressionLinksConsts.IS_LOOPBACK] != is_loopback:
+                    continue
+                if connected_to:
+                    system_type = transceiver_data[RegressionLinksConsts.CONNECTED_TO][
+                        RegressionLinksConsts.CONNECTED_TO_SYSTEM_TYPE]
+                    system_name = transceiver_data[RegressionLinksConsts.CONNECTED_TO][
+                        RegressionLinksConsts.CONNECTED_TO_SYSTEM_NAME]
+                    if connected_to not in [system_type, system_name]:
+                        continue
+
+                with allure.step(f"add {transceiver_data} to the filtered list"):
+                    filtered.append(transceiver)
+
+            allure.attach('filtered transceivers', filtered)
+            return filtered
+
+    @staticmethod
+    def get_filtered_transceivers_and_ports(setup_name, transceiver_type="", is_loopback="", connected_to=""):
+        """
+        Get filtered transceivers and the ports connected to them based on the given parameters.
+
+        :param engine: LinuxSshEngine instance
+        :param setup_name: The setup name to filter connections by
+        :param transceiver_type: Filter by the transceiver type (optional)
+        :param is_loopback: Filter by loopback status (optional)
+        :param connected_to: Filter by connected entity (server/setup) and its name (optional)
+        :return: A list of tuples with (transceiver, ports)
+        """
+        with allure.step(f'Get filtered transceivers and ports for {setup_name}'):
+            filtered_with_ports = {}
+            connections = RegressionLinks._get_setup_links(setup_name)
+            filtered_transceivers = RegressionLinks.get_filtered_transceivers(setup_name, transceiver_type, is_loopback,
+                                                                              connected_to)
+            for transceiver in filtered_transceivers:
+                if transceiver in connections:
+                    filtered_with_ports[transceiver] = connections[transceiver][RegressionLinksConsts.PORTS_LIST]
+
+            return filtered_with_ports

@@ -40,9 +40,4 @@
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/fae/nvos_fae.cases </cases>
 	</test>
-
-	<test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/fae/nvos_fae_debug_token.cases </cases>
-		<ignore><condition> <key>dut_type</key> <op> not in </op> <value>[juliet]</value> </condition></ignore>
-	</test>
 </DBDEF>

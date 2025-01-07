@@ -55,18 +55,50 @@
 
     <test>
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/dip_sip.cases </cases>
+        <ignore>
+            <!-- Case only for main hwsku, skip this case if it is non-main hwsku -->
+            <condition>
+                <key> skip_main_hwsku_only_cases </key>
+                <op> == </op>
+                <value> yes </value>
+            </condition>
+        </ignore>
     </test>
 
     <test>
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/dir_bcast.cases </cases>
+        <ignore>
+            <!-- Case only for main hwsku, skip this case if it is non-main hwsku -->
+            <condition>
+                <key> skip_main_hwsku_only_cases </key>
+                <op> == </op>
+                <value> yes </value>
+            </condition>
+        </ignore>
     </test>
 
     <test>
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/nhop_group.cases </cases>
+        <ignore>
+            <!-- Case only for main hwsku, skip this case if it is non-main hwsku -->
+            <condition>
+                <key> skip_main_hwsku_only_cases </key>
+                <op> == </op>
+                <value> yes </value>
+            </condition>
+        </ignore>
     </test>
 
     <test>
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/ip_packet.cases </cases>
+        <ignore>
+            <!-- Case only for main hwsku, skip this case if it is non-main hwsku -->
+            <condition>
+                <key> skip_main_hwsku_only_cases </key>
+                <op> == </op>
+                <value> yes </value>
+            </condition>
+        </ignore>
     </test>
 
 </DBDEF>

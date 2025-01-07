@@ -21,7 +21,7 @@ class TestSPCXRA_x1Split_800G:
         self.cli_object = self.players['dut']['cli']
         self.scenario = "spcx_ra/split_x1_800G_configuration"
 
-    @pytest.mark.parameterize("packet_size", PACKET_SIZE_LIST)
+    @pytest.mark.parametrize("packet_size", PACKET_SIZE_LIST)
     @allure.title('test_ar_perf_max_bandwidth')
     @allure.description('Calculate the port utilization on the DUT with AR enabled, with various packet sizes (1500, 2000, 4000) and default AR profile.')
     def test_ar_perf_max_bandwidth(self, packet_size):

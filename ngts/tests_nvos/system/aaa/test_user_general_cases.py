@@ -122,10 +122,8 @@ def test_disconnect_all_users(engines):
 
     """
     with allure.step('Set new user'):
-        username1, password1 = System(force_api=ApiType.NVUE).aaa.user.set_new_user(username='admin1')
-        username2, password2 = System(force_api=ApiType.NVUE).aaa.user.set_new_user(username='monitor1',
-                                                                                    role=SystemConsts.DEFAULT_USER_MONITOR,
-                                                                                    apply=True)
+        username1, password1 = System(force_api=ApiType.NVUE).aaa.user.set_new_user(username='admin1', role=SystemConsts.DEFAULT_USER_ADMIN)
+        username2, password2 = System(force_api=ApiType.NVUE).aaa.user.set_new_user(username='monitor1', apply=True)
 
     with allure.step(f'Create connections with users "{username1}" and "{username2}"'):
         connections = [ConnectionTool.create_ssh_conn(engines.dut.ip, username, password).get_returned_value()

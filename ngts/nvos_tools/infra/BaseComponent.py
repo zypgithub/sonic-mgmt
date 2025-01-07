@@ -1,4 +1,5 @@
 import logging
+import os
 
 from ngts.cli_wrappers.nvue.nvue_system_clis import NvueSystemCli
 from ngts.cli_wrappers.openapi.openapi_system_clis import OpenApiSystemCli
@@ -47,6 +48,10 @@ class BaseComponent:
         return "{parent_path}{self_path}".format(
             parent_path=self.parent_obj.get_resource_path() if self.parent_obj else "", self_path=self._resource_path)
 
+    def get_resource_basename(self):
+        resource_path = self.get_resource_path()
+        return os.path.basename(resource_path)
+
     def update_param(self, param, rev):
         if self._api_to_use == ApiType.OPENAPI:
             param = param.replace('/', "%2F").replace(' ', "/")
@@ -55,15 +60,18 @@ class BaseComponent:
         return param
 
     def show(self, op_param="", output_format=OutputFormat.json, dut_engine=None, should_succeed=True,
-             rev=ConfState.OPERATIONAL, exempted_err_msgs=None):
+             rev=ConfState.OPERATIONAL, exempted_err_msgs=None, if_returned_value=True):
         if not dut_engine:
             dut_engine = TestToolkit.engines.dut
 
         with allure.step('Execute show for {}'.format(self.get_resource_path())):
             op_param = self.update_param(op_param, rev)
-            return SendCommandTool.execute_command(self._cli_wrapper.show, dut_engine, self.get_resource_path(),
-                                                   op_param, output_format, exempted_err_msgs=exempted_err_msgs).\
-                get_returned_value(should_succeed=should_succeed)
+            result_obj = SendCommandTool.execute_command(self._cli_wrapper.show, dut_engine, self.get_resource_path(),
+                                                         op_param, output_format, exempted_err_msgs=exempted_err_msgs)
+        if if_returned_value:
+            return result_obj.get_returned_value(should_succeed)
+        else:
+            return result_obj
 
     def parse_show(self, op_param="", dut_engine=None, should_succeed=True):
         output = self.show(op_param, OutputFormat.json, dut_engine, should_succeed)

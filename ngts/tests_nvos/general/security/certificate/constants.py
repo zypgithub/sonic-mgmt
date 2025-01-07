@@ -151,9 +151,16 @@ class CaShowFields:
     SERIAL_NUMBER = 'serial-number'
     VALID_FROM = 'valid-from'
     VALID_TO = 'valid-to'
-    ALL_FIELDS = [COUNT, INSTALLED, SERIAL_NUMBER, VALID_FROM, VALID_TO]
+    TYPE = 'type'
+    ALL_FIELDS = [COUNT, INSTALLED, SERIAL_NUMBER, VALID_FROM, VALID_TO, TYPE]
 
 
-CA_PEM_FILE_LOCATION = '/etc/ssl/certs'
-CA_CRT_FILE_LOCATION = '/usr/local/share/ca-certificates/nvue'
+GLOBAL_CA_PEM_FILE_LOCATION = '/etc/ssl/certs'
+GLOBAL_CA_CRT_FILE_LOCATION = '/usr/local/share/ca-certificates/nvue'
+
 CA_POOL_FILE = '/etc/ssl/certs/ca-certificates.crt'
+
+EXTERNAL_CA_CRT_FILE_LOCATION = '/usr/local/share/ext/ca-certificates/nvue/'
+
+CA_TYPE_EXTERNAL = 'external'
+CA_TYPE_GLOBAL = 'global'

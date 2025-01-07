@@ -105,6 +105,7 @@ def ntp_off(system):
     if should_change:
         with allure.step('Changing back ntp state from "{}" to "{}"'.format(ClockConsts.DISABLED, ClockConsts.ENABLED)):
             system.ntp.set(op_param_name=ClockConsts.STATE, op_param_value=ClockConsts.ENABLED, apply=True).verify_result()
+            time.sleep(10)
 
 
 @pytest.fixture(scope='function')

@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 import pytest
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import ApiType, ActionConsts, SystemConsts, PlatformConsts
@@ -69,9 +70,9 @@ def _test_command_supported(engines, devices, test_name, test_api, force_str):
         reboot_time = ClockTools.parse_datetime(output["gentime"])
         assert reboot_time >= system_time, \
             f"power-cycle command sent at {system_time.strftime('%H:%M:%S')} but 'show system reboot' shows {output}"
-        # todo assert output["reason"] == action power cycle (currently it shows reason unknown, needs newer CPLD)
-        # https://redmine.mellanox.com/issues/4031927
-        # https://redmine.mellanox.com/issues/4030950
+        if not is_redmine_issue_active([4031927, 4030950])[0]:
+            assert output["reason"] == 'power-cycle'
+            assert output["user"] == 'admin'
 
     with allure.step("Assert power-cycle duration was not too long"):
         OperationTime.verify_operation_time(duration, devices.dut.power_cycle_type).verify_result()
@@ -83,7 +84,7 @@ def _test_command_not_supported(engines, devices, test_name, test_api, force_str
     - `nv action power-cycle system [force]` commands don't work
     """
     engine = engines.dut
-    if test_api == ApiType.NVUE and not is_redmine_issue_active([4105725]):
+    if test_api == ApiType.NVUE and not is_bug_active(4105725):
         with allure.independent_step("Verify command doesn't exist in command list"):
             output = NvueGeneralCli.search_in_list_commands(engine, ActionConsts.POWER_CYCLE)
             assert not output, "The following commands should not exist: " + output
@@ -93,7 +94,7 @@ def _test_command_not_supported(engines, devices, test_name, test_api, force_str
 
 
 def do_power_cycle(force_str: str) -> ResultObj:
-    return System().action(ActionConsts.POWER_CYCLE, expect_reboot=True, param_name=force_str)
+    return System().action(ActionConsts.POWER_CYCLE, expect_reboot=True, param_name=force_str, output_format=None)
 
 
 def get_bmc_uptime(engine: LinuxSshEngine) -> timedelta:

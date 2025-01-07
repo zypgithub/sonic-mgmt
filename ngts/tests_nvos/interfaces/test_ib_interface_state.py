@@ -3,6 +3,7 @@ import logging
 import pytest
 
 from ngts.nvos_constants.constants_nvos import ApiType, ActionConsts
+from ngts.nvos_tools.Devices.IbDevice import BlackMambaSwitch
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
 from ngts.nvos_tools.infra.Fae import Fae
@@ -10,6 +11,7 @@ from ngts.nvos_tools.infra.IbInterfaceTool import IbInterfaceTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.system.System import System
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
@@ -163,7 +165,10 @@ def test_ib_interface_state_up_once(engines, devices, test_api, asic_conf_dict):
 
     with allure.step('verify state is down after port toggle failure'):
 
-        mst_dev_name = IbInterfaceTool.get_mst_dev_name(engines=engines, asic_conf_dict=asic_conf_dict, port_name=port_name)
+        if isinstance(devices.dut, BlackMambaSwitch) and is_bug_active(4210708):
+            mst_dev_name = devices.dut.mst_dev_name
+        else:
+            mst_dev_name = IbInterfaceTool.get_mst_dev_name(engines=engines, asic_conf_dict=asic_conf_dict, port_name=port_name)
     try:
         with allure.step('verify state is down after port toggle event'):
             IbInterfaceTool.simulate_toggle_port_event(engines.dut, devices.dut, port_name, mst_dev_name, 5)

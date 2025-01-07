@@ -195,8 +195,17 @@ class OpenApiSystemCli(OpenApiBaseCli):
         if param:
             params["parameters"]["keep"] = param
 
-        return OpenApiCommandHelper.execute_action(ActionType.RESET, engine.engine.username, engine.engine.password,
-                                                   engine.ip, "/system/{}".format(comp), params)
+        result = OpenApiCommandHelper.execute_action(ActionType.RESET, engine.engine.username, engine.engine.password,
+                                                     engine.ip, "/system/{}".format(comp), params)
+
+        if any(msg in result for msg in SystemConsts.REBOOT_RESPONSE_MESSAGES):
+            logger.info("Waiting for switch shutdown after reload command")
+            check_port_status_till_alive(False, engine.ip, engine.ssh_port)
+            engine.disconnect()
+            logger.info("Waiting for switch to be ready")
+            check_port_status_till_alive(True, engine.ip, engine.ssh_port)
+
+        return result
 
     @staticmethod
     def action_rotate_logs(engine):
@@ -319,10 +328,12 @@ class OpenApiSystemCli(OpenApiBaseCli):
                                                    engine.ip, resource_path, params)
 
     @staticmethod
-    def action_import_ca_certificate(engine, resource_path, data=None, uri=None):
+    def action_import_ca_certificate(engine, resource_path, data=None, uri=None, external: bool = False):
         logging.info(f'Run action import on: {resource_path} using OpenApi')
         parameters = {'data': data, 'uri': uri}
         parameters = {param: val for param, val in parameters.items() if val is not None}
+        if external:
+            parameters['external_ca'] = True
         params = \
             {
                 "state": "start",

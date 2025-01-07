@@ -23,6 +23,12 @@
                 <op> == </op>
                 <value> no </value>
             </condition>
+            <!-- Case only for main hwsku, skip this case if it is non-main hwsku -->
+            <condition>
+                <key> skip_main_hwsku_only_cases </key>
+                <op> == </op>
+                <value> yes </value>
+            </condition>
         </ignore>
         <info> Control Plane ACL Case </info>
         <name> cacl_function </name>
@@ -41,6 +47,12 @@
                 <op> == </op>
                 <value> no </value>
             </condition>
+            <!-- Case only for main hwsku, skip this case if it is non-main hwsku -->
+            <condition>
+                <key> skip_main_hwsku_only_cases </key>
+                <op> == </op>
+                <value> yes </value>
+            </condition>
         </ignore>
         <info> Control Plane ACL Ebtables Case </info>
         <name> ebtables_application </name>
@@ -58,6 +70,12 @@
                 <key> skip_weekend_cases </key>
                 <op> == </op>
                 <value> no </value>
+            </condition>
+            <!-- Case only for main hwsku, skip this case if it is non-main hwsku -->
+            <condition>
+                <key> skip_main_hwsku_only_cases </key>
+                <op> == </op>
+                <value> yes </value>
             </condition>
         </ignore>
         <info> Control Plane ACL Application Case </info>
@@ -95,6 +113,12 @@
                 <op> == </op>
                 <value> yes </value>
             </condition>
+            <!-- Case only for main hwsku, skip this case if it is non-main hwsku -->
+            <condition>
+                <key> skip_main_hwsku_only_cases </key>
+                <op> == </op>
+                <value> yes </value>
+            </condition>
         </ignore>
         <info> ACL Toggle Reboot Case </info>
         <name> acl </name>
@@ -113,6 +137,12 @@
                 <op> == </op>
                 <value> no </value>
             </condition>
+            <!-- Case only for main hwsku, skip this case if it is non-main hwsku -->
+            <condition>
+                <key> skip_main_hwsku_only_cases </key>
+                <op> == </op>
+                <value> yes </value>
+            </condition>
         </ignore>
         <info> ACL Outer Vlan Case </info>
         <name> acl_outer_vlan </name>
@@ -130,6 +160,12 @@
                 <key> skip_weekend_cases </key>
                 <op> == </op>
                 <value> no </value>
+            </condition>
+            <!-- Case only for main hwsku, skip this case if it is non-main hwsku -->
+            <condition>
+                <key> skip_main_hwsku_only_cases </key>
+                <op> == </op>
+                <value> yes </value>
             </condition>
         </ignore>
         <info> ACL null route helper Case </info>
@@ -166,6 +202,12 @@
                 <key> skip_weekend_cases </key>
                 <op> == </op>
                 <value> no </value>
+            </condition>
+            <!-- Case only for main hwsku, skip this case if it is non-main hwsku -->
+            <condition>
+                <key> skip_main_hwsku_only_cases </key>
+                <op> == </op>
+                <value> yes </value>
             </condition>
         </ignore>
         <info> Custom ACL table Case </info>

@@ -10,7 +10,7 @@ def set_dpu_bin(topic_map) {
         error "IMAGE_BRANCH and IMAGE_VERSION cannot be defined together. remove one or both of them from Gerrit topic to continue "
     }
 
-    def dpu_branch = env.DEFAULT_DPU_BRANCH ? env.DEFAULT_DPU_BRANCH : "bluefield"
+    def dpu_branch = env.DEFAULT_DPU_BRANCH ? env.DEFAULT_DPU_BRANCH : "smart-switch-master"
     if (topic_map["IMAGE_DPU_BRANCH"] && NGCITools().ciTools.is_parameter_contains_value(topic_map["IMAGE_DPU_BRANCH"])) {
         dpu_branch = topic_map["IMAGE_DPU_BRANCH"]
         print "DPU image branch name is defined by topic: ${dpu_branch}"

@@ -1,6 +1,7 @@
 import logging
 import re
 import time
+
 import allure
 from retry import retry
 
@@ -77,6 +78,6 @@ class History(BaseComponent):
             -1] != last_summary_line, "Didn't print new summary line after boot"
         assert "Monitoring service reboot, clearing issues history." in health_history_output, "expected a new summary line after boot, but it was missing"
 
-    @retry(Exception, tries=12, delay=10)
+    @retry(Exception, tries=12, delay=30)
     def retry_get_health_history_file_summary_line(self, summary_regex=HealthConsts.SUMMARY_REGEX_OK):
         return self.search_line(summary_regex)[-1]

@@ -62,7 +62,7 @@ def check_sonic_version(duthost, target_version):
 
 def install_sonic_image(duthost, **kwargs):
     try:
-        return duthost.reduce_and_add_sonic_images(kwargs)
+        return duthost.reduce_and_add_sonic_images(**kwargs)
     except RunAnsibleModuleFail as err:
         migration_err_regexp = r"Traceback.*migrate_sonic_packages.*SonicRuntimeException"
         msg = err.results['msg'].replace('\n', '')
@@ -87,7 +87,7 @@ def install_sonic(duthost, image_url, tbinfo):
             logger.info("Add default mgmt-gateway-route to the device via {}".format(mg_gwaddr))
             duthost.shell("ip route replace default via {}".format(mg_gwaddr), module_ignore_errors=True)
             new_route_added = True
-        res = install_sonic_image(duthost, new_image_url=image_url)
+        res = duthost.reduce_and_add_sonic_images(new_image_url=image_url)
     else:
         out = duthost.command("df -BM --output=avail /host", module_ignore_errors=True)["stdout"]
         avail = int(out.split('\n')[1][:-1])

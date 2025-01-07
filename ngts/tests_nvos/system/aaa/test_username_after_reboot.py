@@ -23,7 +23,7 @@ def test_saved_users_after_reboot(engines):
         viewer_name, viewer_password = system.aaa.user.set_new_user(role=SystemConsts.ROLE_VIEWER, apply=True)
         TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
     with allure.step('Set another new user (admin) without save'):
-        configurator_name, configurator_password = system.aaa.user.set_new_user(apply=True)
+        configurator_name, configurator_password = system.aaa.user.set_new_user(role=SystemConsts.ROLE_CONFIGURATOR, apply=True)
     with allure.step('reboot testing'):
         system.reboot.action_reboot()
     with allure.step('Verify saved user exists and non saved does not exist'):

@@ -305,19 +305,19 @@
           "out_of_mail": true
         },
         {
-          "name": "Allocate setup BF3",
+          "name": "Allocate setup SmartSwitch",
           "module": "com.mellanox.jenkins.generic_modules.AllocateSetups",
           "category": "Allocate setups",
-          "node": "MINI_MARS@BF3",
+          "node": "MINI_MARS@SS",
           "parameters": {
-            "queue_id": "devops_sonic_ci_bf3",
+            "queue_id": "devops_sonic_ci_ss",
             "priority": "${PRIORITY_NUMBER}",
-            "setup_type": "CI_SONIC_BF3",
-            "setup_var": "CI_SONIC_BF3_SETUP",
+            "setup_type": "CI_SONIC_SS",
+            "setup_var": "CI_SONIC_SS_SETUP",
             "device_var": "SERVER",
             "setup_requirements": "group_name:Sagi,sub_group:SONIC_CI,setup_status:enable"
           },
-          "skip": "${SKIP_DPU_BAT}",
+          "skip": "${SKIP_SONIC_HW_SS_BAT}",
           "on_failure": "stop",
           "out_of_mail": true
         },
@@ -531,23 +531,24 @@
           "out_of_mail": false
         },
         {
-          "name": "BAT BF3",
+          "name": "BAT SmartSwitch",
           "module": "/auto/sw_system_release/ci/sonic_devops/build/ci/bat.groovy",
           "category": "BAT",
-          "node": "MINI_MARS@BF3",
+          "node": "MINI_MARS@SS",
           "parameters": {
-            "matrix_row": "DPU",
-            "matrix_col": "BF3",
+            "matrix_row": "SMARTSWITCH",
+            "matrix_col": "SPC3/BF3",
             "global_conf": "${MARS_GLOBAL_CONF}",
             "local_conf": "${MARS_LOCAL_CONF}",
-            "setup_id": "${CI_SONIC_BF3_SETUP}",
-            "setup_conf_file_path": "/auto/sw_regression/system/SONIC/MARS/conf/setups/${CI_SONIC_BF3_SETUP}/",
-            "base_version": "${DPU_BIN}",
-            "test_type": "CI",
+            "setup_id": "${CI_SONIC_SS_SETUP}",
+            "setup_conf_file_path": "/auto/sw_regression/system/SONIC/MARS/conf/setups/${CI_SONIC_SS_SETUP}/",
+            "base_version": "${SONIC_BIN}",
+            "base_version_dpu": "${DPU_BIN}",
+            "test_type": "MGMT_CI",
             "sonic_mgmt_repo_url": "${nfs_dir}",
             "mars_release_version": "${MARS_RELEASE_VERSION}"
           },
-          "skip": "${SKIP_DPU_BAT}",
+          "skip": "${SKIP_SONIC_HW_SS_BAT}",
           "on_failure": "stop",
           "out_of_mail": false
         },
@@ -682,14 +683,14 @@
           "out_of_mail": true
         },
         {
-          "name": "Free BF3 setup",
+          "name": "Free SmartSwitch setup",
           "module": "com.mellanox.jenkins.generic_modules.FreeSetup",
           "category": "Clean",
-          "node": "MINI_MARS@BF3",
+          "node": "MINI_MARS@SS",
           "parameters": {
-            "setup_name": "${CI_SONIC_BF3_SETUP}"
+            "setup_name": "${CI_SONIC_SS_SETUP}"
           },
-          "skip": false,
+          "skip": "${SKIP_SONIC_HW_SS_BAT}",
           "finally": true,
           "on_failure": "ignore",
           "out_of_mail": true
@@ -732,8 +733,8 @@
                 ]
               },
               {
-                "DPU": [
-                  "BF3"
+                "SMARTSWITCH": [
+                  "SPC3/BF3"
                 ]
               }
             ]

@@ -11,6 +11,15 @@
             <!-- OPTIONAL TAGS -->
             <tags> DHCP_RELAY </tags>
 
+            <ignore>
+                <!-- Case only for main hwsku, skip this case if it is non-main hwsku -->
+                <condition>
+                    <key> skip_main_hwsku_only_cases </key>
+                    <op> == </op>
+                    <value> yes </value>
+                </condition>
+            </ignore>
+
             <!-- pre db commands - executed once before DB run -->
             <pre>
             </pre>
