@@ -2381,6 +2381,15 @@ test_nbr_health.py:
       - "https://github.com/sonic-net/sonic-mgmt/issues/7883"
 
 #######################################
+#####         upgrade_path        #####
+#######################################
+upgrade_path:
+  skip:
+    reason: "Upgrade path test needs base and target image lists, currently do not support on KVM."
+    conditions:
+      - "asic_type in ['vs']"
+
+#######################################
 #####            vlan             #####
 #######################################
 vlan/test_vlan.py::test_vlan_tc7_tagged_qinq_switch_on_outer_tag:
