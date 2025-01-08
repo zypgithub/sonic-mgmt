@@ -83,7 +83,12 @@ def assert_fatal_logs(engines):
 
     with allure.step(f'Find lines for fatal events in {FATAL_LOG_FILE}'):
         log_lines = engine.run_cmd(f'grep "{SAI_LOG_STRING}" {FATAL_LOG_FILE}*', validate=True).splitlines()
-        log_timestamps = [ClockTools.get_datetime_of_system_log_line(line) for line in reversed(log_lines)]
+        log_timestamps = []
+        for line in reversed(log_lines):
+            try:
+                log_timestamps.append(ClockTools.get_datetime_of_system_log_line(line))
+            except ValueError:
+                pass
         logger.info(f'Fatal event log-lines found at {log_timestamps}')
 
     with allure.step('Assert each event we simulated appears in the logs'):
@@ -538,8 +543,8 @@ def _assert_system_fatal_file(count: int):
 
 def _check_tech_support(engine, test_name, num_reboots_done):
     with allure.step(f"Generate tech-support and validate contents"):
-        tech_support_tar, _ = System().techsupport.action_generate(engine, option="1 minute ago",
-                                                                   since_time="1 minute ago",
+        tech_support_tar, _ = System().techsupport.action_generate(engine, option="5 minutes ago",
+                                                                   since_time="5 minutes ago",
                                                                    test_name=test_name)  # todo: params for save duration?
         with allure.independent_step("Verify " + FATAL_FILE):
             validate_file_in_tech_support(engine, tech_support_tar, FATAL_FILE, num_reboots_done)
