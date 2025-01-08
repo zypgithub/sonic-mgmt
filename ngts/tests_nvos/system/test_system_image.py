@@ -77,15 +77,31 @@ def test_show_system_image(original_version):
 
         with allure.step("Validate the values exist"):
             if ImageConsts.PARTITION2_IMG in output_dictionary.keys():
-                partition2 = output_dictionary[ImageConsts.PARTITION2_IMG]
+                partition2 = output_dictionary[ImageConsts.PARTITION2_IMG][ImageConsts.BUILD_ID]
             else:
                 partition2 = ''
-            assert output_dictionary[ImageConsts.CURRENT_IMG] == original_version, \
+            current_partition = ImageConsts.PARTITION + output_dictionary[ImageConsts.CURRENT_IMG]
+            current_version = output_dictionary[current_partition][ImageConsts.BUILD_ID]
+            assert current_version == original_version, \
                 f"Current image is invalid. Expected {original_version}"
-            assert output_dictionary[ImageConsts.PARTITION1_IMG] == original_version or partition2 == original_version, \
+            assert output_dictionary[ImageConsts.PARTITION1_IMG][ImageConsts.BUILD_ID] == original_version or partition2 == original_version, \
                 f"Partition1 image is invalid. Expected {original_version}"
-            assert output_dictionary[ImageConsts.NEXT_IMG] == original_version, \
-                f"Next image is invalid. Expected {original_version}"
+            assert output_dictionary[ImageConsts.NEXT_IMG] == output_dictionary[ImageConsts.CURRENT_IMG], \
+                f"Next image is not the current as expected in default settings."
+
+    with allure.step(f"Validate boot-next {ImageConsts.OTHER} param"):
+        # Define the expected sequence of toggles: 2 -> 1
+        expected_values = ["2", "1"]
+
+        for i, expected_next in enumerate(expected_values, start=1):
+            with allure.step(f"Toggle boot-next - Iteration {i}"):
+                system.image.action_boot_next(ImageConsts.OTHER)
+                output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(system.image.show()).get_returned_value()
+
+                new_next = output_dictionary[ImageConsts.NEXT_IMG]
+                assert new_next == expected_next, f"Boot-next toggle failed. Expected: {expected_next}, Got: {new_next}"
+
+                logger.info(f"Boot-next successfully toggled to {new_next} as expected.")
 
     with allure.step("Run show command to view system image files"):
         output_dictionary = system.image.files.get_files()
@@ -757,7 +773,8 @@ def cleanup_test(system, original_images, original_image_partition, fetched_imag
 def get_image_data(system):
     with allure.step("Save original installed image name"):
         original_images = system.image.get_image_field_values()
-        original_image = original_images[ImageConsts.CURRENT_IMG]
+        current_partition = ImageConsts.PARTITION + original_images[ImageConsts.CURRENT_IMG]
+        original_image = original_images[current_partition][ImageConsts.BUILD_ID]
         original_image_partition = system.image.get_image_partition(original_image, original_images)
         partition_id_for_new_image = get_next_partition_id(original_image_partition)
         logger.info("Original image: {}, partition: {}".format(original_image, original_image_partition))
