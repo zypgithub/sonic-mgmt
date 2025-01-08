@@ -380,7 +380,7 @@ def get_sai_sdk_dump_file(duthost, dump_file_name):
     compressed_dump_file = f"/tmp/{dump_file_name}.tar.gz"
     duthost.archive(path=full_path_dump_file, dest=compressed_dump_file, format='gz')
 
-    duthost.fetch(src=compressed_dump_file, dest=f"/tmp/", flat=True)
+    duthost.fetch(src=compressed_dump_file, dest="/tmp/", flat=True)
     allure.attach.file(compressed_dump_file, dump_file_name, extension=".tar.gz")
 
 
@@ -398,7 +398,6 @@ def create_duthost_console(duthost,localhost, conn_graph_facts, creds):  # noqa 
     # console password and sonic_password are lists, which may contain more than one password
     sonicadmin_alt_password = localhost.host.options['variable_manager']._hostvars[dut_hostname].get(
         "ansible_altpassword")
-    sonic_password = [creds['sonicadmin_password'], sonicadmin_alt_password]
     host = ConsoleHost(console_type=console_type,
                        console_host=console_host,
                        console_port=console_port,
@@ -711,3 +710,48 @@ def duthost_clear_console_port(
     duthost_config_menu.disconnect()
     logger.info(f"Successfully cleared console port {console_port}, sleeping for 5 seconds")
     time.sleep(5)
+
+
+def get_available_tech_support_files(duthost):
+    """
+    Get available techsupport files list
+    :param duthost: duthost object
+    :return: list of available techsupport files
+    """
+    try:
+        available_tech_support_files = duthost.shell('ls /var/dump/*.tar.gz')['stdout_lines']
+    except RunAnsibleModuleFail:
+        available_tech_support_files = []
+    return available_tech_support_files
+
+
+def get_new_techsupport_files_list(duthost, available_tech_support_files):
+    """
+    Get list of new created techsupport files
+    :param duthost: duthost object
+    :param available_tech_support_files: list of already available techsupport files
+    :return: list of new techsupport files
+    """
+    try:
+        duthost.shell('ls -lh /var/dump/')  # print into logs full folder content(for debug purpose)
+        new_available_tech_support_files = duthost.shell('ls /var/dump/*.tar.gz')['stdout_lines']
+    except RunAnsibleModuleFail:
+        new_available_tech_support_files = []
+    new_techsupport_files_list = list(set(new_available_tech_support_files) - set(available_tech_support_files))
+
+    return new_techsupport_files_list
+
+
+def extract_techsupport_tarball_file(duthost, tarball_name):
+    """
+    Extract techsupport tar file and return path to data extracted from archive
+    :param duthost: duthost object
+    :param tarball_name: path to tar file, example: /var/dump/sonic_dump_DUT_NAME_20210901_22140.tar.gz
+    :return: path to folder with techsupport data, example: /tmp/sonic_dump_DUT_NAME_20210901_22140
+    """
+    with allure.step('Extracting techsupport file: {}'.format(tarball_name)):
+        dst_folder = '/tmp/'
+        duthost.shell('tar -xf {} -C {}'.format(tarball_name, dst_folder))
+        techsupport_folder = tarball_name.split('.')[0].split('/var/dump/')[1]
+        techsupport_folder_full_path = '{}{}'.format(dst_folder, techsupport_folder)
+    return techsupport_folder_full_path

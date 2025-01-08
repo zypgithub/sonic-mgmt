@@ -1133,6 +1133,14 @@ tests/nightly/lag/test_lag.py:
     conditions:
     - "https://redmine.mellanox.com/issues/4031452 and 'sn564' in platform"
 
+tests/srv6/:
+  skip:
+    reason: "Testcase ignored due to only support SRv6 function since branch 202412"
+    conditions_logical_operator: or
+    conditions:
+      - "'202405' in release"
+      - "'202411' in release"
+
 console/test_console_driver.py:
   skip:
     reason: "Not supported on existing testbed. the switch needs to be attached to a DUT via USB link."
