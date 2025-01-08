@@ -42,6 +42,9 @@
         <ignore><condition> <key>dut_type</key> <op> not in </op> <value>[juliet]</value> </condition></ignore>
     </test>
 	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_gnmi.cases </cases>
+	</test>
+	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_ldap.cases </cases>
 	</test>
 	<test>
@@ -49,9 +52,6 @@
 	</test>
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_radius.cases </cases>
-	</test>
-	<test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_gnmi.cases </cases>
 	</test>
     <test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_certificates.cases </cases>
