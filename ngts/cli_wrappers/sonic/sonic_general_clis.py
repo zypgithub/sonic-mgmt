@@ -855,7 +855,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                 self.reboot_reload_flow(r_type=SonicConst.CONFIG_RELOAD_CMD, topology_obj=topology_obj,
                                         reload_force=True)
 
-        if not self.is_performance_setup(setup_name):
+        if not self.is_performance_setup(setup_name) and 'bison-simx' not in setup_name:
             with allure.step("Apply qos and dynamic buffer config"):
                 self.cli_obj.qos.reload_qos()
                 self.verify_dockers_are_up(dockers_list=['swss'])
