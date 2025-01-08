@@ -30,12 +30,12 @@ def get_platform_filter_param(params):
     start_idx = 1 if params[0] == "," else 0
     end_idx = -1 if params[-1] == "," else None
     updated_params = params[start_idx:end_idx] if end_idx is not None else params[start_idx:]
-    platform_filter_param = updated_params.split(',')[-15:]
+    platform_filter_param = updated_params.split(',')[-16:]
     if platform_filter_param[0] == "false":
         new_params = params.replace(",".join(platform_filter_param), "false,")
     else:
         platform_filter_list = []
-        for index in range(1, 15):
+        for index in range(len(platform_options)):
             if platform_filter_param[index] == "true":
                 platform_filter_list.append(platform_options[index - 1])
         platform_filter_string = " ".join(platform_filter_list)
