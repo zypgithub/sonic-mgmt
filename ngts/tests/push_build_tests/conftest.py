@@ -105,9 +105,15 @@ def push_gate_configuration(topology_obj, cli_objects, engines, interfaces, plat
                 reboot_after_install = True if '201911' in upgrade_params.base_version else None
                 cli_objects.dut.general.deploy_image(topology_obj, upgrade_params.base_version, apply_base_config=True,
                                                      setup_name=platform_params.setup_name,
-                                                     platform_params=platform_params,
+                                                     platform_params=platform_params, dut_alias='dut',
                                                      deploy_type='onie', reboot_after_install=reboot_after_install,
                                                      disable_ztp=True, configure_dns=True)
+                cli_objects.dut.general.deploy_image_post_installtion(topology_obj, apply_base_config=True,
+                                                                      setup_name=platform_params.setup_name,
+                                                                      platform_params=platform_params,
+                                                                      reboot_after_install=reboot_after_install,
+                                                                      set_timezone='Israel',
+                                                                      disable_ztp=True, configure_dns=True)
                 base_sonic_branch = get_sonic_branch(topology_obj)
 
             with allure.step('Check that APP Extension supported on base version'):
