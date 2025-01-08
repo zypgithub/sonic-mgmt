@@ -98,7 +98,7 @@ def factory_reset_general_pre_steps(engines, devices, system):
 
     with allure.step(f'Set description to {port_type} ports'):
         description = "with_keep_all_config_param"
-        ports = Tools.RandomizationTool.select_random_ports(requested_ports_state="down", requested_ports_type=port_type,
+        ports = Tools.RandomizationTool.select_random_ports(requested_ports_state=None, requested_ports_type=port_type,
                                                             num_of_ports_to_select=3).get_returned_value()
         apply_and_save_port = ports[0]
         just_apply_port = ports[1]
