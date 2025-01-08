@@ -1,17 +1,19 @@
 import inspect
 import logging
+import random
 import re
 import time
 from collections import defaultdict
 from functools import wraps
-import random
 
+from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_constants.constants_nvos import IbConsts, OutputFormat, SystemConsts
 from ngts.nvos_tools.ib.Ib import Ib
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.nvos_tools.infra.RegressionConfigurations import Configurations
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
@@ -19,10 +21,8 @@ from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.nvos_tools.nmx.Sdn import Sdn
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
-from ngts.tools.test_utils import allure_utils as allure
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
-from ngts.nvos_tools.infra.RegressionConfigurations import Configurations
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
 
@@ -393,8 +393,7 @@ class ClusterTools:
 
     @staticmethod
     def uuid_location_in_partition(sdn, partition_id):
-        output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.partition_id[partition_id].show(output_format=output_format),
-                                                             output_format=output_format).get_returned_value()
+        output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.partition_id[partition_id].show()).get_returned_value()
         uuids = list((output['uuids']).keys())
         locations = list((output['locations']).keys())
         return uuids, locations
@@ -464,8 +463,8 @@ class ClusterTools:
 
     @staticmethod
     def wait_for_apps_to_be_in_wanted_state():
-        time.sleep(ClusterConsts.WAIT_FOR_APPS_RUNNING)
         logger.info(f'Sleeping for {ClusterConsts.WAIT_FOR_APPS_RUNNING} seconds until apps are running')
+        time.sleep(ClusterConsts.WAIT_FOR_APPS_RUNNING)
 
     @staticmethod
     def verify_sdn_config_files_deleted(sdn):
@@ -474,7 +473,7 @@ class ClusterTools:
                 app = ClusterConsts.MAP_CONFIG_FILE_TYPE_TO_APP[file_type]
                 files = OutputParsingTool.parse_show_output_to_dict(sdn.config.apps.app_name[app].type.file_type[file_type].files.show(output_format=OutputFormat.json),
                                                                     output_format=OutputFormat.json).get_returned_value()
-                assert not files, f"Expected to get empty output, but instead received {output}"
+                assert not files, f"Expected to get empty output, but instead received {files}"
 
     @staticmethod
     def verify_sdn_state_files_deleted(sdn):
@@ -483,7 +482,7 @@ class ClusterTools:
                 app = ClusterConsts.MAP_STATE_FILE_TYPE_TO_APP[file_type]
                 files = OutputParsingTool.parse_show_output_to_dict(sdn.state.apps.app_name[app].type.file_type[file_type].files.show(output_format=OutputFormat.json),
                                                                     output_format=OutputFormat.json).get_returned_value()
-                assert not files, f"Expected to get empty output, but instead received {output}"
+                assert not files, f"Expected to get empty output, but instead received {files}"
 
     @staticmethod
     def reboot_compute_nodes_gpus(setup_name):

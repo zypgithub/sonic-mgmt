@@ -1,21 +1,18 @@
 import logging
-import random
-import pytest
 import time
 
-from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
-from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_tools.infra.ValidationTool import ValidationTool
-from ngts.nvos_tools.infra.StressResourcesTool import StressResourcesTool
-from ngts.tools.test_utils import allure_utils as allure
-from ngts.nvos_tools.nmx.Cluster import Cluster
-from ngts.nvos_constants.constants_nvos import PlatformConsts, SystemConsts, OutputFormat, ApiType, IbConsts, NvosConst
-from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.nvos_tools.ib.Ib import Ib
-from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports
+import pytest
+
+from ngts.nvos_constants.constants_nvos import SystemConsts, OutputFormat, ApiType, NvosConst
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
-from ngts.tests_nvos.constants import MINUTE
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.nvos_tools.infra.StressResourcesTool import StressResourcesTool
+from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
+from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports
+from ngts.tests_nvos.constants import MINUTE
+from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
 
@@ -49,14 +46,14 @@ def test_cluster_state(engines, devices, test_api, has_loopbox, standalone_syste
                 assert output[ClusterConsts.NMXC_CONN] == 'down', f"{ClusterConsts.NMXC_CONN} state was expected to be down but instead it was {output[ClusterConsts.NMXC_CONN]}"
 
         for state in [NvosConst.ENABLED, NvosConst.DISABLED]:
-            with allure.step("Running 'nv set cluster state {state}' and validating state changed"):
-                cluster.set(op_param_name="state", op_param_value=state, apply=True)
+            with allure.step(f"Running 'nv set cluster state {state}' and validating state changed"):
+                cluster.set(op_param_name="state", op_param_value=state, apply=True).verify_result()
                 ClusterTools.wait_for_apps_to_be_in_wanted_state()
                 output = OutputParsingTool.parse_show_output_to_dict(
                     cluster.show(output_format=output_format),
                     output_format=output_format).get_returned_value()
 
-                with allure.step("Validate state is {state}"):
+                with allure.step(f"Validate state is {state}"):
                     assert output[SystemConsts.STATE] == state, f"initial state is , " \
                         f"{output[SystemConsts.STATE]}, Expected to be: " \
                         f"{state}"
@@ -89,8 +86,9 @@ def test_cluster_state(engines, devices, test_api, has_loopbox, standalone_syste
                 expected_nmxc_state = ClusterConsts.NMXC_CONN_STATE_PER_CLUSTER_STATE[output[SystemConsts.STATE]]
                 assert output[ClusterConsts.NMXC_CONN] == expected_nmxc_state, f"{ClusterConsts.NMXC_CONN} state was expected to be {expected_nmxc_state} but instead it was {output[ClusterConsts.NMXC_CONN]}"
 
-            with allure.step("Running 'nv cluster unset' and validate state is back to disabled"):
-                cluster.unset(apply=True)
+            with allure.step("Running 'nv unset cluster' and validate state is back to disabled"):
+                cluster.unset(apply=True).verify_result()
+                ClusterTools.wait_for_apps_to_be_in_wanted_state()
                 output = OutputParsingTool.parse_show_output_to_dict(
                     cluster.show(output_format=output_format),
                     output_format=output_format).get_returned_value()
