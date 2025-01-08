@@ -400,6 +400,19 @@ platform_tests.cli.test_show_platform.py::test_show_platform_ssdhealth:
     - "'simx' in platform"
     - "https://redmine.mellanox.com/issues/4172759 and 'bf3comdpu' in platform"
     - "https://redmine.mellanox.com/issues/4175083 and '4280' in platform"
+    - "https://redmine.mellanox.com/issues/4244427 and 'sn5640_simx' in platform"
+
+platform_tests/cli/test_show_platform.py::test_show_platform_psustatus:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4244427 on sn5640_simx"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4244427 and 'sn5640_simx' in platform"
+
+platform_tests/cli/test_show_platform.py::test_show_platform_fan:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4244427 on sn5640_simx"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4244427 and 'sn5640_simx' in platform"
 
 passw_hardening/test_passw_hardening.py:
   skip:
