@@ -1,6 +1,7 @@
 import logging
 import os
 import shutil
+import time
 
 import yaml
 
@@ -22,7 +23,6 @@ from ngts.tests_nvos.general.post_upgrade_switch.constants import UPGRADE_STATUS
     UPGRADE_STATUS_FILE_PATH, InstallSteps
 from ngts.tests_nvos.general.post_upgrade_switch.install_steps_timer import InstallStepsTimer
 from ngts.tests_nvos.general.security.bmc.bmc_creds.constants import BmcUsers
-from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_config_utils import clear_conf
 from ngts.tools.test_utils.nvos_general_utils import set_base_configurations
@@ -157,14 +157,11 @@ class NvosInstallationSteps:
         with allure.step('Clear fetched files for the tests'):
             system = System()
             dut_engine.disconnect()  # force engines.dut to reconnect
-            if is_bug_active(4132303):
-                with allure.step('work around bug #4132303 - let first connection to get stuck and force extra connection'):
-                    # TODO: remove once bug #4132303 is closed
-                    try:
-                        dut_engine.run_cmd('echo "tmp cmd"', timeout=10)
-                    except Exception:
-                        dut_engine.disconnect()
-                    dut_engine.disconnect()
+            # in the cleanup we unset interface which sets back default ACL rules (to mgmt ports)
+            # in this case, ongoing sessions may get stuck/interrupted. thus, wait few seconds after that configuration
+            # more info in redmine: #4132303
+            logging.info('sleep after applied default ACL rules in cleanup')
+            time.sleep(10)
 
             with allure.step('Delete fetched image file'):
                 system.image.files.delete_all_existing_files(engine=dut_engine)
