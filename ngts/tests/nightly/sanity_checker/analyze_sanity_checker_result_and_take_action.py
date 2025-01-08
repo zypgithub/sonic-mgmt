@@ -71,7 +71,7 @@ def take_action_based_on_sanity_checker_result(skip_stop_regression, setup_name)
 
     logger.info(f"skip stop regression :{skip_stop_regression}")
     for case_name, case_status in sanity_checker_case_res_dict.items():
-        if "pass" not in case_status.lower():
+        if "pass" not in case_status.lower() and "skip" not in case_status.lower():
             if skip_stop_regression != "yes":
                 if SANITY_CHECKER_TEST_ACTION_MAP[case_name] == "stop" or (
                         case_name == "test_cpld_version_check" and setup_name in skip_setup_list_when_cpld_check_fail):
