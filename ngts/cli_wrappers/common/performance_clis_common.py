@@ -38,8 +38,8 @@ class PerformanceCommon:
             logging.error(error_msg)
             raise TestIssue(msg=error_msg)
 
-    def run_traffic(self, scenario, pkt_size, num_packets, is_ipv6, fan_ports=None, dst_dut_dir="/tmp"):
-        json_path = self.generate_traffic_json(scenario, pkt_size, num_packets, is_ipv6, fan_ports=fan_ports)
+    def run_traffic(self, scenario, pkt_size, num_packets, is_ipv6, tg_ports=None, dst_dut_dir="/tmp"):
+        json_path = self.generate_traffic_json(scenario, pkt_size, num_packets, is_ipv6, tg_ports=tg_ports)
         file_name = f"{scenario.replace('/', '_')}_{pkt_size}_traffic.json"
         self.engine.copy_file(source_file=json_path, file_system=dst_dut_dir, dest_file=file_name,
                               overwrite_file=True, verify_file=False)
@@ -65,12 +65,12 @@ class PerformanceCommon:
         cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names {PerfConsts.DVS_TG_REMOVE_MLOOP_CONFIGURATION}"
         self.execute_cmd(cmd)
 
-    def generate_traffic_json(self, scenario, pkt_size, num_packets, is_ipv6, fan_ports=None,
+    def generate_traffic_json(self, scenario, pkt_size, num_packets, is_ipv6, tg_ports=None,
                               template_suite="traffic_packets_json_files"):
-        fan_ports = self.get_tg_ports(scenario) if not fan_ports else fan_ports
+        tg_ports = self.get_tg_ports(scenario) if not tg_ports else tg_ports
         full_path = os.path.join(BugHandlerConst.NGTS_PATH, "performance_tests", template_suite,
                                  scenario, f"{self.dut_alias}_{scenario.replace('/', '_')}_{pkt_size}.json")
-        create_json_traffic_file(player_alias=self.dut_alias, tg_ports=fan_ports,
+        create_json_traffic_file(player_alias=self.dut_alias, tg_ports=tg_ports,
                                  packet_size=pkt_size, num_packets=num_packets,
                                  is_ipv6=is_ipv6, json_path=full_path)
         logging.info("Json path returned is {}".format(full_path))
@@ -82,8 +82,8 @@ class PerformanceCommon:
         self.execute_cmd(cmd)
         full_path = os.path.join(BugHandlerConst.NGTS_PATH, "performance_tests", template_suite,
                                  scenario, f"{self.dut_alias}_{scenario.replace('/', '_')}_ports.json")
-        self.engine.copy_file(source_file="fan_ports.json", file_system=dst_dut_dir, dest_file=full_path,
+        self.engine.copy_file(source_file="tg_ports.json", file_system=dst_dut_dir, dest_file=full_path,
                               overwrite_file=True, verify_file=False, direction='get')
         with open(full_path) as f:
-            fan_ports = json.load(f)
-        return fan_ports
+            tg_ports = json.load(f)
+        return tg_ports

@@ -32,9 +32,9 @@ class PerfConsts:
     DEFAULT_PERF_TEMPLATES_DIR = "performance_config_templates"
     DVS_TG_NAME = "GenericTrafficGenerator"
     DVS_TG_VALIDATOR_NAME = "TrafficValidator"
-    DVS_TG_MLOOP_CONFIGURATION = "ConfigureMloopOnFan"
-    DVS_TG_REMOVE_MLOOP_CONFIGURATION = "RemoveMloopOnFan"
-    DVS_GET_TG_PORTS = "GetFanPorts"
+    DVS_TG_MLOOP_CONFIGURATION = "ConfigureMloopOnTG"
+    DVS_TG_REMOVE_MLOOP_CONFIGURATION = "RemoveMloopOnTG"
+    DVS_GET_TG_PORTS = "GetTGPorts"
     CONFIG_FILES_DIR = os.path.join(BugHandlerConst.NGTS_PATH, 'tests/performance/config_files')
     REQUIRMENTS_DIR = os.path.join(BugHandlerConst.NGTS_PATH, 'performance_tests/')
     REQUIRMENTS_FILE = 'requirements.txt'
