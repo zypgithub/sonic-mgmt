@@ -1535,7 +1535,7 @@ class ResultUploaderConst:
                                 "mars_orch_sw-mars-orch@Friday_Community_Regression"]
     HOST_INTERNAL_NAMES_LIST = ["boxer", "bulldog", "spider", "panther",
                                 "lionfish", "anaconda", "tigris", "ocelot",
-                                "liger", "tigon", "leopard", "moose", "hippo", "bobcat"]
+                                "liger", "tigon", "leopard", "moose", "hippo", "bobcat", "bison"]
 
     HOST_INTERNAL_NAMES_MAP = {"boxer": "msn2010",
                                "bulldog": "msn2100",
@@ -1550,7 +1550,8 @@ class ResultUploaderConst:
                                "leopard": "msn4700",
                                "moose": "sn5600",
                                "hippo": "sn5400",
-                               "bobcat": "sn4280"}
+                               "bobcat": "sn4280",
+                               "bison": "sn5610n"}
 
 
 class BugHandlerConst:
