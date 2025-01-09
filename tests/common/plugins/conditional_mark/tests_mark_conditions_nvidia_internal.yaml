@@ -922,6 +922,12 @@ show_techsupport/test_auto_techsupport.py:
     - "https://redmine.mellanox.com/issues/4177148"
     - "'bf3comdpu' in platform"
 
+platform_tests/counterpoll/test_counterpoll_watermark.py::test_counterpoll_queue_watermark_pg_drop:
+  skip:
+    reason: "The test is skipped due to https://redmine.mellanox.com/issues/4162799"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4162799 and 'sn5640_simx' in platform"
+
 arp/test_wr_arp.py:
   skip:
     reason: "The WR not supported on SN5600-C224O8, SN5600-C256S1 hwsku"
