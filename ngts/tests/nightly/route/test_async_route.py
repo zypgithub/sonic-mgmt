@@ -37,7 +37,8 @@ def get_routes_count(dut_engine, ip_version):
     :param str ip_version: the version of IP routes to count
     :return int: number of routes
     """
-    output = dut_engine.run_cmd(f'docker exec syncd bash -c "python3 /usr/bin/{SX_API_ROUTES_FILE_NAME} {ip_version}"')
+    output = dut_engine.run_cmd(f'docker exec -t syncd bash -c "python3 /usr/bin/{SX_API_ROUTES_FILE_NAME}'
+                                f' {ip_version}"')
     routes_count = -1
     if output:
         try:
@@ -59,7 +60,7 @@ def get_routes_operation_duration(dut_engine, ip_version, initial_routes_count, 
     :param int expected_routes_count: expected number of routes after the operation performed
     :return float: time to perform the operation in sec
     """
-    output = dut_engine.run_cmd(f'docker exec syncd bash -c "python3 /usr/bin/{SX_API_ROUTES_FILE_NAME}'
+    output = dut_engine.run_cmd(f'docker exec -t syncd bash -c "python3 /usr/bin/{SX_API_ROUTES_FILE_NAME}'
                                 f' {ip_version} --initial_number_of_routes {initial_routes_count}'
                                 f' --expected_number_of_routes {expected_routes_count}"')
     execution_time = -1
