@@ -134,6 +134,7 @@ def readme_versions(cli_objects):
     _, sonic_image = cli_objects.dut.general.get_base_and_target_images()
     # The full image contains SONiC-OS-ActualImage and we want the ActualImage
     sonic_image = sonic_image.replace("SONiC-OS-", "")
+    sonic_image = sonic_image.replace("_ASAN", "")
     yield parse_readme_versions(sonic_image)
 
 
