@@ -19,6 +19,7 @@ platform_tests/test_secure_upgrade.py:
     conditions_logical_operator: or
     conditions:
       - "'r-bison-04' in testbed or 'mtvr-bison-02' in testbed or 'mtvr-bison-03' in testbed"
+      - "'simx' in platform"
 
 tests/nightly/rocev2_acl_counter:
   skip:
