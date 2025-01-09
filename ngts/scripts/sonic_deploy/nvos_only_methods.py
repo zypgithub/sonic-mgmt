@@ -247,7 +247,7 @@ class NvosInstallationSteps:
             image_to_install_in_onie_url = base_image_url if base_image_url else target_image_url
             logger.info(f'URL of image to install in ONIE: {image_to_install_in_onie_url}')
 
-        with allure.step('Deploy sonic image on the dut'):
+        with allure.step(f'Deploy {image_to_install_in_onie_url} image on the dut'):
             cli.deploy_image(topology_obj=topology_obj, image_path=image_to_install_in_onie_url,
                              apply_base_config=apply_base_config, setup_name=setup_name,
                              platform_params=platform_params, deploy_type=deploy_type,

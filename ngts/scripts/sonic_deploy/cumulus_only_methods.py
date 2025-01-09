@@ -33,8 +33,13 @@ class CumulusInstallationSteps:
             Update /etc/sudoers file to permit NOPASSWD for sudo
         """
         cl_password = os.getenv("CUMULUS_SWITCH_PASSWORD")
+        root_password = os.getenv("CUMULUS_ROOT_PASSWORD")
         for dut in setup_info['duts']:
             logging.info("Updating /etc/sudoers file to permit NOPASSWD for sudo")
             dut['engine'].run_cmd_set(["sudo sed -i --follow-symlinks 's/%sudo.*ALL=(ALL:ALL) ALL/%sudo ALL=(ALL:ALL) NOPASSWD: ALL/' /etc/sudoers",
                                        cl_password], patterns_list=["password_for_cumulus"])
             logging.info("Updated /etc/sudoers file to permit NOPASSWD for sudo")
+            logging.info("Permitting root login for dut")
+            dut['engine'].run_cmd_set(["sudo passwd root", root_password, root_password], patterns_list=["New password", "Retype new password", "passwd: password updated successfully"])
+            dut['engine'].run_cmd_set(["nv set system ssh-server permit-root-login enabled", "nv config apply -y"], patterns_list=["applied_and_saved"])
+            logging.info("Root login for dut enabled")

@@ -43,18 +43,19 @@ class DeployMethods:
         return engine
 
     @staticmethod
-    def multi_nos_pre_installation_steps(duts):
+    def multi_nos_pre_installation_steps(duts, target_cli_type):
         logger.info("Multi NOS pre installation steps")
         with concurrent.futures.ThreadPoolExecutor() as executor:
-            executor.map(DeployMethods.do_multi_nos_pre_install, duts)
+            for dut in duts:
+                executor.submit(DeployMethods.do_multi_nos_pre_install, dut, target_cli_type)
 
     @staticmethod
-    def do_multi_nos_pre_install(dut):
+    def do_multi_nos_pre_install(dut, target_cli_type):
         dut_ip = dut['dut_ip']
         current_os, engine = DeployMethods.get_current_os_engine(dut_ip)
         if engine:
             DeployMethods.validate_sudo_config(engine, current_os)
-            GeneralCliCommon(engine).uninstall_os_flow(current_os)
+            GeneralCliCommon(engine).uninstall_os_flow(current_os, target_cli_type)
 
     @staticmethod
     def validate_sudo_config(engine, current_os):

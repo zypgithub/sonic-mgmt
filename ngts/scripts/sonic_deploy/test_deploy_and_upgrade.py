@@ -232,7 +232,7 @@ def pre_installation_steps(sonic_topo, neighbor_type, base_version, target_versi
     replace_nos = request.config.getoption('--target_cli_type')
     if replace_nos:
         dut_list = setup_info['duts']
-        DeployMethods.multi_nos_pre_installation_steps(dut_list)
+        DeployMethods.multi_nos_pre_installation_steps(dut_list, replace_nos)
 
 
 def post_installation_steps(topology_obj, sonic_topo, recover_by_reboot, deploy_dpu,
