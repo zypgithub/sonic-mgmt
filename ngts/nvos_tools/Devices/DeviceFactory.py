@@ -1,6 +1,8 @@
 import logging
 from ngts.nvos_tools.Devices.IbDevice import GorillaSwitch, \
-    MarlinSwitch, GorillaSwitchBF3, CrocodileSwitch, BlackMambaSwitch, CrocodileSimxSwitch, JulietScaleoutSwitch, JulietTTMSwitch, JulietNonScaleoutSwitch, JulietAriel, JulietNonScaleoutSwitchNoNCI, JulietArielPS
+    MarlinSwitch, GorillaSwitchBF3, CrocodileSwitch, BlackMambaSwitch, CrocodileSimxSwitch, JulietScaleoutSwitch, \
+    JulietTTMSwitch, JulietNonScaleoutSwitch, JulietAriel, JulietNonScaleoutSwitchNoNCI, JulietArielPS, \
+    JulietNonScaleoutSwitchNoNCI5600
 from ngts.nvos_tools.Devices.EthDevice import AnacondaSwitch, Mlx2410Switch, Mlx4600Switch, Mlx4700Switch
 from dotted_dict import DottedDict
 
@@ -32,7 +34,8 @@ class DeviceFactory:
             'N5100_LD - JulietNonScaleout': JulietNonScaleoutSwitch,
             'N5112_LD - JulietAriel': JulietAriel,
             'N5200_LD - JulietNonScaleoutSwitchNoNCI': JulietNonScaleoutSwitchNoNCI,
-            'N5112_LD - JulietArielPS': JulietArielPS
+            'N5112_LD - JulietArielPS': JulietArielPS,
+            'N5600_LD - JulietNonScaleoutSwitchNoNCI': JulietNonScaleoutSwitchNoNCI5600,
         }
 
     @staticmethod

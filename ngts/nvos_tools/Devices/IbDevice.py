@@ -1471,6 +1471,33 @@ class JulietNonScaleoutSwitchNoNCI(JulietNonScaleoutSwitch):
         self.platform_inventory_switch_values.update({"hardware-version": None,
                                                       "model": ExpectedString(regex="692-96099-00MV-JS0")})
 
+# -------------------------- JulietNonScaleoutSwitchNoNCI5600 Switch ----------------------------
+
+
+class JulietNonScaleoutSwitchNoNCI5600(JulietNonScaleoutSwitchNoNCI):
+
+    def __init__(self):
+        super().__init__()
+
+    def _init_constants(self):
+        super()._init_constants()
+        self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
+            "x86_64-nvidia_n5600_ld-r0")
+        self.show_platform_output.update({
+            "product-name": "N5600_LD",
+            "asic-model": self.asic_type,
+        })
+
+    def _init_fan_list(self):
+        super()._init_fan_list()
+
+    def _init_temperature(self):
+        super()._init_temperature()
+
+    def _init_platform_lists(self):
+        super()._init_platform_lists()
+        self.platform_inventory_switch_values.update({"hardware-version": None,
+                                                      "model": ExpectedString(regex="692-9K33R-00MV-JES")})
 
 # -------------------------- Caiman Switch ----------------------------
 
