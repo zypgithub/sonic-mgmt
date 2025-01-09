@@ -14,7 +14,7 @@ class SonicDhcpRelayCli:
         engine = kwargs['engine']
         cli_obj = kwargs['cli_obj']
 
-        supported_cli_classes = {'default': SonicDhcpRelayCliDefault(engine, cli_obj),
+        supported_cli_classes = {'default': SonicDhcpRelayCliMaster(engine, cli_obj),
                                  'master': SonicDhcpRelayCliMaster(engine, cli_obj),
                                  '202205': SonicDhcpRelayCli202205(engine, cli_obj),
                                  '202012': SonicDhcpRelayCli202012(engine, cli_obj),
