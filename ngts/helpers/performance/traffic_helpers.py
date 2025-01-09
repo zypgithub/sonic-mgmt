@@ -12,6 +12,8 @@ def create_json_traffic_stream(player_alias, tg_ports, packet_size, num_packets,
                             dst=PerfConsts.TG_ALIASES_PKT_INFO["MAC"][player_alias])
     packet.add_ip_header(src=PerfConsts.DUT_PKT_INFO[ip_key],
                          dst=PerfConsts.TG_ALIASES_PKT_INFO[ip_key][player_alias])
+    packet.add_udp_header(source_port=PerfConsts.UDP_SOURCE_PORT, dest_port=PerfConsts.ROCE_PORT)
+    packet.add_bth_header(ar=PerfConsts.ADAPTIVE_ROUTING_ENABLED)
     packet.add_payload_header(player_alias)
     stream = packet.get_json()
     stream["name"] = stream_name

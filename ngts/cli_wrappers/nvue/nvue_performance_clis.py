@@ -5,15 +5,13 @@ from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 from ngts.constants.constants import BugHandlerConst
 from ngts.constants.performance_constants import PerfConsts
+from ngts.cli_wrappers.common.performance_clis_common import PerformanceCommon
 
 
-class NvuePerformanceCli:
+class NvuePerformanceCli(PerformanceCommon):
 
     def __init__(self, topology_obj, engine, dut_alias, cli_obj):
-        self.topology_obj = topology_obj
-        self.engine = engine
-        self.dut_alias = dut_alias
-        self.cli_obj = cli_obj
+        super().__init__(topology_obj, engine, dut_alias, cli_obj)
 
     def apply_configuration_file(self, scenario, template_suite=PerfConsts.DEFAULT_PERF_TEMPLATES_DIR, dst_dir=PerfConsts.CL_HOME_DIR):
         src_file = self.get_configuration_file_path(scenario, template_suite)
@@ -29,7 +27,7 @@ class NvuePerformanceCli:
     def save_basic_configuration(self, players, dst_dir=PerfConsts.CL_HOME_DIR):
         logging.info(f"Saving the basic configuration on {self.dut_alias}")
         self.cli_obj.general.save_config(self.engine)
-        self.engine.run_cmd(f"cp /etc/nvue.d/startup.yaml {dst_dir} ")
+        self.engine.run_cmd(f"sudo cat /etc/nvue.d/startup.yaml >> {dst_dir}/startup.yaml")
 
     def restore_basic_configuration(self, file_name="startup.yaml", config_directory=PerfConsts.CL_HOME_DIR):
         logging.info("Replacing the basic configuration on the device")
@@ -42,3 +40,9 @@ class NvuePerformanceCli:
                                  template_suite, scenario, "cumulus", f"{self.dut_alias}.yaml")
         logging.info("Full Path returned is {}".format(full_path))
         return full_path
+
+    def set_ibm(self, players, scenario="", ibm_mode=True, reload_conf=True):
+        '''
+        Implementation Pending
+        '''
+        return True

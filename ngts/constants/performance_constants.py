@@ -86,6 +86,9 @@ class PerfConsts:
     FW_BURN_PATH = "/auto/mswg/projects/sx_mlnx_os/sx_fit_regression/libs/scripts/sdk_fw_burn.py"
     DVS_CLI_TYPE = "DVS"
     DVS_WELCOME_MESSAGE = "Welcome to the NVIDIA Switch Development System"
+    ROCE_PORT = 4791
+    UDP_SOURCE_PORT = 2001
+    ADAPTIVE_ROUTING_ENABLED = 1
 
 
 class SPCXRAConsts:

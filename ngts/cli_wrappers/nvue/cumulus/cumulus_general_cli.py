@@ -46,9 +46,9 @@ class CumulusGeneralCli(NvueGeneralCli):
 
         with allure.step('Prepare SDK_VER git to run tests'):
             self.engine.run_cmd(f"sudo {PerfConsts.CL_PYTHON_PATH} {PerfConsts.DVS_RUN_TEST_PATH} -si")
-        with allure.step('run SDK_VER traffic generator test '):
+        with allure.step('Verify the health of SDK env.'):
             self.engine.run_cmd(f"sudo {PerfConsts.CL_PYTHON_PATH} "
-                                f"{PerfConsts.DVS_RUN_TEST_PATH} --names GenericTrafficGenerator")
+                                f"{PerfConsts.DVS_RUN_TEST_PATH} --names SdkExamplesTestPython3Reduced")
 
     def install_pip_dependencies(self):
         self.engine.run_cmd('sudo apt-get update -y')

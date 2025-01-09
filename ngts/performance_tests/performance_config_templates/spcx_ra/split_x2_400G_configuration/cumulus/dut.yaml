@@ -1636,12 +1636,14 @@
             inbound: {}
           acl-default-whitelist:
             inbound: {}
-      hostname: mlx-5600-12
+      hostname: dut
       ssh-server:
         max-sessions-per-connection: 30
         max-unauthenticated:
           throttle-start: 30
         permit-root-login: enabled
+      telemetry:
+        enable: on
     vrf:
       default:
         router:

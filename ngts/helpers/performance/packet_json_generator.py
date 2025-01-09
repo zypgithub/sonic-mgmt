@@ -87,7 +87,7 @@ class PacketGenerator:
             source_port: The source port as an integer.
             dest_port: The destination port as an integer.
         """
-        self.headers["UDP"] = {"source_port": source_port, "dest_port": dest_port}
+        self.headers["UDP"] = {"sport": source_port, "dport": dest_port}
 
     def add_bth_header(self, opcode: int = 0, solicited_event: int = 0, mig_reg: int = 0,
                        pad_count: int = 0, header_version: int = 0, partition_key: int = 0xffff,

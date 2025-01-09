@@ -218,7 +218,7 @@ class NvueGeneralCli(SonicGeneralCliDefault):
         return output
 
     @staticmethod
-    def replace_config(engine, file, output_type='json', verify_execution=True):
+    def replace_config(engine, file, output_type='json', verify_execution=False):
         logging.info("Running 'nv config replace' on dut")
         if verify_execution:
             return SendCommandTool.execute_command(NvueGeneralCli._replace_config, engine, file, output_type).verify_result()
