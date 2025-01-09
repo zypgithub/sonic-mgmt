@@ -220,6 +220,12 @@ tests/nightly/secure:
     conditions:
     - "'r-bison-04' in testbed or 'mtvr-bison-02' in testbed or 'mtvr-bison-03' in testbed"
 
+tests/nightly/show_techsupport/test_health_event.py:
+  skip:
+    reason: "Testcase ignored due to https://redmine.mellanox.com/issues/4217343"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4217343"
+
 tests/push_build_tests:
   skip:
     reason: "Testcase is skipped due to RM 4205976 on physical SPC4"
