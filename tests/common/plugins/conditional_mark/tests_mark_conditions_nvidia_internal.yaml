@@ -156,6 +156,12 @@ tests/push_build_tests/L3/dhcp_relay/test_dhcp_relay.py::TestDHCPRelay::test_dhc
     conditions:
     - https://github.com/Azure/sonic-buildimage/issues/6053
 
+tests/push_build_tests/general/qos/test_qos_reload.py::test_qos_reload_port:
+  skip:
+    reason: "Testcase ignored due RM https://redmine.mellanox.com/issues/4156055"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4156055 and 'sn5640_simx' in platform"
+
 tests/nightly/adaptive_routing:
   skip:
     reason: "AR is not supported on SimX Platform or on SN5610N or on ACS-SN5400 hwsku(AR is not supported on Hippos due to missing SAI_HOSTIF_OPER_STATUS_UPDATE_BY_APP=1 in sai.profile)"
