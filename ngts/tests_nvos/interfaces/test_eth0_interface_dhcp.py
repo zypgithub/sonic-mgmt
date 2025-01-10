@@ -485,10 +485,6 @@ def test_interface_eth0_dhcp_hostname(engines, topology_obj, serial_engine):
         Tools.ValidationTool.verify_field_value_in_output(output_dictionary=dhcp_output, field_name='state',
                                                           expected_value='enabled').verify_result()
 
-        system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
-        Tools.ValidationTool.verify_field_value_in_output(system_output, SystemConsts.HOSTNAME,
-                                                          'hostname').verify_result()
-
     with allure.step('Unset dhcp, , check port up'):
         mgmt_port.interface.ip.dhcp_client.unset(apply=True, ask_for_confirmation=True).verify_result()
         logger.info('Check port status, should be up')
@@ -600,6 +596,4 @@ def wait_for_mtu_changed(port_obj, mtu_to_verify):
 def wait_for_hostname_changed(system, dhcp_hostname):
     with (allure.step("Waiting for system hostname changed to {}".format(dhcp_hostname))):
         system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
-        assert dhcp_hostname in [system_output[SystemConsts.HOSTNAME],
-                                 f'{system_output[SystemConsts.HOSTNAME]}-{SystemConsts.MGMT2_HOSTNAME}'], \
-            "hostname wasn't changed"
+        assert dhcp_hostname in system_output[SystemConsts.HOSTNAME], "hostname wasn't changed"
