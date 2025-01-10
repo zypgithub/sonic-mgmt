@@ -31,6 +31,7 @@ from ngts.scripts.sonic_deploy.nvos_only_methods import NvosInstallationSteps
 from ngts.scripts.sonic_deploy.sonic_only_methods import SonicInstallationSteps, is_community
 from ngts.scripts.sonic_deploy.deploy_helper_methods import DeployMethods
 from ngts.tools.infra import get_platform_info
+from ngts.common.util import save_specified_installed_dpus, get_specified_installed_dpus_from_noga
 
 logger = logging.getLogger()
 
@@ -159,7 +160,7 @@ def test_deploy_and_upgrade(topology_obj, is_simx, is_performance, base_version,
             DeployMethods.wait_until_deploy_background_process(install_threads, timeout=1500)
 
             if deploy_dpu:
-                with allure.step(f'Start to install the bfb image on all DPUs:{base_version_dpu}'):
+                with allure.step(f'Start to install the bfb image on DPUs:{base_version_dpu}'):
                     bfb_install_dpu(topology_obj, setup_info, base_version_dpu)
 
         with allure.step('verify pre installation processes are done'):
@@ -518,16 +519,27 @@ def bfb_install_dpu(topology_obj, setup_info, base_version_dpu):
             f"sudo curl {dpu_image_url} --output {dest_file}")
 
     with allure.step('Install BFB image on all DPUs'):
+        rshim_value = 'all'
+        dpu_index_list = [0, 1, 2, 3]
+        installed_dpus = get_specified_installed_dpus_from_noga(topology_obj)
+        if installed_dpus:
+            rshim_value = installed_dpus.replace(' ', '').replace('dpu', 'rshim')
+            dpu_index_list = [dpu.replace('dpu', '') for dpu in installed_dpus.split(',')]
+            logger.info(f"installed_dpus:{installed_dpus}, rshim_value:{rshim_value}, dpu_index_list:{dpu_index_list}")
+
         # Disconnect ssh connection, prevent "Socket is closed" in case when pre step took more than 15 min
         output = topology_obj.players['dut']['engine'].run_cmd(
-            f"sudo sonic-bfb-installer.sh -r all -b {dest_file} -v")
+            f"sudo sonic-bfb-installer.sh -r {rshim_value} -b {dest_file} -v")
         failures = []
-        for index in range(4):
+        for index in dpu_index_list:
             pattern = f"{index}.*Installation Successful"
             if not re.search(pattern, output):
                 failures.append(index)
         if failures:
             assert False, f"Failed to install bfb image on DPU: {failures}."
+
+        if installed_dpus:
+            save_specified_installed_dpus(installed_dpus)
 
 
 if 'base-version=/auto/sw_system_release/sonic' in ' '.join(sys.argv) and 'target_cli_type' not in ' '.join(sys.argv):

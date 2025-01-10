@@ -213,7 +213,7 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
             duts = read_duts_from_testbed_yaml(f"{self.dut_name}-{self.sonic_topo}")
             self.Logger.info(f"duts :{duts}")
             duts.remove(self.dut_name)
-            dpu_duts = duts
+            dpu_duts = get_installed_dpu_duts(duts)
             self.Logger.info(f" dpu duts: {dpu_duts}")
             self.Logger.info(f" self.run_test_on_dpu_only: {self.run_test_on_dpu_only}, {type(self.run_test_on_dpu_only)}")
 
@@ -344,6 +344,22 @@ def read_duts_from_testbed_yaml(testbed_name):
                 duts = tb.pop("dut")
                 break
     return duts
+
+
+def get_installed_dpu_duts(dpu_duts):
+    installed_dpus_file_path = "/root/mars/workspace/sonic-mgmt/installed_dpus"
+    if os.path.exists(installed_dpus_file_path):
+        with open(installed_dpus_file_path) as f:
+            installed_dpus = f.read().split(',')
+        installed_dpu_duts = []
+        for dpu in installed_dpus:
+            for dpu_dut in dpu_duts:
+                if dpu in dpu_dut:
+                    installed_dpu_duts.append(dpu_dut)
+                    break
+        return installed_dpu_duts
+    else:
+        return dpu_duts
 
 
 if __name__ == "__main__":

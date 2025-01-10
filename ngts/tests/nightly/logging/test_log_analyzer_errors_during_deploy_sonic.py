@@ -5,6 +5,7 @@ import random
 import os
 from retry.api import retry_call
 from ngts.constants.constants import InfraConst
+from ngts.common.util import get_specified_installed_dpus
 
 logger = logging.getLogger()
 
@@ -17,9 +18,13 @@ def device_type(request):
 @pytest.fixture()
 def dut_host(engines, request, device_type):
     if device_type == 'dpu':
-        if "dpu0" in engines:
+        specified_installed_dpus = get_specified_installed_dpus()
+        if specified_installed_dpus:
+            dpu_name = random.choice(specified_installed_dpus)
+        else:
             dpu_index = random.randint(0, 3)
             dpu_name = f'dpu{dpu_index}'
+        if dpu_name in engines:
             os.environ[InfraConst.SELECTED_DPUS] = dpu_name
             return engines[dpu_name]
         else:

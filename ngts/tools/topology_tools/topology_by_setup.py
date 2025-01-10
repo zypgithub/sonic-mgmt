@@ -1,6 +1,7 @@
 from infra.tools.topology_tools.topology_setup_utils import get_topology_by_setup_name, create_player_entry
 from ngts.constants.constants import PlayersAliases
 import logging
+from ngts.common.util import get_specified_installed_dpu_indexes
 logger = logging.getLogger()
 
 
@@ -40,10 +41,13 @@ def add_dpu_player(topology, slow_cli, override_type):
                         'TYPE': '11',
                         'IP': topology.players['dut']['engine'].ip,
                         }
+    dpu_indexes = get_specified_installed_dpu_indexes()
+    if not dpu_indexes:
+        dpu_indexes = [0, 1, 2, 3]
 
-    dpu_num = 4
     base_dpu_ssh_nat_port = 5021
-    for dpu_index in range(0, dpu_num):
+
+    for dpu_index in dpu_indexes:
         dpu_host_name = f'dpu{dpu_index}'
         dpu_player_entry['DESCRIPTION'] = dpu_host_name
         dpu_player_entry['SSH_PORT'] = base_dpu_ssh_nat_port + dpu_index
