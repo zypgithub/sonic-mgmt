@@ -1,7 +1,10 @@
+import logging
 import random
 import re
+import shlex
 import string
-from typing import List
+import subprocess
+from typing import List, Union
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_tools.infra.ResultObj import ResultObj
@@ -36,3 +39,26 @@ def verify_result_obj_failure(result_obj: ResultObj, expected_err=None):
     result_obj.verify_result(False)
     if expected_err:
         assert expected_err in result_obj.info, f'err msg not as expected\nexpected: {expected_err}\nactual: {result_obj.info}'
+
+
+def run_cmd(cmd: Union[str, list], timeout=10, stdout_func=logging.info) -> str:
+    """
+    Run given command on the player/running machine
+    """
+    cmd_str, cmd_list = (cmd, shlex.split(cmd)) if isinstance(cmd, str) else (
+        ' '.join([str(item) for item in cmd]), cmd)
+
+    stdout_func(f'run: {cmd_str}')
+    # Run the bash script
+    result = subprocess.run(cmd_list, capture_output=True, text=True, timeout=timeout)
+
+    # Print the output
+    stdout_func(result.stdout)
+
+    # Print any error messages
+    if result.returncode != 0:
+        stdout_func("Returned code is not 0. Errors:")
+        stdout_func(result.stderr)
+        raise ValueError(f'error has occurred\nout: {result.stdout}\nerr: {result.stderr}')
+
+    return result.stdout

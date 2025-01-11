@@ -12,7 +12,7 @@ CA_CN = 'NVOS-CA'
 class CertificateGenerator:
 
     @classmethod
-    def generate_cert(cls, cert_location: str, cert_name: str, ip: str = '', dn: str = '',
+    def generate_cert(cls, cert_location: str, cert_name: str, cert_subj_cn: str = '', ip: str = '', dn: str = '',
                       new_ca_path: str = '', new_ca_name: str = '', p12_pass: str = '', existing_ca_public: str = '',
                       existing_ca_private: str = '', expiration_years: int = 10, san_uris: List[str] = [], stdout_func=logging.info):
         """
@@ -70,7 +70,7 @@ class CertificateGenerator:
         cls.__openssl_verify_cert_with_ca(ca_public_path, ca_public_path, stdout_func)
 
         # Generate and sign cert using CA
-        cert_csr_path, cert_private_path = cls.__gen_cert_csr_and_private_key(cert_location, cert_name, dn, stdout_func)
+        cert_csr_path, cert_private_path = cls.__gen_cert_csr_and_private_key(cert_location, cert_name, cert_subj_cn, stdout_func)
         cert_crt_public_path = cls.__issue_and_sign_public_cert(ca_private_path, ca_public_path, cert_csr_path,
                                                                 cert_location, cert_name, dn, expiration, ip, san_uris,
                                                                 stdout_func)
@@ -124,13 +124,13 @@ class CertificateGenerator:
         return ca_private_path, ca_public_path
 
     @classmethod
-    def __gen_cert_csr_and_private_key(cls, cert_location, cert_name, dn, stdout_func):
+    def __gen_cert_csr_and_private_key(cls, cert_location, cert_name, cn, stdout_func):
         stdout_func('generate certificate csr and private key')
         cert_csr_filename = f'{cert_name}.csr'
         cert_csr_path = os.path.join(cert_location, cert_csr_filename)
         cert_private_filename = f'{cert_name}.key'
         cert_private_path = os.path.join(cert_location, cert_private_filename)
-        cn = dn or DEFAULT_DN
+        cn = cn or DEFAULT_DN
         gen_cert_key_cmd = f'openssl req -newkey rsa:2048 -nodes -keyout {cert_private_path} -subj /C=CN/ST=GD/L=SZ-Inc/CN={cn} -out {cert_csr_path}'
         cls.__run_cmd_popen(gen_cert_key_cmd, stdout_func)
         cls.__verify_file(cert_csr_path, 'generated certificate csr')
@@ -230,6 +230,7 @@ def __try_generator():
     cert_name: str = 'cert-with-2-spifs'
     ip: str = '10.7.144.58'
     dn: str = 'gorilla-58'
+    subject_cn = dn
     expiration_years: int = 10
     new_ca_path: str = ''  # '/auto/sysgwork/alonn/playground/certs/spiffe/spif1/ca'
     new_ca_name: str = ''  # 'ca'
@@ -238,7 +239,7 @@ def __try_generator():
     p12_pass: str = 'secret2'
     san_uris: List[str] = ['spiffe://alon-trusted.domain/users/ceos/alon', 'spiffe://alon-trusted.domain/users/ceos/lital']
 
-    CertificateGenerator.generate_cert(cert_location, cert_name, ip, dn, new_ca_path, new_ca_name, p12_pass,
+    CertificateGenerator.generate_cert(cert_location, cert_name, subject_cn, ip, dn, new_ca_path, new_ca_name, p12_pass,
                                        existing_ca_public, existing_ca_private, expiration_years, san_uris, print)
 
 

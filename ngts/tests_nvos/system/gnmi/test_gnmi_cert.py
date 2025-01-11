@@ -1,9 +1,9 @@
-import os.path
+import random
 import random
 import select
 import string
 import time
-from typing import Dict, List, Tuple
+from typing import List, Tuple
 
 import pytest
 
@@ -11,7 +11,6 @@ import ngts.tools.test_utils.allure_utils as allure
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.constants.constants import GnmiConsts
 from ngts.nvos_constants.constants_nvos import TestFlowType, ApiType
-from ngts.nvos_tools.infra.CmdRunner import CmdRunner
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.system.System import System
@@ -20,9 +19,9 @@ from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tests_nvos.general.security.certificate.helpers import import_certificates
 from ngts.tests_nvos.general.security.conftest import local_adminuser
-from ngts.tests_nvos.general.security.constants import TMP_TEST_CERTS_DIR
 from ngts.tests_nvos.general.security.helpers import remove_etc_host_mapping_to_dn, add_etc_host_mapping_to_dn, \
-    prepare_tmp_test_certs, import_certs_safely, delete_certs_safely, get_cert_with_ca_mismatch
+    get_cert_with_ca_mismatch, setup_certs_for_tests, \
+    cleanup_certs_for_tests
 from ngts.tests_nvos.general.security.security_test_tools.constants import AddressingType
 from ngts.tests_nvos.helpers.pytest_helpers import get_cur_test_param_value
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
@@ -32,26 +31,15 @@ from ngts.tests_nvos.system.gnmi.helpers import verify_gnmi_client, verify_gnmi_
 
 
 def setup_gnmi_cert_tests(engines, dut_hostname, scp_player) -> Tuple[str, List[CertInfo]]:
-    with allure.step('prepare temp test certs in shared location'):
-        certs_dirname = f'gnmi-{dut_hostname}-{random.randint(0, 9999)}'
-        tmp_certs_dir = os.path.join(TMP_TEST_CERTS_DIR, certs_dirname)
-        certs_names = ['gnmi-cert1', 'gnmi-cert2', 'gnmi-cert3']
-        certs_info: Dict[str, CertInfo] = prepare_tmp_test_certs(certs_names, tmp_certs_dir, engines, dut_hostname)
-        certs = list(certs_info.values())
-    with allure.step('import certs to dut'):
-        import_certs_safely(list(certs_info.values()), scp_player)
-
-    return tmp_certs_dir, certs
+    return setup_certs_for_tests('gnmi', ['gnmi-cert1', 'gnmi-cert2', 'gnmi-cert3'], engines, dut_hostname, True, scp_player)
 
 
 def cleanup_gnmi_cert_tests(tmp_certs_dir: str, certs: List[CertInfo]):
     with allure.step('unset gnmi config'):
         gnmi = System().gnmi_server
         gnmi.unset(apply=True).verify_result()
-    with allure.step('delete certs from dut'):
-        delete_certs_safely(certs)
-    with allure.step('remove temp test certs from shared location'):
-        CmdRunner().run_cmd(f'rm -rf {tmp_certs_dir}')
+    with allure.step('remove certs from dut and local'):
+        cleanup_certs_for_tests(tmp_certs_dir, certs)
 
 
 @pytest.fixture(scope='module', autouse=True)

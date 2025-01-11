@@ -1,25 +1,34 @@
+import logging
+import os
 import random
-from typing import List
+import time
+from typing import List, Dict, Union
 
 import pytest
 
-from ngts.nvos_constants.constants_nvos import ApiType
+from ngts.nvos_constants.constants_nvos import ApiType, UserRole
+from ngts.nvos_tools.infra.CurlCmdBuilder import CurlCmdBuilder
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.api_server.mtls.spiffe_id.constants import INVALID_SPIFFE_ERR, INCOMPLETE_ERR, \
-    SPIFFE_UNIQUENESS_ERR
-from ngts.tests_nvos.general.security.api_server.mtls.spiffe_id.helpers import generate_rand_spiffe_id
+    SPIFFE_UNIQUENESS_ERR, SecurityMode, BAD_RESPONSE_KEYWORDS
+from ngts.tests_nvos.general.security.api_server.mtls.spiffe_id.helpers import generate_rand_spiffe_id, \
+    setup_api_security_mode, get_tmp_revision_number_for_test_only
+from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
+from ngts.tests_nvos.general.security.helpers import import_certs_safely, get_test_certs_dir_location, \
+    set_new_random_users, import_cas_safely, generate_certs
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
-from ngts.tests_nvos.helpers.general_helpers import generate_rand_str, verify_result_obj_failure
+from ngts.tests_nvos.helpers.general_helpers import generate_rand_str, verify_result_obj_failure, run_cmd
+from ngts.tests_nvos.system.gnmi.conftest import scp_player
 from ngts.tools.test_utils import allure_utils as allure
 
 
 @pytest.mark.security
 @pytest.mark.mtls
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_api_spiffe_cli(test_api, local_admin_users: List[UserInfo]):
+def test_api_spiffe_cli(test_api, local_admin_users: List[UserInfo], engines):
     """
     Verify that all CLI work and check values change properly in show
 
@@ -48,7 +57,7 @@ def test_api_spiffe_cli(test_api, local_admin_users: List[UserInfo]):
             with allure.independent_step(spif):
                 user_obj.spiffe_id.spiffe[spif].set().verify_result()
     with allure.step('apply'):
-        user_obj._cli_wrapper.apply_config(verify_execution=True)
+        user_obj._general_cli_wrapper.apply_config(engines.dut, verify_execution=True)
     with allure.step('Verify in show commands'):
         with allure.independent_step('general spiffe-id show of a user'):
             out = OutputParsingTool.parse_json_str_to_dictionary(user_obj.spiffe_id.show()).get_returned_value()
@@ -180,3 +189,277 @@ def test_api_spiffe_uniqueness_apply_separately(test_api, local_admin_users: Lis
             with allure.independent_step(user2.username):
                 out = OutputParsingTool.parse_json_str_to_dictionary(user2_obj.spiffe_id.show()).get_returned_value()
                 assert spif not in out, f'spif "{spif}" unexpectedly found in user2 ({user2.username}) spiffes\n{out}'
+
+
+Cert = Union[CertInfo, None]
+User = Union[UserInfo, None]
+
+
+class Case:
+    def __init__(self, name: str, creds: User, cert: Cert, expect_authorized_user: Union[UserInfo, None]):
+        self.name: str = name
+        self.creds: UserInfo = creds
+        self.cert: CertInfo = cert
+        self.expect_authorized_user: UserInfo = expect_authorized_user
+
+    def verify_show(self, host: str, ca: CertInfo):
+        expect_success = self.expect_authorized_user is not None
+        with allure.step(f'check show: {expect_success}'):
+            method = 'GET'
+            resource = System().version.get_resource_path()
+            curl_cmd = self.__build_curl_request_cmd(host, method, resource, ca)
+            self.__run_curl_and_verify(curl_cmd, expect_success)
+
+    def verify_set(self, revision, host: str, ca: CertInfo):
+        expect_success = self.expect_authorized_user is not None and self.expect_authorized_user.role == UserRole.ADMIN
+        with allure.step(f'check set: {expect_success}'):
+            method = 'PATCH'
+            resource = System().security.password_hardening.get_resource_path()
+            params = {'rev': revision}
+            payload = {'state': 'disabled'}
+            curl_cmd = self.__build_curl_request_cmd(host, method, resource, ca, params, payload)
+            self.__run_curl_and_verify(curl_cmd, expect_success)
+
+    def __build_curl_request_cmd(self, host: str, method: str, resource: str, ca: CertInfo, params: dict = None,
+                                 payload: dict = None) -> str:
+        cmd_builder = CurlCmdBuilder(method, host, resource)
+        if params:
+            cmd_builder.params(params)
+        if self.creds:
+            cmd_builder.user_creds(self.creds.username, self.creds.password)
+        if self.cert:
+            cmd_builder.client_cert(self.cert.private, self.cert.public)
+        else:
+            cmd_builder.insecure()
+        if payload:
+            cmd_builder.payload(payload)
+        if ca:
+            cmd_builder.cacert(ca.cacert)
+        return cmd_builder.build()
+
+    def __run_curl_and_verify(self, curl_cmd, expect_success):
+        time.sleep(0.2)
+        logging.info(f'running request:\n{curl_cmd}\nexpect: {expect_success}')
+        try:
+            out = run_cmd(curl_cmd)
+            assert all(msg not in out for msg in BAD_RESPONSE_KEYWORDS), out
+            logging.info('show succeeded')
+            actual_success = True
+        except Exception as e:
+            logging.info('show failed')
+            actual_success = False
+            out = e
+        assert actual_success == expect_success, f'show result not as expected. expected: {expect_success}. actual: {actual_success}\ncmd: {curl_cmd}\nerr:\n{out}'
+
+
+@pytest.mark.security
+@pytest.mark.mtls
+def test_api_spiffe_core_functionality(dut_hostname, engines, scp_player):
+    """
+    preparation for test:
+    - 3 local users (usr1, usr2, usr3)
+    - one CA that issues all client certs (for server)
+    - client certs:
+        - cert without spiffe
+        - cert0 with spiffe that no user will have
+        - cert11 with spiffe11 that usr1 will have
+        - cert12 with spiffe12 that usr1 will have
+        - cert2 with spiffe2 that usr2 will have
+    - prepare api configuration as the required security mode
+        - unsecured: no further configuration
+        - tls: import server cert and bind to api
+        - mtls: as tls + import client CA and bind to api mtls ca-certificate
+    """
+    dut_engine = engines.dut
+    system = System()
+    dn = dut_hostname
+    ip = dut_engine.ip
+    certs_location = get_test_certs_dir_location('spiffe', dut_hostname)
+
+    with allure.step('randomize spiffes'):
+        spifs = [generate_rand_spiffe_id() for _ in range(4)]
+
+    with allure.step('prepare client certs'):
+        cn = 'nvos-client'
+        cert_no_spif = CertInfo('cert', 'without spiffe', '', '', '', '', dn, ip, '', f'{cn}')
+        cert_2_spifs = CertInfo('cert-2-spiffs', '2 spiffs', '', '', '', '', dn, ip, '', f'{cn}-9', [spifs[0], spifs[1]])
+        cert_spif_not_exists = CertInfo('cert0', 'spiffe that no user has', '', '', '', '', dn, ip, '', f'{cn}-0', [spifs[0]])
+        cert_spif_of_user1_1 = CertInfo('cert11', 'spiffe of user1 #1', '', '', '', '', dn, ip, '', f'{cn}-11', [spifs[1]])
+        cert_spif_of_user1_2 = CertInfo('cert12', 'spiffe of user1 #2', '', '', '', '', dn, ip, '', f'{cn}-12', [spifs[2]])
+        cert_spif_of_user2 = CertInfo('cert2', 'spiffe of user2', '', '', '', '', dn, ip, '', f'{cn}-2', [spifs[3]])
+        clients_certs = [cert_no_spif, cert_2_spifs, cert_spif_not_exists, cert_spif_of_user1_1, cert_spif_of_user1_2,
+                         cert_spif_of_user2]
+        client_certs_dir = os.path.join(certs_location, 'client_certs')
+        generate_certs(client_certs_dir, clients_certs)
+
+    with allure.step('prepare server cert'):
+        server_certs_dir = os.path.join(certs_location, 'server_certs')
+        server_certs = [
+            CertInfo('server-cert', 'server cert', '', '', '', '', dn, ip, '', f'{dn}'),
+        ]
+        server_cert: CertInfo = server_certs[0]
+        generate_certs(server_certs_dir, server_certs)
+
+    with allure.step('set local users'):
+        admins = set_new_random_users(1, UserRole.ADMIN)
+        monitors = set_new_random_users(2, UserRole.MONITOR)
+        user1: UserInfo = admins[0]
+        user2: UserInfo = monitors[0]
+        user3: UserInfo = monitors[1]
+
+    # TODO: uncomment on drop
+    # with allure.step('bind spiffes to users'):
+    #     system.aaa.user.user_id[user1.username].spiffe_id.spiffe[spifs[1]].set().verify_result()
+    #     system.aaa.user.user_id[user1.username].spiffe_id.spiffe[spifs[2]].set().verify_result()
+    #     system.aaa.user.user_id[user2.username].spiffe_id.spiffe[spifs[3]].set().verify_result()
+
+    with allure.step('apply all prepared configuration'):
+        system._general_cli_wrapper.apply_config(dut_engine, verify_execution=True)
+
+    with allure.step('import server cert & CA'):
+        import_certs_safely(server_certs, scp_player)
+        import_cas_safely([clients_certs[0]], scp_player)
+
+    bad_pw = 'bad-password'
+    user1_bad_pw = UserInfo(user1.username, bad_pw, user1.role)
+    user2_bad_pw = UserInfo(user2.username, bad_pw, user2.role)
+    user3_bad_pw = UserInfo(user3.username, bad_pw, user3.role)
+
+    no_mtls_cases: List[Case] = [
+        # no creds
+        Case('no creds + no cert', None, None, None),
+        Case(f'no creds + {cert_2_spifs.info}', None, cert_2_spifs, None),
+        Case(f'no creds + {cert_no_spif.info}', None, cert_no_spif, None),
+        Case(f'no creds + {cert_spif_not_exists.info}', None, cert_spif_not_exists, None),
+        Case(f'no creds + {cert_spif_of_user1_1.info}', None, cert_spif_of_user1_1, None),
+        Case(f'no creds + {cert_spif_of_user1_2.info}', None, cert_spif_of_user1_2, None),
+        Case(f'no creds + {cert_spif_of_user2.info}', None, cert_spif_of_user2, None),
+        # usr1 good pw
+        Case(f'usr1 good creds + no cert', user1, None, user1),
+        Case(f'usr1 good creds + {cert_2_spifs.info}', user1, cert_2_spifs, user1),
+        Case(f'usr1 good creds + {cert_no_spif.info}', user1, cert_no_spif, user1),
+        Case(f'usr1 good creds + {cert_spif_not_exists.info}', user1, cert_spif_not_exists, user1),
+        Case(f'usr1 good creds + {cert_spif_of_user1_1.info}', user1, cert_spif_of_user1_1, user1),
+        Case(f'usr1 good creds + {cert_spif_of_user1_2.info}', user1, cert_spif_of_user1_2, user1),
+        Case(f'usr1 good creds + {cert_spif_of_user2.info}', user1, cert_spif_of_user2, user1),
+        # usr1 bad pw
+        Case(f'usr1 bad creds + no cert', user1_bad_pw, None, None),
+        Case(f'usr1 bad creds + {cert_2_spifs.info}', user1_bad_pw, cert_2_spifs, None),
+        Case(f'usr1 bad creds + {cert_no_spif.info}', user1_bad_pw, cert_no_spif, None),
+        Case(f'usr1 bad creds + {cert_spif_not_exists.info}', user1_bad_pw, cert_spif_not_exists, None),
+        Case(f'usr1 bad creds + {cert_spif_of_user1_1.info}', user1_bad_pw, cert_spif_of_user1_1, None),
+        Case(f'usr1 bad creds + {cert_spif_of_user1_2.info}', user1_bad_pw, cert_spif_of_user1_2, None),
+        Case(f'usr1 bad creds + {cert_spif_of_user2.info}', user1_bad_pw, cert_spif_of_user2, None),
+        # usr2 good pw
+        Case(f'usr2 good creds + no cert', user2, None, user2),
+        Case(f'usr2 good creds + {cert_2_spifs.info}', user2, cert_2_spifs, user2),
+        Case(f'usr2 good creds + {cert_no_spif.info}', user2, cert_no_spif, user2),
+        Case(f'usr2 good creds + {cert_spif_not_exists.info}', user2, cert_spif_not_exists, user2),
+        Case(f'usr2 good creds + {cert_spif_of_user1_1.info}', user2, cert_spif_of_user1_1, user2),
+        Case(f'usr2 good creds + {cert_spif_of_user1_2.info}', user2, cert_spif_of_user1_2, user2),
+        Case(f'usr2 good creds + {cert_spif_of_user2.info}', user2, cert_spif_of_user2, user2),
+        # usr2 bad pw
+        Case(f'usr2 bad creds + no cert', user2_bad_pw, None, None),
+        Case(f'usr2 bad creds + {cert_2_spifs.info}', user2_bad_pw, cert_2_spifs, None),
+        Case(f'usr2 bad creds + {cert_no_spif.info}', user2_bad_pw, cert_no_spif, None),
+        Case(f'usr2 bad creds + {cert_spif_not_exists.info}', user2_bad_pw, cert_spif_not_exists, None),
+        Case(f'usr2 bad creds + {cert_spif_of_user1_1.info}', user2_bad_pw, cert_spif_of_user1_1, None),
+        Case(f'usr2 bad creds + {cert_spif_of_user1_2.info}', user2_bad_pw, cert_spif_of_user1_2, None),
+        Case(f'usr2 bad creds + {cert_spif_of_user2.info}', user2_bad_pw, cert_spif_of_user2, None),
+        # usr3 good pw
+        Case(f'usr3 good creds + no cert', user3, None, user3),
+        Case(f'usr3 good creds + {cert_2_spifs.info}', user3, cert_2_spifs, user3),
+        Case(f'usr3 good creds + {cert_no_spif.info}', user3, cert_no_spif, user3),
+        Case(f'usr3 good creds + {cert_spif_not_exists.info}', user3, cert_spif_not_exists, user3),
+        Case(f'usr3 good creds + {cert_spif_of_user1_1.info}', user3, cert_spif_of_user1_1, user3),
+        Case(f'usr3 good creds + {cert_spif_of_user1_2.info}', user3, cert_spif_of_user1_2, user3),
+        Case(f'usr3 good creds + {cert_spif_of_user2.info}', user3, cert_spif_of_user2, user3),
+        # usr3 bad pw
+        Case(f'usr3 bad creds + no cert', user3_bad_pw, None, None),
+        Case(f'usr3 bad creds + {cert_2_spifs.info}', user3_bad_pw, cert_2_spifs, None),
+        Case(f'usr3 bad creds + {cert_no_spif.info}', user3_bad_pw, cert_no_spif, None),
+        Case(f'usr3 bad creds + {cert_spif_not_exists.info}', user3_bad_pw, cert_spif_not_exists, None),
+        Case(f'usr3 bad creds + {cert_spif_of_user1_1.info}', user3_bad_pw, cert_spif_of_user1_1, None),
+        Case(f'usr3 bad creds + {cert_spif_of_user1_2.info}', user3_bad_pw, cert_spif_of_user1_2, None),
+        Case(f'usr3 bad creds + {cert_spif_of_user2.info}', user3_bad_pw, cert_spif_of_user2, None),
+    ]
+
+    mtls_cases: List[Case] = [
+        # no creds
+        Case('no creds + no cert', None, None, None),
+        Case(f'no creds + {cert_2_spifs.info}', None, cert_2_spifs, None),
+        Case(f'no creds + {cert_no_spif.info}', None, cert_no_spif, None),
+        Case(f'no creds + {cert_spif_not_exists.info}', None, cert_spif_not_exists, None),
+        Case(f'no creds + {cert_spif_of_user1_1.info}', None, cert_spif_of_user1_1, user1),
+        Case(f'no creds + {cert_spif_of_user1_2.info}', None, cert_spif_of_user1_2, user1),
+        Case(f'no creds + {cert_spif_of_user2.info}', None, cert_spif_of_user2, user2),
+        # usr1 good pw
+        Case(f'usr1 good creds + no cert', user1, None, None),
+        Case(f'usr1 good creds + {cert_2_spifs.info}', user1, cert_2_spifs, None),
+        Case(f'usr1 good creds + {cert_no_spif.info}', user1, cert_no_spif, None),
+        Case(f'usr1 good creds + {cert_spif_not_exists.info}', user1, cert_spif_not_exists, None),
+        Case(f'usr1 good creds + {cert_spif_of_user1_1.info}', user1, cert_spif_of_user1_1, user1),
+        Case(f'usr1 good creds + {cert_spif_of_user1_2.info}', user1, cert_spif_of_user1_2, user1),
+        Case(f'usr1 good creds + {cert_spif_of_user2.info}', user1, cert_spif_of_user2, user2),
+        # usr1 bad pw
+        Case(f'usr1 bad creds + no cert', user1_bad_pw, None, None),
+        Case(f'usr1 bad creds + {cert_2_spifs.info}', user1_bad_pw, cert_2_spifs, None),
+        Case(f'usr1 bad creds + {cert_no_spif.info}', user1_bad_pw, cert_no_spif, None),
+        Case(f'usr1 bad creds + {cert_spif_not_exists.info}', user1_bad_pw, cert_spif_not_exists, None),
+        Case(f'usr1 bad creds + {cert_spif_of_user1_1.info}', user1_bad_pw, cert_spif_of_user1_1, user1),
+        Case(f'usr1 bad creds + {cert_spif_of_user1_2.info}', user1_bad_pw, cert_spif_of_user1_2, user1),
+        Case(f'usr1 bad creds + {cert_spif_of_user2.info}', user1_bad_pw, cert_spif_of_user2, user2),
+        # usr2 good pw
+        Case(f'usr2 good creds + no cert', user2, None, None),
+        Case(f'usr2 good creds + {cert_2_spifs.info}', user2, cert_2_spifs, None),
+        Case(f'usr2 good creds + {cert_no_spif.info}', user2, cert_no_spif, None),
+        Case(f'usr2 good creds + {cert_spif_not_exists.info}', user2, cert_spif_not_exists, None),
+        Case(f'usr2 good creds + {cert_spif_of_user1_1.info}', user2, cert_spif_of_user1_1, user1),
+        Case(f'usr2 good creds + {cert_spif_of_user1_2.info}', user2, cert_spif_of_user1_2, user1),
+        Case(f'usr2 good creds + {cert_spif_of_user2.info}', user2, cert_spif_of_user2, user2),
+        # usr2 bad pw
+        Case(f'usr2 bad creds + no cert', user2_bad_pw, None, None),
+        Case(f'usr2 bad creds + {cert_2_spifs.info}', user2_bad_pw, cert_2_spifs, None),
+        Case(f'usr2 bad creds + {cert_no_spif.info}', user2_bad_pw, cert_no_spif, None),
+        Case(f'usr2 bad creds + {cert_spif_not_exists.info}', user2_bad_pw, cert_spif_not_exists, None),
+        Case(f'usr2 bad creds + {cert_spif_of_user1_1.info}', user2_bad_pw, cert_spif_of_user1_1, user1),
+        Case(f'usr2 bad creds + {cert_spif_of_user1_2.info}', user2_bad_pw, cert_spif_of_user1_2, user1),
+        Case(f'usr2 bad creds + {cert_spif_of_user2.info}', user2_bad_pw, cert_spif_of_user2, user2),
+        # usr3 good pw
+        Case(f'usr3 good creds + no cert', user3, None, None),
+        Case(f'usr3 good creds + {cert_2_spifs.info}', user3, cert_2_spifs, None),
+        Case(f'usr3 good creds + {cert_no_spif.info}', user3, cert_no_spif, user2),
+        Case(f'usr3 good creds + {cert_spif_not_exists.info}', user3, cert_spif_not_exists, user2),
+        Case(f'usr3 good creds + {cert_spif_of_user1_1.info}', user3, cert_spif_of_user1_1, user1),
+        Case(f'usr3 good creds + {cert_spif_of_user1_2.info}', user3, cert_spif_of_user1_2, user1),
+        Case(f'usr3 good creds + {cert_spif_of_user2.info}', user3, cert_spif_of_user2, user2),
+        # usr3 bad pw
+        Case(f'usr3 bad creds + no cert', user3_bad_pw, None, None),
+        Case(f'usr3 bad creds + {cert_2_spifs.info}', user3_bad_pw, cert_2_spifs, None),
+        Case(f'usr3 bad creds + {cert_no_spif.info}', user3_bad_pw, cert_no_spif, None),
+        Case(f'usr3 bad creds + {cert_spif_not_exists.info}', user3_bad_pw, cert_spif_not_exists, None),
+        Case(f'usr3 bad creds + {cert_spif_of_user1_1.info}', user3_bad_pw, cert_spif_of_user1_1, user1),
+        Case(f'usr3 bad creds + {cert_spif_of_user1_2.info}', user3_bad_pw, cert_spif_of_user1_2, user1),
+        Case(f'usr3 bad creds + {cert_spif_of_user2.info}', user3_bad_pw, cert_spif_of_user2, user2),
+    ]
+
+    cases_by_security_mode: Dict[str, List[Case]] = {
+        SecurityMode.UNSECURED: no_mtls_cases,
+        SecurityMode.TLS: no_mtls_cases,
+        SecurityMode.MTLS: mtls_cases
+    }
+
+    with allure.step('take new revision number for testing admin permissions'):
+        revision_num = get_tmp_revision_number_for_test_only()
+
+    with allure.step('test all cases'):
+        for mode in SecurityMode.ALL_MODES:
+            with allure.independent_step(mode):
+                with allure.step(f'setup security mode: {mode}'):
+                    setup_api_security_mode(mode, server_cert, clients_certs[0])
+                cases: List[Case] = cases_by_security_mode[mode]
+                for case in cases:
+                    with allure.independent_step(case.name):
+                        client_ca = None if mode == SecurityMode.UNSECURED else server_cert
+                        case.verify_show(dut_engine.ip, client_ca)
+                        case.verify_set(revision_num, dut_engine.ip, client_ca)
