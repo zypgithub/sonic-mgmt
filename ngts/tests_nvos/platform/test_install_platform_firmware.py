@@ -4,7 +4,7 @@ from typing import Tuple
 import pytest
 
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from ngts.nvos_constants.constants_nvos import NvosConst, PlatformConsts, HealthConsts, ImageConsts
+from ngts.nvos_constants.constants_nvos import NvosConst, PlatformConsts, HealthConsts
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.BmcTool import BmcTool
 from ngts.tests_nvos.constants import MINUTE
@@ -87,7 +87,7 @@ def get_version_and_file_name(device) -> Tuple[str, str]:
 
 def get_asic_dict(platform):
     show_output = OutputParsingTool.parse_json_str_to_dictionary(platform.firmware.show()).get_returned_value()
-    asic_dictionary = {k: v for k, v in show_output.items() if PlatformConsts.FW_ASIC in k}
+    asic_dictionary = {k: v for k, v in show_output.items() if PlatformConsts.FW_ASIC in k and 'EROT' not in k}
     assert asic_dictionary and len(asic_dictionary.keys()) > 0, "asic list is empty"
     return asic_dictionary
 

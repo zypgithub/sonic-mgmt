@@ -78,12 +78,11 @@ def test_transceiver_status_unplug(engines, devices, test_api, asic_conf_dict):
         mst_dev_name = IbInterfaceTool.get_mst_dev_name(engines=engines, module_name=module_under_test,
                                                         asic_conf_dict=asic_conf_dict, port_name=ports[0].name)
         assert module_under_test, f"No module with state {desired_state} found"
-        module_index = int(
-            ''.join(c for c in module_under_test if c.isdigit())) - 1  # module start from 0, while sw from 1
+        module_index = _count_module_index(module_under_test, devices.dut)
 
     try:
         _verify_transceiver_status(platform, transceiver_id=module_under_test, expected_module_status='Inserted')
-        IbInterfaceTool.simulate_unplug_module_event(engines.dut, devices.dut, module_index, mst_dev_name, 5)
+        IbInterfaceTool.simulate_unplug_module_event(engines.dut, devices.dut, module_index, mst_dev_name, 8)
         _verify_link_state_down(ports)
         _verify_transceiver_status(platform, transceiver_id=module_under_test, expected_module_status='Removed')
 
@@ -121,13 +120,12 @@ def test_transceiver_status_with_reboot(engines, devices, test_api, asic_conf_di
         mst_dev_name = IbInterfaceTool.get_mst_dev_name(engines=engines, module_name=module_under_test,
                                                         asic_conf_dict=asic_conf_dict, port_name=ports[0].name)
         assert module_under_test, f"No module with state {desired_state} found"
-        module_index = int(
-            ''.join(c for c in module_under_test if c.isdigit())) - 1  # module start from 0, while sw from 1
+        module_index = _count_module_index(module_under_test, devices.dut)
 
     try:
         _verify_transceiver_status(platform, transceiver_id=module_under_test, expected_module_status='Inserted')
 
-        IbInterfaceTool.simulate_unplug_module_event(engines.dut, devices.dut, module_index, mst_dev_name, 5)
+        IbInterfaceTool.simulate_unplug_module_event(engines.dut, devices.dut, module_index, mst_dev_name, 8)
         _verify_link_state_down(ports)
         _verify_transceiver_status(platform, transceiver_id=module_under_test, expected_module_status='Removed')
 
@@ -204,15 +202,12 @@ def _verify_link_state_down(down_ports):
 
 def _get_module_with_status(platform, status):
     with allure.step(f"Find {status} module"):
-        detail = ""
-        if TestToolkit.tested_api == ApiType.NVUE:
-            detail = "detail"
         transceivers = [name for name, transceiver in
                         OutputParsingTool.parse_json_str_to_dictionary(
-                            platform.transceiver.show(detail)).get_returned_value().items() if
+                            platform.transceiver.show()).get_returned_value().items() if
                         "sw" in name and transceiver[PlatformConsts.TRANSCEIVER_STATUS] == status]
         if not transceivers:
-            assert False, f"No {status} transceiver found"
+            pytest.skip(f"No {status} transceivers found for setup")
         return random.choice(transceivers)
 
 
@@ -221,3 +216,12 @@ def _get_ports_for_module(module_name):
         ports = Port.get_list_of_ports()
         ports_for_module = [port for port in ports if f"{module_name}p" in port.name]
         return ports_for_module
+
+
+def _count_module_index(module_name, device):
+    module_index = int(''.join(c for c in module_name if c.isdigit()))
+    module_index -= 1
+    if device.module_offset:
+        offset = device.module_offset
+        module_index %= offset
+    return module_index
