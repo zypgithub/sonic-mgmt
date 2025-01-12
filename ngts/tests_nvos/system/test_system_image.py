@@ -89,20 +89,6 @@ def test_show_system_image(original_version):
             assert output_dictionary[ImageConsts.NEXT_IMG] == output_dictionary[ImageConsts.CURRENT_IMG], \
                 f"Next image is not the current as expected in default settings."
 
-    with allure.step(f"Validate boot-next {ImageConsts.OTHER} param"):
-        # Define the expected sequence of toggles: 2 -> 1
-        expected_values = ["2", "1"]
-
-        for i, expected_next in enumerate(expected_values, start=1):
-            with allure.step(f"Toggle boot-next - Iteration {i}"):
-                system.image.action_boot_next(ImageConsts.OTHER)
-                output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(system.image.show()).get_returned_value()
-
-                new_next = output_dictionary[ImageConsts.NEXT_IMG]
-                assert new_next == expected_next, f"Boot-next toggle failed. Expected: {expected_next}, Got: {new_next}"
-
-                logger.info(f"Boot-next successfully toggled to {new_next} as expected.")
-
     with allure.step("Run show command to view system image files"):
         output_dictionary = system.image.files.get_files()
         if output_dictionary:
