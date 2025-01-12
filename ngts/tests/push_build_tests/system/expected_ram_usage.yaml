@@ -98,8 +98,11 @@ master:
     syncd: 300
   SN2700: # Panther
     <<: *platform_defaults
+    total: 6000
     sx_sdk: 600
     syncd: 300
+    rsyslogd:
+      expected_value: 100
   MSN2700: # Simx Panther
     <<: *platform_defaults
     sx_sdk: 1200
@@ -107,8 +110,11 @@ master:
   # SPC2
   MSN3420: # Lionfish
     <<: *platform_defaults
+    total: 6000
     sx_sdk: 1100
     syncd: 300
+    rsyslogd:
+      expected_value: 100
   MSN3700: # Anaconda
     <<: *platform_defaults
     sx_sdk: 1500
@@ -140,9 +146,12 @@ master:
     syncd: 300
   MSN4700: # Leopard
     <<: *platform_defaults
+    total: 6000
     sx_sdk: 1500
     syncd: 350
     thermalctld: 60
+    rsyslogd:
+      expected_value: 100
   # SPC4
   SN5400: # Hippo
     <<: *platform_defaults
