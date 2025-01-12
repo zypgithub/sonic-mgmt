@@ -1,6 +1,6 @@
 import pytest
 from ngts.nvos_tools.infra.Tools import Tools
-from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import *
+from ngts.nvos_tools.ib.InterfaceConfiguration.Port import *
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_constants.constants_nvos import ApiType
 
@@ -20,7 +20,7 @@ def test_ib0_interface_ipv6_address(engines):
 
 
 def _ib0_interface_ip_address(is_ipv6):
-    ib0_port = MgmtPort('ib0')
+    ib0_port = Port('ib0')
     if is_ipv6:
         ip_address = Tools.IpTool.select_random_ipv6_address().verify_result()
     else:

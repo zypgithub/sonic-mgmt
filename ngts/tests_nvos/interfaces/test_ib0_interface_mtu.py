@@ -1,7 +1,6 @@
 import pytest
 import random
 from ngts.nvos_tools.infra.Tools import Tools
-from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import *
@@ -25,7 +24,7 @@ def test_interface_ib0_mtu_disabled_sm(engines, stop_sm):
     4. Unset mtu, check default value
     """
 
-    ipoib_port = MgmtPort('ib0')
+    ipoib_port = Port('ib0')
     possible_values = [4092]
     with allure.step('pick random mtu value out of {possible_values}'.format(possible_values=possible_values)):
         random_mtu = random.choice(possible_values)
@@ -70,7 +69,7 @@ def test_interface_ib0_arp_timeout_disabled_sm(stop_sm):
     4. Unset arp timeout, check default value
     """
 
-    ipoib_port = MgmtPort('ib0')
+    ipoib_port = Port('ib0')
     with allure.step('pick random valid and invalid arp-timeout values'):
         random_valid_timeout = random.randint(60, 28800)
         random_invalid_timeout = random.randint(0, 59)

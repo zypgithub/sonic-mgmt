@@ -1,12 +1,8 @@
 import pytest
 
-from ngts.nvos_constants.constants_nvos import SystemConsts, IpConsts
 from ngts.nvos_tools.infra.IpTool import IpTool
 from ngts.nvos_tools.infra.Tools import Tools
-from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import *
-from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
@@ -23,8 +19,7 @@ def test_mgmt_interface_mac(engines, serial_engine):
     Reboot switch back into OS
     """
 
-    mgmt_port = MgmtPort()
-    dut_engine = engines.dut
+    mgmt_port = Port()
     with allure.step('Run show command on selected port and verify that each field has an appropriate '
                      'value according to the state of the port'):
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(

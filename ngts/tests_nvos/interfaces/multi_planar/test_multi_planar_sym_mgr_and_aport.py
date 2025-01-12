@@ -10,7 +10,6 @@ from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import ApiType, IbConsts, MultiPlanarConsts
 from ngts.nvos_tools.ib.Ib import Ib
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
-from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.infra.DatabaseTool import DatabaseTool
 from ngts.nvos_tools.infra.Fae import Fae
@@ -78,7 +77,7 @@ def test_fae_interface_commands(engines, devices, test_api, start_sm):
                 output_fae_fnm_port = OutputParsingTool.parse_show_interface_output_to_dictionary(
                     selected_fae_fnm_port.port.interface.show()).get_returned_value()
                 if output_fae_fnm_port[IbInterfaceConsts.LINK][IbInterfaceConsts.LINK_CONNECTION_MODE] != IbInterfaceConsts.XDR:
-                    MgmtPort(selected_fae_fnm_port.port.name).interface.link.set(
+                    Port(selected_fae_fnm_port.port.name).interface.link.set(
                         op_param_name=IbInterfaceConsts.LINK_CONNECTION_MODE, op_param_value=IbInterfaceConsts.XDR,
                         apply=True, ask_for_confirmation=True).verify_result()
 
@@ -346,8 +345,8 @@ def test_aggregated_port_mismatch_between_planes(engines, devices, test_api):
         with allure.step(f"Configure ports"):
             loop_back_name = RandomizationTool.select_random_value(dut_device.default_loopback_ports).\
                 get_returned_value()
-            loop_back_port = MgmtPort(loop_back_name)
-            aggregated_port = MgmtPort(dut_device.default_aggregated_port)
+            loop_back_port = Port(loop_back_name)
+            aggregated_port = Port(dut_device.default_aggregated_port)
             for port in dut_device.default_loopback_ports:
                 if loop_back_name == port:
                     selected_plane_port = Fae(port_name=dut_device.loop_back_to_ports[port])
@@ -550,7 +549,7 @@ def test_aggregated_port_mismatch_between_planes(engines, devices, test_api):
 #             aggregated_port_name = RandomizationTool.select_random_value(aggregated_active_list). \
 #                 get_returned_value()
 #             selected_fae_aggregated_port = Fae(port_name=aggregated_port_name)
-#             selected_aggregated_port = MgmtPort(selected_fae_aggregated_port.port.name)
+#             selected_aggregated_port = Port(selected_fae_aggregated_port.port.name)
 #
 #         with allure.step("Select a random plane port"):
 #             selected_fae_plane_port = MultiPlanarTool.select_random_plane_port(devices, selected_fae_aggregated_port,
@@ -628,7 +627,7 @@ def test_symmetry_manager_log_and_tech_support(engines, devices, test_api):
 
     with allure.step("Select random aggregated port and plane port"):
         selected_fae_aggregated_port = MultiPlanarTool.select_random_aggregated_port(dut_device)
-        selected_aggregated_port = MgmtPort(selected_fae_aggregated_port.port.name)
+        selected_aggregated_port = Port(selected_fae_aggregated_port.port.name)
         selected_fae_plane_port = MultiPlanarTool.select_random_plane_port(selected_fae_aggregated_port,
                                                                            dut_device.num_of_plane_ports)
 
@@ -709,7 +708,7 @@ def test_fae_invalid_commands(engines, devices, test_api):
     with allure.step("Validate show interface with internal fnm id"):
         fnm_internal_port_name = RandomizationTool.select_random_value(devices.dut.fnm_internal_port_list).\
             get_returned_value()
-        MgmtPort(fnm_internal_port_name).interface.show(should_succeed=False)
+        Port(fnm_internal_port_name).interface.show(should_succeed=False)
 
 
 @pytest.mark.interface

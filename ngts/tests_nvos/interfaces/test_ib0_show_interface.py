@@ -1,7 +1,6 @@
 import pytest
 
 from ngts.nvos_tools.infra.Tools import Tools
-from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import *
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_constants.constants_nvos import ApiType
@@ -17,7 +16,7 @@ def test_ib0_show_interface(engines):
     Run show interface ib0 command and verify the required fields are exist
     command: nv show interface ib0 link
     """
-    ib0_port = MgmtPort('ib0')
+    ib0_port = Port('ib0')
     with allure.step('Run show command on ib0 port and verify that each field has an appropriate value'):
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_output_to_dictionary(
             ib0_port.interface.show()).get_returned_value()
@@ -35,7 +34,7 @@ def test_ib0_show_interface_link(engines):
     command2: nv show interface ib0 link stats
     """
 
-    ib0_port = MgmtPort('ib0')
+    ib0_port = Port('ib0')
 
     with allure.step('Run show command on ib0 port and verify that each field has an appropriate '
                      'value according to the state of the port'):
@@ -51,7 +50,7 @@ def test_ib0_show_interface_stats(engines):
     Run show interface command and verify the required fields exist
     Command: nv show interface <name> link stats
     """
-    ib0_port = MgmtPort('ib0')
+    ib0_port = Port('ib0')
 
     with allure.step('Run show command on ib0 port and verify that each field has an appropriate '
                      'value according to the state of the port'):
@@ -72,7 +71,7 @@ def test_ib0_show_interface_ip(engines):
     2. Run 'nv show interface <name> link stats' on selected port
     3. Verify the required fields are presented in the output
     """
-    ib0_port = MgmtPort('ib0')
+    ib0_port = Port('ib0')
 
     with allure.step('Run show command on ib0 port and verify that each field has an appropriate '
                      'value according to the state of the port'):

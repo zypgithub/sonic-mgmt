@@ -14,7 +14,7 @@ from ngts.nvos_tools.infra.HostMethods import HostMethods
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_constants.constants_nvos import SystemConsts, NvosConst, AclConsts, ApiType
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
-from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
+from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 
 
@@ -112,7 +112,7 @@ def test_2_mgmt_dhcp_hostname(engines, topology_obj, serial_engine, devices):
     dhcp_hostname = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific']['dhcp_hostname']
     with allure.step('Disable 2 mgmt interfaces'):
         for mgmt_port in mgmt_ports:
-            mgmt_port_obj = MgmtPort(mgmt_port)
+            mgmt_port_obj = Port(mgmt_port)
             mgmt_port_obj.interface.link.state.set(op_param_name=NvosConsts.LINK_STATE_DOWN, apply=True,
                                                    ask_for_confirmation=True,
                                                    dut_engine=serial_engine).verify_result(True)
@@ -127,7 +127,7 @@ def test_2_mgmt_dhcp_hostname(engines, topology_obj, serial_engine, devices):
 
     with allure.step('Enable mgmt ports'):
         for mgmt_port in mgmt_ports:
-            mgmt_port_obj = MgmtPort(mgmt_port)
+            mgmt_port_obj = Port(mgmt_port)
             mgmt_port_obj.interface.link.state.set(op_param_name=NvosConsts.LINK_STATE_UP, apply=True,
                                                    ask_for_confirmation=True,
                                                    dut_engine=serial_engine)

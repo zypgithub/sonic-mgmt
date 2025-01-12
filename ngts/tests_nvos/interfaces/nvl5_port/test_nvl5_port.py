@@ -4,7 +4,6 @@ import pytest
 import logging
 
 from ngts.nvos_constants.constants_nvos import ApiType, MultiPlanarConsts, NvosConst
-from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
 from ngts.nvos_tools.Devices.IbDevice import JulietNonScaleoutSwitch
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.ib.opensm.OpenSmTool import OpenSmTool
@@ -53,11 +52,11 @@ def test_show_nvl5_interface_commands(engines, devices, test_api, has_loopbox):
     # ClusterTools.wait_for_apps_to_be_in_wanted_state()
     with allure_step("Select nvl5 port"):
         port_name = RandomizationTool.select_random_value(devices.dut.nvl5_access_ports_list + devices.dut.nvl5_trunk_ports_list).get_returned_value()
-        selected_port = MgmtPort(port_name)
+        selected_port = Port(port_name)
         selected_fae_port = Fae(port_name=port_name)
         fnm_port_name = RandomizationTool.select_random_value(devices.dut.nvl5_fnm_ports).get_returned_value()
         fnm_fae_port_name = RandomizationTool.select_random_value(devices.dut.nvl5_internal_fnm_ports).get_returned_value()
-        fnm_port = MgmtPort(fnm_port_name)
+        fnm_port = Port(fnm_port_name)
         fnm_fae_port = Fae(port_name=fnm_fae_port_name)
 
     with allure_step("Validate show interface command with all nvl5 interfaces"):
@@ -223,7 +222,7 @@ def test_nvl5_port_configuration(engines, devices, test_api):
     try:
         with allure_step("Select nvl5 port"):
             port_name = RandomizationTool.select_random_value(devices.dut.nvl5_access_ports_list + devices.dut.nvl5_trunk_ports_list).get_returned_value()
-            selected_port = MgmtPort(port_name)
+            selected_port = Port(port_name)
 
         with allure_step("Set nvl5 {} port description and validate".format(selected_port.name)):
             selected_port.interface.set(NvosConst.DESCRIPTION, 'aaa', apply=True).verify_result()
@@ -254,7 +253,7 @@ def test_nvl5_negative(engines, devices, test_api):
 
     with allure_step("Select nvl5 port"):
         port_name = RandomizationTool.select_random_value(devices.dut.nvl5_access_ports_list + devices.dut.nvl5_trunk_ports_list).get_returned_value()
-        selected_port = MgmtPort(port_name)
+        selected_port = Port(port_name)
 
     try:
         if not is_bug_active(4209873):

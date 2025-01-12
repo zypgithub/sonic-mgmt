@@ -16,7 +16,7 @@ from ngts.nvos_tools.infra.HostMethods import HostMethods
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_constants.constants_nvos import SystemConsts, NvosConst, DatabaseConst
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import InterfaceConsts
-from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
+from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 
 
@@ -200,7 +200,7 @@ def test_system_snmp_functional(engines, topology_obj):
     skip_if_engines_does_not_exist_in_setup([NvosConst.HOST_HA], engines)
     system = System(None)
     mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
-    mgmt_port = MgmtPort(mgmt_port_name)
+    mgmt_port = Port(mgmt_port_name)
     host_engine = engines.ha
     ip_address = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific']['ip_address']
     dhcp_hostname = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific']['dhcp_hostname']

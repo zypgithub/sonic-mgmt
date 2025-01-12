@@ -6,7 +6,6 @@ from ngts.nvos_tools.infra.MultiPlanarTool import MultiPlanarTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_constants.constants_nvos import SystemConsts
 from ngts.nvos_tools.system.System import System
-from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import *
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.tools.test_utils.allure_utils import step as allure_step
@@ -78,7 +77,7 @@ def test_interface_aggregated_port_split(engines, devices, test_api, players, in
         Fae(port_name='sw11p2s1').port.interface.show(should_succeed=False)
 
     with allure_step("Validate split port going to up"):
-        child_port = MgmtPort(name=devices.dut.child_aggregated_port)
+        child_port = Port(name=devices.dut.child_aggregated_port)
         Port.wait_for_port_state(child_port, "up")
 
     with allure_step("Change mtu on child port and check changes"):

@@ -2,7 +2,7 @@ import pytest
 import time
 
 from ngts.nvos_constants.constants_nvos import ApiType, DatabaseConst, IpConsts, UfmMadConsts
-from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
+from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
 from ngts.nvos_tools.infra.DatabaseTool import DatabaseTool
 from ngts.nvos_tools.infra.Fae import Fae
@@ -385,7 +385,7 @@ def test_fae_invalid_commands(test_api):
 
 def choose_mgmt_port(dut_engine, devices):
     port_name = RandomizationTool.select_random_value(devices.mgmt_ports).get_returned_value()
-    mgmt_port = MgmtPort(port_name)
+    mgmt_port = Port(port_name)
     mgmt_ip_dict = get_mgmt_port_ip_addresses(mgmt_port, dut_engine)
     return mgmt_port, mgmt_ip_dict, port_name
 

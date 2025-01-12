@@ -1,22 +1,9 @@
 import logging
-
-from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
-from ngts.nvos_tools.platform.Platform import Platform
-from ngts.tools.test_utils import allure_utils as allure
 import pytest
-from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.nvos_tools.system.System import System
-from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_tools.infra.ValidationTool import ValidationTool
-from ngts.nvos_constants.constants_nvos import SystemConsts, ImageConsts, DocumentsConsts, PlatformConsts
+
+from ngts.nvos_tools.platform.Platform import Platform
+from ngts.nvos_constants.constants_nvos import SystemConsts, PlatformConsts
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from ngts.nvos_constants.constants_nvos import ApiType, ActionConsts
-from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
-from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
-from ngts.nvos_tools.infra.Fae import Fae
-from ngts.nvos_tools.infra.IbInterfaceTool import IbInterfaceTool
-from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
-from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.system.System import System
 from ngts.tools.test_utils import allure_utils as allure

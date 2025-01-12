@@ -4,7 +4,6 @@ from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.tools.test_utils.allure_utils import step as allure_step
-from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import *
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
 from ngts.nvos_constants.constants_nvos import ImageConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import *
@@ -27,7 +26,7 @@ def test_interface_ipoib_mapping_basic_functionality(engines, devices, start_sm)
     """
     fae = Fae()
     system = System()
-    ib0_port = MgmtPort('ib0')
+    ib0_port = Port('ib0')
     system.log.rotate_logs()
 
     with allure_step("Run run nv show fae ipoib-mapping command and validate fields"):
@@ -107,7 +106,7 @@ def test_interface_ipoib_ping_functionality(engines, devices, start_sm, players,
             2. send ping, validate
             3. unset ip address
     """
-    ib0_port = MgmtPort('ib0')
+    ib0_port = Port('ib0')
     # fae = Fae()
 
     with allure_step("Set ip on switch ipoib interface and host ib interface connected to switch"):

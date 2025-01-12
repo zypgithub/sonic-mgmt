@@ -1,7 +1,6 @@
 import pytest
 import time
 from ngts.nvos_tools.infra.Tools import Tools
-from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import *
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_constants.constants_nvos import ApiType
@@ -22,7 +21,7 @@ def test_interface_ib0_dhcp_default_values(engines, topology_obj):
         3. verify the set-hostname is enabled, state is disabled, is-running is no and has-lease is no.
         """
 
-    ipoib_port = MgmtPort('ib0')
+    ipoib_port = Port('ib0')
     with allure.step('verify the default values for ib0 ip dhcp-client and dhcp-client6'):
         expected_keys = [IbInterfaceConsts.DHCP_SET_HOSTNAME, 'state', 'has-lease', 'is-running']
         default_values = ['enabled', 'disabled', 'no', 'no']
@@ -57,7 +56,7 @@ def test_interface_ib0_dhcp_set_hostname(engines, topology_obj):
         8. verify the dhcp-client6 set-hostname is enabled
         """
 
-    ipoib_port = MgmtPort('ib0')
+    ipoib_port = Port('ib0')
     with allure.step('check that we can configure the set-hostname value for dhcp-client'):
         with allure.step('config the set-hostname value to disabled'):
             ipoib_port.interface.ip.dhcp_client.set(op_param_name='set-hostname', op_param_value='disabled',
@@ -115,7 +114,7 @@ def test_interface_ib0_set_dhcp_state(engines, topology_obj):
         4. verify the dhcp-client set-hostname is disabled
         """
 
-    ipoib_port = MgmtPort('ib0')
+    ipoib_port = Port('ib0')
     new_value = 'enabled'
     with allure.step('check that we can configure the state value for dhcp-client'):
         with allure.step('config the state value to disabled'):

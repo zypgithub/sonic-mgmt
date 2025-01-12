@@ -2,7 +2,6 @@ from typing import Tuple
 
 from ngts.nvos_constants.constants_nvos import MultiPlanarConsts
 from ngts.nvos_tools.Devices.IbDevice import CrocodileSwitch
-from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.infra.Fae import Fae
@@ -84,10 +83,10 @@ class MultiPlanarTool:
         return selected_fae_plane_port
 
     @staticmethod
-    def select_random_port_and_plane(device) -> Tuple[MgmtPort, MgmtPort, MgmtPort]:
+    def select_random_port_and_plane(device) -> Tuple[Port, Port, Port]:
         with allure.step("Select a random aggregated port (connected in loop back to another port)"):
             selected_fae_aggregated_port = MultiPlanarTool.select_random_aggregated_port(device)
-            selected_aggregated_port = MgmtPort(selected_fae_aggregated_port.port.name)
+            selected_aggregated_port = Port(selected_fae_aggregated_port.port.name)
         with allure.step("Select a random plane port"):
             selected_fae_plane_port = MultiPlanarTool.select_random_plane_port(selected_fae_aggregated_port,
                                                                                device.num_of_plane_ports)

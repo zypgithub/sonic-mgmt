@@ -5,7 +5,7 @@ import pytest
 
 from ngts.nvos_constants.constants_nvos import FastRecoveryConsts
 from ngts.nvos_constants.constants_nvos import SystemConsts, NvosConst, ApiType
-from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
+from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
@@ -90,7 +90,7 @@ def test_save_reboot(engines, devices):
                            apply=True, dut_engine=engines.dut).verify_result()
 
         try:
-            eth0_port = MgmtPort('eth0')
+            eth0_port = Port('eth0')
             new_eth0_description = 'eth0_test_desc'
             trigger_id = FastRecoveryConsts.TRIGGER_CREDIT_WATCHDOG
 
@@ -182,7 +182,7 @@ def test_save_reboot(engines, devices):
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_general_auto_save(engines, devices, test_api):
     system = System()
-    eth0_port = MgmtPort('eth0')
+    eth0_port = Port('eth0')
     TestToolkit.tested_api = test_api
     new_eth0_description = 'TestingAutoSave'
 

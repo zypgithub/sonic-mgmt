@@ -10,7 +10,7 @@ from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.nvos_constants.constants_nvos import (ApiType, DatabaseConst, HealthConsts, IbConsts, IpConsts, IssuConsts,
                                                 NvosConst, SystemConsts)
-from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
+from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.ib.opensm.OpenSmTool import OpenSmTool
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.nvos_tools.infra.DatabaseTool import DatabaseTool
@@ -647,7 +647,7 @@ def test_link_down_during_issu(engines, devices, test_api, target_version=''):
     system = System()
 
     with allure.step(f"Verify port state is: {IpConsts.PORT_STATE_UP}"):
-        port = MgmtPort(Configurations.ndr_ports[dut_engine.ip][0])
+        port = Port(Configurations.ndr_ports[dut_engine.ip][0])
         port_state = port.interface.link.state.show()
         assert port_state == IpConsts.PORT_STATE_UP, f'port state is {port_state} instead of {IpConsts.PORT_STATE_UP}'
 
@@ -686,7 +686,7 @@ def test_link_down_during_issu(engines, devices, test_api, target_version=''):
         dut_engine.password = dut_device.get_default_password_by_version(target_version)
 
     with (allure.step(f"Verify port state is: {IpConsts.PORT_STATE_DOWN}")):
-        port = MgmtPort(Configurations.ndr_ports[dut_engine.ip][0])
+        port = Port(Configurations.ndr_ports[dut_engine.ip][0])
         port_state = port.interface.link.state.show()
         assert port_state == IpConsts.PORT_STATE_DOWN, \
             f'port state is {port_state} instead of {IpConsts.PORT_STATE_DOWN}'
@@ -741,7 +741,7 @@ def pre_issu_installation_steps(engines, devices, target_version, scp_host_creds
     # TODO: start gnmi, rsyslog, and AAA processes.
 
     with allure.step('Clear ports counters'):
-        MgmtPort().interface.action_clear_counter_for_all_interfaces(dut_engine).verify_result()
+        Port().interface.action_clear_counter_for_all_interfaces(dut_engine).verify_result()
 
     with allure.step('Clear system log (rotate)'):
         system.log.rotate_logs()
@@ -755,7 +755,7 @@ def pre_issu_installation_steps(engines, devices, target_version, scp_host_creds
     with allure.step('Start pinging system mgmt ports'):
         ip_list = []
         for mgmt_port in devices.dut.mgmt_ports:
-            ip_list.append(MgmtPort(mgmt_port).get_port_ip_addresses(dut_engine))
+            ip_list.append(Port(mgmt_port).get_port_ip_addresses(dut_engine))
         Tools.TrafficGeneratorTool.start_ping_multiple_ips(player, ip_list)
 
     with allure.step('start send traffic from Host A to Host B'):
@@ -830,7 +830,7 @@ def post_issu_installation_steps(engines, devices, target_version, fw_expected, 
         # with allure.step('Validate ports counters'):
         #     for port in Configurations.ndr_ports[dut_engine.ip]:
         #         counters = OutputParsingTool.parse_json_str_to_dictionary(
-        #             MgmtPort(port).interface.link.stats.show(dut_engine=dut_engine)).get_returned_value()
+        #             Port(port).interface.link.stats.show(dut_engine=dut_engine)).get_returned_value()
         #         assert counters[IbInterfaceConsts.LINK_STATS_IN_PKTS] > num_of_packets, \
         #             f"counters in packets is: {counters[IbInterfaceConsts.LINK_STATS_IN_PKTS]}, \
         #             while number of packets sent is: {num_of_packets}"

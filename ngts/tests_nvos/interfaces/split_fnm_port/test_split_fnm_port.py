@@ -1,7 +1,6 @@
 import pytest
 
 from ngts.nvos_tools.infra.MultiPlanarTool import MultiPlanarTool
-from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_constants.constants_nvos import SystemConsts
@@ -62,7 +61,7 @@ def test_interface_fnm_port_split(engines, devices, test_api, players, interface
                                     apply=True, ask_for_confirmation=True).verify_result()
 
     with allure_step("Validate split port going to up"):
-        fnm_child_port = MgmtPort(name=devices.dut.fnm_external_child_port)
+        fnm_child_port = Port(name=devices.dut.fnm_external_child_port)
         Port.wait_for_port_state(fnm_child_port, "up")
 
     with allure_step("Run traffic and check counters"):

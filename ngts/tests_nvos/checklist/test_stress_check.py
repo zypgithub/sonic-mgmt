@@ -3,7 +3,7 @@ import pytest
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.platform.Platform import Platform
-from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
+from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_constants.constants_nvos import ApiType
 
@@ -49,7 +49,7 @@ def test_stress_check_openapi(engines):
     logging.info(cmd + " succeeded -----------------------------------")
 
     cmd = 'openapi: show interface eth0 link'
-    mgmt_int = MgmtPort(None)
+    mgmt_int = Port(None)
     logging.info("Run " + cmd)
     _run_cmd_openapi([mgmt_int], num_of_iterations)
     logging.info(cmd + " succeeded -----------------------------------")

@@ -5,12 +5,10 @@ import pytest
 from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import SystemConsts
-from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import *
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.nvos_tools.infra.Tools import Tools
-from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.system.System import System
 
 logger = logging.getLogger()
@@ -30,7 +28,7 @@ def test_interface_eth0_enable_disable(engines, topology_obj, serial_engine):
     """
 
     mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
-    mgmt_port = MgmtPort(mgmt_port_name)
+    mgmt_port = Port(mgmt_port_name)
     serial_engine = topology_obj.players['dut_serial']['engine']
     with allure.step('Run show command on mgmt port and verify that each field has an appropriate value'):
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
@@ -99,7 +97,7 @@ def test_interface_eth0_speed_duplex_autoneg(engines, devices, topology_obj):
     """
 
     mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
-    mgmt_port = MgmtPort(mgmt_port_name)
+    mgmt_port = Port(mgmt_port_name)
     with allure.step('Run show command on mgmt port and verify default values'):
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
             mgmt_port.interface.link.show()).get_returned_value()
@@ -218,7 +216,7 @@ def test_interface_eth0_mtu(engines, topology_obj):
     """
 
     mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
-    mgmt_port = MgmtPort(mgmt_port_name)
+    mgmt_port = Port(mgmt_port_name)
     with allure.step('Run show command on mgmt port and verify default values'):
         wait_for_mtu_changed(mgmt_port, 1500)
 
@@ -263,7 +261,7 @@ def test_interface_eth0_description(engines, topology_obj):
     4. Unset description, check default value
     """
     mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
-    mgmt_port = MgmtPort(mgmt_port_name)
+    mgmt_port = Port(mgmt_port_name)
     with allure.step('Run show command on mgmt port and verify default description'):
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_output_to_dictionary(
             mgmt_port.interface.show()).get_returned_value()
@@ -316,7 +314,7 @@ def test_interface_eth0_ip_address(engines, topology_obj, serial_engine):
     5. Unset ipv4, dhcp, validate in show command and ping
     """
     mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
-    mgmt_port = MgmtPort(mgmt_port_name)
+    mgmt_port = Port(mgmt_port_name)
     switch_ip = engines.dut.ip
     with allure.step('Run show command on mgmt port and verify default description'):
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
@@ -377,7 +375,7 @@ def test_interface_eth0_show_dhcp(engines, topology_obj):
     2. Check all fields exist in nv show interface eth0 ip ipv6 dhcp-client
     """
     mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
-    mgmt_port = MgmtPort(mgmt_port_name)
+    mgmt_port = Port(mgmt_port_name)
     with allure.step('Run show command on mgmt port and verify default description'):
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
             mgmt_port.interface.ip.show()).get_returned_value()
@@ -405,7 +403,7 @@ def test_interface_eth0_dhcp_hostname(engines, topology_obj, serial_engine):
     """
     expect_timeout = 30
     mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
-    mgmt_port = MgmtPort(mgmt_port_name)
+    mgmt_port = Port(mgmt_port_name)
     system = System()
     with allure.step('Run show ip dhcp command and check default values and dhcp hostname'):
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
@@ -527,7 +525,7 @@ def test_mgmt_interface_default(engines, topology_obj):
     """
     system = System(None)
     mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
-    mgmt_port = MgmtPort(mgmt_port_name)
+    mgmt_port = Port(mgmt_port_name)
 
     with allure.step('Run show command on mgmt port and verify default values'):
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_output_to_dictionary(

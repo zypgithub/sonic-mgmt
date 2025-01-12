@@ -6,7 +6,7 @@ from ngts.tests_nvos.general.security.rbac.command_testers import InterfaceComma
     PlatformCommandTester
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
-from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
+from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.system.System import System
 from ngts.tools.test_utils import allure_utils as allure
@@ -59,7 +59,7 @@ def verify_user_permissions_on_interface(engines, username, password, selected_p
 
     if fail_on_eth0:
         with allure.step("Testing additional capabilities"):
-            mgmt_port = MgmtPort('eth0')
+            mgmt_port = Port('eth0')
             TestToolkit.update_tested_ports([mgmt_port])
             other_results = run_commands_on_interface(mgmt_port, create_user_connection(engines, username, password))
             assert not any(other_results.values()), "User should not be able to perform any actions on other interface"

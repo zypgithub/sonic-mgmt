@@ -8,7 +8,6 @@ from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_constants.constants_nvos import SystemConsts, DatabaseConst
-from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
 from ngts.cli_wrappers.nvue.nvue_system_clis import NvueSystemCli
@@ -56,8 +55,8 @@ def test_ib_split_port_no_breakout_profile(engines, interfaces, start_sm, device
             assert not output, "config not detached"
 
     with allure.step("Try split eth0 and ib0 port in not breakout system profile"):
-        mgmt_port = MgmtPort('eth0')
-        ipoib_port = MgmtPort('ib0')
+        mgmt_port = Port('eth0')
+        ipoib_port = Port('ib0')
         mgmt_port.interface.link.set(op_param_name='breakout', op_param_value=IbInterfaceConsts.LINK_BREAKOUT_HDR,
                                      apply=True, ask_for_confirmation=True).verify_result(False)
         mgmt_port.interface.link.set(op_param_name='breakout', op_param_value=IbInterfaceConsts.LINK_BREAKOUT_NDR,

@@ -3,7 +3,7 @@ import re
 import time
 
 from ngts.tools.test_utils import allure_utils as allure
-from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
+from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.infra.DutUtilsTool import wait_for_specific_regex_in_logs
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
@@ -20,7 +20,7 @@ def config_management_interface_verify_logs(engine, mgmt_interface, state, expec
     :param expected_logs:
     :return:
     """
-    mgmt_port = MgmtPort(mgmt_interface)
+    mgmt_port = Port(mgmt_interface)
 
     with allure.step(f"config {mgmt_interface} state to {state}"):
         mgmt_port.interface.link.state.set(state, apply=True, ask_for_confirmation=True).verify_result()
@@ -36,8 +36,8 @@ def replace_two_ip_addresses(engine):
 
     :return:
     """
-    eth0_port = MgmtPort('eth0')
-    eth1_port = MgmtPort('eth1')
+    eth0_port = Port('eth0')
+    eth1_port = Port('eth1')
 
     with allure.step("replace eth0 ip with eth1 ip"):
         with allure.step("get current ip addresses for both mgmt ports"):

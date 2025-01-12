@@ -8,7 +8,7 @@ from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.acl.acl import Acl
-from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
+from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_constants.constants_nvos import ApiType, AclConsts, OutputFormat
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
@@ -80,7 +80,7 @@ def test_can_ping_from_eth1(engines, devices):
         logger.info("Successfully pinged sonic-mgmt through eth1")
     except Exception:
         logger.error(f"Could not ping sonic-mgmt through eth1. Fixing...")
-        gateway = MgmtPort("eth0").interface.ip.gateway.show(output_format=OutputFormat.auto).splitlines()[-1].strip()
+        gateway = Port("eth0").interface.ip.gateway.show(output_format=OutputFormat.auto).splitlines()[-1].strip()
         engines.dut.run_cmd(f"sudo ip route add {engines.sonic_mgmt.ip} via {gateway} dev eth1")
         raise
 
@@ -173,7 +173,7 @@ def test_rules_order(devices, engines, test_api, topology_obj):
 
     with allure.step("Attach ACL to mgmt interface"):
         mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
-        mgmt_port = MgmtPort(mgmt_port_name)
+        mgmt_port = Port(mgmt_port_name)
         mgmt_port.interface.acl.set(acl_id).verify_result()
         mgmt_port.interface.acl.acl_id[acl_id].inbound.set(AclConsts.CONTROL_PLANE, apply=True)
         sleep()
@@ -231,7 +231,7 @@ def test_acl_order(engines, test_api, topology_obj):
     with allure.step("Define ACLs with rule"):
         acl_type = 'ipv4'
         mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
-        mgmt_port = MgmtPort(mgmt_port_name)
+        mgmt_port = Port(mgmt_port_name)
         sonic_mgmt_ip = engines.sonic_mgmt.ip
         rule_id = '1'
         rule_configuration_dict = {AclConsts.ACTION: AclConsts.DENY, AclConsts.SOURCE_IP: sonic_mgmt_ip,
@@ -296,7 +296,7 @@ def test_acl_ipv6(engines, test_api, topology_obj, sonic_mgmt_ipv6_addr):
     with allure.step("Define ACLs with rule"):
         acl_type = 'ipv6'
         mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
-        mgmt_port = MgmtPort(mgmt_port_name)
+        mgmt_port = Port(mgmt_port_name)
         ipv6_prefix_or_netmask = sonic_mgmt_ipv6_addr + '/64'
         rule_id = '1'
         rule_configuration_dict = {AclConsts.ACTION: AclConsts.DENY, AclConsts.SOURCE_IP: sonic_mgmt_ipv6_addr}
@@ -342,7 +342,7 @@ def test_acl_loopback(engines, test_api):
 
     with allure.step("Define ACLs with rule"):
         acl_type = 'ipv4'
-        mgmt_port = MgmtPort('lo')
+        mgmt_port = Port('lo')
         sonic_mgmt_ip = engines.sonic_mgmt.ip
         rule_id = '1'
         rule_configuration_dict = {AclConsts.ACTION: AclConsts.PERMIT}
@@ -484,7 +484,7 @@ def test_show_acl_commands(devices, engines, test_api, topology_obj):
 
     with allure.step("Define ACL to mgmt interface"):
         mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
-        mgmt_port = MgmtPort(mgmt_port_name)
+        mgmt_port = Port(mgmt_port_name)
         mgmt_port.interface.acl.set(acl_id).verify_result()
         mgmt_port.interface.acl.acl_id[acl_id].inbound.set(AclConsts.CONTROL_PLANE, apply=True).verify_result()
         wait_till_acl_applied(mgmt_port, acl_id)
@@ -535,7 +535,7 @@ def test_inbound_outbound_counters(engines, test_api, topology_obj):
     with allure.step("Config inbound and outbound ACLs with match dest-ip rule"):
         acl_type = 'ipv4'
         mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
-        mgmt_port = MgmtPort(mgmt_port_name)
+        mgmt_port = Port(mgmt_port_name)
         sonic_mgmt_ip = engines.sonic_mgmt.ip
         logger.info(f"{mgmt_port_name=}, {sonic_mgmt_ip=}, {control_plane=}")
 
@@ -618,7 +618,7 @@ def test_acl_match_dest_ip(engines, test_api, topology_obj, sonic_mgmt_ipv6_addr
     """
     TestToolkit.tested_api = test_api
     mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
-    mgmt_port = MgmtPort(mgmt_port_name)
+    mgmt_port = Port(mgmt_port_name)
     with allure.step("ACL type ipv4 test"):
         ipv4_addr = engines.sonic_mgmt.ip
         dest_ip_list = [ipv4_addr, ipv4_addr + '/32', ipv4_addr + '/255.255.255.0']
@@ -641,7 +641,7 @@ def test_acl_match_source_port(engines, test_api, topology_obj):
     """
     TestToolkit.tested_api = test_api
     mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
-    mgmt_port = MgmtPort(mgmt_port_name)
+    mgmt_port = Port(mgmt_port_name)
     src_port_list = ['ANY', 'ssh', 1244]
     match_ip_port_test(engines, mgmt_port, 'ipv4', 'AA_TEST_ACL_SOURCE_PORT', src_port_list, engines.dut.ip, AclConsts.TCP_SOURCE_PORT, engines.sonic_mgmt)
 
@@ -658,7 +658,7 @@ def test_acl_match_dest_port(engines, test_api, topology_obj):
     """
     TestToolkit.tested_api = test_api
     mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
-    mgmt_port = MgmtPort(mgmt_port_name)
+    mgmt_port = Port(mgmt_port_name)
     dest_port_list = ['ANY', 'ssh', 1244]
     match_ip_port_test(engines, mgmt_port, 'ipv4', 'AA_TEST_ACL_DEST_PORT', dest_port_list, engines.sonic_mgmt.ip, AclConsts.TCP_DEST_PORT, engines.dut)
 
@@ -676,7 +676,7 @@ def test_acl_match_protocol(engines, test_api, topology_obj):
     TestToolkit.tested_api = test_api
     acl_id = "AA_TEST_ACL_PROTOCOL"
     mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
-    mgmt_port = MgmtPort(mgmt_port_name)
+    mgmt_port = Port(mgmt_port_name)
     dest_addr = engines.dut.ip
     protocol_packet_dict = {'tcp': f"IP(dst=\"{dest_addr}\") / TCP()",
                             'udp': f"IP(dst=\"{dest_addr}\") / UDP()",
@@ -710,7 +710,7 @@ def test_acl_match_fragment(engines, test_api, topology_obj):
     TestToolkit.tested_api = test_api
     acl_id = "AA_TEST_ACL_FRAGMENT"
     mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
-    mgmt_port = MgmtPort(mgmt_port_name)
+    mgmt_port = Port(mgmt_port_name)
     dest_addr = engines.dut.ip
     packet = f"IP(dst=\"{dest_addr}\") /  ICMP() / (\"X\" * (8000))"
     rule_id = '3'
@@ -733,7 +733,7 @@ def test_acl_match_tcp_flag_mask(engines, test_api, topology_obj):
     TestToolkit.tested_api = test_api
     acl_id = "AA_TEST_ACL_TCP_FLAG_MASK"
     mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
-    mgmt_port = MgmtPort(mgmt_port_name)
+    mgmt_port = Port(mgmt_port_name)
     dest_addr = engines.dut.ip
     flag_packet_dict = {'ack': f"IP(dst=\"{dest_addr}\") / TCP(flags=\"A\")",
                         'fin': f"IP(dst=\"{dest_addr}\") / TCP(flags=\"F\")",
@@ -780,7 +780,7 @@ def test_acl_match_ip_state(engines, test_api, topology_obj):
     TestToolkit.tested_api = test_api
     acl_id = "AA_TEST_ACL_IP_STATE"
     mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
-    mgmt_port = MgmtPort(mgmt_port_name)
+    mgmt_port = Port(mgmt_port_name)
     dest_addr = engines.dut.ip
     state_packet_dict = {'new': f"IP(dst=\"{dest_addr}\") / TCP(flags=\"S\")",
                          'invalid': f"IP(dst=\"{dest_addr}\") / TCP(flags=\"R\")",
@@ -812,7 +812,7 @@ def test_acl_match_icmp_type(engines, test_api, topology_obj):
     TestToolkit.tested_api = test_api
     acl_id = "AA_TEST_ACL_ICMP_TYPE"
     mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
-    mgmt_port = MgmtPort(mgmt_port_name)
+    mgmt_port = Port(mgmt_port_name)
     dest_addr = engines.dut.ip
     rand_num_type = random.randint(0, 255)
     state_packet_dict = {'echo-reply': f"IP(dst=\"{dest_addr}\") / ICMP(type=\"echo-reply\")",
@@ -847,7 +847,7 @@ def test_acl_match_icmpv6_type(engines, test_api, topology_obj):
     TestToolkit.tested_api = test_api
     acl_id = "AA_TEST_ACL_ICMPV6_TYPE"
     mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
-    mgmt_port = MgmtPort(mgmt_port_name)
+    mgmt_port = Port(mgmt_port_name)
     dest_addr = engines.dut.ip
     icmpv6_type_packet_dict = {'router-solicitation': f"IP(dst=\"{dest_addr}\") / ICMPv6ND_RS()",
                                'router-advertisement': f"IP(dst=\"{dest_addr}\") / ICMPv6ND_RA()"}
@@ -879,7 +879,7 @@ def test_acl_match_mss(engines, test_api, topology_obj):
     TestToolkit.tested_api = test_api
     acl_id = "AA_TEST_ACL_MSS"
     mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
-    mgmt_port = MgmtPort(mgmt_port_name)
+    mgmt_port = Port(mgmt_port_name)
     dest_addr = engines.dut.ip
     rand_mss = str(random.randint(1500, 2500))
     packet = f"IP(dst=\"{dest_addr}\") / TCP(options=[('MSS', {rand_mss})])"
@@ -915,7 +915,7 @@ def test_acl_match_ecn(engines, test_api, topology_obj):
     TestToolkit.tested_api = test_api
     acl_id = "AA_TEST_ACL_ECN"
     mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
-    mgmt_port = MgmtPort(mgmt_port_name)
+    mgmt_port = Port(mgmt_port_name)
     dest_addr = engines.dut.ip
     ecn_flags_dict = {'tcp-cwr': f"IP(dst=\"{dest_addr}\") / TCP(flags=\"C\")",
                       'tcp-ece': f"IP(dst=\"{dest_addr}\") / TCP(flags=\"E\")"}
@@ -960,7 +960,7 @@ def test_acl_hashlimit(engines, test_api, topology_obj):
     TestToolkit.tested_api = test_api
     acl_id = "AA_TEST_ACL_HASH_LIMIT"
     mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
-    mgmt_port = MgmtPort(mgmt_port_name)
+    mgmt_port = Port(mgmt_port_name)
     dest_addr = engines.sonic_mgmt.ip
     rule_id = '1'
     rand_burst = random.randint(1, 10)
@@ -997,7 +997,7 @@ def test_acl_recent_list(engines, test_api, topology_obj):
     TestToolkit.tested_api = test_api
     acl_id = "AA_TEST_ACL_RECENT_LIST"
     mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
-    mgmt_port = MgmtPort(mgmt_port_name)
+    mgmt_port = Port(mgmt_port_name)
     dest_addr = engines.dut.ip
     src_ip = engines.sonic_mgmt.ip
     set_rule_id = '1'
@@ -1056,7 +1056,7 @@ def test_adding_new_rule(engines, topology_obj):
     -	Add it before the default rules (by acl name): validate that the default rule catch the packet and not the new rule
     """
     mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
-    mgmt_port = MgmtPort(mgmt_port_name)
+    mgmt_port = Port(mgmt_port_name)
     default_chosen_acl = 'ACL_MGMT_INBOUND_CP_DEFAULT'
     default_chosen_rule = '130'
     new_acl = 'AA_TEST_ADD_NEW_RULE'
@@ -1137,7 +1137,7 @@ def test_override_default_rule(engines, topology_obj):
     7. unset filed of default rule - should fail
     """
     mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
-    mgmt_port = MgmtPort(mgmt_port_name)
+    mgmt_port = Port(mgmt_port_name)
     src_ip = "10.77.133.200"    # random unrelated ip
     default_chosen_acl = 'ACL_MGMT_INBOUND_CP_DEFAULT'
     default_rule_to_add_field = '20'   # add source ip that not related to us

@@ -6,7 +6,7 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ConfigTool import ConfigTool
 from ngts.nvos_constants.constants_nvos import SystemConsts, ConfigConsts, NvosConst
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
+from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 
 logger = logging.getLogger()
@@ -112,7 +112,7 @@ def test_diff_history_revision_ids(engines, devices):
         with allure.step('set hostname to be {hostname} - with apply'.format(hostname=new_hostname_value)):
             system.set(SystemConsts.HOSTNAME, new_hostname_value, apply=True, ask_for_confirmation=True)
 
-        eth0_port = MgmtPort('eth0')
+        eth0_port = Port('eth0')
         new_eth0_description = 'some_desc'
         with allure.step('set eth0 description to be {description} - with apply'.format(
                 description=new_eth0_description)):

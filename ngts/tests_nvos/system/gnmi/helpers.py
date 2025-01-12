@@ -13,7 +13,7 @@ from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from infra.tools.linux_tools.linux_tools import scp_file
 from ngts.constants.constants import GnmiConsts
 from ngts.nvos_constants.constants_nvos import HealthConsts, NvosConst, DatabaseConst, SystemConsts, TestFlowType
-from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
+from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.infra.CmdRunner import CmdRunner
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
@@ -73,7 +73,7 @@ def gnmi_basic_flow(engines, mode='', ipv6=False, mgmt_port_name='eth0'):
     """
     system = System()
     gnmi_server_obj = system.gnmi_server
-    target_ip = MgmtPort(mgmt_port_name).interface.get_ipv6_address() if ipv6 else engines.dut.ip
+    target_ip = Port(mgmt_port_name).interface.get_ipv6_address() if ipv6 else engines.dut.ip
     validate_gnmi_is_running_and_stream_updates(system, gnmi_server_obj, engines, target_ip, mode=mode)
 
     with allure.step('Disable gnmi'):

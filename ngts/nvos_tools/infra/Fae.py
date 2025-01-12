@@ -17,7 +17,7 @@ from ngts.cli_wrappers.openapi.openapi_system_clis import OpenApiSystemCli
 from ngts.nvos_constants.constants_nvos import ApiType, ActionConsts
 from ngts.nvos_tools.fae.Debug import Debug
 from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
-from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
+from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
 from ngts.nvos_tools.infra.DefaultDict import DefaultDict
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
@@ -41,7 +41,7 @@ class Fae(BaseComponent):
         self.system = FaeSystem(self)
         self.ipoibmapping = BaseComponent(self, path='/ipoib-mapping')
         self.health = Health(self)
-        self.port = MgmtPort(port_name, self)
+        self.port = Port(port_name, self)
         self.fast_recovery = PortFastRecovery(self)
         self.ib = Ib(self)
         self.sonic_cli = SonicCli(self)

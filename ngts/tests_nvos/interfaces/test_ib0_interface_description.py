@@ -1,7 +1,7 @@
 import pytest
 
 from ngts.nvos_tools.infra.Tools import Tools
-from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import *
+from ngts.nvos_tools.ib.InterfaceConfiguration.Port import *
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_constants.constants_nvos import ApiType
@@ -23,8 +23,8 @@ def test_ib0_interface_description(engines):
     3. UnSet ib0 port description
     4. Verify the configuration applied by running “show” command
     """
-    with allure.step("Create MgmtPort object"):
-        ib0_port = MgmtPort('ib0')
+    with allure.step("Create Port object"):
+        ib0_port = Port('ib0')
 
     with allure.step("Set description and verify"):
         ib0_port.interface.set(op_param_name='description', op_param_value='"ib0 description"',

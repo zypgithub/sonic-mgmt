@@ -6,7 +6,7 @@ import pytest
 from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.nvos_constants.constants_nvos import SystemConsts, NvosConst, TcpDumpConsts, ApiType
 from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
-from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
+from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
 from ngts.nvos_tools.infra.IpTool import IpTool
 from ngts.nvos_tools.infra.LLDPTool import LLDPTool
@@ -168,7 +168,7 @@ def test_lldp_one_neighbor(engines, devices, test_api):
 
     for interface_name in devices.dut.get_mgmt_ports():
         with allure.step(f"Verify {interface_name} has only one neighbor"):
-            mgmt_interface = MgmtPort(name=interface_name)
+            mgmt_interface = Port(name=interface_name)
             output_dict = OutputParsingTool.parse_json_str_to_dictionary(
                 mgmt_interface.interface.lldp.neighbor.show()).get_returned_value()
             neighbor_keys = list(output_dict.keys())
@@ -278,7 +278,7 @@ def test_lldp_additional_ipv6(engines, devices, serial_engine):
     _verify_lldp_running(system.lldp, engine=engine)
 
     for interface_name in devices.dut.get_mgmt_ports():
-        mgmt_interface = MgmtPort(name=interface_name)
+        mgmt_interface = Port(name=interface_name)
 
         try:
             ip_address_full = IpTool.select_random_ipv6_address().verify_result()  # 40c9:7735:e23d:dd2a:ca43:c5e9:682e:decb/114
@@ -312,7 +312,7 @@ def test_lldp_interface_flapping(engines, devices, serial_engine):
     lldp = system.lldp
     _verify_lldp_running(lldp, engine=engines.dut)
 
-    mgmt_ports = [MgmtPort(name=interface_name) for interface_name in devices.dut.get_mgmt_ports()]
+    mgmt_ports = [Port(name=interface_name) for interface_name in devices.dut.get_mgmt_ports()]
 
     try:
         for _ in range(4):
@@ -353,7 +353,7 @@ def test_lldp_disable_dhcp(engines, devices, serial_engine):
     _verify_lldp_running(system.lldp, engine=engines.dut)
 
     for interface_name in devices.dut.get_mgmt_ports():
-        mgmt_interface = MgmtPort(name=interface_name)
+        mgmt_interface = Port(name=interface_name)
 
         try:
             with allure.step("Get ip addresses"):
@@ -414,7 +414,7 @@ def _verify_lldp_is_sending_frames(lldp, engine, device):
             output = LLDPTool.get_lldp_frames(engine=engine, interval=interval, interface=interface_name)
             assert interface_name in output, f"The data for {interface_name} not found in lldp frames"
 
-            mgmt_interface = MgmtPort(name=interface_name)
+            mgmt_interface = Port(name=interface_name)
             output_dict = OutputParsingTool.parse_json_str_to_dictionary(
                 mgmt_interface.interface.lldp.neighbor.show()).get_returned_value()
             assert output_dict, f"The neighbors output for {interface_name} is empty"
@@ -431,7 +431,7 @@ def _verify_lldp_not_running(lldp, engine, device):
 
     with allure.step("Verify lldp frames are not being sent for each active mgmt interface"):
         for interface_name in device.get_mgmt_ports():
-            mgmt_interface = MgmtPort(name=interface_name)
+            mgmt_interface = Port(name=interface_name)
             output_dict = OutputParsingTool.parse_json_str_to_dictionary(
                 mgmt_interface.interface.lldp.neighbor.show()).get_returned_value()
             assert not output_dict, f"The neighbors output for {interface_name} is not empty"

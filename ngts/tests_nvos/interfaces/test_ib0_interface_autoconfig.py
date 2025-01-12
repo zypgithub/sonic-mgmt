@@ -3,11 +3,9 @@ import time
 import pytest
 
 from ngts.nvos_constants.constants_nvos import ApiType
-from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import *
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.Tools import Tools
-from ngts.tests_nvos.constants import MINUTE
 
 logger = logging.getLogger()
 
@@ -25,7 +23,7 @@ def test_interface_ib0_autoconfig_disabled_sm(engines, topology_obj, stop_sm):
     3. Unset autoconf, check default value
     """
 
-    ipoib_port = MgmtPort('ib0')
+    ipoib_port = Port('ib0')
     with allure.step('verify the default ib0 autoconf value is {value}'.format(
             value=IbInterfaceConsts.IB0_IP_AUTOCONF_DEFAULT_VALUE)):
         ip_dict = OutputParsingTool.parse_json_str_to_dictionary(ipoib_port.interface.ip.show()).verify_result()

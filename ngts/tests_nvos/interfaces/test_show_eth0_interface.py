@@ -3,7 +3,6 @@ import pytest
 from ngts.nvos_constants.constants_nvos import SystemConsts, IpConsts
 from ngts.nvos_tools.infra.IpTool import IpTool
 from ngts.nvos_tools.infra.Tools import Tools
-from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import *
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_constants.constants_nvos import ApiType
@@ -24,7 +23,7 @@ def test_mgmt_show_interface(engines):
     command: nv show interface eth0 link
     """
 
-    mgmt_port = MgmtPort()
+    mgmt_port = Port()
     with allure.step('Run show command on mgmt port and verify that each field has an appropriate value'):
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_output_to_dictionary(
             mgmt_port.interface.show()).get_returned_value()
@@ -46,7 +45,7 @@ def test_mgmt_show_interface_link(engines):
     command2: nv show interface eth0 link stats
     """
 
-    mgmt_port = MgmtPort()
+    mgmt_port = Port()
 
     with allure.step('Run show command on selected port and verify that each field has an appropriate '
                      'value according to the state of the port'):
@@ -67,7 +66,7 @@ def test_ib_show_interface_stats(engines):
     Run show interface command and verify the required fields exist
     Command: nv show interface <name> link stats
     """
-    mgmt_port = MgmtPort()
+    mgmt_port = Port()
 
     with allure.step('Run show command on selected port and verify that each field has an appropriate '
                      'value according to the state of the port'):
@@ -92,7 +91,7 @@ def test_ib_show_interface_ip(engines):
     2. Run 'nv show interface <name> link stats' on selected port
     3. Verify the required fields are presented in the output
     """
-    mgmt_port = MgmtPort()
+    mgmt_port = Port()
 
     with allure.step('Run show command on selected port and verify that each field has an appropriate '
                      'value according to the state of the port'):
@@ -138,7 +137,7 @@ def test_show_interface_ip_dhcp(engines):
     4. Run 'nv show interface eth0 ip dhcp_client6'
     5. Verify the required fields are presented in the output and set to default
     """
-    mgmt_port = MgmtPort('eth0')
+    mgmt_port = Port('eth0')
 
     check_dhcp(mgmt_port=mgmt_port, ipv4=True)  # test ipv4
     check_dhcp(mgmt_port=mgmt_port, ipv4=False)  # same test on ipv6

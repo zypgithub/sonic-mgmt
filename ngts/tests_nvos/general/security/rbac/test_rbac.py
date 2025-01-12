@@ -2,7 +2,7 @@ import logging
 import random
 import pytest
 
-from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
+from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.tests_nvos.general.security.rbac.helpers import change_class_permissions, verify_user_permissions_on_interface, \
     verify_user_permissions_on_system, verify_user_permissions_on_denied_interface, run_commands_on_system, run_commands_on_interface, \
@@ -120,7 +120,7 @@ def test_rbac_interface_single_deny(engines, test_api):
     test_class_name = "TestInterfaceClass"
     deny_eth0_class_name = "TestDenyEth0Class"
     test_role_name = "TestRole"
-    selected_port_deny = MgmtPort(UfmMadConsts.MGMT_PORT0)
+    selected_port_deny = Port(UfmMadConsts.MGMT_PORT0)
     TestToolkit.update_tested_ports([selected_port_deny])
     interface_path = "/interface"
     interface_path_deny = f"/interface/{selected_port_deny.name}/"

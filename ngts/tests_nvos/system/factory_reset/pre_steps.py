@@ -1,6 +1,6 @@
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import OutputFormat
-from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
+from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.nmx.Cluster import Cluster
@@ -71,7 +71,7 @@ def factory_reset_keep_basic_pre_steps(engines, system):
         health_status = get_health_status(system)
 
     with allure.step('Set description to eth0 port'):
-        mgmt_port = MgmtPort('eth0')
+        mgmt_port = Port('eth0')
         mgmt_port.interface.set(NvosConst.DESCRIPTION, 'nvosdescription', apply=True).verify_result()
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_output_to_dictionary(
             mgmt_port.interface.show()).get_returned_value()
