@@ -9,7 +9,6 @@ from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_constants.constants_nvos import PlatformConsts
 from ngts.nvos_constants.constants_nvos import OutputFormat
-from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_constants.constants_nvos import ApiType
 
 logger = logging.getLogger()
@@ -38,7 +37,6 @@ class InventoryItemBaseTest(ABC):
 
     @classmethod
     def test_show_item(cls, engines, devices, test_api):
-        TestToolkit.tested_api = test_api
         output_format = OutputFormat.auto if test_api == ApiType.NVUE else OutputFormat.json
         platform = Platform()
         cls.skip_if_needed(devices)
@@ -92,13 +90,11 @@ class InventoryBmcTest(InventoryItemBaseTest):
 @pytest.mark.nvos_ci
 @pytest.mark.simx
 @pytest.mark.nvos_chipsim_ci
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_show_platform_inventory(engines, devices, test_api):
     """nv show platform inventory"""
     test_classes = [cls for cls in InventoryItemBaseTest.__subclasses__()
                     if devices.dut.platform_inventory_items_dict.get(cls.ITEM_TYPE)
                     ]  # e.g. if the switch has no BMC then don't test for one
-    TestToolkit.tested_api = test_api
 
     with allure.step("Create System object"):
         platform = Platform()
@@ -130,27 +126,23 @@ def test_show_platform_inventory(engines, devices, test_api):
 
 @pytest.mark.platform
 @pytest.mark.cumulus
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_show_platform_inventory_fan(engines, devices, test_api):
     InventoryFanTest.test_show_item(engines, devices, test_api)
 
 
 @pytest.mark.platform
 @pytest.mark.cumulus
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_show_platform_inventory_psu(engines, devices, test_api):
     InventoryPsuTest.test_show_item(engines, devices, test_api)
 
 
 @pytest.mark.platform
 @pytest.mark.cumulus
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_show_platform_inventory_switch(engines, devices, test_api):
     InventorySwitchTest.test_show_item(engines, devices, test_api)
 
 
 @pytest.mark.platform
 @pytest.mark.cumulus
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_show_platform_inventory_bmc(engines, devices, test_api):
     InventoryBmcTest.test_show_item(engines, devices, test_api)

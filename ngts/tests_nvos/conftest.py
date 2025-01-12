@@ -726,3 +726,10 @@ def base_version_realpath(base_version):
         base_version_path = cmd_runner.run_cmd(f'realpath {base_version}')
         logging.info(f'base version path: {base_version_path}')
     return base_version_path
+
+
+@pytest.fixture(params=ApiType.ALL_TYPES)
+def test_api(request):
+    """This fixture runs the test twice (once for each api)."""
+    TestToolkit.tested_api = request.param
+    return request.param
