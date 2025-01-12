@@ -503,7 +503,6 @@ def delete_all_sdn_fetched_generated_files(engines, sdn, all_config_files_paths,
                         sdn.config.apps.app_name[app].type.file_type[file_type].files.file_name[file].action_delete()
                     except Exception as e:
                         logger.info("File Already Deleted")
-            engines.sonic_mgmt.run_cmd(f"sudo rm -rf {initial_configs_paths_to_restore[file_type]}")
         for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_STATE_FILES:
             if file_type in all_state_files_paths and all_state_files_paths[file_type]:
                 for file in all_state_files_paths[file_type]:

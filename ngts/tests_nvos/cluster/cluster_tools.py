@@ -152,7 +152,7 @@ class ClusterTools:
                 output = OutputParsingTool.parse_show_output_to_dict(
                     cluster.show(output_format=output_format),
                     output_format=output_format).get_returned_value()
-                assert output[SystemConsts.STATE] == 'disabled', f"State state is , " \
+                assert output[SystemConsts.STATE] == 'disabled', f"State is: " \
                     f"{output[SystemConsts.STATE]}, Expected to be: " \
                     f"disabled"
                 assert ClusterConsts.NMXC_CONN in output, f"{ClusterConsts.NMXC_CONN} was not found in {output}"
