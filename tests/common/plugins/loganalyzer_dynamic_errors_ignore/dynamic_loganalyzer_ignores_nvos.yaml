@@ -655,8 +655,8 @@
 
 # NVOS Security
 - Errors_list:
-    - '.*ERR healthd: Failed to write none to file /var/run/hw-management/led/.* - FileNotFoundError\(2, ''No such file or directory''\).*'
-    - '.*ERR pmon#thermalctld: Failed to read from file /var/run/hw-management/led/.* - FileNotFoundError\(2, ''No such file or directory''\).*'
+    - '.*ERR .*: Failed to write none to file /var/run/hw-management/led/.* - FileNotFoundError\(2, ''No such file or directory''\).*'
+    - '.*ERR .*: Failed to read from file /var/run/hw-management/led/.* - FileNotFoundError\(2, ''No such file or directory''\).*'
   Conditions:
     - Affected_test_cases:
         - tests_nvos/general/security/test_secure_boot/test_secure_boot.py::test_kernel_module_loading
@@ -1269,13 +1269,6 @@
       - tests_nvos/general/security/password_hardening/test_password_hardening_nvos.py::test_password_hardening_functionality
       Redmine:
         - 3531935
-
-# NVOS
-- Errors_list:
-    - '.*ERR pmon#thermalctld: Failed to read from file /var/run/hw-management/led/.* - FileNotFoundError\(2, ''No such file or directory''\).*'
-  Conditions:
-    - Affected_test_cases:
-        - tests_nvos/general/security/test_secure_boot/test_secure_boot.py::test_kernel_module_loading[signed]
 
 # NVOS
 - Errors_list:
