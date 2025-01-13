@@ -1061,6 +1061,12 @@ pfcwd/test_pfcwd_timer_accuracy.py:
       - "https://redmine.mellanox.com/issues/4198717 and 'sn5610n' in platform"
       - "https://redmine.mellanox.com/issues/4206411 and 'sn5600' in platform"
 
+process_monitoring/test_critical_process_monitoring.py::test_orchagent_heartbeat:
+  skip:
+    reason: "Skipped due to RM issue https://redmine.mellanox.com/issues/4251694"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4251694 and 'sn5610n' in platform"
+
 pfcwd/test_pfcwd_function.py:
   skip:
     reason: "Skip due to https://redmine.mellanox.com/issues/4198795 or https://redmine.mellanox.com/issues/4206411"
