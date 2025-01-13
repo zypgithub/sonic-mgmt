@@ -35,8 +35,8 @@ mtvr-moose-130-ptf-any
 
 [ptf]
 # MTVR mtvr-moose-13 PTF host
-ptf-mtvr-moose-13 ansible_host=10.245.20.62 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
-10.245.20.62 ansible_host=10.245.20.62 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+ptf-mtvr-moose-13 ansible_host=10.245.42.62 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+10.245.20.62 ansible_host=10.245.42.62 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
 
 [pdu]
 pdu-10-245-2-49 ansible_host=10.245.2.49 protocol=snmp
