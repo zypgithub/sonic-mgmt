@@ -808,12 +808,19 @@
 
 - Errors_list:
     - '.*ERR service_checker: pam_radius_auth: RADIUS server .*:123 failed to respond.*'
-    - '.*ERR ker process: pam_radius_auth: RADIUS server .*:123 failed to respond.*'
+    - '.*ERR .*: pam_radius_auth: RADIUS server .*:123 failed to respond.*'
+    - '.*ERR python3: pam_radius_auth: All RADIUS servers failed to respond.*'
   Conditions:
     - Affected_test_cases:
         - tests_nvos/general/security/radius/test_aaa_radius.py::test_radius_bad_port
         - tests_nvos/general/security/radius/test_aaa_radius.py::test_radius_server_unreachable
         - tests_nvos/general/security/radius/test_aaa_radius.py::test_radius_timeout
+
+- Errors_list:
+    - '.*ERR python3: pam_radius_auth: packet from RADIUS server.*failed verification: The shared secret is probably incorrect.*'
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/general/security/radius/test_aaa_radius.py::test_radius_bad_secret
 
 - Errors_list:
     - '.* ERR nslcd\[\d+\]\: \[.*\].*ldap_result\(\) failed: Invalid DN.*'
