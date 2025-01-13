@@ -7,6 +7,7 @@ from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.helpers import set_new_random_users, delete_all_imported_cas, \
     delete_all_imported_certs
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
+from ngts.tools.test_utils import allure_utils as allure
 
 
 @pytest.fixture
@@ -21,12 +22,15 @@ def local_monitor_users() -> List[UserInfo]:
     return users
 
 
+def cleanup_spiffe():
+    with allure.step('cleanup spiffe test'):
+        System().api.unset(apply=True).verify_result()
+        delete_all_imported_cas()
+        delete_all_imported_certs()
+
+
 @pytest.fixture(scope='session', autouse=True)
 def cleanup_certs():
-    System().api.unset(apply=True).verify_result()
-    delete_all_imported_cas()
-    delete_all_imported_certs()
+    cleanup_spiffe()
     yield
-    System().api.unset(apply=True).verify_result()
-    delete_all_imported_cas()
-    delete_all_imported_certs()
+    cleanup_spiffe()
