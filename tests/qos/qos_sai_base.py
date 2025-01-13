@@ -2738,7 +2738,7 @@ class QosSaiBase(QosBase):
                         "Changing lacp timer multiplier to default for %s in %s" % (neighbor_lag_member, vm_host))
                     vm_host.no_lacp_time_multiplier(neighbor_lag_member)
 
-    def copy_and_run_set_cir_script_cisco_8000(self, dut, ports, asic="", speed="10000000"):
+    def copy_set_cir_script_cisco_8000(self, dut, ports, asic="", speed="10000000"):
         if dut.facts['asic_type'] != "cisco-8000":
             raise RuntimeError("This function should have been called only for cisco-8000.")
         dshell_script = '''
@@ -2758,8 +2758,12 @@ def set_port_cir(interface, rate):
 
         script_path = "/tmp/set_scheduler.py"
         dut.copy(content=dshell_script, dest=script_path)
+        if dut.sonichost.is_multi_asic:
+            dest = f"syncd{asic}"
+        else:
+            dest = "syncd"
         dut.docker_copy_to_all_asics(
-            container_name=f"syncd{asic}",
+            container_name=dest,
             src=script_path,
             dst="/")
 
@@ -2786,7 +2790,7 @@ def set_port_cir(interface, rate):
             interfaces = match.group(1).split(' ')
 
         # Set scheduler to 5 Gbps.
-        self.copy_and_run_set_cir_script_cisco_8000(
+        self.copy_set_cir_script_cisco_8000(
             dut=dst_dut,
             ports=interfaces,
             asic=dst_index,
