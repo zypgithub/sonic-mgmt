@@ -1839,3 +1839,9 @@
   Conditions:
   - Redmine:
     - 4206176
+
+- Errors_list:
+    - .*ERR\s+kernel:\s+\[\s*\d+\.\d+\]\s+sxd_kernel:\s+\[error\]\s+Fails\s+to\s+access\s+MCIA,\s+module:\s+\d+,\s+status:\s+\d+\..*'
+  Conditions:
+  - Platform:
+    - simx
