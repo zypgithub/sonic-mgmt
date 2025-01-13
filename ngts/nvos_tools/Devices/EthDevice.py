@@ -219,11 +219,12 @@ class Mlx3700Switch(EthSwitch):
 
         self.voltage_sensors = ["PMIC-1-PSU-12V-RAIL-IN1", "PMIC-1-PSU-12V-RAIL-IN2", "PMIC-2-PSU-12V-RAIL-IN1", "PMIC-2-PSU-12V-RAIL-IN2",
                                 "PMIC-3-COMEX-1.8V-RAIL-OUT", "PMIC-3-PSU-12V-RAIL-IN1", "PMIC-3-PSU-12V-RAIL-IN2", "PMIC-4-COMEX-1.2V-RAIL-OUT",
-                                "PMIC-4-PSU-12V-RAIL-IN1", "PMIC-4-PSU-12V-RAIL-IN2", "PSU-1-12V-RAIL-OUT", "PSU-1-220V-RAIL-IN"]
+                                "PMIC-4-PSU-12V-RAIL-IN1", "PMIC-4-PSU-12V-RAIL-IN2", "PSU-1-12V-RAIL-OUT", "PSU-1-220V-RAIL-IN", "PSU-2-12V-RAIL-OUT", "PSU-2-220V-RAIL-IN"]
 
     def _init_temperature(self):
         self.temperature_sensors = ["Asic-Temp-Sensor", "CPU-Package-Sensor", "Main-Board-Ambient-Sensor",
                                     "CPU-Core-Sensor-0", "CPU-Core-Sensor-1",
+                                    "CPU-Core-Sensor-2", "CPU-Core-Sensor-3",
                                     "PSU1-Temp-Sensor", "PSU2-Temp-Sensor",
                                     "Port-Ambient-Sensor"]
 
