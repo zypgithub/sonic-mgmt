@@ -84,7 +84,7 @@ SWITCH_MODELS = {
         }
     },
     "x86_64-nvidia_sn5640-r0": {
-        "chip_type": "spectrum4",
+        "chip_type": "spectrum5",
         "reboot": {
             "cold_reboot": True,
             "fast_reboot": True,
@@ -103,7 +103,7 @@ SWITCH_MODELS = {
             "number": 1
         },
         "cpu_cores": {
-            "number": 16
+            "number": 8
         },
         "ports": {
             "number": 64
