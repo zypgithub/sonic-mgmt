@@ -83,6 +83,10 @@ class SonicAppExtensionCli:
 
     def disable_app(self, app_name, validate=True):
         self.engine.run_cmd('sudo config feature state {} disabled'.format(app_name), validate=validate)
+        # TODO: WA for issue RM#3943532, remove after it's fixed
+        if is_redmine_issue_active([3943532])[0]:
+            import time
+            time.sleep(10)
 
     def install_app_from_tarball(self, tarball_name):
         self.engine.run_cmd("sudo spm install -y --from-tarball {}".format(tarball_name), validate=True)
