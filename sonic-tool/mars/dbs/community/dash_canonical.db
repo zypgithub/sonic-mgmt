@@ -46,6 +46,13 @@
                     </params>
                 </cmd>
             </on_not_success>
+            <ignore>
+                <condition>
+                    <key> base_version_dpu:(none) </key>
+                    <op> == </op>
+                    <value> none </value>
+                </condition>
+           </ignore>
         </Case>
     </global>
     <test>
