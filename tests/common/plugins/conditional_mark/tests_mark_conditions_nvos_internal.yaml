@@ -606,4 +606,10 @@ tests_nvos/general/security/bmc/bmc_creds/test_bmc_creds.py::test_bmc_creds_flow
     conditions:
       - https://redmine.mellanox.com/issues/4146744
 
+tests_nvos/platform/test_install_platform_firmware.py::test_install_platform_firmware:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4250406"
+    conditions:
+      - https://redmine.mellanox.com/issues/4250406
+
 ########################## NVOS IGNORE END ##########################

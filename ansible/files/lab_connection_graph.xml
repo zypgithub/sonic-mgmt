@@ -12,6 +12,7 @@
       <Device Hostname="juliet-158" HwSku="ACS-N5110_LD" Type="DevSonic"/>
       <Device Hostname="juliet-130" HwSku="ACS-N5100_LD" Type="DevSonic"/>
       <Device Hostname="juliet-160" HwSku="ACS-N5200_LD" Type="DevSonic"/>
+      <Device Hostname="juliet-195" HwSku="ACS-N5200_LD" Type="DevSonic"/>
       <Device Hostname="mamba-44" HwSku="ACS-QM3000" Type="DevSonic"/>
       <Device Hostname="mamba-112" HwSku="ACS-QM3000" Type="DevSonic"/>
       <Device Hostname="mamba-150" HwSku="ACS-QM3000" Type="DevSonic"/>
