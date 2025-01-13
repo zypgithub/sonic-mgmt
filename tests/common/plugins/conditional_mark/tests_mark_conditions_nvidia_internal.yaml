@@ -354,9 +354,11 @@ tests/push_build_tests/system/test_cpu_ram_hdd_usage.py::TestCpuRamHddUsage::tes
 
 tests/push_build_tests/system/test_cpu_ram_hdd_usage.py::TestCpuRamHddUsage::test_hdd_usage:
   skip:
-    reason: "Ignored on sn5610n due to RM 4197042"
+    reason: "Skip in sn5610n due to RM issue 4197042 or due to RM issue 4251119"
+    conditions_logical_operator: or
     conditions:
       - "https://redmine.mellanox.com/issues/4197042 and 'sn5610n' in platform"
+      - "https://redmine.mellanox.com/issues/4251119"
 
 tests/push_build_tests/system/test_cpu_ram_hdd_usage.py::TestCpuRamHddUsage::test_ram_usage:
   skip:
