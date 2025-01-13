@@ -574,4 +574,10 @@ tests_nvos/fae/test_asic_error_injection.py::test_asic_error_injection:
     conditions:
       - "'juliet' not in testbed"
 
+tests_nvos/platform/test_install_platform_firmware.py::test_install_platform_firmware:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4250406"
+    conditions:
+      - https://redmine.mellanox.com/issues/4250406
+
 ########################## NVOS IGNORE END ##########################
