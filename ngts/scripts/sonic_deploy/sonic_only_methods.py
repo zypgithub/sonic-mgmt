@@ -441,7 +441,7 @@ class SonicInstallationSteps:
                                                           setup_name=setup_name,
                                                           platform_params=platform_params,
                                                           reboot_after_install=reboot_after_install,
-                                                          configure_dns=True,
+                                                          configure_dns=True, disable_ztp=True,
                                                           setup_info=setup_info,
                                                           dut_alias=dut_alias)
         dut_name = setup_info['duts'][0]['dut_name']
