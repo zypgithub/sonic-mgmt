@@ -768,7 +768,7 @@
 
 - Errors_list:
     - '.*WARNING service_checker: nss_tacplus: TACACS\+ server .* read failed with protocol error \(incorrect shared secret\?\) user.*'
-    - '.*ERR service_checker: tac_author_read: arguments supplied in packet seem to exceed its size.*'
+    - '.*ERR .*: tac_author_read: arguments supplied in packet seem to exceed its size.*'
     - '.*ERR sshd\[.*\]: auth fail: Password incorrect. user: .*'
     - '.*ERR docker-untar: tac_author_read: arguments supplied in packet seem to exceed its size.*'
   Conditions:
@@ -794,18 +794,11 @@
       - tests_nvos/general/security/certificate/test_cert_mgmt.py::test_cert_mgmt_import_cert_uri_bad_param
       - tests_nvos/general/security/certificate/test_cert_mgmt.py::test_cert_mgmt_import_cert_bundle_bad_param
 
-- Errors_list:
-    - '.*ERR service_checker: nss_tacplus: failed to connect TACACS\+ server.*Transport endpoint is not connected.*'
-  Conditions:
-    - Affected_test_cases:
-        - tests_nvos/general/security/tacacs/test_aaa_tacacs.py::test_tacacs_bad_port
-        - tests_nvos/general/security/tacacs/test_aaa_tacacs.py::test_tacacs_timeout
-
 # NVOS - TACACS - invalid port - expected errors
 - Errors_list:
-    - '.*ERR ker process: tac_connect_single: connection failed with .*:123: Transport endpoint is not connected.*'
-    - '.*ERR service_checker: tac_connect_single: connection failed with .*:123: Transport endpoint is not connected.*'
-    - '.*ERR service_checker: nss_tacplus: failed to connect TACACS\+ server .*:123, ret.*: Transport endpoint is not connected'
+    - '.*ERR .*: tac_connect_single: connection failed with .*:123: Transport endpoint is not connected.*'
+    - '.*ERR .*: nss_tacplus: failed to connect TACACS\+ server.*Transport endpoint is not connected.*'
+    - '.*ERR .*: nss_tacplus: failed to connect TACACS\+ server.*Operation now in progress.*'
   Conditions:
     - Affected_test_cases:
         - tests_nvos/general/security/tacacs/test_aaa_tacacs.py::test_tacacs_bad_port
