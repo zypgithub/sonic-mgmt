@@ -11,7 +11,6 @@ from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
-from ngts.nvos_tools.system.System import System
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
@@ -20,7 +19,7 @@ logger = logging.getLogger()
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_system(test_api, engines, devices, topology_obj, test_name):
+def test_system(test_api, engines, devices, topology_obj, nv_command, test_name):
     """
     Run show system message command and verify the required message
         Test flow:
@@ -39,8 +38,7 @@ def test_system(test_api, engines, devices, topology_obj, test_name):
     dut_device: BaseDevice = devices.dut
 
     with allure.step('Run show system command and verify that each field has a value'):
-        system = System()
-        system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
+        system_output = OutputParsingTool.parse_json_str_to_dictionary(nv_command.system.show()).get_returned_value()
 
     with allure.step('validate expected fields exist in output'):
 
@@ -49,7 +47,7 @@ def test_system(test_api, engines, devices, topology_obj, test_name):
             system_output.pop(key, None)
 
         ValidationTool.verify_all_fields_value_exist_in_output_dictionary(
-            system_output, system.get_expected_fields(devices.dut, 'system')).verify_result()
+            system_output, nv_command.system.get_expected_fields(devices.dut, 'system')).verify_result()
 
     with allure.step('get default hostname value'):
         output = OutputParsingTool.parse_json_str_to_dictionary(Interface(None, dut_device.cur_mgmt_port_name).show()).get_returned_value()
@@ -59,14 +57,14 @@ def test_system(test_api, engines, devices, topology_obj, test_name):
             dhcp_hostname = noga_query_data['Specific']['dhcp_hostname'] or noga_query_data['Common']['Name']
             if dhcp_hostname:
                 assert system_output[SystemConsts.HOSTNAME] in [dhcp_hostname, f'{dhcp_hostname}-mgmt2'], f'unexpected "{SystemConsts.HOSTNAME}" value.\nexpected: {[dhcp_hostname, f"{dhcp_hostname}-mgmt2"]}\nactual: {system_output[SystemConsts.HOSTNAME]}'
-            default_hostname = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()[SystemConsts.HOSTNAME]
+            default_hostname = OutputParsingTool.parse_json_str_to_dictionary(nv_command.system.show()).get_returned_value()[SystemConsts.HOSTNAME]
         else:
             default_hostname = SystemConsts.HOSTNAME_DEFAULT_VALUE
 
     with allure.step('set system hostname command and verify that hostname is updated'):
         with allure.step('set new hostname'):
             new_hostname_value = "NOS-NVOS"
-            res_obj, duration = OperationTime.save_duration('set hostname', '', test_name, system.set,
+            res_obj, duration = OperationTime.save_duration('set hostname', '', test_name, nv_command.system.set,
                                                             SystemConsts.HOSTNAME, new_hostname_value,
                                                             apply=True, ask_for_confirmation=True)
             res_obj.verify_result()
@@ -74,17 +72,17 @@ def test_system(test_api, engines, devices, topology_obj, test_name):
         with allure.step('verify duration'):
             OperationTime.verify_operation_time(duration, 'set hostname').verify_result()
         with allure.step('verify change in show'):
-            system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
+            system_output = OutputParsingTool.parse_json_str_to_dictionary(nv_command.system.show()).get_returned_value()
             ValidationTool.verify_field_value_in_output(system_output, SystemConsts.HOSTNAME, new_hostname_value).verify_result()
 
     with allure.step('Run unset system hostname command and verify that hostname is updated'):
         with allure.step('unset hostname'):
-            system.unset(SystemConsts.HOSTNAME, apply=True, ask_for_confirmation=True).verify_result()
+            nv_command.system.unset(SystemConsts.HOSTNAME, apply=True, ask_for_confirmation=True).verify_result()
             if dhcp_enabled:
                 logging.info("Wait till the management interface will be reloaded to get a hostname from DHCP")
                 time.sleep(30)
         with allure.step('verify hostname is back to default'):
-            system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
+            system_output = OutputParsingTool.parse_json_str_to_dictionary(nv_command.system.show()).get_returned_value()
             time.sleep(3)
             assert system_output[SystemConsts.HOSTNAME] in [default_hostname, f'{default_hostname}-mgmt2'], f'unexpected "{SystemConsts.HOSTNAME}" value.\nexpected: {[default_hostname, f"{default_hostname}-mgmt2"]}\nactual: {system_output[SystemConsts.HOSTNAME]}'
 
@@ -93,7 +91,7 @@ def test_system(test_api, engines, devices, topology_obj, test_name):
 @pytest.mark.simx
 @pytest.mark.cumulus
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_system_message(test_api, engines, devices):
+def test_system_message(test_api, engines, devices, nv_command):
     """
     Run show/set/unset system message command and verify the required message
         Test flow:
@@ -116,47 +114,46 @@ def test_system_message(test_api, engines, devices):
 
     new_pre_login_msg = "Testing PRE LOGIN MESSAGE"
     new_post_login_msg = "Testing POST LOGIN MESSAGE"
-    system = System()
 
     with allure.step('Run set system message pre/post-login command and verify that pre/post-login are updated'):
-        message_output = OutputParsingTool.parse_json_str_to_dictionary(system.message.show()).get_returned_value()
+        message_output = OutputParsingTool.parse_json_str_to_dictionary(nv_command.system.message.show()).get_returned_value()
         ValidationTool.verify_field_value_in_output(message_output, SystemConsts.PRE_LOGIN_MESSAGE,
                                                     devices.dut.pre_login_message).verify_result()
         TestToolkit.tested_api = ApiType.NVUE
-        message_output = OutputParsingTool.parse_json_str_to_dictionary(system.message.show()).get_returned_value()
+        message_output = OutputParsingTool.parse_json_str_to_dictionary(nv_command.system.message.show()).get_returned_value()
         ValidationTool.verify_field_value_in_output(message_output, SystemConsts.POST_LOGIN_MESSAGE,
                                                     devices.dut.post_login_message).verify_result()
         TestToolkit.tested_api = test_api
 
-        system.message.set(op_param_name=SystemConsts.PRE_LOGIN_MESSAGE, op_param_value=f'"{new_pre_login_msg}"',
-                           apply=True, dut_engine=engines.dut).verify_result()
-        system.message.set(op_param_name=SystemConsts.POST_LOGIN_MESSAGE, op_param_value=f'"{new_post_login_msg}"',
-                           apply=True, dut_engine=engines.dut).verify_result()
+        nv_command.system.message.set(op_param_name=SystemConsts.PRE_LOGIN_MESSAGE, op_param_value=f'"{new_pre_login_msg}"',
+                                      apply=True, dut_engine=engines.dut).verify_result()
+        nv_command.system.message.set(op_param_name=SystemConsts.POST_LOGIN_MESSAGE, op_param_value=f'"{new_post_login_msg}"',
+                                      apply=True, dut_engine=engines.dut).verify_result()
         time.sleep(3)
-        message_output = OutputParsingTool.parse_json_str_to_dictionary(system.message.show()).get_returned_value()
+        message_output = OutputParsingTool.parse_json_str_to_dictionary(nv_command.system.message.show()).get_returned_value()
         ValidationTool.verify_field_value_in_output(message_output, SystemConsts.PRE_LOGIN_MESSAGE,
                                                     new_pre_login_msg).verify_result()
         ValidationTool.verify_field_value_in_output(message_output, SystemConsts.POST_LOGIN_MESSAGE,
                                                     new_post_login_msg).verify_result()
 
     with allure.step('Run unset system message pre-login command and verify that pre-login is updated'):
-        system.message.unset(op_param=SystemConsts.PRE_LOGIN_MESSAGE, apply=True).verify_result()
+        nv_command.system.message.unset(op_param=SystemConsts.PRE_LOGIN_MESSAGE, apply=True).verify_result()
         time.sleep(3)
-        message_output = OutputParsingTool.parse_json_str_to_dictionary(system.message.show()).get_returned_value()
+        message_output = OutputParsingTool.parse_json_str_to_dictionary(nv_command.system.message.show()).get_returned_value()
         ValidationTool.verify_field_value_in_output(message_output, SystemConsts.PRE_LOGIN_MESSAGE,
                                                     devices.dut.pre_login_message).verify_result()
         logging.info("Verify the post-login was not affected")
         TestToolkit.tested_api = ApiType.NVUE
-        message_output = OutputParsingTool.parse_json_str_to_dictionary(system.message.show()).get_returned_value()
+        message_output = OutputParsingTool.parse_json_str_to_dictionary(nv_command.system.message.show()).get_returned_value()
         ValidationTool.verify_field_value_in_output(message_output, SystemConsts.POST_LOGIN_MESSAGE,
                                                     new_post_login_msg).verify_result()
         TestToolkit.tested_api = test_api
 
     with allure.step('Run unset system message post-login command and verify that pre-login is updated'):
-        system.message.unset(op_param=SystemConsts.POST_LOGIN_MESSAGE, apply=True).verify_result()
+        nv_command.system.message.unset(op_param=SystemConsts.POST_LOGIN_MESSAGE, apply=True).verify_result()
         time.sleep(3)
         TestToolkit.tested_api = ApiType.NVUE
-        message_output = OutputParsingTool.parse_json_str_to_dictionary(system.message.show()).get_returned_value()
+        message_output = OutputParsingTool.parse_json_str_to_dictionary(nv_command.system.message.show()).get_returned_value()
         ValidationTool.verify_field_value_in_output(message_output, SystemConsts.POST_LOGIN_MESSAGE,
                                                     devices.dut.post_login_message).verify_result()
         TestToolkit.tested_api = test_api
@@ -167,7 +164,7 @@ def test_system_message(test_api, engines, devices):
 @pytest.mark.nvos_ci
 @pytest.mark.nvos_chipsim_ci
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_show_system_version(test_api, engines, devices):
+def test_show_system_version(test_api, engines, devices, nv_command):
     """
     Run show system version command and verify version values
         Test flow
@@ -177,16 +174,16 @@ def test_show_system_version(test_api, engines, devices):
     TestToolkit.tested_api = test_api
 
     with allure.step('Run show system command and verify that each field has a value'):
-        system = System()
-        version_output = OutputParsingTool.parse_json_str_to_dictionary(system.version.show()).get_returned_value()
+        version_output = OutputParsingTool.parse_json_str_to_dictionary(nv_command.system.version.show()).get_returned_value()
+
         ValidationTool.verify_all_fields_value_exist_in_output_dictionary(
-            version_output, system.get_expected_fields(devices.dut, 'version')).verify_result()
+            version_output, nv_command.system.get_expected_fields(devices.dut, 'version')).verify_result()
 
 
 @pytest.mark.system
 @pytest.mark.cumulus
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_show_system_reboot(test_api, engines, devices):
+def test_show_system_reboot(test_api, engines, devices, nv_command):
     """
     Run show system reboot command and verify the reboot history and reason values
         Test flow:
@@ -199,8 +196,7 @@ def test_show_system_reboot(test_api, engines, devices):
     TestToolkit.tested_api = test_api
 
     with allure.step('Run show system reboot command and verify that each field has a value'):
-        system = System()
-        reboot_output = OutputParsingTool.parse_json_str_to_dictionary(system.reboot.show()).get_returned_value()
+        reboot_output = OutputParsingTool.parse_json_str_to_dictionary(nv_command.system.reboot.show()).get_returned_value()
         assert reboot_output['reason'], "reason field is missing"
 
 
@@ -208,7 +204,7 @@ def test_show_system_reboot(test_api, engines, devices):
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_show_system_memory(test_api, engines, devices):
+def test_show_system_memory(test_api, engines, devices, nv_command):
     """
     Run show system memory and verify there is a correlation between the different values,
     and the values are in appropriate range.
@@ -222,8 +218,7 @@ def test_show_system_memory(test_api, engines, devices):
     TestToolkit.tested_api = test_api
 
     with allure.step('Run show system memory command and verify that each field has a value'):
-        system = System()
-        output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(system.show("memory")).get_returned_value()
+        output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(nv_command.system.show("memory")).get_returned_value()
 
         assert len(output_dictionary.keys()) == 2, "Unexpected Number of keys"
         assert list(output_dictionary.keys())[0] == SystemConsts.MEMORY_PHYSICAL_KEY, "Unexpected Key value"
@@ -257,7 +252,7 @@ def test_show_system_memory(test_api, engines, devices):
 @pytest.mark.simx
 @pytest.mark.cumulus
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_show_system_cpu(test_api, engines, devices):
+def test_show_system_cpu(test_api, engines, devices, nv_command):
     """
     Run show system memory and verify there is a correlation between the different values,
     and the values are in appropriate range.
@@ -271,8 +266,7 @@ def test_show_system_cpu(test_api, engines, devices):
 
     with allure.step('Run show system cpu command and verify that each field has a value'):
         time.sleep(10)
-        system = System()
-        output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(system.show("cpu")).get_returned_value()
+        output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(nv_command.system.show("cpu")).get_returned_value()
 
         assert len(output_dictionary.keys()) == 3, "Unexpected Number of keys"
         assert list(output_dictionary.keys())[0] == SystemConsts.CPU_CORE_COUNT_KEY, "Unexpected Key value"
@@ -289,7 +283,7 @@ def test_show_system_cpu(test_api, engines, devices):
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_system_contact_set(test_api, engines):
+def test_system_contact_set(test_api, engines, nv_command):
     """
     Run show system message command and verify the required message
         Test flow:
@@ -301,18 +295,17 @@ def test_system_contact_set(test_api, engines):
             6. Validate system contact is not present in system show
     """
     TestToolkit.tested_api = test_api
-    system = System()
     try:
-        help_system_contact_location(engines, system, SystemConsts.CONTACT)
+        help_system_contact_location(engines, nv_command.system, SystemConsts.CONTACT)
 
     finally:
-        clear_system_contact_and_location(system)
+        clear_system_contact_and_location(nv_command.system)
 
 
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_system_location_set(test_api, engines):
+def test_system_location_set(test_api, engines, nv_command):
     """
     Run show system message command and verify the required message
         Test flow:
@@ -324,17 +317,16 @@ def test_system_location_set(test_api, engines):
             6. Validate system location is not present in system show
     """
     TestToolkit.tested_api = test_api
-    system = System()
     try:
-        help_system_contact_location(engines, system, SystemConsts.LOCATION)
+        help_system_contact_location(engines, nv_command.system, SystemConsts.LOCATION)
 
     finally:
-        clear_system_contact_and_location(system)
+        clear_system_contact_and_location(nv_command.system)
 
 
 @pytest.mark.system
 @pytest.mark.simx
-def test_factory_reset_for_system_contact_location(engines):
+def test_factory_reset_for_system_contact_location(engines, nv_command):
     """
     Run factory reset system command and verify the system contact and location fields are removed from system show
         Test flow:
@@ -344,32 +336,30 @@ def test_factory_reset_for_system_contact_location(engines):
             5. Run system factory reset
             6. Run 'nv show system' and verify systems contact and location fields are removed
     """
-    system = System()
-
     try:
         with allure.step('Run set system contact command and apply config'):
-            system.set(op_param_name=SystemConsts.CONTACT, op_param_value="contact_info", apply=True,
-                       dut_engine=engines.dut).verify_result()
+            nv_command.system.set(op_param_name=SystemConsts.CONTACT, op_param_value="contact_info", apply=True,
+                                  dut_engine=engines.dut).verify_result()
 
         with allure.step('Verify system contact is set'):
-            system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
+            system_output = OutputParsingTool.parse_json_str_to_dictionary(nv_command.system.show()).get_returned_value()
             ValidationTool.verify_field_value_in_output(system_output, SystemConsts.CONTACT, "contact_info").\
                 verify_result()
 
         with allure.step('Run set system location command and apply config'):
-            system.set(op_param_name=SystemConsts.LOCATION, op_param_value="location_info", apply=True,
-                       dut_engine=engines.dut).verify_result()
+            nv_command.system.set(op_param_name=SystemConsts.LOCATION, op_param_value="location_info", apply=True,
+                                  dut_engine=engines.dut).verify_result()
 
         with allure.step('Verify system location is set'):
-            system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
+            system_output = OutputParsingTool.parse_json_str_to_dictionary(nv_command.system.show()).get_returned_value()
             ValidationTool.verify_field_value_in_output(system_output, SystemConsts.LOCATION, "location_info").\
                 verify_result()
 
         with allure.step("Run reset factory with keep basic param"):
-            system.factory_default.action_reset(param="keep basic").verify_result()
+            nv_command.system.factory_default.action_reset(param="keep basic").verify_result()
 
         with allure.step('Validate system contact is back to default (Null)'):
-            system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
+            system_output = OutputParsingTool.parse_json_str_to_dictionary(nv_command.system.show()).get_returned_value()
             assert system_output[SystemConsts.CONTACT] is None, "System contact in system show is {} instead of Null".\
                 format(system_output[SystemConsts.CONTACT])
 
@@ -378,7 +368,7 @@ def test_factory_reset_for_system_contact_location(engines):
                                                                  "Null".format(system_output[SystemConsts.LOCATION])
 
     finally:
-        clear_system_contact_and_location(system)
+        clear_system_contact_and_location(nv_command.system)
 
 
 def clear_system_contact_and_location(system):

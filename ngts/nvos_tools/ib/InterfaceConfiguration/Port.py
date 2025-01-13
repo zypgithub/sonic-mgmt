@@ -194,3 +194,7 @@ class Port(BaseComponent):
             ip_addresses_show = list(OutputParsingTool.parse_json_str_to_dictionary(
                 self.interface.ip.address.show(dut_engine=dut_engine)).get_returned_value())
         return ip_addresses_show[0].split("/")[0]
+
+    def update_port_name(self, name):
+        self.name = name
+        self.interface = Interface(self, name)

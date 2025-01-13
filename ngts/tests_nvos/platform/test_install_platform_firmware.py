@@ -1,6 +1,4 @@
 import logging
-from typing import Tuple
-
 import pytest
 
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
@@ -10,9 +8,8 @@ from ngts.nvos_tools.infra.BmcTool import BmcTool
 from ngts.tests_nvos.constants import MINUTE
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
-from ngts.nvos_tools.platform.Platform import Platform
-from ngts.nvos_tools.system.System import System
 from ngts.tools.test_utils import allure_utils as allure
+from typing import Tuple
 
 logger = logging.getLogger()
 
@@ -20,7 +17,7 @@ logger = logging.getLogger()
 @pytest.mark.checklist
 @pytest.mark.platform
 @pytest.mark.timeout(30 * MINUTE, func_only=True)
-def test_install_platform_firmware(engines, devices, test_name, topology_obj, clear_asic_files):
+def test_install_platform_firmware(engines, devices, test_name, topology_obj, nv_command, clear_asic_files):
     """
     Install platform firmware test
 
@@ -30,38 +27,36 @@ def test_install_platform_firmware(engines, devices, test_name, topology_obj, cl
     3. Change fw-source to default and reboot
     4. Verify the firmware is updated successfully to embedded version
     """
-    system = System()
-    platform = Platform()
     component_name = 'asic'
     test_image_name = "test_fw_asic.mfa"
     fw_has_changed = False
     fw_file, filename, version_name = BmcTool.get_fw_component_version_latest(component_name)
 
     with allure.step("Check actual firmware value"):
-        asic_dictionary = get_asic_dict(platform)
+        asic_dictionary = get_asic_dict(nv_command.platform)
         first_asic_name = list(asic_dictionary.keys())[0]
         actual_firmware = asic_dictionary[first_asic_name]["actual-firmware"]
         logging.info("Original actual firmware - " + actual_firmware)
-        system.validate_health_status(HealthConsts.OK)
+        nv_command.system.validate_health_status(HealthConsts.OK)
 
     try:
         with allure.step("Install system firmware file - " + fw_file):
             with allure.step("fetch firmware file to switch"):
                 player_engine = engines['sonic_mgmt']
                 scp_path = 'scp://{}:{}@{}'.format(player_engine.username, player_engine.password, player_engine.ip)
-                platform.firmware.asic.action_fetch(fw_file, base_url=scp_path).verify_result()
-                fetched_image_file = platform.firmware.asic.files.file_name[filename]
+                nv_command.platform.firmware.asic.action_fetch(fw_file, base_url=scp_path).verify_result()
+                fetched_image_file = nv_command.platform.firmware.asic.files.file_name[filename]
                 fetched_image_file.action_rename(test_image_name, expected_str="", rewrite_file_name=False)
 
             with allure.step("Install firmware and verify"):
-                platform.firmware.asic.set(PlatformConsts.FW_SOURCE, PlatformConsts.FW_SOURCE_CUSTOM, apply=True)
+                nv_command.platform.firmware.asic.set(PlatformConsts.FW_SOURCE, PlatformConsts.FW_SOURCE_CUSTOM, apply=True)
                 NvueGeneralCli.save_config(engines.dut)
                 res_obj, duration = OperationTime.save_duration('install user FW', 'include reboot', test_name,
-                                                                install_new_image_fw, platform, test_name,
+                                                                install_new_image_fw, nv_command.platform, test_name,
                                                                 test_image_name)
             with allure.step('Verify the firmware installed successfully'):
-                verify_firmware_with_platform_cmd(platform, version_name)
-                system.validate_health_status(HealthConsts.OK)
+                verify_firmware_with_platform_cmd(nv_command.platform, version_name)
+                nv_command.system.validate_health_status(HealthConsts.OK)
                 fw_has_changed = True
 
             with allure.step('Verify operation time'):
@@ -69,16 +64,16 @@ def test_install_platform_firmware(engines, devices, test_name, topology_obj, cl
     finally:
         with allure.step("cleanup steps"):
             with allure.step("Install original system firmware file"):
-                platform.firmware.asic.set(PlatformConsts.FW_SOURCE, PlatformConsts.FW_SOURCE_DEFAULT, apply=True)
+                nv_command.platform.firmware.asic.set(PlatformConsts.FW_SOURCE, PlatformConsts.FW_SOURCE_DEFAULT, apply=True)
                 NvueGeneralCli.save_config(engines.dut)
 
             OperationTime.save_duration('install default fw', 'include reboot', test_name, install_default_image_fw,
-                                        system, test_name, fw_has_changed)
+                                        nv_command.system, test_name, fw_has_changed)
 
         with allure.step('Verify the firmware installed successfully'):
-            verify_firmware_with_platform_cmd(platform, actual_firmware)
-            validate_all_asics_have_same_info()
-            system.validate_health_status(HealthConsts.OK)
+            verify_firmware_with_platform_cmd(nv_command.platform, actual_firmware)
+            validate_all_asics_have_same_info(nv_command.platform)
+            nv_command.system.validate_health_status(HealthConsts.OK)
 
 
 def get_version_and_file_name(device) -> Tuple[str, str]:
@@ -126,8 +121,8 @@ def verify_field_value_in_output_for_each_asic(output_dictionary, field, value):
     ValidationTool.verify_field_value_in_output(output_dictionary, field, value).verify_result()
 
 
-def validate_all_asics_have_same_info():
-    show_output = get_asic_dict(Platform())
+def validate_all_asics_have_same_info(platform):
+    show_output = get_asic_dict(platform)
     output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(show_output).get_returned_value()
     assert output_dictionary and len(output_dictionary.keys()) > 0, "asic list is empty"
 

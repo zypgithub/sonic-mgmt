@@ -31,6 +31,7 @@ from ngts.nvos_tools.infra.CmdRunner import CmdRunner
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.nvos_tools.infra.DiskTool import DiskTool
 from ngts.nvos_tools.infra.IpTool import IpTool
+from ngts.nvos_tools.infra.NvCommand import NvCommand
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.PexpectTool import PexpectTool
@@ -733,3 +734,8 @@ def test_api(request):
     """This fixture runs the test twice (once for each api)."""
     TestToolkit.tested_api = request.param
     return request.param
+
+
+@pytest.fixture(scope='module')
+def nv_command():
+    return NvCommand()
