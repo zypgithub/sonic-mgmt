@@ -156,6 +156,9 @@ class BaseDevice(ABC):
     def get_mgmt_ports(self) -> List[str]:
         return None
 
+    def get_admins_group(self):
+        return 'nvapply'
+
     def get_default_nvue_config(self, dut_engine=None):
         return {}
 

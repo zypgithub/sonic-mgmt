@@ -99,6 +99,9 @@ class EthSwitch(BaseSwitch):
     def get_mgmt_ports(self) -> List[str]:
         return self.mgmt_ports
 
+    def get_admins_group(self):
+        return 'cumulus'
+
     def _init_eth0_speeds(self):
         self.supported_eth0_speeds = ['10M', '100M', '1G']
 

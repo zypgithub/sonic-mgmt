@@ -159,12 +159,12 @@ def local_adminuser(engines, devices) -> UserInfo:
 
 
 @pytest.fixture(scope='session', autouse=False)
-def prepare_scp(engines):
+def prepare_scp(engines, devices):
     """
     @summary: Upload a dummy text file to the switch, that will be used in tests for scp verification
     """
     admin_monitor_mutual_group = 'adm'
-    admins_group = 'nvapply'
+    admins_group = devices.dut.get_admins_group()
 
     logging.info('Prepare directory for admin users only')
     engines.dut.run_cmd(f'mkdir -p {AuthConsts.SWITCH_ADMINS_DIR}')
@@ -175,7 +175,7 @@ def prepare_scp(engines):
     logging.info('Prepare non-privileged directory')
     engines.dut.run_cmd(f'mkdir -p {AuthConsts.SWITCH_MONITORS_DIR}')
     engines.dut.run_cmd(f'echo "Alon The King" > {AuthConsts.SWITCH_MONITOR_SCP_DOWNLOAD_TEST_FILE}')
-    engines.dut.run_cmd(f'chgrp -R {admin_monitor_mutual_group} {AuthConsts.SWITCH_MONITORS_DIR}')
+    engines.dut.run_cmd(f'sudo chgrp -R {admin_monitor_mutual_group} {AuthConsts.SWITCH_MONITORS_DIR}')
     engines.dut.run_cmd(f'chmod -R 770 {AuthConsts.SWITCH_MONITORS_DIR}')
 
     yield
