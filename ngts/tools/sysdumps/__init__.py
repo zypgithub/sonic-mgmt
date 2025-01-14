@@ -31,16 +31,25 @@ def pytest_runtest_makereport(item, call):
                 and os.environ.get(PytestConst.GET_DUMP_AT_TEST_FALIURE) != "False":
             if session_id:
                 try:
-                    topology_obj = item.funcargs['topology_obj']
+                    test_name = item.name.replace('/', '_')
                     dumps_folder = item.funcargs['dumps_folder']
-                    with allure.step('The test case has failed, generating a sysdump'):
-                        dut_cli_object = topology_obj.players['dut']['cli']
-                        dut_engine = topology_obj.players['dut']['engine']
-                        duration = get_test_duration(item)
-                        collect_stored_cmds_then_attach_to_allure_report(topology_obj)
-                        switch_type = get_switch_type(topology_obj)
-                        generate_dump_method[switch_type](topology_obj, dut_engine, dumps_folder, duration, item)
-
+                    dump_file_exists = False
+                    for dump_file in os.listdir(dumps_folder):
+                        if test_name in dump_file:
+                            dump_file_exists = True
+                            existing_dump_file = dump_file
+                    if not dump_file_exists:
+                        topology_obj = item.funcargs['topology_obj']
+                        with allure.step('The test case has failed, generating a sysdump'):
+                            dut_cli_object = topology_obj.players['dut']['cli']
+                            dut_engine = topology_obj.players['dut']['engine']
+                            duration = get_test_duration(item)
+                            collect_stored_cmds_then_attach_to_allure_report(topology_obj)
+                            switch_type = get_switch_type(topology_obj)
+                            generate_dump_method[switch_type](topology_obj, dut_engine, dumps_folder, duration, item)
+                    else:
+                        with allure.step('The test case has failed, dump already exists at log folder {}/{}'.format(dumps_folder, existing_dump_file)):
+                            pass
                 except BaseException as err:
                     error_message = f'Failed to generate/store techsupport dump.\nGot error: {err}'
                     logger.error(error_message)

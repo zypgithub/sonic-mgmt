@@ -4,7 +4,7 @@ import pytest
 import random
 import os
 from retry.api import retry_call
-from ngts.constants.constants import InfraConst
+from ngts.constants.constants import InfraConst, PytestConst
 from ngts.common.util import get_specified_installed_dpus
 
 logger = logging.getLogger()
@@ -47,6 +47,7 @@ def test_check_errors_in_log_during_deploy_sonic_image(dut_host, request, logana
     :param engines: engines fixture
     :param request: pytest build-in
     """
+    os.environ[PytestConst.GET_DUMP_AT_TEST_FALIURE] = "False"
     log_analyzer_start_string_line = get_la_start_string(dut_host, request)
     oldest_syslog_id = get_oldest_syslog_id(dut_host)
     new_log_analyzer_start_string = get_new_start_string(dut_host, oldest_syslog_id, log_analyzer_start_string_line)
