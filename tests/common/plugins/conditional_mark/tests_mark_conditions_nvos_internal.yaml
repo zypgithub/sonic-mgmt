@@ -1,10 +1,27 @@
 ########################## NVOS IGNORE START ##########################
 
-tests_nvos/general/security/certificate/test_cacert_mgmt.py:
+tests_nvos/interfaces/nvl5_port/test_nvl5_port.py::test_show_nvl5_interface_commands:
   skip:
-    reason: "Skip for BUGS: https://redmine.mellanox.com/issues/4237850, https://redmine.mellanox.com/issues/4237752, https://redmine.mellanox.com/issues/4237677"
+    reason: "Skip for BUG: https://redmine.mellanox.com/issues/4100265"
+    conditions:
+      - https://redmine.mellanox.com/issues/4100265
+
+tests_nvos/general/security/certificate/test_cert_cacert_mgmt.py::test_certs_mgmt_reboot_case:
+  skip:
+    reason: "Skip for BUGS: https://redmine.mellanox.com/issues/4251992, https://redmine.mellanox.com/issues/4237850, https://redmine.mellanox.com/issues/4237752, https://redmine.mellanox.com/issues/4237677"
     conditions_logical_operator: or
     conditions:
+      - https://redmine.mellanox.com/issues/4251992
+      - https://redmine.mellanox.com/issues/4237677
+      - https://redmine.mellanox.com/issues/4237752
+      - https://redmine.mellanox.com/issues/4237850
+
+tests_nvos/general/security/certificate/test_cacert_mgmt.py:
+  skip:
+    reason: "Skip for BUGS: https://redmine.mellanox.com/issues/4251992, https://redmine.mellanox.com/issues/4237850, https://redmine.mellanox.com/issues/4237752, https://redmine.mellanox.com/issues/4237677"
+    conditions_logical_operator: or
+    conditions:
+      - https://redmine.mellanox.com/issues/4251992
       - https://redmine.mellanox.com/issues/4237677
       - https://redmine.mellanox.com/issues/4237752
       - https://redmine.mellanox.com/issues/4237850
