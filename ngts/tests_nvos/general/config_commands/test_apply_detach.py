@@ -129,7 +129,7 @@ def test_apply_rev_id(engines):
         ref_2 = 'rev_' + rev_id_2 + '_apply_1'
 
     with allure.step('apply using rev id and verify output'):
-        apply_output = NvueGeneralCli.apply_config(engine=engines.dut, rev_id=rev_id_1)
+        apply_output = NvueGeneralCli.apply_config(engine=engines.dut, rev_id=rev_id_1, option='-y')
         message_output = OutputParsingTool.parse_json_str_to_dictionary(system.message.show()).get_returned_value()
 
         with allure.step('Verify pre-login changed to TESTING_001 in show system'):
@@ -137,7 +137,7 @@ def test_apply_rev_id(engines):
         assert 'applied' in apply_output, "failed to apply using rev_id"
 
     with allure.step('apply using ref and verify output'):
-        apply_output = NvueGeneralCli.apply_config(engine=engines.dut, rev_id=ref_2)
+        apply_output = NvueGeneralCli.apply_config(engine=engines.dut, rev_id=ref_2, option='-y')
         message_output = OutputParsingTool.parse_json_str_to_dictionary(system.message.show()).get_returned_value()
 
         with allure.step('Verify pre-login changed to TESTING_002 in show system'):

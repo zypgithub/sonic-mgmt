@@ -1890,5 +1890,12 @@
       Redmine:
         - 4038479
 
+# NVOS : Errors which should be ignored after attaching invalid revision id
+- Errors_list:
+    - '.*ERR nvued:   ERROR: app.py:\d+ Exception on \/nvue_v1\/ \[PATCH\].*'
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/general/config_commands/test_config_delete_attach_revision.py::test_config_attach_negative_flow
+
 
 # --------------------------------------------------

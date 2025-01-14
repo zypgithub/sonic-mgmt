@@ -35,7 +35,8 @@ def test_show_fetch_file(engines):
         8. Expected output: set: system: hostname: <new_hostname>
     """
     system = System(None)
-    assert '{}' == system.config.files.show(), "the config files list should be empty"
+    files = OutputParsingTool.parse_json_str_to_dictionary(system.config.files.show()).verify_result()
+    assert 1 == len(files), "The config files list should contain only one file"
 
     with allure.step('get remote server engine'):
         remote_server_engine = engines[NvosConst.SONIC_MGMT]

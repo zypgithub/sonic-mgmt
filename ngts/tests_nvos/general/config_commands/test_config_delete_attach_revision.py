@@ -131,7 +131,7 @@ def test_config_delete_negative_flow(engines):
 @pytest.mark.general
 @pytest.mark.configuration
 @pytest.mark.simx
-def test_config_attach(engines):
+def test_config_attach_positive_flow(engines):
     """
     in this case we validate all possible ways to attach a revision,
     we can attach two types of revisions: 1. detached 3. previous 4. invalid
@@ -150,9 +150,6 @@ def test_config_attach(engines):
         - Run nv config attach <rev_id_2>									- attached <rev_id_2>
         - Run nv config apply												- Applied <rev_id_2>
         - Run nv show system message										- Pre-login = TESTING
-
-    – bad flow, can’t attach invalid revision id
-        - Run nv config attach <invalid_id>									- Revision <invalid_id> does not exist
         """
     with allure.step("Create System"):
         system = System()
@@ -188,10 +185,21 @@ def test_config_attach(engines):
                 get_revision_id(NvueGeneralCli.apply_config(engine=engines.dut, option='-y'),
                                 RevisionStatus.APPLIED)
 
-        with allure.independent_step("attach invalid revision - Should Fail"):
-            with allure.step(f"Attach revision -21"):
-                error_msg = NvueGeneralCli.attach_config(engines.dut, "-21")
-                assert "Revision -21 does not exist" == error_msg, f"the error message is not as expected, {error_msg}"
+
+@pytest.mark.cumulus
+@pytest.mark.general
+@pytest.mark.configuration
+@pytest.mark.simx
+def test_config_attach_negative_flow(engines):
+    """
+    Test Flow:
+    – bad flow, can’t attach invalid revision id
+        - Run nv config attach <invalid_id>									- Revision <invalid_id> does not exist
+        """
+    with allure.step("attach invalid revision - Should Fail"):
+        with allure.step(f"Attach revision -21"):
+            error_msg = NvueGeneralCli.attach_config(engines.dut, "-21")
+            assert "Revision -21 does not exist" == error_msg, f"the error message is not as expected, {error_msg}"
 
 
 def get_revision_id(output, expected_pattern=""):

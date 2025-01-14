@@ -166,7 +166,7 @@ def test_ssd_cleanup_reboot_with_high_ssd_usage(engines, devices):
     df_output = _get_df_output(engines.dut)
     path = '/host/nos-images/'
     file_name = 'new_file'
-    file_size = df_output[SystemConsts.SSD_SPACE_AVAILABLE_SIZE] - (0.02 * df_output[SystemConsts.SSD_SPACE_TOTAL_SIZE])
+    file_size = df_output[SystemConsts.SSD_SPACE_AVAILABLE_SIZE] - (0.01 * df_output[SystemConsts.SSD_SPACE_TOTAL_SIZE])
 
     try:
         engines.dut.run_cmd('sudo fallocate -l {size}G /{path}/{file}'.format(size=file_size, path=path, file=file_name))

@@ -78,6 +78,7 @@ def test_system_remarkable_requested_logs(engines, devices):
 
     with allure.step(f"rotate logs and make sure demon can send request to save logs"):
         system.log.rotate_logs()
+        system.log.rotate_logs()
         engines.dut.run_cmd("sudo ls /var/log/remarkable_logs_1/")
 
     try:
