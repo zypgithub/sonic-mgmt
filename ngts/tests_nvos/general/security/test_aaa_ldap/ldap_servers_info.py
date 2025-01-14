@@ -90,13 +90,13 @@ class LdapServersP3:
         hostname=AaaConsts.VM_AAA_SERVER_IPV4_ADDR,
         priority=1,
         secret='secret',
-        port=1389,
+        port=391,
         base_dn=BASE_DN,
         bind_dn=BIND_DN,
         timeout_bind=5,
         timeout_search=5,
         version=VERSION,
-        ssl_port=1636,
+        ssl_port=392,
         users=[
             UserInfo(
                 username='ldap1adm1',
