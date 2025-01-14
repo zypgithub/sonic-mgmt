@@ -196,6 +196,7 @@ tests/nightly/fec/test_fec.py::TestFec::test_fec_capabilities_loopback_ports:
     conditions_logical_operator: or
     conditions:
     - "'2201' in platform"
+    - "https://redmine.mellanox.com/issues/4252039"
   xfail:
     reason: "Testcase may fail due to RM https://redmine.mellanox.com/issues/3971501 on r-leopard-56"
     conditions:
