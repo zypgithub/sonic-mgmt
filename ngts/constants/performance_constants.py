@@ -25,6 +25,18 @@ class PerfConsts:
         "COUNTERS_SAMPLE_DELAY": 1
     }
     OCC_AVG_TH = 400
+    TEMPERATURE_TH = 105
+    POWER_TH_PER_ASIC = {
+        "SPC3": None,
+        "SPC4": {
+            r"VCORE TILES \d & \d \(VDD_Tx\)": 17,
+            r"DVDD TILES \d & \d \(DVDD_Tx\)": 18.13,
+            r"HVDD TILES \(HVDD_T\d+\)": 113,
+            r"VDDSCC": 43,
+            r"VCORE MAIN \(VDD_M\)": 345,
+            "TOTAL": 754
+        }
+    }
     CL_HOME_DIR = "/home/cumulus"
     CL_PYTHON_PATH = "/home/cumulus/sdk_env/bin/python3.11"
     NON_SONIC_CLI_TYPE = NvosCliTypes.NvueCliTypes + DVSCliTypes.DVSCliTypes

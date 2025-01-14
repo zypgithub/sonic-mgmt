@@ -11,6 +11,7 @@ from ngts.helpers.thread_log_filter import redirect_thread_stdout, config_root_l
 from ngts.helpers.custom_catch_exception_thread import CatchExceptionThread, parse_threads_exceptions_at_join
 from infra.tools.exceptions.test_issue import TestIssue
 from ngts.helpers.performance.traffic_helpers import validate_bw, validate_tc
+from ngts.helpers.performance.power_temp_helpers import validate_temperature, validate_power
 from ngts.cli_wrappers.dvs.dvs_cli import DvsCli
 from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
 from ngts.cli_wrappers.sonic.sonic_cli import SonicCli
@@ -103,9 +104,12 @@ def attach_json_to_allure(json_path, attachment_name):
     return json_obj
 
 
-def traffic_validation(players, test_name, scenario, bw_threshold,
-                       samples_params_dict=PerfConsts.SAMPLES_PARAMS,
-                       tc_occ_threshold=PerfConsts.OCC_AVG_TH, port_list=None):
+def run_validation(players, test_name, scenario, bw_threshold,
+                   samples_params_dict=PerfConsts.SAMPLES_PARAMS,
+                   tc_occ_threshold=PerfConsts.OCC_AVG_TH,
+                   temperature_threshold=PerfConsts.TEMPERATURE_TH,
+                   power_threshold=None,
+                   port_list=None):
     with allure.step("Run traffic validation on Json results"):
         traffic_validation_jsons_list = validate_traffic_results(players, test_name, scenario, samples_params_dict)
 
@@ -115,6 +119,10 @@ def traffic_validation(players, test_name, scenario, bw_threshold,
                 validate_bw(traffic_json, bw_threshold, violations_list)
             if tc_occ_threshold:
                 validate_tc(traffic_json, tc_occ_threshold, violations_list)
+            if temperature_threshold:
+                validate_temperature(traffic_json, temperature_threshold, violations_list)
+            if power_threshold:
+                validate_power(traffic_json, power_threshold, violations_list)
             if violations_list:
                 raise TestIssue("\n".join(violations_list))
 

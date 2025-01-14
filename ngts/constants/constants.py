@@ -128,12 +128,14 @@ class FanoutConfigFile:
 class DbConstants:
     METADATA_PATH = "/.autodirect/sw_regression/system/SONIC/MARS/metadata/"
     METADATA_PATH_NVOS = "/auto/sw_system_project/MLNX_OS_INFRA/NVOS-SONIC/MARS/metadata/"
+    METADATA_DVS_PATH = "/auto/sw_regression/system/SDK_SWITCH/MARS/metadata/"
 
     CLI_TYPE_PATH_MAPPING = {CliType.SONIC: METADATA_PATH,
                              CliType.NVUE: METADATA_PATH_NVOS,
                              CliType.SHELL: METADATA_PATH,
                              CliType.MLNX_OS: METADATA_PATH_NVOS,
-                             CliType.SKYNET: METADATA_PATH}
+                             CliType.SKYNET: METADATA_PATH,
+                             CliType.DVS: METADATA_DVS_PATH}
     CREDENTIALS = {CliType.SONIC: {'server': 'm-il-misql-01-prd.public.fbd32f5072b8.database.windows.net,3342', 'database': 'sonic_mars',
                                    'username': os.getenv("SONIC_SERVER_USER"),
                                    'password': os.getenv("SONIC_SERVER_PASSWORD")},
