@@ -15,7 +15,7 @@ from tests.common import config_reload
 from tests.common.fixtures.duthost_utils import ports_list
 
 pytestmark = [
-    pytest.mark.topology('any')
+    pytest.mark.topology('any', 't1-multi-asic')
 ]
 
 logger = logging.getLogger(__name__)
