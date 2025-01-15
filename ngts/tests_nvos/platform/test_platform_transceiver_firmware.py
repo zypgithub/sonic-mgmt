@@ -56,7 +56,7 @@ def test_transceiver_database_tables(engines, devices, test_api):
 
 @pytest.mark.platform
 @pytest.mark.transceiver
-def test_reset_transceiver_firmware_positive(engines, test_api, start_sm):
+def test_reset_transceiver_firmware_positive(engines, test_api):
     """
         after reset transceiver firmware we expect the next behavior:
             1. for the physical-state of the interface link: LinkUp, Polling, LinkUp
@@ -89,8 +89,8 @@ def test_reset_transceiver_firmware_positive(engines, test_api, start_sm):
         default_fw = OutputParsingTool.parse_json_str_to_dictionary(default_output).verify_result()[PlatformConsts.FW_ACTUAL]
         platform.transceiver.action_reset(random_transceiver).verify_result()
 
-        with allure.step("sleep for 2 sec - waiting for after reset action"):
-            time.sleep(2)
+        with allure.step("sleep for 3 sec - waiting for after reset action"):
+            time.sleep(3)
 
         with allure.step(f"verify all {random_transceiver} fields back to the same values"):
             output_after_reset = OutputParsingTool.parse_json_str_to_dictionary(output_json=platform.transceiver.show(random_transceiver + ' firmware')).verify_result()
@@ -106,7 +106,7 @@ def test_reset_transceiver_firmware_positive(engines, test_api, start_sm):
 
 @pytest.mark.platform
 @pytest.mark.transceiver
-def test_install_transceiver_firmware_positive(engines, devices, test_api, start_sm, test_name):
+def test_install_transceiver_firmware_positive(engines, devices, test_api, test_name):
     """
     Test Flow:
         1. Fetch 2 module FW images. Save as <FW1>و <FW2>

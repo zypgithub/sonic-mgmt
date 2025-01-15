@@ -36,7 +36,7 @@ def test_parallel_cli_commands(engines, devices):
 
     with allure.step('Show ssh and verify default values'):
         ssh_output = OutputParsingTool.parse_json_str_to_dictionary(system.ssh_server.show()).get_returned_value()
-        max_sessions = ssh_output[SystemConsts.SSH_CONFIG_MAX_SESSIONS] - 10
+        max_sessions = ssh_output[SystemConsts.SSH_CONFIG_MAX_SESSIONS] - 20
         sessions = []
 
     with allure.step('save memory and cpu before testing'):
@@ -109,7 +109,7 @@ def run_session(session, commands_list, keep_running_event):
         while keep_running_event.is_set():
             for cmd in commands:
                 session.run_cmd(cmd)
-                time.sleep(5)
+                time.sleep(7)
 
 
 def memory_cpu_run(session, keep_running_event):

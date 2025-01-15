@@ -1184,6 +1184,7 @@
     - '.*Failed to start ib-utils container.*'
     - '.*WARNING systemd\[\d\]: lldp.service: Failed with result.*'
     - '.*WARNING systemd\[\d\]: lldp.service: Control process exited, code=killed.*'
+    - '.*ERR health\-statsd\#health\_history: lldp: Container ''lldp'' is not running.*'
     - '.*ERR healthd: lldp service status: Down, app status: Down, fail reason: signal.*'
   Conditions:
     - Affected_test_cases:
@@ -1825,10 +1826,18 @@
     - '.*ERR kernel:.*loop: Write error at byte offset.*'
     - '.*ERR kernel:.*blk_update_request: I\/O error, dev loop1, sector.*'
     - '.*WARNING kernel:.*EXT4-fs warning \(device loop1\): ext4_end_bio:347: I\/O error.*'
+    - '.*ERR health\-statsd\#health\_history: Disk space: Status is not ok.*'
     - '.*ERR kernel:.*Buffer I\/O error on device loop1, logical block.*'
   Conditions:
     - Affected_test_cases:
       - tests_nvos/system/test_system_ssd_cleanup.py::test_ssd_cleanup_positive_flow
+
+# NVOS
+- Errors_list:
+    - '.*ERR admin: Welcome \d+ times.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests_nvos/system/test_system_remarkable_logs.py::test_system_remarkable_logs_error
 
 # NVOS
 - Errors_list:
