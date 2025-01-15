@@ -29,6 +29,8 @@ class NVOSRemoteAaaResource(AbstractRemoteAaaResource):
         res = authentication.set(AuthConsts.FAILTHROUGH, failthrough_val, apply=apply, dut_engine=engine)
         if verify_res:
             res.verify_result()
+        else:
+            res.ignore_result()
 
 
 class CLRemoteAaaResource(AbstractRemoteAaaResource):
@@ -45,6 +47,8 @@ class CLRemoteAaaResource(AbstractRemoteAaaResource):
 
         if verify_res:
             res.verify_result()
+        else:
+            res.ignore_result()
 
 
 resource_class_by_is_eth = {

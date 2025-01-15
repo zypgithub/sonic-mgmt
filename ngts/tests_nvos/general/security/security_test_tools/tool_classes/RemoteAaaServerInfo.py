@@ -106,7 +106,7 @@ class TacacsServerInfo(RemoteAaaServerInfo):
             engine = dut_engine or (
                 item.active_remote_admin_engine if hasattr(item, 'active_remote_admin_engine') else None)
             System().aaa.tacacs.server.server_id[self.hostname].set(AaaConsts.SERVER_AUTH_MODE, auth_mode, apply=True,
-                                                                    dut_engine=engine)
+                                                                    dut_engine=engine).ignore_result()
 
 
 class LdapServerInfo(RemoteAaaServerInfo):

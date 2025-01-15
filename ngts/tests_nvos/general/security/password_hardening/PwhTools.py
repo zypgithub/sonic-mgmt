@@ -691,7 +691,7 @@ class PwhTools:
         @param expected_errors: the expected password hardening policy error/s
         """
         with allure.step('Try to set the password "{}"'.format(password)):
-            res_obj = user_obj.set(PwhConsts.PW, '"' + password + '"', apply=False)
+            res_obj = user_obj.set(PwhConsts.PW, '"' + password + '"', apply=False).ignore_result()
 
         with allure.step('Expect errors'):
             for error in expected_errors:

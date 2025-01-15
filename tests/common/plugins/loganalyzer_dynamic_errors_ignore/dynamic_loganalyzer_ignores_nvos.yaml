@@ -807,7 +807,6 @@
         - tests_nvos/general/security/tacacs/test_aaa_tacacs.py::test_tacacs_accounting_unreachable_top_server
 
 - Errors_list:
-    - '.*ERR service_checker: pam_radius_auth: RADIUS server .*:123 failed to respond.*'
     - '.*ERR .*: pam_radius_auth: RADIUS server .*:123 failed to respond.*'
     - '.*ERR python3: pam_radius_auth: All RADIUS servers failed to respond.*'
   Conditions:

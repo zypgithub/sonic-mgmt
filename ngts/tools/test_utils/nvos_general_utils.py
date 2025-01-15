@@ -1,14 +1,14 @@
 import fnmatch
+import logging
 import os
 import re
 import time
 from contextlib import contextmanager
 from typing import Tuple
-import logging
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
-from ngts.nvos_constants.constants_nvos import DiskConsts, TopologyConsts, NvosConst, SystemConsts
+from ngts.nvos_constants.constants_nvos import DiskConsts, TopologyConsts, NvosConst
 from ngts.nvos_tools.infra.DiskTool import DiskTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.tools.test_utils import allure_utils as allure
@@ -86,7 +86,7 @@ def check_partitions_capacity(partition_name: str = DiskConsts.DEFAULT_PARTITION
 
 def wait_for_ldap_nvued_restart_workaround(test_item, engine_to_use=None):
     with allure.step('After LDAP configuration - wait for NVUE restart Workaround'):
-        workaround_max_time = 15
+        workaround_max_time = 20
         with allure.step(f'sleep for {workaround_max_time} seconds'):
             time.sleep(workaround_max_time)
         # sleep_time = 3

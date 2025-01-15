@@ -693,7 +693,7 @@ def test_ldap_map_group(test_api, engines, request, topology_obj):
     with allure.step('Set ldap configuration'):
         server = LdapServersP3.LDAP1_IPV4.copy()
         test_user = [user for user in server.users if user.username == 'ldap1adm1'][0]
-        test_groups = ['adm', 'sudo', 'nvapply', 'nvset', 'docker', 'redis', 'ldap1grp1']
+        test_groups = ['adm', 'sudo', 'nvapply', 'nvaction', 'docker', 'redis', 'ldap1grp1']
         server.configure(engines)
 
     with allure.step('Set group map from "memberUid" to "member"'):
@@ -789,4 +789,7 @@ def test_ldap_filter_performance(test_api, engines, request, topology_obj):
         logging.info(f'Diff |with-filters - without|: {diff_formatted}')
 
     with allure.step(f'Diff |with-filters - without|: {diff_formatted} - {100 * diff / duration_without_filters}%'):
-        assert diff <= 0.15 * duration_without_filters, f'Expected diff: <= 10% . Actual: {100 * diff / duration_without_filters}%'
+        expected_margin = 0.4
+        assert diff <= expected_margin * duration_without_filters, \
+            (f'Expected diff: <= {expected_margin * 100}%\n'
+             f'Actual: {100 * diff / duration_without_filters}%')

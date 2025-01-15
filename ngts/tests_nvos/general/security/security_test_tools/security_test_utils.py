@@ -106,7 +106,7 @@ def verify_user_auth(engines, topology_obj, user: UserInfo, expect_login_success
     accounting_server_mngrs = [AaaServerManager(server.ipv4_addr, server.docker_name) for server in accounting_servers]
     if should_check_accounting:
         assert switch_hostname, f'Must give "switch_hostname" argument when should check accounting.\n' \
-                                f'Given hostname: {switch_hostname}'
+            f'Given hostname: {switch_hostname}'
 
     with loganalyzer_ignore(False and (not expect_login_success)):
         with allure.step(f'Verify auth: User: {user.username} , Password: {user.password} , Role: {user.role} , '
@@ -383,7 +383,7 @@ def check_ldap_user_with_getent_passwd(engine: ProxySshEngine, username: str, us
         output = engine.run_cmd('getent passwd | grep ldap')
     with allure.step(f'Verify "{username}" does not exist'):
         err_msg = f'username "{username}" unexpectedly {"does not " if not user_should_exist else ""}exist ' \
-                  f'in getent passwd output\ngetent passwd output: {output}\n'
+            f'in getent passwd output\ngetent passwd output: {output}\n'
         if not output:
             assert not user_should_exist, err_msg
         else:
@@ -394,16 +394,17 @@ def check_ldap_user_with_getent_passwd(engine: ProxySshEngine, username: str, us
 
 def check_ldap_user_groups_with_id(engine: ProxySshEngine, username: str, groupname, group_should_exist: bool):
     with allure.step('Get id output'):
-        output = engine.run_cmd(f'id {username}')
+        cmd = f'id {username}'
+        output = engine.run_cmd(cmd)
 
-    def assert_group(grp: str):
-        assert (f'({grp})' in output) == group_should_exist, \
-            f'groupname "{grp}" unexpectedly {"does not " if not group_should_exist else ""}exist ' \
-            f'in id {username} output\nid {username} output: {output}\n'
+    groups = [groupname] if isinstance(groupname, str) else groupname
+    if group_should_exist:
+        violating_groups = [group for group in groups if f'({group})' not in output]
+    else:
+        violating_groups = [group for group in groups if f'({group})' in output]
 
-    with allure.step(f'Verify "{groupname}" does not exist'):
-        if isinstance(groupname, list):
-            for group in groupname:
-                assert_group(group)
-        else:
-            assert_group(groupname)
+    assert not violating_groups, (f'some groups violating the expectations.\n'
+                                  f'groups that expected{"" if group_should_exist else " not"} to exist for user "{username}": {groups}\n'
+                                  f'violating groups: {violating_groups}\n'
+                                  f'cmd: {cmd}\n'
+                                  f'full output: {output}')
