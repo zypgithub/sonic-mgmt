@@ -4,6 +4,7 @@ mtvr-bison-02  ansible_host=10.245.21.108 sonic_version=v2  sonic_hwsku=Mellanox
 mtvr-bison-02-t0  ansible_host=10.245.21.108 sonic_version=v2  sonic_hwsku=Mellanox-SN5610N-C256S2 iface_speed=100000 serial_console="ssh -l rcon:7044 10.245.2.42" ptf_host=ptf-mtvr-bison-02 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-245-2-15,pdu-10-245-2-34"
 mtvr-bison-02-t0-64  ansible_host=10.245.21.108 sonic_version=v2  sonic_hwsku=Mellanox-SN5610N-C256S2 iface_speed=100000 serial_console="ssh -l rcon:7044 10.245.2.42" ptf_host=ptf-mtvr-bison-02 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-245-2-15,pdu-10-245-2-34"
 mtvr-bison-02-t0-64-256  ansible_host=10.245.21.108 sonic_version=v2  sonic_hwsku=Mellanox-SN5610N-C256S2 iface_speed=100000 serial_console="ssh -l rcon:7044 10.245.2.42" ptf_host=ptf-mtvr-bison-02 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-245-2-15,pdu-10-245-2-34"
+mtvr-bison-02-t0-isolated-d2u254s1  ansible_host=10.245.21.108 sonic_version=v2  sonic_hwsku=Mellanox-SN5610N-C256S2 iface_speed=100000 serial_console="ssh -l rcon:7044 10.245.2.42" ptf_host=ptf-mtvr-bison-02 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-245-2-15,pdu-10-245-2-34"
 mtvr-bison-02-t1  ansible_host=10.245.21.108 sonic_version=v2  sonic_hwsku=Mellanox-SN5610N-C256S2 iface_speed=100000 serial_console="ssh -l rcon:7044 10.245.2.42" ptf_host=ptf-mtvr-bison-02 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-245-2-15,pdu-10-245-2-34"
 mtvr-bison-02-t1-lag  ansible_host=10.245.21.108 sonic_version=v2  sonic_hwsku=Mellanox-SN5610N-C256S2 iface_speed=100000 serial_console="ssh -l rcon:7044 10.245.2.42" ptf_host=ptf-mtvr-bison-02 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-245-2-15,pdu-10-245-2-34"
 mtvr-bison-02-t1-lag-c224o8  ansible_host=10.245.21.108 sonic_version=v2  sonic_hwsku=Mellanox-SN5610N-C256S2 iface_speed=100000 serial_console="ssh -l rcon:7044 10.245.2.42" ptf_host=ptf-mtvr-bison-02 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-245-2-15,pdu-10-245-2-34"
@@ -20,6 +21,7 @@ mtvr-bison-02
 mtvr-bison-02-t0
 mtvr-bison-02-t0-64
 mtvr-bison-02-t0-64-256
+mtvr-bison-02-t0-isolated-d2u254s1
 mtvr-bison-02-t1
 mtvr-bison-02-t1-lag
 mtvr-bison-02-t1-lag-c224o8
@@ -34,6 +36,7 @@ mtvr-bison-02
 mtvr-bison-02-t0
 mtvr-bison-02-t0-64
 mtvr-bison-02-t0-64-256
+mtvr-bison-02-t0-isolated-d2u254s1
 mtvr-bison-02-t1
 mtvr-bison-02-t1-lag
 mtvr-bison-02-t1-lag-c224o8

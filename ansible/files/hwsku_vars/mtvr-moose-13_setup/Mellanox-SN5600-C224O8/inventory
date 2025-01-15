@@ -7,6 +7,8 @@ mtvr-moose-13-t0-64-256  ansible_host=10.245.21.105 sonic_version=v2  sonic_hwsk
 mtvr-moose-13-t1  ansible_host=10.245.21.105 sonic_version=v2  sonic_hwsku=Mellanox-SN5600-C224O8 iface_speed=100000 serial_console="ssh -l rcon:7040 10.245.2.4" ptf_host=ptf-mtvr-moose-13 ptf_portmap="roles/test/files/mlnx/mtvr-moose-13_interface_to_front_map.ini" pdu_host=pdu-10-245-2-13,pdu-10-245-2-35
 mtvr-moose-13-t1-lag  ansible_host=10.245.21.105 sonic_version=v2  sonic_hwsku=Mellanox-SN5600-C224O8 iface_speed=100000 serial_console="ssh -l rcon:7040 10.245.2.4" ptf_host=ptf-mtvr-moose-13 ptf_portmap="roles/test/files/mlnx/mtvr-moose-13_interface_to_front_map.ini" pdu_host=pdu-10-245-2-13,pdu-10-245-2-35
 mtvr-moose-13-t1-lag-c224o8  ansible_host=10.245.21.105 sonic_version=v2  sonic_hwsku=Mellanox-SN5600-C224O8 iface_speed=100000 serial_console="ssh -l rcon:7040 10.245.2.4" ptf_host=ptf-mtvr-moose-13 ptf_portmap="roles/test/files/mlnx/mtvr-moose-13_interface_to_front_map.ini" pdu_host=pdu-10-245-2-13,pdu-10-245-2-35
+mtvr-moose-13-t1-isolated-d224u8 ansible_host=10.245.21.105 sonic_version=v2  sonic_hwsku=Mellanox-SN5600-C224O8 iface_speed=100000 serial_console="ssh -l rcon:7040 10.245.2.4" ptf_host=ptf-mtvr-moose-13 ptf_portmap="roles/test/files/mlnx/mtvr-moose-13_interface_to_front_map.ini" pdu_host=pdu-10-245-2-13,pdu-10-245-2-35
+mtvr-moose-13-t1-isolated-d254u2s1 ansible_host=10.245.21.105 sonic_version=v2  sonic_hwsku=Mellanox-SN5600-C224O8 iface_speed=100000 serial_console="ssh -l rcon:7040 10.245.2.4" ptf_host=ptf-mtvr-moose-13 ptf_portmap="roles/test/files/mlnx/mtvr-moose-13_interface_to_front_map.ini" pdu_host=pdu-10-245-2-13,pdu-10-245-2-35
 mtvr-moose-13-ptf32  ansible_host=10.245.21.105 sonic_version=v2  sonic_hwsku=Mellanox-SN5600-C224O8 iface_speed=100000 serial_console="ssh -l rcon:7040 10.245.2.4" ptf_host=ptf-mtvr-moose-13 ptf_portmap="roles/test/files/mlnx/mtvr-moose-13_interface_to_front_map.ini" pdu_host=pdu-10-245-2-13,pdu-10-245-2-35
 mtvr-moose-13-ptf-any  ansible_host=10.245.21.105 sonic_version=v2  sonic_hwsku=Mellanox-SN5600-C224O8 iface_speed=100000 serial_console="ssh -l rcon:7040 10.245.2.4" ptf_host=ptf-mtvr-moose-13 ptf_portmap="roles/test/files/mlnx/mtvr-moose-13_interface_to_front_map.ini" pdu_host=pdu-10-245-2-13,pdu-10-245-2-35
 
@@ -23,6 +25,8 @@ mtvr-moose-13-t0-64-256
 mtvr-moose-13-t1
 mtvr-moose-13-t1-lag
 mtvr-moose-13-t1-lag-c224o8
+mtvr-moose-13-t1-isolated-d224u8
+mtvr-moose-13-t1-isolated-d254u2s1
 mtvr-moose-13-ptf32
 mtvr-moose-13-ptf-any
 
