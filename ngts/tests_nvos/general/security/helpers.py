@@ -4,12 +4,14 @@ import string
 from typing import List, Dict
 
 import ngts.tools.test_utils.allure_utils as allure
+from ngts.nvos_constants.constants_nvos import CacertType
 from ngts.nvos_tools.infra.CertificateGenerator import CertificateGenerator
 from ngts.nvos_tools.infra.CmdRunner import CmdRunner
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tests_nvos.general.security.constants import ETC_HOSTS
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tools.test_utils.nvos_general_utils import generate_scp_uri_using_player
 
 
@@ -125,3 +127,10 @@ def get_cert_with_ca_mismatch(certs: List[CertInfo]) -> CertInfo:
     cert_with_mismatch = cert1.copy()
     cert_with_mismatch.cacert = cert2.cacert
     return cert_with_mismatch
+
+
+def optional_cacert_types() -> list:  # TODO: remove once closed
+    if any(is_bug_active(bug) for bug in [4251992, 4237677, 4237752, 4237850]):
+        return [CacertType.GLOBAL]
+    else:
+        return CacertType.ALL_TYPES

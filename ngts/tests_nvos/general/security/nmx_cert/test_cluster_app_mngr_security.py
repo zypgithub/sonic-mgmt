@@ -7,7 +7,7 @@ import pytest
 
 import ngts.tools.test_utils.allure_utils as allure
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from ngts.nvos_constants.constants_nvos import ApiType, TestFlowType, ClusterApps, CacertType
+from ngts.nvos_constants.constants_nvos import ApiType, TestFlowType, ClusterApps
 from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.nmx.Cluster import Cluster
@@ -16,6 +16,7 @@ from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tests_nvos.general.security.certificate.constants import TestCert
 from ngts.tests_nvos.general.security.certificate.helpers import import_test_certs
+from ngts.tests_nvos.general.security.helpers import optional_cacert_types
 from ngts.tests_nvos.general.security.nmx_cert.conftest import clear_manager_config
 from ngts.tests_nvos.general.security.nmx_cert.constants import Defaults, EncryptionMode, ENABLED, DISABLED, STATE, \
     APP_CONSTS
@@ -27,7 +28,7 @@ from ngts.tests_nvos.system.gnmi.conftest import scp_player, get_scp_player
 @pytest.mark.nmx
 @pytest.mark.security
 @pytest.mark.parametrize('test_api, app_name, ca_type',
-                         [(api, app, random.choice(CacertType.ALL_TYPES)) for api in ApiType.ALL_TYPES for app in
+                         [(api, app, random.choice(optional_cacert_types())) for api in ApiType.ALL_TYPES for app in
                           ClusterApps.ALL_APPS])
 def test_cluster_app_mngr_security_cli(test_api, app_name, engines, ca_type):
     """
@@ -152,7 +153,7 @@ def test_cluster_app_mngr_security_cli(test_api, app_name, engines, ca_type):
 @pytest.mark.nmx
 @pytest.mark.security
 @pytest.mark.parametrize('test_api, app_name, ca_type',
-                         [(api, app, random.choice(CacertType.ALL_TYPES)) for api in ApiType.ALL_TYPES for app in
+                         [(api, app, random.choice(optional_cacert_types())) for api in ApiType.ALL_TYPES for app in
                           ClusterApps.ALL_APPS])
 def test_cluster_app_mngr_security_cli_fail_when_cluster_off(test_api, app_name, ca_type):
     """
@@ -226,7 +227,7 @@ def test_cluster_app_mngr_security_cli_fail_when_cluster_off(test_api, app_name,
 @pytest.mark.nmx
 @pytest.mark.security
 @pytest.mark.parametrize('test_api, app_name, ca_type',
-                         [(api, app, random.choice(CacertType.ALL_TYPES)) for api in ApiType.ALL_TYPES for app in
+                         [(api, app, random.choice(optional_cacert_types())) for api in ApiType.ALL_TYPES for app in
                           ClusterApps.ALL_APPS])
 def test_delete_cert_allowed_when_bound_to_cluster_app_mngr(test_api, app_name, scp_player, engines, ca_type):
     """
@@ -268,7 +269,7 @@ def test_delete_cert_allowed_when_bound_to_cluster_app_mngr(test_api, app_name, 
 @pytest.mark.nmx
 @pytest.mark.security
 @pytest.mark.parametrize('test_api, app_name, ca_type',
-                         [(api, app, random.choice(CacertType.ALL_TYPES)) for api in ApiType.ALL_TYPES for app in
+                         [(api, app, random.choice(optional_cacert_types())) for api in ApiType.ALL_TYPES for app in
                           ClusterApps.ALL_APPS])
 def test_update_cluster_app_mngr_security_bad_param(test_api, app_name, ca_type):
     """
@@ -304,7 +305,7 @@ def test_update_cluster_app_mngr_security_bad_param(test_api, app_name, ca_type)
 @pytest.mark.nmx
 @pytest.mark.security
 @pytest.mark.parametrize('test_api, app_name, ca_type',
-                         [(api, app, random.choice(CacertType.ALL_TYPES)) for api in ApiType.ALL_TYPES for app in
+                         [(api, app, random.choice(optional_cacert_types())) for api in ApiType.ALL_TYPES for app in
                           ClusterApps.ALL_APPS])
 def test_update_cluster_app_mngr_encryption_fail_when_cert_not_bound(test_api, app_name, ca_type):
     """
@@ -337,7 +338,7 @@ def test_update_cluster_app_mngr_encryption_fail_when_cert_not_bound(test_api, a
 @pytest.mark.nmx
 @pytest.mark.security
 @pytest.mark.parametrize('test_api, app_name, ca_type',
-                         [(api, app, random.choice(CacertType.ALL_TYPES)) for api in ApiType.ALL_TYPES for app in
+                         [(api, app, random.choice(optional_cacert_types())) for api in ApiType.ALL_TYPES for app in
                           ClusterApps.ALL_APPS])
 def test_restore_cluster_app_mngr_cert_fail_when_in_encryption_mode(test_api, app_name, ca_type):
     """
@@ -389,7 +390,7 @@ def test_restore_cluster_app_mngr_cert_fail_when_in_encryption_mode(test_api, ap
 @pytest.mark.nmx
 @pytest.mark.security
 @pytest.mark.parametrize('app_name, ca_type',
-                         [(app, random.choice(CacertType.ALL_TYPES)) for app in ClusterApps.ALL_APPS])
+                         [(app, random.choice(optional_cacert_types())) for app in ClusterApps.ALL_APPS])
 def test_cluster_app_mngr_connection(app_name, ca_type):
     """
     Verify communication of app with manager
@@ -488,7 +489,7 @@ def test_cluster_app_mngr_connection(app_name, ca_type):
 @pytest.mark.nmx
 @pytest.mark.security
 @pytest.mark.parametrize('app_name, ca_type',
-                         [(app, random.choice(CacertType.ALL_TYPES)) for app in ClusterApps.ALL_APPS])
+                         [(app, random.choice(optional_cacert_types())) for app in ClusterApps.ALL_APPS])
 def test_cluster_app_mngr_connection_after_restore_encryption(app_name, ca_type):
     """
     Verify that after encryption mode – manager can connect only insecurely
@@ -534,7 +535,7 @@ def verify_no_client_connection(app_name, server_cert: CertInfo, server_ca: Cert
 @pytest.mark.nmx
 @pytest.mark.security
 @pytest.mark.parametrize('app_name, ca_type',
-                         [(app, random.choice(CacertType.ALL_TYPES)) for app in ClusterApps.ALL_APPS])
+                         [(app, random.choice(optional_cacert_types())) for app in ClusterApps.ALL_APPS])
 def test_cluster_app_mngr_no_connection_when_state_disabled(app_name, ca_type):
     """
     Verify that when cluster manager state disabled (restore/update disabled) – client cannot connect at all
@@ -578,7 +579,7 @@ def test_cluster_app_mngr_no_connection_when_state_disabled(app_name, ca_type):
 @pytest.mark.nmx
 @pytest.mark.security
 @pytest.mark.parametrize('app_name, ca_type',
-                         [(app, random.choice(CacertType.ALL_TYPES)) for app in ClusterApps.ALL_APPS])
+                         [(app, random.choice(optional_cacert_types())) for app in ClusterApps.ALL_APPS])
 def test_cluster_app_mngr_no_connection_when_cluster_disabled(app_name, ca_type):
     """
     Verify that after disabling cluster (restore) – client cannot connect at all
@@ -613,7 +614,7 @@ def test_cluster_app_mngr_no_connection_when_cluster_disabled(app_name, ca_type)
 
 @pytest.mark.nmx
 @pytest.mark.security
-@pytest.mark.parametrize('ca_type', [random.choice(CacertType.ALL_TYPES)])
+@pytest.mark.parametrize('ca_type', optional_cacert_types())
 def test_cluster_app_mngr_security_reboot_case(engines, ca_type):
     """
     Verify that certificates and encryption mode are kept after reboot
@@ -731,7 +732,7 @@ cluster_app_mngr_security_factory_reset_no_params_checker = cluster_app_mngr_sec
 
 @pytest.mark.nmx
 @pytest.mark.security
-@pytest.mark.parametrize('ca_type', [random.choice(CacertType.ALL_TYPES)])
+@pytest.mark.parametrize('ca_type', [random.choice(optional_cacert_types())])
 def test_cluster_app_mngr_connection_combined(ca_type):
     """
     Verify communication of app with manager
