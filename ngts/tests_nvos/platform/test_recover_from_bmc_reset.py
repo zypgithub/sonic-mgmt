@@ -73,5 +73,5 @@ def test_recover_from_bmc_reset(engines, devices, topology_obj, loganalyzer):
 
     except Exception:
         with allure.step("Failed to recover from BMC reset. Fixing device by remote-reboot."):
-            recover_dut_with_remote_reboot(topology_obj, engines, should_clear_config=False)
+            recover_dut_with_remote_reboot(topology_obj, engines)
         raise

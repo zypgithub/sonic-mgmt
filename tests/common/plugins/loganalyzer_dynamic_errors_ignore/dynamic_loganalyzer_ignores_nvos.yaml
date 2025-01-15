@@ -817,7 +817,7 @@
         - tests_nvos/general/security/radius/test_aaa_radius.py::test_radius_timeout
 
 - Errors_list:
-    - '.*ERR python3: pam_radius_auth: packet from RADIUS server.*failed verification: The shared secret is probably incorrect.*'
+    - '.*ERR .*: pam_radius_auth: packet from RADIUS server.*failed verification: The shared secret is probably incorrect.*'
   Conditions:
     - Affected_test_cases:
         - tests_nvos/general/security/radius/test_aaa_radius.py::test_radius_bad_secret
