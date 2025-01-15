@@ -8,6 +8,7 @@ import re
 
 from ngts.constants.constants import InfraConst, PytestConst
 from ngts.tools.topology_tools.topology_by_setup import get_topology_by_setup_name_and_aliases
+from ngts.nvos_constants.constants_nvos import NvosConst
 
 logger = logging.getLogger()
 DEVICE_PLATFORM_INFO_PATH = os.path.join(os.path.dirname(__file__), '../../common/device_platform_info.json')
@@ -55,6 +56,21 @@ def log_folder(setup_name, session_id, topology_obj):
     return env_log_folder
 
 
+def create_nvos_result_dir(setup_name, session_id, suffix_path_name):
+    result_path = '/'.join(
+        [InfraConst.NVOS_REGRESSION_SHARED_RESULTS_DIR, setup_name, session_id, suffix_path_name])
+    create_folder(result_path)
+    dump_path = '/'.join([NvosConst.MARS_DUMPS_FOLDER, setup_name, session_id, suffix_path_name])
+    create_folder(dump_path)
+    return dump_path
+
+
+def create_sonic_result_dir(setup_name, session_id, suffix_path_name):
+    result_path = '/'.join([InfraConst.REGRESSION_SHARED_RESULTS_DIR, setup_name, session_id, suffix_path_name])
+    create_folder(result_path)
+    return result_path
+
+
 def create_result_dir(setup_name, session_id, suffix_path_name, topology_obj):
     """
     Create directory for test artifacts in shared location
@@ -65,14 +81,15 @@ def create_result_dir(setup_name, session_id, suffix_path_name, topology_obj):
     """
     player_info = topology_obj.players['dut']
     if player_info['attributes'].noga_query_data['attributes']['Topology Conn.']['CLI_TYPE'] == "NVUE":
-        folder_path = '/'.join(
-            [InfraConst.NVOS_REGRESSION_SHARED_RESULTS_DIR, setup_name, session_id, suffix_path_name])
+        return create_nvos_result_dir(setup_name, session_id, suffix_path_name)
     else:
-        folder_path = '/'.join([InfraConst.REGRESSION_SHARED_RESULTS_DIR, setup_name, session_id, suffix_path_name])
-    logger.info("Create folder: {} if it doesn't exist".format(folder_path))
-    pathlib.Path(folder_path).mkdir(parents=True, exist_ok=True)
-    logger.info("Created folder - {}".format(folder_path))
-    return folder_path
+        return create_sonic_result_dir(setup_name, session_id, suffix_path_name)
+
+
+def create_folder(path_to_create):
+    logger.info("Create folder: {} if it doesn't exist".format(path_to_create))
+    pathlib.Path(path_to_create).mkdir(parents=True, exist_ok=True)
+    logger.info("Created folder - {}".format(path_to_create))
 
 
 def get_platform_info(topology_obj):

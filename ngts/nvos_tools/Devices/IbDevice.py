@@ -26,6 +26,7 @@ from ngts.tests_nvos.general.security.security_test_tools.constants import AaaCo
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_config_utils import clear_conf
 from ngts.tools.test_utils.nvos_general_utils import get_version_info
+from ngts.nvos_tools.infra.FilesTool import FilesTool
 
 logger = logging.getLogger()
 
@@ -110,26 +111,31 @@ class IbSwitch(BaseSwitch):
                 default_config_name = NvosConst.DEFAULT_CONFIG_FILE_NAME
                 path_to_config_ymls = f"{root_dir}/{NvosConst.DEFAULT_CONFIG_PATH}"
 
+                logging.info(f"eth0_ip:{TestToolkit.dut_eth0_ip}")
+                logging.info(f"switch_class:{self.switch_class}")
+
                 for file_name in os.listdir(path_to_config_ymls):
-                    logging.info(f"switch_class:{self.switch_class}")
                     if self.switch_class in file_name:
                         default_config_name = file_name
-                    logging.info(f"eth0_ip:{TestToolkit.dut_eth0_ip}")
                     if TestToolkit.dut_eth0_ip and TestToolkit.dut_eth0_ip in file_name:
                         default_config_name = file_name
                         break
 
-            with allure.step(f"Copy {default_config_name} to the switch"):
-                scp_file(player=engine,
-                         src_path=f"{path_to_config_ymls}{default_config_name}",
-                         dst_path=NvosConst.PATH_TO_TMP_ON_DUT,
-                         download_from_remote=False, print_output=True)
-
-            tmp_file_path = f"{NvosConst.PATH_TO_TMP_ON_DUT}/{default_config_name}"
             yml_file_path = f"{NvosConst.PATH_TO_CONFIG_FILES_ON_DUT}/{default_config_name}"
 
-            with allure.step(f"Copy {tmp_file_path} to {yml_file_path}"):
-                engine.run_cmd(f"sudo cp {tmp_file_path} {yml_file_path}")
+            if FilesTool.file_exists(engine, yml_file_path):
+                logging.info(f"Config file {yml_file_path} already exists on the switch")
+            else:
+                with allure.step(f"Copy {default_config_name} to the switch"):
+                    scp_file(player=engine,
+                             src_path=f"{path_to_config_ymls}{default_config_name}",
+                             dst_path=NvosConst.PATH_TO_TMP_ON_DUT,
+                             download_from_remote=False, print_output=True)
+
+                tmp_file_path = f"{NvosConst.PATH_TO_TMP_ON_DUT}/{default_config_name}"
+
+                with allure.step(f"Copy {tmp_file_path} to {yml_file_path}"):
+                    engine.run_cmd(f"sudo cp {tmp_file_path} {yml_file_path}")
 
             logging.info(f"Using default yml file: {yml_file_path}")
             return yml_file_path

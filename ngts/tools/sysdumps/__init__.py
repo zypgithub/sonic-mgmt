@@ -10,6 +10,8 @@ from ngts.constants.constants import PytestConst
 from ngts.scripts.store_techsupport_on_not_success import dump_simx_data
 from ngts.tools.allure_report.allure_report_attacher import collect_stored_cmds_then_attach_to_allure_report, \
     clean_stored_cmds_with_fixture_scope_list
+from ngts.tools.test_utils.nvos_general_utils import get_switch_type
+from ngts.nvos_constants.constants_nvos import TopologyConsts
 
 logger = logging.getLogger()
 
@@ -36,10 +38,8 @@ def pytest_runtest_makereport(item, call):
                         dut_engine = topology_obj.players['dut']['engine']
                         duration = get_test_duration(item)
                         collect_stored_cmds_then_attach_to_allure_report(topology_obj)
-                        if topology_obj.players['dut'].get('is_nvos', False):
-                            generate_and_copy_nvos_dump(topology_obj, dut_engine, dumps_folder, item)
-                        else:
-                            generate_and_copy_sonic_dump(topology_obj, dut_engine, dumps_folder, duration, item)
+                        switch_type = get_switch_type(topology_obj)
+                        generate_dump_method[switch_type](topology_obj, dut_engine, dumps_folder, duration, item)
 
                 except BaseException as err:
                     error_message = f'Failed to generate/store techsupport dump.\nGot error: {err}'
@@ -53,11 +53,7 @@ def pytest_runtest_makereport(item, call):
         os.environ[PytestConst.GET_DUMP_AT_TEST_FALIURE] = "True"
 
 
-def generate_and_copy_nvos_dump(topology_obj, dut_engine, dumps_folder, item):
-    if topology_obj.players['dut'].get('is_cumulus', False):
-        generate_and_copy_cumulus_dump(topology_obj, dut_engine, dumps_folder)
-        return
-
+def generate_and_copy_nvos_dump(topology_obj, dut_engine, dumps_folder, duration, item):
     with allure.step("Generating NVOS tech-support"):
         logging.info("disconnect dut engine")
         dut_engine.disconnect()
@@ -71,7 +67,7 @@ def generate_and_copy_nvos_dump(topology_obj, dut_engine, dumps_folder, item):
     store_dest_file_path(dest_tech_support_file, item.name.replace('/', '_'))
 
 
-def generate_and_copy_cumulus_dump(topology_obj, dut_engine, dumps_folder):
+def generate_and_copy_cumulus_dump(topology_obj, dut_engine, dumps_folder, duration, item):
     logging.info("Generate dump for Cumulus - not implemented yet")
     pass
 
@@ -90,6 +86,11 @@ def generate_and_copy_sonic_dump(topology_obj, dut_engine, dumps_folder, duratio
         with allure.step('Dump SIMX VM logs'):
             dump_simx_data(topology_obj, dumps_folder, name_prefix=item.name.replace('/', '_'))
     store_dest_file_path(dest_file, item.name.replace('/', '_'))
+
+
+generate_dump_method = {TopologyConsts.NVOS: generate_and_copy_nvos_dump,
+                        TopologyConsts.CL: generate_and_copy_cumulus_dump,
+                        TopologyConsts.SONIC: generate_and_copy_sonic_dump}
 
 
 def copy_dump_file(dut_engine, source_file, dest_file):

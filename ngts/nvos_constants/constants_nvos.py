@@ -120,6 +120,7 @@ class NvosConst:
     DESTINATION_FW_SCRIPT_PATH = "/var/tmp/"
     SDK_DUMP_FOLDER = "/var/log/mellanox/sdk-dumps/"
     MARS_RESULTS_FOLDER = "/auto/sw_regression/system/NVOS/MARS/results/"
+    MARS_DUMPS_FOLDER = "/auto/sw_regression/system/NVOS/MARS/dumps/"
 
     PATH_TO_IMAGES = "/host/nos-images"
 
