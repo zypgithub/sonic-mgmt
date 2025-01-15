@@ -571,11 +571,11 @@ platform_tests/test_power_off_reboot.py::test_power_off_reboot:
 
 platform_tests/api/test_psu.py::TestPsuApi::test_temperature:
   skip:
-    reason: "Testcase ignored due to platform 2010/2100 or due to RM 4248913"
+    reason: "Testcase ignored due to platform 2010/2100 or due to RM 4257471"
     conditions_logical_operator: or
     conditions:
     - "'2010' in platform or '2100' in platform"
-    - "https://redmine.mellanox.com/issues/4248913 and 'sn5640_simx' in platform"
+    - "https://redmine.mellanox.com/issues/4257471 and 'sn5640_simx' in platform"
 
 platform_tests/api/test_sfp.py:
   skip:
@@ -592,59 +592,54 @@ platform_tests/api/test_sfp.py::TestSfpApi::test_get_error_description:
     - "https://redmine.mellanox.com/issues/4220524 and ('sn5610n' in platform or 'sn5600' in platform)"
     - "https://redmine.mellanox.com/issues/4205722"
 
-platform_tests/api/test_chassis.py::TestChassisApi::test_get_name:
-  skip:
-    reason: "Skipped due to RM https://redmine.mellanox.com/issues/4248913"
-    conditions:
-    - "https://redmine.mellanox.com/issues/4248913 and 'sn5640_simx' in platform"
-
 platform_tests/api/test_chassis.py::TestChassisApi::test_psus:
   skip:
-    reason: "Skipped due to RM https://redmine.mellanox.com/issues/4248913"
+    reason: "Skipped due to RM https://redmine.mellanox.com/issues/4257471"
     conditions:
-    - "https://redmine.mellanox.com/issues/4248913 and 'sn5640_simx' in platform"
+    - "https://redmine.mellanox.com/issues/4257471 and 'sn5640_simx' in platform"
 
 platform_tests/api/test_fan_drawer.py::TestFanDrawerApi::test_get_name:
   skip:
-    reason: "Skipped due to RM https://redmine.mellanox.com/issues/4248913"
+    reason: "Skipped due to RM https://redmine.mellanox.com/issues/4257471"
     conditions:
-    - "https://redmine.mellanox.com/issues/4248913 and 'sn5640_simx' in platform"
+    - "https://redmine.mellanox.com/issues/4257471 and 'sn5640_simx' in platform"
 
 platform_tests/api/test_fan_drawer.py::TestFanDrawerApi::test_get_num_fans:
+
   skip:
-    reason: "Skipped due to RM https://redmine.mellanox.com/issues/4248913"
+    reason: "Skipped due to RM https://redmine.mellanox.com/issues/4257471"
     conditions:
-    - "https://redmine.mellanox.com/issues/4248913 and 'sn5640_simx' in platform"
+    - "https://redmine.mellanox.com/issues/4257471 and 'sn5640_simx' in platform"
 
 platform_tests/api/test_fan_drawer.py::TestFanDrawerApi::test_get_all_fans:
   skip:
-    reason: "Skipped due to RM https://redmine.mellanox.com/issues/4248913"
+    reason: "Skipped due to RM https://redmine.mellanox.com/issues/4257471"
     conditions:
-    - "https://redmine.mellanox.com/issues/4248913 and 'sn5640_simx' in platform"
+    - "https://redmine.mellanox.com/issues/4257471 and 'sn5640_simx' in platform"
 
 platform_tests/api/test_fan_drawer_fans.py:
   skip:
-    reason: "Skipped due to RM https://redmine.mellanox.com/issues/4248913"
+    reason: "Skipped due to RM https://redmine.mellanox.com/issues/4257471"
     conditions:
-    - "https://redmine.mellanox.com/issues/4248913 and 'sn5640_simx' in platform"
+    - "https://redmine.mellanox.com/issues/4257471 and 'sn5640_simx' in platform"
 
 platform_tests/api/test_psu.py::TestPsuApi::test_get_name:
   skip:
-    reason: "Skipped due to RM https://redmine.mellanox.com/issues/4248913"
+    reason: "Skipped due to RM https://redmine.mellanox.com/issues/4257471"
     conditions:
-    - "https://redmine.mellanox.com/issues/4248913 and 'sn5640_simx' in platform"
+    - "https://redmine.mellanox.com/issues/4257471 and 'sn5640_simx' in platform"
 
 platform_tests/api/test_psu_fans.py::TestPsuFans:test_get_name:
   skip:
-    reason: "Skipped due to RM https://redmine.mellanox.com/issues/4248913"
+    reason: "Skipped due to RM https://redmine.mellanox.com/issues/4257471"
     conditions:
-    - "https://redmine.mellanox.com/issues/4248913 and 'sn5640_simx' in platform"
+    - "https://redmine.mellanox.com/issues/4257471 and 'sn5640_simx' in platform"
 
 platform_tests/api/test_psu_fans.py::TestPsuFans:test_get_speed:
   skip:
-    reason: "Skipped due to RM https://redmine.mellanox.com/issues/4248913"
+    reason: "Skipped due to RM https://redmine.mellanox.com/issues/4257471"
     conditions:
-    - "https://redmine.mellanox.com/issues/4248913 and 'sn5640_simx' in platform"
+    - "https://redmine.mellanox.com/issues/4257471 and 'sn5640_simx' in platform"
 
 platform_tests/mellanox/test_check_sfp_eeprom.py:
   skip:
@@ -1033,7 +1028,7 @@ platform_tests/api/test_chassis.py::TestChassisApi::test_thermals:
     conditions_logical_operator: or
     conditions:
       - "https://redmine.mellanox.com/issues/4208857 and 'sn5610n' in platform"
-      - "https://redmine.mellanox.com/issues/4248913 and 'sn5640_simx' in platform"
+      - "https://redmine.mellanox.com/issues/4257471 and 'sn5640_simx' in platform"
 
 platform_tests/api/test_thermal.py::TestThermalApi::test_get_name:
   skip:
@@ -1190,7 +1185,7 @@ platform_tests/mellanox/test_check_sysfs.py::test_check_hw_mgmt_sysfs:
     conditions:
     - "'sn4280_simx' in platform"
     - "https://redmine.mellanox.com/issues/4209112 and 'r-bison-04' in testbed"
-    - "https://redmine.mellanox.com/issues/4248913 and 'sn5640_simx' in platform"
+    - "https://redmine.mellanox.com/issues/4257471 and 'sn5640_simx' in platform"
 
 platform_tests/test_power_off_reboot.py:
   skip:
