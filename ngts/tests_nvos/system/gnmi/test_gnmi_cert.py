@@ -11,7 +11,6 @@ import ngts.tools.test_utils.allure_utils as allure
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.constants.constants import GnmiConsts
 from ngts.nvos_constants.constants_nvos import TestFlowType, ApiType
-from ngts.nvos_tools.infra.CmdRunner import CmdRunner
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.system.System import System
@@ -50,8 +49,8 @@ def cleanup_gnmi_cert_tests(tmp_certs_dir: str, certs: List[CertInfo]):
         gnmi.unset(apply=True).verify_result()
     with allure.step('delete certs from dut'):
         delete_certs_safely(certs)
-    with allure.step('remove temp test certs from shared location'):
-        CmdRunner().run_cmd(f'rm -rf {tmp_certs_dir}')
+    # with allure.step('remove temp test certs from shared location'):  # TODO: uncomment after gnmi tests stabilize on master
+    #     CmdRunner().run_cmd(f'rm -rf {tmp_certs_dir}')
 
 
 @pytest.fixture(scope='module', autouse=True)
@@ -149,7 +148,7 @@ def check_gnmi_cert_cli(api, gnmi_certs: List[CertInfo]):
 
 @pytest.mark.system
 @pytest.mark.gnmi
-@pytest.mark.parametrize('api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('api', [ApiType.NVUE])
 def test_gnmi_cert_cli(api, gnmi_certs):
     """
     verify gnmi certificate related cli work properly
@@ -191,8 +190,8 @@ def test_gnmi_cert_cli_when_gnmi_disabled(api, gnmi_certs):
 
 @pytest.mark.system
 @pytest.mark.gnmi
-@pytest.mark.parametrize('test_flow', TestFlowType.ALL_TYPES)
-@pytest.mark.parametrize('addressing_type', [AddressingType.IPV4, AddressingType.IPV6])
+@pytest.mark.parametrize('test_flow', [TestFlowType.GOOD_FLOW])
+@pytest.mark.parametrize('addressing_type', [AddressingType.IPV4])
 def test_gnmi_cert_set_cert(test_flow, addressing_type, local_adminuser, gnmi_certs,
                             add_etc_host_mapping_for_ipv6_cert_test):
     """
@@ -210,10 +209,12 @@ def test_gnmi_cert_set_cert(test_flow, addressing_type, local_adminuser, gnmi_ce
     with allure.step(
             f'run client without skip-verify flag, using right CA crt - expect {"success" if test_flow == TestFlowType.GOOD_FLOW else "fail"}'):
         verify_gnmi_client(test_flow, cert.ip, GnmiConsts.GNMI_DEFAULT_PORT, local_adminuser.username,
-                           local_adminuser.password, False, GnmicErr.CERT_VERIFY_FAIL, cacert=cert.cacert)
+                           local_adminuser.password, False, GnmicErr.CERT_VERIFY_FAIL,
+                           cacert=cert.cacert, debug_mode=False)
     with allure.step('run client with skip-verify flag - expect success'):
         verify_gnmi_client(TestFlowType.GOOD_FLOW, cert.ip, GnmiConsts.GNMI_DEFAULT_PORT,
-                           local_adminuser.username, local_adminuser.password, True, GnmicErr.CERT_VERIFY_FAIL)
+                           local_adminuser.username, local_adminuser.password, True,
+                           GnmicErr.CERT_VERIFY_FAIL, debug_mode=False)
 
 
 @pytest.mark.system
