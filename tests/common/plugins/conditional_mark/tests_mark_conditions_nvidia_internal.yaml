@@ -1039,13 +1039,13 @@ platform_tests/api/test_thermal.py::TestThermalApi::test_get_name:
   skip:
     reason: "Skipped due to RM issue https://redmine.mellanox.com/issues/4208857"
     conditions:
-      - "https://redmine.mellanox.com/issues/4208857 and 'sn5610n' in platform"
+      - "https://redmine.mellanox.com/issues/4208857 and 'sn5640_simx' in platform"
 
 platform_tests/api/test_psu_fans:py::TestPsuFans::test_get_name:
   skip:
     reason: "Skipped due to RM issue https://redmine.mellanox.com/issues/4208857"
     conditions:
-      - "https://redmine.mellanox.com/issues/4208857 and 'sn5610n' in platform"
+      - "https://redmine.mellanox.com/issues/4208857 and 'sn5640_simx' in platform"
 
 platform_tests/api/test_psu_fans:py::TestPsuFans::test_get_speed:
   skip:
@@ -1065,7 +1065,7 @@ process_monitoring/test_critical_process_monitoring.py::test_orchagent_heartbeat
   skip:
     reason: "Skipped due to RM issue https://redmine.mellanox.com/issues/4251694"
     conditions:
-      - "https://redmine.mellanox.com/issues/4251694 and 'sn5610n' in platform"
+      - "https://redmine.mellanox.com/issues/4251694 and 'sn5640_simx' in platform"
 
 pfcwd/test_pfcwd_function.py:
   skip:
