@@ -74,9 +74,8 @@ def mock_t1_topo_on_ptf32(duthost):
     logger.info("mock t1 topo on ptf32")
     neighbors = get_dev_neighbor(duthost)
     vm_hwsku = "Arista-VM"
-    lo_addr = None
 
-    add_neighbor_metadata_cmd_pattern = 'redis-cli -n 4 hset "DEVICE_NEIGHBOR_METADATA|{}" hwsku {} lo_addr {} mgmt_addr {}  type {}'
+    add_neighbor_metadata_cmd_pattern = 'redis-cli -n 4 hset "DEVICE_NEIGHBOR_METADATA|{}" hwsku {} mgmt_addr {}  type {}'
 
     mgmt_addr_patern = "10.75.207.{}"
     for index, neighbor in enumerate(neighbors):
@@ -86,7 +85,7 @@ def mock_t1_topo_on_ptf32(duthost):
             router_type = "ToRRouter"
         else:
             router_type = "SpineRouter"
-        add_neighbor_metadata_cmd = add_neighbor_metadata_cmd_pattern.format(neighbor_name, vm_hwsku, lo_addr, mgmt_addr, router_type)
+        add_neighbor_metadata_cmd = add_neighbor_metadata_cmd_pattern.format(neighbor_name, vm_hwsku, mgmt_addr, router_type)
         duthost.run_cmd(add_neighbor_metadata_cmd)
     enable_qos_config_and_reload_config(duthost)
 
@@ -106,7 +105,7 @@ def mock_t0_topo_on_ptf32(duthost):
             new_neighbor_name = neighbor_name.replace("T0", "T1")
             router_type = "LeafRouter"
             add_neighbor_metadata_cmd = 'redis-cli -n 4 hset "DEVICE_NEIGHBOR_METADATA|{}" ' \
-                                        'hwsku Arista-VM lo_addr None mgmt_addr {} type {}'.format(new_neighbor_name, mgmt_addr, router_type)
+                                        'hwsku Arista-VM mgmt_addr {} type {}'.format(new_neighbor_name, mgmt_addr, router_type)
             logger.info("Add DEVICE_NEIGHBOR_METADATA with cmd:{}".format(add_neighbor_metadata_cmd))
             duthost.run_cmd(add_neighbor_metadata_cmd)
             update_neighbor_name_cmd = 'redis-cli -n 4 hset "{}" name {}'.format(neighbor, new_neighbor_name)
