@@ -588,11 +588,11 @@ platform_tests/api/test_sfp.py:
 
 platform_tests/api/test_sfp.py::TestSfpApi::test_get_error_description:
   skip:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4220524"
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4220524 or https://redmine.mellanox.com/issues/4258343"
     conditions_logical_operator: or
     conditions:
     - "https://redmine.mellanox.com/issues/4220524 and ('sn5610n' in platform or 'sn5600' in platform)"
-    - "https://redmine.mellanox.com/issues/4205722"
+    - "https://redmine.mellanox.com/issues/4258343 and 'sn4' in platform"
 
 platform_tests/api/test_chassis.py::TestChassisApi::test_psus:
   skip:
@@ -674,11 +674,11 @@ platform_tests/sfp/test_show_intf_xcvr.py:
 
 platform_tests/sfp/test_sfputil.py::test_check_sfputil_error_status:
   skip:
-    reason: "Testcase ignored due to RM issue: 4204539 or due to RM 4205722"
+    reason: "Testcase ignored due to RM issue: 4220524 or RM 4258343 "
     conditions_logical_operator: or
     conditions:
-    - "https://redmine.mellanox.com/issues/4204539"
-    - "https://redmine.mellanox.com/issues/4205722"
+    - "https://redmine.mellanox.com/issues/4220524 and ('sn5610n' in platform or 'sn5600' in platform)"
+    - "https://redmine.mellanox.com/issues/4258343 and 'sn4' in platform"
 
 platform_tests/fw_utility/test_fwutil.py:
   skip:
