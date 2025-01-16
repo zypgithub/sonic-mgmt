@@ -1626,6 +1626,15 @@ class DebugKernelConsts:
     KMEMLEAK = 'kmemleak'
 
 
+class CoreDumpConsts:
+    COREDUMP_PATH = '/var/lib/systemd/coredump'
+
+
+class FatalStateConsts:
+    FATAL_FILE = "/etc/system_fatal"
+    FATAL_STATE_RETURN_CODE = 42
+
+
 class GnmiConsts:
     GNMI_DOCKER = 'gnmi-server'
     GNMI_STATE_FIELD = 'state'

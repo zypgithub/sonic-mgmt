@@ -3,6 +3,7 @@ import datetime
 import logging
 import random
 import smtplib
+import os
 import time
 from email.mime.text import MIMEText
 from typing import Dict
@@ -20,7 +21,7 @@ from infra.tools.sql.connect_to_mssql import ConnectMSSQL
 from ngts.cli_wrappers.linux.linux_general_clis import LinuxGeneralCli
 from ngts.cli_wrappers.nvue.nvue_base_clis import NvueBaseCli
 from ngts.cli_wrappers.openapi.openapi_command_builder import OpenApiRequest
-from ngts.constants.constants import DbConstants, CliType, DebugKernelConsts, InfraConst
+from ngts.constants.constants import DbConstants, CliType, DebugKernelConsts, InfraConst, CoreDumpConsts
 from ngts.nvos_constants.constants_nvos import ApiType, OperationTimeConsts, OutputFormat, NvosConst, TestConsts
 from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
 from ngts.nvos_tools.Devices.DeviceFactory import DeviceFactory
@@ -44,6 +45,7 @@ from ngts.scripts.code_coverage.code_coverage_consts import NvosConsts
 from ngts.scripts.code_coverage.test_code_coverage import extract_python_coverage_for_nvos
 from ngts.tests_nvos.helpers.pytest_helpers import is_cur_test_has_marker
 from ngts.tests_nvos.helpers.pytest_items_filters import run_nvos_pytest_items_modification
+from infra.tools.linux_tools.linux_tools import scp_file
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_general_utils import wait_for_ldap_nvued_restart_workaround
 
@@ -570,6 +572,42 @@ def debug_kernel_check(engines, test_name, setup_name, session_id):
                 s.quit()
 
             engines.dut.run_cmd("sudo echo clear | sudo tee {}".format(DebugKernelConsts.KMEMLEAK_PATH))
+
+
+@pytest.fixture(scope='function', autouse=True)
+def coredump_check(engines, test_name, setup_name, dumps_folder, session_id):
+    yield
+    files = engines.dut.run_cmd(f"sudo ls {CoreDumpConsts.COREDUMP_PATH}").strip().split("\n")
+
+    if not files or files == ['']:
+        logger.info(f'No core dumps found in {pytest.test_name}')
+    else:
+        for file in files:
+            file_path = os.path.join(CoreDumpConsts.COREDUMP_PATH, file)
+            logger.info('Copy dump {} to log folder {}'.format(file_path, dumps_folder))
+            dest_file = dumps_folder + '/' + file
+            scp_file(engines.dut, file_path, dest_file, download_from_remote=True)
+            os.chmod(dest_file, 0o655)
+            logger.info('Dump file location: {}'.format(dest_file))
+            logger.info('Delete coredump {} from the switch'.format(file_path))
+            engines.dut.run_cmd(f"sudo rm -f {file_path}")
+            logger.info("Core dump were found, will send mail with the leaks")
+            context = f"Core dump were found during test:{test_name}\n" \
+                f"Setup: {setup_name}\n" \
+                f"Session ID: {session_id}\n" \
+                f"Test: {pytest.test_name}\n" \
+                f"Core dump file location: {dest_file}"
+            try:
+                s = smtplib.SMTP(InfraConst.NVIDIA_MAIL_SERVER)
+                email_contents = MIMEText(context)
+                email_contents['Subject'] = "Core dump issue NVOS"
+                email_contents['To'] = ", ".join(['sviatoslavd@nvidia.com', 'ncaro-org@exchange.nvidia.com',
+                                                  'yport@nvidia.com', 'nadeemn@nvidia.com'])
+                s.sendmail('noreply@nvidia.com', email_contents['To'], email_contents.as_string())
+                logger.info("Mail was sent to: {}".format(email_contents['To']))
+            finally:
+                s.quit()
+        pytest.fail(f"Coredump found and uploaded to {dest_file}")
 
 
 @pytest.fixture(scope="session", autouse=True)

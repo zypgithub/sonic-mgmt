@@ -1,6 +1,7 @@
 import logging
 import os
 import pytest
+import smtplib
 from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.TrafficGeneratorTool import TrafficGeneratorTool
@@ -10,8 +11,14 @@ from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_config_utils import clear_conf
 from ngts.tools.test_utils.switch_recovery import check_switch_connectivity
+from ngts.constants.constants import FatalStateConsts
+from scripts.setup_status import get_setup_info_from_noga
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 logger = logging.getLogger()
+from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
+from ngts.nvos_tools.infra.SerialConsoleTool import SerialConsoleTool
 
 
 @pytest.mark.general
@@ -32,6 +39,7 @@ def test_post_checker(engines, topology_obj,
         7. If after cleanup we still have uncleaned configuration, perform reboot
         8. Check if ssh port is open, if not perform reboot
         9. Upload sysdump to shared location
+        10. Check system in fatal state, if yes, stop regression
     """
     try:
         if security_post_checker:
@@ -68,6 +76,12 @@ def test_post_checker(engines, topology_obj,
                         NvueGeneralCli(engines.dut).remote_reboot(topology_obj)
                         DutUtilsTool.wait_for_nvos_to_become_functional(engines.dut).verify_result()
 
+                with allure.step('Check fatal state'):
+                    fatal_state_result = check_system_in_fatal_state(serial_engine, FatalStateConsts.FATAL_FILE)
+                    if fatal_state_result == FatalStateConsts.FATAL_STATE_RETURN_CODE:
+                        pytest.exit(f"System in fatal state, return code {FatalStateConsts.FATAL_STATE_RETURN_CODE}",
+                                    returncode=FatalStateConsts.FATAL_STATE_RETURN_CODE)
+
         if not security_post_checker:
             TrafficGeneratorTool.bring_up_traffic_containers(engines, setup_name)
 
@@ -82,6 +96,12 @@ def check_if_dut_port_is_open(engines):
         return True
     except BaseException:
         return False
+
+
+def check_system_in_fatal_state(engines, file_path):
+    result = engines.dut.run_cmd(f"sudo test -f {file_path} && echo exists || echo not_exists")
+    if result.strip() == "exists":
+        return FatalStateConsts.FATAL_STATE_RETURN_CODE
 
 
 def generate_techsupport(dumps_folder, system, serial_engine):
