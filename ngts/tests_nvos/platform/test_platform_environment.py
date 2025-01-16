@@ -8,6 +8,7 @@ from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.nvos_constants.constants_nvos import FansConsts
 from ngts.nvos_constants.constants_nvos import OutputFormat
 from ngts.nvos_constants.constants_nvos import PlatformConsts, HealthConsts, ActionConsts, SystemConsts
+from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
 from ngts.nvos_tools.infra.FilesTool import TempFileOnEngine
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
@@ -47,10 +48,11 @@ def test_show_platform_environment(engines, devices, test_api, output_format):
         ValidationTool.validate_set_equal(output_field_names, ['type', 'state']).verify_result()
 
     with allure.step("Validate all environment items are present"):
+        temperature_sensor_list = get_available_temperature_sensor_list(devices.dut)
         output = OutputParsingTool.parse_show_output_to_dict(raw_output, output_format).get_returned_value()
         ValidationTool.validate_set_equal(output.keys(),
                                           devices.dut.psu_fan_list + devices.dut.fan_list + devices.dut.psu_list +
-                                          devices.dut.temperature_sensors + devices.dut.led_list +
+                                          temperature_sensor_list + devices.dut.led_list +
                                           devices.dut.voltage_sensors).verify_result()
 
 
@@ -265,16 +267,18 @@ def test_show_platform_environment_temperature(engines, devices, test_api):
     with allure.step("Create System object"):
         platform = Platform()
 
+    temperature_sensor_list = get_available_temperature_sensor_list(devices.dut)
+
     with allure.step("Execute show platform environment temperature and make sure all the components exist"):
-        output = _verify_output(platform, "temperature", devices.dut.temperature_sensors)
+        output = _verify_output(platform, "temperature", temperature_sensor_list)
 
     with allure.step("make sure all temperature sensors are present in the output"):
         with allure.step(
                 "Verify for every sensor in sensors_dict[TEMPERATURE], it exist in nv show platform temperature"):
-            diff_sensors = [x for x in devices.dut.sensors_dict["TEMPERATURE"] if x not in output.keys()]
+            diff_sensors = [x for x in temperature_sensor_list if x not in output.keys()]
             err_mes = '' if not len(diff_sensors) else 'the next sensors are not in the output: {}'.format(diff_sensors)
         with allure.step("Verify no extra sensors are found in nv show platform environment temperature"):
-            diff_sensors = [x for x in output.keys() if x not in devices.dut.sensors_dict["TEMPERATURE"]]
+            diff_sensors = [x for x in output.keys() if x not in temperature_sensor_list]
             err_mes += '' if not len(diff_sensors) else 'there are extra sensors in the output: {}'.format(diff_sensors)
 
     assert not err_mes, err_mes
@@ -297,6 +301,21 @@ def test_show_platform_environment_temperature(engines, devices, test_api):
     with allure.step('Check is Juliet Device'):
         if not isinstance(TestToolkit.devices.dut, JulietSwitch):
             verify_sensor_group_by_tolerance(output, PlatformConsts.ENV_PSU.upper())
+
+
+def get_available_temperature_sensor_list(device: BaseDevice):
+    with allure.step('Get temperature-sensor list'):
+        try:
+            missing_psus = [psu.replace('PSU', 'PSU-') for psu in Platform().environment.get_available_psus(invert=True)]
+            output = [sensor for sensor in device.temperature_sensors if not any(psu in sensor for psu in missing_psus)]
+            logger.info("Available temperature sensors: " + str(output))
+            return output
+        except AssertionError as e:
+            if "'psu' is not one of" in str(e):
+                # then it's a Juliet or similar switch
+                return device.temperature_sensors
+            else:
+                raise
 
 
 @pytest.mark.platform
