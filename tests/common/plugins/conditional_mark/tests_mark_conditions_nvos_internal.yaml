@@ -599,6 +599,12 @@ tests_nvos/platform/test_platform_transceiver.py:
       - "'gorilla' not in testbed and 'juliet' not in testbed"
       - https://redmine.mellanox.com/issues/3950840
 
+tests_nvos/platform/test_platform_transceiver.py::test_transceiver_status_with_reboot:
+  skip:
+    reason: "Testcase skipped on juliet because it is statically connected system"
+    conditions:
+      - "'juliet' in testbed"
+
 tests_nvos/general/config_commands/test_config_fetch:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3955660"
