@@ -213,7 +213,7 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
             duts = read_duts_from_testbed_yaml(f"{self.dut_name}-{self.sonic_topo}")
             self.Logger.info(f"duts :{duts}")
             duts.remove(self.dut_name)
-            dpu_duts = get_installed_dpu_duts(duts)
+            dpu_duts = get_installed_dpu_duts(duts, self.Players[0].player_ip, self.Logger)
             self.Logger.info(f" dpu duts: {dpu_duts}")
             self.Logger.info(f" self.run_test_on_dpu_only: {self.run_test_on_dpu_only}, {type(self.run_test_on_dpu_only)}")
 
@@ -346,17 +346,21 @@ def read_duts_from_testbed_yaml(testbed_name):
     return duts
 
 
-def get_installed_dpu_duts(dpu_duts):
+def get_installed_dpu_duts(dpu_duts, player_ip, logger):
     installed_dpus_file_path = "/root/mars/workspace/sonic-mgmt/installed_dpus"
-    if os.path.exists(installed_dpus_file_path):
-        with open(installed_dpus_file_path) as f:
+    conn = connect(player_ip)
+    if conn.modules.os.path.exists(installed_dpus_file_path):
+        with conn.builtins.open(installed_dpus_file_path, 'r') as f:
             installed_dpus = f.read().split(',')
+        logger.info(f"installed_dpus is {installed_dpus}")
         installed_dpu_duts = []
         for dpu in installed_dpus:
+            dpu_rename = f'{dpu.split("dpu")[0]}-{dpu.split("dpu")[1]}'
             for dpu_dut in dpu_duts:
-                if dpu in dpu_dut:
+                if dpu_rename in dpu_dut:
                     installed_dpu_duts.append(dpu_dut)
                     break
+        logger.info(f"installed_dpu_duts is {installed_dpu_duts}")
         return installed_dpu_duts
     else:
         return dpu_duts
