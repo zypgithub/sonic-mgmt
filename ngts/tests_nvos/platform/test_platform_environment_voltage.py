@@ -33,20 +33,55 @@ def test_show_platform_environment_voltage(engines, devices):
                                                             "expected sensors list: {expected_list}").format(
             expected=len(sensors), output=len(voltage_output.keys()), expected_list=sensors)
 
-    with allure.step("Execute show platform environment voltage for every sensor"):
+    with allure.step("Check all details of all sensors are available in show platform environment voltage"):
+        sensors_absent = []
+        min_max_actual_keys_absent = []
+        for sensor in devices.dut.voltage_sensors:
+            if voltage_output[sensor]['state'] != 'ok':
+                sensors_absent.append(sensor)
+                continue
+            if 'min' not in voltage_output[sensor].keys() or 'max' not in voltage_output[sensor].keys() or\
+                    'actual' not in voltage_output[sensor].keys():
+                min_max_actual_keys_absent.append(sensor)
+
+        assert len(sensors_absent) == 0 and len(min_max_actual_keys_absent) == 0, \
+            'Absent sensors={}, min/max/actual voltage missing={}'.format(sensors_absent, min_max_actual_keys_absent)
+
+    with allure.step("Execute show platform environment voltage for every sensor and compare with aggregated show"):
+        mismatch = False
+        err = []
         for sensor in devices.dut.voltage_sensors:
             sensor_output = Tools.OutputParsingTool.parse_json_str_to_dictionary(
                 platform.environment.voltage.show(sensor)).verify_result()
-            with allure.step("Verify both dictionaries are equal"):
-                voltage_output_for_sensor = voltage_output[sensor].copy()
-                # the actual voltage might fluctuate between the two `nv show` commands, so we don't compare it
+            voltage_output_for_sensor = voltage_output[sensor].copy()
+            # the actual voltage might fluctuate between the two `nv show` commands, so we keep 5% tolerance
+            if 'actual' in sensor_output.keys():
+                actual_voltage_low = float(voltage_output_for_sensor['actual']) * 0.95
+                actual_voltage_high = float(voltage_output_for_sensor['actual']) * 1.05
+                if not (actual_voltage_low <= float(sensor_output['actual']) <= actual_voltage_high):
+                    mismatch = True
+                    err.append("Actual voltage of sensor {} varied more than 5%, from {} to {}".
+                               format(sensor, voltage_output_for_sensor['actual'], sensor_output['actual']))
                 del sensor_output['actual']
                 del voltage_output_for_sensor['actual']
-                assert sensor_output == voltage_output_for_sensor, ""
+            else:
+                mismatch = True
+                err.append('Actual voltage for sensor {} not present in sensor specific output'.format(sensor))
+            if sensor_output != voltage_output_for_sensor:
+                mismatch = True
+                err.append('Min/max not matching for {}:{}'.format(sensor, voltage_output_for_sensor - sensor_output))
 
-    with allure.step("Check voltage range for random sensor"):
-        random_sensor = get_random_sensor_max_min(voltage_output)
-        check_voltage_in_range(voltage_output[random_sensor])
+        assert not mismatch, "Mismatch between aggregated output and single sensor output:{}".format(err)
+
+    with allure.step("Check voltage range for voltage sensors"):
+        voltage_issue = False
+        err_msg = []
+        for sensor in devices.dut.voltage_sensors:
+            err = check_voltage_in_range(voltage_output[sensor])
+            if err != "":
+                voltage_issue = True
+                err_msg.append(err)
+        assert not voltage_issue, 'Voltage of sensors out of range:{}'.format(err_msg)
 
 
 @pytest.mark.cumulus
@@ -127,6 +162,8 @@ def check_voltage_in_range(sensor_output):
     :return:
     """
     with allure.step("Verify the actual voltage is between min and max inclusive"):
-        assert sensor_output['state'] == 'ok', ""
-        assert float(sensor_output['actual']) <= float(sensor_output['max']), "the actual voltage out of range, max voltage = {}".format(sensor_output['max'])
-        assert float(sensor_output['actual']) >= float(sensor_output['min']), "the actual voltage out of range, min voltage = {}".format(sensor_output['min'])
+        if float(sensor_output['actual']) > float(sensor_output['max']):
+            return "Actual voltage out of range, actual={} max={}".format(sensor_output['actual'], sensor_output['max'])
+        if float(sensor_output['actual']) < float(sensor_output['min']):
+            return "Actual voltage out of range, actual={} min={}".format(sensor_output['actual'], sensor_output['min'])
+        return ""
