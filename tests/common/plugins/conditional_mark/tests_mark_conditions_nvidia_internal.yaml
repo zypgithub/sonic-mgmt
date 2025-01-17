@@ -714,12 +714,12 @@ ecmp/inner_hashing:
 
 platform_tests/test_sensors.py::test_sensors:
   skip:
-    reason: "Testcase ignored due to RM issue 3816778 on r-anaconda-15  or due to RM issue 4137145 on bobcat or due to RM 4205069 on sn5610n"
+    reason: "Testcase ignored due to RM issue 3816778 on r-anaconda-15  or due to RM issue 4137145 on bobcat or due to RM 4261914 on sn5610n"
     conditions_logical_operator: or
     conditions:
     - "https://redmine.mellanox.com/issues/3816778 and 'r-anaconda-15' in testbed"
     - "https://redmine.mellanox.com/issues/4205069 and 'sn5610n' in platform"
-    - "https://redmine.mellanox.com/issues/4248821 and 'sn5640_simx' in platform"
+    - "https://redmine.mellanox.com/issues/4261914 and 'sn5640_simx' in platform"
 
 qos/test_qos_sai_dual_tor.py:
   skip:
