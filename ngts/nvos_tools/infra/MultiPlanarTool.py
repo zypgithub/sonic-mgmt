@@ -59,7 +59,7 @@ class MultiPlanarTool:
                 port_name = 'swA10p1'
             else:
                 port_name = RandomizationTool.select_random_port(
-                    requested_ports_logical_state=IbInterfaceConsts.LINK_LOGICAL_PORT_STATE_ACTIVE
+                    requested_ports_logical_state=IbInterfaceConsts.LINK_LOGICAL_PORT_STATE_UP
                 ).get_returned_value().name
         allure.attach(f"Selected port: {port_name}")
         return Fae(port_name=port_name)
@@ -94,7 +94,7 @@ class MultiPlanarTool:
 
     @staticmethod
     @retry(Exception, tries=4, delay=2)
-    def _get_split_ports(port="sw10p1"):
+    def _get_split_ports(port="swA10p1"):
         all_ports = Port.get_list_of_ports()
         split_ports = []
         split_port_names = [port]

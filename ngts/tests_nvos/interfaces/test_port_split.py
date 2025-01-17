@@ -116,7 +116,7 @@ def test_ib_split_port_no_breakout_profile(engines, interfaces, start_sm, device
 
     with allure.step("Split splitter port"):
         parent_port = split_ports[0]
-        parent_port.interface.link.set(op_param_name='breakout', op_param_value=IbInterfaceConsts.LINK_BREAKOUT_NDR,
+        parent_port.interface.link.set(op_param_name='breakout', op_param_value=IbInterfaceConsts.LINK_BREAKOUT_XDR,
                                        apply=True, ask_for_confirmation=True).verify_result()
 
     with allure.step("Try split already splitted port"):
@@ -181,12 +181,12 @@ def test_ib_split_port_default_values(engines, interfaces, start_sm, devices):
                                                               expected_value='parent').verify_result()
 
     with allure.step("Split port, check default values for child and parent port"):
-        parent_port.interface.link.set(op_param_name='breakout', op_param_value=IbInterfaceConsts.LINK_BREAKOUT_NDR,
+        parent_port.interface.link.set(op_param_name='breakout', op_param_value=IbInterfaceConsts.LINK_BREAKOUT_XDR,
                                        apply=True, ask_for_confirmation=True).verify_result()
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
             parent_port.show_interface(port_names=parent_port.name)).get_returned_value()
         Tools.ValidationTool.validate_fields_values_in_output(expected_fields=['link'],
-                                                              expected_values=[{'breakout': '2x-ndr'}],
+                                                              expected_values=[{'breakout': '2x-xdr'}],
                                                               output_dict=output_dictionary).verify_result()
 
         with allure.step("Verify default values on child port"):
@@ -267,7 +267,7 @@ def test_split_port_counters(engines, players, interfaces, start_sm, devices):
         assert (output_dictionary['in-pkts'] == output_dictionary['out-pkts']) != 0
 
     with allure.step("Split port"):
-        parent_port.interface.link.set(op_param_name='breakout', op_param_value=IbInterfaceConsts.LINK_BREAKOUT_NDR,
+        parent_port.interface.link.set(op_param_name='breakout', op_param_value=IbInterfaceConsts.LINK_BREAKOUT_XDR,
                                        apply=True, ask_for_confirmation=True).verify_result()
 
     with allure.step("Get child port"):
@@ -321,7 +321,7 @@ def test_split_port_timings(engines, interfaces, start_sm, devices):
     with allure.step("Split port"):
         split_ports, active_ports = _get_split_ports()
         parent_port = split_ports[0]
-        parent_port.interface.link.set(op_param_name='breakout', op_param_value=IbInterfaceConsts.LINK_BREAKOUT_NDR,
+        parent_port.interface.link.set(op_param_name='breakout', op_param_value=IbInterfaceConsts.LINK_BREAKOUT_XDR,
                                        apply=True, ask_for_confirmation=True).verify_result()
 
     with allure.step("Get alias from redis db for child port"):
@@ -355,7 +355,7 @@ def test_split_port_n_times(engines, interfaces, start_sm, devices):
     with allure.step("Split/unsplit port n times and check log about that"):
         for _ in range(15):
             parent_port.interface.link.set(op_param_name='breakout',
-                                           op_param_value=IbInterfaceConsts.LINK_BREAKOUT_NDR,
+                                           op_param_value=IbInterfaceConsts.LINK_BREAKOUT_XDR,
                                            apply=True, ask_for_confirmation=True).verify_result()
             parent_port.interface.link.unset(op_param='breakout', apply=True,
                                              ask_for_confirmation=True).verify_result()
@@ -390,13 +390,13 @@ def test_split_all_ports_together(engines, interfaces, start_sm, devices):
 
     with allure.step("Split not connected ports"):
         for port_up in ports_down_state:
-            port_up.interface.link.set(op_param_name='breakout', op_param_value=IbInterfaceConsts.LINK_BREAKOUT_NDR)\
+            port_up.interface.link.set(op_param_name='breakout', op_param_value=IbInterfaceConsts.LINK_BREAKOUT_XDR)\
                 .verify_result()
 
     with allure.step("Split physical ports"):
         for port_down in ports_up_state:
             port_down.interface.link.set(op_param_name='breakout',
-                                         op_param_value=IbInterfaceConsts.LINK_BREAKOUT_NDR).verify_result()
+                                         op_param_value=IbInterfaceConsts.LINK_BREAKOUT_XDR).verify_result()
         NvueGeneralCli.apply_config(engines.dut, option='-y')
 
     with allure.step("Check if we can do show for splitted interface"):
@@ -438,23 +438,23 @@ def test_split_all_ports(engines, interfaces, start_sm, devices):
 
     with allure.step("Split not connected ports"):
         for port_up in ports_down_state:
-            port_up.interface.link.set(op_param_name='breakout', op_param_value=IbInterfaceConsts.LINK_BREAKOUT_NDR,
+            port_up.interface.link.set(op_param_name='breakout', op_param_value=IbInterfaceConsts.LINK_BREAKOUT_XDR,
                                        apply=True, ask_for_confirmation=True).verify_result()
             output_dictionary = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
                 port_up.show_interface(port_names=port_up.name)).get_returned_value()
             Tools.ValidationTool.validate_fields_values_in_output(expected_fields=['link'],
-                                                                  expected_values=[{'breakout': '2x-ndr'}],
+                                                                  expected_values=[{'breakout': '2x-xdr'}],
                                                                   output_dict=output_dictionary).verify_result()
 
     with allure.step("Split physical ports"):
         for port_down in ports_up_state:
             port_down.interface.link.set(op_param_name='breakout',
-                                         op_param_value=IbInterfaceConsts.LINK_BREAKOUT_NDR,
+                                         op_param_value=IbInterfaceConsts.LINK_BREAKOUT_XDR,
                                          apply=True, ask_for_confirmation=True).verify_result()
             output_dictionary = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
                 port_down.show_interface(port_names=port_down.name)).get_returned_value()
             Tools.ValidationTool.validate_fields_values_in_output(expected_fields=['link'],
-                                                                  expected_values=[{'breakout': '2x-ndr'}],
+                                                                  expected_values=[{'breakout': '2x-xdr'}],
                                                                   output_dict=output_dictionary).verify_result()
 
     with allure.step("Check if we can do show for splitted interface"):
@@ -527,7 +527,7 @@ def test_ib_split_port_stress(engines, interfaces, start_sm, devices):
         with allure.step("Split splitter port"):
             parent_port = split_ports[0]
             parent_port.interface.link.set(op_param_name='breakout',
-                                           op_param_value=IbInterfaceConsts.LINK_BREAKOUT_NDR,
+                                           op_param_value=IbInterfaceConsts.LINK_BREAKOUT_XDR,
                                            apply=True, ask_for_confirmation=True).verify_result()
         with allure.step("Unset parent port"):
             parent_port.interface.link.unset(op_param='breakout', apply=True,
@@ -554,7 +554,7 @@ def test_split_port_redis_db_crash(engines, interfaces, start_sm, devices):
 
     with allure.step("Split splitter port"):
         parent_port = split_ports[0]
-        parent_port.interface.link.set(op_param_name='breakout', op_param_value=IbInterfaceConsts.LINK_BREAKOUT_NDR,
+        parent_port.interface.link.set(op_param_name='breakout', op_param_value=IbInterfaceConsts.LINK_BREAKOUT_XDR,
                                        apply=True, ask_for_confirmation=True).verify_result()
 
     with allure.step("Get alias from redis db for child port"):
@@ -613,7 +613,7 @@ def _run_cmd_nvue(engines, cmds_to_run, num_of_iterations):
 def _get_split_ports():
     active_ports = Tools.RandomizationTool.get_random_active_port(0).get_returned_value()
     split_ports = []
-    split_port_names = ["sw10p1", "sw10p2", "sw15p1", "sw16p1"]
+    split_port_names = ["swA10p1", "swB10p1", "swA15p1", "swB15p1"]
     for port in active_ports:
         if port.name in split_port_names:
             split_ports.append(port)
