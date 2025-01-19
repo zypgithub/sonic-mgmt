@@ -1,6 +1,7 @@
 import os
 from enum import Enum
 
+from ngts.tests_nvos.general.security.bmc.bmc_creds.constants import ADMIN
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 
 
@@ -370,6 +371,7 @@ class ActionType:
     INSTALL = '@install'
     REBOOT = '@reboot'
     RENEW = '@renew'
+    RUN = '@run'
     ROTATE = '@rotate'
     TURNOFF = '@turn-off'
     TURNON = '@turn-on'
@@ -656,6 +658,9 @@ class SystemConsts:
     STARTUP_FILE_CLEAR_CONFIG_TRUE = 'startup_file_clear_config.json'
     STARTUP_FILE_SAVE_CONFIG_TRUE = 'startup_file_config_save.json'
     STARTUP_FILE_INTERACTIVE_COMMANDS = 'startup_file_interactive.json'
+    NMX_POSITIVE_JSON = 'ztp_nmx.json'
+    NMX_NOT_EXIST_FILE_JSON = 'ztp_nmx_negative_wrong_file.json'
+    NMX_BAD_COMMANDS = 'ztp_nmx_negative_bad_commands.json'
     CONNECTIVITY_IPV4_IPV6 = 'ping_ipv4_ipv6.json'
     NEGATIVE_CONNECTIVITY = 'negative_connectivity.json'
     COMPLEX = 'complex.json'
@@ -878,7 +883,7 @@ class PlatformConsts:
     EROT_ASIC2_PATH_NAME = 'EROT-ASIC2'
     BMC_INVENTORY_PATTERN = r'/redfish/v1/UpdateService/FirmwareInventory/([^"]+)'
     BMC_COMPONENT_VERSION_PATTERN = r'"Version":\s*"([^"]+)"'
-    BMC_LOGIN = 'admin'
+    BMC_LOGIN = ADMIN
     BMC_INTERNAL_IP = '10.0.1.1'
     BMC_DEFAULT_ROOT_PASSWORD_AFTER_RESET_VIA_NOS = '0penBmcTempPass!'
 
@@ -898,11 +903,11 @@ class PlatformConsts:
     TRANSCEIVER_CABLE_OPTICAL_MODULE = 'Optical module'
     TRANSCEIVER_CABLE_COPPER_CABLE = 'Copper cable'
     CHASSIS_LOCATION_TRAY_ID = 'tray-index'
-    CHASSIS_LOCATION_SLOT_ID = 'slot-number'
+    CHASSIS_LOCATION_SLOT_NUM = 'slot-number'
     CHASSIS_LOCATION_CHAS_SN = 'chassis-sn'
     CHASSIS_LOCATION_TOPO_ID = 'topology-id'
     CHASSIS_LOCATION_STANDALONE_DICT = {CHASSIS_LOCATION_TRAY_ID: '0',
-                                        CHASSIS_LOCATION_SLOT_ID: '0',
+                                        CHASSIS_LOCATION_SLOT_NUM: '0',
                                         CHASSIS_LOCATION_CHAS_SN: 'N/A',
                                         CHASSIS_LOCATION_TOPO_ID: 'Loopback'}
     EROTS_LIST = ['ERoT_BMC_0', 'ERoT_CPU_0', 'ERoT_FPGA_0', 'ERoT_NVSwitch_0', 'ERoT_NVSwitch_1']
@@ -1350,8 +1355,8 @@ class OperationTimeConsts:
     SESSION_ID_COL = 'session_id'
     DATE_COL = 'date'
     THRESHOLDS = {'reboot': 250 if is_bug_active(4074566) else 220,     # TODO: revert once bug closed
-                  'julietscaleout_reboot': 505,  # Currently there is a bug on this. Time needs to be decreased once fixed.
-                  'julietscaleout reset factory': 560,  # Currently there is a bug on this. Time needs to be decreased once fixed.
+                  'julietscaleout_reboot': 330,
+                  'julietscaleout reset factory': 390,
                   'reset factory': 260,
                   'install user FW': 450,
                   'install default fw': 360,

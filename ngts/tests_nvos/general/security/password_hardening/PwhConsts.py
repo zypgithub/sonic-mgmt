@@ -98,10 +98,10 @@ class PwhConsts:
     ERR_MAX_RANGE = 'Error: At {}: {} is greater than the maximum of {}'
     ERR_MIN_RANGE = 'Error: At {}: {} is less than the minimum of {}'
     ERR_RANGE = 'Error: Valid range is {} - {}'
-    ERR_VALUE_LESS_THAN_MIN = "Error: At {}: {} is less than the minimum of {}"
-    ERR_VALUE_GREATER_THAN_MAX = "Error: At {}: {} is greater than the maximum of {}"
+    ERR_VALUE_LESS_THAN_MIN = "Error: {} is less than the minimum of {}"
+    ERR_VALUE_GREATER_THAN_MAX = "Error: {} is greater than the maximum of {}"
     ERR_EXP_WARN_LEQ_EXP = 'expiration-warning should be equal or smaller than expiration'
-    ERR_INTEGER_EXPECTED = "Error: '{}' is not an integer"
+    ERR_INTEGER_EXPECTED = "Error: '{}' is not of type 'integer'"
 
     WEAK_PW_ERRORS = {
         HISTORY_CNT: 'Password should be different than',

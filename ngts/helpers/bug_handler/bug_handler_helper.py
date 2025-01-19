@@ -495,7 +495,10 @@ def _generate_sonic_techsupport(duthost):
 
 
 def _generate_nvue_techsupport(duthost):
-    dump_file = duthost.shell('nv action generate system tech-support')["stdout_lines"][-2].split(' ')[-1]
+    cmd = "nv action generate system tech-support"
+    logger.info(f"Running {cmd}")
+    dump_file = duthost.shell(cmd)["stdout_lines"][-2].split(' ')[-1]
+    logger.info(f"action output is {dump_file}")
     return SystemConsts.TECHSUPPORT_FILES_PATH + dump_file
 
 

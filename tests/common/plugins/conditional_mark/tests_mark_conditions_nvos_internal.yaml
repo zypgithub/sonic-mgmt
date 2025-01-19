@@ -647,4 +647,22 @@ tests_nvos/platform/test_install_platform_firmware.py::test_install_platform_fir
     conditions:
       - "'juliet' in testbed"
 
+tests_nvos/system/test_system_ztp.py::test_ztp_nmx_negative:
+  skip:
+    reason: "Testcase skipped on non Juliet systems due to lack of nmx support"
+    conditions:
+      - "'juliet' not in testbed"
+
+tests_nvos/system/test_system_ztp.py::test_ztp_nmx_positive:
+  skip:
+    reason: "Testcase skipped on non Juliet systems due to lack of nmx support"
+    conditions:
+      - "'juliet' not in testbed"
+
+tests_nvos/fae/test_asic_error_injection.py::test_asic_error_injection:
+  skip:
+    reason: "Testcase skipped on non Juliet systems"
+    conditions:
+      - "'juliet' not in testbed"
+
 ########################## NVOS IGNORE END ##########################

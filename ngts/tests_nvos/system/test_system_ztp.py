@@ -6,12 +6,19 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_constants.constants_nvos import SystemConsts, NvosConst
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
+from ngts.nvos_tools.nmx.Cluster import Cluster
+from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
+from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
+from ngts.nvos_constants.constants_nvos import OutputFormat, ClusterAppsLogLevels
 from retry import retry
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.SecureBootTool import SecureBootTool
 
 logger = logging.getLogger()
+
+NMX_CONTROLLER = 'nmx-controller'
+NMX_TELEMETRY = 'nmx-telemetry'
 
 
 @pytest.mark.ztp
@@ -406,6 +413,135 @@ def test_ztp_json_complex(engines, devices):
         system.ztp.action_abort_ztp()
         engines.dut.run_cmd('sudo rm -f /host/ztp/ztp_data_local.json')
         system.ztp.action_run_ztp()
+
+
+@pytest.mark.ztp
+@pytest.mark.system
+def test_ztp_nmx_negative(engines, devices, setup_name, has_loopbox):
+    """
+    Test flow:
+        1. Check default values for ztp
+        2. Download and run ztp positive json, when cluster is disabled
+        3. Download and run ztp json with no exist file, when cluster is disabled
+        4. Start cluster
+        5. Download and run ztp json with incorrect commands
+        6. Stop nmx-controller
+        7. Download and run ztp positive json
+        8. Stop nmx-telemetry
+        9. Download and run positive ztp json
+        10. Cleanup
+    """
+    system = System(None)
+    cluster = Cluster()
+
+    try:
+        with allure.step("Run nv action run system ztp"):
+            system.ztp.action_run_ztp()
+            _wait_until_ztp_values_fields_changed(system, SystemConsts.ZTP_OUTPUT_FIELDS,
+                                                  SystemConsts.ZTP_DEFAULT_VALUES, tries=5, delay=2)
+
+        with allure.step("Download ztp nmx positive command list, cluster disabled"):
+            _download_file_and_run_ztp(engines, system, SystemConsts.NMX_POSITIVE_JSON, '1-nmx-commands-list',
+                                       SystemConsts.ZTP_STATUS_FAILED, SystemConsts.ZTP_STATUS_SUCCESS)
+
+        with allure.step("Download ztp nmx not exist file"):
+            _download_file_and_run_ztp(engines, system, SystemConsts.NMX_NOT_EXIST_FILE_JSON, '1-nmx-commands-list',
+                                       SystemConsts.ZTP_STATUS_FAILED, SystemConsts.ZTP_STATUS_SUCCESS)
+
+        with allure.step("Start cluster"):
+            ClusterTools.start_cluster(cluster, setup_name)
+
+            with allure.step("Verify cluster enabled"):
+                ClusterTools.validate_cluster_enabled(cluster)
+
+        with allure.step("Download ztp nmx json, with incorrect commands inside"):
+            _download_file_and_run_ztp(engines, system, SystemConsts.NMX_BAD_COMMANDS, '1-nmx-commands-list',
+                                       SystemConsts.ZTP_STATUS_FAILED, SystemConsts.ZTP_STATUS_SUCCESS)
+
+        with allure.step("Disable nmx controller and run positive ztp"):
+            ClusterTools.stop_app(cluster, ClusterConsts.NMX_CONTROLLER)
+
+            with allure.step("Download ztp nmx positive, when nmx controller disabled"):
+                _download_file_and_run_ztp(engines, system, SystemConsts.NMX_POSITIVE_JSON, '1-nmx-commands-list',
+                                           SystemConsts.ZTP_STATUS_FAILED, SystemConsts.ZTP_STATUS_SUCCESS)
+
+            with allure.step("Enable nmx controller"):
+                ClusterTools.start_app(cluster, ClusterConsts.NMX_CONTROLLER, has_loopbox)
+
+        with allure.step("Disable nmx telemetry and run positive ztp"):
+            ClusterTools.stop_app(cluster, ClusterConsts.NMX_TELEMETRY)
+
+            with allure.step("Download ztp nmx positive, when nmx controller disabled"):
+                _download_file_and_run_ztp(engines, system, SystemConsts.NMX_POSITIVE_JSON, '1-nmx-commands-list',
+                                           SystemConsts.ZTP_STATUS_FAILED, SystemConsts.ZTP_STATUS_SUCCESS)
+
+    except Exception as e:
+        logger.info("Received Exception during test_ztp_json_complex: {}".format(e))
+        raise e
+    finally:
+        ClusterTools.stop_cluster(cluster)
+        _ztp_cleanup(engines, system)
+
+
+@pytest.mark.ztp
+@pytest.mark.system
+def test_ztp_nmx_positive(engines, devices, setup_name):
+    """
+    Test flow:
+        1. Check default values for ztp
+        2. Start cluster
+        3. Download and run positive ztp json
+        4. Verify changes
+        5. Cleanup
+    """
+    output_format = OutputFormat.json
+    system = System(None)
+    cluster = Cluster()
+
+    try:
+        with allure.step("Run nv action run system ztp"):
+            system.ztp.action_run_ztp()
+            _wait_until_ztp_values_fields_changed(system, SystemConsts.ZTP_OUTPUT_FIELDS,
+                                                  SystemConsts.ZTP_DEFAULT_VALUES, tries=5, delay=2)
+
+        with allure.step("Start cluster"):
+            ClusterTools.start_cluster(cluster, setup_name)
+
+        with allure.step("Download ztp nmx positive command list, cluster enabled"):
+            _download_file_and_run_ztp(engines, system, SystemConsts.NMX_POSITIVE_JSON, '1-nmx-commands-list',
+                                       SystemConsts.ZTP_STATUS_SUCCESS, SystemConsts.ZTP_STATUS_SUCCESS)
+
+            with allure.step("Verify log level of apps changed"):
+                ClusterTools.verify_log_level(ClusterAppsLogLevels.INFO, ClusterConsts.NMX_CONTROLLER,
+                                              output_format, cluster)
+                ClusterTools.verify_log_level(ClusterAppsLogLevels.INFO, ClusterConsts.NMX_TELEMETRY,
+                                              output_format, cluster)
+
+    except Exception as e:
+        logger.info("Received Exception during test_ztp_json_complex: {}".format(e))
+        raise e
+    finally:
+        ClusterTools.stop_cluster(cluster)
+        _ztp_cleanup(engines, system)
+
+
+def _download_file_and_run_ztp(engines, system, file='', step='', step_status_code=SystemConsts.ZTP_STATUS_SUCCESS,
+                               ztp_status_code=SystemConsts.ZTP_STATUS_SUCCESS):
+    with allure.step("Download json file"):
+        _download_ztp_json_config(engines, file)
+
+    with allure.step("Run nv action run system ztp"):
+        system.ztp.action_run_ztp()
+
+        with allure.step("Check ztp status"):
+            _wait_until_ztp_step_status(system, step, step_status_code)
+            _wait_until_ztp_status(system, ztp_status_code)
+
+
+def _ztp_cleanup(engines, system):
+    system.ztp.action_abort_ztp()
+    engines.dut.run_cmd('sudo rm -f /host/ztp/ztp_data_local.json')
+    system.ztp.action_run_ztp()
 
 
 @pytest.mark.ztp

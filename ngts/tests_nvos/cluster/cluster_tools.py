@@ -527,11 +527,12 @@ class ClusterTools:
         yield
         if ClusterTools.check_cluster_state(cluster, output_format) == 'disabled':
             ClusterTools.start_cluster(cluster, setup_name, output_format=output_format)
-        cleanup_command = f"echo '{original_content}' | sudo tee {path_to_generated_file} > /dev/null"
-        engines.dut.run_cmd(cleanup_command)
+        if "Exists" in engines.dut.run_cmd(f'test -e {path_to_generated_file} && echo "Exists" || echo "Does not exist"'):
+            cleanup_command = f"echo '{original_content}' | sudo tee {path_to_generated_file} > /dev/null"
+            engines.dut.run_cmd(cleanup_command)
 
-        sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[fm_config].files.file_name[generated_file_name].action_file_install(force=False)
-        sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[fm_config].files.file_name[generated_file_name].action_delete()
+            sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[fm_config].files.file_name[generated_file_name].action_file_install(force=False)
+            sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[fm_config].files.file_name[generated_file_name].action_delete()
 
     @staticmethod
     def get_generated_sdn_file(output, file_type):
