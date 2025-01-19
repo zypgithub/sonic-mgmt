@@ -81,7 +81,7 @@ def test_interface_ipoib_mapping_basic_functionality(engines, devices, start_sm)
         with allure_step("Check logs exist for ib0 commands"):
 
             with allure_step("Run nv show system log command follow to view system logs"):
-                show_output = system.log.show_log(param="| grep 'IB_INTERFACE_TABLE'")
+                show_output = system.log.file.show_log(param="| grep 'IB_INTERFACE_TABLE'")
 
             with allure_step('Verify updated “system/image” in the logs as expected'):
                 ValidationTool.verify_expected_output(show_output, "IB_INTERFACE_TABLE").verify_result()

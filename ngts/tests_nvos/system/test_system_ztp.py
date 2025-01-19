@@ -41,7 +41,7 @@ def test_show_ztp_command(engines, devices, serial_engine):
         _wait_until_ztp_values_fields_changed(system, SystemConsts.ZTP_OUTPUT_FIELDS, SystemConsts.ZTP_DEFAULT_VALUES, tries=5, delay=2)
 
         with allure.step("Run nv show system log command and check ztp logs inside"):
-            show_output = system.log.show_log(param="| grep ztp")
+            show_output = system.log.file.show_log(param="| grep ztp")
             ValidationTool.verify_expected_output(show_output, 'ztp').verify_result()
 
         with allure.step("Run nv show system log command and check ztp logs inside"):
@@ -159,7 +159,7 @@ def test_ztp_json(engines, devices):
                 _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_FAILED)
 
             with allure.step("Run nv show system log command and check ztp logs inside"):
-                show_output = system.log.show_log(param="| grep ztp")
+                show_output = system.log.file.show_log(param="| grep ztp")
                 ValidationTool.verify_expected_output(show_output,
                                                       'Waiting for 300 seconds before restarting ZTP').verify_result()
 

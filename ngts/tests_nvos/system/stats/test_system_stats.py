@@ -559,7 +559,7 @@ def test_stats_reliability(engines, devices, test_api):
             assert stats_show[StatsConsts.STATE] == StatsConsts.State.ENABLED.value, \
                 "stats state parameter is expected to be 'enabled'"
             system.log.rotate_logs()
-            show_output = system.log.show_log(exit_cmd='q')
+            show_output = system.log.file.show_log(exit_cmd='q')
             # TODO: update StatsConsts.LOG_MSG_ERROR_DB
             # ValidationTool.verify_expected_output(show_output, StatsConsts.LOG_MSG_ERROR_DB).verify_result()
 

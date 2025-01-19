@@ -588,7 +588,7 @@ def validate_health_fix_or_issue(system, health_issue_dict, search_since_datetim
                     regex.format(time_regex=NvosConst.DATE_TIME_REGEX, component=component, issue=issues_regex), health_history_output, search_since_datetime)) > 0
 
         with allure.independent_step("Validate health status change appears in system log"):
-            log_output = system.log.show_log(exit_cmd='q', param='| grep Health', expected_str="Health DB change cache")
+            log_output = system.log.file.show_log(exit_cmd='q', param='| grep Health', expected_str="Health DB change cache")
             assert len(TestToolkit.search_line_after_a_specific_date_time(
                 NvosConst.DATE_TIME_REGEX + HealthConsts.SYSTEM_LOG_HEALTH_REGEX.format(status), log_output,
                 search_since_datetime)) > 0, "Didn't find health status line in the system log since specific time :{}\n" \

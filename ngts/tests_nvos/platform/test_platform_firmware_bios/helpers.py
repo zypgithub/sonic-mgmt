@@ -33,15 +33,6 @@ def verify_current_version(original_version, system):
         assert current_version == original_version, f"Current version is invalid: {current_version}, expected: {original_version}"
 
 
-def get_image_data(system) -> str:
-    with allure.step("Save original installed image name"):
-        original_images = system.image.get_image_field_values()
-        original_image = original_images[ImageConsts.CURRENT_IMG]
-        original_image_partition = system.image.get_image_partition(original_image, original_images)
-        logger.info("Original image: {}, partition: {}".format(original_image, original_image_partition))
-        return original_image_partition
-
-
 def verify_bios_auto_update_value(platform, value):
     with allure.step(f'verify nv show platform firmware BIOS auto-update is {value}'):
         logging.info(f'verify nv show platform firmware BIOS auto-update is {value}')

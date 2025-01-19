@@ -57,7 +57,7 @@ def test_fw_dump_me(engines, devices):
 
         with allure.step("Run nv show system log command follow to view system logs"):
             logging.info("Run nv show system log command follow to view system logs")
-            show_output = system.log.show_log(exit_cmd='q', expected_str=' ')
+            show_output = system.log.file.show_log(exit_cmd='q', expected_str=' ')
 
         with allure.step('Verify updated SDK message in the logs as expected'):
             logging.info('Verify updated SDK message in the logs as expected')

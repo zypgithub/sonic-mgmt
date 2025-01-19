@@ -1048,7 +1048,7 @@ def test_acl_recent_list(engines, test_api, topology_obj):
 
 
 @pytest.mark.acl
-def test_adding_new_rule(engines, topology_obj):
+def test_adding_new_rule(engines, topology_obj, apply_default_config):
     """
     Adding new rule that will be the opposite of a default rule and validate that the first rule will catch the packet.
     -	Add it before the default rules (by acl name) : validate new rule catch the packet and see counter increase
@@ -1122,7 +1122,7 @@ def test_adding_new_rule(engines, topology_obj):
 
 
 @pytest.mark.acl
-def test_override_default_rule(engines, topology_obj):
+def test_override_default_rule(engines, topology_obj, apply_default_config):
     """
     Override rule – not allowed to delete attr of default rule,
     just add new one or change existing one.

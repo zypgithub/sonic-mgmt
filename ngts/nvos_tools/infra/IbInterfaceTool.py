@@ -63,7 +63,7 @@ class IbInterfaceTool:
 
         with allure.step(f"Find correct mst_dev_name for {module_name or port_name}"):
             output_fae_port = OutputParsingTool.parse_show_interface_output_to_dictionary(
-                fae.port.interface.show()).get_returned_value()
+                fae.interface.show()).get_returned_value()
             asic_number = output_fae_port.get(IbInterfaceConsts.PRIMARY_ASIC, "0")
             assert asic_number is not None, "primary-asic is None"
             asic_dev_id_number = f"DEV_ID_ASIC_{asic_number}"

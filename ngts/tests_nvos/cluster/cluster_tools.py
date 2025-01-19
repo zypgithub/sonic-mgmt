@@ -451,7 +451,7 @@ class ClusterTools:
         expected_log_levels_upper = [level.upper() for level in expected_log_levels]
         unexpected_log_levels = [level.upper() for level in unexpected_log_levels]
 
-        show_output = system.log.show_log(param=f"| grep -E \"{'|'.join(ClusterConsts.NMX_LOG_MESSAGES_TAGS)}\"").split('\n')[1:]
+        show_output = system.log.file.show_log(param=f"| grep -E \"{'|'.join(ClusterConsts.NMX_LOG_MESSAGES_TAGS)}\"").split('\n')[1:]
         for line in show_output:
             if ":~$" in line:  # Symbolizes start of prompt line, no need to check.
                 continue

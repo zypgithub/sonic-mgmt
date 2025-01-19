@@ -7,12 +7,24 @@ from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 logger = logging.getLogger()
 
 
+@pytest.fixture(scope='function')
+def apply_default_config(engines):
+    acl_cleanup(engines)
+
+
 @pytest.fixture(scope='function', autouse=True)
-def acl_cleanup(engines):
+def cleanup(engines):
     """
     clean ACL configurations
     """
     yield
+    acl_cleanup(engines)
+
+
+def acl_cleanup(engines):
+    """
+    clean ACL configurations
+    """
     with allure.step("ACL cleanup"):
         try:
             Acl().unset()
