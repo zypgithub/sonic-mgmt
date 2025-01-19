@@ -15,8 +15,8 @@ from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.conftest import get_dut_hostname
 from ngts.tests_nvos.general.security.api_server.mtls.spiffe_id.conftest import cleanup_spiffe
-from ngts.tests_nvos.general.security.api_server.mtls.spiffe_id.constants import INVALID_SPIFFE_ERR, INCOMPLETE_ERR, \
-    SPIFFE_UNIQUENESS_ERR, SecurityMode, BAD_RESPONSE_KEYWORDS
+from ngts.tests_nvos.general.security.api_server.mtls.spiffe_id.constants import INVALID_SPIFFE_ERR, \
+    SPIFFE_UNIQUENESS_ERR, SecurityMode, BAD_RESPONSE_KEYWORDS, INCOMPLETE_ERR_PER_API
 from ngts.tests_nvos.general.security.api_server.mtls.spiffe_id.helpers import generate_rand_spiffe_id, \
     setup_api_security_mode, get_tmp_revision_number_for_test_only
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
@@ -54,8 +54,8 @@ def test_api_spiffe_cli(test_api, local_admin_users: List[UserInfo], engines):
     with allure.step('Run show commands and verify outputs contain the required fields'):
         out = OutputParsingTool.parse_json_str_to_dictionary(user_obj.spiffe_id.show()).get_returned_value()
         assert out == {}, f'output of general spiffe resource is not empty as expected. actual: {out}'
-        out = user_obj.spiffe_id.spiffe[spif1].show()
-        # TODO: check how it should that its not exists be and assert it
+        out = OutputParsingTool.parse_json_str_to_dictionary(user_obj.spiffe_id.spiffe[spif1].show()).get_returned_value()
+        assert out == {}, f'output of specific spiffe resource is not empty as expected. actual: {out}'
     with allure.step('Set multiple spiffes to single user'):
         for spif in spifs:
             with allure.independent_step(spif):
@@ -83,10 +83,42 @@ def test_api_spiffe_cli(test_api, local_admin_users: List[UserInfo], engines):
                 assert spif1 not in out, f'spiffe "{spif1}" unexpectedly exist in show output after unset'
         with allure.independent_step('unset all spifs'):
             with allure.step('unset'):
-                user_obj.spiffe_id.spiffe.unset(apply=True).verify_result()
+                user_obj.spiffe_id.unset(apply=True).verify_result()
             with allure.step('verify deleted in show'):
                 out = OutputParsingTool.parse_json_str_to_dictionary(user_obj.spiffe_id.show()).get_returned_value()
                 assert out == {}, f'show output is not empty after unsetting all spiffes'
+
+
+@pytest.mark.security
+@pytest.mark.mtls
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_api_spiffe_valid_value_special_cases(test_api, local_adminuser: UserInfo, engines):
+    """
+    Verify that set with valid spiffe works
+    """
+    TestToolkit.update_apis(test_api)
+    user_obj = System().aaa.user.user_id[local_adminuser.username]
+
+    class Case:
+        def __init__(self, name: str, spif_val: str):
+            self.name: str = name
+            self.spif_val: str = spif_val
+
+    cases: List[Case] = [
+        Case('long spif', generate_rand_spiffe_id(500, 500)),
+        Case('short spif', generate_rand_spiffe_id(1, 1)),
+    ]
+
+    with allure.step('Set invalid spiffes and verify err'):
+        for case in cases:
+            with allure.independent_step(f'{case.name} : "{case.spif_val}"'):
+                user_obj.spiffe_id.spiffe[case.spif_val].set().verify_result()
+        with allure.step('apply'):
+            user_obj._general_cli_wrapper.apply_config(engines.dut, verify_execution=True)
+    with allure.step('Verify in show – expect the value exists'):
+        out = OutputParsingTool.parse_json_str_to_dictionary(user_obj.spiffe_id.show()).get_returned_value()
+        missing_valid_spiffs = [case.spif_val for case in cases if case.spif_val not in out]
+        assert not missing_valid_spiffs, f'missing values "{missing_valid_spiffs}" in show spiffe output: {out}'
 
 
 @pytest.mark.security
@@ -106,19 +138,17 @@ def test_api_spiffe_invalid_value(test_api, local_adminuser: UserInfo):
     class Case:
         def __init__(self, name: str, spif_val: str, expected_err: str):
             self.name: str = name
-            self.spif_val: str = name
+            self.spif_val: str = spif_val
             self.expected_err: str = expected_err
 
     cases: List[Case] = [
-        Case('empty spif ""', '', INCOMPLETE_ERR),
+        Case('empty spif ""', '', INCOMPLETE_ERR_PER_API[test_api]),
         Case('rand str (not well spiffe formatted)', generate_rand_str(10), INVALID_SPIFFE_ERR),
-        Case('too long spif', generate_rand_spiffe_id(50, 50), 'TODO'),  # TODO: check
-        Case('too short spif', generate_rand_spiffe_id(1, 1), 'TODO'),  # TODO: check
     ]
 
     with allure.step('Set invalid spiffes and verify err'):
         for case in cases:
-            with allure.independent_step(case.name):
+            with allure.independent_step(f'{case.name} : "{case.spif_val}"'):
                 res: ResultObj = user_obj.spiffe_id.spiffe[case.spif_val].set()
                 verify_result_obj_failure(res, case.expected_err)
     with allure.step('Verify in show – expect the value doesn’t exist'):
@@ -206,35 +236,35 @@ class Case:
         self.cert: CertInfo = cert
         self.expect_authorized_user: UserInfo = expect_authorized_user
 
-    def verify_show(self, host: str, ca: CertInfo):
+    def verify_show(self, host: str, ca: CertInfo, insecured: bool):
         expect_success = self.expect_authorized_user is not None
         with allure.step(f'check show: {expect_success}'):
             method = 'GET'
             resource = System().version.get_resource_path()
-            curl_cmd = self.__build_curl_request_cmd(host, method, resource, ca)
+            curl_cmd = self.__build_curl_request_cmd(host, method, resource, ca, insecured)
             self.__run_curl_and_verify(curl_cmd, expect_success)
 
-    def verify_set(self, revision, host: str, ca: CertInfo):
+    def verify_set(self, revision, host: str, ca: CertInfo, insecured: bool):
         expect_success = self.expect_authorized_user is not None and self.expect_authorized_user.role == UserRole.ADMIN
         with allure.step(f'check set: {expect_success}'):
             method = 'PATCH'
             resource = System().security.password_hardening.get_resource_path()
             params = {'rev': revision}
             payload = {'state': 'disabled'}
-            curl_cmd = self.__build_curl_request_cmd(host, method, resource, ca, params, payload)
+            curl_cmd = self.__build_curl_request_cmd(host, method, resource, ca, insecured, params, payload)
             self.__run_curl_and_verify(curl_cmd, expect_success)
 
-    def __build_curl_request_cmd(self, host: str, method: str, resource: str, ca: CertInfo, params: dict = None,
-                                 payload: dict = None) -> str:
+    def __build_curl_request_cmd(self, host: str, method: str, resource: str, ca: CertInfo, insecured: bool,
+                                 params: dict = None, payload: dict = None) -> str:
         cmd_builder = CurlCmdBuilder(method, host, resource)
         if params:
             cmd_builder.params(params)
         if self.creds:
             cmd_builder.user_creds(self.creds.username, self.creds.password)
+        if insecured or not self.cert:
+            cmd_builder.insecure()
         if self.cert:
             cmd_builder.client_cert(self.cert.private, self.cert.public)
-        else:
-            cmd_builder.insecure()
         if payload:
             cmd_builder.payload(payload)
         if ca:
@@ -242,7 +272,7 @@ class Case:
         return cmd_builder.build()
 
     def __run_curl_and_verify(self, curl_cmd, expect_success):
-        time.sleep(0.2)
+        time.sleep(0.1)
         logging.info(f'running request:\n{curl_cmd}\nexpect: {expect_success}')
         try:
             out = run_cmd(curl_cmd)
@@ -274,7 +304,7 @@ class TestSetup:
         self.spiffes_info: Dict[str, List[str]] = spiffes_info
 
 
-def setup_test(dut_hostname, engines, scp_player) -> TestSetup:
+def setup_test(dut_hostname, engines, scp_player, save_users: bool = False) -> TestSetup:
     dut_engine = engines.dut
     system = System()
     dn = dut_hostname
@@ -312,11 +342,16 @@ def setup_test(dut_hostname, engines, scp_player) -> TestSetup:
         user2: UserInfo = monitors[0]
         user3: UserInfo = monitors[1]
 
-    # TODO: uncomment on drop
-    # with allure.step('bind spiffes to users'):
-    #     system.aaa.user.user_id[user1.username].spiffe_id.spiffe[spifs[1]].set().verify_result()
-    #     system.aaa.user.user_id[user1.username].spiffe_id.spiffe[spifs[2]].set().verify_result()
-    #     system.aaa.user.user_id[user2.username].spiffe_id.spiffe[spifs[3]].set().verify_result()
+    if save_users:
+        with allure.step('apply config'):
+            system._general_cli_wrapper.apply_config(dut_engine, verify_execution=True)
+        with allure.step('save config'):
+            NvueGeneralCli.save_config(engines.dut)
+
+    with allure.step('bind spiffes to users'):
+        system.aaa.user.user_id[user1.username].spiffe_id.spiffe[spifs[1]].set().verify_result()
+        system.aaa.user.user_id[user1.username].spiffe_id.spiffe[spifs[2]].set().verify_result()
+        system.aaa.user.user_id[user2.username].spiffe_id.spiffe[spifs[3]].set().verify_result()
 
     with allure.step('attach spiffes info in setup object'):
         spiffes_info: Dict[str, List[str]] = {
@@ -462,7 +497,7 @@ def test_api_spiffe_core_functionality(dut_hostname, engines, scp_player):
         Case(f'usr2 bad creds + {setup.cert_spif_of_user2.info}', user2_bad_pw, setup.cert_spif_of_user2, setup.user2),
         # usr3 good pw
         Case(f'usr3 good creds + no cert', setup.user3, None, None),
-        Case(f'usr3 good creds + {setup.cert_2_spifs.info}', setup.user3, setup.cert_2_spifs, None),
+        Case(f'usr3 good creds + {setup.cert_2_spifs.info}', setup.user3, setup.cert_2_spifs, setup.user3),
         Case(f'usr3 good creds + {setup.cert_no_spif.info}', setup.user3, setup.cert_no_spif, setup.user2),
         Case(f'usr3 good creds + {setup.cert_spif_not_exists.info}', setup.user3, setup.cert_spif_not_exists, setup.user2),
         Case(f'usr3 good creds + {setup.cert_spif_of_user1_1.info}', setup.user3, setup.cert_spif_of_user1_1, setup.user1),
@@ -495,15 +530,18 @@ def test_api_spiffe_core_functionality(dut_hostname, engines, scp_player):
                 check_test_cases(cases_by_security_mode[mode], setup, mode, revision_num, engines)
 
 
-def check_spiffe_negative(engines, revision_num, setup, verify_config: bool = True, verify_auth: bool = True):
+def check_spiffe_negative(engines, revision_num, setup, verify_config: bool = True, verify_auth: bool = True, users_should_exist: bool = True):
     if verify_config:
         with allure.step('verify config not kept in show'):
             for user in [setup.user1, setup.user2]:
                 with allure.independent_step(user.username):
                     user_obj = System().aaa.user.user_id[user.username]
-                    out = OutputParsingTool.parse_json_str_to_dictionary(user_obj.spiffe_id.show()).get_returned_value()
-                    expected = {}
-                    assert out == expected, f'output of {user.username} general spiffe resource is not as expected:\nexpected: {expected}\nactual: {out}'
+                    if users_should_exist:
+                        out = OutputParsingTool.parse_json_str_to_dictionary(user_obj.spiffe_id.show()).get_returned_value()
+                        expected = {}
+                        assert out == expected, f'output of {user.username} general spiffe resource is not as expected:\nexpected: {expected}\nactual: {out}'
+                    else:
+                        user_obj.spiffe_id.show(should_succeed=False)
     if verify_auth:
         with allure.step("verify spiffe auth doesn't work"):
             cases: List[Case] = [
@@ -538,8 +576,8 @@ def check_test_cases(cases: List[Case], setup: TestSetup, security_mode, revisio
         for case in cases:
             with allure.independent_step(case.name):
                 client_ca = None if security_mode == SecurityMode.UNSECURED else setup.server_cert
-                case.verify_show(engines.dut.ip, client_ca)
-                case.verify_set(revision_num, engines.dut.ip, client_ca)
+                case.verify_show(engines.dut.ip, client_ca, security_mode == SecurityMode.UNSECURED)
+                case.verify_set(revision_num, engines.dut.ip, client_ca, security_mode == SecurityMode.UNSECURED)
 
 
 @pytest.mark.track_serial_console
@@ -559,11 +597,15 @@ def test_api_spiffe_reboot_case(reboot_flow, engines, scp_player, dut_hostname):
     6. Verify config not kept in show
     7. Verify mtls passwordless connection using spiffe doesn’t work
     """
+
     is_save_flow = reboot_flow == RebootTestFlowType.WITH_SAVE
+
+    with allure.step('take new revision number for testing admin permissions'):
+        revision_num = get_tmp_revision_number_for_test_only()
 
     with allure.step('setup'):
         with allure.step('prepare certs, users, spiffes'):
-            setup: TestSetup = setup_test(dut_hostname, engines, scp_player)
+            setup: TestSetup = setup_test(dut_hostname, engines, scp_player, not is_save_flow)
 
         with allure.step(f'setup security mode: {SecurityMode.MTLS}'):
             setup_api_security_mode(SecurityMode.MTLS, setup.server_cert, setup.server_ca)
@@ -577,9 +619,6 @@ def test_api_spiffe_reboot_case(reboot_flow, engines, scp_player, dut_hostname):
         engines.dut.disconnect()
 
     with allure.step('verify after reboot'):
-
-        with allure.step('take new revision number for testing admin permissions'):
-            revision_num = get_tmp_revision_number_for_test_only()
 
         if is_save_flow:
             check_spiffe_positive(engines, revision_num, setup)
@@ -615,7 +654,7 @@ def api_spiffe_factory_reset_no_params_check():
             with allure.step('take new revision number for testing admin permissions'):
                 revision_num = get_tmp_revision_number_for_test_only()
 
-            check_spiffe_negative(engines, revision_num, setup)
+            check_spiffe_negative(engines, revision_num, setup, users_should_exist=False)
     finally:
         cleanup_spiffe()
 
@@ -667,6 +706,8 @@ def api_spiffe_factory_reset_keep_basic_check():
             check_spiffe_negative(engines, revision_num, setup, verify_config=False)
 
             with allure.step(f'setup security mode again: {SecurityMode.MTLS}'):
+                import_certs_safely([setup.server_cert], scp_player)
+                import_cas_safely([setup.server_ca], scp_player)
                 setup_api_security_mode(SecurityMode.MTLS, setup.server_cert, setup.server_ca)
 
             check_spiffe_positive(engines, revision_num, setup, verify_config=False)
@@ -702,7 +743,13 @@ def api_spiffe_factory_reset_keep_all_config_check():
     try:
         with allure.step('verify after factory reset'):
             with allure.step('take new revision number for testing admin permissions'):
-                revision_num = get_tmp_revision_number_for_test_only()
+                revision_num = get_tmp_revision_number_for_test_only(CertInfo('', '',
+                                                                              setup.cert_spif_of_user1_1.private,
+                                                                              setup.cert_spif_of_user1_1.public,
+                                                                              '', '',
+                                                                              setup.cert_spif_of_user1_1.ip,
+                                                                              setup.cert_spif_of_user1_1.ip,
+                                                                              setup.server_cert.cacert))
 
             check_spiffe_positive(engines, revision_num, setup)
     finally:

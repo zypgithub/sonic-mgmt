@@ -15,12 +15,6 @@ tests_nvos/general/security/certificate/test_certificate_mgmt.py::test_import_ce
     conditions:
       - https://redmine.mellanox.com/issues/4222041
 
-tests_nvos/general/security/centralized_tests/factory_reset/test_factory_reset.py::test_reset_factory:
-  skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4213351"
-    conditions:
-      - https://redmine.mellanox.com/issues/4213351
-
 tests_nvos/system/gnmi/test_gnmi_cert.py::test_gnmi_cert_unset_cert:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4222040"

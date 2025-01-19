@@ -5,6 +5,7 @@ from typing import List, Dict, Tuple
 
 from ngts.nvos_tools.infra.CertificateGenerator import CertificateGenerator
 from ngts.nvos_tools.infra.CmdRunner import CmdRunner
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
@@ -24,7 +25,7 @@ def set_new_random_users(num_users: int, role: str, apply=False) -> List[UserInf
             users.append(UserInfo(username, password, role))
     if apply:
         with allure.step('apply users'):
-            system._cli_wrapper.apply_config(verify_execution=True)
+            system._general_cli_wrapper.apply_config(TestToolkit.engines.dut, verify_execution=True)
     return users
 
 
