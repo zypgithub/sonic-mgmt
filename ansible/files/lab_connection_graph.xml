@@ -91,7 +91,7 @@
       <Device Hostname="mtvr-liger-02" HwSku="MLNX-OS" Type="FanoutLeaf"/>
       <Device Hostname="mtvr-liger-03" HwSku="MLNX-OS" Type="FanoutLeaf"/>
       <Device Hostname="mtvr-leopard-02" HwSku="MLNX-OS" Type="FanoutLeaf"/>
-      <Device Hostname="mtvr-leopard-04" HwSku="Mellanox-SN4700-O8V48" Type="FanoutLeaf"/>
+      <Device Hostname="mtvr-moose-20" HwSku="ACS-SN5600" Type="FanoutLeaf"/>
       <Device Hostname="r-leopard-80" HwSku="MLNX-OS" Type="FanoutLeaf"/>
       <Device Hostname="r-leopard-82" HwSku="MLNX-OS" Type="FanoutLeaf"/>
       <Device Hostname="r-leopard-71" HwSku="Mellanox-SN4700-O8V48" Type="FanoutLeaf"/>
@@ -2629,8 +2629,8 @@
     <DevicesL3Info Hostname="r-leopard-20">
       <ManagementIPInterface Name="ManagementIp" Prefix="10.210.25.114/22"/>
     </DevicesL3Info>
-    <DevicesL3Info Hostname="mtvr-leopard-04">
-      <ManagementIPInterface Name="ManagementIp" Prefix="10.245.21.9/22"/>
+    <DevicesL3Info Hostname="mtvr-moose-20">
+      <ManagementIPInterface Name="ManagementIp" Prefix="10.245.20.245/22"/>
     </DevicesL3Info>
     <DevicesL3Info Hostname="r-tigon-14">
       <ManagementIPInterface Name="ManagementIp" Prefix="10.210.25.188/22"/>

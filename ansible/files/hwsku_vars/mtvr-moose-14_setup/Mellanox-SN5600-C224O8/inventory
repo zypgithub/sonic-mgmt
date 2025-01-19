@@ -10,7 +10,7 @@ mtvr-moose-14-t1-lag-c224o8  ansible_host=10.245.21.107 sonic_version=v2  sonic_
 mtvr-moose-14-ptf32  ansible_host=10.245.21.107 sonic_version=v2  sonic_hwsku=Mellanox-SN5600-C224O8 iface_speed=50000 serial_console="ssh -l rcon:7038 10.245.2.4" ptf_host=ptf-mtvr-moose-14 ptf_portmap="roles/test/files/mlnx/mtvr-moose-14_interface_to_front_map.ini" pdu_host=pdu-10-245-2-13,pdu-10-245-2-35
 mtvr-moose-14-ptf-any  ansible_host=10.245.21.107 sonic_version=v2  sonic_hwsku=Mellanox-SN5600-C224O8 iface_speed=50000 serial_console="ssh -l rcon:7038 10.245.2.4" ptf_host=ptf-mtvr-moose-14 ptf_portmap="roles/test/files/mlnx/mtvr-moose-14_interface_to_front_map.ini" pdu_host=pdu-10-245-2-13,pdu-10-245-2-35
 
-mtvr-leopard-04 ansible_host=mtvr-leopard-04 ansible_ssh_user="{{ lookup('env','SONIC_SWITCH_USER') }}" ansible_ssh_pass="{{ lookup('env','SONIC_SWITCH_PASSWORD') }}" os=sonic
+mtvr-moose-20 ansible_host=mtvr-moose-20 ansible_ssh_user="{{ lookup('env','SONIC_SWITCH_USER') }}" ansible_ssh_pass="{{ lookup('env','SONIC_SWITCH_PASSWORD') }}" os=sonic
 
 [sonic:children]
 sonic_latest
