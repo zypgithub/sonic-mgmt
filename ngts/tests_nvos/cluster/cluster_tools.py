@@ -23,6 +23,7 @@ from ngts.nvos_tools.platform.Platform import Platform
 from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.nvos_tools.Devices.IbDevice import JulietSwitch
 
 logger = logging.getLogger()
 
@@ -276,7 +277,7 @@ class ClusterTools:
                 else:
                     assert app_status == expected_state, f"App {app} status is {app_status} instead of {expected_state}"
                 ClusterTools.verify_app_is_up(engines, app)
-            if is_bug_active(4207869):
+            if not is_bug_active(4207869):
                 ClusterTools.verify_lid_value(devices)
 
     @staticmethod
@@ -599,53 +600,55 @@ def disabled_access_ports(func):
         has_access_ports = True
         interface_wa_called = False
         try:
-            TestToolkit.tested_api = 'NVUE'
-            if not hasattr(devices.dut, 'nvl5_access_ports_list'):
-                has_access_ports = False
-            if has_access_ports and standalone_system:
-                port_name = summarize_ports(devices.dut.nvl5_access_ports_list)
-                selected_port = Port(port_name, "", "")
-                port_state = NvosConsts.LINK_STATE_DOWN
-                selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True).verify_result()
-                TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
-            if not standalone_system:
-                for port in Configurations.ports_to_disable[setup_name]:
-                    selected_port = Port(port, "", "")
+            if isinstance(devices.dut, JulietSwitch):
+                TestToolkit.tested_api = 'NVUE'
+                if not hasattr(devices.dut, 'nvl5_access_ports_list'):
+                    has_access_ports = False
+                if has_access_ports and standalone_system:
+                    port_name = summarize_ports(devices.dut.nvl5_access_ports_list)
+                    selected_port = Port(port_name, "", "")
                     port_state = NvosConsts.LINK_STATE_DOWN
                     selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True).verify_result()
-                TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
+                    TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
+                if not standalone_system:
+                    for port in Configurations.ports_to_disable[setup_name]:
+                        selected_port = Port(port, "", "")
+                        port_state = NvosConsts.LINK_STATE_DOWN
+                        selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True).verify_result()
+                    TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
 
-            cluster = Cluster()
-            sdn = Sdn()
-            ClusterTools().stop_cluster(cluster)
-            ClusterTools().start_cluster(cluster, setup_name)
-            interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name)
-            next(interfaces_wa)
-            interface_wa_called = True
-            with allure.step("Unset Cluster before test starts to run, to make sure we are at the correct init state"):
-                cluster.unset(apply=True)
-                ClusterTools.wait_for_apps_to_be_in_wanted_state()
-            # Execute the test function
-            return func(*args, **kwargs)
-        finally:
-            if has_access_ports:
-                port_name = summarize_ports(devices.dut.nvl5_access_ports_list)
-                selected_port = Port(port_name, "", "")
-                port_state = NvosConsts.LINK_STATE_UP
-                selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True).verify_result()
-                TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
-
-            if interface_wa_called:
-                try:
-                    next(interfaces_wa)
-                except StopIteration:
-                    pass  # Or handle it if necessary
-            if hasattr(devices.dut, 'nvl5_trunk_ports_list') and devices.dut.nvl5_trunk_ports_list:
-                refresh_switch_ports(devices.dut.nvl5_trunk_ports_list, engines)
-            with allure.step("Reset cluster state"):
-                if ClusterTools.check_cluster_state(cluster, OutputFormat.json) == 'enabled':
+                cluster = Cluster()
+                sdn = Sdn()
+                ClusterTools().stop_cluster(cluster)
+                ClusterTools().start_cluster(cluster, setup_name)
+                interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name)
+                next(interfaces_wa)
+                interface_wa_called = True
+                with allure.step("Unset Cluster before test starts to run, to make sure we are at the correct init state"):
                     cluster.unset(apply=True)
                     ClusterTools.wait_for_apps_to_be_in_wanted_state()
+                # Execute the test function
+            return func(*args, **kwargs)
+        finally:
+            if isinstance(devices.dut, JulietSwitch):
+                if has_access_ports:
+                    port_name = summarize_ports(devices.dut.nvl5_access_ports_list)
+                    selected_port = Port(port_name, "", "")
+                    port_state = NvosConsts.LINK_STATE_UP
+                    selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True).verify_result()
+                    TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
+
+                if interface_wa_called:
+                    try:
+                        next(interfaces_wa)
+                    except StopIteration:
+                        pass  # Or handle it if necessary
+                if hasattr(devices.dut, 'nvl5_trunk_ports_list') and devices.dut.nvl5_trunk_ports_list:
+                    refresh_switch_ports(devices.dut.nvl5_trunk_ports_list, engines)
+                with allure.step("Reset cluster state"):
+                    if ClusterTools.check_cluster_state(cluster, OutputFormat.json) == 'enabled':
+                        cluster.unset(apply=True)
+                        ClusterTools.wait_for_apps_to_be_in_wanted_state()
     return wrapper
 
 
