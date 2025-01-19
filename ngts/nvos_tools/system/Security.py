@@ -28,3 +28,12 @@ class Security(BaseComponent):
                 params = {"sed-password": new_password}
             return SendCommandTool.execute_command(self._cli_wrapper.action_change, engine,
                                                    self.get_resource_path(), params)
+
+    def action_sed_erase(self, dut_engine=None, device=None) -> ResultObj:
+        with allure.step(f'Execute sed erase action {self.get_resource_path()}'):
+            engine = dut_engine if dut_engine else TestToolkit.engines.dut
+            params = "sed-erase"
+            if TestToolkit.tested_api == ApiType.OPENAPI:
+                params = {"sed-erase": True}
+            return SendCommandTool.execute_command(self._cli_wrapper.action_run, engine, device,
+                                                   self.get_resource_path(), params)

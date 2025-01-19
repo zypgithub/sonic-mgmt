@@ -1814,6 +1814,13 @@
         - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm.py::TestNewTc::test_check_tc_config_link
         - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm.py::TestNewTc::test_operate_tc_service
 
+# NVOS - expected errors - installing invalid transceiver firmware
+- Errors_list:
+    - '.*ERR nvued:   ERROR: lifecycle.py:1021 Failed to get FW version from.*'
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/platform/test_platform_transceiver_firmware.py::test_install_reset_transceiver_firmware_negative_flow
+
 # NVOS
 - Errors_list:
     - '.*ERR health-statsd#health_history: .*: speed is out of range, speed=.*'

@@ -943,7 +943,7 @@ class JulietSwitch(NvLinkSwitch):
         self.ztp_complex_dev_json = 'complex_juliet.json'
         self.show_platform_chassis_location_output = {
             PlatformConsts.CHASSIS_LOCATION_TRAY_ID: ExpectedString(range_min=-1, range_max=9),
-            PlatformConsts.CHASSIS_LOCATION_SLOT_ID: ExpectedString(range_min=4, range_max=18),
+            PlatformConsts.CHASSIS_LOCATION_SLOT_NUM: ExpectedString(range_min=4, range_max=18),
             PlatformConsts.CHASSIS_LOCATION_CHAS_SN: "",
             PlatformConsts.CHASSIS_LOCATION_TOPO_ID: ExpectedString(regex=r"^(Loopback|GB200 NVL36|GB200 NVL72|\d+)$")
         }
@@ -1162,8 +1162,8 @@ class JulietScaleoutSwitch(JulietSwitch):
                                                       "model": "692-9K36F-00MV-JS0"})
 
     def sleep_after_system_reboot(self):
-        logger.info("Sleeping for 140 seconds - Reboot takes longer on juliet for now")
-        time.sleep(140)
+        logger.info("Sleeping for 60 seconds - Reboot takes longer on juliet for now")
+        time.sleep(60)
 
     def _relevant_config_filename_by_version(self, version: str) -> str:
         return 'nvos_config_nvl5.yml'
@@ -1286,7 +1286,7 @@ class JulietArielPS(JulietTTMSwitch):
 
     def _init_platform_lists(self):
         super()._init_platform_lists()
-        self.platform_inventory_switch_values.update({"model": "692-9K36F-A5MV-JQS"})
+        self.platform_inventory_switch_values.update({"model": "692-9K36F-A5MV-JCR"})
 
 
 # -------------------------- JulietNonScaleoutSwitch Switch ----------------------------
@@ -1440,6 +1440,33 @@ class JulietNonScaleoutSwitchNoNCI(JulietNonScaleoutSwitch):
         self.platform_inventory_switch_values.update({"hardware-version": None,
                                                       "model": ExpectedString(regex="692-96099-00MV-JS0")})
 
+# -------------------------- JulietNonScaleoutSwitchNoNCI5600 Switch ----------------------------
+
+
+class JulietNonScaleoutSwitchNoNCI5600(JulietNonScaleoutSwitchNoNCI):
+
+    def __init__(self):
+        super().__init__()
+
+    def _init_constants(self):
+        super()._init_constants()
+        self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
+            "x86_64-nvidia_n5600_ld-r0")
+        self.show_platform_output.update({
+            "product-name": "N5600_LD",
+            "asic-model": self.asic_type,
+        })
+
+    def _init_fan_list(self):
+        super()._init_fan_list()
+
+    def _init_temperature(self):
+        super()._init_temperature()
+
+    def _init_platform_lists(self):
+        super()._init_platform_lists()
+        self.platform_inventory_switch_values.update({"hardware-version": None,
+                                                      "model": ExpectedString(regex="692-9K33R-00MV-JES")})
 
 # -------------------------- Caiman Switch ----------------------------
 
