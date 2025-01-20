@@ -128,7 +128,7 @@ def test_ssd_cleanup_positive_flow(engines, devices):
 
         df_output = _get_df_output(engines.dut)
         file_name = 'Big_file'
-        engines.dut.run_cmd('sudo fallocate -l {size}G /{path}/{file}'.format(size=df_output[SystemConsts.SSD_SPACE_AVAILABLE_SIZE] - 2, path=paths_order[0], file=file_name))
+        engines.dut.run_cmd('sudo fallocate -l {size}G /{path}/{file}'.format(size=df_output[SystemConsts.SSD_SPACE_AVAILABLE_SIZE] - 1.5, path=paths_order[0], file=file_name))
 
         with allure.step("check auto cleanup step"):
             with allure.step("check SSD Cleanup Started in the logs"):
@@ -203,7 +203,7 @@ def _add_files(engine, usage_threshold, available_space):
     with allure.step("create new files to reach usage threshold {}".format(usage_threshold)):
         added_files_list = []
 
-        size_each_file = 700 / (2 * len(paths_order) - 1)
+        size_each_file = 500 / (2 * len(paths_order) - 1)
         file_size = f"{size_each_file}M"
 
         for i, path in enumerate(paths_order):

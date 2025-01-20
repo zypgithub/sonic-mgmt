@@ -212,8 +212,9 @@ def test_gnmi_bad_flow(test_api, engines, devices):
     with allure.step("Subscribe to the gnmi server for data that is not supported"):
         xpath = f'interfaces/interface[name={devices.dut.default_port}]/state/counters/in-broadcast-pkts'
         gnmi_stream_updates = run_gnmi_client_and_parse_output(engines, devices, xpath, engines.dut.ip)
-        gnmi_stream_updates_value = list(gnmi_stream_updates.values())
-        assert not gnmi_stream_updates_value, f'{xpath} is unsupported field, so we expect to have none, but got {gnmi_stream_updates_value}'
+        gnmi_stream_updates_value = list(gnmi_stream_updates.values())[0]
+        assert gnmi_stream_updates_value == '0', f'{xpath} is unsupported field,' \
+            f' so we expect to have 0, but got {gnmi_stream_updates_value}'
 
     with allure.step("Subscribe to the gnmi server with bad xpath"):
         xpath = f'/{Tools.RandomizationTool.get_random_string(5)}/{Tools.RandomizationTool.get_random_string(5)}'
