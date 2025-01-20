@@ -186,9 +186,9 @@ def verify_after_disconnect(dut_engine, system, action_output, username, passwor
             assert 'Action succeeded' in action_output, f"could not disconnect {username}"
 
         with allure.step(f'verify {username} state still enabled'):
-            outpout = OutputParsingTool.parse_json_str_to_dictionary(
+            output = OutputParsingTool.parse_json_str_to_dictionary(
                 system.aaa.user.user_id[username].show()).get_returned_value()
-            ValidationTool.verify_field_value_in_output(outpout, SystemConsts.USER_STATE,
+            ValidationTool.verify_field_value_in_output(output, SystemConsts.USER_STATE,
                                                         SystemConsts.USER_STATE_ENABLED).verify_result()
 
         with allure.step(f'verify {username} running processes count'):

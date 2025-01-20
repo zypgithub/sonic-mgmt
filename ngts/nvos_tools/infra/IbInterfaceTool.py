@@ -49,10 +49,10 @@ class IbInterfaceTool:
             time.sleep(sleep)
 
     @staticmethod
-    def simulate_toggle_port_event(engine, device, port_name, mst_dev_name, sleep):
+    def simulate_toggle_port_event(engine, device, fae, port_name, mst_dev_name, sleep):
         with allure.step(f"Simulate toggle port event for port {port_name}"):
-
-            local_port_hex = IbInterfaceTool.get_local_port_hex(engine, port_name)
+            asic_number = get_primary_asic(fae)
+            local_port_hex = IbInterfaceTool.get_local_port_hex(engine, port_name, asic_number)
             RegisterTool.update_prei_register(engine, mst_dev_name=mst_dev_name, local_port=local_port_hex)
             time.sleep(sleep)
 
@@ -62,9 +62,7 @@ class IbInterfaceTool:
         fae = Fae(port_name=fae_port_name)
 
         with allure.step(f"Find correct mst_dev_name for {module_name or port_name}"):
-            output_fae_port = OutputParsingTool.parse_show_interface_output_to_dictionary(
-                fae.interface.show()).get_returned_value()
-            asic_number = output_fae_port.get(IbInterfaceConsts.PRIMARY_ASIC, "0")
+            asic_number = get_primary_asic(fae)
             assert asic_number is not None, "primary-asic is None"
             asic_dev_id_number = f"DEV_ID_ASIC_{asic_number}"
             asic_mapping_number = asic_conf_dict[asic_dev_id_number]
@@ -74,12 +72,18 @@ class IbInterfaceTool:
             return mst_dev_name
 
     @staticmethod
-    def get_local_port_hex(engine, port_name):
-        docker = "syncd-ibv01" if 'B' in port_name else "syncd-ibv00"
+    def get_local_port_hex(engine, port_name, asic_number):
+        docker = f"syncd-ibv0{asic_number}"
         cmd = f"docker exec {docker} sx_api_ports_mapping_dump.py"
         table_output = engine.run_cmd(cmd)
         local_port, lane_bmap = get_local_port_and_lane_bmap(port_name)
         return get_log_port(table_output, local_port, lane_bmap)
+
+
+def get_primary_asic(fae):
+    output_fae_port = OutputParsingTool.parse_show_interface_output_to_dictionary(
+        fae.interface.show()).get_returned_value()
+    return output_fae_port.get(IbInterfaceConsts.PRIMARY_ASIC, "0")
 
 
 def get_local_port_and_lane_bmap(port_name):

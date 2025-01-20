@@ -164,14 +164,10 @@ def test_ib_interface_state_up_once(engines, devices, test_api, asic_conf_dict):
         verify_port_state(output_dictionary, NvosConsts.LINK_STATE_UP)
 
     with allure.step('verify state is down after port toggle failure'):
-
-        if isinstance(devices.dut, BlackMambaSwitch) and is_bug_active(4210708):
-            mst_dev_name = devices.dut.mst_dev_name
-        else:
-            mst_dev_name = IbInterfaceTool.get_mst_dev_name(engines=engines, asic_conf_dict=asic_conf_dict, port_name=port_name)
+        mst_dev_name = IbInterfaceTool.get_mst_dev_name(engines=engines, asic_conf_dict=asic_conf_dict, port_name=port_name)
     try:
         with allure.step('verify state is down after port toggle event'):
-            IbInterfaceTool.simulate_toggle_port_event(engines.dut, devices.dut, port_name, mst_dev_name, 5)
+            IbInterfaceTool.simulate_toggle_port_event(engines.dut, devices.dut, fae, port_name, mst_dev_name, 5)
             # in future will verify 'down by port failure' instead of just 'down'
             output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
                 selected_port.interface.link.show()).get_returned_value()
