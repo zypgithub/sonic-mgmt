@@ -113,12 +113,6 @@
       </params>
     </cmd>
     <ignore>
-      <logic>or</logic>
-      <condition>
-        <key>dut_hwsku</key>
-        <op> in </op>
-        <value>[MQM9700 - Gorilla]</value>
-      </condition>
       <condition>
         <key>dut_type</key>
         <op> in </op>
