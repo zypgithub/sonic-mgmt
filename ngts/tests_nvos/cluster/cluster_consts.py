@@ -41,13 +41,10 @@ class ClusterConsts:
 
     NMXC_CONN = 'nmxc-conn'
     NMXC_CONN_STATE_PER_CLUSTER_STATE = {NvosConst.ENABLED: 'up', NvosConst.DISABLED: 'down'}
-    WAIT_FOR_APPS_RUNNING = 70  # Reduce to 15 once bug is fixed [NVOS - Design] Bug SW #4099507: [Non-Functional ] [NVL5 - JULIET - NMX] | nmxc-conn takes too long to be in "up" state | Assignee: Or Farfara | Status: Opened on other team
+    WAIT_FOR_APPS_RUNNING = 60  # Reduce to 15 once bug is fixed [NVOS - Design] Bug SW #4099507: [Non-Functional ] [NVL5 - JULIET - NMX] | nmxc-conn takes too long to be in "up" state | Assignee: Or Farfara | Status: Opened on other team
     UNDEFINED_STATE_ERR_MSG = 'Error: At state: \'undefined\' is not one of [\'enabled\', \'disabled\']'
     DEFAULT_LOG_LEVEL = 'notice'
-    UNDEFINED_LOG_LEVEL = '''Output was expected to contain:
-    Action succeeded
-    But the output is:
-    Error: 'undefined' is not one of ['critical', 'error', 'warn', 'notice', 'info', 'debug', None]'''
+    UNDEFINED_LOG_LEVEL = "Error: 'undefined' is not one of ['critical', 'error', 'warn', 'notice', 'info', 'debug', None]"
     SLEEP_AFTER_LOG_ROTATE = 20
     PARTITIONS_NAMES = ['test_partition1', 'test_partition2', 'test_partition3']
     RESILIENCY_MODES = ['adaptive_bandwidth', 'full_bandwidth', 'user_action']

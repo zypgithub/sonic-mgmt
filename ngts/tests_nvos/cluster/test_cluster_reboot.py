@@ -51,7 +51,7 @@ def test_reboot_command(engines, devices, test_name, test_api, has_loopbox, stan
 
         with allure.step("Check Cluster status and cluster apps after reboot"):
             ClusterTools.validate_cluster_enabled(cluster)
-            ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format)
+            ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format, standalone_system)
 
         OperationTime.verify_operation_time(duration, devices.dut.reboot_type).verify_result()
 

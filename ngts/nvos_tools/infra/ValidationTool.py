@@ -464,7 +464,7 @@ class ValidationTool:
                     if expected_value is None:
                         if actual_value in ('', NvosConst.NOT_AVAILABLE):
                             errors.append(f"Field {key} is {actual_value or 'empty'}")
-                    elif isinstance(expected_value, str):
+                    elif isinstance(expected_value, str) or isinstance(expected_value, dict):
                         if expected_value != actual_value:
                             errors.append(f"Field '{key}' expected value '{expected_value}' but actual value is "
                                           f"'{actual_value}'")
@@ -484,7 +484,6 @@ class ValidationTool:
                                               f"{expected_value.range_max} but field value is '{actual_value}'")
                             else:
                                 raise ValueError()
-
                     else:
                         raise TypeError()  # if we got here, there's a bug in the test itself (check the `expected` obj)
 

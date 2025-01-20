@@ -99,7 +99,7 @@ def test_cluster_partition(engines, devices, test_api, has_loopbox, setup_name, 
     finally:
         with allure.step("Running sdn factory reset"):
             sdn.factory_default.action_reset(param='force')
-        interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name)
+        interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name, standalone_system)
         next(interfaces_wa)
         output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
                                                              output_format=output_format).get_returned_value()
@@ -206,7 +206,7 @@ def test_cluster_partition_bad_flow(engines, devices, test_api, has_loopbox, sta
                     output = sdn.partition.partition_id[part_id].action_create_partition_id(name=ClusterConsts.CREATED_PARTITION_NAME + '1', resiliency_mode=resiliency_mode, mcast_limit=mcast_limit, uuid=uuid).verify_result(should_succeed=False)
                 err_msg = f"'{resiliency_mode}' is not one of ['full_bandwidth', 'adaptive_bandwidth', 'user_action']"
                 assert err_msg in output, f"Expected message to include {err_msg}, instead\n {output}"
-                ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format)
+                ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format, standalone_system)
 
             with allure.step("Add GPU with wrong mcast_limit"):
                 resiliency_mode = random.choice(ClusterConsts.RESILIENCY_MODES)
@@ -220,12 +220,12 @@ def test_cluster_partition_bad_flow(engines, devices, test_api, has_loopbox, sta
                     output = sdn.partition.partition_id[part_id].action_create_partition_id(name=ClusterConsts.CREATED_PARTITION_NAME + '11', resiliency_mode=resiliency_mode, mcast_limit=mcast_limit, uuid=uuid).verify_result(should_succeed=False)
                 err_msg = "Valid range is 0 - 1024"
                 assert err_msg in output, f"Expected message to include {err_msg}, instead\n {output}"
-                ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format)
+                ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format, standalone_system)
 
     finally:
         with allure.step("Running sdn factory reset"):
             sdn.factory_default.action_reset(param='force')
-        interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name)
+        interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name, standalone_system)
         next(interfaces_wa)
         output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
                                                              output_format=output_format).get_returned_value()

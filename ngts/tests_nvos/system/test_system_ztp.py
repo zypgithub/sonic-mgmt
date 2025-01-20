@@ -417,7 +417,7 @@ def test_ztp_json_complex(engines, devices):
 
 @pytest.mark.ztp
 @pytest.mark.system
-def test_ztp_nmx_negative(engines, devices, setup_name, has_loopbox):
+def test_ztp_nmx_negative(engines, devices, setup_name, has_loopbox, standalone_system):
     """
     Test flow:
         1. Check default values for ztp
@@ -466,7 +466,7 @@ def test_ztp_nmx_negative(engines, devices, setup_name, has_loopbox):
                                            SystemConsts.ZTP_STATUS_FAILED, SystemConsts.ZTP_STATUS_SUCCESS)
 
             with allure.step("Enable nmx controller"):
-                ClusterTools.start_app(cluster, ClusterConsts.NMX_CONTROLLER, has_loopbox)
+                ClusterTools.start_app(cluster, ClusterConsts.NMX_CONTROLLER, has_loopbox, standalone_system)
 
         with allure.step("Disable nmx telemetry and run positive ztp"):
             ClusterTools.stop_app(cluster, ClusterConsts.NMX_TELEMETRY)

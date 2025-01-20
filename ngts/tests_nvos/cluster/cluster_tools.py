@@ -31,7 +31,7 @@ logger = logging.getLogger()
 class ClusterTools:
 
     @staticmethod
-    def stop_start_app(cluster, engines, devices, has_loopbox, setup_name):
+    def stop_start_app(cluster, engines, devices, has_loopbox, setup_name, standalone_system):
         with allure.step("Stop/Start apps"):
             for app in ClusterConsts.INITIAL_EXPECTED_APPS:
                 with allure.step(f"Validate app {app} is up"):
@@ -41,7 +41,7 @@ class ClusterTools:
                         ClusterTools.verify_lid_value(devices)
                         ClusterTools.verify_interface_up(devices, has_loopbox, setup_name)
                 with allure.step("Running 'nv show cluster apps running' command and verifying output"):
-                    if app == ClusterConsts.NMX_CONTROLLER and is_bug_active(4207869):
+                    if app == ClusterConsts.NMX_CONTROLLER and is_bug_active(4207869) and standalone_system:
                         pass
                     else:
                         output = OutputParsingTool.parse_show_output_to_dict(
@@ -64,7 +64,7 @@ class ClusterTools:
                     ClusterTools.verify_lid_value(devices)
                     ClusterTools.verify_interface_up(devices, has_loopbox, setup_name)
                 with allure.step("Running 'nv show cluster apps running' command and verifying output"):
-                    if app == ClusterConsts.NMX_CONTROLLER and is_bug_active(4207869):
+                    if app == ClusterConsts.NMX_CONTROLLER and is_bug_active(4207869) and standalone_system:
                         pass
                     else:
                         output = OutputParsingTool.parse_show_output_to_dict(
@@ -265,20 +265,19 @@ class ClusterTools:
         return ResultObj(result=True)
 
     @staticmethod
-    def verify_apps_running(engines, devices, cluster, expected_state, output_format):
+    def verify_apps_running(engines, devices, cluster, expected_state, output_format, standalone_system):
         with allure.step("Running 'nv show cluster apps running' command and verifying output"):
             for app in ClusterConsts.INITIAL_EXPECTED_APPS:
                 output = OutputParsingTool.parse_show_output_to_dict(
                     cluster.apps.running.show(output_format=output_format),
                     output_format=output_format).get_returned_value()
                 app_status = output[app]['status']
-                if app == ClusterConsts.NMX_CONTROLLER and is_bug_active(4207869):
+                if app == ClusterConsts.NMX_CONTROLLER and is_bug_active(4207869) and standalone_system:
                     pass
                 else:
                     assert app_status == expected_state, f"App {app} status is {app_status} instead of {expected_state}"
                 ClusterTools.verify_app_is_up(engines, app)
-            if not is_bug_active(4207869):
-                ClusterTools.verify_lid_value(devices)
+            ClusterTools.verify_lid_value(devices)
 
     @staticmethod
     def verify_app_version(cluster, app, expected_version):
@@ -289,11 +288,11 @@ class ClusterTools:
                 f"Expected {app} version: {expected_version}. Actual version: {output[app][ClusterConsts.APP_VERSION]}"
 
     @staticmethod
-    def start_app(cluster, app, has_loopbox):
+    def start_app(cluster, app, has_loopbox, standalone_system):
         with allure.step(f"Start app {app}"):
             cluster.apps.app_name[app].action_start_cluster_app()
             ClusterTools.wait_for_apps_to_be_in_wanted_state()
-            if app == ClusterConsts.NMX_CONTROLLER and is_bug_active(4207869):
+            if app == ClusterConsts.NMX_CONTROLLER and is_bug_active(4207869) and standalone_system:
                 pass
             else:
                 with allure.step("Running 'nv show cluster apps running' command and verifying output"):
@@ -498,7 +497,7 @@ class ClusterTools:
             time.sleep(10)
 
     @staticmethod
-    def wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name):
+    def wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name, standalone_system):
         fm_config = ClusterConsts.NMX_CONTROLLER_CONFIG_FILE_TYPES[0]
         output = sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[fm_config].action_generate_sdn().get_returned_value()
         generated_file_name = ClusterTools().get_generated_sdn_file(output, 'config')
@@ -520,7 +519,7 @@ class ClusterTools:
         sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[fm_config].files.file_name[generated_file_name].action_file_install(force=False)
 
         ClusterTools().stop_app(cluster, ClusterConsts.NMX_CONTROLLER)
-        ClusterTools().start_app(cluster, ClusterConsts.NMX_CONTROLLER, has_loopbox)
+        ClusterTools().start_app(cluster, ClusterConsts.NMX_CONTROLLER, has_loopbox, standalone_system)
 
         ClusterTools.reboot_compute_nodes_gpus(setup_name)
 
@@ -621,7 +620,7 @@ def disabled_access_ports(func):
                 sdn = Sdn()
                 ClusterTools().stop_cluster(cluster)
                 ClusterTools().start_cluster(cluster, setup_name)
-                interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name)
+                interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name, standalone_system)
                 next(interfaces_wa)
                 interface_wa_called = True
                 with allure.step("Unset Cluster before test starts to run, to make sure we are at the correct init state"):

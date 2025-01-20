@@ -19,6 +19,7 @@ from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_
 from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
 from ngts.nvos_tools.infra.ValidationTool import ExpectedString
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 
 logger = logging.getLogger()
 NMX_CONTROLLER = 'nmx-controller'
@@ -50,11 +51,11 @@ def test_cluster_app_start_stop(engines, devices, test_api, has_loopbox, standal
 
         with allure.step("Verify 'nv show cluster apps' output"):
             ValidationTool.validate_output_of_show(output[NMX_TELEMETRY], devices.dut.cluster_app_nmx_telemetry).verify_result()
-            # WA - [NVOS - Verification] Bug SW #4159006: [Non-Functional ] [Cluster - Juliet] | GFM unhealthy, when enabling cluster | Assignee: Elias Abboud | Status: Assigned
-            # cluster_app_nmx_controller_not_ok = devices.dut.cluster_app_nmx_controller.copy()
-            # cluster_app_nmx_controller_not_ok['status'] = ExpectedString(regex=".*")
-            # cluster_app_nmx_controller_not_ok['reason'] = ExpectedString(regex=".*")
-            ValidationTool.validate_output_of_show(output[NMX_CONTROLLER], devices.dut.cluster_app_nmx_controller).verify_result()
+            cluster_app_nmx_controller = devices.dut.cluster_app_nmx_controller.copy()
+            if is_bug_active(4207869) and standalone_system:
+                cluster_app_nmx_controller['status'] = ExpectedString(regex=".*")
+                cluster_app_nmx_controller['reason'] = ExpectedString(regex=".*")
+            ValidationTool.validate_output_of_show(output[NMX_CONTROLLER], cluster_app_nmx_controller).verify_result()
 
     with allure.step("Create Cluster object"):
         interface_wa_called = False
@@ -75,7 +76,14 @@ def test_cluster_app_start_stop(engines, devices, test_api, has_loopbox, standal
                 output = OutputParsingTool.parse_show_output_to_dict(
                     cluster.apps.app_name[app].show(output_format=OutputFormat.json),
                     output_format=OutputFormat.json).get_returned_value()
-                ValidationTool.validate_output_of_show(output, devices.dut.cluster_app[app]).verify_result()
+                if app == NMX_CONTROLLER:
+                    cluster_app_nmx_controller = devices.dut.cluster_app[app].copy()
+                    if is_bug_active(4207869) and standalone_system:
+                        cluster_app_nmx_controller['status'] = ExpectedString(regex=".*")
+                        cluster_app_nmx_controller['reason'] = ExpectedString(regex=".*")
+                    ValidationTool.validate_output_of_show(output, cluster_app_nmx_controller).verify_result()
+                else:
+                    ValidationTool.validate_output_of_show(output, devices.dut.cluster_app[app]).verify_result()
 
         TestToolkit.tested_api = 'NVUE'
         with allure.step("Running 'nv show cluster apps installed' command and verifying output"):
@@ -91,8 +99,8 @@ def test_cluster_app_start_stop(engines, devices, test_api, has_loopbox, standal
                 cluster.apps.running.show(output_format=OutputFormat.json),
                 output_format=OutputFormat.json).get_returned_value()
             for app in INITIAL_EXPECTED_APPS:
-                # if app == NMX_CONTROLLER:
-                #     continue  # Need to be removed once WA is not needed.
+                if app == NMX_CONTROLLER and is_bug_active(4207869) and standalone_system:
+                    continue
                 app_status = output[app]['status']
                 assert app_status == 'ok', f"App {app} status is {app_status} instead of 'ok'"
             logger.info("Make sure there are no extra Unexpected apps")
@@ -100,7 +108,7 @@ def test_cluster_app_start_stop(engines, devices, test_api, has_loopbox, standal
 
         # TestToolkit.tested_api = test_api
 
-        ClusterTools.stop_start_app(cluster, engines, devices, has_loopbox, setup_name)
+        ClusterTools.stop_start_app(cluster, engines, devices, has_loopbox, setup_name, standalone_system)
 
     finally:
         pass
@@ -127,7 +135,7 @@ def test_stress_cluster_app_start_stop(engines, devices, test_api, test_name, ha
             ClusterTools.start_cluster(cluster, setup_name, output_format)
             for i in range(5):
                 logger.info(f"Starting iteration {i}")
-                result_obj, duration = OperationTime.save_duration(operation, '', test_name, ClusterTools.stop_start_app, cluster, engines, devices, has_loopbox, setup_name)
+                result_obj, duration = OperationTime.save_duration(operation, '', test_name, ClusterTools.stop_start_app, cluster, engines, devices, has_loopbox, setup_name, standalone_system)
                 OperationTime.verify_operation_time(duration, operation).verify_result()
 
     finally:
@@ -163,7 +171,7 @@ def test_cluster_app_start_stop_under_stressed_resources(engines, devices, test_
                 if has_loopbox:
                     operation = 'start stop cluster app stressed resources with loopbox'
                 ClusterTools.start_cluster(cluster, setup_name, output_format)
-                result_obj, duration = OperationTime.save_duration(operation, '', test_name, ClusterTools.stop_start_app, cluster, engines, devices, has_loopbox, setup_name)
+                result_obj, duration = OperationTime.save_duration(operation, '', test_name, ClusterTools.stop_start_app, cluster, engines, devices, has_loopbox, setup_name, standalone_system)
                 OperationTime.verify_operation_time(duration, operation).verify_result()
 
     finally:

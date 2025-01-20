@@ -76,7 +76,7 @@ def test_cluster_default_factory_reset(engines, devices, test_api, has_loopbox, 
             for app in ClusterConsts.INITIAL_EXPECTED_APPS:
                 ClusterTools.verify_log_level(ClusterAppsLogLevels.NOTICE, app, output_format, cluster)
 
-            interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name)
+            interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name, standalone_system)
             next(interfaces_wa)
             interface_wa_called = True
 
@@ -155,7 +155,7 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name,
             for app in ClusterConsts.INITIAL_EXPECTED_APPS:
                 ClusterTools.verify_log_level(ClusterAppsLogLevels.NOTICE, app, output_format, cluster)
 
-            interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name)
+            interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name, standalone_system)
             next(interfaces_wa)
             interface_wa_called = True
             verify_config_files_content_not_changed(sdn, initial_config_contents, engines)
@@ -231,7 +231,7 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name, 
             for app in ClusterConsts.INITIAL_EXPECTED_APPS:
                 ClusterTools.verify_log_level(ClusterAppsLogLevels.NOTICE, app, output_format, cluster)
 
-            interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name)
+            interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name, standalone_system)
             next(interfaces_wa)
             interface_wa_called = True
             verify_config_files_content_not_changed(sdn, initial_config_contents, engines)
@@ -312,7 +312,7 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
                 transformation_fn = ClusterConsts.CONFIG_FILES_CONTENT_CHANGE.get(file_type, lambda x: x)
                 initial_config_contents[file_type] = transformation_fn(initial_config_contents[file_type])
 
-            interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name)
+            interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name, standalone_system)
             next(interfaces_wa)
             interface_wa_called = True
             verify_config_files_content_not_changed(sdn, initial_config_contents, engines)
@@ -392,9 +392,6 @@ def reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, s
 
     logger.info("Setting cluster state to enabled")
     ClusterTools.start_cluster(cluster, setup_name, output_format)
-
-    # for app in ClusterConsts.INITIAL_EXPECTED_APPS:
-    #     ClusterTools.start_app(cluster, app)
 
     with allure.step("Choose random log level, and set cluster app log level to and start app"):
         log_level = random.choice(ClusterConsts.ClusterAppsLogLevelsList)
