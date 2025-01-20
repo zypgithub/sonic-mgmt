@@ -7535,7 +7535,7 @@
   inv_name: lab
   comment: Mellanox MTR testbed
 
-- conf-name: juliet-195-ptf-any
+- conf-name: juliet-160-ptf-any
   group-name: vm-t1
   topo: ptf-any
   ptf_image_name: docker-ptf-mlnx
@@ -7545,7 +7545,7 @@
   server: server_54
   vm_base: VM0000
   dut:
-    - juliet-195
+    - juliet-160
   inv_name: lab
   comment: Mellanox MTR testbed
 
