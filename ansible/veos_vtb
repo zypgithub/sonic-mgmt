@@ -40,6 +40,7 @@ all:
           - t0-isolated-d16u16s2
           - t0-isolated-d2u254s1
           - t0-isolated-d128u128s1
+          - t0-118
           - t0-backend
           - dualtor
           - dualtor-56
