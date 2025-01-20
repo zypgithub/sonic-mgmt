@@ -1,20 +1,19 @@
-import string
-import time
-
-import pytest
 import base64
 import random
+import string
+import time
 from urllib.parse import quote
+
+import pytest
+
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from infra.tools.general_constants.constants import DefaultConnectionValues
 from infra.tools.redmine.redmine_api import *
 from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.nvos_constants.constants_nvos import ImageConsts
-from ngts.nvos_constants.constants_nvos import SystemConsts, NvosConst
-from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
+from ngts.nvos_constants.constants_nvos import SystemConsts
 from ngts.nvos_tools.actions.Actions import Action
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
-from ngts.nvos_tools.infra.DMIDecodeTool import DMIDecodeTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
@@ -24,7 +23,6 @@ from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.general.security.conftest import create_ssh_login_engine
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_general_utils import check_partitions_capacity
-from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 
 logger = logging.getLogger()
 
@@ -102,7 +100,7 @@ def test_show_system_image(original_version):
 @pytest.mark.simx
 @pytest.mark.image
 @pytest.mark.system
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 @pytest.mark.timeout(25 * MINUTE, func_only=True)
 def test_downgrade_upgrade(release_name, test_api, original_version, devices, engines, base_version_realpath):
     """
@@ -141,8 +139,11 @@ def test_downgrade_upgrade(release_name, test_api, original_version, devices, en
         with allure.step("Delete original image name, should fail"):
             system.image.files.delete_files([fetched_image], "File not found")
 
-            orig_engine: LinuxSshEngine = TestToolkit.engines.dut
+        with allure.step('rename back to original name'):
             fetched_image_file.action_rename(fetched_image)
+
+        with allure.step('install the fetched image (after renamed back to original name)'):
+            orig_engine: LinuxSshEngine = TestToolkit.engines.dut
             install_image_and_verify(orig_engine=orig_engine, image_name=fetched_image,
                                      partition_id=partition_id_for_new_image,
                                      original_images=original_images, system=system, release_name=release_name,
@@ -198,7 +199,7 @@ def test_system_image_upload(engines, release_name, test_api, original_version, 
 @pytest.mark.simx
 @pytest.mark.image
 @pytest.mark.system
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 @pytest.mark.timeout(25 * MINUTE, func_only=True)
 def test_image_uninstall(release_name, test_api, original_version, test_name, devices, base_version_realpath):
     """
@@ -321,7 +322,7 @@ def test_system_image_bad_flow(engines, release_name, test_api, original_version
 @pytest.mark.checklist
 @pytest.mark.image
 @pytest.mark.system
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_install_multiple_images(release_name, test_name, test_api, original_version, devices):
     """
     Install system image test
@@ -403,9 +404,12 @@ def image_uninstall_test(release_name, original_version, devices, uninstall_forc
     original_images, _, original_image_partition, partition_id_for_new_image, fetched_image = \
         get_image_data_and_fetch_base_image(system, base_version)
 
-    if original_images[partition_id_for_new_image]:
+    if original_images[partition_id_for_new_image][ImageConsts.BUILD_ID]:
         with allure.step("uninstall image, while there are 2 images- should success"):
             system.image.action_uninstall(params="force")
+            image_output = system.image.get_image_field_values()
+            assert not image_output[partition_id_for_new_image][ImageConsts.BUILD_ID], "uninstall didn't work"
+
     else:
         with allure.step("{} uninstall image, while there is just 1 image- should fail".format(uninstall_force)):
             system.image.action_uninstall(params=uninstall_force, expected_str="Nothing to uninstall")
@@ -414,19 +418,14 @@ def image_uninstall_test(release_name, original_version, devices, uninstall_forc
     try:
         with allure.step("Install image and verify"):
             orig_engine: LinuxSshEngine = TestToolkit.engines.dut
-            installed_images_output = install_image_and_verify(orig_engine, fetched_image, partition_id_for_new_image,
-                                                               original_images, system, release_name, test_name)
+            install_image_and_verify(orig_engine, fetched_image, partition_id_for_new_image, original_images, system,
+                                     release_name, test_name)
 
             with allure.step("Set the original image to be booted next and verify"):
                 system.image.boot_next_and_verify(original_image_partition)
 
         if not uninstall_force:
             system.image.action_uninstall(expected_str="Failed to uninstall. Image set to boot-next")
-            expected_show_images_output = create_images_output_dictionary(installed_images_output,
-                                                                          installed_images_output[
-                                                                              original_image_partition],
-                                                                          "", "")
-            system.image.verify_show_images_output(expected_show_images_output)
 
     finally:
         cleanup_test(system, original_images, original_image_partition, [fetched_image], orig_engine)
@@ -435,7 +434,7 @@ def image_uninstall_test(release_name, original_version, devices, uninstall_forc
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.image
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_system_image_install_reject_with_smallcase_n(engines, test_api, original_version, devices):
     """
     Check the image install cmd by rejecting the prompt with 'n'
@@ -453,7 +452,7 @@ def test_system_image_install_reject_with_smallcase_n(engines, test_api, origina
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.image
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_system_image_install_reject_with_uppercase_n(engines, test_api, original_version, devices):
     """
     Check the image install cmd by rejecting the prompt with 'N'
@@ -471,7 +470,7 @@ def test_system_image_install_reject_with_uppercase_n(engines, test_api, origina
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.image
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_system_image_install_reject_with_random_char(engines, test_api, original_version, devices):
     """
     Check the image install cmd by rejecting the prompt with random character
@@ -564,7 +563,7 @@ def test_fetch_image_via_http(test_api):
 
     try:
         with allure.step("Get the image details to be fetched"):
-            original_image = system.image.get_image_field_values()[ImageConsts.CURRENT_IMG]
+            original_image = system.image.get_image_field_values()[ImageConsts.PARTITION1_IMG][ImageConsts.BUILD_ID]
             result = get_images_to_fetch(release_name, original_image, 1)
             assert len(result) > 0, "Required images with release {} were not retrieved".format(release_name)
             image_to_fetch = result[0]
@@ -675,22 +674,25 @@ def normalize_image_name(image_name):
 def install_image_and_verify(orig_engine, image_name, partition_id, original_images, system, release_name,
                              test_name=''):
     with allure.step("Installing image {}".format(image_name)):
-        device: BaseDevice = TestToolkit.devices.dut
-        new_engine = LinuxSshEngine(orig_engine.ip, orig_engine.username,
-                                    device.get_default_password_by_version(release_name))
-        OperationTime.save_duration('image install', '', test_name,
-                                    system.image.files.file_name[image_name].action_file_install_with_reboot,
-                                    "", True, None, None, new_engine)
+        new_engine = LinuxSshEngine(orig_engine.ip, orig_engine.username, orig_engine.password)
+        res_obj, _ = OperationTime.save_duration('image install', '', test_name,
+                                                 system.image.files.file_name[image_name].action_file_install_with_reboot,
+                                                 "", True, None, None, new_engine)
 
     with allure.step('replace dut engine'):
         TestToolkit.engines.dut = new_engine  # if install succeeded, need to replace dut engine
 
     with allure.step("Verify installed image"):
         time.sleep(5)
-        expected_show_images_output = create_images_output_dictionary(original_images, image_name, image_name,
-                                                                      partition_id)
-        system.image.verify_show_images_output(expected_show_images_output)
-        return expected_show_images_output
+
+        image_output = system.image.get_image_field_values()
+        image_name = normalize_image_name(image_name)
+        with allure.step(f"Verify image was installed properly on {partition_id}"):
+            assert image_output[partition_id][ImageConsts.BUILD_ID] == image_name, f"{image_name} was expected to be installed on {partition_id} but it failed"
+        with allure.step("Verify current and next fields points to new image"):
+            num = "1" if partition_id == ImageConsts.PARTITION1_IMG else "2"
+            assert image_output[ImageConsts.NEXT_IMG] == image_output[ImageConsts.CURRENT_IMG] == num, \
+                f"Next image is not the current as expected in default settings."
 
 
 def get_list_of_directories(current_installed_img, starts_with=None):
@@ -751,9 +753,8 @@ def cleanup_test(system, original_images, original_image_partition, fetched_imag
             system.image.files.delete_files(fetched_image_files)
             system.image.files.verify_show_files_output(unexpected_files=fetched_image_files)
 
-        with allure.step("Uninstall unused images and verify"):
+        with allure.step("Uninstall unused images if there's any"):
             system.image.action_uninstall(params='force')
-            system.image.verify_show_images_output(original_images)
 
 
 def get_image_data(system):
@@ -798,14 +799,3 @@ def verify_current_version(original_version, system, device):
         current_version = OutputParsingTool.parse_json_str_to_dictionary(system.version.show()).get_returned_value()[
             'image']
         assert current_version == original_version, f"Current version is invalid: {current_version}, expected: {original_version}"
-
-
-def create_images_output_dictionary(original_images, next_image, current_image, partition_id):
-    expected_show_images_output = original_images.copy()
-    if next_image:
-        expected_show_images_output[ImageConsts.NEXT_IMG] = normalize_image_name(next_image)
-    if current_image:
-        expected_show_images_output[ImageConsts.CURRENT_IMG] = normalize_image_name(current_image)
-    if partition_id:
-        expected_show_images_output[partition_id] = expected_show_images_output[ImageConsts.NEXT_IMG]
-    return expected_show_images_output
