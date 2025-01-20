@@ -127,7 +127,7 @@ def check_if_current_ver_include_bug_fix(issue_url, basic_facts):
 
     branch = basic_facts.get('branch', 'none')
     cur_version = basic_facts.get('build_version', '')
-    if branch in fixed_in_version:
+    if f'{branch}.' in fixed_in_version:
         if is_current_ver_newer_or_equal_than_fixed_ver(branch, cur_version, fixed_in_version):
             logger.info(f"The current image:{cur_version} has included the bug fix {issue_url}."
                         f" Bug fix start form :{fixed_in_version}")
