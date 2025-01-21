@@ -506,7 +506,7 @@ class ClusterTools:
                                                              output_format=output_format).get_returned_value()
         path_to_generated_file = output[generated_file_name]['path']
         original_content = engines.dut.run_cmd(f"cat {path_to_generated_file}")
-        logger.info("Adjusted fm_config file content.")  # TODO ADD A PROPER COMMENTnuadnjsandsndasfg
+        logger.info("Adjusted fm_config file content.")  # TODO ADD A PROPER COMMENT
         engines.dut.run_cmd(
             f"""
             sudo sed -i '/^MNNVL_TOPOLOGY=/c\\MNNVL_TOPOLOGY=gb200_nvl36r1_c2g4_topology' {path_to_generated_file} && \

@@ -1502,7 +1502,7 @@ class JulietNonScaleoutSwitchNoNCI5600(JulietNonScaleoutSwitchNoNCI):
     def _init_platform_lists(self):
         super()._init_platform_lists()
         self.platform_inventory_switch_values.update({"hardware-version": None,
-                                                      "model": ExpectedString(regex="692-9K33R-00MV-JES")})
+                                                      "model": ExpectedString(regex="692-9K33R-00MV-JS0")})
 
 # -------------------------- Caiman Switch ----------------------------
 

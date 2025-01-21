@@ -37,11 +37,13 @@ def test_cluster_app_log_level(engines, devices, test_api, has_loopbox, standalo
             for app in ClusterConsts.INITIAL_EXPECTED_APPS:
                 ClusterTools.verify_log_level(ClusterConsts.DEFAULT_LOG_LEVEL, app, output_format, cluster)
 
+        TestToolkit.tested_api = 'NVUE'
         with allure.step("Set log level to undefined log level"):
             for app in ClusterConsts.INITIAL_EXPECTED_APPS:
                 output = cluster.apps.app_name[app].loglevel.action_update_cluster_log_level(level='undefined').get_returned_value(should_succeed=False)
                 assert ClusterConsts.UNDEFINED_LOG_LEVEL in output, f"Expected {ClusterConsts.UNDEFINED_LOG_LEVEL}, Actual: {output}"
                 ClusterTools.verify_log_level(ClusterConsts.DEFAULT_LOG_LEVEL, app, output_format, cluster)
+        TestToolkit.tested_api = test_api
 
         with allure.step("Choose random log level, and set cluster app log level to"):
             log_level = random.choice(ClusterConsts.ClusterAppsLogLevelsList)

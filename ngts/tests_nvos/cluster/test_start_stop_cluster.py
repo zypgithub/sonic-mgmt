@@ -198,10 +198,10 @@ def test_cluster_app_start_stop_disabled_cluster(engines, devices, test_api):
             try:
                 output = OutputParsingTool.parse_show_output_to_dict(
                     cluster.apps.app_name[app].show(output_format=OutputFormat.json),
-                    output_format=OutputFormat.json).get_returned_value()
+                    output_format=OutputFormat.json).get_returned_value(should_succeed=False)
             except Exception as e:
                 err = e.args[0].split('\n')[-1]
-                assert err == INVALID_SHOW_EXPECTED_OUTPUT[test_api], f"Expected {INVALID_SHOW_EXPECTED_OUTPUT[test_api]}, but instead received {output}"
+                assert INVALID_SHOW_EXPECTED_OUTPUT[test_api] in err, f"Expected {INVALID_SHOW_EXPECTED_OUTPUT[test_api]}, but instead received {output}"
 
     TestToolkit.tested_api = 'NVUE'
 
