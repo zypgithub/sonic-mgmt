@@ -159,13 +159,6 @@ def test_rules_order(devices, engines, test_api, topology_obj):
                     }
                 }
             })
-        # temp workaround due to - https://redmine.mellanox.com/issues/4203639 - add MAC masking
-        if is_redmine_issue_active([4203639])[0] and isinstance(devices.dut, JulietSwitch):
-            for rule_id in [rule_id_1, rule_id_2]:
-                expected_acl_dict[acl_id][AclConsts.RULE][rule_id][AclConsts.MATCH][AclConsts.MAC] = {
-                    AclConsts.DEST_MAC_MASK: "ff:ff:ff:ff:ff:ff",
-                    AclConsts.SOURCE_MAC_MASK: "ff:ff:ff:ff:ff:ff",
-                }
 
         with allure.step("Validate configuration with show commands"):
             acl_id_output = acl_id_obj.parse_show()
@@ -435,14 +428,6 @@ def test_show_acl_commands(devices, engines, test_api, topology_obj):
                     },
                 }
             })
-
-        # temp workaround due to - https://redmine.mellanox.com/issues/4203639 - add MAC masking
-        if is_redmine_issue_active([4203639])[0] and isinstance(devices.dut, JulietSwitch):
-            for rule_id in [rule_id_1, rule_id_2, rule_id_3]:
-                expected_acl_dict[acl_id][AclConsts.RULE][rule_id][AclConsts.MATCH][AclConsts.MAC] = {
-                    AclConsts.DEST_MAC_MASK: "ff:ff:ff:ff:ff:ff",
-                    AclConsts.SOURCE_MAC_MASK: "ff:ff:ff:ff:ff:ff",
-                }
 
         with allure.step("Validate configuration with show commands"):
             rule_id_1_obj = acl_id_obj.rule.rule_id[rule_id_1]
@@ -1145,8 +1130,7 @@ def test_override_default_rule(engines, topology_obj, apply_default_config):
     acl_obj = Acl().acl_id[default_chosen_acl]
 
     with allure.step("Unset existing field - should fail"):
-        acl_obj.rule.rule_id[default_rule_to_override_field].match.unset(apply=True, expected_str="err"
-                                                                         ).verify_result(True)
+        acl_obj.rule.rule_id[default_rule_to_override_field].match.unset(apply=True, expected_str="err").verify_result(False)
 
     with allure.step("Sanity check - send SYN packet and validate counters increase"):
         rule_packets_before = get_rule_packets(mgmt_port, default_chosen_acl, default_rule_to_add_field)

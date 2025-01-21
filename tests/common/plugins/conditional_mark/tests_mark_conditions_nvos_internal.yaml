@@ -435,6 +435,14 @@ tests_nvos/platform/test_platform_firmware_bios/test_platform_firmware_bios.py:
       - "'q3400-06' in testbed"
       - https://redmine.mellanox.com/issues/4241214
 
+tests_nvos/platform/test_platform_environment_leakage.py:
+  skip:
+    reason: "Testcase skipped on juliet systems due to RM issue: https://redmine.mellanox.com/issues/4264703"
+    conditions_logical_operator: and
+    conditions:
+      - "'juliet' in testbed"
+      - https://redmine.mellanox.com/issues/4264703
+
 tests_nvos/system/test_system_profile_change.py::test_system_profile_redis_db_crash:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3554789"
