@@ -680,6 +680,13 @@ platform_tests/sfp/test_sfputil.py::test_check_sfputil_error_status:
     - "https://redmine.mellanox.com/issues/4220524 and ('sn5610n' in platform or 'sn5600' in platform)"
     - "https://redmine.mellanox.com/issues/4258343 and 'sn4' in platform"
 
+platform_tests.sfp.test_sfputil.py::test_check_sfputil_error_status.*fetch-from-hardware:
+  regex: true
+  skip:
+    reason: "Testcase ignored due to RM#4204539 "
+    conditions:
+      - "https://redmine.mellanox.com/issues/4204539"
+
 platform_tests/fw_utility/test_fwutil.py:
   skip:
     reason: "Testcase ignored due to platform msn4"
