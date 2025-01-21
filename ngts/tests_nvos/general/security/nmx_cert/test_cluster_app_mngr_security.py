@@ -21,7 +21,9 @@ from ngts.tests_nvos.general.security.nmx_cert.conftest import clear_manager_con
 from ngts.tests_nvos.general.security.nmx_cert.constants import Defaults, EncryptionMode, ENABLED, DISABLED, STATE, \
     APP_CONSTS
 from ngts.tests_nvos.general.security.nmx_cert.helpers import verify_manager_show, verify_cert_show, verify_cacert_show, \
-    verify_encryption_show, run_manager_hello_request, verify_files, enable_cluster
+    verify_encryption_show, run_manager_hello_request, verify_files, enable_cluster, disable_cluster, \
+    enable_cluster_app_manager_state, disable_cluster_app_manager_state, update_cluster_app_manager_state, \
+    restore_cluster_app_manager_state
 from ngts.tests_nvos.system.gnmi.conftest import scp_player, get_scp_player
 
 
@@ -122,21 +124,21 @@ def test_cluster_app_mngr_security_cli(test_api, app_name, engines, ca_type):
     with allure.step('check values after update manager'):
         for state in [ENABLED, DISABLED]:
             with allure.step(f'Run update manager: state {state}'):
-                app.manager.action_update(state).verify_result()
+                update_cluster_app_manager_state(app.manager, state)
             with allure.independent_step('Verify in manager show that related fields'):
                 verify_manager_show(app_name, expect_state=state)
             with allure.independent_step('verify files and fields in json'):
                 verify_files(app_name, engines.dut, {consts.user_config_json_fields.state: state})
     with allure.step('check values after restore manager'):
         with allure.step('Run restore manager (disable manager communication)'):
-            app.manager.action_restore().verify_result()
+            restore_cluster_app_manager_state(app.manager)
         with allure.independent_step('Verify in manager show that related fields restored to default'):
             verify_manager_show(app_name, expect_state=DISABLED)
             with allure.independent_step('verify files and fields in json'):
                 verify_files(app_name, engines.dut, {consts.user_config_json_fields.state: DISABLED})
     with allure.step('check values after disable cluster'):
         with allure.step('disable cluster'):
-            cluster.set(STATE, DISABLED, apply=True).verify_result()
+            disable_cluster()
         with allure.independent_step('Verify outputs contain the required fields'):
             with allure.independent_step('verify manager show - expect item does not exist'):
                 verify_manager_show(app_name, expect_item_not_exist=True)
@@ -426,7 +428,7 @@ def test_cluster_app_mngr_connection(app_name, ca_type):
                 return
             if enable_mngr:
                 with allure.step('enable manager'):
-                    mngr.action_update(ENABLED).verify_result()
+                    enable_cluster_app_manager_state(mngr)
             if self.server_cert.name != Test.cur_server_cert:
                 with allure.step(f'update server cert: {self.server_cert.name}'):
                     mngr.certificate.action_update(self.server_cert.name).verify_result()
@@ -475,7 +477,7 @@ def test_cluster_app_mngr_connection(app_name, ca_type):
         app = cluster.apps.app_name[app_name]
         enable_cluster()
     with allure.step('enable cluster manager'):
-        app.manager.action_update(ENABLED).verify_result()
+        enable_cluster_app_manager_state(app.manager)
 
     with allure.step('run all cases'):
         for case in cases:
@@ -505,7 +507,7 @@ def test_cluster_app_mngr_connection_after_restore_encryption(app_name, ca_type)
         enable_cluster()
     with allure.step('enable cluster manager'):
         manager = Cluster().apps.app_name[app_name].manager
-        manager.action_update(ENABLED).verify_result()
+        enable_cluster_app_manager_state(manager)
     with allure.step('update encryption'):
         manager.certificate.action_update(cert.name).verify_result()
         manager.ca_certificate.action_update(cert.cacert_name).verify_result()
@@ -551,7 +553,7 @@ def test_cluster_app_mngr_no_connection_when_state_disabled(app_name, ca_type):
 
     with allure.step('enable cluster manager'):
         manager = Cluster().apps.app_name[app_name].manager
-        manager.action_update(ENABLED).verify_result()
+        enable_cluster_app_manager_state(manager)
 
     with allure.step('update encryption'):
         manager.certificate.action_update(cert.name).verify_result()
@@ -559,18 +561,16 @@ def test_cluster_app_mngr_no_connection_when_state_disabled(app_name, ca_type):
         manager.encryption.action_update(random.choice(EncryptionMode.ALL_MODES)).verify_result()
 
     with allure.step('disable manager (update to disabled)'):
-        manager.action_update(DISABLED).verify_result()
-        time.sleep(2)
+        disable_cluster_app_manager_state(manager)
 
     with allure.step('verify cluster manager client cannot connect'):
         verify_no_client_connection(app_name, cert, cert)
 
     with allure.step('enable cluster manager'):
-        manager.action_update(ENABLED).verify_result()
+        enable_cluster_app_manager_state(manager)
 
     with allure.step('disable manager (restore)'):
-        manager.action_restore().verify_result()
-        time.sleep(2)
+        restore_cluster_app_manager_state(manager)
 
     with allure.step('verify cluster manager client cannot connect'):
         verify_no_client_connection(app_name, cert, cert)
@@ -580,7 +580,7 @@ def test_cluster_app_mngr_no_connection_when_state_disabled(app_name, ca_type):
 @pytest.mark.security
 @pytest.mark.parametrize('app_name, ca_type',
                          [(app, random.choice(optional_cacert_types())) for app in ClusterApps.ALL_APPS])
-def test_cluster_app_mngr_no_connection_when_cluster_disabled(app_name, ca_type):
+def test_cluster_app_mngr_no_connection_when_cluster_disabled(app_name, ca_type, engines):
     """
     Verify that after disabling cluster (restore) – client cannot connect at all
 
@@ -596,7 +596,7 @@ def test_cluster_app_mngr_no_connection_when_cluster_disabled(app_name, ca_type)
 
     with allure.step('enable cluster manager'):
         manager = cluster.apps.app_name[app_name].manager
-        manager.action_update(ENABLED).verify_result()
+        enable_cluster_app_manager_state(manager)
 
     with allure.step('update encryption'):
         manager.certificate.action_update(cert.name).verify_result()
@@ -604,9 +604,7 @@ def test_cluster_app_mngr_no_connection_when_cluster_disabled(app_name, ca_type)
         manager.encryption.action_update(random.choice(EncryptionMode.ALL_MODES)).verify_result()
 
     with allure.step('disable cluster'):
-        cluster.set(STATE, DISABLED, apply=True).verify_result()
-        if app_name == ClusterApps.NMX_TELEMETRY:
-            time.sleep(15)
+        disable_cluster()
 
     with allure.step('verify cluster manager client cannot connect'):
         verify_no_client_connection(app_name, cert, cert)
@@ -639,7 +637,7 @@ def test_cluster_app_mngr_security_reboot_case(engines, ca_type):
     for app_name in apps:
         manager = cluster.apps.app_name[app_name].manager
         with allure.step(f'enable {app_name} cluster manager'):
-            manager.action_update(ENABLED).verify_result()
+            enable_cluster_app_manager_state(manager)
         with allure.step(f'bind cert & cacert to {app_name}'):
             manager.certificate.action_update(cert[app_name].name).verify_result()
             manager.ca_certificate.action_update(cert[app_name].cacert_name).verify_result()
@@ -783,7 +781,7 @@ def test_cluster_app_mngr_connection_combined(ca_type):
                 if state == DISABLED:
                     return
                 mngr: Manager = cluster.apps.app_name[app].manager
-                mngr.action_update(ENABLED).verify_result()
+                enable_cluster_app_manager_state(mngr)
                 if encryption == EncryptionMode.DISABLED:
                     return
                 mngr.certificate.action_update(cert.name).verify_result()

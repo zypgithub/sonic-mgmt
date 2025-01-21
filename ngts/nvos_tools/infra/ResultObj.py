@@ -7,6 +7,7 @@ False according to the use case).
 """
 import itertools
 import logging
+import re
 import sys
 import traceback
 
@@ -137,3 +138,11 @@ class ResultObj:
                              else "The operation failed")
         msg += '\nResult traceback:\n' + ''.join(tb)
         return msg
+
+    def apply_occurred(self) -> bool:
+        apply_occurred = bool(self and self.result and isinstance(self.returned_value, str) and
+                              re.findall('verif.*applied', self.returned_value))
+        # logging.warning(
+        #     f'DEBUG:\nresult: {self.result}\ninfo: {self.info}\nreturned value: {self.returned_value}\n'
+        #     f'issue type: {self.issue_type}\n***should sleep***: {apply_occurred}')
+        return apply_occurred

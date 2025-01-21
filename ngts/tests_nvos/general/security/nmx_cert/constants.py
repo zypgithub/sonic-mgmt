@@ -2,7 +2,8 @@ from typing import Dict
 
 from ngts.nvos_constants.constants_nvos import ClusterApps
 
-CLUSTER_ENABLE_WAIT_TIME = 10
+CLUSTER_STATE_TOGGLE_WAIT_TIME = 20
+CLUSTER_APP_MNGR_STATE_UPDATE_WAIT_TIME = 5
 
 NA = 'N/A'
 STATE = 'state'
@@ -78,4 +79,5 @@ NMX_T_CONSTS = ClusterAppConsts(
     external_port=DEFAULT_NMX_T_MGMT_PORT
 )
 
-APP_CONSTS: Dict[str, ClusterAppConsts] = {ClusterApps.NMX_CONTROLLER: NMX_C_CONSTS, ClusterApps.NMX_TELEMETRY: NMX_T_CONSTS}
+APP_CONSTS: Dict[str, ClusterAppConsts] = {ClusterApps.NMX_CONTROLLER: NMX_C_CONSTS,
+                                           ClusterApps.NMX_TELEMETRY: NMX_T_CONSTS}

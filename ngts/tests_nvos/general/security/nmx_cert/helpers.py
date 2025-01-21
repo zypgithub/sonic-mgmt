@@ -4,27 +4,64 @@ from typing import Union, Dict
 
 import ngts.tools.test_utils.allure_utils as allure
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from ngts.nvos_constants.constants_nvos import ClusterApps
+from ngts.nvos_constants.constants_nvos import ClusterApps, OutputFormat
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.nmx.Cluster import Cluster
+from ngts.nvos_tools.nmx.Manager import Manager
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tests_nvos.general.security.nmx_cert.constants import FieldsInShowOf, CERTIFICATE, CA_CERTIFICATE, ENCRYPTION, \
     FILE_NOT_EXIST_ERR, STATE, APP_CONSTS, ClusterAppConsts, NMX_C_CONSTS, NMX_T_CONSTS, ITEM_NOT_EXIST_ERR, ENABLED, \
-    CLUSTER_ENABLE_WAIT_TIME
+    CLUSTER_STATE_TOGGLE_WAIT_TIME, DISABLED, CLUSTER_APP_MNGR_STATE_UPDATE_WAIT_TIME, USR_CFG_JSON_PATH
 from ngts.tests_nvos.general.security.nmx_cert.grpc.config import GrpcConfig, GrpcServerConfig, GrpcClientConfig
 from ngts.tests_nvos.general.security.nmx_cert.grpc.nmx_c.client.NmxControllerClientApp import run_nmx_c_grpc_client
 from ngts.tests_nvos.general.security.nmx_cert.grpc.nmx_t.client.NmxTelemetryClientApp import run_nmx_t_grpc_client
 
 
-def enable_cluster():
-    with allure.step('enable cluster'):
-        res: ResultObj = Cluster().set(STATE, ENABLED, apply=True)
-        if res.result and 'applied' in res.returned_value:
-            with allure.step(f'wait {CLUSTER_ENABLE_WAIT_TIME} seconds after cluster enabled'):
-                time.sleep(CLUSTER_ENABLE_WAIT_TIME)
+def set_cluster_state(state, force_wait: bool = False):
+    with allure.step(f'set cluster state: {state}'):
+        res: ResultObj = Cluster().set(STATE, state, apply=True)
+        if force_wait or res.apply_occurred():
+            with allure.step(f'wait {CLUSTER_STATE_TOGGLE_WAIT_TIME} seconds after cluster state toggled'):
+                time.sleep(CLUSTER_STATE_TOGGLE_WAIT_TIME)
+        res.verify_result()
+
+
+def enable_cluster(force_wait: bool = False):
+    set_cluster_state(ENABLED, force_wait)
+
+
+def disable_cluster(force_wait: bool = False):
+    set_cluster_state(DISABLED, force_wait)
+
+
+def wait_after_cluster_app_manager_state_changed():
+    with allure.step(
+            f'wait {CLUSTER_APP_MNGR_STATE_UPDATE_WAIT_TIME} seconds after cluster app manager state updated'):
+        time.sleep(CLUSTER_APP_MNGR_STATE_UPDATE_WAIT_TIME)
+
+
+def update_cluster_app_manager_state(manager: Manager, state):
+    with allure.step(f'update cluster app manager state: {state}'):
+        res: ResultObj = manager.action_update(state)
+        wait_after_cluster_app_manager_state_changed()
+        res.verify_result()
+
+
+def enable_cluster_app_manager_state(manager: Manager):
+    update_cluster_app_manager_state(manager, ENABLED)
+
+
+def disable_cluster_app_manager_state(manager: Manager):
+    update_cluster_app_manager_state(manager, DISABLED)
+
+
+def restore_cluster_app_manager_state(manager: Manager):
+    with allure.step('restore cluster app manager state'):
+        res: ResultObj = manager.action_restore()
+        wait_after_cluster_app_manager_state_changed()
         res.verify_result()
 
 
@@ -47,7 +84,8 @@ def verify_component_show(component: BaseComponent, required_fields,
                         field] == expected, f'mismatch with field "{field}": expected {field}: {expected}, actual: {out[field]}'
 
 
-def verify_manager_show(app_name: str, expect_state=None, expect_cert=None, expect_cacert=None, expect_encryption=None, expect_item_not_exist: bool = False):
+def verify_manager_show(app_name: str, expect_state=None, expect_cert=None, expect_cacert=None, expect_encryption=None,
+                        expect_item_not_exist: bool = False):
     verify_component_show(Cluster().apps.app_name[app_name].manager, FieldsInShowOf.MANAGER,
                           {STATE: expect_state, CERTIFICATE: expect_cert, CA_CERTIFICATE: expect_cacert,
                            ENCRYPTION: expect_encryption}, expect_item_not_exist)
@@ -219,3 +257,11 @@ def verify_files(app_name: str, dut_engine: LinuxSshEngine, expected_user_config
         if expected_cacert_id is not None:
             with allure.independent_step('verify cacert file'):
                 verify_cacert_file(app_name, dut_engine, expected_cacert_id)
+
+
+def attach_debug_info(cluster: Cluster, engines):
+    with allure.step('DEBUG - attach info to allure'):
+        allure.attach('netstat -tulnp', engines.dut.run_cmd('netstat -tulnp'))
+        allure.attach('netstat -lt', engines.dut.run_cmd('netstat -lt'))
+        allure.attach('user_config.json', engines.dut.run_cmd(f'sudo cat {USR_CFG_JSON_PATH}'))
+        allure.attach('cluster config', cluster.show(output_format=OutputFormat.auto))

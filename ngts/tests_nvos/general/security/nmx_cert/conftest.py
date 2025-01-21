@@ -8,7 +8,7 @@ from ngts.tests_nvos.general.security.certificate.constants import TestCert
 from ngts.tests_nvos.general.security.certificate.helpers import import_test_certs, delete_certificates
 from ngts.tests_nvos.general.security.helpers import remove_etc_host_mapping_to_dn, add_etc_host_mapping_to_dn
 from ngts.tests_nvos.general.security.nmx_cert.constants import STATE, DISABLED
-from ngts.tests_nvos.general.security.nmx_cert.helpers import enable_cluster
+from ngts.tests_nvos.general.security.nmx_cert.helpers import enable_cluster, restore_cluster_app_manager_state
 from ngts.tests_nvos.helpers.pytest_helpers import get_cur_test_param_value
 from ngts.tests_nvos.system.gnmi.conftest import scp_player
 from ngts.tests_nvos.system.gnmi.constants import ETC_HOSTS
@@ -27,18 +27,18 @@ def test_certs():
     return [TestCert.cert_valid_1, TestCert.cert_valid_2, TestCert.cert_valid_3]
 
 
-def clear_manager_config(app_name: str):
-    enable_cluster()
+def clear_manager_config(app_name: str, force_wait: bool = False):
+    enable_cluster(force_wait=force_wait)
     app = Cluster().apps.app_name[app_name]
+    restore_cluster_app_manager_state(app.manager)
     app.manager.encryption.action_restore().verify_result()
     app.manager.certificate.action_restore().verify_result()
     app.manager.ca_certificate.action_restore().verify_result()
-    app.manager.action_restore().verify_result()
 
 
 def clear_everything(app_name: str):
     with allure.step('clear everything'):
-        clear_manager_config(app_name)
+        clear_manager_config(app_name, True)
         delete_certificates()
         delete_certificates(True)
 
