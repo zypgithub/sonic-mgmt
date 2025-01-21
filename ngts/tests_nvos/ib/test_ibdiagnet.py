@@ -142,12 +142,17 @@ def test_ibdiagnet_upload(engines):
     invalid_url_1 = 'scp://{}:{}{}/tmp/'.format(player.username, player.password, player.ip)
     invalid_url_2 = 'ffff://{}:{}@{}/tmp/'.format(player.username, player.password, player.ip)
     upload_path = 'scp://{}:{}@{}/tmp/'.format(player.username, player.password, player.ip)
-    with allure.step('delete ibdiagnet as a cleanup step'):
-        ib.ibdiagnet.action_delete(file_name=IbConsts.IBDIAGNET_FILE_NAME)
+    with allure.step('pre cleanup: delete ibdiagnet file if it exists'):
+        try:
+            ib.ibdiagnet.action_delete(file_name=IbConsts.IBDIAGNET_FILE_NAME).verify_result()
+        except AssertionError as e:
+            if 'File not found' in str(e):
+                pass
 
     with allure.step('try to upload non exist ibdiagnet file'):
         output = ib.ibdiagnet.action_upload(upload_path=upload_path)
-        assert "File not found: {}".format(IbConsts.IBDIAGNET_FILE_NAME) in output.info, "we can not upload a non exist file!"
+        assert "File not found: {}".format(IbConsts.IBDIAGNET_FILE_NAME) in output.get_info(False), (
+            "we can not upload a non exist file!")
         ib.ibdiagnet.action_run(command=IbConsts.IBDIAGNET_COMMAND, option=IbConsts.IBDIAGNET_PHY_INFO,
                                 expected_str=IbConsts.IBDIAGNET_EXPECTED_MESSAGE)
 
@@ -164,11 +169,11 @@ def test_ibdiagnet_upload(engines):
 
     with allure.step('try to upload ibdiagnet to invalid url - url is not in the right format'):
         output = ib.ibdiagnet.action_upload(upload_path=invalid_url_1)
-        assert "is not a" in output.info, "URL was not in the right format"
+        assert "is not a" in output.get_info(False), "URL was not in the right format"
 
     with allure.step('try to upload ibdiagnet to invalid url - using non supported transfer protocol'):
         output = ib.ibdiagnet.action_upload(upload_path=invalid_url_2)
-        assert "is not a" in output.info, "URL used non supported transfer protocol"
+        assert "is not a" in output.get_info(False), "URL used non supported transfer protocol"
 
 
 @pytest.mark.ib
@@ -195,7 +200,8 @@ def test_ibdiagnet_delete(engines):
     with allure.step('Try to delete with invalid file name'):
         invalid_file = 'ibdiagnetfile'
         output = ib.ibdiagnet.action_delete(file_name=invalid_file)
-        assert "File not found: {}".format(invalid_file) in output.info, "ibdiagnet name should be {file_name}".format(file_name=IbConsts.IBDIAGNET_FILE_NAME)
+        assert "File not found: {}".format(invalid_file) in output.get_info(False), (
+            "ibdiagnet name should be {file_name}".format(file_name=IbConsts.IBDIAGNET_FILE_NAME))
 
     with allure.step('Validate we can delete ibdiagnet files'):
         output = ib.ibdiagnet.action_delete(file_name=IbConsts.IBDIAGNET_FILE_NAME)
@@ -211,4 +217,5 @@ def test_ibdiagnet_delete(engines):
 
     with allure.step('Try to delete non exist ibdiagnet file'):
         output = ib.ibdiagnet.action_delete(file_name=IbConsts.IBDIAGNET_FILE_NAME)
-        assert "File not found: {}".format(IbConsts.IBDIAGNET_FILE_NAME) in output.info, "can not delete non exist ibdiagnet file".format(file_name=IbConsts.IBDIAGNET_FILE_NAME)
+        assert "File not found: {}".format(IbConsts.IBDIAGNET_FILE_NAME) in output.get_info(False), (
+            "can not delete non exist ibdiagnet file".format(file_name=IbConsts.IBDIAGNET_FILE_NAME))

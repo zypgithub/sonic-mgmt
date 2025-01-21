@@ -65,7 +65,7 @@ class ResultObj:
         self._returned_value = value
         self._update_traceback()
 
-    def verify_result(self, should_succeed=True):
+    def verify_result(self, should_succeed=True, expected_value=''):
         """
         Assert an error if result is False, otherwise returns returned_value
         :return: If 'result' is True, returns the 'returned_value'
@@ -78,10 +78,18 @@ class ResultObj:
         if should_succeed != self.result:
             raise AssertionError(self._get_fail_message())
 
+        if expected_value:
+            assert expected_value in self.returned_value, (
+                f"Expected {repr(expected_value)} but returned value is: {self.returned_value}")
+
         return self.returned_value if self.result else self.info
 
     def get_returned_value(self, should_succeed=True):
         return self.verify_result(should_succeed)
+
+    def get_info(self, should_succeed=True):
+        self.verify_result(should_succeed)
+        return self.info
 
     def ignore_result(self):
         """Call this method if we don't care whether the operation succeeded or failed."""

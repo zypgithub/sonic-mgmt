@@ -1145,7 +1145,8 @@ def test_override_default_rule(engines, topology_obj, apply_default_config):
     acl_obj = Acl().acl_id[default_chosen_acl]
 
     with allure.step("Unset existing field - should fail"):
-        acl_obj.rule.rule_id[default_rule_to_override_field].match.unset(apply=True, expected_str="err")
+        acl_obj.rule.rule_id[default_rule_to_override_field].match.unset(apply=True, expected_str="err"
+                                                                         ).verify_result(True)
 
     with allure.step("Sanity check - send SYN packet and validate counters increase"):
         rule_packets_before = get_rule_packets(mgmt_port, default_chosen_acl, default_rule_to_add_field)

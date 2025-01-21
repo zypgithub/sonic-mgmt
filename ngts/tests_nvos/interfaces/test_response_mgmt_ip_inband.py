@@ -480,13 +480,15 @@ def verify_ufm_mad_db_table(engine, state, port_name, ipv4='', ipv6=''):
     table_general = DatabaseTool.sonic_db_cli_hgetall(engine=engine, asic="", db_name=DatabaseConst.STATE_DB_NAME,
                                                       table_name=UfmMadConsts.UFM_MAD_TABLE_GENERAL)
     reg_state = table_general.split(': ')[1].replace("'", "").replace("}", "")
-    ValidationTool.compare_values(reg_state, state)
+    ValidationTool.compare_values(reg_state, state).verify_result()
     if ipv4:
-        reg_ipv4 = table_eth.split(',')[0].split(': ')[1].replace("'", "")
-        ValidationTool.compare_values(reg_ipv4, ipv4)
+        with allure.independent_step('ipv4'):
+            reg_ipv4 = table_eth.split(',')[0].split(': ')[1].replace("'", "")
+            ValidationTool.compare_values(reg_ipv4, ipv4).verify_result()
     if ipv6:
-        reg_ipv6 = table_eth.split(',')[1].split(': ')[1].replace("'", "").replace("}", "")
-        ValidationTool.compare_values(reg_ipv6, ipv6)
+        with allure.independent_step('ipv6'):
+            reg_ipv6 = table_eth.split(',')[1].split(': ')[1].replace("'", "").replace("}", "")
+            ValidationTool.compare_values(reg_ipv6, ipv6).verify_result()
 
 
 def parse_ibsni_register(ibsni_value, port_name):

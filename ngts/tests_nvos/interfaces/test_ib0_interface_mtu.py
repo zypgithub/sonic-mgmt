@@ -96,6 +96,7 @@ def test_interface_ib0_arp_timeout_disabled_sm(stop_sm):
             value=random_invalid_timeout)):
         result = ipoib_port.interface.ip.set(op_param_name='arp-timeout', op_param_value=random_invalid_timeout,
                                              apply=TestToolkit.tested_api == ApiType.OPENAPI)
+        result.ignore_result()
         assert not result.result or "Valid range is" in result.info or \
             'Invalid Command' in result.info, "Set of an invalid arp-timeout should fail"
         NvueGeneralCli.detach_config(TestToolkit.engines.dut)
@@ -107,6 +108,7 @@ def test_interface_ib0_arp_timeout_disabled_sm(stop_sm):
             value=random_invalid_timeout_neg)):
         result = ipoib_port.interface.ip.set(op_param_name='arp-timeout', op_param_value=random_invalid_timeout_neg,
                                              apply=TestToolkit.tested_api == ApiType.OPENAPI)
+        result.ignore_result()
         assert not result.result or "Valid range is" in result.info or \
             'Invalid Command' in result.info, "Set of an invalid arp-timeout should fail"
         NvueGeneralCli.detach_config(TestToolkit.engines.dut)
@@ -118,6 +120,7 @@ def test_interface_ib0_arp_timeout_disabled_sm(stop_sm):
             value=random_invalid_timeout_max)):
         result = ipoib_port.interface.ip.set(op_param_name='arp-timeout', op_param_value=random_invalid_timeout_max,
                                              apply=TestToolkit.tested_api == ApiType.OPENAPI)
+        result.ignore_result()
         assert not result.result or "Valid range is" in result.info or \
             'Invalid Command' in result.info, "Set of an invalid arp-timeout should fail"
         NvueGeneralCli.detach_config(TestToolkit.engines.dut)

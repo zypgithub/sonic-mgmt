@@ -298,7 +298,7 @@ def test_show_interface_filter(engines, test_api):
     with allure.step('Compare between filtered output dictionary to the full dictionary'):
         res_obj = ValidationTool.compare_nested_dictionary_content(output_dict_filtered, output_dict)
         if is_redmine_issue_active([4235573])[0] and test_api == ApiType.OPENAPI:
-            pass
+            res_obj.ignore_result()
         else:
             res_obj.verify_result()
 

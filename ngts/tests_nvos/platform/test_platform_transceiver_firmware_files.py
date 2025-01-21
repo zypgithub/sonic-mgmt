@@ -126,8 +126,14 @@ def test_transceiver_files_negative(engines, test_api):
         platform = Platform()
 
     with (allure.step("try to fetch using invalid URLs {}, {}".format(invalid_url_1, invalid_url_2))):
-        assert invalid_url_expected_message in platform.firmware.transceiver.action_fetch(fw_path_1, base_url=invalid_url_1).returned_value, "Test failed: trying to fetch using invalid url = {} the expected error message = {}".format(invalid_url_1, invalid_url_expected_message)
-        assert invalid_url_expected_message in platform.firmware.transceiver.action_fetch(fw_path_1, base_url=invalid_url_2).returned_value, "Test failed: trying to fetch using  invalid url = {} the expected error message = {}".format(invalid_url_2, invalid_url_expected_message)
+        assert (invalid_url_expected_message in
+                platform.firmware.transceiver.action_fetch(fw_path_1, base_url=invalid_url_1)
+                .get_returned_value(False)), (
+            f"Test failed: trying to fetch using invalid url = {invalid_url_1} the expected error message = {invalid_url_expected_message}")
+        assert (invalid_url_expected_message in
+                platform.firmware.transceiver.action_fetch(fw_path_1, base_url=invalid_url_2)
+                .get_returned_value(False)), (
+            f"Test failed: trying to fetch using  invalid url = {invalid_url_2} the expected error message = {invalid_url_expected_message}")
 
     with allure.step("trying to upload non exist transceiver firmware file"):
         upload_path = '{}://{}:{}@{}/tmp/{}'.format('scp', player_engine.username, player_engine.password,

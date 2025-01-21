@@ -125,6 +125,7 @@ class OpenApiRequest:
             return res.info
         res = OpenApiRequest._apply_config(request_data, add_approve, client_certs_after_apply)
         OpenApiRequest.clear_changeset_and_payload()
+        res.ignore_result()
         return res.info
 
     @staticmethod
@@ -281,6 +282,7 @@ class OpenApiRequest:
 
             res = OpenApiRequest._validate_response(r, OpenApiReqType.GET)
             if not res.result:
+                res.ignore_result()
                 return res.info
             return r.content.decode('utf8')
 

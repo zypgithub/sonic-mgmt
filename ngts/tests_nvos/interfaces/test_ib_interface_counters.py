@@ -66,30 +66,27 @@ def test_range_clear_counters_negative(engines, players, interfaces, start_sm, f
 
     out_of_range_p, out_of_range_sw, reversed_range, undefined_range = create_invalid_ranges(selected_ports[0].name)
     error_msg1 = 'does not exist'
-    error_msg2 = "is not a 'interface name'. Valid interface types are"
+    error_msg2 = "is not a 'interface-name'. Valid interface types are"
 
     with allure.step("Create Interface"):
         interface = Interface(parent_obj=None)
 
-    with allure.step("check out of range {}".format(out_of_range_p)):
-        interface.action_clear_counter_for_interface(interface_name=out_of_range_p)
-        err_msg = Tools.RandomizationTool.get_random_traffic_port().get_returned_value()
-        assert error_msg1 not in err_msg, "action should fail with this error message: {}".format(error_msg1)
+    with allure.step('Tests'):
+        with allure.independent_step("check out of range {}".format(out_of_range_p)):
+            interface.action_clear_counter_for_interface(interface_name=out_of_range_p
+                                                         ).verify_result(False, error_msg1)
 
-    with allure.step("check out of range {}".format(out_of_range_sw)):
-        interface.action_clear_counter_for_interface(interface_name=out_of_range_sw)
-        err_msg = Tools.RandomizationTool.get_random_traffic_port().get_returned_value()
-        assert error_msg1 not in err_msg, "action should fail with this error message: {}".format(error_msg1)
+        with allure.independent_step("check out of range {}".format(out_of_range_sw)):
+            interface.action_clear_counter_for_interface(interface_name=out_of_range_sw
+                                                         ).verify_result(False, error_msg1)
 
-    with allure.step("check reversed range"):
-        interface.action_clear_counter_for_interface(interface_name=reversed_range)
-        err_msg = Tools.RandomizationTool.get_random_traffic_port().get_returned_value()
-        assert error_msg2 not in err_msg, "action should fail with this error message: {}".format(error_msg2)
+        with allure.independent_step("check reversed range"):
+            interface.action_clear_counter_for_interface(interface_name=reversed_range
+                                                         ).verify_result(False, error_msg2)
 
-    with allure.step("check undefined range"):
-        interface.action_clear_counter_for_interface(interface_name=undefined_range)
-        err_msg = Tools.RandomizationTool.get_random_traffic_port().get_returned_value()
-        assert error_msg2 not in err_msg, "action should fail with this error message: {}".format(error_msg2)
+        with allure.independent_step("check undefined range"):
+            interface.action_clear_counter_for_interface(interface_name=undefined_range
+                                                         ).verify_result(False, error_msg2)
 
 
 @pytest.mark.ib_interfaces

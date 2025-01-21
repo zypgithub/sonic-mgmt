@@ -179,7 +179,8 @@ def test_interface_eth0_speed_duplex_autoneg(engines, devices, topology_obj):
 
         Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
                                                           field_name=IbInterfaceConsts.LINK_AUTO_NEGOTIATE,
-                                                          expected_value="on")
+                                                          expected_value="on"
+                                                          ).verify_result()
 
         mgmt_port.interface.link.unset(op_param='duplex', apply=True, ask_for_confirmation=True).verify_result()
 
@@ -188,7 +189,8 @@ def test_interface_eth0_speed_duplex_autoneg(engines, devices, topology_obj):
 
         Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
                                                           field_name=IbInterfaceConsts.LINK_DUPLEX,
-                                                          expected_value="full")
+                                                          expected_value="full"
+                                                          ).verify_result()
 
         mgmt_port.interface.link.unset(op_param='speed', apply=True, ask_for_confirmation=True).verify_result()
 
@@ -197,7 +199,8 @@ def test_interface_eth0_speed_duplex_autoneg(engines, devices, topology_obj):
 
         Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
                                                           field_name=IbInterfaceConsts.LINK_SPEED,
-                                                          expected_value="1G")
+                                                          expected_value="1G"
+                                                          ).verify_result()
 
 
 @pytest.mark.cumulus
@@ -228,7 +231,7 @@ def test_interface_eth0_mtu(engines, topology_obj):
         check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port)
     with allure.step('Negative validation with not supported for eth mtu 9218'):
         result_obj = mgmt_port.interface.link.set(op_param_name='mtu', op_param_value='9218', apply=False)
-        assert not result_obj.result and "Valid range is" in result_obj.info, "Set of invalid mtu should fail"
+        assert "Valid range is" in result_obj.get_info(False), "Set of invalid mtu should fail"
         NvueGeneralCli.detach_config(TestToolkit.engines.dut)
         logger.info('Check port status, should be up')
         check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port)
@@ -325,6 +328,7 @@ def test_interface_eth0_ip_address(engines, topology_obj, serial_engine):
 
     with allure.step('Negative validation for {0} ip'.format(mgmt_port_name)):
         res = mgmt_port.interface.ip.address.set(op_param_name='aa', apply=False, ask_for_confirmation=True)
+        res.ignore_result()
         assert not res.result or "is not a" in res.returned_value, \
             "The operation succeeded while it is expected to fail"
 
