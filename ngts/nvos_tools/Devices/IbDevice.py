@@ -955,7 +955,7 @@ class JulietSwitch(NvLinkSwitch):
             PlatformConsts.CHASSIS_LOCATION_TOPO_ID: ExpectedString(regex=r"^(Loopback|GB200 NVL36|GB200 NVL72|\d+)$")
         }
         cluster_files = ['conf', 'nmx-controller', 'nmx-telemetry']
-        self.constants.firmware.append('CPLD4')
+        self.constants.firmware.extend(['CPLD4', 'EROT-FPGA', 'EROT-BMC', 'EROT', 'EROT-ASIC2', 'EROT-CPU', 'EROT-ASIC1'])
         self.constants = self.constants._replace(cluster_files=cluster_files)
         bmc_dump_files = ['bmc_debug_log_dump.tar']
         self.constants = self.constants._replace(bmc_dump_files=bmc_dump_files)
