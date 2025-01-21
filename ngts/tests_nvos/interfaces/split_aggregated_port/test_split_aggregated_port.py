@@ -64,7 +64,7 @@ def test_interface_aggregated_port_split(engines, devices, test_api, players, in
     with allure_step("Split splitter port"):
         parent_port = split_ports[0]
         parent_port.interface.link.set(op_param_name='breakout',
-                                       op_param_value=IbInterfaceConsts.LINK_BREAKOUT_NDR,
+                                       op_param_value=IbInterfaceConsts.LINK_BREAKOUT_XDR,
                                        apply=True, ask_for_confirmation=True).verify_result()
 
     with allure_step("Get split ports"):
