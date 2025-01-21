@@ -263,7 +263,7 @@ def test_password_hardening_set_invalid_input(engines, system):
                         logging.info('Invalid value for setting "{}" - "{}")'.format(setting, invalid_value))
 
                         with allure.step('Try to set password hardening setting "{}" to "{}"'.format(setting, invalid_value)):
-                            res_obj = pwh_obj.set(setting, invalid_value, apply=False)
+                            res_obj = pwh_obj.set(setting, invalid_value, apply=False).ignore_result()
 
                         with allure.independent_step('Verify error'):
                             if invalid_value == '':
@@ -272,11 +272,11 @@ def test_password_hardening_set_invalid_input(engines, system):
                                 expected_err = PwhConsts.ERR_INVALID_SET_ENABLE_DISABLED
                             elif setting in PwhConsts.MIN.keys():  # setting is numeric
                                 if re.match(PwhConsts.REGEX_NUMERIC, str(invalid_value)):  # value is numeric but not in range
-                                    # expected_err = PwhConsts.ERR_RANGE.format(PwhConsts.MIN[setting], PwhConsts.MAX[setting])
-                                    if int(invalid_value) < PwhConsts.MIN[setting]:
-                                        expected_err = PwhConsts.ERR_VALUE_LESS_THAN_MIN.format(invalid_value, PwhConsts.MIN[setting])
-                                    else:
-                                        expected_err = PwhConsts.ERR_VALUE_GREATER_THAN_MAX.format(invalid_value, PwhConsts.MAX[setting])
+                                    expected_err = PwhConsts.ERR_RANGE.format(PwhConsts.MIN[setting], PwhConsts.MAX[setting])
+                                    # if int(invalid_value) < PwhConsts.MIN[setting]:
+                                    #     expected_err = PwhConsts.ERR_VALUE_LESS_THAN_MIN.format(setting, invalid_value, PwhConsts.MIN[setting])
+                                    # else:
+                                    #     expected_err = PwhConsts.ERR_VALUE_GREATER_THAN_MAX.format(setting, invalid_value, PwhConsts.MAX[setting])
                                 else:
                                     expected_err = PwhConsts.ERR_INTEGER_EXPECTED.format(invalid_value)  # value is not numeric
                             else:
@@ -299,7 +299,7 @@ def test_password_hardening_set_invalid_input(engines, system):
             logging.info('Set expiration to {} - should succeed'.format(exp))
             pwh_obj.set(PwhConsts.EXPIRATION, exp, apply=True).verify_result()
             logging.info('Try to set expiration-warning to {} (larger) - should fail'.format(bad_exp_warn))
-            res_obj = pwh_obj.set(PwhConsts.EXPIRATION_WARNING, bad_exp_warn, apply=True)
+            res_obj = pwh_obj.set(PwhConsts.EXPIRATION_WARNING, bad_exp_warn, apply=True).ignore_result()
             logging.info('Verify error')
             PwhTools.verify_error(res_obj=res_obj, error_should_contain=PwhConsts.ERR_EXP_WARN_LEQ_EXP)
 
@@ -313,7 +313,7 @@ def test_password_hardening_set_invalid_input(engines, system):
             logging.info('Set expiration-warning to {} - should succeed'.format(exp_warn))
             pwh_obj.set(PwhConsts.EXPIRATION_WARNING, exp_warn, apply=True).verify_result()
             logging.info('Try to set expiration to {} (smaller) - should fail'.format(bad_exp))
-            res_obj = pwh_obj.set(PwhConsts.EXPIRATION, bad_exp, apply=True)
+            res_obj = pwh_obj.set(PwhConsts.EXPIRATION, bad_exp, apply=True).ignore_result()
             logging.info('Verify error')
             PwhTools.verify_error(res_obj=res_obj, error_should_contain=PwhConsts.ERR_EXP_WARN_LEQ_EXP)
 

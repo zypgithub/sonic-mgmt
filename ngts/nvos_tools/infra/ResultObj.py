@@ -91,9 +91,10 @@ class ResultObj:
         self.verify_result(should_succeed)
         return self.info
 
-    def ignore_result(self):
+    def ignore_result(self) -> 'ResultObj':
         """Call this method if we don't care whether the operation succeeded or failed."""
         self._discard_instance(self)
+        return self
 
     def __bool__(self):
         return bool(self.result)
