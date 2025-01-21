@@ -1,4 +1,5 @@
 import time
+import re
 
 import pytest
 
@@ -565,7 +566,9 @@ def test_mgmt_interface_dhcpv6_ztp(engines, topology_obj):
     with allure.step('Run tcpdump and catch dhcpv6 ztp vendor class'):
         tcpdump_output = Tools.IpTool.run_tcpdump(engines.dut, mgmt_port_name,
                                                   filter='port 546 or port 547 -e -c 5 -n -vv')
-        assert '5 packets received by filter' in tcpdump_output, 'DHCPv6 Vendor class packets not caught'
+        match = re.search(r"(\d+) packets received by filter", tcpdump_output)
+        packets_received = int(match.group(1))
+        assert packets_received >= 5, f"Only {packets_received} packets received, less than 5"
 
 
 def validate_interface_ip_address(address, output_dictionary, validate_in=True):
