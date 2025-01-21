@@ -403,6 +403,7 @@ class IbSwitch(BaseSwitch):
                     file='/auto/sw_system_project/NVOS_INFRA/verification_files/ssd_fw/virtium_ssd_fw_pkg.pkg',
                     current_version='0202-000', alternate_version='0202-002'),
         }
+        self.module_offset = None  # Should be overridden in child if used for module mapping
 
     def sleep_after_system_reboot(self):
         pass

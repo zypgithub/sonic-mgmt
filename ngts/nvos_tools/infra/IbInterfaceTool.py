@@ -58,7 +58,7 @@ class IbInterfaceTool:
 
     @staticmethod
     def get_mst_dev_name(engines, asic_conf_dict, module_name=None, port_name=None):
-        fae_port_name = f"{module_name}p1" if module_name else port_name
+        fae_port_name = port_name if port_name else f"{module_name}p1"
         fae = Fae(port_name=fae_port_name)
 
         with allure.step(f"Find correct mst_dev_name for {module_name or port_name}"):
