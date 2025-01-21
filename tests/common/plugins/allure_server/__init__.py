@@ -152,7 +152,15 @@ def get_setup_session_info(session):
             "Random_seed": random_seed,
         }
     )
-
+    job_name = os.environ.get("REGRESSION_TYPE")
+    # only show metadata for CI jobs, no need for regression runs
+    if job_name and job_name != "regression":
+        result.update({"Job_name": job_name})
+        ci_log_folder = os.environ.get("LOG_FOLDER")
+        if ci_log_folder:
+            segs = ci_log_folder.split(os.sep)
+            if len(segs) > 2:
+                result.update({"Build_ID": segs[-3]})
     return result
 
 
