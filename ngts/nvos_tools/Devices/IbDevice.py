@@ -643,7 +643,7 @@ class BlackMambaSwitch(IbSwitch):
         self.ztp_complex_prod_json = 'complex_prod.json'
         self.ztp_complex_dev_json = 'complex.json'
 
-        self.constants.firmware.append('CPLD4', 'CPLD5', 'CPLD6')
+        self.constants.firmware.extend(['CPLD4', 'CPLD5', 'CPLD6'])
 
     def get_mgmt_ports(self) -> List[str]:
         return self.mgmt_ports
