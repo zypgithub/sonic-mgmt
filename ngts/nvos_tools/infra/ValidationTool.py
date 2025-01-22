@@ -2,7 +2,7 @@ import logging
 import re
 from collections import defaultdict
 from enum import Enum
-from typing import Iterable, Dict
+from typing import Iterable, Dict, Union
 
 from ngts.tools.test_utils import allure_utils as allure
 from .ResultObj import ResultObj, IssueType
@@ -555,3 +555,14 @@ class ValidationTool:
                               f"logical state is {logical_state} not {expected_ports_logical_state} as expected",
                               False)
             return result_obj
+
+    @staticmethod
+    def verify_any_string_in_string(actual: str, expected: Union[str, Iterable[str]]) -> ResultObj:
+        """Returns success if any of the expected strings can be found in the actual string."""
+        if isinstance(expected, str):
+            expected = (expected, )
+        if any(s in actual for s in expected):
+            return ResultObj(True, returned_value=True)
+        else:
+            return ResultObj(False, returned_value=False,
+                             info=f'String expected to contain one of {expected} but actual value is: {actual}')
