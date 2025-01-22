@@ -434,8 +434,7 @@ def image_uninstall_test(release_name, original_version, devices, uninstall_forc
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.image
-@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_system_image_install_reject_with_smallcase_n(engines, test_api, original_version, devices):
+def test_system_image_install_reject_with_smallcase_n(engines, original_version, devices):
     """
     Check the image install cmd by rejecting the prompt with 'n'
     Validate that install image command will be aborted when the prompt is rejected.
@@ -443,7 +442,6 @@ def test_system_image_install_reject_with_smallcase_n(engines, test_api, origina
     2. Attempt image install command, reject the prompt with 'n'
     3. Check the image is the original one
     """
-    TestToolkit.tested_api = test_api
     system = System()
     prompt_response = 'n'
     system_image_install_reject_with_prompt(engines, system, prompt_response, original_version, devices)
@@ -452,8 +450,7 @@ def test_system_image_install_reject_with_smallcase_n(engines, test_api, origina
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.image
-@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_system_image_install_reject_with_uppercase_n(engines, test_api, original_version, devices):
+def test_system_image_install_reject_with_uppercase_n(engines, original_version, devices):
     """
     Check the image install cmd by rejecting the prompt with 'N'
     Validate that install image command will be aborted when the prompt is rejected.
@@ -461,7 +458,6 @@ def test_system_image_install_reject_with_uppercase_n(engines, test_api, origina
     2. Attempt image install command, reject the prompt with 'N'
     3. Check the image is the original one
     """
-    TestToolkit.tested_api = test_api
     system = System()
     prompt_response = 'N'
     system_image_install_reject_with_prompt(engines, system, prompt_response, original_version, devices)
@@ -470,8 +466,7 @@ def test_system_image_install_reject_with_uppercase_n(engines, test_api, origina
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.image
-@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_system_image_install_reject_with_random_char(engines, test_api, original_version, devices):
+def test_system_image_install_reject_with_random_char(engines, original_version, devices):
     """
     Check the image install cmd by rejecting the prompt with random character
     Validate that install image command will be aborted when the prompt is rejected.
@@ -479,7 +474,6 @@ def test_system_image_install_reject_with_random_char(engines, test_api, origina
     2. Attempt image install command, reject the prompt with random character
     3. Check the image is the original one
     """
-    TestToolkit.tested_api = test_api
     system = System()
     prompt_response = 't'
     system_image_install_reject_with_prompt(engines, system, prompt_response, original_version, devices)
