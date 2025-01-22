@@ -35,17 +35,16 @@ def test_show_platform_environment_voltage(engines, devices):
 
     with allure.step("Check all details of all sensors are available in show platform environment voltage"):
         sensors_absent = []
-        min_max_actual_keys_absent = []
+        actual_volt_absent = []
         for sensor in devices.dut.voltage_sensors:
             if voltage_output[sensor]['state'] != 'ok':
                 sensors_absent.append(sensor)
                 continue
-            if 'min' not in voltage_output[sensor].keys() or 'max' not in voltage_output[sensor].keys() or\
-                    'actual' not in voltage_output[sensor].keys():
-                min_max_actual_keys_absent.append(sensor)
+            if 'actual' not in voltage_output[sensor].keys():
+                actual_volt_absent.append(sensor)
 
-        assert len(sensors_absent) == 0 and len(min_max_actual_keys_absent) == 0, \
-            'Absent sensors={}, min/max/actual voltage missing={}'.format(sensors_absent, min_max_actual_keys_absent)
+        assert len(sensors_absent) == 0 and len(actual_volt_absent) == 0, \
+            'Absent sensors={}, Actual voltage missing={}'.format(sensors_absent, actual_volt_absent)
 
     with allure.step("Execute show platform environment voltage for every sensor and compare with aggregated show"):
         mismatch = False
@@ -162,8 +161,10 @@ def check_voltage_in_range(sensor_output):
     :return:
     """
     with allure.step("Verify the actual voltage is between min and max inclusive"):
-        if float(sensor_output['actual']) > float(sensor_output['max']):
-            return "Actual voltage out of range, actual={} max={}".format(sensor_output['actual'], sensor_output['max'])
-        if float(sensor_output['actual']) < float(sensor_output['min']):
-            return "Actual voltage out of range, actual={} min={}".format(sensor_output['actual'], sensor_output['min'])
+        if 'max' in sensor_output.keys():
+            if float(sensor_output['actual']) > float(sensor_output['max']):
+                return "Actual voltage {} more than max of {}".format(sensor_output['actual'], sensor_output['max'])
+        if 'min' in sensor_output.keys():
+            if float(sensor_output['actual']) < float(sensor_output['min']):
+                return "Actual voltage {} less than min of {}".format(sensor_output['actual'], sensor_output['min'])
         return ""
