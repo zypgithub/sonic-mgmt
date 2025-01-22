@@ -94,7 +94,7 @@
   - name: Install python packages
     pip:
       name:
-      - "docker==6.1.0"
+      - "docker==7.1.0"
       - "requests==2.31.0"
       state: forcereinstall
       executable: "{{ pip_executable }}"
