@@ -888,8 +888,14 @@ def post_issu_installation_steps(engines, devices, target_version, fw_expected, 
 def prepare_image_for_install(player, dut_engine, dut_device, image_version):
     system = System()
 
-    with allure.step("Uninstall system image on the other partition"):
-        system.image.action_uninstall(params="force", engine=dut_engine, verify_res=False)
+    with allure.step("Uninstall system image (if any) on the other partition"):
+        try:
+            system.image.action_uninstall(params="force", engine=dut_engine, verify_res=False).verify_result()
+        except AssertionError as e:
+            if 'Nothing to uninstall' in str(e):
+                pass
+            else:
+                raise
         time.sleep(10)
 
     with allure.step("Prepare system image for install"):

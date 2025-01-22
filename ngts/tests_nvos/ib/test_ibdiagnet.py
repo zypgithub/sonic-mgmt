@@ -148,6 +148,8 @@ def test_ibdiagnet_upload(engines):
         except AssertionError as e:
             if 'File not found' in str(e):
                 pass
+            else:
+                raise
 
     with allure.step('try to upload non exist ibdiagnet file'):
         output = ib.ibdiagnet.action_upload(upload_path=upload_path)
