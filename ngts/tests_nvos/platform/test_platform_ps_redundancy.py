@@ -118,7 +118,7 @@ def platform_ps_redundancy_functionality(engines, topology_obj, system, min_for_
     try:
         with allure.step("Get name from NOGA"):
             noga_query_data = topology_obj.players['dut']['attributes'].noga_query_data['attributes']
-            dhcp_hostname = noga_query_data['Specific']['dhcp_hostname'] or noga_query_data['Common']['Name']
+            dhcp_hostname = noga_query_data['Common']['Name'] or noga_query_data['Specific']['dhcp_hostname']
 
         with allure.step("Deteriorate PSUs till redundancy threshold"):
             skip_str = PlatformConsts.PS_REBOOT_PSU_SKIP_STR
@@ -126,13 +126,13 @@ def platform_ps_redundancy_functionality(engines, topology_obj, system, min_for_
             psu_bad_state = str(list(range(1, min_for_redundancy))).replace('[', '').replace(']', '').replace(' ', '')
             skip_str_good = skip_str + psu_good_state + ' '
             skip_str_bad = skip_str + psu_bad_state + ' '
-            DutUtilsTool.dut_psu_control(engines, skip_str_good, 'off', dhcp_hostname)
+            DutUtilsTool.dut_psu_control(engines, topology_obj, skip_str_good, 'off', dhcp_hostname)
             # Wait for PSU states to update
             time.sleep(10)
             system_health_check(system, HealthConsts.OK)
 
         with allure.step("Deteriorate one more PSU than redundancy threshold to fail PS redundancy"):
-            DutUtilsTool.dut_psu_control(engines, skip_str_bad, 'off', dhcp_hostname)
+            DutUtilsTool.dut_psu_control(engines, topology_obj, skip_str_bad, 'off', dhcp_hostname)
 
         # Need to consult with design regarding below behaviour
         # with allure.step("Validate System health is not OK and issues are found"):
@@ -140,7 +140,7 @@ def platform_ps_redundancy_functionality(engines, topology_obj, system, min_for_
 
     finally:
         with allure.step("Recover PSUs"):
-            DutUtilsTool.dut_psu_control(engines, '', 'on', dhcp_hostname)
+            DutUtilsTool.dut_psu_control(engines, topology_obj, '', 'on', dhcp_hostname)
             # Wait for PSU states to update
             time.sleep(10)
 

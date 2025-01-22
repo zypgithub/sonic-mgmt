@@ -1,4 +1,5 @@
 import logging
+import os
 import socket
 import subprocess
 import time
@@ -278,11 +279,15 @@ class DutUtilsTool:
         return dockers
 
     @staticmethod
-    def dut_psu_control(engines, skip_str='', psu_state='', dhcp_hostname=''):
-        player = engines['sonic_mgmt']
+    def dut_psu_control(engines, topology_obj, skip_str='', psu_state='', dhcp_hostname='',):
+        from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
+        cli = NvueGeneralCli(engines.dut)
         with allure.step("Reboot {} the PSUs using reboot script".format(psu_state)):
+            server_ip = cli.get_site_server_ip(topology_obj)
+            ssh_conn = LinuxSshEngine(ip=server_ip, username=os.getenv("TEST_SERVER_USER"),
+                                      password=os.getenv("TEST_SERVER_PASSWORD"))
             reboot_cmd = skip_str + '/.autodirect/mswg/utils/bin/rreboot ' + dhcp_hostname + ' ' + psu_state
-            player.run_cmd(reboot_cmd)
+            ssh_conn.run_cmd(reboot_cmd)
 
 
 def ping_device(ip_add):

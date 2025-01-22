@@ -22,7 +22,7 @@ from ngts.nvos_constants.constants_nvos import SystemConsts
 @pytest.mark.checklist
 @pytest.mark.reset_factory
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_reset_factory_without_params(engines, devices, topology_obj, platform_params, test_api, has_loopbox, setup_name, standalone_system):
+def test_reset_factory_without_params(engines, devices, topology_obj, platform_params, test_api, has_loopbox, setup_name, standalone_system, test_name):
     """
     Validate reset factory without params cleanup done as expected
 
@@ -50,7 +50,7 @@ def test_reset_factory_without_params(engines, devices, topology_obj, platform_p
                                                                               has_loopbox, setup_name, standalone_system)
 
     with allure.step("Run reset factory without params"):
-        execute_reset_factory(engines, system, devices.dut.reset_factory, "", current_time)
+        execute_reset_factory(engines, system, devices.dut.reset_factory, "", current_time, test_name=test_name)
 
     with allure.step('post factory reset steps'):
         factory_reset_no_params_post_steps(apply_and_save_port, engines, just_apply_port, health_status,
@@ -77,7 +77,7 @@ def test_reset_factory_without_params(engines, devices, topology_obj, platform_p
 @pytest.mark.checklist
 @pytest.mark.reset_factory
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_reset_factory_keep_basic(engines, devices, test_api):
+def test_reset_factory_keep_basic(engines, devices, test_api, test_name):
     """
     Validate reset factory with keep basic param cleanup done as expected
 
@@ -103,7 +103,7 @@ def test_reset_factory_keep_basic(engines, devices, test_api):
             output_dictionary_mgmt_show = factory_reset_keep_basic_pre_steps(engines, system)
 
     with allure.step("Run reset factory with keep basic param"):
-        execute_reset_factory(engines, system, devices.dut.reset_factory, "keep basic", current_time)
+        execute_reset_factory(engines, system, devices.dut.reset_factory, "keep basic", current_time, test_name=test_name)
 
     update_timezone(system)
 
@@ -130,7 +130,7 @@ def test_reset_factory_keep_basic(engines, devices, test_api):
 @pytest.mark.checklist
 @pytest.mark.reset_factory
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_reset_factory_keep_all_config(engines, devices, test_api):
+def test_reset_factory_keep_all_config(engines, devices, test_api, test_name):
     """
     Validate reset factory with keep all config param cleanup done as expected
 
@@ -156,7 +156,7 @@ def test_reset_factory_keep_all_config(engines, devices, test_api):
             not_apply_port, username = factory_reset_general_pre_steps(engines, devices, system)
 
     with allure.step("Run reset factory with keep all-config param"):
-        execute_reset_factory(engines, system, devices.dut.reset_factory, "keep all-config", current_time)
+        execute_reset_factory(engines, system, devices.dut.reset_factory, "keep all-config", current_time, test_name=test_name)
 
     update_timezone(system)
 
@@ -181,7 +181,7 @@ def test_reset_factory_keep_all_config(engines, devices, test_api):
 @pytest.mark.checklist
 @pytest.mark.reset_factory
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_reset_factory_keep_only_files(engines, devices, test_api):
+def test_reset_factory_keep_only_files(engines, devices, test_api, test_name):
     """
     Validate reset factory with keep only files param cleanup done as expected
 
@@ -207,7 +207,7 @@ def test_reset_factory_keep_only_files(engines, devices, test_api):
             not_apply_port, username = factory_reset_general_pre_steps(engines, devices, system)
 
     with allure.step("Run reset factory keep only-files"):
-        execute_reset_factory(engines, system, devices.dut.reset_factory, "keep only-files", current_time)
+        execute_reset_factory(engines, system, devices.dut.reset_factory, "keep only-files", current_time, test_name=test_name)
 
     update_timezone(system)
 
@@ -236,10 +236,10 @@ def test_error_flow_reset_factory_with_params(test_api, engines, devices, topolo
         assert "Invalid parameter" in output, "Reset factory with param should fail"
 
 
-def execute_reset_factory(engines, system, operation, flag, current_time, topology_obj=None):
+def execute_reset_factory(engines, system, operation, flag, current_time, topology_obj=None, test_name=''):
     logging.info("Current time: " + str(current_time))
     topology_obj = topology_obj or (TestToolkit.topology_obj if TestToolkit else None)
-    result_obj = system.factory_default.action_reset(operation=operation, param=flag, topology_obj=topology_obj)
+    result_obj = system.factory_default.action_reset(operation=operation, param=flag, topology_obj=topology_obj, test_name=test_name)
     assert result_obj.result, result_obj.info
 
 

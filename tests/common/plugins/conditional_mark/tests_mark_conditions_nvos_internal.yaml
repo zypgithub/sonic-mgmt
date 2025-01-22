@@ -430,10 +430,10 @@ tests_nvos/system/test_system_factory_reset.py:
 tests_nvos/platform/test_platform_firmware_bios/test_platform_firmware_bios.py:
   skip:
     reason: "Testcase skipped on mtvr-q3400-06 black mamba system due to RM issue: https://redmine.mellanox.com/issues/4241214"
-    conditions_logical_operator: and
+    conditions_logical_operator: or
     conditions:
       - "'q3400-06' in testbed"
-      - https://redmine.mellanox.com/issues/4241214
+      - "'juliet' in testbed"
 
 tests_nvos/platform/test_platform_environment_leakage.py:
   skip:

@@ -108,15 +108,13 @@ def test_reboot_halt(engines, devices, test_name, topology_obj):
         1. run remote reboot script to turn off PSU and turn on the PSU
         2. Validate reboot reason in system events
     """
-    pytest.skip("Test breaking the regression. Skipped until fixed.")
-
     system = System()
     expected_reboot_reason = SystemConsts.REBOOT_REASON_POWER_LOSS
     dhcp_hostname = ''
 
     with allure.step("Get name from NOGA"):
         noga_query_data = topology_obj.players['dut']['attributes'].noga_query_data['attributes']
-        dhcp_hostname = noga_query_data['Specific']['dhcp_hostname'] or noga_query_data['Common']['Name']
+        dhcp_hostname = noga_query_data['Common']['Name'] or noga_query_data['Specific']['dhcp_hostname']
 
     with allure.step('Run nv action reboot system'):
         OperationTime.save_duration('reboot halt', '', test_name, system.reboot.action_reboot, params='halt',
@@ -125,7 +123,7 @@ def test_reboot_halt(engines, devices, test_name, topology_obj):
         time.sleep(10)
 
     with allure.step('Power the system back on via PSU'):
-        DutUtilsTool.dut_psu_control(engines, dhcp_hostname=dhcp_hostname)
+        DutUtilsTool.dut_psu_control(engines, topology_obj, dhcp_hostname=dhcp_hostname)
 
     with allure.step('Wait for the system to be ready'):
         res_obj = DutUtilsTool.wait_on_system_reboot(engines.dut, device=devices.dut, verify_final_result=False)
@@ -152,10 +150,10 @@ def test_reboot_via_psu_off(engines, devices, topology_obj):
 
     with allure.step("Get name from NOGA"):
         noga_query_data = topology_obj.players['dut']['attributes'].noga_query_data['attributes']
-        dhcp_hostname = noga_query_data['Specific']['dhcp_hostname'] or noga_query_data['Common']['Name']
+        dhcp_hostname = noga_query_data['Common']['Name'] or noga_query_data['Specific']['dhcp_hostname']
 
     with allure.step("Reboot the system using PSU off-on"):
-        DutUtilsTool.dut_psu_control(engines, dhcp_hostname=dhcp_hostname)
+        DutUtilsTool.dut_psu_control(engines, topology_obj, dhcp_hostname=dhcp_hostname)
 
     res_obj = DutUtilsTool.wait_on_system_reboot(engines.dut, device=devices.dut, verify_final_result=False)
     assert res_obj.result, 'System reboot failed'
