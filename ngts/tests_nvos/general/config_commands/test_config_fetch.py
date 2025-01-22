@@ -12,6 +12,7 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.system.System import System
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.tools.test_utils.nvos_general_utils import generate_scp_uri_using_player
 
 logger = logging.getLogger()
 YAML_FILES_PATH = MarsConstants.SONIC_MGMT_DIR + "/ngts/tests_nvos/general/config_commands/yaml_files/"
@@ -39,14 +40,8 @@ def test_show_fetch_file(engines):
     assert 1 == len(files), "The config files list should contain only one file"
 
     with allure.step('get remote server engine'):
-        remote_server_engine = engines[NvosConst.SONIC_MGMT]
-
-    yaml_file = YAML_FILES_LIST[0]
-    logger.info('the yaml file name is {}'.format(yaml_file))
-
-    with allure.step('get the remote url'):
-        remote_url = DutUtilsTool.get_url(engine=remote_server_engine, command_opt='scp',
-                                          file_full_path=YAML_FILES_PATH + yaml_file).verify_result()
+        yaml_file = YAML_FILES_LIST[0]
+        remote_url = generate_scp_uri_using_player(engines.sonic_mgmt, YAML_FILES_PATH + yaml_file)
 
     action_expected_str = "File fetched successfully"
 
@@ -132,8 +127,7 @@ def test_rename_and_upload(engines):
     logger.info('the yaml file name is {}'.format(yaml_file))
 
     with allure.step('get the remote url'):
-        remote_url = DutUtilsTool.get_url(engine=remote_server_engine, command_opt='scp',
-                                          file_full_path=YAML_FILES_PATH + yaml_file).verify_result()
+        remote_url = generate_scp_uri_using_player(engines.sonic_mgmt, YAML_FILES_PATH + yaml_file)
 
     with allure.step('fetch {}'.format(yaml_file)):
         system.config.action_fetch(remote_url)
@@ -145,8 +139,7 @@ def test_rename_and_upload(engines):
         fetched_config_file.rename_and_verify(new_name, expected_str)
 
     with allure.step('upload file'):
-        upload_path = DutUtilsTool.get_url(engine=remote_server_engine, command_opt='scp',
-                                           file_full_path='/tmp/').verify_result()
+        upload_path = generate_scp_uri_using_player(engines.sonic_mgmt, '/tmp/')
 
         fetched_config_file.action_upload(upload_path)
         with allure.step("Validate file was uploaded"):
@@ -186,14 +179,10 @@ def test_patch_replace_delete(engines):
         delete_all = system.config.files.file_name['']
         delete_all.action_delete()
 
-    with allure.step('get remote server engine'):
-        remote_server_engine = engines[NvosConst.SONIC_MGMT]
-
     with allure.step('fetch 3 yaml files'):
         for file in YAML_FILES_LIST:
             with allure.step('get the remote url'):
-                remote_url = DutUtilsTool.get_url(engine=remote_server_engine, command_opt='scp',
-                                                  file_full_path=YAML_FILES_PATH + file).verify_result()
+                remote_url = generate_scp_uri_using_player(engines.sonic_mgmt, YAML_FILES_PATH + file)
             with allure.step('fetch {}'.format(file)):
                 system.config.action_fetch(remote_url)
 
@@ -253,10 +242,7 @@ def test_config_bad_flow(engines):
 
     with allure.step('trying to upload non exist file'):
         with allure.step('get remote server engine'):
-            remote_server_engine = engines[NvosConst.SONIC_MGMT]
-
-        upload_path = DutUtilsTool.get_url(engine=remote_server_engine, command_opt='scp',
-                                           file_full_path='/tmp/').verify_result()
+            upload_path = generate_scp_uri_using_player(engines.sonic_mgmt, '/tmp/')
         fetched_config_file.action_upload(upload_path, "File not found")
 
     with allure.step('trying to rename non exist file'):
