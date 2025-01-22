@@ -589,6 +589,14 @@
     - simx
 
 - Errors_list:
+  - '.*ERR pmon#thermalctld: Thermal sysfs /run/hw-management/thermal/cpu_pack.* does not exist.*'
+  Conditions:
+  - Redmine:
+    - 4267612
+    Platform:
+    - sn5640_simx
+
+- Errors_list:
   - '.* ERR kernel: \[.*\] mlxsw_minimal 2-0048: Could not acquire lock.*'
   - '.* ERR kernel: \[.*\] hwmon hwmon\d+: Failed to query module temperature.*'
   - '.* ERR kernel: \[.*\] mlxsw_minimal \d+-0048: Failed to query temp sensor.*'
