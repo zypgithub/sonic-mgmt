@@ -18,6 +18,7 @@ logger = logging.getLogger()
 
 
 @pytest.mark.bmc
+@pytest.mark.disable_loganalyzer
 def test_bmc_creds_flow(engines, devices, topology_obj):
     """
     1. factory reset the BMC

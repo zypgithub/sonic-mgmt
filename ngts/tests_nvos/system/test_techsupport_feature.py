@@ -10,6 +10,7 @@ from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.tools.test_utils.nvos_general_utils import loganalyzer_ignore
 import logging
 import pytest
 
@@ -156,24 +157,25 @@ def test_techsupport_bmc_badflow(engines, test_name):
     system = System()
     try:
         dut_engine: LinuxSshEngine = TestToolkit.engines.dut
-        with allure.step('gracefully restart bmc via redfish'):
-            BmcTool.reset(dut_engine)
+        with loganalyzer_ignore():  # supposed to be able to ignore LA here because #4223438
+            with allure.step('gracefully restart bmc via redfish'):
+                BmcTool.reset(dut_engine)
 
-        with allure.step('Run nv action generate system tech-support'):
-            tech_support_folder, duration = system.techsupport.action_generate(test_name=test_name)
-            with allure.step("Tech-support generation takes: {} seconds".format(duration)):
-                logger.info("Tech-support generation takes: {} seconds".format(duration))
+            with allure.step('Run nv action generate system tech-support'):
+                tech_support_folder, duration = system.techsupport.action_generate(test_name=test_name)
+                with allure.step("Tech-support generation takes: {} seconds".format(duration)):
+                    logger.info("Tech-support generation takes: {} seconds".format(duration))
 
-        system.techsupport.extract_techsupport_files(engines.dut)
+            system.techsupport.extract_techsupport_files(engines.dut)
 
-        with allure.step('verify bmc folder is empty'):
-            files_list = system.techsupport.get_techsupport_files_list(engines.dut, 'bmc')
-            assert not files_list, f'bmc folder is not empty and got: {files_list}'
+            with allure.step('verify bmc folder is empty'):
+                files_list = system.techsupport.get_techsupport_files_list(engines.dut, 'bmc')
+                assert not files_list, f'bmc folder is not empty and got: {files_list}'
 
-        with allure.step('verify error msg in logs'):
-            output = engines.dut.run_cmd("cat /var/log/syslog | grep 'bmc_techsupport.py'")
-            assert re.search(r'Failed to (extract|collect) BMC debug log dump',
-                             output), f"Expected to find 'Failed to extract/collect BMC debug log dump' in output. Got: {output}"
+            with allure.step('verify error msg in logs'):
+                output = engines.dut.run_cmd("cat /var/log/syslog | grep 'bmc_techsupport.py'")
+                assert re.search(r'Failed to (extract|collect) BMC debug log dump',
+                                 output), f"Expected to find 'Failed to extract/collect BMC debug log dump' in output. Got: {output}"
     finally:
         engines.dut.run_cmd("sudo ifup usb0")
         system.techsupport.cleanup(engines.dut)
