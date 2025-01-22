@@ -446,7 +446,6 @@ class IbSwitch(BaseSwitch):
         self.aggregated_port_list = ['sw1p1', 'sw2p1', 'sw32p1']  # total 3 ports
         self.fnm_port_list = ['fnm1']
         self.aggregated_split_port_list = ['sw10p1']
-        self.fnm_internal_port_list = ['fnma1p236']
         self.fnm_external_port_list = ['fnm1']
         self.fnm_external_child_port = 'fnm1s1'
         self.interface_active_internal_fnm_ports = {}
@@ -756,78 +755,6 @@ class CrocodileSwitch(IbSwitch):
         self.stats_temperature_header_num_of_lines = 32
         self.allow_cpld_update = True
         self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/crocodile_versions.json"
-        self.fnm_link_speed = '800G'
-        self.interface_list = ['eth0', 'eth1', 'fnm1', 'ib0', 'lo', 'swA10p1', 'swA10p2', 'swA11p1', 'swA11p2',
-                               'swA12p1', 'swA12p2', 'swA13p1', 'swA13p2', 'swA14p1', 'swA14p2', 'swA15p1', 'swA15p2',
-                               'swA16p1', 'swA16p2', 'swA17p1', 'swA17p2', 'swA18p1', 'swA18p2', 'swA1p1', 'swA1p2',
-                               'swA2p1', 'swA2p2', 'swA3p1', 'swA3p2', 'swA4p1', 'swA4p2', 'swA5p1', 'swA5p2', 'swA6p1',
-                               'swA6p2', 'swA7p1', 'swA7p2', 'swA8p1', 'swA8p2', 'swA9p1', 'swA9p2', 'swB10p1',
-                               'swB10p2', 'swB11p1', 'swB11p2', 'swB12p1', 'swB12p2', 'swB13p1', 'swB13p2', 'swB14p1',
-                               'swB14p2', 'swB15p1', 'swB15p2', 'swB16p1', 'swB16p2', 'swB17p1', 'swB17p2', 'swB18p1',
-                               'swB18p2', 'swB1p1', 'swB1p2', 'swB2p1', 'swB2p2', 'swB3p1', 'swB3p2', 'swB4p1',
-                               'swB4p2', 'swB5p1', 'swB5p2', 'swB6p1', 'swB6p2', 'swB7p1', 'swB7p2', 'swB8p1', 'swB8p2',
-                               'swB9p1', 'swB9p2']
-        self.interface_fae_list = ['eth0', 'eth1', 'fnm1', 'fnm1pl1', 'fnm1pl2', 'fnma0p1', 'fnma0p2', 'fnma0p3',
-                                   'fnma0p4', 'fnma1p1', 'fnma1p2', 'ib0', 'lo', 'swA10p1', 'swA10p1pl1', 'swA10p1pl2',
-                                   'swA10p1pl3', 'swA10p1pl4', 'swA10p2', 'swA10p2pl1', 'swA10p2pl2', 'swA10p2pl3',
-                                   'swA10p2pl4', 'swA11p1', 'swA11p1pl1', 'swA11p1pl2', 'swA11p1pl3', 'swA11p1pl4',
-                                   'swA11p2', 'swA11p2pl1', 'swA11p2pl2', 'swA11p2pl3', 'swA11p2pl4', 'swA12p1',
-                                   'swA12p1pl1', 'swA12p1pl2', 'swA12p1pl3', 'swA12p1pl4', 'swA12p2', 'swA12p2pl1',
-                                   'swA12p2pl2', 'swA12p2pl3', 'swA12p2pl4', 'swA13p1', 'swA13p1pl1', 'swA13p1pl2',
-                                   'swA13p1pl3', 'swA13p1pl4', 'swA13p2', 'swA13p2pl1', 'swA13p2pl2', 'swA13p2pl3',
-                                   'swA13p2pl4', 'swA14p1', 'swA14p1pl1', 'swA14p1pl2', 'swA14p1pl3', 'swA14p1pl4',
-                                   'swA14p2', 'swA14p2pl1', 'swA14p2pl2', 'swA14p2pl3', 'swA14p2pl4', 'swA15p1',
-                                   'swA15p1pl1', 'swA15p1pl2', 'swA15p1pl3', 'swA15p1pl4', 'swA15p2', 'swA15p2pl1',
-                                   'swA15p2pl2', 'swA15p2pl3', 'swA15p2pl4', 'swA16p1', 'swA16p1pl1', 'swA16p1pl2',
-                                   'swA16p1pl3', 'swA16p1pl4', 'swA16p2', 'swA16p2pl1', 'swA16p2pl2', 'swA16p2pl3',
-                                   'swA16p2pl4', 'swA17p1', 'swA17p1pl1', 'swA17p1pl2', 'swA17p1pl3', 'swA17p1pl4',
-                                   'swA17p2', 'swA17p2pl1', 'swA17p2pl2', 'swA17p2pl3', 'swA17p2pl4', 'swA18p1',
-                                   'swA18p1pl1', 'swA18p1pl2', 'swA18p1pl3', 'swA18p1pl4', 'swA18p2', 'swA18p2pl1',
-                                   'swA18p2pl2', 'swA18p2pl3', 'swA18p2pl4', 'swA1p1', 'swA1p1pl1', 'swA1p1pl2',
-                                   'swA1p1pl3', 'swA1p1pl4', 'swA1p2', 'swA1p2pl1', 'swA1p2pl2', 'swA1p2pl3',
-                                   'swA1p2pl4', 'swA2p1', 'swA2p1pl1', 'swA2p1pl2', 'swA2p1pl3', 'swA2p1pl4',
-                                   'swA2p2', 'swA2p2pl1', 'swA2p2pl2', 'swA2p2pl3', 'swA2p2pl4', 'swA3p1', 'swA3p1pl1',
-                                   'swA3p1pl2', 'swA3p1pl3', 'swA3p1pl4', 'swA3p2', 'swA3p2pl1', 'swA3p2pl2',
-                                   'swA3p2pl3', 'swA3p2pl4', 'swA4p1', 'swA4p1pl1', 'swA4p1pl2', 'swA4p1pl3',
-                                   'swA4p1pl4', 'swA4p2', 'swA4p2pl1', 'swA4p2pl2', 'swA4p2pl3', 'swA4p2pl4', 'swA5p1',
-                                   'swA5p1pl1', 'swA5p1pl2', 'swA5p1pl3', 'swA5p1pl4', 'swA5p2', 'swA5p2pl1',
-                                   'swA5p2pl2', 'swA5p2pl3', 'swA5p2pl4', 'swA6p1', 'swA6p1pl1', 'swA6p1pl2',
-                                   'swA6p1pl3', 'swA6p1pl4', 'swA6p2', 'swA6p2pl1', 'swA6p2pl2', 'swA6p2pl3',
-                                   'swA6p2pl4', 'swA7p1', 'swA7p1pl1', 'swA7p1pl2', 'swA7p1pl3', 'swA7p1pl4', 'swA7p2',
-                                   'swA7p2pl1', 'swA7p2pl2', 'swA7p2pl3', 'swA7p2pl4', 'swA8p1', 'swA8p1pl1',
-                                   'swA8p1pl2', 'swA8p1pl3', 'swA8p1pl4', 'swA8p2', 'swA8p2pl1', 'swA8p2pl2',
-                                   'swA8p2pl3', 'swA8p2pl4', 'swA9p1', 'swA9p1pl1', 'swA9p1pl2', 'swA9p1pl3',
-                                   'swA9p1pl4', 'swA9p2', 'swA9p2pl1', 'swA9p2pl2', 'swA9p2pl3', 'swA9p2pl4', 'swB10p1',
-                                   'swB10p1pl1', 'swB10p1pl2', 'swB10p1pl3', 'swB10p1pl4', 'swB10p2', 'swB10p2pl1',
-                                   'swB10p2pl2', 'swB10p2pl3', 'swB10p2pl4', 'swB11p1', 'swB11p1pl1', 'swB11p1pl2',
-                                   'swB11p1pl3', 'swB11p1pl4', 'swB11p2', 'swB11p2pl1', 'swB11p2pl2', 'swB11p2pl3',
-                                   'swB11p2pl4', 'swB12p1', 'swB12p1pl1', 'swB12p1pl2', 'swB12p1pl3', 'swB12p1pl4',
-                                   'swB12p2', 'swB12p2pl1', 'swB12p2pl2', 'swB12p2pl3', 'swB12p2pl4', 'swB13p1',
-                                   'swB13p1pl1', 'swB13p1pl2', 'swB13p1pl3', 'swB13p1pl4', 'swB13p2', 'swB13p2pl1',
-                                   'swB13p2pl2', 'swB13p2pl3', 'swB13p2pl4', 'swB14p1', 'swB14p1pl1', 'swB14p1pl2',
-                                   'swB14p1pl3', 'swB14p1pl4', 'swB14p2', 'swB14p2pl1', 'swB14p2pl2', 'swB14p2pl3',
-                                   'swB14p2pl4', 'swB15p1', 'swB15p1pl1', 'swB15p1pl2', 'swB15p1pl3', 'swB15p1pl4',
-                                   'swB15p2', 'swB15p2pl1', 'swB15p2pl2', 'swB15p2pl3', 'swB15p2pl4', 'swB16p1',
-                                   'swB16p1pl1', 'swB16p1pl2', 'swB16p1pl3', 'swB16p1pl4', 'swB16p2', 'swB16p2pl1',
-                                   'swB16p2pl2', 'swB16p2pl3', 'swB16p2pl4', 'swB17p1', 'swB17p1pl1', 'swB17p1pl2',
-                                   'swB17p1pl3', 'swB17p1pl4', 'swB17p2', 'swB17p2pl1', 'swB17p2pl2', 'swB17p2pl3',
-                                   'swB17p2pl4', 'swB18p1', 'swB18p1pl1', 'swB18p1pl2', 'swB18p1pl3', 'swB18p1pl4',
-                                   'swB18p2', 'swB18p2pl1', 'swB18p2pl2', 'swB18p2pl3', 'swB18p2pl4', 'swB1p1',
-                                   'swB1p1pl1', 'swB1p1pl2', 'swB1p1pl3', 'swB1p1pl4', 'swB1p2', 'swB1p2pl1',
-                                   'swB1p2pl2', 'swB1p2pl3', 'swB1p2pl4', 'swB2p1', 'swB2p1pl1', 'swB2p1pl2',
-                                   'swB2p1pl3', 'swB2p1pl4', 'swB2p2', 'swB2p2pl1', 'swB2p2pl2', 'swB2p2pl3',
-                                   'swB2p2pl4', 'swB3p1', 'swB3p1pl1', 'swB3p1pl2', 'swB3p1pl3', 'swB3p1pl4', 'swB3p2',
-                                   'swB3p2pl1', 'swB3p2pl2', 'swB3p2pl3', 'swB3p2pl4', 'swB4p1', 'swB4p1pl1',
-                                   'swB4p1pl2', 'swB4p1pl3', 'swB4p1pl4', 'swB4p2', 'swB4p2pl1', 'swB4p2pl2',
-                                   'swB4p2pl3', 'swB4p2pl4', 'swB5p1', 'swB5p1pl1', 'swB5p1pl2', 'swB5p1pl3',
-                                   'swB5p1pl4', 'swB5p2', 'swB5p2pl1', 'swB5p2pl2', 'swB5p2pl3', 'swB5p2pl4', 'swB6p1',
-                                   'swB6p1pl1', 'swB6p1pl2', 'swB6p1pl3', 'swB6p1pl4', 'swB6p2', 'swB6p2pl1',
-                                   'swB6p2pl2', 'swB6p2pl3', 'swB6p2pl4', 'swB7p1', 'swB7p1pl1', 'swB7p1pl2',
-                                   'swB7p1pl3', 'swB7p1pl4', 'swB7p2', 'swB7p2pl1', 'swB7p2pl2', 'swB7p2pl3',
-                                   'swB7p2pl4', 'swB8p1', 'swB8p1pl1', 'swB8p1pl2', 'swB8p1pl3', 'swB8p1pl4', 'swB8p2',
-                                   'swB8p2pl1', 'swB8p2pl2', 'swB8p2pl3', 'swB8p2pl4', 'swB9p1', 'swB9p1pl1',
-                                   'swB9p1pl2', 'swB9p1pl3', 'swB9p1pl4', 'swB9p2', 'swB9p2pl1', 'swB9p2pl2',
-                                   'swB9p2pl3', 'swB9p2pl4']
 
         self.constants.firmware.append('CPLD4')
 
@@ -873,6 +800,15 @@ class CrocodileSwitch(IbSwitch):
         self.mgmt_ports = ['eth0', 'eth1']
         self.interface_active_internal_fnm_ports = {'fnma0p1', 'fnma1p1'}
         self.default_port = 'swA1p1'
+        self.fnm_link_speed = '800G'
+        self.fnm_internal_link_speed = '200G'
+        traffic_ports = [f'sw{a}{n}p{p}' for a in 'AB' for n in range(1, 19) for p in (1, 2)]
+        self.interface_list = self.network_ports + ['eth1', 'fnm1'] + traffic_ports
+        self.interface_fae_list = (
+            self.interface_list +
+            ['fnma0p1', 'fnma0p2', 'fnma1p1'] +
+            [f'{port}pl{i}' for port in traffic_ports for i in range(1, 5)]
+        )
 
     def _init_boot_time_timeouts(self):
         super()._init_boot_time_timeouts()

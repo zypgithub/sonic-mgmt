@@ -65,13 +65,16 @@ class MultiPlanarTool:
         return Fae(port_name=port_name)
 
     @staticmethod
-    def select_random_fnm_port(devices):
+    def select_random_fnm_port_and_plane(device):
         with allure.step("Select a random fnm port"):
-            fnm_port_name = RandomizationTool.select_random_value(devices.dut.fnm_port_list). \
-                get_returned_value()
+            fnm_port_name = RandomizationTool.select_random_value(device.fnm_port_list).get_returned_value()
             selected_fae_fnm_port = Fae(port_name=fnm_port_name)
-        allure.attach(f"Selected port: {fnm_port_name}")
-        return selected_fae_fnm_port
+        with allure.step("Select a random internal fnm port"):
+            internal_fnm_port_name = RandomizationTool.select_random_value(
+                device.interface_active_internal_fnm_ports).get_returned_value()
+            selected_fae_internal_fnm_port = Fae(port_name=internal_fnm_port_name)
+        allure.attach(f"Selected port and plane: {fnm_port_name}, {internal_fnm_port_name}")
+        return selected_fae_fnm_port, selected_fae_internal_fnm_port
 
     @staticmethod
     def select_random_plane_port(fae_aggregated_port, num_of_planes):

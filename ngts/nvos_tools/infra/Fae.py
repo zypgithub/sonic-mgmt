@@ -42,7 +42,7 @@ class Fae(BaseComponent):
         self.system = FaeSystem(self)
         self.ipoibmapping = BaseComponent(self, path='/ipoib-mapping')
         self.health = Health(self)
-        self.port = Port(port_name, self)
+        self.port = Port(port_name, parent_obj=self)
         self.fast_recovery = PortFastRecovery(self)
         self.ib = Ib(self)
         self.sonic_cli = SonicCli(self)

@@ -70,8 +70,8 @@ def test_fae_interface_commands(engines, devices, test_api, start_sm):
             selected_port, selected_fae_port, selected_fae_plane_port = MultiPlanarTool.select_random_port_and_plane(dut_device)
 
         with (allure.step("Select random external fnm port and fnm plane port")):
-            selected_fae_fnm_port = MultiPlanarTool.select_random_fnm_port(devices)
-            selected_fae_fnm_plane_port = MultiPlanarTool.select_random_plane_port(selected_fae_fnm_port, dut_device.num_of_plane_ports)
+            selected_fae_fnm_port, selected_fae_fnm_plane_port = (
+                MultiPlanarTool.select_random_fnm_port_and_plane(devices.dut))
 
             with allure.step(f"Verify external FNM port is in connection_mode {IbInterfaceConsts.XDR}"):
                 output_fae_fnm_port = OutputParsingTool.parse_show_interface_output_to_dictionary(
@@ -706,8 +706,7 @@ def test_fae_invalid_commands(engines, devices, test_api):
             verify_result(should_succeed=False)
 
     with allure.step("Validate show interface with internal fnm id"):
-        fnm_internal_port_name = RandomizationTool.select_random_value(devices.dut.fnm_internal_port_list).\
-            get_returned_value()
+        fnm_internal_port_name = 'fnma1p236'
         Port(fnm_internal_port_name).interface.show(should_succeed=False)
 
 
