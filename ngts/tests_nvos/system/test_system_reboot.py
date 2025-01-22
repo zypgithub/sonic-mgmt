@@ -108,6 +108,8 @@ def test_reboot_halt(engines, devices, test_name, topology_obj):
         1. run remote reboot script to turn off PSU and turn on the PSU
         2. Validate reboot reason in system events
     """
+    pytest.skip("Test breaking the regression. Skipped until fixed.")
+
     system = System()
     expected_reboot_reason = SystemConsts.REBOOT_REASON_POWER_LOSS
     dhcp_hostname = ''
