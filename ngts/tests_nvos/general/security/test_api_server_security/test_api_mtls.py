@@ -219,7 +219,7 @@ def test_api_mtls_reboot(reboot_flow, engines, local_adminuser):
             NvueGeneralCli.save_config(engines.dut)
 
     with allure.step('reboot the system'):
-        System().action('reboot', param_name='force', expect_reboot=True, output_format=None).verify_result()
+        System().action_reboot('force').verify_result()
 
     with allure.step('verify show'):
         if with_save:

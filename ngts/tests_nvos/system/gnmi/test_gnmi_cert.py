@@ -341,7 +341,7 @@ def test_gnmi_reboot_system(engines, local_adminuser, gnmi_certs):
             system = System()
             system.gnmi_server.set(CERTIFICATE, cert.name, apply=True).verify_result()
         with allure.step('reboot the system'):
-            system.action('reboot', param_name='force', expect_reboot=True, output_format=None).verify_result()
+            system.action_reboot('force').verify_result()
         with allure.step("verify cert doesn't appear in show"):
             out = OutputParsingTool.parse_json_str_to_dictionary(system.gnmi_server.show()).get_returned_value()
             assert cert.name != out[
@@ -356,7 +356,7 @@ def test_gnmi_reboot_system(engines, local_adminuser, gnmi_certs):
             with allure.step('save config'):
                 NvueGeneralCli.save_config(engines.dut)
         with allure.step('reboot the system'):
-            system.action('reboot', param_name='force', expect_reboot=True, output_format=None).verify_result()
+            system.action_reboot('force').verify_result()
         with allure.step("verify cert appears in show"):
             out = OutputParsingTool.parse_json_str_to_dictionary(system.gnmi_server.show()).get_returned_value()
             assert cert.name == out[

@@ -58,14 +58,6 @@ class NvueIbInterfaceCli(NvueBaseCli):
 
     @staticmethod
     @check_output
-    def action_recover(engine, port_name, comp):
-        cmd = "nv action recover interface {port_name} {comp}".format(port_name=port_name, comp=comp)
-        cmd = " ".join(cmd.split())
-        logging.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
-        return engine.run_cmd(cmd)
-
-    @staticmethod
-    @check_output
     def filter(engine, filter_name, value, output_format=OutputFormat.json):
         param = f"{filter_name}={value}" if filter_name else "\"\""
         cmd = f"nv show interface --filter {param} --output {output_format}"

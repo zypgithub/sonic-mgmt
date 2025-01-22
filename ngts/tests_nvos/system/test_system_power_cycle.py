@@ -94,7 +94,8 @@ def _test_command_not_supported(engines, devices, test_name, test_api, force_str
 
 
 def do_power_cycle(force_str: str) -> ResultObj:
-    return System().action(ActionConsts.POWER_CYCLE, expect_reboot=True, param_name=force_str, output_format=None)
+    return System().action(ActionConsts.POWER_CYCLE, expect_reboot=True, param_name=force_str, output_format=None,
+                           expected_output='System will power cycle in a few seconds')
 
 
 def get_bmc_uptime(engine: LinuxSshEngine) -> timedelta:

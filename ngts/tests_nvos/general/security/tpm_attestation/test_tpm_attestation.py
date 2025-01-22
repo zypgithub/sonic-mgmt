@@ -215,7 +215,7 @@ def test_tpm_reboot_cases(engines, devices, save_local_timezone):
             system.security.tpm.action_generate_quote(VALID_PCRS_PARAM, VALID_NONCE_PARAM).verify_result()
             quote_time1 = get_file_creation_time(engines.dut, QUOTE_FILE_PATH)
     with allure.step('reboot'):
-        system.action('reboot', 'force', expect_reboot=True, output_format='')
+        system.action_reboot('force').verify_result()
     with allure.step('checks after reboot'):
         with allure.step('verify boot generated new AIK file'):
             with allure.step('get new AIK file creation time'):

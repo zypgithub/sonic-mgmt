@@ -80,7 +80,8 @@ class NvueBaseCli:
     @staticmethod
     def action(engine, device=None, action_type='', resource_path='', suffix="", param_name="", param_value="",
                output_format=None, expect_reboot=False, recovery_engine=None, topology_obj=None, should_succeed=True,
-               system_is_ready_timeout=None, track_boot_intervals=False, deny_reboot=False, press_y=False):
+               system_is_ready_timeout=None, track_boot_intervals=False, deny_reboot=False, press_y=False,
+               expected_output=''):
         return NvueBaseCli.nvue_action(engine, device, action_type, resource_path, suffix, param_name, param_value,
                                        output_format, expect_reboot, recovery_engine, topology_obj, should_succeed,
                                        system_is_ready_timeout, track_boot_intervals, deny_reboot, press_y=press_y)

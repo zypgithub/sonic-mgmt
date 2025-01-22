@@ -1,11 +1,15 @@
 import logging
+import os
 import time
 
+import pytest
 from retry import retry
 
 from ngts.cli_wrappers.nvue.nvue_system_clis import NvueSystemCli
 from ngts.cli_wrappers.openapi.openapi_system_clis import OpenApiSystemCli
-from ngts.nvos_constants.constants_nvos import ApiType, SystemConsts, HealthConsts
+from ngts.constants.constants import InfraConst
+from ngts.helpers.sanitizer_helper import check_sanitizer_and_store_dump
+from ngts.nvos_constants.constants_nvos import ApiType, SystemConsts, HealthConsts, ActionConsts
 from ngts.nvos_constants.constants_nvos import OutputFormat
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
@@ -93,6 +97,26 @@ class System(BaseComponent):
     @retry(Exception, tries=3, delay=2)
     def wait_until_health_status_change_to(self, expected_status):
         self.validate_health_status(expected_status)
+
+    def action_reboot(self, flags=(), reboot_params=None, engine=None, device=None):
+        with allure.step('Execute action for {resource_path}'.format(resource_path=self.get_resource_path())):
+            engine = engine or TestToolkit.engines.dut
+            device = device or TestToolkit.devices.dut
+            start_time = time.time()
+            result = SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].action_reboot,
+                                                     engine, device, self.get_resource_path(), flags, reboot_params)
+            end_time = time.time()
+            duration = end_time - start_time
+
+            with allure.step(f"Reboot and system is ready takes {duration} seconds"):
+                pass
+
+            if pytest.is_sanitizer:
+                dumps_folder = os.environ.get(InfraConst.ENV_LOG_FOLDER)
+                with allure.step(f'check_sanitizer_and_store_dump in {dumps_folder}'):
+                    check_sanitizer_and_store_dump(engine, dumps_folder, pytest.test_name)
+
+            return result
 
 
 class Documentation(BaseComponent):

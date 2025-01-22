@@ -3,7 +3,7 @@ import logging
 from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.cli_wrappers.openapi.openapi_base_clis import OpenApiBaseCli
 from ngts.nvos_constants.constants_nvos import ActionType, SystemConsts, OpenApiReqType
-from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
+from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool, RebootParams
 from .openapi_command_builder import OpenApiCommandHelper
 from ...nvos_tools.infra.OutputParsingTool import OutputParsingTool
 
@@ -196,7 +196,8 @@ class OpenApiSystemCli(OpenApiBaseCli):
             params["parameters"]["keep"] = param
 
         result = OpenApiCommandHelper.execute_action(ActionType.RESET, engine.engine.username, engine.engine.password,
-                                                     engine.ip, "/system/{}".format(comp), params)
+                                                     engine.ip, "/system/{}".format(comp), params,
+                                                     SystemConsts.REBOOT_RESPONSE_MESSAGES)
 
         if any(msg in result for msg in SystemConsts.REBOOT_RESPONSE_MESSAGES):
             logger.info("Waiting for switch shutdown after reload command")
@@ -218,9 +219,9 @@ class OpenApiSystemCli(OpenApiBaseCli):
                                                    engine.ip, resource_path, params)
 
     @staticmethod
-    def action_reboot(engine, device, resource_path, op_param="", should_wait_till_system_ready=True,
-                      recovery_engine=None, topology_obj=None, system_is_ready_timeout=None):
-        logging.info("Running action: rotate system log on dut using OpenApi")
+    def action_reboot(engine, device, resource_path, op_param="", reboot_params=None):
+        logging.info("Running action: reboot system on dut using OpenApi")
+        reboot_params = reboot_params or RebootParams()
         parameters_dict = {}
         if "force" in op_param:
             parameters_dict.update({"force": True})
@@ -235,7 +236,8 @@ class OpenApiSystemCli(OpenApiBaseCli):
         if parameters_dict:
             params.update({"parameters": parameters_dict})
         result = OpenApiCommandHelper.execute_action(ActionType.REBOOT, engine.engine.username, engine.engine.password,
-                                                     engine.ip, resource_path, params)
+                                                     engine.ip, resource_path, params,
+                                                     SystemConsts.REBOOT_RESPONSE_MESSAGES)
         if any(msg in result for msg in SystemConsts.REBOOT_RESPONSE_MESSAGES):
             logger.info("Waiting for switch shutdown after reload command")
             check_port_status_till_alive(False, engine.ip, engine.ssh_port)
@@ -243,8 +245,8 @@ class OpenApiSystemCli(OpenApiBaseCli):
             logger.info("Waiting for switch to be ready")
             check_port_status_till_alive(True, engine.ip, engine.ssh_port)
 
-        if should_wait_till_system_ready:
-            device.wait_for_os_to_become_functional(recovery_engine or engine).verify_result()
+        if reboot_params.should_wait_till_system_ready:
+            device.wait_for_os_to_become_functional(reboot_params.recovery_engine or engine).verify_result()
         return result
 
     @staticmethod

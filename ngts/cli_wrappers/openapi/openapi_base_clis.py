@@ -44,7 +44,8 @@ class OpenApiBaseCli:
     @staticmethod
     def action(engine, device=None, action_type='', resource_path='', suffix="", param_name="", param_value="",
                output_format=None, expect_reboot=False, recovery_engine=None, topology_obj=None, should_succeed=True,
-               system_is_ready_timeout=None, track_boot_intervals=False, deny_reboot=False, press_y=False):
+               system_is_ready_timeout=None, track_boot_intervals=False, deny_reboot=False, press_y=False,
+               expected_output=''):
         """See documentation of BaseComponent.action"""
         if not action_type:
             raise ValueError("action_type must be non-empty")
@@ -55,9 +56,12 @@ class OpenApiBaseCli:
         data = {'state': 'start'}
         if param_name:
             data['parameters'] = {param_name: (True if (param_value == '') else param_value)}
+        if not expected_output and action_type == 'reboot':
+            # Temporary workaround before refactoring action()
+            expected_output = SystemConsts.REBOOT_RESPONSE_MESSAGES
         result = OpenApiCommandHelper.execute_action(
             OpenApiBaseCli._action_key(action_type), engine.engine.username, engine.engine.password, engine.ip,
-            url, data)
+            url, data, expected_output)
 
         if deny_reboot:
             return result

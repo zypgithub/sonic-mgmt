@@ -63,7 +63,7 @@ def test_certs_mgmt_reboot_case(test_api, reboot_flow, engines, scp_player, clea
         with allure.step('save config'):
             NvueGeneralCli.save_config(engines.dut)
     with allure.step('reboot the system'):
-        System().action('reboot', param_name='force', expect_reboot=True, output_format=None).verify_result()
+        System().action_reboot('force').verify_result()
         engines.dut.disconnect()
     with allure.step('verify after reboot'):
         with allure.independent_step('verify cert exist in show'):

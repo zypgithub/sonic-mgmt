@@ -260,7 +260,7 @@ def test_ssh_pka_after_reboot_system(engines, generate_new_admin_keys):
                 admin_key_obj.set(op_param_name='type', op_param_value=admin_key_type, apply=True).verify_result()
 
             with allure.step('reboot the system'):
-                system.action('reboot', param_name='force', expect_reboot=True, output_format=None).verify_result()
+                system.action_reboot('force').verify_result()
 
             with allure.independent_step(f"verify we can not connect using key"):
                 PKAAuthVerifier(username='admin', private_key_path=admin_private_key_path,
@@ -279,7 +279,7 @@ def test_ssh_pka_after_reboot_system(engines, generate_new_admin_keys):
                 NvueGeneralCli.save_config(engines.dut)
 
             with allure.step('reboot the system'):
-                system.action('reboot', param_name='force', expect_reboot=True, output_format=None).verify_result()
+                system.action_reboot('force').verify_result()
 
             with allure.independent_step(f"verify we can connect using key"):
                 admin_session_obj = PKAAuthVerifier(username='admin', private_key_path=admin_private_key_path,

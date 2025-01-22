@@ -171,7 +171,8 @@ class BaseComponent:
             return SendCommandTool.execute_command_expected_str(self._cli_wrapper.action, expected_output, dut_engine,
                                                                 dut_device, action, resource_path, suffix, param_name,
                                                                 param_value, output_format, expect_reboot, None,
-                                                                deny_reboot=deny_reboot, topology_obj=topology_obj)
+                                                                deny_reboot=deny_reboot, topology_obj=topology_obj,
+                                                                expected_output=expected_output)
 
     def action_fetch(self, path, base_url='') -> ResultObj:
         """nv action fetch <resource-path> <remote-url>"""

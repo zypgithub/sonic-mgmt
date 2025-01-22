@@ -648,7 +648,7 @@ def test_cluster_app_mngr_security_reboot_case(engines, ca_type):
         NvueGeneralCli.save_config(engines.dut)
 
     with allure.step('reboot the system'):
-        System().action('reboot', param_name='force', expect_reboot=True, output_format=None).verify_result()
+        System().action_reboot('force').verify_result()
         engines.dut.disconnect()
 
     with allure.step('Verify updated values in show kept'):

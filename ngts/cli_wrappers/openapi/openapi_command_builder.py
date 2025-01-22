@@ -1,17 +1,17 @@
 import json
 import logging
-import re
 import time
 from typing import Tuple
 
-import allure
 import requests
 from requests.auth import HTTPBasicAuth
 from retry import retry
 
 from ngts.nvos_constants.constants_nvos import OpenApiReqType, NvosConst, SystemConsts
 from ngts.nvos_tools.infra.ResultObj import ResultObj
+from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
+from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
 
@@ -353,9 +353,8 @@ class OpenApiRequest:
                 return res.info
 
     @staticmethod
-    def send_action_request(request_data, resource_path, expected_regex=''):
+    def send_action_request(request_data, expected_str='') -> str:
         with allure.step("Send POST request"):
-            logging.info("Send POST request")
             req_url = '{url}{resource_path}'.format(url=OpenApiRequest._get_endpoint_url(request_data),
                                                     resource_path=request_data.resource_path)
 
@@ -379,30 +378,50 @@ class OpenApiRequest:
                 assert isinstance(r, dict) and r.get('status') != 200 and 'title' in r and 'detail' in r, \
                     f"In case of bad request expect status!=200 and some error message, but response is: {r}"
                 return f"{r['title']}: {r['detail']}"
-            return OpenApiRequest._send_get_req_and_wait_till_completed(request_data, response, expected_regex)
+        response_for_get_request = OpenApiRequest._send_get_req_and_wait_till_completed(
+            request_data, response, expected_str)
+        return response_for_get_request
 
     @staticmethod
-    def _send_get_req_and_wait_till_completed(request_data, rev, expected_regex=''):
+    def _send_get_req_and_wait_till_completed(request_data, rev, expected_str='') -> str:
         with allure.step("Send GET request"):
-            logging.info("Send GET request")
             req_url = OpenApiRequest._get_endpoint_url(request_data) + "/action/" + rev
             auth = OpenApiRequest._get_http_auth(request_data)
 
             while True:
                 r = requests.get(url=req_url, auth=auth, timeout=30, **OpenApiRequest._get_client_security_config())
+                # Note: this 30-second timeout is for obtaining the action-status, *not* for completing the action.
+                # This tool does not define a timeout for completing the action since there's a great variance in
+                # completion times for different actions, for example CPLD update takes ~15 minutes.
                 OpenApiRequest.print_request(r.request, request_data)
                 OpenApiRequest.print_response(r, OpenApiReqType.GET)
-                response = json.loads(r.content)
-                if expected_regex and re.search(expected_regex, response['status']):
-                    return json.loads(r.content.decode('utf-8'))['status']
-                if any(msg in response['status'] for msg in SystemConsts.REBOOT_RESPONSE_MESSAGES):
-                    return json.loads(r.content.decode('utf-8'))['status']
-                if response['state'] == "action_success":
-                    return json.loads(r.content.decode('utf-8'))['status']
-                elif response['state'] == 'action_error' and response['issue'] != '':
-                    return 'action_error: ' + json.loads(r.content.decode('utf-8'))['issue'][0]['message']
-                elif response['state'] and response['state'] != "running" and response['state'] != "start":
-                    raise Exception(response["status"] + " - issue: " + response["issue"])
+                response = json.loads(r.content.decode('utf-8'))
+                action_state = response['state']
+                action_status = response['status']
+                if expected_str:
+                    try:
+                        ValidationTool.verify_any_string_in_string(action_status, expected_str).verify_result()
+                        logger.info(f'Action finished - found expected string: {action_status}')
+                        return action_status
+                    except AssertionError:
+                        pass
+
+                if action_state == "action_success":
+                    logger.info('Action finished - state action_success')
+                    return action_status
+                elif action_state not in ("", "running", "start"):
+                    logger.info(f'Action finished - state {action_state}')
+                    issue = ''
+                    try:
+                        issue = response['issue']
+                        issue = issue[0]['message']
+                    except Exception:
+                        pass
+                    if action_state == 'action_error':
+                        return 'action_error: ' + str(issue)
+                    else:
+                        raise Exception(action_status + " - issue: " + str(issue))
+
                 time.sleep(2)
 
 
@@ -427,6 +446,6 @@ class OpenApiCommandHelper:
             return OpenApiCommandHelper.req_method[req_type](request_data, op_param_name)
 
     @staticmethod
-    def execute_action(action_type, user_name, password, dut_ip, resource_path, params, expected_regex=''):
+    def execute_action(action_type, user_name, password, dut_ip, resource_path, params, expected_str=''):
         request_data = RequestData(user_name, password, dut_ip, resource_path.strip(), action_type, params)
-        return OpenApiCommandHelper.req_method[OpenApiReqType.ACTION](request_data, resource_path, expected_regex)
+        return OpenApiCommandHelper.req_method[OpenApiReqType.ACTION](request_data, expected_str)
