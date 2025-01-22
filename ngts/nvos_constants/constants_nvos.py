@@ -372,6 +372,7 @@ class ActionType:
     REBOOT = '@reboot'
     RENEW = '@renew'
     RUN = '@run'
+    ERASE = '@erase'
     ROTATE = '@rotate'
     TURNOFF = '@turn-off'
     TURNON = '@turn-on'

@@ -16,6 +16,7 @@ from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.nvos_tools.system.Aaa import Aaa
 from ngts.nvos_tools.system.Config import Config
 from ngts.nvos_tools.system.Debug_log import DebugLog
+from ngts.nvos_tools.system.Disk import Disk
 from ngts.nvos_tools.system.Gnmi_server import Gnmi_server
 from ngts.nvos_tools.system.Health import Health
 from ngts.nvos_tools.system.Image import Image
@@ -69,6 +70,7 @@ class System(BaseComponent):
         self.api = Api(self)
         self.ptp = BaseComponent(self, path='/ptp')
         self.lldp = Lldp(self)
+        self.disk = Disk(self)
 
     @staticmethod
     def get_expected_fields(device, resource):

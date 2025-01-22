@@ -25,8 +25,8 @@ def test_sed_erase(engines, devices, serial_engine, test_api):
     system = System()
     engine = engines.dut
 
-    with allure.step("Run sed erase action"):
-        system.security.action_sed_erase(engine, devices.dut)
+    with allure.step("Run disk erase action"):
+        system.disk.action_erase(engine, devices.dut)
 
     engine.disconnect()
     with allure.step("Verify ssh connection works"):
@@ -63,8 +63,8 @@ def test_sed_high_ram(engines, devices):
     dir_name = "/mnt/ramspace"
     _mount_ram_space(dir_name, engine, twelve_gb)
 
-    with allure.step("Run sed erase action"):
-        system.security.action_sed_erase(engine, devices.dut)
+    with allure.step("Run disk erase action"):
+        system.disk.action_erase(engine, devices.dut)
 
     engine.run_cmd(f"sudo umount {dir_name}")
 
