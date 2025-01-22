@@ -172,17 +172,18 @@ def replace_conn_graph_facts(sonic_mgmt_path):
         sonic_mgmt_path)
     stub_mgmt_conn_graph_facts_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'conn_graph_facts.py')
 
-    # Copy ansible/library/conn_graph_facts.py to ansible/module_utils/conn_graph_facts_community.py
-    logger.info('Copying: {} to {}'.format(mgmt_conn_graph_facts_path, mgmt_conn_graph_facts_community_path))
-    shutil.copyfile(mgmt_conn_graph_facts_path, mgmt_conn_graph_facts_community_path)
+    if not os.path.exists(mgmt_conn_graph_facts_community_path):
+        # Copy ansible/library/conn_graph_facts.py to ansible/module_utils/conn_graph_facts_community.py
+        logger.info('Copying: {} to {}'.format(mgmt_conn_graph_facts_path, mgmt_conn_graph_facts_community_path))
+        shutil.copyfile(mgmt_conn_graph_facts_path, mgmt_conn_graph_facts_community_path)
 
-    # Update ansible/module_utils/conn_graph_facts_community.py
-    logger.info('Updating: {}'.format(mgmt_conn_graph_facts_community_path))
-    os.system(f"sed -i 's/module.exit_json/return dict/g' {mgmt_conn_graph_facts_community_path}")
+        # Update ansible/module_utils/conn_graph_facts_community.py
+        logger.info('Updating: {}'.format(mgmt_conn_graph_facts_community_path))
+        os.system(f"sed -i 's/module.exit_json/return dict/g' {mgmt_conn_graph_facts_community_path}")
 
-    # Replace ansible/library/conn_graph_facts.py with sonic-tool/sonic_ngts/scripts/conn_graph_facts.py
-    logger.info('Replacing: {} by {}'.format(mgmt_conn_graph_facts_path, stub_mgmt_conn_graph_facts_path))
-    shutil.copyfile(stub_mgmt_conn_graph_facts_path, mgmt_conn_graph_facts_path)
+        # Replace ansible/library/conn_graph_facts.py with sonic-tool/sonic_ngts/scripts/conn_graph_facts.py
+        logger.info('Replacing: {} by {}'.format(mgmt_conn_graph_facts_path, stub_mgmt_conn_graph_facts_path))
+        shutil.copyfile(stub_mgmt_conn_graph_facts_path, mgmt_conn_graph_facts_path)
 
 
 def replace_ptfadapter_init_py(sonic_mgmt_path):
