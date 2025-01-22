@@ -41,15 +41,15 @@ def test_cluster_sdn_factory_reset_nmx_down(engines, devices, test_api, has_loop
         with allure.step("Run sdn reset factory while cluster is disabled"):
             cluster = Cluster()
             sdn = Sdn()
-            output = sdn.factory_default.action_reset(param='force')
+            output = sdn.factory_default.action_reset(param='force').verify_result(should_succeed=False)
 
-            assert ClusterConsts.RESET_FACTORY_CLUSTER_DISABLED[test_api] in output.info, f'Expected {ClusterConsts.RESET_FACTORY_CLUSTER_DISABLED[test_api]} Got {output.info}'
+            assert ClusterConsts.RESET_FACTORY_CLUSTER_DISABLED[test_api] in output, f'Expected {ClusterConsts.RESET_FACTORY_CLUSTER_DISABLED[test_api]} Got {output}'
 
         with allure.step("Run sdn reset factory while nmx-conn is disabled (Enable cluster, and then reset factory before nmx-conn is up"):
             cluster.set(op_param_name="state", op_param_value=NvosConst.ENABLED, apply=True)
             cluster.show(output_format=output_format)
-            output = sdn.factory_default.action_reset(param='force')
-            assert ClusterConsts.RESET_FACTORY_NMX_CONN_DISABLED[test_api] in output.info, f'Expected {ClusterConsts.RESET_FACTORY_NMX_CONN_DISABLED[test_api]} Got {output.info}'
+            output = sdn.factory_default.action_reset(param='force').verify_result(should_succeed=False)
+            assert ClusterConsts.RESET_FACTORY_NMX_CONN_DISABLED[test_api] in output, f'Expected {ClusterConsts.RESET_FACTORY_NMX_CONN_DISABLED[test_api]} Got {output}'
 
     finally:
         cluster.unset(apply=True).verify_result()
