@@ -350,19 +350,11 @@ def test_lldp_disable_dhcp(engines, devices, serial_engine):
     4. Verify lldp frames contain mac address.
     """
     system = System()
-    lldp = system.lldp
     _verify_lldp_running(system.lldp, engine=engines.dut)
-    mgmt_interfaces = [Port(name=interface_name) for interface_name in devices.dut.get_mgmt_ports()]
 
-    mac_addresses = []
-    for mgmt_interface in mgmt_interfaces:
-        interface_link = OutputParsingTool.parse_json_str_to_dictionary(
-            mgmt_interface.interface.link.show(dut_engine=serial_engine)).get_returned_value()
-        mac_address = interface_link[SystemConsts.MAC]
-        mac_addresses.append(mac_address)
+    for interface_name in devices.dut.get_mgmt_ports():
+        mgmt_interface = Port(name=interface_name)
 
-    for mgmt_interface in mgmt_interfaces:
-        interface_name = mgmt_interface.name
         try:
             with allure.step("Get ip addresses"):
                 ip_addresses_dict = mgmt_interface.interface.ip.address.parse_show(dut_engine=serial_engine)
@@ -374,15 +366,11 @@ def test_lldp_disable_dhcp(engines, devices, serial_engine):
                 check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port)
 
             with allure.step("Verify lldp frames do not contain hostname"):
-                with allure.independent_step("Disable and enable lldp to get first frame instead of waiting forever"):
-                    lldp.set(SystemConsts.STATE, NvosConst.DISABLED, apply=True, dut_engine=serial_engine).verify_result()
-                    time.sleep(10)
-                    # WA in order to get first lldp frame without waiting for long ttl
-                    lldp.set(SystemConsts.STATE, NvosConst.ENABLED, apply=True, dut_engine=serial_engine).verify_result()
                 output = LLDPTool.get_lldp_frames(engine=serial_engine, interface=interface_name)
+                interface_link = OutputParsingTool.parse_json_str_to_dictionary(mgmt_interface.interface.link.show(dut_engine=serial_engine)).get_returned_value()
                 for ip_address in ip_addresses:
                     assert ip_address not in output, f"The {ip_address} is found in output"
-                assert any(mac in output for mac in mac_addresses), f"No mac found in lldp output"
+                assert interface_link[SystemConsts.MAC] in output, f"The {interface_link[SystemConsts.MAC]} is not found in output"
 
         finally:
             mgmt_interface.interface.ip.dhcp_client.unset(apply=True, dut_engine=serial_engine, ask_for_confirmation=True).verify_result()
