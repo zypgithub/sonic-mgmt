@@ -40,7 +40,7 @@ def test_fpga_install(engines, devices, topology_obj, test_api, platform_compone
     with allure.step('Check whether device has BMC'):
         bmc_older_version_path = getattr(device, 'bmc_older_version_path', None)
         if bmc_older_version_path is None:
-            pytest.fail("Device does not have BMC. Failing the test on this setup.")
+            pytest.skip("Device does not have BMC")
 
     TestToolkit.tested_api = test_api
     component_name = platform_component_with_clear.get_resource_basename().lower()
