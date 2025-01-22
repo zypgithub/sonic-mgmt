@@ -1887,6 +1887,19 @@
   inv_name: lab
   comment: Mellanox MTVR testbed
 
+- conf-name: mtvr-leopard-01-t0-56-o8v48
+  group-name: vm-t1
+  topo: t0-56-o8v48
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-mtvr-leopard-01
+  ptf_ip: 10.245.32.122/20
+  ptf_ipv6:
+  server: server_66
+  vm_base: VM3101
+  dut:
+    - mtvr-leopard-01
+  comment: Mellanox MTVR testbed
+
 - conf-name: mtvr-leopard-01-t1
   group-name: vm-t1
   topo: t1

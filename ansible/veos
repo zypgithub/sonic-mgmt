@@ -2146,7 +2146,7 @@ host_var_file=host_vars/MTVR-R740-04.yml
 
 [vms_66:vars]
 host_var_file=host_vars/MTVR-R740-04.yml
-mgmt_prefixlen=16
+mgmt_prefixlen=20
 
 [server_67:children]
 vm_host_67

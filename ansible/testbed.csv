@@ -139,6 +139,7 @@ mtvr-tigon-06-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server
 mtvr-tigon-07-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,mtvr-tigon-07,Mellanox MTR testbed
 
 mtvr-leopard-01-t0,vm-t1,t0,docker-ptf-mlnx,ptf-mtvr-leopard-01,10.245.32.122/20,,server_66,VM3101,mtvr-leopard-01,Mellanox MTVR testbed
+mtvr-leopard-01-t0-56-o8v48,vm-t1,t0-56-o8v48,docker-ptf-mlnx,ptf-mtvr-leopard-01,10.245.32.122/20,,server_66,VM3101,mtvr-leopard-01,Mellanox MTVR testbed
 mtvr-leopard-01-t1,vm-t1,t1,docker-ptf-mlnx,ptf-mtvr-leopard-01,10.245.32.122/20,,server_66,VM3101,mtvr-leopard-01,Mellanox MTVR testbed
 mtvr-leopard-01-t1-lag,vm-t1,t1-lag,docker-ptf-mlnx,ptf-mtvr-leopard-01,10.245.32.122/20,,server_66,VM3101,mtvr-leopard-01,Mellanox MTVR testbed
 mtvr-leopard-01-t1-28-lag,vm-t1,t1-28-lag,docker-ptf-mlnx,ptf-mtvr-leopard-01,10.245.32.122/20,,server_66,VM3101,mtvr-leopard-01,Mellanox MTVR testbed
