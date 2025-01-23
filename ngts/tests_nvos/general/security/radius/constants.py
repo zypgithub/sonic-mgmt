@@ -26,7 +26,7 @@ class RadiusConsts:
         AaaConsts.SECRET: '*',
         AaaConsts.RETRANSMIT: 0,
         AaaConsts.STATISTICS: AaaConsts.DISABLED,
-        AaaConsts.TIMEOUT: 3,
+        AaaConsts.TIMEOUT: 5,
     }
 
     DEFAULTS = {

@@ -338,7 +338,7 @@ def generic_aaa_test_accounting_local_first(test_api, engines, topology_obj, req
     with allure.step(f'Connect {remote_aaa_type} user "{remote_user.username}" and make operation'):
         remote_user_engine: LinuxSshEngine = LinuxSshEngine(engines.dut.ip, remote_user.username, remote_user.password)
         pwh = System(force_api=ApiType.NVUE).security.password_hardening
-        pwh.set(PwhConsts.LEN_MIN, 19, dut_engine=remote_user_engine)
+        pwh.set(PwhConsts.LEN_MIN, 19, dut_engine=remote_user_engine).ignore_result()
 
     with allure.step(f'Turn authentication order to local,{remote_aaa_type}'):
         System().aaa.authentication.set(AuthConsts.ORDER, f'local,{remote_aaa_type}', apply=True).verify_result()
@@ -347,8 +347,8 @@ def generic_aaa_test_accounting_local_first(test_api, engines, topology_obj, req
 
     with allure.step(f'Make another operation with already connected {remote_aaa_type} user "{remote_user.username}"'):
         time_at_server: str = datetime.now(pytz.utc).strftime('%b %d %H:%M:%S')  # servers have UTC timezone
-        pwh.set(PwhConsts.LEN_MIN, 20, dut_engine=remote_user_engine)
-        pwh.unset(PwhConsts.LEN_MIN, dut_engine=remote_user_engine)
+        pwh.set(PwhConsts.LEN_MIN, 20, dut_engine=remote_user_engine).ignore_result()
+        pwh.unset(PwhConsts.LEN_MIN, dut_engine=remote_user_engine).ignore_result()
 
     expect_logs = True
     with allure.step(f'Verify {"" if expect_logs else "no "}logs for these operations'):

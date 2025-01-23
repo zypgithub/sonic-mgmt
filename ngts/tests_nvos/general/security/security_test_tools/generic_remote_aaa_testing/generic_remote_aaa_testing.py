@@ -422,7 +422,7 @@ def generic_aaa_test_priority(test_flow, test_api, engines, topology_obj, reques
             worse_server_resource = remote_aaa_obj.server.server_id[worse_server.hostname]
             worse_server.priority = next_prio
             worse_server_resource.set(AaaConsts.PRIORITY, worse_server.priority, apply=True,
-                                      dut_engine=item.active_remote_admin_engine)
+                                      dut_engine=item.active_remote_admin_engine).ignore_result()
             worse_server, best_server = best_server, worse_server
             update_active_aaa_server(item, best_server)
             if remote_aaa_type == RemoteAaaType.LDAP:

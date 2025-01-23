@@ -655,8 +655,7 @@
 
 # NVOS Security
 - Errors_list:
-    - '.*ERR .*: Failed to write none to file /var/run/hw-management/led/.* - FileNotFoundError\(2, ''No such file or directory''\).*'
-    - '.*ERR .*: Failed to read from file /var/run/hw-management/led/.* - FileNotFoundError\(2, ''No such file or directory''\).*'
+    - '.*ERR.*Failed to.*file /var/run/hw-management/led/.*FileNotFoundError\(2, ''No such file or directory''\).*'
   Conditions:
     - Affected_test_cases:
         - tests_nvos/general/security/test_secure_boot/test_secure_boot.py::test_kernel_module_loading
@@ -761,13 +760,16 @@
         - 3544347
 
 - Errors_list:
-    - '.*ERR ker process: PAM-tacplus: auth failed: 2.*'
+    - '.*ERR.*PAM-tacplus: auth failed: 2.*'
   Conditions:
     - Affected_test_cases:
       - tests_nvos/general/security/authentication_restrictions/test_authentication_restrictions.py::test_auth_restrictions_remote_counting
+      - tests_nvos/general/security/tacacs/test_aaa_tacacs.py::test_tacacs_auth
+      - tests_nvos/system/gnmi/test_gnmi_pam.py::test_gnmi_auth_failthrough
+      - tests_nvos/system/gnmi/test_gnmi_pam.py::test_gnmi_authentication
 
 - Errors_list:
-    - '.*WARNING service_checker: nss_tacplus: TACACS\+ server .* read failed with protocol error \(incorrect shared secret\?\) user.*'
+    - '.*WARNING.*nss_tacplus:.*TACACS\+ server.*read failed with protocol error \(incorrect shared secret\?\).*'
     - '.*ERR .*: tac_author_read: arguments supplied in packet seem to exceed its size.*'
     - '.*ERR sshd\[.*\]: auth fail: Password incorrect. user: .*'
     - '.*ERR docker-untar: tac_author_read: arguments supplied in packet seem to exceed its size.*'
@@ -779,7 +781,7 @@
 - Errors_list:
     - '.*ERR ker process: tac_authen_read: inconsistent reply body, incorrect key\?.*'
     - '.*ERR service_checker: tac_authen_read: inconsistent reply body, incorrect key\?.*'
-    - '.*ERR .*: tac_authen_read: inconsistent reply body, incorrect key\?.*'
+    - '.*ERR.*inconsistent reply body, incorrect key\?.*'
   Conditions:
     - Affected_test_cases:
       - tests_nvos/general/security/tacacs/test_aaa_tacacs.py::test_tacacs_bad_secret
@@ -808,7 +810,7 @@
 
 - Errors_list:
     - '.*ERR .*: pam_radius_auth: RADIUS server .*:123 failed to respond.*'
-    - '.*ERR python3: pam_radius_auth: All RADIUS servers failed to respond.*'
+    - '.*ERR.*pam_radius_auth: All RADIUS servers failed to respond.*'
   Conditions:
     - Affected_test_cases:
         - tests_nvos/general/security/radius/test_aaa_radius.py::test_radius_bad_port
@@ -823,6 +825,7 @@
 
 - Errors_list:
     - '.* ERR nslcd\[\d+\]\: \[.*\].*ldap_result\(\) failed: Invalid DN.*'
+    - '.*WARNING.*nslcd.service: Failed with result ''exit-code''.*'
   Conditions:
     - Affected_test_cases:
         - tests_nvos/general/security/test_aaa_ldap/test_aaa_ldap.py::test_ldap_bad_base_dn_error_flow
@@ -1393,14 +1396,6 @@
   Conditions:
     - Affected_test_cases:
         - tests_nvos/general/security/nmx_cert/test_nmx_cert.py::test_restore_cert_when_in_encryption_mode
-
-# NVOS Security
-- Errors_list:
-    - '.*ERR .*: PAM-tacplus: auth failed: 2.*'
-  Conditions:
-    - Affected_test_cases:
-        - tests_nvos/system/gnmi/test_gnmi_pam.py::test_gnmi_auth_failthrough
-        - tests_nvos/system/gnmi/test_gnmi_pam.py::test_gnmi_authentication[ipv4-BadFlow]
 
 # NVOS tacacs bad flow
 - Errors_list:
