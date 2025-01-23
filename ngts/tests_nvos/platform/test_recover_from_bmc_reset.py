@@ -68,7 +68,7 @@ def test_recover_from_bmc_reset(engines, devices, topology_obj, loganalyzer):
                 assert cpu_utilization <= CPU_MAX_UTILIZATION
 
             with allure.independent_step("Assert logs aren't flooded with BMC error messages"):
-                bmc_log_lines = system.log.file.show_log(op_param=" | grep -ie bmc").splitlines()
+                bmc_log_lines = system.log.file.show_log(param=" | grep -ie bmc").splitlines()
                 assert len(bmc_log_lines) < BMC_LOG_LINES_MAX
 
     except Exception:
