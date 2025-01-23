@@ -15,6 +15,14 @@
     </Case>
   </global>
   <case>
+    <ignore>
+    <!-- ignore if target_cli_type is NVUE  -->
+      <condition>
+        <key> target_cli_type </key>
+        <op> == </op>
+        <value> NVUE </value>
+      </condition>
+    </ignore>
     <name> test_spcx_ra_split_x1_800G </name>
     <info> </info>
     <cmd>
@@ -33,6 +41,14 @@
     </cmd>
   </case>
   <case>
+    <ignore>
+      <!-- ignore if target_cli_type is NVUE  -->
+        <condition>
+          <key> target_cli_type </key>
+          <op> == </op>
+          <value> NVUE </value>
+        </condition>
+    </ignore>
     <name> test_spcx_ra_split_x2_400G_fw_latency_optimization </name>
     <info> </info>
     <cmd>
