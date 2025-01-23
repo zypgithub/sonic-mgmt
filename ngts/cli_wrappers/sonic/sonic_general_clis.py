@@ -855,7 +855,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                 self.reboot_reload_flow(r_type=SonicConst.CONFIG_RELOAD_CMD, topology_obj=topology_obj,
                                         reload_force=True)
 
-        if not self.is_performance_setup(setup_name) and 'bison-simx' not in setup_name:
+        if not self.is_performance_setup(setup_name):
             with allure.step("Apply qos and dynamic buffer config"):
                 self.cli_obj.qos.reload_qos()
                 self.verify_dockers_are_up(dockers_list=['swss'])
@@ -872,8 +872,6 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                 self.cli_obj.ip.apply_dns_servers_into_resolv_conf(
                     is_air_setup=platform_params.setup_name.startswith('air'))
 
-        if 'bison-simx' in setup_name and is_redmine_issue_active([4156055])[0]:
-            self.cli_obj.qos.clear_qos()
         self.cli_obj.general.save_configuration()
 
     def get_chip_gen(self, platform_params):
