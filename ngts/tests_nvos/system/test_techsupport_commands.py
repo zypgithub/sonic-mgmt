@@ -193,7 +193,7 @@ def test_techsupport_upload(engines):
 
     with allure.step('Try to upload non exist tech-support file'):
         output = system.techsupport.action_upload(file_name='nonexist', upload_path=upload_path)
-        assert "File not found: nonexist" in output.info, "we can not upload a non exist file!"
+        assert "File not found: nonexist" in output.get_info(False), "we can not upload a non exist file!"
 
     with allure.step('Generate tech-support file'):
         tech_file, duration = system.techsupport.action_generate()
@@ -210,11 +210,11 @@ def test_techsupport_upload(engines):
 
     with allure.step('try to upload techsupport to invalid url - url is not in the right format'):
         output = system.techsupport.action_upload(file_name='nonexist', upload_path=invalid_url_1)
-        assert "is not a" in output.info, "URL was not in the right format"
+        assert "is not a" in output.get_info(False), "URL was not in the right format"
 
     with allure.step('try to upload ibdiagnet to invalid url - using non supported transfer protocol'):
         output = system.techsupport.action_upload(file_name='nonexist', upload_path=invalid_url_2)
-        assert "is not a" in output.info, "URL used non supported transfer protocol"
+        assert "is not a" in output.get_info(False), "URL used non supported transfer protocol"
 
     system.techsupport.action_delete(system.techsupport.file_name)
 

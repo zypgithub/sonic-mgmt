@@ -32,6 +32,7 @@ class Image(BaseComponent):
         if verify_res:
             return res.get_returned_value()
         else:
+            res.ignore_result()
             return res.returned_value
 
     def action_install(self, params="", expected_str="", dut_engine=None):

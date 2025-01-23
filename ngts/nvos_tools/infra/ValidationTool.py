@@ -192,6 +192,7 @@ class ValidationTool:
             ret_info = ""
             for field, value in zip(expected_fields, expected_values):
                 result_obj = ValidationTool.verify_field_value_in_output(output_dict, field, value)
+                result_obj.ignore_result()
                 if not result_obj.result:
                     result = False
                     ret_info += result_obj.info

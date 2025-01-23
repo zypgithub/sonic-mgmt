@@ -48,7 +48,8 @@ def test_fae_system_ready_invalid_value():
     with step("test the invalid value of system init done"):
         fae = Fae()
         with step("verify the fae default values using nv show fae system"):
-            assert err_message in fae.system.set('ready state INVALID').info, "Invalid value message is not as expected: {expected}".format(expected=err_message)
+            assert err_message in fae.system.set('ready state INVALID').get_info(False), (
+                f"Invalid value message is not as expected: {err_message}")
 
 
 @pytest.mark.init_flow

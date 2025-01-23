@@ -935,7 +935,7 @@ def test_ntp_reliability():
             logging.info("Configure ntp server in the loop and verify system remains stable")
             for server_id in range(1, NtpConsts.NUMBER_OF_ITERATION):
                 server_name = 'server_' + str(server_id)
-                system.ntp.servers.set_resource(server_name, apply=True)
+                system.ntp.servers.set_resource(server_name, apply=True).verify_result()
             # Validate system is still stable by executing show ntp command
             OutputParsingTool.parse_json_str_to_dictionary(system.ntp.show()).get_returned_value()
 

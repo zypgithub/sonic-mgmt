@@ -87,11 +87,11 @@ def test_upload_document(engines, devices):
 
     with allure.step('try to upload {} to invalid url - url is not in the right format'.format(random_file)):
         output = system.documentation.action_upload(file_name=random_file, upload_path=invalid_url_1)
-        assert "is not a" in output.info, "URL was not in the right format"
+        assert "is not a" in output.get_info(False), "URL was not in the right format"
 
     with allure.step('try to upload {} to invalid url - using non supported transfer protocol'.format(random_file)):
         output = system.documentation.action_upload(file_name=random_file, upload_path=invalid_url_2)
-        assert "is not a" in output.info, "URL used non supported transfer protocol"
+        assert "is not a" in output.get_info(False), "URL used non supported transfer protocol"
 
 
 def verify_documents_type(output, validation_key):
