@@ -667,15 +667,15 @@ tests_nvos/system/test_system_ztp.py::test_ztp_nmx_positive:
 
 tests_nvos/platform/test_platform_environment.py::test_show_platform_environment:
   skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4253235"
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4259913"
     conditions_logical_operator: and
     conditions:
-      - "'juliet' not in testbed"
+      - "'juliet' in testbed"
       - https://redmine.mellanox.com/issues/4259913
 
 tests_nvos/platform/test_platform_environment_voltage.py::test_show_platform_environment_voltage:
   skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4253235"
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4259913"
     conditions_logical_operator: and
     conditions:
       - "'juliet' in testbed"
