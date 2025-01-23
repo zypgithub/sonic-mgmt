@@ -156,14 +156,14 @@ def test_cluster_sdn(engines, devices, test_api, has_loopbox, standalone_system,
         if not config_files_deleted:
             with allure.step("Delete state/config Files"):
                 for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_CONFIG_FILES:
-                    if all_config_files_paths[file_type]:
+                    if (file_type in all_config_files_paths) and all_config_files_paths[file_type]:
                         for file in all_config_files_paths[file_type]:
                             app = ClusterConsts.MAP_CONFIG_FILE_TYPE_TO_APP[file_type]
                             file = file.split('/')[-1]
                             sdn.config.apps.app_name[app].type.file_type[file_type].files.file_name[file].action_delete()
                     engines.sonic_mgmt.run_cmd(f"sudo rm -rf {initial_configs_paths_to_restore[file_type]}")
                 for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_STATE_FILES:
-                    if all_state_files_paths[file_type]:
+                    if (file_type in all_state_files_paths) and all_state_files_paths[file_type]:
                         for file in all_state_files_paths[file_type]:
                             app = ClusterConsts.MAP_STATE_FILE_TYPE_TO_APP[file_type]
                             file = file.split('/')[-1]

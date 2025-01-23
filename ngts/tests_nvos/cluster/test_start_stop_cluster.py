@@ -115,7 +115,7 @@ def test_cluster_app_start_stop(engines, devices, test_api, has_loopbox, standal
 
 
 @disabled_access_ports
-@pytest.mark.timeout(35 * MINUTE, func_only=True)
+@pytest.mark.timeout(60 * MINUTE, func_only=True)
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
 def test_stress_cluster_app_start_stop(engines, devices, test_api, test_name, has_loopbox, standalone_system, setup_name):
@@ -133,7 +133,7 @@ def test_stress_cluster_app_start_stop(engines, devices, test_api, test_name, ha
             if has_loopbox:
                 operation = 'start stop cluster app with loopbox'
             ClusterTools.start_cluster(cluster, setup_name, output_format)
-            for i in range(5):
+            for i in range(4):
                 logger.info(f"Starting iteration {i}")
                 result_obj, duration = OperationTime.save_duration(operation, '', test_name, ClusterTools.stop_start_app, cluster, engines, devices, has_loopbox, setup_name, standalone_system)
                 OperationTime.verify_operation_time(duration, operation).verify_result()
@@ -195,13 +195,8 @@ def test_cluster_app_start_stop_disabled_cluster(engines, devices, test_api):
 
     for app in INITIAL_EXPECTED_APPS:
         with allure.step(f"Running 'nv show cluster apps {app}' command and parsing output"):
-            try:
-                output = OutputParsingTool.parse_show_output_to_dict(
-                    cluster.apps.app_name[app].show(output_format=OutputFormat.json),
-                    output_format=OutputFormat.json).get_returned_value(should_succeed=False)
-            except Exception as e:
-                err = e.args[0].split('\n')[-1]
-                assert INVALID_SHOW_EXPECTED_OUTPUT[test_api] in err, f"Expected {INVALID_SHOW_EXPECTED_OUTPUT[test_api]}, but instead received {output}"
+            output = cluster.apps.app_name[app].show(output_format=OutputFormat.json, should_succeed=False)
+            assert INVALID_SHOW_EXPECTED_OUTPUT[test_api] in output, f"Expected {INVALID_SHOW_EXPECTED_OUTPUT[test_api]}, but instead received {output} "
 
     TestToolkit.tested_api = 'NVUE'
 

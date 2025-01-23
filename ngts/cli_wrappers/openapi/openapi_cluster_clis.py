@@ -22,7 +22,7 @@ class OpenApiClusterCli(OpenApiBaseCli):
 
     @staticmethod
     def action_update_cluster_log_level(engine, resource_path, level):
-        param_name = "level"
+        param_name = "log_level"
         param_value = level
         return OpenApiClusterCli.action(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=resource_path, param_name=param_name, param_value=param_value)
 

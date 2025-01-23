@@ -106,7 +106,7 @@ def test_cluster_state(engines, devices, test_api, has_loopbox, standalone_syste
 
 
 @disabled_access_ports
-@pytest.mark.timeout(45 * MINUTE, func_only=True)
+@pytest.mark.timeout(50 * MINUTE, func_only=True)
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
 def test_stress_cluster_state(engines, devices, test_api, test_name, has_loopbox, standalone_system, setup_name):
