@@ -25,6 +25,7 @@ class CommandTester:
         with allure.step(f"Testing {operation} operation"):
             output = func(*args, **kwargs, dut_engine=self.user_engine)
             self.results[operation] = output.result
+            output.ignore_result()
 
     def get_results(self):
         return self.results

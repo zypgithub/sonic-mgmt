@@ -335,7 +335,7 @@ def test_rbac_user_add_remove_class_interaction(engines, test_api):
         system.aaa.role.role_id[test_role_name].class_rbac.set(test_interface_class, apply=True, ask_for_confirmation=True).verify_result()
 
     with allure.step("Verify the user is disconnected after permission change"):
-        assert ConnectionTool.is_connected(engines.dut, test_user).result == '0', f"User {test_user} was not disconnected"
+        ConnectionTool.is_connected(engines.dut, test_user).verify_result(False)
 
     with allure.step("Allow the user to log in again and verify new permissions"):
         user_engine = create_user_connection(engines, test_user, test_password)
@@ -346,7 +346,7 @@ def test_rbac_user_add_remove_class_interaction(engines, test_api):
         system.aaa.role.role_id[test_role_name].class_rbac.unset(test_interface_class, apply=True, ask_for_confirmation=True).verify_result()
 
     with allure.step("Verify the user is disconnected after permission change"):
-        assert ConnectionTool.is_connected(engines.dut, test_user).result == '0', f"User {test_user} was not disconnected"
+        assert ConnectionTool.is_connected(engines.dut, test_user).verify_result(False)
 
     with allure.step("Allow the user to log in again and verify new permissions"):
         user_engine = create_user_connection(engines, test_user, test_password)

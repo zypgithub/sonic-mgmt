@@ -54,7 +54,7 @@ class ConnectionTool:
             running_processes = OutputParsingTool.parse_lslogins_cmd(engine.run_cmd('lslogins {username}'.format(
                 username=username_to_check))).verify_result()[SystemConsts.PASSWORD_HARDENING_RUNNING_PROCESSES]
 
-            return ResultObj(running_processes, "", "connected to {number}".format(number=running_processes))
+            return ResultObj(int(running_processes) > 0, "connected to {number}".format(number=running_processes), running_processes)
 
     @staticmethod
     def create_serial_engine(topology_obj, ip=None, username=None, password=None, enter_serial_context=False):
