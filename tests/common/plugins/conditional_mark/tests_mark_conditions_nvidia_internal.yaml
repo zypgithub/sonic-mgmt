@@ -33,6 +33,12 @@ tests/nightly/route/test_async_route.py:
     conditions:
     - "'simx' in platform"
 
+tests/nightly/routing/test_routing.py::TestRouting::test_reboot:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4222104"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4222104 and 'sn5640_simx' in platform"
+
 tests/nightly/component_versions/test_component_versions.py:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4017774 or due RM 4258591"
