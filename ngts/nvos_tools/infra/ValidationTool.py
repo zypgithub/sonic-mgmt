@@ -14,6 +14,48 @@ from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceCon
 logger = logging.getLogger()
 
 
+class ExpectedString:
+    Result = Enum('Result', ['SUCCESS', 'REGEX_FAIL', 'NOT_A_NUMBER', 'TOO_SMALL', 'TOO_LARGE'])
+
+    def __init__(self, regex=None, range_min=None, range_max=None):
+        """
+        String will be tested for full-match to regex. If range_min and/or range_max are given, then the first group
+        inside the regex is expected to contain a float or int and the class validates the number is in range.
+        If `regex` is omitted, the entire string is expected to be numeric.
+        """
+        self.range_min = range_min
+        self.range_max = range_max
+        self.regex = re.compile(regex) if regex else None
+
+    @staticmethod
+    def number_and_string(s: str, range_min=None, range_max=None):
+        """Initializes an ExpectedString object that expects a string of the form '<number> <s>' """
+        return ExpectedString(r"(\d+(\.\d*)?) ?" + re.escape(s), range_min, range_max)
+
+    def _validate_range(self, s) -> Result:
+        try:
+            n = float(s.strip())
+        except ValueError:
+            return ResultObj(False, ExpectedString.Result.NOT_A_NUMBER)
+        if self.range_min is not None and n < self.range_min:
+            return ResultObj(False, ExpectedString.Result.TOO_SMALL)
+        if self.range_max is not None and n > self.range_max:
+            return ResultObj(False, ExpectedString.Result.TOO_LARGE)
+        return ResultObj(True, ExpectedString.Result.SUCCESS)
+
+    def validate(self, s) -> Result:
+        if self.regex:
+            match = self.regex.fullmatch(s)
+            if not match:
+                return ResultObj(False, ExpectedString.Result.REGEX_FAIL)
+            if self.range_min or self.range_max:
+                return self._validate_range(match.group(1))
+            else:
+                return ResultObj(True, ExpectedString.Result.SUCCESS)
+        else:
+            return self._validate_range(s)
+
+
 class ValidationTool:
 
     @staticmethod
@@ -488,48 +530,6 @@ class ValidationTool:
 
             return ResultObj(bool(errors) != should_be_valid,
                              f"{len(errors)} validation errors encountered:\n" + '.\n'.join(errors))
-
-
-class ExpectedString:
-    Result = Enum('Result', ['SUCCESS', 'REGEX_FAIL', 'NOT_A_NUMBER', 'TOO_SMALL', 'TOO_LARGE'])
-
-    def __init__(self, regex=None, range_min=None, range_max=None):
-        """
-        String will be tested for full-match to regex. If range_min and/or range_max are given, then the first group
-        inside the regex is expected to contain a float or int and the class validates the number is in range.
-        If `regex` is omitted, the entire string is expected to be numeric.
-        """
-        self.range_min = range_min
-        self.range_max = range_max
-        self.regex = re.compile(regex) if regex else None
-
-    @staticmethod
-    def number_and_string(s: str, range_min=None, range_max=None):
-        """Initializes an ExpectedString object that expects a string of the form '<number> <s>' """
-        return ExpectedString(r"(\d+(\.\d*)?) ?" + re.escape(s), range_min, range_max)
-
-    def _validate_range(self, s) -> Result:
-        try:
-            n = float(s.strip())
-        except ValueError:
-            return ResultObj(False, ExpectedString.Result.NOT_A_NUMBER)
-        if self.range_min is not None and n < self.range_min:
-            return ResultObj(False, ExpectedString.Result.TOO_SMALL)
-        if self.range_max is not None and n > self.range_max:
-            return ResultObj(False, ExpectedString.Result.TOO_LARGE)
-        return ResultObj(True, ExpectedString.Result.SUCCESS)
-
-    def validate(self, s) -> Result:
-        if self.regex:
-            match = self.regex.fullmatch(s)
-            if not match:
-                return ResultObj(False, ExpectedString.Result.REGEX_FAIL)
-            if self.range_min or self.range_max:
-                return self._validate_range(match.group(1))
-            else:
-                return ResultObj(True, ExpectedString.Result.SUCCESS)
-        else:
-            return self._validate_range(s)
 
     @staticmethod
     def validate_port_link(output_dictionary, expected_ports_state, expected_ports_logical_state):
