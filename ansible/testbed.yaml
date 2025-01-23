@@ -1970,6 +1970,97 @@
   inv_name: lab
   comment: Mellanox MTVR testbed
 
+- conf-name: mtvr-leopard-09-t0
+  group-name: vm-t1
+  topo: t0
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-mtvr-leopard-09
+  ptf_ip: 10.245.46.3/20
+  ptf_ipv6:
+  server: server_88
+  vm_base: VM5301
+  dut:
+    - mtvr-leopard-09
+  comment: Mellanox MTVR testbed
+
+- conf-name: mtvr-leopard-09-t0-56-o8v48
+  group-name: vm-t1
+  topo: t0-56-o8v48
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-mtvr-leopard-09
+  ptf_ip: 10.245.46.3/20
+  ptf_ipv6:
+  server: server_88
+  vm_base: VM5301
+  dut:
+    - mtvr-leopard-09
+  comment: Mellanox MTVR testbed
+
+- conf-name: mtvr-leopard-09-t1
+  group-name: vm-t1
+  topo: t1
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-mtvr-leopard-09
+  ptf_ip: 10.245.46.3/20
+  ptf_ipv6:
+  server: server_88
+  vm_base: VM5301
+  dut:
+    - mtvr-leopard-09
+  comment: Mellanox MTVR testbed
+
+- conf-name: mtvr-leopard-09-t1-lag
+  group-name: vm-t1
+  topo: t1-lag
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-mtvr-leopard-09
+  ptf_ip: 10.245.46.3/20
+  ptf_ipv6:
+  server: server_88
+  vm_base: VM5301
+  dut:
+    - mtvr-leopard-09
+  comment: Mellanox MTVR testbed
+
+- conf-name: mtvr-leopard-09-t1-28-lag
+  group-name: vm-t1
+  topo: t1-28-lag
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-mtvr-leopard-09
+  ptf_ip: 10.245.46.3/20
+  ptf_ipv6:
+  server: server_88
+  vm_base: VM5301
+  dut:
+    - mtvr-leopard-09
+  comment: Mellanox MTVR testbed
+
+- conf-name: mtvr-leopard-09-ptf32
+  group-name: vm-t1
+  topo: ptf32
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-mtvr-leopard-09
+  ptf_ip: 10.245.46.3/20
+  ptf_ipv6:
+  server: server_88
+  vm_base: VM5301
+  dut:
+    - mtvr-leopard-09
+  comment: Mellanox MTVR testbed
+
+- conf-name: mtvr-leopard-09-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-mtvr-leopard-09
+  ptf_ip: 10.245.46.3/20
+  ptf_ipv6:
+  server: server_88
+  vm_base: VM5301
+  dut:
+    - mtvr-leopard-09
+  comment: Mellanox MTVR testbed
+
 - conf-name: r-tigris-04-t0
   group-name: vm-t1
   topo: t0

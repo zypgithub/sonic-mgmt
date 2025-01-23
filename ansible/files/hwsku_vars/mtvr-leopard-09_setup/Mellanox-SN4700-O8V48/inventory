@@ -1,0 +1,50 @@
+[sonic_latest]
+# MTVR testbed mtvr-leopard-09 topologies
+mtvr-leopard-09  ansible_host=10.245.20.250  sonic_version=v2  sonic_hwsku=Mellanox-SN4700-O8V48 switch_type="switch" iface_speed=200000 serial_console="ssh -l rcon:7026 10.245.2.8" ptf_host=ptf-mtvr-leopard-09 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" fanout_switch=mtvr-leopard-10 dut_mac="c4:70:bd:d6:81:d6" pdu_host="pdu-10-245-2-49"
+mtvr-leopard-09-t0  ansible_host=10.245.20.250  sonic_version=v2  sonic_hwsku=Mellanox-SN4700-O8V48 switch_type="switch" iface_speed=200000 serial_console="ssh -l rcon:7026 10.245.2.8" ptf_host=ptf-mtvr-leopard-09 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" fanout_switch=mtvr-leopard-10 dut_mac="c4:70:bd:d6:81:d6" pdu_host="pdu-10-245-2-49"
+mtvr-leopard-09-t0-56-o8v48  ansible_host=10.245.20.250  sonic_version=v2  sonic_hwsku=Mellanox-SN4700-O8V48 switch_type="switch" iface_speed=200000 serial_console="ssh -l rcon:7026 10.245.2.8" ptf_host=ptf-mtvr-leopard-09 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" fanout_switch=mtvr-leopard-10 dut_mac="c4:70:bd:d6:81:d6" pdu_host="pdu-10-245-2-49"
+mtvr-leopard-09-t0-64-32  ansible_host=10.245.20.250  sonic_version=v2  sonic_hwsku=Mellanox-SN4700-O8V48 switch_type="switch" iface_speed=200000 serial_console="ssh -l rcon:7026 10.245.2.8" ptf_host=ptf-mtvr-leopard-09 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" fanout_switch=mtvr-leopard-10 dut_mac="c4:70:bd:d6:81:d6" pdu_host="pdu-10-245-2-49"
+mtvr-leopard-09-t1  ansible_host=10.245.20.250 sonic_version=v2 sonic_hwsku=Mellanox-SN4700-O8V48 switch_type="switch" iface_speed=200000 serial_console="ssh -l rcon:7026 10.245.2.8" ptf_host=ptf-mtvr-leopard-09 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" fanout_switch=mtvr-leopard-10 dut_mac="c4:70:bd:d6:81:d6" pdu_host="pdu-10-245-2-49"
+mtvr-leopard-09-t1-lag  ansible_host=10.245.20.250 sonic_version=v2 sonic_hwsku=Mellanox-SN4700-O8V48 switch_type="switch" iface_speed=200000 serial_console="ssh -l rcon:7026 10.245.2.8" ptf_host=ptf-mtvr-leopard-09 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" fanout_switch=mtvr-leopard-10 dut_mac="c4:70:bd:d6:81:d6" pdu_host="pdu-10-245-2-49"
+mtvr-leopard-09-t1-28-lag  ansible_host=10.245.20.250 sonic_version=v2 sonic_hwsku=Mellanox-SN4700-O8V48 switch_type="switch" iface_speed=200000 serial_console="ssh -l rcon:7026 10.245.2.8" ptf_host=ptf-mtvr-leopard-09 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" fanout_switch=mtvr-leopard-10 dut_mac="c4:70:bd:d6:81:d6" pdu_host="pdu-10-245-2-49"
+mtvr-leopard-09-ptf32   ansible_host=10.245.20.250 sonic_version=v2 sonic_hwsku=Mellanox-SN4700-O8V48 switch_type="switch" iface_speed=200000 serial_console="ssh -l rcon:7026 10.245.2.8" ptf_host=ptf-mtvr-leopard-09 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" fanout_switch=mtvr-leopard-10 dut_mac="c4:70:bd:d6:81:d6" pdu_host="pdu-10-245-2-49"
+mtvr-leopard-09-ptf-any   ansible_host=10.245.20.250 sonic_version=v2 sonic_hwsku=Mellanox-SN4700-O8V48 switch_type="switch" iface_speed=200000 serial_console="ssh -l rcon:7026 10.245.2.8" ptf_host=ptf-mtvr-leopard-09 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" fanout_switch=mtvr-leopard-10 dut_mac="c4:70:bd:d6:81:d6" pdu_host="pdu-10-245-2-49"
+
+mtvr-leopard-10 ansible_host=mtvr-leopard-10 ansible_ssh_user="{{ lookup('env','SONIC_SWITCH_USER') }}" ansible_ssh_pass="{{ lookup('env','SONIC_SWITCH_PASSWORD') }}" os=sonic
+
+[sonic:children]
+sonic_latest
+
+[leaf_topo_1]
+mtvr-leopard-09
+mtvr-leopard-09-t0
+mtvr-leopard-09-t0-56-o8v48
+mtvr-leopard-09-t0-64-32
+mtvr-leopard-09-t1
+mtvr-leopard-09-t1-lag
+mtvr-leopard-09-t1-28-lag
+mtvr-leopard-09-ptf32
+mtvr-leopard-09-ptf-any
+
+[leaf_topo_1:vars]
+podset_number=200
+
+[lab]
+# MTVR mtvr-leopard-09 topologies
+mtvr-leopard-09
+mtvr-leopard-09-t0
+mtvr-leopard-09-t0-56-o8v48
+mtvr-leopard-09-t0-64-32
+mtvr-leopard-09-t1
+mtvr-leopard-09-t1-lag
+mtvr-leopard-09-t1-28-lag
+mtvr-leopard-09-ptf32
+mtvr-leopard-09-ptf-any
+
+[ptf]
+# MTVR mtvr-leopard-09 PTF host
+ptf-mtvr-leopard-09 ansible_host=10.245.46.3 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+10.245.46.3 ansible_host=10.245.46.3 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+
+[pdu]
+pdu-10-245-2-49 ansible_host=10.245.2.49 protocol=snmp

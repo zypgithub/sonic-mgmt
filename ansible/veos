@@ -157,6 +157,10 @@ MTVR-DL360-04_1 ansible_host=mtvr-dl360-04
 [vm_host_87]
 MTVR-DL360-04_2 ansible_host=mtvr-dl360-04
 
+[vm_host_88]
+MTVR-DL380-13 ansible_host=mtvr-dl380-13
+
+
 [vm_host:children]
 vm_host_1
 vm_host_2
@@ -211,6 +215,7 @@ vm_host_84
 vm_host_85
 vm_host_86
 vm_host_87
+vm_host_88
 
 [vms_0]
 VM0000 ansible_host=0.0.0.0
@@ -1801,6 +1806,41 @@ VM5254 ansible_host=10.245.44.174
 VM5255 ansible_host=10.245.44.175
 VM5256 ansible_host=10.245.44.176
 
+[vms_88]
+VM5301 ansible_host=10.245.46.4
+VM5302 ansible_host=10.245.46.5
+VM5303 ansible_host=10.245.46.6
+VM5304 ansible_host=10.245.46.7
+VM5305 ansible_host=10.245.46.8
+VM5306 ansible_host=10.245.46.9
+VM5307 ansible_host=10.245.46.10
+VM5308 ansible_host=10.245.46.11
+VM5309 ansible_host=10.245.46.12
+VM5310 ansible_host=10.245.46.13
+VM5311 ansible_host=10.245.46.14
+VM5312 ansible_host=10.245.46.15
+VM5313 ansible_host=10.245.46.16
+VM5314 ansible_host=10.245.46.17
+VM5315 ansible_host=10.245.46.18
+VM5316 ansible_host=10.245.46.19
+VM5317 ansible_host=10.245.46.20
+VM5318 ansible_host=10.245.46.21
+VM5319 ansible_host=10.245.46.22
+VM5320 ansible_host=10.245.46.23
+VM5321 ansible_host=10.245.46.24
+VM5322 ansible_host=10.245.46.25
+VM5323 ansible_host=10.245.46.26
+VM5324 ansible_host=10.245.46.27
+VM5325 ansible_host=10.245.46.28
+VM5326 ansible_host=10.245.46.29
+VM5327 ansible_host=10.245.46.30
+VM5328 ansible_host=10.245.46.31
+VM5329 ansible_host=10.245.46.32
+VM5330 ansible_host=10.245.46.33
+VM5331 ansible_host=10.245.46.34
+VM5332 ansible_host=10.245.46.35
+
+
 [eos:children]
 vms_1
 vms_2
@@ -1855,6 +1895,7 @@ vms_84
 vms_85
 vms_86
 vms_87
+vms_88
 
 ## The groups below are helper to limit running playbooks to server_1, server_2 or server_3 only
 [server_1:children]
@@ -2369,6 +2410,17 @@ host_var_file=host_vars/MTVR-DL360-04_2.yml
 host_var_file=host_vars/MTVR-DL360-04_2.yml
 mgmt_prefixlen=16
 
+[server_88:children]
+vm_host_88
+vms_88
+
+[server_88:vars]
+host_var_file=host_vars/MTVR-DL380-13.yml
+
+[vms_88:vars]
+host_var_file=host_vars/MTVR-DL380-13.yml
+mgmt_prefixlen=20
+
 
 [servers:children]
 server_1
@@ -2424,6 +2476,7 @@ server_84
 server_85
 server_86
 server_87
+server_88
 
 [servers:vars]
 topologies=['dualtor', 'dualtor-64', 'dualtor-64-breakout', 'dualtor-mixed', 'dualtor-aa', 'dualtor-aa-64', 'dualtor-aa-64-breakout', 'dualtor-56', 'dualtor-mixed-56', 'dualtor-aa-56', 't1', 't1-lag', 't1-28-lag', 't1-32-lag', 't1-56-lag', 't1-64-lag', 't1-64-lag-clet', 't0', 't0-16', 't0-28', 't0-56', 't0-56-po2vlan', 't0-56-o8v48', 't0-52', 'ptf32', 'ptf64', 't0-64', 't0-64-32', 't0-64-256', 't0-80', 't0-116', 't0-120', 't0-256', 't0-c256', 't1-lag-c224o8', 'dpu', 'dpu-1']
