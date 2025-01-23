@@ -80,7 +80,7 @@ def deploy_minigpraph(ansible_path, dut_name, sonic_topo, recover_by_reboot, top
             except Exception as err:
                 logger.warning("Failed in Deploying minigraph. Got error: %s", err)
                 logger.warning("Performing a reboot and retrying")
-                cli_obj.reboot_reload_flow(topology_obj=topology_obj, ports_list=[])
+                cli_obj.reboot_reload_flow(topology_obj=topology_obj, ports_list=['Ethernet0'])
         logger.info("Deploying minigraph")
         return execute_script(cmd, ansible_path)
 
