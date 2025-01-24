@@ -18,6 +18,7 @@ from ngts.cli_util.verify_cli_show_cmd import verify_show_cmd
 from ngts.conftest import cleanup_last_config_in_stack
 from ngts.helpers.reboot_reload_helper import get_supported_reboot_reload_types_list
 from ngts.helpers.interface_helpers import speed_string_to_int_in_mb
+from ngts.helpers import json_file_helper
 from ngts.constants.constants import SonicConst
 
 logger = logging.getLogger()
@@ -597,9 +598,16 @@ def config_speed_dependency(topology_obj, cleanup_list):
     """
     dut_hb_2 = topology_obj.ports['dut-hb-2']
     cli_obj = topology_obj.players['dut']['cli']
+    dut_engine = topology_obj.players['dut']['engine']
     dut_original_interfaces_speeds = cli_obj.interface.get_interfaces_speed([dut_hb_2])
+    # Read supported port speeds from platform.json file
+    platform_json_info = json_file_helper.get_platform_json(dut_engine, cli_obj, fail_if_does_not_exist=False)
+    iface_supported_speeds = cli_obj.general.parse_platform_json(topology_obj, platform_json_info)[dut_hb_2]
+    # Get unique values and find minimum configured speed
+    unique_speeds = set(item for s in iface_supported_speeds.values() if s for item in s)
+    min_supported_speed = min(unique_speeds, key=lambda x: int(x[:-1]))
     interfaces_config_dict = {
-        'dut': [{'iface': dut_hb_2, 'speed': '10G',
+        'dut': [{'iface': dut_hb_2, 'speed': min_supported_speed,
                  'original_speed': dut_original_interfaces_speeds[dut_hb_2]}]
     }
     add_interface_conf(topology_obj, interfaces_config_dict, cleanup_list)
