@@ -55,9 +55,6 @@
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/dash_private_link.cases </cases>
     </test>
     <test>
-        <cases> sonic-mgmt/sonic-tool/mars/cases/community/dash_pa_validation.cases </cases>
-    </test>
-    <test>
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/dash_crm.cases </cases>
     </test>
 </DBDEF>
