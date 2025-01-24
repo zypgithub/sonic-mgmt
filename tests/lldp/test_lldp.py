@@ -2,7 +2,7 @@ import logging
 import pytest
 from tests.common.platform.interface_utils import get_dpu_npu_ports_from_hwsku
 from tests.common.helpers.dut_utils import get_program_info, kill_process_by_pid, is_container_running
-
+from tests.common import config_reload
 from tests.common.helpers.assertions import pytest_assert
 
 logger = logging.getLogger(__name__)
@@ -36,7 +36,10 @@ def restart_orchagent(duthosts, enum_rand_one_per_hwsku_frontend_hostname, enum_
     is_running = is_container_running(duthost, container_name)
     pytest_assert(is_running, "Container '{}' is not running. Exiting...".format(container_name))
     duthost.shell("docker exec {} supervisorctl start {}".format(container_name, program_name))
+
     yield
+
+    config_reload(duthost, safe_reload=True)
 
 
 def test_lldp(duthosts, enum_rand_one_per_hwsku_frontend_hostname, localhost,
