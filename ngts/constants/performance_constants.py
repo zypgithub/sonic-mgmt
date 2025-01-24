@@ -41,7 +41,6 @@ class PerfConsts:
     CL_PYTHON_PATH = "/home/cumulus/sdk_env/bin/python3.11"
     NON_SONIC_CLI_TYPE = NvosCliTypes.NvueCliTypes + DVSCliTypes.DVSCliTypes
     DVS_RUN_TEST_PATH = "/root/sys_sdk/sx_sdk_py_tests/tests/run_tests.py"
-    DVS_CONF_FW_LATENCY_OPT = "/root/sys_sdk/sx_sdk_py_tests/tools/multi_nos/dqs_to_glc.py"
     DEFAULT_PERF_TEMPLATES_DIR = "performance_config_templates"
     DVS_TG_NAME = "GenericTrafficGenerator"
     DVS_TG_VALIDATOR_NAME = "TrafficValidator"

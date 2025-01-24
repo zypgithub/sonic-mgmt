@@ -1,33 +1,48 @@
 import allure
 import json
+import ipaddress
 import pandas as pd
 from ngts.helpers.performance.packet_json_generator import PacketGenerator
 from ngts.constants.performance_constants import PerfConsts
 
 
-def create_json_traffic_stream(player_alias, tg_ports, packet_size, num_packets, is_ipv6, stream_name):
-    ip_key = "IPv6" if is_ipv6 else "IP"
-    packet = PacketGenerator(ports=tg_ports, packet_size=packet_size, num_packets=num_packets)
-    packet.add_ether_header(src=PerfConsts.DUT_PKT_INFO["MAC"],
-                            dst=PerfConsts.TG_ALIASES_PKT_INFO["MAC"][player_alias])
-    packet.add_ip_header(src=PerfConsts.DUT_PKT_INFO[ip_key],
-                         dst=PerfConsts.TG_ALIASES_PKT_INFO[ip_key][player_alias])
-    packet.add_udp_header(source_port=PerfConsts.UDP_SOURCE_PORT, dest_port=PerfConsts.ROCE_PORT)
-    packet.add_bth_header(ar=PerfConsts.ADAPTIVE_ROUTING_ENABLED)
+def ip_to_int(ipstr):
+    return int(ipaddress.ip_address(ipstr))
+
+
+def int_to_ip(n):
+    return str(ipaddress.ip_address(n))
+
+
+def generate_ip_list(start_ip_address, list_of_ports):
+    ip_list = [int_to_ip(ip_to_int(start_ip_address) + i) for i in range(len(list_of_ports))]
+    return dict(list(zip(list_of_ports, ip_list)))
+
+
+def create_json_traffic_stream(player_alias, traffic_parameters, stream_name):
+    packet = PacketGenerator(ports=traffic_parameters["ports"],
+                             packet_size=traffic_parameters["packet_size"],
+                             num_packets=traffic_parameters["num_packets"])
+    packet.add_ether_header(src=traffic_parameters["MAC"]["src"],
+                            dst=traffic_parameters["MAC"]["dst"])
+    packet.add_ip_header(src=traffic_parameters["IP"]["src"],
+                         dst=traffic_parameters["IP"]["dst"])
+    packet.add_udp_header(source_port=traffic_parameters["UDP"]["src"],
+                          dest_port=traffic_parameters["UDP"]["dst"])
+    packet.add_bth_header(ar=traffic_parameters["AR"])
     packet.add_payload_header(player_alias)
     stream = packet.get_json()
     stream["name"] = stream_name
     return stream
 
 
-def create_json_traffic_file(player_alias, tg_ports, packet_size, num_packets, is_ipv6, json_path):
-    stream = create_json_traffic_stream(player_alias, tg_ports, packet_size,
-                                        num_packets, is_ipv6, f"spcx_ra_{player_alias}_main_stream")
+def create_json_traffic_file(player_alias, traffic_parameters, json_path):
+    stream = create_json_traffic_stream(player_alias, traffic_parameters, f"spcx_ra_{player_alias}_main_stream")
     traffic_json = {
         "port_groups": [
             {
                 "name": f"spcx_ra_{player_alias}",
-                "ports": tg_ports,
+                "ports": traffic_parameters["ports"],
                 "stream_list": [stream]
             }
         ]

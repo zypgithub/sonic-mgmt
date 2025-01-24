@@ -15,11 +15,6 @@ class PerformanceCommon:
         self.dut_alias = dut_alias
         self.cli_obj = cli_obj
 
-    def configure_mloops(self):
-        logging.info(f"Configure Mloop on {self.dut_alias}")
-        cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names {PerfConsts.DVS_TG_MLOOP_CONFIGURATION}"
-        self.execute_cmd(cmd)
-
     def execute_cmd(self, cmd):
         """
         All functions on the inheritance classes (DVS, SONiC, Cumulus) will be executed
@@ -39,40 +34,68 @@ class PerformanceCommon:
             logging.error(error_msg)
             raise TestIssue(msg=error_msg)
 
-    def run_traffic(self, scenario, pkt_size, num_packets, is_ipv6, tg_ports=None):
-        self.generate_traffic_json(scenario, pkt_size, num_packets, is_ipv6, tg_ports=tg_ports)
+    def get_cmd_for_sdk(self, cmd, env_variables=None):
+        """
+        This method should be implemented in child class
+        Returns:
+        This method should return a cmd that is running on the sdk per OS
+        """
+        raise NotImplementedError
+
+    def apply_configuration_file(self, scenario, conf_args, template_suite=PerfConsts.DEFAULT_PERF_TEMPLATES_DIR):
+        """
+        This method should return a cmd that is running on the sdk per OS
+        """
+        raise NotImplementedError
+
+    def get_configuration_file(self, scenario, conf_args, template_suite=PerfConsts.DEFAULT_PERF_TEMPLATES_DIR):
+        """
+        This method should return a cmd that is running on the sdk per OS
+        """
+        raise NotImplementedError
+
+    def save_configuration_file(self, conf_path, conf_json, dst_dut_dir="/tmp"):
+        """
+        This method should return a cmd that is running on the sdk per OS
+        """
+        raise NotImplementedError
+
+    def save_basic_configuration(self, players):
+        """
+        This method should be implemented in child class
+        """
+        raise NotImplementedError
+
+    def configure_mloops(self):
+        logging.info(f"Configure Mloop on {self.dut_alias}")
+        configure_mloops_cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names {PerfConsts.DVS_TG_MLOOP_CONFIGURATION}"
+        self.execute_cmd(self.get_cmd_for_sdk(configure_mloops_cmd))
+
+    def run_traffic(self, scenario, traffic_jsons):
+        json_path = traffic_jsons[self.dut_alias]
+        traffic_json_path = self.copy_traffic_json_to_player(scenario, json_path)
+        self.set_tg_json_env_var(traffic_json_path)
         logging.info("Running traffic onto the device")
         run_traffic_cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names {PerfConsts.DVS_TG_NAME}"
-        self.execute_cmd(run_traffic_cmd)
+        self.execute_cmd(self.get_cmd_for_sdk(run_traffic_cmd, env_variables=['TG_JSON']))
 
     def validate_traffic(self, json_path, samples_params_dict, dst_dut_dir="/tmp"):
         logging.info("Running traffic validator on the dut")
         for env_var_name, param_val in samples_params_dict.items():
             set_interval_cmd = f"export {env_var_name}={param_val}"
             self.execute_cmd(set_interval_cmd)
-        cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names {PerfConsts.DVS_TG_VALIDATOR_NAME}"
-        self.execute_cmd(cmd)
+        run_validator_cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names {PerfConsts.DVS_TG_VALIDATOR_NAME}"
+        self.execute_cmd(self.get_cmd_for_sdk(run_validator_cmd))
         self.engine.copy_file(source_file="TrafficValidator.json", file_system=dst_dut_dir, dest_file=json_path,
                               overwrite_file=True, verify_file=False, direction='get')
 
     def stop_traffic(self):
         logging.info(f"Remove Mloop configuration from {self.dut_alias}")
-        cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names {PerfConsts.DVS_TG_REMOVE_MLOOP_CONFIGURATION}"
-        self.execute_cmd(cmd)
+        remove_mloops_cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names {PerfConsts.DVS_TG_REMOVE_MLOOP_CONFIGURATION}"
+        self.execute_cmd(self.get_cmd_for_sdk(remove_mloops_cmd))
 
-    def generate_traffic_json(self, scenario, pkt_size, num_packets, is_ipv6, tg_ports=None,
-                              template_suite="traffic_packets_json_files"):
-        tg_ports = self.get_tg_unconnected_ports(scenario) if not tg_ports else tg_ports
-        json_path = os.path.join(BugHandlerConst.NGTS_PATH, "performance_tests", template_suite,
-                                 scenario, f"{self.dut_alias}_{scenario.replace('/', '_')}_{pkt_size}.json")
-        create_json_traffic_file(player_alias=self.dut_alias, tg_ports=tg_ports,
-                                 packet_size=pkt_size, num_packets=num_packets,
-                                 is_ipv6=is_ipv6, json_path=json_path)
-        traffic_json_path = self.copy_traffic_json_to_player(scenario, pkt_size, json_path)
-        self.set_tg_json_env_var(traffic_json_path)
-
-    def copy_traffic_json_to_player(self, scenario, pkt_size, json_path, dst_dut_dir="/tmp"):
-        file_name = f"{scenario.replace('/', '_')}_{pkt_size}_traffic.json"
+    def copy_traffic_json_to_player(self, scenario, json_path, dst_dut_dir="/tmp"):
+        file_name = f"{scenario.replace('/', '_')}_traffic.json"
         traffic_json_path = os.path.join(dst_dut_dir, file_name)
         logging.info(f"Copy Traffic JSON to : {traffic_json_path} on {self.dut_alias}")
         self.engine.copy_file(source_file=json_path, file_system=dst_dut_dir, dest_file=file_name,
@@ -84,20 +107,58 @@ class PerformanceCommon:
         set_traffic_json_cmd = f"export TG_JSON=\"{traffic_json_path}\""
         self.execute_cmd(set_traffic_json_cmd)
 
-    def get_player_ports(self, scenario, template_suite="traffic_packets_json_files", dst_dut_dir="/tmp"):
+    def get_player_ports(self, dst_dut_dir="/tmp"):
         """
         This method should be implemented in child class
         """
-        pass
+        raise NotImplementedError
 
-    def get_tg_unconnected_ports(self, scenario):
+    def get_player_unconnected_connected_ports_aliases(self):
         """
         This method should be implemented in child class
         """
-        pass
+        raise NotImplementedError
 
-    def get_dut_ports(self, scenario):
+    def get_player_left_right_ports_aliases(self):
         """
         This method should be implemented in child class
         """
-        pass
+        raise NotImplementedError
+
+    def restore_basic_configuration(self):
+        """
+        This method should be implemented in child class
+        """
+        raise NotImplementedError
+
+    def get_tg_unconnected_ports(self):
+        """
+        This method should be implemented in child class
+        """
+        raise NotImplementedError
+
+    def get_dut_ports(self):
+        """
+        This method should be implemented in child class
+        """
+        raise NotImplementedError
+
+    def get_traffic_parameters(self, scenario, conf_args):
+        """
+
+        Args:
+            scenario: name of the scenario, i.e, spcx_ra
+            conf_args: a dict with the configuration arguments per test
+
+        Returns:
+        player traffic params based on the scenario configuration file, i.e,
+        {
+                "MAC" : {"src" : "aa:bb:cc:dd:ee:ff", "dst" : "aa:bb:cc:dd:ee:ff"},
+                "IP   : {"src" : "11.11.11.11", "dst" : "22:22:22:22"},
+                -------------    OR   -------------
+                "IP"  :  {"src" : "1::1", "dst" : "2::2"}
+                "UDP" : {"src": int, "dst": int},
+                "AR"  : 0/1
+            }
+        """
+        raise NotImplementedError

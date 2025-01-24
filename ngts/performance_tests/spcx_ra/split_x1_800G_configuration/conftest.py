@@ -8,31 +8,38 @@ Defines the methods and fixtures which will be used by pytest for only performan
 import pytest
 import logging
 import allure
-from ngts.constants.performance_constants import PerfConsts
-from ngts.helpers.performance.performance_setup_helpers import (save_base_configuration, set_ibm,
-                                                                restore_basic_configuration, apply_test_configuration)
-
+import copy
+import os
+from ngts.helpers.performance.performance_setup_helpers import (save_base_configuration,
+                                                                restore_basic_configuration,
+                                                                apply_test_configuration)
+from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts
 logger = logging.getLogger()
 
-TESTS_SCENARIO = "spcx_ra/split_x1_800G_configuration"
+TESTS_SCENARIO = "spcx_ra"
 
 
 @pytest.fixture(scope='session', autouse=True)
-def set_fan_env_aliases(players):
-    for tg_alias in PerfConsts.PERF_SETUP_TG_ALIASES:
-        tg_engine = players[tg_alias]['engine']
-        tg_engine.run_cmd(f"export PLAYER_ALIAS={tg_alias}")
+def conf_args():
+    conf_args = {"run_fw_latency_optimization": "False",
+                 "auto_buffer_mode": "True",
+                 "congestion_thresh_lo": 400,
+                 "is_ipv6": False,
+                 "split_right": 1,
+                 "split_left": 1,
+                 "packet_size": PerfConsts.PACKET_SIZE_LIST[0],
+                 "num_packets": SPCXRAConsts.PACKET_NUM_800G_x1
+                 }
+    return conf_args
 
 
 @pytest.fixture(scope='session', autouse=True)
-def basic_setup_configuration(players):
+def basic_setup_configuration(players, conf_args):
     try:
         with allure.step('Save Players initial Configuration'):
             save_base_configuration(players)
-        with allure.step("Set Ingress Buffer Mode Configuration on Dut"):
-            set_ibm(players, scenario=TESTS_SCENARIO, ibm_mode=False)
         with allure.step("Apply Test configuration on all Players"):
-            apply_test_configuration(players, scenario=TESTS_SCENARIO)
+            apply_test_configuration(players, scenario=TESTS_SCENARIO, conf_args=conf_args)
         yield
     except Exception as e:
         raise e
@@ -42,9 +49,11 @@ def basic_setup_configuration(players):
 
 
 @pytest.fixture(scope='function', autouse=False)
-def ibm_fixture(players):
+def ibm_fixture(players, conf_args):
+    original_conf_args = copy.deepcopy(conf_args)
+    conf_args["auto_buffer_mode"] = "False"
     with allure.step("Set IBM to true"):
-        set_ibm(players, scenario=TESTS_SCENARIO, ibm_mode=True, reload_conf=True)
+        players['dut']['cli'].performance.set_ibm(TESTS_SCENARIO, conf_args)
     yield
     with allure.step("Set IBM to false"):
-        set_ibm(players, scenario=TESTS_SCENARIO, ibm_mode=False, reload_conf=True)
+        players['dut']['cli'].performance.set_ibm(TESTS_SCENARIO, original_conf_args)

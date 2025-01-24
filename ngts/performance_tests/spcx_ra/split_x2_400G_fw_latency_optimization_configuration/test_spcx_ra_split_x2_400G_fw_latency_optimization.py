@@ -3,8 +3,10 @@ import logging
 import pytest
 
 from ngts.helpers.general_helper import get_pytest_test_name
-from ngts.helpers.performance.performance_setup_helpers import run_traffic, run_validation
+from ngts.helpers.performance.performance_setup_helpers import run_traffic, run_validation, get_topology_obj
 from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts
+from ngts.performance_tests.spcx_ra.conftest import get_spcx_ra_spine_traffic
+
 logger = logging.getLogger()
 
 PACKET_SIZE_LIST = PerfConsts.PACKET_SIZE_LIST
@@ -13,13 +15,14 @@ PACKET_SIZE_LIST = PerfConsts.PACKET_SIZE_LIST
 class TestSPCXRA_x2Split_400G:
 
     @pytest.fixture(autouse=True)
-    def setup(self, topology_obj, players, engines, power_thresholds_by_chip_type):
-        self.topology_obj = topology_obj
+    def setup(self, players, engines, power_thresholds_by_chip_type, conf_args):
+        self.topology_obj = get_topology_obj(players)
         self.players = players
         self.engines = engines
         self.cli_object = self.players['dut']['cli']
-        self.scenario = "spcx_ra/split_x2_400G_configuration"
+        self.scenario = "spcx_ra"
         self.power_thresholds_by_chip_type = power_thresholds_by_chip_type
+        self.traffic_jsons = get_spcx_ra_spine_traffic(players, conf_args)
 
     @pytest.mark.parametrize("packet_size", PACKET_SIZE_LIST)
     @allure.title('test_ar_perf_max_bandwidth')
@@ -30,8 +33,7 @@ class TestSPCXRA_x2Split_400G:
         test_name = get_pytest_test_name(request)
 
         with allure.step(f"Run {packet_size}B packet Traffic on all the ports"):
-            run_traffic(self.players, self.scenario, packet_size=packet_size,
-                        num_packets=SPCXRAConsts.PACKET_NUM_400G_x2)
+            run_traffic(self.players, self.scenario, self.traffic_jsons)
 
         with allure.step(f"Verifying the traffic for packet size {packet_size}"):
             run_validation(players=self.players, test_name=test_name, scenario=self.scenario,
@@ -49,7 +51,7 @@ class TestSPCXRA_x2Split_400G:
         test_name = get_pytest_test_name(request)
 
         with allure.step(f"Run {packet_size}B packet Traffic on all the ports"):
-            run_traffic(self.players, self.scenario, packet_size)
+            run_traffic(self.players, self.scenario, self.traffic_jsons)
 
         with allure.step(f"Verifying the traffic for packet size {packet_size}"):
             run_validation(players=self.players, test_name=test_name, scenario=self.scenario,
