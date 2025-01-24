@@ -532,6 +532,7 @@ class GorillaSwitch(IbSwitch):
         self.stats_fan_header_num_of_lines = 25
         self.stats_cpu_header_num_of_lines = 12
         self.stats_temperature_header_num_of_lines = 53
+        self.valid_ports_count = 64
         self.supports_tpm_testing = False
 
     def get_mgmt_ports(self) -> List[str]:
@@ -642,6 +643,7 @@ class BlackMambaSwitch(IbSwitch):
         self.ztp_dev_json = 'uninstall.json'
         self.ztp_complex_prod_json = 'complex_prod.json'
         self.ztp_complex_dev_json = 'complex.json'
+        self.valid_ports_count = 144
 
         self.constants.firmware.extend(['CPLD4', 'CPLD5', 'CPLD6'])
 
@@ -753,6 +755,7 @@ class CrocodileSwitch(IbSwitch):
         self.stats_cpu_header_num_of_lines = 12
         self.stats_power_header_num_of_lines = 17
         self.stats_temperature_header_num_of_lines = 32
+        self.valid_ports_count = 73
         self.allow_cpld_update = True
         self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/crocodile_versions.json"
 
@@ -923,7 +926,7 @@ class JulietSwitch(NvLinkSwitch):
 
         self.power_cycle_type = 'juliet-power-cycle'
         self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/juliet_versions.json"
-        self.valid_ports_count = 144
+        self.valid_ports_count = 72
         self.module_offset = 9
 
     def _init_fan_list(self):

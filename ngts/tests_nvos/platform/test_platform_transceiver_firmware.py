@@ -36,22 +36,13 @@ def test_transceiver_database_tables(engines, devices, test_api):
     :return:
     """
     with allure.step("Create platform object"):
-        platform = Platform()
         transceivers_tables_name = "TRANSCEIVER_FIRMWARE_INFO"
-        # TODO: solve this properly
-        if isinstance(devices.dut, JulietSwitch):
-            transceivers_list = list(OutputParsingTool.parse_json_str_to_dictionary(platform.transceiver.show()).returned_value.keys())
-            number_of_transceivers = len(transceivers_list) * 4
-        else:
-            transceivers_list = list(OutputParsingTool.parse_json_str_to_dictionary(platform.transceiver.show_detailed()).get_returned_value().keys())
-            number_of_transceivers = sum(2 if transceiver.startswith('sw') else 1 for transceiver in transceivers_list)  # swA3 -> swA3p1, swA3p2
+        number_of_transceivers = devices.dut.valid_ports_count
         with allure.step("Validate for each transceiver out of {} transceivers we have the table in STATE_DB".format(number_of_transceivers)):
             tables_in_database = Tools.DatabaseTool.sonic_db_cli_get_keys(engine=engines.dut, asic="",
                                                                           db_name=DatabaseConst.STATE_DB_NAME,
                                                                           grep_str=transceivers_tables_name).splitlines()
-            assert number_of_transceivers == len(tables_in_database), "Test Failed: we expected {} transceivers tables " \
-                                                                      "in STATE_DB but we found only {}".format(number_of_transceivers,
-                                                                                                                len(tables_in_database))
+            assert number_of_transceivers == len(tables_in_database), f"Test Failed: we expected {number_of_transceivers} transceivers tables in STATE_DB but we found {len(tables_in_database)}"
 
 
 @pytest.mark.platform

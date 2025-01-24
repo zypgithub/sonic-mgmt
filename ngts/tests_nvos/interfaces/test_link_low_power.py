@@ -82,7 +82,7 @@ def validate_all_ports_l1_capability(expected_status, engine, device):
     mst_devices = engine.run_cmd(f"ls {mst_path} | grep -i pciconf").splitlines()
     ""
     with allure.step(f"Verify all ports support L1 saving power is {expected_status}"):
-        for port in range(1, device.valid_ports_count, 2):
+        for port in range(1, device.valid_ports_count * 2, 2):
             logger.info(f"validate l1_cap for port {port}:")
             for device in mst_devices:
                 output = RegisterTool.get_mst_register_value(engine, mst_path + device, "PPSLS", f'--indexes "lp_msb=8,local_port={port}"', "l1_cap")
