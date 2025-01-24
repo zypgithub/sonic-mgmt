@@ -426,7 +426,8 @@ def test_platform_environment_fan_direction_mismatch(engines, devices):
 def _verify_fan_direction_mismatch_behaviour(engines, devices, feature_enable):
     platform = Platform()
     system = System()
-    # def_dir = FansConsts.FORWARD_DIRECTION
+    dir_changed = False
+    health_changed_to_not_ok = False
     if feature_enable:
         state = FansConsts.STATE_NOT_OK
         should_str = 'be'
@@ -470,14 +471,29 @@ def _verify_fan_direction_mismatch_behaviour(engines, devices, feature_enable):
             else:
                 wrong_dir = FansConsts.FORWARD_DIRECTION
 
+        with allure.step("Get the latest event"):
+            last_event = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.events.show("last 1")).\
+                get_returned_value()
+            latest_event_id = list(last_event)[0]
+
         with allure.step("Change direction of {} to wrong dir({}) and verify".format(fan_to_check, wrong_dir)):
             _set_platform_environment_fan_direction(engines, devices, platform, fan_to_check, def_dir, wrong_dir)
+            dir_changed = True
 
         with allure.step('Validate System health status should be {}'.format(state)):
             output = system.health.show(output_format=OutputFormat.json)
             output_dict = Tools.OutputParsingTool.parse_json_str_to_dictionary(output).verify_result()
             health_status = output_dict['status']
             assert health_status == state, 'System health status is {} instead of {}'.format(health_status, state)
+
+        if state == FansConsts.STATE_NOT_OK:
+            with allure.step("Validate system event regarding Health status: Health status is not ok"):
+                events = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.events.show("last")).\
+                    get_returned_value()
+                newer_events = [events[event]['text'] for event in list(events) if event > latest_event_id]
+                assert PlatformConsts.HEALTH_STATUS_NOT_OK_EVENT in newer_events, \
+                    "Health status not ok event not found in events"
+                health_changed_to_not_ok = True
 
         with allure.step("Validate Issues should {} seen in System Health Report".format(should_str)):
             health_issues = output_dict['issues']
@@ -488,8 +504,17 @@ def _verify_fan_direction_mismatch_behaviour(engines, devices, feature_enable):
                 assert not health_issues, f'Unexpected Health Issues:\n{health_issues}'
 
     finally:
-        with allure.step("Change Fan direction of {} to default({}) and verify".format(fan_to_check, def_dir)):
-            _set_platform_environment_fan_direction(engines, devices, platform, fan_to_check, def_dir, def_dir)
+        if dir_changed:
+            with allure.step("Change Fan direction of {} to default({}) and verify".format(fan_to_check, def_dir)):
+                _set_platform_environment_fan_direction(engines, devices, platform, fan_to_check, def_dir, def_dir)
+
+        if health_changed_to_not_ok:
+            with allure.step("Validate system event regarding clear Health status- Cleared: Health status is not ok"):
+                events0 = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.events.show("last")).\
+                    get_returned_value()
+                newer_events = [events0[event]['text'] for event in list(events0) if event > latest_event_id]
+                assert "Cleared: " + PlatformConsts.HEALTH_STATUS_NOT_OK_EVENT in newer_events, \
+                    "Clear health event not found in events"
 
         with allure.step("Validate Issues should not be seen in System Health Report"):
             output = system.health.show(output_format=OutputFormat.json)
