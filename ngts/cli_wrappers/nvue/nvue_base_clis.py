@@ -1,7 +1,7 @@
 import logging
 
 from ngts.nvos_constants.constants_nvos import OutputFormat
-from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
+from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool, RebootParams
 
 logger = logging.getLogger()
 
@@ -105,10 +105,11 @@ class NvueBaseCli:
 
         if expect_reboot:
             return (DutUtilsTool.reload(engine=engine, device=device, command=command, confirm=press_y,
-                                        recovery_engine=recovery_engine, topology_obj=topology_obj,
-                                        system_is_ready_timeout=system_is_ready_timeout,
-                                        track_boot_intervals=track_boot_intervals,
-                                        deny_reboot=deny_reboot).verify_result(should_succeed=should_succeed))
+                                        reboot_params=RebootParams(recovery_engine=recovery_engine,
+                                                                   topology_obj=topology_obj,
+                                                                   system_is_ready_timeout=system_is_ready_timeout,
+                                                                   track_boot_intervals=track_boot_intervals)
+                                        ).verify_result(should_succeed=should_succeed))
         else:
             output = engine.run_cmd(command)
             logger.info(output)
@@ -138,7 +139,9 @@ class NvueBaseCli:
         cmd = "nv action install {fae} platform {args} {force}".format(fae="fae" if fae_command else '', args=args, force="force" if force else '')
         logging.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
         if expect_reboot:
-            return DutUtilsTool.reload(engine=engine, device=device, command=cmd, confirm=True, topology_obj=topology_obj).verify_result()
+            return DutUtilsTool.reload(engine=engine, device=device, command=cmd, confirm=True,
+                                       reboot_params=RebootParams(topology_obj=topology_obj)
+                                       ).verify_result()
         else:
             return engine.run_cmd(cmd)
 
@@ -157,6 +160,8 @@ class NvueBaseCli:
         cmd = "nv action uninstall {fae} platform {args} {force}".format(fae="fae" if fae_command else '', args=args, force="force" if force else '')
         logging.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
         if expect_reboot:
-            return DutUtilsTool.reload(engine=engine, device=device, command=cmd, confirm=True, topology_obj=topology_obj).verify_result()
+            return DutUtilsTool.reload(engine=engine, device=device, command=cmd, confirm=True,
+                                       reboot_params=RebootParams(topology_obj=topology_obj)
+                                       ).verify_result()
         else:
             return engine.run_cmd(cmd)

@@ -3,7 +3,7 @@ import time
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_tools.infra.BmcSshEngine import BmcSshEngine
-from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
+from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool, RebootParams
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.tests_nvos.general.security.bmc.bmc_creds.constants import BmcCliCmd, BmcUsers
 from ngts.tools.test_utils import allure_utils as allure
@@ -21,7 +21,8 @@ def bmc_factory_reset(bmc_session: BmcSshEngine, dut_engine: LinuxSshEngine, top
     with allure.step('power cycle the switch - run remote reboot'):
         NvueGeneralCli(dut_engine).remote_reboot(topology_obj)
     with allure.step('wait for switch to be ready again'):
-        DutUtilsTool.wait_on_system_reboot(dut_engine, topology_obj=TestToolkit.topology_obj)
+        DutUtilsTool.wait_on_system_reboot(dut_engine,
+                                           reboot_params=RebootParams(topology_obj=TestToolkit.topology_obj))
 
 
 def enable_mctp_pcie_ctrl_service_in_bmc(dut_engine: LinuxSshEngine):

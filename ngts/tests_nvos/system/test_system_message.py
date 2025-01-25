@@ -4,7 +4,7 @@ import pytest
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
-from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
+from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool, RebootParams
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.nvos_constants.constants_nvos import SystemConsts
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
@@ -393,8 +393,9 @@ def test_system_reload_for_system_message(engines, devices, test_api):
         with allure.step('Run system reload command and apply config'):
             reload_cmd_set = "nv action reboot system"
             # Reload system and wait until the system is ready
-            DutUtilsTool.reload(engine=engines.dut, device=devices.dut, command=reload_cmd_set,
-                                should_wait_till_system_ready=True, confirm=True).verify_result()
+            DutUtilsTool.reload(engine=engines.dut, device=devices.dut, command=reload_cmd_set, confirm=True,
+                                reboot_params=RebootParams(should_wait_till_system_ready=True)
+                                ).verify_result()
             # Reconnect
             ssh_connection = ConnectionTool.create_ssh_conn(engines.dut.ip, engines.dut.username, engines.dut.password).get_returned_value()
 

@@ -3,8 +3,8 @@ import os
 import socket
 import subprocess
 import time
-from typing import Dict
-from typing import List
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
 
 from netmiko import ConnectHandler
 from paramiko.ssh_exception import AuthenticationException
@@ -24,81 +24,44 @@ from .ResultObj import ResultObj, IssueType
 logger = logging.getLogger()
 
 
+@dataclass
+class RebootParams:
+    recovery_engine: Any = None
+    topology_obj: Any = None
+    wait_time_before_reboot: int = 120
+    system_is_ready_timeout: int = None
+    track_boot_intervals: bool = False
+    should_wait_till_system_ready: bool = True
+
+
 class DutUtilsTool:
     invalid_output_list = ['aborted', 'aborting', 'error']
 
     @staticmethod
-    def reload(engine, device, command, find_prompt_tries=80, find_prompt_delay=2, should_wait_till_system_ready=True,
-               confirm=False, recovery_engine=None, topology_obj=None, system_is_ready_timeout=None, track_boot_intervals=False, deny_reboot=False):
-        """
+    def reload(engine, device, command, confirm=False, reboot_params: Optional[RebootParams] = None):
+        reboot_params = reboot_params or RebootParams()
+        with allure.step(f'Run command "{command}" and wait for reboot to finish'):
+            list_commands = [command, 'y'] if confirm else [command]
+            output = device.reload_device(engine, list_commands)
+            logger.info(output)
 
-        :param topology_obj:
-        :param deny_reboot:
-        :param should_wait_till_system_ready: if True then we will wait till the system is ready, if false then we only will wait till we can re-connect to the system
-        :param engine:
-        :param device:
-        :param command:
-        :param find_prompt_tries:
-        :param find_prompt_delay:
-        :param confirm:
-        :param recovery_engine: recover with other engine (optional)
-        :return:
-        """
-        res_obj = ResultObj(True)
-        output = ""
-        if deny_reboot:
-            with allure.step('Run {} command and deny reload'.format(command)):
-                list_commands = [command, 'N']
-                output = device.reload_device(engine, list_commands)
-                logger.info(output)
-                time.sleep(5)
+            output_lower = output.lower()
+            if ('action succeeded' in output_lower) and ('reboot skipped' in output_lower):
+                return ResultObj(result=True, info=output)
 
-            if any(sub in output.lower() for sub in DutUtilsTool.invalid_output_list):
-                return ResultObj(result=False, info=output)
+            error_list = ['aborted', 'aborting', 'error: action failed', 'command not found']
+            for error in error_list:
+                if error in output_lower:
+                    return ResultObj(result=False, info=output)
 
-            if not should_wait_till_system_ready:
+            res_obj = DutUtilsTool.wait_on_system_reboot(engine, reboot_params, device,
+                                                         verify_final_result=False, wait_for_nvos=True)
+            if not reboot_params.should_wait_till_system_ready:
                 time.sleep(40)
                 return res_obj
 
-        else:
-            with allure.step('Reload the system with {} command, and wait till system is ready'.format(command)):
-                list_commands = [command, 'y'] if confirm else [command]
-                output = device.reload_device(engine, list_commands)
-                logger.info(output)
-
-                output_lower = output.lower()
-                if ('action succeeded' in output_lower) and ('reboot skipped' in output_lower):
-                    return ResultObj(result=True, info=output)
-
-                error_list = ['aborted', 'aborting', 'error: action failed', 'command not found']
-                for error in error_list:
-                    if error in output_lower:
-                        return ResultObj(result=False, info=output)
-
-                res_obj = DutUtilsTool.wait_on_system_reboot(engine, recovery_engine, None, should_wait_till_system_ready,
-                                                             device, False, True, topology_obj, system_is_ready_timeout, track_boot_intervals)
-                if not should_wait_till_system_ready:
-                    time.sleep(40)
-                    return res_obj
-
         res_obj.returned_value = output
         return res_obj
-
-    def reload_deny_reboot(engine, device, command, prompt='N'):
-        """
-        :param engine:
-        :param device:
-        :param command:
-        :param prompt: deny prompt character
-        :return:
-        """
-        with allure.step('Reload the system with {} command'.format(command)):
-            list_commands = [command, prompt]
-            output = device.reload_device(engine, list_commands)
-            logger.info(output)
-            time.sleep(5)
-
-        return ResultObj(result=True, returned_value=output)
 
     @staticmethod
     def check_ssh_for_authentication_error(engine, device):
@@ -129,39 +92,39 @@ class DutUtilsTool:
             return ResultObj(result=True, info="Reconnected After Running {}".format(command))
 
     @staticmethod
-    def wait_on_system_reboot(engine, recovery_engine=None, wait_time_before_reboot=120, wait_till_system_ready=True,
-                              device=None, verify_final_result=True, wait_for_nvos=True, topology_obj=None, system_is_ready_timeout=None, track_boot_intervals=False):
+    def wait_on_system_reboot(engine, reboot_params: Optional[RebootParams] = None, device=None, verify_final_result=True, wait_for_nvos=True):
         """
         Call this after an operation that should trigger a reboot. Will wait on the switch until it's functional.
-        :param wait_time_before_reboot: How many seconds to wait for the switch to go down. If this time elapsed and
-            the ports are still alive, we assume the switch did not start reboot at all and raise AssertionError.
+        The RebootParams object can be used to control some parameters. If omitted, default values are used.
         """
+        if not isinstance(reboot_params, RebootParams):
+            reboot_params = RebootParams()
         with allure.step("Waiting for switch shutdown after reload command"):
-            if wait_time_before_reboot is not None:
-                check_port_status_till_alive(False, engine.ip, engine.ssh_port,
-                                             tries=wait_time_before_reboot / 2)  # divide by 2 because 2 delay=2 seconds
-            else:
-                check_port_status_till_alive(False, engine.ip, engine.ssh_port)
-                if track_boot_intervals:
-                    InstallStepsTimer.add_timestamp(InstallSteps.SHUT_DOWN)
+            check_port_status_till_alive(
+                False, engine.ip, engine.ssh_port,
+                tries=reboot_params.wait_time_before_reboot / 2)  # divide by 2 because delay=2 seconds
+            if reboot_params.track_boot_intervals:
+                InstallStepsTimer.add_timestamp(InstallSteps.SHUT_DOWN)
             engine.disconnect()
-            if not wait_till_system_ready:
+            if not reboot_params.should_wait_till_system_ready:
                 return ResultObj(result=True, info="system is not ready yet")
 
         with allure.step("Waiting for system to reboot and become available"):
-            dut_engine: LinuxSshEngine = recovery_engine or engine
+            dut_engine: LinuxSshEngine = reboot_params.recovery_engine or engine
             with allure.step("Waiting for switch to be ready"):
                 with allure.step('wait for switch reachable/ping'):
                     check_port_status_till_alive(True, dut_engine.ip, dut_engine.ssh_port)
-                if wait_for_nvos and topology_obj:
+                if wait_for_nvos and reboot_params.topology_obj:
                     with allure.step('wait for System is ready in serial'):
-                        if system_is_ready_timeout:
-                            DutUtilsTool.wait_for_system_ready_in_serial(topology_obj, wait_timeout=system_is_ready_timeout)
+                        if reboot_params.system_is_ready_timeout:
+                            DutUtilsTool.wait_for_system_ready_in_serial(reboot_params.topology_obj,
+                                                                         wait_timeout=reboot_params.system_is_ready_timeout)
                         elif device:
-                            DutUtilsTool.wait_for_system_ready_in_serial(topology_obj, wait_timeout=device.timeout_system_is_ready)
+                            DutUtilsTool.wait_for_system_ready_in_serial(reboot_params.topology_obj,
+                                                                         wait_timeout=device.timeout_system_is_ready)
                         else:
-                            DutUtilsTool.wait_for_system_ready_in_serial(topology_obj)
-                        if track_boot_intervals:
+                            DutUtilsTool.wait_for_system_ready_in_serial(reboot_params.topology_obj)
+                        if reboot_params.track_boot_intervals:
                             InstallStepsTimer.add_timestamp(InstallSteps.SYSTEM_IS_READY_AFTER_UPGRADE)
                 if not wait_for_nvos:
                     with allure.step('wait for ssh'):
@@ -172,10 +135,10 @@ class DutUtilsTool:
                         result_obj = device.wait_for_os_to_become_functional(dut_engine)
                     else:
                         result_obj = DutUtilsTool.wait_for_nvos_to_become_functional(dut_engine)
+
                     if verify_final_result:
                         result_obj.verify_result()
-                    else:
-                        return result_obj
+                    return result_obj
 
     @staticmethod
     def wait_for_system_ready_in_serial(topology_obj, serial_engine: PexpectSerialEngine = None, wait_timeout=300):

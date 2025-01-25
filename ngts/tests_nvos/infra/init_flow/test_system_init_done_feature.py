@@ -2,7 +2,7 @@ from infra.tools.validations.traffic_validations.port_check.port_checker import 
 from ngts.nvos_constants.constants_nvos import *
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.nvos_tools.infra.SerialConsoleTool import SerialConsoleTool
-from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
+from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool, RebootParams
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.general.security.conftest import *
@@ -30,8 +30,9 @@ def test_system_ready_state_up(engines, devices, topology_obj):
 
     with allure.step('reboot the system'):
         reload_cmd_set = "nv action reboot system"
-        DutUtilsTool.reload(engine=engines.dut, device=devices.dut, command=reload_cmd_set,
-                            should_wait_till_system_ready=False, confirm=True, topology_obj=topology_obj).verify_result()
+        DutUtilsTool.reload(engine=engines.dut, device=devices.dut, command=reload_cmd_set, confirm=True,
+                            reboot_params=RebootParams(should_wait_till_system_ready=False, topology_obj=topology_obj)
+                            ).verify_result()
 
     # TODO - WA once "checkpoint # " prints are removed and the reboot is faster.
     devices.dut.sleep_after_system_reboot()
@@ -106,7 +107,9 @@ def test_system_ready_state_down(engines, devices, topology_obj):
 
     with allure.step('reboot the system'):
         reload_cmd_set = "nv action reboot system"
-        DutUtilsTool.reload(engine=engines.dut, device=devices.dut, command=reload_cmd_set, should_wait_till_system_ready=False, confirm=True).verify_result()
+        DutUtilsTool.reload(engine=engines.dut, device=devices.dut, command=reload_cmd_set, confirm=True,
+                            reboot_params=RebootParams(should_wait_till_system_ready=False)
+                            ).verify_result()
 
     # TODO - WA once "checkpoint # " prints are removed and the reboot is faster.
     devices.dut.sleep_after_system_reboot()

@@ -9,7 +9,7 @@ from retry.api import retry_call
 
 from ngts.nvos_constants.constants_nvos import ApiType, HealthConsts, NvosConst, ActionConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
-from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
+from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool, RebootParams
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
@@ -512,7 +512,8 @@ def _assert_syncd_restart(expect_restart=True):
 
 def _assert_reboot():
     with allure.step(f"{_assert_reboot.__name__}: Verify switch is rebooted"):
-        DutUtilsTool.wait_on_system_reboot(TestToolkit.engines.dut, wait_time_before_reboot=20)
+        DutUtilsTool.wait_on_system_reboot(TestToolkit.engines.dut,
+                                           reboot_params=RebootParams(wait_time_before_reboot=20))
         _reset_base_prompt(TestToolkit.engines.dut)
         _wait(0, 15)
 

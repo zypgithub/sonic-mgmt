@@ -2,7 +2,7 @@ import logging
 
 from ngts.nvos_constants.constants_nvos import OpenApiReqType, SystemConsts
 from ngts.nvos_constants.constants_nvos import OutputFormat
-from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
+from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool, RebootParams
 from .openapi_command_builder import OpenApiCommandHelper
 
 logger = logging.getLogger()
@@ -65,6 +65,10 @@ class OpenApiBaseCli:
         elif ((expect_reboot or any(msg in result for msg in SystemConsts.REBOOT_RESPONSE_MESSAGES)) and
                 "abort" not in result):
 
-            DutUtilsTool.wait_on_system_reboot(engine, recovery_engine, topology_obj=topology_obj, system_is_ready_timeout=system_is_ready_timeout, track_boot_intervals=track_boot_intervals)
+            DutUtilsTool.wait_on_system_reboot(
+                engine,
+                reboot_params=RebootParams(recovery_engine=recovery_engine, topology_obj=topology_obj,
+                                           system_is_ready_timeout=system_is_ready_timeout,
+                                           track_boot_intervals=track_boot_intervals))
 
         return result

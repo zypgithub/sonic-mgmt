@@ -1,7 +1,7 @@
 import logging
 
 from ngts.cli_wrappers.nvue.nvue_base_clis import NvueBaseCli, check_output
-from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
+from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool, RebootParams
 
 logger = logging.getLogger()
 
@@ -122,9 +122,12 @@ class NvueSystemCli(NvueBaseCli):
         cmd = "nv action reboot {path} {op_param}".format(path=path, op_param=op_param)
         cmd = " ".join(cmd.split())
         logging.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
-        return DutUtilsTool.reload(engine=engine, device=device, command=cmd,
-                                   should_wait_till_system_ready=should_wait_till_system_ready,
-                                   confirm=True, recovery_engine=recovery_engine, topology_obj=topology_obj, system_is_ready_timeout=system_is_ready_timeout).verify_result()
+        return DutUtilsTool.reload(
+            engine=engine, device=device, command=cmd, confirm=True,
+            reboot_params=RebootParams(should_wait_till_system_ready=should_wait_till_system_ready,
+                                       recovery_engine=recovery_engine, topology_obj=topology_obj,
+                                       system_is_ready_timeout=system_is_ready_timeout)
+        ).verify_result()
 
     @staticmethod
     @check_output
@@ -305,7 +308,9 @@ class NvueSystemCli(NvueBaseCli):
         cmd = " ".join(cmd.split())
         logging.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
         return DutUtilsTool.reload(engine=engine, device=device, command=cmd, confirm=True,
-                                   topology_obj=topology_obj, system_is_ready_timeout=system_is_ready_timeout).verify_result()
+                                   reboot_params=RebootParams(topology_obj=topology_obj,
+                                                              system_is_ready_timeout=system_is_ready_timeout)
+                                   ).verify_result()
 
     @staticmethod
     @check_output
