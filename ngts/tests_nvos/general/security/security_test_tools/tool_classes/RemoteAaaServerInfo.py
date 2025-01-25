@@ -90,11 +90,11 @@ class TacacsServerInfo(RemoteAaaServerInfo):
 
     def make_unreachable(self, engines, apply=False, dut_engine=None):
         System().aaa.tacacs.server.server_id[self.hostname].set(AaaConsts.PORT, AaaConsts.AAA_SERVER_BAD_PORT, apply=apply,
-                                                                dut_engine=dut_engine)
+                                                                dut_engine=dut_engine).ignore_result()
 
     def make_reachable(self, engines, apply=False, dut_engine=None):
         System().aaa.tacacs.server.server_id[self.hostname].set(AaaConsts.PORT, self.port, apply=apply,
-                                                                dut_engine=dut_engine)
+                                                                dut_engine=dut_engine).ignore_result()
 
     def update_auth_mode(self, auth_mode: str, item, dut_engine=None, set_on_dut: bool = True):
         logging.info(f'Update server info of "{self.hostname} - {self.port}" users to use {auth_mode} passwords')
@@ -124,7 +124,7 @@ class LdapServerInfo(RemoteAaaServerInfo):
     def configure(self, engines, set_explicit_priority=False, apply=False, dut_engine=None):
         ldap_obj: Ldap = System().aaa.ldap
         server_resource_obj = ldap_obj.server.server_id[self.hostname]
-        server_resource_obj.set(dut_engine=dut_engine)
+        server_resource_obj.set(dut_engine=dut_engine).verify_result()
         conf_to_set = {
             LdapConsts.SECRET: self.secret,
             LdapConsts.PORT: self.port,
@@ -139,15 +139,15 @@ class LdapServerInfo(RemoteAaaServerInfo):
 
     def make_unreachable(self, engines, apply=False, dut_engine=None):
         ldap = System().aaa.ldap
-        ldap.server.server_id[self.hostname].unset(apply=False, dut_engine=dut_engine)
+        ldap.server.server_id[self.hostname].unset(apply=False, dut_engine=dut_engine).verify_result()
         ldap.server.server_id['unreachable-' + self.hostname].set(AaaConsts.PRIORITY, self.priority,
-                                                                  apply=apply, dut_engine=dut_engine)
+                                                                  apply=apply, dut_engine=dut_engine).ignore_result()
 
     def make_reachable(self, engines, apply=False, dut_engine=None):
         ldap = System().aaa.ldap
-        ldap.server.server_id['unreachable-' + self.hostname].unset(apply=False, dut_engine=dut_engine)
+        ldap.server.server_id['unreachable-' + self.hostname].unset(apply=False, dut_engine=dut_engine).verify_result()
         ldap.server.server_id[self.hostname].set(AaaConsts.PRIORITY, self.priority,
-                                                 apply=apply, dut_engine=dut_engine)
+                                                 apply=apply, dut_engine=dut_engine).ignore_result()
 
 
 class RadiusServerInfo(RemoteAaaServerInfo):
@@ -171,11 +171,11 @@ class RadiusServerInfo(RemoteAaaServerInfo):
 
     def make_unreachable(self, engines, apply=False, dut_engine=None):
         System().aaa.radius.server.server_id[self.hostname].set(AaaConsts.PORT, AaaConsts.AAA_SERVER_BAD_PORT,
-                                                                apply=apply, dut_engine=dut_engine)
+                                                                apply=apply, dut_engine=dut_engine).ignore_result()
 
     def make_reachable(self, engines, apply=False, dut_engine=None):
         System().aaa.radius.server.server_id[self.hostname].set(AaaConsts.PORT, self.port, apply=apply,
-                                                                dut_engine=dut_engine)
+                                                                dut_engine=dut_engine).ignore_result()
 
     def update_auth_type(self, auth_type: str, item, dut_engine=None, set_on_dut: bool = True):
         logging.info(f'Update server info of "{self.hostname} - {self.port}" users to use {auth_type} passwords')
@@ -186,4 +186,4 @@ class RadiusServerInfo(RemoteAaaServerInfo):
             engine = dut_engine or (
                 item.active_remote_admin_engine if hasattr(item, 'active_remote_admin_engine') else None)
             System().aaa.radius.server.server_id[self.hostname].set(AaaConsts.AUTH_TYPE, auth_type, apply=True,
-                                                                    dut_engine=engine)
+                                                                    dut_engine=engine).ignore_result()

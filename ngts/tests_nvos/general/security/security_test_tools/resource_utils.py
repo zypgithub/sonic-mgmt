@@ -1,8 +1,9 @@
+import logging
+
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.tools.test_utils import allure_utils as allure
-import logging
 
 
 def configure_resource(engines, resource_obj: BaseComponent, conf, apply=False, verify_apply=True, dut_engine=None):
@@ -50,3 +51,5 @@ def configure_resource(engines, resource_obj: BaseComponent, conf, apply=False, 
                                                           dut_engine, True)
                 if verify_apply:
                     res.verify_result()
+                else:
+                    res.ignore_result()

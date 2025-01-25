@@ -244,7 +244,7 @@ class PwhTools:
         @param pw: password
         @return: True - if update_credentials succeeds; False - otherwise
         """
-        res_obj = ConnectionTool.create_ssh_conn(dut_engine_obj.ip, usr, pw)
+        res_obj = ConnectionTool.create_ssh_conn(dut_engine_obj.ip, usr, pw).ignore_result()
         connection_success = res_obj.result
         if connection_success:
             res_obj.returned_value.disconnect()

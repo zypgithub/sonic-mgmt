@@ -3,14 +3,13 @@ import time
 import allure
 import pytest
 
-from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
+from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.general.security.security_test_tools.constants import AddressingType
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.AuthVerifier import *
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.SecuritySshTool import SecuritySshTool
 from ngts.tests_nvos.general.security.test_ssh_pka.helpers import _generate_new_key, keys_path, public_key_length
-from ngts.tests_nvos.constants import MINUTE
 
 
 @pytest.mark.security
@@ -204,11 +203,11 @@ def test_ssh_pka_invalid_values(engines, generate_new_admin_keys):
     try:
         with allure.step(f"testing bad flows"):
             with allure.independent_step("Bad Flow: try to set only key id and key type"):
-                set_result_obj = admin_key_obj.set(apply=True)
+                set_result_obj = admin_key_obj.set(apply=True).ignore_result()
                 assert err_msg in set_result_obj.info, "test should fail because we can't configure new key with out public key"
                 assert not set_result_obj.result, "result should be false"
 
-                set_result_obj = admin_key_obj.set(op_param_name='type', op_param_value=admin_key_type, apply=True)
+                set_result_obj = admin_key_obj.set(op_param_name='type', op_param_value=admin_key_type, apply=True).ignore_result()
                 assert err_msg in set_result_obj.info, "test should fail because we can't configure new key with out public key"
                 assert not set_result_obj.result, "result should be false"
 
