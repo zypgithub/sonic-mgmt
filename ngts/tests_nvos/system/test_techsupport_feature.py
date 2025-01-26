@@ -109,7 +109,7 @@ def test_techsupport_expected_files(engines, devices, test_name):
 
                 if output[SystemConsts.STATE] == 'disabled':
                     cluster.set(op_param_name="state", op_param_value='enabled', apply=True)
-                    ClusterTools.wait_for_apps_to_be_in_wanted_state()
+                    ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
 
         with allure.step('Run nv action generate system tech-support and validate dump files'):
             tech_support_folder, duration = system.techsupport.action_generate(test_name=test_name)
@@ -131,6 +131,7 @@ def test_techsupport_expected_files(engines, devices, test_name):
     finally:
         if devices.dut.has_nmx:
             Cluster().unset(apply=True)
+            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
             ClusterTools.wait_for_apps_to_be_in_wanted_state()
         system.techsupport.cleanup(engines.dut)
         if system.techsupport.file_name:

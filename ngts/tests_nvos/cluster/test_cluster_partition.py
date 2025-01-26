@@ -106,7 +106,7 @@ def test_cluster_partition(engines, devices, test_api, has_loopbox, setup_name, 
         assert initial_partition_output == output, f"Initial partition was {initial_partition_output}, but current partition is {output}"
         next(interfaces_wa)
         cluster.unset(apply=True)
-        ClusterTools.wait_for_apps_to_be_in_wanted_state()
+        ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
 
 
 @disabled_access_ports
@@ -232,7 +232,7 @@ def test_cluster_partition_bad_flow(engines, devices, test_api, has_loopbox, sta
         assert initial_partition_output == output, f"Initial partition was {initial_partition_output}, but current partition is {output}"
         next(interfaces_wa)
         cluster.unset(apply=True)
-        ClusterTools.wait_for_apps_to_be_in_wanted_state()
+        ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
 
 
 def choose_new_partition_id(used_partition_ids):

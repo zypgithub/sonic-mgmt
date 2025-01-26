@@ -140,8 +140,9 @@ def uninstall_install_and_verify_package(fae, app, filename, expected_version, c
 def verify_start_stop(cluster, app):
     with allure.step(f'try to start stop {app}'):
         cluster.apps.app_name[app].action_start_cluster_app().verify_result()
-        ClusterTools.wait_for_apps_to_be_in_wanted_state()
+        ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
         cluster.apps.app_name[app].action_stop_cluster_app().verify_result()
+        ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
 
 
 def delete_package_file(fae, filename):

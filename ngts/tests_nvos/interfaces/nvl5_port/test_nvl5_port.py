@@ -47,9 +47,6 @@ def test_show_nvl5_interface_commands(engines, devices, test_api, has_loopbox):
     dut_device = devices.dut
     platform = Platform()
     present_transceivers = platform.transceiver.get_list_of_connected_transceivers()
-    # cluster = Cluster()
-    # ClusterTools.start_cluster(cluster)
-    # ClusterTools.wait_for_apps_to_be_in_wanted_state()
     with allure_step("Select nvl5 port"):
         port_name = RandomizationTool.select_random_value(devices.dut.nvl5_access_ports_list + devices.dut.nvl5_trunk_ports_list).get_returned_value()
         selected_port = Port(port_name)
@@ -130,17 +127,6 @@ def test_show_nvl5_interface_commands(engines, devices, test_api, has_loopbox):
     with allure_step("Clear counters and validate"):
         selected_port.interface.action_clear_counter_for_all_interfaces(engines.dut).verify_result()
 
-        # with allure_step("Check counters after clear counters, should be 0"):
-        #     output_dictionary = OutputParsingTool.parse_show_interface_stats_output_to_dictionary(
-        #         selected_port.interface.link.stats.show()).get_returned_value()
-        #     assert (output_dictionary[IbInterfaceConsts.LINK_STATS_IN_PKTS] ==
-        #             output_dictionary[IbInterfaceConsts.LINK_STATS_OUT_PKTS]) == 0
-        # [TBD] will work only on real system,  when system arrived, bug 3730650
-
-    # finally:
-        # cluster.unset(apply=True)
-        # ClusterTools.wait_for_apps_to_be_in_wanted_state()
-
 
 @pytest.mark.interface
 @pytest.mark.nvl_ci
@@ -159,9 +145,6 @@ def test_toggle_interface_state(test_name, devices, has_loopbox):
     5. Wait until the port is up
     6. Verify the configuration applied by running “show” command
     """
-    # cluster = Cluster()
-    # ClusterTools.start_cluster(cluster)
-    # ClusterTools.wait_for_apps_to_be_in_wanted_state()
     port_init_state_restored = True
     toggleable_interface = ['fnm', 'sw', 'acp'] if has_loopbox else ['sw']
     platform = Platform()
@@ -199,8 +182,6 @@ def test_toggle_interface_state(test_name, devices, has_loopbox):
     finally:
         if not port_init_state_restored:
             toggle_port_state(selected_port, NvosConsts.LINK_STATE_UP, test_name)
-        # cluster.unset(apply=True)
-        # ClusterTools.wait_for_apps_to_be_in_wanted_state()
 
 
 @pytest.mark.interface

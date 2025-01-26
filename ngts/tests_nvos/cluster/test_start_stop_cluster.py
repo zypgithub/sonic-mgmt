@@ -94,7 +94,6 @@ def test_cluster_app_start_stop(engines, devices, test_api, has_loopbox, standal
                 ValidationTool.validate_output_of_show(output[app], devices.dut.cluster_app_installed[app]).verify_result()
 
         with allure.step("Running 'nv show cluster apps running' command and verifying output"):
-            ClusterTools.wait_for_apps_to_be_in_wanted_state()
             output = OutputParsingTool.parse_show_output_to_dict(
                 cluster.apps.running.show(output_format=OutputFormat.json),
                 output_format=OutputFormat.json).get_returned_value()

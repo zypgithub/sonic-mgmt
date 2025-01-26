@@ -70,5 +70,5 @@ def test_reboot_command(engines, devices, test_name, test_api, has_loopbox, stan
             with allure.step("Running sdn factory reset"):
                 sdn.factory_default.action_reset(param='force')
         cluster.unset(apply=True)
-        ClusterTools.wait_for_apps_to_be_in_wanted_state()
+        ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
         TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)

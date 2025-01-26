@@ -224,7 +224,7 @@ def test_upgrade_with_nmx_enabled(test_api, devices, base_version,
             cluster.apps.app_name[app].loglevel.action_restore_cluster()
 
         cluster.unset(apply=True)
-        ClusterTools.wait_for_apps_to_be_in_wanted_state()
+        ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
 
 
 def install_image_and_verify(orig_engine, image_name, partition_id, original_images, system, release_name, device,

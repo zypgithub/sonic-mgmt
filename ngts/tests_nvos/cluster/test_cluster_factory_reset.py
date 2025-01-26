@@ -56,7 +56,7 @@ def test_cluster_default_factory_reset(engines, devices, test_api, has_loopbox, 
 
         with allure.step("Run reset factory without params"):
             execute_reset_factory(engines, system, devices.dut.reset_factory, "", current_time)
-            ClusterTools.wait_for_apps_to_be_in_wanted_state()
+            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
 
         with allure.step("Verify cluster in correct state"):
             verify_cluster_state_resetted(cluster)
@@ -93,7 +93,7 @@ def test_cluster_default_factory_reset(engines, devices, test_api, has_loopbox, 
             next(interfaces_wa)
         engines.sonic_mgmt.run_cmd(f"sudo rm -rf {ClusterConsts.INITIAL_CONFIGURATIONS_PATH + '/*'}")
         cluster.unset(apply=True)
-        ClusterTools.wait_for_apps_to_be_in_wanted_state()
+        ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
 
         with allure.step("Verify the setup is functional"):
             verify_the_setup_is_functional(system, engines, dut=devices.dut)
@@ -135,7 +135,7 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name,
 
         with allure.step("Run reset factory keep basic param"):
             execute_reset_factory(engines, system, devices.dut.reset_factory, "keep basic", current_time)
-            ClusterTools.wait_for_apps_to_be_in_wanted_state()
+            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
 
         with allure.step("Verify cluster in correct state"):
             verify_cluster_state_resetted(cluster)
@@ -211,7 +211,7 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name, 
 
         with allure.step("Run reset factory with keep only-files param"):
             execute_reset_factory(engines, system, devices.dut.reset_factory, "keep only-files", current_time)
-            ClusterTools.wait_for_apps_to_be_in_wanted_state()
+            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
 
         with allure.step("Verify cluster in correct state"):
             verify_cluster_state_resetted(cluster)
@@ -289,7 +289,7 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
 
         with allure.step("Run reset factory with keep all-config param"):
             execute_reset_factory(engines, system, devices.dut.reset_factory, "keep all-config", current_time)
-            ClusterTools.wait_for_apps_to_be_in_wanted_state()
+            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
 
         with allure.step("Verify cluster in correct state"):
             cluster_state = ClusterTools.check_cluster_state(cluster, output_format)

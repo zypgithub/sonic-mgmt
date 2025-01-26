@@ -48,7 +48,10 @@ def test_cluster_state(engines, devices, test_api, has_loopbox, standalone_syste
         for state in [NvosConst.ENABLED, NvosConst.DISABLED]:
             with allure.step(f"Running 'nv set cluster state {state}' and validating state changed"):
                 cluster.set(op_param_name="state", op_param_value=state, apply=True).verify_result()
-                ClusterTools.wait_for_apps_to_be_in_wanted_state()
+                if state == NvosConst.DISABLED:
+                    ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
+                else:
+                    ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
                 output = OutputParsingTool.parse_show_output_to_dict(
                     cluster.show(output_format=output_format),
                     output_format=output_format).get_returned_value()
@@ -73,7 +76,7 @@ def test_cluster_state(engines, devices, test_api, has_loopbox, standalone_syste
 
         with allure.step("Running 'nv set cluster state enabled' and validating state changed"):
             cluster.set(op_param_name="state", op_param_value=NvosConst.ENABLED, apply=True)
-            ClusterTools.wait_for_apps_to_be_in_wanted_state()
+            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
             output = OutputParsingTool.parse_show_output_to_dict(
                 cluster.show(output_format=output_format),
                 output_format=output_format).get_returned_value()
@@ -88,7 +91,7 @@ def test_cluster_state(engines, devices, test_api, has_loopbox, standalone_syste
 
             with allure.step("Running 'nv unset cluster' and validate state is back to disabled"):
                 cluster.unset(apply=True).verify_result()
-                ClusterTools.wait_for_apps_to_be_in_wanted_state()
+                ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
                 output = OutputParsingTool.parse_show_output_to_dict(
                     cluster.show(output_format=output_format),
                     output_format=output_format).get_returned_value()

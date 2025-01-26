@@ -5,6 +5,7 @@ import re
 import time
 from collections import defaultdict
 from functools import wraps
+from retry import retry
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_constants.constants_nvos import IbConsts, OutputFormat, SystemConsts
@@ -51,13 +52,13 @@ class ClusterTools:
                         assert app_status == 'ok', f"App {app} status is {app_status} instead of 'ok"
                 with allure.step(f"Stop app {app} and validate its down"):
                     cluster.apps.app_name[app].action_stop_cluster_app()
-                    ClusterTools.wait_for_apps_to_be_in_wanted_state()
+                    ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
                     # TBD -- once "running" is working, use it to verify app is not running
                     ClusterTools.verify_app_is_down(engines, app)
 
                 with allure.step(f"Start app again {app} and validate its up"):
                     output = cluster.apps.app_name[app].action_start_cluster_app()
-                    ClusterTools.wait_for_apps_to_be_in_wanted_state()
+                    ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
                     ClusterTools.reboot_compute_nodes_gpus(setup_name)
                 ClusterTools.verify_app_is_up(engines, app)
                 if app == ClusterConsts.NMX_CONTROLLER:
@@ -85,7 +86,7 @@ class ClusterTools:
             if output[SystemConsts.STATE] == 'disabled':
                 cluster.set(op_param_name="state", op_param_value='enabled', apply=True)
 
-            ClusterTools.wait_for_apps_to_be_in_wanted_state()
+            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
             ClusterTools.reboot_compute_nodes_gpus(setup_name)
             output = OutputParsingTool.parse_show_output_to_dict(
                 cluster.show(output_format=output_format),
@@ -144,7 +145,7 @@ class ClusterTools:
             if output[SystemConsts.STATE] == 'enabled':
                 cluster.set(op_param_name="state", op_param_value='disabled', apply=True)
 
-            ClusterTools.wait_for_apps_to_be_in_wanted_state()
+            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
             output = OutputParsingTool.parse_show_output_to_dict(
                 cluster.show(output_format=output_format),
                 output_format=output_format).get_returned_value()
@@ -291,7 +292,7 @@ class ClusterTools:
     def start_app(cluster, app, has_loopbox, standalone_system):
         with allure.step(f"Start app {app}"):
             cluster.apps.app_name[app].action_start_cluster_app()
-            ClusterTools.wait_for_apps_to_be_in_wanted_state()
+            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
             if app == ClusterConsts.NMX_CONTROLLER and is_bug_active(4207869) and standalone_system:
                 pass
             else:
@@ -306,7 +307,11 @@ class ClusterTools:
     def stop_app(cluster, app):
         with allure.step(f"Stop app {app}"):
             cluster.apps.app_name[app].action_stop_cluster_app()
-            ClusterTools.wait_for_apps_to_be_in_wanted_state()
+            if app == ClusterConsts.NMX_CONTROLLER:
+                ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='', nmx_c_expected_state='down')
+            else:
+                logger.info("Stopping nmx-telemetry app, sleeping for 10 seconds till its status is updated")
+                time.sleep(10)
 
     @staticmethod
     def get_current_config_files_paths(sdn, app, files_types):
@@ -462,9 +467,25 @@ class ClusterTools:
         TestToolkit.tested_api = test_api
 
     @staticmethod
-    def wait_for_apps_to_be_in_wanted_state():
-        logger.info(f'Sleeping for {ClusterConsts.WAIT_FOR_APPS_RUNNING} seconds until apps are running')
-        time.sleep(ClusterConsts.WAIT_FOR_APPS_RUNNING)
+    @retry(tries=15, delay=5)
+    def wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='', nmx_c_expected_state=''):
+        output = OutputParsingTool.parse_show_output_to_dict(
+            cluster.show(output_format=OutputFormat.json),
+            output_format=OutputFormat.json).get_returned_value()
+        with allure.step(
+                f"Polling until cluster state is {cluster_expected_state} "
+                f"and nmx-c state is {nmx_c_expected_state}"
+        ):
+            if (
+                    (cluster_expected_state and output[SystemConsts.STATE] != cluster_expected_state) or
+                    (nmx_c_expected_state and
+                        output[ClusterConsts.NMXC_CONN] != nmx_c_expected_state)
+            ):
+                logger.info("Cluster state not as expected yet. Retrying...")
+                raise ValueError("Cluster or nmx-c state not in wanted state")
+
+            logger.info("Cluster is now in the wanted state. Sleeping for 2 seconds.")
+            time.sleep(2)
 
     @staticmethod
     def verify_sdn_config_files_deleted(sdn):
@@ -625,7 +646,7 @@ def disabled_access_ports(func):
                 interface_wa_called = True
                 with allure.step("Unset Cluster before test starts to run, to make sure we are at the correct init state"):
                     cluster.unset(apply=True)
-                    ClusterTools.wait_for_apps_to_be_in_wanted_state()
+                    ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
                 # Execute the test function
             return func(*args, **kwargs)
         finally:
@@ -647,7 +668,7 @@ def disabled_access_ports(func):
                 with allure.step("Reset cluster state"):
                     if ClusterTools.check_cluster_state(cluster, OutputFormat.json) == 'enabled':
                         cluster.unset(apply=True)
-                        ClusterTools.wait_for_apps_to_be_in_wanted_state()
+                        ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
     return wrapper
 
 
