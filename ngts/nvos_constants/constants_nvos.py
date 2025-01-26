@@ -1580,6 +1580,8 @@ class LogComponentsConsts:
     LEVEL = 'level'
     NOTICE = 'notice'
     NVUE = 'nvue'
+    NVUE_LOG = 'nvued.log'
+    NVUE_CLI_LOG = 'nv-cli.log'
     FILE = 'file'
     SYSLOG = 'syslog'
 

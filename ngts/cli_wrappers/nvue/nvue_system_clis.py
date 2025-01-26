@@ -237,22 +237,25 @@ class NvueSystemCli(NvueBaseCli):
 
     @staticmethod
     @check_output
-    def show_log(engine, log_type='', param='', exit_cmd=''):
-        cmd = "nv show system {type}log file {param}".format(type=log_type, param=param)
+    def show_log(engine, resource_path, param='', exit_cmd=''):
+        path = resource_path.replace('/', ' ')
+        cmd = f"nv show {path} {param}"
         logging.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
         return engine.run_cmd_after_cmd([cmd, exit_cmd])
 
     @staticmethod
     @check_output
-    def action_rotate_logs(engine):
-        rotate_log_cmd = 'nv action rotate system log'
+    def action_rotate_logs(engine, resource_path):
+        path = resource_path.replace('/', ' ')
+        rotate_log_cmd = f"nv action rotate {path}"
         logging.info("Running '{cmd}' on dut using NVUE".format(cmd=rotate_log_cmd))
         return engine.run_cmd(rotate_log_cmd)
 
     @staticmethod
     @check_output
-    def action_rotate_debug_logs(engine):
-        rotate_log_cmd = 'nv action rotate system debug-log'
+    def action_rotate_debug_logs(engine, resource_path):
+        path = resource_path.replace('/', ' ')
+        rotate_log_cmd = f"nv action rotate {path}"
         logging.info("Running '{cmd}' on dut using NVUE".format(cmd=rotate_log_cmd))
         return engine.run_cmd(rotate_log_cmd)
 

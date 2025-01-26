@@ -208,14 +208,14 @@ class OpenApiSystemCli(OpenApiBaseCli):
         return result
 
     @staticmethod
-    def action_rotate_logs(engine):
+    def action_rotate_logs(engine, resource_path):
         logging.info("Running action: rotate system log on dut using OpenApi")
         params = \
             {
                 "state": "start",
             }
         return OpenApiCommandHelper.execute_action(ActionType.ROTATE, engine.engine.username, engine.engine.password,
-                                                   engine.ip, "/system/log", params)
+                                                   engine.ip, resource_path, params)
 
     @staticmethod
     def action_reboot(engine, device, resource_path, op_param="", should_wait_till_system_ready=True,

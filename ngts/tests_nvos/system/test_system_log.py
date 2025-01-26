@@ -527,8 +527,8 @@ def test_upload_log_files(engines, topology_obj):
     with allure.step('Test upload log files'):
         with allure.independent_step(f"Test upload log files on {LogComponentsConsts.SYSLOG}"):
             _upload_log_files(topology_obj, system.log)
-        component = get_random_component(system)
-        with allure.independent_step(f"Test upload log files on {component.component_name}"):
+        component = system.log.component.component_id[LogComponentsConsts.NVUE]  # for now only nvue component has logs
+        with allure.independent_step(f"Test upload log files on {component.get_resource_basename()}"):
             _upload_log_files(topology_obj, component)
 
 
@@ -572,9 +572,9 @@ def test_delete_log_files(engines, topology_obj):
     with allure.step('Test delete log files'):
         with allure.independent_step(f"Test delete log files on {LogComponentsConsts.SYSLOG}"):
             _delete_log_files(engines, system.log, file_name=LogComponentsConsts.SYSLOG)
-        component = get_random_component(system)
-        with allure.independent_step(f"Test delete log files on {component.component_name}"):
-            _delete_log_files(engines, component, file_name=component.component_name)
+        component = system.log.component.component_id[LogComponentsConsts.NVUE]  # for now only nvue component has logs
+        with allure.independent_step(f"Test delete log files on {component.get_resource_basename()}"):
+            _delete_log_files(engines, component, file_name=LogComponentsConsts.NVUE_LOG)
 
 
 @pytest.mark.system
@@ -607,7 +607,7 @@ def _delete_log_files(engines, system_log_obj, file_name):
 
         with allure.step("Get current size of " + file_name):
             output = engines.dut.run_cmd("stat /var/log/{} | grep Size".format(file_name))
-            assert output, "Can't find syslog file"
+            assert output, f"Can't find {file_name} file"
             prev_log_size = output.split()[1]
 
         logs_names_to_delete = list(log_files_dict.keys())
@@ -631,26 +631,26 @@ def _delete_log_files(engines, system_log_obj, file_name):
                         if left_files:
                             ValidationTool.verify_field_exist_in_json_output(output_dictionary,
                                                                              left_files).verify_result()
+        if file_name == LogComponentsConsts.SYSLOG:
+            with allure.step("Verify syslog file was deleted and a new one was created"):
+                with allure.step("Save log analyzer marker before deleting the log file"):
+                    marker = TestToolkit.get_loganalyzer_marker(engines.dut)
 
-        with allure.step("Verify syslog file was deleted and a new one was created"):
-            with allure.step("Save log analyzer marker before deleting the log file"):
-                marker = TestToolkit.get_loganalyzer_marker(engines.dut)
+                with allure.step(f"Delete {file_name} log file"):
+                    system_log_obj.file.file_id[file_name].action_delete()
+                    output = engines.dut.run_cmd("stat /var/log/{} | grep Size".format(file_name))
+                    assert output, f"Can't find {file_name} file"
+                    curr_log_size = output.split()[1]
+                    assert int(curr_log_size) < int(prev_log_size), f"{file_name} file probably was not deleted"
 
-            with allure.step("Delete log file"):
-                system_log_obj.file.file_id[log_file].action_delete()
-                output = engines.dut.run_cmd("stat /var/log/{} | grep Size".format(file_name))
-                assert output, "Can't find syslog file"
-                curr_log_size = output.split()[1]
-                assert int(curr_log_size) < int(prev_log_size), "Syslog file probably was not deleted"
-
-            with allure.step("Add log analyzer marker for the new log file"):
-                TestToolkit.add_loganalyzer_marker(engines.dut, marker)
+                with allure.step("Add log analyzer marker for the new log file"):
+                    TestToolkit.add_loganalyzer_marker(engines.dut, marker)
 
     with allure.step("Run show command to view system image"):
         system.image.show()
 
     with allure.step("Run nv show system log command follow to view system logs"):
-        system.log.show_log(exit_cmd='q', expected_str='system/image')
+        system_log_obj.file.show_log(exit_cmd='q', expected_str='system/image')
 
 
 @pytest.mark.system

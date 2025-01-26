@@ -11,21 +11,33 @@ from ngts.nvos_tools.infra.DefaultDict import DefaultDict
 logger = logging.getLogger()
 
 
-class Log(BaseComponent):
-    def __init__(self, parent_obj=None):
-        BaseComponent.__init__(self, parent=parent_obj, path='/log')
+class BaseLog(BaseComponent):
+    def __init__(self, parent_obj=None, path=''):
+        super().__init__(parent=parent_obj, path=path)
         self.file = File(self)
-        self.component = Component(self)
         self.rotation = BaseComponent(self, path='/rotation')
+
+    def rotate_logs(self):
+        """
+        Shared rotate_logs implementation for log rotation.
+        """
+        with allure.step('Rotate logs'):
+            resource_path = self.get_resource_path()
+            return SendCommandTool.execute_command(
+                self.api_obj[TestToolkit.tested_api].action_rotate_logs,
+                TestToolkit.engines.dut,
+                resource_path
+            ).get_returned_value()
+
+
+class Log(BaseLog):
+    def __init__(self, parent_obj=None):
+        super().__init__(parent_obj=parent_obj, path='/log')
+        self.component = Component(self)
 
     def write_to_log(self):
         with allure.step('Write content to logs'):
             return SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].action_write_to_logs,
-                                                   TestToolkit.engines.dut).get_returned_value()
-
-    def rotate_logs(self):
-        with allure.step('Rotate logs'):
-            return SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].action_rotate_logs,
                                                    TestToolkit.engines.dut).get_returned_value()
 
     def verify_expected_logs(self, logs_to_find, engine=None, only_latest_log=False):
@@ -66,11 +78,11 @@ class File(BaseComponent):
         self.file_id: Dict[str, FileId] = DefaultDict(
             lambda file_id: FileId(parent=self, file_id=file_id))
 
-    def show_log(self, log_type='', param='', exit_cmd='', expected_str=''):
-        with allure.step('Execute nv show system {type}log {param} and exit cmd {exit_cmd}'.
-                         format(type=log_type, param=param, exit_cmd=exit_cmd)):
+    def show_log(self, param='', exit_cmd='', expected_str=''):
+        with allure.step('Show logs'):
+            resource_path = self.get_resource_path()
             return SendCommandTool.execute_command_expected_str(self.api_obj[TestToolkit.tested_api].show_log,
-                                                                expected_str, TestToolkit.engines.dut, log_type,
+                                                                expected_str, TestToolkit.engines.dut, resource_path,
                                                                 param, exit_cmd).get_returned_value()
 
 
@@ -104,10 +116,7 @@ class Component(BaseComponent):
             lambda component_id: ComponentId(parent=self, component_id=component_id))
 
 
-class ComponentId(BaseComponent):
+class ComponentId(BaseLog):
     def __init__(self, parent, component_id):
-        super().__init__(parent=parent, path=f'/{component_id}')
-        self.component_name = component_id
-        self.file = File(self)
-        self.rotation = BaseComponent(self, path='/rotation')
+        super().__init__(parent_obj=parent, path=f'/{component_id}')
         self.level = BaseComponent(self, path='/level')
