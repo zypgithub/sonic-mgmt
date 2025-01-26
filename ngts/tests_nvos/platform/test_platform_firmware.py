@@ -29,13 +29,7 @@ def test_show_platform_firmware(engines, devices, test_api, output_format):
         all_output = OutputParsingTool.parse_show_output_to_dict(
             platform.firmware.show(output_format=output_format),
             output_format=output_format, field_name_dict=PlatformConsts.FW_FIELD_NAME_DICT).get_returned_value()
-        result = ValidationTool.validate_set_equal(all_output.keys(), firmware_items)
-        if not isinstance(devices.dut, JulietSwitch) and is_bug_active(4262203):
-            result.ignore_result()
-            expected_info = "Missing fields: set()\nUnexpected fields: {'EROT'}"
-            assert result.info == expected_info, result._get_fail_message()
-        else:
-            result.verify_result()
+        ValidationTool.validate_set_equal(all_output.keys(), firmware_items).verify_result()
 
     with allure.step("Test specific firmware components"):
         errors = {}
