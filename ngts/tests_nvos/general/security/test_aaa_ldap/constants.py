@@ -337,6 +337,7 @@ class LdapConsts:
     # DOCKER_LDAP_SERVER_CERT_PATH = \
     #     '/auto/sw_system_project/NVOS_INFRA/security/verification/ldap/custom_ldap_server_cert.pem'
     DOCKER_LDAP_SERVER_CERT_PATH = '/auto/sw_system_project/NVOS_INFRA/security/verification/ldap/LDAP_DOCKERS/ldap_final/ca/ca.pem'
+    CA_CERT_ID = 'ldap-ca'
     SWITCH_TMP_PATH = '/tmp'
     SERVER_CERT_FILE_IN_SWITCH = '/tmp/custom_ldap_server_cert.pem'
     SWITCH_CA_FILE = '/etc/ssl/certs/ca-certificates.crt'

@@ -1,11 +1,12 @@
-import time
-
 from ngts.nvos_tools.system.Server import ServerId
+from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.security_test_tools.resource_utils import configure_resource
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.RemoteAaaServerInfo import RemoteAaaServerInfo, \
     LdapServerInfo
 from ngts.tests_nvos.general.security.test_aaa_ldap.constants import LdapConsts, LdapEncryptionModes
+from ngts.tests_nvos.system.gnmi.helpers import get_scp_player
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.tools.test_utils.nvos_general_utils import generate_scp_uri_using_player
 
 
 class LdapTestTool:
@@ -61,14 +62,36 @@ def update_ldap_encryption_mode(engines, item, server_info: RemoteAaaServerInfo,
                               dut_engine=engine, server_info=server_info, disable_cert_verify=disable_cert_verify)
 
 
-def add_ldap_server_certificate_to_switch(dut_engine):
+def restart_nslcd(dut_engine):
+    with allure.step('Restart nslcd service'):
+        dut_engine.run_cmd('sudo service nslcd restart', validate=True)
+
+
+def add_ldap_server_certificate_to_switch(dut_engine, engines):
     """
     @summary: Add ldap server certificate to the switch
     """
-    with allure.step('Append server certificate to certificates file'):
-        dut_engine.run_cmd(
-            f"sudo sh -c 'cat {LdapConsts.SERVER_CERT_FILE_IN_SWITCH} >> {LdapConsts.SWITCH_CA_FILE}'")
+    with allure.step('import CA cert proper to ldap server'):
+        System().security.ca_certificate.cert_id[LdapConsts.CA_CERT_ID].action_import(
+            uri=generate_scp_uri_using_player(get_scp_player(engines), LdapConsts.DOCKER_LDAP_SERVER_CERT_PATH),
+            dut_engine=dut_engine
+        ).verify_result()
 
-    with allure.step('Restart nslcd service'):
-        dut_engine.run_cmd('sudo service nslcd restart')
-        time.sleep(3)
+    # older/manual implementation
+    # with allure.step('Append server certificate to certificates file'):
+    #     dut_engine.run_cmd(
+    #         f"sudo sh -c 'cat {LdapConsts.SERVER_CERT_FILE_IN_SWITCH} >> {LdapConsts.SWITCH_CA_FILE}'")
+    #
+    # with allure.step('Restart nslcd service'):
+    #     dut_engine.run_cmd('sudo service nslcd restart')
+    #     time.sleep(3)
+
+
+def remove_ldap_server_certificate_to_switch(dut_engine):
+    """
+    @summary: Remove ldap server certificate to the switch
+    """
+    System().security.ca_certificate.cert_id[LdapConsts.CA_CERT_ID].action_delete(dut_engine).verify_result()
+
+    # older/manual implementation
+    # dut_engine.run_cmd(f"sudo cp -f {LdapConsts.SWITCH_CA_BACKUP_FILE} {LdapConsts.SWITCH_CA_FILE}")
