@@ -22,19 +22,16 @@ def restore_image_path(request, target_version_realpath):
 
 
 @pytest.fixture(scope='function')
-def mount_uefi_disk_partition(serial_engine):
+def mount_uefi_disk_partition(engines, serial_engine):
     '''
     @summary: will load the uefi disk partition
     :param serial_engine: serial connection
     '''
-    logger.info("mounting UEFI disk partition at {}".format(SecureBootConsts.MOUNT_FOLDER))
-    serial_engine.run_cmd_and_get_output(SecureBootConsts.ROOT_PRIVILAGE)
-    serial_engine.run_cmd_and_get_output("mkdir {}".format(SecureBootConsts.MOUNT_FOLDER))
-    output = serial_engine.run_cmd(SecureBootConsts.EFI_PARTITION_CMD,
-                                   SecureBootConsts.LAST_OCCURENCE_REGEX.format('#'))[0]
+    logger.info(f"mounting UEFI disk partition at {SecureBootConsts.MOUNT_FOLDER}")
+    engines.dut.run_cmd(f'sudo mkdir -p {SecureBootConsts.MOUNT_FOLDER}', validate=True)
+    output = engines.dut.run_cmd(f'sudo {SecureBootConsts.EFI_PARTITION_CMD}')
     partitions = re.findall(r'/dev/sda\d', output)
     if not partitions:
         partitions = re.findall(r'/dev/nvme.*', output)
     uefi_partition = partitions[0]
-    serial_engine.run_cmd("mount -o rw,auto,user,fmask=0022,dmask=0000 {} {}".format(uefi_partition,
-                                                                                     SecureBootConsts.MOUNT_FOLDER))
+    engines.dut.run_cmd(f"sudo mount -o rw,auto,user,fmask=0022,dmask=0000 {uefi_partition} {SecureBootConsts.MOUNT_FOLDER}", validate=True)

@@ -19,7 +19,9 @@ from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
 from infra.tools.linux_tools.linux_tools import scp_file
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.conftest import topology_obj
+from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
 from ngts.nvos_tools.infra.Tools import RandomizationTool
+from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.KernelModulesTool import KernelModulesTool
 from ngts.tests_nvos.general.security.test_secure_boot.constants import ChainOfTrustNode, SecureBootConsts, SigningState
 from ngts.tools.test_utils import allure_utils as allure
@@ -51,8 +53,8 @@ def manipulate_nvos_system_file_signature(chain_of_trust_node: str, dut_engine: 
         system_file_switch_tmp_path = f'{SecureBootConsts.TMP_FOLDER}/{filename}'
         with allure.step('Copy system file to tmp dir on switch and make it readable for sudoers'):
             logging.info(f'Copy system file to tmp dir on switch:\nSwitch (src) path: {system_file_switch_path}\nSwitch (dst) path: {system_file_switch_tmp_path}')
-            serial_engine.run_cmd(f'sudo cp -f {system_file_switch_path} {system_file_switch_tmp_path}')
-            serial_engine.run_cmd(f'sudo chown admin {system_file_switch_tmp_path}')
+            dut_engine.run_cmd(f'sudo cp -f {system_file_switch_path} {system_file_switch_tmp_path}', validate=True)
+            dut_engine.run_cmd(f'sudo chown admin {system_file_switch_tmp_path}', validate=True)
         with allure.step(f'Download using scp:\nSwitch (src) path: {system_file_switch_path}\nLocal (dst) path: {system_file_local_path}'):
             scp_file(
                 player=dut_engine,
@@ -85,7 +87,7 @@ def manipulate_nvos_system_file_signature(chain_of_trust_node: str, dut_engine: 
             )
         with allure.step(f'Override orig {chain_of_trust_node} file with the new one'):
             logging.info(f'Copy file on switch:\nSwitch (src) path: {system_file_switch_tmp_path}\nSwitch (dst) path: {system_file_switch_path}')
-            serial_engine.run_cmd(f'sudo cp -f {system_file_switch_tmp_path} {system_file_switch_path}')
+            dut_engine.run_cmd(f'sudo cp -f {system_file_switch_tmp_path} {system_file_switch_path}', validate=True)
 
     with allure.step('Remove file from local fs'):
         os.remove(system_file_local_path)
@@ -100,6 +102,7 @@ def test_secure_boot_unsigned_system_file(tested_chain_of_trust_node: str, seria
                                           topology_obj, devices):
     assert tested_chain_of_trust_node in ChainOfTrustNode.ALL_NODES, \
         f'chain of trust must be in: {ChainOfTrustNode.ALL_NODES}'
+    dut_device: BaseDevice = devices.dut
 
     with allure.step(f'Manipulate signature of {tested_chain_of_trust_node} file on the switch'):
         manipulate_nvos_system_file_signature(
@@ -114,7 +117,7 @@ def test_secure_boot_unsigned_system_file(tested_chain_of_trust_node: str, seria
             _, respond_index = serial_engine.run_cmd(
                 cmd='sudo reboot',
                 expected_value=expected_messages,
-                timeout=180
+                timeout=dut_device.timeout_reboot_to_grub_menu + 1 * MINUTE
             )
 
         with allure.step(f'Verify got one of expected messages: {expected_messages}'):
@@ -124,6 +127,8 @@ def test_secure_boot_unsigned_system_file(tested_chain_of_trust_node: str, seria
     finally:
         with allure.step(f'Recovery after test - reinstall nvos: {restore_image_path}'):
             NvueGeneralCli(engines.dut, devices.dut).install_image_via_onie(topology_obj, restore_image_path)
+        with allure.step('disconnect engine'):
+            engines.dut.disconnect()
 
 
 def get_kernel_module_path(signing_state: str, engines, kernel_modules_tool: KernelModulesTool):
