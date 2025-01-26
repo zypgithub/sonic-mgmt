@@ -8,6 +8,7 @@ r-moose-01-t0-256  ansible_host=10.210.24.105 sonic_version=v2  sonic_hwsku=Mell
 r-moose-01-t1  ansible_host=10.210.24.105 sonic_version=v2  sonic_hwsku=Mellanox-SN5600-C224O8 iface_speed=50000 serial_console="ssh -l rcon:7002 10.208.0.80" ptf_host=ptf-r-moose-01 ptf_portmap="roles/test/files/mlnx/r-moose-01_interface_to_front_map.ini" pdu_host=pdu-10-208-2-47
 r-moose-01-t1-lag  ansible_host=10.210.24.105 sonic_version=v2  sonic_hwsku=Mellanox-SN5600-C224O8 iface_speed=50000 serial_console="ssh -l rcon:7002 10.208.0.80" ptf_host=ptf-r-moose-01 ptf_portmap="roles/test/files/mlnx/r-moose-01_interface_to_front_map.ini" pdu_host=pdu-10-208-2-47
 r-moose-01-t1-lag-c224o8  ansible_host=10.210.24.105 sonic_version=v2  sonic_hwsku=Mellanox-SN5600-C224O8 iface_speed=50000 serial_console="ssh -l rcon:7002 10.208.0.80" ptf_host=ptf-r-moose-01 ptf_portmap="roles/test/files/mlnx/r-moose-01_interface_to_front_map.ini" pdu_host=pdu-10-208-2-47
+r-moose-01-t1-isolated-d28u1  ansible_host=10.210.24.105 sonic_version=v2  sonic_hwsku=Mellanox-SN5600-C224O8 iface_speed=50000 serial_console="ssh -l rcon:7002 10.208.0.80" ptf_host=ptf-r-moose-01 ptf_portmap="roles/test/files/mlnx/r-moose-01_interface_to_front_map.ini" pdu_host=pdu-10-208-2-47
 r-moose-01-ptf32  ansible_host=10.210.24.105 sonic_version=v2  sonic_hwsku=Mellanox-SN5600-C224O8 iface_speed=50000 serial_console="ssh -l rcon:7002 10.208.0.80" ptf_host=ptf-r-moose-01 ptf_portmap="roles/test/files/mlnx/r-moose-01_interface_to_front_map.ini" pdu_host=pdu-10-208-2-47
 r-moose-01-ptf-any  ansible_host=10.210.24.105 sonic_version=v2  sonic_hwsku=Mellanox-SN5600-C224O8 iface_speed=50000 serial_console="ssh -l rcon:7002 10.208.0.80" ptf_host=ptf-r-moose-01 ptf_portmap="roles/test/files/mlnx/r-moose-01_interface_to_front_map.ini" pdu_host=pdu-10-208-2-47
 
@@ -30,6 +31,7 @@ r-moose-01-t0-256
 r-moose-01-t1
 r-moose-01-t1-lag
 r-moose-01-t1-lag-c224o8
+r-moose-01-t1-isolated-d28u1
 r-moose-01-ptf32
 r-moose-01-ptf-any
 

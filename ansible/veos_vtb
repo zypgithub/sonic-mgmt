@@ -20,6 +20,7 @@ all:
           - t1-backend
           - t1-isolated-d254u2s1
           - t1-isolated-d224u8
+          - t1-isolated-d28u1
           - t0
           - t0-16
           - t0-28
@@ -34,6 +35,8 @@ all:
           - t0-116
           - t0-c256
           - t0-256
+          - t0-isolated-d16u16s1
+          - t0-isolated-d16u16s2
           - t0-isolated-d2u254s1
           - t0-isolated-d128u128s1
           - t0-backend

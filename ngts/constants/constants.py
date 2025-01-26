@@ -1350,9 +1350,9 @@ class MarsConstants:
     EXTRA_PACKAGE_PATH_LIST = ["/usr/lib64/python2.7/site-packages"]
 
     TOPO_ARRAY = ("t0-56-po2vlan", "t0", "t1-lag", "t1-lag-c224o8", "t1-28-lag", "t1-32-lag", "ptf32", "t0-64", "t0-64-256", "t0-c256",
-                  "t1-64-lag", "t0-56", "t0-56-o8v48", "t0-120", "t0-256", "t1-56-lag", "t1-isolated-d224u8", "t0-isolated-d128u128s1",
-                  "t0-28", "dualtor", "dualtor-64", "dualtor-aa", "t0-isolated-d2u254s1", "t1-isolated-d254u2s1",
-                  "dualtor-64-breakout", "dualtor-aa-64-breakout")
+                  "t1-64-lag", "t0-56", "t0-56-o8v48", "t0-120", "t0-256", "t1-56-lag", "t1-isolated-d82u1", "t1-isolated-d224u8",
+                  "t0-isolated-d128u128s1", "t0-isolated-d16u16s1", "t0-isolated-d16u16s2", "t0-28", "dualtor", "dualtor-64",
+                  "dualtor-aa", "t0-isolated-d2u254s1", "t1-isolated-d254u2s1", "dualtor-64-breakout", "dualtor-aa-64-breakout")
     TOPO_ARRAY_DUALTOR = ("dualtor", "dualtor-64", "dualtor-aa", "dualtor-64-breakout", "dualtor-aa-64-breakout")
     REBOOT_TYPES = {
         "reboot": "reboot",
