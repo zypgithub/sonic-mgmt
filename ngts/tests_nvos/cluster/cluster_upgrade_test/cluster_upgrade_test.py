@@ -22,16 +22,15 @@ from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.constants.constants import NvosCliTypes
 
 logger = logging.getLogger()
 
 
-@disabled_access_ports
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
 @pytest.mark.timeout(55 * MINUTE, func_only=True)
-def test_upgrade_with_nmx_enabled(test_api, devices, base_version,
-                                  target_version, topology_obj, setup_name, platform_params, engines, release_name, test_name, has_loopbox, standalone_system):
+def test_upgrade_with_nmx_enabled(test_api, devices, topology_obj, setup_name, engines, has_loopbox, standalone_system, base_version_realpath, target_version_realpath):
     '''
     Test will install a base version (Taken from regression).
     On base version perform the following:
@@ -50,17 +49,12 @@ def test_upgrade_with_nmx_enabled(test_api, devices, base_version,
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
 
-    base_version, target_version = get_real_paths(base_version, target_version)
-    image_urls = prepare_images_to_install(base_version, target_version, None)
-    base_version_url = get_base_version_url(False, image_urls)
-    target_version_url = '' if not target_version else get_target_version_url(image_urls)
-    platform_params_copy = copy.deepcopy(platform_params)
+    interface_wa_called = False
     target_image_installed = False
     cli_obj = NvueGeneralCli(engines.dut, devices.dut)
 
-    NvosInstallationSteps.deploy_image(cli_obj, topology_obj, setup_name, platform_params_copy, base_version_url, 'onie',
-                                       None, None, None, base_version_url)
-
+    NvueGeneralCli(engines.dut, devices.dut).install_image_via_onie(topology_obj, base_version_realpath)
+    TestToolkit.engines.dut.disconnect()
     with allure.step("Create Cluster object"):
         cluster = Cluster()
         system = System()
@@ -84,6 +78,11 @@ def test_upgrade_with_nmx_enabled(test_api, devices, base_version,
 
         with allure.step("Enable cluster and perform configurations"):
             ClusterTools.start_cluster(cluster, setup_name, output_format, verify_nmx_c=False)  # remove verify=False once base version for regression is different than 1638.
+
+            interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name, standalone_system)
+            next(interfaces_wa)
+            interface_wa_called = True
+
             with allure.step("Choose random log level, and set cluster app log level to"):
                 for app in ClusterConsts.INITIAL_EXPECTED_APPS:
                     log_level = random.choice(ClusterConsts.ClusterAppsLogLevelsList)
@@ -139,19 +138,16 @@ def test_upgrade_with_nmx_enabled(test_api, devices, base_version,
         TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
 
         with allure.step("Performing upgrade:"):
-            orig_engine: LinuxSshEngine = TestToolkit.engines.dut
-            new_engine = LinuxSshEngine(orig_engine.ip, orig_engine.username,
-                                        devices.dut.get_default_password_by_version(release_name))
-            bin_filename = target_version.split('/')[-1]
+            bin_filename = target_version_realpath.split('/')[-1]
             system = System()
             sonic_mgmt_engine = topology_obj.players['sonic-mgmt']['engine']
             scp_host_creds = f'{sonic_mgmt_engine.username}:{sonic_mgmt_engine.password}@{sonic_mgmt_engine.ip}'
             NvosInstallationSteps.upgrade_to_target_version(bin_filename, cli_obj.engine, cli_obj.device, scp_host_creds,
                                                             system,
-                                                            target_version, topology_obj)
+                                                            target_version_realpath, topology_obj)
 
-            with allure.step('replace dut engine'):
-                TestToolkit.engines.dut = new_engine  # if install succeeded, need to replace dut engine
+            with allure.step('disconnect dut engine'):
+                TestToolkit.engines.dut.disconnect()  # if install succeeded, need to replace dut engine
             target_image_installed = True
 
         with allure.step("Running 'nv show cluster' command and parsing output"):
@@ -177,9 +173,6 @@ def test_upgrade_with_nmx_enabled(test_api, devices, base_version,
             ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format, standalone_system)
         with allure.step("Check log level"):
             for app in ClusterConsts.INITIAL_EXPECTED_APPS:
-                _rotate_logs(system)
-                logger.info("Sleeping for 30 seconds to gather log messages and verify its level")
-                time.sleep(30)
                 ClusterTools.verify_log_level(log_levels[app], app, output_format, cluster)
 
         with allure.step("Make sure config is saved"):
@@ -201,78 +194,35 @@ def test_upgrade_with_nmx_enabled(test_api, devices, base_version,
                 sdn.factory_default.action_reset(param='force')
 
         if not target_image_installed:
-            NvosInstallationSteps.deploy_image(cli_obj, topology_obj, setup_name, platform_params_copy, target_version_url, 'onie',
-                                               None, None, None, target_version_url)
-        with allure.step("Install initial configurations"):
-            for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_CONFIG_FILES:
-                app = ClusterConsts.MAP_CONFIG_FILE_TYPE_TO_APP[file_type]
-                sdn.config.apps.app_name[app].type.file_type[file_type].action_fetch_sdn(initial_configs_paths_to_restore[file_type])
-                conf_file_name = initial_configs_paths_to_restore[file_type].split('/')[-1]
-                sdn.config.apps.app_name[app].type.file_type[file_type].files.file_name[conf_file_name].action_file_install(force=False)
+            NvueGeneralCli(engines.dut, devices.dut).install_image_via_onie(topology_obj, target_version_realpath)
+            TestToolkit.engines.dut.disconnect()
+        else:
+            with allure.step("Install initial configurations"):
+                for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_CONFIG_FILES:
+                    app = ClusterConsts.MAP_CONFIG_FILE_TYPE_TO_APP[file_type]
+                    sdn.config.apps.app_name[app].type.file_type[file_type].action_fetch_sdn(initial_configs_paths_to_restore[file_type])
+                    conf_file_name = initial_configs_paths_to_restore[file_type].split('/')[-1]
+                    sdn.config.apps.app_name[app].type.file_type[file_type].files.file_name[conf_file_name].action_file_install(force=False)
 
-        with allure.step("Delete state/config Files"):
-            for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_CONFIG_FILES:
-                if all_config_files_paths[file_type]:
-                    for file in all_config_files_paths[file_type]:
-                        app = ClusterConsts.MAP_CONFIG_FILE_TYPE_TO_APP[file_type]
-                        file = file.split('/')[-1]
-                        sdn.config.apps.app_name[app].type.file_type[file_type].files.file_name[file].action_delete()
-                        engines.sonic_mgmt.run_cmd(f"sudo rm -rf {initial_configs_paths_to_restore[file_type]}")
-                engines.sonic_mgmt.run_cmd(f"sudo rm -rf {ClusterConsts.INITIAL_CONFIGURATIONS_PATH}/*")
+            with allure.step("Delete state/config Files"):
+                for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_CONFIG_FILES:
+                    if all_config_files_paths[file_type]:
+                        for file in all_config_files_paths[file_type]:
+                            app = ClusterConsts.MAP_CONFIG_FILE_TYPE_TO_APP[file_type]
+                            file = file.split('/')[-1]
+                            sdn.config.apps.app_name[app].type.file_type[file_type].files.file_name[file].action_delete()
+                            engines.sonic_mgmt.run_cmd(f"sudo rm -rf {initial_configs_paths_to_restore[file_type]}")
+                    engines.sonic_mgmt.run_cmd(f"sudo rm -rf {ClusterConsts.INITIAL_CONFIGURATIONS_PATH}/*")
 
-        with allure.step("Restore log level"):
-            cluster.apps.app_name[app].loglevel.action_restore_cluster()
+            with allure.step("Restore log level"):
+                cluster.apps.app_name[app].loglevel.action_restore_cluster()
 
-        cluster.unset(apply=True)
-        ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
-
-
-def install_image_and_verify(orig_engine, image_name, partition_id, original_images, system, release_name, device,
-                             test_name=''):
-    with allure.step("Installing image {}".format(image_name)):
-        device = device.dut
-        new_engine = LinuxSshEngine(orig_engine.ip, orig_engine.username,
-                                    device.get_default_password_by_version(release_name))
-        OperationTime.save_duration('image install', '', test_name,
-                                    system.image.files.file_name[image_name].action_file_install_with_reboot,
-                                    "", True, None, None, new_engine)
-
-    with allure.step('replace dut engine'):
-        TestToolkit.engines.dut = new_engine  # if install succeeded, need to replace dut engine
-
-    with allure.step("Verify installed image"):
-        time.sleep(5)
-        expected_show_images_output = create_images_output_dictionary(original_images, image_name, image_name, partition_id)
-        system.image.verify_show_images_output(expected_show_images_output)
-        return expected_show_images_output
-
-
-def get_image_data_and_fetch_base_image(system, base_version):
-    original_images, original_image, original_image_partition, partition_id_for_new_image = get_image_data(system)
-
-    with allure.step(f"Fetch image {base_version}"):
-        player = TestToolkit.engines['sonic_mgmt']
-        system.image.action_fetch(ImageConsts.SCP_PATH_SERVER.format(username=player.username, password=player.password,
-                                                                     ip=player.ip, path=base_version))
-    image_name = base_version.split("/")[-1]
-    return original_images, original_image, original_image_partition, partition_id_for_new_image, image_name
-
-
-def get_image_data(system):
-    with allure.step("Save original installed image name"):
-        original_images = system.image.get_image_field_values()
-        original_image = original_images[ImageConsts.CURRENT_IMG]
-        original_image_partition = system.image.get_image_partition(original_image, original_images)
-        partition_id_for_new_image = get_next_partition_id(original_image_partition)
-        logger.info("Original image: {}, partition: {}".format(original_image, original_image_partition))
-        return original_images, original_image, original_image_partition, partition_id_for_new_image
+            if interface_wa_called:
+                next(interfaces_wa)
+            else:
+                cluster.unset(apply=True)
+                ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
 
 
 def get_next_partition_id(partition_id):
     return ImageConsts.PARTITION2_IMG if partition_id == ImageConsts.PARTITION1_IMG else ImageConsts.PARTITION1_IMG
-
-
-def _rotate_logs(system):
-    with allure.step("Rotate logs"):
-        logging.info("Rotate logs")
-        system.log.rotate_logs()

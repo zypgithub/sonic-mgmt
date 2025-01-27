@@ -1374,7 +1374,7 @@ class OperationTimeConsts:
                   'start stop cluster app': 810,
                   'start stop cluster app with loopbox': 720,
                   'start stop cluster': 285,
-                  'cluster update log level': 5,
+                  'cluster update log level': 6,
                   'install bmc': 900,
                   'install fpga': 900,
                   ActionConsts.POWER_CYCLE: 360,

@@ -238,7 +238,8 @@ class ClusterTools:
         present_transceivers = platform.transceiver.get_list_of_connected_transceivers()
 
         for transceiver in present_transceivers:
-            interfaces.extend([interface for interface in devices.dut.nvl5_trunk_ports_list if interface.startswith(transceiver)])
+            interfaces.extend([interface for interface in devices.dut.nvl5_trunk_ports_list if interface.startswith(f"{transceiver}p")])
+            # This way, if sw1 is present and sw10 is not, we will not take sw10. because we force sw1p so sw10p falls.
         return interfaces
 
     @staticmethod
