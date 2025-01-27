@@ -20,10 +20,6 @@
     },
     "DHCP_SERVER_IPV4": {
         "bridge-midplane": {
-            "customized_options": [
-                "option60",
-                "option223"
-            ],
             "gateway": "169.254.200.254",
             "lease_time": "900",
             "mode": "PORT",
@@ -55,32 +51,16 @@
     },
     "DPUS": {
         "dpu0": {
-            "midplane_interface": "dpu0",
-            "interface": {
-                "Ethernet224": "Ethernet0"
-            },
-            "bus_info": "08:00.0"
+            "midplane_interface": "dpu0"
         },
         "dpu1": {
-            "midplane_interface": "dpu1",
-            "interface": {
-                "Ethernet232": "Ethernet0"
-            },
-            "bus_info": "07:00.0"
+            "midplane_interface": "dpu1"
         },
         "dpu2": {
-            "midplane_interface": "dpu2",
-            "interface": {
-                "Ethernet240": "Ethernet0"
-            },
-            "bus_info": "01:00.0"
+            "midplane_interface": "dpu2"
         },
         "dpu3": {
-            "midplane_interface": "dpu3",
-            "interface": {
-                "Ethernet248": "Ethernet0"
-            },
-            "bus_info": "02:00.0"
+            "midplane_interface": "dpu3"
         }
     },
     "PORT": {
