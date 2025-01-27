@@ -14,6 +14,7 @@ from infra.tools.linux_tools.linux_tools import scp_file
 from ngts.nvos_constants.constants_nvos import SystemConsts, ApiType
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.conftest import ssh_to_device_and_retrieve_raw_login_ssh_notification
+from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts
 from ngts.tests_nvos.general.security.security_test_tools.switch_authenticators import SshAuthenticator
 from ngts.tests_nvos.general.security.test_login_ssh_notification.constants import LoginSSHNotificationConsts as Consts
 from ngts.tests_nvos.system.clock.ClockTools import ClockTools
@@ -294,7 +295,7 @@ def test_ssh_login_notification_role_new_user(engines, login_source_ip_addresses
     '''
     with allure.step("Creating a new username"):
         system = System(force_api=ApiType.NVUE)
-        user_name, password = system.aaa.user.set_new_user(apply=True)
+        user_name, password = system.aaa.user.set_new_user(role=AaaConsts.ADMIN, apply=True)
         logging.info(
             f"User created: \nusername: {user_name} \npassword: {password}\ncapability: {SystemConsts.ROLE_CONFIGURATOR}")
 
