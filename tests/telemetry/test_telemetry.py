@@ -165,6 +165,11 @@ def test_telemetry_queue_buffer_cnt(duthosts, enum_rand_one_per_hwsku_hostname, 
     logger.info('start telemetry output testing')
     dut_ip = duthost.mgmt_ip
 
+    interfaces = duthost.get_interfaces_status()
+    pattern = re.compile(r'^Ethernet[0-9]{1,3}$')
+    admin_up_interfaces = [iface for iface, info in interfaces.items()
+                           if pattern.match(iface) and info['admin'] == 'up' and info['oper'] == 'up']
+
     duthost.shell("sonic-cfggen -d --print-data > {}".format(ORIG_CFG_DB))
     data = json.loads(duthost.shell("cat {}".format(ORIG_CFG_DB),
                                     verbose=False)['stdout'])
@@ -174,7 +179,7 @@ def test_telemetry_queue_buffer_cnt(duthosts, enum_rand_one_per_hwsku_hostname, 
 
     interface_to_check = None
     for bq in buffer_queues_interfaces:
-        if bq in ports_list:
+        if bq in admin_up_interfaces:
             interface_to_check = bq
             break
     if interface_to_check is None:
