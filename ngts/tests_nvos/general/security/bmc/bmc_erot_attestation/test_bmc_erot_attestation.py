@@ -132,19 +132,19 @@ def test_generate_with_bad_nonce_param(test_api, available_spdm_components):
         with allure.step(f'component: {component}'):
             with allure.independent_step('run generate with empty nonce param (incomplete)'):
                 bad_nonce = ''
-                res = component_obj.action_generate(bad_nonce)
+                res = component_obj.action_generate(bad_nonce).ignore_result()
                 assert not res.result, f'generate with empty nonce (incomplete) - success but expected to fail\n{res.info}'
             with allure.independent_step('run generate with non-hex string as nonce param'):
                 bad_nonce = randomize_non_hex_str()
-                res = component_obj.action_generate(bad_nonce)
+                res = component_obj.action_generate(bad_nonce).ignore_result()
                 assert not res.result, f'generate with non hex nonce - success but expected to fail\n{res.info}'
             with allure.independent_step(f'run generate with hex string longer than {VALID_NONCE_LEN} chars'):
                 bad_nonce = randomize_hex_str(random.randint(VALID_NONCE_LEN + 1, 2 * VALID_NONCE_LEN))
-                res = component_obj.action_generate(bad_nonce)
+                res = component_obj.action_generate(bad_nonce).ignore_result()
                 assert not res.result, f'generate with too long hex nonce - success but expected to fail\n{res.info}'
             with allure.independent_step(f'run generate with hex string shorter than {VALID_NONCE_LEN} chars'):
                 bad_nonce = randomize_hex_str(random.randint(1, VALID_NONCE_LEN - 1))
-                res = component_obj.action_generate(bad_nonce)
+                res = component_obj.action_generate(bad_nonce).ignore_result()
                 assert not res.result, f'generate with too short hex nonce - success but expected to fail\n{res.info}'
 
 

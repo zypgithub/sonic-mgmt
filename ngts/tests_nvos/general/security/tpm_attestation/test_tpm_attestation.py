@@ -256,7 +256,7 @@ def test_tpm_oiak(engines, devices, save_local_timezone):
 
     with allure.step('Import oIAK with incorrect public key'):
         mismatch_public_key_cert = get_oiak_cert(engines.sonic_mgmt, OIAK_DUMMY_CERT_PATH)
-        response = system.security.tpm.oaik.action_import_tpm_oiak(dut_engine=dut, data=f'{mismatch_public_key_cert}')
+        response = system.security.tpm.oaik.action_import_tpm_oiak(dut_engine=dut, data=f'{mismatch_public_key_cert}').ignore_result()
         assert 'Error: Public key mismatch' in response.info, "Switch accept certificate with mismatched public key"
 
         with allure.step('Check oIAK with mismatched public key not accept'):
