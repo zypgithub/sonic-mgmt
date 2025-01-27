@@ -27,15 +27,16 @@ from ngts.tests_nvos.helpers.pytest_helpers import get_cur_test_param_value
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
 from ngts.tests_nvos.system.gnmi.constants import CERTIFICATE, DEFAULT_CERTIFICATE, GnmicErr, \
     ETC_HOSTS, GnmiMode
-from ngts.tests_nvos.system.gnmi.helpers import verify_gnmi_client, verify_gnmi_client_tools_installed, get_scp_player
+from ngts.tests_nvos.system.gnmi.helpers import verify_gnmi_client, verify_gnmi_client_tools_installed, get_scp_player, \
+    supported_gnmi_addressing_types
 
 
-def setup_gnmi_cert_tests(engines, dut_hostname, scp_player) -> Tuple[str, List[CertInfo]]:
+def setup_gnmi_cert_tests(engines, dut_hostname, scp_player, dut_ip=None) -> Tuple[str, List[CertInfo]]:
     with allure.step('prepare temp test certs in shared location'):
         certs_dirname = f'gnmi-{dut_hostname}-{random.randint(0, 9999)}'
         tmp_certs_dir = os.path.join(TMP_TEST_CERTS_DIR, certs_dirname)
         certs_names = ['gnmi-cert1', 'gnmi-cert2', 'gnmi-cert3']
-        certs_info: Dict[str, CertInfo] = prepare_tmp_test_certs(certs_names, tmp_certs_dir, engines, dut_hostname)
+        certs_info: Dict[str, CertInfo] = prepare_tmp_test_certs(certs_names, tmp_certs_dir, engines, dut_hostname, dut_ip)
         certs = list(certs_info.values())
     with allure.step('import certs to dut'):
         import_certs_safely(list(certs_info.values()), scp_player)
@@ -190,8 +191,8 @@ def test_gnmi_cert_cli_when_gnmi_disabled(api, gnmi_certs):
 
 @pytest.mark.system
 @pytest.mark.gnmi
-@pytest.mark.parametrize('test_flow', [TestFlowType.GOOD_FLOW])
-@pytest.mark.parametrize('addressing_type', [AddressingType.IPV4])
+@pytest.mark.parametrize('test_flow', TestFlowType.ALL_TYPES)
+@pytest.mark.parametrize('addressing_type', random.sample(supported_gnmi_addressing_types(), 1))
 def test_gnmi_cert_set_cert(test_flow, addressing_type, local_adminuser, gnmi_certs,
                             add_etc_host_mapping_for_ipv6_cert_test):
     """

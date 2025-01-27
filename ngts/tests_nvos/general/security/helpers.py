@@ -27,7 +27,7 @@ def remove_etc_host_mapping_to_dn(dn, cmd_runner=None):
     cmd_runner.run_cmd(cmd)
 
 
-def prepare_tmp_test_certs(cert_names: List[str], dest_dir, engines, dut_hostname) -> Dict[str, CertInfo]:
+def prepare_tmp_test_certs(cert_names: List[str], dest_dir, engines, dut_hostname, dut_ip=None) -> Dict[str, CertInfo]:
     certs_info: Dict[str, CertInfo] = {}
 
     with allure.step('arrange test certs'):
@@ -47,7 +47,7 @@ def prepare_tmp_test_certs(cert_names: List[str], dest_dir, engines, dut_hostnam
                         p12_bundle=os.path.join(cert_dir, 'cert.p12'),
                         p12_password=rand_pass,
                         dn=dut_hostname,
-                        ip=engines.dut.ip,
+                        ip=dut_ip or engines.dut.ip,
                         cacert=os.path.join(cert_dir, 'ca.crt'),
                     )
                     certs_info[cert_name] = cert_info

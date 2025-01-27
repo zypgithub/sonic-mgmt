@@ -23,13 +23,23 @@ from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tests_nvos.general.security.certificate.constants import TestCert
 from ngts.tests_nvos.general.security.certificate.helpers import import_test_certs
 from ngts.tests_nvos.general.security.helpers import add_etc_host_mapping_to_dn, remove_etc_host_mapping_to_dn
+from ngts.tests_nvos.general.security.security_test_tools.constants import AddressingType
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
 from ngts.tests_nvos.system.gnmi.constants import CERTIFICATE, DEFAULT_CERTIFICATE, GnmicErr
 from ngts.tests_nvos.system.gnmi.constants import DUT_GNMI_CERTS_DIR, DOCKER_CERTS_DIR, GnmiMode, GrpcMsg, \
     SERVER_REFLECTION_SUBSCRIBE_RESPONSE
 
 logger = logging.getLogger()
+
+
+def supported_gnmi_addressing_types():
+    if is_bug_active(4273731):  # TODO: remove once closed
+        supported_addressing_types = [AddressingType.IPV4]
+    else:
+        supported_addressing_types = [AddressingType.IPV4, AddressingType.IPV6]
+    return supported_addressing_types
 
 
 def validate_memory_and_cpu_utilization():

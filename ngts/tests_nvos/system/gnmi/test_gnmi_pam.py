@@ -21,7 +21,7 @@ from ngts.tests_nvos.general.security.test_aaa_ldap.ldap_servers_info import Lda
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
 from ngts.tests_nvos.system.gnmi.constants import GnmiMode, MAX_GNMI_SUBSCRIBERS, GnmicErr
 from ngts.tests_nvos.system.gnmi.helpers import verify_gnmi_client, change_interface_description, \
-    verify_msg_in_out_or_err, verify_msg_not_in_out_or_err
+    verify_msg_in_out_or_err, verify_msg_not_in_out_or_err, supported_gnmi_addressing_types
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_general_utils import wait_for_ldap_nvued_restart_workaround
 from ngts.tools.test_utils.switch_recovery import generate_strong_password
@@ -49,8 +49,8 @@ def aaa_users(engines, cleanup_after_aaa) -> Dict[str, UserInfo]:
 
 @pytest.mark.system
 @pytest.mark.gnmi
-@pytest.mark.parametrize('test_flow', [TestFlowType.GOOD_FLOW])
-@pytest.mark.parametrize('addressing_type', [AddressingType.IPV4])
+@pytest.mark.parametrize('test_flow', TestFlowType.ALL_TYPES)
+@pytest.mark.parametrize('addressing_type', supported_gnmi_addressing_types())
 def test_gnmi_authentication(test_flow, addressing_type, engines, local_adminuser, aaa_users, dut_ipv6_addr):
     """
     verify that gnmi clients must be properly authenticated to subscribe and get updates
