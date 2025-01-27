@@ -3,7 +3,6 @@ import time
 
 import pytest
 
-from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.nvos_constants.constants_nvos import SystemConsts
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
@@ -13,7 +12,8 @@ from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.acl.test_acl_basic import test_show_acls
 from ngts.tests_nvos.checklist.test_checklist_ipv6 import test_checklist_ipv6
-from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts
+from ngts.tests_nvos.general.security.radius.constants import RadiusConsts
+from ngts.tests_nvos.general.security.tacacs.constants import TacacsConsts
 from ngts.tests_nvos.general.security.test_aaa_ldap.constants import LdapConsts
 from ngts.tools.test_utils import allure_utils as allure
 
@@ -85,9 +85,7 @@ def test_ci_sanity_ldap(engines, topology_obj, devices):
     with allure.step("Check LDAP output"):
         system = System()
         output = OutputParsingTool.parse_json_str_to_dictionary(system.aaa.ldap.show()).get_returned_value()
-        expected_field = [LdapConsts.PORT, LdapConsts.BASE_DN, LdapConsts.BIND_DN,
-                          LdapConsts.TIMEOUT_BIND, LdapConsts.TIMEOUT, LdapConsts.SSL,
-                          LdapConsts.VERSION]
+        expected_field = LdapConsts.LDAP_FIELDS
         ValidationTool.verify_field_exist_in_json_output(json_output=output,
                                                          keys_to_search_for=expected_field).verify_result()
 
@@ -99,7 +97,19 @@ def test_ci_sanity_tacacs(engines, topology_obj, devices):
     with allure.step("Check TACACS output"):
         system = System()
         output = OutputParsingTool.parse_json_str_to_dictionary(system.aaa.tacacs.show()).get_returned_value()
-        expected_field = [AaaConsts.PORT, AaaConsts.TIMEOUT]
+        expected_field = TacacsConsts.TACACS_FIELDS
+        ValidationTool.verify_field_exist_in_json_output(json_output=output,
+                                                         keys_to_search_for=expected_field).verify_result()
+
+
+@pytest.mark.simx
+@pytest.mark.nvos_chipsim_ci
+@pytest.mark.nvos_ci
+def test_ci_sanity_radius(engines, topology_obj, devices):
+    with allure.step("Check RADIUS output"):
+        system = System()
+        output = OutputParsingTool.parse_json_str_to_dictionary(system.aaa.radius.show()).get_returned_value()
+        expected_field = RadiusConsts.RADIUS_FIELDS
         ValidationTool.verify_field_exist_in_json_output(json_output=output,
                                                          keys_to_search_for=expected_field).verify_result()
 

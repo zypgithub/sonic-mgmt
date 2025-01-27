@@ -1,6 +1,7 @@
 from typing import Dict
 
-from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts, AddressingType
+from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts, AddressingType, AccountingConsts, \
+    AuthConsts
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.RemoteAaaServerInfo import TacacsServerInfo
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
 
@@ -8,6 +9,7 @@ from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo 
 class TacacsConsts:
     TIME_TILL_TACACS_CONF_TAKES_PLACE = 3
 
+    TACACS_FIELDS = [AaaConsts.PORT, AaaConsts.TIMEOUT, AccountingConsts.ACCOUNTING, AuthConsts.AUTHENTICATION]
     AUTH_MODES = [AaaConsts.PAP, AaaConsts.CHAP, AaaConsts.LOGIN]  # AaaConsts.MSCHAPV2
 
     VALID_VALUES = {

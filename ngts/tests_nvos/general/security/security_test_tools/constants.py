@@ -50,6 +50,7 @@ class AaaConsts:
 
 # aaa authentication constants
 class AuthConsts:
+    AUTHENTICATION = 'authentication'
     ORDER = 'order'
     LOCAL = 'local'
     LDAP = 'ldap'

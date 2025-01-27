@@ -6,6 +6,7 @@ from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo 
 class RadiusConsts:
     TIME_TILL_RADIUS_CONF_TAKES_PLACE = 3
 
+    RADIUS_FIELDS = [AaaConsts.AUTH_TYPE, AaaConsts.PORT, AaaConsts.RETRANSMIT, AaaConsts.STATISTICS, AaaConsts.TIMEOUT]
     AUTH_TYPES = [AaaConsts.PAP, AaaConsts.CHAP, AaaConsts.MSCHAPV2]
 
     VALID_VALUES = {
