@@ -803,8 +803,8 @@ class CrocodileSwitch(IbSwitch):
         self.mgmt_ports = ['eth0', 'eth1']
         self.interface_active_internal_fnm_ports = {'fnma0p1', 'fnma1p1'}
         self.default_port = 'swA1p1'
-        self.fnm_link_speed = '800G'
-        self.fnm_internal_link_speed = '200G'
+        self.fnm_link_speed = '200G'
+        self.fnm_internal_link_speed = '100G'
         traffic_ports = [f'sw{a}{n}p{p}' for a in 'AB' for n in range(1, 19) for p in (1, 2)]
         self.interface_list = self.network_ports + ['eth1', 'fnm1'] + traffic_ports
         self.interface_fae_list = (
