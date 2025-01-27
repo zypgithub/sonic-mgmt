@@ -5,14 +5,14 @@ import semantic_version
 
 from ngts.cli_util.verify_cli_show_cmd import verify_show_cmd
 from dateutil.parser import parse as time_parse
-from ngts.constants.constants import AppExtensionInstallationConstants
+from ngts.constants.constants import AppExtensionInstallationConstants, MarsConstants
 from retry.api import retry_call
 
 
 logger = logging.getLogger()
 APP_INFO = {
     "name": "cpu-report",
-    "repository": "harbor.mellanox.com/sonic/cpu-report",
+    "repository": "{}/sonic/cpu-report".format(MarsConstants.DOCKER_REGISTRY),
     "normal1": {"digest": "sha256:59801bed4ebe5701f6cbac232281d0d7e990c2274a70e0b1d8818a4710cbf1bf ",
                 "version": "1.0.0"},
     "normal2": {"digest": "sha256:96a87a62ca962fbf92a33c25e6bb2768aa6f113203845da64603d13872eb642f",
@@ -331,7 +331,7 @@ def verify_app_container_start_delay(dut_engine, app_name, delay_time):
 
     """
     get_app_uptime_cmd = f'date ' \
-                         f'--date=`docker inspect --format="{{{{.State.StartedAt}}}}" {app_name}` +"%Y-%m-%d %H:%M:%S"'
+        f'--date=`docker inspect --format="{{{{.State.StartedAt}}}}" {app_name}` +"%Y-%m-%d %H:%M:%S"'
     up_time_kernel = time_parse(dut_engine.run_cmd('uptime -s'))
     up_time_app = time_parse(dut_engine.run_cmd(get_app_uptime_cmd))
 

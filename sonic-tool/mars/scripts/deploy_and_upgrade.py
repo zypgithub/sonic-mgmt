@@ -81,8 +81,8 @@ def _parse_args():
                         dest="wjh_deb_url", default="")
     parser.add_argument("--app_extension_dict_path",
                        help="Specify path with json data of app extensions"
-                            " Content of file: '{\"lc-manager\":\"harbor.mellanox.com/sonic-lc-manager/lc-manager:0.0.6\","
-                            "\"p4-sampling\":\"harbor.mellanox.com/sonic-p4/p4-sampling:0.2.0-004\"}' ",
+                            " Content of file: '{\"lc-manager\":\"nbu-harbor.gtm.nvidia.com/sonic-lc-manager/lc-manager:0.0.6\","
+                            "\"p4-sampling\":\"nbu-harbor.gtm.nvidia.com/sonic-p4/p4-sampling:0.2.0-004\"}' ",
                        dest="app_extension_dict_path", default="")
     parser.add_argument("--additional-apps", help="Specify url to WJH debian package or JSON data of app extensions",
                         dest="additional_apps", default="")

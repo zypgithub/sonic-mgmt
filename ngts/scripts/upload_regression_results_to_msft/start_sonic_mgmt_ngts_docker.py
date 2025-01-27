@@ -64,7 +64,7 @@ def create_secrets_vars_script(container_name):
 
 
 def pull_image(ngts_version):
-    image_name = "{DOCKER_REGISTRY}/docker-ngts".format(DOCKER_REGISTRY=MarsConstants.DOCKER_REGISTRY)
+    image_name = "{DOCKER_REGISTRY}/sonic/docker-ngts".format(DOCKER_REGISTRY=MarsConstants.DOCKER_REGISTRY)
     command = "sudo docker pull {image_name}:{ngts_version}".format(image_name=image_name,
                                                                     ngts_version=ngts_version)
     os.popen(command).read()

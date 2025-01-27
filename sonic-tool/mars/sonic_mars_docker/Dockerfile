@@ -1,9 +1,9 @@
 # This Dockerfile used for create SONiC STM docker container for run MARS STM in docker
 # This Docker used in STM config: /.autodirect/sw_regression/system/SONIC/MARS/conf/global/MARS_setups_mgr_docker.conf
-# SONiC STM docker based on MARS team image: harbor.mellanox.com/sonic/sonic_mars_docker
-# SONiC STM docker placed in  harbor.mellanox.com/sonic/sonic_mars_docker:latest
+# SONiC STM docker based on MARS team image: nbu-harbor.gtm.nvidia.com/sonic/sonic_mars_docker
+# SONiC STM docker placed in  nbu-harbor.gtm.nvidia.com/sonic/sonic_mars_docker:latest
 
-FROM harbor.mellanox.com/mars/mars_docker:latest
+FROM nbu-harbor.gtm.nvidia.com/mars/mars_docker:latest
 
 RUN pip install virtualenv
 

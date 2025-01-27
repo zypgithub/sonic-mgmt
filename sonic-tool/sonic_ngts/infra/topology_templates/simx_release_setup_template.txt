@@ -38,7 +38,7 @@
         <topology> ptf-any </topology>
 
         <reboot_after_deploy> no </reboot_after_deploy>
-        <docker_registry_url> harbor.mellanox.com/sonic </docker_registry_url>
+        <docker_registry_url> nbu-harbor.gtm.nvidia.com/sonic </docker_registry_url>
 
         <sonic_mgmt_docker_name> docker-ngts </sonic_mgmt_docker_name>
 

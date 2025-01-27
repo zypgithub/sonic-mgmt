@@ -1249,27 +1249,6 @@ class CounterpollConstants:
     CPU_MEMORY_SAMPLE_ITERATION_2 = 60
 
 
-class AppExtensionInstallationConstants:
-    WJH_APP_NAME = 'what-just-happened'
-    WJH_REPOSITORY = 'harbor.mellanox.com/sonic-wjh/docker-wjh'
-    LC_MANAGER = 'line-card-manager'
-    DOAI = 'doai'
-    LC_MANAGER_REPOSITORY = 'harbor.mellanox.com/sonic-lc-manager/line-card-manager'
-    APPLICATION_LIST = [
-        P4SamplingConsts.APP_NAME,
-        WJH_APP_NAME,
-        LC_MANAGER,
-        P4ExamplesConsts.APP_NAME,
-        DOAI
-    ]
-    APP_EXTENSION_PROJECT_MAPPING = {'sonic-wjh': WJH_APP_NAME,
-                                     'p4-sampling': P4SamplingConsts.APP_NAME,
-                                     'sonic-lc-manager': LC_MANAGER,
-                                     'p4-examples': P4ExamplesConsts.APP_NAME,
-                                     'doai': DOAI}
-    APPS_WHERE_SX_SDK_NOT_PRESENT = [P4SamplingConsts.APP_NAME, P4ExamplesConsts.APP_NAME, DOAI]
-
-
 class MarsConstants:
     SONIC_MARS_BASE_PATH = "/.autodirect/sw_regression/system/SONIC/MARS"
 
@@ -1314,7 +1293,7 @@ class MarsConstants:
         "warm-reboot": "warm-reboot"
     }
 
-    DOCKER_REGISTRY = "harbor.mellanox.com/sonic"
+    DOCKER_REGISTRY = "nbu-harbor.gtm.nvidia.com"
 
     DUT_LOG_BACKUP_PATH = "/.autodirect/sw_system_project/sonic/dut_logs"
 
@@ -1322,6 +1301,27 @@ class MarsConstants:
                           '202012': '42007',
                           '202106': '42007'
                           }
+
+
+class AppExtensionInstallationConstants:
+    WJH_APP_NAME = 'what-just-happened'
+    WJH_REPOSITORY = '{}/sonic-wjh/docker-wjh'.format(MarsConstants.DOCKER_REGISTRY)
+    LC_MANAGER = 'line-card-manager'
+    DOAI = 'doai'
+    LC_MANAGER_REPOSITORY = '{}/sonic-lc-manager/line-card-manager'.format(MarsConstants.DOCKER_REGISTRY)
+    APPLICATION_LIST = [
+        P4SamplingConsts.APP_NAME,
+        WJH_APP_NAME,
+        LC_MANAGER,
+        P4ExamplesConsts.APP_NAME,
+        DOAI
+    ]
+    APP_EXTENSION_PROJECT_MAPPING = {'sonic-wjh': WJH_APP_NAME,
+                                     'p4-sampling': P4SamplingConsts.APP_NAME,
+                                     'sonic-lc-manager': LC_MANAGER,
+                                     'p4-examples': P4ExamplesConsts.APP_NAME,
+                                     'doai': DOAI}
+    APPS_WHERE_SX_SDK_NOT_PRESENT = [P4SamplingConsts.APP_NAME, P4ExamplesConsts.APP_NAME, DOAI]
 
 
 class PlayersAliases:

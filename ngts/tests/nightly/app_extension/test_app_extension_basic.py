@@ -27,7 +27,7 @@ def test_repo_management(engines, cli_objects):
     and then verify that the new app appears in the package list:
     Name            Repository                                Description                   Version    Status
     --------------  ----------------------------------------  ----------------------------  ---------  ---------
-    p4-sampling     harbor.mellanox.com/sonic-p4/p4-sampling  N/A                           N/A        Not Installed
+    p4-sampling     nbu-harbor.gtm.nvidia.com/sonic-p4/p4-sampling  N/A                           N/A        Not Installed
     Thirdly, Remove a test repository from the package database with sonic-package-manager repository remove <NAME>
      <REPOSITORY>,
     and verify that the app was removed from the package list..

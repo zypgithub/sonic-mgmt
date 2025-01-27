@@ -320,7 +320,7 @@ def main():
 
     args = _parse_args()
 
-    registry_url = constants.DOCKER_REGISTRY
+    registry_url = '{}/sonic'.format(constants.DOCKER_REGISTRY)
     logger.info("Default registry_url=%s" % registry_url)
     if args.registry_url:
         registry_url = args.registry_url

@@ -24,7 +24,7 @@ sys.path.remove("dash")
 logger = logging.getLogger(__name__)
 
 DPDK_CONTAINER_NAME = "dpdk-app-container"
-DPDK_APP = "harbor.mellanox.com/sonic/dpdk-app:latest"
+DPDK_APP = "nbu-harbor.gtm.nvidia.com/sonic/dpdk-app:latest"
 SWITCH_DATA_PORT = {'x86_64-nvidia_sn4280-r0': 'Ethernet64'}
 ptf_port_index = 0
 

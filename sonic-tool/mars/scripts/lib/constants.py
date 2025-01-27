@@ -51,7 +51,7 @@ REBOOT_TYPES = {
     "warm-reboot": "warm-reboot"
 }
 
-DOCKER_REGISTRY = "harbor.mellanox.com/sonic"
+DOCKER_REGISTRY = "nbu-harbor.gtm.nvidia.com"
 
 DUT_LOG_BACKUP_PATH = "/.autodirect/sw_system_project/sonic/dut_logs"
 

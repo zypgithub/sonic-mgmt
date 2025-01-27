@@ -682,7 +682,7 @@ class SystemConsts:
     ZTP_STATUS_IN_PROGRESS = 'in-progress'
     ZTP_STATUS_SUCCESS = 'success'
     ZTP_STATUS_FAILED = 'failed'
-    HTTP_SERVER = 'http://nbu-nfs.mellanox.com'
+    HTTP_SERVER = 'http://nbu-nfs.gtm.nvidia.com'
     VERIFICATION_ZTP_PATH = '/auto/sw_system_project/NVOS_INFRA/ztp/'
 
     PYTHON_PATH = 'PYTHONPATH=/ngts_venv/ /ngts_venv/bin/python'

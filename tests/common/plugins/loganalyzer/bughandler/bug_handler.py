@@ -349,7 +349,7 @@ def init_parser():
                    '2. Full steps of installation:\n'
                    '    a. Install Docker (if not existed)\n'
                    '    b. Docker login to Harbor\n'
-                   '    c. Pull image from harbor.mellanox.com\n'
+                   '    c. Pull image from nbu-harbor.gtm.nvidia.com\n'
                    '    d. Create docker MACVLAN network (if not existed).\n'
                    '    e. Remove Old docker containers on hypervisor (if existed).\n'
                    '    f. Create new clean containers.')

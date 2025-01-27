@@ -163,7 +163,7 @@ def collectTestResults() {
 pipeline {
 
     agent {
-        docker { image 'harbor.mellanox.com/sonic/docker-ngts:1.2.198'
+        docker { image 'nbu-harbor.gtm.nvidia.com/sonic/docker-ngts:1.2.198'
                  args '--entrypoint="" -v /.autodirect/sw_regression/system/SONIC/MARS/tarballs:/.autodirect/sw_regression/system/SONIC/MARS/tarballs/ -v /.autodirect/sw_regression/mtbcsw/system/SONIC/MARS/tarballs:/.autodirect/sw_regression/mtbcsw/system/SONIC/MARS/tarballs/ '
             }
         }

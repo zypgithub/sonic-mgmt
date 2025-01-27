@@ -120,8 +120,8 @@ def pytest_addoption(parser):
                                                                                  'will be executed')
     parser.addoption('--app_extension_dict_path', action='store', required=False, default=None,
                      help='''Provide path to application extensions json file.
-                          'Example of content: {"p4-sampling":"harbor.mellanox.com/sonic-p4/p4-sampling:0.2.0",
-                                      "what-just-happened":"harbor.mellanox.com/sonic-wjh/docker-wjh:1.0.1"} ''')
+                          'Example of content: {"p4-sampling":"nbu-harbor.gtm.nvidia.com/sonic-p4/p4-sampling:0.2.0",
+                                      "what-just-happened":"nbu-harbor.gtm.nvidia.com/sonic-wjh/docker-wjh:1.0.1"} ''')
     parser.addoption("--nvos_api_type", action="store", default='nvue', help="nvue/openapi")
     parser.addoption("--current_topo", dest="current_topo",
                      help="Current topology for example: t0, t1, t1-lag, ptf32, ...")
