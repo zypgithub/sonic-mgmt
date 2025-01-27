@@ -18,6 +18,7 @@ from ngts.tests_nvos.general.security.security_test_tools.tool_classes.RemoteAaa
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
 from ngts.tests_nvos.general.security.tacacs.constants import TacacsDockerServer0
 from ngts.tests_nvos.general.security.test_aaa_ldap.ldap_servers_info import LdapServersP3
+from ngts.tests_nvos.helpers.general_helpers import run_cmd
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
 from ngts.tests_nvos.system.gnmi.constants import GnmiMode, MAX_GNMI_SUBSCRIBERS, GnmicErr
 from ngts.tests_nvos.system.gnmi.helpers import verify_gnmi_client, change_interface_description, \
@@ -45,6 +46,13 @@ def aaa_users(engines, cleanup_after_aaa) -> Dict[str, UserInfo]:
             System().aaa.authentication.set(AuthConsts.FAILTHROUGH, AaaConsts.ENABLED, apply=True).verify_result()
     return {RemoteAaaType.TACACS: tac_server.users[0], RemoteAaaType.LDAP: ldap_server.users[0],
             RemoteAaaType.RADIUS: rad_server.users[0], }  # servers config cleared in clear_conf hook func
+
+
+@pytest.fixture()
+def killall_gnmic():
+    run_cmd('killall gnmic', validate=False)
+    yield
+    run_cmd('killall gnmic', validate=False)
 
 
 @pytest.mark.system
@@ -216,7 +224,7 @@ def test_gnmi_auth_existing_streamed_session(engines, local_adminuser):
 
 @pytest.mark.system
 @pytest.mark.gnmi
-def test_gnmi_auth_failing_clients_ddos(engines, local_adminuser):
+def test_gnmi_auth_failing_clients_ddos(engines, local_adminuser, killall_gnmic):
     """
     verify that gnmi is not blocked when there are existing >10 failed gnmi clients attempting
 

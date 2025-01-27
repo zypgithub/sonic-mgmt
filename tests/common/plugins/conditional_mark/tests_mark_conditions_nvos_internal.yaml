@@ -1,23 +1,5 @@
 ########################## NVOS IGNORE START ##########################
 
-tests_nvos/system/gnmi/test_gnmi_cert.py::test_gnmi_cert_rotation:
-  skip:
-    reason: "Skip for BUG: https://redmine.mellanox.com/issues/4255788"
-    conditions:
-      - https://redmine.mellanox.com/issues/4255788
-
-tests_nvos/system/gnmi/test_gnmi_cert.py::test_gnmi_cert_set_cert_after_unset:
-  skip:
-    reason: "Skip for BUG: https://redmine.mellanox.com/issues/4255788"
-    conditions:
-      - https://redmine.mellanox.com/issues/4255788
-
-tests_nvos/system/gnmi/test_gnmi_cert.py::test_gnmi_cert_set_cert:
-  skip:
-    reason: "Skip for BUG: https://redmine.mellanox.com/issues/4255788"
-    conditions:
-      - https://redmine.mellanox.com/issues/4255788
-
 tests_nvos/interfaces/nvl5_port/test_nvl5_port.py::test_show_nvl5_interface_commands:
   skip:
     reason: "Skip for BUG: https://redmine.mellanox.com/issues/4100265"

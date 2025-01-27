@@ -1,5 +1,8 @@
+import logging
 import re
-from typing import List
+import shlex
+import subprocess
+from typing import List, Union
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 
@@ -23,3 +26,26 @@ def verify_hidden_cmd_args_in_history(dut_engine: LinuxSshEngine, num_lines: int
     ]
 
     assert not bad_commands, f'some commands history have no hidden args as expected:\n{bad_commands}'
+
+
+def run_cmd(cmd: Union[str, list], timeout=10, validate: bool = True, stdout_func=logging.info) -> str:
+    """
+    Run given command on the player/running machine
+    """
+    cmd_str, cmd_list = (cmd, shlex.split(cmd)) if isinstance(cmd, str) else (
+        ' '.join([str(item) for item in cmd]), cmd)
+
+    stdout_func(f'run: {cmd_str}')
+    # Run the bash script
+    result = subprocess.run(cmd_list, capture_output=True, text=True, timeout=timeout)
+
+    # Print the output
+    stdout_func(result.stdout)
+
+    # Print any error messages
+    if validate and result.returncode != 0:
+        stdout_func("Returned code is not 0. Errors:")
+        stdout_func(result.stderr)
+        raise ValueError(f'error has occurred\nout: {result.stdout}\nerr: {result.stderr}')
+
+    return result.stdout
