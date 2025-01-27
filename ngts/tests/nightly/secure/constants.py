@@ -82,7 +82,7 @@ class SonicSecureBootConsts(SecureBootConsts):
 
     SWITCH_RECOVER_TIMEOUT = 300
     CPLD_BURNING_RECOVER_TIMEOUT = 1200
-    ONIE_TIMEOUT = 120
+    ONIE_TIMEOUT = 180
     PROD_CORRUPT_MFA_PATH = '/auto/sw_regression/system/SONIC/MARS/security/secure_boot/corrupt_mfa/OPN/'
     DEV_CORRUPT_MFA_PATH = '/auto/sw_regression/system/SONIC/MARS/security/secure_boot/corrupt_mfa/IPN/'
     PROD_CORRUPT_MFA_FILE = 'prod_corrupted_bin'
