@@ -480,7 +480,7 @@ def eth_handle_exception():
 
 
 @pytest.fixture(scope="function", autouse=True)
-def list_of_executed_commands(engines, run_cli_coverage_flow, request):
+def list_of_executed_commands(engines, run_cli_coverage_flow, request, session_data):
     pytest.s_time = time.time()
     logging.info(f'------- TEST STARTED - {request.node.name} -------')
     if 'no_log_test_wrapper' not in request.keywords:
@@ -496,6 +496,9 @@ def list_of_executed_commands(engines, run_cli_coverage_flow, request):
             commands_list = SendCommandTool.execute_command(
                 LinuxGeneralCli(engines.dut).get_history).get_returned_value()
             allure.attach("List of commands", commands_list)
+
+        session_data[request.node.name] = {"history": commands_list}
+
     except BaseException as err:
         logging.warning(f"Failed to get list of executed commands - {err}")
 
@@ -666,6 +669,19 @@ def insert_operation_duration_to_db(setup_name, type, version, session_id, relea
         logger.info("--------- insert to operation time DB table successfully ---------\n")
     finally:
         mssql_connection_obj.disconnect_db()
+
+
+@pytest.fixture(scope="session")
+def session_data():
+    """
+    Fixture to hold session-wide data for executed commands and additional metadata.
+
+    This fixture acts as a centralized storage for data that needs to persist throughout the test session.
+    It can be used for various purposes, such as:
+    - Holding log outputs or diagnostic information for bug handling after running loganalyzer.
+    - Keeping track of test-related context data.
+    """
+    return {}
 
 
 @pytest.fixture(autouse=True)

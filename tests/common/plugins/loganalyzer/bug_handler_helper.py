@@ -11,8 +11,6 @@ from retry.api import retry
 
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 from ngts.constants.constants import BugHandlerConst, InfraConst, NvosCliTypes, FILE_INCLUDE_FAILED_SANITY_CHECKER_CASE
-from ngts.nvos_constants.constants_nvos import SystemConsts
-
 from ngts.helpers.bug_handler.bug_handler_helper import create_session_tmp_folder, clear_files, bug_handler_wrapper_err_msg, \
     create_log_analyzer_yaml_file, group_log_errors_by_timestamp, summarize_la_bug_handler
 from ngts.scripts.allure_reporter import predict_allure_report_link
@@ -190,6 +188,9 @@ def log_analyzer_bug_handler(duthost, request, log_errors_dir_path=None, only_ch
 
     if "components" in log_analyzer_handler_info:
         bug_handler_dict["components"] = log_analyzer_handler_info["components"]
+
+    if log_analyzer_handler_info['cli_type'] == 'NVUE':
+        bug_handler_dict.update(get_nvue_additional_info(duthost, request))
 
     log_analyzer_res, la_error_messages = handle_log_analyzer_errors(log_analyzer_handler_info['cli_type'],
                                                   log_analyzer_handler_info['branch'], test_name, duthost,
@@ -394,3 +395,50 @@ def get_sonic_branch(duthost, cli_type):
         else:
             branch = "master"
     return branch.strip()
+
+
+def get_nvue_additional_info(duthost, request):
+    """
+    Fetches additional NVUE-related information from the DUT (Device Under Test).
+
+    Args:
+        duthost: DUT object.
+
+    Returns:
+        dict: Contains the history of executed commands and specific outputs for show_system and show_platform_firmware.
+    """
+    nvue_info = {}
+    try:
+        # List of commands to execute
+        commands = [
+            "nv show system reboot history",
+            "nv show platform firmware",
+        ]
+
+
+        # Run commands on the remote duthost
+        results = duthost.shell_cmds(cmds=commands, continue_on_fail=True, timeout=30)['results']
+        # Parse results
+        command_results = {}
+        for result in results:
+            cmd = result['cmd']
+            command_results[cmd] = {
+                'stdout': result.get('stdout', '').strip(),
+                'stderr': result.get('stderr', '').strip(),
+                'rc': result.get('rc', 0)
+            }
+
+        # Populate nvue_info
+        nvue_info['show_system'] = command_results.get("nv show system reboot history", {}).get('stdout', '')
+        nvue_info['show_platform_firmware'] = command_results.get("nv show platform firmware", {}).get('stdout', '')
+
+        # Use `request.getfixturevalue` to access the session-scoped fixture
+        session_data = request.getfixturevalue("session_data")
+        nvue_info['history'] = session_data.get(request.node.name, {}).get('history', "")
+
+    except Exception as e:
+        logging.error(f"Failed to retrieve NVUE information from {duthost}: {e}")
+        nvue_info['show_system'] = "Error: Unable to fetch 'nv show system reboot history' output"
+        nvue_info['show_platform_firmware'] = "Error: Unable to fetch 'nv show platform firmware' output"
+
+    return nvue_info
