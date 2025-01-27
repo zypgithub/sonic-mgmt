@@ -89,7 +89,7 @@ def get_sum_power_df_by_collectors_group(power_df):
 
 
 def validate_power_df_by_collectors(power_df, collectors_power_threshold, violations_list):
-    power_total_th = collectors_power_threshold.pop("TOTAL")
+    power_total_th = collectors_power_threshold.get("TOTAL")
     total_power = power_df["Power (W)"].sum()
     for index, row in power_df.iterrows():
         collector_name = row["Power Supply"]
