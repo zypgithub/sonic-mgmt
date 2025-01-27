@@ -71,7 +71,7 @@ class File(BaseComponent):
         resource_path = self.get_resource_path()
         with allure.step(f"Upload file {resource_path} to '{upload_path}'"):
             return SendCommandTool.execute_command_expected_str(
-                self._cli_wrapper.action, expected_str,
+                self._cli_wrapper.action_deprecated, expected_str,
                 engine, action_type='upload', resource_path=resource_path,
                 param_name='remote-url', param_value=upload_path).get_returned_value(should_succeed)
 
@@ -80,7 +80,7 @@ class File(BaseComponent):
         resource_path = self.get_resource_path()
         with allure.step(f"Delete file: {resource_path}"):
             return SendCommandTool.execute_command_expected_str(
-                self._cli_wrapper.action, expected_str,
+                self._cli_wrapper.action_deprecated, expected_str,
                 engine, action_type='delete', resource_path=resource_path).get_returned_value(should_succeed)
 
     def action_rename(self, new_name, expected_str="", rewrite_file_name=True, dut_engine=None, should_succeed=True
@@ -89,7 +89,7 @@ class File(BaseComponent):
         resource_path = self.get_resource_path()
         with allure.step(f"Rename file: {resource_path} to: {new_name}"):
             result = SendCommandTool.execute_command_expected_str(
-                self._cli_wrapper.action, expected_str,
+                self._cli_wrapper.action_deprecated, expected_str,
                 engine, action_type='rename', resource_path=resource_path,
                 param_name='new-name', param_value=new_name).get_returned_value(should_succeed)
             if result and rewrite_file_name:
@@ -121,12 +121,13 @@ class File(BaseComponent):
             no_force = 'skip-reboot'
         with allure.step(f"Install file: {resource_path}"):
             return SendCommandTool.execute_command_expected_str(
-                self._cli_wrapper.action, expected_str,
+                self._cli_wrapper.action_deprecated, expected_str,
                 engine, device, action_type='install', resource_path=resource_path,
                 param_name='force' if force else no_force, param_value=param_value,
                 expect_reboot=with_reboot, recovery_engine=recovery_engine, deny_reboot=deny_reboot,
                 topology_obj=topology_obj, track_boot_intervals=track_boot_intervals, press_y=press_y,
-                should_succeed=should_succeed, system_is_ready_timeout=system_is_ready_timeout)
+                should_succeed=should_succeed, system_is_ready_timeout=system_is_ready_timeout,
+                expected_output=expected_str)
 
     def rename_and_verify(self, new_name, expected_str="", dut_engine=None):
         original_name = self.file_name

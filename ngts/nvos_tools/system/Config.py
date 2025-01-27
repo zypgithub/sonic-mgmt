@@ -14,15 +14,6 @@ class Config(BaseComponent):
         self.files = Files(self)
         self.auto_save = BaseComponent(self, path='/auto-save')
 
-    def action_fetch(self, remote_url, expected_str="", dut_engine=None):
-        if not dut_engine:
-            dut_engine = TestToolkit.engines.dut
-        with allure.step('Trying to fetch {}'.format(remote_url)):
-            return SendCommandTool.execute_command_expected_str(self.api_obj[TestToolkit.tested_api].action_fetch,
-                                                                expected_str, dut_engine,
-                                                                self.get_resource_path(),
-                                                                remote_url).verify_result()
-
     def action_export(self, file_name, expected_str="", dut_engine=None):
         if not dut_engine:
             dut_engine = TestToolkit.engines.dut

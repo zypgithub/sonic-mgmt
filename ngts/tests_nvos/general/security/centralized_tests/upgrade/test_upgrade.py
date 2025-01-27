@@ -124,7 +124,7 @@ def is_cur_version_as_expected(system: System, expected_version: str) -> ResultO
 def fetch_install_img(system: System, img_path: str, engines):
     @retry(Exception, 3, 1)
     def _fetch_img_with_retry(scp_url):
-        system.image.action_fetch(scp_url)
+        system.image.action_fetch(scp_url, base_url='')
 
     img_name = img_path.split("/")[-1]
     with allure.step(f"fetch image: {img_name}"):

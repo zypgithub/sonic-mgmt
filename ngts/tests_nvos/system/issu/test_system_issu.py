@@ -895,7 +895,7 @@ def prepare_image_for_install(player, dut_engine, dut_device, image_version):
 
         with allure.step(f"Fetch system image: {image_version}"):
             image_scp_url = f'scp://{scp_host_creds}{image_version}'
-            system.image.action_fetch(url=image_scp_url, dut_engine=dut_engine)
+            system.image.action_fetch(url=image_scp_url, base_url='', engine=dut_engine)
             time.sleep(10)
 
         with allure.step('Get recovery engine, use new default password for recovery after upgrade'):

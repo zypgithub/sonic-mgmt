@@ -149,7 +149,7 @@ def test_save_reboot(engines, devices):
                            dut_engine=engines.dut).verify_result()
 
             with allure.step('Run nv action reboot system'):
-                system.reboot.action_reboot()
+                system.action_reboot(send_user_confirmation='y').verify_result()
 
             with allure.step('verify the hostname is {hostname}'.format(hostname=new_hostname_value)):
                 system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()

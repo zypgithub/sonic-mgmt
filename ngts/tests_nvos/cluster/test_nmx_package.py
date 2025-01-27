@@ -198,7 +198,7 @@ def test_nmx_package_bad_flow(devices, engines, test_name, test_api):
     non_exist_app = RandomizationTool.get_random_string(8)
 
     with allure.step(f'try to uninstall non existing app {non_exist_app}'):
-        fae.cluster.apps.action(action=ActionConsts.UNINSTALL, param_name=ClusterConsts.APP_NAME, param_value=non_exist_app).verify_result(False)
+        fae.cluster.apps.action_deprecated(action=ActionConsts.UNINSTALL, param_name=ClusterConsts.APP_NAME, param_value=non_exist_app).verify_result(False)
 
     with allure.step('try to fetch cluster package'):
         nmx_package.action_fetch(path=new_path).verify_result()

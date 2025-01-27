@@ -16,4 +16,4 @@ class Bmc_password(BaseComponent):
 
     def action_reset(self):
         """ nv action reset platform bmc-password """
-        return self.action(ActionConsts.RESET)
+        return self.action_deprecated(ActionConsts.RESET)

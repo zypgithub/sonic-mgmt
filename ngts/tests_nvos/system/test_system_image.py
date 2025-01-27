@@ -123,6 +123,7 @@ def test_downgrade_upgrade(release_name, random_api, original_version, devices, 
     if not downgrade_version_realpath:
         pytest.skip("Cannot run test because base_version parameter is missing from the setup file")
 
+    orig_engine: LinuxSshEngine = TestToolkit.engines.dut
     system = System()
     verify_current_version(original_version, system, devices.dut)
 
@@ -146,7 +147,6 @@ def test_downgrade_upgrade(release_name, random_api, original_version, devices, 
             fetched_image_file.action_rename(fetched_image)
 
         with allure.step('install the fetched image (after renamed back to original name)'):
-            orig_engine: LinuxSshEngine = TestToolkit.engines.dut
             install_image_and_verify(orig_engine=orig_engine, image_name=fetched_image,
                                      partition_id=partition_id_for_new_image,
                                      original_images=original_images, system=system, release_name=release_name,
@@ -295,17 +295,17 @@ def test_system_image_bad_flow(engines, release_name, test_api, original_version
                 player = engines['sonic_mgmt']
                 scp_path = ImageConsts.SCP_PATH_SERVER.format(username=player.username, password=player.password,
                                                               ip=player.ip, path=image_path)
-                system.image.action_fetch(scp_path)
+                system.image.action_fetch(scp_path, base_url='').verify_result()
                 images_name.append(image_name)
 
             if IpTool.is_dhcp_client6_has_lease(engines.dut):
                 with allure.independent_step("Fetch the same image again using ipv6 address"):
                     scp_path = ImageConsts.SCP_PATH_SERVER.format(username=player.username, password=player.password,
                                                                   ip=f"[{sonic_mgmt_ipv6_addr}]", path=image_path)
-                    system.image.action_fetch(scp_path)
+                    system.image.action_fetch(scp_path, base_url='').verify_result()
 
             with allure.independent_step("Fetch an image that does not exist"):
-                system.image.action_fetch(scp_path + rand_name, "Failed")
+                system.image.action_fetch(scp_path + rand_name, base_url='').verify_result(False)
 
         with allure.step("Delete bad flows"):
             with allure.independent_step("Delete file that does not exist"):
@@ -391,7 +391,7 @@ def test_install_multiple_images(release_name, test_name, random_api, original_v
         scp_path = 'scp://{}:{}@{}'.format(player.username, player.password, player.ip)
 
         with allure.step("Fetch an image {}".format(scp_path + BASE_IMAGE_VERSION_TO_INSTALL_PATH)):
-            system.image.action_fetch(scp_path + BASE_IMAGE_VERSION_TO_INSTALL_PATH)
+            system.image.action_fetch(BASE_IMAGE_VERSION_TO_INSTALL_PATH, scp_path)
             image_files.append(
                 BASE_IMAGE_VERSION_TO_INSTALL) if BASE_IMAGE_VERSION_TO_INSTALL not in image_files else image_files
 
@@ -581,7 +581,7 @@ def test_fetch_image_via_https(test_api):
 
     try:
         with allure.step("Fetch an image {}".format(SystemConsts.NBU_NFS_SERVER + image_to_fetch)):
-            system.image.action_fetch(SystemConsts.NBU_NFS_SERVER + image_to_fetch)
+            system.image.action_fetch(image_to_fetch, base_url=SystemConsts.NBU_NFS_SERVER)
             image_fetched = True
 
         with allure.step("Verify fetched image is shown in the show command"):
@@ -661,7 +661,7 @@ def helper_fetch_image_with_weird_password(engines, system, test_api, weird_pass
             scp_path = ImageConsts.SCP_PATH_SERVER.format(username=new_user,
                                                           password=weird_password_urlencoded, ip=hostname,
                                                           path=SystemConsts.DUMMY_IMAGE_PATH + SystemConsts.DUMMY_IMAGE)
-            system.image.action_fetch(scp_path)
+            system.image.action_fetch(scp_path, base_url='')
             image_fetched = True
 
         with allure.step("Verify fetched image is shown in the show command"):
@@ -690,7 +690,10 @@ def install_image_and_verify(orig_engine, image_name, partition_id, original_ima
         new_engine = LinuxSshEngine(orig_engine.ip, orig_engine.username, orig_engine.password)
         res_obj, _ = OperationTime.save_duration('image install', '', test_name,
                                                  system.image.files.file_name[image_name].action_file_install_with_reboot,
-                                                 "", True, None, None, new_engine)
+                                                 SystemConsts.REBOOT_RESPONSE_MESSAGES,
+                                                 True, None, None, new_engine,
+                                                 )
+        res_obj.verify_result()
 
     with allure.step('replace dut engine'):
         TestToolkit.engines.dut = new_engine  # if install succeeded, need to replace dut engine
@@ -815,7 +818,7 @@ def get_image_data_and_fetch_random_image_files(release_name, system, images_amo
             player = TestToolkit.engines['sonic_mgmt']
             scp_path = 'scp://{}:{}@{}'.format(player.username, player.password, player.ip)
             with allure.step("Fetch an image {}".format(scp_path + image_path)):
-                system.image.action_fetch(scp_path + image_path)
+                system.image.action_fetch(image_path, base_url=scp_path)
                 images_name.append(image_name)
     return original_images, original_image, original_image_partition, partition_id_for_new_image, images_name
 
@@ -825,8 +828,7 @@ def get_image_data_and_fetch_base_image(system, base_version):
 
     with allure.step(f"Fetch image {base_version}"):
         player = TestToolkit.engines['sonic_mgmt']
-        system.image.action_fetch(ImageConsts.SCP_PATH_SERVER.format(username=player.username, password=player.password,
-                                                                     ip=player.ip, path=base_version))
+        system.image.action_fetch(path=base_version).verify_result()
     image_name = base_version.split("/")[-1]
     return original_images, original_image, original_image_partition, partition_id_for_new_image, image_name
 

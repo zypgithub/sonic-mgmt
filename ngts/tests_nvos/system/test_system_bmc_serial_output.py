@@ -44,8 +44,8 @@ def test_system_bmc_serial_output(engines, devices, serial_engine, topology_obj,
         _show_and_verify_serial_console(system, serial_engine, param='image')
 
         with allure_step('Run nv action change fae system system serial-console connected-to bmc'):
-            fae.system.serial_console.action(action=ActionConsts.CHANGE,
-                                             param_value=SystemConsts.SERIAL_BMC_ACTION_CHANGE_BMC).verify_result()
+            fae.system.serial_console.action_deprecated(action=ActionConsts.CHANGE,
+                                                        param_value=SystemConsts.SERIAL_BMC_ACTION_CHANGE_BMC).verify_result()
 
         with allure_step('Show ssh and verify default values'):
             serial_output = OutputParsingTool.parse_json_str_to_dictionary(system.serial_console.show())\
@@ -59,8 +59,8 @@ def test_system_bmc_serial_output(engines, devices, serial_engine, topology_obj,
 
     finally:
         with allure_step('Run nv action change fae system system serial-console connected-to cpu'):
-            fae.system.serial_console.action(action=ActionConsts.CHANGE,
-                                             param_value=SystemConsts.SERIAL_BMC_ACTION_CHANGE_CPU).verify_result()
+            fae.system.serial_console.action_deprecated(action=ActionConsts.CHANGE,
+                                                        param_value=SystemConsts.SERIAL_BMC_ACTION_CHANGE_CPU).verify_result()
 
         with allure_step('Run nv show serial-console and verify value changed to cpu'):
             serial_output = OutputParsingTool.parse_json_str_to_dictionary(system.serial_console.show())\

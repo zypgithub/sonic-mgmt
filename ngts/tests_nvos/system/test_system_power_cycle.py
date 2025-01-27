@@ -90,12 +90,12 @@ def _test_command_not_supported(engines, devices, test_name, test_api, force_str
             assert not output, "The following commands should not exist: " + output
 
     with allure.independent_step("Verify command doesn't work"):
-        System().action(ActionConsts.POWER_CYCLE, param_name=force_str).verify_result(should_succeed=False)
+        System().action_deprecated(ActionConsts.POWER_CYCLE, param_name=force_str).verify_result(should_succeed=False)
 
 
 def do_power_cycle(force_str: str) -> ResultObj:
-    return System().action(ActionConsts.POWER_CYCLE, expect_reboot=True, param_name=force_str, output_format=None,
-                           expected_output='System will power cycle in a few seconds')
+    return System().action_deprecated(ActionConsts.POWER_CYCLE, expect_reboot=True, param_name=force_str, output_format=None,
+                                      expected_output='System will power cycle in a few seconds')
 
 
 def get_bmc_uptime_seconds(engine: LinuxSshEngine) -> float:

@@ -48,4 +48,4 @@ class DebugInfoComponent(BaseComponent):
     def action_delete_all(self):
         """nv action delete fae platform debug info {debug-image | customer-support} files"""
         with allure.step(f"Delete all files of {self.component_name}"):
-            return self.action(ActionConsts.DELETE, 'files')
+            return self.action_deprecated(ActionConsts.DELETE, 'files')

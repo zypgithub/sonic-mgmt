@@ -68,12 +68,6 @@ class FaePackage(BaseComponent):
         super().__init__(parent=parent_obj, path="/package")
         self.files = Files(self)
 
-    def action_fetch(self, path, base_url='') -> ResultObj:
-        with allure.step(f"fetching nmx package from {path}"):
-            return SendCommandTool.execute_command(
-                self.api_obj[TestToolkit.tested_api].action_fetch,
-                TestToolkit.engines.dut, self.get_resource_path(), path)
-
 
 class FaeApps(BaseComponent):
     def __init__(self, parent_obj=None):
@@ -90,7 +84,7 @@ class FaeClusterApp(BaseComponent):
 
     def action_uninstall(self, expect_reboot=False) -> ResultObj:
         """nv action uninstall fae cluster apps <app_name> [force]"""
-        return self.action(ActionConsts.UNINSTALL, expect_reboot=expect_reboot)
+        return self.action_deprecated(ActionConsts.UNINSTALL, expect_reboot=expect_reboot)
 
 
 class Ib(BaseComponent):
@@ -172,11 +166,11 @@ class FaePlatformComponent(BaseComponent):
 
     def action_install(self, filename, device, expect_reboot) -> ResultObj:
         """nv action install fae platform firmware (bios|cpld|ssd) files <file-name> [force]"""
-        return self.action(ActionConsts.INSTALL, 'files ' + filename, 'force', expect_reboot=expect_reboot)
+        return self.action_deprecated(ActionConsts.INSTALL, 'files ' + filename, 'force', expect_reboot=expect_reboot)
 
     def action_delete(self, filename) -> ResultObj:
         """nv action delete fae platform firmware (bios|cpld|ssd) files <file-name> [force]"""
-        return self.action(ActionConsts.DELETE, 'files ' + filename, expected_output='File delete successfully')
+        return self.action_deprecated(ActionConsts.DELETE, 'files ' + filename, expected_output='File delete successfully')
 
 
 class FaeCpldComponent(FaePlatformComponent):
@@ -211,7 +205,7 @@ class FaeSystem(BaseComponent):
 
     def ssd_cleanup(self, expected_str="", dut_engine=None):
         """nv action run fae system ssd-cleanup """
-        return self.action(ActionConsts.RUN, 'ssd-cleanup', expected_output=expected_str)
+        return self.action_deprecated(ActionConsts.RUN, 'ssd-cleanup', expected_output=expected_str)
 
 
 class FaeLog(BaseComponent):

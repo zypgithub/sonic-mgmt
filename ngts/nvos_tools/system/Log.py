@@ -96,7 +96,7 @@ class FileId(BaseComponent):
         resource_path = self.get_resource_path()
         with allure.step(f"Upload file {resource_path} to '{upload_path}'"):
             return SendCommandTool.execute_command_expected_str(
-                self._cli_wrapper.action, expected_str,
+                self._cli_wrapper.action_deprecated, expected_str,
                 engine, action_type='upload', resource_path=resource_path,
                 param_name='remote-url', param_value=upload_path).get_returned_value(should_succeed)
 
@@ -105,7 +105,7 @@ class FileId(BaseComponent):
         resource_path = self.get_resource_path()
         with allure.step(f"Delete file: {resource_path}"):
             return SendCommandTool.execute_command_expected_str(
-                self._cli_wrapper.action, expected_str,
+                self._cli_wrapper.action_deprecated, expected_str,
                 engine, action_type='delete', resource_path=resource_path).get_returned_value(should_succeed)
 
 

@@ -389,9 +389,9 @@ def _manual_exit_fatal_mode(engine):
     """nv action resume fae system fatal monitor force. Verify the system reboots, exits fatal mode and opens ports."""
     with allure.step(f"{_manual_exit_fatal_mode.__name__}: Run FAE command to manually exit fatal mode and check that "
                      f"the system reboots to normal"):
-        Fae().system.fatal.monitor.action(ActionConsts.RESUME, param_name="force", expect_reboot=True,
-                                          output_format=None, dut_engine=engine, expected_output="Performing reboot"
-                                          ).verify_result()
+        Fae().system.fatal.monitor.action_deprecated(ActionConsts.RESUME, param_name="force", expect_reboot=True,
+                                                     output_format=None, dut_engine=engine, expected_output="Performing reboot"
+                                                     ).verify_result()
         _wait(0, 20)
         _assert_system_fatal_mode(False)
         # todo assert ports are open

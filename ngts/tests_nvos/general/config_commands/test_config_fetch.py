@@ -50,7 +50,7 @@ def test_show_fetch_file(engines):
     }
 
     with allure.step('fetch {}'.format(yaml_file)):
-        system.config.action_fetch(remote_url, action_expected_str)
+        system.config.action_fetch(remote_url, base_url='')
 
     with allure.step('verify nv show system config files command after fetch'):
         assert expected_dict == \
@@ -130,7 +130,7 @@ def test_rename_and_upload(engines):
         remote_url = generate_scp_uri_using_player(engines.sonic_mgmt, YAML_FILES_PATH + yaml_file)
 
     with allure.step('fetch {}'.format(yaml_file)):
-        system.config.action_fetch(remote_url)
+        system.config.action_fetch(remote_url, base_url='')
 
     with allure.step('Rename image and verify'):
         new_name = RandomizationTool.get_random_string(20, ascii_letters=string.ascii_letters + string.digits) + '.yaml'
@@ -184,7 +184,7 @@ def test_patch_replace_delete(engines):
             with allure.step('get the remote url'):
                 remote_url = generate_scp_uri_using_player(engines.sonic_mgmt, YAML_FILES_PATH + file)
             with allure.step('fetch {}'.format(file)):
-                system.config.action_fetch(remote_url)
+                system.config.action_fetch(remote_url, base_url='')
 
     with allure.step('run nv config replace'):
         output = TestToolkit.GeneralApi[TestToolkit.tested_api].replace_config(engines.dut, YAML_FILES_LIST[0])

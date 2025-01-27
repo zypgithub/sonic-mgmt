@@ -47,10 +47,17 @@ class SendCommandTool:
     def execute_command_expected_str(command_to_execute, expected_str, *args, **kwargs) -> ResultObj:
         """`expected_str` can also be a list of strings; the function searches for any (not all) of them."""
         output = command_to_execute(*args, **kwargs)
+        return SendCommandTool.verify_output(output, expected_str)
+
+    @staticmethod
+    def verify_output(output: str, expected_str='', exempted_err_msgs=()) -> ResultObj:
+        if expected_str and exempted_err_msgs:
+            raise ValueError(f'Cannot supply both expected_str and exempted_err_msgs.\n'
+                             f'{expected_str=}\n{exempted_err_msgs=}')
         if expected_str:
             return ValidationTool.verify_any_string_in_string(output, expected_str)
         else:
-            return SendCommandTool.verify_no_error_message(output)
+            return SendCommandTool.verify_no_error_message(output, exempted_err_msgs)
 
     @staticmethod
     def execute_command(command_to_execute, *args, exempted_err_msgs=(), **kwargs) -> ResultObj:

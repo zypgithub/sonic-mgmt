@@ -37,10 +37,7 @@ class FileType(BaseComponent):
                                                    self.get_resource_path())
 
     def action_fetch_sdn(self, url, dut_engine=None) -> ResultObj:
-        with allure.step(f'Execute action fetch for {self.get_resource_path()}'):
-            engine = dut_engine if dut_engine else TestToolkit.engines.dut
-            return SendCommandTool.execute_command(self._cli_wrapper.action_fetch, engine,
-                                                   self.get_resource_path(), url)
+        return self.action_fetch(url, '', dut_engine)
 
     def action_install_sdn(self, file, dut_engine=None) -> ResultObj:
         with allure.step(f'Execute action install for {self.get_resource_path()}'):

@@ -113,19 +113,6 @@ class NvueSystemCli(NvueBaseCli):
 
     @staticmethod
     @check_output
-    def action_reboot(engine, device, resource_path, op_param="", reboot_params=None):
-        """
-        Rebooting the switch
-        """
-        path = resource_path.replace('/', ' ')
-        cmd = "nv action reboot {path} {op_param}".format(path=path, op_param=op_param)
-        cmd = " ".join(cmd.split())
-        logging.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
-        return DutUtilsTool.reload(engine=engine, device=device, command=cmd, confirm=True, reboot_params=reboot_params
-                                   ).verify_result()
-
-    @staticmethod
-    @check_output
     def action_profile_change(engine, device, resource_path, op_param=""):
         """
         Rebooting the switch
@@ -256,14 +243,6 @@ class NvueSystemCli(NvueBaseCli):
         rotate_log_cmd = f"nv action rotate {path}"
         logging.info("Running '{cmd}' on dut using NVUE".format(cmd=rotate_log_cmd))
         return engine.run_cmd(rotate_log_cmd)
-
-    @staticmethod
-    @check_output
-    def action_fetch(engine, resource_path, remote_url):
-        path = resource_path.replace('/', ' ')
-        cmd = "nv action fetch {} {}".format(path, remote_url)
-        logging.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
-        return engine.run_cmd(cmd)
 
     @staticmethod
     @check_output

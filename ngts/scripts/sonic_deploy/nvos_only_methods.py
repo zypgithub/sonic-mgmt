@@ -200,7 +200,7 @@ class NvosInstallationSteps:
     def upgrade_to_target_version(bin_filename, dut_engine, dut_device, scp_host_creds, system, target_version_path,
                                   topology_obj, param_value=''):
         image_scp_url = f'scp://{scp_host_creds}{target_version_path}'
-        system.image.action_fetch(url=image_scp_url, dut_engine=dut_engine)
+        system.image.action_fetch(image_scp_url, base_url='', engine=dut_engine)
         # use new default password for recovery after upgrade
         recovery_engine = LinuxSshEngine(dut_engine.ip, dut_engine.username,
                                          dut_device.get_default_password_by_version(target_version_path))
@@ -213,7 +213,7 @@ class NvosInstallationSteps:
     @staticmethod
     def fetch_apply_save_config(config_filename, config_file_path, dut_engine, scp_host_creds, system):
         conf_scp_url = f'scp://{scp_host_creds}{config_file_path}'
-        system.config.action_fetch(remote_url=conf_scp_url, dut_engine=dut_engine)
+        system.config.action_fetch(conf_scp_url, base_url='', engine=dut_engine)
         NvueGeneralCli.replace_config(engine=dut_engine, file=config_filename)
         NvueGeneralCli.apply_config(engine=dut_engine, option='-y')
         NvueGeneralCli.save_config(engine=dut_engine)

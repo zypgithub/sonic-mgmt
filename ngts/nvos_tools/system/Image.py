@@ -1,8 +1,6 @@
 import logging
 
-import allure
-
-from ngts.nvos_constants.constants_nvos import ApiType, ActionConsts
+from ngts.nvos_constants.constants_nvos import ApiType, ActionConsts, ActionParamConsts
 from ngts.nvos_constants.constants_nvos import ImageConsts
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
@@ -11,6 +9,7 @@ from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.system.Files import Files
+from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
 
@@ -23,40 +22,24 @@ class Image(BaseComponent):
     def unset(self, op_param=""):
         raise Exception("unset is not implemented for /image")
 
-    def _action(self, action_type, op_param="", expected_str="Action succeeded", dut_engine=None, verify_res: bool = True):
-        if not dut_engine:
-            dut_engine = TestToolkit.engines.dut
-        res: ResultObj = SendCommandTool.execute_command_expected_str(self.api_obj[TestToolkit.tested_api].action_image,
-                                                                      expected_str, dut_engine,
-                                                                      action_type, self.get_resource_path(),
-                                                                      op_param)
-        if verify_res:
-            return res.get_returned_value()
-        else:
-            res.ignore_result()
-            return res.returned_value
-
-    def action_install(self, params="", expected_str="", dut_engine=None):
-        with allure.step("Install {params} system image".format(params=params)):
-            logging.info("Install {params} system image".format(params=params))
-            return self._action(ActionConsts.INSTALL, params, expected_str, dut_engine)
-
     def action_uninstall(self, params="", expected_str="", engine=None, verify_res: bool = True):
         with allure.step("Uninstall {params} system image".format(params=params)):
-            logging.info("Uninstall {params} system image".format(params=params))
-            return self._action(ActionConsts.UNINSTALL, params, expected_str, dut_engine=engine, verify_res=verify_res)
-
-    def action_fetch(self, url="", expected_str="Action succeeded", dut_engine=None):
-        with allure.step("Image fetch {url} ".format(url=url)):
-            logging.info("Image fetch {url} system image".format(url=url))
-            if TestToolkit.tested_api == ApiType.OPENAPI and expected_str == "Action succeeded":
-                expected_str = 'File fetched successfully'
-            return self._action(ActionConsts.FETCH, url, expected_str, dut_engine)
+            if not engine:
+                engine = TestToolkit.engines.dut
+            res: ResultObj = SendCommandTool.execute_command_expected_str(self.api_obj[TestToolkit.tested_api].action_image,
+                                                                          expected_str, engine,
+                                                                          ActionConsts.UNINSTALL, self.get_resource_path(),
+                                                                          params)
+            if verify_res:
+                return res.get_returned_value()
+            else:
+                res.ignore_result()
+                return res.returned_value
 
     def action_boot_next(self, partition_id, expected_str=''):
-        with allure.step("Set image '{id}' to boot next".format(id=partition_id)):
-            logging.info("Set image '{id}' to boot next".format(id=partition_id))
-            return self._action(ActionConsts.BOOT_NEXT, partition_id, expected_str)
+        with allure.step(f"Set image '{partition_id}' to boot next"):
+            return self.action(ActionConsts.BOOT_NEXT, (ImageConsts.PARTITION, partition_id),
+                               expected_output=expected_str)
 
     def get_image_field_value(self, field_name):
         output = OutputParsingTool.parse_json_str_to_dictionary(BaseComponent.show(self)).get_returned_value()

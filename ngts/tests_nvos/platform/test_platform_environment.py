@@ -185,8 +185,8 @@ def test_set_platform_environment_led(engines, devices, test_api):
         for led, led_prop in output.items():
             if led == PlatformConsts.ENV_UID:
                 continue
-            platform.environment.led.action(action='turn-{type}'.format(type=PlatformConsts.ENV_LED_TURN_OFF),
-                                            suffix=led).verify_result(False)
+            platform.environment.led.action_deprecated(action='turn-{type}'.format(type=PlatformConsts.ENV_LED_TURN_OFF),
+                                                       suffix=led).verify_result(False)
 
     with allure.step("Check that all leds are green and UID off by default"):
         logging.info("Check that all leds are green and UID off by default")
@@ -195,8 +195,8 @@ def test_set_platform_environment_led(engines, devices, test_api):
 
     with allure.step("Change UID state led to on"):
         logging.info("Check UID state led to on")
-        platform.environment.led.action(action='turn-{type}'.format(type=PlatformConsts.ENV_LED_TURN_ON),
-                                        suffix=PlatformConsts.ENV_UID)
+        platform.environment.led.action_deprecated(action='turn-{type}'.format(type=PlatformConsts.ENV_LED_TURN_ON),
+                                                   suffix=PlatformConsts.ENV_UID)
         output = Tools.OutputParsingTool.parse_json_str_to_dictionary(
             platform.environment.led.show()).verify_result()
         Tools.ValidationTool.compare_values(output[PlatformConsts.ENV_UID][PlatformConsts.ENV_LED_COLOR_LABEL],
@@ -204,8 +204,8 @@ def test_set_platform_environment_led(engines, devices, test_api):
 
     with allure.step("Change UID state led to off"):
         logging.info("Change UID state led to off")
-        platform.environment.led.action(action='turn-{type}'.format(type=PlatformConsts.ENV_LED_TURN_OFF),
-                                        suffix=PlatformConsts.ENV_UID)
+        platform.environment.led.action_deprecated(action='turn-{type}'.format(type=PlatformConsts.ENV_LED_TURN_OFF),
+                                                   suffix=PlatformConsts.ENV_UID)
         output = Tools.OutputParsingTool.parse_json_str_to_dictionary(
             platform.environment.led.show()).verify_result()
         Tools.ValidationTool.compare_values(output[PlatformConsts.ENV_UID][PlatformConsts.ENV_LED_COLOR_LABEL],
@@ -355,7 +355,7 @@ def test_platform_environment_events_performance(engines, devices, skip_for_fanl
                     output['status'], HealthConsts.OK)
 
     with allure.step('Clear system events'):
-        system.events.action(ActionConsts.CLEAR)
+        system.events.action_deprecated(ActionConsts.CLEAR)
 
     with allure.step("Assign default FAN direction as per this System"):
         output = Tools.OutputParsingTool.parse_json_str_to_dictionary(

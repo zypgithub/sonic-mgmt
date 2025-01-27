@@ -19,63 +19,58 @@ class NvueClusterCli(NvueBaseCli):
 
     @staticmethod
     def action_start_cluster_app(engine, path):
-        return NvueClusterCli.action(engine, action_type=ActionType.START.replace('@', ''), resource_path=path)
+        return NvueClusterCli.action_deprecated(engine, action_type=ActionType.START.replace('@', ''), resource_path=path)
 
     @staticmethod
     def action_stop_cluster_app(engine, path):
-        return NvueClusterCli.action(engine, action_type=ActionType.STOP.replace('@', ''), resource_path=path)
+        return NvueClusterCli.action_deprecated(engine, action_type=ActionType.STOP.replace('@', ''), resource_path=path)
 
     @staticmethod
     def action_update_cluster_log_level(engine, path, level=''):
-        return NvueClusterCli.action(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=path, param_value=level)
+        return NvueClusterCli.action_deprecated(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=path, param_value=level)
 
     @staticmethod
     def action_update_cluster_log_stream(engine, path, stream=''):
-        return NvueClusterCli.action(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=path, param_value=stream)
+        return NvueClusterCli.action_deprecated(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=path, param_value=stream)
 
     @staticmethod
     def action_update_cluster_chassis_id(engine, path, mapping_id=''):
         param_value = "chassis-id " + str(mapping_id)
-        return NvueClusterCli.action(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=path, param_value=param_value)
+        return NvueClusterCli.action_deprecated(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=path, param_value=param_value)
 
     @staticmethod
     def action_update(engine, path, param_name='', param_value=''):
-        return NvueClusterCli.action(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=path, param_name=param_name, param_value=param_value)
+        return NvueClusterCli.action_deprecated(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=path, param_name=param_name, param_value=param_value)
 
     @staticmethod
     def action_restore_cluster(engine, path, param_name='', param_value=''):
-        return NvueClusterCli.action(engine, action_type=ActionType.RESTORE.replace('@', ''), resource_path=path, param_name=param_name, param_value=param_value)
+        return NvueClusterCli.action_deprecated(engine, action_type=ActionType.RESTORE.replace('@', ''), resource_path=path, param_name=param_name, param_value=param_value)
 
     @staticmethod
     def action_restore_cluster_log_stream(engine, path, param_name='', param_value=''):
-        return NvueClusterCli.action(engine, action_type=ActionType.RESTORE.replace('@', ''), resource_path=path, param_name=param_name, param_value=param_value)
+        return NvueClusterCli.action_deprecated(engine, action_type=ActionType.RESTORE.replace('@', ''), resource_path=path, param_name=param_name, param_value=param_value)
 
     @staticmethod
     @check_output
     def action_generate(engine, resource_path):
-        return NvueClusterCli.action(engine, action_type=ActionType.GENERATE.replace('@', ''), resource_path=resource_path)
+        return NvueClusterCli.action_deprecated(engine, action_type=ActionType.GENERATE.replace('@', ''), resource_path=resource_path)
 
     @staticmethod
     @check_output
     def action_delete(engine, resource_path):
-        return NvueClusterCli.action(engine, action_type=ActionType.DELETE.replace('@', ''), resource_path=resource_path)
-
-    @staticmethod
-    def action_fetch(engine, resource_path, path):
-        remote_url = ImageConsts.SCP_PATH + path
-        return NvueClusterCli.action(engine, action_type=ActionType.FETCH.replace('@', ''), resource_path=resource_path, param_value=remote_url)
+        return NvueClusterCli.action_deprecated(engine, action_type=ActionType.DELETE.replace('@', ''), resource_path=resource_path)
 
     @staticmethod
     def action_install(engine, resource_path, file):
-        return NvueClusterCli.action(engine, action_type=ActionType.INSTALL.replace('@', ''), resource_path=resource_path, param_value=file)
+        return NvueClusterCli.action_deprecated(engine, action_type=ActionType.INSTALL.replace('@', ''), resource_path=resource_path, param_value=file)
 
     @staticmethod
     def action_install_fae(engine, resource_path):
-        return NvueClusterCli.action(engine, action_type=ActionType.INSTALL.replace('@', ''), resource_path=resource_path)
+        return NvueClusterCli.action_deprecated(engine, action_type=ActionType.INSTALL.replace('@', ''), resource_path=resource_path)
 
     @staticmethod
     def action_uninstall_fae(engine, resource_path):
-        return NvueClusterCli.action(engine, action_type=ActionType.UNINSTALL.replace('@', ''), resource_path=resource_path)
+        return NvueClusterCli.action_deprecated(engine, action_type=ActionType.UNINSTALL.replace('@', ''), resource_path=resource_path)
 
     @staticmethod
     def action_create_partition(engine, resource_path, name, resiliency_mode, mcast_limit, uuid='', location=''):
@@ -130,8 +125,8 @@ class NvueClusterCli(NvueBaseCli):
     @staticmethod
     def action_update_sdn_transceiver_maintenance_state(engine, path, maintenance_state=''):
         param_value = ClusterConsts.MAINTENANCE_STATE + " " + maintenance_state
-        return NvueClusterCli.action(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=path, param_value=param_value)
+        return NvueClusterCli.action_deprecated(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=path, param_value=param_value)
 
     @staticmethod
     def action_restore_sdn_transceiver_maintenance_state(engine, path):
-        return NvueClusterCli.action(engine, action_type=ActionType.RESTORE.replace('@', ''), resource_path=path, param_name=ClusterConsts.MAINTENANCE_STATE)
+        return NvueClusterCli.action_deprecated(engine, action_type=ActionType.RESTORE.replace('@', ''), resource_path=path, param_name=ClusterConsts.MAINTENANCE_STATE)

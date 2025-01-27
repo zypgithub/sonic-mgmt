@@ -15,27 +15,27 @@ class OpenApiClusterCli(OpenApiBaseCli):
 
     @staticmethod
     def action_start_cluster_app(engine, resource_path):
-        return OpenApiClusterCli.action(engine, action_type=ActionType.START.replace('@', ''), resource_path=resource_path)
+        return OpenApiClusterCli.action_deprecated(engine, action_type=ActionType.START.replace('@', ''), resource_path=resource_path)
 
     @staticmethod
     def action_stop_cluster_app(engine, resource_path):
-        return OpenApiClusterCli.action(engine, action_type=ActionType.STOP.replace('@', ''), resource_path=resource_path)
+        return OpenApiClusterCli.action_deprecated(engine, action_type=ActionType.STOP.replace('@', ''), resource_path=resource_path)
 
     @staticmethod
     def action_update_cluster_log_level(engine, resource_path, level):
         param_name = "log_level"
         param_value = level
-        return OpenApiClusterCli.action(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=resource_path, param_name=param_name, param_value=param_value)
+        return OpenApiClusterCli.action_deprecated(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=resource_path, param_name=param_name, param_value=param_value)
 
     @staticmethod
     def action_update_cluster_log_stream(engine, resource_path, stream):
         param_name = "log_stream"
         param_value = stream
-        return OpenApiClusterCli.action(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=resource_path, param_name=param_name, param_value=param_value)
+        return OpenApiClusterCli.action_deprecated(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=resource_path, param_name=param_name, param_value=param_value)
 
     @staticmethod
     def action_update_cluster_chassis_id(engine, resource_path, mapping_id=''):
-        return OpenApiClusterCli.action(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=resource_path, param_name="chassis-id", param_value=mapping_id)
+        return OpenApiClusterCli.action_deprecated(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=resource_path, param_name="chassis-id", param_value=mapping_id)
 
     @staticmethod
     def action_update(engine, resource_path, param_name='', param_val=''):
@@ -65,32 +65,26 @@ class OpenApiClusterCli(OpenApiBaseCli):
 
     @staticmethod
     def action_generate(engine, resource_path):
-        return OpenApiClusterCli.action(engine, action_type=ActionType.GENERATE.replace('@', ''), resource_path=resource_path)
+        return OpenApiClusterCli.action_deprecated(engine, action_type=ActionType.GENERATE.replace('@', ''), resource_path=resource_path)
 
     @staticmethod
     def action_delete(engine, resource_path):
-        return OpenApiClusterCli.action(engine, action_type=ActionType.DELETE.replace('@', ''), resource_path=resource_path)
-
-    @staticmethod
-    def action_fetch(engine, resource_path, path):
-        param_name = "remote-url"
-        remote_url = ImageConsts.SCP_PATH + path
-        return OpenApiClusterCli.action(engine, action_type=ActionType.FETCH.replace('@', ''), resource_path=resource_path, param_name=param_name, param_value=remote_url)
+        return OpenApiClusterCli.action_deprecated(engine, action_type=ActionType.DELETE.replace('@', ''), resource_path=resource_path)
 
     @staticmethod
     def action_install(engine, resource_path, file):
         param_name = "files"
-        return OpenApiClusterCli.action(engine, action_type=ActionType.INSTALL.replace('@', ''), resource_path=resource_path, param_name=param_name, param_value=file)
+        return OpenApiClusterCli.action_deprecated(engine, action_type=ActionType.INSTALL.replace('@', ''), resource_path=resource_path, param_name=param_name, param_value=file)
 
     @staticmethod
     def action_install_fae(engine, resource_path=''):
         """
         """
-        return OpenApiClusterCli.action(engine, action_type=ActionType.INSTALL.replace('@', ''), resource_path=resource_path)
+        return OpenApiClusterCli.action_deprecated(engine, action_type=ActionType.INSTALL.replace('@', ''), resource_path=resource_path)
 
     @staticmethod
     def action_uninstall_fae(engine, resource_path):
-        return OpenApiClusterCli.action(engine, action_type=ActionType.UNINSTALL.replace('@', ''), resource_path=resource_path)
+        return OpenApiClusterCli.action_deprecated(engine, action_type=ActionType.UNINSTALL.replace('@', ''), resource_path=resource_path)
 
     @staticmethod
     def action_create_partition(engine, resource_path, name, resiliency_mode, mcast_limit, uuid='', location=''):
@@ -184,8 +178,8 @@ class OpenApiClusterCli(OpenApiBaseCli):
     @staticmethod
     def action_update_sdn_transceiver_maintenance_state(engine, path, maintenance_state=''):
         param_value = maintenance_state
-        return OpenApiClusterCli.action(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=path, param_name=ClusterConsts.MAINTENANCE_STATE, param_value=param_value)
+        return OpenApiClusterCli.action_deprecated(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=path, param_name=ClusterConsts.MAINTENANCE_STATE, param_value=param_value)
 
     @staticmethod
     def action_restore_sdn_transceiver_maintenance_state(engine, path):
-        return OpenApiClusterCli.action(engine, action_type=ActionType.RESTORE.replace('@', ''), resource_path=path, param_name=ClusterConsts.MAINTENANCE_STATE)
+        return OpenApiClusterCli.action_deprecated(engine, action_type=ActionType.RESTORE.replace('@', ''), resource_path=path, param_name=ClusterConsts.MAINTENANCE_STATE)

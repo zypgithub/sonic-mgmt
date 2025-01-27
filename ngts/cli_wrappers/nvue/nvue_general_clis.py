@@ -365,31 +365,6 @@ class NvueGeneralCli(SonicGeneralCliDefault):
             raise j
         return output['asic-model']
 
-    @staticmethod
-    def upgrade_dut(engine, path_to_image):
-        """
-        Installing the provided image on dut
-        """
-        logging.info("Installing {}".format(path_to_image))
-
-        with allure.step("Copying image to dut"):
-            logging.info("Copy image from {src} to {dest}".format(src=path_to_image,
-                                                                  dest=NvosConst.IMAGES_PATH_ON_SWITCH))
-            if not path_to_image.startswith('http'):
-                image_path = '{}{}'.format(InfraConst.HTTP_SERVER, path_to_image)
-                engine.run_cmd('sudo curl {} -o {}'.format(image_path, NvosConst.IMAGES_PATH_ON_SWITCH), validate=True)
-
-        with allure.step("Installing image {}".format(NvosConst.IMAGES_PATH_ON_SWITCH)):
-            NvueSystemCli.action_image(engine=engine, action_str=ActionConsts.INSTALL,
-                                       action_component_str="image", op_param=NvosConst.IMAGES_PATH_ON_SWITCH)
-
-        with allure.step("Reboot dut"):
-            NvueGeneralCli.reboot(engine)
-
-        with allure.step("Verifying NVOS initialized successfully"):
-            NvueGeneralCli.verify_dockers_are_up()
-            DutUtilsTool.wait_for_nvos_to_become_functional(engine).verify_result()
-
     def remote_reboot_nvue(self, topology_obj, dut_alias='dut'):
         '''
         @summary: perform remote reboot from the physical server using the noga remote reboot command,

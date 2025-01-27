@@ -591,7 +591,7 @@ def test_mgmt_interface_dhcp_option_60(engines, topology_obj):
             tcpdump_process.start()
 
         with allure.step("Renew DHCP to initiate packet transfers"):
-            mgmt_port.interface.ip.dhcp_client.action('renew')
+            mgmt_port.interface.ip.dhcp_client.action_deprecated('renew')
 
     finally:
         with allure.step("Combine with tcpdump process to finish gracefully"):

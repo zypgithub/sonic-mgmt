@@ -573,7 +573,7 @@ def test_api_spiffe_reboot_case(reboot_flow, engines, scp_player, dut_hostname):
             NvueGeneralCli.save_config(engines.dut)
 
     with allure.step('reboot the system'):
-        System().action('reboot', param_name='force', expect_reboot=True, output_format=None).verify_result()
+        System().action_deprecated('reboot', param_name='force', expect_reboot=True, output_format=None).verify_result()
         engines.dut.disconnect()
 
     with allure.step('verify after reboot'):

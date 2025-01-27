@@ -425,6 +425,22 @@ class ActionConsts:
     RESUME = 'resume'
     UPDATE = 'update'
     POWER_CYCLE = 'power-cycle'
+    REBOOT = 'reboot'
+
+
+class ActionParamConsts:
+    YES = 'yes'
+    NO = 'no'
+    ON = 'on'
+    OFF = 'off'
+    ENABLED = 'enabled'
+    DISABLED = 'disabled'
+    FORCE = 'force'
+    IMMEDIATE = 'immediate'
+    REBOOT = 'reboot'
+    SKIP_REBOOT = 'skip-reboot'
+    NEW_NAME = 'new-name'
+    REMOTE_URL = 'remote-url'
 
 
 class SystemConsts:
@@ -749,7 +765,7 @@ class SystemConsts:
     REBOOT_RESPONSE_MESSAGES = (
         "Performing reboot",
         "Disconnecting from NVOS, system is offline during reboot",
-        "System will power cycle in a few seconds"
+        "System will be rebooted",
     )
 
     LOCALHOST = "127.0.0.1"
