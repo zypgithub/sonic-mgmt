@@ -10,7 +10,7 @@ invalid_cmd_str = ['invalid date', 'Invalid config', 'Error', 'command not found
                    'Cannot create local user', "is not a ", "is not one of", 'File not found', 'unsuccessful',
                    'Uncaught exception', 'first uninstall old package', 'failed to uninstall', 'action_error',
                    'Method Not Allowed', 'Unknown app name', 'Failed to install', 'unexpected keyword argument',
-                   'No match found for filter'
+                   'No match found for filter', 'Failure during apply'
                    ]
 
 timeout_cmd_str = ['Timeout while waiting for client response']

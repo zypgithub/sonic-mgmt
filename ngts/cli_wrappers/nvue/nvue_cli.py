@@ -3,10 +3,10 @@ import logging
 from ngts.cli_wrappers.nvue.nvue_chassis_clis import NvueChassisCli
 from ngts.cli_wrappers.sonic.sonic_hw_mgmt_cli import SonicHwMgmtCli
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from ngts.cli_wrappers.sonic.sonic_interface_clis import SonicInterfaceCli
 from ngts.cli_wrappers.sonic.sonic_im_clis import SonicImClis
 from ngts.cli_wrappers.nvue.nvue_ip_clis import NvueIpCli
 from ngts.cli_wrappers.nvue.nvue_performance_clis import NvuePerformanceCli
+from ngts.cli_wrappers.nvue.nvue_interface_clis import NvueInterfaceCli
 
 logger = logging.getLogger()
 
@@ -40,7 +40,7 @@ class NvueCli:
     @property
     def interface(self):
         if self._interface is None:
-            self._interface = SonicInterfaceCli(engine=self.engine, cli_obj=self)
+            self._interface = NvueInterfaceCli(engine=self.engine, cli_obj=self)
         return self._interface
 
     @property

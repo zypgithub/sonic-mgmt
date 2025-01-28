@@ -34,6 +34,14 @@ class PerformanceCommon:
             logging.error(error_msg)
             raise TestIssue(msg=error_msg)
 
+    def logrotate(self, daemon=''):
+        '''
+        This method is optional for dvs and sonic but mandatory for cumulus
+        Returns:
+        This method should return a cmd that rotates the log before running sdk tests.
+        '''
+        pass
+
     def get_cmd_for_sdk(self, cmd, env_variables=None):
         """
         This method should be implemented in child class
@@ -68,6 +76,7 @@ class PerformanceCommon:
 
     def configure_mloops(self):
         logging.info(f"Configure Mloop on {self.dut_alias}")
+        self.logrotate("rsyslog")
         configure_mloops_cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names {PerfConsts.DVS_TG_MLOOP_CONFIGURATION}"
         self.execute_cmd(self.get_cmd_for_sdk(configure_mloops_cmd))
 
@@ -77,6 +86,7 @@ class PerformanceCommon:
         self.set_tg_json_env_var(traffic_json_path)
         logging.info("Running traffic onto the device")
         run_traffic_cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names {PerfConsts.DVS_TG_NAME}"
+        self.logrotate("rsyslog")
         self.execute_cmd(self.get_cmd_for_sdk(run_traffic_cmd, env_variables=['TG_JSON']))
 
     def validate_traffic(self, json_path, samples_params_dict, dst_dut_dir="/tmp"):
@@ -85,6 +95,7 @@ class PerformanceCommon:
             set_interval_cmd = f"export {env_var_name}={param_val}"
             self.execute_cmd(set_interval_cmd)
         run_validator_cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names {PerfConsts.DVS_TG_VALIDATOR_NAME}"
+        self.logrotate("rsyslog")
         self.execute_cmd(self.get_cmd_for_sdk(run_validator_cmd))
         self.engine.copy_file(source_file="TrafficValidator.json", file_system=dst_dut_dir, dest_file=json_path,
                               overwrite_file=True, verify_file=False, direction='get')
@@ -92,6 +103,7 @@ class PerformanceCommon:
     def stop_traffic(self):
         logging.info(f"Remove Mloop configuration from {self.dut_alias}")
         remove_mloops_cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names {PerfConsts.DVS_TG_REMOVE_MLOOP_CONFIGURATION}"
+        self.logrotate("rsyslog")
         self.execute_cmd(self.get_cmd_for_sdk(remove_mloops_cmd))
 
     def copy_traffic_json_to_player(self, scenario, json_path, dst_dut_dir="/tmp"):

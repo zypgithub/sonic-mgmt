@@ -41,15 +41,16 @@ class PacketGenerator:
         }
         return packet_data
 
-    def add_ip_header(self, src: str, dst: str, ttl: int = 64) -> None:
+    def add_ip_header(self, src: str, dst: str, ttl: int = 64, tos: int = 96) -> None:
         """
         Adds an IP header to the packet configuration.
         Args:
             src: The source IP address as a string.
             dst: The destination IP address as a string.
             ttl: The time-to-live value for the IP packet. Defaults to 64.
+            tos: Type of service, defaults to 96 for default ROCE Lossless Traffic.
         """
-        self.headers["IP"] = {"src": src, "dst": dst, "ttl": ttl}
+        self.headers["IP"] = {"src": src, "dst": dst, "ttl": ttl, "tos": tos}
 
     def add_ether_header(self, src: str, dst: str) -> None:
         """

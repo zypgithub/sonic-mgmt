@@ -1,21 +1,5 @@
 import logging
-from infra.tools.validations.traffic_validations.ping.send import ping_till_alive
-from ngts.tests_nvos.conftest import ProxySshEngine
-from ngts.tools.test_utils import allure_utils as allure
-from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
-import shutil
 import os
-from ngts.constants.constants import LinuxConsts
-from ngts.tests_nvos.general.security.authentication_restrictions.constants import RestrictionsConsts
-from ngts.tests_nvos.system.clock.ClockConsts import ClockConsts
-from ngts.nvos_tools.system.System import System
-from ngts.cli_wrappers.nvue.nvue_system_clis import NvueSystemCli
-from infra.tools.linux_tools.linux_tools import scp_file
-from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
-from ngts.nvos_tools.Devices.DeviceFactory import DeviceFactory
-from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
-
 
 logger = logging.getLogger()
 
@@ -43,3 +27,11 @@ class CumulusInstallationSteps:
             dut['engine'].run_cmd_set(["sudo passwd root", root_password, root_password], patterns_list=["New password", "Retype new password", "passwd: password updated successfully"])
             dut['engine'].run_cmd_set(["nv set system ssh-server permit-root-login enabled", "nv config apply -y"], patterns_list=["applied_and_saved"])
             logging.info("Root login for dut enabled")
+            logging.info("Updating /etc/apt/sources.list")
+            CumulusInstallationSteps.update_apt_sources_list(dut)
+
+    @staticmethod
+    def update_apt_sources_list(dut):
+        cmd = "sudo sed -i  -e \'s/# deb/deb/g\' -e \'2d;3d\' -e \'4i deb  [trusted=yes] https://urm.nvidia.com/artifactory/sw-nbu-cl-debian-local/ CumulusLinux-5 upstream\' /etc/apt/sources.list"
+        dut['engine'].run_cmd(cmd)
+        logging.info(dut['engine'].run_cmd("sudo cat /etc/apt/sources.list"))
