@@ -76,7 +76,7 @@ class ClockTools:
         @return: datetime object
         """
         orig_datetime = ClockTools.get_datetime_from_show_system_output(show_system_output)
-        return datetime.strptime(orig_datetime, "%Y-%m-%d %H:%M:%S")
+        return datetime.strptime(orig_datetime, StatsConsts.SYSTEM_TIME_FORMAT)
 
     @staticmethod
     def datetime_difference_in_seconds(dt1, dt2):
@@ -481,7 +481,7 @@ class ClockTools:
             new_datetime_obj = datetime_obj.replace(year=current_year)
 
             # format datetime object to string
-            res = new_datetime_obj.strftime('%Y-%m-%d %H:%M:%S')
+            res = new_datetime_obj.strftime(StatsConsts.SYSTEM_TIME_FORMAT)
             logging.info('Result date-time: {}'.format(res))
 
             return res
@@ -497,7 +497,7 @@ class ClockTools:
         with allure.step('Adding {} hours to the given datetime "{}"'.format(num_hours_to_add, datetime_str)):
             dt_obj = datetime.fromisoformat(datetime_str)
             dt_obj = dt_obj + timedelta(hours=num_hours_to_add)
-            res = dt_obj.strftime("%Y-%m-%d %H:%M:%S")
+            res = dt_obj.strftime(StatsConsts.SYSTEM_TIME_FORMAT)
             logging.info('Result new datetime: "{}"'.format(res))
             return res
 

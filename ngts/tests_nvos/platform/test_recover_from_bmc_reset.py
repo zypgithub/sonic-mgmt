@@ -1,8 +1,10 @@
 import logging
+from datetime import datetime
 from time import sleep
 
 from ngts.nvos_constants.constants_nvos import SystemConsts, PlatformConsts, FansConsts, HealthConsts
 from ngts.nvos_tools.infra.BmcTool import BmcTool
+from ngts.nvos_tools.infra.DeviceLogTool import grep_log_lines_after_datetime
 from ngts.nvos_tools.infra.DutUtilsTool import wait_for_specific_regex_in_logs
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.platform.Platform import Platform
@@ -38,6 +40,7 @@ def test_recover_from_bmc_reset(engines, devices, topology_obj, loganalyzer):
             system.health.show()).get_returned_value()[HealthConsts.ISSUES].keys()
 
     with allure.step("Reset BMC"):
+        start_time = datetime.now()
         BmcTool.reset(engine)
 
     try:
@@ -68,8 +71,12 @@ def test_recover_from_bmc_reset(engines, devices, topology_obj, loganalyzer):
                 assert cpu_utilization <= CPU_MAX_UTILIZATION
 
             with allure.independent_step("Assert logs aren't flooded with BMC error messages"):
-                bmc_log_lines = system.log.file.show_log(param=" | grep -ie bmc").splitlines()
-                assert len(bmc_log_lines) < BMC_LOG_LINES_MAX
+                bmc_log_lines = grep_log_lines_after_datetime(engine, 'bmc', start_time)
+                assert len(bmc_log_lines) < BMC_LOG_LINES_MAX, (
+                    f'BMC reset causes log flooding: logs contain {len(bmc_log_lines)} lines regarding BMC, more '
+                    f'than the threshold of {BMC_LOG_LINES_MAX}:\n\n' +
+                    '\n'.join(bmc_log_lines)
+                )
 
     except Exception:
         with allure.step("Failed to recover from BMC reset. Fixing device by remote-reboot."):
