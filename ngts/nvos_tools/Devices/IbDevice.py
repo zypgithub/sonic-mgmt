@@ -7,7 +7,7 @@ from typing import List, Dict
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from infra.tools.linux_tools.linux_tools import scp_file
 from ngts.nvos_constants.constants_nvos import MultiPlanarConsts, PlatformConsts, HealthConsts, \
-    ActionConsts
+    ActionConsts, ChassisLocationConsts, CableCartridgeConsts
 from ngts.nvos_constants.constants_nvos import (NvosConst, DatabaseConst, IbConsts, StatsConsts, FansConsts,
                                                 DocumentsConsts)
 from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
@@ -885,16 +885,22 @@ class JulietSwitch(NvLinkSwitch):
         self.fpga_older_version_path = "/auto/sw_system_release/fpga/juliet/V0_15/FPGA_juliet_0v15.fwpkg"
         self.has_nmx = True
         self.has_bmc = True
-        self.is_standalone = True
         self.ztp_prod_json = 'uninstall_juliet_prod.json'
         self.ztp_dev_json = 'uninstall_juliet.json'
         self.ztp_complex_prod_json = 'complex_prod_juliet.json'
         self.ztp_complex_dev_json = 'complex_juliet.json'
         self.show_platform_chassis_location_output = {
-            PlatformConsts.CHASSIS_LOCATION_TRAY_ID: ExpectedString(range_min=-1, range_max=9),
-            PlatformConsts.CHASSIS_LOCATION_SLOT_NUM: ExpectedString(range_min=4, range_max=18),
-            PlatformConsts.CHASSIS_LOCATION_CHAS_SN: "",
-            PlatformConsts.CHASSIS_LOCATION_TOPO_ID: ExpectedString(regex=r"^(Loopback|GB200 NVL36|GB200 NVL72|\d+)$")
+            ChassisLocationConsts.TRAY_ID: ExpectedString(range_min=-1, range_max=18),
+            ChassisLocationConsts.SLOT_NUM: ExpectedString(range_min=0, range_max=28),
+            ChassisLocationConsts.CHAS_SN: ExpectedString(regex="^\\d+$"),
+            ChassisLocationConsts.TOPO_ID: ExpectedString(regex=f"^({'|'.join(ChassisLocationConsts.ALLOWED_TOPOLOGIES)})$")
+        }
+        self.show_platform_cable_cartridge_output = {
+            CableCartridgeConsts.KEY_TRAY_ID: ExpectedString(range_min=-1, range_max=18),
+            CableCartridgeConsts.KEY_SLOT_ID: ExpectedString(range_min=0, range_max=28),
+            CableCartridgeConsts.KEY_SERIAL: ExpectedString(regex="^\\d+$"),
+            CableCartridgeConsts.KEY_PART_NUMBER: ExpectedString(regex=f"^{CableCartridgeConsts.PART_NUMBER}$"),
+            CableCartridgeConsts.KEY_MANUFACTURING_DATE: ExpectedString(regex="^(0[1-9]|1[0-2])/([0-2][0-9]|3[0-1])/\\d{2} - ([0-1][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])$")
         }
         cluster_files = ['conf', 'nmx-controller', 'nmx-telemetry']
         self.constants.firmware.extend(['CPLD4', 'EROT-FPGA', 'EROT-BMC', 'EROT', 'EROT-ASIC2', 'EROT-CPU', 'EROT-ASIC1'])
@@ -1116,6 +1122,7 @@ class JulietScaleoutSwitch(JulietSwitch):
         self.fnm_link_speed = '100G'
         self.fnm_fae_link_speed = '100G'
         self.nvl5_port_type = 'nvl'
+        self.num_of_cartridges = 4
         # will be updated
 
     def _init_fan_list(self):
@@ -1187,7 +1194,7 @@ class JulietAriel(JulietTTMSwitch):
             "product-name": "N5112_LD",
             "asic-model": self.asic_type,
         })
-
+        self.num_of_cartridges = 2
         self.nvl5_access_ports_list = ['acp1', 'acp2', 'acp3', 'acp4', 'acp5', 'acp6',
                                        'acp7', 'acp8', 'acp9', 'acp10', 'acp11', 'acp12', 'acp13', 'acp14',
                                        'acp15', 'acp16', 'acp17', 'acp18', 'acp19', 'acp20',

@@ -914,22 +914,55 @@ class PlatformConsts:
     TRANSCEIVER_CABLE_TYPE = 'cable-type'
     TRANSCEIVER_CABLE_OPTICAL_MODULE = 'Optical module'
     TRANSCEIVER_CABLE_COPPER_CABLE = 'Copper cable'
-    CHASSIS_LOCATION_TRAY_ID = 'tray-index'
-    CHASSIS_LOCATION_SLOT_NUM = 'slot-number'
-    CHASSIS_LOCATION_CHAS_SN = 'chassis-sn'
-    CHASSIS_LOCATION_TOPO_ID = 'topology-id'
-    CHASSIS_LOCATION_STANDALONE_DICT = {CHASSIS_LOCATION_TRAY_ID: '0',
-                                        CHASSIS_LOCATION_SLOT_NUM: '0',
-                                        CHASSIS_LOCATION_CHAS_SN: 'N/A',
-                                        CHASSIS_LOCATION_TOPO_ID: 'Loopback'}
     EROTS_LIST = ['ERoT_BMC_0', 'ERoT_CPU_0', 'ERoT_FPGA_0', 'ERoT_NVSwitch_0', 'ERoT_NVSwitch_1']
-
     INV_STATE = 'state'
     INV_OK = 'ok'
     ASIC_CONF_FILE_PATH = "/usr/share/sonic/device/{}/asic.conf"
     INV_FAILED = 'failed'
     TIMEOUT_AFTER_BIOS_INSTALL = 720
     TIMEOUT_AFTER_FW_INSTALL = 1200
+
+
+class ChassisLocationConsts:
+    TRAY_ID = 'tray-index'
+    SLOT_NUM = 'slot-number'
+    CHAS_SN = 'chassis-sn'
+    TOPO_ID = 'topology-id'
+    LOOP_CABLE = 'Loopback'
+    ETF = "3-slot ETF Cartridge"
+    OBERON_36 = "GB200 NVL36"
+    OBERON_72 = "GB200 NVL72"
+    NA = 'N/A'
+    ALLOWED_TOPOLOGIES = [
+        LOOP_CABLE,
+        ETF,
+        OBERON_36,
+        OBERON_72,
+    ]
+    EXPECTED_STANDALONE_DICT = {TRAY_ID: '0',
+                                SLOT_NUM: '0',
+                                CHAS_SN: NA,
+                                TOPO_ID: LOOP_CABLE}
+
+
+class CableCartridgeConsts:
+    # Keys in the cable cartridge output
+    NAME = "Name"
+    KEY_SLOT_ID = "slot-id"
+    KEY_TRAY_ID = "tray-id"
+    KEY_SERIAL = "serial-number"
+    KEY_PART_NUMBER = "part-number"
+    KEY_MANUFACTURING_DATE = "manufacture-date"
+    LEFTMOST_CARTRIDGE = "cartridge1"
+    PART_NUMBER = "755-24972-0003-000"
+    # Error messages
+    ERR_MISSING_KEY = "Missing key in cable cartridge data: {}"
+    ERR_NULL_VALUE = "Key '{}' has a null or empty value"
+    ERR_MISMATCH = "'{}' '{}' does not match the expected value '{}'"
+    ERR_GENERAL_VALIDATION_FAILED = "Validation failed for key '{}'"
+    ERR_TRAY_ID_OUT_OF_RANGE = "Tray ID '{}' is out of the valid range ({}-{})"
+    # All expected keys for validation
+    ALL_KEYS = {KEY_SLOT_ID, KEY_TRAY_ID, KEY_SERIAL, KEY_PART_NUMBER, KEY_MANUFACTURING_DATE}
 
 
 class FansConsts:

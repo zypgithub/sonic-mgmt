@@ -4,6 +4,7 @@ from ngts.cli_wrappers.nvue.nvue_platform_clis import NvuePlatformCli
 from ngts.cli_wrappers.openapi.openapi_platform_clis import OpenApiPlatformCli
 from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
+from ngts.nvos_tools.platform.CableCartridge import CableCartridge
 from ngts.nvos_tools.platform.Environment import Environment
 from ngts.nvos_tools.platform.Inventory import Inventory
 from ngts.nvos_tools.platform.Software import Software
@@ -28,6 +29,7 @@ class Platform(BaseComponent):
         self.transceiver = Transceiver(self)
         self.chassis_location = BaseComponent(self, path='/chassis-location')
         self.bmc_password = Bmc_password(self)
+        self.cable_cartridge = CableCartridge(self)
 
     def set(self, op_param_name="", op_param_value=""):
         raise Exception("set is not implemented for /platform")

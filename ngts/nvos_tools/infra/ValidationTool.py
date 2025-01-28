@@ -516,7 +516,7 @@ class ValidationTool:
                             if result.info == ExpectedString.Result.REGEX_FAIL:
                                 errors.append(f"Field '{key}' expected to match regex '{expected_value.regex}' "
                                               f"but value is '{actual_value}'")
-                            if result.info == ExpectedString.Result.NOT_A_NUMBER:
+                            elif result.info == ExpectedString.Result.NOT_A_NUMBER:
                                 errors.append(f"Field '{key}' expected to be a number but value is '{actual_value}'")
                             elif result.info == ExpectedString.Result.TOO_SMALL:
                                 errors.append(f"Numeric value in field '{key}' expected to be at least "

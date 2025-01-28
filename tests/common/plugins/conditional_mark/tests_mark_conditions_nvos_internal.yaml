@@ -393,6 +393,7 @@ tests_nvos/platform/test_platform_firmware_bios/test_platform_firmware_bios.py:
       - "'juliet' in testbed"
       - "'mamba' in testbed"
       - "'croc' in testbed"
+      - https://redmine.mellanox.com/issues/4241214
 
 tests_nvos/platform/test_platform_environment_leakage.py:
   skip:
@@ -531,13 +532,25 @@ tests_nvos/cluster/test_nmx_package.py:
     reason: "Testcase skipped on non Juliet systems, Juliet feature only"
     conditions:
       - "'juliet' not in testbed"
-
+      
+tests_nvos/platform/test_platform_cable_cartridge.py:
+  skip:
+    reason: "Testcase skipped on juliet systems with no cartridges"
+    conditions:
+      - "'juliet-148' not in testbed"
+      
 tests_nvos/interfaces/test_eth0_interface_dhcp.py::test_interface_eth0_speed_duplex_autoneg:
   skip:
     reason: "Testcase skipped on Juliet systems, Juliet does not support half duplex"
     conditions:
       - "'juliet' in testbed"
-
+      
+tests_nvos/checklist/test_bios_upgrade.py::test_bios_manual_update:
+  skip:
+    reason: "Testcase skipped on non Juliet systems since they has 'auto-update' which changes the upgrade's flow"
+    conditions:
+      - "'juliet' not in testbed"
+      
 tests_nvos/interfaces/test_port_split.py:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3924138"
