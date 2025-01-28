@@ -444,10 +444,13 @@ class SystemConsts:
     LOCATION = 'location'
     TECHSUPPORT_FILES_PATH = '/host/dump/'
     TECHSUPPORT_SIZE_LIMIT = 75  # in MBs
-    TECHSUPPORT_EMPTY_FILES_TO_IGNORE = ['queue.counters_2', 'queue.counters_1.0', 'swapon', 'queue.counters_1',
-                                         'queue.counters_2.0', 'queue.counters_1.1', 'queue.counters_2.1',
-                                         'queue.counters_1.3', 'queue.counters_1.2', 'queue.counters_2.3',
-                                         'queue.counters_2.2']
+    TECHSUPPORT_DUMP_EMPTY_FILES_TO_IGNORE = ['queue.counters_2', 'queue.counters_1.0', 'swapon', 'queue.counters_1',
+                                              'queue.counters_2.0', 'queue.counters_1.1', 'queue.counters_2.1',
+                                              'queue.counters_1.3', 'queue.counters_1.2', 'queue.counters_2.3',
+                                              'queue.counters_2.2', 'rsyslog.conf']
+    TECHSUPPORT_ETC_EMPTY_FILES_TO_IGNORE = ['ifstatelock', '.lock', 'base', 'tail', 'installed', 'rules.v4',
+                                             'rules.v6', 'gnmi-server_reconcile', 'lsb_release', 'usr.sbin.haveged',
+                                             'nvidia_modprobe', '.placeholder', 'installed', '.pwd.lock']
     PATH_KEY = 'path'
     LATEST_KEY = 'latest'
 
@@ -1050,6 +1053,7 @@ class NtpConsts:
     class Dhcp(Enum):
         ENABLED = 'enabled'
         DISABLED = 'disabled'
+        DHCP_FOLDER = '/var/lib/dhcp/'
 
     class State(Enum):
         ENABLED = 'enabled'

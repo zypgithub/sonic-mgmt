@@ -198,6 +198,13 @@ def verify_cleanup_done(engine, current_time, system, username, param=''):
                     if current_time >= file_date_time:
                         errors += "\nold stats internal file {} was not deleted".format(stat_file)
 
+    with allure.step("Verify DHCP files were deleted, bug #4218163"):
+        output = engine.run_cmd("stat /var/lib/dhcp/dhclient.eth0.leases | grep Birth")
+        if output and "No such file or directory" not in output:
+            file_date_time = create_date_time_obj(output)
+            if current_time >= file_date_time:
+                errors += "\n/var/lib/dhcp/dhclient.eth0.leases was not deleted"
+
     with allure.step("Verify stats external files were deleted"):
         if param != KEEP_ONLY_FILES:
             output = engine.run_cmd("ls /host/stats")

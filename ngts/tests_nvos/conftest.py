@@ -580,7 +580,6 @@ def debug_kernel_check(engines, test_name, setup_name, session_id):
 
 @pytest.fixture(scope='function', autouse=True)
 def coredump_check(engines, test_name, setup_name, dumps_folder, session_id):
-    yield
     files = engines.dut.run_cmd(f"sudo ls {CoreDumpConsts.COREDUMP_PATH}").strip().split("\n")
 
     if not files or files == ['']:

@@ -44,6 +44,12 @@ def test_reboot_command(engines, devices, test_name):
                 ValidationTool.verify_all_fields_value_exist_in_output_dictionary(output[list(output.keys())[0]],
                                                                                   ["gentime", "reason", "user"]).verify_result()
 
+        with allure.step("Check reboot cause"):
+            output = OutputParsingTool.parse_json_str_to_dictionary(system.reboot.show(SystemConsts.REBOOT_REASON)
+                                                                    ).get_returned_value()
+            assert output["reason"] == 'reboot'
+            assert output["user"] == 'admin'
+
     with allure.step("Check reboot reason event in system events"):
         reboot_reason = OutputParsingTool.get_reboot_reason_system_events(system)
         assert expected_reboot_reason in reboot_reason, 'Reboot reason is {} instead of {}'.\

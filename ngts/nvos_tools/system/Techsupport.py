@@ -81,7 +81,7 @@ class TechSupport(BaseComponent):
         with allure.step(f'Get all tech-support empty files from {tech_folder}'):
             logging.info(f'Get all tech-support empty files from {tech_folder}')
             full_path = SystemConsts.TECHSUPPORT_FILES_PATH + self.file_name.replace('.tar.gz', "")
-            output = engine.run_cmd('find ' + full_path + '/' + tech_folder + " -type f -empty")
+            output = engine.run_cmd('sudo find ' + full_path + '/' + tech_folder + " -type f -empty")
             return [file.split('/')[-1] for file in output.split()]
 
     def cleanup(self, engine):

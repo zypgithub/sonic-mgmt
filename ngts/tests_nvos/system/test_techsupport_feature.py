@@ -132,7 +132,6 @@ def test_techsupport_expected_files(engines, devices, test_name):
         if devices.dut.has_nmx:
             Cluster().unset(apply=True)
             ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
-            ClusterTools.wait_for_apps_to_be_in_wanted_state()
         system.techsupport.cleanup(engines.dut)
         if system.techsupport.file_name:
             system.techsupport.action_delete(system.techsupport.file_name)
@@ -206,7 +205,9 @@ def verify_techsupport_files_names(files_list, expected_files):
 
 def verify_techsupport_files_sizes(files_list, folder):
     if folder == 'dump':
-        files_list = [file for file in files_list if file not in SystemConsts.TECHSUPPORT_EMPTY_FILES_TO_IGNORE]
+        files_list = [file for file in files_list if file not in SystemConsts.TECHSUPPORT_DUMP_EMPTY_FILES_TO_IGNORE]
+    elif folder == 'etc':
+        files_list = [file for file in files_list if file not in SystemConsts.TECHSUPPORT_ETC_EMPTY_FILES_TO_IGNORE]
 
     assert len(files_list) == 0, f"the next files are empty {files_list}"
 
