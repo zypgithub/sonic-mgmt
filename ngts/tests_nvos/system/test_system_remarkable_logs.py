@@ -171,17 +171,17 @@ def _test_remarkable_logs(engine, testing, log_count, log_priority, threshold_fi
                                            ).verify_result()
         fae.system.log.remarkable_logs.set(op_param_name=f"{testing}{RemarkableLogsConsts.LOGS_RATE}", op_param_value=new_values[2]
                                            ).verify_result()
-        fae.system.log.remarkable_logs.set(op_param_name=f"{testing}{RemarkableLogsConsts.LOGS_TIME_WINDOW}", op_param_value=new_values[2]
+        fae.system.log.remarkable_logs.set(op_param_name=f"{testing}{RemarkableLogsConsts.LOGS_TIME_WINDOW}", op_param_value=new_values[3]
                                            ).verify_result()
         NvueGeneralCli.apply_config(engine, True)
 
     with allure.step("validate changes"):
         system_output = OutputParsingTool.parse_json_str_to_dictionary(
             fae.system.log.remarkable_logs.show()).get_returned_value()
-        expected_fields = [RemarkableLogsConsts.ERROR_LOGS_CLEAN_TIME,
-                           RemarkableLogsConsts.ERROR_LOGS_NUMBER, RemarkableLogsConsts.ERROR_LOGS_RATE,
-                           RemarkableLogsConsts.ERROR_LOGS_TIME_WINDOW]
-        expected_values = ["120", "5", "250", "120"]
+        expected_fields = [f"{testing}{RemarkableLogsConsts.LOGS_CLEAN_TIME}",
+                           f"{testing}{RemarkableLogsConsts.LOGS_NUMBER}", f"{testing}{RemarkableLogsConsts.LOGS_RATE}",
+                           f"{testing}{RemarkableLogsConsts.LOGS_TIME_WINDOW}"]
+        expected_values = new_values
         ValidationTool.validate_fields_values_in_output(output_dict=system_output, expected_fields=expected_fields,
                                                         expected_values=expected_values).verify_result()
     try:
