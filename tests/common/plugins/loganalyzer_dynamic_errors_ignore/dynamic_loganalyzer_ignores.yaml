@@ -150,15 +150,17 @@
     - tests/nightly/logging/test_log_analyzer_errors_during_deploy_sonic.py::test_check_errors_in_log_during_deploy_sonic_image
 
 
-# TODO: Skip the err msg for https://redmine.mellanox.com/issues/4178892, this is due to the setup limitaion of the community moose,
-# TODO: the fanout of the moose now is using ligger, if we replace it with moose, then need to remove the skip.
-# TODO: now only see the issue after the deployment, so only skip on the test after deployment,
+# Skip the error msg for https://redmine.mellanox.com/issues/4178892, this is due to the setup or cable limitation
+# example 1: the fanout of the moose now is using ligger, if we replace it with moose and align port speeds we will not
+# see this error
+# example 2: AOC cable supporting speed are 100G or 200G, port breakout supporting 50G but 50G can not be applied
+# due to cable limitation
 - Errors_list:
     - '.*ERR pmon#xcvrd: CMIS: Ethernet\d+: no suitable app for the port appl .* host_lane_count \d+ host_speed .*'
   Conditions:
     - Affected_test_cases:
         - tests/nightly/logging/test_log_analyzer_errors_during_deploy_sonic.py::test_check_errors_in_log_during_deploy_sonic_image
-      Platform: sn5600
+        - tests/qos/test_buffer.py::test_change_speed_cable
 
 # Vivek conclaimed these error logs are not bug(RM #3238130), he suggest adding them into common ignore list
 - Errors_list:
