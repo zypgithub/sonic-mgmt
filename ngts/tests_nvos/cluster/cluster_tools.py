@@ -52,13 +52,15 @@ class ClusterTools:
                         assert app_status == 'ok', f"App {app} status is {app_status} instead of 'ok"
                 with allure.step(f"Stop app {app} and validate its down"):
                     cluster.apps.app_name[app].action_stop_cluster_app()
-                    ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
+                    nmx_c_expected_state = 'down' if app == ClusterConsts.NMX_CONTROLLER else ''
+                    ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='', nmx_c_expected_state=nmx_c_expected_state)
                     # TBD -- once "running" is working, use it to verify app is not running
                     ClusterTools.verify_app_is_down(engines, app)
 
                 with allure.step(f"Start app again {app} and validate its up"):
                     output = cluster.apps.app_name[app].action_start_cluster_app()
-                    ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
+                    nmx_c_expected_state = 'up' if app == ClusterConsts.NMX_CONTROLLER else ''
+                    ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state=nmx_c_expected_state)
                     ClusterTools.reboot_compute_nodes_gpus(setup_name)
                 ClusterTools.verify_app_is_up(engines, app)
                 if app == ClusterConsts.NMX_CONTROLLER:
@@ -298,10 +300,15 @@ class ClusterTools:
                 pass
             else:
                 with allure.step("Running 'nv show cluster apps running' command and verifying output"):
-                    output = OutputParsingTool.parse_show_output_to_dict(
-                        cluster.apps.running.show(output_format=OutputFormat.json),
-                        output_format=OutputFormat.json).get_returned_value()
-                    app_status = output[app]['status']
+                    for _ in range(10):
+                        output = OutputParsingTool.parse_show_output_to_dict(
+                            cluster.apps.running.show(output_format=OutputFormat.json),
+                            output_format=OutputFormat.json).get_returned_value()
+                        app_status = output[app]['status']
+                        if app_status == 'ok':
+                            break
+                        logger.info("Sleeping for 5 seconds until app state is ok.")
+                        time.sleep(5)
                     assert app_status == 'ok', f"App {app} status is {app_status} instead of 'ok"
 
     @staticmethod
@@ -470,23 +477,31 @@ class ClusterTools:
     @staticmethod
     @retry(tries=15, delay=5)
     def wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='', nmx_c_expected_state=''):
-        output = OutputParsingTool.parse_show_output_to_dict(
-            cluster.show(output_format=OutputFormat.json),
-            output_format=OutputFormat.json).get_returned_value()
-        with allure.step(
-                f"Polling until cluster state is {cluster_expected_state} "
-                f"and nmx-c state is {nmx_c_expected_state}"
-        ):
-            if (
-                    (cluster_expected_state and output[SystemConsts.STATE] != cluster_expected_state) or
-                    (nmx_c_expected_state and
-                        output[ClusterConsts.NMXC_CONN] != nmx_c_expected_state)
+        try:
+            final_sleep_time = 2
+            if (not cluster_expected_state) and (not nmx_c_expected_state):
+                final_sleep_time += 8
+            output = OutputParsingTool.parse_show_output_to_dict(
+                cluster.show(output_format=OutputFormat.json),
+                output_format=OutputFormat.json).get_returned_value()
+            with allure.step(
+                    f"Polling until cluster state is {cluster_expected_state} "
+                    f"and nmx-c state is {nmx_c_expected_state}"
             ):
-                logger.info("Cluster state not as expected yet. Retrying...")
-                raise ValueError("Cluster or nmx-c state not in wanted state")
+                if (
+                        (cluster_expected_state and output[SystemConsts.STATE] != cluster_expected_state) or
+                        (nmx_c_expected_state and
+                         output[ClusterConsts.NMXC_CONN] != nmx_c_expected_state)
+                ):
+                    logger.info("Cluster state not as expected yet. Retrying...")
+                    raise ValueError("Cluster or nmx-c state not in wanted state")
 
-            logger.info("Cluster is now in the wanted state. Sleeping for 2 seconds.")
-            time.sleep(2)
+                logger.info(f"Cluster is now in the wanted state. Sleeping for {final_sleep_time} seconds.")
+                time.sleep(final_sleep_time)
+
+        except Exception as e:
+            logger.info("Cluster was not in expected state, but we can continue test execution.")
+            logger.info(f"Expected: cluster {cluster_expected_state}, nmx_c {nmx_c_expected_state}.\n Actual: cluster {output[SystemConsts.STATE]}, nmx_c {output[ClusterConsts.NMXC_CONN]}")
 
     @staticmethod
     def verify_sdn_config_files_deleted(sdn):

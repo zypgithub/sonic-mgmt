@@ -48,7 +48,7 @@ def test_cluster_app_log_level(engines, devices, test_api, has_loopbox, standalo
         with allure.step("Choose random log level, and set cluster app log level to"):
             log_level = random.choice(ClusterConsts.ClusterAppsLogLevelsList)
             for app in ClusterConsts.INITIAL_EXPECTED_APPS:
-                cluster.apps.app_name[app].loglevel.action_update_cluster_log_level(level=log_level)
+                cluster.apps.app_name[app].loglevel.action_update_cluster_log_level(level=log_level).get_returned_value()
                 ClusterTools.verify_log_level(log_level, app, output_format, cluster)
 
     finally:

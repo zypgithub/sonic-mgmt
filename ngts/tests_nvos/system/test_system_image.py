@@ -23,6 +23,7 @@ from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.general.security.conftest import create_ssh_login_engine
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_general_utils import check_partitions_capacity
+from ngts.scripts.sonic_deploy.nvos_only_methods import NvosInstallationSteps
 
 logger = logging.getLogger()
 
@@ -115,7 +116,7 @@ def test_downgrade_upgrade(release_name, test_api, original_version, devices, en
     6. Uninstall image
     7. Delete the new image name , success
     """
-
+    config_file_path = ''
     if not base_version_realpath:
         pytest.skip("Cannot run test because base_version parameter is missing from the setup file")
 
@@ -149,9 +150,18 @@ def test_downgrade_upgrade(release_name, test_api, original_version, devices, en
                                      original_images=original_images, system=system, release_name=release_name,
                                      test_name='test_downgrade_upgrade')
 
+        player = engines.sonic_mgmt
+        scp_host_creds = f'{player.username}:{player.password}@{player.ip}'
+        with allure.step('Get config file and path for target version'):
+            config_file_path, config_filename = devices.dut.get_test_config_file_by_version(original_version)
+
+        with allure.step('Apply and save pre-defined configuration'):
+            NvosInstallationSteps.fetch_apply_save_config(config_filename, config_file_path, engines.dut,
+                                                          scp_host_creds, system)
+
     finally:
         # cleanup - boot back with orig image, uninstall new image, and restore to orig engine
-        cleanup_test(system, original_images, original_image_partition, [fetched_image], orig_engine=orig_engine)
+        cleanup_test(system, original_images, original_image_partition, [fetched_image], config_file_path=config_file_path, orig_engine=orig_engine)
 
 
 @pytest.mark.checklist
@@ -377,7 +387,7 @@ def test_install_multiple_images(release_name, test_name, test_api, original_ver
             check_partitions_capacity(allowed_limit=60)
 
     finally:
-        cleanup_test(system, original_images, original_image_partition, image_files, orig_engine)
+        cleanup_test(system, original_images, original_image_partition, image_files, orig_engine=orig_engine)
 
 
 def image_uninstall_test(release_name, original_version, devices, uninstall_force="", test_name="", base_version=''):
@@ -428,7 +438,7 @@ def image_uninstall_test(release_name, original_version, devices, uninstall_forc
             system.image.action_uninstall(expected_str="Failed to uninstall. Image set to boot-next")
 
     finally:
-        cleanup_test(system, original_images, original_image_partition, [fetched_image], orig_engine)
+        cleanup_test(system, original_images, original_image_partition, [fetched_image], orig_engine=orig_engine)
 
 
 @pytest.mark.system
@@ -732,8 +742,9 @@ def get_next_partition_id(partition_id):
     return ImageConsts.PARTITION2_IMG if partition_id == ImageConsts.PARTITION1_IMG else ImageConsts.PARTITION1_IMG
 
 
-def cleanup_test(system, original_images, original_image_partition, fetched_image_files, orig_engine=None):
+def cleanup_test(system, original_images, original_image_partition, fetched_image_files, config_file_path='', orig_engine=None):
     with allure.step("Cleanup step"):
+        configuration_diff = {}
         with allure.step("Set the original image to be booted next and verify"):
             system.image.boot_next_and_verify(original_image_partition)
 
@@ -743,12 +754,18 @@ def cleanup_test(system, original_images, original_image_partition, fetched_imag
         with allure.step('restore original dut engine'):
             TestToolkit.engines.dut = orig_engine or TestToolkit.engines.dut
 
+        if config_file_path:
+            with allure.step('Verify configuration was preserved after upgrade'):
+                configuration_diff = NvosInstallationSteps.verify_config_after_upgrade(config_file_path, TestToolkit.engines.dut)
+
         with allure.step("Delete all images that have been fetch during the test and verify"):
             system.image.files.delete_files(fetched_image_files)
             system.image.files.verify_show_files_output(unexpected_files=fetched_image_files)
 
         with allure.step("Uninstall unused images if there's any"):
             system.image.action_uninstall(params='force')
+
+        assert configuration_diff == {}, f'Configuration was not preserved across image upgrade. \nDiff: {configuration_diff}'
 
 
 def get_image_data(system):

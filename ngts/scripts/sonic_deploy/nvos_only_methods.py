@@ -185,6 +185,7 @@ class NvosInstallationSteps:
                 err = f'{UPGRADE_STATUS_FAIL_MSG}\ndiff:\n{dicts_diff}'
                 logger.info(err)
                 dut_engine.run_cmd(f'echo "{err}" > {upgrade_status_file_path_dut}')
+        return dicts_diff
 
     @staticmethod
     def upgrade_to_target_version(bin_filename, dut_engine, dut_device, scp_host_creds, system, target_version_path,
