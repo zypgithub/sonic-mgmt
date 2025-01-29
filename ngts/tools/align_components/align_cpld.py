@@ -3,14 +3,27 @@ import traceback
 
 from Component import CpldComponent
 from ComponentManager import ComponentManager
-from align_fw_components import get_switch_info, parse_args
 from Constants import NogaConstants, Defaults
+from align_fw_components import get_switch_info, parse_args, create_json_dict, verify_install_path
 
 
 def perform_cpld_update(_args):
     switch_info = get_switch_info(_args.setup_name)
     hostname = switch_info[NogaConstants.ATTRIBUTES][NogaConstants.COMMON]['Name']
-    file_name = os.path.basename(_args.cpld_path)
+    if _args.cpld_path:
+        install_path = _args.cpld_path
+    else:
+        json_dict = create_json_dict(_args.file_path)
+        provisioning = switch_info[NogaConstants.ATTRIBUTES][NogaConstants.HARDWARE_COMPONENTS][
+            NogaConstants.BIOS_VERSION]
+        provisioning = 'prod' if provisioning == 'OPN' else 'dev'
+        install_path = json_dict[provisioning][Defaults.CPLD_NAME]['latest']['path']
+
+    if not verify_install_path(install_path):
+        print(f"Provided cpld path does not exist {install_path}")
+        raise FileNotFoundError(install_path)
+
+    file_name = os.path.basename(install_path)
     required_version = file_name[file_name.index("CPLD"):file_name.rindex("_")]
 
     component = CpldComponent(Defaults.CPLD_NAME, install_path=_args.cpld_path, switch_ip=hostname,

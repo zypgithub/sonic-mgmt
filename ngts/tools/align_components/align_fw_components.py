@@ -29,7 +29,7 @@ def start_components_update(_args):
     provisioning = 'prod' if provisioning == 'OPN' else 'dev'
     update_via_parameter = bool(_args.bmc_path or _args.bios_path or _args.erot_path or _args.fpga_path)
     rf_api = RedFishRestApi(bmc_ip, _args.bmc_user, _args.bmc_pass)
-    json_dict = _create_json_dict(_args.file_path)
+    json_dict = create_json_dict(_args.file_path)
 
     components_mapping = {
         Defaults.BMC_NAME: "bmc_path",
@@ -53,7 +53,7 @@ def start_components_update(_args):
             required_version = json_dict[provisioning][component_name]['latest']['version_name']
             install_path = json_dict[provisioning][component_name]['latest']['path']
 
-        if not _verify_install_path(install_path):
+        if not verify_install_path(install_path):
             print(f"{component_name} path does not exist {install_path}")
             raise FileNotFoundError(install_path)
 
@@ -72,7 +72,7 @@ def start_components_update(_args):
     component_manager.print_installed_versions()
 
 
-def _verify_install_path(install_path):
+def verify_install_path(install_path):
     return os.path.exists(install_path)
 
 
@@ -82,8 +82,11 @@ def _create_bmc_component(component_name, version, install_path, rf_api):
     return component
 
 
-def _create_json_dict(json_file_path):
+def create_json_dict(json_file_path):
     print(f'Read platform components info from json {json_file_path}')
+    if not verify_install_path(json_file_path):
+        print(f"Json file path does not exist {json_file_path}")
+        raise FileNotFoundError(json_file_path)
     with open(json_file_path, 'r') as file:
         return json.load(file)
 
