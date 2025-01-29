@@ -438,6 +438,7 @@ def get_nvue_additional_info(duthost, request):
 
     except Exception as e:
         logging.error(f"Failed to retrieve NVUE information from {duthost}: {e}")
+        nvue_info['history'] = "Error: Unable to fetch last executed commands"
         nvue_info['show_system'] = "Error: Unable to fetch 'nv show system reboot history' output"
         nvue_info['show_platform_firmware'] = "Error: Unable to fetch 'nv show platform firmware' output"
 

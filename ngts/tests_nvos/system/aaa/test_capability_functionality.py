@@ -50,10 +50,10 @@ def is_monitor(username, password, engines):
         assert output, "monitor can run nv config diff"
 
     with allure.step('testing capability negative flow'):
-        out_set = system.aaa.user.user_id[username].set(SystemConsts.USER_FULL_NAME, 'TESTING', dut_engine=user_engine).info
+        out_set = system.aaa.user.user_id[username].set(SystemConsts.USER_FULL_NAME, 'TESTING', dut_engine=user_engine).verify_result(False)
         assert monitor_message in out_set, 'monitor can not set any configuration'
 
-        out_unset = system.aaa.user.user_id[username].unset(SystemConsts.USER_FULL_NAME, dut_engine=user_engine).info
+        out_unset = system.aaa.user.user_id[username].unset(SystemConsts.USER_FULL_NAME, dut_engine=user_engine).verify_result(False)
         assert monitor_message in out_unset, 'monitor can not set any configuration'
 
 

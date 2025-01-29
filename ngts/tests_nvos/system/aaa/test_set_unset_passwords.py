@@ -55,8 +55,8 @@ def test_set_invalid_password(engines):
         password_min_len, enabled_rules = system.security.password_hardening.parse_password_hardening_enabled_rules(secutiry_output)
         invalid_password, random_labels = generate_invalid_password(enabled_rules, password_min_len)
     with allure.step('try to set the invalid password and verify the output message'):
-        set_res = system.aaa.user.user_id[SystemConsts.DEFAULT_USER_MONITOR].set(SystemConsts.USER_PASSWORD, invalid_password)
-        verify_invalid_messages(random_labels, set_res.info)
+        set_info = system.aaa.user.user_id[SystemConsts.DEFAULT_USER_MONITOR].set(SystemConsts.USER_PASSWORD, invalid_password).verify_result(False)
+        verify_invalid_messages(random_labels, set_info)
 
     NvueGeneralCli.detach_config(engines.dut)
 
@@ -80,9 +80,9 @@ def test_set_invalid_password_length(engines):
         password_min_len, enabled_rules = system.security.password_hardening.parse_password_hardening_enabled_rules(secutiry_output)
         invalid_password, rules = generate_invalid_password(enabled_rules=enabled_rules, password_min_len=password_min_len, length_case=True)
     with allure.step('try to set the invalid password and verify the output message'):
-        result_obj = system.aaa.user.user_id[SystemConsts.DEFAULT_USER_MONITOR].set(SystemConsts.USER_PASSWORD, f'"{invalid_password}"')
-        assert not result_obj.result and 'Password should contain at least' in result_obj.info, \
-            "length error message not as expected the output = {output} expected = {expected}".format(output=result_obj.info,
+        result_obj_info = system.aaa.user.user_id[SystemConsts.DEFAULT_USER_MONITOR].set(SystemConsts.USER_PASSWORD, f'"{invalid_password}"').verify_result(False)
+        assert 'Password should contain at least' in result_obj_info, \
+            "length error message not as expected the output = {output} expected = {expected}".format(output=result_obj_info,
                                                                                                       expected='Password should contain at least')
     NvueGeneralCli.detach_config(engines.dut)
 
@@ -198,10 +198,12 @@ def test_password_history(engines):
             monitor_usr.set(SystemConsts.USER_PASSWORD, '"' + new_password_2 + '"', apply=True).verify_result()
 
         with allure.step("set the same password again - password = {}".format(new_password_2)):
-            assert "Password should be different than" in monitor_usr.set(SystemConsts.USER_PASSWORD, '"' + new_password_2 + '"').info, "we can not set a previous password"
+            res_info = monitor_usr.set(SystemConsts.USER_PASSWORD, '"' + new_password_2 + '"').verify_result(False)
+            assert "Password should be different than" in res_info, "we can not set a previous password"
 
         with allure.step("set the first password again - password = {}".format(new_password_1)):
-            assert "Password should be different than" in monitor_usr.set(SystemConsts.USER_PASSWORD, '"' + new_password_1 + '"').info, "we can not set a previous password"
+            res_info = monitor_usr.set(SystemConsts.USER_PASSWORD, '"' + new_password_1 + '"').verify_result(False)
+            assert "Password should be different than" in res_info, "we can not set a previous password"
 
     with allure.step("test password history after changing history-cnt to 1"):
 

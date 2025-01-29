@@ -94,15 +94,15 @@ def test_invalid_username(engines):
     system = System(None)
     with allure.step('verify we can not user invalid user name - user name is up to 32 letters, digits and start with letter or _ '):
         invalid_username = User.generate_username(is_valid=False)
-        res = system.aaa.user.set(invalid_username, '')
-        assert "'{invalid_username}' is not a 'user-name'".format(invalid_username=invalid_username) in res.info, \
+        info = system.aaa.user.set(invalid_username, '').verify_result(False)
+        assert "'{invalid_username}' is not a 'user-name'".format(invalid_username=invalid_username) in info, \
             'succeeded to set invalid username - not as expected'
 
     with allure.step('verify we can not user invalid user name - user name is up to 32 letters, digits and start with letter or _ '):
         random_length = random.randint(SystemConsts.USERNAME_MAX_LEN + 1, 100)
         invalid_username = User.generate_username(random_length=False, length=random_length)
-        res = system.aaa.user.set(invalid_username, '')
-        assert "'{invalid_username}' is not a 'user-name'".format(invalid_username=invalid_username) in res.info, \
+        info = system.aaa.user.set(invalid_username, '').verify_result(False)
+        assert "'{invalid_username}' is not a 'user-name'".format(invalid_username=invalid_username) in info, \
             'succeeded to set invalid username - not as expected'
 
 
