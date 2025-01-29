@@ -10,6 +10,7 @@ from multiprocessing import Process
 import pytest
 
 import ngts.tools.test_utils.allure_utils as allure
+from ngts.nvos_tools.Devices.IbDevice import JulietSwitch
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.constants.constants import GnmiConsts
 from ngts.nvos_constants.constants_nvos import NvosConst, DatabaseConst, ApiType, ActionConsts, SystemConsts
@@ -191,7 +192,7 @@ def test_updates_on_gnmi_stream_mode(engines, devices):
 @pytest.mark.system
 @pytest.mark.gnmi
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_gnmi_bad_flow(test_api, engines, devices):
+def test_gnmi_bad_flow(test_api, engines, devices, setup_name):
     """
     Check gnmi bad flow:
         Test flow:
@@ -212,9 +213,11 @@ def test_gnmi_bad_flow(test_api, engines, devices):
     with allure.step("Subscribe to the gnmi server for data that is not supported"):
         xpath = f'interfaces/interface[name={devices.dut.default_port}]/state/counters/in-broadcast-pkts'
         gnmi_stream_updates = run_gnmi_client_and_parse_output(engines, devices, xpath, engines.dut.ip)
-        gnmi_stream_updates_value = list(gnmi_stream_updates.values())[0]
-        assert gnmi_stream_updates_value == '0', f'{xpath} is unsupported field,' \
-            f' so we expect to have 0, but got {gnmi_stream_updates_value}'
+        gnmi_stream_updates_value = list(gnmi_stream_updates.values())
+        if devices.dut.switch_type == NvosConst.NVL_SWITCH_TYPE:
+            assert not gnmi_stream_updates_value, f'{xpath} is unsupported field, so we expect to have none, but got {gnmi_stream_updates_value}'
+        else:
+            assert gnmi_stream_updates_value[0] == '0', f'{xpath} is unsupported field, so we expect to have 0, but got {gnmi_stream_updates_value}'
 
     with allure.step("Subscribe to the gnmi server with bad xpath"):
         xpath = f'/{Tools.RandomizationTool.get_random_string(5)}/{Tools.RandomizationTool.get_random_string(5)}'
