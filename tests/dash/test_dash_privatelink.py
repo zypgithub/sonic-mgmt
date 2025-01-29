@@ -150,7 +150,10 @@ def apply_dpu_basic_config(dpuhost, apply_switch_basic_config, dpuhosts, dpu_ind
         dpuhost.shell(cmd_remove_data_port_ip)
 
 
-@pytest.mark.parametrize("encap_proto", ["vxlan", "gre"])
+# NOTE: Disable the GRE test as NASA does not currently support it.
+# The GRE work is tracked under a separate FR. The test will be enabled when the support is added.
+#@pytest.mark.parametrize("encap_proto", ["vxlan", "gre"])
+@pytest.mark.parametrize("encap_proto", ["vxlan"])
 def test_privatelink_basic_transform(
     ptfadapter,
     dash_pl_config,

@@ -108,8 +108,12 @@ def inbound_pl_packets(config, inner_packet_type='udp', vxlan_udp_dport=4789):
     )
 
     exp_inner_packet = generate_inner_packet(inner_packet_type)(
-        eth_src=pl.ENI_MAC,
-        eth_dst=pl.REMOTE_MAC,
+        # NOTE: NASA is not supporting the rewrite of inner MAC addresses at this moment.
+        # The work is tracked under a separate FR. This change will be reverted when the support is added.
+        #eth_src=pl.ENI_MAC,
+        #eth_dst=pl.REMOTE_MAC,
+        eth_src=pl.REMOTE_MAC,
+        eth_dst=pl.ENI_MAC,
         ip_src=pl.PE_CA,
         ip_dst=pl.VM1_CA,
         ip_id=0,
@@ -196,8 +200,12 @@ def outbound_pl_packets(config, outer_encap, inner_packet_type='udp', vxlan_udp_
         exp_inner_packet = scapy.Ether() / scapy.IPv6() / scapy.TCP()
     else:
         exp_inner_packet = scapy.Ether() / scapy.IPv6() / scapy.UDP()
-    exp_inner_packet[scapy.Ether].src = pl.ENI_MAC
-    exp_inner_packet[scapy.Ether].dst = pl.REMOTE_MAC
+    # NOTE: NASA is not supporting the rewrite of inner MAC addresses at this moment.
+    # The work is tracked under a separate FR. This change will be reverted when the support is added.
+    #exp_inner_packet[scapy.Ether].src = pl.ENI_MAC
+    #exp_inner_packet[scapy.Ether].dst = pl.REMOTE_MAC
+    exp_inner_packet[scapy.Ether].src = pl.REMOTE_MAC
+    exp_inner_packet[scapy.Ether].dst = pl.ENI_MAC
     exp_inner_packet[scapy.IPv6].src = exp_overlay_sip
     exp_inner_packet[scapy.IPv6].dst = exp_overlay_dip
     if inner_packet_type == 'tcp':
