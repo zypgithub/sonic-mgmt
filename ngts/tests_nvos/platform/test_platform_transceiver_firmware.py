@@ -80,15 +80,14 @@ def test_reset_transceiver_firmware_positive(engines, test_api):
         default_fw = OutputParsingTool.parse_json_str_to_dictionary(default_output).verify_result()[PlatformConsts.FW_ACTUAL]
         platform.transceiver.action_reset(random_transceiver).verify_result()
 
-        with allure.step("sleep for 3 sec - waiting for after reset action"):
-            time.sleep(3)
+        with allure.step("sleep for 5 sec - waiting for after reset action"):
+            time.sleep(5)
 
         with allure.step(f"verify all {random_transceiver} fields back to the same values"):
             output_after_reset = OutputParsingTool.parse_json_str_to_dictionary(output_json=platform.transceiver.show(random_transceiver + ' firmware')).verify_result()
             _verify_expected_dict(output_after_reset, default_fw)
 
         with allure.step(f"verify all {random_port} link fields back to the same values"):
-            start_sm
             link_output_after_reset = OutputParsingTool.parse_json_str_to_dictionary(interface.link.show()).verify_result()
             link_output_before_reset = link_output_before_reset.pop('counters')
             link_output_after_reset = link_output_after_reset.pop('counters')
@@ -205,8 +204,8 @@ def test_install_reset_transceiver_firmware_negative_flow(engines, test_api):
         show_interface_before_install = OutputParsingTool.parse_json_str_to_dictionary(interface.link.show()).verify_result()
 
     with allure.step("install new transceiver firmware - {}".format(invalid_file)):
-        platform.transceiver.action_install(random_transceiver, invalid_file, expected_str=expected_error_msg)
-        platform.transceiver.action_reset(random_transceiver)
+        platform.transceiver.action_install(random_transceiver, invalid_file, expected_str=expected_error_msg).verify_result(should_succeed=False)
+        platform.transceiver.action_reset(random_transceiver).verify_result()
 
     with allure.step("verify show commands after install"):
         time.sleep(20)
@@ -239,7 +238,7 @@ def test_install_reset_invalid_transceiver_id(engines, test_api):
         invalid_transceiver = 'testing'
         invalid_file_name = 'no_file'
         invalid_action_expected_output = "Module testing does not exist"
-        invalid_show_expected_output = 'Error: The requested item does not exist'
+        invalid_show_expected_output = 'The requested item does not exist'
 
     with allure.step("try to run transceiver commands with invalid transceiver id and non exist file"):
         platform.transceiver.action_install(invalid_transceiver, invalid_file_name, expected_str=invalid_action_expected_output)
