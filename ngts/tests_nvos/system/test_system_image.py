@@ -274,59 +274,60 @@ def test_system_image_bad_flow(engines, release_name, test_api, original_version
         images_name = []
         image_file = system.image.files.file_name[image_name]
 
-    with allure.step("Fetch bad flows"):
-        with allure.step("Fetch an image"):
+    try:
+        with allure.step("Fetch bad flows"):
+            with allure.step("Fetch an image"):
+                player = engines['sonic_mgmt']
+                scp_path = ImageConsts.SCP_PATH_SERVER.format(username=player.username, password=player.password,
+                                                              ip=player.ip, path=image_path)
+                system.image.action_fetch(scp_path)
+                images_name.append(image_name)
+            with allure.step("Fetch the same image again using ipv6 address"):
+                scp_path = ImageConsts.SCP_PATH_SERVER.format(username=player.username, password=player.password,
+                                                              ip=f"[{sonic_mgmt_ipv6_addr}]", path=image_path)
+                system.image.action_fetch(scp_path)
+            with allure.step("Fetch an image that does not exist"):
+                system.image.action_fetch(scp_path + rand_name, "Failed")
+
+        with allure.step("Delete bad flows"):
+            with allure.step("Delete file that does not exist"):
+                system.image.files.delete_files([rand_name], "File not found")
+
+        with allure.step("Install bad flows"):
+            with allure.step("Install image file that does not exist"):
+                file_rand_name.action_file_install("Image does not exist").verify_result()
+
+        with allure.step("Boot-next bad flows"):
+            if not original_images[ImageConsts.PARTITION2_IMG]:
+                with allure.step("Boot-next {}, even tough we have no image there".format(ImageConsts.PARTITION2_IMG)):
+                    system.image.action_boot_next(ImageConsts.PARTITION2_IMG, 'Failed')
+            with allure.step("Boot-next random string"):
+                system.image.action_boot_next(ImageConsts.PARTITION2_IMG, "Failed")
+            with allure.step("Boot-next the same partition"):
+                system.image.action_boot_next(original_image_partition)
+
+        with allure.step("Rename bad flows"):
+            with allure.step("Rename image file that does not exist"):
+                file_rand_name.action_rename(rand_name, "File not found")
+
+        with allure.step("Upload bad flows"):
             player = engines['sonic_mgmt']
-            scp_path = ImageConsts.SCP_PATH_SERVER.format(username=player.username, password=player.password,
-                                                          ip=player.ip, path=image_path)
-            system.image.action_fetch(scp_path)
-            images_name.append(image_name)
-        with allure.step("Fetch the same image again using ipv6 address"):
-            scp_path = ImageConsts.SCP_PATH_SERVER.format(username=player.username, password=player.password,
-                                                          ip=f"[{sonic_mgmt_ipv6_addr}]", path=image_path)
-            system.image.action_fetch(scp_path)
-        with allure.step("Fetch an image that does not exist"):
-            system.image.action_fetch(scp_path + rand_name, "Failed")
-
-    with allure.step("Delete bad flows"):
-        with allure.step("Delete file that does not exist"):
-            system.image.files.delete_files([rand_name], "File not found")
-
-    with allure.step("Install bad flows"):
-        with allure.step("Install image file that does not exist"):
-            file_rand_name.action_file_install("Image does not exist").verify_result()
-
-    with allure.step("Boot-next bad flows"):
-        if not original_images[ImageConsts.PARTITION2_IMG]:
-            with allure.step("Boot-next {}, even tough we have no image there".format(ImageConsts.PARTITION2_IMG)):
-                system.image.action_boot_next(ImageConsts.PARTITION2_IMG, 'Failed')
-        with allure.step("Boot-next random string"):
-            system.image.action_boot_next(ImageConsts.PARTITION2_IMG, "Failed")
-        with allure.step("Boot-next the same partition"):
-            system.image.action_boot_next(original_image_partition)
-
-    with allure.step("Rename bad flows"):
-        with allure.step("Rename image file that does not exist"):
-            file_rand_name.action_rename(rand_name, "File not found")
-
-    with allure.step("Upload bad flows"):
-        player = engines['sonic_mgmt']
-        upload_path = ImageConsts.SCP_PATH_SERVER.format(username=player.username, password=player.password, ip=player.ip, path='/tmp')
-        with allure.step("Upload image file that does not exist"):
-            file_rand_name.action_upload(upload_path, "File not found")
-        with allure.step("Upload the same image twice"):
-            with allure.step("First upload"):
-                image_file.action_upload(upload_path)
-                with allure.step("Validate file was uploaded"):
-                    assert player.run_cmd(
-                        cmd='ls /tmp/ | grep {}'.format(image_name)), "Did not find the file with ls cmd"
-            with allure.step("Second upload"):
-                image_file.action_upload(upload_path)
-                with allure.step("Delete the file from the player"):
-                    player.run_cmd(cmd='rm -f /tmp/{}'.format(image_name))
-
-    with allure.step("Delete all images that have been fetch during the test"):
-        system.image.files.delete_files(images_name)
+            upload_path = ImageConsts.SCP_PATH_SERVER.format(username=player.username, password=player.password, ip=player.ip, path='/tmp')
+            with allure.step("Upload image file that does not exist"):
+                file_rand_name.action_upload(upload_path, "File not found")
+            with allure.step("Upload the same image twice"):
+                with allure.step("First upload"):
+                    image_file.action_upload(upload_path)
+                    with allure.step("Validate file was uploaded"):
+                        assert player.run_cmd(
+                            cmd='ls /tmp/ | grep {}'.format(image_name)), "Did not find the file with ls cmd"
+                with allure.step("Second upload"):
+                    image_file.action_upload(upload_path)
+                    with allure.step("Delete the file from the player"):
+                        player.run_cmd(cmd='rm -f /tmp/{}'.format(image_name))
+    finally:
+        with allure.step("Delete all images that have been fetch during the test"):
+            system.image.files.delete_files(images_name)
 
 
 @pytest.mark.checklist

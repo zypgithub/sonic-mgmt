@@ -78,11 +78,12 @@ class ResultObj:
         if should_succeed != self.result:
             raise AssertionError(self._get_fail_message())
 
+        output: str = self.returned_value if should_succeed else self.info
         if expected_value:
-            assert expected_value in self.returned_value, (
-                f"Expected {repr(expected_value)} but returned value is: {self.returned_value}")
+            assert expected_value in output, (
+                f"Expected {repr(expected_value)} but output is: {output}")
 
-        return self.returned_value if self.result else self.info
+        return output
 
     def get_returned_value(self, should_succeed=True):
         return self.verify_result(should_succeed)
