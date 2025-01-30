@@ -707,8 +707,8 @@
 				"BIOS": [
 					{
 						"force_reboot": true,
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/sx_mlnx_bios/SnowyOwl/0ACTV_00.01.010/Release/0ACTV.cab",
-						"version": "0ACTV_00.01.010",
+						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_bios/SnowyOwl/0ACTV_00.01.012/Release/0ACTV.cab",
+						"version": "0ACTV_00.01.012",
 						"reboot": ["cold"]
 					}
 				],
