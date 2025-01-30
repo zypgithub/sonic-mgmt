@@ -7,8 +7,21 @@ def test_acl_config(cli_objects, engines, acl_base_configuration, acl_table_conf
     """
     Test the acl tables and rules can be added and removed correctly
     :param cli_objects: cli_objects fixture
+    :param engines: engines fixture
+    :param acl_base_configuration: acl_base_configuration fixture
     :param acl_table_config_list: acl_table_config_list fixture, which is a list of value returned from
     generate_acl_table
+    """
+    do_acl_config_test(cli_objects, engines, acl_base_configuration, acl_table_config_list)
+
+
+def do_acl_config_test(cli_objects, engines, acl_base_configuration, acl_table_config_list):
+    """
+    Contains all logic for acl config test
+    :param cli_objects: cli_objects fixture
+    :param engines: engines fixture
+    :param acl_base_configuration: acl_base_configuration fixture
+    :param acl_table_config_list: acl_table_config_list fixture, which is a list of value returned from
     """
     cli_obj = cli_objects.dut
     engine = engines.dut

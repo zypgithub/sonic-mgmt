@@ -18,6 +18,7 @@ from ngts.constants.constants import PytestConst
 from ngts.helpers import json_file_helper
 from ngts.helpers.config_db_utils import save_config_db_json
 from ngts.tests.nightly.conftest import convert_speed_format_to_m_speed
+from ngts.tools.ports_modifier import reload_config, MAX_PORTS_TEST_LIST
 
 logger = logging.getLogger()
 RAM_SYNCD_USAGE_ASAN_COEFFICIENT = 4
@@ -205,7 +206,6 @@ def get_expected_cpu_or_ram_usage_dict(expected_cpu_or_ram_usage_file, sonic_bra
                                          expected_cpu_or_ram_usage_dict)
     update_cpu_usage_for_simx(expected_cpu_or_ram_usage_file, is_simx,
                               chip_type, expected_cpu_or_ram_usage_dict)
-
     return expected_cpu_or_ram_usage_dict
 
 
@@ -346,7 +346,7 @@ def toggle_rsyslog_configurations(dut_engine, configurations, target, state):
 
 
 @pytest.fixture(scope="module", autouse=True)
-def config_check(engines, cli_objects, topology_obj, request, sonic_version):
+def config_check(engines, cli_objects, topology_obj, request, sonic_version, platform_params, chip_type):
     """
     Check if the running config (from redis db) is modified after the test case running.
     If so, we will reload the running config after test case running.
@@ -365,10 +365,16 @@ def config_check(engines, cli_objects, topology_obj, request, sonic_version):
 
         logger.info("Collecting running config before test on {}".format(dut_hostname))
 
-        dut_data["pre_running_config"] = json.loads(dut_engine.run_cmd("sonic-cfggen -d --print-data"))
+        if request.session.items[0].name in MAX_PORTS_TEST_LIST:
+            dut_data["pre_running_config"] = json.loads(dut_engine.run_cmd("sudo cat /tmp/pre_running_config.json"))
+            dut_engine.run_cmd("sudo rm -f /tmp/pre_running_config.json")
+        else:
+            dut_data["pre_running_config"] = json.loads(dut_engine.run_cmd("sonic-cfggen -d --print-data"))
 
         yield dut_data
 
+        if request.session.items[0].name in MAX_PORTS_TEST_LIST:
+            reload_config(request.session, platform_params, chip_type)
         logger.info("Collecting running config after test on {}".format(dut_hostname))
         dut_data["cur_running_config"] = json.loads(dut_engine.run_cmd("sonic-cfggen -d --print-data"))
 

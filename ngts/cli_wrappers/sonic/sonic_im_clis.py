@@ -209,6 +209,19 @@ class SonicImClis:
         else:
             return None
 
+    def cleanup_sai_profile_flag(self, platform_params):
+        """
+        @summary: This method is removing the flag in case we have 'SAI_INDEPENDENT_MODULE_MODE=0'
+        @param: platform_params: platform_params fixture
+        """
+        platform = platform_params.platform
+        hwsku = platform_params.hwsku
+
+        attribute_name = IndependentModuleConst.IM_SAI_ATTRIBUTE_NAME
+        file_path = SonicConst.SAI_PROFILE_FILE_PATH.format(PLATFORM=platform, HWSKU=hwsku)
+        cmd = f"sudo sed -i '/^{attribute_name}=0$/d' {file_path}"
+        self.engine.run_cmd(cmd)
+
     def enable_im(self, topology_obj, platform_params, chip_type, enable_im=True):
         """
         @summary: This method is for enable IM feature at DUT

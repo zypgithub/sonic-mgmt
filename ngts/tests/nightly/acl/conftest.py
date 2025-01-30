@@ -6,15 +6,31 @@ from ngts.helpers.acl_helper import ACLConstants
 
 
 @pytest.fixture(scope='package')
-def acl_table_config_list(engines, interfaces):
+def acl_table_config_list(topology_obj):
     """
-    The acl table config list fixture, which will return the list acl tables config params
-    :param engines: engines fixture
-    :param interfaces: interfaces fixture
+    @summary: The acl table config list fixture, which will return the list acl tables config params.
+    @param: topology_obj fixture
+    """
+    yield get_acl_table_config_list([topology_obj.ports.get('dut-ha-2')])
+
+
+@pytest.fixture(scope='package')
+def acl_table_config_list_scale(topology_obj):
+    """
+    @summary: The acl table config list fixture for scale, which will return the list acl tables config params.
+    @param: topology_obj fixture
+    """
+    yield get_acl_table_config_list(topology_obj.players_all_ports['dut'])
+
+
+def get_acl_table_config_list(ports_list):
+    """
+    Helper method for creating the ACL table list
+    :param ports_list: list of all the ports
     return: list of dictionary,the item of the list include all the information used to created one acl table and
     the acl rules for this table
             example:[{'table_name': 'DATA_INGRESS_L3TEST',
-                    'table_ports': ['Ethernet236'],
+                    'table_ports': ['Ethernet0'...],
                     'table_stage': 'ingress',
                     'table_type': 'L3',
                     'rules_template_file': 'acl_rules_ipv4.j2',
@@ -32,12 +48,10 @@ def acl_table_config_list(engines, interfaces):
     """
     ip_version_list = ACLConstants.IP_VERSION_LIST
     stage_list = ACLConstants.STAGE_LIST
-    port_list = [interfaces.dut_ha_2]
     acl_table_config_list = []
     for ip_version, stage in itertools.product(ip_version_list, stage_list):
-        acl_table_config_list.append(acl_helper.generate_acl_table_config(stage, ip_version, port_list))
-
-    yield acl_table_config_list
+        acl_table_config_list.append(acl_helper.generate_acl_table_config(stage, ip_version, ports_list))
+    return acl_table_config_list
 
 
 @pytest.fixture(scope='package')

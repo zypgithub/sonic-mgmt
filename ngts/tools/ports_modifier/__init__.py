@@ -8,14 +8,19 @@ from ngts.cli_wrappers.sonic.sonic_cli import SonicCli
 from ngts.constants.constants import InfraConst, PlatformTypesConstants
 from ngts.helpers.config_db_utils import save_config_db_json
 from ngts.tools.infra import get_platform_info
-
+from ngts.conftest import chip_type, platform_params
 logger = logging.getLogger()
 
 UNSUPPORTED_SPLIT_PLATFORMS = [PlatformTypesConstants.PLATFORM_ALLIGATOR]
 REBOOT_TEST_NAME = 'test_push_gate_reboot_policer'
+ACL_SCALE_TEST_NAME = 'test_acl_config_scale'
 CONFIG_DB_DUT_PATH = '/etc/sonic/config_db.json'
 CONFIG_DB_DUT_TEMP_PATH = '/tmp/config_db.json'
 CONFIG_DB_COPY_NAME = 'config_db_copy.json'
+PRE_RUNNING_CONFIG_PATH = '/tmp/pre_running_config.json'
+MAX_PORTS_TEST_LIST = [REBOOT_TEST_NAME, ACL_SCALE_TEST_NAME]
+INDEPENDENT_MODULE_PLATFORMS = [PlatformTypesConstants.PLATFORM_MOOSE, PlatformTypesConstants.PLATFORM_GAUR,
+                                PlatformTypesConstants.PLATFORM_LEOPARD, PlatformTypesConstants.PLATFORM_HIPPO]
 
 
 def pytest_addoption(parser):
@@ -31,46 +36,57 @@ def pytest_collection_modifyitems(session, config, items):
     msn2700  - 60
     msn3420  - 93
     msn3700  - 116
-    msn3800  - 124
     msn4410  - 116
     msn4600  - 124
     msn4600c - 124
     msn4700  - 116
     sn5400   - 128
     sn5600   - 128
+    sn5610   - 244
     """
-    if len(items) == 1 and items[0].name == REBOOT_TEST_NAME and config.option.ports_number:
+    if len(items) == 1 and items[0].name in MAX_PORTS_TEST_LIST and config.option.ports_number:
         minimum_ports_number = 4
-        max_pors_num_per_platform = {PlatformTypesConstants.PLATFORM_PANTHER: 60,
-                                     PlatformTypesConstants.PLATFORM_LIONFISH: 93,
-                                     PlatformTypesConstants.PLATFORM_ANACONDA: 116,
-                                     PlatformTypesConstants.PLATFORM_ANACONDA_C: 116,
-                                     PlatformTypesConstants.PLATFORM_TIGRIS: 124,
-                                     PlatformTypesConstants.PLATFORM_OCELOT: 116,
-                                     PlatformTypesConstants.PLATFORM_LIGER: 124,
-                                     PlatformTypesConstants.PLATFORM_TIGON: 124,
-                                     PlatformTypesConstants.PLATFORM_LEOPARD: 116,
-                                     PlatformTypesConstants.PLATFORM_HIPPO: 128,
-                                     PlatformTypesConstants.PLATFORM_MOOSE: 128}
+        max_ports_num_per_platform = {PlatformTypesConstants.PLATFORM_PANTHER: 60,
+                                      PlatformTypesConstants.PLATFORM_LIONFISH: 93,
+                                      PlatformTypesConstants.PLATFORM_ANACONDA: 116,
+                                      PlatformTypesConstants.PLATFORM_ANACONDA_C: 116,
+                                      PlatformTypesConstants.PLATFORM_OCELOT: 116,
+                                      PlatformTypesConstants.PLATFORM_LIGER: 124,
+                                      PlatformTypesConstants.PLATFORM_TIGON: 124,
+                                      PlatformTypesConstants.PLATFORM_LEOPARD: 116,
+                                      PlatformTypesConstants.PLATFORM_HIPPO: 128,
+                                      PlatformTypesConstants.PLATFORM_MOOSE: 244,
+                                      PlatformTypesConstants.PLATFORM_GAUR: 244
+                                      }
 
         setup_name = session.config.option.setup_name
         topology = get_topology_by_setup_name_and_aliases(session.config.option.setup_name, slow_cli=False)
         dut_engine = topology.players['dut']['engine']
         cli_object = SonicCli(topology)
         platform = get_platform_info(topology)['platform']
-        if cli_object.im.is_im_enabled():
+
+        # save pre running config for config_check
+        dut_engine.run_cmd(f"sonic-cfggen -d --print-data > {PRE_RUNNING_CONFIG_PATH}")
+
+        if items[0].name == ACL_SCALE_TEST_NAME:
+            if '_simx' in platform:
+                # enable simx
+                platform = platform.replace('_simx', '')
+            elif platform in INDEPENDENT_MODULE_PLATFORMS and cli_object.im.is_im_enabled():
+                # disable IM
+                dut_engine.run_cmd('sudo /usr/bin/cmis_host_mgmt.py --disable')
+
+        elif cli_object.im.is_im_enabled():
             skip = pytest.mark.skip(reason=f'SW control feature enabled at {platform} and port breakout '
                                     f'is not supported')
-            for item in items:
-                item.add_marker(skip)
-                return
-        if platform not in max_pors_num_per_platform.keys():
+            add_marker(items, skip)
+            return
+        if platform not in max_ports_num_per_platform.keys():
             skip = pytest.mark.skip(reason=f'{platform} platform does not support split to maximum ports')
-            for item in items:
-                item.add_marker(skip)
-                return
+            add_marker(items, skip)
+            return
 
-        platform_max_ports_num = max_pors_num_per_platform[platform]
+        platform_max_ports_num = max_ports_num_per_platform[platform]
         if config.option.ports_number == "max":
             expected_ports_num = platform_max_ports_num
         else:
@@ -79,15 +95,13 @@ def pytest_collection_modifyitems(session, config, items):
         if expected_ports_num < minimum_ports_number:
             skip = pytest.mark.skip(reason=f'Expected number of ports: {expected_ports_num}, '
                                     f'but it must be >= {minimum_ports_number}')
-            for item in items:
-                item.add_marker(skip)
-                return
+            add_marker(items, skip)
+            return
         if expected_ports_num > platform_max_ports_num:
             skip = pytest.mark.skip(reason=f'Platform: {platform} expected number of ports: {expected_ports_num}, '
                                     f'but it must be <= {platform_max_ports_num}')
-            for item in items:
-                item.add_marker(skip)
-                return
+            add_marker(items, skip)
+            return
         logger.info(f'Setup will be configured with {expected_ports_num} ports')
         # Get config from shared location
         shared_path = f'{InfraConst.MARS_TOPO_FOLDER_PATH}{setup_name}'
@@ -99,17 +113,15 @@ def pytest_collection_modifyitems(session, config, items):
         existing_ports_num = len(original_config_db['PORT'])
         # Save available config_db.json from DUT to sonic-mgmt docker /tmp folder
         logger.info(f'Copy original config_db.json from DUT to sonic-mgmt /tmp folder')
-        dut_engine.copy_file(source_file=f"{CONFIG_DB_DUT_PATH}",
+        dut_engine.copy_file(source_file=f"{PRE_RUNNING_CONFIG_PATH}",
                              dest_file=f'/tmp/{CONFIG_DB_COPY_NAME}', file_system='/tmp/', direction='get')
 
         if expected_ports_num != existing_ports_num:
             if platform in UNSUPPORTED_SPLIT_PLATFORMS:
                 msg = f'Platform {platform} can\'t split ports to reach total number of ports: {expected_ports_num}'
                 skip = pytest.mark.skip(reason=msg)
-                for item in items:
-                    item.add_marker(skip)
-                    return
-
+                add_marker(items, skip)
+                return
             dut_to_host_ports_list = [port for alias, port in topology.ports.items() if alias.startswith('dut-h')]
             modified_config = generate_config_db(original_config_db, dut_engine, expected_ports_num, platform,
                                                  dut_to_host_ports_list, topology)
@@ -122,24 +134,38 @@ def pytest_collection_modifyitems(session, config, items):
             cli_object.ip.apply_dns_servers_into_resolv_conf()
 
 
-def pytest_sessionfinish(session, exitstatus):
+def add_marker(items, skip):
+    # Helper method for adding skip markers
+    for item in items:
+        item.add_marker(skip)
+        return
 
-    if len(session.items) == 1 and session.items[0].name == REBOOT_TEST_NAME and session.config.option.ports_number:
-        restore_original_config = getattr(session, 'restore_original_config', False)
-        logger.info(f'Configuration restoration needed: {restore_original_config}')
-        if not restore_original_config:
-            return
 
-        topology = get_topology_by_setup_name_and_aliases(session.config.option.setup_name, slow_cli=False)
-        dut_engine = topology.players['dut']['engine']
-        cli_object = SonicCli(topology)
-        logger.info(f'Copy original config_db.json file from sonic-mgmt /tmp folder to  DUT /tmp/ folder')
-        dut_engine.copy_file(source_file=f"/tmp/{CONFIG_DB_COPY_NAME}",
-                             dest_file=CONFIG_DB_DUT_TEMP_PATH, file_system='/tmp/',
-                             overwrite_file=True, verify_file=False)
-        logger.info(f'Copy db file from DUT /tmp folder to DUT {CONFIG_DB_DUT_PATH}')
-        dut_engine.run_cmd(f'sudo cp {CONFIG_DB_DUT_TEMP_PATH} {CONFIG_DB_DUT_PATH}')
-        cli_object.general.reload_configuration(force=True)
+def reload_config(session, platform_params, chip_type):
+    # Reload the original configuration
+    restore_original_config = getattr(session, 'restore_original_config', False)
+    logger.info(f'Configuration restoration needed: {restore_original_config}')
+    if not restore_original_config:
+        return
+
+    topology = get_topology_by_setup_name_and_aliases(session.config.option.setup_name, slow_cli=False)
+    dut_engine = topology.players['dut']['engine']
+    cli_object = SonicCli(topology)
+    logger.info(f'Copy original config_db.json file from sonic-mgmt /tmp folder to  DUT /tmp/ folder')
+    dut_engine.copy_file(source_file=f"/tmp/{CONFIG_DB_COPY_NAME}",
+                         dest_file=CONFIG_DB_DUT_TEMP_PATH, file_system='/tmp/',
+                         overwrite_file=True, verify_file=False)
+    logger.info(f'Copy db file from DUT /tmp folder to DUT {CONFIG_DB_DUT_PATH}')
+    dut_engine.run_cmd(f'sudo cp {CONFIG_DB_DUT_TEMP_PATH} {CONFIG_DB_DUT_PATH}')
+    cli_object.general.reload_configuration(force=True)
+
+    # enable independent module in case it's disabled
+    platform = get_platform_info(topology)['platform']
+    if platform in INDEPENDENT_MODULE_PLATFORMS and not cli_object.im.is_im_enabled():
+        cli_object.im.cleanup_sai_profile_flag(platform_params)
+        cli_object.im.enable_im_in_sai()
+        cli_object.im.upload_cmis_files(platform_params, chip_type)
+        cli_object.im.enable_cmis_mgr_in_pmon_file(platform_params)
 
 
 def read_config_db_from_shared_location(config_db_path):
@@ -168,24 +194,25 @@ def modify_lanes_per_platform(platform, port_lanes, split_x2=False):
     lanes_8_spit_x2_x4_lanes = False
     lanes_8_spit_x4_x2_lanes = False
 
-    four_lanes_x2_split_platforms = [PlatformTypesConstants.PLATFORM_PANTHER, PlatformTypesConstants.PLATFORM_TIGRIS,
-                                     PlatformTypesConstants.PLATFORM_TIGON, PlatformTypesConstants.PLATFORM_LIGER]
+    four_lanes_x2_split_platforms = [PlatformTypesConstants.PLATFORM_PANTHER, PlatformTypesConstants.PLATFORM_TIGON,
+                                     PlatformTypesConstants.PLATFORM_LIGER]
     lanes_4_spit_x2_x2_lanes = platform in four_lanes_x2_split_platforms
 
     eight_lanes_x4_split_platforms = [PlatformTypesConstants.PLATFORM_OCELOT, PlatformTypesConstants.PLATFORM_LEOPARD,
-                                      PlatformTypesConstants.PLATFORM_MOOSE, PlatformTypesConstants.PLATFORM_HIPPO]
+                                      PlatformTypesConstants.PLATFORM_MOOSE, PlatformTypesConstants.PLATFORM_HIPPO,
+                                      PlatformTypesConstants.PLATFORM_GAUR]
 
     if platform in [PlatformTypesConstants.PLATFORM_MOOSE, PlatformTypesConstants.PLATFORM_HIPPO] and split_x2:
         lanes_8_spit_x2_x4_lanes = True
     else:
         lanes_8_spit_x4_x2_lanes = platform in eight_lanes_x4_split_platforms
 
-    if lanes_4_spit_x2_x2_lanes:  # 4 lanes, can be split into x2 with 2 lanes each port
+    if len(port_lanes) == 4 and lanes_4_spit_x2_x2_lanes:  # 4 lanes, can be split into x2 with 2 lanes each port
         port_lanes = [','.join(port_lanes[0:2]), ','.join(port_lanes[2:4])]
     if lanes_8_spit_x4_x2_lanes:  # 8 lanes, can be split into x4 with 2 lanes each port
         port_lanes = [','.join(port_lanes[0:2]), ','.join(port_lanes[2:4]),
                       ','.join(port_lanes[4:6]), ','.join(port_lanes[6:8])]
-    if lanes_8_spit_x2_x4_lanes:  # 8 lanes, can be split into x2 with 4 lanes each port
+    if len(port_lanes) == 8 and lanes_8_spit_x2_x4_lanes:  # 8 lanes, can be split into x2 with 4 lanes each port
         port_lanes = [','.join(port_lanes[0:4]), ','.join(port_lanes[4:8])]
 
     return port_lanes
@@ -219,9 +246,12 @@ def generate_config_db(config_db, engine, expected_num_of_ports, platform, dut_h
     aliases_list = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
     added_ports_counter = len(target_ports)
     # Add loopback split ports
+    port_index_list = [config_db['PORT'][port]['index'] for port in config_db['PORT']]
     for port in physical_dut_ports:
         port_data = physical_dut_ports[port]
         port_index = port_data['index']
+        if port_index not in port_index_list:
+            continue
         port_alias = port_data['alias']
         port_speed = port_speed
         port_mtu = '9100'
@@ -232,7 +262,8 @@ def generate_config_db(config_db, engine, expected_num_of_ports, platform, dut_h
             else:
                 port_lanes = [','.join(port_lanes)]
         else:
-            if (platform in [PlatformTypesConstants.PLATFORM_MOOSE, PlatformTypesConstants.PLATFORM_HIPPO] and
+            if (platform in [PlatformTypesConstants.PLATFORM_MOOSE, PlatformTypesConstants.PLATFORM_HIPPO,
+                             PlatformTypesConstants.PLATFORM_GAUR] and
                     expected_num_of_ports - added_ports_counter <= 4):
                 port_lanes = modify_lanes_per_platform(platform, port_lanes, split_x2=True)
             else:
