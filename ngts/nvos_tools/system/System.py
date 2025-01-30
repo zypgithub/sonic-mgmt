@@ -62,7 +62,7 @@ class System(BaseComponent):
         self.image = Image(self)
         self.message = BaseComponent(self, path='/message')
         self.version = BaseComponent(self, path='/version')
-        self.events = BaseComponent(self, path='/events')
+        self.events = Events(self)
         self.dns = BaseComponent(self, path='/dns')
         self.reboot = Reboot(self)
         self.factory_default = FactoryDefault(self)
@@ -117,6 +117,18 @@ class System(BaseComponent):
                     check_sanitizer_and_store_dump(engine, dumps_folder, pytest.test_name)
 
             return result
+
+
+class Events(BaseComponent):
+    def __init__(self, parent_obj=None):
+        BaseComponent.__init__(self, parent=parent_obj, path='/events')
+
+    def show_last(self, last_events_count=1):
+        with allure.step("Show last system event"):
+            logging.info("Show last system event")
+            return SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].show,
+                                                   TestToolkit.engines.dut, self.get_resource_path(),
+                                                   'last ' + str(last_events_count))
 
 
 class Documentation(BaseComponent):

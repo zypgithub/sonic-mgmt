@@ -944,6 +944,8 @@ class FansConsts:
     FAN_DIRECTION_MISMATCH_ERR_CROC = "direction intake is not aligned"
     FAN_STATUS_LED = "FAN_STATUS"
     FAN_FAULT_FILE = "/var/run/hw-management/thermal/fan{}_fault"
+    FAN_SPEED_OUT_OF_RANGE = "speed is out of range"
+    FAN_NOT_WORKING = 'is not working'
 
 
 class IbConsts:
@@ -1352,6 +1354,7 @@ class HealthConsts:
     HEALTH_ISSUE_REGEX = "ERROR {time_regex} : {component}: (?:is )?{issue}"
     HEALTH_FIX_REGEX = "INFO {time_regex} : Cleared: {component}: (?:is )?{issue}"
     SYSTEM_LOG_HEALTH_REGEX = '.* Health DB change cache.* new data.*\'summary\': \'{}\''
+    SYSTEM_LOG_HEALTH_STATUS_REGEX = '.*text.*{}.*type-id.*{}'
 
     FATAL = "FATAL"
     ASIC_HEALTH_ISSUE_FATAL = "Switch ASIC in fatal mode."
