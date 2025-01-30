@@ -58,7 +58,7 @@ class History(BaseComponent):
         return re.findall(line_to_search, file_output)
 
     def get_last_status_from_health_file(self, file_output=None):
-        last_status = self.search_line(HealthConsts.ADD_STATUS_TO_SUMMARY_REGEX + HealthConsts.OK, file_output)
+        last_status = self.search_line(HealthConsts.ADD_STATUS_TO_SUMMARY_REGEX, file_output)
         assert len(last_status) > 0, "Didn't find summary line in the health history file"
         last_status = last_status[-1]
         logger.info("last status line is: \n {}".format(last_status))

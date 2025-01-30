@@ -9,8 +9,10 @@ from ngts.nvos_tools.infra import ExceptionTool
 from ngts.nvos_tools.infra.FilesTool import EngineFile, TempFileOnEngine
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.tools.test_utils import allure_utils as allure
+from retry.api import retry_call
 import pytest
 import random
+import re
 import math
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.infra.Fae import Fae
@@ -18,7 +20,8 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.infra.Simulator import HWSimulator
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.nvos_constants.constants_nvos import SystemConsts, HealthConsts, NvosConst, PlatformConsts
+from ngts.nvos_tools.infra.Tools import Tools
+from ngts.nvos_constants.constants_nvos import SystemConsts, HealthConsts, NvosConst, PlatformConsts, FansConsts
 from ngts.tests_nvos.system.clock.ClockTools import ClockTools
 from ngts.nvos_tools.infra.DatabaseTool import DatabaseTool
 from ngts.nvos_constants.constants_nvos import DatabaseConst
@@ -187,6 +190,7 @@ def test_ignore_health_issue(engines, devices, loganalyzer):
         7. Fix PSU and FAN health issue
     """
     system = System()
+    thermal_directory = devices.dut.fan_direction_dir
     validate_psu_redundancy(devices, Platform())
     health_config_file = EngineFile(engines.dut, get_system_health_monitoring_config_file_path())
     verify_health_before_test()
@@ -256,8 +260,8 @@ def test_ignore_health_issue(engines, devices, loganalyzer):
     finally:
 
         with allure.step("Fix PSU and FAN health issue"):
-            HWSimulator.simulate_fix_fan_fault(engines.dut, fan_id)
-            HWSimulator.simulate_fix_psu_fault(engines.dut, psu_id)
+            HWSimulator.simulate_fix_fan_fault(engines.dut, thermal_directory, fan_id)
+            HWSimulator.simulate_fix_psu_fault(engines.dut, thermal_directory, psu_id)
             health_config_file.revert_to_original()
             system.wait_until_health_status_change_to(OK)
             verify_health_status_and_led(system, OK)
@@ -280,6 +284,7 @@ def test_simulate_health_problem_with_hw_simulator(devices, engines, set_unset_p
     """
     validate_psu_redundancy(devices, Platform())
     system = System()
+    thermal_directory = devices.dut.fan_direction_dir
     system.log.rotate_logs()
     health_issue_dict = {}
     date_time = ClockTools.get_datetime_object_from_show_system_output(system.show())
@@ -295,15 +300,15 @@ def test_simulate_health_problem_with_hw_simulator(devices, engines, set_unset_p
                              fan_display_name: "not working"}
         logger.info("sleep 5 sec after simulating HW issue")
         time.sleep(5)
-        validate_health_fix_or_issue(system, health_issue_dict, date_time, False)
+        validate_health_fix_or_issue(engines, system, health_issue_dict, date_time, False)
 
     finally:
         date_time = ClockTools.get_datetime_object_from_show_system_output(system.show())
         time.sleep(1)
         with allure.step("Cleanup - Fix the health issues"):
-            HWSimulator.simulate_fix_fan_fault(engines.dut, fan_id)
-            HWSimulator.simulate_fix_psu_fault(engines.dut, psu_id)
-            validate_health_fix_or_issue(system, health_issue_dict, date_time, True)
+            HWSimulator.simulate_fix_fan_fault(engines.dut, thermal_directory, fan_id)
+            HWSimulator.simulate_fix_psu_fault(engines.dut, thermal_directory, psu_id)
+            validate_health_fix_or_issue(engines, system, health_issue_dict, date_time, True)
 
 
 @pytest.mark.system
@@ -321,6 +326,7 @@ def test_simulate_fan_speed_fault(devices, engines, loganalyzer):
             8. validate devices appear in the detailed health report as OK
     """
     system = System()
+    thermal_directory = devices.dut.fan_direction_dir
     system.log.rotate_logs()
     date_time = ClockTools.get_datetime_object_from_show_system_output(system.show())
     system.health.history.delete_history_file(HealthConsts.HEALTH_FIRST_FILE)
@@ -335,18 +341,190 @@ def test_simulate_fan_speed_fault(devices, engines, loganalyzer):
                                                        f"\\.*Insufficient number of working fans warning\\.*"])
 
     try:
-        real_speed = HWSimulator.simulate_fan_speed_fault(engines.dut, fan_id)
+        real_speed = HWSimulator.simulate_fan_speed_fault(engines.dut, thermal_directory, 1, fan_id)
         fan_display_name = get_fan_display_name(fan_id)
-        health_issue_dict = {fan_display_name: ["speed is out of range", "is not working"]}
-        retry_validate_health_fix_or_issue(system, health_issue_dict, date_time, False)
+        health_issue_dict = {fan_display_name: [FansConsts.FAN_SPEED_OUT_OF_RANGE, FansConsts.FAN_NOT_WORKING]}
+        retry_validate_health_fix_or_issue(engines, system, health_issue_dict, date_time, False)
 
     finally:
         date_time = ClockTools.get_datetime_object_from_show_system_output(system.show())
         time.sleep(1)
         with allure.step("Fix the health issues"):
             logger.info("Fix the health issues")
-            HWSimulator.simulate_fix_fan_speed_fault(engines.dut, fan_id, real_speed)
-            retry_validate_health_fix_or_issue(system, health_issue_dict, date_time, True)
+            HWSimulator.simulate_fix_fan_speed_fault(engines.dut, thermal_directory, fan_id, real_speed)
+            retry_validate_health_fix_or_issue(engines, system, health_issue_dict, date_time, True)
+
+
+@pytest.mark.system
+@pytest.mark.health
+def test_simulate_multi_fan_speed_fault(engines, devices, loganalyzer):
+    """
+    Validate health monitoring when having a fan speed fault.
+        Test flow:
+            1. Get the last system event ID to be used as marker
+            2. Choose two fans to be used for testing
+            3. Simulate fan speed fault for the chosen fans
+            4. Validate fan speed fault system events for these fans
+            5. Simulate fan speed fault fix for the chosen fans
+            6. Validate fan speed fault system clear events for these fans
+    """
+    system = System()
+    platform = Platform()
+    thermal_directory = devices.dut.fan_direction_dir
+    show_output = OutputParsingTool.parse_json_str_to_dictionary(platform.environment.fan.show()).verify_result()
+    no_of_fans = 0
+    for key in show_output:
+        if re.search("^FAN.*", key):
+            no_of_fans += 1
+    fan_ids = random.sample([i for i in range(1, no_of_fans)], 2)
+    logger.info("Chosen fans : {}".format(fan_ids))
+    fan_info = dict()
+    fan_fault_events = [FansConsts.FAN_SPEED_OUT_OF_RANGE, FansConsts.FAN_NOT_WORKING]
+
+    if loganalyzer:
+        for key, value in loganalyzer.items():
+            for fan_id in fan_ids:
+                value.ignore_regex.extend([f"\\.*Fan low speed warning: fan{fan_id} current speed\\.*",
+                                           f"\\.*Fan fault warning: fan{fan_id} is not working\\.*",
+                                           f"\\.*Insufficient number of working fans warning\\.*"])
+
+    try:
+        with allure.step("Get the latest event"):
+            last_event = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.events.show_last().
+                                                                              verify_result()).get_returned_value()
+            latest_event_id = list(last_event)[0]
+
+        with allure.step("Simulate fan speed fault for chosen fans:{}".format(fan_ids)):
+            for fan_id in fan_ids:
+                fan_display_name = get_fan_display_name(fan_id)
+                real_speed = HWSimulator.simulate_fan_speed_fault(engines.dut, thermal_directory, 1, fan_id)
+                fan_info[fan_id] = [fan_display_name, real_speed]
+                time.sleep(2)
+
+        with allure.step("Validate system event for fan speed fault for chosen fans:{}".format(fan_ids)):
+            for fan_id in fan_ids:
+                prefix = fan_info[fan_id][0] + " "
+                events_to_search = [prefix + fan_fault_event for fan_fault_event in fan_fault_events]
+                retry_call(validate_system_event, [system, latest_event_id, events_to_search],
+                           exceptions=AssertionError, tries=12, delay=5)
+
+        with allure.step("Simulate fix fan speed fault for chosen fans:{}".format(fan_ids)):
+            for fan_id in fan_ids:
+                HWSimulator.simulate_fix_fan_speed_fault(engines.dut, thermal_directory, fan_id, fan_info[fan_id][1])
+
+        with allure.step("Validate system clear event for speed fault for chosen fans:{}".format(fan_ids)):
+            for fan_id in fan_ids:
+                prefix = "Cleared: " + fan_info[fan_id][0] + " "
+                clear_events_to_search = [prefix + fan_fault_event for fan_fault_event in fan_fault_events]
+                retry_call(validate_system_event, [system, latest_event_id, clear_events_to_search],
+                           exceptions=AssertionError, tries=12, delay=5)
+    finally:
+        time.sleep(1)
+        with allure.step("Fix the fan speed fault"):
+            for fan_id in fan_ids:
+                HWSimulator.simulate_fix_fan_speed_fault(engines.dut, thermal_directory, fan_ids[0], fan_info[fan_id][1])
+
+
+@pytest.mark.system
+@pytest.mark.health
+def test_simulate_psu_multi_faults(engines, devices, loganalyzer):
+    """
+    Validate health monitoring when having a fan speed fault.
+        Test flow:
+            1. Get the last system event ID to be used as marker
+            2. Choose one PSU to be used for testing
+            3. Simulate PSU temperature out of range fault for the chosen PSU
+            4. Validate PSU temperature fault system event for this PSU
+            5. Simulate PSU absent for the chosen PSU
+            6. Validate PSU absent fault system event for this PSU
+            7. Get the last system event ID to be used as new marker
+            8. Simulate PSU present for the chosen fans
+            9. Validate PSU temperature fault system event again for this PSU
+            10. Simulate PSU temperature in range for the chosen PSU
+            11. Validate Cleared:PSU temperature fault system event for this PSU
+    """
+    system = System()
+    platform = Platform()
+    thermal_directory = devices.dut.fan_direction_dir
+    show_output = OutputParsingTool.parse_json_str_to_dictionary(platform.environment.psu.show()).verify_result()
+    no_of_psu = 0
+    for key in show_output:
+        if re.search("^PSU.*", key):
+            no_of_psu += 1
+    psu_id = random.randrange(1, no_of_psu + 1)
+    logger.info("Chosen PSU : {}".format(psu_id))
+    psu_display_name = "PSU{}".format(psu_id)
+    psu_info = dict()
+    psu_fault_events = ["temperature is too hot", "is missing - Unpopulated PSU slot"]
+    temp_fault = False
+    temp_fixed = False
+    psu_status_fault = False
+    psu_status_fixed = False
+
+    if loganalyzer:
+        for key, value in loganalyzer.items():
+            value.ignore_regex.extend([f"\\.*PSU absence warning: PSU {psu_id} is not present.\\.*"])
+
+    try:
+        with allure.step("Get the latest event"):
+            last_event = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.events.show_last().
+                                                                              verify_result()).get_returned_value()
+            latest_event_id = list(last_event)[0]
+
+        with allure.step("Simulate PSU temperature fault for chosen PSU:{}".format(psu_id)):
+            real_temp = HWSimulator.simulate_psu_temp_fault(engines.dut, thermal_directory, psu_id)
+            psu_info[psu_id] = [psu_display_name, real_temp]
+            temp_fault = True
+            time.sleep(2)
+
+        with allure.step("Validate system event for PSU temperature fault for chosen PSU:{}".format(psu_id)):
+            event_to_search = psu_info[psu_id][0] + " " + psu_fault_events[0]
+            retry_call(validate_system_event, [system, latest_event_id, [event_to_search]],
+                       exceptions=AssertionError, tries=12, delay=5)
+
+        with allure.step("Simulate PSU absent fault for chosen PSU:{}".format(psu_id)):
+            HWSimulator.simulate_psu_fault(engines.dut, thermal_directory, psu_id)
+            psu_status_fault = True
+            time.sleep(2)
+
+        with allure.step("Validate system event for PSU missing status for chosen PSU:{}".format(psu_id)):
+            event_to_search = psu_info[psu_id][0] + " " + psu_fault_events[1]
+            retry_call(validate_system_event, [system, latest_event_id, [event_to_search]],
+                       exceptions=AssertionError, tries=12, delay=5)
+
+        with allure.step("Get the latest event to be used as new marker"):
+            last_event = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.events.show_last().
+                                                                              verify_result()).get_returned_value()
+            latest_event_id = list(last_event)[0]
+
+        with allure.step("Simulate fix PSU absent for chosen PSU:{}".format(psu_id)):
+            HWSimulator.simulate_fix_psu_fault(engines.dut, thermal_directory, psu_id)
+            psu_status_fixed = True
+
+        with allure.step("Validate system event for PSU temperature fault for chosen PSU:{}".format(psu_id)):
+            event_to_search = psu_info[psu_id][0] + " " + psu_fault_events[0]
+            retry_call(validate_system_event, [system, latest_event_id, [event_to_search]],
+                       exceptions=AssertionError, tries=12, delay=5)
+
+        with allure.step("Simulate PSU temperature fault fix for chosen PSU:{}".format(psu_id)):
+            HWSimulator.simulate_psu_temp_fault(engines.dut, thermal_directory, psu_id, psu_info[psu_id][1])
+            time.sleep(2)
+            temp_fixed = True
+
+        with allure.step("Validate clear system event for PSU temperature fault for chosen PSU:{}".format(psu_id)):
+            event_to_search = "Cleared: " + psu_info[psu_id][0] + " " + psu_fault_events[0]
+            retry_call(validate_system_event, [system, latest_event_id, [event_to_search]],
+                       exceptions=AssertionError, tries=12, delay=5)
+
+    finally:
+        time.sleep(1)
+        if temp_fault and not temp_fixed:
+            with allure.step("Fix the PSU temperature fault for PSU:{}".format(psu_id)):
+                HWSimulator.simulate_psu_temp_fault(engines.dut, thermal_directory, psu_id, psu_info[psu_id][1])
+
+        if psu_status_fault and not psu_status_fixed:
+            with allure.step("Fix PSU absent fault for chosen PSU:{}".format(psu_id)):
+                HWSimulator.simulate_fix_psu_fault(engines.dut, thermal_directory, psu_id)
 
 
 @pytest.mark.system
@@ -406,6 +584,7 @@ def test_simulate_health_problem_with_docker_stop(devices, engines):
     time.sleep(1)
     system.validate_health_status(OK)
     docker_to_stop = "gnmi-server"
+    docker_not_running_log_str = "Container '" + docker_to_stop + "' is not running"
 
     try:
         with allure.step("stop {} docker auto restart".format(docker_to_stop)):
@@ -414,12 +593,24 @@ def test_simulate_health_problem_with_docker_stop(devices, engines):
                                            param=NvosConst.DOCKER_AUTO_RESTART,
                                            value=NvosConst.DOCKER_STATUS_DISABLED)
             # DatabaseTool.redis_cli_hset(engines.dut, DatabaseConst.CONFIG_DB_NAME, "FEATURE|{}".format(docker_to_stop), NvosConst.DOCKER_AUTO_RESTART, NvosConst.DOCKER_STATUS_DISABLED)
+
+        with allure.step("Get the latest event"):
+            last_event = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.events.show_last().
+                                                                              verify_result()).get_returned_value()
+            latest_event_id = list(last_event)[0]
+
         with allure.step("stop {} docker".format(docker_to_stop)):
             time.sleep(3)
             output = engines.dut.run_cmd("docker stop {}".format(docker_to_stop))
             assert docker_to_stop in output, "Failed to stop docker"
-        health_issue_dict = {docker_to_stop: f"Container '{docker_to_stop}' is not running"}
-        validate_health_fix_or_issue(system, health_issue_dict, date_time, False, expected_in_monitor_list=False)
+
+        with allure.step("Validate docker not running in health issues"):
+            health_issue_dict = {docker_to_stop: f"Container '{docker_to_stop}' is not running"}
+            validate_health_fix_or_issue(engines, system, health_issue_dict, date_time, False, False)
+
+        with allure.step("validate docker not running event in system events"):
+            retry_call(validate_system_event, [system, latest_event_id, [docker_not_running_log_str]],
+                       exceptions=AssertionError, tries=12, delay=5)
 
     finally:
         date_time = ClockTools.get_datetime_object_from_show_system_output(system.show())
@@ -436,7 +627,19 @@ def test_simulate_health_problem_with_docker_stop(devices, engines):
                 assert docker_to_stop in output, "Failed to start docker"
             validate_docker_is_up(engines.dut, docker_to_stop)
             time.sleep(10)
-            validate_health_fix_or_issue(system, health_issue_dict, date_time, True)
+            validate_health_fix_or_issue(engines, system, health_issue_dict, date_time, True)
+
+        with allure.step("validate docker not running clear event in system events"):
+            clear_docker_not_running_log_str = "Cleared: {}".format(docker_not_running_log_str)
+            retry_call(validate_system_event, [system, latest_event_id, [clear_docker_not_running_log_str]],
+                       exceptions=AssertionError, tries=12, delay=5)
+
+
+def validate_system_event(system, latest_event_id, events_to_search):
+    events = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.events.show("last")). \
+        get_returned_value()
+    newer_events = [events[event]['text'] for event in list(events) if event > latest_event_id]
+    assert bool(set(events_to_search) & set(newer_events)), "None of events:{} found in events".format(events_to_search)
 
 
 @retry(Exception, tries=5, delay=2)
@@ -499,12 +702,13 @@ def get_system_health_monitoring_config_file_path():
 
 
 def simulate_fan_and_psu_health_issue(engines, devices):
+    thermal_directory = devices.dut.fan_direction_dir
     with allure.step("simulate_fan_and_psu_health_issue"):
         psu_id = int(random.choice(Platform().environment.get_available_psus()).replace('PSU', ''))
         fan_id = random.randrange(1, len(devices.dut.fan_list) + 1)
         logger.info("Chosen PSU : {}\n Chosen fan : {}  - {}".format(psu_id, fan_id, get_fan_display_name(fan_id)))
-        HWSimulator.simulate_fan_fault(engines.dut, fan_id)
-        HWSimulator.simulate_psu_fault(engines.dut, psu_id)
+        HWSimulator.simulate_fan_fault(engines.dut, thermal_directory, fan_id)
+        HWSimulator.simulate_psu_fault(engines.dut, thermal_directory, psu_id)
         return psu_id, fan_id
 
 
@@ -523,13 +727,17 @@ def ignore_health_issue(components_list_to_ignore, health_config_file: EngineFil
 
 def verify_issues_in_health_output(health_issues, expected_issues, is_fae_output):
     key = 'message' if is_fae_output else 'issue'
+    issues_matched = False
     for component, issues in expected_issues.items():
-        assert health_issues[component][key] in issues, (
-            f'Expected {component} health issue to be one of: {issues}, but got "{health_issues[component]["issue"]}"'
-        )
+        for issue in issues:
+            if issue in health_issues[component][key]:
+                issues_matched = True
+
+    assert issues_matched, (f'Expected {component} health issue to be one of: {issues}, '
+                            f'but got "{health_issues[component][key]}"')
 
 
-def validate_health_fix_or_issue(system, health_issue_dict, search_since_datetime, is_fix, expected_in_monitor_list=True):
+def validate_health_fix_or_issue(engines, system, health_issue_dict, search_since_datetime, is_fix, expected_in_monitor_list=True):
     """
     validate health issue or fix with show commands
         - validate with system show cmd the health status
@@ -575,7 +783,8 @@ def validate_health_fix_or_issue(system, health_issue_dict, search_since_datetim
                                                        health_issue_dict, is_fae_output=True)
 
         with allure.independent_step("Validate health history file"):
-            health_history_output = system.health.history.show()
+            # health_history_output = system.health.history.files.show("health_history | tail -1")
+            health_history_output = engines.dut.run_cmd('nv show system health history files health_history | grep ""')
             assert system.health.history.get_last_status_from_health_file(
                 health_history_output) == status, "Last status in the health report file is not {}, as we expect".format(status)
             assert len(TestToolkit.search_line_after_a_specific_date_time(
@@ -585,19 +794,25 @@ def validate_health_fix_or_issue(system, health_issue_dict, search_since_datetim
             for component, issues in health_issue_dict.items():
                 issues_regex = "[" + "|".join(issues) + "]"
                 assert len(TestToolkit.search_line_after_a_specific_date_time(
-                    regex.format(time_regex=NvosConst.DATE_TIME_REGEX, component=component, issue=issues_regex), health_history_output, search_since_datetime)) > 0
+                    regex.format(time_regex=NvosConst.DATE_TIME_REGEX, component=component, issue=issues_regex),
+                    health_history_output, search_since_datetime)) > 0
 
         with allure.independent_step("Validate health status change appears in system log"):
-            log_output = system.log.file.show_log(exit_cmd='q', param='| grep Health', expected_str="Health DB change cache")
-            assert len(TestToolkit.search_line_after_a_specific_date_time(
-                NvosConst.DATE_TIME_REGEX + HealthConsts.SYSTEM_LOG_HEALTH_REGEX.format(status), log_output,
-                search_since_datetime)) > 0, "Didn't find health status line in the system log since specific time :{}\n" \
-                                             "System Log:\n {}".format(search_since_datetime, log_output)
+            exp_status = "Health status is {arg}ok".format(arg="" if is_fix else "not ")
+            exp_summary = "HEALTH_SUMMARY_{arg}OK".format(arg="" if is_fix else "NOT_")
+            log_output = system.log.file.show_log(param='| grep healthd', expected_str=exp_status)
+            HealthConsts.SYSTEM_LOG_HEALTH_REGEX.format(status)
+            regex_to_search = NvosConst.DATE_TIME_REGEX + HealthConsts.SYSTEM_LOG_HEALTH_STATUS_REGEX.format(
+                exp_status, exp_summary)
+            assert len(TestToolkit.search_line_after_a_specific_date_time(regex_to_search,
+                                                                          log_output, search_since_datetime)) > 0, \
+                "Didn't find health status line in the system log since specific time :{}\nSystem Log:\n {}".format(
+                    search_since_datetime, log_output)
 
 
 @retry(Exception, tries=6, delay=10)
-def retry_validate_health_fix_or_issue(system, health_issue_dict, search_since_datetime, is_fix, expected_in_monitor_list=True):
-    validate_health_fix_or_issue(system, health_issue_dict, search_since_datetime, is_fix, expected_in_monitor_list)
+def retry_validate_health_fix_or_issue(engines, system, health_issue_dict, search_since_datetime, is_fix, expected_in_monitor_list=True):
+    validate_health_fix_or_issue(engines, system, health_issue_dict, search_since_datetime, is_fix, expected_in_monitor_list)
 
 
 def system_health_files_test(engines, check_rotation=False):
