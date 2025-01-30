@@ -55,7 +55,7 @@ def test_set_invalid_password(engines):
         password_min_len, enabled_rules = system.security.password_hardening.parse_password_hardening_enabled_rules(secutiry_output)
         invalid_password, random_labels = generate_invalid_password(enabled_rules, password_min_len)
     with allure.step('try to set the invalid password and verify the output message'):
-        set_info = system.aaa.user.user_id[SystemConsts.DEFAULT_USER_MONITOR].set(SystemConsts.USER_PASSWORD, invalid_password).verify_result(False)
+        set_info = system.aaa.user.user_id[SystemConsts.DEFAULT_USER_MONITOR].set(SystemConsts.USER_PASSWORD, f'"{invalid_password}"').verify_result(False)
         verify_invalid_messages(random_labels, set_info)
 
     NvueGeneralCli.detach_config(engines.dut)
