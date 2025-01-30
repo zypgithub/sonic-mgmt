@@ -14,10 +14,12 @@ sonic_mgmt_path = path.split('/ngts/')[0]
 sys.path.append(sonic_mgmt_path)
 
 from ngts.constants.constants import InfraConst  # noqa: E402
+from ngts.nvos_constants.constants_nvos import TopologyConsts
 
 ALLURE_DOCKER_SERVICE = 'allure-docker-service'
 HTTP_TIMEOUT = 200
 SSL_VERIFICATION = False
+PATH_TO_UPLOAD_URL = '/auto/sw_system_project/NVOS_INFRA/verification_files/'
 
 
 def get_logger():
@@ -122,6 +124,15 @@ def generate_report(allure_server_url, allure_project):
     report_url = response['data']['report_url']
     logger.info('Allure report URL: {}'.format(report_url))
 
+    if TopologyConsts.NVOS.lower() in allure_project.lower():
+        logger.info("Upload url path to file")
+        file_path = os.path.join(PATH_TO_UPLOAD_URL, "allure_report_url.txt")
+        with open(file_path, "w") as f:
+            f.write(report_url)
+        logger.info(f"File {file_path} created")
+        with open(file_path, "r") as f:
+            content = f.read()
+        logger.info(f"Contents of {file_path}:\n{content}")
     cleanup_report(allure_server_url, allure_project)
 
 
