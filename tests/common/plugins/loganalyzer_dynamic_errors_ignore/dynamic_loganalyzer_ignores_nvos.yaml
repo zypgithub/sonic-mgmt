@@ -669,6 +669,7 @@
 
 - Errors_list:
     - '.*WARNING sed_pw_recovery_service.sh: Password used from TPM Bank 2 not passing authentication.*'
+    - '.*WARNING sed_pw_recovery_service.sh: SED listLockingRanges failed.*'
   Conditions:
     - Affected_test_cases:
         - tests_nvos/general/security/sed/test_sed_password.py::test_back_new_pass
