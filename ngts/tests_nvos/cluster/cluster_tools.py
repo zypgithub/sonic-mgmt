@@ -5,7 +5,6 @@ import re
 import time
 from collections import defaultdict
 from functools import wraps
-from retry import retry
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_constants.constants_nvos import IbConsts, OutputFormat, SystemConsts
@@ -475,9 +474,8 @@ class ClusterTools:
         TestToolkit.tested_api = test_api
 
     @staticmethod
-    @retry(tries=15, delay=5)
     def wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='', nmx_c_expected_state=''):
-        try:
+        for _ in range(15):
             final_sleep_time = 2
             if (not cluster_expected_state) and (not nmx_c_expected_state):
                 final_sleep_time += 8
@@ -494,14 +492,13 @@ class ClusterTools:
                          output[ClusterConsts.NMXC_CONN] != nmx_c_expected_state)
                 ):
                     logger.info("Cluster state not as expected yet. Retrying...")
-                    raise ValueError("Cluster or nmx-c state not in wanted state")
-
-                logger.info(f"Cluster is now in the wanted state. Sleeping for {final_sleep_time} seconds.")
-                time.sleep(final_sleep_time)
-
-        except Exception as e:
-            logger.info("Cluster was not in expected state, but we can continue test execution.")
-            logger.info(f"Expected: cluster {cluster_expected_state}, nmx_c {nmx_c_expected_state}.\n Actual: cluster {output[SystemConsts.STATE]}, nmx_c {output[ClusterConsts.NMXC_CONN]}")
+                    logger.info(f"Expected: cluster {cluster_expected_state}, nmx_c {nmx_c_expected_state}.\n Actual: cluster {output[SystemConsts.STATE]}, nmx_c {output[ClusterConsts.NMXC_CONN]}")
+                    logger.info("Sleeping for 3 seconds between iterations")
+                    time.sleep(3)
+                else:
+                    logger.info(f"Cluster is now in the wanted state. Sleeping for {final_sleep_time} seconds.")
+                    time.sleep(final_sleep_time)
+                    break
 
     @staticmethod
     def verify_sdn_config_files_deleted(sdn):
