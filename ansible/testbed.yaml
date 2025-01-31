@@ -1898,6 +1898,7 @@
   vm_base: VM3101
   dut:
     - mtvr-leopard-01
+  inv_name: lab
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-leopard-01-t1
@@ -1981,6 +1982,7 @@
   vm_base: VM5301
   dut:
     - mtvr-leopard-09
+  inv_name: lab
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-leopard-09-t0-56-o8v48
@@ -1994,6 +1996,7 @@
   vm_base: VM5301
   dut:
     - mtvr-leopard-09
+  inv_name: lab
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-leopard-09-t1
@@ -2007,6 +2010,7 @@
   vm_base: VM5301
   dut:
     - mtvr-leopard-09
+  inv_name: lab
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-leopard-09-t1-lag
@@ -2020,6 +2024,7 @@
   vm_base: VM5301
   dut:
     - mtvr-leopard-09
+  inv_name: lab
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-leopard-09-t1-28-lag
@@ -2033,6 +2038,7 @@
   vm_base: VM5301
   dut:
     - mtvr-leopard-09
+  inv_name: lab
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-leopard-09-ptf32
@@ -2046,6 +2052,7 @@
   vm_base: VM5301
   dut:
     - mtvr-leopard-09
+  inv_name: lab
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-leopard-09-ptf-any
@@ -2059,6 +2066,7 @@
   vm_base: VM5301
   dut:
     - mtvr-leopard-09
+  inv_name: lab
   comment: Mellanox MTVR testbed
 
 - conf-name: r-tigris-04-t0
