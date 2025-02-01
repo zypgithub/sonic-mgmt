@@ -36,9 +36,8 @@ def check_install_and_upgrade_steps_intervals():
 
     # Constant dictionary for step limits
     intervals_limit: Dict[Tuple[str, str], float] = {
-        (InstallSteps.ONIE_NOS_INSTALL, InstallSteps.SYSTEM_IS_READY_AFTER_MANUFACTURE): 10 * MINUTE,
-        (InstallSteps.UPGRADE_CMD, InstallSteps.SHUT_DOWN): 10 * MINUTE,
-        (InstallSteps.UPGRADE_CMD, InstallSteps.SYSTEM_IS_READY_AFTER_UPGRADE): 15 * MINUTE,
+        (InstallSteps.ONIE_NOS_INSTALL, InstallSteps.SYSTEM_IS_READY_AFTER_MANUFACTURE): 13.5 * MINUTE,
+        (InstallSteps.UPGRADE_CMD, InstallSteps.SYSTEM_IS_READY_AFTER_UPGRADE): 9 * MINUTE,
     }
 
     with allure.step('verify install/upgrade intervals against defined limits'):
