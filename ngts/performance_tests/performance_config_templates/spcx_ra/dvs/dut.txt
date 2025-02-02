@@ -41,7 +41,7 @@
             {% set split_ports = get_split_ports(split_left, split_right) %}
             {% set right_split_ports = split_ports["right_split_ports"] %}
             "split_ports": {{split_ports | tojson}},
-            "two_sided_ar": "True",
+            "two_sided_ar": "{{ conf_args.two_sided_ar }}",
             {% if conf_args.is_ipv6 %}
             {% set ip_address = "192:168:5:1:1:1:2:0" %}
             {% else %}

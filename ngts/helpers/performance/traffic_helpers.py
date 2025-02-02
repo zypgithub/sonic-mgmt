@@ -38,12 +38,16 @@ def create_json_traffic_stream(player_alias, traffic_parameters, stream_name):
 
 def create_json_traffic_file(player_alias, traffic_parameters, json_path):
     stream = create_json_traffic_stream(player_alias, traffic_parameters, f"spcx_ra_{player_alias}_main_stream")
+    create_json_traffic_file_with_stream_list(player_alias, traffic_parameters, json_path, stream_list=[stream])
+
+
+def create_json_traffic_file_with_stream_list(player_alias, traffic_parameters, json_path, stream_list):
     traffic_json = {
         "port_groups": [
             {
                 "name": f"spcx_ra_{player_alias}",
                 "ports": traffic_parameters["ports"],
-                "stream_list": [stream]
+                "stream_list": stream_list
             }
         ]
     }

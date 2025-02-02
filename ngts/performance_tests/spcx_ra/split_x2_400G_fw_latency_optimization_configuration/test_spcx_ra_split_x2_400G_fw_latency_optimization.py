@@ -26,8 +26,7 @@ class TestSPCXRA_x2Split_400G:
 
     @pytest.mark.parametrize("packet_size", PACKET_SIZE_LIST)
     @allure.title('test_ar_perf_max_bandwidth')
-    @allure.description('Calculate the port utilization on the DUT with AR enabled, '
-                        'with various packet sizes (1500, 2000, 4000) and default AR profile.')
+    @allure.description('Calculate the port utilization on the DUT with AR enabled and default AR profile.')
     def test_ar_perf_max_bandwidth(self, request, packet_size):
 
         test_name = get_pytest_test_name(request)
@@ -44,8 +43,7 @@ class TestSPCXRA_x2Split_400G:
 
     @pytest.mark.parametrize("packet_size", PACKET_SIZE_LIST)
     @allure.title('test_ar_perf_max_bandwidth_ibm')
-    @allure.description('Calculate the port utilization on the DUT with AR enabled, '
-                        'with various packet sizes (1500, 2000, 4000) and IBM enabled')
+    @allure.description('Calculate the port utilization on the DUT with AR enabled and IBM enabled')
     def test_ar_perf_max_bandwidth_ibm(self, request, packet_size, ibm_fixture):
 
         test_name = get_pytest_test_name(request)

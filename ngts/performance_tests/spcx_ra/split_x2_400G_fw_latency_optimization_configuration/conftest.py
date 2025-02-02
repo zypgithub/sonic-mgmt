@@ -37,9 +37,11 @@ def conf_args():
     conf_args = {"run_fw_latency_optimization": "True",
                  "auto_buffer_mode": "True",
                  "congestion_thresh_lo": 190,
+                 "two_sided_ar": True,
                  "is_ipv6": False,
                  "split_right": 2,
                  "split_left": 2,
+                 "scenario": TESTS_SCENARIO,
                  "packet_size": PerfConsts.PACKET_SIZE_LIST[0],
                  "num_packets": SPCXRAConsts.PACKET_NUM_400G_x2}
     return conf_args
