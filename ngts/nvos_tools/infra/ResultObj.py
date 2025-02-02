@@ -80,8 +80,12 @@ class ResultObj:
 
         output: str = self.returned_value if should_succeed else self.info
         if expected_value:
-            assert expected_value in output, (
-                f"Expected {repr(expected_value)} but output is: {output}")
+            if isinstance(expected_value, list):
+                assert any(value in output for value in expected_value), (
+                    f"None of the expected values {repr(expected_value)} matched the output: {output}")
+            else:
+                assert expected_value in output, (
+                    f"Expected {repr(expected_value)} but output is: {output}")
 
         return output
 

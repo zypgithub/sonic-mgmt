@@ -22,6 +22,8 @@ ERROR = "Error"
 INVALID_COMMAND = "Invalid Command"
 IS_NOT_ONE_OF = "is not one of"
 IS_NOT_AN_INTEGER = "is not an integer"
+IS_NOT_OF_TYPE_INTEGER = "is not of type 'integer'"
+IS_TOO_SHORT = "'' is too short"
 
 
 @pytest.mark.system
@@ -786,14 +788,17 @@ def test_rsyslog_bad_params(test_api):
 
         with allure.independent_step("Configure and validate trap, should fail"):
             logging.info("Configure and validate trap, should fail")
-            system.syslog.set_trap("").verify_result(False, expected_value=INCOMPLETE_COMMAND)
-            system.syslog.set_trap(rand_str).verify_result(False, expected_value=f"{IS_NOT_ONE_OF} ['debug', 'info', 'notice', 'warn', 'error', 'critical']")
+            system.syslog.set_trap("").verify_result(False, expected_value=[INCOMPLETE_COMMAND,
+                                                                            f"{IS_NOT_ONE_OF} ['debug', 'info', 'notice', 'warn', 'error', 'critical', None]"])
+            system.syslog.set_trap(rand_str).verify_result(False, expected_value=[f"{IS_NOT_ONE_OF} ['debug', 'info', 'notice', 'warn', 'error', 'critical']",
+                                                                                  f"{IS_NOT_ONE_OF} ['debug', 'info', 'notice', 'warn', 'error', 'critical', None]"])
 
         # TODO change when bug 3390504 will be fixed
         with allure.independent_step("Configure and validate format, should fail"):
             logging.info("Configure and validate format, should fail")
             # system.syslog.format.set("").verify_result(False, expected_value=INCOMPLETE_COMMAND)
-            system.syslog.format.set(rand_str).verify_result(False, expected_value=f"{IS_NOT_ONE_OF} ['welf', 'standard']")
+            system.syslog.format.set(rand_str).verify_result(False, expected_value=[f"{IS_NOT_ONE_OF} ['welf', 'standard']",
+                                                                                    f"'{rand_str}' was unexpected: expected ['standard', 'welf']"])
 
     with allure.step("Specific syslog server commands"):
         logging.info("Specific syslog server commands")
@@ -802,45 +807,50 @@ def test_rsyslog_bad_params(test_api):
         with allure.independent_step("Configure and validate port, should fail"):
             logging.info("Configure and validate port, should fail")
             system.syslog.servers.servers_dict[server_name].set_port("").verify_result(False,
-                                                                                       expected_value=INCOMPLETE_COMMAND)
+                                                                                       expected_value=[INCOMPLETE_COMMAND, IS_NOT_OF_TYPE_INTEGER])
             system.syslog.servers.servers_dict[server_name].set_port(rand_str).verify_result(False,
-                                                                                             expected_value=IS_NOT_AN_INTEGER)
+                                                                                             expected_value=[f"'{rand_str}' {IS_NOT_AN_INTEGER}", IS_NOT_OF_TYPE_INTEGER])
 
         with allure.independent_step("Configure and validate protocol, should fail"):
             logging.info("Configure and validate protocol, should fail")
             system.syslog.servers.servers_dict[server_name].set_protocol("").verify_result(False,
-                                                                                           expected_value=INCOMPLETE_COMMAND)
+                                                                                           expected_value=[INCOMPLETE_COMMAND,
+                                                                                                           f"{IS_NOT_ONE_OF} ['tcp', 'udp', None]"])
             system.syslog.servers.servers_dict[server_name].set_protocol(rand_str).verify_result(False,
-                                                                                                 expected_value=f"{IS_NOT_ONE_OF} ['tcp', 'udp']")
+                                                                                                 expected_value=[f"{IS_NOT_ONE_OF} ['tcp', 'udp']",
+                                                                                                                 f"{IS_NOT_ONE_OF} ['tcp', 'udp', None]"])
 
         with allure.independent_step("Configure and validate trap, should fail"):
             logging.info("Configure and validate trap, should fail")
-            system.syslog.servers.servers_dict[server_name].set_trap("").verify_result(False, expected_value=INCOMPLETE_COMMAND)
+            system.syslog.servers.servers_dict[server_name].set_trap("").verify_result(False, expected_value=[INCOMPLETE_COMMAND,
+                                                                                                              f"{IS_NOT_ONE_OF} ['debug', 'info', 'notice', 'warn', 'error', 'critical', None]"])
             system.syslog.servers.servers_dict[server_name].set_trap(rand_str).verify_result(False,
-                                                                                             expected_value=f"{IS_NOT_ONE_OF} ['debug', 'info', 'notice', 'warn', 'error', 'critical']")
+                                                                                             expected_value=[f"{IS_NOT_ONE_OF} ['debug', 'info', 'notice', 'warn', 'error', 'critical']",
+                                                                                                             f"{IS_NOT_ONE_OF} ['debug', 'info', 'notice', 'warn', 'error', 'critical', None]"])
 
         with allure.independent_step("Configure and validate vrf, should fail"):
             logging.info("Configure and validate vrf, should fail")
             system.syslog.servers.servers_dict[server_name].set_vrf("").verify_result(False,
-                                                                                      expected_value=INCOMPLETE_COMMAND)
-            system.syslog.servers.servers_dict[server_name].set_vrf(rand_str).verify_result(False, expected_value=f"{IS_NOT_ONE_OF} ['mgmt', 'default']")
+                                                                                      expected_value=[INCOMPLETE_COMMAND,
+                                                                                                      "is too short"])
+            system.syslog.servers.servers_dict[server_name].set_vrf(rand_str).verify_result(False, expected_value=[f"{IS_NOT_ONE_OF} ['mgmt', 'default']",
+                                                                                                                   "is too short"])
 
         with allure.independent_step("Configure and validate filter, should fail"):
             logging.info("Configure and validate filter, should fail")
             # system.syslog.servers.servers_dict[server_name].set_filter("", "").verify_result(False, expected_value=INCOMPLETE_COMMAND)  # bug #3390504
             system.syslog.servers.servers_dict[server_name].set_filter(rand_str, rand_str).verify_result(False,
-                                                                                                         expected_value=f"{IS_NOT_ONE_OF} ['include', 'exclude']")
+                                                                                                         expected_value=[f"{IS_NOT_ONE_OF} ['include', 'exclude']",
+                                                                                                                         f"'{rand_str}' was unexpected: expected ['exclude', 'include']"])
 
         with allure.independent_step("Configure and validate filter include, should fail"):
             logging.info("Configure and validate filter include, should fail")
-            system.syslog.servers.servers_dict[server_name].set_filter(SyslogConsts.INCLUDE, "").verify_result(False,
-                                                                                                               expected_value=INCOMPLETE_COMMAND)
+            system.syslog.servers.servers_dict[server_name].set_filter(SyslogConsts.INCLUDE, "").verify_result(False, expected_value=[INCOMPLETE_COMMAND, IS_TOO_SHORT])
             # system.syslog.servers.servers_dict[server_name].filter.unset_include_filter("").verify_result(False, expected_value=INVALID_COMMAND) # bug #3390504
 
         with allure.independent_step("Configure and validate filter exclude, should fail"):
             logging.info("Configure and validate filter exclude, should fail")
-            system.syslog.servers.servers_dict[server_name].set_filter(SyslogConsts.EXCLUDE, "").verify_result(False,
-                                                                                                               expected_value=INCOMPLETE_COMMAND)
+            system.syslog.servers.servers_dict[server_name].set_filter(SyslogConsts.EXCLUDE, "").verify_result(False, expected_value=[INCOMPLETE_COMMAND, IS_TOO_SHORT])
             system.syslog.servers.servers_dict[server_name].filter.unset_exclude_filter("").verify_result()
 
     with allure.step("Cleanup syslog configurations"):
