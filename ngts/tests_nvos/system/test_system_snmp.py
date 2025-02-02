@@ -202,8 +202,9 @@ def test_system_snmp_functional(engines, topology_obj):
     mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
     mgmt_port = Port(mgmt_port_name)
     host_engine = engines.ha
-    ip_address = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific']['ip_address']
-    dhcp_hostname = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific']['dhcp_hostname']
+    noga_query_data = topology_obj.players['dut']['attributes'].noga_query_data['attributes']
+    ip_address = noga_query_data['Specific']['ip_address']
+    dhcp_hostname = noga_query_data['Common']['Name'] or noga_query_data['Specific']['dhcp_hostname']
     with allure.step("Enable snmp"):
         HostMethods.start_snmp_server(engine=engines.dut, state=NvosConst.ENABLED, readonly_community='qwerty12',
                                       listening_address=ip_address)
@@ -285,10 +286,9 @@ def test_system_snmp_redis_crash(engines, topology_obj):
             assert redis_cli_output != 0, "Redis command failed"
 
         with allure.step("Snmpget after rewrite type of community"):
-            ip_address = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific'][
-                'ip_address']
-            dhcp_hostname = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific'][
-                'dhcp_hostname']
+            noga_query_data = topology_obj.players['dut']['attributes'].noga_query_data['attributes']
+            ip_address = noga_query_data['Specific']['ip_address']
+            dhcp_hostname = noga_query_data['Common']['Name'] or noga_query_data['Specific']['dhcp_hostname']
             host_output = HostMethods.host_snmp_get(host_engine, ip_address)
             assert dhcp_hostname in host_output, 'snmp get with wrong port returned output'
 
