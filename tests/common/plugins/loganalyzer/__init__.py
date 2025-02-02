@@ -109,4 +109,4 @@ def loganalyzer(duthosts, request, log_rotate_modular_chassis):
                         f"a network error.")
     logging.info("Starting to analyse on all DUTs")
     parallel_run(analyze_logs, [analyzers, markers], {'fail_test': fail_test, 'store_la_logs': store_la_logs},
-                 duthosts, timeout=240)
+                 duthosts, timeout=360)
