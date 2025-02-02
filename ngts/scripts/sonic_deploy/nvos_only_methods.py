@@ -208,6 +208,7 @@ class NvosInstallationSteps:
         NvueGeneralCli.replace_config(engine=dut_engine, file=config_filename)
         NvueGeneralCli.apply_config(engine=dut_engine, option='-y')
         NvueGeneralCli.save_config(engine=dut_engine)
+        time.sleep(30)  # due to bug SW #4262437
 
     @staticmethod
     def wait_for_nvos_to_become_functional(dut_engine):
