@@ -24,6 +24,7 @@ from ngts.tests_nvos.general.security.conftest import create_ssh_login_engine
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_general_utils import check_partitions_capacity
 from ngts.scripts.sonic_deploy.nvos_only_methods import NvosInstallationSteps
+from ngts.tests_nvos.general.security.centralized_tests.upgrade.test_upgrade import fetch_install_img
 
 logger = logging.getLogger()
 
@@ -103,7 +104,7 @@ def test_show_system_image(original_version):
 @pytest.mark.system
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 @pytest.mark.timeout(25 * MINUTE, func_only=True)
-def test_downgrade_upgrade(release_name, test_api, original_version, devices, engines, base_version_realpath):
+def test_downgrade_upgrade(release_name, test_api, original_version, devices, engines, base_version_realpath, target_version_realpath):
     """
     Check the image rename cmd.
     Validate that install and delete commands will success with the new name
@@ -150,6 +151,9 @@ def test_downgrade_upgrade(release_name, test_api, original_version, devices, en
                                      original_images=original_images, system=system, release_name=release_name,
                                      test_name='test_downgrade_upgrade')
 
+            with allure.step('uninstall orig version'):
+                system.image.action_uninstall('force')
+
         player = engines.sonic_mgmt
         scp_host_creds = f'{player.username}:{player.password}@{player.ip}'
         with allure.step('Get config file and path for target version'):
@@ -159,9 +163,12 @@ def test_downgrade_upgrade(release_name, test_api, original_version, devices, en
             NvosInstallationSteps.fetch_apply_save_config(config_filename, config_file_path, engines.dut,
                                                           scp_host_creds, system)
 
+        with allure.step(f"Run upgrade: {target_version_name}"):
+            fetch_install_img(system, target_version_realpath, engines)
+
     finally:
         # cleanup - boot back with orig image, uninstall new image, and restore to orig engine
-        cleanup_test(system, original_images, original_image_partition, [fetched_image], config_file_path=config_file_path, orig_engine=orig_engine)
+        cleanup_test(system, original_images, original_image_partition, [fetched_image], config_file_path=config_file_path, orig_engine=orig_engine, target_version_realpath=target_version_realpath)
 
 
 @pytest.mark.checklist
@@ -743,17 +750,18 @@ def get_next_partition_id(partition_id):
     return ImageConsts.PARTITION2_IMG if partition_id == ImageConsts.PARTITION1_IMG else ImageConsts.PARTITION1_IMG
 
 
-def cleanup_test(system, original_images, original_image_partition, fetched_image_files, config_file_path='', orig_engine=None):
+def cleanup_test(system, original_images, original_image_partition, fetched_image_files, config_file_path='', orig_engine=None, target_version_realpath=''):
     with allure.step("Cleanup step"):
         configuration_diff = {}
-        with allure.step("Set the original image to be booted next and verify"):
-            system.image.boot_next_and_verify(original_image_partition)
+        if not target_version_realpath:
+            with allure.step("Set the original image to be booted next and verify"):
+                system.image.boot_next_and_verify(original_image_partition)
 
-        with allure.step("Reboot the system"):
-            system.reboot.action_reboot(recovery_engine=orig_engine)
+            with allure.step("Reboot the system"):
+                system.reboot.action_reboot(recovery_engine=orig_engine)
 
-        with allure.step('restore original dut engine'):
-            TestToolkit.engines.dut = orig_engine or TestToolkit.engines.dut
+            with allure.step('restore original dut engine'):
+                TestToolkit.engines.dut = orig_engine or TestToolkit.engines.dut
 
         if config_file_path:
             with allure.step('Verify configuration was preserved after upgrade'):
