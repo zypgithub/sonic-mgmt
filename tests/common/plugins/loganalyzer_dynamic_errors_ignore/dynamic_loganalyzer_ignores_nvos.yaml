@@ -1920,5 +1920,6 @@
   Conditions:
     - Affected_test_cases:
       - tests_nvos/platform/test_platform_ps_redundancy.py::test_set_platform_ps_redundancy
+      - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm.py::TestNewTc::test_sensor_errors[psu_err_present]
 
 # --------------------------------------------------
