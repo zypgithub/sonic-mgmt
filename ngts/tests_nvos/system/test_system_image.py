@@ -159,16 +159,18 @@ def test_downgrade_upgrade(release_name, test_api, original_version, devices, en
         with allure.step('Get config file and path for target version'):
             config_file_path, config_filename = devices.dut.get_test_config_file_by_version(original_version)
 
+        TestToolkit.tested_api = 'NVUE'
         with allure.step('Apply and save pre-defined configuration'):
             NvosInstallationSteps.fetch_apply_save_config(config_filename, config_file_path, engines.dut,
                                                           scp_host_creds, system)
-
-        with allure.step(f"Run upgrade: {target_version_name}"):
-            fetch_install_img(system, target_version_realpath, engines)
+        TestToolkit.tested_api = test_api
 
     finally:
+        with allure.step(f"Run upgrade: {target_version_realpath}"):
+            fetch_install_img(system, target_version_realpath, engines)
+        target_fetched_image = target_version_realpath.split('/')[-1]
         # cleanup - boot back with orig image, uninstall new image, and restore to orig engine
-        cleanup_test(system, original_images, original_image_partition, [fetched_image], config_file_path=config_file_path, orig_engine=orig_engine, target_version_realpath=target_version_realpath)
+        cleanup_test(system, original_images, original_image_partition, [fetched_image, target_fetched_image], config_file_path=config_file_path, orig_engine=orig_engine, target_version_realpath=target_version_realpath)
 
 
 @pytest.mark.checklist
@@ -770,12 +772,16 @@ def cleanup_test(system, original_images, original_image_partition, fetched_imag
             with allure.step('Verify configuration was preserved after upgrade'):
                 configuration_diff = NvosInstallationSteps.verify_config_after_upgrade(config_file_path, TestToolkit.engines.dut)
 
+        with allure.step("Uninstall unused images and verify"):
+            try:
+                system.image.action_uninstall(params='force')
+                system.image.verify_show_images_output(original_images)
+            except Exception as e:
+                logger.info("No image to uninstall")
+
         with allure.step("Delete all images that have been fetch during the test and verify"):
             system.image.files.delete_files(fetched_image_files)
             system.image.files.verify_show_files_output(unexpected_files=fetched_image_files)
-
-        with allure.step("Uninstall unused images if there's any"):
-            system.image.action_uninstall(params='force')
 
         assert configuration_diff == {}, f'Configuration was not preserved across image upgrade. \nDiff: {configuration_diff}'
 
