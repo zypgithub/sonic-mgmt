@@ -4,6 +4,7 @@ import logging
 import pytest
 import random
 from ngts.helpers.general_helper import get_pytest_test_name
+from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.helpers.performance.traffic_helpers import validate_bw_per_ports
 from ngts.helpers.performance.performance_setup_helpers import (run_traffic, run_validation, get_topology_obj,
                                                                 validate_traffic_results,
@@ -73,6 +74,9 @@ class TestSPCXRA_x2Split_400G:
     @allure.description('With full line rate traffic, verify that traffic converges '
                         'to the initial state after an interface flap.')
     def test_ar_perf_link_flap(self, request, packet_size, flap_scenario):
+        # TODO: remove when bug 4267499 is resolved
+        if is_redmine_issue_active([4267499])[0] and flap_scenario == "toggle_multiple_ports":
+            pytest.xfail(f"test_ar_perf_link_flap[toggle_multiple_ports] expected to fail while RM 4267499 is active")
 
         test_name = get_pytest_test_name(request)
 
