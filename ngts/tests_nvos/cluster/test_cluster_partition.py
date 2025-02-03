@@ -72,7 +72,7 @@ def test_cluster_partition(engines, devices, test_api, has_loopbox, setup_name, 
             for partition_id in partition_ids:
                 output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.partition_id[partition_id].show(output_format=output_format),
                                                                      output_format=output_format).get_returned_value()
-                list_of_tuples = ClusterTools.get_partition_uuid_location_map(output)
+                list_of_tuples = ClusterTools.get_partition_uuid_location_map(output['locations'])
                 partitions_mapping[partition_id] = list_of_tuples
 
         ClusterTools.create_empty_partition(sdn, partitions_mapping)
@@ -99,6 +99,8 @@ def test_cluster_partition(engines, devices, test_api, has_loopbox, setup_name, 
     finally:
         with allure.step("Running sdn factory reset"):
             sdn.factory_default.action_reset(param='force')
+        ClusterTools().stop_cluster(cluster)
+        ClusterTools().start_cluster(cluster, setup_name)
         interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name, standalone_system)
         next(interfaces_wa)
         output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
@@ -225,6 +227,8 @@ def test_cluster_partition_bad_flow(engines, devices, test_api, has_loopbox, sta
     finally:
         with allure.step("Running sdn factory reset"):
             sdn.factory_default.action_reset(param='force')
+        ClusterTools().stop_cluster(cluster)
+        ClusterTools().start_cluster(cluster, setup_name)
         interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name, standalone_system)
         next(interfaces_wa)
         output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),

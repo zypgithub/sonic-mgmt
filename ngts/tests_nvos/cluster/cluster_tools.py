@@ -428,23 +428,30 @@ class ClusterTools:
         return mapping, default_partition_type
 
     @staticmethod
-    def get_partition_uuid_location_map(partition_output):
-        # TODO - Values are not ordered in show. so we need to retrieve from topology file once its available!
-        locations = list(partition_output["locations"].keys())
-        uuids = list(partition_output["uuids"].keys())
-        mapping_list = []
-        for uuid, location in zip(uuids, locations):
-            mapping_list.append((uuid, location))
+    def get_partition_uuid_location_map(location_uuid_map):
+        mapping_list = [(info['uuid'], location) for location, info in location_uuid_map.items()]
         return mapping_list
 
     @staticmethod
     def delete_empty_partition(sdn, partitions_mapping, output_format=OutputFormat.json):
         with allure.step("Delete empty partition"):
+            start_time = time.time()
+            timeout = 20
             sdn.partition.partition_id[ClusterConsts.EMPTY_PARTITION_ID].action_delete_partition()
-            output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
-                                                                 output_format=output_format).get_returned_value()
+            while True:
+                output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
+                                                                     output_format=output_format).get_returned_value()
+                if ClusterConsts.EMPTY_PARTITION_ID not in list(output.keys()):
+                    elapsed_time = time.time() - start_time
+                    logger.info(f"Condition met: Partition {ClusterConsts.EMPTY_PARTITION_ID} deleted after {elapsed_time:.2f} seconds")
+                    break
+
+                if time.time() - start_time > timeout:
+                    logger.error(f"Timeout: Partition {ClusterConsts.EMPTY_PARTITION_ID} was not deleted within {timeout} seconds")
+                    break
+
             assert ClusterConsts.EMPTY_PARTITION_ID not in list(output.keys()), f'Partition {ClusterConsts.EMPTY_PARTITION_ID} was not deleted'
-        partitions_mapping.pop(ClusterConsts.EMPTY_PARTITION_ID)
+            partitions_mapping.pop(ClusterConsts.EMPTY_PARTITION_ID)
 
     @staticmethod
     def verify_log_messages_log_level(log_level, system, test_api, cluster, setup_name):
