@@ -574,6 +574,9 @@ def test_fetch_image_via_http(test_api):
     release_name = ImageConsts.NVOS_RELEASE_25_02_1000
 
     try:
+        with allure.step("Delete all the pre existing images"):
+            system.image.files.delete_all_existing_files()
+
         with allure.step("Get the image details to be fetched"):
             original_image = system.image.get_image_field_values()[ImageConsts.PARTITION1_IMG][ImageConsts.BUILD_ID]
             result = get_images_to_fetch(release_name, original_image, 1)
