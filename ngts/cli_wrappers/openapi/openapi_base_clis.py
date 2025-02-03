@@ -56,7 +56,7 @@ class OpenApiBaseCli:
         data = {'state': 'start'}
         if param_name:
             data['parameters'] = {param_name: (True if (param_value == '') else param_value)}
-        if not expected_output and action_type == 'reboot':
+        if not expected_output and (action_type == 'reboot' or expect_reboot):
             # Temporary workaround before refactoring action()
             expected_output = SystemConsts.REBOOT_RESPONSE_MESSAGES
         result = OpenApiCommandHelper.execute_action(

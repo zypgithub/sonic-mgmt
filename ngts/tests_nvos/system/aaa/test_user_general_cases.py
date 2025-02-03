@@ -63,8 +63,8 @@ def test_disconnect_user_with_multiple_terminals(engines):
 
     with allure.step('disconnect {username} with {conn} connection'.format(username=username, conn=num_connections)):
         system = System()
-        output = system.aaa.user.user_id[username].action_disconnect().get_returned_value()
-        verify_after_disconnect(engines.dut, system, output, username, password)
+        system.aaa.user.action_disconnect().verify_result()
+        verify_after_disconnect(engines.dut, system, username, password)
 
 
 @pytest.mark.system
@@ -131,13 +131,13 @@ def test_disconnect_all_users(engines):
 
     with allure.step('Disconnect all users'):
         system = System()
-        output = system.aaa.user.action_disconnect().get_returned_value()
+        system.aaa.user.action_disconnect().verify_result()
         # DutUtilsTool.run_cmd_and_reconnect(engine=engines.dut,
         #                                    command="nv action disconnect system aaa user").verify_result()
         # logger.info("sleep 5 sec after the disconnection")
         # time.sleep(5)
         for connection in connections:
-            verify_after_disconnect(engines.dut, system, output, connection.username, connection.password)
+            verify_after_disconnect(engines.dut, system, connection.username, connection.password)
 
 
 def kill_no_tty_processes(dut_engine, username):
@@ -170,10 +170,8 @@ def check_user_num_connections(username, expected_num_connections, system_obj: S
                 user=username, run_proc=running_processes, expected=expected_num_user_processes)
 
 
-def verify_after_disconnect(dut_engine, system, action_output, username, password, connections_count=0):
+def verify_after_disconnect(dut_engine, system, username, password, connections_count=0):
     """
-
-    :param action_output: the output after running nv action disconnect
     :param dut_engine: dut engine
     :param system: system obj
     :param username: username
@@ -181,22 +179,18 @@ def verify_after_disconnect(dut_engine, system, action_output, username, passwor
     :param connections_count: connections count
     :return:
     """
-    with allure.step(f'verify after disconnecting username: {username}'):
-        with allure.step(f'verify disconnect action succeeded'):
-            assert 'Action succeeded' in action_output, f"could not disconnect {username}"
+    with allure.step(f'verify {username} state still enabled'):
+        output = OutputParsingTool.parse_json_str_to_dictionary(
+            system.aaa.user.user_id[username].show()).get_returned_value()
+        ValidationTool.verify_field_value_in_output(output, SystemConsts.USER_STATE,
+                                                    SystemConsts.USER_STATE_ENABLED).verify_result()
 
-        with allure.step(f'verify {username} state still enabled'):
-            output = OutputParsingTool.parse_json_str_to_dictionary(
-                system.aaa.user.user_id[username].show()).get_returned_value()
-            ValidationTool.verify_field_value_in_output(output, SystemConsts.USER_STATE,
-                                                        SystemConsts.USER_STATE_ENABLED).verify_result()
+    with allure.step(f'verify {username} running processes count'):
+        check_user_num_connections(username, connections_count, system, dut_engine)
 
-        with allure.step(f'verify {username} running processes count'):
-            check_user_num_connections(username, connections_count, system, dut_engine)
-
-        ConnectionTool.create_ssh_conn(dut_engine.ip, username, password).verify_result()
-        with allure.step('verify {user} running processes count after the new connection'.format(user=username)):
-            check_user_num_connections(username, connections_count + 1, system, dut_engine)
+    ConnectionTool.create_ssh_conn(dut_engine.ip, username, password).verify_result()
+    with allure.step('verify {user} running processes count after the new connection'.format(user=username)):
+        check_user_num_connections(username, connections_count + 1, system, dut_engine)
 
 
 def verify_after_disable(dut_engine, system, username, password, connections_count):
