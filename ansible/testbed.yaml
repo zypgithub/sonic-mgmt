@@ -5051,6 +5051,20 @@
   inv_name: lab
   comment: Mellanox MTR testbed
 
+- conf-name: mtvr-moose-13-t0-c256
+  group-name: vm-t1
+  topo: t0-c256
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-mtvr-moose-13
+  ptf_ip: 10.245.42.62/20
+  ptf_ipv6:
+  server: server_81
+  vm_base: VM4601
+  dut:
+    - mtvr-moose-13
+  inv_name: lab
+  comment: Mellanox MTR testbed
+
 - conf-name: r-panther-47-t0
   group-name: vm-t1
   topo: t0
