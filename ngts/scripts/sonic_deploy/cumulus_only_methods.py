@@ -32,6 +32,10 @@ class CumulusInstallationSteps:
 
     @staticmethod
     def update_apt_sources_list(dut):
-        cmd = "sudo sed -i  -e \'s/# deb/deb/g\' -e \'2d;3d\' -e \'4i deb  [trusted=yes] https://urm.nvidia.com/artifactory/sw-nbu-cl-debian-local/ CumulusLinux-5 upstream\' /etc/apt/sources.list"
+        #  below command would enable the bookworm debian repository and replace the cumulus dev repository with release one
+        bookworm_repo_enable = "\'s/#\\ *deb/deb/g\'"
+        cumulus_dev_repo_disable = "\'2d;3d\'"
+        cumulus_release_repo_enable = "\'4i deb  [trusted=yes] https://urm.nvidia.com/artifactory/sw-nbu-cl-debian-local/ CumulusLinux-5 upstream\'"
+        cmd = f"sudo sed -i  -e {bookworm_repo_enable} -e {cumulus_dev_repo_disable} -e {cumulus_release_repo_enable} /etc/apt/sources.list"
         dut['engine'].run_cmd(cmd)
         logging.info(dut['engine'].run_cmd("sudo cat /etc/apt/sources.list"))

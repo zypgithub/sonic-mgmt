@@ -1,4 +1,5 @@
 
+from requests import JSONDecodeError
 from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
 from infra.tools.general_constants.constants import DefaultConnectionValues
 from infra.tools.linux_tools.linux_tools import scp_file
@@ -271,7 +272,7 @@ class NvueGeneralCli(SonicGeneralCliDefault):
         logging.info("Checking the config to be applied")
         NvueGeneralCli.diff_config(engine=engine)
 
-        logging.info("Running 'nv config apply {} ' on dut".format(rev_id))
+        logging.info("Running 'nv {} config apply {} ' on dut".format(option, rev_id))
         if ask_for_confirmation:
             if isinstance(engine, PexpectSerialEngine):
                 output = engine.run_cmd_and_get_output('nv config apply --assume-yes')
@@ -342,6 +343,23 @@ class NvueGeneralCli(SonicGeneralCliDefault):
         logging.info(f"Running 'nv list-commands | grep '{string}'' on dut")
         output = engine.run_cmd(f'nv list-commands | grep "{string}"')
         return output
+
+    def reboot(self, engine, save_config=False, wait_after_ping=120):
+        if save_config:
+            logging.info("Saving the config")
+            engine.run_cmd("nv config save")
+        logging.info("Rebooting the dut using sudo reboot")
+        engine.reload(['sudo reboot'], wait_after_ping=wait_after_ping)
+
+    def get_asic_model(self, engine):
+        output = engine.run_cmd("nv show platform -o json")
+        try:
+            output = json.loads(output)
+        except JSONDecodeError as j:
+            logging.error("Interface output is not a valid JSON object")
+            logging.error(f"Output is : {output}")
+            raise j
+        return output['asic-model']
 
     @staticmethod
     def upgrade_dut(engine, path_to_image):

@@ -8,7 +8,7 @@ from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.helpers.performance.traffic_helpers import validate_bw_per_ports
 from ngts.helpers.performance.performance_setup_helpers import (run_traffic, run_validation, get_topology_obj,
                                                                 validate_traffic_results,
-                                                                set_ports_admin_state, reboot_dut,
+                                                                set_ports_admin_state,
                                                                 skip_test_on_unsupported_os, get_obj_method)
 from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts
 from infra.tools.exceptions.test_issue import TestIssue
@@ -27,6 +27,7 @@ class TestSPCXRA_x2Split_400G:
         self.topology_obj = get_topology_obj(players)
         self.players = players
         self.engines = engines
+        self.dut_engine = engines['dut']
         self.cli_object = self.players['dut']['cli']
         self.scenario = "spcx_ra"
         self.power_thresholds_by_chip_type = power_thresholds_by_chip_type
@@ -97,8 +98,9 @@ class TestSPCXRA_x2Split_400G:
     @allure.title('test_ar_perf_reload_reboot')
     @allure.description('With full line rate traffic, verify that traffic converges to'
                         ' the initial state after cold reboot/reload.')
-    def test_ar_perf_reload_reboot(self, packet_size=4000):
+    def test_ar_perf_reload_reboot(self, request, packet_size=4096):
         skip_test_on_unsupported_os(cli_obj=self.cli_object, unsupported_os=CliType.DVS)
+        test_name = get_pytest_test_name(request)
 
         with allure.step("Run 4000B packet Traffic on all the ports"):
             run_traffic(self.players, self.scenario, self.traffic_jsons)
@@ -111,7 +113,7 @@ class TestSPCXRA_x2Split_400G:
                            power_threshold=self.power_thresholds_by_chip_type)
 
         with allure.step("Rebooting the dut."):
-            reboot_dut(self.players, system_check=True)
+            self.cli_object.general.reboot(self.dut_engine, save_config=True, wait_after_ping=240)
 
         with allure.step(f"Verifying the traffic for packet size {packet_size}"):
             run_validation(players=self.players, test_name=test_name, scenario=self.scenario,

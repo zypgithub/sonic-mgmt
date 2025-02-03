@@ -2,6 +2,7 @@ from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.cli_wrappers.sonic.sonic_interface_clis import SonicInterfaceCli
 import logging
 import json
+from ngts.constants.performance_constants import Cl_Consts
 
 
 class NvueInterfaceCli(SonicInterfaceCli):
@@ -36,3 +37,14 @@ class NvueInterfaceCli(SonicInterfaceCli):
             output = NvueInterfaceCli._get_interface_mac_address(self.engine, interface)
         output_json = json.loads(output)
         return output_json['mac-address']
+
+    def get_bonus_ports(self, engine) -> list:
+        asic_model = self.cli_obj.general.get_asic_model(engine)
+        bonus_ports = Cl_Consts.BONUS_PORTS[asic_model]
+        logging.info(f"Bonus ports are {bonus_ports}")
+        return bonus_ports
+
+    def set_ports_admin_state(self, port_list: list, port_state):
+        string_of_ports = ",".join(port_list)
+        self.engine.run_cmd(f"nv set interface {string_of_ports} link state {port_state}")
+        self.cli_obj.general.apply_config(self.engine, option="-y", verify_execution=True)

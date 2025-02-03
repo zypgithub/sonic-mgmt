@@ -235,3 +235,6 @@ class DvsPerformance(PerformanceCommon):
     def set_ibm(self, scenario, conf_args):
         self.restore_basic_configuration()
         self.apply_configuration_file(scenario, conf_args)
+
+    def get_sdk_ports(self, ports_list):
+        return ports_list

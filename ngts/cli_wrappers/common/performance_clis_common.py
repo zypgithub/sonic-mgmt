@@ -155,6 +155,12 @@ class PerformanceCommon:
         """
         raise NotImplementedError
 
+    def get_sdk_ports(self):
+        """
+        This method should be implemented in child class
+        """
+        raise NotImplementedError
+
     def get_traffic_parameters(self, scenario, conf_args):
         """
 

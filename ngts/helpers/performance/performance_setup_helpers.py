@@ -138,13 +138,6 @@ def set_ports_admin_state(players, port_list, port_state="up", step="Test Body")
                                            step=step)
 
 
-def reboot_dut(players, system_check=False):
-    '''
-    Implementation pending
-    '''
-    pass
-
-
 def call_performance_function_with_threads(players, players_aliases, action,
                                            performance_clis_function_name,
                                            performance_clis_function_args, step):

@@ -1,8 +1,9 @@
 import json
 import logging
 import os
+from requests import JSONDecodeError
 from ngts.constants.constants import BugHandlerConst
-from ngts.constants.performance_constants import PerfConsts
+from ngts.constants.performance_constants import PerfConsts, Cl_Consts
 from ngts.cli_wrappers.common.performance_clis_common import PerformanceCommon
 
 
@@ -11,7 +12,7 @@ class NvuePerformanceCli(PerformanceCommon):
     def __init__(self, topology_obj, engine, dut_alias, cli_obj):
         super().__init__(topology_obj, engine, dut_alias, cli_obj)
 
-    def apply_configuration_file(self, scenario, conf_args, template_suite=PerfConsts.DEFAULT_PERF_TEMPLATES_DIR, dst_dir=PerfConsts.CL_HOME_DIR):
+    def apply_configuration_file(self, scenario, conf_args, template_suite=PerfConsts.DEFAULT_PERF_TEMPLATES_DIR, dst_dir=Cl_Consts.CL_HOME_DIR):
         src_file = self.get_configuration_file_path(scenario, template_suite)
         logging.info(f"Applying configuration file on {self.dut_alias}")
         self.engine.copy_file(source_file=src_file, file_system=dst_dir,
@@ -22,12 +23,12 @@ class NvuePerformanceCli(PerformanceCommon):
         self.cli_obj.general.apply_config(self.engine, option="-y", verify_execution=True)
         logging.info(f"The configuration file on {self.dut_alias} was applied successfully")
 
-    def save_basic_configuration(self, players, dst_dir=PerfConsts.CL_HOME_DIR):
+    def save_basic_configuration(self, players, dst_dir=Cl_Consts.CL_HOME_DIR):
         logging.info(f"Saving the basic configuration on {self.dut_alias}")
         self.cli_obj.general.save_config(self.engine)
         self.engine.run_cmd(f"sudo cat /etc/nvue.d/startup.yaml >> {dst_dir}/startup.yaml")
 
-    def restore_basic_configuration(self, file_name="startup.yaml", config_directory=PerfConsts.CL_HOME_DIR):
+    def restore_basic_configuration(self, file_name="startup.yaml", config_directory=Cl_Consts.CL_HOME_DIR):
         logging.info("Replacing the basic configuration on the device")
         full_path = config_directory + "/" + file_name
         self.cli_obj.general.replace_config(self.engine, full_path, output_type="json", verify_execution=True)
@@ -39,10 +40,36 @@ class NvuePerformanceCli(PerformanceCommon):
         logging.info("Full Path returned is {}".format(full_path))
         return full_path
 
-    def set_ibm(self, players, scenario="", ibm_mode=True, reload_conf=True):
-        '''
-        Implementation Pending
-        '''
+    def set_ibm(self, scenario, conf_args):
+        ibm_mode = True if conf_args["auto_buffer_mode"] == "False" else False
+        logging.info(f"Set IBM mode to {ibm_mode}")
+        if ibm_mode:
+            txt = "\n".join([
+                "ar.p.m = 0",
+                "ar.ctl = 400",
+                "ar.ctm = 800",
+                "ar.cth = 2000",
+                "ar.srt = 10",
+                "ar.srf = 10",
+                "ar.p.bit = 0",
+                "ar.p.frt = 4",
+                "ar.p.but = 0",
+                "ar.p.sfe = FALSE",
+                "ar.p.ste = FALSE",
+                "ar.p.ef = FALSE",
+                "ar.ecs = 512",
+                "ar.ibm = ingress"
+            ])
+            cmd = "echo \"echo -e \'{}\' > /etc/cumulus/switchd.d/ar_profile_custom.conf\" | sudo su".format(txt)
+            self.execute_cmd(cmd)
+            logging.info("Enabling the custom ar profile for IBM mode ingress.")
+            logging.info(cmd)
+            self.execute_cmd("nv set router adaptive-routing profile profile-custom")
+            self.cli_obj.general.apply_config(self.engine, option="-y", verify_execution=True)
+        else:
+            logging.info("Enabling the default ar profile")
+            self.execute_cmd("nv set router adaptive-routing profile profile-2")
+            self.cli_obj.general.apply_config(self.engine, option="-y", verify_execution=True)
         return True
 
     def get_player_ports(self, dst_dut_dir="/tmp"):
@@ -54,7 +81,7 @@ class NvuePerformanceCli(PerformanceCommon):
         {'connected_ports': [65537, 65539, ...], 'unconnected_ports': [65659, 65661, ...]}
         """
         logging.info("Getting player connected and unconnected ports")
-        get_player_ports_cmd = f"sudo {PerfConsts.CL_PYTHON_PATH} {PerfConsts.DVS_RUN_TEST_PATH} --names {PerfConsts.DVS_GET_PORTS}"
+        get_player_ports_cmd = f"sudo {Cl_Consts.CL_PYTHON_PATH} {PerfConsts.DVS_RUN_TEST_PATH} --names {PerfConsts.DVS_GET_PORTS}"
         self.execute_cmd(get_player_ports_cmd)
         get_ports_output = os.path.join(BugHandlerConst.NGTS_PATH, "performance_tests", f"{self.dut_alias}_ports.json")
         self.engine.copy_file(source_file="tg_ports.json", file_system=dst_dut_dir, dest_file=get_ports_output,
@@ -67,15 +94,31 @@ class NvuePerformanceCli(PerformanceCommon):
         player_ports = self.get_player_ports()
         return player_ports["unconnected_ports"]
 
-    def get_dut_ports(self):
-        player_ports = self.get_player_ports()
-        return player_ports["connected_ports"]
+    def get_dut_ports(self, sdk_ports=False):
+        mgmt_port = "eth0"
+        bonus_ports = self.cli_obj.interface.get_bonus_ports(self.engine)
+        if sdk_ports:
+            player_ports = self.get_player_ports()
+            return player_ports["connected_ports"]
+        else:
+            output = self.execute_cmd("nv sh interface physical -o json")
+            try:
+                output = json.loads(output)
+            except JSONDecodeError as j:
+                logging.error("Interface output is not a valid JSON object")
+                logging.error(f"Output is : {output}")
+                raise j
+            list_of_ports = list(output.keys())
+            list_of_ports.pop(list_of_ports.index(mgmt_port))
+            for ports in bonus_ports:
+                list_of_ports.pop(list_of_ports.index(ports))
+            return list_of_ports
 
     def get_cmd_for_sdk(self, cmd, env_variables=[]):
         variables = "sudo env "
         for env in env_variables:
             variables += f'\"{env}\"=${env} '
-        return variables + PerfConsts.CL_PYTHON_PATH + ' ' + cmd
+        return variables + Cl_Consts.CL_PYTHON_PATH + ' ' + cmd
 
     def logrotate(self, daemon):
         logging.info(f"Rotating log for {daemon}")
@@ -105,4 +148,20 @@ class NvuePerformanceCli(PerformanceCommon):
         traffic_parameters["UDP"] = conf_args.get("UDP", {"src": PerfConsts.UDP_SOURCE_PORT, "dst": PerfConsts.ROCE_PORT})
         traffic_parameters["AR"] = conf_args.get("AR", PerfConsts.ADAPTIVE_ROUTING_ENABLED)
         traffic_parameters["ports"] = self.get_tg_unconnected_ports()
+        traffic_parameters["packet_size"] = conf_args["packet_size"]
+        traffic_parameters["num_packets"] = conf_args["num_packets"]
+        traffic_parameters["is_ipv6"] = is_ipv6
         return traffic_parameters
+
+    def set_ports(self, port_list: list, port_state):
+        self.cli_obj.interface.set_ports_admin_state(port_list, port_state)
+
+    def get_sdk_ports(self, ports_list: list):
+        ports_string = " ".join(ports_list)
+        self.engine.copy_file(source_file=f'{Cl_Consts.CL_LOG_PORT_FILE_PATH}/{Cl_Consts.CL_LOG_PORT_FILE}',
+                              dest_file=f'{Cl_Consts.CL_LOG_PORT_FILE}',
+                              file_system=Cl_Consts.CL_HOME_DIR, overwrite_file=True, verify_file=False)
+        sdk_ports = self.execute_cmd(f'sudo python {Cl_Consts.CL_HOME_DIR}/{Cl_Consts.CL_LOG_PORT_FILE} --ports {ports_string}  | egrep \"^[0-9]\"')
+        sdk_ports = sdk_ports.split()
+        logging.info(sdk_ports)
+        return sdk_ports

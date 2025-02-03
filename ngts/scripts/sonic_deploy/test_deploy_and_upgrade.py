@@ -20,7 +20,7 @@ from ngts.cli_wrappers.sonic.sonic_cli import SonicCli
 from ngts.constants.constants import PlayersAliases, SonicDeployConstants, MarsConstants, SerialLoggerConst, CliType
 from ngts.cli_wrappers.sonic.sonic_general_clis import SonicGeneralCliDefault
 from ngts.constants.constants import PlayersAliases, SerialLoggerConst, SSHConsts
-from ngts.constants.performance_constants import PerfConsts
+from ngts.constants.performance_constants import PerfConsts, Cl_Consts
 from ngts.helpers.general_helper import extract_host_details_from_topo_obj, get_cli_obj
 from ngts.helpers.run_process_on_host import wait_until_background_procs_done
 from ngts.nvos_tools.Devices.IbDevice import BlackMambaSwitch, CrocodileSwitch
@@ -348,7 +348,7 @@ def get_image_for_traffic_generators(base_version, target_version, dut, use_GA_i
     if dut['cli_type'] == CliType.SONIC:
         base_version = PerfConsts.SONIC_GA_IMAGE if use_GA_image else base_version
     elif dut['cli_type'] == CliType.NVUE:
-        target_version = PerfConsts.CL_GA_IMAGE if use_GA_image else target_version
+        target_version = Cl_Consts.CL_GA_IMAGE if use_GA_image else target_version
     return base_version, target_version
 
 

@@ -4,7 +4,7 @@ import os
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import NvosConst
 from ngts.constants.constants import InfraConst
-from ngts.constants.performance_constants import PerfConsts
+from ngts.constants.performance_constants import PerfConsts, Cl_Consts
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 
@@ -45,9 +45,9 @@ class CumulusGeneralCli(NvueGeneralCli):
             self.install_apt_get_pkg()
 
         with allure.step('Prepare SDK_VER git to run tests'):
-            self.engine.run_cmd(f"sudo {PerfConsts.CL_PYTHON_PATH} {PerfConsts.DVS_RUN_TEST_PATH} -si")
+            self.engine.run_cmd(f"sudo {Cl_Consts.CL_PYTHON_PATH} {PerfConsts.DVS_RUN_TEST_PATH} -si")
         with allure.step('Verify the health of SDK env.'):
-            self.engine.run_cmd(f"sudo {PerfConsts.CL_PYTHON_PATH} "
+            self.engine.run_cmd(f"sudo {Cl_Consts.CL_PYTHON_PATH} "
                                 f"{PerfConsts.DVS_RUN_TEST_PATH} --names SdkExamplesTestPython3Reduced")
 
     def install_pip_dependencies(self):

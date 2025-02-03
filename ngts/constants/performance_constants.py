@@ -1,6 +1,17 @@
 import os
-
 from ngts.constants.constants import NvosCliTypes, DVSCliTypes, BugHandlerConst
+
+
+class Cl_Consts:
+    CL_LOG_PORT_FILE_PATH = os.path.join(BugHandlerConst.NGTS_PATH, 'scripts/')
+    CL_LOG_PORT_FILE = 'log_port_cumulus.py'
+    BONUS_PORTS = {
+        'Spectrum-4': ['swp65']
+    }
+    CL_HOME_DIR = "/home/cumulus"
+    CL_PYTHON_PATH = "/home/cumulus/sdk_env/bin/python3.11"
+    CL_GRUB_PATH = 'boot'
+    CL_GA_IMAGE = "/auto/sw_system_project/NVOS_INFRA/cumulus_images/GA/5.10/cumulus-linux-mlx-amd64.bin.devsigned"
 
 
 class PerfConsts:
@@ -37,8 +48,6 @@ class PerfConsts:
             "TOTAL": 754
         }
     }
-    CL_HOME_DIR = "/home/cumulus"
-    CL_PYTHON_PATH = "/home/cumulus/sdk_env/bin/python3.11"
     NON_SONIC_CLI_TYPE = NvosCliTypes.NvueCliTypes + DVSCliTypes.DVSCliTypes
     DVS_RUN_TEST_PATH = "/root/sys_sdk/sx_sdk_py_tests/tests/run_tests.py"
     DEFAULT_PERF_TEMPLATES_DIR = "performance_config_templates"
@@ -83,12 +92,10 @@ class PerfConsts:
     PERF_SUPPORTED_REBOOT_TYPES = ['reboot', 'config reload -y']
     SLEEP_TIME_BEFORE_SAMPLE = 15
     SONIC_GA_IMAGE = "/auto/sw_system_release/sonic/202311/202311/dev/sonic-mellanox.bin"
-    CL_GA_IMAGE = "/auto/sw_system_project/NVOS_INFRA/cumulus_images/GA/5.10/cumulus-linux-mlx-amd64.bin.devsigned"
     DVS_GA_IMAGE = ("/auto/sw/release/sw_system/sx_mlnx_evb/dvs-os-sonic_4.7.1920_DEV_x86-64-0/dvs-os-sonic"
                     "_4.7.1920_DEV_LK6.1.38_x86-64_installer.bin")
-    CL_GRUB_PATH = 'boot'
     SONIC_DVS_GRUB_PATH = 'host'
-    GRUB_PATH_DICT = {"SONiC": SONIC_DVS_GRUB_PATH, "Cumulus": CL_GRUB_PATH, "DVS": SONIC_DVS_GRUB_PATH}
+    GRUB_PATH_DICT = {"SONiC": SONIC_DVS_GRUB_PATH, "Cumulus": Cl_Consts.CL_GRUB_PATH, "DVS": SONIC_DVS_GRUB_PATH}
     SDK_VERSION_PATH = "/auto/sw_system_release/sx_sdk_eth/"
     FW_VERSION_FILE = "FW.txt"
     USED_SITE = "MTL"
