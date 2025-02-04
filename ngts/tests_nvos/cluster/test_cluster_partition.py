@@ -72,7 +72,7 @@ def test_cluster_partition(engines, devices, test_api, has_loopbox, setup_name, 
             for partition_id in partition_ids:
                 output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.partition_id[partition_id].show(output_format=output_format),
                                                                      output_format=output_format).get_returned_value()
-                list_of_tuples = ClusterTools.get_partition_uuid_location_map(output['locations'])
+                list_of_tuples = ClusterTools.get_partition_uuid_location_map(output)
                 partitions_mapping[partition_id] = list_of_tuples
 
         ClusterTools.create_empty_partition(sdn, partitions_mapping)

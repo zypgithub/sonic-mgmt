@@ -163,6 +163,9 @@ def test_downgrade_upgrade(release_name, test_api, original_version, devices, en
         with allure.step('Apply and save pre-defined configuration'):
             NvosInstallationSteps.fetch_apply_save_config(config_filename, config_file_path, engines.dut,
                                                           scp_host_creds, system)
+            logger.info("After replacing configuration file, system will ask for new password. Restoring password:")
+            engines.dut.disconnect()
+            engines.dut.run_cmd("true")
         TestToolkit.tested_api = test_api
 
     finally:
