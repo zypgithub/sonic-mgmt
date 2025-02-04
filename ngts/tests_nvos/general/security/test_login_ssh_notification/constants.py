@@ -1,3 +1,4 @@
+import re
 
 
 class LoginSSHNotificationConsts:
@@ -23,16 +24,16 @@ class LoginSSHNotificationConsts:
     SRC_IP_ADDRESS_REGEX = 'src\\s+(\\d+\\.\\d+\\.\\d+\\.\\d+)'
 
     # REGEX
-    LAST_SUCCESSFUL_LOGIN_DATE_REGEX = 'Last login:\\s+([a-zA-Z0-9]*\\s+[a-zA-Z0-9]*\\s+[a-zA-Z0-9]*\\s+\\d+:\\d+:\\d+\\s+[a-zA-Z0-9]*\\s+[a-zA-Z0-9]*)'
-    LAST_UNSUCCESSFUL_LOGIN_DATE_REGEX = 'Last failed login:\\s+([a-zA-Z0-9]*\\s+[a-zA-Z0-9]*\\s+[a-zA-Z0-9]*\\s+\\d+:\\d+:\\d+\\s+[a-zA-Z0-9]*\\s+[a-zA-Z0-9]*)'
-    LAST_SUCCESSFUL_LOGIN_IP_REGEX = 'Last login:.*from\\s+([0-9a-zA-Z:\\.]*)'
-    LAST_UNSUCCESSFUL_LOGIN_IP_REGEX = 'Last failed login:.*from\\s+([0-9a-zA-Z:\\.]*)'
-    NUMBER_OF_UNSUCCESSFUL_ATTEMPTS_SINCE_LAST_LOGIN_REGEX = 'There were\\s+(\\d+).*failed login attempts since the last successful login'
-    RECORD_PERIOD_REGEX = 'Number of total successful connections since last (\\d+)'
-    NUMBER_OF_SUCCESSFUL_CONNECTIONS_IN_THE_LAST_RECORD_PERIOD_REGEX = 'Number of total successful connections since last.*days:.*(\\d+)'
-    PASSWORD_CHANGED_MESSAGE_REGEX = 'Your.*password.*been changed since.*last login'
-    ROLE_CHANGED_MESSAGE_REGEX = 'Your.*capability.*been changed since.*last login'
-    LINUX_DATE_REGEX = '([a-zA-Z0-9]*\\s+[a-zA-Z0-9]*\\s+[a-zA-Z0-9]*\\s+\\d+:\\d+:\\d+\\s+[a-zA-Z0-9]*\\s+[a-zA-Z0-9]*)'
+    LAST_SUCCESSFUL_LOGIN_DATE_REGEX = re.compile(r'Last login:\s+([a-zA-Z0-9]*\s+[a-zA-Z0-9]*\s+[a-zA-Z0-9]*\s+\d+:\d+:\d+\s+[a-zA-Z0-9]*\s+[a-zA-Z0-9]*)')
+    LAST_UNSUCCESSFUL_LOGIN_DATE_REGEX = re.compile(r'Last failed login:\s+([a-zA-Z0-9]*\s+[a-zA-Z0-9]*\s+[a-zA-Z0-9]*\s+\d+:\d+:\d+\s+[a-zA-Z0-9]*\s+[a-zA-Z0-9]*)')
+    LAST_SUCCESSFUL_LOGIN_IP_REGEX = re.compile(r'Last login:.*from\s+([0-9a-zA-Z:\.]*)')
+    LAST_UNSUCCESSFUL_LOGIN_IP_REGEX = re.compile(r'Last failed login:.*from\s+([0-9a-zA-Z:\.]*)')
+    NUMBER_OF_UNSUCCESSFUL_ATTEMPTS_SINCE_LAST_LOGIN_REGEX = re.compile(r'There were\s+(\d+).*failed login attempts since the last successful login')
+    RECORD_PERIOD_REGEX = re.compile(r'Number of total successful connections since last (\d+)')
+    NUMBER_OF_SUCCESSFUL_CONNECTIONS_IN_THE_LAST_RECORD_PERIOD_REGEX = re.compile(r'Number of total successful connections since last.*days:.*(\d+)')
+    PASSWORD_CHANGED_MESSAGE_REGEX = re.compile(r'Your.*password.*been changed since.*last login')
+    ROLE_CHANGED_MESSAGE_REGEX = re.compile(r'Your.*capability.*been changed since.*last login')
+    LINUX_DATE_REGEX = re.compile(r'([a-zA-Z0-9]*\s+[a-zA-Z0-9]*\s+[a-zA-Z0-9]*\s+\d+:\d+:\d+\s+[a-zA-Z0-9]*\s+[a-zA-Z0-9]*)')
 
     # dict
     LOGIN_SSH_NOTIFICATION_REGEX_DICT = {
