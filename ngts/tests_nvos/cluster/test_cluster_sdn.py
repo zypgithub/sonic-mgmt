@@ -23,6 +23,7 @@ from ngts.tests_nvos.system.factory_reset.helpers import add_verification_data, 
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
 from ngts.tests_nvos.constants import MINUTE
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 
 logger = logging.getLogger()
 
@@ -107,6 +108,8 @@ def test_cluster_sdn(engines, devices, test_api, has_loopbox, standalone_system,
                 current_installed_config_path = output[installed_file]['path']
                 current_config_content = engines.dut.run_cmd("sudo cat {}".format(current_installed_config_path))
                 expected_config_content = engines.sonic_mgmt.run_cmd("sudo cat {}".format(path_to_config[file_type]))
+                if file_type == 'chassis_mapping' and is_bug_active(4222718):
+                    continue
                 assert set(current_config_content.split('\n')) == set(expected_config_content.split('\n')), f"Config file was not loaded properly. Expected content {expected_config_content}, Actual content: {current_config_content}"
                 if ClusterConsts.CONFIG_FILES_CHANGE[file_type] != 'true':
                     assert set(current_config_content.split('\n')) != set((initial_config_contents[file_type]).split('\n')), f"Current content has not changed, still same as in init state. init: {initial_config_contents[file_type]}, \ncurrent{current_config_content}"

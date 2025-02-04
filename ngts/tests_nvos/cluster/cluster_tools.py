@@ -428,7 +428,8 @@ class ClusterTools:
         return mapping, default_partition_type
 
     @staticmethod
-    def get_partition_uuid_location_map(location_uuid_map):
+    def get_partition_uuid_location_map(partition_output):
+        location_uuid_map = partition_output['locations']
         mapping_list = [(info['uuid'], location) for location, info in location_uuid_map.items()]
         return mapping_list
 

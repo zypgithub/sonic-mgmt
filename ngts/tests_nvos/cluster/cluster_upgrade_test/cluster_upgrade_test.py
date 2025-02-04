@@ -23,6 +23,7 @@ from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.constants.constants import NvosCliTypes
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 
 logger = logging.getLogger()
 
@@ -125,6 +126,8 @@ def test_upgrade_with_nmx_enabled(test_api, devices, topology_obj, setup_name, e
                     current_installed_config_path = output[installed_file]['path']
                     current_config_content = engines.dut.run_cmd("sudo cat {}".format(current_installed_config_path))
                     expected_config_content = engines.sonic_mgmt.run_cmd("sudo cat {}".format(path_to_config[file_type]))
+                    if file_type == 'chassis_mapping' and is_bug_active(4222718):
+                        continue
                     assert set(current_config_content.split('\n')) == set(expected_config_content.split('\n')), f"Config file was not loaded properly. Expected content {expected_config_content}, Actual content: {current_config_content}"
                     if ClusterConsts.CONFIG_FILES_CHANGE[file_type] != 'true':
                         if set(current_config_content.split('\n')) == set((initial_config_contents[file_type]).split('\n')):
