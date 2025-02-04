@@ -108,7 +108,7 @@ def attach_json_to_allure(json_path, attachment_name):
     return json_obj
 
 
-def run_validation(players, test_name, scenario, bw_threshold,
+def run_validation(players, test_name, scenario, chip_type, bw_threshold,
                    samples_params_dict=PerfConsts.SAMPLES_PARAMS,
                    tc_occ_threshold=PerfConsts.OCC_AVG_TH,
                    temperature_threshold=PerfConsts.TEMPERATURE_TH,
@@ -128,7 +128,7 @@ def run_validation(players, test_name, scenario, bw_threshold,
             if temperature_threshold:
                 validate_temperature(traffic_json, temperature_threshold, violations_list)
             if power_threshold:
-                validate_power(traffic_json, power_threshold, violations_list)
+                validate_power(players, chip_type, traffic_json, power_threshold, violations_list)
             if violations_list:
                 raise TestIssue("\n".join(violations_list))
     return traffic_validation_jsons_list

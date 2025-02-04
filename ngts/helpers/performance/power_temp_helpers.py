@@ -1,6 +1,7 @@
 import re
 import allure
 import pandas as pd
+from ngts.constants.performance_constants import PerfConsts, SPCControllers, PowerConsts
 
 
 def validate_temperature(traffic_json, temperature_threshold, violations_list):
@@ -17,20 +18,21 @@ def validate_temperature(traffic_json, temperature_threshold, violations_list):
                                    f"please check {higher_temperature_samples}")
 
 
-def validate_power(traffic_json, power_threshold, violations_list):
+def validate_power(players, chip_type, traffic_json, power_threshold, violations_list):
     with allure.step(f"Validate all power samples are below the power_thresholds"):
+        dut_cli_obj = players['dut']['cli']
         power_samples = traffic_json["Power_samples"]
         power_samples.pop('sample_params', None)
-        power_df = get_avg_samples_power_dataframe(power_samples)
+        power_df = get_avg_samples_power_dataframe(dut_cli_obj, chip_type, power_samples)
         power_df_with_total = validate_power_df_by_collectors(power_df, power_threshold, violations_list)
         allure.attach(power_df_with_total.to_html(), 'Power full dataframe', allure.attachment_type.HTML)
         get_sum_power_df_by_collectors_group(power_df)
 
 
-def get_avg_samples_power_dataframe(power_samples):
+def get_avg_samples_power_dataframe(cli_obj, chip_type, power_samples):
     current_sum = None
     for sample_id, power_sample in power_samples.items():
-        power_df = pd.DataFrame(power_sample['power_dataframe'])
+        power_df = get_power_dataframe(cli_obj, power_sample['sensors_output'], chip_type)
         if current_sum is not None:
             current_sum += power_df["Current (A)"]
         else:
@@ -38,6 +40,48 @@ def get_avg_samples_power_dataframe(power_samples):
     power_df["Current (A)"] = current_sum.div(len(power_samples)).round(3)
     power_df["Power (W)"] = (power_df["Voltage (V)"] * power_df["Current (A)"]).round(3)
     return power_df
+
+
+def get_power_dataframe(cli_obj, sensors_output, chip_type):
+    """
+    Args:
+        cli_obj: a cli object of the device DUT
+        sensors_output: output of command "sensors *-i2c-5-*" on the device
+        chip_type: i.e, "SPC3"
+    The Function uses the arguments to parse the sensors data into a power dataframe:
+        controller_names_list: a list of the controllers names ['mp2975-i2c-5-63','mp2975-i2c-5-6c',...]
+        controllers_info_dicts_list: a list of dicts, each dict contains the values of a controller on the device,
+                                     i.e, [{'vout1': 1.20, 'vout2': 1.20, 'iout1': 13.00, 'iout2': 94.00},...]
+        controllers_by_address_dict: a dict of controller addresses keys and controller names values, i.e,
+                                     { "0x61": "HVDD TILES (HVDD_T47)",...}
+
+    Returns:
+    A Pandas Dataframe based on the list of dicts,
+    [{"Power Supply": "HVDD TILES (HVDD_T47)",
+    "Address": "0x61",
+    "Voltage (V)": 1.20,
+    "Current (A)": 13.00,
+    "Power (W)": 15.6},...]
+    """
+    controller_names_list = re.findall(PowerConsts.CONTROLLER_REGEX, sensors_output)
+    controllers_info_dicts_list = cli_obj.performance.get_controllers_info_dicts_list(sensors_output)
+    controllers_by_address_dict = SPCControllers.SPCControllers_DICT[chip_type]
+    power_dp = []
+    for controller_idx, controller_name in enumerate(controller_names_list):
+        address = str(hex(int(re.search(r'.*-i2c-5-(.*)', controller_name).group(1), 16)))
+        controller_info_dict = controllers_info_dicts_list[controller_idx]
+        controller_name = controllers_by_address_dict[address]
+        for index in [1, 2]:
+            if controller_info_dict.get(f"vout{index}"):
+                controller_dict_df_entry = {}
+                controller_dict_df_entry["Power Supply"] = controller_name
+                controller_dict_df_entry["Address"] = address
+                controller_dict_df_entry["Voltage (V)"] = controller_info_dict[f"vout{index}"]
+                controller_dict_df_entry["Current (A)"] = controller_info_dict[f"iout{index}"]
+                controller_dict_df_entry["Power (W)"] = (controller_dict_df_entry["Voltage (V)"] *
+                                                         controller_dict_df_entry["Current (A)"])
+                power_dp.append(controller_dict_df_entry)
+    return pd.DataFrame(power_dp)
 
 
 def get_sum_power_df_by_collectors_group(power_df):

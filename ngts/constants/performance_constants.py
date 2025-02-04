@@ -19,17 +19,6 @@ class PerfConsts:
     PERF_SETUP_PLAYERS_ALIASES = ['left_tg', 'dut', 'right_tg']
     PERF_SETUP_TG_ALIASES = ['left_tg', 'right_tg']
     PERF_SETUP_DUT_ALIASES = ['dut']
-    # TODO: remove DUT_PKT_INFO / TG_ALIASES_PKT_INFO once traffic generator is not static
-    DUT_PKT_INFO = {
-        "MAC": '00:01:02:03:04:05',
-        "IP": '4.4.4.4',
-        "IPv6": '192:168:0:0:0:0:0:1'
-    }
-    TG_ALIASES_PKT_INFO = {
-        "MAC": {'left_tg': '00:01:02:03:04:06', 'right_tg': '00:00:00:00:10:60'},
-        "IP": {'left_tg': '10.0.1.0', 'right_tg': '192.168.1.0'},
-        "IPv6": {'left_tg': '192:168:5:1:1:1:2:0', 'right_tg': '192:168:5:1:1:2:2:0'}
-    }
     SAMPLES_PARAMS = {
         "SAMPLE_DURATION": 60,
         "BW_SAMPLE_DELAY": 5,
@@ -38,17 +27,6 @@ class PerfConsts:
     }
     OCC_AVG_TH = 400
     TEMPERATURE_TH = 105
-    POWER_TH_PER_ASIC = {
-        "SPC3": None,
-        "SPC4": {
-            r"VCORE TILES \d & \d \(VDD_Tx\)": 17,
-            r"DVDD TILES \d & \d \(DVDD_Tx\)": 18.13,
-            r"HVDD TILES \(HVDD_T\d+\)": 118,
-            r"VDDSCC": 46,
-            r"VCORE MAIN \(VDD_M\)": 345,
-            "TOTAL": 754
-        }
-    }
     NON_SONIC_CLI_TYPE = NvosCliTypes.NvueCliTypes + DVSCliTypes.DVSCliTypes
     DVS_RUN_TEST_PATH = "/root/sys_sdk/sx_sdk_py_tests/tests/run_tests.py"
     DEFAULT_PERF_TEMPLATES_DIR = "performance_config_templates"
@@ -117,3 +95,47 @@ class SPCXRAConsts:
     DUT_TX_UTIL_IBM_TH_DICT = {4096: 0.96}
     PACKET_NUM_400G_x2 = 8
     PACKET_NUM_800G_x1 = 16
+
+
+class PowerConsts:
+    POWER_TH_PER_ASIC = {
+        "SPC3": None,
+        "SPC4": {
+            r"VCORE TILES \d & \d \(VDD_Tx\)": 17,
+            r"DVDD TILES \d & \d \(DVDD_Tx\)": 18.13,
+            r"HVDD TILES \(HVDD_T\d+\)": 118,
+            r"VDDSCC": 46,
+            r"VCORE MAIN \(VDD_M\)": 345,
+            "TOTAL": 754
+        }
+    }
+    CONTROLLER_REGEX = r'\w*\d*-i2c-\d*-\d*\w*'
+
+
+class SPCControllers:
+    SPCControllers_DICT = {
+        "SPC3": {
+            "0x62": "VCORE MAIN",
+            "0x64": "1.8V_MAIN & 1.2V_MAIN",
+            "0x66": "VCORE & 1.8V_Tile",
+            "0x68": "VCORE & 1.8V_Tile",
+            "0x6a": "VCORE & 1.8V_Tile",
+            "0x6c": "VCORE & 1.8V_Tile",
+            "0x6e": "VCORE & 1.8V_Tile",
+        },
+        "SPC4": {
+            "0x61": "HVDD TILES (HVDD_T47)",
+            "0x62": "VCORE MAIN (VDD_M)",
+            "0x63": "VCORE TILES 0 & 1 (VDD_Tx)",
+            "0x64": "VCORE TILES 2 & 3 (VDD_Tx)",
+            "0x65": "VCORE TILES 4 & 5 (VDD_Tx)",
+            "0x66": "VCORE TILES 6 & 7 (VDD_Tx)",
+            "0x67": "DVDD TILES 0 & 1 (DVDD_Tx)",
+            "0x68": "DVDD TILES 2 & 3 (DVDD_Tx)",
+            "0x69": "DVDD TILES 4 & 5 (DVDD_Tx)",
+            "0x6a": "DVDD TILES 6 & 7 (DVDD_Tx)",
+            "0x6c": "HVDD TILES (HVDD_T03)",
+            "0x6e": "VDDSCC",
+
+        }
+    }

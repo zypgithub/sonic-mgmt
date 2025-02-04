@@ -3,8 +3,8 @@ import os
 import re
 import json
 from ngts.constants.constants import BugHandlerConst
-from ngts.constants.performance_constants import PerfConsts
 from ngts.helpers.performance.traffic_helpers import generate_ip_address_dict
+from ngts.constants.performance_constants import PerfConsts, PowerConsts
 from ngts.cli_wrappers.common.performance_clis_common import PerformanceCommon
 from jinja2 import Environment, FileSystemLoader
 
@@ -245,3 +245,30 @@ class DvsPerformance(PerformanceCommon):
 
     def get_sdk_ports(self, ports_list):
         return ports_list
+
+    @staticmethod
+    def get_controllers_info_dicts_list(sensors_output):
+        """
+        returns voltage/current per controller
+        Args:
+            sensors_output: a string with the output of sensors command
+
+        Returns:
+        A list of dicts, each dict contains the values of a controller on the device i.e,
+        [{'vout1': 1.20, 'vout2': 1.20, 'iout1': 13.00, 'iout2': 94.00},...]
+        """
+        controllers_info_dicts_list = []
+        controllers_info_str_list = re.split(PowerConsts.CONTROLLER_REGEX, sensors_output)
+        for controller_info_str in controllers_info_str_list:
+            controller_info_list = controller_info_str.splitlines()
+            if controller_info_list:
+                controllers_info_dict = {}
+                for controller_info in controller_info_list:
+                    controller_info_parsed = re.search(r"((vout|iout)\d):\s+(\d*\.*\d+)\s(\w*)", controller_info)
+                    if controller_info_parsed:
+                        key = controller_info_parsed.group(1)
+                        value = controller_info_parsed.group(3)
+                        measure_unit = controller_info_parsed.group(4)
+                        controllers_info_dict[key] = float(value) / 1000 if 'm' in measure_unit else float(value)
+                controllers_info_dicts_list.append(controllers_info_dict)
+        return controllers_info_dicts_list

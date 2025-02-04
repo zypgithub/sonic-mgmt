@@ -1,11 +1,7 @@
 import logging
 import os
-import json
-import allure
-from ngts.constants.constants import BugHandlerConst
 from ngts.constants.performance_constants import PerfConsts
 from infra.tools.exceptions.test_issue import TestIssue
-from ngts.helpers.performance.traffic_helpers import create_json_traffic_file
 
 
 class PerformanceCommon:
@@ -180,3 +176,16 @@ class PerformanceCommon:
         logging.info(f"set TG_JSON ={traffic_json_path} on {self.dut_alias}")
         set_traffic_json_cmd = f"export TG_JSON=\"{traffic_json_path}\""
         self.execute_cmd(set_traffic_json_cmd)
+
+    @staticmethod
+    def get_controllers_info_dicts_list(sensors_output):
+        """
+        returns voltage/current per controller
+        Args:
+            sensors_output: a string with the output of sensors command
+
+        Returns:
+        A list of dicts, each dict contains the values of a controller on the device i.e,
+        [{'vout1': 1.20, 'vout2': 1.20, 'iout1': 13.00, 'iout2': 94.00},...]
+        """
+        raise NotImplementedError

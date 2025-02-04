@@ -1,7 +1,7 @@
 import pytest
 import logging
 import os
-from ngts.constants.performance_constants import PerfConsts
+from ngts.constants.performance_constants import PerfConsts, PowerConsts
 from ngts.constants.constants import BugHandlerConst
 from ngts.helpers.performance.traffic_helpers import (create_json_traffic_file, create_json_traffic_stream,
                                                       create_json_traffic_file_with_stream_list)
@@ -12,7 +12,7 @@ TESTS_SCENARIO = "spcx_ra"
 
 @pytest.fixture(scope='session', autouse=True)
 def power_thresholds_by_chip_type(chip_type):
-    return PerfConsts.POWER_TH_PER_ASIC[chip_type]
+    return PowerConsts.POWER_TH_PER_ASIC[chip_type]
 
 
 def get_spcx_ra_spine_traffic(players, conf_args, template_suite="traffic_packets_json_files"):
