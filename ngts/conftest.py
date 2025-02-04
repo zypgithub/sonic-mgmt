@@ -147,6 +147,8 @@ def pytest_addoption(parser):
                      default=False,
                      help='On Performance deploy, this parameter will override the cli type defined in Noga,'
                           ' and will set the relevant cli')
+    parser.addoption('--is_ipv6', dest="is_ipv6", required=False, action="store_true", default=False,
+                     help='On Performance tests, this parameter will determine if the tests run with ipv4 or ipv6')
     parser.addoption(SerialLoggerConst.CMD_LINE_KEY, action='store', required=False,
                      choices=SerialLoggerConst.CMD_LINE_VALUES, default=SerialLoggerConst.MODE_OFF,
                      help='Action for serial log handler. Options: off (no serial logging), store (without analyzing), '

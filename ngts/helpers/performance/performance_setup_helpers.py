@@ -5,6 +5,7 @@ import os
 import json
 import pytest
 from datetime import datetime
+from ngts.helpers.general_helper import get_pytest_test_name
 from ngts.constants.constants import BugHandlerConst, CliType
 from ngts.constants.performance_constants import PerfConsts
 from ngts.helpers.thread_log_filter import redirect_thread_stdout, config_root_logger
@@ -186,3 +187,23 @@ def get_topology_obj(players):
         return get_dvs_topology_obj(players)
     else:
         return get_nvue_sonic_topology_obj(players)
+
+
+def get_performance_pytest_test_name(request, ip):
+    """
+    Args:
+        request: pytest request fixture
+        ip: the ip type (IPv4/IPv6)
+
+    Returns:
+        the test name with the ip parameter, i.e, test_ar_perf_max_bandwidth[4096-IPv6]
+    """
+    test_name = get_pytest_test_name(request)
+    test_name_with_ip_param = test_name.replace("]", f"-{ip}]")
+    return test_name_with_ip_param
+
+
+def set_allure_title(request, ip):
+    test_name = get_performance_pytest_test_name(request, ip)
+    allure.dynamic.title(test_name)
+    return test_name

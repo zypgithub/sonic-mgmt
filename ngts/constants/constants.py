@@ -173,6 +173,8 @@ class InfraConst:
     SLEEP_AFTER_RRBOOT = 35
     SLEEP_AFTER_WJH_INSTALLATION = 100
     IP = 'ip'
+    IPV4 = "IPv4"
+    IPV6 = "IPv6"
     MASK = 'mask'
 
     ALLURE_SERVER_IP = 'allure.nvidia.com'

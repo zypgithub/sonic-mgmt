@@ -52,6 +52,16 @@ class PacketGenerator:
         """
         self.headers["IP"] = {"src": src, "dst": dst, "ttl": ttl, "tos": tos}
 
+    def add_ipv6_header(self, src: str, dst: str, hlim: int = 64) -> None:
+        """
+        Adds an IPv6 header to the packet configuration.
+        Args:
+            src: The source IP address as a string.
+            dst: The destination IP address as a string.
+            hlim: The hop limit value for the IPv6 packet. Defaults to 64.
+        """
+        self.headers["IPv6"] = {"src": src, "dst": dst, "hlim": hlim}
+
     def add_ether_header(self, src: str, dst: str) -> None:
         """
         Adds an Ether header to the packet configuration.

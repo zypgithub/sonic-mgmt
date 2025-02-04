@@ -9,7 +9,6 @@ import pytest
 import logging
 import allure
 import copy
-import os
 from ngts.helpers.performance.performance_setup_helpers import (save_base_configuration,
                                                                 restore_basic_configuration,
                                                                 apply_test_configuration)
@@ -19,13 +18,13 @@ logger = logging.getLogger()
 TESTS_SCENARIO = "spcx_ra"
 
 
-@pytest.fixture(scope='session', autouse=True)
-def conf_args():
+@pytest.fixture(scope='class', autouse=True)
+def conf_args(is_ipv6):
     conf_args = {"run_fw_latency_optimization": "False",
                  "auto_buffer_mode": "True",
                  "congestion_thresh_lo": 400,
                  "two_sided_ar": True,
-                 "is_ipv6": False,
+                 "is_ipv6": is_ipv6,
                  "split_right": 1,
                  "split_left": 1,
                  "leaf": "right_tg",
@@ -37,7 +36,7 @@ def conf_args():
     return conf_args
 
 
-@pytest.fixture(scope='session', autouse=True)
+@pytest.fixture(scope='class', autouse=True)
 def basic_setup_configuration(players, conf_args):
     try:
         with allure.step('Save Players initial Configuration'):

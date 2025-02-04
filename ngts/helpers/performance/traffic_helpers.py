@@ -64,8 +64,12 @@ def create_json_traffic_stream(player_alias, traffic_parameters, stream_name):
                              num_packets=traffic_parameters["num_packets"])
     packet.add_ether_header(src=traffic_parameters["MAC"]["src"],
                             dst=traffic_parameters["MAC"]["dst"])
-    packet.add_ip_header(src=traffic_parameters["IP"]["src"],
-                         dst=traffic_parameters["IP"]["dst"])
+    if traffic_parameters['is_ipv6']:
+        packet.add_ipv6_header(src=traffic_parameters["IP"]["src"],
+                               dst=traffic_parameters["IP"]["dst"])
+    else:
+        packet.add_ip_header(src=traffic_parameters["IP"]["src"],
+                             dst=traffic_parameters["IP"]["dst"])
     packet.add_udp_header(source_port=traffic_parameters["UDP"]["src"],
                           dest_port=traffic_parameters["UDP"]["dst"])
     packet.add_bth_header(ar=traffic_parameters["AR"])

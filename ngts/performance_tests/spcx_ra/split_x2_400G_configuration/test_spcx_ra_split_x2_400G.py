@@ -3,16 +3,16 @@ import allure
 import logging
 import pytest
 import random
-from ngts.helpers.general_helper import get_pytest_test_name
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.helpers.performance.traffic_helpers import validate_bw_per_ports
 from ngts.helpers.performance.performance_setup_helpers import (run_traffic, run_validation, get_topology_obj,
                                                                 validate_traffic_results,
                                                                 set_ports_admin_state,
-                                                                skip_test_on_unsupported_os, get_obj_method)
+                                                                skip_test_on_unsupported_os, get_obj_method,
+                                                                set_allure_title)
 from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts
 from infra.tools.exceptions.test_issue import TestIssue
-from ngts.constants.constants import CliType
+from ngts.constants.constants import CliType, InfraConst
 from ngts.performance_tests.spcx_ra.conftest import get_spcx_ra_spine_traffic
 
 logger = logging.getLogger()
@@ -32,13 +32,15 @@ class TestSPCXRA_x2Split_400G:
         self.scenario = "spcx_ra"
         self.power_thresholds_by_chip_type = power_thresholds_by_chip_type
         self.traffic_jsons = get_spcx_ra_spine_traffic(players, conf_args)
+        self.ip = InfraConst.IPV6 if conf_args["is_ipv6"] else InfraConst.IPV4
 
     @pytest.mark.parametrize("packet_size", PACKET_SIZE_LIST)
     @allure.title('test_ar_perf_max_bandwidth')
     @allure.description('Calculate the port utilization on the DUT with AR enabled and default AR profile.')
     def test_ar_perf_max_bandwidth(self, request, packet_size):
 
-        test_name = get_pytest_test_name(request)
+        with allure.step(f"Set test correct allure title with {self.ip} parameter"):
+            test_name = set_allure_title(request, self.ip)
 
         with allure.step(f"Run {packet_size}B packet Traffic on all the ports"):
             run_traffic(self.players, self.scenario, self.traffic_jsons)
@@ -55,7 +57,8 @@ class TestSPCXRA_x2Split_400G:
     @allure.description('Calculate the port utilization on the DUT with AR enabled and IBM enabled')
     def test_ar_perf_max_bandwidth_ibm(self, request, packet_size, ibm_fixture):
 
-        test_name = get_pytest_test_name(request)
+        with allure.step(f"Set test correct allure title with {self.ip} parameter"):
+            test_name = set_allure_title(request, self.ip)
 
         with allure.step(f"Run {packet_size}B packet Traffic on all the ports"):
             run_traffic(self.players, self.scenario, self.traffic_jsons)
@@ -77,7 +80,8 @@ class TestSPCXRA_x2Split_400G:
         if is_redmine_issue_active([4267499])[0] and flap_scenario == "toggle_multiple_ports":
             pytest.xfail(f"test_ar_perf_link_flap[toggle_multiple_ports] expected to fail while RM 4267499 is active")
 
-        test_name = get_pytest_test_name(request)
+        with allure.step(f"Set test correct allure title with {self.ip} parameter"):
+            test_name = set_allure_title(request, self.ip)
 
         with allure.step("Run {packet_size}B packet Traffic on all the ports"):
             run_traffic(self.players, self.scenario, self.traffic_jsons)
@@ -98,7 +102,9 @@ class TestSPCXRA_x2Split_400G:
                         ' the initial state after cold reboot/reload.')
     def test_ar_perf_reload_reboot(self, request, packet_size=4096):
         skip_test_on_unsupported_os(cli_obj=self.cli_object, unsupported_os=CliType.DVS)
-        test_name = get_pytest_test_name(request)
+
+        with allure.step(f"Set test correct allure title with {self.ip} parameter"):
+            test_name = set_allure_title(request, self.ip)
 
         with allure.step("Run 4000B packet Traffic on all the ports"):
             run_traffic(self.players, self.scenario, self.traffic_jsons)

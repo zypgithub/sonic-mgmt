@@ -15,45 +15,20 @@
     </Case>
   </global>
   <case>
-    <ignore>
-    <!-- ignore if target_cli_type is NVUE  -->
-      <condition>
-        <key> target_cli_type </key>
-        <op> == </op>
-        <value> NVUE </value>
-      </condition>
-    </ignore>
-    <name> test_spcx_ra_split_x1_800G </name>
+    <name> spcx ra tests with ipv4 </name>
     <info> </info>
     <cmd>
       <params>
-          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/performance_tests/spcx_ra/split_x1_800G_configuration/test_spcx_ra_split_x1_800G.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --clean-alluredir --alluredir=/tmp/allure-results --target_cli_type=[[conf:extra_info.target_cli_type]] --showlocals --disable_loganalyzer\'"</static_args>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/performance_tests/spcx_ra/ --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --clean-alluredir --alluredir=/tmp/allure-results --target_cli_type=[[conf:extra_info.target_cli_type]] --showlocals --disable_loganalyzer\'"</static_args>
       </params>
     </cmd>
   </case>
   <case>
-    <name> test_spcx_ra_split_x2_400G </name>
+    <name> spcx ra tests with ipv6 </name>
     <info> </info>
     <cmd>
       <params>
-          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/performance_tests/spcx_ra/split_x2_400G_configuration/test_spcx_ra_split_x2_400G.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --clean-alluredir --alluredir=/tmp/allure-results --target_cli_type=[[conf:extra_info.target_cli_type]] --showlocals --disable_loganalyzer\'"</static_args>
-      </params>
-    </cmd>
-  </case>
-  <case>
-    <ignore>
-      <!-- ignore if target_cli_type is NVUE  -->
-        <condition>
-          <key> target_cli_type </key>
-          <op> == </op>
-          <value> NVUE </value>
-        </condition>
-    </ignore>
-    <name> test_spcx_ra_split_x2_400G_fw_latency_optimization </name>
-    <info> </info>
-    <cmd>
-      <params>
-          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/performance_tests/spcx_ra/split_x2_400G_fw_latency_optimization_configuration/test_spcx_ra_split_x2_400G_fw_latency_optimization.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --clean-alluredir --alluredir=/tmp/allure-results --target_cli_type=[[conf:extra_info.target_cli_type]] --showlocals --disable_loganalyzer\'"</static_args>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/performance_tests/spcx_ra/ --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --clean-alluredir --alluredir=/tmp/allure-results --target_cli_type=[[conf:extra_info.target_cli_type]] --is_ipv6 --showlocals --disable_loganalyzer\'"</static_args>
       </params>
     </cmd>
   </case>
