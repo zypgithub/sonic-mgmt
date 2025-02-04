@@ -1,8 +1,9 @@
 """ Class to describe info about certificate in test environment """
+from typing import List
 
 
 class CertInfo:
-    def __init__(self, name, info, private, public, p12_bundle, p12_password, dn, ip, cacert):
+    def __init__(self, name, info='', private='', public='', p12_bundle='', p12_password='', dn='', ip='', cacert='', subj_cn='', san_uris: List[str] = []):
         self.name: str = name
         self.info: str = info
         self.private: str = private
@@ -12,6 +13,13 @@ class CertInfo:
         self.dn: str = dn
         self.ip: str = ip
         self.cacert: str = cacert
+        self.subject_cn: str = subj_cn or dn
+        self.san_uris: List[str] = san_uris
+
+    def update(self, **kwargs):
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
 
     def copy(self, new_name: str = '') -> 'CertInfo':
         return CertInfo(new_name or self.name, self.info, self.private, self.public, self.p12_bundle, self.p12_password,
