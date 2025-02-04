@@ -9,7 +9,7 @@ from ngts.tests.nightly.cpld.test_cpld import get_info_about_current_components_
 logger = logging.getLogger()
 
 COMPONENT_SCRIPT_NAME = "get_component_versions.py"
-README_COVERED_COMPONENTS = ['SDK', 'FW', 'SAI', 'HW_MANAGEMENT', 'MFT', 'SIMX', 'KERNEL']
+README_COVERED_COMPONENTS = ['SDK', 'FW', 'SAI', 'HW_MANAGEMENT', 'MFT', 'KERNEL']
 FW_DEFAULT_VERSIONS = ['ONIE', 'SSD', 'BIOS', 'CPLD']  # Expected columns of the table if the setup is SIMX
 COMMANDS_FOR_ACTUAL = {
     "MFT": ["dpkg -l | grep -e 'mft '", "mft *([0-9.-]*)"],
@@ -17,8 +17,7 @@ COMMANDS_FOR_ACTUAL = {
     "SDK": ["docker exec -it syncd bash -c 'dpkg -l | grep sdk'", ".*1\\.mlnx\\.([0-9.]*)"],
     "SAI": ["docker exec -it syncd bash -c 'dpkg -l | grep mlnx-sai'", ".*1\\.mlnx\\.([A-Za-z0-9.]*)"],
     "FW": ["sudo mlxfwmanager --query | grep -e 'FW *[0-9.]*'", "FW * [0-9]{2}\\.([0-9.]*)"],
-    "KERNEL": ["uname -r", "([0-9][0-9.-]*)-.*"],
-    "SIMX": ["sudo lspci -vv | grep SimX", "([0-9]+\\.[0-9]+-[0-9]+)"]
+    "KERNEL": ["uname -r", "([0-9][0-9.-]*)-.*"]
 }
 
 # non-existent versions are versions that aren't supposed to appear, like BIOS compilation versions while unexpected
@@ -40,6 +39,9 @@ def parse_component_version_table(engines):
     version_dict = dict()
     for component_info in parsed_table:
         component = component_info['COMPONENT']
+        # We cannot guarantee that SimX version will be aligned
+        if component == 'SIMX':
+            continue
         compilation_version = component_info['COMPILATION']
         actual_version = component_info['ACTUAL']
         version_dict[component] = (compilation_version, actual_version)
@@ -108,11 +110,7 @@ def fetch_versions_from_dut(dut_engine, is_simx):
     """
     actual_versions_dict = dict()
     for component in COMMANDS_FOR_ACTUAL:
-        if component == "SIMX" and not is_simx:
-            # no need to fetch simx version from dut if the dut is not simx - the test won't verify this version
-            continue
-        else:
-            actual_versions_dict[component] = get_actual_version(dut_engine, component)
+        actual_versions_dict[component] = get_actual_version(dut_engine, component)
     if not is_simx:
         actual_versions_dict.update(get_info_about_current_components_version_dict(dut_engine))
     else:
