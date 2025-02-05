@@ -23,6 +23,7 @@ from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_general_utils import generate_scp_uri_using_player
 
 
+@pytest.mark.nvos_ci
 @pytest.mark.system
 @pytest.mark.certificate
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)

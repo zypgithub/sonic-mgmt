@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CASEDEF>
+  <global>
+    <Test>
+      <group> NVOS </group>
+      <name> NVOS CI - Security on Croc </name>
+      <info> </info>
+      <owner> Alon N. </owner>
+    </Test>
+    <Case>
+      <tags> commit_push_gate </tags>
+      <wrapper> [[run_time:db_tests_path]]/sonic-mgmt/sonic-tool/mars/scripts/canonical_mars_pytest_runner.py </wrapper>
+      <tout> 10800 </tout>
+      <tags>ALL</tags>
+    </Case>
+  </global>
+
+  <case>
+    <name> NVOS Security - TPM Attestation </name>
+    <info></info>
+    <cmd>
+      <params>
+          <static_args>  --setup_name [[conf:extra_info.setup_name]]
+          --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/general/security/tpm_attestation/test_tpm_attestation.py
+          --raw_options "\' --rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini
+          -k \"test_generate_quote\" -m \"nvos_ci\" --max_case_instances=1
+          --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results
+          --showlocals  [[conf:extra_info.additional_options]]  --timeout 900    \'"</static_args>
+      </params>
+    </cmd>
+  </case>
+
+</CASEDEF>
