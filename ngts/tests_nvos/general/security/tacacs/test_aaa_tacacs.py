@@ -15,6 +15,11 @@ from ngts.tests_nvos.general.security.tacacs.tacacs_test_utils import update_tac
 from ngts.tools.test_utils import allure_utils as allure
 
 
+@pytest.fixture(scope='session', autouse=True)
+def prepare_scp_test(prepare_scp):
+    return
+
+
 @pytest.mark.security
 @pytest.mark.simx_security
 @pytest.mark.nvos_chipsim_ci
@@ -317,7 +322,8 @@ def test_tacacs_accounting_lowest_server_only(test_api, engines, topology_obj, r
 @pytest.mark.security
 @pytest.mark.simx_security
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_tacacs_accounting_unreachable_lowest_server(test_api, engines, topology_obj, request, local_adminuser: UserInfo,
+def test_tacacs_accounting_unreachable_lowest_server(test_api, engines, topology_obj, request,
+                                                     local_adminuser: UserInfo,
                                                      switch_hostname: str):
     """
     @summary: Verify that when lowest server becomes unreachable, accounting logs are sent to next available server only

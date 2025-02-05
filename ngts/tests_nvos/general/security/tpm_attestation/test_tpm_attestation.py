@@ -115,6 +115,7 @@ def test_generate_quote_bad_param(test_api, engines):
         verify_only_aik_at_tpm_dir(engines)
 
 
+@pytest.mark.nvos_ci
 @pytest.mark.security
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 @pytest.mark.tpm

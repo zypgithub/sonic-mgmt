@@ -3,7 +3,7 @@
   <global>
     <Test>
       <group> NVOS </group>
-      <name> Security tests </name>
+      <name> NVOS CI - Security on Chipsim </name>
       <info> </info>
       <owner> Yana Port </owner>
     </Test>
@@ -16,31 +16,72 @@
   </global>
 
    <case>
-    <name> General aaa tests </name>
+    <name> General AAA </name>
     <info> </info>
     <cmd>
       <params>
-          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/system/aaa/test_capability_functionality.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --clean-alluredir --disable_cli_coverage -v -m nvos_chipsim_ci --disable_loganalyzer --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>
+          <static_args> --setup_name [[conf:extra_info.setup_name]]
+          --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/system/aaa/test_capability_functionality.py
+          --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini
+          --log-level=INFO --clean-alluredir --disable_cli_coverage -v -m nvos_chipsim_ci --disable_loganalyzer
+          --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>
       </params>
     </cmd>
   </case>
 
    <case>
-    <name> Tacacs tests </name>
+    <name> Tacacs </name>
     <info> </info>
     <cmd>
       <params>
-          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/general/security/tacacs/test_tacacs_ci.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --clean-alluredir --disable_cli_coverage --disable_loganalyzer --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>
+          <static_args> --setup_name [[conf:extra_info.setup_name]]
+          --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/general/security/tacacs/test_tacacs_ci.py
+          --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini
+          --log-level=INFO --clean-alluredir --disable_cli_coverage --disable_loganalyzer --alluredir=/tmp/allure-results
+          --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>
       </params>
     </cmd>
   </case>
 
   <case>
-    <name> LDAP tests </name>
+    <name> LDAP </name>
     <info> </info>
     <cmd>
       <params>
-          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/general/security/test_aaa_ldap/test_ldap_ci.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --clean-alluredir --disable_cli_coverage --disable_loganalyzer --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>
+          <static_args> --setup_name [[conf:extra_info.setup_name]]
+          --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/general/security/test_aaa_ldap/test_ldap_ci.py
+          --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini
+          --log-level=INFO --clean-alluredir --disable_cli_coverage --disable_loganalyzer --alluredir=/tmp/allure-results
+          --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>
+      </params>
+    </cmd>
+  </case>
+
+  <case>
+    <name> RADIUS </name>
+    <info> </info>
+    <cmd>
+      <params>
+          <static_args> --setup_name [[conf:extra_info.setup_name]]
+          --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/general/security/radius/test_radius_ci.py
+          --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini
+          --log-level=INFO --clean-alluredir --disable_cli_coverage --disable_loganalyzer --alluredir=/tmp/allure-results
+          --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>
+      </params>
+    </cmd>
+  </case>
+
+  <case>
+    <name> Certificates Mgmt </name>
+    <info> </info>
+    <cmd>
+      <params>
+          <static_args> --setup_name [[conf:extra_info.setup_name]]
+          --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/general/security/certificate
+          --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini
+          -m \"nvos_ci\" --max_case_instances=1
+          --release_name=[[conf:extra_info.release_name]] --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]]
+          --clean-alluredir  --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>
       </params>
     </cmd>
   </case>

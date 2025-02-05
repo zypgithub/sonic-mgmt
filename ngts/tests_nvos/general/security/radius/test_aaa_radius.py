@@ -12,6 +12,11 @@ from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo 
 from ngts.tools.test_utils import allure_utils as allure
 
 
+@pytest.fixture(scope='session', autouse=True)
+def prepare_scp_test(prepare_scp):
+    return
+
+
 @pytest.mark.security
 @pytest.mark.simx_security
 @pytest.mark.nvos_chipsim_ci
@@ -125,7 +130,8 @@ def test_radius_bad_secret(test_api, engines, topology_obj):
     generic_aaa_test_bad_configured_server(test_api, engines, topology_obj,
                                            remote_aaa_type=RemoteAaaType.RADIUS,
                                            remote_aaa_obj=System().aaa.radius,
-                                           bad_param_name=AaaConsts.SECRET, bad_configured_server=radius_server, skip_auth_mediums=skip_auth_mediums)
+                                           bad_param_name=AaaConsts.SECRET, bad_configured_server=radius_server,
+                                           skip_auth_mediums=skip_auth_mediums)
 
 
 @pytest.mark.security
@@ -146,7 +152,8 @@ def test_radius_bad_port(test_api, engines, topology_obj):
     generic_aaa_test_bad_configured_server(test_api, engines, topology_obj,
                                            remote_aaa_type=RemoteAaaType.RADIUS,
                                            remote_aaa_obj=System().aaa.radius,
-                                           bad_param_name=AaaConsts.PORT, bad_configured_server=radius_server, skip_auth_mediums=skip_auth_mediums)
+                                           bad_param_name=AaaConsts.PORT, bad_configured_server=radius_server,
+                                           skip_auth_mediums=skip_auth_mediums)
 
 
 @pytest.mark.security
@@ -181,7 +188,8 @@ def test_radius_priority(test_flow, test_api, engines, topology_obj, request):
     skip_auth_mediums = []
     server1, server2 = get_two_different_radius_servers()
     generic_aaa_test_priority(test_flow, test_api, engines, topology_obj, request, remote_aaa_type=RemoteAaaType.RADIUS,
-                              remote_aaa_obj=System().aaa.radius, server1=server1, server2=server2, skip_auth_mediums=skip_auth_mediums)
+                              remote_aaa_obj=System().aaa.radius, server1=server1, server2=server2,
+                              skip_auth_mediums=skip_auth_mediums)
 
 
 @pytest.mark.security

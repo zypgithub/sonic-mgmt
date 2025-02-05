@@ -22,6 +22,7 @@ from ngts.tools.test_utils.nvos_general_utils import generate_scp_uri_using_play
 """ CLI tests """
 
 
+@pytest.mark.nvos_ci
 @pytest.mark.system
 @pytest.mark.certificate
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
