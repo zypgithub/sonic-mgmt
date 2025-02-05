@@ -12,6 +12,10 @@ class Transceiver:
         self.downgrade_version_number = downgrade_version_number
         self.installation_time = installation_time
 
+    def update_versions(self):
+        self.upgrade_version_name = self.upgrade_version_name.replace('dev', 'pk')
+        self.downgrade_version_name = self.downgrade_version_name.replace('dev', 'pk')
+
 
 class TransceiversConsts:
     TRANSCEIVER_TYPE = 'type'
@@ -41,10 +45,10 @@ class TransceiversConsts:
             transceiver_type='Wolverine',
             last_release_path=f"{TRANSCEIVERS_FIRMWARES_PATH}70_Wolverine/{TRANSCEIVERS_RELEASE}",
             test_versions_path=f"{TRANSCEIVERS_APPROVED_FIRMWARES_PATH}Wolverine/",
-            upgrade_version_name="fw_70_220_01073_dev_signed_WOLVERINE_DK.bin",
-            downgrade_version_name="fw_70_220_01070_dev_signed_WOLVERINE_DK.bin",
-            upgrade_version_number="70.220.1073",
-            downgrade_version_number="70.220.1070",
+            upgrade_version_name="fw_70_220_01031_dev_signed_WOLVERINE_DK.bin",
+            downgrade_version_name="fw_70_230_01023_dev_signed_WOLVERINE_DK.bin",
+            upgrade_version_number="70.230.1031",
+            downgrade_version_number="70.230.1023",
             installation_time=360
         ),
         '46': Transceiver(

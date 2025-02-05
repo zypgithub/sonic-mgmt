@@ -127,6 +127,7 @@ class IbInterfaceConsts:
     IB0_DHCP_STATE_DEFAULT_VALUE = 'disabled'
     MAX_COUNTERS_AFTER_CLEAR = 700
     PLANARIZED_PORTS = "planarized-ports"
+    PRIMARY_ASIC_DEVICE = "primary-asic-device"
 
 
 class DataBaseNames:

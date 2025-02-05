@@ -72,6 +72,21 @@ class IbInterfaceTool:
             return mst_dev_name
 
     @staticmethod
+    def get_mst_cable_name(engines, transceiver_name, pci_conf):
+        match = re.search(r'(?<=sw)(\d+)', transceiver_name)
+        mst_dev_name = pci_conf
+        if match:
+            mst_dev_name += str(int(match.group(1)) - 1)
+
+        return mst_dev_name
+
+    @staticmethod
+    def is_dev_module(engine, transceiver_name):
+        engine.run_cmd("mst cable add")
+        output = (engine.run_cmd(f'sudo flint -d {transceiver_name} q | grep DEV')).strip()
+        return bool(output)
+
+    @staticmethod
     def get_local_port_hex(engine, port_name, asic_number):
         docker = f"syncd-ibv0{asic_number}"
         cmd = f"docker exec {docker} sx_api_ports_mapping_dump.py"
