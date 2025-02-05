@@ -449,7 +449,7 @@ class IbSwitch(BaseSwitch):
         self.fnm_external_port_list = ['fnm1']
         self.fnm_external_child_port = 'fnm1s1'
         self.interface_active_internal_fnm_ports = {}
-        self.child_aggregated_port = 'sw10p1s1'
+        self.child_aggregated_port = 'swA10p1s1'
         self.num_of_plane_ports = 4
         self.num_of_fnm_plane_ports = 2
         self.network_ports = ['eth0', 'ib0', 'lo']  # total 3 ports
