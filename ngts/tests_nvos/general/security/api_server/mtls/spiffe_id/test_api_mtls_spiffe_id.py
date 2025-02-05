@@ -758,7 +758,7 @@ def api_spiffe_factory_reset_keep_all_config_check():
     yield  # to prevent StopIteration on the 2nd next() call
 
 
-def gnmi_cert_upgrade_check():
+def api_spiffe_upgrade_check():
     """
     Upgrade case
 
@@ -784,7 +784,9 @@ def gnmi_cert_upgrade_check():
     try:
         with allure.step('verify after upgrade'):
             with allure.step('take new revision number for testing admin permissions'):
-                revision_num = get_tmp_revision_number_for_test_only()
+                cert = setup.cert_no_spif.copy()
+                cert.update(cacert=setup.server_cert.cacert)
+                revision_num = get_tmp_revision_number_for_test_only(client_certs=cert)
 
             check_spiffe_positive(engines, revision_num, setup)
     finally:
