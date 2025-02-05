@@ -1473,6 +1473,12 @@
     - show_techsupport/test_techsupport_dpu.py
 
 - Errors_list:
+  - '.*kernel.*NOHZ tick-stop error: local softirq work is pending, handler.*'
+  Conditions:
+  - Platform:
+    - dpu
+
+- Errors_list:
   - '.* ERR syncd#SDK: \[BULK_COUNTER.ERR\] Port-Counter-Transaction-Start: failed to access MOCS register .*'
   - '.* ERR syncd#SDK: \[BULK_COUNTER.ERR\] failed to start port counters bulk-read transaction .*'
   - '.* ERR syncd#SDK: \[SAI_OBJECT.ERR\] mlnx_sai_object.c.*- mlnx_set_async_bulk_read: Failed to start bulk read operation: No More Resources.*'
