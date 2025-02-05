@@ -1861,3 +1861,9 @@
   Conditions:
   - Platform:
     - simx
+
+- Errors_list:
+  - '.*ERR lldp#lldpmgrd\[\d+\]: Command failed ''\[''lldpcli\'', ''configure'', ''ports''.*cannot find port .*'
+  Conditions:
+  - Redmine:
+    - 3804214
