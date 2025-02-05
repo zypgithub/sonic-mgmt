@@ -107,6 +107,8 @@ class PerfConsts:
     ROCE_PORT = 4791
     UDP_SOURCE_PORT = 2001
     ADAPTIVE_ROUTING_ENABLED = 1
+    COUNTERS = ["if_out_discards", "a_mac_control_frames_transmitted", "a_mac_control_frames_received",
+                "a_pause_mac_ctrl_frames_transmitted", "a_pause_mac_ctrl_frames_received"]
 
 
 class SPCXRAConsts:

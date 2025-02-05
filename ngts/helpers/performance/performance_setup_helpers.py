@@ -10,7 +10,7 @@ from ngts.constants.performance_constants import PerfConsts
 from ngts.helpers.thread_log_filter import redirect_thread_stdout, config_root_logger
 from ngts.helpers.custom_catch_exception_thread import CatchExceptionThread, parse_threads_exceptions_at_join
 from infra.tools.exceptions.test_issue import TestIssue
-from ngts.helpers.performance.traffic_helpers import validate_bw, validate_tc
+from ngts.helpers.performance.traffic_helpers import validate_bw, validate_tc, validate_counters
 from ngts.helpers.performance.topology_helpers import get_dvs_topology_obj, get_nvue_sonic_topology_obj
 from ngts.helpers.performance.power_temp_helpers import validate_temperature, validate_power
 from ngts.cli_wrappers.dvs.dvs_cli import DvsCli
@@ -118,6 +118,7 @@ def run_validation(players, test_name, scenario, bw_threshold,
 
         for traffic_json in traffic_validation_jsons_list:
             violations_list = []
+            validate_counters(traffic_json, violations_list)
             if bw_threshold:
                 validate_bw(traffic_json, bw_threshold, violations_list)
             if tc_occ_threshold:
