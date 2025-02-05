@@ -91,6 +91,7 @@ def test_bios_auto_update_enabled(devices, engines, topology_obj, test_api, orig
 
             fetch_and_install_bios(platform=platform, path=path, name=version_name, filename=filename,
                                    topology_obj=topology_obj, test_name=test_name)
+            verify_bios_version(engines, platform, version_name)
             platform.firmware.bios.set(op_param_name=PlatformConsts.FW_AUTO_UPDATE, op_param_value=NvosConst.ENABLED,
                                        apply=True).verify_result()
             TestToolkit.GeneralApi[test_api].save_config(engine=engines.dut)

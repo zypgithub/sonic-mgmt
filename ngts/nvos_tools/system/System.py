@@ -156,7 +156,7 @@ class FactoryDefault(BaseComponent):
 
             start_time = time.time()
 
-            res_obj, duration = OperationTime.save_duration(f'reset factory {param}', param, test_name, SendCommandTool.execute_command,
+            res_obj, duration = OperationTime.save_duration(f'reset factory {param}', "", test_name, SendCommandTool.execute_command,
                                                             self.api_obj[TestToolkit.tested_api].action_reset, engine=engine, device=device, comp="factory-default", param=param, topology_obj=topology_obj,
                                                             system_is_ready_timeout=system_is_ready_timeout)
 
