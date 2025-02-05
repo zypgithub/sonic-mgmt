@@ -14,11 +14,10 @@ import logging
 
 from dotted_dict import DottedDict
 from deepdiff import DeepDiff
-from ngts.constants.constants import PytestConst, PlatformTypesConstants
+from ngts.constants.constants import PytestConst
 from ngts.helpers import json_file_helper
 from ngts.helpers.config_db_utils import save_config_db_json
 from ngts.tests.nightly.conftest import convert_speed_format_to_m_speed
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 logger = logging.getLogger()
 RAM_SYNCD_USAGE_ASAN_COEFFICIENT = 4
@@ -452,14 +451,7 @@ def config_check(engines, cli_objects, topology_obj, request, sonic_version):
                         f"before the test")
             save_config_db_json(dut_engine, dut_data["pre_running_config"])
             cli_objects.dut.general.reload_flow(topology_obj=topology_obj, reload_force=True)
-            # This list contains of known modules that lead to stale configurations, and need to be analyzed.
-            config_check_problematic_modules = ["test_app_extension_upgrade.py", "test_app_extension_install_uninstall.py",
-                                                "test_dpb_speeds.py", "test_dpb_negative.py", "test_dpb_all_ports.py",
-                                                "tests/push_build_tests/general/doroce/test_doroce.py", "test_wjh.py"]
-            if is_redmine_issue_active([4119542])[0] and module_name in config_check_problematic_modules:
-                logger.error(f"There are known stale configurations, details in RM Issue #4119542.")
-            else:
-                raise Exception(config_check_error_message)
+            raise Exception(config_check_error_message)
         else:
             logger.info("Config check passed for {}".format(module_name))
 
