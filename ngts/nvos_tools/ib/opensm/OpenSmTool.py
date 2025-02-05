@@ -51,6 +51,9 @@ class OpenSmTool:
                 output = engines.hfnm.run_cmd("ibdev2netdev")
                 if "smi2" not in output:
                     engines.hfnm.run_cmd(f"/opt/mellanox/iproute2/sbin/rdma dev add smi2 type SMI parent {port_name}")
+                opensm_path = '/opt/ufm/opensm/sbin/opensm'
+            else:
+                opensm_path = '/labhome/juliav/workspace/sm_regression/sources/SM_MASTER/usr/sbin/opensm'
             output = engines.hfnm.run_cmd("ibstat {}".format(port_name))
             guid = ''
             for line in output.splitlines():
@@ -62,9 +65,7 @@ class OpenSmTool:
                 return ResultObj(False, "Failed to find GUID to start OpenSM")
 
         with (allure.step("Start OpenSM")):
-            # todo: remove when we get opensm 5.22 or later
-            OPEN_SM_PATH = '/labhome/juliav/workspace/sm_regression/sources/SM_MASTER/usr/sbin/opensm'
-            engines.hfnm.run_cmd(f"{OPEN_SM_PATH} -F {OPEN_SM_CFG_PATH} -g {guid} -B")
+            engines.hfnm.run_cmd(f"{opensm_path} -F {OPEN_SM_CFG_PATH} -g {guid} -B")
             time.sleep(5)
 
         with allure.step("Verify OpenSM is running"):
