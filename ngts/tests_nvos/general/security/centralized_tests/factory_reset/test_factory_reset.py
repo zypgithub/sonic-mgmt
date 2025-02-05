@@ -19,6 +19,8 @@ from ngts.tests_nvos.general.security.test_api_server_security.test_api_mtls imp
     api_mtls_factory_reset_no_params_check, api_mtls_factory_reset_keep_all_config_check, \
     api_mtls_factory_reset_keep_only_files_check
 from ngts.tests_nvos.general.security.rbac.rbac_factory_reset import rbac_factory_reset_no_params_check, rbac_factory_reset_keep_roles
+from ngts.tests_nvos.general.security.test_ssh_pka.test_ssh_pka_pka_only import ssh_pka_factory_reset_no_params_check, \
+    ssh_pka_factory_reset__keep_basic_check
 from ngts.tests_nvos.general.security.tpm_attestation.helpers import tpm_attestation_factory_reset_no_params_check
 from ngts.tests_nvos.system.factory_reset.helpers import update_timezone
 from ngts.tests_nvos.system.gnmi.helpers import gnmi_cert_factory_reset_no_params_check
@@ -46,7 +48,7 @@ NO_PARAMS_CHECKERS: Dict[str, Generator[None, None, None]] = {
     GNMI_CERT: gnmi_cert_factory_reset_no_params_check(),
     NMX_CERT: cluster_app_mngr_security_factory_reset_no_params_check(),
     API_MTLS: api_mtls_factory_reset_no_params_check(),
-    # SSH_PKA: ssh_pka_factory_reset_no_params_check(), # FIXME: remove expected param
+    SSH_PKA: ssh_pka_factory_reset_no_params_check(),
     SED_PASSWORD: sed_password_factory_reset_check(),
     CERTS_MGMT: certs_mgmt_factory_reset_no_params_check(),
     RBAC: rbac_factory_reset_no_params_check(),
@@ -54,7 +56,7 @@ NO_PARAMS_CHECKERS: Dict[str, Generator[None, None, None]] = {
 
 KEEP_BASIC_CHECKERS: Dict[str, Generator[None, None, None]] = {
     API_MTLS: api_mtls_factory_reset_no_params_check(),
-    # SSH_PKA: ssh_pka_factory_reset__keep_basic_check(),   # FIXME: remove expected param
+    SSH_PKA: ssh_pka_factory_reset__keep_basic_check(),
     SED_PASSWORD: sed_password_factory_reset_check(),
     CERTS_MGMT: certs_mgmt_factory_reset_no_params_check(),
     RBAC: rbac_factory_reset_keep_roles(),
