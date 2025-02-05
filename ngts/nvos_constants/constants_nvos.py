@@ -316,6 +316,13 @@ class CertificateFiles:
     PATH_TO_CERTIFICATES = "/etc/ssl/certs/"
 
 
+class UserRole:
+    ADMIN = "admin"
+    MONITOR = "monitor"
+    # list of all roles
+    ALL_ROLES = [ADMIN, MONITOR]
+
+
 class ApiType:
     NVUE = "NVUE"
     OPENAPI = "OpenApi"

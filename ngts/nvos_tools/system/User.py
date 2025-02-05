@@ -1,16 +1,14 @@
-from typing import Dict
+import random
 
 import allure
-import logging
-import random
+
+from infra.tools.connection_tools.utils import generate_strong_password
 from ngts.nvos_constants.constants_nvos import SystemConsts
-from ngts.nvos_tools.infra.BaseComponent import BaseComponent
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
-from ngts.nvos_tools.infra.DefaultDict import DefaultDict
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
-from infra.tools.connection_tools.utils import generate_strong_password
+from ngts.nvos_tools.system.SpiffeId import SpiffeId
 from ngts.nvos_tools.system.Ssh import *
 
 logger = logging.getLogger()
@@ -85,6 +83,7 @@ class UserId(BaseComponent):
         self.username = user_id
         self.ssh = Ssh(self)
         self.role = BaseComponent(self, path='/role')
+        self.spiffe_id = SpiffeId(self)
 
     def action_disconnect(self, engine=None):
         engine = engine if engine else TestToolkit.engines.dut
