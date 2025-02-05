@@ -71,10 +71,10 @@ def test_interface_aggregated_port_split(engines, devices, test_api, players, in
         child_ports = MultiPlanarTool._get_split_child_ports(parent_port)
 
     with allure_step("Validate next two ports not exist"):
-        Fae(port_name='sw11p1').port.interface.show(should_succeed=False)
-        Fae(port_name='sw11p2').port.interface.show(should_succeed=False)
-        Fae(port_name='sw11p1s1').port.interface.show(should_succeed=False)
-        Fae(port_name='sw11p2s1').port.interface.show(should_succeed=False)
+        Fae(port_name='swA11p1').port.interface.show(should_succeed=False)
+        Fae(port_name='swA11p2').port.interface.show(should_succeed=False)
+        Fae(port_name='swA11p1s1').port.interface.show(should_succeed=False)
+        Fae(port_name='swA11p2s1').port.interface.show(should_succeed=False)
 
     with allure_step("Validate split port going to up"):
         child_port = Port(name=devices.dut.child_aggregated_port)

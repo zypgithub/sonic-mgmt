@@ -2,6 +2,7 @@ import logging
 import pytest
 from ngts.tools.test_utils import allure_utils as allure
 import random
+import time
 from retry import retry
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.system.System import System
@@ -199,6 +200,7 @@ def test_ib_split_port_default_values(engines, interfaces, start_sm, devices):
             child_ports[0].interface.wait_for_port_state(NvosConsts.LINK_STATE_UP, sleep_time=30).verify_result()
             output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
                 child_ports[0].interface.link.show()).get_returned_value()
+            time.sleep(5)  # TBD remove when bug 4290449 closed
             values_to_verify = [NvosConsts.LINK_STATE_UP, IbInterfaceConsts.SPLIT_PORT_CHILD_DEFAULT_LANES,
                                 IbInterfaceConsts.SPLIT_PORT_DEFAULT_MTU]
             ValidationTool.validate_fields_values_in_output(['state', 'lanes', 'mtu'],
@@ -211,6 +213,7 @@ def test_ib_split_port_default_values(engines, interfaces, start_sm, devices):
 
         with allure.step("Verify changed values on child port"):
             child_ports[0].interface.wait_for_port_state(NvosConsts.LINK_STATE_UP, sleep_time=30).verify_result()
+            time.sleep(5)  # TBD remove when bug time.sleep closed
             output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
                 child_ports[0].interface.link.show()).get_returned_value()
             Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
@@ -227,6 +230,7 @@ def test_ib_split_port_default_values(engines, interfaces, start_sm, devices):
     with allure.step("Unset parent port"):
         parent_port.interface.link.unset(op_param='breakout', apply=True, ask_for_confirmation=True).verify_result()
         parent_port.interface.wait_for_port_state(NvosConsts.LINK_STATE_UP, sleep_time=30).verify_result()
+        time.sleep(5)  # TBD remove when bug 4290449 closed
 
     with allure.step("Check default values after unset parent port"):
         values_to_verify = [IbInterfaceConsts.SPLIT_PORT_DEFAULT_LANES, IbInterfaceConsts.DEFAULT_MTU,

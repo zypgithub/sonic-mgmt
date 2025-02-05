@@ -55,6 +55,8 @@ class IbInterfaceConsts:
     XDR = "xdr"
     NDR = "ndr"
     SDR = "sdr"
+    LINK_AUTO_NEG_ON = 'on'
+    LINK_AUTO_NEG_OFF = 'off'
     LINK_DIAGNOSTICS = "diagnostics"
     LINK_DIAGNOSTICS_UNPLUGGED_PORT = {'1024': {'status': 'Cable is unplugged'}}
     LINK_DIAGNOSTICS_CLOSED_BY_COMMAND_PORT = {'1': {'status': 'Closed by command'}}
@@ -118,7 +120,7 @@ class IbInterfaceConsts:
     SPLIT_PORT_DEFAULT_LANES = '4X'
     SPLIT_PORT_CHILD_DEFAULT_LANES = '2X'
     SPLIT_PORT_DEFAULT_MTU = 4096
-    SPLIT_PORT_DEFAULT_VLS = 'VL0-VL3'
+    SPLIT_PORT_DEFAULT_VLS = 'VL0-VL1'
     SUPPORTED_VLS = ['VL0', 'VL0-VL1', 'VL0-VL3', 'VL0-VL7']
     DEFAULT_VLS = 'VL0-VL7'
     IB0_LINK_MTU_DEFAULT_VALUE = 2044

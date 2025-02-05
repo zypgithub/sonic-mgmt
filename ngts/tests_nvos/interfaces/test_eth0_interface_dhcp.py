@@ -169,17 +169,24 @@ def test_interface_eth0_speed_duplex_autoneg(engines, devices, topology_obj):
     with allure.step('Set autoneg to off'):
         mgmt_port.interface.link.set(op_param_name=IbInterfaceConsts.LINK_AUTO_NEGOTIATE, op_param_value='off', apply=True,
                                      ask_for_confirmation=True).verify_result()
-        time.sleep(5)
-
-    with allure.step('Run show command on mgmt port and verify default values after unset'):
-        mgmt_port.interface.link.unset(op_param=IbInterfaceConsts.LINK_AUTO_NEGOTIATE, apply=True, ask_for_confirmation=True).verify_result()
-
+        time.sleep(2)
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
             mgmt_port.interface.link.show()).get_returned_value()
 
         Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
                                                           field_name=IbInterfaceConsts.LINK_AUTO_NEGOTIATE,
-                                                          expected_value="on"
+                                                          expected_value=IbInterfaceConsts.LINK_AUTO_NEG_OFF
+                                                          ).verify_result()
+
+    with allure.step('Run show command on mgmt port and verify default values after unset'):
+        mgmt_port.interface.link.unset(op_param=IbInterfaceConsts.LINK_AUTO_NEGOTIATE, apply=True, ask_for_confirmation=True).verify_result()
+        time.sleep(2)
+        output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
+            mgmt_port.interface.link.show()).get_returned_value()
+
+        Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
+                                                          field_name=IbInterfaceConsts.LINK_AUTO_NEGOTIATE,
+                                                          expected_value=IbInterfaceConsts.LINK_AUTO_NEG_ON
                                                           ).verify_result()
 
         mgmt_port.interface.link.unset(op_param='duplex', apply=True, ask_for_confirmation=True).verify_result()
@@ -193,7 +200,7 @@ def test_interface_eth0_speed_duplex_autoneg(engines, devices, topology_obj):
                                                           ).verify_result()
 
         mgmt_port.interface.link.unset(op_param='speed', apply=True, ask_for_confirmation=True).verify_result()
-
+        time.sleep(2)
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
             mgmt_port.interface.link.show()).get_returned_value()
 
