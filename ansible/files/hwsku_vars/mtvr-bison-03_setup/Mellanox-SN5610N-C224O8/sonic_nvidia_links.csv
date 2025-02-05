@@ -229,4 +229,4 @@ mtvr-bison-03,Ethernet500,mtvr-moose-12,Ethernet500,100000,353,Access,True
 mtvr-bison-03,Ethernet501,mtvr-moose-12,Ethernet501,100000,354,Access,True
 mtvr-bison-03,Ethernet502,mtvr-moose-12,Ethernet502,100000,355,Access,True
 mtvr-bison-03,Ethernet503,mtvr-moose-12,Ethernet503,100000,356,Access,True
-mtvr-moose-12,Ethernet512,mtvr-r730-06,p4p0,25000,101-356,Trunk,True
+mtvr-moose-12,Ethernet512,mtvr-dl380-14,p4p1,25000,101-356,Trunk,True

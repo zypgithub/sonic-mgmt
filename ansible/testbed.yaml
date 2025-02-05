@@ -1541,11 +1541,11 @@
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-bison-03-t0
-  group-name: vm-t2
+  group-name: vm-t1
   topo: t0
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-mtvr-bison-03
-  ptf_ip: 10.245.44.62/20
+  ptf_ip: 10.245.46.62/20
   ptf_ipv6:
   server: server_85
   vm_base: VM4925
@@ -1555,11 +1555,11 @@
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-bison-03-t0-c256
-  group-name: vm-t2
+  group-name: vm-t1
   topo: t0-c256
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-mtvr-bison-03
-  ptf_ip: 10.245.44.62/20
+  ptf_ip: 10.245.46.62/20
   ptf_ipv6:
   server: server_85
   vm_base: VM4925
@@ -1569,11 +1569,11 @@
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-bison-03-t0-64
-  group-name: vm-t2
+  group-name: vm-t1
   topo: t0-64
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-mtvr-bison-03
-  ptf_ip: 10.245.44.62/20
+  ptf_ip: 10.245.46.62/20
   ptf_ipv6:
   server: server_85
   vm_base: VM4925
@@ -1583,11 +1583,11 @@
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-bison-03-t0-64-256
-  group-name: vm-t2
+  group-name: vm-t1
   topo: t0-64-256
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-mtvr-bison-03
-  ptf_ip: 10.245.44.62/20
+  ptf_ip: 10.245.46.62/20
   ptf_ipv6:
   server: server_85
   vm_base: VM4925
@@ -1597,11 +1597,11 @@
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-bison-03-t1
-  group-name: vm-t2
+  group-name: vm-t1
   topo: t1
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-mtvr-bison-03
-  ptf_ip: 10.245.44.62/20
+  ptf_ip: 10.245.46.62/20
   ptf_ipv6:
   server: server_85
   vm_base: VM4925
@@ -1611,11 +1611,11 @@
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-bison-03-t1-lag
-  group-name: vm-t2
+  group-name: vm-t1
   topo: t1-lag
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-mtvr-bison-03
-  ptf_ip: 10.245.44.62/20
+  ptf_ip: 10.245.46.62/20
   ptf_ipv6:
   server: server_85
   vm_base: VM4925
@@ -1625,11 +1625,11 @@
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-bison-03-t1-lag-c224o8
-  group-name: vm-t2
+  group-name: vm-t1
   topo: t1-lag-c224o8
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-mtvr-bison-03
-  ptf_ip: 10.245.44.62/20
+  ptf_ip: 10.245.46.62/20
   ptf_ipv6:
   server: server_85
   vm_base: VM4925
@@ -1639,11 +1639,11 @@
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-bison-03-ptf32
-  group-name: vm-t2
+  group-name: vm-t1
   topo: ptf32
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-mtvr-bison-03
-  ptf_ip: 10.245.44.62/20
+  ptf_ip: 10.245.46.62/20
   ptf_ipv6:
   server: server_85
   vm_base: VM4925
@@ -1653,11 +1653,11 @@
   comment: Mellanox MTVR testbed
 
 - conf-name: mtvr-bison-03-ptf-any
-  group-name: vm-t2
+  group-name: vm-t1
   topo: ptf-any
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-mtvr-bison-03
-  ptf_ip: 10.245.44.62/20
+  ptf_ip: 10.245.46.62/20
   ptf_ipv6:
   server: server_85
   vm_base: VM4925
@@ -5040,20 +5040,6 @@
 - conf-name: mtvr-moose-13-ptf-any
   group-name: vm-t1
   topo: ptf-any
-  ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-mtvr-moose-13
-  ptf_ip: 10.245.42.62/20
-  ptf_ipv6:
-  server: server_81
-  vm_base: VM4601
-  dut:
-    - mtvr-moose-13
-  inv_name: lab
-  comment: Mellanox MTR testbed
-
-- conf-name: mtvr-moose-13-t0-c256
-  group-name: vm-t1
-  topo: t0-c256
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-mtvr-moose-13
   ptf_ip: 10.245.42.62/20

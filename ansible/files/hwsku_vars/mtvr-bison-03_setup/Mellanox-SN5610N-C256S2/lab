@@ -5,7 +5,7 @@ mtvr-bison-03     ansible_host=10.245.21.116 ansible_hostv6="fe80::bae9:24ff:fea
 sonic_latest
 
 [ptf]
-ptf-mtvr-bison-03  ansible_host=10.245.44.62 ansible_ssh_usr=root ansible_ssh_pass=root
+ptf-mtvr-bison-03  ansible_host=10.245.46.62 ansible_ssh_usr=root ansible_ssh_pass=root
 
 [lab:children]
 sonic

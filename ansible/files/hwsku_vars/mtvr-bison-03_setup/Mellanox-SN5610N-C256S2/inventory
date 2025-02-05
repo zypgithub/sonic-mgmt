@@ -42,8 +42,8 @@ mtvr-bison-03-ptf-any
 
 [ptf]
 # MTVR mtvr-bison-03 PTF host
-ptf-mtvr-bison-03 ansible_host=10.245.44.62 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
-10.245.44.62 ansible_host=10.245.44.62 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+ptf-mtvr-bison-03 ansible_host=10.245.46.62 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+10.245.46.62 ansible_host=10.245.46.62 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
 
 [pdu]
 pdu-10-245-2-15 ansible_host=10.245.2.15 protocol=snmp
