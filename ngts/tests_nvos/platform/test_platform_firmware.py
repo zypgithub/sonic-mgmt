@@ -17,6 +17,7 @@ logger = logging.getLogger()
 @pytest.mark.platform
 @pytest.mark.cumulus
 @pytest.mark.nvos_ci
+@pytest.mark.nvl_ci
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_show_platform_firmware(engines, devices, test_api, output_format):
     """Tests nv show platform firmware"""
