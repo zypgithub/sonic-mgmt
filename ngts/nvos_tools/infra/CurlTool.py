@@ -93,7 +93,7 @@ class CurlTool:
 
         if data:
             data = f'-d \'{data}\''
-        curl_cmd = f"curl -k -u {username}:{password} -H 'Content-Type:application/json' -X {rest_op} {data} https://{self.server_host}/redfish/v1{path}"
+        curl_cmd = f"curl -k -w '\\n' -u {username}:{password} -H 'Content-Type:application/json' -X {rest_op} {data} https://{self.server_host}/redfish/v1{path}"
         return dut_engine.run_cmd(curl_cmd)
 
     def _verify_curl_installed(self):
