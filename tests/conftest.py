@@ -104,7 +104,8 @@ pytest_plugins = ('tests.common.plugins.ptfadapter',
                   'tests.common.plugins.loganalyzer_dynamic_errors_ignore.la_dynamic_errors_ignore',
                   'tests.common.plugins.collect_test_data_to_sql',
                   'tests.common.plugins.random_seed',
-                  'tests.common.plugins.memory_utilization')
+                  'tests.common.plugins.memory_utilization',
+                  'tests.common.fixtures.duthost_utils')
 
 
 def pytest_addoption(parser):
