@@ -21,6 +21,7 @@ from ngts.tests_nvos.system.gnmi.helpers import factory_reset_gnmi_checker
 from ngts.tests_nvos.system.factory_reset.helpers import add_verification_data, \
     verify_cleanup_done, verify_the_setup_is_functional, get_current_time
 from ngts.nvos_tools.system.System import System
+from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
 from ngts.tests_nvos.constants import MINUTE
 
@@ -100,7 +101,10 @@ def test_sdn_reset_factory(engines, devices, test_api, has_loopbox, test_name, s
 
     finally:
         current_time = get_current_time(engines)
-        execute_reset_factory(engines, system, devices.dut.reset_factory, "", current_time)
+        duration = execute_reset_factory(engines, system, devices.dut.reset_factory, "", current_time)
+
+        with allure.step("Verify operation time"):
+            OperationTime.verify_operation_time(duration, devices.dut.reset_factory).verify_result()
 
 
 def verify_current_config_equals_given_config(sdn, engines, initial_config_contents, output_format):
@@ -123,7 +127,9 @@ def verify_current_config_equals_given_config(sdn, engines, initial_config_conte
 
 def execute_reset_factory(engines, system, operation, flag, current_time):
     logging.info("Current time: " + str(current_time))
-    system.factory_default.action_reset(operation=operation, param=flag).verify_result()
+    result_obj, duration = system.factory_default.action_reset(operation=operation, param=flag)
+    result_obj.verify_result()
+    return duration
 
 
 def get_current_config_files_paths(sdn):

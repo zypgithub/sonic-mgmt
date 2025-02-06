@@ -704,12 +704,25 @@ def install_image_and_verify(orig_engine, image_name, partition_id, original_ima
 
         image_output = system.image.get_image_field_values()
         image_name = normalize_image_name(image_name)
-        with allure.step(f"Verify image was installed properly on {partition_id}"):
-            assert image_output[partition_id][ImageConsts.BUILD_ID] == image_name, f"{image_name} was expected to be installed on {partition_id} but it failed"
-        with allure.step("Verify current and next fields points to new image"):
-            num = "1" if partition_id == ImageConsts.PARTITION1_IMG else "2"
-            assert image_output[ImageConsts.NEXT_IMG] == image_output[ImageConsts.CURRENT_IMG] == num, \
-                f"Next image is not the current as expected in default settings."
+        res_obj = ValidationTool.verify_expected_output(system.image.show(), ImageConsts.BUILD_ID)
+        res_obj.ignore_result()
+        if res_obj.result:  # temp solution until 3000 GA
+            with allure.step(f"Verify image was installed properly on {partition_id}"):
+                assert image_output[partition_id][ImageConsts.BUILD_ID] == image_name, \
+                    f"{image_name} was expected to be installed on {partition_id} but it failed"
+
+            with allure.step("Verify current and next fields point to new image"):
+                num = "1" if partition_id == ImageConsts.PARTITION1_IMG else "2"
+                assert image_output[ImageConsts.NEXT_IMG] == image_output[ImageConsts.CURRENT_IMG] == num, \
+                    "Next image is not the current as expected in default settings."
+        else:
+            with allure.step(f"Verify image was installed properly on {partition_id}"):
+                assert image_output[partition_id] == image_name, \
+                    f"{image_name} was expected to be installed on {partition_id} but it failed"
+
+            with allure.step("Verify current and next fields point to new image"):
+                assert image_output[ImageConsts.CURRENT_IMG] == image_name, \
+                    "Current image is not as expected in default settings."
 
 
 def get_list_of_directories(current_installed_img, starts_with=None):
@@ -791,10 +804,9 @@ def get_image_data(system):
         original_images = system.image.get_image_field_values()
         current_partition = ImageConsts.PARTITION + original_images[ImageConsts.CURRENT_IMG]
         original_image = original_images[current_partition][ImageConsts.BUILD_ID]
-        original_image_partition = system.image.get_image_partition(original_image, original_images)
-        partition_id_for_new_image = get_next_partition_id(original_image_partition)
-        logger.info("Original image: {}, partition: {}".format(original_image, original_image_partition))
-        return original_images, original_image, original_image_partition, partition_id_for_new_image
+        partition_id_for_new_image = get_next_partition_id(current_partition)
+        logger.info("Original image: {}, partition: {}".format(original_image, current_partition))
+        return original_images, original_image, current_partition, partition_id_for_new_image
 
 
 def get_image_data_and_fetch_random_image_files(release_name, system, images_amount_to_fetch=1):

@@ -200,11 +200,9 @@ class OpenApiSystemCli(OpenApiBaseCli):
                                                      SystemConsts.REBOOT_RESPONSE_MESSAGES)
 
         if any(msg in result for msg in SystemConsts.REBOOT_RESPONSE_MESSAGES):
-            logger.info("Waiting for switch shutdown after reload command")
-            check_port_status_till_alive(False, engine.ip, engine.ssh_port)
-            engine.disconnect()
-            logger.info("Waiting for switch to be ready")
-            check_port_status_till_alive(True, engine.ip, engine.ssh_port)
+            reboot_params = RebootParams()
+            reboot_params.topology_obj = topology_obj
+            DutUtilsTool.wait_on_system_reboot(engine=engine, reboot_params=reboot_params)
 
         return result
 

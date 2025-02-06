@@ -8,6 +8,7 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.platform.Platform import Platform
+from ngts.tests_nvos.constants import MINUTE
 from ngts.nvos_tools.system.System import System
 from ngts.tools.test_utils import allure_utils as allure
 
@@ -42,6 +43,7 @@ def test_show_platform_ps_redundancy(test_api):
 
 
 @pytest.mark.platform
+@pytest.mark.timeout(6 * MINUTE, func_only=True)
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_set_platform_ps_redundancy(engines, test_api):
     """nv set platform ps-redundancy"""
@@ -75,6 +77,7 @@ def test_set_platform_ps_redundancy(engines, test_api):
 
 @pytest.mark.platform
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.timeout(5 * MINUTE, func_only=True)
 def test_platform_ps_redundancy_functionality(engines, topology_obj, test_api):
     TestToolkit.tested_api = test_api
 

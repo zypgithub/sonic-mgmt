@@ -11,6 +11,7 @@ from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
 from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
 from ngts.nvos_constants.constants_nvos import OutputFormat, ClusterAppsLogLevels
 from retry import retry
+from ngts.tests_nvos.constants import MINUTE
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.SecureBootTool import SecureBootTool
@@ -546,6 +547,7 @@ def _ztp_cleanup(engines, system):
 
 @pytest.mark.ztp
 @pytest.mark.system
+@pytest.mark.timeout(6 * MINUTE, func_only=True)
 def test_ztp_provisioning_script_negative(engines, devices):
     """
     Test flow:
