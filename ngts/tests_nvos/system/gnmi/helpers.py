@@ -5,10 +5,10 @@ import re
 import string
 import subprocess
 import time
+from typing import Tuple, List
 
 from retry import retry
 
-import ngts.tools.test_utils.allure_utils as allure
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from infra.tools.linux_tools.linux_tools import scp_file
 from ngts.constants.constants import GnmiConsts
@@ -22,24 +22,16 @@ from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tests_nvos.general.security.certificate.constants import TestCert
 from ngts.tests_nvos.general.security.certificate.helpers import import_test_certs
-from ngts.tests_nvos.general.security.helpers import add_etc_host_mapping_to_dn, remove_etc_host_mapping_to_dn
-from ngts.tests_nvos.general.security.security_test_tools.constants import AddressingType
+from ngts.tests_nvos.general.security.helpers import add_etc_host_mapping_to_dn, remove_etc_host_mapping_to_dn, \
+    setup_certs_for_tests, cleanup_certs_for_tests
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
-from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
 from ngts.tests_nvos.system.gnmi.constants import CERTIFICATE, DEFAULT_CERTIFICATE, GnmicErr
 from ngts.tests_nvos.system.gnmi.constants import DUT_GNMI_CERTS_DIR, DOCKER_CERTS_DIR, GnmiMode, GrpcMsg, \
     SERVER_REFLECTION_SUBSCRIBE_RESPONSE
+from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
-
-
-def supported_gnmi_addressing_types():
-    if is_bug_active(4273731):  # TODO: remove once closed
-        supported_addressing_types = [AddressingType.IPV4]
-    else:
-        supported_addressing_types = [AddressingType.IPV4, AddressingType.IPV6]
-    return supported_addressing_types
 
 
 def validate_memory_and_cpu_utilization():
@@ -484,7 +476,7 @@ def gnmi_cert_factory_reset_no_params_check():
     with allure.step(f'set certificate "{cert.name}" to gnmi'):
         system.gnmi_server.set(CERTIFICATE, cert.name, apply=True).verify_result()
 
-    yield   # do factory reset
+    yield  # do factory reset
 
     with allure.step('verify no GNMI certificate'):
         with allure.independent_step(f'verify default gnmi certificate'):
@@ -529,3 +521,16 @@ def get_timestamp_of_first_gnmi_response2(user: UserInfo, cert: CertInfo):
     cmd_runner.run_cmd_in_process(f'bash {script_path_absolute_path} {cert.cacert} {user.username} {user.password}')
 
     return time.time()
+
+
+def setup_gnmi_cert_tests(engines, dut_hostname, scp_player, dut_ip=None) -> Tuple[str, List[CertInfo]]:
+    return setup_certs_for_tests('gnmi', ['gnmi-cert1', 'gnmi-cert2', 'gnmi-cert3'], engines,
+                                 dut_hostname, True, scp_player, dut_ip)
+
+
+def cleanup_gnmi_cert_tests(tmp_certs_dir: str, certs: List[CertInfo]):
+    with allure.step('unset gnmi config'):
+        gnmi = System().gnmi_server
+        gnmi.unset(apply=True).verify_result()
+    with allure.step('remove certs from dut and local'):
+        cleanup_certs_for_tests(tmp_certs_dir, certs)

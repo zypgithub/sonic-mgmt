@@ -1,10 +1,13 @@
 import logging
+import random
 import re
 import shlex
+import string
 import subprocess
 from typing import List, Union
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from ngts.nvos_tools.infra.ResultObj import ResultObj
 
 
 def verify_hidden_cmd_args_in_history(dut_engine: LinuxSshEngine, num_lines: int, cmd_prefix, interesting_args, forbidden_patterns: List[str] = []):
@@ -26,6 +29,16 @@ def verify_hidden_cmd_args_in_history(dut_engine: LinuxSshEngine, num_lines: int
     ]
 
     assert not bad_commands, f'some commands history have no hidden args as expected:\n{bad_commands}'
+
+
+def generate_rand_str(str_len, possible_chars=string.ascii_letters) -> str:
+    return ''.join(random.choices(possible_chars, k=str_len))
+
+
+def verify_result_obj_failure(result_obj: ResultObj, expected_err=None):
+    result_obj.verify_result(False)
+    if expected_err:
+        assert expected_err in result_obj.info, f'err msg not as expected\nexpected: {expected_err}\nactual: {result_obj.info}'
 
 
 def run_cmd(cmd: Union[str, list], timeout=10, validate: bool = True, stdout_func=logging.info) -> str:
