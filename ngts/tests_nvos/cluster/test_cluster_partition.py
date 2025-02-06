@@ -40,7 +40,7 @@ def test_cluster_partition(engines, devices, test_api, has_loopbox, setup_name, 
 
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
-
+    interface_wa_called = False
     with allure.step("Create Cluster object"):
         cluster = Cluster()
         sdn = Sdn()
@@ -95,18 +95,23 @@ def test_cluster_partition(engines, devices, test_api, has_loopbox, setup_name, 
 
         # TODO - Once we have a way to test the reroute option, cover the gaps. (need to run nv action update sdn partition <partition_id> reroute)
         # And also, need to run with no-reroute randomization.
-
-    finally:
         with allure.step("Running sdn factory reset"):
             sdn.factory_default.action_reset(param='force')
         ClusterTools().stop_cluster(cluster)
         ClusterTools().start_cluster(cluster, setup_name)
         interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name, standalone_system)
         next(interfaces_wa)
-        output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
-                                                             output_format=output_format).get_returned_value()
-        assert initial_partition_output == output, f"Initial partition was {initial_partition_output}, but current partition is {output}"
-        next(interfaces_wa)
+        interface_wa_called = True
+        with allure.step("Checking if partition is restored to original"):
+            output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
+                                                                 output_format=output_format).get_returned_value()
+            assert initial_partition_output == output, f"Initial partition was {initial_partition_output}, but current partition is {output}"
+
+    finally:
+        with allure.step("Running sdn factory reset"):
+            sdn.factory_default.action_reset(param='force')
+        if interface_wa_called:
+            next(interfaces_wa)
         cluster.unset(apply=True)
         ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
 
@@ -122,7 +127,7 @@ def test_cluster_partition_bad_flow(engines, devices, test_api, has_loopbox, sta
 
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
-
+    interface_wa_called = False
     with allure.step("Create Cluster object"):
         cluster = Cluster()
         sdn = Sdn()
@@ -170,27 +175,27 @@ def test_cluster_partition_bad_flow(engines, devices, test_api, has_loopbox, sta
         with allure.step("Remove GPU from default partition - Twice"):
             no_reroute = random.choice(['', 'no-reroute'])
             if default_partition_type == 'location_based':
-                sdn.partition.partition_id[default_partition_type].location.location_id[location].action_restore_partition(reroute_param=no_reroute)
-                output = sdn.partition.partition_id[default_partition_type].location.location_id[location].action_restore_partition(reroute_param=no_reroute).verify_result(should_succeed=False)
+                sdn.partition.partition_id[default_partition_id].location.location_id[location].action_restore_partition(reroute_param=no_reroute)
+                output = sdn.partition.partition_id[default_partition_id].location.location_id[location].action_restore_partition(reroute_param=no_reroute).verify_result(should_succeed=False)
                 err_msg = f"failed to restore partition {default_partition_id} location {location}"
             else:
-                sdn.partition.partition_id[default_partition_type].uuid.uuid_value[uuid].action_restore_partition(reroute_param=no_reroute)
-                output = sdn.partition.partition_id[default_partition_type].uuid.uuid_value[uuid].action_restore_partition(reroute_param=no_reroute).verify_result(should_succeed=False)
+                sdn.partition.partition_id[default_partition_id].uuid.uuid_value[uuid].action_restore_partition(reroute_param=no_reroute)
+                output = sdn.partition.partition_id[default_partition_id].uuid.uuid_value[uuid].action_restore_partition(reroute_param=no_reroute).verify_result(should_succeed=False)
                 err_msg = f"failed to restore partition {default_partition_id} uuid {uuid}"
-            partitions_mapping[default_partition_id].remove((uuid, locaion))
+            partitions_mapping[default_partition_id].remove((uuid, location))
             assert err_msg in output, f"Expected message to include {err_msg}, instead\n {output}"
 
         with allure.step("ADD GPU To partition - Twice"):
             no_reroute = random.choice(['', 'no-reroute'])
             if default_partition_type == 'location_based':
-                sdn.partition.partition_id[default_partition_type].location.location_id[location].action_update_partition(reroute_param=no_reroute)
-                output = sdn.partition.partition_id[default_partition_type].location.location_id[location].action_update_partition(reroute_param=no_reroute).verify_result(should_succeed=False)
+                sdn.partition.partition_id[default_partition_id].location.location_id[location].action_update_partition(reroute_param=no_reroute)
+                output = sdn.partition.partition_id[default_partition_id].location.location_id[location].action_update_partition(reroute_param=no_reroute).verify_result(should_succeed=False)
                 err_msg = f"failed to update partition {default_partition_id} location {location}"
             else:
-                sdn.partition.partition_id[target_partition_id].uuid.uuid_value[uuid].action_update_partition(reroute_param=no_reroute)
-                output = sdn.partition.partition_id[target_partition_id].uuid.uuid_value[uuid].action_update_partition(reroute_param=no_reroute).verify_result(should_succeed=False)
+                sdn.partition.partition_id[default_partition_id].uuid.uuid_value[uuid].action_update_partition(reroute_param=no_reroute)
+                output = sdn.partition.partition_id[default_partition_id].uuid.uuid_value[uuid].action_update_partition(reroute_param=no_reroute).verify_result(should_succeed=False)
                 err_msg = f"failed to update partition {default_partition_id} uuid {uuid}"
-            partitions_mapping[default_partition_id].append((uuid, locaion))
+            partitions_mapping[default_partition_id].append((uuid, location))
             assert err_msg in output, f"Expected message to include {err_msg}, instead\n {output}"
 
         with allure.step("Run partition commands with invalid parameters and make sure apps are still running"):
@@ -224,17 +229,23 @@ def test_cluster_partition_bad_flow(engines, devices, test_api, has_loopbox, sta
                 assert err_msg in output, f"Expected message to include {err_msg}, instead\n {output}"
                 ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format, standalone_system)
 
-    finally:
         with allure.step("Running sdn factory reset"):
             sdn.factory_default.action_reset(param='force')
         ClusterTools().stop_cluster(cluster)
         ClusterTools().start_cluster(cluster, setup_name)
         interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name, standalone_system)
         next(interfaces_wa)
-        output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
-                                                             output_format=output_format).get_returned_value()
-        assert initial_partition_output == output, f"Initial partition was {initial_partition_output}, but current partition is {output}"
-        next(interfaces_wa)
+        interface_wa_called = True
+        with allure.step("Checking if partition is restored to original"):
+            output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
+                                                                 output_format=output_format).get_returned_value()
+            assert initial_partition_output == output, f"Initial partition was {initial_partition_output}, but current partition is {output}"
+
+    finally:
+        with allure.step("Running sdn factory reset"):
+            sdn.factory_default.action_reset(param='force')
+        if interface_wa_called:
+            next(interfaces_wa)
         cluster.unset(apply=True)
         ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
 
@@ -315,8 +326,10 @@ def remove_gpu_from_partition_and_add_to_new_partition(sdn, original_partition_i
             sdn.partition.partition_id[new_partition].action_create_partition_id(name=partition_name, resiliency_mode=resiliency_mode, mcast_limit=mcast_limit, uuid=uuid)
 
     with allure.step("Checking newly created partition"):
+        time.sleep(5)
         output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
                                                              output_format=output_format).get_returned_value()
+        new_partition = str(new_partition)
         assert new_partition in list(output.keys()), f'Partition {new_partition} was not created'
         output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.partition_id[new_partition].show(output_format=output_format),
                                                              output_format=output_format).get_returned_value()

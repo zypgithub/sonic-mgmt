@@ -20,6 +20,7 @@ from ngts.tests_nvos.system.factory_reset.helpers import add_verification_data, 
     verify_the_setup_is_functional, get_current_time
 from ngts.tests_nvos.system.gnmi.helpers import factory_reset_gnmi_checker
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 
 logger = logging.getLogger()
 
@@ -453,6 +454,8 @@ def reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, s
 
             current_config_set = set(line.strip() for line in current_config_content.strip().split('\n') if line.strip())
             expected_config_set = set(line.strip() for line in expected_config_content.strip().split('\n') if line.strip())
+            if file_type == 'chassis_mapping' and is_bug_active(4222718):
+                continue
             assert current_config_set == expected_config_set, f"Configuration mismatch:\nCurrent: {current_config_set}\nExpected: {expected_config_set}"
 
     return log_level

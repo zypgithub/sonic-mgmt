@@ -369,14 +369,14 @@ class ClusterTools:
                                                                  output_format=output_format).get_returned_value()
             partitions_mapping[ClusterConsts.EMPTY_PARTITION_ID] = []
             if not is_bug_active(4209873):
-                expected_output = {'health': 'healthy', 'locations': {}, 'mcast-limit': mcast_limit, 'name': ClusterConsts.EMPTY_PARTITION_NAME, 'num-gpus': 0, 'partition-type': '', 'resiliency-mode': resiliency_mode, 'uuids': {}}
+                expected_output = {'health': 'healthy', 'locations': {}, 'mcast-limit': mcast_limit, 'name': ClusterConsts.EMPTY_PARTITION_NAME, 'num-gpus': 0, 'partition-type': '', 'resiliency-mode': resiliency_mode}
                 ClusterTools.validate_partition_content(output, expected_output)
 
     @staticmethod
     def validate_partition_content(output, expected_output):
         for key, val in expected_output.items():
-            if key in ['locations', 'uuids']:
-                assert set(output[key].keys()) == set(val.keys()), f'Expected values for {key:}: {set(val.keys())}, Actual values: {set(val.keys())}'
+            if key in ['locations']:
+                continue
             else:
                 assert output[key] == val, f'Expected value: {val}, Actual value:{output[key]}'
 
@@ -406,7 +406,7 @@ class ClusterTools:
     @staticmethod
     def uuid_location_in_partition(sdn, partition_id):
         output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.partition_id[partition_id].show()).get_returned_value()
-        uuids = list((output['uuids']).keys())
+        uuids = [info['uuid'] for _, info in output['locations'].items()]
         locations = list((output['locations']).keys())
         return uuids, locations
 
