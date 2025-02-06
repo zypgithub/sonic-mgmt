@@ -1,9 +1,8 @@
-import os.path
 import random
 import select
 import string
 import time
-from typing import Dict, List, Tuple
+from typing import List
 
 import pytest
 
@@ -19,51 +18,26 @@ from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tests_nvos.general.security.certificate.helpers import import_certificates
 from ngts.tests_nvos.general.security.conftest import local_adminuser
-from ngts.tests_nvos.general.security.constants import TMP_TEST_CERTS_DIR
-from ngts.tests_nvos.general.security.helpers import remove_etc_host_mapping_to_dn, add_etc_host_mapping_to_dn, \
-    prepare_tmp_test_certs, import_certs_safely, delete_certs_safely, get_cert_with_ca_mismatch
-from ngts.tests_nvos.general.security.helpers import remove_etc_host_mapping_to_dn, add_etc_host_mapping_to_dn, \
-    get_cert_with_ca_mismatch, setup_certs_for_tests, \
-    cleanup_certs_for_tests
+from ngts.tests_nvos.general.security.helpers import get_cert_with_ca_mismatch
 from ngts.tests_nvos.general.security.security_test_tools.constants import AddressingType
-from ngts.tests_nvos.helpers.pytest_helpers import get_cur_test_param_value
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
 from ngts.tests_nvos.system.gnmi.constants import CERTIFICATE, DEFAULT_CERTIFICATE, GnmicErr, \
-    ETC_HOSTS, GnmiMode
+    GnmiMode
 from ngts.tests_nvos.system.gnmi.helpers import verify_gnmi_client, verify_gnmi_client_tools_installed, get_scp_player, \
-    supported_gnmi_addressing_types
+    setup_gnmi_cert_tests, cleanup_gnmi_cert_tests
 
 
-def setup_gnmi_cert_tests(engines, dut_hostname, scp_player, dut_ip=None) -> Tuple[str, List[CertInfo]]:
-    return setup_certs_for_tests('gnmi', ['gnmi-cert1', 'gnmi-cert2', 'gnmi-cert3'], engines, dut_hostname, True, scp_player, dut_ip)
-
-
-def cleanup_gnmi_cert_tests(tmp_certs_dir: str, certs: List[CertInfo]):
-    with allure.step('unset gnmi config'):
-        gnmi = System().gnmi_server
-        gnmi.unset(apply=True).verify_result()
-    with allure.step('remove certs from dut and local'):
-        cleanup_certs_for_tests(tmp_certs_dir, certs)
-
-
-@pytest.fixture(scope='module', autouse=True)
-def gnmi_certs(engines, dut_hostname, scp_player):
-    tmp_certs_dir, certs = setup_gnmi_cert_tests(engines, dut_hostname, scp_player)
-    yield certs
-    cleanup_gnmi_cert_tests(tmp_certs_dir, certs)
-
-
-@pytest.fixture()
-def add_etc_host_mapping_for_ipv6_cert_test(request, dut_ipv6_addr, dut_hostname):
-    should_run = get_cur_test_param_value(request, 'addressing_type') == AddressingType.IPV6
-    if should_run:
-        with allure.step(f'add ipv6 mapping of new dut hostname to {ETC_HOSTS}'):
-            remove_etc_host_mapping_to_dn(dut_hostname)
-            add_etc_host_mapping_to_dn(dut_hostname, dut_ipv6_addr)
-    yield
-    if should_run:
-        with allure.step(f'remove ipv6 mapping of new dut hostname to {ETC_HOSTS}'):
-            remove_etc_host_mapping_to_dn(dut_hostname)
+# @pytest.fixture()
+# def add_etc_host_mapping_for_ipv6_cert_test(request, dut_ipv6_addr, dut_hostname):
+#     should_run = get_cur_test_param_value(request, 'addressing_type') == AddressingType.IPV6
+#     if should_run:
+#         with allure.step(f'add ipv6 mapping of new dut hostname to {ETC_HOSTS}'):
+#             remove_etc_host_mapping_to_dn(dut_hostname)
+#             add_etc_host_mapping_to_dn(dut_hostname, dut_ipv6_addr)
+#     yield
+#     if should_run:
+#         with allure.step(f'remove ipv6 mapping of new dut hostname to {ETC_HOSTS}'):
+#             remove_etc_host_mapping_to_dn(dut_hostname)
 
 
 # @pytest.mark.system
@@ -184,9 +158,8 @@ def test_gnmi_cert_cli_when_gnmi_disabled(api, gnmi_certs):
 @pytest.mark.system
 @pytest.mark.gnmi
 @pytest.mark.parametrize('test_flow', TestFlowType.ALL_TYPES)
-@pytest.mark.parametrize('addressing_type', random.sample(supported_gnmi_addressing_types(), 1))
-def test_gnmi_cert_set_cert(test_flow, addressing_type, local_adminuser, gnmi_certs,
-                            add_etc_host_mapping_for_ipv6_cert_test):
+@pytest.mark.parametrize('addressing_type', random.sample([AddressingType.IPV4, AddressingType.IPV6], 1))
+def test_gnmi_cert_set_cert(test_flow, addressing_type, local_adminuser, gnmi_certs):
     """
     verify that set command loads the certificate into gnmi,
         so clients with the right CA crt can communicate with gnmi with/out skip-verify flag
@@ -195,19 +168,19 @@ def test_gnmi_cert_set_cert(test_flow, addressing_type, local_adminuser, gnmi_ce
     2. run client without skip-verify flag, using right CA crt - expect success
     3. run client with skip-verify flag - expect success
     """
-
-    cert: CertInfo = gnmi_certs[0] if test_flow == TestFlowType.GOOD_FLOW else get_cert_with_ca_mismatch(gnmi_certs)
+    is_good_flow = test_flow == TestFlowType.GOOD_FLOW
+    cert: CertInfo = gnmi_certs[0] if is_good_flow else get_cert_with_ca_mismatch(gnmi_certs)
     with allure.step('set gnmi certificate'):
         System().gnmi_server.set(CERTIFICATE, cert.name, apply=True).verify_result()
     with allure.step(
-            f'run client without skip-verify flag, using right CA crt - expect {"success" if test_flow == TestFlowType.GOOD_FLOW else "fail"}'):
+            f'run client without skip-verify flag, using {"" if is_good_flow else "non-"}proper CA crt - expect {"success" if is_good_flow else "fail"}'):
         verify_gnmi_client(test_flow, cert.ip, GnmiConsts.GNMI_DEFAULT_PORT, local_adminuser.username,
                            local_adminuser.password, False, GnmicErr.CERT_VERIFY_FAIL,
-                           cacert=cert.cacert, debug_mode=False)
+                           cacert=cert.cacert, debug_mode=(not is_good_flow))
     with allure.step('run client with skip-verify flag - expect success'):
         verify_gnmi_client(TestFlowType.GOOD_FLOW, cert.ip, GnmiConsts.GNMI_DEFAULT_PORT,
                            local_adminuser.username, local_adminuser.password, True,
-                           GnmicErr.CERT_VERIFY_FAIL, debug_mode=False)
+                           GnmicErr.CERT_VERIFY_FAIL, debug_mode=(not is_good_flow))
 
 
 @pytest.mark.system

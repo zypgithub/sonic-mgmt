@@ -6,6 +6,7 @@ from typing import List, Dict, Tuple
 from ngts.nvos_constants.constants_nvos import CacertType
 from ngts.nvos_tools.infra.CertificateGenerator import CertificateGenerator
 from ngts.nvos_tools.infra.CmdRunner import CmdRunner
+from ngts.nvos_tools.infra.IpTool import IpTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.system.System import System
@@ -68,7 +69,8 @@ def prepare_tmp_test_certs(cert_names: List[str], dest_dir, engines, dut_hostnam
                     )
                     certs_info[cert_name] = cert_info
                 with allure.step('generate'):
-                    CertificateGenerator.generate_cert(cert_dir, 'cert', cert_info.dn, cert_info.ip, cert_info.dn, cert_dir, 'ca',
+                    CertificateGenerator.generate_cert(cert_dir, 'cert', cert_info.dn, cert_info.ip, cert_info.dn,
+                                                       cert_dir, 'ca',
                                                        cert_info.p12_password)
         with allure.step('chmod 777'):
             CmdRunner().run_cmd(f'chmod -R 777 {dest_dir}')
@@ -179,10 +181,14 @@ def get_test_certs_dir_location(certs_dirname_prefix, dut_hostname):
     return os.path.join(TMP_TEST_CERTS_DIR, certs_dirname)
 
 
-def setup_certs_for_tests(certs_dirname_prefix: str, certs_names: List[str], engines, dut_hostname, import_to_dut=False, scp_player=None, dut_ip=None) -> Tuple[str, List[CertInfo]]:
+def setup_certs_for_tests(certs_dirname_prefix: str, certs_names: List[str], engines, dut_hostname, import_to_dut=False,
+                          scp_player=None, dut_ip=None) -> Tuple[str, List[CertInfo]]:
     with allure.step('prepare temp test certs in shared location'):
         certs_location = get_test_certs_dir_location(certs_dirname_prefix, dut_hostname)
-        certs_info: Dict[str, CertInfo] = prepare_tmp_test_certs(certs_names, certs_location, engines, dut_hostname, dut_ip)
+        if dut_ip and IpTool.is_address_ipv6(dut_ip):
+            certs_names = [cert_name if 'ipv6' in cert_name else f'{cert_name}-ipv6' for cert_name in certs_names]
+        certs_info: Dict[str, CertInfo] = prepare_tmp_test_certs(certs_names, certs_location, engines, dut_hostname,
+                                                                 dut_ip)
         certs = list(certs_info.values())
     if import_to_dut:
         with allure.step('import certs to dut'):
