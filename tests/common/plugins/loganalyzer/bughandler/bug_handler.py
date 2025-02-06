@@ -24,7 +24,7 @@ DEFAULT_MATCH_FILE_LIST = ["loganalyzer_common_match.txt"]
 DEFAULT_EXPECT_FILE_LIST = ["loganalyzer_common_expect.txt"]
 DEFAULT_IGNORE_FILE_LIST = ["loganalyzer_common_ignore.txt"]
 
-TMP_SYSLOG_FOLDER = "syslogs"
+TMP_SYSLOG_FOLDER = "/tmp/syslogs"
 TMP_TECHSUPPORT_DUMP = "/tmp/"
 
 
@@ -182,8 +182,8 @@ def extract_log_from_dut(options):
     dut = options.dut
     username = options.username if options.username else os.getenv("DUT_USERNAME")
     password = options.password if options.password else os.getenv("DUT_PASSWORD")
-
-    sonic = LinuxSshEngine(ip=dut, username=username, password=password, ssh_port=22)
+    ssh_port = options.ssh_port
+    sonic = LinuxSshEngine(ip=dut, username=username, password=password, ssh_port=ssh_port)
 
     timestamp = options.time_stamp_start
     find_syslog_cmd = f"sudo find /var/log -newermt \'{timestamp}\' | grep syslog"
@@ -217,8 +217,8 @@ def get_dump_from_dut(options):
     password = options.password if  options.password else os.getenv("DUT_PASSWORD")
     if not username or not password:
         raise Exception("The username and password are required for access the dut, you can specify via the options or set the it as an linux env: DUT_USERNAME, DUT_PASSWORD")
-
-    sonic = LinuxSshEngine(ip=dut, username=username, password=password, ssh_port=22)
+    ssh_port = options.ssh_port
+    sonic = LinuxSshEngine(ip=dut, username=username, password=password, ssh_port=ssh_port)
     if since:
         cmd = f'sudo generate_dump -s \"-{since} seconds\"'
     else:
@@ -387,6 +387,7 @@ def init_parser():
     parser.add_argument("-v", "--verbose", action="store_true", dest="verbose",   default=False,  help="show details info")
     parser.add_argument("--start-marker", dest="start_marker", default="", help="It is the marker that you want to start to analyze the results, if could not find the marker in syslog, then will analyze all the content of the syslog")
     parser.add_argument("--end-marker", dest="end_marker", default="", help="It is the marker that you want to end to analyze the results, if could not find the marker in syslog, then will analyze all the content of the syslog")
+    parser.add_argument("--ssh-port", dest="ssh_port", default=22, help="The ssh port used to connect to the DUT")
 
     arguments, unknown = parser.parse_known_args()
     if unknown:
