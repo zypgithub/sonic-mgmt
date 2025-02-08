@@ -350,6 +350,9 @@ def main():
     if args.send_takeover_notification == 'yes':
         send_takeover_notification(topo)
 
+    logger.info("Set hypervisor timezone to IST")
+    test_server.run('sudo timedatectl set-timezone Israel')
+
     logger.info("Pull docker image to ensure that it is up to date")
     retry_call(test_server.run, fargs=["docker pull {}/{}:{}".format(registry_url, docker_image_name, docker_tag)],
                tries=3, delay=10, logger=logger)
