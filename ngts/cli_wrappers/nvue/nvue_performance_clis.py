@@ -1,10 +1,11 @@
 import json
 import logging
 import os
-from requests import JSONDecodeError
+from json.decoder import JSONDecodeError
+
+from ngts.cli_wrappers.common.performance_clis_common import PerformanceCommon
 from ngts.constants.constants import BugHandlerConst
 from ngts.constants.performance_constants import PerfConsts, Cl_Consts
-from ngts.cli_wrappers.common.performance_clis_common import PerformanceCommon
 
 
 class NvuePerformanceCli(PerformanceCommon):

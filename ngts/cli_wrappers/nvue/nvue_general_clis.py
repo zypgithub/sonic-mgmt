@@ -1,5 +1,5 @@
+from json.decoder import JSONDecodeError
 
-from requests import JSONDecodeError
 from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
 from infra.tools.general_constants.constants import DefaultConnectionValues
 from infra.tools.linux_tools.linux_tools import scp_file
