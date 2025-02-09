@@ -1,5 +1,6 @@
 import logging
 import os
+import time
 
 from ngts.cli_wrappers.nvue.nvue_system_clis import NvueSystemCli
 from ngts.cli_wrappers.openapi.openapi_system_clis import OpenApiSystemCli
@@ -10,6 +11,7 @@ from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tools.test_utils import allure_utils as allure
+from infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 
 class BaseComponent:
@@ -130,16 +132,25 @@ class BaseComponent:
     def unset(self, op_param="", expected_str="", apply=False, ask_for_confirmation=False, dut_engine=None):
         if not dut_engine:
             dut_engine = TestToolkit.engines.dut
-
+        resource_path = self.get_resource_path()
         with allure.step('Execute unset {op_param} for {resource_path}'.format(op_param=op_param,
-                                                                               resource_path=self.get_resource_path())):
+                                                                               resource_path=resource_path)):
             result_obj = SendCommandTool.execute_command_expected_str(self._cli_wrapper.unset,
                                                                       expected_str, dut_engine,
-                                                                      self.get_resource_path(), op_param)
+                                                                      resource_path, op_param)
         if result_obj.result and apply:
             with allure.step("Applying unset configuration"):
                 result_obj = SendCommandTool.execute_command(self._general_cli_wrapper.apply_config, dut_engine,
                                                              ask_for_confirmation)
+
+        if is_redmine_issue_active([4289747])[0]:
+            if '/interface/eth0' in resource_path:
+                dut_engine.run_cmd('nv action renew interface eth0 ip dhcp-client')
+                time.sleep(10)
+            elif '/interface/eth1' in resource_path:
+                dut_engine.run_cmd('nv action renew interface eth1 ip dhcp-client')
+                time.sleep(10)
+
         return result_obj
 
     def action(self, action: str, suffix="", param_name="", param_value="", output_format=OutputFormat.json,
