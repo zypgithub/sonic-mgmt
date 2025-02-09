@@ -541,7 +541,7 @@ def ssh_pka_factory_reset_no_params_check():
     yield
 
 
-def ssh_pka_factory_reset__keep_basic_check():
+def ssh_pka_factory_reset_keep_basic_check():
     """
     Verify that user keys not deleted after factory reset keep basic
 

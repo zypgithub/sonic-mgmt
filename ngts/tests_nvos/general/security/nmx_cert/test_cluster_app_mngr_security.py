@@ -8,15 +8,16 @@ import pytest
 import ngts.tools.test_utils.allure_utils as allure
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import ApiType, TestFlowType, ClusterApps
-from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.nvos_tools.nmx.Manager import Manager
 from ngts.nvos_tools.system.System import System
+from ngts.tests_nvos.conftest import get_dut_hostname
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tests_nvos.general.security.certificate.constants import TestCert
 from ngts.tests_nvos.general.security.certificate.helpers import import_test_certs
-from ngts.tests_nvos.general.security.helpers import optional_cacert_types
+from ngts.tests_nvos.general.security.helpers import optional_cacert_types, setup_certs_for_tests, \
+    cleanup_certs_for_tests
 from ngts.tests_nvos.general.security.nmx_cert.conftest import clear_manager_config
 from ngts.tests_nvos.general.security.nmx_cert.constants import Defaults, EncryptionMode, ENABLED, DISABLED, STATE, \
     APP_CONSTS
@@ -527,11 +528,11 @@ def test_cluster_app_mngr_connection_after_restore_encryption(app_name, ca_type)
                 run_manager_hello_request(app_name, client_mode, cert, cert, cert, cert).verify_result(expect_success)
 
 
-def verify_no_client_connection(app_name, server_cert: CertInfo, server_ca: CertInfo):
+def verify_no_client_connection(app_name, server_cert: CertInfo, server_ca: CertInfo, skip_etc_mapping: bool = False):
     for client_mode in EncryptionMode.ALL_MODES:
         with allure.independent_step(f'verify client connection: client mode: {client_mode}. expect success: False'):
             run_manager_hello_request(app_name, client_mode, server_cert, server_ca, server_ca,
-                                      server_cert).verify_result(False)
+                                      server_cert, skip_etc_mapping=skip_etc_mapping).verify_result(False)
 
 
 @pytest.mark.nmx
@@ -670,6 +671,39 @@ def test_cluster_app_mngr_security_reboot_case(engines, ca_type):
                                               app_cert).verify_result(True)
 
 
+def setup_cluster_app_mngr_security_checker(engines):
+    scp_player = get_scp_player(engines)
+    dut_hostname = get_dut_hostname(engines)
+    cluster = Cluster()
+    use_external = random.choice([False, True])
+    encryption_mode = random.choice([EncryptionMode.TLS, EncryptionMode.MTLS])
+
+    with allure.step('prepare certs'):
+        tmp_certs_dir, nmx_certs = setup_certs_for_tests('nmx', ['nmx-cert1', 'nmx-cert2'],
+                                                         engines, dut_hostname, False, scp_player)
+        certs: Dict[str, CertInfo] = {ClusterApps.NMX_CONTROLLER: nmx_certs[0],
+                                      ClusterApps.NMX_TELEMETRY: nmx_certs[1]}
+    with allure.step('enable cluster and clear managers config'):
+        for app_name in ClusterApps.ALL_APPS:
+            clear_manager_config(app_name)
+    with allure.step(f'Import and load cert & {"external" if use_external else "global"} cacert'):
+        import_test_certs(scp_player, TestToolkit.engines.dut, list(certs.values()), use_external)
+    for app_name in ClusterApps.ALL_APPS:
+        with allure.step(f'bind ca/cert to {app_name}'):
+            cluster.apps.app_name[app_name].manager.certificate.action_update(
+                certs[app_name].name).verify_result()
+            cluster.apps.app_name[app_name].manager.ca_certificate.action_update(
+                certs[app_name].cacert_name).verify_result()
+        with allure.step(f'Update encryption mode to {app_name}'):
+            cluster.apps.app_name[app_name].manager.encryption.action_update(encryption_mode).verify_result()
+        with allure.step(f'Enable {app_name} manager'):
+            cluster.apps.app_name[app_name].manager.action_update(ENABLED).verify_result()
+    with allure.step('save config'):
+        NvueGeneralCli.save_config(engines.dut)
+
+    return tmp_certs_dir, nmx_certs, encryption_mode
+
+
 def cluster_app_mngr_security_factory_reset_no_params_check():
     """
     Verify that certificates and encryption mode cleared to default after factory reset
@@ -679,53 +713,74 @@ def cluster_app_mngr_security_factory_reset_no_params_check():
     3.	Factory reset
     4.	Verify values in show restored to defaults
     """
+    engines = TestToolkit.engines
+    devices = TestToolkit.devices
 
-    apps = ClusterApps.ALL_APPS
+    if devices.dut.has_nmx:
+        with allure.step('setup'):
+            tmp_certs_dir, nmx_certs, encryption_mode = setup_cluster_app_mngr_security_checker(engines)
+            certs: Dict[str, CertInfo] = {ClusterApps.NMX_CONTROLLER: nmx_certs[0],
+                                          ClusterApps.NMX_TELEMETRY: nmx_certs[1]}
 
-    certs: Dict[str, CertInfo] = {ClusterApps.NMX_CONTROLLER: TestCert.cert_valid_1,
-                                  ClusterApps.NMX_TELEMETRY: TestCert.cert_valid_2}
+    yield  # factory reset
 
-    cluster = Cluster()
-    dut_device: BaseDevice = TestToolkit.devices.dut
-    scp_player = get_scp_player(TestToolkit.engines)
-    encryption_mode = random.choice([EncryptionMode.TLS, EncryptionMode.MTLS])
-    use_external = random.choice([True, False])
+    try:
+        if devices.dut.has_nmx:
+            with allure.step('verify after factory reset'):
+                with allure.step('enable cluster'):
+                    enable_cluster()
+                for app_name in ClusterApps.ALL_APPS:
+                    with allure.independent_step(app_name):
+                        with allure.independent_step('Verify values in show restored to defaults'):
+                            verify_manager_show(app_name, expect_cert=Defaults.CERT, expect_cacert=Defaults.CACERT,
+                                                expect_encryption=Defaults.ENCRYPTION)
+                        with allure.independent_step('verify no manager client connection'):
 
-    if dut_device.has_nmx:
-        with allure.step('enable cluster and clear managers config'):
-            for app_name in apps:
-                clear_manager_config(app_name)
-        with allure.step(f'Import and load cert & {"external" if use_external else "global"} cacert'):
-            import_test_certs(scp_player, TestToolkit.engines.dut, list(certs.values()), use_external)
-        for app_name in apps:
-            with allure.step(f'bind ca/cert to {app_name}'):
-                cluster.apps.app_name[app_name].manager.certificate.action_update(certs[app_name].name).verify_result()
-                cluster.apps.app_name[app_name].manager.ca_certificate.action_update(
-                    certs[app_name].cacert_name).verify_result()
-            with allure.step(f'Update encryption mode to {app_name}'):
-                cluster.apps.app_name[app_name].manager.encryption.action_update(encryption_mode).verify_result()
-
-    yield  # do factory reset
-
-    if dut_device.has_nmx:
-        with allure.step('enable cluster'):
-            enable_cluster()
-        for app_name in apps:
-            with allure.step('Verify values in show restored to defaults'):
-                with allure.independent_step('verify manager show'):
-                    verify_manager_show(app_name, expect_cert=Defaults.CERT, expect_cacert=Defaults.CACERT,
-                                        expect_encryption=Defaults.ENCRYPTION)
-                with allure.independent_step('verify cert show'):
-                    verify_cert_show(app_name, expect_cert_id=Defaults.CERT)
-                with allure.independent_step('verify cacert show'):
-                    verify_cacert_show(app_name, expect_cert_id=Defaults.CACERT)
-                with allure.independent_step('verify encryption show'):
-                    verify_encryption_show(app_name, expect_mode=Defaults.ENCRYPTION)
+                            verify_no_client_connection(app_name, certs[app_name], certs[app_name], True)
+    finally:
+        cleanup_certs_for_tests(tmp_certs_dir, nmx_certs)
 
     yield  # to prevent StopIteration on the 2nd next() call
 
 
 cluster_app_mngr_security_factory_reset_no_params_checker = cluster_app_mngr_security_factory_reset_no_params_check()  # generator
+
+
+def cluster_app_mngr_security_factory_reset_keep_all_config_check():
+    """
+    Verify that certificates and encryption mode cleared to default after factory reset
+
+    1.	Import and load cert & cacert
+    2.	Update encryption mode
+    3.	Factory reset
+    4.	verify everything is kept
+    """
+    engines = TestToolkit.engines
+    devices = TestToolkit.devices
+
+    if devices.dut.has_nmx:
+        with allure.step('setup'):
+            tmp_certs_dir, nmx_certs, encryption_mode = setup_cluster_app_mngr_security_checker(engines)
+            certs: Dict[str, CertInfo] = {ClusterApps.NMX_CONTROLLER: nmx_certs[0],
+                                          ClusterApps.NMX_TELEMETRY: nmx_certs[1]}
+
+    yield  # factory reset
+
+    try:
+        if devices.dut.has_nmx:
+            with allure.step('verify after factory reset'):
+                for app_name in ClusterApps.ALL_APPS:
+                    with allure.independent_step(app_name):
+                        cert = certs[app_name]
+                        with allure.independent_step('Verify values in show kept'):
+                            verify_manager_show(app_name, expect_cert=cert.name, expect_cacert=cert.cacert_name,
+                                                expect_encryption=encryption_mode)
+                        with allure.independent_step(f'verify client connection: client mode: {encryption_mode}. expect success: True'):
+                            run_manager_hello_request(app_name, encryption_mode, cert, cert, cert, cert, skip_etc_mapping=True).verify_result()
+    finally:
+        cleanup_certs_for_tests(tmp_certs_dir, nmx_certs)
+
+    yield  # to prevent StopIteration on the 2nd next() call
 
 
 @pytest.mark.nmx

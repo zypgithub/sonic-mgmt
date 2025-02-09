@@ -18,7 +18,7 @@ from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo 
 from ngts.tests_nvos.general.security.test_api_server_security.constants import ApiConsts, TEST_CERTS, CERTIFICATE
 from ngts.tests_nvos.general.security.test_api_server_security.constants import CA_CERTIFICATE
 from ngts.tests_nvos.general.security.test_api_server_security.helpers import verify_api_connection, verify_mtls_config, \
-    verify_api_ca_configuration, setup_steps, cleanup_steps
+    verify_api_ca_configuration, cleanup_mtls_test, setup_mtls_test, setup_mtls_checker
 
 
 @pytest.mark.mtls
@@ -250,31 +250,24 @@ def api_mtls_factory_reset_no_params_check():
     4. Verify no mtls configuration in show
     5. Verify no mtls connection
     """
-    setup_steps()
+    engines = TestToolkit.engines
 
-    dut: LinuxSshEngine = TestToolkit.engines.dut
-    system = System()
-    server_cert: CertInfo = random.choice(TEST_CERTS)
-    server_ca: CertInfo = RandomizationTool.select_random_value(TEST_CERTS, [server_cert]).get_returned_value()
-
-    with allure.step(f'set some cert: {server_cert.name}'):
-        system.api.set(CERTIFICATE, server_cert.name).verify_result()
-    with allure.step(f'set ca: {server_ca.cacert_name}'):
-        system.api.mtls.set(CA_CERTIFICATE, server_ca.cacert_name, apply=True).verify_result()
-    with allure.step('save config'):
-        NvueGeneralCli.save_config(dut)
+    with allure.step('setup'):
+        tmp_certs_dir, server_cert, server_ca = setup_mtls_checker(engines)
 
     yield  # factory reset
 
     try:
-        with allure.step('verify no mtls after this factory reset'):
-            with allure.independent_step('verify mtls is not configured in show'):
-                verify_mtls_config('')
-            with allure.independent_step('verify no mtls only connection'):
-                verify_api_connection(TestFlowType.ALL_TYPES, dut, UserInfo(dut.username, dut.password, 'admin'), False,
-                                      server_cert, server_ca)
+        with allure.step('verify after factory reset'):
+            with allure.step('verify no mtls after this factory reset'):
+                with allure.independent_step('verify mtls is not configured in show'):
+                    verify_mtls_config('')
+                with allure.independent_step('verify no mtls only connection'):
+                    verify_api_connection(TestFlowType.ALL_TYPES, engines.dut,
+                                          UserInfo(engines.dut.username, engines.dut.password, 'admin'),
+                                          False, server_cert, server_ca)
     finally:
-        cleanup_steps()
+        cleanup_mtls_test(tmp_certs_dir, [server_cert], [server_ca])
 
     yield  # to prevent StopIteration on the 2nd next() call
 
@@ -293,7 +286,7 @@ def api_mtls_factory_reset_keep_only_files_check():
     5. Verify no mtls connection
     6. Verify in show ca-certificates – exist but not installed to api
     """
-    setup_steps()
+    setup_mtls_test()
 
     dut: LinuxSshEngine = TestToolkit.engines.dut
     system = System()
@@ -317,7 +310,7 @@ def api_mtls_factory_reset_keep_only_files_check():
                 verify_api_connection(TestFlowType.ALL_TYPES, dut, UserInfo(dut.username, dut.password, 'admin'), False,
                                       server_cert, server_ca)
     finally:
-        cleanup_steps()
+        cleanup_mtls_test()
 
     yield  # to prevent StopIteration on the 2nd next() call
 
@@ -335,19 +328,10 @@ def api_mtls_factory_reset_keep_all_config_check():
     4. Verify mtls config in show
     5. Verify mtls connection only
     """
-    setup_steps()
+    engines = TestToolkit.engines
 
-    dut: LinuxSshEngine = TestToolkit.engines.dut
-    system = System()
-    server_cert: CertInfo = random.choice(TEST_CERTS)
-    server_ca: CertInfo = RandomizationTool.select_random_value(TEST_CERTS, [server_cert]).get_returned_value()
-
-    with allure.step(f'set some cert: {server_cert.name}'):
-        system.api.set(CERTIFICATE, server_cert.name).verify_result()
-    with allure.step(f'set ca: {server_ca.cacert_name}'):
-        system.api.mtls.set(CA_CERTIFICATE, server_ca.cacert_name, apply=True).verify_result()
-    with allure.step('save config'):
-        NvueGeneralCli.save_config(dut)
+    with allure.step('setup'):
+        tmp_certs_dir, server_cert, server_ca = setup_mtls_checker(engines)
 
     yield  # factory reset
 
@@ -356,10 +340,11 @@ def api_mtls_factory_reset_keep_all_config_check():
             with allure.independent_step('verify mtls is configured in show'):
                 verify_api_ca_configuration(server_ca.cacert_name)
             with allure.independent_step('verify mtls only connection'):
-                verify_api_connection(TestFlowType.ALL_TYPES, dut, UserInfo(dut.username, dut.password, 'admin'), True,
-                                      server_cert, server_ca)
+                verify_api_connection(TestFlowType.ALL_TYPES, engines.dut,
+                                      UserInfo(engines.dut.username, engines.dut.password, 'admin'),
+                                      True, server_cert, server_ca)
     finally:
-        cleanup_steps()
+        cleanup_mtls_test(tmp_certs_dir, [server_cert], [server_ca])
 
     yield  # to prevent StopIteration on the 2nd next() call
 
@@ -374,7 +359,7 @@ def api_mtls_upgrade_check():
     4. Verify updated values in show kept
     5. Verify mtls connection
     """
-    setup_steps()
+    setup_mtls_test()
 
     dut: LinuxSshEngine = TestToolkit.engines.dut
     system = System()
@@ -398,6 +383,6 @@ def api_mtls_upgrade_check():
                 verify_api_connection(TestFlowType.ALL_TYPES, dut, UserInfo(dut.username, dut.password, 'admin'), True,
                                       server_cert, server_ca)
     finally:
-        cleanup_steps()
+        cleanup_mtls_test()
 
     yield  # to prevent StopIteration on the 2nd next() call

@@ -11,6 +11,7 @@ from retry import retry
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from infra.tools.linux_tools.linux_tools import scp_file
+from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.constants.constants import GnmiConsts
 from ngts.nvos_constants.constants_nvos import HealthConsts, NvosConst, DatabaseConst, SystemConsts, TestFlowType
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
@@ -19,11 +20,9 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.system.System import System
+from ngts.tests_nvos.conftest import get_dut_hostname
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
-from ngts.tests_nvos.general.security.certificate.constants import TestCert
-from ngts.tests_nvos.general.security.certificate.helpers import import_test_certs
-from ngts.tests_nvos.general.security.helpers import add_etc_host_mapping_to_dn, remove_etc_host_mapping_to_dn, \
-    setup_certs_for_tests, cleanup_certs_for_tests
+from ngts.tests_nvos.general.security.helpers import setup_certs_for_tests, cleanup_certs_for_tests
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
 from ngts.tests_nvos.system.gnmi.constants import CERTIFICATE, DEFAULT_CERTIFICATE, GnmicErr
@@ -462,37 +461,48 @@ def verify_gnmi_client_tools_installed():
         player.verify_grpcurl_installation()
 
 
-def gnmi_cert_factory_reset_no_params_check():
-    engines = TestToolkit.engines
-    cert = TestCert.cert_valid_1
-    system = System()
-    scp_engine = get_scp_player(engines)
-    dut_engine = engines.dut
+def setup_gnmi_cert_checker(engines):
+    scp_player = get_scp_player(engines)
+    dut_hostname = get_dut_hostname(engines)
 
     with allure.step('verify player has gnmi client tools'):
         verify_gnmi_client_tools_installed()
-    with allure.step(f'import cert {cert.name}'):
-        import_test_certs(scp_engine, TestToolkit.engines.dut, [cert])
+    with allure.step('prepare certs'):
+        tmp_certs_dir, gnmi_certs = setup_gnmi_cert_tests(engines, dut_hostname, scp_player)
+        cert = gnmi_certs[0]
     with allure.step(f'set certificate "{cert.name}" to gnmi'):
-        system.gnmi_server.set(CERTIFICATE, cert.name, apply=True).verify_result()
+        System().gnmi_server.set(CERTIFICATE, cert.name, apply=True).verify_result()
+    with allure.step('save config'):
+        NvueGeneralCli.save_config(engines.dut)
 
-    yield  # do factory reset
+    return tmp_certs_dir, gnmi_certs
 
-    with allure.step('verify no GNMI certificate'):
-        with allure.independent_step(f'verify default gnmi certificate'):
-            out = OutputParsingTool.parse_json_str_to_dictionary(system.gnmi_server.show()).get_returned_value()
-            assert out[CERTIFICATE] == DEFAULT_CERTIFICATE, (
-                f'value of field "{CERTIFICATE}" not as expected (default)\n'
-                f'expected (default): {DEFAULT_CERTIFICATE}\n'
-                f'actual: {out[CERTIFICATE]}')
-        with allure.independent_step('verify client cannot request using the certificate'):
-            time.sleep(5)
-            remove_etc_host_mapping_to_dn(cert.dn)
-            add_etc_host_mapping_to_dn(cert.dn, engines.dut.ip)
-            verify_gnmi_client(TestFlowType.BAD_FLOW, cert.dn, GnmiConsts.GNMI_DEFAULT_PORT,
-                               dut_engine.username, dut_engine.password, False, GnmicErr.CERT_VERIFY_FAIL,
-                               cacert=cert.cacert)
-            remove_etc_host_mapping_to_dn(cert.dn)
+
+def gnmi_cert_factory_reset_no_params_check():
+    engines = TestToolkit.engines
+
+    with allure.step('setup'):
+        tmp_certs_dir, gnmi_certs = setup_gnmi_cert_checker(engines)
+        cert = gnmi_certs[0]
+
+    yield  # factory reset
+
+    try:
+        with allure.step('verify after factory reset'):
+            with allure.step('verify no GNMI certificate'):
+                with allure.independent_step(f'verify default gnmi certificate'):
+                    out = OutputParsingTool.parse_json_str_to_dictionary(System().gnmi_server.show()).get_returned_value()
+                    assert out[CERTIFICATE] == DEFAULT_CERTIFICATE, (
+                        f'value of field "{CERTIFICATE}" not as expected (default)\n'
+                        f'expected (default): {DEFAULT_CERTIFICATE}\n'
+                        f'actual: {out[CERTIFICATE]}')
+                with allure.independent_step('verify client cannot request using the certificate'):
+                    time.sleep(5)
+                    verify_gnmi_client(TestFlowType.BAD_FLOW, cert.dn, GnmiConsts.GNMI_DEFAULT_PORT,
+                                       engines.dut.username, engines.dut.password, False, GnmicErr.CERT_VERIFY_FAIL,
+                                       cacert=cert.cacert)
+    finally:
+        cleanup_gnmi_cert_tests(tmp_certs_dir, gnmi_certs)
 
     yield  # to prevent StopIteration on the 2nd next() call
 

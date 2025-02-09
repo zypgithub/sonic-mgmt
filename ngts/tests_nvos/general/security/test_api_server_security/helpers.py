@@ -1,15 +1,20 @@
+from typing import List
+
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import TestFlowType
 from ngts.nvos_tools.infra.CurlTool import CurlTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.system.System import System
+from ngts.tests_nvos.conftest import get_dut_hostname
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
-from ngts.tests_nvos.general.security.certificate.helpers import import_test_certs
+from ngts.tests_nvos.general.security.certificate.helpers import import_test_certs, import_certificates
+from ngts.tests_nvos.general.security.helpers import cleanup_certs_for_tests, setup_certs_for_tests
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
 from ngts.tests_nvos.general.security.test_api_server_security.constants import API_INSTALLED, INSTALLED, TEST_CERTS, \
-    ApiConsts, CA_CERTIFICATE
+    ApiConsts, CA_CERTIFICATE, CERTIFICATE
 from ngts.tests_nvos.system.gnmi.helpers import get_scp_player
 from ngts.tools.test_utils import allure_utils as allure
 
@@ -107,12 +112,40 @@ def verify_api_connection(test_flow, dut: LinuxSshEngine, user: UserInfo, expect
                     _run_curl_and_verify(True, True)
 
 
-def setup_steps():
+def setup_mtls_test():
     CurlTool('', '', '', verify_tools_installed=True)
     scp_player = get_scp_player(TestToolkit.engines)
     import_test_certs(scp_player, TestToolkit.engines.dut, TEST_CERTS)
 
 
-def cleanup_steps():
+def cleanup_mtls_test(tmp_certs_dir=None, certs: List[CertInfo] = None, cas: List[CertInfo] = None):
     with allure.step('cleanup'):
         System().api.unset(apply=True).verify_result()
+    if tmp_certs_dir and certs:
+        with allure.step('remove certs from dut and local'):
+            cleanup_certs_for_tests(tmp_certs_dir, certs, cas)
+
+
+def setup_mtls_checker(engines):
+    scp_player = get_scp_player(engines)
+    dut_hostname = get_dut_hostname(engines)
+    system = System()
+
+    with allure.step('verify player has curl'):
+        CurlTool('', '', '', verify_tools_installed=True)
+    with allure.step('prepare certs'):
+        tmp_certs_dir, certs = setup_certs_for_tests('mtls', ['mtls-cert1', 'mtls-cert2'],
+                                                     engines, dut_hostname, False, scp_player)
+        server_cert: CertInfo = certs[0]
+        server_ca: CertInfo = certs[1]
+    with allure.step('import server ca/certs'):
+        import_certificates(scp_player, engines.dut, [server_cert])
+        import_certificates(scp_player, engines.dut, [server_ca], True)
+    with allure.step(f'set cert: {server_cert.name}'):
+        system.api.set(CERTIFICATE, server_cert.name).verify_result()
+    with allure.step(f'set ca: {server_ca.cacert_name}'):
+        system.api.mtls.set(CA_CERTIFICATE, server_ca.cacert_name, apply=True).verify_result()
+    with allure.step('save config'):
+        NvueGeneralCli.save_config(engines.dut)
+
+    return tmp_certs_dir, server_cert, server_ca
