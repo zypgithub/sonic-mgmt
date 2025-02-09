@@ -138,7 +138,7 @@
           "name": "Allocate setup SPC Community",
           "module": "com.mellanox.jenkins.generic_modules.AllocateSetups",
           "category": "Allocate setups",
-          "node": "STM@COMMUNITY_SPC",
+          "node": "MINI_MARS@COMMUNITY_SPC",
           "parameters": {
             "queue_id": "devops_sonic_ci_community_spc",
             "priority": "${PRIORITY_NUMBER}",
@@ -155,7 +155,7 @@
           "name": "Allocate setup SPC",
           "module": "com.mellanox.jenkins.generic_modules.AllocateSetups",
           "category": "Allocate setups",
-          "node": "STM@SPC",
+          "node": "MINI_MARS@SPC",
           "parameters": {
             "queue_id": "devops_sonic_ci_spc",
             "priority": "${PRIORITY_NUMBER}",
@@ -172,7 +172,7 @@
           "name": "Allocate setup SPC2",
           "module": "com.mellanox.jenkins.generic_modules.AllocateSetups",
           "category": "Allocate setups",
-          "node": "STM@SPC2",
+          "node": "MINI_MARS@SPC2",
           "parameters": {
             "queue_id": "devops_sonic_ci_spc2",
             "priority": "${PRIORITY_NUMBER}",
@@ -189,7 +189,7 @@
           "name": "Allocate setup SPC3",
           "module": "com.mellanox.jenkins.generic_modules.AllocateSetups",
           "category": "Allocate setups",
-          "node": "STM@SPC3",
+          "node": "MINI_MARS@SPC3",
           "parameters": {
             "queue_id": "devops_sonic_ci_spc3",
             "priority": "${PRIORITY_NUMBER}",
@@ -206,7 +206,7 @@
           "name": "Allocate setup SPC4",
           "module": "com.mellanox.jenkins.generic_modules.AllocateSetups",
           "category": "Allocate setups",
-          "node": "STM@SPC4",
+          "node": "MINI_MARS@SPC4",
           "parameters": {
             "queue_id": "devops_sonic_ci_spc4",
             "priority": "${PRIORITY_NUMBER}",
@@ -223,7 +223,7 @@
           "name": "Allocate setup SIMX SPC",
           "module": "com.mellanox.jenkins.generic_modules.AllocateSetups",
           "category": "Allocate setups",
-          "node": "STM@SIMX_SPC",
+          "node": "MINI_MARS@SIMX_SPC",
           "parameters": {
             "queue_id": "devops_sonic_ci_simx_spc",
             "priority": "${PRIORITY_NUMBER}",
@@ -240,7 +240,7 @@
           "name": "Allocate setup SIMX SPC2",
           "module": "com.mellanox.jenkins.generic_modules.AllocateSetups",
           "category": "Allocate setups",
-          "node": "STM@SIMX_SPC2",
+          "node": "MINI_MARS@SIMX_SPC2",
           "parameters": {
             "queue_id": "devops_sonic_ci_simx_spc2",
             "priority": "${PRIORITY_NUMBER}",
@@ -257,7 +257,7 @@
           "name": "Allocate setup SIMX SPC3",
           "module": "com.mellanox.jenkins.generic_modules.AllocateSetups",
           "category": "Allocate setups",
-          "node": "STM@SIMX_SPC3",
+          "node": "MINI_MARS@SIMX_SPC3",
           "parameters": {
             "queue_id": "devops_sonic_ci_simx_spc3",
             "priority": "${PRIORITY_NUMBER}",
@@ -274,7 +274,7 @@
           "name": "Allocate setup SIMX SPC4",
           "module": "com.mellanox.jenkins.generic_modules.AllocateSetups",
           "category": "Allocate setups",
-          "node": "STM@SIMX_SPC4",
+          "node": "MINI_MARS@SIMX_SPC4",
           "parameters": {
             "queue_id": "devops_sonic_ci_simx_spc4",
             "priority": "${PRIORITY_NUMBER}",
@@ -291,7 +291,7 @@
           "name": "Allocate setup QTM2",
           "module": "com.mellanox.jenkins.generic_modules.AllocateSetups",
           "category": "Allocate setups",
-          "node": "STM@QTM2",
+          "node": "MINI_MARS@QTM2",
           "parameters": {
             "queue_id": "devops_nvos_ci_qtm2",
             "priority": "${PRIORITY_NUMBER}",
@@ -308,7 +308,7 @@
           "name": "Allocate setup SmartSwitch",
           "module": "com.mellanox.jenkins.generic_modules.AllocateSetups",
           "category": "Allocate setups",
-          "node": "STM@SS",
+          "node": "MINI_MARS@SS",
           "parameters": {
             "queue_id": "devops_sonic_ci_ss",
             "priority": "${PRIORITY_NUMBER}",
@@ -325,7 +325,7 @@
           "name": "BAT Community SPC",
           "module": "/auto/sw_system_release/ci/sonic_devops/build/ci/bat.groovy",
           "category": "BAT",
-          "node": "STM@COMMUNITY_SPC",
+          "node": "MINI_MARS@COMMUNITY_SPC",
           "parameters": {
             "matrix_row": "ETH_COMMUNITY",
             "matrix_col": "SPC",
@@ -345,7 +345,7 @@
           "name": "BAT SPC",
           "module": "/auto/sw_system_release/ci/sonic_devops/build/ci/bat.groovy",
           "category": "BAT",
-          "node": "STM@SPC",
+          "node": "MINI_MARS@SPC",
           "parameters": {
             "matrix_row": "ETH",
             "matrix_col": "SPC",
@@ -366,7 +366,7 @@
           "name": "BAT SPC2",
           "module": "/auto/sw_system_release/ci/sonic_devops/build/ci/bat.groovy",
           "category": "BAT",
-          "node": "STM@SPC2",
+          "node": "MINI_MARS@SPC2",
           "parameters": {
             "matrix_row": "ETH",
             "matrix_col": "SPC2",
@@ -387,7 +387,7 @@
           "name": "BAT SPC3",
           "module": "/auto/sw_system_release/ci/sonic_devops/build/ci/bat.groovy",
           "category": "BAT",
-          "node": "STM@SPC3",
+          "node": "MINI_MARS@SPC3",
           "parameters": {
             "matrix_row": "ETH",
             "matrix_col": "SPC3",
@@ -408,7 +408,7 @@
           "name": "BAT SPC4",
           "module": "/auto/sw_system_release/ci/sonic_devops/build/ci/bat.groovy",
           "category": "BAT",
-          "node": "STM@SPC4",
+          "node": "MINI_MARS@SPC4",
           "parameters": {
             "matrix_row": "ETH",
             "matrix_col": "SPC4",
@@ -429,7 +429,7 @@
           "name": "BAT SIMX SPC",
           "module": "/auto/sw_system_release/ci/sonic_devops/build/ci/bat.groovy",
           "category": "BAT",
-          "node": "STM@SIMX_SPC",
+          "node": "MINI_MARS@SIMX_SPC",
           "parameters": {
             "matrix_row": "SIMX",
             "matrix_col": "SPC",
@@ -450,7 +450,7 @@
           "name": "BAT SIMX SPC2",
           "module": "/auto/sw_system_release/ci/sonic_devops/build/ci/bat.groovy",
           "category": "BAT",
-          "node": "STM@SIMX_SPC2",
+          "node": "MINI_MARS@SIMX_SPC2",
           "parameters": {
             "matrix_row": "SIMX",
             "matrix_col": "SPC2",
@@ -471,7 +471,7 @@
           "name": "BAT SIMX SPC3",
           "module": "/auto/sw_system_release/ci/sonic_devops/build/ci/bat.groovy",
           "category": "BAT",
-          "node": "STM@SIMX_SPC3",
+          "node": "MINI_MARS@SIMX_SPC3",
           "parameters": {
             "matrix_row": "SIMX",
             "matrix_col": "SPC3",
@@ -492,7 +492,7 @@
           "name": "BAT SIMX SPC4",
           "module": "/auto/sw_system_release/ci/sonic_devops/build/ci/bat.groovy",
           "category": "BAT",
-          "node": "STM@SIMX_SPC4",
+          "node": "MINI_MARS@SIMX_SPC4",
           "parameters": {
             "matrix_row": "SIMX",
             "matrix_col": "SPC4",
@@ -513,7 +513,7 @@
           "name": "BAT QTM2",
           "module": "/auto/sw_system_release/ci/nos/nvos/build/ci/bat.groovy",
           "category": "BAT",
-          "node": "STM@QTM2",
+          "node": "MINI_MARS@QTM2",
           "parameters": {
             "matrix_row": "IB",
             "matrix_col": "QTM2",
@@ -534,7 +534,7 @@
           "name": "BAT SmartSwitch",
           "module": "/auto/sw_system_release/ci/sonic_devops/build/ci/bat.groovy",
           "category": "BAT",
-          "node": "STM@SS",
+          "node": "MINI_MARS@SS",
           "parameters": {
             "matrix_row": "SMARTSWITCH",
             "matrix_col": "SPC3/BF3",
@@ -556,7 +556,7 @@
           "name": "Free community setup",
           "module": "com.mellanox.jenkins.generic_modules.FreeSetup",
           "category": "Clean",
-          "node": "STM@COMMUNITY_SPC",
+          "node": "MINI_MARS@COMMUNITY_SPC",
           "parameters": {
             "setup_name": "${CI_SONIC_COMMUNITY_SPC_SETUP}"
           },
@@ -569,7 +569,7 @@
           "name": "Free SPC setup",
           "module": "com.mellanox.jenkins.generic_modules.FreeSetup",
           "category": "Clean",
-          "node": "STM@SPC",
+          "node": "MINI_MARS@SPC",
           "parameters": {
             "setup_name": "${CI_SONIC_SPC_SETUP}"
           },
@@ -582,7 +582,7 @@
           "name": "Free SPC2 setup",
           "module": "com.mellanox.jenkins.generic_modules.FreeSetup",
           "category": "Clean",
-          "node": "STM@SPC2",
+          "node": "MINI_MARS@SPC2",
           "parameters": {
             "setup_name": "${CI_SONIC_SPC2_SETUP}"
           },
@@ -595,7 +595,7 @@
           "name": "Free SPC3 setup",
           "module": "com.mellanox.jenkins.generic_modules.FreeSetup",
           "category": "Clean",
-          "node": "STM@SPC3",
+          "node": "MINI_MARS@SPC3",
           "parameters": {
             "setup_name": "${CI_SONIC_SPC3_SETUP}"
           },
@@ -608,7 +608,7 @@
           "name": "Free SPC4 setup",
           "module": "com.mellanox.jenkins.generic_modules.FreeSetup",
           "category": "Clean",
-          "node": "STM@SPC4",
+          "node": "MINI_MARS@SPC4",
           "parameters": {
             "setup_name": "${CI_SONIC_SPC4_SETUP}"
           },
@@ -621,7 +621,7 @@
           "name": "Free SIMX SPC setup",
           "module": "com.mellanox.jenkins.generic_modules.FreeSetup",
           "category": "Clean",
-          "node": "STM@SIMX_SPC",
+          "node": "MINI_MARS@SIMX_SPC",
           "parameters": {
             "setup_name": "${CI_SONIC_SIMX_SPC_SETUP}"
           },
@@ -634,7 +634,7 @@
           "name": "Free SIMX SPC2 setup",
           "module": "com.mellanox.jenkins.generic_modules.FreeSetup",
           "category": "Clean",
-          "node": "STM@SIMX_SPC2",
+          "node": "MINI_MARS@SIMX_SPC2",
           "parameters": {
             "setup_name": "${CI_SONIC_SIMX_SPC2_SETUP}"
           },
@@ -647,7 +647,7 @@
           "name": "Free SIMX SPC3 setup",
           "module": "com.mellanox.jenkins.generic_modules.FreeSetup",
           "category": "Clean",
-          "node": "STM@SIMX_SPC3",
+          "node": "MINI_MARS@SIMX_SPC3",
           "parameters": {
             "setup_name": "${CI_SONIC_SIMX_SPC3_SETUP}"
           },
@@ -660,7 +660,7 @@
           "name": "Free SIMX SPC4 setup",
           "module": "com.mellanox.jenkins.generic_modules.FreeSetup",
           "category": "Clean",
-          "node": "STM@SIMX_SPC4",
+          "node": "MINI_MARS@SIMX_SPC4",
           "parameters": {
             "setup_name": "${CI_SONIC_SIMX_SPC4_SETUP}"
           },
@@ -673,7 +673,7 @@
           "name": "Free QTM2 setup",
           "module": "com.mellanox.jenkins.generic_modules.FreeSetup",
           "category": "Clean",
-          "node": "STM@QTM2",
+          "node": "MINI_MARS@QTM2",
           "parameters": {
             "setup_name": "${CI_NVOS_QTM2_SETUP}"
           },
@@ -686,7 +686,7 @@
           "name": "Free SmartSwitch setup",
           "module": "com.mellanox.jenkins.generic_modules.FreeSetup",
           "category": "Clean",
-          "node": "STM@SS",
+          "node": "MINI_MARS@SS",
           "parameters": {
             "setup_name": "${CI_SONIC_SS_SETUP}"
           },
