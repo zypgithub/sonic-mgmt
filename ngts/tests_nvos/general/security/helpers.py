@@ -195,9 +195,12 @@ def setup_certs_for_tests(certs_dirname_prefix: str, certs_names: List[str], eng
     return certs_location, certs
 
 
-def cleanup_certs_for_tests(tmp_certs_dir: str, certs: List[CertInfo]):
+def cleanup_certs_for_tests(tmp_certs_dir: str, certs: List[CertInfo], cas: List[CertInfo] = None):
     with allure.step('delete certs from dut'):
         delete_certs_safely(certs)
+    if cas:
+        with allure.step('delete cas from dut'):
+            delete_cas_safely(cas)
     with allure.step('remove temp test certs from shared location'):
         CmdRunner().run_cmd(f'rm -rf {tmp_certs_dir}')
 

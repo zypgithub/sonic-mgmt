@@ -154,7 +154,7 @@ def run_nmx_t_client_hello_request(client_tls_mode: str, server_cert: CertInfo, 
 
 def run_manager_hello_request(app_name: str, client_tls_mode: str, server_cert: CertInfo, server_ca: CertInfo,
                               client_cert: CertInfo, client_ca: CertInfo,
-                              num_requests: int = 1, delay_between_requests: int = 1) -> ResultObj:
+                              num_requests: int = 1, delay_between_requests: int = 1, skip_etc_mapping: bool = False) -> ResultObj:
     app_consts: ClusterAppConsts = APP_CONSTS[app_name]
 
     result = ResultObj(result=True, info=f'client successfully communicated with {app_name}', returned_value=True)
@@ -170,9 +170,9 @@ def run_manager_hello_request(app_name: str, client_tls_mode: str, server_cert: 
     try:
         with allure.step('run client hello request'):
             if app_name == ClusterApps.NMX_CONTROLLER:
-                responses = run_nmx_c_grpc_client(config, TestToolkit.engines.dut.ip, logging, False)
+                responses = run_nmx_c_grpc_client(config, TestToolkit.engines.dut.ip, logging, skip_etc_mapping)
             else:
-                responses = run_nmx_t_grpc_client(config, TestToolkit.engines.dut.ip, logging, False)
+                responses = run_nmx_t_grpc_client(config, TestToolkit.engines.dut.ip, logging, skip_etc_mapping)
         result.returned_value = responses
     except Exception as e:
         result = ResultObj(result=False, info=f'client failed:\n{e}', returned_value=None)
