@@ -6,6 +6,7 @@ from datetime import datetime
 from ngts.constants.constants import LinuxConsts
 from ngts.nvos_constants.constants_nvos import HealthConsts, NvosConst, ApiType, SystemConsts
 from ngts.nvos_tools.ib.opensm.OpenSmTool import OpenSmTool
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.system.System import System
@@ -140,22 +141,23 @@ def add_verification_data(engine, system):
         return username
 
 
-def verify_cleanup_done(engine, current_time, system, username, param=''):
+def verify_cleanup_done(engine, time_before_rf, system, username, param=''):
     logging.info("Verify cleanup done as expected")
     errors = ""
+    device = TestToolkit.devices.dut
     with allure.step("Verify NVUE reset done"):
         if param != KEEP_ONLY_FILES:
             output = engine.run_cmd("stat /etc/sonic/nvue.d/platform/immutables.yaml | grep Birth")
             if output and "No such file or directory" not in output:
                 file_date_time = create_date_time_obj(output)
-                if current_time >= file_date_time:
+                if time_before_rf >= file_date_time:
                     errors += "\n/etc/sonic/nvue.d/platform/immutables.yaml was not deleted"
 
             if param != KEEP_ALL_CONFIG:
                 output = engine.run_cmd("stat /etc/sonic/nvue.d/startup.yaml | grep Birth")
                 if output and "No such file or directory" not in output:
                     file_date_time = create_date_time_obj(output)
-                    if current_time >= file_date_time:
+                    if time_before_rf >= file_date_time:
                         errors += "\n/etc/sonic/nvue.d/startup.yaml was not deleted"
 
     with allure.step("Verify sonic.target stopped"):
@@ -164,7 +166,7 @@ def verify_cleanup_done(engine, current_time, system, username, param=''):
             if output:
                 output = output.split('=')[1].split()
                 file_date_time = create_date_time_obj("date {} {}".format(output[1], output[2]))
-                if current_time >= file_date_time:
+                if time_before_rf >= file_date_time:
                     errors += "\nsonic.target probably was not stopped"
 
     with allure.step("Verify new DB was created"):
@@ -172,7 +174,7 @@ def verify_cleanup_done(engine, current_time, system, username, param=''):
             output = engine.run_cmd("stat /etc/sonic/config_db.json | grep Birth")
             if output and "No such file or directory" not in output:
                 file_date_time = create_date_time_obj(output)
-                if current_time >= file_date_time:
+                if time_before_rf >= file_date_time:
                     errors += "\nnew /etc/sonic/config_db.json was not created"
 
     with allure.step("Verify NVOS HOOKs were deleted"):
@@ -195,15 +197,17 @@ def verify_cleanup_done(engine, current_time, system, username, param=''):
                 for stat_file in stats_files:
                     output = engine.run_cmd(f"stat /var/stats/{stat_file} | grep Birth")
                     file_date_time = create_date_time_obj(output)
-                    if current_time >= file_date_time:
+                    if time_before_rf >= file_date_time:
                         errors += "\nold stats internal file {} was not deleted".format(stat_file)
 
     with allure.step("Verify DHCP files were deleted, bug #4218163"):
-        output = engine.run_cmd("stat /var/lib/dhcp/dhclient.eth0.leases | grep Birth")
-        if output and "No such file or directory" not in output:
-            file_date_time = create_date_time_obj(output)
-            if current_time >= file_date_time:
-                errors += "\n/var/lib/dhcp/dhclient.eth0.leases was not deleted"
+        if param != KEEP_ONLY_FILES:
+            for port_number in range(len(device.mgmt_ports)):
+                output = engine.run_cmd(f"stat /var/lib/dhcp/dhclient.eth{port_number}.leases | grep Birth")
+                if output and "No such file or directory" not in output:
+                    file_date_time = create_date_time_obj(output)
+                    if time_before_rf >= file_date_time:
+                        errors += f"\n/var/lib/dhcp/dhclient.eth{port_number}.leases was not deleted"
 
     with allure.step("Verify stats external files were deleted"):
         if param != KEEP_ONLY_FILES:
@@ -249,19 +253,19 @@ def verify_cleanup_done(engine, current_time, system, username, param=''):
             output = engine.run_cmd("stat /var/log/btmp | grep Modify")
             if output and "No such file or directory" not in output:
                 file_date_time = create_date_time_obj(output)
-                if current_time >= file_date_time:
+                if time_before_rf >= file_date_time:
                     errors += "\n/var/log/btmp was not cleared: {}".format(output)
 
             output = engine.run_cmd("stat /var/log/lastlog | grep Modify")
             if output and "No such file or directory" not in output:
                 file_date_time = create_date_time_obj(output)
-                if current_time >= file_date_time:
+                if time_before_rf >= file_date_time:
                     errors += "\n/var/log/lastlog was not created: {}".format(output)
 
             output = engine.run_cmd("stat /var/log/wtmp | grep Modify")
             if output and "No such file or directory" not in output:
                 file_date_time = create_date_time_obj(output)
-                if current_time >= file_date_time:
+                if time_before_rf >= file_date_time:
                     errors += "\n/var/log/wtmp was not created: {}".format(output)
 
     with allure.step("Create new user"):

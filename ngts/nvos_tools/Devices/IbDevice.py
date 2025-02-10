@@ -832,11 +832,14 @@ class NvLinkSwitch(IbSwitch):
         super().__init__(switch_type=NvosConst.NVL_SWITCH_TYPE, asic_amount=asic_amount,
                          switch_class=NvosConst.JULIET_SWITCH)
 
+    def _init_interface_lists(self):
+        super()._init_interface_lists()
+        self.mgmt_ports = ['eth0', 'eth1']
+
     def _init_constants(self):
         super()._init_constants()
         self.ib_ports_num = 64
         self.core_count = 4
-        self.mgmt_ports = ['eth0', 'eth1']
         self.asic_type = NvosConst.QTM3
         self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
             "x86_64-mlnx_mqm9700-r0")
