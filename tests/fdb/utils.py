@@ -41,8 +41,8 @@ def get_crm_resources(duthost, resource, status):
 
 
 def get_fdb_dynamic_mac_count(duthost):
-    res = duthost.command('show mac')
-    logger.info('"show mac" output on DUT:\n{}'.format(pprint.pformat(res['stdout_lines'])))
+    res = duthost.command('fdbshow')
+    logger.info('"fdbshow" output on DUT:\n{}'.format(pprint.pformat(res['stdout_lines'])))
     total_mac_count = 0
     for output_mac in res['stdout_lines']:
         if "dynamic" in output_mac.lower() and BASE_MAC_PREFIX in output_mac.lower():
@@ -51,8 +51,8 @@ def get_fdb_dynamic_mac_count(duthost):
 
 
 def fdb_table_has_dummy_mac_for_interface(duthost, interface, dummy_mac_prefix=""):
-    res = duthost.command('show mac')
-    logger.info('"show mac" output on DUT:\n{}'.format(pprint.pformat(res['stdout_lines'])))
+    res = duthost.command('fdbshow')
+    logger.info('"fdbshow" output on DUT:\n{}'.format(pprint.pformat(res['stdout_lines'])))
     for output_mac in res['stdout_lines']:
         if (interface in output_mac and (dummy_mac_prefix in output_mac or dummy_mac_prefix == "")):
             return True
@@ -76,7 +76,7 @@ def fdb_cleanup(duthosts, rand_one_dut_hostname, fanouthosts={}):
         return
     else:
         duthost.command('sonic-clear fdb all')
-        pytest_assert(wait_until(100, 2, 0, fdb_table_has_no_dynamic_macs, duthost), "FDB Table Cleanup failed")
+        pytest_assert(wait_until(100, 5, 0, fdb_table_has_no_dynamic_macs, duthost), "FDB Table Cleanup failed")
 
 
 def simple_eth_packet(
