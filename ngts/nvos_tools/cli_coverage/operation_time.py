@@ -32,6 +32,8 @@ class OperationTime:
             duration_time_dict = OperationTime.create_duration_time_dict(operation, oper_params, duration, test_name)
             pytest.operation_list.append(duration_time_dict)
             logger.info(f"current state of pytest.operation_list: {pytest.operation_list}")
+
+        result_obj.duration = duration
         return result_obj, duration
 
     @staticmethod

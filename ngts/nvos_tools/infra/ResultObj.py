@@ -25,17 +25,19 @@ class ResultObj:
     _info = ""
     _returned_value = None
     issue_type = IssueType.Unknown
+    _duration = None
     _instances = set()
 
-    def __init__(self, result, info="", returned_value=None, issue_type=IssueType.Unknown):
-        self.update(result, info, returned_value, issue_type)
+    def __init__(self, result, info="", returned_value=None, issue_type=IssueType.Unknown, duration=None):
+        self.update(result, info, returned_value, issue_type, duration)
         self._add_instance(self)
 
-    def update(self, result, info="", returned_value=None, issue_type=IssueType.Unknown):
+    def update(self, result, info="", returned_value=None, issue_type=IssueType.Unknown, duration=None):
         self._result = result
         self._info = info
         self._returned_value = returned_value
         self.issue_type = issue_type
+        self._duration = duration
         self._update_traceback()
 
     @property
@@ -57,6 +59,19 @@ class ResultObj:
         self._update_traceback()
 
     @property
+    def duration(self):
+        return self._duration
+
+    @duration.setter
+    def duration(self, value):
+        if value is None:
+            raise ValueError("Duration cannot be None")  # Prevent setting None
+        if value < 0:
+            raise ValueError("Duration cannot be negative")  # Prevent invalid values
+        self._duration = value
+        self._update_traceback()
+
+    @property
     def returned_value(self):
         return self._returned_value
 
@@ -65,7 +80,7 @@ class ResultObj:
         self._returned_value = value
         self._update_traceback()
 
-    def verify_result(self, should_succeed=True, expected_value=''):
+    def verify_result(self, should_succeed=True, expected_value='', expected_duration=None):
         """
         Assert an error if result is False, otherwise returns returned_value
         :return: If 'result' is True, returns the 'returned_value'
@@ -87,7 +102,16 @@ class ResultObj:
                 assert expected_value in output, (
                     f"Expected {repr(expected_value)} but output is: {output}")
 
+        if should_succeed and expected_duration:
+            self.verify_duration(expected_duration)
+
         return output
+
+    def verify_duration(self, expected_duration):
+        """Raises an exception if duration is missing or exceeds the expected threshold"""
+        assert self._duration, "Duration is missing. Please set a valid duration before verifying."
+
+        assert expected_duration > self._duration, f"Operation took {self._duration} seconds - more than the threshold of {expected_duration} seconds."
 
     def get_returned_value(self, should_succeed=True):
         return self.verify_result(should_succeed)

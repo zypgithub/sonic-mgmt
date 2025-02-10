@@ -360,9 +360,9 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
 
 def execute_reset_factory(engines, system, operation, flag, current_time):
     logging.info("Current time: " + str(current_time))
-    result_obj, duration = system.factory_default.action_reset(operation=operation, param=flag)
+    result_obj = system.factory_default.action_reset(operation=operation, param=flag)
     result_obj.verify_result()
-    return duration
+    return result_obj.duration
 
 
 def verify_cluster_state_resetted(cluster):

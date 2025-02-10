@@ -161,8 +161,9 @@ class FactoryDefault(BaseComponent):
             TestToolkit.add_loganalyzer_marker(engine, marker)
 
             logger.info("Reset factory till system is ready takes: {} seconds".format(duration))
+            res_obj.duration = duration
 
-            return res_obj, duration
+            return res_obj
 
 
 class DateTime(BaseComponent):

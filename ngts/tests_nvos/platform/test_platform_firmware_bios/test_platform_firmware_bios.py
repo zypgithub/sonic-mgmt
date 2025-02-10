@@ -92,10 +92,10 @@ def test_bios_auto_update_enabled(devices, engines, topology_obj, test_api, orig
             fetch_and_install_bios(platform=platform, path=path, name=version_name, filename=filename,
                                    topology_obj=topology_obj, test_name=test_name)
             verify_bios_version(engines, platform, version_name)
-            platform.firmware.bios.set(op_param_name=PlatformConsts.FW_AUTO_UPDATE, op_param_value=NvosConst.ENABLED,
-                                       apply=True).verify_result()
-            TestToolkit.GeneralApi[test_api].save_config(engine=engines.dut)
     finally:
+        platform.firmware.bios.set(op_param_name=PlatformConsts.FW_AUTO_UPDATE, op_param_value=NvosConst.ENABLED,
+                                   apply=True).verify_result()
+        TestToolkit.GeneralApi[test_api].save_config(engine=engines.dut)
         with allure.step(f'Installation and reboot with latest BIOS version '):
             res, duration = OperationTime.save_duration(f'install BIOS 006', '',
                                                         test_name, system.reboot.action_reboot, topology_obj=topology_obj, system_is_ready_timeout=PlatformConsts.TIMEOUT_AFTER_BIOS_INSTALL)

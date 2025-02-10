@@ -6,7 +6,7 @@ from ngts.nvos_constants.constants_nvos import ApiType, PlatformConsts, HealthCo
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
-from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
+from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool, RebootParams
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.tests_nvos.constants import MINUTE
 from ngts.nvos_tools.system.System import System
@@ -145,7 +145,9 @@ def platform_ps_redundancy_functionality(engines, topology_obj, system, min_for_
         with allure.step("Recover PSUs"):
             DutUtilsTool.dut_psu_control(engines, topology_obj, '', 'on', dhcp_hostname)
             # Wait for PSU states to update
-            time.sleep(10)
+            reboot_params = RebootParams()
+            reboot_params.topology_obj = reboot_params
+            DutUtilsTool.wait_on_system_reboot(engines.dut, reboot_params)
 
         with allure.step("Validate System health is OK and issues are not seen"):
             system_health_check(system, HealthConsts.OK)

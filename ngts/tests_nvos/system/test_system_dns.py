@@ -460,7 +460,7 @@ def test_factory_reset_for_static_system_dns(engines, devices):
                 format(dns_server_id)
 
         with allure.step("Run reset factory with keep basic param"):
-            res_obj, duration = system.factory_default.action_reset(param="keep basic", operation=devices.dut.reset_factory)
+            res_obj = system.factory_default.action_reset(param="keep basic", operation=devices.dut.reset_factory)
             res_obj.verify_result()
 
         with allure.step('Validate system dns is back to default (Null)'):
@@ -473,7 +473,7 @@ def test_factory_reset_for_static_system_dns(engines, devices):
         clear_system_dns(system, engines)
 
         with allure.step("Verify operation time"):
-            OperationTime.verify_operation_time(duration, devices.dut.reset_factory).verify_result()
+            OperationTime.verify_operation_time(res_obj.duration, devices.dut.reset_factory).verify_result()
 
 
 @pytest.mark.dns
