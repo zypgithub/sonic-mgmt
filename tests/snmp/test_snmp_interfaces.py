@@ -371,7 +371,7 @@ def test_snmp_interfaces_error_discard(duthosts, enum_rand_one_per_hwsku_hostnam
         f"rx_drp value is {port_counters['rx_drp']} not set to {COUNTER_VALUE}"
 
     snmp_facts = get_snmp_facts(
-        localhost, host=hostip, version="v2c",
+        duthost, localhost, host=hostip, version="v2c",
         community=creds_all_duts[duthost.hostname]["snmp_rocommunity"], wait=True)['ansible_facts']
 
     minigraph_port_name_to_alias_map = mg_facts['minigraph_port_name_to_alias_map']
