@@ -610,7 +610,7 @@
         - tests_nvos/interfaces/test_ib_show_interface.py::test_ib_show_interface_all_state_up
         - tests_nvos/interfaces/test_ib_show_interface.py::test_ib_show_interface_all_state_up_openapi
         - tests_nvos/interfaces/test_ib_interface_counters.py
-        - tests_nvos/general/traffic/test_basic_traffic.py::test_basic_traffic
+        - tests_nvos/general/traffic/test_basic_traffic.py
         - tests_nvos/interfaces/test_ib0_interface_state.py::test_ib0_interface_state
         - tests_nvos/system/test_techsupport_feature.py::test_techsupport_folder_name
         - tests_nvos/system/test_system_profile_change.py::test_system_profile_adaptive_routing
@@ -1166,21 +1166,6 @@
   Conditions:
     - Redmine:
       - 3512321
-
-# NVOS - traffic test
-- Errors_list:
-    - '.*monit: service is not ready.*'
-    - '.*ERR health-statsd: unexpected exception.*'
-    - '.*Failed to get target speed date for psu.*'
-  Conditions:
-    - Affected_test_cases:
-      - tests_nvos/general/traffic/test_basic_traffic.py::test_basic_traffic
-      - tests_nvos/general/config_commands/test_show_diff_history.py::test_diff_history_revision_ids
-      - tests_nvos/general/config_commands/test_replace_patch.py
-      - tests_nvos/general/config_commands/test_apply_detac.py::test_apply_assume
-      - tests_nvos/general/config_commands/test_apply_detac.py::test_apply_rev_id
-      Redmine:
-        - 3544169
 
 # NVOS - expected errors during init done event
 - Errors_list:

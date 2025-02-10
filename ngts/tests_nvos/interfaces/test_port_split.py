@@ -244,7 +244,7 @@ def test_ib_split_port_default_values(engines, interfaces, start_sm, devices):
 
 
 @pytest.mark.ib_interfaces
-def test_split_port_counters(engines, players, interfaces, start_sm, devices):
+def test_split_port_counters(engines, players, interfaces, start_sm, devices, setup_name):
     """
     Test flow:
         1. Send traffic
@@ -261,7 +261,7 @@ def test_split_port_counters(engines, players, interfaces, start_sm, devices):
         assert engines.ha and engines.hb, "Traffic hosts details can't be found in Noga setup"
 
     with allure.step("Run traffic"):
-        Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, True).verify_result()
+        Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, setup_name, True).verify_result()
 
     with allure.step("Check counters before split, should be not 0"):
         split_ports, active_ports = _get_split_ports()
@@ -292,7 +292,7 @@ def test_split_port_counters(engines, players, interfaces, start_sm, devices):
             port.interface.wait_for_port_state(NvosConsts.LINK_STATE_UP, sleep_time=30).verify_result()
 
     with allure.step("Run traffic"):
-        Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, True).verify_result()
+        Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, setup_name, True).verify_result()
 
     with allure.step("Check counters after traffic on child port, should be not 0"):
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_stats_output_to_dictionary(
@@ -308,7 +308,7 @@ def test_split_port_counters(engines, players, interfaces, start_sm, devices):
             port.interface.wait_for_port_state(NvosConsts.LINK_STATE_UP, sleep_time=30).verify_result()
 
     with allure.step("Run traffic"):
-        Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, True).verify_result()
+        Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, setup_name, True).verify_result()
 
 
 @pytest.mark.ib_interfaces

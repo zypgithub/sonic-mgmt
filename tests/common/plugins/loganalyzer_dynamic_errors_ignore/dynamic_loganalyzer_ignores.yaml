@@ -1268,7 +1268,7 @@
     - tests_nvos/interfaces/test_ib_show_interface.py::test_ib_show_interface_all_state_up
     - tests_nvos/interfaces/test_ib_show_interface.py::test_ib_show_interface_all_state_up_openapi
     - tests_nvos/interfaces/test_ib_interface_counters.py
-    - tests_nvos/general/traffic/test_basic_traffic.py::test_basic_traffic
+    - tests_nvos/general/traffic/test_basic_traffic.py
     - tests_nvos/interfaces/test_ib0_interface_state.py::test_ib0_interface_state
     - tests_nvos/system/test_techsupport_feature.py::test_techsupport_folder_name
     - tests_nvos/system/test_system_profile_change.py::test_system_profile_adaptive_routing

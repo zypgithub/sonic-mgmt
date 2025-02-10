@@ -19,7 +19,7 @@ logger = logging.getLogger()
 @pytest.mark.simx_xdr
 @pytest.mark.system_profile_cleanup
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_interface_aggregated_port_split(engines, devices, test_api, players, interfaces, start_sm):
+def test_interface_aggregated_port_split(engines, devices, test_api, players, interfaces, start_sm, setup_name):
     """
     validate all show fae interface commands.
 
@@ -112,7 +112,7 @@ def test_interface_aggregated_port_split(engines, devices, test_api, players, in
         assert redis_cli_output != '(empty array)', "Planarized port not exist in redis db"
 
     with allure_step("Run traffic and check counters"):
-        Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, True).verify_result()
+        Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, setup_name, True).verify_result()
 
         with allure_step("Check counters before split, should be not 0"):
             output_dictionary = Tools.OutputParsingTool.parse_show_interface_stats_output_to_dictionary(

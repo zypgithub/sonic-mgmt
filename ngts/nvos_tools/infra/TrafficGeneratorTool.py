@@ -18,21 +18,22 @@ logger = logging.getLogger()
 
 class TrafficGeneratorTool:
     @staticmethod
-    def create_listener(host, port):
-        host.run_cmd(f"ib_send_lat -F -n 5 -s 512 -i 1 -d {port}")
-
-    @staticmethod
-    def send_ib_traffic(players, interfaces, should_success):
+    def send_ib_traffic(players, interfaces, setup_name, should_success, reverse_direction=False):
         """
         Send ib traffic
         :param interfaces: interfaces fixture
         :param players: players fixture
+        :param setup_name: setup_name
         :param should_success: True of False
+        :param reverse_direction: True to send from hb to ha
         """
+        flags = '--no_ddp' if 'xdr_ndr' in setup_name else ''
         with allure.step("Generate ib traffic"):
             validation_obj = TrafficGeneratorTool._create_validation_obj(
                 interfaces=interfaces,
                 traffic_type=InternalNvosConsts.IB_TRAFFIC_LAT_TYPE,
+                flags=flags,
+                reverse_direction=reverse_direction,
                 expected_results=IBTrafficConst.SUCCESS if should_success else IBTrafficConst.FAILURE)
 
             with allure.step("Send ib traffic"):
@@ -44,17 +45,19 @@ class TrafficGeneratorTool:
                     return ResultObj(False, "IB traffic validation failed - check log for more info.")
 
     @staticmethod
-    def send_ipoib_traffic(players, interfaces, should_success):
+    def send_ipoib_traffic(players, interfaces, should_success, reverse_direction=False):
         """
         Send IPoIB traffic
         :param interfaces: interfaces fixture
         :param players: players fixture
         :param should_success: True of False
+        :param reverse_direction: True to send from hb to ha
         """
         with allure.step("Generate IPoIB traffic"):
             validation_obj = TrafficGeneratorTool._create_validation_obj(
                 interfaces=interfaces,
                 traffic_type=InternalNvosConsts.IB_TRAFFIC_IPOIB_TYPE,
+                reverse_direction=reverse_direction,
                 expected_results=IBTrafficConst.SUCCESS if should_success else IBTrafficConst.FAILURE)
 
             with allure.step("Send IPoIB traffic"):
@@ -66,16 +69,27 @@ class TrafficGeneratorTool:
                     return ResultObj(False, "IPoIB traffic validation failed - " + str(ex))
 
     @staticmethod
-    def _create_validation_obj(interfaces, traffic_type, expected_results):
+    def _create_validation_obj(interfaces, traffic_type, expected_results, flags='', reverse_direction=False):
         with allure.step("Creating validation object in order to generate traffic"):
             logger.info("Creating validation object")
             validation_obj = {'type': traffic_type,
-                              'sender': 'ha',
-                              'sender_interface': interfaces.ha_dut_1,
-                              'receiver': 'hb',
-                              'receiver_interface': interfaces.hb_dut_1,
-                              'expected_traffic_result': expected_results
+                              'expected_traffic_result': expected_results,
+                              IBTrafficConst.FLAGS: flags,
                               }
+            if reverse_direction:
+                validation_obj.update({
+                    'sender': 'hb',
+                    'sender_interface': interfaces.hb_dut_1,
+                    'receiver': 'ha',
+                    'receiver_interface': interfaces.ha_dut_1,
+                })
+            else:
+                validation_obj.update({
+                    'sender': 'ha',
+                    'sender_interface': interfaces.ha_dut_1,
+                    'receiver': 'hb',
+                    'receiver_interface': interfaces.hb_dut_1,
+                })
             if traffic_type == InternalNvosConsts.IB_TRAFFIC_IPOIB_TYPE:
                 validation_obj['ping_args'] = {'count': 5}
 

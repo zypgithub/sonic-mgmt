@@ -23,7 +23,7 @@ logger = logging.getLogger()
 
 # todo openapi - need to implement OpenApiIbInterfaceCli.clear_stats
 @pytest.mark.ib_interfaces
-def test_ib_clear_counters(engines, players, interfaces, start_sm, fae_param=""):
+def test_ib_clear_counters(engines, players, interfaces, start_sm, setup_name, fae_param=""):
     """
     Clear counters test
     Commands:
@@ -37,18 +37,18 @@ def test_ib_clear_counters(engines, players, interfaces, start_sm, fae_param="")
     5. Make sure the counters were cleared
     6. Run traffic and make sure the counters are not 0
     """
-    _clear_counters_test_flow(engines, players, interfaces, False, fae_param)
+    _clear_counters_test_flow(engines, players, interfaces, setup_name, False, fae_param)
 
 
 # todo openapi - need to implement OpenApiIbInterfaceCli.clear_stats
 @pytest.mark.ib_interfaces
-def test_clear_all_counters(engines, players, interfaces, start_sm, fae_param=""):
+def test_clear_all_counters(engines, players, interfaces, start_sm, setup_name, fae_param=""):
     """
     Clear counters for all interfaces
     Commands:
         > nv action clear interface counters
     """
-    _clear_counters_test_flow(engines, players, interfaces, True, fae_param)
+    _clear_counters_test_flow(engines, players, interfaces, setup_name, True, fae_param)
 
 
 @pytest.mark.ib_interfaces
@@ -91,7 +91,7 @@ def test_range_clear_counters_negative(engines, players, interfaces, start_sm, f
 
 @pytest.mark.ib_interfaces
 # todo openapi - need to implement OpenApiIbInterfaceCli.clear_stats
-def test_range_clear_counters_positive(engines, devices, players, interfaces, start_sm, fae_param=""):
+def test_range_clear_counters_positive(engines, devices, players, interfaces, start_sm, setup_name, fae_param=""):
     """
     verify all these commands fail with the right error message.
         0. get linked ports
@@ -115,7 +115,7 @@ def test_range_clear_counters_positive(engines, devices, players, interfaces, st
     file_name, user_name, ssh_connection = create_new_user(engines.dut)
 
     with allure.step('Send traffic through selected port'):
-        Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, True).verify_result()
+        Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, setup_name, True).verify_result()
 
     with allure.step("Get 4 random numbers - to define ranges"):
         if isinstance(devices.dut, CrocodileSwitch):
@@ -168,7 +168,7 @@ def test_range_clear_counters_positive(engines, devices, players, interfaces, st
                 check_port_counters(selected_port, False, engines.dut).verify_result()
 
 
-def _clear_counters_test_flow(engines, players, interfaces, all_counters=False, fae_param=""):
+def _clear_counters_test_flow(engines, players, interfaces, setup_name, all_counters=False, fae_param=""):
     with allure.step("Get a random active port"):
         temp_selected_ports = Tools.RandomizationTool.get_random_traffic_port().get_returned_value()
 
@@ -179,7 +179,7 @@ def _clear_counters_test_flow(engines, players, interfaces, all_counters=False, 
             verify_result()
 
         with allure.step('Send traffic through selected port'):
-            Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, True).verify_result()
+            Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, setup_name, True).verify_result()
 
         with allure.step('Check selected port counters'):
             selected_ports = temp_selected_ports.copy()
@@ -215,7 +215,7 @@ def _clear_counters_test_flow(engines, players, interfaces, all_counters=False, 
                 check_port_counters(port, False, engines.dut).verify_result()
 
         with allure.step('Send traffic through selected port'):
-            Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, True).verify_result()
+            Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, setup_name, True).verify_result()
 
         with allure.step('Check selected port counters'):
             for port in selected_ports:
