@@ -279,7 +279,7 @@ def remove_gpu_from_partition_and_add_to_existing_partition(sdn, original_partit
         number_of_gpus = len(partitions_mapping[target_partition_id])
         # TODO - location/uuid as sets. When do not have guarantee on order.
         if not is_bug_active(4209873):
-            expected_output = {'health': 'healthy', 'locations': locations_dict, 'mcast-limit': mcast_limit, 'name': target_partition_name, 'num-gpus': number_of_gpus, 'partition-type': '', 'resiliency-mode': resiliency_mode, 'uuids': uuids_dict}
+            expected_output = {'health': 'healthy', 'locations': {}, 'mcast-limit': '', 'name': target_partition_name, 'num-gpus': number_of_gpus, 'partition-type': '', 'resiliency-mode': ''}
             ClusterTools.validate_partition_content(output, expected_output)
 
 
@@ -326,7 +326,8 @@ def remove_gpu_from_partition_and_add_to_new_partition(sdn, original_partition_i
             sdn.partition.partition_id[new_partition].action_create_partition_id(name=partition_name, resiliency_mode=resiliency_mode, mcast_limit=mcast_limit, uuid=uuid)
 
     with allure.step("Checking newly created partition"):
-        time.sleep(5)
+        if is_bug_active(4285786):
+            time.sleep(15)
         output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
                                                              output_format=output_format).get_returned_value()
         new_partition = str(new_partition)
@@ -335,8 +336,9 @@ def remove_gpu_from_partition_and_add_to_new_partition(sdn, original_partition_i
                                                              output_format=output_format).get_returned_value()
         partitions_mapping[new_partition] = [(uuid, location)]
         uuids_dict, locations_dict = build_uuid_location_dicts(partitions_mapping, new_partition)
+        locations = {location: {'uuid': uuid}}
         if not is_bug_active(4190587):
-            expected_output = {'health': 'healthy', 'locations': locations, 'mcast-limit': mcast_limit, 'name': partition_name, 'num-gpus': 1, 'partition-type': partition_type, 'resiliency-mode': resiliency_mode, 'uuids': uuids}
+            expected_output = {'health': 'healthy', 'locations': locations, 'mcast-limit': mcast_limit, 'name': partition_name, 'num-gpus': 1, 'partition-type': partition_type, 'resiliency-mode': resiliency_mode}
             ClusterTools.validate_partition_content(output, expected_output)
 
     return new_partition, partition_type

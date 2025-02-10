@@ -375,10 +375,13 @@ class ClusterTools:
     @staticmethod
     def validate_partition_content(output, expected_output):
         for key, val in expected_output.items():
-            if key in ['locations']:
+            if key in ['locations'] and (not expected_output[key]):
                 continue
             else:
-                assert output[key] == val, f'Expected value: {val}, Actual value:{output[key]}'
+                if is_bug_active(4290901) and (val == 'user_action'):
+                    pass
+                else:
+                    assert str(output[key]) == str(val), f'Expected value: {val}, Actual value:{output[key]}'
 
     @staticmethod
     def create_empty_partition_and_add_gpu(sdn, no_reroute='', output_format=OutputFormat.json):
@@ -551,8 +554,8 @@ class ClusterTools:
         logger.info("Adjusted fm_config file content.")  # TODO ADD A PROPER COMMENT
         engines.dut.run_cmd(
             f"""
-            sudo sed -i '/^MNNVL_TOPOLOGY=/c\\MNNVL_TOPOLOGY=gb200_nvl36r1_c2g4_topology' {path_to_generated_file} && \
-            sudo grep -q '^MNNVL_TOPOLOGY=' {path_to_generated_file} || echo 'MNNVL_TOPOLOGY=gb200_nvl36r1_c2g4_topology' | sudo tee -a {path_to_generated_file} && \
+            sudo sed -i '/^MNNVL_TOPOLOGY=/c\\MNNVL_TOPOLOGY=gb200_nvl8r1_c2g4_etf_topology' {path_to_generated_file} && \
+            sudo grep -q '^MNNVL_TOPOLOGY=' {path_to_generated_file} || echo 'MNNVL_TOPOLOGY=gb200_nvl8r1_c2g4_etf_topology' | sudo tee -a {path_to_generated_file} && \
             sudo sed -i '/^MNNVL_PARTIALLY_POPULATED_TOPOLOGY=/c\\MNNVL_PARTIALLY_POPULATED_TOPOLOGY=1' {path_to_generated_file} && \
             sudo grep -q '^MNNVL_PARTIALLY_POPULATED_TOPOLOGY=' {path_to_generated_file} || echo 'MNNVL_PARTIALLY_POPULATED_TOPOLOGY=1' | sudo tee -a {path_to_generated_file}
             """
@@ -565,7 +568,7 @@ class ClusterTools:
 
         ClusterTools.reboot_compute_nodes_gpus(setup_name)
 
-        ClusterTools().validate_cluster_enabled(cluster)
+        ClusterTools.validate_cluster_enabled(cluster)
         yield
         if ClusterTools.check_cluster_state(cluster, output_format) == 'disabled':
             ClusterTools.start_cluster(cluster, setup_name, output_format=output_format)

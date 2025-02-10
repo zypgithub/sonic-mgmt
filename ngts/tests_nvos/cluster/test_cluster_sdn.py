@@ -178,16 +178,3 @@ def verify_all_files_are_deleted(engines, files_list):
     for file_path in files_list:
         output = engines.dut.run_cmd(f"ls {file_path}")
         assert "No such file or directory" in output, "File was found, not expected to be found"
-
-
-def verify_config_files_content_not_changed(sdn, initial_config_contents):
-    current_config_files_content = {}
-    controller_config_files_paths = ClusterTools.get_current_config_files_paths(sdn, ClusterConsts.NMX_CONTROLLER, ClusterConsts.NMX_CONTROLLER_CONFIG_FILE_TYPES)
-    telemetry_config_files_paths = ClusterTools.get_current_config_files_paths(sdn, ClusterConsts.NMX_TELEMETRY, ClusterConsts.NMX_TELEMETRY_CONFIG_FILE_TYPES)
-    config_files_paths = dict(list(controller_config_files_paths.items()) + list(telemetry_config_files_paths.items()))
-    for file_type, file_path in config_files_paths.items():
-        current_config_files_content[file_type] = engines.dut.run_cmd("sudo cat {}".format(file_path))
-    assert len(current_config_files_content) == len(initial_config_contents), 'Missing configs'
-    for file_type, current_file_content in current_config_files_content.items():
-        init_file_content = initial_config_contents.get(file_type)
-        assert set(current_file_content.split('\n')) == set(init_file_content.split('\n')), f"Initial configuration was not restored for {file_type}. Current: {current_file_content}, Initial: {init_file_content}"
