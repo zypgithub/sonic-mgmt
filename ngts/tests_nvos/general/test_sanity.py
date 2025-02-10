@@ -85,7 +85,7 @@ def test_ci_sanity_ldap(engines, topology_obj, devices):
     with allure.step("Check LDAP output"):
         system = System()
         output = OutputParsingTool.parse_json_str_to_dictionary(system.aaa.ldap.show()).get_returned_value()
-        expected_field = LdapConsts.LDAP_FIELDS
+        expected_field = LdapConsts.LDAP_SHOW_FIELDS
         ValidationTool.verify_field_exist_in_json_output(json_output=output,
                                                          keys_to_search_for=expected_field).verify_result()
 
