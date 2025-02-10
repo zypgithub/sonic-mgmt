@@ -173,3 +173,91 @@ def test_reboot_via_psu_off(engines, devices, topology_obj):
 def _help_validate_reboot_reason(expected_reboot_reason, reboot_reason):
     assert expected_reboot_reason in reboot_reason, 'Reboot reason is {} instead of {}'.\
         format(reboot_reason, expected_reboot_reason)
+
+
+@pytest.mark.platform
+def test_lspci_width(engines, devices):
+    """
+    The purpose of this function is to check if 2 parameters (LnkSta, LnkCap) are valid.
+    """
+    with allure.step("Running lspci command to find Infiniband controllers"):
+        lines_devices = engines.dut.run_cmd("sudo lspci | grep 'Infiniband controller: Mellanox Technologies Device'")
+        actual_devices = lines_devices.split("\n")
+
+    with allure.step("Validating the number of detected devices"):
+        assert len(actual_devices) == devices.dut.asic_amount, \
+            f"Actual number of devices: {len(actual_devices)}, Expected: {devices.dut.asic_amount}"
+
+    for device in actual_devices:
+        device_num_str = device.split(" ")[0]
+
+        with allure.step(f"Fetching LnkCap for device {device_num_str}"):
+            bash_cmd_cap = f"sudo lspci -vv -s {device_num_str} | grep LnkCap:"
+            line_cap = engines.dut.run_cmd(bash_cmd_cap)
+            cap_arr = line_cap.split(' ')
+
+        with allure.step(f"Fetching LnkSta for device {device_num_str}"):
+            bash_cmd_sta = f"sudo lspci -vv -s {device_num_str} | grep LnkSta:"
+            line_sta = engines.dut.run_cmd(bash_cmd_sta)
+            sta_arr = line_sta.split(' ')
+
+        with allure.step(f"Validating LnkCap and LnkSta for device {device_num_str}"):
+            validate_lspci_status(engines, cap_arr, sta_arr, line_sta, line_cap)
+
+
+def validate_lspci_status(engines, cap_arr, sta_arr, line_sta, line_cap):
+    with allure.step("Checking if cap_arr and sta_arr are non-empty"):
+        assert sta_arr, f"sta_arr is empty: {sta_arr}"
+        assert cap_arr, f"cap_arr is empty: {cap_arr}"
+
+    with allure.step("Validating speed in LnkCap and LnkSta"):
+        number_gts_sta = get_number_gts(sta_arr, "")
+        number_gts_cap = get_number_gts(cap_arr, "")
+        assert number_gts_sta, f"The string number_gts_sta is empty: {cap_arr}"
+        assert number_gts_cap, f"The string number_gts_cap is empty: {sta_arr}"
+        assert number_gts_cap in number_gts_sta, \
+            f"Speed NUMBER GT/s mismatch: LnkCap={number_gts_cap}, LnkSta={number_gts_sta}"
+
+    with allure.step("Validating Width values in LnkCap and LnkSta"):
+        x_number_cap = get_x_number(cap_arr, "")
+        assert x_number_cap, f"Width x<Number> not found in line_cap: {line_cap}, cap_arr: {cap_arr}"
+        x_number_sta = get_x_number(sta_arr, "")
+        assert x_number_sta, "Width x<Number> not found in LnkSta"
+        assert x_number_cap == x_number_sta, \
+            f"Width mismatch: LnkCap={x_number_cap}, LnkSta={x_number_sta}"
+
+    with allure.step("Checking the number of 'ok' occurrences in LnkSta"):
+        ok_count = get_ok_count(sta_arr)
+        assert ok_count == 2, f"Unexpected 'ok' count in LnkSta: {line_sta}, found: {ok_count}"
+
+
+def get_ok_count(sta_arr):
+    """
+    Return the number of times "ok" appears in LnkSta.
+    """
+    with allure.step("Counting 'ok' occurrences in sta_arr"):
+        ok_count = sum(1 for word in sta_arr if "ok" in word)
+        return ok_count
+
+
+def get_number_gts(arr, number_gts):
+    """
+    Return GT/s number.
+    """
+    with allure.step("Extracting GT/s value from array"):
+        for word in arr:
+            if "GT/s" in word:
+                number_gts = word[:-1] if word.endswith(',') else word
+                return number_gts
+
+
+def get_x_number(arr, x_number):
+    """
+    Return x number.
+    """
+    with allure.step("Extracting Width x<number> from array"):
+        for i in range(len(arr)):
+            if "Width" in arr[i]:
+                x_number = arr[i + 1]
+                x_number = x_number[:-1] if x_number.endswith(',') else x_number
+                return x_number
