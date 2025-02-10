@@ -158,9 +158,10 @@
 - Errors_list:
     - '.*ERR pmon#xcvrd: CMIS: Ethernet\d+: no suitable app for the port appl .* host_lane_count \d+ host_speed .*'
   Conditions:
-    - Affected_test_cases:
-        - tests/nightly/logging/test_log_analyzer_errors_during_deploy_sonic.py::test_check_errors_in_log_during_deploy_sonic_image
-        - tests/qos/test_buffer.py::test_change_speed_cable
+  - Platform:
+    - sn4700
+    - sn5600
+    - sn5640
 
 # Vivek conclaimed these error logs are not bug(RM #3238130), he suggest adding them into common ignore list
 - Errors_list:
