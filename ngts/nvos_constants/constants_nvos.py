@@ -488,6 +488,7 @@ class SystemConsts:
 
     PROFILE_ADAPTIVE_ROUTING = 'adaptive-routing'
     PROFILE_ADAPTIVE_ROUTING_GROUPS = 'adaptive-routing-groups'
+    PROFILE_ADAPTIVE_ROUTING_GROUPS_INDEX = 1
     PROFILE_BREAKOUT_MODE = 'breakout-mode'
     PROFILE_IB_ROUTING = 'ib-routing'
     PROFILE_NUMBER_OF_SWIDS = 'num-of-swids'

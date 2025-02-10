@@ -18,13 +18,13 @@ from ngts.nvos_tools.ib.opensm.OpenSmTool import OpenSmTool
 invalid_cmd_str = ['Invalid config', 'Error', 'command not found', 'Bad Request', 'Not Found', "unrecognized arguments",
                    "error: unrecognized arguments", "invalid choice", "Action failed", "Invalid Command",
                    "You do not have permission", "The requested item does not exist."]
-negative_profile_commands = ['breakout-mode aa adaptive-routing bb',
-                             'adaptive-routing aa adaptive-routing-groups 128 breakout-mode disabled',
-                             'adaptive-routing enabled adaptive-routing-groups 127 breakout-mode disabled',
-                             'adaptive-routing enabled adaptive-routing-groups 4097 breakout-mode disabled',
-                             'adaptive-routing disabled adaptive-routing-groups 1024 breakout-mode disabled',
-                             'adaptive-routing enabled adaptive-routing-groups 4097 breakout-mode disabled',
-                             'breakout-mode enabled adaptive-routing disabled adaptive-routing-groups 1792']
+invalid_profile_breakout_mode_change_commands = ['breakout-mode aa adaptive-routing bb',
+                                                 'breakout-mode aa adaptive-routing 125',
+                                                 'breakout-mode aa',
+                                                 'breakout-mode aa adaptive-routing 128']
+invalid_profile_adaptive_routing_change_commands = ['adaptive-routing-groups 127',
+                                                    'adaptive-routing-groups 1793',
+                                                    'adaptive-routing-groups bb']
 
 
 @pytest.mark.system
@@ -59,8 +59,9 @@ def test_system_profile_negative(engines, devices):
         1. Testing all negative scenarios for action
         2. Verify no changes
     """
-    if not devices.dut.profile_change_supported:
-        pytest.skip("Profile change is not supported on this setup")
+    negative_profile_commands = invalid_profile_adaptive_routing_change_commands
+    if devices.dut.profile_change_supported:
+        negative_profile_commands.extend(invalid_profile_breakout_mode_change_commands)
 
     system = System(None)
     with allure.step('Negative testing'):
@@ -108,9 +109,9 @@ def test_system_profile_adaptive_routing(engines, players, interfaces, start_sm,
 
     with allure.step('Change adaptive-routing-groups, check changes and traffic'):
         with allure.step("Change adaptive-routing-groups to possible value"):
-            positive_group_value = random.randrange(128, 4096, 128)
+            positive_group_value = random.randrange(128, 1792, 128)
 
-            params = {'adaptive-routing': 'enabled', 'adaptive-routing-groups': positive_group_value}
+            params = {'adaptive-routing-groups': positive_group_value}
             system.profile.action_profile_change(params_dict=params)
 
         with allure.step("Start OpenSm"):
@@ -141,32 +142,11 @@ def test_system_profile_adaptive_routing(engines, players, interfaces, start_sm,
         with allure.step("Run traffic"):
             Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, True).verify_result()
 
-    with allure.step('Disable adaptive routing'):
-        system.profile.action_profile_change(
-            params_dict={'adaptive-routing': 'disabled'})
-        system_profile_output = OutputParsingTool.parse_json_str_to_dictionary(system.profile.show()) \
-            .get_returned_value()
-        values_to_verify = [SystemConsts.PROFILE_STATE_DISABLED, '', SystemConsts.PROFILE_STATE_ENABLED,
-                            SystemConsts.PROFILE_STATE_DISABLED, SystemConsts.DEFAULT_NUM_SWIDS]
-        ValidationTool.validate_fields_values_in_output(SystemConsts.PROFILE_OUTPUT_FIELDS,
-                                                        values_to_verify,
-                                                        system_profile_output).verify_result()
-        logging.info("All values returned successfully")
-
     with allure.step('Change system profile to default'):
-        system.profile.action_profile_change(
-            params_dict={'adaptive-routing': 'enabled', 'adaptive-routing-groups': '2048'})
-        system_profile_output = OutputParsingTool.parse_json_str_to_dictionary(system.profile.show()) \
-            .get_returned_value()
-        ValidationTool.validate_fields_values_in_output(SystemConsts.PROFILE_OUTPUT_FIELDS,
-                                                        devices.dut.system_profile_default_values,
-                                                        system_profile_output).verify_result()
-        logging.info("All values returned successfully")
+        change_profile_to_default(system, devices, engines)
 
         with allure.step("Start OpenSm"):
             OpenSmTool.start_open_sm(engines).verify_result()
-
-        update_timezone(engines)
 
         with allure.step("Check traffic port up"):
             for port in active_ports:
@@ -179,63 +159,6 @@ def test_system_profile_adaptive_routing(engines, players, interfaces, start_sm,
 
         with allure.step("Run traffic"):
             Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, True).verify_result()
-
-
-@pytest.mark.system
-@pytest.mark.system_profile_cleanup
-def test_system_profile_change_breakout_mode(engines, devices):
-    """
-    Test flow:
-        1. Verify default values
-        2. Enable breakout-mode
-        3. Disable adaptive routing and check changes
-        4. Return system profile to default
-    """
-    system = System(None)
-    with allure.step('Change system profile to breakout-mode enabled'):
-        with allure.step("Change adaptive-routing-groups to possible value"):
-            positive_group_value = random.randrange(128, 1792, 128)
-            system.profile.action_profile_change(
-                params_dict={'adaptive-routing': 'enabled',
-                             'adaptive-routing-groups': positive_group_value})
-
-        with allure.step('Verify changed values'):
-            system_profile_output = OutputParsingTool.parse_json_str_to_dictionary(system.profile.show()) \
-                .get_returned_value()
-            values_to_verify = [SystemConsts.PROFILE_STATE_ENABLED, positive_group_value,
-                                SystemConsts.PROFILE_STATE_ENABLED, SystemConsts.PROFILE_STATE_DISABLED,
-                                SystemConsts.DEFAULT_NUM_SWIDS]
-            ValidationTool.validate_fields_values_in_output(SystemConsts.PROFILE_OUTPUT_FIELDS,
-                                                            values_to_verify,
-                                                            system_profile_output).verify_result()
-            logging.info("All expected values were found")
-
-    with allure.step('Change system profile to breakout-mode enabled, adaptive-routing disabled and verify'):
-        with allure.step("Disable adaptive-routing and enable breakout-mode "):
-            system.profile.action_profile_change(params_dict={'adaptive-routing': 'disabled'})
-
-        with allure.step('Verify changed values'):
-            system_profile_output = OutputParsingTool.parse_json_str_to_dictionary(system.profile.show()) \
-                .get_returned_value()
-            values_to_verify = [SystemConsts.PROFILE_STATE_DISABLED, '',
-                                SystemConsts.PROFILE_STATE_ENABLED, SystemConsts.PROFILE_STATE_DISABLED,
-                                SystemConsts.DEFAULT_NUM_SWIDS]
-            ValidationTool.validate_fields_values_in_output(SystemConsts.PROFILE_OUTPUT_FIELDS,
-                                                            values_to_verify,
-                                                            system_profile_output).verify_result()
-            logging.info("All expected values were found")
-
-    with allure.step('Change system profile to default'):
-        system.profile.action_profile_change(
-            params_dict={'adaptive-routing': 'enabled', 'adaptive-routing-groups': 2048})
-        system_profile_output = OutputParsingTool.parse_json_str_to_dictionary(system.profile.show()) \
-            .get_returned_value()
-        ValidationTool.validate_fields_values_in_output(SystemConsts.PROFILE_OUTPUT_FIELDS,
-                                                        devices.dut.system_profile_default_values,
-                                                        system_profile_output).verify_result()
-        logging.info("All values returned successfully")
-
-    update_timezone(engines)
 
 
 @pytest.mark.system
@@ -269,8 +192,7 @@ def test_system_profile_changes_stress(engines, devices):
         with allure.step("Enable adaptive-routing and enable breakout-mode, configure groups"):
             positive_group_value = random.randrange(128, 1792, 128)
             system.profile.action_profile_change(
-                params_dict={'adaptive-routing': 'enabled',
-                             'adaptive-routing-groups': positive_group_value, })
+                params_dict={'adaptive-routing-groups': positive_group_value})
             system_profile_output = OutputParsingTool.parse_json_str_to_dictionary(system.profile.show()) \
                 .get_returned_value()
             values_to_verify = [SystemConsts.PROFILE_STATE_ENABLED, positive_group_value,
@@ -281,17 +203,7 @@ def test_system_profile_changes_stress(engines, devices):
                                                             system_profile_output).verify_result()
 
         with allure.step('Verify default values'):
-            system.profile.action_profile_change(
-                params_dict={'adaptive-routing': 'enabled',
-                             'adaptive-routing-groups': 2048})
-            system_profile_output = OutputParsingTool.parse_json_str_to_dictionary(system.profile.show()) \
-                .get_returned_value()
-            ValidationTool.validate_fields_values_in_output(SystemConsts.PROFILE_OUTPUT_FIELDS,
-                                                            devices.dut.system_profile_default_values,
-                                                            system_profile_output).verify_result()
-            logging.info("All expected values were found")
-
-    update_timezone(engines)
+            change_profile_to_default(system, devices, engines)
 
 
 @pytest.mark.system
@@ -320,8 +232,14 @@ def test_system_profile_redis_db_crash(engines, devices):
                                                         system_profile_output).verify_result()
 
     with allure.step('Change system profile to default'):
+        change_profile_to_default(system, devices, engines)
+
+
+def change_profile_to_default(system, devices, engines):
+    with allure.step('Change system profile to default'):
         system.profile.action_profile_change(
-            params_dict={'adaptive-routing': 'enabled', 'adaptive-routing-groups': 2048})
+            params_dict={SystemConsts.PROFILE_ADAPTIVE_ROUTING_GROUPS:
+                         devices.dut.system_profile_default_values[SystemConsts.PROFILE_ADAPTIVE_ROUTING_GROUPS_INDEX]})
         system_profile_output = OutputParsingTool.parse_json_str_to_dictionary(system.profile.show()) \
             .get_returned_value()
         ValidationTool.validate_fields_values_in_output(SystemConsts.PROFILE_OUTPUT_FIELDS,
