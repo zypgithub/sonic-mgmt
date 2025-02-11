@@ -367,7 +367,7 @@ class ClusterTools:
             assert ClusterConsts.EMPTY_PARTITION_ID in list(output.keys()), f'Partition {ClusterConsts.EMPTY_PARTITION_ID} was not created'
             output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.partition_id[ClusterConsts.EMPTY_PARTITION_ID].show(output_format=output_format),
                                                                  output_format=output_format).get_returned_value()
-            partitions_mapping[ClusterConsts.EMPTY_PARTITION_ID] = []
+            partitions_mapping[int(ClusterConsts.EMPTY_PARTITION_ID)] = []
             if not is_bug_active(4209873):
                 expected_output = {'health': 'healthy', 'locations': {}, 'mcast-limit': mcast_limit, 'name': ClusterConsts.EMPTY_PARTITION_NAME, 'num-gpus': 0, 'partition-type': '', 'resiliency-mode': resiliency_mode}
                 ClusterTools.validate_partition_content(output, expected_output)
@@ -394,16 +394,16 @@ class ClusterTools:
         (uuid, location) = random.choice(gpus_in_partition)
         with allure.step(f"Remove GPU from partition {partition_to_remove_from}"):
             if original_partition_type == 'location_based':
-                sdn.partition.partition_id[partition_to_remove_from].location.location_id[location].action_restore_partition(reroute_param=no_reroute)
+                sdn.partition.partition_id[partition_to_remove_from].location.location_id[location].action_restore_partition(reroute_param=no_reroute).verify_result()
             else:
-                sdn.partition.partition_id[partition_to_remove_from].uuid.uuid_value[uuid].action_restore_partition(reroute_param=no_reroute)
+                sdn.partition.partition_id[partition_to_remove_from].uuid.uuid_value[uuid].action_restore_partition(reroute_param=no_reroute).verify_result()
 
         with allure.step(f"Add GPU {uuid} {location} to empty partition {ClusterConsts.EMPTY_PARTITION_ID}"):
             empty_partition_type = random.choice(['uuid', 'location'])
             if empty_partition_type == 'location':
-                sdn.partition.partition_id[ClusterConsts.EMPTY_PARTITION_ID].location.location_id[location].action_update_partition(reroute_param=no_reroute)
+                sdn.partition.partition_id[ClusterConsts.EMPTY_PARTITION_ID].location.location_id[location].action_update_partition(reroute_param=no_reroute).verify_result()
             else:
-                sdn.partition.partition_id[ClusterConsts.EMPTY_PARTITION_ID].uuid.uuid_value[uuid].action_update_partition(reroute_param=no_reroute)
+                sdn.partition.partition_id[ClusterConsts.EMPTY_PARTITION_ID].uuid.uuid_value[uuid].action_update_partition(reroute_param=no_reroute).verify_result()
         return uuid, location, ClusterConsts.EMPTY_PARTITION_ID, partition_to_remove_from
 
     @staticmethod

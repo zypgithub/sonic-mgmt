@@ -44,7 +44,7 @@ def test_cluster_partition(engines, devices, test_api, has_loopbox, setup_name, 
     with allure.step("Create Cluster object"):
         cluster = Cluster()
         sdn = Sdn()
-
+        system = System()
         used_partition_ids = []
         partition_ids = []
         expected_number_of_gpus = Configurations.oberon_num_of_gpus[setup_name]
@@ -110,6 +110,7 @@ def test_cluster_partition(engines, devices, test_api, has_loopbox, setup_name, 
     finally:
         with allure.step("Running sdn factory reset"):
             sdn.factory_default.action_reset(param='force')
+            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
         if interface_wa_called:
             next(interfaces_wa)
         cluster.unset(apply=True)
@@ -131,7 +132,7 @@ def test_cluster_partition_bad_flow(engines, devices, test_api, has_loopbox, sta
     with allure.step("Create Cluster object"):
         cluster = Cluster()
         sdn = Sdn()
-
+        system = System()
         used_partition_ids = []
         partition_ids = []
         expected_number_of_gpus = Configurations.oberon_num_of_gpus[setup_name]
@@ -168,18 +169,18 @@ def test_cluster_partition_bad_flow(engines, devices, test_api, has_loopbox, sta
             if partition_type == 'location_based':
                 output = sdn.partition.partition_id[part_id].action_create_partition_id(name=ClusterConsts.CREATED_PARTITION_NAME + '1', resiliency_mode=resiliency_mode, mcast_limit=mcast_limit, location=location).verify_result(should_succeed=False)
             else:
-                output = sdn.partition.partition_id[part_id].action_create_partition_id(name=ClusterConsts.CREATED_PARTITION_NAME + '1', resiliency_mode=resiliency_mode, mcast_limit=mcast_limit, uuid=uuid).verify_result(should_succeed=False)
+                output = sdn.partition.partition_id[part_id].action_create_partition_id(name=ClusterConsts.CREATED_PARTITION_NAME + '1', resiliency_mode=resiliency_mode, mcast_limit=mcast_limit, uuid=int(uuid)).verify_result(should_succeed=False)
             err_msg = f"failed to create partition {part_id}"
             assert err_msg in output, f"Expected message to include {err_msg}, instead\n {output}"
 
         with allure.step("Remove GPU from default partition - Twice"):
             no_reroute = random.choice(['', 'no-reroute'])
             if default_partition_type == 'location_based':
-                sdn.partition.partition_id[default_partition_id].location.location_id[location].action_restore_partition(reroute_param=no_reroute)
+                sdn.partition.partition_id[default_partition_id].location.location_id[location].action_restore_partition(reroute_param=no_reroute).verify_result()
                 output = sdn.partition.partition_id[default_partition_id].location.location_id[location].action_restore_partition(reroute_param=no_reroute).verify_result(should_succeed=False)
                 err_msg = f"failed to restore partition {default_partition_id} location {location}"
             else:
-                sdn.partition.partition_id[default_partition_id].uuid.uuid_value[uuid].action_restore_partition(reroute_param=no_reroute)
+                sdn.partition.partition_id[default_partition_id].uuid.uuid_value[uuid].action_restore_partition(reroute_param=no_reroute).verify_result()
                 output = sdn.partition.partition_id[default_partition_id].uuid.uuid_value[uuid].action_restore_partition(reroute_param=no_reroute).verify_result(should_succeed=False)
                 err_msg = f"failed to restore partition {default_partition_id} uuid {uuid}"
             partitions_mapping[default_partition_id].remove((uuid, location))
@@ -188,11 +189,11 @@ def test_cluster_partition_bad_flow(engines, devices, test_api, has_loopbox, sta
         with allure.step("ADD GPU To partition - Twice"):
             no_reroute = random.choice(['', 'no-reroute'])
             if default_partition_type == 'location_based':
-                sdn.partition.partition_id[default_partition_id].location.location_id[location].action_update_partition(reroute_param=no_reroute)
+                sdn.partition.partition_id[default_partition_id].location.location_id[location].action_update_partition(reroute_param=no_reroute).verify_result()
                 output = sdn.partition.partition_id[default_partition_id].location.location_id[location].action_update_partition(reroute_param=no_reroute).verify_result(should_succeed=False)
                 err_msg = f"failed to update partition {default_partition_id} location {location}"
             else:
-                sdn.partition.partition_id[default_partition_id].uuid.uuid_value[uuid].action_update_partition(reroute_param=no_reroute)
+                sdn.partition.partition_id[default_partition_id].uuid.uuid_value[uuid].action_update_partition(reroute_param=no_reroute).verify_result()
                 output = sdn.partition.partition_id[default_partition_id].uuid.uuid_value[uuid].action_update_partition(reroute_param=no_reroute).verify_result(should_succeed=False)
                 err_msg = f"failed to update partition {default_partition_id} uuid {uuid}"
             partitions_mapping[default_partition_id].append((uuid, location))
@@ -210,7 +211,7 @@ def test_cluster_partition_bad_flow(engines, devices, test_api, has_loopbox, sta
                 if partition_type == 'location_based':
                     output = sdn.partition.partition_id[part_id].action_create_partition_id(name=ClusterConsts.CREATED_PARTITION_NAME + '1', resiliency_mode=resiliency_mode, mcast_limit=mcast_limit, location=location).verify_result(should_succeed=False)
                 else:
-                    output = sdn.partition.partition_id[part_id].action_create_partition_id(name=ClusterConsts.CREATED_PARTITION_NAME + '1', resiliency_mode=resiliency_mode, mcast_limit=mcast_limit, uuid=uuid).verify_result(should_succeed=False)
+                    output = sdn.partition.partition_id[part_id].action_create_partition_id(name=ClusterConsts.CREATED_PARTITION_NAME + '1', resiliency_mode=resiliency_mode, mcast_limit=mcast_limit, uuid=int(uuid)).verify_result(should_succeed=False)
                 err_msg = f"'{resiliency_mode}' is not one of ['full_bandwidth', 'adaptive_bandwidth', 'user_action']"
                 assert err_msg in output, f"Expected message to include {err_msg}, instead\n {output}"
                 ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format, standalone_system)
@@ -224,7 +225,7 @@ def test_cluster_partition_bad_flow(engines, devices, test_api, has_loopbox, sta
                 if partition_type == 'location_based':
                     output = sdn.partition.partition_id[part_id].action_create_partition_id(name=ClusterConsts.CREATED_PARTITION_NAME + '11', resiliency_mode=resiliency_mode, mcast_limit=mcast_limit, location=location).verify_result(should_succeed=False)
                 else:
-                    output = sdn.partition.partition_id[part_id].action_create_partition_id(name=ClusterConsts.CREATED_PARTITION_NAME + '11', resiliency_mode=resiliency_mode, mcast_limit=mcast_limit, uuid=uuid).verify_result(should_succeed=False)
+                    output = sdn.partition.partition_id[part_id].action_create_partition_id(name=ClusterConsts.CREATED_PARTITION_NAME + '11', resiliency_mode=resiliency_mode, mcast_limit=mcast_limit, uuid=int(uuid)).verify_result(should_succeed=False)
                 err_msg = "Valid range is 0 - 1024"
                 assert err_msg in output, f"Expected message to include {err_msg}, instead\n {output}"
                 ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format, standalone_system)
@@ -244,6 +245,7 @@ def test_cluster_partition_bad_flow(engines, devices, test_api, has_loopbox, sta
     finally:
         with allure.step("Running sdn factory reset"):
             sdn.factory_default.action_reset(param='force')
+            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
         if interface_wa_called:
             next(interfaces_wa)
         cluster.unset(apply=True)
@@ -323,7 +325,7 @@ def remove_gpu_from_partition_and_add_to_new_partition(sdn, original_partition_i
         if partition_type == 'location_based':
             sdn.partition.partition_id[new_partition].action_create_partition_id(name=partition_name, resiliency_mode=resiliency_mode, mcast_limit=mcast_limit, location=location)
         else:
-            sdn.partition.partition_id[new_partition].action_create_partition_id(name=partition_name, resiliency_mode=resiliency_mode, mcast_limit=mcast_limit, uuid=uuid)
+            sdn.partition.partition_id[new_partition].action_create_partition_id(name=partition_name, resiliency_mode=resiliency_mode, mcast_limit=mcast_limit, uuid=int(uuid))
 
     with allure.step("Checking newly created partition"):
         if is_bug_active(4285786):

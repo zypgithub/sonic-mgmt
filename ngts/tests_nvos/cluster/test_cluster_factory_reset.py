@@ -339,6 +339,7 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
         if not standalone_system:
             with allure.step("Running sdn factory reset"):
                 sdn.factory_default.action_reset(param='force')
+                ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
 
         engines.sonic_mgmt.run_cmd(f"sudo rm -rf {ClusterConsts.INITIAL_CONFIGURATIONS_PATH + '/*'}")
         for app in ClusterConsts.INITIAL_EXPECTED_APPS:
