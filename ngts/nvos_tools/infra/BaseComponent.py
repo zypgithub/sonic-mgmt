@@ -142,15 +142,6 @@ class BaseComponent:
             with allure.step("Applying unset configuration"):
                 result_obj = SendCommandTool.execute_command(self._general_cli_wrapper.apply_config, dut_engine,
                                                              ask_for_confirmation)
-
-        if is_redmine_issue_active([4289747])[0]:
-            if '/interface/eth0' in resource_path:
-                dut_engine.run_cmd('nv action renew interface eth0 ip dhcp-client')
-                time.sleep(10)
-            elif '/interface/eth1' in resource_path:
-                dut_engine.run_cmd('nv action renew interface eth1 ip dhcp-client')
-                time.sleep(10)
-
         return result_obj
 
     def action(self, action: str, suffix="", param_name="", param_value="", output_format=OutputFormat.json,

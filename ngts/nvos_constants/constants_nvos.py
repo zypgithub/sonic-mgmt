@@ -1090,6 +1090,7 @@ class NtpConsts:
 
     class Listen(Enum):
         ETH0 = 'eth0'
+        ETH1 = 'eth1'
 
     AUTHENTICATION = 'authentication'
     DHCP = 'dhcp'
@@ -1131,6 +1132,8 @@ class NtpConsts:
     MULTIPLE_SERVERS_NUMBER = 11
     CONFIG_TIME_DIFF_THRESHOLD = 2.5  # [sec]
     SHOW_TIME_DIFF_THRESHOLD = 0.5  # [sec]
+    SYNCHRONIZE_NEW_LISTEN_TIME = 20  # [sec]
+    SYNCHRONIZE_TIME = 50  # [sec]
     SYNCHRONIZATION_MAX_TIME = 100  # [sec]
     SYNCHRONIZATION_TIME_AFTER_REBOOT = 60  # [sec]
     CONFIG_TIME = 10  # [sec]
