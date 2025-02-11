@@ -38,7 +38,7 @@ def get_spcx_ra_leaf_traffic(players, conf_args, template_suite="traffic_packets
                                  TESTS_SCENARIO, f"{player_alias}_{TESTS_SCENARIO.replace('/', '_')}_{pkt_size}.json")
         traffic_parameters = player_cli_obj.performance.get_traffic_parameters(scenario=TESTS_SCENARIO,
                                                                                conf_args=conf_args)
-        if player_alias == conf_args["leaf"]:
+        if player_alias == conf_args["host"]:
             create_json_traffic_file(player_alias=player_alias,
                                      traffic_parameters=traffic_parameters, json_path=json_path)
         else:
@@ -49,7 +49,7 @@ def get_spcx_ra_leaf_traffic(players, conf_args, template_suite="traffic_packets
 
 def get_spine_to_leaf_stream_list(players, spine_tg, conf_args, traffic_parameters, json_path):
     dut_configuration = players['dut']['cli'].performance.get_device_configuration(scenario=conf_args["scenario"])
-    leaf_dst_ips = list(dut_configuration["rif_ip_list"].values())
+    leaf_dst_ips = list(dut_configuration["right_side_ports_to_ip_dict"].values())
     stream_list = []
     for ip in leaf_dst_ips:
         stream_name = f"spine_to_leaf_ip_{ip}"

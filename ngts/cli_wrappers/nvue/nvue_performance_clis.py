@@ -4,6 +4,9 @@ import os
 import pprint
 import tempfile
 import yaml
+import re
+from json.decoder import JSONDecodeError
+
 from ngts.constants.constants import BugHandlerConst
 from ngts.constants.performance_constants import PerfConsts, Cl_Consts
 from dataclasses import dataclass
@@ -142,6 +145,8 @@ class NvuePerformanceCli(PerformanceCommon):
         self.execute_cmd(f"sudo logrotate --force /etc/logrotate.d/{daemon}")
 
     def get_traffic_parameters(self, scenario, conf_args={}):
+        tg_regex = r"(left|right)_tg"
+        tg_alias = re.search(tg_regex, self.dut_alias).group(1)
         is_ipv6 = conf_args.get("is_ipv6", False)
         ip_key = "IPV6" if is_ipv6 else "IP"
         ip_dict = {
@@ -166,7 +171,7 @@ class NvuePerformanceCli(PerformanceCommon):
         traffic_parameters["AR"] = conf_args.get("AR", PerfConsts.ADAPTIVE_ROUTING_ENABLED)
         traffic_parameters["ports"] = self.get_tg_unconnected_ports()
         traffic_parameters["packet_size"] = conf_args["packet_size"]
-        traffic_parameters["num_packets"] = conf_args["num_packets"]
+        traffic_parameters["num_packets"] = conf_args[f"{tg_alias}_num_packets"]
         traffic_parameters["is_ipv6"] = is_ipv6
         return traffic_parameters
 

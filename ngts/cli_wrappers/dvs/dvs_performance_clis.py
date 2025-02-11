@@ -234,7 +234,7 @@ class DvsPerformance(PerformanceCommon):
             "UDP": {"src": PerfConsts.UDP_SOURCE_PORT, "dst": PerfConsts.ROCE_PORT},
             "AR": PerfConsts.ADAPTIVE_ROUTING_ENABLED,
             "packet_size": conf_args["packet_size"],
-            "num_packets": conf_args["num_packets"],
+            "num_packets": conf_args[f"{tg_alias}_num_packets"],
             "is_ipv6": conf_args["is_ipv6"]
         }
         return traffic_parameters

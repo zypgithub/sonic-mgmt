@@ -89,6 +89,7 @@ def validate_traffic_results(players, test_name, scenario, samples_params_dict,
         full_path = os.path.join(BugHandlerConst.NGTS_PATH, "performance_tests",
                                  "traffic_validation_json_files",
                                  scenario, f"{hour_str}_{player_alias}_{hostname}_{test_name}_TrafficValidator.json")
+
         call_performance_function_with_threads(players, players_aliases=[player_alias],
                                                action="run traffic validator",
                                                performance_clis_function_name="validate_traffic",

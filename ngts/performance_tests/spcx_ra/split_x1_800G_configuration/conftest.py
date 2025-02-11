@@ -27,11 +27,12 @@ def conf_args(is_ipv6):
                  "is_ipv6": is_ipv6,
                  "split_right": 1,
                  "split_left": 1,
-                 "leaf": "right_tg",
+                 "host": "right_tg",
                  "spine": "left_tg",
                  "scenario": TESTS_SCENARIO,
                  "packet_size": PerfConsts.PACKET_SIZE_LIST[0],
-                 "num_packets": SPCXRAConsts.PACKET_NUM_800G_x1
+                 "left_num_packets": SPCXRAConsts.PACKET_NUM_800G_x1,
+                 "right_num_packets": SPCXRAConsts.PACKET_NUM_800G_x1,
                  }
     return conf_args
 
