@@ -70,7 +70,7 @@ def test_rsyslog_positive_minimal_flow_by_ipv4(engines, test_api):
 @pytest.mark.system
 @pytest.mark.syslog
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_rsyslog_positive_minimal_flow_by_ipv6(engines, test_api):
+def test_rsyslog_positive_minimal_flow_by_ipv6(engines, test_api, sonic_mgmt_ipv6_addr):
     """
     Will validate the minimal positive flow:
         set server and send UDP msg , verify the server get the msg and show commands
@@ -83,14 +83,7 @@ def test_rsyslog_positive_minimal_flow_by_ipv6(engines, test_api):
     5. Cleanup
     """
     TestToolkit.tested_api = test_api
-    remote_server_engine = engines[NvosConst.SONIC_MGMT]
-
-    ifconfig_output = remote_server_engine.run_cmd("ifconfig")
-    ipv6_addresses = re.findall(r'inet6 ([\da-f:]+)', ifconfig_output)
-    if not ipv6_addresses:
-        assert False, f"Failed to get IPV6 address for {remote_server_engine.ip}"
-
-    positive_minimal_flow(remote_server_engine, ipv6_addresses[0])
+    positive_minimal_flow(engines[NvosConst.SONIC_MGMT], sonic_mgmt_ipv6_addr)
 
 
 @pytest.mark.system
