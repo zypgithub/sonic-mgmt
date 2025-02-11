@@ -17,7 +17,6 @@ from ngts.tests_nvos.general.security.certificate.helpers import verify_ca_in_ex
     send_curl_with_and_verify
 from ngts.tests_nvos.general.security.nmx_cert.constants import EncryptionMode
 from ngts.tests_nvos.general.security.test_api_server_security.constants import CERTIFICATE, CA_CERTIFICATE
-from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tests_nvos.system.gnmi.conftest import scp_player
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_general_utils import generate_scp_uri_using_player
@@ -338,17 +337,14 @@ def test_cert_mgmt_use_ca_for_rest_api_mtls(test_api, engines, scp_player, clear
 
     cases = [
         Case('import + bind global ca', [CA(cert2)], cert2, [Cert(cert2, True), Cert(cert3, False)]),
-        Case('import + bind external ca', [CA(cert2, True)], cert2, [Cert(cert2, True), Cert(cert3, False)], True),
         Case('import 2 globals (bind one) - both should work', [CA(cert2), CA(cert3)], cert2, [Cert(cert2, True), Cert(cert3, True)]),
-        Case('import 2 externals (bind one) - one should work', [CA(cert2, True), CA(cert3, True)], cert2, [Cert(cert2, True), Cert(cert3, False)], True),
-        Case('import global + external, bind external - both should work', [CA(cert2), CA(cert3, True)], cert3, [Cert(cert2, True), Cert(cert3, True)], True),
         Case('import global + external, bind global - only global should work', [CA(cert2), CA(cert3, True)], cert2, [Cert(cert2, True), Cert(cert3, False)]),
     ]
 
     with allure.step('test with several cases'):
         for case in cases:
-            if case.bind_external and is_bug_active(4163320):
-                continue  # TODO: remove once bug is closed
+            if case.bind_external:
+                continue  # can't bind external ca to api
             with allure.independent_step(f'case: {case.title}'):
                 with allure.step('clear existing ca/certs'):
                     TestToolkit.tested_api = ApiType.NVUE

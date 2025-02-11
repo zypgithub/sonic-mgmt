@@ -14,7 +14,6 @@ from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tests_nvos.general.security.constants import ETC_HOSTS, TMP_TEST_CERTS_DIR, YEAR
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
 from ngts.tests_nvos.helpers.general_helpers import generate_rand_str
-from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_general_utils import generate_scp_uri_using_player
 
@@ -169,10 +168,10 @@ def get_cert_with_ca_mismatch(certs: List[CertInfo]) -> CertInfo:
 
 
 def optional_cacert_types() -> list:  # TODO: remove once closed
-    if any(is_bug_active(bug) for bug in [4251992, 4237677, 4237752, 4237850]):
-        return [CacertType.GLOBAL]
-    else:
-        return CacertType.ALL_TYPES
+    # if any(is_bug_active(bug) for bug in [4251992, 4237677, 4237752, 4237850]):
+    #     return [CacertType.GLOBAL]
+    # else:
+    return CacertType.ALL_TYPES
 
 
 def get_test_certs_dir_location(certs_dirname_prefix, dut_hostname):

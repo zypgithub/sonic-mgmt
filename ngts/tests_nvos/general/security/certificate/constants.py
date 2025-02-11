@@ -160,7 +160,7 @@ GLOBAL_CA_CRT_FILE_LOCATION = '/usr/local/share/ca-certificates/nvue'
 
 CA_POOL_FILE = '/etc/ssl/certs/ca-certificates.crt'
 
-EXTERNAL_CA_CRT_FILE_LOCATION = '/usr/local/share/ext/ca-certificates/nvue/'
+EXTERNAL_CA_CRT_FILE_LOCATION = '/usr/local/share/ext/ca-certificates/nvue'
 
 CA_TYPE_EXTERNAL = 'external'
 CA_TYPE_GLOBAL = 'global'
