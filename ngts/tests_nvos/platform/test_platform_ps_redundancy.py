@@ -145,9 +145,7 @@ def platform_ps_redundancy_functionality(engines, topology_obj, system, min_for_
         with allure.step("Recover PSUs"):
             DutUtilsTool.dut_psu_control(engines, topology_obj, '', 'on', dhcp_hostname)
             # Wait for PSU states to update
-            reboot_params = RebootParams()
-            reboot_params.topology_obj = reboot_params
-            DutUtilsTool.wait_on_system_reboot(engines.dut, reboot_params)
+            time.sleep(10)
 
         with allure.step("Validate System health is OK and issues are not seen"):
             system_health_check(system, HealthConsts.OK)

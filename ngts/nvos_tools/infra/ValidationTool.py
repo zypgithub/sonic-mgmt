@@ -562,7 +562,7 @@ class ValidationTool:
         if isinstance(expected, str):
             expected = (expected, )
         if any(s in actual for s in expected):
-            return ResultObj(True, returned_value=True)
+            return ResultObj(True, "", actual)
         else:
             return ResultObj(False, returned_value=False,
                              info=f'String expected to contain one of {expected} but actual value is: {actual}')
