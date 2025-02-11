@@ -25,5 +25,8 @@
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/CI/nvos_chipsim_ci_init_flow.cases </cases>
 	</test>
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/CI/nvos_chipsim_ci_gnmi.cases </cases>
+	</test>
 
 </DBDEF>
