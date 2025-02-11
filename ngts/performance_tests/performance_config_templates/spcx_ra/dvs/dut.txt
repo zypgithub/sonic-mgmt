@@ -44,9 +44,10 @@
             "two_sided_ar": "{{ conf_args.two_sided_ar }}",
             {% if conf_args.is_ipv6 %}
             {% set ip_address = "192:168:5:1:1:1:2:0" %}
+            "rif_ip_list": {{ generate_ip_list(address_start = ip_address,  step = 1, list_of_ports=right_split_ports, mode=v6) | tojson}}
             {% else %}
             {% set ip_address = "10.0.1.0" %}
+            "rif_ip_list": {{ generate_ip_list(address_start = ip_address,  step = 1, list_of_ports=right_split_ports, mode=v4) | tojson}}
             {% endif %}
-            "rif_ip_list": {{ generate_ip_list(ip_address, right_split_ports) | tojson}}
         }
 }

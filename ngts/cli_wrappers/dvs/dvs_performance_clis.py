@@ -4,7 +4,7 @@ import re
 import json
 from ngts.constants.constants import BugHandlerConst
 from ngts.constants.performance_constants import PerfConsts
-from ngts.helpers.performance.traffic_helpers import generate_ip_list
+from ngts.helpers.performance.traffic_helpers import generate_ip_address_dict
 from ngts.cli_wrappers.common.performance_clis_common import PerformanceCommon
 from jinja2 import Environment, FileSystemLoader
 
@@ -35,7 +35,7 @@ class DvsPerformance(PerformanceCommon):
         jinja_template = env.get_template(f"{self.dut_alias}.txt")
         func_dict = {"get_right_left_ports_dict": self.get_right_left_ports_dict,
                      "get_split_ports": self.get_split_ports,
-                     "generate_ip_list": generate_ip_list}
+                     "generate_ip_list": generate_ip_address_dict}
         jinja_template.globals.update(func_dict)
         template_string = jinja_template.render(conf_args=conf_args, dut_alias=self.dut_alias)
         json_dict = json.loads(template_string)

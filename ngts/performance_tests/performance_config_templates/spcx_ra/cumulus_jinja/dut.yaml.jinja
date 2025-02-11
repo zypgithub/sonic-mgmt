@@ -1,0 +1,162 @@
+{% set left_ports = get_right_left_ports_dict(bring_up_ports=False)['left_ports'] %}
+{% set right_ports = get_right_left_ports_dict(bring_up_ports=False)['right_ports'] %}
+{% set split_left = parameter_dict.split_left %}
+{% set split_right = parameter_dict.split_right %}
+{% set total_ports = parameter_dict.total_ports %}
+{% set left_address_list = generate_ip_address_list("172.16.1.2", "172::1:2", mode="dual", number_of_address=(total_ports//2)*split_left) %}
+{% set right_address_list = generate_ip_address_list("192.168.1.2", "192::1:2", mode="dual", number_of_address=(total_ports//2)*split_right) %}
+{% set left_to_right_next_hop_list = generate_ip_address_list("192.168.1.1", "192::1:1", mode="dual", number_of_address=(total_ports//2)*split_left) %}
+{% set right_to_left_next_hop_list = generate_ip_address_list("172.16.1.1", "172::1:1", mode="dual", number_of_address=(total_ports//2)*split_right) %}
+- header:
+    model: sn5600
+    nvue-api-version: nvue_v1
+    rev-id: 1.0
+    version: Cumulus Linux 5.11.0   
+- set:
+    interface:
+      eth0:
+        ip:
+          address:
+            dhcp: {}
+          vrf: mgmt
+        type: eth
+    {% if split_left!=1 %}
+    {% for port in left_ports  %}
+      {{ port }}:
+        link:
+          breakout:
+            {{ split_left }}x: {}
+        type: swp
+    {% endfor %}
+    {% endif %}
+    {% if split_right!=1 %}
+    {% for port in right_ports  %}
+      {{ port }}:
+        link:
+          breakout:
+            {{ split_right }}x: {}
+        type: swp
+    {% endfor %}
+    {% endif %}
+    {% set counter = namespace(value=0) %}
+    {% for port in left_ports %}
+    {% for split in range(0, split_left) %}
+      {{ port }}{% if split_left != 1 %}s{{ split }} {% endif %}:
+        ip:
+          address:
+            {{ left_address_list["v4"][counter.value] }}/24 : {}
+            {{ left_address_list["v6"][counter.value] }}/120 : {}
+            {% set counter.value = counter.value + 1 %}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+    {% endfor %}
+    {% endfor %}
+    {% set counter = namespace(value=0) %}
+    {% for port in right_ports %}
+      {% for split in range(0, split_right)%}
+      {{ port }}{% if split_right != 1 %}s{{ split }} {% endif %}:
+        ip:
+          address:
+            {{ right_address_list["v4"][counter.value] }}/24 : {}
+            {{ right_address_list["v6"][counter.value] }}/120 : {}
+            {% set counter.value = counter.value + 1 %}
+        router:
+          adaptive-routing:
+            enable: on
+        type: swp
+      {% endfor %}
+    {% endfor %}
+    qos:
+      pfc:
+        default-global:
+          port-buffer: 20200
+          switch-priority:
+            '3': {}
+          xoff-threshold: 65000
+          xon-threshold: 65000
+      roce:
+        enable: on
+        mode: lossless
+    router:
+      adaptive-routing:
+        enable: on
+    service:
+      ntp:
+        mgmt:
+          server:
+            0.cumulusnetworks.pool.ntp.org: {}
+            1.cumulusnetworks.pool.ntp.org: {}
+            2.cumulusnetworks.pool.ntp.org: {}
+            3.cumulusnetworks.pool.ntp.org: {}
+    system:
+      aaa:
+        user:
+          cumulus:
+            full-name: cumulus,,,
+            hashed-password: $y$j9T$9Cyz6WM14RJ7pTBn3vhNC1$f9Yv..6j2M98TBcNXHsephQHAwnhCQ9XNg0Sy5f7NV8
+            role: system-admin
+      api:
+        state: enabled
+      config:
+        auto-save:
+          state: enabled
+      control-plane:
+        acl:
+          acl-default-dos:
+            inbound: {}
+          acl-default-whitelist:
+            inbound: {}
+      hostname: dut
+      reboot:
+        mode: cold
+      ssh-server:
+        state: enabled
+        max-sessions-per-connection: 30
+        max-unauthenticated:
+          throttle-start: 30
+        permit-root-login: enabled
+      telemetry:
+        enable: on
+      wjh:
+        channel:
+          forwarding:
+            trigger:
+              l1: {}
+              l2: {}
+              l3: {}
+              tunnel: {}
+        enable: on
+    vrf:
+      default:
+        router:
+          static:
+            110.110.110.0/24:
+              address-family: ipv4-unicast
+              via:
+                {% for nh in right_to_left_next_hop_list["v4"] %}
+                {{ nh }}:
+                  type: ipv4-address
+                {% endfor %}
+            130.130.130.0/24:
+              address-family: ipv4-unicast
+              via:
+                {% for nh in left_to_right_next_hop_list["v4"] %}
+                {{ nh }}:
+                  type: ipv4-address
+                {% endfor %}
+            110::/120:
+              address-family: ipv6-unicast
+              via:
+                {% for nh in right_to_left_next_hop_list["v6"] %}
+                {{ nh }}:
+                  type: ipv6-address
+                {% endfor %}
+            130::/120:
+              address-family: ipv6-unicast
+              via:
+                {% for nh in left_to_right_next_hop_list["v6"] %}
+                {{ nh }}:
+                  type: ipv6-address
+                {% endfor %}

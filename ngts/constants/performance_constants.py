@@ -6,6 +6,7 @@ class Cl_Consts:
     CL_LOG_PORT_FILE_PATH = os.path.join(BugHandlerConst.NGTS_PATH, 'scripts/')
     CL_LOG_PORT_FILE = 'log_port_cumulus.py'
     BONUS_PORTS = {
+        'Spectrum-3': [],
         'Spectrum-4': ['swp65']
     }
     CL_HOME_DIR = "/home/cumulus"

@@ -1,0 +1,157 @@
+{% set port_list = filter_ports(["dut"]) %}
+{% set total_ports = parameter_dict.total_ports %}
+{% set split_right = parameter_dict.split_right %}
+{% set address_list = generate_ip_address_list("192.168.1.1", "192::1:1", mode="dual", number_of_address=(total_ports//2)*split_right) %}
+{% set mloop_ports = down_ports() %}
+- header:
+    model: sn5600
+    nvue-api-version: nvue_v1
+    rev-id: 1.0
+    version: Cumulus Linux 5.11.0
+- set:
+    acl:
+      acl-drop-arp:
+        rule:
+          '1':
+            action:
+              deny: {}
+            match:
+              mac:
+                protocol: arp
+          '2':
+            action:
+              deny: {}
+            match:
+              ip:
+                protocol: 1
+              mac:
+                protocol: ipv4
+          '3':
+            action:
+              deny: {}
+            match:
+              ip:
+                protocol: 58
+              mac:
+                protocol: ipv6
+          '4':
+            action:
+              permit: {}
+        type: mac
+    bridge:
+      domain:
+        br_default:
+          stp:
+            state:
+              down: {}
+          vlan:
+            200-800: {}
+    interface:
+      eth0:
+        ip:
+          address:
+            dhcp: {}
+          vrf: mgmt
+        type: eth
+    {% if split_right!=1 %}
+    {% for port in port_list['dut']  %}
+      {{ port }}:
+        link:
+          breakout:
+            {{ split_right }}x: {}
+        type: swp
+    {% endfor %}
+    {% endif %}
+    {% if split_right!=1 %}
+    {% for port in mloop_ports  %}
+      {{ port }}:
+        link:
+          breakout:
+            {{ split_right }}x: {}
+        type: swp
+    {% endfor %}
+    {% endif %}
+    {% set counter = namespace(value=0) %}
+    {% for port in port_list['dut'] %}
+    {% for split in range(0, split_right | int ) %}
+      {{ port }}{% if split_right != 1 %}s{{ split }} {% endif %}:
+        acl:
+          acl-drop-arp:
+            inbound: {}
+        bridge:
+          domain:
+            br_default:
+              access: {{ counter.value + 200 }}
+              {% set counter.value = counter.value + 1 %}
+              learning: off
+        type: swp
+    {% endfor %}
+    {% endfor %}
+    {% set counter = namespace(value=0) %}
+    {% for port in mloop_ports %}
+    {% for split in range(0, split_right | int ) %}
+      {{ port }}{% if split_right != 1 %}s{{ split }} {% endif %}:
+        acl:
+          acl-drop-arp:
+            inbound: {}
+        bridge:
+          domain:
+            br_default:
+              access: {{ counter.value + 200 }}
+              {% set counter.value = counter.value + 1 %}
+              learning: off
+        type: swp
+    {% endfor %}
+    {% endfor %}
+    {% for vlan in range(200, 200 + address_list["v4"]|length ) %}
+      vlan{{ vlan }}:
+        base-interface: br_default
+        ip:
+          address:
+            {{ address_list["v4"][loop.index0] }}/24: {}
+            {{ address_list["v6"][loop.index0] }}/120: {}
+        type: svi
+        vlan: {{ vlan }}
+    {% endfor %}
+    service:
+      ntp:
+        mgmt:
+          server:
+            0.cumulusnetworks.pool.ntp.org: {}
+            1.cumulusnetworks.pool.ntp.org: {}
+            2.cumulusnetworks.pool.ntp.org: {}
+            3.cumulusnetworks.pool.ntp.org: {}
+    system:
+      aaa:
+        user:
+          cumulus:
+            full-name: cumulus,,,
+            hashed-password: $y$j9T$8zsfwM2wUFOqZ6Rf3R52N1$arVIQV7VMODDweBK.amymemQTvZmugDDW6rnEF.fHS3
+            role: system-admin
+      api:
+        state: enabled
+      config:
+        auto-save:
+          state: enabled
+      control-plane:
+        acl:
+          acl-default-dos:
+            inbound: {}
+          acl-default-whitelist:
+            inbound: {}
+      hostname: right-tg
+      reboot:
+        mode: cold
+      ssh-server:
+        max-sessions-per-connection: 30
+        max-unauthenticated:
+          throttle-start: 30
+        permit-root-login: enabled
+      wjh:
+        channel:
+          forwarding:
+            trigger:
+              l2: {}
+              l3: {}
+              tunnel: {}
+        enable: on

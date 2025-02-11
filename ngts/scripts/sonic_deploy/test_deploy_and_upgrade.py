@@ -267,7 +267,7 @@ def post_installation_steps(topology_obj, sonic_topo, recover_by_reboot, deploy_
     """
     dut_cli_obj = setup_info['duts'][0]['cli_obj']
     if isinstance(dut_cli_obj, CumulusGeneralCli):
-        CumulusInstallationSteps.post_installation_steps(setup_info)
+        CumulusInstallationSteps.post_installation_steps(setup_info, is_performance)
     elif isinstance(dut_cli_obj, NvueGeneralCli):
         NvosInstallationSteps.post_installation_steps(topology_obj, workspace_path, setup_info,
                                                       serial_log_analyzers[dut_cli_obj.engine.ip],
@@ -370,7 +370,7 @@ def get_info_from_topology(topology_obj, workspace_path):
                     topology_obj, host)
                 cli_obj = get_cli_obj(topology_obj, cli_type, switch_type, engine, host, dut_alias)
                 dut_info = {'dut_name': dut_name, 'cli_type': cli_type, 'engine': engine, 'cli_obj': cli_obj,
-                            'dut_alias': dut_alias, 'switch_type': switch_type, 'dut_ip': dut_ip}
+                            'dut_alias': dut_alias, 'switch_type': switch_type, 'dut_ip': dut_ip, 'cli': topology_obj.players[dut_alias]['cli']}
                 if dut_info['dut_alias'] == "dut":
                     setup_info['duts'].insert(0, dut_info)
                 else:

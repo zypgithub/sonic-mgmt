@@ -1,11 +1,15 @@
 import json
 import logging
 import os
-from json.decoder import JSONDecodeError
-
-from ngts.cli_wrappers.common.performance_clis_common import PerformanceCommon
+import pprint
+import tempfile
+import yaml
 from ngts.constants.constants import BugHandlerConst
 from ngts.constants.performance_constants import PerfConsts, Cl_Consts
+from ngts.cli_wrappers.common.performance_clis_common import PerformanceCommon
+from jinja2 import Environment, FileSystemLoader
+from ngts.helpers.performance.traffic_helpers import generate_ip_address_list
+from time import sleep
 
 
 class NvuePerformanceCli(PerformanceCommon):
@@ -14,7 +18,7 @@ class NvuePerformanceCli(PerformanceCommon):
         super().__init__(topology_obj, engine, dut_alias, cli_obj)
 
     def apply_configuration_file(self, scenario, conf_args, template_suite=PerfConsts.DEFAULT_PERF_TEMPLATES_DIR, dst_dir=Cl_Consts.CL_HOME_DIR):
-        src_file = self.get_configuration_file_path(scenario, template_suite)
+        src_file = self.get_configuration_file(scenario, conf_args, template_suite)
         logging.info(f"Applying configuration file on {self.dut_alias}")
         self.engine.copy_file(source_file=src_file, file_system=dst_dir,
                               dest_file="tmp.yaml", overwrite_file=True, verify_file=False)
@@ -105,7 +109,7 @@ class NvuePerformanceCli(PerformanceCommon):
             output = self.execute_cmd("nv sh interface physical -o json")
             try:
                 output = json.loads(output)
-            except JSONDecodeError as j:
+            except json.JSONDecodeError as j:
                 logging.error("Interface output is not a valid JSON object")
                 logging.error(f"Output is : {output}")
                 raise j
@@ -166,3 +170,60 @@ class NvuePerformanceCli(PerformanceCommon):
         sdk_ports = sdk_ports.split()
         logging.info(sdk_ports)
         return sdk_ports
+
+    def get_right_left_ports_dict(self, bring_up_ports=False):
+        """
+        Returns:
+        A dict of ports in the dut connect to the right TG and left TG, i.e,
+        {'left_ports': ['swp1s0', 'swp1s1', ...,], 'right_ports': ['swp33s0', 'swp33s1',...]}
+        """
+        right_left_port_dict = {
+            'right_ports': [],
+            'left_ports': []
+        }
+        if bring_up_ports:
+            for dut in PerfConsts.PERF_SETUP_PLAYERS_ALIASES:
+                self.topology_obj[0][dut]['cli'].interface.initialize_physical_ports()
+            logging.info("Waiting 10 seconds for LLDP neighbor to get populated.")
+            sleep(10)
+        lldp_json = self.cli_obj.interface.get_lldp_neighbors(output_type="json")
+        for port, properties in lldp_json.items():
+            if [*properties['lldp']['neighbor'].keys()][0] == 'right-tg':
+                right_left_port_dict["right_ports"].append(port)
+            if [*properties['lldp']['neighbor'].keys()][0] == 'left-tg':
+                right_left_port_dict["left_ports"].append(port)
+        return right_left_port_dict
+
+    def get_configuration_file(self, scenario, conf_args, template_suite=PerfConsts.DEFAULT_PERF_TEMPLATES_DIR):
+        func_dict = {"get_right_left_ports_dict": self.get_right_left_ports_dict,
+                     "generate_ip_address_list": generate_ip_address_list,
+                     "filter_ports": self.cli_obj.interface.filter_lldp_neighbors,
+                     "down_ports": self.cli_obj.interface.get_down_ports
+                     }
+        asic = self.cli_obj.general.get_asic_model(self.engine)
+        number_of_bonus_ports = len(Cl_Consts.BONUS_PORTS[asic])
+        total_ports = self.cli_obj.interface.get_physical_ports()
+        total_dut_ports = total_ports - number_of_bonus_ports
+        templates_path = os.path.join(BugHandlerConst.NGTS_PATH, "performance_tests",
+                                      template_suite, scenario, "cumulus_jinja")
+        templateLoader = FileSystemLoader(searchpath=templates_path)
+        templateEnv = Environment(loader=templateLoader)
+        TEMPLATE_FILE = "{}.yaml.jinja".format(self.dut_alias)
+        jinja_template = templateEnv.get_template(TEMPLATE_FILE)
+        jinja_template.globals.update(func_dict)
+        parameter_dict = {
+            "split_left": conf_args['split_left'],
+            "split_right": conf_args['split_right'],
+            "total_ports": total_dut_ports
+        }
+        outputText = jinja_template.render(parameter_dict=parameter_dict)
+        try:
+            yaml.safe_load(outputText)  # just for checking the YAML sanity
+        except yaml.YAMLError as yex:
+            logging.error(yex)
+            logging.error(f"{self.dut_alias}'s Jinja file has resulted in incorrect YAML configuration :- \r\n{pprint.pformat(outputText, depth=12, width=128)}\r\n")
+            raise
+        fd, path = tempfile.mkstemp()
+        with open(path, 'w') as f:
+            f.write(outputText)
+        return path

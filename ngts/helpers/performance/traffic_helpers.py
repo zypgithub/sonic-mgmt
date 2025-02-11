@@ -6,17 +6,56 @@ from ngts.helpers.performance.packet_json_generator import PacketGenerator
 from ngts.constants.performance_constants import PerfConsts
 
 
-def ip_to_int(ipstr):
-    return int(ipaddress.ip_address(ipstr))
+def generate_ip_address_list(address_start_v4="172.168.1.1", address_start_v6="172::1:1", step_v4=256, step_v6=0x10000,
+                             number_of_address: int = 64, mode="v4"):
+    """
+    Returns :
+        address_lst = {
+            "v4": ["172.168.1.1", "172.168.1.2" ...],
+            "v6": ["172::1", "172::2", ...]
+        }
+    """
+    address_list = {
+        "v4": [],
+        "v6": []
+    }
+
+    if mode in ["v4", "dual"]:
+        start_address_v4 = ipaddress.IPv4Address(address_start_v4)
+        for i in range(0, number_of_address):
+            address_list["v4"].append(str(start_address_v4 + i * step_v4))
+
+    if mode in ["v6", "dual"]:
+        start_address_v6 = ipaddress.IPv6Address(address_start_v6)
+        for i in range(0, number_of_address):
+            address_list["v6"].append(str(start_address_v6 + i * step_v6))
+
+    if mode == "dual":
+        return address_list
+    elif mode == "v4":
+        return address_list["v4"]
+    elif mode == "v6":
+        return address_list["v6"]
 
 
-def int_to_ip(n):
-    return str(ipaddress.ip_address(n))
+def generate_ip_address_dict(address_start, step, mode, list_of_ports):
+    '''
+    Returns :
+    {
+        port1: "172.168.1.1",
+        port2: "172.168.1.2",
+        or
+        port1: "172::1",
+        port2: "172::2"
+    }
+    '''
+    address_list = []
+    if mode == "v4":
+        address_list = generate_ip_address_list(address_start_v4=address_start, step_v4=step, number_of_address=len(list_of_ports), mode="v4")
+    if mode == "v6":
+        address_list = generate_ip_address_list(address_start_v6=address_start, step_v6=step, number_of_address=len(list_of_ports), mode="v6")
 
-
-def generate_ip_list(start_ip_address, list_of_ports):
-    ip_list = [int_to_ip(ip_to_int(start_ip_address) + i) for i in range(len(list_of_ports))]
-    return dict(list(zip(list_of_ports, ip_list)))
+    return dict(zip(list_of_ports, address_list))
 
 
 def create_json_traffic_stream(player_alias, traffic_parameters, stream_name):

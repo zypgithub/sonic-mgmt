@@ -11,7 +11,7 @@ class CumulusInstallationSteps:
         assert target_version, 'Argument "target_version" must be provided for installing Cumulus'
 
     @staticmethod
-    def post_installation_steps(setup_info):
+    def post_installation_steps(setup_info, is_performance):
         """
         Post-installation steps for NVOS NOS
             Update /etc/sudoers file to permit NOPASSWD for sudo
@@ -29,6 +29,12 @@ class CumulusInstallationSteps:
             logging.info("Root login for dut enabled")
             logging.info("Updating /etc/apt/sources.list")
             CumulusInstallationSteps.update_apt_sources_list(dut)
+            if is_performance:
+                logging.info(f"Updating the hostname for performance setups.")
+                dut_hostname = dut['dut_alias'].replace("_", "-")
+                dut['engine'].run_cmd_set([f"nv set system hostname {dut_hostname}", "nv config apply -y"], patterns_list=["applied_and_saved"])
+                logging.info("Bringing up all the ports")
+                dut['cli'].interface.get_and_initialize_physical_ports(bring_up_ports=True)
 
     @staticmethod
     def update_apt_sources_list(dut):
