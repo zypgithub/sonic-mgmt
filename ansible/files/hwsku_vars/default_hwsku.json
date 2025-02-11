@@ -195,7 +195,7 @@
         "default_hwsku": "Mellanox-SN5610N-C256S2",
         "support_hwsku": ["Mellanox-SN5610N-C256S2", "Mellanox-SN5610N-C224O8"]
     },
-    "mtvr-bison-03_setup": {
+    "mtvr-gaur-03_setup": {
         "default_hwsku": "Mellanox-SN5610N-C256S2",
         "support_hwsku": ["Mellanox-SN5610N-C256S2", "Mellanox-SN5610N-C224O8"]
     },
