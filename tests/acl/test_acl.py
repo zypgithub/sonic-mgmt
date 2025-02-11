@@ -396,7 +396,6 @@ def setup(duthosts, ptfhost, rand_selected_dut, rand_unselected_dut, tbinfo, ptf
             # In multi-asic we need config both in host and namespace.
             if namespace:
                 acl_table_ports[''] += port
-
     if len(port_channels) and topo in ["t0", "m0_vlan", "m0_l3"] or tbinfo["topo"]["name"] in ("t1-lag", "t1-64-lag",
                                                                                                "t1-64-lag-clet",
                                                                                                "t1-56-lag",
