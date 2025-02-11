@@ -71,7 +71,7 @@ def pull_image(ngts_version):
     stream = os.popen("sudo docker images")
     output = stream.read()
     logger.info("docker images:\n {output}".format(output=output))
-    regex = r"harbor\.mellanox\.com\/sonic\/docker-ngts\s+{ngts_version}".format(ngts_version=ngts_version)
+    regex = r"harbor\.gtm\.nvidia\.com\/sonic\/docker-ngts\s+{ngts_version}".format(ngts_version=ngts_version)
     assert re.search(regex, output), "Not found {image_name}:{ngts_version} " \
                                      "in docker images after pull".format(image_name=image_name,
                                                                           ngts_version=ngts_version)
