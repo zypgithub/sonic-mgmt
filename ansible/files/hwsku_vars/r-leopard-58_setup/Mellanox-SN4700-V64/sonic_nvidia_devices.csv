@@ -2,5 +2,5 @@ Hostname,ManagementIp,HwSku,Type,Protocol,Os
 r-leopard-58,10.210.25.116/22,Mellanox-SN4700-V64,DevSonic,,sonic
 r-leopard-59,10.210.25.3/22,Mellanox-SN4700-V64,FanoutLeaf,,sonic
 r-sonic-03,10.213.103.1,TestServ,Server,,
-pdu-10-208-0-186,10.208.0.186,Sentry,CDU,snmp,
+pdu-10-208-0-186,10.208.0.186,Raritan,Pdu,snmp,
 rcon-sws-2-4,10.208.0.49,,ConsoleServer,ssh,sonic

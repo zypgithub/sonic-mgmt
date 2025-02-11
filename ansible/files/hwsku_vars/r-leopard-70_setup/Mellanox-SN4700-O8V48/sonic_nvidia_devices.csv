@@ -5,7 +5,7 @@ r-leopard-72,10.210.24.196/22,Mellanox-SN4700-O8V48,DevSonic,,sonic
 r-leopard-73,10.210.24.210/22,Mellanox-SN4700-O8V48,FanoutLeaf,,sonic
 r-r640-16,10.215.26.180,TestServ,Server,,
 dev-r-vrt-249,10.215.34.60,TestServ,Server,,
-pdu-10-208-0-22,10.208.0.22,Sentry,CDU,snmp,
-pdu-10-208-0-21,10.208.0.21,Sentry,CDU,snmp,
+pdu-10-208-0-22,10.208.0.22,Raritan,Pdu,snmp,
+pdu-10-208-0-21,10.208.0.21,Raritan,Pdu,snmp,
 rcon-sws-3-6,10.208.0.45,,ConsoleServer,ssh,sonic
 rcon-sws-3-8,10.208.0.47,,ConsoleServer,ssh,sonic
