@@ -514,7 +514,7 @@ def test_factory_reset_with_config_save_for_static_system_dns(engines, devices):
             TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
 
         with allure.step("Run reset factory with keep basic param"):
-            res_obj, duration = system.factory_default.action_reset(param="keep basic", operation=devices.dut.reset_factory)
+            res_obj = system.factory_default.action_reset(param="keep basic", operation=devices.dut.reset_factory)
             res_obj.verify_result()
 
         with allure.step('Validate system dns config is retained'):
@@ -527,7 +527,7 @@ def test_factory_reset_with_config_save_for_static_system_dns(engines, devices):
         clear_system_dns(system, engines)
 
         with allure.step("Verify operation time"):
-            OperationTime.verify_operation_time(duration, devices.dut.reset_factory).verify_result()
+            OperationTime.verify_operation_time(res_obj.duration, devices.dut.reset_factory).verify_result()
 
 
 def verify_dns_in_resolv_file(engines, dns_server_id_list, is_present=True):
