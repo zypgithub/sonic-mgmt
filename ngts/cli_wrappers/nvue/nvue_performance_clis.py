@@ -6,10 +6,22 @@ import tempfile
 import yaml
 from ngts.constants.constants import BugHandlerConst
 from ngts.constants.performance_constants import PerfConsts, Cl_Consts
+from dataclasses import dataclass
 from ngts.cli_wrappers.common.performance_clis_common import PerformanceCommon
 from jinja2 import Environment, FileSystemLoader
 from ngts.helpers.performance.traffic_helpers import generate_ip_address_list
 from time import sleep
+import re
+
+
+@dataclass
+class VoltageCurrentInfo:
+    vout_number: str
+    vout_value: str
+    vout_unit: str
+    iout_number: str
+    iout_value: str
+    iout_unit: str
 
 
 class NvuePerformanceCli(PerformanceCommon):
@@ -170,6 +182,47 @@ class NvuePerformanceCli(PerformanceCommon):
         sdk_ports = sdk_ports.split()
         logging.info(sdk_ports)
         return sdk_ports
+
+    @staticmethod
+    def get_controllers_info_dicts_list(sensors_output):
+        """
+        returns voltage/current per controller
+        Args:
+            sensors_output: a string with the output of sensors command
+
+        Returns:
+        A list of dicts, each dict contains the values of a controller on the device i.e,
+        [{'vout1': 1.20, 'vout2': 1.20, 'iout1': 13.00, 'iout2': 94.00},...]
+        """
+        sensor_pattern = r'\s*Rail \((out\d+)\):\s+(\d+.\d+ )(m|V)|\s*Curr \((out\d+)\):\s+(\d+.\d+ )(m|A)'
+        i2c_group = re.split(r'\n\s*\n', sensors_output)
+        controller_dict_list = []
+        for group in i2c_group:
+
+            controller_dict = {}
+            sensor_info_list = re.findall(sensor_pattern, group)
+
+            for info in sensor_info_list:
+                values = VoltageCurrentInfo(*info)
+                # convert 'mV' and 'mA' values to corresponding float
+                if values.iout_value:
+                    converted_value = float(values.iout_value)
+                elif values.vout_value:
+                    converted_value = float(values.vout_value)
+                if values.vout_unit.lower() == 'm' or values.iout_unit.lower() == 'm':
+                    converted_value /= 1000
+                if values.vout_number:
+                    if 'out1' in values.vout_number:
+                        controller_dict['vout1'] = converted_value
+                    elif 'out2' in values.vout_number:
+                        controller_dict['vout2'] = converted_value
+                elif values.iout_number:
+                    if 'out1' in values.iout_number:
+                        controller_dict['iout1'] = converted_value
+                    elif 'out2' in values.iout_number:
+                        controller_dict['iout2'] = converted_value
+            controller_dict_list.append(controller_dict)
+        return controller_dict_list
 
     def get_right_left_ports_dict(self, bring_up_ports=False):
         """
