@@ -54,7 +54,7 @@ def test_cluster_default_factory_reset(engines, devices, test_api, has_loopbox, 
             initial_partition_output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
                                                                                    output_format=output_format).get_returned_value()
             with allure.step("Create Empty partition"):
-                ClusterTools.create_empty_partition(sdn, [])
+                ClusterTools.create_empty_partition(sdn, {})
 
         with allure.step("Run reset factory without params"):
             duration = execute_reset_factory(engines, system, devices.dut.reset_factory, "", current_time)
@@ -136,7 +136,7 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name,
             initial_partition_output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
                                                                                    output_format=output_format).get_returned_value()
             with allure.step("Create Empty partition"):
-                ClusterTools.create_empty_partition(sdn, [])
+                ClusterTools.create_empty_partition(sdn, {})
 
         with allure.step("Run reset factory keep basic param"):
             duration = execute_reset_factory(engines, system, devices.dut.reset_factory, "keep basic", current_time)
@@ -215,7 +215,7 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name, 
             initial_partition_output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
                                                                                    output_format=output_format).get_returned_value()
             with allure.step("Create Empty partition"):
-                ClusterTools.create_empty_partition(sdn, [])
+                ClusterTools.create_empty_partition(sdn, {})
 
         with allure.step("Run reset factory with keep only-files param"):
             duration = execute_reset_factory(engines, system, devices.dut.reset_factory, "keep only-files", current_time)
@@ -296,7 +296,7 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
 
         if not standalone_system:
             with allure.step("Create Empty partition"):
-                ClusterTools.create_empty_partition(sdn, [])
+                ClusterTools.create_empty_partition(sdn, {})
 
         with allure.step("Run reset factory with keep all-config param"):
             duration = execute_reset_factory(engines, system, devices.dut.reset_factory, "keep all-config", current_time)

@@ -2,25 +2,14 @@ import logging
 import random
 import pytest
 import time
-import re
-import copy
 
-from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.nvos_tools.nmx.Sdn import Sdn
-from ngts.nvos_constants.constants_nvos import PlatformConsts, IbConsts, ApiType, OutputFormat, SystemConsts, ClusterAppsLogLevels, NvosConst, ImageConsts
+from ngts.nvos_constants.constants_nvos import ApiType, OutputFormat
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.nvos_tools.ib.Ib import Ib
-from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
-from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports
-from ngts.tests_nvos.general.security.tpm_attestation.helpers import factory_reset_tpm_checker
-from ngts.tests_nvos.system.gnmi.helpers import factory_reset_gnmi_checker
-from ngts.tests_nvos.system.factory_reset.helpers import add_verification_data, \
-    verify_cleanup_done, verify_the_setup_is_functional, get_current_time
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
 from ngts.nvos_tools.infra.RegressionConfigurations import Configurations
@@ -218,7 +207,7 @@ def test_cluster_partition_bad_flow(engines, devices, test_api, has_loopbox, sta
 
             with allure.step("Add GPU with wrong mcast_limit"):
                 resiliency_mode = random.choice(ClusterConsts.RESILIENCY_MODES)
-                mcast_limit = random.randrange(ClusterConsts.MIN_MCAST, ClusterConsts.MAX_MCAST + 1, 4) + 1024  # Invalid
+                mcast_limit = random.randrange(ClusterConsts.MIN_MCAST, ClusterConsts.MAX_MCAST + 1, 4) + 1025  # Invalid
                 no_reroute = random.choice(['', 'no-reroute'])
                 part_id = choose_new_partition_id(used_partition_ids)
                 partition_type = random.choice(ClusterConsts.PARTITION_TYPES)
@@ -300,6 +289,9 @@ def remove_gpu_from_partition(sdn, original_partition_id, location, uuid, partit
             sdn.partition.partition_id[original_partition_id].location.location_id[location].action_restore_partition(reroute_param=no_reroute)
         else:
             sdn.partition.partition_id[original_partition_id].uuid.uuid_value[uuid].action_restore_partition(reroute_param=no_reroute)
+
+    if is_bug_active(4285786):
+        time.sleep(15)
 
     partitions_mapping[original_partition_id].remove((uuid, location))
     output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.partition_id[original_partition_id].show(output_format=output_format),

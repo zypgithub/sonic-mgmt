@@ -398,6 +398,9 @@ class ClusterTools:
             else:
                 sdn.partition.partition_id[partition_to_remove_from].uuid.uuid_value[uuid].action_restore_partition(reroute_param=no_reroute).verify_result()
 
+        if is_bug_active(4285786):
+            time.sleep(15)
+
         with allure.step(f"Add GPU {uuid} {location} to empty partition {ClusterConsts.EMPTY_PARTITION_ID}"):
             empty_partition_type = random.choice(['uuid', 'location'])
             if empty_partition_type == 'location':
@@ -439,12 +442,13 @@ class ClusterTools:
     @staticmethod
     def delete_empty_partition(sdn, partitions_mapping, output_format=OutputFormat.json):
         with allure.step("Delete empty partition"):
-            start_time = time.time()
-            timeout = 20
             sdn.partition.partition_id[ClusterConsts.EMPTY_PARTITION_ID].action_delete_partition()
+            start_time = time.time()
+            timeout = 25
             while True:
                 output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
                                                                      output_format=output_format).get_returned_value()
+                logger.info("Checking if partition is deleted,")
                 if ClusterConsts.EMPTY_PARTITION_ID not in list(output.keys()):
                     elapsed_time = time.time() - start_time
                     logger.info(f"Condition met: Partition {ClusterConsts.EMPTY_PARTITION_ID} deleted after {elapsed_time:.2f} seconds")
@@ -453,9 +457,10 @@ class ClusterTools:
                 if time.time() - start_time > timeout:
                     logger.error(f"Timeout: Partition {ClusterConsts.EMPTY_PARTITION_ID} was not deleted within {timeout} seconds")
                     break
+                logger.info("Partition is not deleted. Retrying")
 
             assert ClusterConsts.EMPTY_PARTITION_ID not in list(output.keys()), f'Partition {ClusterConsts.EMPTY_PARTITION_ID} was not deleted'
-            partitions_mapping.pop(ClusterConsts.EMPTY_PARTITION_ID)
+            partitions_mapping.pop(int(ClusterConsts.EMPTY_PARTITION_ID))
 
     @staticmethod
     def verify_log_messages_log_level(log_level, system, test_api, cluster, setup_name):
