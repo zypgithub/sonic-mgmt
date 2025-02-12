@@ -82,7 +82,7 @@ def assert_fatal_logs(engines):
     yield
 
     with allure.step(f'Find lines for fatal events in {FATAL_LOG_FILE}'):
-        log_lines = engine.run_cmd(f'grep "{SAI_LOG_STRING}" {FATAL_LOG_FILE}*', validate=True).splitlines()
+        log_lines = engine.run_cmd(f'grep -h "{SAI_LOG_STRING}" {FATAL_LOG_FILE}*', validate=True).splitlines()
         log_timestamps = []
         for line in reversed(log_lines):
             try:
@@ -153,6 +153,7 @@ def test_flow_until_soft_reset(engines, devices, random_asic, events_count_setti
         _wait_to_exit_fatal()
 
 
+@pytest.mark.timeout(20 * MINUTE, func_only=True)
 @pytest.mark.checklist
 @pytest.mark.fatal_mode
 def test_flow_until_reboot(engines, devices, random_asic, test_name, events_count_setting):
