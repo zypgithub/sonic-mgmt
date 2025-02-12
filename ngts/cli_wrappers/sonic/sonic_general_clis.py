@@ -867,6 +867,10 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         with allure.step("Enable INFO logging on swss"):
             self.enable_info_logging_on_docker(docker_name='swss')
 
+        with allure.step("Configure ntp servers"):
+            for ntp_server in SonicConst.NTP_SERVERS:
+                self.add_ntp_server(ntp_server)
+
         if configure_dns:
             with allure.step('Apply DNS servers configuration'):
                 self.cli_obj.ip.apply_dns_servers_into_resolv_conf(
@@ -1675,6 +1679,13 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         logger.info(f"Health event config command is: {command}")
         dut_engine.run_cmd(command)
         get_health_event_config(dut_engine)
+
+    def add_ntp_server(self, server_ip):
+        """
+        This method add a ntp server on the dut
+        :return: command output
+        """
+        return self.engine.run_cmd(f'sudo config ntp add {server_ip}')
 
     def change_default_grub_timeout(self, timeout):
         cmd = "sudo sed -i 's/set timeout=5/set timeout={}/' /host/grub/grub.cfg".format(timeout)
