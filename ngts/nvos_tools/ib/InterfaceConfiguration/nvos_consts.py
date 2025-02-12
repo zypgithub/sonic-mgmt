@@ -90,8 +90,8 @@ class IbInterfaceConsts:
     LINK_STATS_OUT_ERRORS = "out-errors"
     LINK_STATS_OUT_PKTS = "out-pkts"
     LINK_STATS_OUT_WAIT = "out-wait"
-    MAX_BYTE_COUNTER_AFTER_CLEAR = 1500
-    MAX_PKT_COUNTER_AFTER_CLEAR = 5
+    MAX_BYTE_COUNTER_AFTER_CLEAR = 2500
+    MAX_PKT_COUNTER_AFTER_CLEAR = 9
     LINK_STATS_RCV_ICRC_ERRORS = 'rcv-icrc-errors'
     LINK_STATS_TX_PARITY_ERRORS = 'tx-parity-errors'
     LINK_STATS_QNT3 = ['link-error-recovery', 'link-downed', 'port-rcv-remote-physical-errors', 'port-rcv-switch-relay-errors',

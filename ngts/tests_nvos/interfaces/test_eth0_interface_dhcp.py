@@ -143,15 +143,11 @@ def test_interface_eth0_speed_duplex_autoneg(engines, devices, topology_obj):
                 applicable_duplex = ["full"]  # For other speeds, only "full" duplex is applicable
 
             for duplex in applicable_duplex:
-                mgmt_port.interface.link.set(op_param_name='speed', op_param_value=speed, apply=True,
+                mgmt_port.interface.link.set(op_param_name='speed', op_param_value=speed, apply=False,
                                              ask_for_confirmation=True).verify_result()
-
-                time.sleep(5)
-                Port.wait_for_port_state(mgmt_port, "up")
-
                 result = mgmt_port.interface.link.set(op_param_name='duplex', op_param_value=duplex,
                                                       apply=True, ask_for_confirmation=True)
-                time.sleep(5)
+                Port.wait_for_port_state(mgmt_port, "up")
 
                 if not result:
                     SendCommandTool.execute_command(TestToolkit.GeneralApi[TestToolkit.tested_api].

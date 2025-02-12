@@ -15,5 +15,4 @@ class NvCommand:
         self.ib = Ib()
         self.platform = Platform()
         self.system = System()
-        self.port: Dict[str, Port] = DefaultDict(
-            lambda port: Port(name='eth0'))
+        self.port: Dict[str, Port] = DefaultDict(lambda port: Port(name=port))

@@ -77,11 +77,12 @@ def test_range_clear_counters_negative(engines, players, interfaces, start_sm, f
                                                          ).verify_result(False, error_msg1)
 
         with allure.independent_step("check out of range {}".format(out_of_range_sw)):
-            interface.action_clear_counter_for_interface(interface_name=out_of_range_sw, expected_str=error_msg1).verify_result()
+            interface.action_clear_counter_for_interface(interface_name=out_of_range_sw,
+                                                         expected_str=error_msg1).verify_result(True)
 
         with allure.independent_step("check reversed range"):
-            interface.action_clear_counter_for_interface(interface_name=reversed_range
-                                                         ).verify_result(False, error_msg2)
+            interface.action_clear_counter_for_interface(interface_name=reversed_range, expected_str=error_msg2
+                                                         ).verify_result(True)
 
         with allure.independent_step("check undefined range"):
             interface.action_clear_counter_for_interface(interface_name=undefined_range
