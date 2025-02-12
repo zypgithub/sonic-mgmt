@@ -133,7 +133,7 @@ def test_install_transceiver_firmware_positive(engines, devices, test_api, test_
 
     with allure.step(f"get the mst device for transceiver {random_transceiver}"):
         output_dictionary = OutputParsingTool.parse_show_all_interfaces_output_to_dictionary(
-            Port.show_interface(fae_param='fae')).get_returned_value()
+            Port.show_interface(fae_param='fae', port_names=random_port)).get_returned_value()
         pci_conf = output_dictionary[IbInterfaceConsts.PRIMARY_ASIC_DEVICE].split("/")
         mst_dev_name = IbInterfaceTool.get_mst_cable_name(engines.dut, random_transceiver, pci_conf[-1])
 

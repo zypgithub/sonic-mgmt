@@ -128,13 +128,6 @@ tests_nvos/system/test_system_image.py::test_install_multiple_images:
   skip:
     reason: "Need to fix the test - currently installs the same image twice"
 
-tests_nvos/interfaces/test_ib_interface_counters.py::test_range_clear_counters_negative:
-  skip:
-    reason: "Testcase skipped due to RM issues: https://redmine.mellanox.com/issues/3916837 and 3920791"
-    conditions:
-      - https://redmine.mellanox.com/issues/3916837
-      - https://redmine.mellanox.com/issues/3920791
-
 tests_nvos/interfaces/test_lldp.py::test_lldp_additional_ipv6:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3941826"
