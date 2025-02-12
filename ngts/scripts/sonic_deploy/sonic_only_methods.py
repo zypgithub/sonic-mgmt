@@ -14,6 +14,7 @@ from ngts.scripts.sonic_deploy.community_only_methods import get_generate_minigr
     config_y_cable_simulator, add_host_for_y_cable_simulator
 from retry.api import retry_call
 from ngts.helpers.run_process_on_host import run_background_process_on_host, wait_until_background_procs_done
+from ngts.common.util import get_installed_dpu_info
 
 logger = logging.getLogger()
 
@@ -550,6 +551,13 @@ class SonicInstallationSteps:
                 with allure.step('Update the dash api in sonic-mgmt'):
                     retry_call(fetch_dash_api_package, tries=3, delay=10, logger=logger)
                     os.system("dpkg --install ./libdashapi_1.0.0_amd64.deb")
+
+                if dut_engine.run_cmd("ls /etc/mlnx/ | grep dpu.conf", validate=False) != 'dpu.conf':
+                    with allure.step('Startup dpu and save config'):
+                        _, dpu_index_list, _ = get_installed_dpu_info(topology_obj)
+                        general_cli_obj.startup_dpu(dpu_index_list)
+                        general_cli_obj.save_configuration()
+
                 with allure.step('Apply DPU IP assignment configuration'):
                     config_file_name = "dpu_basic_config.json"
                     dut_engine = topology_obj.players['dut']['engine']

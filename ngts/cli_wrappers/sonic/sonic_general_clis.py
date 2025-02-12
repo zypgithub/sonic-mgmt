@@ -1754,6 +1754,10 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         sdk_version = re.search(r"SX-SDK ETH (\d+\.\d+\.\d+)", sdk_version_output).group(1)
         return sdk_version
 
+    def startup_dpu(self, dpu_index_list):
+        for dpu_index in dpu_index_list:
+            self.engine.run_cmd(f'sudo config chassis modules startup DPU{dpu_index}')
+
 
 class SonicGeneralCli202012(SonicGeneralCliDefault):
 

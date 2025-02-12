@@ -46,3 +46,15 @@ def get_specified_installed_dpus_from_noga(topology_obj):
     specified_installed_dpus = dut_attr.get("installed_dpus", '')
     logger.info(f"specified installed dpus from noga are :{specified_installed_dpus}")
     return specified_installed_dpus
+
+
+def get_installed_dpu_info(topology_obj):
+    rshim_value = 'all'
+    dpu_index_list = [0, 1, 2, 3]
+    installed_dpus = get_specified_installed_dpus_from_noga(topology_obj)
+    if installed_dpus:
+        rshim_value = installed_dpus.replace(' ', '').replace('dpu', 'rshim')
+        dpu_index_list = [dpu.replace('dpu', '') for dpu in installed_dpus.split(',')]
+        logger.info(f"installed_dpus:{installed_dpus}, rshim_value:{rshim_value}, dpu_index_list:{dpu_index_list}")
+
+    return rshim_value, dpu_index_list, installed_dpus

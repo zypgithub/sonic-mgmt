@@ -31,7 +31,8 @@ from ngts.scripts.sonic_deploy.nvos_only_methods import NvosInstallationSteps
 from ngts.scripts.sonic_deploy.sonic_only_methods import SonicInstallationSteps, is_community
 from ngts.scripts.sonic_deploy.deploy_helper_methods import DeployMethods
 from ngts.tools.infra import get_platform_info
-from ngts.common.util import save_specified_installed_dpus, get_specified_installed_dpus_from_noga
+from ngts.common.util import save_specified_installed_dpus, get_specified_installed_dpus_from_noga, \
+    get_installed_dpu_info
 
 logger = logging.getLogger()
 
@@ -501,16 +502,11 @@ def get_hwsku(sonic_topo, dest_hwsku, setup_name):
 
 def bfb_install_dpu(topology_obj, setup_info, base_version_dpu):
     cli_obj = setup_info['duts'][0]['cli_obj']
-    if "DARK_MODE=true" in topology_obj.players['dut']['engine'].run_cmd("cat /etc/mlnx/dpu.conf"):
-        with allure.step('Disable dark mode and power cycle'):
-            topology_obj.players['dut']['engine'].run_cmd(
-                'sudo sh -c "sed -i \'s/DARK_MODE=true/DARK_MODE=false/\' /etc/mlnx/dpu.conf"')
-            time.sleep(60)
-            cli_obj.remote_reboot(topology_obj)
-            cli_obj.verify_dockers_are_up()
-            dpu_ready = topology_obj.players['dut']['engine'].run_cmd(
-                "dpuctl dpu-status | awk '{print $2}'")
-            assert "False" not in dpu_ready, "Not all DPUs are ready."
+
+    rshim_value, dpu_index_list, installed_dpus = get_installed_dpu_info(topology_obj)
+
+    with allure.step("Disable dark mode"):
+        disable_dark_mode(topology_obj, cli_obj, dpu_index_list)
 
     with allure.step('Copying image to switch dut'):
         dpu_image_url = MarsConstants.HTTP_SERVER_NBU_NFS + base_version_dpu
@@ -519,14 +515,6 @@ def bfb_install_dpu(topology_obj, setup_info, base_version_dpu):
             f"sudo curl {dpu_image_url} --output {dest_file}")
 
     with allure.step('Install BFB image on all DPUs'):
-        rshim_value = 'all'
-        dpu_index_list = [0, 1, 2, 3]
-        installed_dpus = get_specified_installed_dpus_from_noga(topology_obj)
-        if installed_dpus:
-            rshim_value = installed_dpus.replace(' ', '').replace('dpu', 'rshim')
-            dpu_index_list = [dpu.replace('dpu', '') for dpu in installed_dpus.split(',')]
-            logger.info(f"installed_dpus:{installed_dpus}, rshim_value:{rshim_value}, dpu_index_list:{dpu_index_list}")
-
         # Disconnect ssh connection, prevent "Socket is closed" in case when pre step took more than 15 min
         output = topology_obj.players['dut']['engine'].run_cmd(
             f"sudo sonic-bfb-installer.sh -r {rshim_value} -b {dest_file} -v")
@@ -540,6 +528,24 @@ def bfb_install_dpu(topology_obj, setup_info, base_version_dpu):
 
         if installed_dpus:
             save_specified_installed_dpus(installed_dpus)
+
+
+def disable_dark_mode(topology_obj, cli_obj, dpu_index_list):
+    if topology_obj.players['dut']['engine'].run_cmd("ls /etc/mlnx/ | grep dpu.conf", validate=False) == 'dpu.conf':
+        if "DARK_MODE=true" in topology_obj.players['dut']['engine'].run_cmd("cat /etc/mlnx/dpu.conf"):
+            with allure.step('Disable dark mode and power cycle'):
+                topology_obj.players['dut']['engine'].run_cmd(
+                    'sudo sh -c "sed -i \'s/DARK_MODE=true/DARK_MODE=false/\' /etc/mlnx/dpu.conf"')
+                time.sleep(60)
+                cli_obj.remote_reboot(topology_obj)
+                cli_obj.verify_dockers_are_up()
+                dpu_ready = topology_obj.players['dut']['engine'].run_cmd(
+                    "dpuctl dpu-status | awk '{print $2}'")
+                assert "False" not in dpu_ready, "Not all DPUs are ready."
+    else:
+        with allure.step('Disable dark mode by config chassis modules startup DPU'):
+            cli_obj.startup_dpu(dpu_index_list)
+            cli_obj.save_configuration()
 
 
 if 'base-version=/auto/sw_system_release/sonic' in ' '.join(sys.argv) and 'target_cli_type' not in ' '.join(sys.argv):
