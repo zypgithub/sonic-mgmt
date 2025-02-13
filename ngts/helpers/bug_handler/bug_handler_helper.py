@@ -619,9 +619,11 @@ def create_log_analyzer_yaml_file(log_errors, dump_path, project, test_name, hos
     else:
         hostname_regex = r'\S+'
     bug_title = create_bug_title(hostname_regex, log_errors[0], is_serial_log)
-    bug_regex = '.*' + error_to_regex(bug_title) + '.*'
+    normalized_title = error_to_regex(bug_title)
+    bug_regex = '.*' + normalized_title + '.*'
     description = f'| \n{bug_title}\n' + '\n'.join(log_errors)
     bug_info_dictionary.update({'search_regex': bug_regex,
+                                'normalized_title': normalized_title,
                                 'bug_title': bug_title,
                                 'description': f"{description}",
                                 'project': project,
