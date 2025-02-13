@@ -1032,9 +1032,9 @@ def test_ntp_mgmt_port_listeners(topology_obj, nv_command, test_api):
 
     finally:
         with allure.step("Clear ntp and mgmt-ports configuration"):
-            nv_command.system.ntp.unset().verify_result()
-            nv_command.port['eth0'].interface.link.state.unset().verify_result()
-            nv_command.port['eth1'].interface.link.state.unset(apply=True, ask_for_confirmation=True).verify_result()
+            nv_command.port['eth0'].interface.link.state.unset(engine_dut=serial_engine).verify_result()
+            nv_command.port['eth1'].interface.link.state.unset(engine_dut=serial_engine).verify_result()
+            nv_command.system.ntp.unset(engine_dut=serial_engine, apply=True, ask_for_confirmation=True).verify_result()
 
 
 @pytest.mark.system

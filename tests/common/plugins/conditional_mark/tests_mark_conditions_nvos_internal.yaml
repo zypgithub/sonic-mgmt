@@ -434,7 +434,7 @@ tests_nvos/system/ntp/test_system_ntp.py::test_ntp_system_authentication:
   skip:
     reason: "Skip until fixed"
 
-tests_nvos/system/test_system_ntp.py::test_ntp_mgmt_port_listeners:
+tests_nvos/system/ntp/test_system_ntp.py::test_ntp_mgmt_port_listeners:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4211804"
     conditions:
