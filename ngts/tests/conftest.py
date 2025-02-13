@@ -11,6 +11,7 @@ import pytest
 import os
 import yaml
 import logging
+import allure
 
 from dotted_dict import DottedDict
 from deepdiff import DeepDiff
@@ -363,20 +364,26 @@ def config_check(engines, cli_objects, topology_obj, request, sonic_version, pla
 
         dut_data = {}
 
-        logger.info("Collecting running config before test on {}".format(dut_hostname))
-
-        if request.session.items[0].name in MAX_PORTS_TEST_LIST:
-            dut_data["pre_running_config"] = json.loads(dut_engine.run_cmd("sudo cat /tmp/pre_running_config.json"))
-            dut_engine.run_cmd("sudo rm -f /tmp/pre_running_config.json")
-        else:
-            dut_data["pre_running_config"] = json.loads(dut_engine.run_cmd("sonic-cfggen -d --print-data"))
+        with allure.step(f"Collecting running config before test on {dut_hostname}"):
+            logger.info(f"Collecting running config before test on {dut_hostname}, config info save in fixture config_check attachment")
+            if request.session.items[0].name in MAX_PORTS_TEST_LIST:
+                before_config_output = dut_engine.run_cmd("sudo cat /tmp/pre_running_config.json", print_output=False)
+                dut_engine.run_cmd("sudo rm -f /tmp/pre_running_config.json")
+            else:
+                before_config_output = dut_engine.run_cmd("sonic-cfggen -d --print-data", print_output=False)
+            allure.attach(before_config_output, f"before_test_running_config_{module_name}", allure.attachment_type.TEXT)
+            dut_data["pre_running_config"] = json.loads(before_config_output)
 
         yield dut_data
 
         if request.session.items[0].name in MAX_PORTS_TEST_LIST:
             reload_config(request.session, platform_params, chip_type)
-        logger.info("Collecting running config after test on {}".format(dut_hostname))
-        dut_data["cur_running_config"] = json.loads(dut_engine.run_cmd("sonic-cfggen -d --print-data"))
+
+        with allure.step(f"Collecting running config after test on {dut_hostname}"):
+            logger.info(f"Collecting running config after test on {dut_hostname}, config info save in fixture config_check attachment")
+            after_config_output = dut_engine.run_cmd("sonic-cfggen -d --print-data", print_output=False)
+            allure.attach(after_config_output, f"after_test_running_config_{module_name}", allure.attachment_type.TEXT)
+            dut_data["cur_running_config"] = json.loads(after_config_output)
 
         pre_only_config = {}
         cur_only_config = {}
