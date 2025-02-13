@@ -15,6 +15,7 @@ from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_constants.constants_nvos import PlatformConsts
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_constants.constants_nvos import ApiType
+from infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 logger = logging.getLogger()
 
@@ -84,7 +85,8 @@ def test_transceiver_status_unplug(engines, devices, test_api, asic_conf_dict):
         _verify_transceiver_status(platform, transceiver_id=module_under_test, expected_module_status='Inserted')
         IbInterfaceTool.simulate_unplug_module_event(engines.dut, devices.dut, module_index, mst_dev_name, 8)
         _verify_link_state_down(ports)
-        _verify_transceiver_status(platform, transceiver_id=module_under_test, expected_module_status='Removed')
+        if not is_redmine_issue_active([4299015])[0]:
+            _verify_transceiver_status(platform, transceiver_id=module_under_test, expected_module_status='Removed')
 
     finally:
         IbInterfaceTool.simulate_plugin_module_event(engines.dut, devices.dut, module_index, mst_dev_name, 50)
@@ -127,7 +129,8 @@ def test_transceiver_status_with_reboot(engines, devices, test_api, asic_conf_di
 
         IbInterfaceTool.simulate_unplug_module_event(engines.dut, devices.dut, module_index, mst_dev_name, 8)
         _verify_link_state_down(ports)
-        _verify_transceiver_status(platform, transceiver_id=module_under_test, expected_module_status='Removed')
+        if not is_redmine_issue_active([4299015])[0]:
+            _verify_transceiver_status(platform, transceiver_id=module_under_test, expected_module_status='Removed')
 
         sleep_time_seconds = 60
         with allure.step(f"Reboot the system and sleep {sleep_time_seconds} seconds"):
