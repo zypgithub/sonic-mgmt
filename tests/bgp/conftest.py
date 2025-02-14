@@ -18,8 +18,8 @@ from tests.common.helpers.parallel import reset_ansible_local_tmp
 from tests.common.utilities import wait_until, get_plt_reboot_ctrl
 from tests.common.utilities import wait_tcp_connection
 from tests.common import config_reload
-from bgp_helpers import define_config, apply_default_bgp_config, DUT_TMP_DIR, TEMPLATE_DIR, BGP_PLAIN_TEMPLATE, \
-    BGP_NO_EXPORT_TEMPLATE, DUMP_FILE, CUSTOM_DUMP_SCRIPT, CUSTOM_DUMP_SCRIPT_DEST, \
+from bgp_helpers import define_config, apply_default_bgp_config, DUT_TMP_DIR, TEMPLATE_DIR, BGP_PLAIN_TEMPLATE,\
+    BGP_NO_EXPORT_TEMPLATE, DUMP_FILE, CUSTOM_DUMP_SCRIPT, CUSTOM_DUMP_SCRIPT_DEST,\
     BGPMON_TEMPLATE_FILE, BGPMON_CONFIG_FILE, BGP_MONITOR_NAME, BGP_MONITOR_PORT
 from tests.common.helpers.constants import DEFAULT_NAMESPACE
 from tests.common.dualtor.dual_tor_utils import mux_cable_server_ip
@@ -46,7 +46,7 @@ def check_results(results):
 
 
 @pytest.fixture(scope='module')
-def setup_bgp_graceful_restart(duthosts, rand_one_dut_hostname, nbrhosts, tbinfo, cct=24):
+def setup_bgp_graceful_restart(duthosts, rand_one_dut_hostname, nbrhosts, tbinfo, cct=8):
     duthost = duthosts[rand_one_dut_hostname]
 
     config_facts = duthost.config_facts(host=duthost.hostname, source="running")['ansible_facts']
@@ -69,20 +69,20 @@ def setup_bgp_graceful_restart(duthosts, rand_one_dut_hostname, nbrhosts, tbinfo
         logger.info('enable graceful restart on neighbor host {}'.format(node['host'].hostname))
         logger.info('bgp asn {}'.format(node['conf']['bgp']['asn']))
         node_results.append(node['host'].eos_config(
-            lines=['graceful-restart restart-time 300'],
-            parents=['router bgp {}'.format(node['conf']['bgp']['asn'])],
-            module_ignore_errors=True)
-        )
+                lines=['graceful-restart restart-time 300'],
+                parents=['router bgp {}'.format(node['conf']['bgp']['asn'])],
+                module_ignore_errors=True)
+            )
         node_results.append(node['host'].eos_config(
-            lines=['graceful-restart'],
-            parents=['router bgp {}'.format(node['conf']['bgp']['asn']), 'address-family ipv4'],
-            module_ignore_errors=True)
-        )
+                lines=['graceful-restart'],
+                parents=['router bgp {}'.format(node['conf']['bgp']['asn']), 'address-family ipv4'],
+                module_ignore_errors=True)
+            )
         node_results.append(node['host'].eos_config(
-            lines=['graceful-restart'],
-            parents=['router bgp {}'.format(node['conf']['bgp']['asn']), 'address-family ipv6'],
-            module_ignore_errors=True)
-        )
+                lines=['graceful-restart'],
+                parents=['router bgp {}'.format(node['conf']['bgp']['asn']), 'address-family ipv6'],
+                module_ignore_errors=True)
+            )
         results[node['host'].hostname] = node_results
 
     @reset_ansible_local_tmp
@@ -103,15 +103,15 @@ def setup_bgp_graceful_restart(duthosts, rand_one_dut_hostname, nbrhosts, tbinfo
         node['host'].start_bgpd()
         logger.info('disable graceful restart on neighbor {}'.format(node))
         node_results.append(node['host'].eos_config(
-            lines=['no graceful-restart'],
-            parents=['router bgp {}'.format(node['conf']['bgp']['asn']), 'address-family ipv4'],
-            module_ignore_errors=True)
-        )
+                lines=['no graceful-restart'],
+                parents=['router bgp {}'.format(node['conf']['bgp']['asn']), 'address-family ipv4'],
+                module_ignore_errors=True)
+            )
         node_results.append(node['host'].eos_config(
-            lines=['no graceful-restart'],
-            parents=['router bgp {}'.format(node['conf']['bgp']['asn']), 'address-family ipv6'],
-            module_ignore_errors=True)
-        )
+                lines=['no graceful-restart'],
+                parents=['router bgp {}'.format(node['conf']['bgp']['asn']), 'address-family ipv6'],
+                module_ignore_errors=True)
+            )
         results[node['host'].hostname] = node_results
 
     results = parallel_run(configure_nbr_gr, (), {}, list(nbrhosts.values()), timeout=120, concurrent_tasks=cct)
