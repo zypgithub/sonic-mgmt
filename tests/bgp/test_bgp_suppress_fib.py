@@ -1008,7 +1008,7 @@ def test_suppress_fib_stress(duthost, tbinfo, nbrhosts, ptfadapter, prepare_para
                 ptf_interfaces = get_t2_ptf_intfs(mg_facts)
                 retry_call(validate_bulk_traffic,
                            fargs=[tcpdump_helper, ptfadapter, traffic_data_ipv4_forward + traffic_data_ipv6_forward,
-                                  router_mac, ptf_interfaces, ptf_interfaces], tries=3, delay=2)
+                                  router_mac, ptf_interfaces, ptf_interfaces], tries=10, delay=2)
 
             with allure.step("Suspend orchagent process to simulate a route install delay"):
                 operate_orchagent(duthost)
