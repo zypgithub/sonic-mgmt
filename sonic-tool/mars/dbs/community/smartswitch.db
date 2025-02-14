@@ -51,7 +51,7 @@
                         <ep_targets> SONIC_MGMT </ep_targets>
                     </players_selection>
                     <name> run_on_stm </name>
-                    <tout> 600 </tout>
+                    <tout> 900 </tout>
                     <params>
                         <exec> PYTHONPATH=/devts/ /ngts_venv/bin/pytest /root/mars/workspace/sonic-mgmt/ngts/scripts/store_techsupport_on_not_success.py  --sonic-topo=[[conf:extra_info.topology]]  --setup_name=[[conf:extra_info.setup_name]] --tech_support_duration=7200  --session_id=[[run_time:session_id]]  --rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini     --log-level=INFO --clean-alluredir --alluredir=/tmp/allure-results</exec>
                     </params>
