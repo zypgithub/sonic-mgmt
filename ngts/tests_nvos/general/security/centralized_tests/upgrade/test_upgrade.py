@@ -12,6 +12,8 @@ from ngts.tests_nvos.general.security.centralized_tests.helpers.checker_skip_rul
     SkipCheckerByCond, SkipCheckerBySetup, should_skip_checker
 from ngts.tests_nvos.general.security.certificate.helpers import delete_certificates
 from ngts.tests_nvos.general.security.certificate.test_cert_cacert_mgmt import certs_mgmt_upgrade_check
+from ngts.tests_nvos.general.security.nmx_cert.test_cluster_app_mngr_security import \
+    cluster_app_mngr_security_upgrade_check
 from ngts.tests_nvos.general.security.test_api_server_security.test_api_mtls import api_mtls_upgrade_check
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tests_nvos.system.factory_reset.helpers import *
@@ -27,9 +29,10 @@ SED_PASSWORD = 'SED password'
 CERTS_MGMT = 'Certificates management'
 
 UPGRADE_CHECKERS: Dict[str, Generator[None, None, None]] = {
+    GNMI_CERT: gnmi_cert_upgrade_check(),
+    NMX_CERT: cluster_app_mngr_security_upgrade_check(),
     API_MTLS: api_mtls_upgrade_check(),
     CERTS_MGMT: certs_mgmt_upgrade_check(),
-    GNMI_CERT: gnmi_cert_upgrade_check()
 }
 
 CHECKERS_SKIP_RULES: Dict[str, CheckerSkipRule] = {

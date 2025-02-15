@@ -783,6 +783,9 @@ def cluster_app_mngr_security_factory_reset_keep_all_config_check():
     yield  # to prevent StopIteration on the 2nd next() call
 
 
+cluster_app_mngr_security_upgrade_check = cluster_app_mngr_security_factory_reset_keep_all_config_check
+
+
 @pytest.mark.nmx
 @pytest.mark.security
 @pytest.mark.parametrize('ca_type', [random.choice(optional_cacert_types())])
