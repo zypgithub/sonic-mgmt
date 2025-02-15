@@ -3,12 +3,15 @@ from typing import List
 
 import pytest
 
+from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_constants.constants_nvos import ApiType, TestFlowType
+from ngts.nvos_tools.infra.CertificateGenerator import CertificateGeneratorOnRemoteHost
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.helpers import randomize_hex_str
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
+from ngts.tests_nvos.general.security.certificate.conftest import clear_certs, clear_existing_certs
 from ngts.tests_nvos.general.security.certificate.constants import TestCert, CertShowFields
 from ngts.tests_nvos.general.security.certificate.helpers import verify_cert_in_expected_locations, import_certificates, \
     send_curl_with_and_verify
@@ -18,6 +21,7 @@ from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tests_nvos.system.gnmi.conftest import scp_player
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_general_utils import generate_scp_uri_using_player
+from tests.platform_tests.test_first_time_boot_password_change.conftest import dut_hostname
 
 """ CLI tests """
 
@@ -375,3 +379,56 @@ def test_cert_mgmt_use_cert_for_rest_api_tls(test_api, test_flow, engines, scp_p
         client_ca = cert if is_good_flow else TestCert.cert_valid_2
         send_curl_with_and_verify(cert.dn, engines.dut.username, engines.dut.password, EncryptionMode.TLS, client_ca,
                                   None, is_good_flow)
+
+
+@pytest.mark.system
+@pytest.mark.certificate
+@pytest.mark.security
+def test_local_cert_generated_after_timezone_change(engines, dut_hostname):
+    """
+    Case of customer bug that tried to configure locally generated cert after timezone changed to PST
+
+    https://redmine.mellanox.com/issues/4252131
+    https://nvbugspro.nvidia.com/bug/5048616
+
+    Steps:
+    1. change dut timezone
+    2. generate cert locally on dut
+    3. import local cert
+    4. set local cert to api certificate
+    5. verify successfully configured in show
+    """
+    test_dir = '/tmp/test'
+    cert_filename = 'cert'
+    cert_pass = 'secret'
+    cert_dir = f'{test_dir}/cert'
+    ca_dir = f'{test_dir}/ca'
+    ca_filename = 'cert'
+    cert_id = 'local-cert'
+
+    client_timezone = 'America/Los_Angeles'
+
+    with allure.step('clear existing certs'):
+        clear_existing_certs()
+    with allure.step('change timezone'):
+        system = System()
+        system.set('timezone', client_timezone, apply=True).verify_result()
+    with allure.step('generate cert on dut'):
+        cert_generator = CertificateGeneratorOnRemoteHost(engines.dut)
+        cert_generator.generate_cert(
+            cert_dir, cert_filename, 'alon', engines.dut.ip, dut_hostname,
+            ca_dir, ca_filename, cert_pass
+        )
+    with allure.step('import cert to system'):
+        system.security.certificate.cert_id[cert_id].action_import(
+            passphrase=cert_pass,
+            uri_bundle=generate_scp_uri_using_player(
+                LinuxSshEngine('localhost', engines.dut.username, engines.dut.password),
+                f'{cert_dir}/{cert_filename}.p12'
+            )
+        ).verify_result()
+    with allure.step('set to api'):
+        system.api.set(CERTIFICATE, cert_id, apply=True).verify_result()
+    with allure.step('verify successfully changed in show'):
+        out = OutputParsingTool.parse_json_str_to_dictionary(system.api.show()).get_returned_value()
+        assert out[CERTIFICATE] == cert_id, f'unexpected cert in api show\nexpected: {cert_id}\nactual: {out[CERTIFICATE]}'

@@ -68,8 +68,8 @@ def prepare_tmp_test_certs(cert_names: List[str], dest_dir, engines, dut_hostnam
                     )
                     certs_info[cert_name] = cert_info
                 with allure.step('generate'):
-                    CertificateGenerator.generate_cert(cert_dir, 'cert', cert_info.dn, cert_info.ip, cert_info.dn,
-                                                       cert_dir, 'ca', cert_info.p12_password)
+                    CertificateGenerator().generate_cert(cert_dir, 'cert', cert_info.dn, cert_info.ip, cert_info.dn,
+                                                         cert_dir, 'ca', cert_info.p12_password)
         with allure.step('chmod 777'):
             CmdRunner().run_cmd(f'chmod -R 777 {dest_dir}')
 
@@ -220,7 +220,7 @@ def generate_certs(dest, certs: List[CertInfo], ca_private=None, ca_public=None)
             with allure.step(f'create ca subdir: {ca_dir}'):
                 os.makedirs(ca_dir, exist_ok=True)
             with allure.step('generate ca'):
-                ca_private, ca_public = CertificateGenerator.generate_ca(ca_dir, 'ca', 10 * YEAR)
+                ca_private, ca_public = CertificateGenerator().generate_ca(ca_dir, 'ca', 10 * YEAR)
     with allure.step('generate certs from that ca'):
         for cert in certs:
             with allure.step(cert.name):
@@ -236,6 +236,6 @@ def generate_certs(dest, certs: List[CertInfo], ca_private=None, ca_public=None)
                         cacert=ca_public
                     )
                 with allure.step('generate cert'):
-                    CertificateGenerator.generate_cert(cert_dir, 'cert', cert.name, cert.ip, cert.dn,
-                                                       p12_pass=cert.p12_password, existing_ca_public=ca_public,
-                                                       existing_ca_private=ca_private, san_uris=cert.san_uris)
+                    CertificateGenerator().generate_cert(cert_dir, 'cert', cert.name, cert.ip, cert.dn,
+                                                         p12_pass=cert.p12_password, existing_ca_public=ca_public,
+                                                         existing_ca_private=ca_private, san_uris=cert.san_uris)
