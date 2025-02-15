@@ -11,8 +11,7 @@ CA_CN = 'NVOS-CA'
 
 class CertificateGenerator:
 
-    @classmethod
-    def generate_cert(cls, cert_location: str, cert_name: str, cert_subj_cn: str = '', ip: str = '', dn: str = '',
+    def generate_cert(self, cert_location: str, cert_name: str, cert_subj_cn: str = '', ip: str = '', dn: str = '',
                       new_ca_path: str = '', new_ca_name: str = '', p12_pass: str = '', existing_ca_public: str = '',
                       existing_ca_private: str = '', expiration_years: int = 10, san_uris: List[str] = [], stdout_func=logging.info):
         """
@@ -38,14 +37,10 @@ class CertificateGenerator:
 
         chmod +r ./*
         -------------
-
-        @param ca_path: if ca_path does not exist - raise.
-            if it is file, use it as existing ca (just create new cert issued by this ca).
-            if dir - create and use new ca saved in this location.
         """
 
         stdout_func('validate parameters')
-        assert os.path.exists(cert_location), f"given location for cert doesn't exist: {cert_location}"
+        self._validate_cert_location(cert_location)
         target_device_props = [ip, dn]
         assert len(
             [prop for prop in target_device_props if prop]) > 0, "none of [ip, dn] given. at least one must be given"
@@ -64,31 +59,30 @@ class CertificateGenerator:
         ######################
 
         # Prepare CA
-        ca_private_path, ca_public_path = cls.__prepare_ca(existing_ca_private, existing_ca_public, expiration,
+        ca_private_path, ca_public_path = self._prepare_ca(existing_ca_private, existing_ca_public, expiration,
                                                            new_ca_name, new_ca_path, new_ca_props, stdout_func)
         stdout_func('verify CA with itself')
-        cls.__openssl_verify_cert_with_ca(ca_public_path, ca_public_path, stdout_func)
+        self._openssl_verify_cert_with_ca(ca_public_path, ca_public_path, stdout_func)
 
         # Generate and sign cert using CA
-        cert_csr_path, cert_private_path = cls.__gen_cert_csr_and_private_key(cert_location, cert_name, cert_subj_cn, stdout_func)
-        cert_crt_public_path = cls.__issue_and_sign_public_cert(ca_private_path, ca_public_path, cert_csr_path,
+        cert_csr_path, cert_private_path = self._gen_cert_csr_and_private_key(cert_location, cert_name, cert_subj_cn, stdout_func)
+        cert_crt_public_path = self._issue_and_sign_public_cert(ca_private_path, ca_public_path, cert_csr_path,
                                                                 cert_location, cert_name, dn, expiration, ip, san_uris,
                                                                 stdout_func)
         stdout_func('verify generated cert crt with CA')
-        cls.__openssl_verify_cert_with_ca(ca_public_path, cert_crt_public_path, stdout_func)
+        self._openssl_verify_cert_with_ca(ca_public_path, cert_crt_public_path, stdout_func)
 
         # Convert public cert to PEM format
-        cert_public_pem_path = cls.__convert_crt_to_pem(cert_crt_public_path, cert_location, cert_name, stdout_func)
+        cert_public_pem_path = self._convert_crt_to_pem(cert_crt_public_path, cert_location, cert_name, stdout_func)
         stdout_func('verify generated cert pem with CA')
-        cls.__openssl_verify_cert_with_ca(ca_public_path, cert_public_pem_path, stdout_func)
+        self._openssl_verify_cert_with_ca(ca_public_path, cert_public_pem_path, stdout_func)
 
         # Create p12 bundle of the cert
-        cls.__create_cert_p12_bundle(cert_location, cert_name, cert_private_path, cert_public_pem_path, p12_pass,
+        self._create_cert_p12_bundle(cert_location, cert_name, cert_private_path, cert_public_pem_path, p12_pass,
                                      stdout_func)
 
-    @classmethod
-    def generate_ca(cls, new_ca_dir, new_ca_name, expiration, stdout_func=logging.info):
-        cls.__verify_file(new_ca_dir, 'new CA', True)
+    def generate_ca(self, new_ca_dir, new_ca_name, expiration, stdout_func=logging.info):
+        self._validate_new_ca_location(new_ca_dir)
         assert new_ca_name, "empty string as CA name not allowed"
 
         stdout_func('generate new CA')
@@ -97,34 +91,38 @@ class CertificateGenerator:
         ca_public_filename = f'{new_ca_name}.crt'
         ca_public_path = os.path.join(new_ca_dir, ca_public_filename)
         gen_new_ca_private_key_cmd = f'openssl genrsa -out {ca_private_path} 2048'
-        cls.__run_cmd_popen(gen_new_ca_private_key_cmd, stdout_func)
-        cls.__chmod_for_reading(ca_private_path, stdout_func)
+        self._run(gen_new_ca_private_key_cmd, stdout_func)
+        self._chmod_for_reading(ca_private_path, stdout_func)
         gen_new_ca_public_key = f'openssl req -new -x509 -days {expiration} -key {ca_private_path} -subj /C=CN/ST=GD/L=SZ-Inc/CN={CA_CN} -out {ca_public_path}'
-        cls.__run_cmd_popen(gen_new_ca_public_key, stdout_func)
-        cls.__chmod_for_reading(ca_private_path, stdout_func)
+        self._run(gen_new_ca_public_key, stdout_func)
+        self._chmod_for_reading(ca_private_path, stdout_func)
 
         stdout_func('verify CA with itself')
-        cls.__openssl_verify_cert_with_ca(ca_public_path, ca_public_path, stdout_func)
+        self._openssl_verify_cert_with_ca(ca_public_path, ca_public_path, stdout_func)
 
         return ca_private_path, ca_public_path
 
-    @classmethod
-    def __prepare_ca(cls, existing_ca_private, existing_ca_public, expiration, new_ca_name, new_ca_path, new_ca_props,
-                     stdout_func):
+    def _validate_cert_location(self, cert_location):
+        assert os.path.exists(cert_location), f"given location for cert doesn't exist: {cert_location}"
+
+    def _validate_new_ca_location(self, new_ca_dir):
+        self._verify_file(new_ca_dir, 'new CA', True)
+
+    def _prepare_ca(self, existing_ca_private, existing_ca_public, expiration, new_ca_name, new_ca_path, new_ca_props,
+                    stdout_func):
         stdout_func('prepare CA')
         if new_ca_props:
-            ca_private_path, ca_public_path = cls.generate_ca(new_ca_path, new_ca_name, expiration, stdout_func)
+            ca_private_path, ca_public_path = self.generate_ca(new_ca_path, new_ca_name, expiration, stdout_func)
         else:
             stdout_func('use given existing CA')
             ca_private_path, ca_public_path = existing_ca_private, existing_ca_public
 
         stdout_func('verify CA files exist')
-        cls.__verify_file(ca_public_path, 'existing CA public key')
-        cls.__verify_file(ca_private_path, 'existing CA private key')
+        self._verify_file(ca_public_path, 'existing CA public key')
+        self._verify_file(ca_private_path, 'existing CA private key')
         return ca_private_path, ca_public_path
 
-    @classmethod
-    def __gen_cert_csr_and_private_key(cls, cert_location, cert_name, cn, stdout_func):
+    def _gen_cert_csr_and_private_key(self, cert_location, cert_name, cn, stdout_func):
         stdout_func('generate certificate csr and private key')
         cert_csr_filename = f'{cert_name}.csr'
         cert_csr_path = os.path.join(cert_location, cert_csr_filename)
@@ -132,16 +130,15 @@ class CertificateGenerator:
         cert_private_path = os.path.join(cert_location, cert_private_filename)
         cn = cn or DEFAULT_DN
         gen_cert_key_cmd = f'openssl req -newkey rsa:2048 -nodes -keyout {cert_private_path} -subj /C=CN/ST=GD/L=SZ-Inc/CN={cn} -out {cert_csr_path}'
-        cls.__run_cmd_popen(gen_cert_key_cmd, stdout_func)
-        cls.__verify_file(cert_csr_path, 'generated certificate csr')
-        cls.__verify_file(cert_private_path, 'generated certificate key')
-        cls.__chmod_for_reading(cert_csr_path, stdout_func)
-        cls.__chmod_for_reading(cert_private_path, stdout_func)
+        self._run(gen_cert_key_cmd, stdout_func)
+        self._verify_file(cert_csr_path, 'generated certificate csr')
+        self._verify_file(cert_private_path, 'generated certificate key')
+        self._chmod_for_reading(cert_csr_path, stdout_func)
+        self._chmod_for_reading(cert_private_path, stdout_func)
         return cert_csr_path, cert_private_path
 
-    @classmethod
-    def __issue_and_sign_public_cert(cls, ca_private_path, ca_public_path, cert_csr_path, cert_location, cert_name, dn,
-                                     expiration, ip, san_uris, stdout_func):
+    def _issue_and_sign_public_cert(self, ca_private_path, ca_public_path, cert_csr_path, cert_location, cert_name, dn,
+                                    expiration, ip, san_uris, stdout_func):
         stdout_func('generate and sign/issue the public certificate')
         cert_public_filename = f'{cert_name}.crt'
         cert_public_path = os.path.join(cert_location, cert_public_filename)
@@ -156,57 +153,57 @@ class CertificateGenerator:
         target_device_props = [tupl for tupl in target_device_props if tupl[1]]
         subject_alt_name = ','.join([f'{tupl[0]}:{tupl[1]}' for tupl in target_device_props])
 
-        with tempfile.NamedTemporaryFile(mode='w', delete=False) as tmp_file:
-            tmp_file.write(f'subjectAltName={subject_alt_name}')
-            tmp_file.flush()
-            gen_and_issue_cert_public_cmd = f'openssl x509 -req -in {cert_csr_path} -CA {ca_public_path} -CAkey {ca_private_path} -CAcreateserial -out {cert_public_path} -days {expiration} -extfile {tmp_file.name}'
-        cls.__run_cmd_popen(gen_and_issue_cert_public_cmd, stdout_func)
-        cls.__verify_file(cert_public_path, 'generated certificate crt')
-        cls.__chmod_for_reading(cert_public_path, stdout_func)
+        tmp_extfile_content = f'subjectAltName={subject_alt_name}'
+        tmp_extfile = self._prepare_tmp_extfile(tmp_extfile_content)
+        gen_and_issue_cert_public_cmd = f'openssl x509 -req -in {cert_csr_path} -CA {ca_public_path} -CAkey {ca_private_path} -CAcreateserial -out {cert_public_path} -days {expiration} -extfile {tmp_extfile}'
+        self._run(gen_and_issue_cert_public_cmd, stdout_func)
+        self._verify_file(cert_public_path, 'generated certificate crt')
+        self._chmod_for_reading(cert_public_path, stdout_func)
         return cert_public_path
 
-    @classmethod
-    def __convert_crt_to_pem(cls, cert_crt_public_path, cert_location, cert_name, stdout_func):
+    def _prepare_tmp_extfile(self, tmp_extfile_content: str):
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as tmp_file:
+            tmp_file.write(tmp_extfile_content)
+            tmp_file.flush()
+            tmp_extfile = tmp_file.name
+        return tmp_extfile
+
+    def _convert_crt_to_pem(self, cert_crt_public_path, cert_location, cert_name, stdout_func):
         stdout_func('convert public crt to PEM')
         cert_public_pem_filename = f'{cert_name}.pem'
         cert_public_pem_path = os.path.join(cert_location, cert_public_pem_filename)
         convert_crt_to_pem_cmd = f'openssl x509 -in {cert_crt_public_path} -out {cert_public_pem_path} -outform PEM'
-        cls.__run_cmd_popen(convert_crt_to_pem_cmd, stdout_func)
-        cls.__verify_file(cert_public_pem_path, 'generated certificate crt')
-        cls.__chmod_for_reading(cert_public_pem_path, stdout_func)
+        self._run(convert_crt_to_pem_cmd, stdout_func)
+        self._verify_file(cert_public_pem_path, 'generated certificate crt')
+        self._chmod_for_reading(cert_public_pem_path, stdout_func)
         return cert_public_pem_path
 
-    @classmethod
-    def __create_cert_p12_bundle(cls, cert_location, cert_name, cert_private_path, cert_public_pem_path, p12_pass,
-                                 stdout_func):
+    def _create_cert_p12_bundle(self, cert_location, cert_name, cert_private_path, cert_public_pem_path, p12_pass,
+                                stdout_func):
         stdout_func('create p12 bundle of the generated certificate')
         p12_bundle_filename = f'{cert_name}.p12'
         p12_bundle_path = os.path.join(cert_location, p12_bundle_filename)
         create_p12_bundle_cmd = f'openssl pkcs12 -export -out {p12_bundle_path} -in {cert_public_pem_path} -inkey {cert_private_path} -passout pass:{p12_pass}'
-        cls.__run_cmd_popen(create_p12_bundle_cmd, stdout_func)
-        cls.__verify_file(p12_bundle_path, 'generated certificate crt')
-        cls.__chmod_for_reading(p12_bundle_path, stdout_func)
+        self._run(create_p12_bundle_cmd, stdout_func)
+        self._verify_file(p12_bundle_path, 'generated certificate crt')
+        self._chmod_for_reading(p12_bundle_path, stdout_func)
 
-    @classmethod
-    def __openssl_verify_cert_with_ca(cls, ca_file, cert_file, stdout_func):
+    def _openssl_verify_cert_with_ca(self, ca_file, cert_file, stdout_func):
         verify_cmd = f'openssl verify -CAfile {ca_file} {cert_file}'
-        cls.__run_cmd_popen(verify_cmd, stdout_func)
+        self._run(verify_cmd, stdout_func)
 
-    @classmethod
-    def __verify_file(cls, file, purpose, is_dir=False):
+    def _verify_file(self, file, purpose, is_dir=False):
         assert os.path.exists(file), f"given {purpose} path doesn't exist: {file}"
         if is_dir:
             assert os.path.isdir(file), f"given {purpose} path isn't a directory: {file}"
         else:
             assert os.path.isfile(file), f"{purpose} isn't a file: {file}"
 
-    @classmethod
-    def __chmod_for_reading(cls, file, stdout_func):
+    def _chmod_for_reading(self, file, stdout_func):
         chmod_cmd = f'chmod +r {file}'
-        cls.__run_cmd_popen(chmod_cmd, stdout_func)
+        self._run(chmod_cmd, stdout_func)
 
-    @classmethod
-    def __run_cmd_popen(cls, cmd: Union[str, list], stdout_func):
+    def _run(self, cmd: Union[str, list], stdout_func, validate: bool = True) -> str:
         cmd_str, cmd_list = (cmd, cmd.split(' ')) if isinstance(cmd, str) else (
             ' '.join([str(item) for item in cmd]), cmd)
 
@@ -218,10 +215,35 @@ class CertificateGenerator:
         stdout_func(result.stdout)
 
         # Print any error messages
-        if result.returncode != 0:
+        if validate and result.returncode != 0:
             stdout_func("Returned code is not 0. Errors:")
             stdout_func(result.stderr)
             raise ValueError(f'error has occurred\nout: {result.stdout}\nerr: {result.stderr}')
+
+        return result.stdout
+
+
+class CertificateGeneratorOnRemoteHost(CertificateGenerator):
+    def __init__(self, engine):
+        super().__init__()
+        self.__engine = engine
+
+    def _validate_cert_location(self, cert_location):
+        self._run(f'mkdir -p {cert_location}')
+
+    def _validate_new_ca_location(self, new_ca_dir):
+        self._run(f'mkdir -p {new_ca_dir}')
+
+    def _verify_file(self, file, purpose, is_dir=False):
+        self._run(f'ls -l {file}')
+
+    def _prepare_tmp_extfile(self, tmp_extfile_content: str):
+        tmp_extfile = '/tmp/extfile'
+        self._run(f'echo """{tmp_extfile_content}""" > {tmp_extfile}')
+        return tmp_extfile
+
+    def _run(self, cmd: str, stdout_func=logging.info, validate: bool = True) -> str:
+        return self.__engine.run_cmd(cmd, validate=validate)
 
 
 def __try_generator():
@@ -239,8 +261,8 @@ def __try_generator():
     p12_pass: str = 'secret2'
     san_uris: List[str] = ['spiffe://alon-trusted.domain/users/ceos/alon', 'spiffe://alon-trusted.domain/users/ceos/lital']
 
-    CertificateGenerator.generate_cert(cert_location, cert_name, subject_cn, ip, dn, new_ca_path, new_ca_name, p12_pass,
-                                       existing_ca_public, existing_ca_private, expiration_years, san_uris, print)
+    CertificateGenerator().generate_cert(cert_location, cert_name, subject_cn, ip, dn, new_ca_path, new_ca_name, p12_pass,
+                                         existing_ca_public, existing_ca_private, expiration_years, san_uris, print)
 
 
 if __name__ == '__main__':

@@ -14,7 +14,6 @@ from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tests_nvos.general.security.constants import ETC_HOSTS, TMP_TEST_CERTS_DIR, YEAR
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
 from ngts.tests_nvos.helpers.general_helpers import generate_rand_str
-from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_general_utils import generate_scp_uri_using_player
 
@@ -69,9 +68,8 @@ def prepare_tmp_test_certs(cert_names: List[str], dest_dir, engines, dut_hostnam
                     )
                     certs_info[cert_name] = cert_info
                 with allure.step('generate'):
-                    CertificateGenerator.generate_cert(cert_dir, 'cert', cert_info.dn, cert_info.ip, cert_info.dn,
-                                                       cert_dir, 'ca',
-                                                       cert_info.p12_password)
+                    CertificateGenerator().generate_cert(cert_dir, 'cert', cert_info.dn, cert_info.ip, cert_info.dn,
+                                                         cert_dir, 'ca', cert_info.p12_password)
         with allure.step('chmod 777'):
             CmdRunner().run_cmd(f'chmod -R 777 {dest_dir}')
 
@@ -169,11 +167,11 @@ def get_cert_with_ca_mismatch(certs: List[CertInfo]) -> CertInfo:
     return cert_with_mismatch
 
 
-def optional_cacert_types() -> list:  # TODO: remove once closed
-    if any(is_bug_active(bug) for bug in [4251992, 4237677, 4237752, 4237850]):
-        return [CacertType.GLOBAL]
-    else:
-        return CacertType.ALL_TYPES
+def optional_cacert_types() -> list:
+    return [CacertType.GLOBAL]
+    # TODO: bugs 4251992, 4237677, 4237752, 4237850 closed on 3000 (not on master)
+    # TODO: once merged, use the line below to use all CA types
+    # return CacertType.ALL_TYPES
 
 
 def get_test_certs_dir_location(certs_dirname_prefix, dut_hostname):
@@ -197,9 +195,12 @@ def setup_certs_for_tests(certs_dirname_prefix: str, certs_names: List[str], eng
     return certs_location, certs
 
 
-def cleanup_certs_for_tests(tmp_certs_dir: str, certs: List[CertInfo]):
+def cleanup_certs_for_tests(tmp_certs_dir: str, certs: List[CertInfo], cas: List[CertInfo] = None):
     with allure.step('delete certs from dut'):
         delete_certs_safely(certs)
+    if cas:
+        with allure.step('delete cas from dut'):
+            delete_cas_safely(cas)
     with allure.step('remove temp test certs from shared location'):
         CmdRunner().run_cmd(f'rm -rf {tmp_certs_dir}')
 
@@ -219,7 +220,7 @@ def generate_certs(dest, certs: List[CertInfo], ca_private=None, ca_public=None)
             with allure.step(f'create ca subdir: {ca_dir}'):
                 os.makedirs(ca_dir, exist_ok=True)
             with allure.step('generate ca'):
-                ca_private, ca_public = CertificateGenerator.generate_ca(ca_dir, 'ca', 10 * YEAR)
+                ca_private, ca_public = CertificateGenerator().generate_ca(ca_dir, 'ca', 10 * YEAR)
     with allure.step('generate certs from that ca'):
         for cert in certs:
             with allure.step(cert.name):
@@ -235,6 +236,6 @@ def generate_certs(dest, certs: List[CertInfo], ca_private=None, ca_public=None)
                         cacert=ca_public
                     )
                 with allure.step('generate cert'):
-                    CertificateGenerator.generate_cert(cert_dir, 'cert', cert.name, cert.ip, cert.dn,
-                                                       p12_pass=cert.p12_password, existing_ca_public=ca_public,
-                                                       existing_ca_private=ca_private, san_uris=cert.san_uris)
+                    CertificateGenerator().generate_cert(cert_dir, 'cert', cert.name, cert.ip, cert.dn,
+                                                         p12_pass=cert.p12_password, existing_ca_public=ca_public,
+                                                         existing_ca_private=ca_private, san_uris=cert.san_uris)
