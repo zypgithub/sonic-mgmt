@@ -803,7 +803,7 @@ def post_issu_installation_steps(engines, devices, target_version, fw_expected, 
                                                                     f'means cpu was down for ~{packets_lost} seconds')
 
         with allure.step('Verify traffic results from Host A to Host B'):
-            num_of_packets = Tools.TrafficGeneratorTool.stop_traffic_between_2_hosts(
+            num_of_iterations = Tools.TrafficGeneratorTool.stop_traffic_between_2_hosts(
                 engines_ha, engines_hb, traffic_start_time, IssuConsts.TRAFFIC_TIMEOUT,
                 IssuConsts.SERVER_OUTPUT, IssuConsts.CLIENT_OUTPUT)
 

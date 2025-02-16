@@ -646,4 +646,10 @@ tests_nvos/platform/test_platform_environment_voltage.py::test_show_platform_env
       - "'juliet' in testbed"
       - https://redmine.mellanox.com/issues/4259913
 
+tests_nvos/system/issu/test_system_issu.py::test_system_issu_positive_flow_with_traffic:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4276503"
+    conditions:
+      - https://redmine.mellanox.com/issues/4276503
+
 ########################## NVOS IGNORE END ##########################
