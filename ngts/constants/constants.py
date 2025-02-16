@@ -1566,7 +1566,7 @@ class BugHandlerConst:
     BUG_HANDLER_CONF_FILE = {"SONiC-Design": os.path.join(NGTS_PATH, "helpers/bug_handler/sonic_bug_handler.conf"),
                              "'NVOS - Design'": os.path.join(NGTS_PATH, "helpers/bug_handler/nvos_bug_handler.conf")}
     BUG_HANDLER_PYTHON_PATH = "/mswg/projects/swvt/MARS/scripts/python37_wrapper.sh"
-    BUG_HANDLER_PATH = "/auto/sw_tools/Internal/BugHandling/RELEASES/1_4_1/bin/"
+    BUG_HANDLER_PATH = "/auto/sw_tools/Internal/BugHandling/RELEASES/1_4_1_BETA/bin/"
     BUG_HANDLER_SCRIPT = BUG_HANDLER_PATH + "handle_bug.py"
     BUG_HANDLER_UPLOAD_ATTACHMENT_SCRIPT = BUG_HANDLER_PATH + "upload_attachment_to_bug.py"
     BUG_HANDLER_SANITIZER_USER = "asan"
