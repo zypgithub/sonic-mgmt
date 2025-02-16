@@ -1,3 +1,6 @@
+<<<<<<< HEAD   (b98e11 ignore ntp and clock tests due to active bug)
 StartDevice,StartPort,EndDevice,Console_type,Console_menu_type,Proxy
 rcon-mtvr-rack-1-3,7044,mtvr-bison-02,ssh,,root
 rcon-mtvr-rack-1-7,7024,mtvr-moose-11,ssh,,root
+=======
+>>>>>>> CHANGE (a6df8d Rename mtvr-bison-02 setup to mtvr-gaur-02)

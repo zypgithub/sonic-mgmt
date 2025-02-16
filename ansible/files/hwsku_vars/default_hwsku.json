@@ -191,7 +191,7 @@
         "default_hwsku": "Mellanox-SN4700-O8V48",
         "support_hwsku": ["Mellanox-SN4700-O8V48"]
     },
-    "mtvr-bison-02_setup": {
+    "mtvr-gaur-02_setup": {
         "default_hwsku": "Mellanox-SN5610N-C256S2",
         "support_hwsku": ["Mellanox-SN5610N-C256S2", "Mellanox-SN5610N-C224O8"]
     },

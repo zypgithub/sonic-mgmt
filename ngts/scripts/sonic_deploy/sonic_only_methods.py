@@ -93,7 +93,7 @@ class SonicInstallationSteps:
                 "mtvr-hippo-02" != dut_name and 'bobcat' not in dut_name and "r-moose-01" != dut_name and
                 "mtvr-moose-04" != dut_name and "r-leopard-01" != dut_name and "r-leopard-58" != dut_name and
                 'r-tigon-04' != dut_name and "mtvr-moose-13" != dut_name and "mtvr-moose-14" != dut_name and
-                "mtvr-bison-02" != dut_name and "mtvr-gaur-03" != dut_name):
+                "mtvr-gaur-02" != dut_name and "mtvr-gaur-03" != dut_name):
             gen_mg_cmd = get_generate_minigraph_cmd(setup_info, dut_name, sonic_topo, port_number)
             run_background_process_on_host(threads_dict, 'generate_minigraph', gen_mg_cmd, timeout=300,
                                            exec_path=ansible_path)
@@ -477,7 +477,7 @@ class SonicInstallationSteps:
         if "sonic-dual-tor-leopard" in setup_name:
             hwskus = ['Mellanox-SN4700-V64']
             need_gen_mingraph = True
-        if "mtvr-bison-02" in setup_name or "mtvr-gaur-03" in setup_name:
+        if "mtvr-gaur-02" in setup_name or "mtvr-gaur-03" in setup_name:
             hwskus = ['Mellanox-SN5610N-C256S2', 'Mellanox-SN5610N-C224O8']
             need_gen_mingraph = True
 

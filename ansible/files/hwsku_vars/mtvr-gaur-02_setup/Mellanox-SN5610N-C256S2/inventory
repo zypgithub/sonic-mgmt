@@ -1,0 +1,55 @@
+[sonic_latest]
+# MTVR community testbed mtvr-gaur-02_setup topologies
+mtvr-gaur-02  ansible_host=10.245.21.108 sonic_version=v2  sonic_hwsku=Mellanox-SN5610N-C256S2 iface_speed=100000 serial_console="ssh -l rcon:7044 10.245.2.42" ptf_host=ptf-mtvr-gaur-02 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-245-2-15,pdu-10-245-2-34"
+mtvr-gaur-02-t0  ansible_host=10.245.21.108 sonic_version=v2  sonic_hwsku=Mellanox-SN5610N-C256S2 iface_speed=100000 serial_console="ssh -l rcon:7044 10.245.2.42" ptf_host=ptf-mtvr-gaur-02 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-245-2-15,pdu-10-245-2-34"
+mtvr-gaur-02-t0-64  ansible_host=10.245.21.108 sonic_version=v2  sonic_hwsku=Mellanox-SN5610N-C256S2 iface_speed=100000 serial_console="ssh -l rcon:7044 10.245.2.42" ptf_host=ptf-mtvr-gaur-02 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-245-2-15,pdu-10-245-2-34"
+mtvr-gaur-02-t0-64-256  ansible_host=10.245.21.108 sonic_version=v2  sonic_hwsku=Mellanox-SN5610N-C256S2 iface_speed=100000 serial_console="ssh -l rcon:7044 10.245.2.42" ptf_host=ptf-mtvr-gaur-02 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-245-2-15,pdu-10-245-2-34"
+mtvr-gaur-02-t0-isolated-d16u16s2  ansible_host=10.245.21.108 sonic_version=v2  sonic_hwsku=Mellanox-SN5610N-C256S2 iface_speed=100000 serial_console="ssh -l rcon:7044 10.245.2.42" ptf_host=ptf-mtvr-gaur-02 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-245-2-15,pdu-10-245-2-34"
+mtvr-gaur-02-t0-isolated-d2u254s1  ansible_host=10.245.21.108 sonic_version=v2  sonic_hwsku=Mellanox-SN5610N-C256S2 iface_speed=100000 serial_console="ssh -l rcon:7044 10.245.2.42" ptf_host=ptf-mtvr-gaur-02 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-245-2-15,pdu-10-245-2-34"
+mtvr-gaur-02-t1  ansible_host=10.245.21.108 sonic_version=v2  sonic_hwsku=Mellanox-SN5610N-C256S2 iface_speed=100000 serial_console="ssh -l rcon:7044 10.245.2.42" ptf_host=ptf-mtvr-gaur-02 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-245-2-15,pdu-10-245-2-34"
+mtvr-gaur-02-t1-lag  ansible_host=10.245.21.108 sonic_version=v2  sonic_hwsku=Mellanox-SN5610N-C256S2 iface_speed=100000 serial_console="ssh -l rcon:7044 10.245.2.42" ptf_host=ptf-mtvr-gaur-02 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-245-2-15,pdu-10-245-2-34"
+mtvr-gaur-02-t1-lag-c224o8  ansible_host=10.245.21.108 sonic_version=v2  sonic_hwsku=Mellanox-SN5610N-C256S2 iface_speed=100000 serial_console="ssh -l rcon:7044 10.245.2.42" ptf_host=ptf-mtvr-gaur-02 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-245-2-15,pdu-10-245-2-34"
+mtvr-gaur-02-ptf32  ansible_host=10.245.21.108 sonic_version=v2  sonic_hwsku=Mellanox-SN5610N-C256S2 iface_speed=100000 serial_console="ssh -l rcon:7044 10.245.2.42" ptf_host=ptf-mtvr-gaur-02 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-245-2-15,pdu-10-245-2-34"
+mtvr-gaur-02-ptf-any  ansible_host=10.245.21.108 sonic_version=v2  sonic_hwsku=Mellanox-SN5610N-C256S2 iface_speed=100000 serial_console="ssh -l rcon:7044 10.245.2.42" ptf_host=ptf-mtvr-gaur-02 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-245-2-15,pdu-10-245-2-34"
+
+mtvr-moose-11 ansible_host=mtvr-moose-11 ansible_ssh_user="{{ lookup('env','SONIC_SWITCH_USER') }}" ansible_ssh_pass="{{ lookup('env','SONIC_SWITCH_PASSWORD') }}" os=sonic
+
+[sonic:children]
+sonic_latest
+
+[leaf_topo_1]
+mtvr-gaur-02
+mtvr-gaur-02-t0
+mtvr-gaur-02-t0-64
+mtvr-gaur-02-t0-64-256
+mtvr-gaur-02-t0-isolated-d16u16s2
+mtvr-gaur-02-t0-isolated-d2u254s1
+mtvr-gaur-02-t1
+mtvr-gaur-02-t1-lag
+mtvr-gaur-02-t1-lag-c224o8
+mtvr-gaur-02-ptf32
+mtvr-gaur-02-ptf-any
+
+[leaf_topo_1:vars]
+podset_number=200
+
+[lab]
+mtvr-gaur-02
+mtvr-gaur-02-t0
+mtvr-gaur-02-t0-64
+mtvr-gaur-02-t0-64-256
+mtvr-gaur-02-t0-isolated-d16u16s2
+mtvr-gaur-02-t0-isolated-d2u254s1
+mtvr-gaur-02-t1
+mtvr-gaur-02-t1-lag
+mtvr-gaur-02-t1-lag-c224o8
+mtvr-gaur-02-ptf32
+mtvr-gaur-02-ptf-any
+
+[ptf]
+# MTVR mtvr-gaur-02 PTF host
+ptf-mtvr-gaur-02 ansible_host=10.245.38.63 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+10.245.38.63 ansible_host=10.245.38.63 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+
+[pdu]
+pdu-10-245-2-15 ansible_host=10.245.2.15 protocol=snmp

@@ -1,0 +1,3 @@
+StartDevice,StartPort,EndDevice,Console_type,Proxy
+rcon-mtvr-rack-1-3,7044,mtvr-gaur-02,ssh,root
+rcon-mtvr-rack-1-7,7024,mtvr-moose-11,ssh,root

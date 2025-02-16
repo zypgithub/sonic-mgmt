@@ -1,3 +1,4 @@
+<<<<<<< HEAD   (b98e11 ignore ntp and clock tests due to active bug)
 StartDevice,StartPort,EndDevice,EndPort,BandWidth,VlanID,VlanMode,AutoNeg
 mtvr-bison-02,Ethernet0,mtvr-moose-11,Ethernet0,100000,101,Access,on
 mtvr-bison-02,Ethernet1,mtvr-moose-11,Ethernet1,100000,102,Access,on
@@ -230,3 +231,5 @@ mtvr-bison-02,Ethernet501,mtvr-moose-11,Ethernet501,100000,354,Access,on
 mtvr-bison-02,Ethernet502,mtvr-moose-11,Ethernet502,100000,355,Access,on
 mtvr-bison-02,Ethernet503,mtvr-moose-11,Ethernet503,100000,356,Access,on
 mtvr-moose-11,Ethernet512,mtvr-dl360-02,p1p2,25000,101-356,Trunk,on
+=======
+>>>>>>> CHANGE (a6df8d Rename mtvr-bison-02 setup to mtvr-gaur-02)

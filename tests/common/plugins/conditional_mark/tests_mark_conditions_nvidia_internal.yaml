@@ -18,7 +18,7 @@ platform_tests/test_secure_upgrade.py:
     reason: "Testcase ignored on r-bison testbeds"
     conditions_logical_operator: or
     conditions:
-      - "'r-bison-04' in testbed or 'mtvr-bison-02' in testbed or 'mtvr-gaur-03' in testbed"
+      - "'r-bison-04' in testbed or 'mtvr-gaur-02' in testbed or 'mtvr-gaur-03' in testbed"
       - "'simx' in platform"
 
 tests/nightly/rocev2_acl_counter:
@@ -241,7 +241,7 @@ tests/nightly/secure:
   skip:
     reason: "Skipped on bison testbeds"
     conditions:
-    - "'r-bison-04' in testbed or 'mtvr-bison-02' in testbed or 'mtvr-gaur-03' in testbed"
+    - "'r-bison-04' in testbed or 'mtvr-gaur-02' in testbed or 'mtvr-gaur-03' in testbed"
 
 tests/nightly/show_techsupport/test_health_event.py:
   skip:
