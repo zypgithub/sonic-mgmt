@@ -13,7 +13,8 @@ import os
 from ngts.helpers.performance.performance_setup_helpers import (save_base_configuration,
                                                                 restore_basic_configuration,
                                                                 apply_test_configuration)
-from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts
+from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts, MongoDbConsts
+from ngts.helpers.performance.performance_db_helpers import get_perf_test_name, add_test_mongo_metadata
 
 logger = logging.getLogger()
 TESTS_SCENARIO = "spcx_ra"
@@ -61,3 +62,11 @@ def ibm_fixture(players, conf_args):
     yield
     with allure.step("Set IBM to false"):
         players['dut']['cli'].performance.set_ibm(TESTS_SCENARIO, original_conf_args)
+
+
+@pytest.fixture(scope='function', autouse=True)
+def update_test_mongo_metadata(request, players, is_ipv6, port_group_df):
+    test_name = get_perf_test_name(request.node.name, is_ipv6)
+    add_test_mongo_metadata(test_name, {MongoDbConsts.CONF_NAME: "x2_400G_spine",
+                                        MongoDbConsts.PORT_GROUP_DF: port_group_df})
+    yield

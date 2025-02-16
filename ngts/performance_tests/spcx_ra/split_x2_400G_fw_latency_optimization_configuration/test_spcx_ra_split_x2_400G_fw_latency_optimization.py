@@ -17,7 +17,7 @@ PACKET_SIZE_LIST = PerfConsts.PACKET_SIZE_LIST
 class TestSPCXRA_x2Split_400G:
 
     @pytest.fixture(autouse=True)
-    def setup(self, players, engines, power_thresholds_by_chip_type, conf_args, chip_type):
+    def setup(self, players, engines, power_thresholds_by_chip_type, conf_args, chip_type, is_ipv6):
         self.topology_obj = get_topology_obj(players)
         self.players = players
         self.engines = engines
@@ -25,7 +25,8 @@ class TestSPCXRA_x2Split_400G:
         self.scenario = "spcx_ra"
         self.power_thresholds_by_chip_type = power_thresholds_by_chip_type
         self.traffic_jsons = get_spcx_ra_spine_traffic(players, conf_args)
-        self.ip = InfraConst.IPV6 if conf_args["is_ipv6"] else InfraConst.IPV4
+        self.ip = InfraConst.IPV6 if is_ipv6 else InfraConst.IPV4
+        self.is_ipv6 = is_ipv6
         self.chip_type = chip_type
 
     @pytest.mark.parametrize("packet_size", PACKET_SIZE_LIST)
@@ -35,7 +36,7 @@ class TestSPCXRA_x2Split_400G:
         skip_test_on_unsupported_os(cli_obj=self.cli_object, unsupported_os=CliType.NVUE)
 
         with allure.step(f"Set test correct allure title with {self.ip} parameter"):
-            test_name = set_allure_title(request, self.ip)
+            test_name = set_allure_title(request, self.is_ipv6)
 
         with allure.step(f"Run {packet_size}B packet Traffic on all the ports"):
             run_traffic(self.players, self.scenario, self.traffic_jsons)
@@ -55,7 +56,7 @@ class TestSPCXRA_x2Split_400G:
         skip_test_on_unsupported_os(cli_obj=self.cli_object, unsupported_os=CliType.NVUE)
 
         with allure.step(f"Set test correct allure title with {self.ip} parameter"):
-            test_name = set_allure_title(request, self.ip)
+            test_name = set_allure_title(request, self.is_ipv6)
 
         with allure.step(f"Run {packet_size}B packet Traffic on all the ports"):
             run_traffic(self.players, self.scenario, self.traffic_jsons)

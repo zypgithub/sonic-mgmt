@@ -1,5 +1,6 @@
 import logging
 import os
+import json
 from ngts.constants.performance_constants import PerfConsts
 from infra.tools.exceptions.test_issue import TestIssue
 
@@ -176,6 +177,26 @@ class PerformanceCommon:
         logging.info(f"set TG_JSON ={traffic_json_path} on {self.dut_alias}")
         set_traffic_json_cmd = f"export TG_JSON=\"{traffic_json_path}\""
         self.execute_cmd(set_traffic_json_cmd)
+
+    @staticmethod
+    def get_test_specific_values(testname):
+        """
+
+        Args:
+            testname: returns all the test values stored during the test run,
+            and adds any OS specific info
+
+        Returns:
+            a json obj with the test info, i.e,
+            {
+                "testName": "test_ar_perf_max_bandwidth[4096-IPv6]",
+                "timeStamp": "23-02-2025 14:09:25",
+                "configurationName": "x2_400G", ...
+            }
+        """
+        with open(os.path.join(PerfConsts.REQUIRMENTS_DIR, f"{testname}_info_dump.json")) as f:
+            test_specific_values = json.load(f)
+        return test_specific_values
 
     @staticmethod
     def get_controllers_info_dicts_list(sensors_output):

@@ -7,10 +7,11 @@ import pytest
 from datetime import datetime
 from ngts.helpers.general_helper import get_pytest_test_name
 from ngts.constants.constants import BugHandlerConst, CliType
-from ngts.constants.performance_constants import PerfConsts
+from ngts.constants.performance_constants import PerfConsts, MongoDbConsts
 from ngts.helpers.thread_log_filter import redirect_thread_stdout, config_root_logger
 from ngts.helpers.custom_catch_exception_thread import CatchExceptionThread, parse_threads_exceptions_at_join
 from infra.tools.exceptions.test_issue import TestIssue
+from ngts.helpers.performance.performance_db_helpers import add_test_mongo_metadata, get_perf_test_name
 from ngts.helpers.performance.traffic_helpers import validate_bw, validate_tc, validate_counters
 from ngts.helpers.performance.topology_helpers import get_dvs_topology_obj, get_nvue_sonic_topology_obj
 from ngts.helpers.performance.power_temp_helpers import validate_temperature, validate_power
@@ -98,6 +99,8 @@ def validate_traffic_results(players, test_name, scenario, samples_params_dict,
         traffic_json = attach_json_to_allure(full_path,
                                              f'Traffic Validation JSON results on {player_alias} - {hostname}')
         traffic_validation_jsons_list.append(traffic_json)
+
+        add_test_mongo_metadata(test_name, {MongoDbConsts.VALIDATOR_RESULTS: traffic_json})
     return traffic_validation_jsons_list
 
 
@@ -129,7 +132,9 @@ def run_validation(players, test_name, scenario, chip_type, bw_threshold,
             if temperature_threshold:
                 validate_temperature(traffic_json, temperature_threshold, violations_list)
             if power_threshold:
-                validate_power(players, chip_type, traffic_json, power_threshold, violations_list)
+                power_df_with_total, power_df_by_collectors_group_with_total = validate_power(players, chip_type, traffic_json, power_threshold, violations_list)
+                add_test_mongo_metadata(test_name, {MongoDbConsts.POWER_TOTAL: power_df_with_total.to_dict(orient='records'),
+                                                    MongoDbConsts.POWER_BY_COLLECTORS: power_df_by_collectors_group_with_total.to_dict(orient='records')})
             if violations_list:
                 raise TestIssue("\n".join(violations_list))
     return traffic_validation_jsons_list
@@ -192,7 +197,7 @@ def get_topology_obj(players):
         return get_nvue_sonic_topology_obj(players)
 
 
-def get_performance_pytest_test_name(request, ip):
+def get_performance_pytest_test_name(request, is_ipv6):
     """
     Args:
         request: pytest request fixture
@@ -202,11 +207,11 @@ def get_performance_pytest_test_name(request, ip):
         the test name with the ip parameter, i.e, test_ar_perf_max_bandwidth[4096-IPv6]
     """
     test_name = get_pytest_test_name(request)
-    test_name_with_ip_param = test_name.replace("]", f"-{ip}]")
+    test_name_with_ip_param = get_perf_test_name(test_name, is_ipv6)
     return test_name_with_ip_param
 
 
-def set_allure_title(request, ip):
-    test_name = get_performance_pytest_test_name(request, ip)
+def set_allure_title(request, is_ipv6):
+    test_name = get_performance_pytest_test_name(request, is_ipv6)
     allure.dynamic.title(test_name)
     return test_name

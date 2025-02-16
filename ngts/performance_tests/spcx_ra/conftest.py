@@ -1,7 +1,7 @@
 import pytest
 import logging
 import os
-from ngts.constants.performance_constants import PerfConsts, PowerConsts
+from ngts.constants.performance_constants import PerfConsts, PowerConsts, MongoDbConsts
 from ngts.constants.constants import BugHandlerConst
 from ngts.helpers.performance.traffic_helpers import (create_json_traffic_file, create_json_traffic_stream,
                                                       create_json_traffic_file_with_stream_list)
@@ -52,3 +52,15 @@ def get_spine_to_leaf_stream_list(players, spine_tg, conf_args, traffic_paramete
         stream = create_json_traffic_stream(spine_tg, traffic_parameters, stream_name)
         stream_list.append(stream)
     create_json_traffic_file_with_stream_list(spine_tg, traffic_parameters, json_path, stream_list)
+
+
+@pytest.fixture(scope='class', autouse=False)
+def port_group_df(request, players):
+    request.getfixturevalue('basic_setup_configuration')
+    port_group_df = []
+    ports = players['dut']['cli'].performance.get_right_left_ports_dict()
+    for port in ports["left_ports"]:
+        port_group_df.append({"port": players['dut']['cli'].performance.get_sdk_port(port), MongoDbConsts.PORT_GROUP_NAME: "left_ports"})
+    for port in ports["right_ports"]:
+        port_group_df.append({"port": players['dut']['cli'].performance.get_sdk_port(port), MongoDbConsts.PORT_GROUP_NAME: "right_ports"})
+    return port_group_df

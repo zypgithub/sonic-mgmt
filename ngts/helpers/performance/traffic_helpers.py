@@ -3,7 +3,7 @@ import json
 import ipaddress
 import pandas as pd
 from ngts.helpers.performance.packet_json_generator import PacketGenerator
-from ngts.constants.performance_constants import PerfConsts
+from ngts.constants.performance_constants import PerfConsts, ValidationConsts
 
 
 def generate_ip_address_list(address_start_v4="172.168.1.1", address_start_v6="172::1:1", step_v4=256, step_v6=0x10000,
@@ -139,11 +139,11 @@ def create_json_traffic_file_with_stream_list(player_alias, traffic_parameters, 
 
 def validate_bw(traffic_json, bw_threshold, violations_list):
     with allure.step(f"Validate all bandwidth samples minimal value is above {bw_threshold} threshold"):
-        bw_samples = traffic_json["Bandwidth_samples"]
-        bw_samples.pop('sample_params', None)
+        bw_samples = traffic_json[ValidationConsts.BW_SAMPLES]
+        bw_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
         lower_bw_sample = []
         for sample_id, bw_sample in bw_samples.items():
-            if bw_sample['bw_stats']['min_bw'] < bw_threshold:
+            if bw_sample[ValidationConsts.BW_STATS][ValidationConsts.BW_MIN] < bw_threshold:
                 lower_bw_sample.append(sample_id)
         if lower_bw_sample:
             violations_list.append(f"Not all bandwidth samples were higher than threshold {bw_threshold}, "
@@ -151,12 +151,12 @@ def validate_bw(traffic_json, bw_threshold, violations_list):
 
 
 def validate_bw_per_ports(traffic_json, bw_threshold, ports_list, violations_list):
-    bw_samples = traffic_json["Bandwidth_samples"]
-    bw_samples.pop('sample_params', None)
+    bw_samples = traffic_json[ValidationConsts.BW_SAMPLES]
+    bw_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
     for sample_id, bw_sample in bw_samples.items():
-        bw_df = pd.DataFrame(bw_sample['bandwidth_dataframe'])
+        bw_df = pd.DataFrame(bw_sample[ValidationConsts.BW_DATAFRAME])
         for port in ports_list:
-            port_tx = bw_df.loc[bw_df['port'] == hex(int(port))].loc[:, 'tx_rate'].values[0]
+            port_tx = bw_df.loc[bw_df[ValidationConsts.PORT] == hex(int(port))].loc[:, ValidationConsts.TX_RATE].values[0]
             if bw_threshold == 0 and port_tx > bw_threshold:
                 violations_list.append(f"Port {port} tx: {port_tx} > {bw_threshold}, "
                                        f"please check {sample_id}")
@@ -167,12 +167,14 @@ def validate_bw_per_ports(traffic_json, bw_threshold, ports_list, violations_lis
 
 def validate_tc(traffic_json, tc_occ_threshold, violations_list):
     with allure.step(f"Validate all TC samples average occupancy is below {tc_occ_threshold} cells"):
-        tc_samples = traffic_json["TC_samples"]
-        tc_samples.pop('sample_params', None)
+        tc_samples = traffic_json[ValidationConsts.TC_SAMPLES]
+        tc_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
         higher_tc_samples = []
-        for sample_id, tc_samples_dict in tc_samples.items():
-            for tc_name, tc_samples_stats in tc_samples_dict.items():
-                occ_avg = tc_samples_stats['occ_avg']
+        for sample_id, tc_sample in tc_samples.items():
+            tc_df = tc_sample[ValidationConsts.TC_DATAFRAME]
+            for tc_dict in tc_df:
+                tc_name = tc_dict[ValidationConsts.TC_NAME]
+                occ_avg = tc_dict[ValidationConsts.TC_OCC_AVG]
                 if occ_avg > tc_occ_threshold:
                     higher_tc_samples.append(f"{sample_id} - {tc_name}")
         if higher_tc_samples:
@@ -181,18 +183,18 @@ def validate_tc(traffic_json, tc_occ_threshold, violations_list):
 
 
 def validate_counters(traffic_json, violations_list):
-    counters_samples = traffic_json["Counters_samples"]
-    counters_samples.pop('sample_params', None)
+    counters_samples = traffic_json[ValidationConsts.COUNTERS_SAMPLES]
+    counters_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
     for sample_id, counters_sample in counters_samples.items():
         validate_counters_sample(sample_id, counters_sample, violations_list)
 
 
 def validate_counters_sample(sample_id, counters_sample, violations_list):
-    counters_df = counters_sample['counters_dataframe']
+    counters_df = counters_sample[ValidationConsts.COUNTERS_DATAFRAME]
     for counters_dict in counters_df:
         for counter_name in PerfConsts.COUNTERS:
             counter_value = counters_dict[counter_name]
             if counter_value > 0:
-                port = counters_dict["port"]
+                port = counters_dict[ValidationConsts.PORT]
                 violations_list.append(f"Port {port} {counter_name}: {counter_value} > 0, "
                                        f"please check {sample_id}")

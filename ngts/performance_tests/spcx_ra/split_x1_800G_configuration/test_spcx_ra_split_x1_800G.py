@@ -1,12 +1,12 @@
 import allure
 import logging
 import pytest
+from ngts.constants.constants import CliType, InfraConst
 from ngts.helpers.performance.performance_setup_helpers import (restore_basic_configuration, apply_test_configuration,
                                                                 run_traffic, run_validation, get_topology_obj,
-                                                                get_performance_pytest_test_name,
                                                                 skip_test_on_unsupported_os, set_allure_title)
-from ngts.constants.constants import CliType, InfraConst
-from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts
+from ngts.helpers.performance.performance_db_helpers import add_test_mongo_metadata
+from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts, MongoDbConsts
 from ngts.performance_tests.spcx_ra.conftest import get_spcx_ra_spine_traffic, get_spcx_ra_leaf_traffic
 logger = logging.getLogger()
 
@@ -14,7 +14,7 @@ logger = logging.getLogger()
 class TestSPCXRA_x1Split_800G:
 
     @pytest.fixture(autouse=True)
-    def setup(self, players, engines, power_thresholds_by_chip_type, conf_args, chip_type):
+    def setup(self, players, engines, power_thresholds_by_chip_type, conf_args, chip_type, is_ipv6):
         self.topology_obj = get_topology_obj(players)
         self.players = players
         self.engines = engines
@@ -22,8 +22,9 @@ class TestSPCXRA_x1Split_800G:
         self.scenario = "spcx_ra"
         self.power_thresholds_by_chip_type = power_thresholds_by_chip_type
         self.traffic_jsons = get_spcx_ra_spine_traffic(players, conf_args)
-        self.ip = InfraConst.IPV6 if conf_args["is_ipv6"] else InfraConst.IPV4
         self.chip_type = chip_type
+        self.ip = InfraConst.IPV6 if is_ipv6 else InfraConst.IPV4
+        self.is_ipv6 = is_ipv6
 
     @pytest.mark.parametrize("packet_size", PerfConsts.PACKET_SIZE_LIST)
     @allure.title('test_ar_perf_max_bandwidth')
@@ -32,7 +33,7 @@ class TestSPCXRA_x1Split_800G:
         pytest.xfail(f"test_ar_perf_max_bandwidth expected to on 800G with auto buffer mode")
 
         with allure.step(f"Set test correct allure title with {self.ip} parameter"):
-            test_name = set_allure_title(request, self.ip)
+            test_name = set_allure_title(request, self.is_ipv6)
 
         with allure.step(f"Run {packet_size}B packet Traffic on all the ports"):
             run_traffic(self.players, self.scenario, self.traffic_jsons)
@@ -51,7 +52,7 @@ class TestSPCXRA_x1Split_800G:
     def test_ar_perf_max_bandwidth_ibm(self, request, packet_size, ibm_fixture):
 
         with allure.step(f"Set test correct allure title with {self.ip} parameter"):
-            test_name = set_allure_title(request, self.ip)
+            test_name = set_allure_title(request, self.is_ipv6)
 
         with allure.step(f"Run {packet_size}B packet Traffic on all the ports"):
             run_traffic(self.players, self.scenario, self.traffic_jsons)
@@ -71,7 +72,8 @@ class TestSPCXRA_x1Split_800G:
         skip_test_on_unsupported_os(cli_obj=self.cli_object, unsupported_os=CliType.NVUE)
 
         with allure.step(f"Set test correct allure title with {self.ip} parameter"):
-            test_name = set_allure_title(request, self.ip)
+            test_name = set_allure_title(request, self.is_ipv6)
+            add_test_mongo_metadata(test_name, {MongoDbConsts.CONF_NAME: "x2_400G_leaf"})
 
         conf_args["two_sided_ar"] = False
         leaf_traffic_jsons = get_spcx_ra_leaf_traffic(self.players, conf_args)

@@ -13,7 +13,8 @@ import os
 from ngts.helpers.performance.performance_setup_helpers import (save_base_configuration,
                                                                 restore_basic_configuration,
                                                                 apply_test_configuration)
-from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts
+from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts, MongoDbConsts
+from ngts.helpers.performance.performance_db_helpers import get_perf_test_name, add_test_mongo_metadata
 from ngts.helpers.performance.traffic_helpers import create_json_traffic_file
 
 logger = logging.getLogger()
@@ -58,3 +59,11 @@ def conf_args():
                  "scenario": TESTS_SCENARIO
                  }
     return conf_args
+
+
+@pytest.fixture(scope='function', autouse=True)
+def update_test_mongo_metadata(request, players, is_ipv6, port_group_df):
+    test_name = get_perf_test_name(request.node.name, is_ipv6)
+    add_test_mongo_metadata(test_name, {MongoDbConsts.CONF_NAME: "400G_to_200G_leaf",
+                                        MongoDbConsts.PORT_GROUP_DF: port_group_df})
+    yield

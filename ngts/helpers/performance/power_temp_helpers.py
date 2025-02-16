@@ -1,16 +1,16 @@
 import re
 import allure
 import pandas as pd
-from ngts.constants.performance_constants import PerfConsts, SPCControllers, PowerConsts
+from ngts.constants.performance_constants import PerfConsts, SPCControllers, PowerConsts, ValidationConsts
 
 
 def validate_temperature(traffic_json, temperature_threshold, violations_list):
     with allure.step(f"Validate all temperature samples are below {temperature_threshold}"):
-        temperature_samples = traffic_json["Temperature_samples"]
-        temperature_samples.pop('sample_params', None)
+        temperature_samples = traffic_json[ValidationConsts.TEMPERATURE_SAMPLES]
+        temperature_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
         higher_temperature_samples = []
         for sample_id, temperature_samples_dict in temperature_samples.items():
-            temperature = temperature_samples_dict["temperature"]
+            temperature = temperature_samples_dict[ValidationConsts.TEMPERATURE]
             if int(temperature) > temperature_threshold:
                 higher_temperature_samples.append(f"{sample_id} - temperature: {temperature}")
         if higher_temperature_samples:
@@ -21,24 +21,27 @@ def validate_temperature(traffic_json, temperature_threshold, violations_list):
 def validate_power(players, chip_type, traffic_json, power_threshold, violations_list):
     with allure.step(f"Validate all power samples are below the power_thresholds"):
         dut_cli_obj = players['dut']['cli']
-        power_samples = traffic_json["Power_samples"]
-        power_samples.pop('sample_params', None)
+        power_samples = traffic_json[ValidationConsts.POWER_SAMPLES]
+        power_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
         power_df = get_avg_samples_power_dataframe(dut_cli_obj, chip_type, power_samples)
         power_df_with_total = validate_power_df_by_collectors(power_df, power_threshold, violations_list)
         allure.attach(power_df_with_total.to_html(), 'Power full dataframe', allure.attachment_type.HTML)
-        get_sum_power_df_by_collectors_group(power_df)
+        power_df_by_collectors_group_with_total = get_sum_power_df_by_collectors_group(power_df)
+        allure.attach(power_df_by_collectors_group_with_total.to_html(),
+                      'Power summary by collectors', allure.attachment_type.HTML)
+        return power_df_with_total, power_df_by_collectors_group_with_total
 
 
 def get_avg_samples_power_dataframe(cli_obj, chip_type, power_samples):
     current_sum = None
     for sample_id, power_sample in power_samples.items():
-        power_df = get_power_dataframe(cli_obj, power_sample['sensors_output'], chip_type)
+        power_df = get_power_dataframe(cli_obj, power_sample[ValidationConsts.SENSORS_OUTPUT], chip_type)
         if current_sum is not None:
-            current_sum += power_df["Current (A)"]
+            current_sum += power_df[PowerConsts.POWER_CURRENT]
         else:
-            current_sum = power_df["Current (A)"]
-    power_df["Current (A)"] = current_sum.div(len(power_samples)).round(3)
-    power_df["Power (W)"] = (power_df["Voltage (V)"] * power_df["Current (A)"]).round(3)
+            current_sum = power_df[PowerConsts.POWER_CURRENT]
+    power_df[PowerConsts.POWER_CURRENT] = current_sum.div(len(power_samples)).round(3)
+    power_df[PowerConsts.POWER_WATT] = (power_df[PowerConsts.POWER_VOLTAGE] * power_df[PowerConsts.POWER_CURRENT]).round(3)
     return power_df
 
 
@@ -74,12 +77,12 @@ def get_power_dataframe(cli_obj, sensors_output, chip_type):
         for index in [1, 2]:
             if controller_info_dict.get(f"vout{index}"):
                 controller_dict_df_entry = {}
-                controller_dict_df_entry["Power Supply"] = controller_name
-                controller_dict_df_entry["Address"] = address
-                controller_dict_df_entry["Voltage (V)"] = controller_info_dict[f"vout{index}"]
-                controller_dict_df_entry["Current (A)"] = controller_info_dict[f"iout{index}"]
-                controller_dict_df_entry["Power (W)"] = (controller_dict_df_entry["Voltage (V)"] *
-                                                         controller_dict_df_entry["Current (A)"])
+                controller_dict_df_entry[PowerConsts.POWER_SUPPLY] = controller_name
+                controller_dict_df_entry[PowerConsts.POWER_SUPPLY_ADDRESS] = address
+                controller_dict_df_entry[PowerConsts.POWER_VOLTAGE] = controller_info_dict[f"vout{index}"]
+                controller_dict_df_entry[PowerConsts.POWER_CURRENT] = controller_info_dict[f"iout{index}"]
+                controller_dict_df_entry[PowerConsts.POWER_WATT] = (controller_dict_df_entry[PowerConsts.POWER_VOLTAGE] *
+                                                                    controller_dict_df_entry[PowerConsts.POWER_CURRENT])
                 power_dp.append(controller_dict_df_entry)
     return pd.DataFrame(power_dp)
 
@@ -105,39 +108,39 @@ def get_sum_power_df_by_collectors_group(power_df):
     """
     rows_to_drop = []
     collectors_regex_counters = {
-        r"VCORE & 1.8V_Tile": {"counter": 0, "Power Supply": "VCORE & 1.8V_Tile", "Address": []},
-        r"VCORE TILES \d & \d \(VDD_Tx\)": {"counter": 0, "Power Supply": "VCORE TILES", "Address": []},
-        r"DVDD TILES \d & \d \(DVDD_Tx\)": {"counter": 0, "Power Supply": "DVDD TILES", "Address": []},
+        r"VCORE & 1.8V_Tile": {"counter": 0, PowerConsts.POWER_SUPPLY: "VCORE & 1.8V_Tile", PowerConsts.POWER_SUPPLY_ADDRESS: []},
+        r"VCORE TILES \d & \d \(VDD_Tx\)": {"counter": 0, PowerConsts.POWER_SUPPLY: "VCORE TILES", PowerConsts.POWER_SUPPLY_ADDRESS: []},
+        r"DVDD TILES \d & \d \(DVDD_Tx\)": {"counter": 0, PowerConsts.POWER_SUPPLY: "DVDD TILES", PowerConsts.POWER_SUPPLY_ADDRESS: []},
     }
-    power_df_by_group = power_df.groupby(["Power Supply", "Address"])["Power (W)"].sum().reset_index()
+    power_df_by_group = power_df.groupby([PowerConsts.POWER_SUPPLY, PowerConsts.POWER_SUPPLY_ADDRESS])[PowerConsts.POWER_WATT].sum().reset_index()
     for index, row in power_df_by_group.iterrows():
         for collector_regex in collectors_regex_counters.keys():
-            if re.search(collector_regex, row["Power Supply"]):
-                collectors_regex_counters[collector_regex]["counter"] += row["Power (W)"]
-                collectors_regex_counters[collector_regex]["Address"].append(row["Address"])
+            if re.search(collector_regex, row[PowerConsts.POWER_SUPPLY]):
+                collectors_regex_counters[collector_regex]["counter"] += row[PowerConsts.POWER_WATT]
+                collectors_regex_counters[collector_regex][PowerConsts.POWER_SUPPLY_ADDRESS].append(row[PowerConsts.POWER_SUPPLY_ADDRESS])
                 rows_to_drop.append(index)
     power_df_by_group = power_df_by_group.drop(rows_to_drop)
     power_df_to_concat = []
     for collector_regex, counter_dict in collectors_regex_counters.items():
         if counter_dict["counter"] > 0:
-            new_row = {"Power Supply": counter_dict["Power Supply"],
-                       "Address": ",".join(counter_dict["Address"]),
-                       "Power (W)": counter_dict["counter"]}
+            new_row = {PowerConsts.POWER_SUPPLY: counter_dict[PowerConsts.POWER_SUPPLY],
+                       PowerConsts.POWER_SUPPLY_ADDRESS: ",".join(counter_dict[PowerConsts.POWER_SUPPLY_ADDRESS]),
+                       PowerConsts.POWER_WATT: counter_dict["counter"]}
             power_df_to_concat.append(new_row)
     new_rows = pd.DataFrame(power_df_to_concat)
     power_df_by_collectors_group = pd.concat([power_df_by_group, new_rows], ignore_index=True)
     power_df_by_collectors_group_with_total = append_total_power(power_df_by_collectors_group)
     allure.attach(power_df_by_collectors_group_with_total.to_html(),
                   'Power summary by collectors', allure.attachment_type.HTML)
-    return power_df_by_collectors_group
+    return power_df_by_collectors_group_with_total
 
 
 def validate_power_df_by_collectors(power_df, collectors_power_threshold, violations_list):
     power_total_th = collectors_power_threshold.get("TOTAL")
-    total_power = power_df["Power (W)"].sum()
+    total_power = power_df[PowerConsts.POWER_WATT].sum()
     for index, row in power_df.iterrows():
-        collector_name = row["Power Supply"]
-        collector_power = row["Power (W)"]
+        collector_name = row[PowerConsts.POWER_SUPPLY]
+        collector_power = row[PowerConsts.POWER_WATT]
         for power_supply_regex, collector_th in collectors_power_threshold.items():
             if re.search(power_supply_regex, collector_name):
                 if collector_power > collector_th:
@@ -153,7 +156,9 @@ def validate_power_df_by_collectors(power_df, collectors_power_threshold, violat
 
 
 def append_total_power(power_df):
-    total_power = power_df["Power (W)"].sum()
-    new_row = pd.DataFrame([{"Power Supply": "Total Power", "Power (W)": total_power}])
+    total_power = power_df[PowerConsts.POWER_WATT].sum()
+    new_row = pd.DataFrame([{PowerConsts.POWER_SUPPLY: PowerConsts.TOTAL_POWER,
+                             PowerConsts.POWER_SUPPLY_ADDRESS: None,
+                             PowerConsts.POWER_WATT: total_power}])
     power_df_with_total = pd.concat([power_df, new_row], ignore_index=True)
     return power_df_with_total

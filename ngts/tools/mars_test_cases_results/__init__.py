@@ -8,12 +8,14 @@ import subprocess
 
 from datetime import datetime
 from ngts.constants.constants import CliType, DbConstants, BugHandlerConst
+from ngts.helpers.performance.performance_db_helpers import add_allure_url_into_perf_test
 
 logger = logging.getLogger()
 ALLURE_REPORT_URL = 'allure_report_url'
 SESSION_ID = "session_id"
 SETUP_NAME = "setup_name"
 MARS_KEY_ID = "mars_key_id"
+IS_IPV6 = "is_ipv6"
 ALLURE_URL = "allure_url"
 DUMP_INFO = "dump_info"
 TEST_INSERTED_TIME = "test_inserted_time"
@@ -127,8 +129,10 @@ def pytest_sessionfinish(session, exitstatus):
     if not session.config.getoption("--collectonly"):
         session_id = session.config.option.session_id
         mars_key_id = session.config.option.mars_key_id
+        is_ipv6 = getattr(session.config.option, 'is_ipv6', None)
         session.config.cache.set(SESSION_ID, session_id)
         session.config.cache.set(MARS_KEY_ID, mars_key_id)
+        session.config.cache.set(IS_IPV6, is_ipv6)
         if hasattr(session.config.option, SETUP_NAME):
             session.config.cache.set(SETUP_NAME, session.config.getoption(SETUP_NAME))
         if hasattr(session.config.option, SKYNET):
@@ -147,6 +151,7 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config):
     session_id = config.cache.get(SESSION_ID, None)
     setup_name = config.cache.get(SETUP_NAME, '')
     mars_key_id = config.cache.get(MARS_KEY_ID, '')
+    is_ipv6 = config.cache.get(IS_IPV6, '')
     skynet = config.cache.get(SKYNET, None)
     la_redmine_issues = config.cache.get(BugHandlerConst.LA_RM_ISSUES_DICT, dict())
     logger.info(f"la_issues = {la_redmine_issues}")
@@ -154,6 +159,7 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config):
     if valid_tests_data(session_id, mars_key_id):
         tests_results, tests_skipreason, tests_exceptions = parse_tests_results(terminalreporter)
         for test_case_name, test_result in tests_results.items():
+            add_allure_url_into_perf_test(report_url, test_case_name, is_ipv6)
             test_exception, test_exception_regex, test_case_la_issues = update_exception_from_la_error(tests_exceptions,
                                                                                                        test_case_name,
                                                                                                        la_redmine_issues)

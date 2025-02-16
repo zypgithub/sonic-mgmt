@@ -31,7 +31,8 @@ SONIC_MGMT_MOUNTPOINTS = {
     '/auto/sw_tools/Internal/BugHandling/RELEASES': '/auto/sw_tools/Internal/BugHandling/RELEASES',
     "/.autodirect/LIT/LOGS/RR": "/.autodirect/LIT/LOGS/RR",
     '/.autodirect/sw/release/': '/.autodirect/sw/release/',
-    '/auto/sw/tools/comet/': '/auto/sw/tools/comet/'
+    '/auto/sw/tools/comet/': '/auto/sw/tools/comet/',
+    '/auto/sw/projects/performance/results/mongodb/': '/auto/sw/projects/performance/results/mongodb/',
 }
 
 SONIC_MGMT_MOUNTPOINTS_MTBC = {

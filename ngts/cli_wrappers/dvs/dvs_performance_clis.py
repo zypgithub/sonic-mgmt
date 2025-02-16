@@ -2,8 +2,8 @@ import logging
 import os
 import re
 import json
-from ngts.constants.constants import BugHandlerConst
 from ngts.helpers.performance.traffic_helpers import generate_ip_address_dict
+from ngts.constants.constants import BugHandlerConst, ResultUploaderConst
 from ngts.constants.performance_constants import PerfConsts, PowerConsts
 from ngts.cli_wrappers.common.performance_clis_common import PerformanceCommon
 from jinja2 import Environment, FileSystemLoader
@@ -244,7 +244,31 @@ class DvsPerformance(PerformanceCommon):
         self.apply_configuration_file(scenario, conf_args)
 
     def get_sdk_ports(self, ports_list):
-        return ports_list
+        """
+
+        Args:
+            ports_list: a list of ports, i.e, ['0x10001','0x10003',..] or
+            [65573,65578,...]
+
+        Returns:
+            return the list of ports as sdk ports in hex format, i.e, ['0x10001','0x10003',..]
+        """
+        return list(map(self.get_sdk_port, ports_list))
+
+    def get_sdk_port(self, port):
+        """
+        Args:
+            port: any sdk port identifier, "65537" or '0x10001'
+
+        Returns:
+            sdk port in hex format, i.e, "0x10001"
+        """
+        if isinstance(port, str) and port.startswith('0x'):
+            return port
+        elif isinstance(port, str):
+            port = int(port)
+        if isinstance(port, int):
+            return hex(port)
 
     @staticmethod
     def get_controllers_info_dicts_list(sensors_output):
@@ -272,3 +296,58 @@ class DvsPerformance(PerformanceCommon):
                         controllers_info_dict[key] = float(value) / 1000 if 'm' in measure_unit else float(value)
                 controllers_info_dicts_list.append(controllers_info_dict)
         return controllers_info_dicts_list
+
+    def get_dut_system_information(self, session_id, setup_name):
+        """
+
+        Args:
+            session_id: Mars session id, i.e, 9443960
+            setup_name: i.e, nv_performance_mtvr-moose-17
+
+        Returns: a dictionary with the full dut system information, .i.e,
+         "dutSystemInformation": {
+                "marsSessionId": "9438676",
+                "setupName": "nv_performance_mtvr-moose-17",
+                "osType": "DVS",
+                "chip": "SPECTRUM4",
+                "board": "sn5600",
+                "sdkVersion": "4.7.3094-003",
+                "hwChassisRev": "AJ",
+                "modelNumber": "MSN-9N402-00RI-7N0_Ax",
+                "hostDetails": "mtvr-moose-17, IP N/A",
+                "serialNumber": "MT2443J011Q7",
+                "onieVersion": "2023.11-5.3.0012-115200",
+                "psid": "MT_0000000955",
+                "osVersion": "dvs-os-sonic_4.7.1920_DEV_LK6.1.38_x86_64---2024-09-09 10:43:49"
+            }
+        """
+        cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} -si"
+        output = self.execute_cmd(cmd)
+        dut_system_information = {"marsSessionId": session_id,
+                                  "setupName": setup_name,
+                                  "osType": "DVS"}
+        regex_dict = {
+            "chip": r"Platform String\s*=\s*(SPECTRUM\d+).*",
+            "board": r"Board\s*=\s*(.*)",
+            "sdkVersion": r"SDK Version\s*=\s*ETH\s*([\d|.|-]*)\s*\(FROM .*\)",
+            "fwVersion": r"FW\/SimX Version\s*=\s*([\d|_|-]*)\s*\(FROM .*\)",
+            "hwChassisRev": r"HW Chassis Rev\s*=\s*(.*)",
+            "modelNumber": r"Part Number\s*=\s*(.*)",
+            "hostDetails": r"Host Details\s*=\s*(.*)",
+            "serialNumber": r"Serial Number\s*=\s*(.*)",
+            "onieVersion": r"ONIE Version\s*=\s*(.*)",
+            "psid": r"PSID\s*=\s*(.*)",
+            "osVersion": r"DVS\/OPT_OS\s*=\s*(.*)"
+        }
+        for key, regex in regex_dict.items():
+            match = re.search(regex, output)
+            if match:
+                dut_system_information[key] = match.group(1)
+        self.modify_board_host_internal_name(output, regex_dict, dut_system_information)
+        return dut_system_information
+
+    @staticmethod
+    def modify_board_host_internal_name(output, regex_dict, dut_system_information):
+        match = re.search(regex_dict["board"], output)
+        if match:
+            dut_system_information["board"] = ResultUploaderConst.HOST_INTERNAL_NAMES_MAP[match.group(1).lower()]

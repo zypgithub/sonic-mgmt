@@ -158,6 +158,59 @@ class SPCXRAConsts:
     PACKET_NUM_800G_x1 = 16
 
 
+class ValidationConsts:
+    TC_DATAFRAME = "tc_dataframe"
+    TC_SAMPLES = "TC_samples"
+    TC_NAME = "tc"
+    TC_OCC_AVG = "occAvg"
+    TC_OCC_99 = "occ99"
+    TC_OCC_MAX = "occMax"
+    TC_MAX_WATERMARK = "maxWatermark"
+    TX_RATE = "txRate"
+    RX_RATE = "rxRate"
+    COUNTERS_SAMPLES = "Counters_samples"
+    SAMPLES_PARAMS = "sample_params"
+    COUNTERS_DATAFRAME = "counters_dataframe"
+    BW_SAMPLES = "Bandwidth_samples"
+    BW_DATAFRAME = "bandwidth_dataframe"
+    BW_STATS = 'bw_stats'
+    BW_MIN = 'min_bw'
+    PORT = "port"
+    POWER_SAMPLES = "Power_samples"
+    TEMPERATURE_SAMPLES = "Temperature_samples"
+    TEMPERATURE = "temperature"
+    SENSORS_OUTPUT = 'sensors_output'
+
+
+class MongoDbConsts:
+    PERF_MONGO_DB_FILENAME = "perf_res.db"
+    PERF_MONGO_DB_RESULTS_PATH = os.path.join(PerfConsts.REQUIRMENTS_DIR, PERF_MONGO_DB_FILENAME)
+    PORT_GROUP_NAME = "portGroupName"
+    PORT_GROUP_DF = "portGroupDataframe"
+    BW_COUTERS_DATA = "bandwidthCountersData"
+    TC_DATA = "tcData"
+    TEMP_DATA = "temperatureData"
+    TEST_NAME = "testName"
+    TIME_STAMP = "timeStamp"
+    TIME_REGEX_FORMAT = "%d-%m-%Y %H:%M:%S"
+    IF_OUT_DISCARDS = "ifOutDiscards"
+    MAC_CONTROL_FRAMES_TRANSMITTED = "aMacControlFramesTransmitted"
+    MAC_CONTROL_FRAMES_RECEIVED = "aMacControlFramesReceived"
+    PAUSE_MAC_CONTROL_FRAMES_TRANSMITTED = "aPauseMacCtrlFramesTransmitted"
+    PAUSE_MAC_CONTROL_FRAMES_RECEIVED = "aPauseMacCtrlFramesReceived"
+    POWER_TOTAL = "powerTotal"
+    POWER_BY_COLLECTORS = "powerByCollectors"
+    ALLURE_URL = "allureUrl"
+    TEST_RESULT = "result"
+    VALIDATOR_RESULTS = "validatorResults"
+    CONF_NAME = "configurationName"
+    COLLECTION = ":COLLECTION:SwitchPerformanceCollection\n",
+    CRITERIA = ":CRITERIA_FIELD:testType\n"
+    MONGO_DB_DICT_PATH = "/auto/sw/projects/performance/results/mongodb/"
+    MONGO_DB_UPLOADS = os.path.join(MONGO_DB_DICT_PATH, "for_upload/")
+    MONGO_DB_ERRORS = os.path.join(MONGO_DB_DICT_PATH, "errors/")
+
+
 class PowerConsts:
     POWER_TH_PER_ASIC = {
         "SPC3": None,
@@ -171,6 +224,12 @@ class PowerConsts:
         }
     }
     CONTROLLER_REGEX = r'\w*\d*-i2c-\d*-\d*\w*'
+    POWER_SUPPLY = "powerSupply"
+    POWER_SUPPLY_ADDRESS = "address"
+    POWER_VOLTAGE = "voltage"
+    POWER_CURRENT = "currentAmp"
+    POWER_WATT = "powerWatt"
+    TOTAL_POWER = "Total Power"
 
 
 class SPCControllers:
