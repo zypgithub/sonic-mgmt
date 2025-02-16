@@ -1,14 +1,21 @@
+import logging
+import random
+from functools import lru_cache
 from typing import Tuple
 
-from ngts.nvos_constants.constants_nvos import MultiPlanarConsts
-from ngts.nvos_tools.Devices.IbDevice import CrocodileSwitch
-from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
-from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
-from ngts.nvos_tools.infra.Fae import Fae
-from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
-from ngts.tools.test_utils import allure_utils as allure
 from retry import retry
-import random
+
+from ngts.nvos_constants.constants_nvos import MultiPlanarConsts, PlatformConsts, SystemConsts
+from ngts.nvos_tools.Devices.IbDevice import CrocodileSwitch
+from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
+from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
+from ngts.nvos_tools.infra.Fae import Fae
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
+from ngts.nvos_tools.system.System import System
+from ngts.tools.test_utils import allure_utils as allure
+
+logger = logging.getLogger()
 
 
 class MultiPlanarTool:
@@ -116,3 +123,70 @@ class MultiPlanarTool:
             if parent_port.name in port.name and port.name[-2] == 's':
                 child_ports.append(port)
         return child_ports
+
+    @staticmethod
+    @lru_cache
+    def get_asic_conf_dict(engine):
+        """
+        Parses asic.conf file to dict
+            NUM_ASIC = 4
+            DEV_ID_ASIC_0 = 05:00.0
+            DEV_ID_ASIC_1 = 04:00.0
+            DEV_ID_ASIC_2 = 03:00.0
+            DEV_ID_ASIC_3 = 09:00.0
+        """
+        asic_conf = dict()
+
+        system = System()
+        system_info = OutputParsingTool.parse_json_str_to_dictionary(
+            system.show()).get_returned_value()
+        asic_conf_path = PlatformConsts.ASIC_CONF_FILE_PATH.format(system_info[SystemConsts.PLATFORM])
+        with allure.step(f"Generate asic conf dictionary from {asic_conf_path}"):
+            asic_conf_values = engine.run_cmd(f"cat {asic_conf_path}")
+            for line in asic_conf_values.split('\n'):
+                line = line.strip()
+
+                if not line or '=' not in line:
+                    continue
+
+                asic_dev_id, value = line.split('=')
+
+                asic_conf[asic_dev_id] = value
+
+            logger.info(f"{asic_conf=}")
+            return asic_conf
+
+    @staticmethod
+    def asic_letter_to_number(letter):
+        return ord(letter) - ord('A')
+
+    @staticmethod
+    @lru_cache
+    def get_primary_asic(fae):  # todo: use port_name instead and use nv_command inside the function
+        """
+        Returns the primary ASIC as reported by nv show fae interface <port>
+        Note the nv command's different behavior for different ports and devices:
+
+        Aggregated port (Mamba or Crocodile):
+        admin@mamba-248-mgmt2:~$ nv sh fae int sw1p1 | grep asic
+        asic                                 ['0', '1', '2', '3']
+        primary-asic                         0                        <-- return this
+
+        Crocodile plane port:
+        admin@croc-61-mgmt2:~$ nv sh fae int swA2p1pl1 | grep asic
+        asic                                 0
+        primary-asic                         0                        <-- return this
+
+        Mamba plane-port for the plane matching the primary asic:
+        admin@mamba-248-mgmt2:~$ nv sh fae int sw1p1pl1 | grep asic
+        asic                                 0
+        primary-asic                         0                        <-- return this
+
+        Mamba plane-port for another plane:
+        admin@mamba-248-mgmt2:~$ nv sh fae int sw1p1pl2 | grep asic
+        asic                                 1                        <-- return this (primary-asic field doesn't exist)
+        """
+        output_fae_port = OutputParsingTool.parse_show_interface_output_to_dictionary(
+            fae.interface.show()).get_returned_value()
+        return (output_fae_port.get(IbInterfaceConsts.PRIMARY_ASIC) or
+                output_fae_port.get(IbInterfaceConsts.ASIC) or "0")

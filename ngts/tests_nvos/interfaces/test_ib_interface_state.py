@@ -143,7 +143,7 @@ def test_ib_interface_state_unset(engines, test_api):
 
 @pytest.mark.ib_interfaces
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_ib_interface_state_up_once(engines, devices, test_api, asic_conf_dict):
+def test_ib_interface_state_up_once(engines, devices, test_api):
 
     with allure.step('set up system objects'):
         TestToolkit.tested_api = test_api
@@ -163,11 +163,9 @@ def test_ib_interface_state_up_once(engines, devices, test_api, asic_conf_dict):
 
         verify_port_state(output_dictionary, NvosConsts.LINK_STATE_UP)
 
-    with allure.step('verify state is down after port toggle failure'):
-        mst_dev_name = IbInterfaceTool.get_mst_dev_name(engines=engines, asic_conf_dict=asic_conf_dict, port_name=port_name)
     try:
         with allure.step('verify state is down after port toggle event'):
-            IbInterfaceTool.simulate_toggle_port_event(engines.dut, devices.dut, fae, port_name, mst_dev_name, 5)
+            IbInterfaceTool.simulate_toggle_port_event(engines.dut, port_name=port_name, sleep=5)
             # in future will verify 'down by port failure' instead of just 'down'
             output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
                 selected_port.interface.link.show()).get_returned_value()

@@ -1,41 +1,7 @@
 import pytest
 
-from ngts.nvos_constants.constants_nvos import PlatformConsts, SystemConsts
-from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.platform.Platform import Platform
-from ngts.nvos_tools.system.System import System
 from ngts.tools.test_utils import allure_utils as allure
-
-
-@pytest.fixture(scope='module')
-def asic_conf_dict(engines) -> dict:
-    """
-    Parses asic.conf file to dict
-        NUM_ASIC = 4
-        DEV_ID_ASIC_0 = 05:00.0
-        DEV_ID_ASIC_1 = 04:00.0
-        DEV_ID_ASIC_2 = 03:00.0
-        DEV_ID_ASIC_3 = 09:00.0
-    """
-    asic_conf = dict()
-
-    system = System()
-    system_info = OutputParsingTool.parse_json_str_to_dictionary(
-        system.show()).get_returned_value()
-    asic_conf_path = PlatformConsts.ASIC_CONF_FILE_PATH.format(system_info[SystemConsts.PLATFORM])
-    with allure.step(f"Generate asic conf dictionary from {asic_conf_path}"):
-        asic_conf_values = engines.dut.run_cmd(f"cat {asic_conf_path}")
-        for line in asic_conf_values.split('\n'):
-            line = line.strip()
-
-            if not line or '=' not in line:
-                continue
-
-            asic_dev_id, value = line.split('=')
-
-            asic_conf[asic_dev_id] = value
-
-        return asic_conf
 
 
 @pytest.fixture(scope='function')

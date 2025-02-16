@@ -154,6 +154,7 @@ class InfraConst:
         "{DOCKER_EXEC_BASH_CMD} '{CMD_GET_SDK_VERSION}'".format(DOCKER_EXEC_BASH_CMD=DOCKER_EXEC_BASH_CMD,
                                                                 CMD_GET_SDK_VERSION=CMD_GET_SDK_VERSION)
     SYNCD_DOCKER = 'syncd'
+    SYNCD_IBV_DOCKER = 'syncd-ibv{:0>2}'
     NVIDIA_MAIL_SERVER = 'mail.nvidia.com'
     HTTP_SERVER = 'http://nbu-nfs.gtm'
     HTTTP_SERVER_FIT16 = 'http://r-fit16-clone.mtr.labs.mlnx'
