@@ -1,13 +1,17 @@
 import logging
-import time
 import re
+import time
+from functools import lru_cache
 
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from ngts.constants.constants import InfraConst
 from ngts.nvos_constants.constants_nvos import LinkDetectionConsts
+from ngts.nvos_tools.Devices.IbDevice import BlackMambaSwitch, CrocodileSwitch
 from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.LinuxCmdBuilderTool import LinuxCmdBuilderTool
+from ngts.nvos_tools.infra.MultiPlanarTool import MultiPlanarTool
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RegisterTool import RegisterTool
 from ngts.tools.test_utils import allure_utils as allure
@@ -49,27 +53,42 @@ class IbInterfaceTool:
             time.sleep(sleep)
 
     @staticmethod
-    def simulate_toggle_port_event(engine, device, fae, port_name, mst_dev_name, sleep):
+    def simulate_toggle_port_event(engine, port_name='', sleep=0):
         with allure.step(f"Simulate toggle port event for port {port_name}"):
-            asic_number = get_primary_asic(fae)
-            local_port_hex = IbInterfaceTool.get_local_port_hex(engine, port_name, asic_number)
+            mst_dev_name = IbInterfaceTool.get_mst_dev_name(engine, port_name=port_name)
+            local_port_hex = IbInterfaceTool.get_local_port_hex(engine, port_name)
             RegisterTool.update_prei_register(engine, mst_dev_name=mst_dev_name, local_port=local_port_hex)
             time.sleep(sleep)
 
     @staticmethod
-    def get_mst_dev_name(engines, asic_conf_dict, module_name=None, port_name=None):
-        fae_port_name = port_name if port_name else f"{module_name}p1"
-        fae = Fae(port_name=fae_port_name)
+    @lru_cache
+    def get_mst_dev_name(engine, module_name=None, port_name=None):
+        if not (module_name or port_name):
+            raise ValueError(f'{module_name=}, {port_name=}')
+        fae_port_name = port_name or f"{module_name}p1"
+        asic_letter, _, _, plane_number = IbInterfaceTool.parse_port_name(port_name)
 
-        with allure.step(f"Find correct mst_dev_name for {module_name or port_name}"):
-            asic_number = get_primary_asic(fae)
-            assert asic_number is not None, "primary-asic is None"
-            asic_dev_id_number = f"DEV_ID_ASIC_{asic_number}"
-            asic_mapping_number = asic_conf_dict[asic_dev_id_number]
-            cmd = LinuxCmdBuilderTool("sudo mst status -v").grep("pciconf").grep(f"{asic_mapping_number}").awk_print(
-                "2").build()
-            mst_dev_name = engines.dut.run_cmd(cmd)
-            return mst_dev_name
+        with allure.step(f"Find mst_dev_name for {fae_port_name}"):
+            if asic_letter or plane_number:  # Crocodile ports, e.g. swA...
+                # asic_letter is for Crocodile where the port name mentions ASIC 'A' or 'B'.
+                # plane_number is for other systems and only for plane-ports, e.g. sw1p1pl3 is plane 3 which belongs
+                # to ASIC 2 (because plane-numbers are 1-based and ASIC-numbers are (sometimes) 0-based, god knows why)
+                asic_number = MultiPlanarTool.asic_letter_to_number(asic_letter) if asic_letter else plane_number - 1
+                logger.info(f'{fae_port_name=} --> {asic_number=}')
+                asic_dev_id_number = f"DEV_ID_ASIC_{asic_number}"
+                asic_mapping_number = MultiPlanarTool.get_asic_conf_dict(engine)[asic_dev_id_number]
+                cmd = LinuxCmdBuilderTool("sudo mst status -v").grep("pciconf").grep(f"{asic_mapping_number}").awk_print(
+                    "2").build()
+                mst_dev_name = engine.run_cmd(cmd, validate=True)
+
+            else:  # for aggregated port on non-Crocodile, get the primary-asic-device from nv show fae interface <port>
+                fae = Fae(port_name=fae_port_name)  # todo nv_command.fae[fae_port_name] ...
+                output_fae_port = OutputParsingTool.parse_show_interface_output_to_dictionary(
+                    fae.interface.show()).get_returned_value()
+                mst_dev_name = output_fae_port[IbInterfaceConsts.PRIMARY_ASIC_DEVICE]
+
+        logger.info(f'mst device for {fae_port_name} is {mst_dev_name}')
+        return mst_dev_name
 
     @staticmethod
     def get_mst_cable_name(engines, transceiver_name, pci_conf):
@@ -87,51 +106,56 @@ class IbInterfaceTool:
         return bool(output)
 
     @staticmethod
-    def get_local_port_hex(engine, port_name, asic_number):
-        docker = f"syncd-ibv0{asic_number}"
+    def get_local_port_hex(engine, port_name):
+        asic_letter, port_number, local_port, plane_number = IbInterfaceTool.parse_port_name(port_name)
+        asic_number = (MultiPlanarTool.asic_letter_to_number(asic_letter)
+                       if asic_letter else MultiPlanarTool.get_primary_asic(Fae(port_name=port_name)))
+        docker = InfraConst.SYNCD_IBV_DOCKER.format(asic_number)
         cmd = f"docker exec {docker} sx_api_ports_mapping_dump.py"
-        table_output = engine.run_cmd(cmd)
-        local_port, lane_bmap = get_local_port_and_lane_bmap(port_name)
-        return get_log_port(table_output, local_port, lane_bmap)
+        table_output = engine.run_cmd(cmd, validate=True)
+        lane_bmap = get_lane_bmap(port_name)
+        return get_log_port(table_output, port_number, lane_bmap)
 
+    @staticmethod
+    def parse_port_name(name: str):
+        """swA13p2pl1 --> ('A', 13, 2, 1).   sw13p2 --> (None, 13, 2, None)"""
+        match = re.fullmatch(r'[sS][wW]([A-Za-z])?\s*(\d+)p(\d+)(?:pl(\d+))?', name)
+        if not match:
+            raise ValueError(f"Invalid port name format: {name}")
 
-def get_primary_asic(fae):
-    output_fae_port = OutputParsingTool.parse_show_interface_output_to_dictionary(
-        fae.interface.show()).get_returned_value()
-    return output_fae_port.get(IbInterfaceConsts.PRIMARY_ASIC, "0")
-
-
-def get_local_port_and_lane_bmap(port_name):
-    """
-    Extracts the switch number and port number from a port name.
-
-    Args:
-        port_name (str): The port name string (e.g., 'swA11p1', 'port swB15p1', 'sw11p1').
-
-    Returns:
-        tuple: A tuple containing the switch number and port number as integers (e.g., (11, 1)).
-    """
-    # Update regex to make 'A' or 'B' optional and match the switch and port number
-    match = re.search(r'[sS][wW]([A-Za-z]?)\s*(\d+)p(\d+)', port_name)
-
-    if match:
-        switch_letter = match.group(1)  # This can be empty or 'A' or 'B'
+        asic_letter = match.group(1)  # This can be None or 'A' or 'B'
         port_number = int(match.group(2))
         local_port = int(match.group(3))
+        plane_number = int(match.group(4)) if match.group(4) else None
+        result = asic_letter, port_number, local_port, plane_number
+        logger.info(f'parsed "{name}" ==> {result}')
+        return result
 
-        if switch_letter.lower() in ['a', 'b'] and local_port == 2:
-            lane_bmap = '0x80'
-        elif local_port == 2:
-            lane_bmap = '0x10'
-        elif local_port == 1:
-            lane_bmap = '0x01'
-        else:
-            raise ValueError(f"Unsupported local_port value: {local_port}")
 
-        return port_number, lane_bmap
+def get_lane_bmap(port_name):
+    """
+    Calculates the lane-bmap as it would appear in the output of sx_api_ports_mapping_dump.py
 
-    # Return None or raise an exception if the port name doesn't match the expected pattern
-    raise ValueError(f"Invalid port name format: {port_name}")
+    Args:
+        port_name (str): The port name string, can be aggregated (e.g. 'swA11p1', 'sw11p2') or plane-port ('swB15p1pl3')
+        Note: If the port given is an aggregated port, returned value is for plane-port #1.
+
+    Returns:
+        str: lane-bmap as a string representing a hex number, e.g. on Crocodile: 'swB11p2pl4' --> '0x18'
+    """
+    _, _, local_port, plane_number = IbInterfaceTool.parse_port_name(port_name)
+    lane_bmap = 0x10 ** (local_port - 1) * 2 ** ((plane_number or 1) - 1)
+    lane_bmap = f'0x{lane_bmap:0>2x}'
+    # p1pl1 --> 0x01, p1pl2 --> 0x02, p1pl3 --> 0x04, p1pl4 --> 0x08
+    # p2pl1 --> 0x10, p2pl2 --> 0x20, p2pl3 --> 0x40, p2pl4 --> 0x80
+    logger.info(f'{lane_bmap=}')
+    tested_switches = (BlackMambaSwitch, CrocodileSwitch)
+    if not any(isinstance(TestToolkit.devices.dut, device) for device in tested_switches):
+        raise NotImplementedError(
+            f'get_lane_bmap function was only tested for {[device.__name__ for device in tested_switches]}. Test this '
+            f'function manually for the current switch type and add it to the supported_switches list. Current output '
+            f'for reference: get_lane_bmap({port_name}) --> {lane_bmap}')
+    return lane_bmap
 
 
 def get_log_port(table: str, label_port: int, lane_bmap: str):
@@ -164,7 +188,7 @@ def get_log_port(table: str, label_port: int, lane_bmap: str):
     }
 
     # Parse rows and find the matching row based on label_port and lane_bmap
-    for row in rows[3:]:  # Data rows start after the separator line
+    for row in rows[3:-1]:  # these are all the data rows
         cols = row.split("|")
         try:
             row_label_port = int(cols[col_indexes["label_port"]].strip())
