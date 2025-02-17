@@ -7883,8 +7883,6 @@ sensors_checks:
 
         - mp2891-i2c-5-67/PMIC-6 DVDD_T0 ADJ Temp 1/temp1_alarm
 
-        - 00000400400-mdio-4/temp1/temp1_max_alarm
-
         - mp2891-i2c-5-66/PMIC-5 VDD_T6 ADJ Temp 1/temp1_alarm
 
         - mp2891-i2c-5-64/PMIC-3 VDD_T2 ADJ Temp 1/temp1_alarm
@@ -7973,9 +7971,6 @@ sensors_checks:
 
         - - mp2891-i2c-5-67/PMIC-6 DVDD_T0 ADJ Temp 1/temp1_input
           - mp2891-i2c-5-67/PMIC-6 DVDD_T0 ADJ Temp 1/temp1_crit
-
-        - - 00000400400-mdio-4/temp1/temp1_input
-          - 00000400400-mdio-4/temp1/temp1_crit
 
         - - mp2891-i2c-5-66/PMIC-5 VDD_T6 ADJ Temp 1/temp1_input
           - mp2891-i2c-5-66/PMIC-5 VDD_T6 ADJ Temp 1/temp1_crit
