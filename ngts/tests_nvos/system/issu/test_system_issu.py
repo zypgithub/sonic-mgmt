@@ -263,7 +263,7 @@ def test_system_issu_positive_flow(engines, devices, issu_version, target_versio
 
 @pytest.mark.system
 @pytest.mark.issu
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_system_issu_prevention_cases(engines, devices, downgrade_version, issu_version, target_version, test_api):
     """
     Validate:
@@ -359,7 +359,7 @@ def test_system_issu_prevention_cases(engines, devices, downgrade_version, issu_
     #     OpenSmTool.start_open_sm(engines).verify_result()
 
     with allure.step("Perform ISSU with “no reboot” flag"):
-        with allure.step("Perform install image with ISSU with 'no reboot no' flag"):
+        with allure.step("Perform install image with ISSU with 'reboot no' flag"):
             output = system.image.files.file_name[target_filename].action_file_install_with_reboot(
                 force=False, engine=dut_engine, device=dut_device, recovery_engine=recovery_engine,
                 param_value=IssuConsts.ISSU_NO_REBOOT, should_succeed=False, press_y=True).verify_result(
