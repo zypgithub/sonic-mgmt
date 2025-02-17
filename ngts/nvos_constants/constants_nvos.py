@@ -601,6 +601,7 @@ class SystemConsts:
     SHOW_VALUE_NO = 'no'
     DHCP_SHOW_FIELDS = ['has-lease', 'is-running', 'set-hostname', 'state']
     DHCP_SHOW_DEFAULT_VALUES = [SHOW_VALUE_YES, SHOW_VALUE_YES, USER_STATE_ENABLED, USER_STATE_ENABLED]
+    DH_CLIENT_CONF_FILE = "/etc/dhcp/dhclient.conf"
 
     MEMORY_PHYSICAL_KEY = 'Physical'
     MEMORY_SWAP_KEY = 'Swap'
