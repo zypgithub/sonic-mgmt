@@ -840,6 +840,7 @@ class PlatformConsts:
     ENV_FAN = "fan"
     ENV_LED = "led"
     ENV_UID = "UID"
+    ENV_PSU_STATUS_LED = "PSU_STATUS"
     ENV_PSU = "psu"
     ENV_TEMP = 'temperature'
     ENV_COMP = [ENV_FAN, ENV_LED, ENV_PSU, ENV_TEMP]
