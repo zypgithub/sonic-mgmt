@@ -287,7 +287,7 @@ def test_acl_ipv6(engines, test_api, topology_obj, sonic_mgmt_ipv6_addr):
     """
     TestToolkit.tested_api = test_api
     if not IpTool.is_dhcp_client6_has_lease(engines.dut):
-        pytest.skip(f"DUT dhcp_client6 has-lease is no, can't run this ipv6 test")
+        pytest.skip("DUT DHCP client6 has no lease; cannot run this IPv6 test.")
 
     with allure.step("Define ACLs with rule"):
         acl_type = 'ipv6'

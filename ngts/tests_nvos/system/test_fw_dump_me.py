@@ -27,7 +27,7 @@ def test_fw_dump_me(engines, devices):
     ibv_num = str(random.randint(0, devices.dut.asic_amount - 1) if hasattr(devices.dut, 'asic_amount') else '')
     # just multi asic systems have asic_amount attribute
     syncd_ibv = "syncd-ibv0{}".format(ibv_num)
-    sdk_dump_folder = "/var/log/mellanox/sdk-dumps{}/".format('_dev{}'.format(ibv_num) if ibv_num else '')
+    sdk_dump_folder = "/var/log/mellanox/sdk-dumps/"
 
     with allure.step('Upload sdk fw crush file to switch'):
         player_engine = engines['sonic_mgmt']
@@ -68,7 +68,9 @@ def test_fw_dump_me(engines, devices):
             time.sleep(timeout_in_seconds)
             cmd_output = engines.dut.run_cmd('ls {}'.format(sdk_dump_folder))
             assert 'sai-dfw' in cmd_output, "Sdk dump not created"
-            sdk_dump = cmd_output.split()[0]
+            file_list = cmd_output.split()
+            sai_dfw_files = [file for file in file_list if file.startswith("sai-dfw-")]
+            sdk_dump = sai_dfw_files[0]
 
         with allure.step('Validate upload sdkdump to sonic-mgmt'):
             logging.info('Validate upload sdkdump to sonic-mgmt')

@@ -1,6 +1,8 @@
 import logging
 import pytest
 import random
+
+from ngts.nvos_tools.infra.IpTool import IpTool
 from ngts.tools.test_utils import allure_utils as allure
 import string
 import time
@@ -82,6 +84,9 @@ def test_rsyslog_positive_minimal_flow_by_ipv6(engines, test_api, sonic_mgmt_ipv
     4. Print msg that the server should not catch, validate it does not get the msg
     5. Cleanup
     """
+    if not IpTool.is_dhcp_client6_has_lease(engines.dut):
+        pytest.skip("DUT DHCP client6 has no lease; cannot run this IPv6 test.")
+
     TestToolkit.tested_api = test_api
     positive_minimal_flow(engines[NvosConst.SONIC_MGMT], sonic_mgmt_ipv6_addr)
 

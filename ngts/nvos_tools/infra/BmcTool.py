@@ -141,7 +141,8 @@ class BmcTool:
 
     @staticmethod
     def install_fw_image(platform_component, test_name, filename, topology_obj, name):
-        res_obj, duration = OperationTime.save_duration(f'Installation of {name} using {filename} with reboot', '',
+        component_name = platform_component.get_resource_basename().lower()
+        res_obj, duration = OperationTime.save_duration(f'{component_name} install with reboot', '',
                                                         test_name,
                                                         platform_component.files.file_name[
                                                             filename].action_file_install_with_reboot,
