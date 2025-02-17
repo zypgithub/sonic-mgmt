@@ -35,8 +35,8 @@ class Configurations:
     # List of all ports connected to traffic servers
     traffic_ports = {
         # Black Mamba
-        "10.7.148.112": ['sw61p1', 'sw67p1'],
-        "10.7.148.113": ['sw61p1', 'sw67p1'],
+        "10.7.148.248": ['sw61p1', 'sw67p1'],
+        "10.7.148.249": ['sw61p1', 'sw67p1'],
 
         # Crocodile
         "10.7.148.94": ['swA1p1', 'swA2p1'],
@@ -67,15 +67,15 @@ class Configurations:
                              "10.245.21.50": ['nv set acl ACL_MGMT_INBOUND_CP_DEFAULT rule 120 match ip recent-list hit-count 3000',
                                               'nv config apply -y'],
                              "10.245.21.67": ['nv set acl ACL_MGMT_INBOUND_CP_DEFAULT rule 120 match ip recent-list hit-count 3000',
-                                              'nv config apply -y'],
-                             "10.7.148.248": ['sudo cp /usr/share/sonic/device/x86_64-nvidia_q3450_ld-r0/platform.json /usr/share/sonic/device/x86_64-nvidia_q3400_ra-r0/platform.json',
-                                              'sudo cp /usr/share/sonic/device/x86_64-nvidia_q3450_ld-r0/co_optics_modules.json /usr/share/sonic/device/x86_64-nvidia_q3400_ra-r0/co_optics_modules.json',
-                                              'sudo sed -i \'s/"sfp_count"[[:space:]]*:[[:space:]]*"[0-9]*",/"sfp_count":"73",/\' /usr/share/sonic/device/x86_64-nvidia_q3400_ra-r0/platform.json']
+                                              'nv config apply -y']
+                             # "10.7.148.248": ['sudo cp /usr/share/sonic/device/x86_64-nvidia_q3450_ld-r0/platform.json /usr/share/sonic/device/x86_64-nvidia_q3400_ra-r0/platform.json',
+                             #                  'sudo cp /usr/share/sonic/device/x86_64-nvidia_q3450_ld-r0/co_optics_modules.json /usr/share/sonic/device/x86_64-nvidia_q3400_ra-r0/co_optics_modules.json',
+                             #                  'sudo sed -i \'s/"sfp_count"[[:space:]]*:[[:space:]]*"[0-9]*",/"sfp_count":"73",/\' /usr/share/sonic/device/x86_64-nvidia_q3400_ra-r0/platform.json']
                              }
 
     devices_missing_psus = {}
     devices_to_configure_ndr_ports = ndr_ports.keys()
-    devices_requested_factory_reset = ['10.7.148.248']
+    devices_requested_factory_reset = []  # ['10.7.148.248']
 
     default_conf = NvosConst.DEFAULT_CONFIG
     default_conf["interface"] = {
