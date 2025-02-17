@@ -9,7 +9,7 @@ from ngts.cli_wrappers.nvue.nvue_system_clis import NvueSystemCli
 from ngts.cli_wrappers.openapi.openapi_system_clis import OpenApiSystemCli
 from ngts.constants.constants import InfraConst
 from ngts.helpers.sanitizer_helper import check_sanitizer_and_store_dump
-from ngts.nvos_constants.constants_nvos import ApiType, SystemConsts, HealthConsts, ActionConsts
+from ngts.nvos_constants.constants_nvos import ApiType, SystemConsts, HealthConsts
 from ngts.nvos_constants.constants_nvos import OutputFormat
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
@@ -21,11 +21,12 @@ from ngts.nvos_tools.system.Aaa import Aaa
 from ngts.nvos_tools.system.Config import Config
 from ngts.nvos_tools.system.Debug_log import DebugLog
 from ngts.nvos_tools.system.Disk import Disk
-from ngts.nvos_tools.system.Gnmi_server import Gnmi_server
+from ngts.nvos_tools.system.GnmiServer import GnmiServer
 from ngts.nvos_tools.system.Health import Health
 from ngts.nvos_tools.system.Image import Image
 from ngts.nvos_tools.system.Lldp import Lldp
 from ngts.nvos_tools.system.Log import Log
+from ngts.nvos_tools.system.MTLSableServerResource import MTLSableServerResource
 from ngts.nvos_tools.system.Ntp import Ntp
 from ngts.nvos_tools.system.Profile import Profile
 from ngts.nvos_tools.system.Reboot import Reboot
@@ -69,7 +70,7 @@ class System(BaseComponent):
         self.profile = Profile(self)
         self.health = Health(self)
         self.datetime = DateTime(self)
-        self.gnmi_server = Gnmi_server(self)
+        self.gnmi_server = GnmiServer(self)
         self.web_server_api = WebServerAPI(self)
         self.api = Api(self)
         self.ptp = BaseComponent(self, path='/ptp')
@@ -210,7 +211,6 @@ class WebServerAPI(BaseComponent):
         self.listen_address = BaseComponent(self, path='/listening-address')
 
 
-class Api(BaseComponent):
+class Api(MTLSableServerResource):
     def __init__(self, parent_obj=None):
-        BaseComponent.__init__(self, parent=parent_obj, path='/api')
-        self.mtls = BaseComponent(self, path='/mtls')
+        super().__init__(parent=parent_obj, path='/api')

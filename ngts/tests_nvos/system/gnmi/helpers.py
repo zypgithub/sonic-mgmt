@@ -22,10 +22,13 @@ from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.conftest import get_dut_hostname
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
+from ngts.tests_nvos.general.security.certificate.helpers import import_certificates
 from ngts.tests_nvos.general.security.helpers import setup_certs_for_tests, cleanup_certs_for_tests
+from ngts.tests_nvos.general.security.mtls.generic_testing.constants import CA_CERTIFICATE
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
-from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
-from ngts.tests_nvos.system.gnmi.constants import CERTIFICATE, DEFAULT_CERTIFICATE, GnmicErr
+from ngts.tests_nvos.helpers.general_helpers import run_cmd
+from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient, GnmicCmdBuilder
+from ngts.tests_nvos.system.gnmi.constants import CERTIFICATE, GnmicErr
 from ngts.tests_nvos.system.gnmi.constants import DUT_GNMI_CERTS_DIR, DOCKER_CERTS_DIR, GnmiMode, GrpcMsg, \
     SERVER_REFLECTION_SUBSCRIBE_RESPONSE
 from ngts.tools.test_utils import allure_utils as allure
@@ -343,7 +346,7 @@ def verify_description_value(output, expected_description):
 def change_interface_description(selected_port, new_description: str = ''):
     rand_str = new_description or ''.join(random.choice(string.ascii_lowercase) for _ in range(20))
     selected_port.interface.set(NvosConst.DESCRIPTION, rand_str, apply=True).verify_result()
-    time.sleep(GnmiConsts.SLEEP_TIME_FOR_UPDATE)
+    wait_for_gnmi_to_update_data()
     return rand_str
 
 
@@ -431,6 +434,48 @@ def verify_gnmi_client(test_flow, server_host, server_port, username, password, 
                 verify_server_reflection(test_flow, client, skip_cert_verify, err_msg_to_check)
 
 
+def run_gnmi_client_and_verify(addr: str, user: UserInfo, expect_success: bool, run_insecure: bool,
+                               client_cacert: CertInfo = None, client_cert: CertInfo = None, timeout=None):
+    # with allure.step('randomize port to change description'):
+    #     selected_port = Tools.RandomizationTool.select_random_port(requested_ports_state=None).get_returned_value()
+    with allure.step('build gnmic cmd'):
+        mode = ''
+        # gnmic = GnmicCmdBuilder(addr).user_creds(user.username, user.password).subscribe_interface_description(selected_port.name, mode).debug()
+        gnmic = GnmicCmdBuilder(addr).user_creds(user.username, user.password).capabilities()
+        if run_insecure:
+            gnmic.skip_verify()
+        if client_cert:
+            gnmic.cert(client_cert.private, client_cert.public)
+        if client_cacert:
+            gnmic.ca(client_cacert.cacert)
+
+    run_cmd_and_verify(gnmic.build(), client_cacert, client_cert, expect_success, timeout)
+
+
+def run_cmd_and_verify(cmd: str, client_cacert: CertInfo, client_cert: CertInfo, expect_success: bool, timeout=None) -> str:
+    exc = ''
+    gnmic_success = True
+    output = ''
+    try:
+        if timeout:
+            output = run_cmd(cmd, validate=True, timeout=timeout)
+        else:
+            output = run_cmd(cmd, validate=True)
+        errs = GnmicErr.ALL_ERRS
+        found_errs = [err for err in errs if err in output]
+        assert not found_errs, f'gnmic got errors: {found_errs}'
+    except Exception as e:
+        gnmic_success = False
+        exc = e
+    assert gnmic_success == expect_success, (
+        f'gnmic {"fail but expected success" if expect_success else "success but expected fail"}\n'
+        f'client cert: {client_cert.name if client_cert else ""}\n'
+        f'client ca: {client_cacert.cacert_name if client_cacert else ""}\n'
+        f'out: {output}\n'
+        f'exception: {exc}')
+    return output
+
+
 def verify_server_reflection(test_flow, client, skip_cert_verify, err_msg_to_check, services=None):
     out_reflect, err_reflect = client.grpcurl_describe(skip_cert_verify=skip_cert_verify)
     if test_flow == TestFlowType.GOOD_FLOW:
@@ -446,6 +491,7 @@ def verify_server_reflection(test_flow, client, skip_cert_verify, err_msg_to_che
 
 
 def get_scp_player(engines) -> LinuxSshEngine:
+    return LinuxSshEngine('fit70', 'root', '3tango')
     return engines.sonic_mgmt
     # return LinuxSshEngine(ip='10.237.116.70', username='root', password='12345')
     # return LinuxSshEngine(ip='10.237.116.84', username='root', password='12345')
@@ -461,7 +507,8 @@ def verify_gnmi_client_tools_installed():
         player.verify_grpcurl_installation()
 
 
-def setup_gnmi_cert_checker(engines):
+def setup_gnmi_cert_checker(engines=None):
+    engines = engines or TestToolkit.engines
     scp_player = get_scp_player(engines)
     dut_hostname = get_dut_hostname(engines)
 
@@ -476,38 +523,6 @@ def setup_gnmi_cert_checker(engines):
         NvueGeneralCli.save_config(engines.dut)
 
     return tmp_certs_dir, gnmi_certs
-
-
-def gnmi_cert_factory_reset_no_params_check():
-    engines = TestToolkit.engines
-
-    with allure.step('setup'):
-        tmp_certs_dir, gnmi_certs = setup_gnmi_cert_checker(engines)
-        cert = gnmi_certs[0]
-
-    yield  # factory reset
-
-    try:
-        with allure.step('verify after factory reset'):
-            with allure.step('verify no GNMI certificate'):
-                with allure.independent_step(f'verify default gnmi certificate'):
-                    out = OutputParsingTool.parse_json_str_to_dictionary(System().gnmi_server.show()).get_returned_value()
-                    assert out[CERTIFICATE] == DEFAULT_CERTIFICATE, (
-                        f'value of field "{CERTIFICATE}" not as expected (default)\n'
-                        f'expected (default): {DEFAULT_CERTIFICATE}\n'
-                        f'actual: {out[CERTIFICATE]}')
-                with allure.independent_step('verify client cannot request using the certificate'):
-                    time.sleep(5)
-                    verify_gnmi_client(TestFlowType.BAD_FLOW, cert.dn, GnmiConsts.GNMI_DEFAULT_PORT,
-                                       engines.dut.username, engines.dut.password, False, GnmicErr.CERT_VERIFY_FAIL,
-                                       cacert=cert.cacert)
-    finally:
-        cleanup_gnmi_cert_tests(tmp_certs_dir, gnmi_certs)
-
-    yield  # to prevent StopIteration on the 2nd next() call
-
-
-factory_reset_gnmi_checker = gnmi_cert_factory_reset_no_params_check()  # generator
 
 
 def get_timestamp_of_first_gnmi_response(user: UserInfo, cert: CertInfo):
@@ -533,14 +548,44 @@ def get_timestamp_of_first_gnmi_response2(user: UserInfo, cert: CertInfo):
     return time.time()
 
 
-def setup_gnmi_cert_tests(engines, dut_hostname, scp_player, dut_ip=None) -> Tuple[str, List[CertInfo]]:
+def setup_gnmi_cert_tests(engines, dut_hostname, scp_player, dut_ip=None, import_to_dut=True, import_cas=False) -> Tuple[str, List[CertInfo]]:
     return setup_certs_for_tests('gnmi', ['gnmi-cert1', 'gnmi-cert2', 'gnmi-cert3'], engines,
-                                 dut_hostname, True, scp_player, dut_ip)
+                                 dut_hostname, import_to_dut, scp_player, dut_ip, import_cas)
 
 
-def cleanup_gnmi_cert_tests(tmp_certs_dir: str, certs: List[CertInfo]):
+def cleanup_gnmi_cert_tests(tmp_certs_dir: str, certs: List[CertInfo], cas: List[CertInfo] = None):
     with allure.step('unset gnmi config'):
         gnmi = System().gnmi_server
         gnmi.unset(apply=True).verify_result()
     with allure.step('remove certs from dut and local'):
-        cleanup_certs_for_tests(tmp_certs_dir, certs)
+        cleanup_certs_for_tests(tmp_certs_dir, certs, cas)
+
+
+def setup_gnmi_mtls_checker(engines=None):
+    engines = engines or TestToolkit.engines
+    scp_player = get_scp_player(engines)
+    dut_hostname = get_dut_hostname(engines)
+    system = System()
+
+    with allure.step('verify player has gnmi client tools'):
+        verify_gnmi_client_tools_installed()
+    with allure.step('prepare certs'):
+        tmp_certs_dir, certs = setup_gnmi_cert_tests(engines, dut_hostname, scp_player, None, False)
+        server_cert: CertInfo = certs[0]
+        server_ca: CertInfo = certs[1]
+    with allure.step('import server ca/certs'):
+        import_certificates(scp_player, engines.dut, [server_cert])
+        import_certificates(scp_player, engines.dut, [server_ca], True)
+    with allure.step(f'set cert: {server_cert.name}'):
+        system.gnmi_server.set(CERTIFICATE, server_cert.name).verify_result()
+    with allure.step(f'set ca: {server_ca.cacert_name}'):
+        system.gnmi_server.mtls.set(CA_CERTIFICATE, server_ca.cacert_name, apply=True).verify_result()
+    with allure.step('save config'):
+        NvueGeneralCli.save_config(engines.dut)
+
+    return tmp_certs_dir, server_cert, server_ca
+
+
+def wait_for_gnmi_to_update_data():
+    with allure.step(f'wait {GnmiConsts.SLEEP_TIME_FOR_UPDATE} seconds for gnmi to update with new data'):
+        time.sleep(GnmiConsts.SLEEP_TIME_FOR_UPDATE)

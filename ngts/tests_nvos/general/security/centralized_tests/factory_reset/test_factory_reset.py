@@ -27,14 +27,14 @@ from ngts.tests_nvos.general.security.test_ssh_pka.test_ssh_pka_pka_only import 
     ssh_pka_factory_reset_keep_basic_check
 from ngts.tests_nvos.general.security.tpm_attestation.helpers import tpm_attestation_factory_reset_no_params_check
 from ngts.tests_nvos.system.factory_reset.helpers import update_timezone
-from ngts.tests_nvos.system.gnmi.helpers import gnmi_cert_factory_reset_no_params_check
-from ngts.tests_nvos.system.gnmi.test_gnmi_cert import gnmi_cert_factory_reset_keep_all_config_check
+from ngts.tests_nvos.system.gnmi.test_gnmi_mtls import gnmi_mtls_factory_reset_no_params_check, \
+    gnmi_mtls_factory_reset_keep_all_config_check
 from ngts.tools.test_utils import allure_utils as allure
 
 # generators to feature checkers
 
 TPM_ATTESTATION = 'TPM attestation'
-GNMI_CERT = 'GNMI cert'
+GNMI_CERT = 'GNMI cert + mTLS'
 NMX_CERT = 'NMX cert'
 API_MTLS = 'API mTLS'
 CERTS_MGMT = 'Certificates management'
@@ -51,7 +51,7 @@ CHECKERS_SKIP_RULES: Dict[str, CheckerSkipRule] = {
 
 NO_PARAMS_CHECKERS: Dict[str, Generator[None, None, None]] = {
     TPM_ATTESTATION: tpm_attestation_factory_reset_no_params_check(),
-    GNMI_CERT: gnmi_cert_factory_reset_no_params_check(),
+    GNMI_CERT: gnmi_mtls_factory_reset_no_params_check(),
     NMX_CERT: cluster_app_mngr_security_factory_reset_no_params_check(),
     API_MTLS: api_mtls_factory_reset_no_params_check(),
     CERTS_MGMT: certs_mgmt_factory_reset_no_params_check(),
@@ -62,7 +62,7 @@ NO_PARAMS_CHECKERS: Dict[str, Generator[None, None, None]] = {
 }
 
 KEEP_BASIC_CHECKERS: Dict[str, Generator[None, None, None]] = {
-    GNMI_CERT: gnmi_cert_factory_reset_no_params_check(),
+    GNMI_CERT: gnmi_mtls_factory_reset_no_params_check(),
     NMX_CERT: cluster_app_mngr_security_factory_reset_no_params_check(),
     API_MTLS: api_mtls_factory_reset_no_params_check(),
     CERTS_MGMT: certs_mgmt_factory_reset_no_params_check(),
@@ -73,7 +73,7 @@ KEEP_BASIC_CHECKERS: Dict[str, Generator[None, None, None]] = {
 }
 
 KEEP_ONLY_FILES_CHECKERS: Dict[str, Generator[None, None, None]] = {
-    GNMI_CERT: gnmi_cert_factory_reset_no_params_check(),
+    GNMI_CERT: gnmi_mtls_factory_reset_no_params_check(),
     NMX_CERT: cluster_app_mngr_security_factory_reset_no_params_check(),
     API_MTLS: api_mtls_factory_reset_no_params_check(),
     CERTS_MGMT: certs_mgmt_factory_reset_keep_only_files_check(),
@@ -83,22 +83,13 @@ KEEP_ONLY_FILES_CHECKERS: Dict[str, Generator[None, None, None]] = {
 }
 
 KEEP_ALL_CONFIG_CHECKERS: Dict[str, Generator[None, None, None]] = {
-    GNMI_CERT: gnmi_cert_factory_reset_keep_all_config_check(),
+    GNMI_CERT: gnmi_mtls_factory_reset_keep_all_config_check(),
     NMX_CERT: cluster_app_mngr_security_factory_reset_keep_all_config_check(),
     API_MTLS: api_mtls_factory_reset_keep_all_config_check(),
     CERTS_MGMT: certs_mgmt_factory_reset_keep_only_files_check(),
     SED_PASSWORD: sed_password_factory_reset_check(),
     RBAC: rbac_factory_reset_keep_roles(),
     API_SPIFFE_ID: api_spiffe_factory_reset_keep_all_config_check(),
-}
-
-KEEP_ALL_CONFIG_CHECKERS: Dict[str, Generator[None, None, None]] = {
-    GNMI_CERT: gnmi_cert_factory_reset_keep_all_config_check(),
-    NMX_CERT: cluster_app_mngr_security_factory_reset_keep_all_config_check(),
-    API_MTLS: api_mtls_factory_reset_keep_all_config_check(),
-    CERTS_MGMT: certs_mgmt_factory_reset_keep_only_files_check(),
-    SED_PASSWORD: sed_password_factory_reset_check(),
-    RBAC: rbac_factory_reset_keep_roles(),
 }
 
 FACTORY_RESET_TYPE_TO_CHECKER_FUNCTIONS: Dict[str, Dict[str, Generator[None, None, None]]] = {

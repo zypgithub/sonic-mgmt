@@ -184,3 +184,68 @@ class GnmiClient:
 
     def _log(self, msg: str):
         logging.info(f"[GnmiClient] {msg}")
+
+
+class GnmicCmdBuilder:
+    DEFAULT_TARGET = 'nvos'
+    DEFAULT_PORT = 9339
+    CMD_TEMPLATE = "gnmic -a {host} --port {port}{opts} {op}"
+
+    def __init__(self, host: str = '', port=DEFAULT_PORT):
+        self.host = host
+        self.port = port
+        self.options: str = ''
+        self.operation: str = ''
+
+    def build(self) -> str:
+        self.options.strip()
+        self.operation.strip()
+        return GnmicCmdBuilder.CMD_TEMPLATE.format(host=self.host, port=self.port, opts=self.options, op=self.operation).strip()
+
+    def address(self, address: str) -> 'GnmicCmdBuilder':
+        self.host = address
+        return self
+
+    def port(self, port: str) -> 'GnmicCmdBuilder':
+        self.port = port
+        return self
+
+    def user_creds(self, username: str, password: str) -> 'GnmicCmdBuilder':
+        self.options += f" -u {username} -p {password}"
+        return self
+
+    def skip_verify(self) -> 'GnmicCmdBuilder':
+        self.options += f' --skip-verify'
+        return self
+
+    def ca(self, cacert_path: str) -> 'GnmicCmdBuilder':
+        self.options += f' --tls-ca {cacert_path}'
+        return self
+
+    def cert(self, key_path: str, public_path: str) -> 'GnmicCmdBuilder':
+        self.options += f' --tls-key {key_path} --tls-cert {public_path}'
+        return self
+
+    def subscribe(self, prefix: str = '', path: str = '', mode: str = '', target: str = DEFAULT_TARGET) -> 'GnmicCmdBuilder':
+        self.operation = f"subscribe --target {target} --prefix \'{prefix}\' --path \'{path}\'"
+        if mode:
+            self.operation += f' --mode {mode}'
+        return self
+
+    def capabilities(self) -> 'GnmicCmdBuilder':
+        self.operation = f"capabilities"
+        return self
+
+    def debug(self) -> 'GnmicCmdBuilder':
+        self.operation += f" -d"
+        return self
+
+    def format_flat(self) -> 'GnmicCmdBuilder':
+        self.operation += " --format flat"
+        return self
+
+    def subscribe_interface_description(self, interface_name: str, mode: str = '', target: str = DEFAULT_TARGET) -> 'GnmicCmdBuilder':
+        return self.subscribe(f'interfaces/interface[name={interface_name}]/state', 'description', mode, target)
+
+    def subscribe_system_events(self, mode: str = '', target: str = DEFAULT_TARGET) -> 'GnmicCmdBuilder':
+        return self.subscribe(f'system-events', '', mode, target)

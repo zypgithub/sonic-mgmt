@@ -76,21 +76,26 @@ def prepare_tmp_test_certs(cert_names: List[str], dest_dir, engines, dut_hostnam
     return certs_info
 
 
-def import_certs_safely(certs: List[CertInfo], scp_player):
+def import_certs_safely(certs: List[CertInfo], scp_player, override_existing=True):
     system = System()
+
+    def __import_cert(cert: CertInfo):
+        with allure.step(f'import cert {cert.name}'):
+            system.security.certificate.cert_id[cert.name].action_import(
+                uri_bundle=generate_scp_uri_using_player(scp_player, cert.p12_bundle),
+                passphrase=cert.p12_password).verify_result()
 
     with allure.step('import test certs'):
         current_certs = OutputParsingTool.parse_json_str_to_dictionary(
             system.security.certificate.show()).get_returned_value()
         for cert in certs:
-            name = cert.name
-            if name in current_certs:
-                with allure.step(f'cert {name} already exist. delete existing one before import'):
-                    system.security.certificate.cert_id[name].action_delete().verify_result()
-            with allure.step(f'import cert {name}'):
-                system.security.certificate.cert_id[name].action_import(
-                    uri_bundle=generate_scp_uri_using_player(scp_player, cert.p12_bundle),
-                    passphrase=cert.p12_password).verify_result()
+            if cert.name in current_certs:
+                if override_existing:
+                    with allure.step(f'cert {cert.name} already exist. delete existing one before import'):
+                        system.security.certificate.cert_id[cert.name].action_delete().verify_result()
+                    __import_cert(cert)
+            else:
+                __import_cert(cert)
 
 
 def delete_certs_safely(certs: List[CertInfo]):
@@ -117,21 +122,25 @@ def delete_all_imported_certs():
                 system.security.certificate.cert_id[cert].action_delete().verify_result()
 
 
-def import_cas_safely(cas: List[CertInfo], scp_player, external: bool = False):
+def import_cas_safely(cas: List[CertInfo], scp_player, external: bool = False, override_existing: bool = True):
     system = System()
+
+    def __import_ca(ca: CertInfo):
+        with allure.step(f'import CA {ca.cacert_name}'):
+            system.security.ca_certificate.cert_id[ca.cacert_name].action_import(
+                uri=generate_scp_uri_using_player(scp_player, ca.cacert), external=external).verify_result()
 
     with allure.step('import test certs'):
         current_cas = OutputParsingTool.parse_json_str_to_dictionary(
             system.security.ca_certificate.show()).get_returned_value()
         for ca in cas:
-            name = ca.cacert_name
-            if name in current_cas:
-                with allure.step(f'ca {name} already exist. delete existing one before import'):
-                    system.security.ca_certificate.cert_id[name].action_delete().verify_result()
-            if name not in current_cas:
-                with allure.step(f'import CA {name}'):
-                    system.security.ca_certificate.cert_id[name].action_import(
-                        uri=generate_scp_uri_using_player(scp_player, ca.cacert), external=external).verify_result()
+            if ca.cacert_name in current_cas:
+                if override_existing:
+                    with allure.step(f'ca {ca.cacert_name} already exist. delete existing one before import'):
+                        system.security.ca_certificate.cert_id[ca.cacert_name].action_delete().verify_result()
+                    __import_ca(ca)
+            else:
+                __import_ca(ca)
 
 
 def delete_cas_safely(cas: List[CertInfo]):
@@ -139,7 +148,7 @@ def delete_cas_safely(cas: List[CertInfo]):
 
     with allure.step('delete certs from the system'):
         current_cas = OutputParsingTool.parse_json_str_to_dictionary(
-            system.security.certificate.show()).get_returned_value()
+            system.security.ca_certificate.show()).get_returned_value()
         for ca in cas:
             name = ca.cacert_name
             if name in current_cas:
@@ -180,7 +189,7 @@ def get_test_certs_dir_location(certs_dirname_prefix, dut_hostname):
 
 
 def setup_certs_for_tests(certs_dirname_prefix: str, certs_names: List[str], engines, dut_hostname, import_to_dut=False,
-                          scp_player=None, dut_ip=None) -> Tuple[str, List[CertInfo]]:
+                          scp_player=None, dut_ip=None, import_cas=False) -> Tuple[str, List[CertInfo]]:
     with allure.step('prepare temp test certs in shared location'):
         certs_location = get_test_certs_dir_location(certs_dirname_prefix, dut_hostname)
         if dut_ip and IpTool.is_address_ipv6(dut_ip):
@@ -191,6 +200,9 @@ def setup_certs_for_tests(certs_dirname_prefix: str, certs_names: List[str], eng
     if import_to_dut:
         with allure.step('import certs to dut'):
             import_certs_safely(list(certs_info.values()), scp_player)
+        if import_cas:
+            with allure.step('import cas to dut'):
+                import_cas_safely(list(certs_info.values()), scp_player)
 
     return certs_location, certs
 

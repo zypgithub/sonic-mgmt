@@ -22,7 +22,7 @@ from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
 from ngts.tests_nvos.system.gnmi.conftest import gnmi_certs
 from ngts.tests_nvos.system.gnmi.constants import CERTIFICATE, DEFAULT_CERTIFICATE, GnmicErr, \
     GnmiMode
-from ngts.tests_nvos.system.gnmi.helpers import verify_gnmi_client, cleanup_gnmi_cert_tests, setup_gnmi_cert_checker
+from ngts.tests_nvos.system.gnmi.helpers import verify_gnmi_client
 
 
 # @pytest.fixture()
@@ -414,34 +414,3 @@ def read_process_for_specified_time(process, timeout):
                     err.append(line.decode('utf-8').strip())
 
         return output, err
-
-
-def gnmi_cert_factory_reset_keep_all_config_check():
-    engines = TestToolkit.engines
-
-    with allure.step('setup'):
-        tmp_certs_dir, gnmi_certs = setup_gnmi_cert_checker(engines)
-        cert = gnmi_certs[0]
-
-    yield  # factory reset
-
-    try:
-        with allure.step('verify gnmi certificate kept'):
-            with allure.independent_step('verify in show'):
-                out = OutputParsingTool.parse_json_str_to_dictionary(System().gnmi_server.show()).get_returned_value()
-                assert out[CERTIFICATE] == cert.name, (
-                    f'value of field "{CERTIFICATE}" not as expected\n'
-                    f'expected: {cert.name}\n'
-                    f'actual: {out[CERTIFICATE]}')
-            with allure.independent_step('verify client can request using the certificate'):
-                time.sleep(5)
-                verify_gnmi_client(TestFlowType.GOOD_FLOW, cert.ip, GnmiConsts.GNMI_DEFAULT_PORT,
-                                   engines.dut.username, engines.dut.password, False,
-                                   GnmicErr.CERT_VERIFY_FAIL, cacert=cert.cacert)
-    finally:
-        cleanup_gnmi_cert_tests(tmp_certs_dir, gnmi_certs)
-
-    yield  # to prevent StopIteration on the 2nd next() call
-
-
-gnmi_cert_upgrade_check = gnmi_cert_factory_reset_keep_all_config_check

@@ -18,18 +18,18 @@ from ngts.tests_nvos.general.security.test_api_server_security.test_api_mtls imp
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tests_nvos.system.factory_reset.helpers import *
 from ngts.tests_nvos.system.gnmi.helpers import get_scp_player
-from ngts.tests_nvos.system.gnmi.test_gnmi_cert import gnmi_cert_upgrade_check
+from ngts.tests_nvos.system.gnmi.test_gnmi_mtls import gnmi_mtls_upgrade_check
 from ngts.tools.test_utils import allure_utils as allure
 
 TPM_ATTESTATION = 'TPM attestation'
-GNMI_CERT = 'GNMI cert'
+GNMI_CERT = 'GNMI cert + mTLS'
 NMX_CERT = 'NMX cert'
 API_MTLS = 'API mTLS'
 SED_PASSWORD = 'SED password'
 CERTS_MGMT = 'Certificates management'
 
 UPGRADE_CHECKERS: Dict[str, Generator[None, None, None]] = {
-    GNMI_CERT: gnmi_cert_upgrade_check(),
+    GNMI_CERT: gnmi_mtls_upgrade_check(),
     NMX_CERT: cluster_app_mngr_security_upgrade_check(),
     API_MTLS: api_mtls_upgrade_check(),
     CERTS_MGMT: certs_mgmt_upgrade_check(),

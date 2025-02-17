@@ -14,7 +14,8 @@ from ngts.tests_nvos.general.security.certificate.helpers import import_test_cer
 from ngts.tests_nvos.general.security.helpers import cleanup_certs_for_tests, setup_certs_for_tests
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
 from ngts.tests_nvos.general.security.test_api_server_security.constants import API_INSTALLED, INSTALLED, TEST_CERTS, \
-    ApiConsts, CA_CERTIFICATE, CERTIFICATE
+    ApiConsts, CA_CERTIFICATE, CERTIFICATE, Errors
+from ngts.tests_nvos.helpers.general_helpers import run_cmd
 from ngts.tests_nvos.system.gnmi.helpers import get_scp_player
 from ngts.tools.test_utils import allure_utils as allure
 
@@ -53,35 +54,39 @@ def verify_api_ca_configuration(expected_ca, verify_mtls_fields=False):
                                verify_mtls_fields)  # with allure.independent_step('check in ca-certs show'):   # TODO: there's a bug 4063802  #     verify_installed_cacert(TEST_CACERT_NAMES, expected_ca if expected_ca else None)
 
 
+def run_curl_and_verify(addr: str, user: UserInfo, expect_success: bool, run_insecure: bool,
+                        client_cacert: CertInfo = None, client_cert: CertInfo = None, timeout=None):
+    req_type = 'GET'
+    req_path = '/nvue_v1/system/version'
+    cacert = client_cacert.cacert if client_cacert else ''
+    resolve_dn = client_cacert.dn if client_cacert else ''
+
+    exc = ''
+    curl_success = True
+    output = ''
+    try:
+        curl = CurlTool(addr, user.username, user.password)._compose_curl_cmd(cacert, client_cert, run_insecure, '', req_path, resolve_dn, req_type, '')
+        if timeout:
+            output = run_cmd(curl, validate=True, timeout=timeout)
+        else:
+            output = run_cmd(curl, validate=True)
+        errs = Errors.ALL_ERRORS
+        found_errs = [err for err in errs if err in output]
+        assert not found_errs, f'curl got errors: {found_errs}\noutput:\n{output}'
+    except Exception as e:
+        curl_success = False
+        exc = e
+    assert curl_success == expect_success, (
+        f'curl {"fail but expected success" if expect_success else "success but expected fail"}\n'
+        f'client cert: {client_cert.name if client_cert else ""}\n'
+        f'client ca: {client_cacert.cacert_name if client_cacert else ""}\n'
+        f'out: {output}\n'
+        f'exception: {exc}')
+
+
 def verify_api_connection(test_flow, dut: LinuxSshEngine, user: UserInfo, expect_mtls: bool, server_cert: CertInfo,
                           server_ca: CertInfo, dut_ipv6_addr=None):
-    curl = CurlTool(dut_ipv6_addr or dut.ip, user.username, user.password)
-
-    def _run_curl_and_verify(expect_success: bool, run_insecure: bool, client_cacert: CertInfo = None,
-                             client_cert: CertInfo = None):
-        req_type = 'GET'
-        req_path = '/nvue_v1/system/version'
-        cacert = client_cacert.cacert if client_cacert else ''
-        resolve_dn = client_cacert.dn if client_cacert else ''
-
-        exc = ''
-        curl_success = True
-        output = ''
-        try:
-            out, err = curl.request(request_type=req_type, path=req_path, skip_cert_verify=run_insecure, cacert=cacert,
-                                    client_cert=client_cert, resolve_dn=resolve_dn)
-            output = f'{out}\n{err}'
-            assert all(err not in output for err in
-                       ApiConsts.Mtls.Errors.MTLS_ERRORS), f'curl got error "{ApiConsts.Mtls.Errors.FAILED_TO_VERIFY_SERVER_ERR}"\n'
-        except AssertionError as e:
-            curl_success = False
-            exc = e
-        assert curl_success == expect_success, (
-            f'curl {"fail but expected success" if expect_success else "success but expected fail"}\n'
-            f'client cert: {client_cert.name if client_cert else ""}\n'
-            f'client ca: {client_cacert.cacert_name if client_cacert else ""}\n'
-            f'out: {output}\n'
-            f'exception: {exc}')
+    addr = dut_ipv6_addr or dut.ip
 
     matching_cert: CertInfo = server_ca
     matching_ca: CertInfo = server_cert
@@ -93,23 +98,23 @@ def verify_api_connection(test_flow, dut: LinuxSshEngine, user: UserInfo, expect
         with allure.step('verify mtls only'):
             if test_flow == TestFlowType.ALL_TYPES or test_flow == TestFlowType.GOOD_FLOW:
                 with allure.independent_step('goodflow - use suitable cert & cacert on client side'):
-                    _run_curl_and_verify(True, False, matching_ca, matching_cert)
+                    run_curl_and_verify(addr, user, True, False, matching_ca, matching_cert)
             if test_flow == TestFlowType.ALL_TYPES or test_flow == TestFlowType.BAD_FLOW:
                 # bug #4064106 still active - [Functional] [mTLS] api mtls is working with an imported ca-cert but not set to api mtls
                 # bug rejected because even if a CA is imported in the switch it's used in mtls
                 # with allure.independent_step('badflow - bad cert & good cacert on client side'):
                 #     _run_curl_and_verify(False, False, matching_ca, non_matching_cert)
                 with allure.independent_step('badflow - good cert & bad cacert on client side'):
-                    _run_curl_and_verify(False, False, non_matching_ca, matching_cert)
+                    run_curl_and_verify(addr, user, False, False, non_matching_ca, matching_cert)
                 with allure.independent_step('badflow - bad cert & bad cacert on client side'):
-                    _run_curl_and_verify(False, False, non_matching_ca, non_matching_cert)
+                    run_curl_and_verify(addr, user, False, False, non_matching_ca, non_matching_cert)
                 with allure.independent_step('badflow - run insecure'):
-                    _run_curl_and_verify(False, True)
+                    run_curl_and_verify(addr, user, False, True)
     else:
         with allure.step('verify no mtls - insecure works'):
             if test_flow == TestFlowType.ALL_TYPES or test_flow == TestFlowType.GOOD_FLOW:
                 with allure.independent_step('goodflow - run insecure'):
-                    _run_curl_and_verify(True, True)
+                    run_curl_and_verify(addr, user, True, True)
 
 
 def setup_mtls_test():
@@ -126,7 +131,8 @@ def cleanup_mtls_test(tmp_certs_dir=None, certs: List[CertInfo] = None, cas: Lis
             cleanup_certs_for_tests(tmp_certs_dir, certs, cas)
 
 
-def setup_mtls_checker(engines):
+def setup_mtls_checker(engines=None):
+    engines = engines or TestToolkit.engines
     scp_player = get_scp_player(engines)
     dut_hostname = get_dut_hostname(engines)
     system = System()
@@ -134,7 +140,7 @@ def setup_mtls_checker(engines):
     with allure.step('verify player has curl'):
         CurlTool('', '', '', verify_tools_installed=True)
     with allure.step('prepare certs'):
-        tmp_certs_dir, certs = setup_certs_for_tests('mtls', ['mtls-cert1', 'mtls-cert2'],
+        tmp_certs_dir, certs = setup_certs_for_tests('api-mtls', ['mtls-cert1', 'mtls-cert2'],
                                                      engines, dut_hostname, False, scp_player)
         server_cert: CertInfo = certs[0]
         server_ca: CertInfo = certs[1]

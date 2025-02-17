@@ -22,6 +22,11 @@ class ApiConsts:
             MTLS_ERRORS = [FAILED_TO_VERIFY_SERVER_ERR, NO_CERT_WAS_SENT_ERR, SSL_CERT_ERR]
 
 
+class Errors:
+    AUTH_ERROR = '401 Authorization Required'
+    ALL_ERRORS = [AUTH_ERROR] + ApiConsts.Mtls.Errors.MTLS_ERRORS
+
+
 TEST_CERTS = [TestCert.cert_valid_1, TestCert.cert_valid_2, TestCert.cert_valid_3]
 TEST_CERTS = [cert.copy(f'api-test-{cert.name}') for cert in TEST_CERTS]
 TEST_CACERT_NAMES = [cert.cacert_name for cert in TEST_CERTS]

@@ -5,6 +5,8 @@ class GnmiMode:
     ALL_MODES = [ONCE, POLL, STREAM]
 
 
+GNMI_INSTALLED = 'gnmi-server'
+
 DUT_HOSTNAME_FOR_CERT = 'nvos-dut'
 DUT_GNMI_CERTS_DIR = '/tmp/gnmi-certs'
 DOCKER_CERTS_DIR = '/etc/netq/cert'
