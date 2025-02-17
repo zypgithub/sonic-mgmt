@@ -545,6 +545,7 @@ def disable_dark_mode(topology_obj, cli_obj, dpu_index_list):
     else:
         with allure.step('Disable dark mode by config chassis modules startup DPU'):
             cli_obj.startup_dpu(dpu_index_list)
+            cli_obj.verify_dpus_up(dpu_index_list)
             cli_obj.save_configuration()
 
 

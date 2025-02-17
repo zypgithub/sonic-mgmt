@@ -1769,6 +1769,23 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         for dpu_index in dpu_index_list:
             self.engine.run_cmd(f'sudo config chassis modules startup DPU{dpu_index}')
 
+    def get_dpus_status(self):
+        dpu_status = self.engine.run_cmd(f'show chassis module status')
+        return generic_sonic_output_parser(dpu_status, output_key="Name")
+
+    @retry(Exception, tries=60, delay=3)
+    def verify_dpus_up(self, dpu_index_list):
+        """
+        Verifying the Oper-Status are Online and Admin-Status are up for the specified DPUs
+        """
+        with allure.step('Check that DPUS in UP state'):
+            dpu_status = self.get_dpus_status()
+            for dpu_index in dpu_index_list:
+                dpu_name = f"DPU{dpu_index}"
+                assert dpu_status[dpu_name]['Oper-Status'] == 'Online' and dpu_status[dpu_name]['Admin-Status'] == 'up', \
+                    f'For {dpu_name}, dpu status is {dpu_status[dpu_name]} '
+        logger.info("all dpus:{dpu_index_list} are up")
+
 
 class SonicGeneralCli202012(SonicGeneralCliDefault):
 
