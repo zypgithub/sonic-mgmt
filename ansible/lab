@@ -99,7 +99,7 @@ r-liger-02      ansible_host=10.210.25.88 ansible_hostv6="fe80::e42:a1ff:fe44:44
 r-leopard-56      ansible_host=10.210.24.97 ansible_hostv6="fe80::e42:a1ff:fe44:44c0" sonic_version=v2 hwsku="ACS-MSN4700" iface_speed=25000  mgmt_subnet_mask_length=22 vm_base=VM0000
 r-leopard-41      ansible_host=10.210.24.85 ansible_hostv6="fe80::e42:a1ff:fe44:44c0" sonic_version=v2 hwsku="ACS-MSN4700" iface_speed=25000  mgmt_subnet_mask_length=22 vm_base=VM0000
 r-leopard-32      ansible_host=10.210.24.55 ansible_hostv6="fe80::e42:a1ff:fe44:44c0" sonic_version=v2 hwsku="ACS-MSN4700" iface_speed=25000  mgmt_subnet_mask_length=22 vm_base=VM0000
-r-bison-04      ansible_host=10.210.26.40 ansible_hostv6="fe80::e42:a1ff:fe44:44c0" sonic_version=v2 hwsku="Mellanox-SN5610N-C256S2" iface_speed=25000  mgmt_subnet_mask_length=22 vm_base=VM0000
+r-gaur-04      ansible_host=10.210.26.40 ansible_hostv6="fe80::e42:a1ff:fe44:44c0" sonic_version=v2 hwsku="Mellanox-SN5610N-C256S2" iface_speed=25000  mgmt_subnet_mask_length=22 vm_base=VM0000
 mtvr-bobcat-05      ansible_host=10.245.21.126 ansible_hostv6="fe80::e42:a1ff:fe44:44c0" sonic_version=v2 hwsku="Mellanox-SN4280-O28" iface_speed=25000  mgmt_subnet_mask_length=22 vm_base=VM0000
 mtvr-bobcat-05-dpu-0      ansible_host=10.245.21.126 ansible_ssh_port=5021 ansible_hostv6="fe80::e42:a1ff:fe44:44c0" sonic_version=v2 hwsku="Nvidia-bf3-com-dpu" iface_speed=400000  mgmt_subnet_mask_length=22 vm_base=VM0000
 mtvr-bobcat-05-dpu-1      ansible_host=10.245.21.126 ansible_ssh_port=5022 ansible_hostv6="fe80::e42:a1ff:fe44:44c0" sonic_version=v2 hwsku="Nvidia-bf3-com-dpu" iface_speed=400000  mgmt_subnet_mask_length=22 vm_base=VM0000

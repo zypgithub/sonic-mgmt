@@ -18,7 +18,7 @@ platform_tests/test_secure_upgrade.py:
     reason: "Testcase ignored on r-bison testbeds"
     conditions_logical_operator: or
     conditions:
-      - "'r-bison-04' in testbed or 'mtvr-gaur-02' in testbed or 'mtvr-gaur-03' in testbed"
+      - "'r-gaur-04' in testbed or 'mtvr-gaur-02' in testbed or 'mtvr-gaur-03' in testbed"
       - "'simx' in platform"
 
 tests/nightly/rocev2_acl_counter:
@@ -239,9 +239,9 @@ tests/nightly/show_techsupport/test_techsupport.py::test_techsupport_validate_ap
 
 tests/nightly/secure:
   skip:
-    reason: "Skipped on bison testbeds"
+    reason: "Skipped on gaur testbeds"
     conditions:
-    - "'r-bison-04' in testbed or 'mtvr-gaur-02' in testbed or 'mtvr-gaur-03' in testbed"
+    - "'r-gaur-04' in testbed or 'mtvr-gaur-02' in testbed or 'mtvr-gaur-03' in testbed"
 
 tests/nightly/show_techsupport/test_health_event.py:
   skip:
@@ -603,7 +603,7 @@ platform_tests/api/test_psu.py::TestPsuApi::test_temperature:
     conditions_logical_operator: or
     conditions:
     - "'2010' in platform or '2100' in platform"
-    - "https://redmine.mellanox.com/issues/4257471 and 'sn5640_simx' in platform"
+    - "https://redmine.mellanox.com/issues/4262143 and 'r-gaur-04' in testbed"
 
 platform_tests/api/test_sfp.py:
   skip:
@@ -791,7 +791,7 @@ platform_tests/test_reload_config.py::test_reload_configuration:
     conditions_logical_operator: or
     conditions:
     - "'simx' in platform"
-    - "https://redmine.mellanox.com/issues/4209112 and 'r-bison-04' in testbed"
+    - "https://redmine.mellanox.com/issues/4209112 and 'r-gaur-04' in testbed"
 
 qos/test_lossless_bum_traffic_drop.py:
   skip:
@@ -1093,11 +1093,11 @@ platform_tests/test_sequential_restart.py:
 
 platform_tests/test_sequential_restart.py::test_restart_swss:
   skip:
-    reason: "Skipped due to RM 3816778 on r-anaconda-15 or due to RM 4209112 on r-bison-04"
+    reason: "Skipped due to RM 3816778 on r-anaconda-15 or due to RM 4209112 on r-gaur-04"
     conditions_logical_operator: or
     conditions:
     - "https://redmine.mellanox.com/issues/3816778 and 'r-anaconda-15' in testbed"
-    - "https://redmine.mellanox.com/issues/4209112 and 'r-bison-04' in testbed"
+    - "https://redmine.mellanox.com/issues/4209112 and 'r-gaur-04' in testbed"
 
 platform_tests/cli/test_show_platform.py::test_show_platform_syseeprom:
   skip:
@@ -1117,7 +1117,7 @@ platform_tests/mellanox/test_check_sysfs.py::test_check_hw_mgmt_sysfs:
     conditions_logical_operator: or
     conditions:
     - "'sn4280_simx' in platform"
-    - "https://redmine.mellanox.com/issues/4209112 and 'r-bison-04' in testbed"
+    - "https://redmine.mellanox.com/issues/4209112 and 'r-gaur-04' in testbed"
     - "https://redmine.mellanox.com/issues/4258480 and 'sn5640_simx' in platform"
 
 platform_tests/test_power_off_reboot.py:
