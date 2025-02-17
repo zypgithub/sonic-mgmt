@@ -462,12 +462,6 @@ tests_nvos/interfaces/multi_planar/test_multi_planar_sym_mgr_and_aport.py::test_
     conditions:
       - https://redmine.mellanox.com/issues/3795750
 
-tests_nvos/interfaces/multi_planar/test_multi_planar_sym_mgr_and_aport.py::test_aggregated_port_configuration:
-  skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3795718"
-    conditions:
-      - https://redmine.mellanox.com/issues/3795718
-
 tests_nvos/interfaces/multi_planar/test_multi_planar_sym_mgr_and_aport.py::test_symmetry_manager_log_and_tech_support:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3795718"
