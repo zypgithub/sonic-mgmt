@@ -295,6 +295,12 @@ tests/nightly/app_extension/test_app_extension_install_uninstall.py:
     conditions:
     - "https://redmine.mellanox.com/issues/3943532 and 'sn5640' in platform"
 
+tests/nightly/app_extension/test_app_extension_install_uninstall.py::test_app_install_uninstall:
+  xfail:
+    reason: "Testcase ignored due to RM issue: https://github.com/sonic-net/sonic-buildimage/issues/19878"
+    conditions:
+    - "https://github.com/sonic-net/sonic-buildimage/issues/19878"
+
 tests/nightly/app_extension/test_app_extension_upgrade.py:
   skip:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/3943532 on SPC5 platform"
