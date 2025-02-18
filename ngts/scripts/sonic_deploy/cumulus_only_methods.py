@@ -34,7 +34,7 @@ class CumulusInstallationSteps:
                 dut_hostname = dut['dut_alias'].replace("_", "-")
                 dut['engine'].run_cmd_set([f"nv set system hostname {dut_hostname}", "nv config apply -y"], patterns_list=["applied_and_saved"])
                 logging.info("Bringing up all the ports")
-                dut['cli'].interface.get_and_initialize_physical_ports(bring_up_ports=True)
+                dut['cli'].interface.initialize_physical_ports()
 
     @staticmethod
     def update_apt_sources_list(dut):
