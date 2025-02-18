@@ -783,6 +783,18 @@ def base_version_realpath(base_version):
     return base_version_path
 
 
+@pytest.fixture(scope='session')
+def downgrade_version_realpath(downgrade_version, base_version):
+    version = downgrade_version or base_version
+    if not version:
+        raise SetupIssue('Must specify downgrade_version or base_version in command-line')
+    cmd_runner = CmdRunner()
+    with allure.step('get real full path of version'):
+        version_path = cmd_runner.run_cmd(f'realpath {version}')
+        logging.info(f'{version_path=}')
+    return version_path
+
+
 @pytest.fixture(params=ApiType.ALL_TYPES)
 def test_api(request):
     """This fixture runs the test twice (once for each api)."""
