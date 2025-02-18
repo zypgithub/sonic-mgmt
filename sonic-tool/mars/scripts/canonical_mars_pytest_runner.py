@@ -46,7 +46,11 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
         if '--alluredir' not in self.raw_options:
             self.raw_options += ' --alluredir="/tmp/allure-results" '
 
-        allure_project = get_allure_project_id(self.setup_name, self.test_script)
+        self.target_cli_type = None
+        if "--target_cli_type" in self.raw_options:
+            self.target_cli_type = re.search(r"target_cli_type=(\w*)", self.raw_options).group(1)
+
+        allure_project = get_allure_project_id(self.setup_name, self.test_script, cli_type=self.target_cli_type)
         random_seed = int(time.time())
         if self.sonic_topo:
             cmd_template = '/ngts_venv/bin/pytest --setup_name={} --sonic-topo={} --session_id={} --mars_key_id={} {} ' \
@@ -90,7 +94,8 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
         self.Logger.info('Going to upload allure data to server')
 
         sonic_mgmt_path = self.test_script.split('ngts')[0]
-        cmd = 'PYTHONPATH=/devts /ngts_venv/bin/python {}/ngts/scripts/allure_reporter.py --action upload --setup_name {}'.format(sonic_mgmt_path, self.setup_name)
+        cmd_suffix = "--cli_type {}".format(self.target_cli_type) if self.target_cli_type else ""
+        cmd = 'PYTHONPATH=/devts /ngts_venv/bin/python {}/ngts/scripts/allure_reporter.py --action upload --setup_name {} {}'.format(sonic_mgmt_path, self.setup_name, cmd_suffix)
         self.Logger.info('Running cmd: {}'.format(cmd))
         self.EPoints[0].Player.run_process(cmd, shell=True, disable_realtime_log=False, delete_files=False)
 

@@ -112,14 +112,15 @@ def run_validation(players, test_name, scenario, bw_threshold,
                    samples_params_dict=PerfConsts.SAMPLES_PARAMS,
                    tc_occ_threshold=PerfConsts.OCC_AVG_TH,
                    temperature_threshold=PerfConsts.TEMPERATURE_TH,
-                   power_threshold=None,
+                   power_threshold=None, run_validate_counters=True,
                    port_list=None):
     with allure.step("Run traffic validation on Json results"):
         traffic_validation_jsons_list = validate_traffic_results(players, test_name, scenario, samples_params_dict)
 
         for traffic_json in traffic_validation_jsons_list:
             violations_list = []
-            validate_counters(traffic_json, violations_list)
+            if run_validate_counters:
+                validate_counters(traffic_json, violations_list)
             if bw_threshold:
                 validate_bw(traffic_json, bw_threshold, violations_list)
             if tc_occ_threshold:
@@ -130,6 +131,7 @@ def run_validation(players, test_name, scenario, bw_threshold,
                 validate_power(traffic_json, power_threshold, violations_list)
             if violations_list:
                 raise TestIssue("\n".join(violations_list))
+    return traffic_validation_jsons_list
 
 
 def set_ports_admin_state(players, port_list, port_state="up", step="Test Body"):

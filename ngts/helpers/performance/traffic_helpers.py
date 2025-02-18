@@ -145,11 +145,15 @@ def validate_counters(traffic_json, violations_list):
     counters_samples = traffic_json["Counters_samples"]
     counters_samples.pop('sample_params', None)
     for sample_id, counters_sample in counters_samples.items():
-        counters_df = counters_sample['counters_dataframe']
-        for counters_dict in counters_df:
-            for counter_name in PerfConsts.COUNTERS:
-                counter_value = counters_dict[counter_name]
-                if counter_value > 0:
-                    port = counters_dict["port"]
-                    violations_list.append(f"Port {port} {counter_name}: {counter_value} > 0, "
-                                           f"please check {sample_id}")
+        validate_counters_sample(sample_id, counters_sample, violations_list)
+
+
+def validate_counters_sample(sample_id, counters_sample, violations_list):
+    counters_df = counters_sample['counters_dataframe']
+    for counters_dict in counters_df:
+        for counter_name in PerfConsts.COUNTERS:
+            counter_value = counters_dict[counter_name]
+            if counter_value > 0:
+                port = counters_dict["port"]
+                violations_list.append(f"Port {port} {counter_name}: {counter_value} > 0, "
+                                       f"please check {sample_id}")

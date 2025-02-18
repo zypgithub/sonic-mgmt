@@ -4,7 +4,7 @@ import logging
 import pytest
 import random
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
-from ngts.helpers.performance.traffic_helpers import validate_bw_per_ports
+from ngts.helpers.performance.traffic_helpers import validate_bw_per_ports, validate_counters_sample
 from ngts.helpers.performance.performance_setup_helpers import (run_traffic, run_validation, get_topology_obj,
                                                                 validate_traffic_results,
                                                                 set_ports_admin_state,
@@ -91,11 +91,14 @@ class TestSPCXRA_x2Split_400G:
 
         with allure.step(f"Verifying the BW utilization is at least {SPCXRAConsts.DUT_TX_UTIL_IBM_TH_DICT[packet_size]}% "
                          f"on all the ports"):
-            run_validation(players=self.players, test_name=test_name, scenario=self.scenario,
-                           bw_threshold=SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size],
-                           samples_params_dict=PerfConsts.SAMPLES_PARAMS,
-                           tc_occ_threshold=PerfConsts.OCC_AVG_TH,
-                           power_threshold=self.power_thresholds_by_chip_type)
+            traffic_validation_jsons_list = run_validation(players=self.players, test_name=test_name,
+                                                           scenario=self.scenario,
+                                                           bw_threshold=SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size],
+                                                           samples_params_dict=PerfConsts.SAMPLES_PARAMS,
+                                                           tc_occ_threshold=PerfConsts.OCC_AVG_TH,
+                                                           power_threshold=self.power_thresholds_by_chip_type,
+                                                           run_validate_counters=False)
+            self.validate_counters_post_congestion(traffic_validation_jsons_list)
 
     @allure.title('test_ar_perf_reload_reboot')
     @allure.description('With full line rate traffic, verify that traffic converges to'
@@ -175,3 +178,14 @@ class TestSPCXRA_x2Split_400G:
 
             if violations_list:
                 raise TestIssue("\n".join(violations_list))
+
+    def validate_counters_post_congestion(self, validation_jsons_list):
+        violations_list = []
+        for validation_json in validation_jsons_list:
+            counters_samples = validation_json["Counters_samples"]
+            counters_samples.pop('sample_params', None)
+            for sample_idx, (sample_id, counters_sample) in enumerate(counters_samples.items()):
+                if sample_idx != 0:
+                    validate_counters_sample(sample_id, counters_sample, violations_list)
+        if violations_list:
+            raise TestIssue("\n".join(violations_list))

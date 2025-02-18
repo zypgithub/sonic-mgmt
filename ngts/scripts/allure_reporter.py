@@ -42,6 +42,8 @@ def parse_args():
     parser.add_argument("--action", required=True, dest="action", default="upload",
                         choices=["upload", "generate", "cleanup"], help="Action to do")
     parser.add_argument('--setup_name', dest='setup_name', help='Setup name')
+    parser.add_argument('--cli_type', dest='cli_type',
+                        required=False, default="", help='cli type of the OS')
 
     return parser.parse_args()
 
@@ -179,8 +181,9 @@ if __name__ == "__main__":
     allure_report_dir = InfraConst.ALLURE_REPORT_DIR
     allure_server_addr = InfraConst.ALLURE_SERVER_URL
     setup_name = args.setup_name
-
-    allure_project_id = setup_name.replace('_', '-').lower()
+    cli_type = args.cli_type
+    cli_type_str = f"-{cli_type}" if cli_type else ""
+    allure_project_id = (setup_name.replace('_', '-') + cli_type_str).lower()
     allure_server_base_url = '{}/{}'.format(allure_server_addr, ALLURE_DOCKER_SERVICE)
 
     if args.action == 'upload':
