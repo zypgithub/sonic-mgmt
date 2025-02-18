@@ -565,7 +565,7 @@ def system_image_install_reject_with_prompt(engines, system, prompt_response, or
 @pytest.mark.image
 @pytest.mark.system
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_fetch_image_via_http(test_api):
+def test_fetch_image_via_https(test_api):
     """
     Install system image test
 

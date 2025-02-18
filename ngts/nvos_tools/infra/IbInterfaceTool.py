@@ -73,8 +73,8 @@ class IbInterfaceTool:
 
     @staticmethod
     def get_mst_cable_name(engines, transceiver_name, pci_conf):
-        match = re.search(r'(?<=sw)(\d+)', transceiver_name)
-        mst_dev_name = pci_conf
+        match = re.search(r'(?<=sw)[^\d]*(\d+)', transceiver_name)
+        mst_dev_name = pci_conf + '_cable_'
         if match:
             mst_dev_name += str(int(match.group(1)) - 1)
 
@@ -82,7 +82,7 @@ class IbInterfaceTool:
 
     @staticmethod
     def is_dev_module(engine, transceiver_name):
-        engine.run_cmd("mst cable add")
+        engine.run_cmd("sudo mst cable add")
         output = (engine.run_cmd(f'sudo flint -d {transceiver_name} q | grep DEV')).strip()
         return bool(output)
 
