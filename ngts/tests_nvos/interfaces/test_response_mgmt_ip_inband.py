@@ -487,7 +487,7 @@ def verify_ufm_mad_db_table(engine, state, port_name, ipv4='', ipv6=''):
             ValidationTool.compare_values(reg_ipv4, ipv4).verify_result()
     if ipv6:
         with allure.independent_step('ipv6'):
-            reg_ipv6 = table_eth.split(',')[1].split(': ')[1].replace("'", "").replace("}", "")
+            reg_ipv6 = table_eth.split(',')[2].split(': ')[1].replace("'", "").replace("}", "")
             ValidationTool.compare_values(reg_ipv6, ipv6).verify_result()
 
 

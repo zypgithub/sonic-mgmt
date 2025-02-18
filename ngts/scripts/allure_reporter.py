@@ -17,7 +17,7 @@ from ngts.constants.constants import InfraConst  # noqa: E402
 from ngts.nvos_constants.constants_nvos import TopologyConsts
 
 ALLURE_DOCKER_SERVICE = 'allure-docker-service'
-HTTP_TIMEOUT = 200
+HTTP_TIMEOUT = 300
 SSL_VERIFICATION = False
 PATH_TO_UPLOAD_URL = '/auto/sw_system_project/NVOS_INFRA/verification_files/'
 
@@ -114,8 +114,25 @@ def upload_data_to_server(allure_report_items_list, allure_server, project_id):
     logger.info(response.status_code)
 
 
+def store_allure_url(allure_project, report_url):
+    try:
+        if TopologyConsts.NVOS.lower() in allure_project.lower():
+            logger.info("Upload url path to file")
+            file_path = os.path.join(PATH_TO_UPLOAD_URL, f"{allure_project}.txt")
+            with open(file_path, "w") as f:
+                f.write(report_url)
+            logger.info(f"File {file_path} created")
+            with open(file_path, "r") as f:
+                content = f.read()
+            logger.info(f"Contents of {file_path}:\n{content}")
+    except BaseException as ex:
+        logger.warning(f"Failed to store allure url for NVOS ({ex})")
+
+
 def generate_report(allure_server_url, allure_project):
-    predict_allure_report_link(allure_server_url, allure_project)
+    allure_report_url = predict_allure_report_link(allure_server_url, allure_project)
+    store_allure_url(allure_project, allure_report_url)
+
     start_time = time.time()
     response = requests.get('{}/generate-report?project_id={}'.format(allure_server_url, allure_project),
                             verify=SSL_VERIFICATION, timeout=HTTP_TIMEOUT).json()
@@ -124,15 +141,6 @@ def generate_report(allure_server_url, allure_project):
     report_url = response['data']['report_url']
     logger.info('Allure report URL: {}'.format(report_url))
 
-    if TopologyConsts.NVOS.lower() in allure_project.lower():
-        logger.info("Upload url path to file")
-        file_path = os.path.join(PATH_TO_UPLOAD_URL, "allure_report_url.txt")
-        with open(file_path, "w") as f:
-            f.write(report_url)
-        logger.info(f"File {file_path} created")
-        with open(file_path, "r") as f:
-            content = f.read()
-        logger.info(f"Contents of {file_path}:\n{content}")
     cleanup_report(allure_server_url, allure_project)
 
 
