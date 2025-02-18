@@ -36,8 +36,12 @@ def test_show_platform_environment_voltage(engines, devices):
     with allure.step("Check all details of all sensors are available in show platform environment voltage"):
         sensors_absent = []
         actual_volt_absent = []
+        available_psu_list = platform.environment.get_available_psus()
         for sensor in devices.dut.voltage_sensors:
             if voltage_output[sensor]['state'] != 'ok':
+                if is_sensor_for_absent_psu(sensor, available_psu_list):
+                    # Ignore absence of sensor for absent PSU
+                    continue
                 sensors_absent.append(sensor)
                 continue
             if 'actual' not in voltage_output[sensor].keys():
@@ -50,6 +54,9 @@ def test_show_platform_environment_voltage(engines, devices):
         mismatch = False
         err = []
         for sensor in devices.dut.voltage_sensors:
+            if is_sensor_for_absent_psu(sensor, available_psu_list):
+                # Ignore absence of sensor for for absent PSU
+                continue
             sensor_output = Tools.OutputParsingTool.parse_json_str_to_dictionary(
                 platform.environment.voltage.show(sensor)).verify_result()
             voltage_output_for_sensor = voltage_output[sensor].copy()
@@ -76,7 +83,7 @@ def test_show_platform_environment_voltage(engines, devices):
         voltage_issue = False
         err_msg = []
         for sensor in devices.dut.voltage_sensors:
-            err = check_voltage_in_range(voltage_output[sensor])
+            err = check_voltage_in_range(sensor, voltage_output[sensor])
             if err != "":
                 voltage_issue = True
                 err_msg.append(err)
@@ -140,6 +147,17 @@ def test_database_platform_environment_voltage(engines, devices):
             ).verify_result()
 
 
+def is_sensor_for_absent_psu(sensor, available_psu_list):
+    psu_name = re.search(r"PSU-(\d+)-.*", sensor)
+    if psu_name is not None:
+        # Sensor is a PSU sensor
+        psu_name = "PSU" + psu_name.group(1)
+        if psu_name not in available_psu_list:
+            # Sensor belongs to an absent PSU
+            return True
+    return False
+
+
 def get_random_sensor_max_min(sensors_dic):
     """
         get random sensor out of all the sensors with: ok state and have max, min values
@@ -154,13 +172,13 @@ def get_random_sensor_max_min(sensors_dic):
     return random.choice(sensors_list)
 
 
-def check_voltage_in_range(sensor_output):
+def check_voltage_in_range(sensor, sensor_output):
     """
-
+    :param sensor
     :param sensor_output:
     :return:
     """
-    with allure.step("Verify the actual voltage is between min and max inclusive"):
+    with allure.step("Verify the actual voltage is between min and max inclusive for {}".format(sensor)):
         if 'max' in sensor_output.keys():
             if float(sensor_output['actual']) > float(sensor_output['max']):
                 return "Actual voltage {} more than max of {}".format(sensor_output['actual'], sensor_output['max'])
