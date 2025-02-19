@@ -53,3 +53,4 @@ ptf-mtvr-gaur-02 ansible_host=10.245.38.63 ansible_ssh_user="{{ lookup('env','PT
 
 [pdu]
 pdu-10-245-2-15 ansible_host=10.245.2.15 protocol=snmp
+pdu-10-245-2-34 ansible_host=10.245.2.34 protocol=snmp
