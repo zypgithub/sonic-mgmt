@@ -192,6 +192,7 @@ def test_upgrade_with_nmx_enabled(test_api, devices, topology_obj, setup_name, e
         if not standalone_system:
             with allure.step("Running sdn factory reset"):
                 sdn.factory_default.action_reset(param='force')
+                time.sleep(2)
                 ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
 
         if not target_image_installed:

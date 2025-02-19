@@ -38,5 +38,5 @@ class LocationId(BaseComponent):
         engine = engine if engine else TestToolkit.engines.dut
         with allure.step('Restore partition'):
             return SendCommandTool.execute_command_expected_str(self._cli_wrapper.action_restore_partition,
-                                                                "Action succeeded", engine,
+                                                                "has been successfully restored", engine,
                                                                 self.get_resource_path(), reroute_param)

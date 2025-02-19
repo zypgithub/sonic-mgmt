@@ -1,33 +1,22 @@
 import logging
-import random
 import pytest
 import time
-import re
 
-from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.nvos_tools.nmx.Sdn import Sdn
-from ngts.nvos_constants.constants_nvos import PlatformConsts, IbConsts, ApiType, OutputFormat, SystemConsts, ClusterAppsLogLevels, NvosConst, ImageConsts
+from ngts.nvos_constants.constants_nvos import ApiType, OutputFormat, NvosConst
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.nvos_tools.ib.Ib import Ib
-from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
-from ngts.nvos_tools.infra.ResultObj import ResultObj
-from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports
-from ngts.tests_nvos.general.security.tpm_attestation.helpers import factory_reset_tpm_checker
-from ngts.tests_nvos.system.gnmi.helpers import factory_reset_gnmi_checker
-from ngts.tests_nvos.system.factory_reset.helpers import add_verification_data, \
-    verify_cleanup_done, verify_the_setup_is_functional, get_current_time
+from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
+from ngts.tests_nvos.system.factory_reset.helpers import get_current_time
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
 from ngts.tests_nvos.constants import MINUTE
-
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 
 logger = logging.getLogger()
-# @disabled_access_ports
 
 
 @pytest.mark.nmx
@@ -57,7 +46,6 @@ def test_cluster_sdn_factory_reset_nmx_down(engines, devices, test_api, has_loop
         ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
 
 
-# @disabled_access_ports
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
 @pytest.mark.timeout(25 * MINUTE, func_only=True)
@@ -92,7 +80,7 @@ def test_sdn_reset_factory(engines, devices, test_api, has_loopbox, test_name, s
 
         with allure.step("Running sdn factory reset"):
             sdn.factory_default.action_reset(param='force')
-            time.sleep(1)
+            time.sleep(2)
             ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
 
         verify_current_config_equals_given_config(sdn, engines, initial_config_contents, output_format)

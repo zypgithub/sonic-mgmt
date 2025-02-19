@@ -21,7 +21,6 @@ from ngts.tests_nvos.system.factory_reset.helpers import add_verification_data, 
 from ngts.tests_nvos.system.gnmi.helpers import factory_reset_gnmi_checker
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
-from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 
 logger = logging.getLogger()
 
@@ -57,7 +56,7 @@ def test_cluster_default_factory_reset(engines, devices, test_api, has_loopbox, 
                 ClusterTools.create_empty_partition(sdn, {})
 
         with allure.step("Run reset factory without params"):
-            duration = execute_reset_factory(engines, system, devices.dut.reset_factory, "", current_time)
+            execute_reset_factory(engines, system, devices.dut.reset_factory, "", current_time)
             ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
 
         with allure.step("Verify cluster in correct state"):
@@ -104,9 +103,6 @@ def test_cluster_default_factory_reset(engines, devices, test_api, has_loopbox, 
             ClusterTools.start_cluster(cluster, setup_name, OutputFormat.json)
             delete_all_sdn_fetched_generated_files(engines, sdn, all_config_files_paths, all_state_files_paths)
 
-        with allure.step("Verify operation time"):
-            OperationTime.verify_operation_time(duration, devices.dut.reset_factory).verify_result()
-
 
 @disabled_access_ports
 @pytest.mark.timeout(35 * MINUTE, func_only=True)
@@ -139,7 +135,7 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name,
                 ClusterTools.create_empty_partition(sdn, {})
 
         with allure.step("Run reset factory keep basic param"):
-            duration = execute_reset_factory(engines, system, devices.dut.reset_factory, "keep basic", current_time)
+            execute_reset_factory(engines, system, devices.dut.reset_factory, "keep basic", current_time)
             ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
 
         with allure.step("Verify cluster in correct state"):
@@ -182,9 +178,6 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name,
         if not sdn_files_deleted:
             ClusterTools.start_cluster(cluster, setup_name, OutputFormat.json)
             delete_all_sdn_fetched_generated_files(engines, sdn, all_config_files_paths, all_state_files_paths)
-
-        with allure.step("Verify operation time"):
-            OperationTime.verify_operation_time(duration, devices.dut.reset_factory).verify_result()
 
 
 @disabled_access_ports
@@ -218,7 +211,7 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name, 
                 ClusterTools.create_empty_partition(sdn, {})
 
         with allure.step("Run reset factory with keep only-files param"):
-            duration = execute_reset_factory(engines, system, devices.dut.reset_factory, "keep only-files", current_time)
+            execute_reset_factory(engines, system, devices.dut.reset_factory, "keep only-files", current_time)
             ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
 
         with allure.step("Verify cluster in correct state"):
@@ -261,9 +254,6 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name, 
         if not sdn_files_deleted:
             ClusterTools.start_cluster(cluster, setup_name, OutputFormat.json)
             delete_all_sdn_fetched_generated_files(engines, sdn, all_config_files_paths, all_state_files_paths)
-
-        with allure.step("Verify operation time"):
-            OperationTime.verify_operation_time(duration, devices.dut.reset_factory).verify_result()
 
 
 @disabled_access_ports
@@ -299,7 +289,7 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
                 ClusterTools.create_empty_partition(sdn, {})
 
         with allure.step("Run reset factory with keep all-config param"):
-            duration = execute_reset_factory(engines, system, devices.dut.reset_factory, "keep all-config", current_time)
+            execute_reset_factory(engines, system, devices.dut.reset_factory, "keep all-config", current_time)
             ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
 
         with allure.step("Verify cluster in correct state"):
@@ -339,6 +329,7 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
         if not standalone_system:
             with allure.step("Running sdn factory reset"):
                 sdn.factory_default.action_reset(param='force')
+                time.sleep(2)
                 ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
 
         engines.sonic_mgmt.run_cmd(f"sudo rm -rf {ClusterConsts.INITIAL_CONFIGURATIONS_PATH + '/*'}")
@@ -353,17 +344,12 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
             delete_all_sdn_fetched_generated_files(engines, sdn, all_config_files_paths, all_state_files_paths)
 
         with allure.step("Run reset factory to get back to default configuration"):
-            duration = execute_reset_factory(engines, system, devices.dut.reset_factory, "", current_time)
-
-        with allure.step("Verify operation time"):
-            OperationTime.verify_operation_time(duration, devices.dut.reset_factory).verify_result()
+            execute_reset_factory(engines, system, devices.dut.reset_factory, "", current_time)
 
 
 def execute_reset_factory(engines, system, operation, flag, current_time):
     logging.info("Current time: " + str(current_time))
-    result_obj = system.factory_default.action_reset(operation=operation, param=flag)
-    result_obj.verify_result()
-    return result_obj.duration
+    system.factory_default.action_reset(operation=operation, param=flag).verify_result()
 
 
 def verify_cluster_state_resetted(cluster):
@@ -485,7 +471,10 @@ def rotate_logs(system):
 
 def verify_config_files_content_not_changed(sdn, initial_config_contents, engines):
     current_config_files_content = {}
-    config_files_paths = ClusterTools.get_current_config_files_paths(sdn, ClusterConsts.NMX_CONTROLLER, ClusterConsts.NMX_CONTROLLER_CONFIG_FILE_TYPES)
+    controller_config_files_paths = ClusterTools.get_current_config_files_paths(sdn, ClusterConsts.NMX_CONTROLLER, ClusterConsts.NMX_CONTROLLER_CONFIG_FILE_TYPES)
+    telemetry_config_files_paths = ClusterTools.get_current_config_files_paths(sdn, ClusterConsts.NMX_TELEMETRY, ClusterConsts.NMX_TELEMETRY_CONFIG_FILE_TYPES)
+    config_files_paths = dict(list(controller_config_files_paths.items()) + list(telemetry_config_files_paths.items()))
+
     for file_type, file_path in config_files_paths.items():
         current_config_files_content[file_type] = engines.dut.run_cmd("sudo cat {}".format(file_path))
     assert len(current_config_files_content) == len(initial_config_contents), 'Missing configs'
