@@ -698,7 +698,7 @@ def group_log_errors_by_timestamp(log_errors: str) -> List[List[str]]:
     for line in error_line_list:
         timestamp = get_timestamp_from_log_line(line)
 
-        if (timestamp - prev_timestamp) > timedelta(seconds=5):
+        if (timestamp - prev_timestamp) > timedelta(seconds=10):
             # close the group and create new one
             error_groups.append(current_group)
             current_group = []
