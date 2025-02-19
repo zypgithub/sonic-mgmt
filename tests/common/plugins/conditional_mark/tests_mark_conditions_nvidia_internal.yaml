@@ -956,6 +956,13 @@ show_techsupport/test_techsupport.py::test_techsupport:
     conditions:
     - "https://redmine.mellanox.com/issues/4196657"
 
+memory_checker/test_memory_checker.py:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/3948768"
+    conditions:
+    - "https://redmine.mellanox.com/issues/3948768"
+    - "'4280' in platform"
+
 bgp/test_bgp_bbr.py:
   skip:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4196870"
