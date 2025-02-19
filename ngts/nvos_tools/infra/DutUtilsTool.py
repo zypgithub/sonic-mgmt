@@ -85,7 +85,7 @@ class DutUtilsTool:
         :return:
         """
         with allure.step('Run {} and reconnect'.format(command)):
-            engine.send_config_set(command, exit_config_mode=False, cmd_verify=False)
+            engine.send_config_set(command, exit_config_mode=False, cmd_verify=False, enter_config_mode=False)
             engine.disconnect()
             retry_call(engine.run_cmd, fargs=[''], tries=find_prompt_tries, delay=find_prompt_delay, logger=logger)
 

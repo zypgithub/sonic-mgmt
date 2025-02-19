@@ -473,8 +473,9 @@ class IbSwitch(BaseSwitch):
     def wait_for_os_to_become_functional(self, engine, find_prompt_tries=60, find_prompt_delay=10):
         return DutUtilsTool.wait_for_nvos_to_become_functional(engine)
 
-    def reload_device(self, engine, cmd_list, validate=False):
-        return engine.send_config_set(cmd_list, exit_config_mode=False, cmd_verify=False)
+    def reload_device(self, engine, cmd_list, validate=False, enter_config_mode=False):
+        return engine.send_config_set(cmd_list, exit_config_mode=False, cmd_verify=False,
+                                      enter_config_mode=enter_config_mode)
 
     def get_bios_file_name(self):
         return self.current_bios_version_path.split('/')[-1]
