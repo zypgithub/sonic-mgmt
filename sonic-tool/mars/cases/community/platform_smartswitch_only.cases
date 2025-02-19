@@ -45,4 +45,24 @@
         </cmd>
     </case>
 
+    <case>
+        <info> dpu platform test </info>
+        <name>  dpu platform test </name>
+        <cmd>
+             <params>
+                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 3600 --session-timeout 3600 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts smartswitch/platform_tests/test_show_platform_dpu.py </static_args>
+             </params>
+        </cmd>
+    </case>
+
+    <case>
+        <info> dpu reload test </info>
+        <name> dpu reload test </name>
+        <cmd>
+             <params>
+                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 3600 --session-timeout 3600 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts smartswitch/platform_tests/test_reload_dpu.py </static_args>
+             </params>
+        </cmd>
+    </case>
+
 </CASEDEF>
