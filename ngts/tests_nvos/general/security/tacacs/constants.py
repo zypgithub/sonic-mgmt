@@ -1,8 +1,9 @@
 from typing import Dict
 
 from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts, AddressingType, AccountingConsts, \
-    AuthConsts
-from ngts.tests_nvos.general.security.security_test_tools.tool_classes.RemoteAaaServerInfo import TacacsServerInfo
+    AuthConsts, AuthMedium, UserRole
+from ngts.tests_nvos.general.security.security_test_tools.tool_classes.RemoteAaaServerInfo import TacacsServerInfo, \
+    UsersPerAuthMedium
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
 
 
@@ -168,6 +169,25 @@ class TacacsDockerServer0:
         AaaConsts.LOGIN: USERS_LOGIN
     }
 
+    users_per_medium: UsersPerAuthMedium = {
+        AuthMedium.SSH: {
+            UserRole.ADMIN: [UserInfo('tac0adm-ssh', 'tac0adm-ssh_pap', UserRole.ADMIN)],
+            UserRole.MONITOR: [UserInfo('tac0mon-ssh', 'tac0mon-ssh_pap', UserRole.MONITOR)],
+        },
+        AuthMedium.OPENAPI: {
+            UserRole.ADMIN: [UserInfo('tac0adm-rest', 'tac0adm-rest_pap', UserRole.ADMIN)],
+            UserRole.MONITOR: [UserInfo('tac0mon-rest', 'tac0mon-rest_pap', UserRole.MONITOR)],
+        },
+        AuthMedium.RCON: {
+            UserRole.ADMIN: [UserInfo('tac0adm-rcon', 'tac0adm-rcon_pap', UserRole.ADMIN)],
+            UserRole.MONITOR: [UserInfo('tac0mon-rcon', 'tac0mon-rcon_pap', UserRole.MONITOR)],
+        },
+        AuthMedium.SCP: {
+            UserRole.ADMIN: [UserInfo('tac0adm-scp', 'tac0adm-scp_pap', UserRole.ADMIN)],
+            UserRole.MONITOR: [UserInfo('tac0mon-scp', 'tac0mon-scp_pap', UserRole.MONITOR)],
+        }
+    }
+
     SERVER_IPV4 = TacacsServerInfo(
         hostname=AaaConsts.VM_AAA_SERVER_IPV4_ADDR,
         priority=1,
@@ -180,6 +200,7 @@ class TacacsDockerServer0:
         ipv4_addr=AaaConsts.VM_AAA_SERVER_IPV4_ADDR,
         docker_name='tacacs_container',
         users_per_auth_mode=USERS_BY_AUTH_MODE,
+        users_per_auth_medium=users_per_medium
     )
     SERVER_IPV6 = SERVER_IPV4.copy()
     SERVER_IPV6.hostname = AaaConsts.VM_AAA_SERVER_IPV6_ADDR
@@ -226,6 +247,25 @@ class TacacsDockerServer1:
         AaaConsts.LOGIN: USERS_LOGIN
     }
 
+    users_per_medium: UsersPerAuthMedium = {
+        AuthMedium.SSH: {
+            UserRole.ADMIN: [UserInfo('tac1adm-ssh', 'tac1adm-ssh_pap', UserRole.ADMIN)],
+            UserRole.MONITOR: [UserInfo('tac1mon-ssh', 'tac1mon-ssh_pap', UserRole.MONITOR)],
+        },
+        AuthMedium.OPENAPI: {
+            UserRole.ADMIN: [UserInfo('tac1adm-rest', 'tac1adm-rest_pap', UserRole.ADMIN)],
+            UserRole.MONITOR: [UserInfo('tac1mon-rest', 'tac1mon-rest_pap', UserRole.MONITOR)],
+        },
+        AuthMedium.RCON: {
+            UserRole.ADMIN: [UserInfo('tac1adm-rcon', 'tac1adm-rcon_pap', UserRole.ADMIN)],
+            UserRole.MONITOR: [UserInfo('tac1mon-rcon', 'tac1mon-rcon_pap', UserRole.MONITOR)],
+        },
+        AuthMedium.SCP: {
+            UserRole.ADMIN: [UserInfo('tac1adm-scp', 'tac1adm-scp_pap', UserRole.ADMIN)],
+            UserRole.MONITOR: [UserInfo('tac1mon-scp', 'tac1mon-scp_pap', UserRole.MONITOR)],
+        }
+    }
+
     SERVER_IPV4 = TacacsServerInfo(
         hostname=AaaConsts.VM_AAA_SERVER_IPV4_ADDR,
         priority=1,
@@ -237,7 +277,8 @@ class TacacsDockerServer1:
         users=USERS_PAP,
         ipv4_addr=AaaConsts.VM_AAA_SERVER_IPV4_ADDR,
         docker_name='nvos_tacacs',
-        users_per_auth_mode=USERS_BY_AUTH_MODE
+        users_per_auth_mode=USERS_BY_AUTH_MODE,
+        users_per_auth_medium=users_per_medium
     )
     SERVER_IPV6 = SERVER_IPV4.copy()
     SERVER_IPV6.hostname = AaaConsts.VM_AAA_SERVER_IPV6_ADDR

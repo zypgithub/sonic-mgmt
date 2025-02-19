@@ -95,7 +95,7 @@ def test_radius_auth(test_flow, test_api, addressing_type, engines, topology_obj
 
     # our vm radius server does not support mschapv2 - all auth types will be tested only on physical server
     server_by_addr_type = {
-        AddressingType.IPV4: RadiusPhysicalServer.SERVER_IPV4,
+        AddressingType.IPV4: RadiusPhysicalServer.SERVER_IPV4,  # only physical supports mschap (not sure how to configure it)
         AddressingType.IPV6: RadiusVmServer.SERVER_IPV6,
         AddressingType.DN: RadiusVmServer.SERVER_DN
     }

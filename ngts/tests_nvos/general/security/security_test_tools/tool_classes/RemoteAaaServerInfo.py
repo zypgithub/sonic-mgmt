@@ -2,21 +2,25 @@ import copy
 import logging
 from typing import List, Dict
 
+from typing_extensions import TypeAlias
+
 from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.system.Ldap import Ldap
 from ngts.nvos_tools.system.Server import ServerId
 from ngts.nvos_tools.system.System import System
-from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts
+from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts, AuthMedium, UserRole
 from ngts.tests_nvos.general.security.security_test_tools.resource_utils import configure_resource
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
 from ngts.tests_nvos.general.security.test_aaa_ldap.constants import LdapConsts
 from ngts.tools.test_utils import allure_utils as allure
 
+UsersPerAuthMedium: TypeAlias = Dict[str, Dict[str, List[UserInfo]]]
+
 
 class RemoteAaaServerInfo:
     def __init__(self, hostname, priority, secret, port, users: List[UserInfo], ipv4_addr: str = '',
-                 docker_name: str = ''):
+                 docker_name: str = '', users_per_auth_medium: UsersPerAuthMedium = None):
         self.hostname = hostname
         self.priority = priority
         self.secret = secret
@@ -25,6 +29,13 @@ class RemoteAaaServerInfo:
         # info for mgmt of server
         self.ipv4_addr = ipv4_addr
         self.docker_name = docker_name
+
+        # validate users_per_auth_medium and set it
+        if users_per_auth_medium:
+            assert all(key in AuthMedium.ALL_MEDIUMS for key in users_per_auth_medium.keys()), f'invalid "users_per_auth_medium" param: 1st layer keys must be in {AuthMedium.ALL_MEDIUMS}'
+            for _, users_per_role in users_per_auth_medium.items():
+                assert all(key in UserRole.ALL_ROLES for key in users_per_role.keys()), f'invalid "users_per_auth_medium" param: 2nd layer keys must be in {UserRole.ALL_ROLES}'
+        self.users_per_auth_medium: UsersPerAuthMedium = users_per_auth_medium
 
     def copy(self, deep=False):
         if deep:
@@ -70,8 +81,8 @@ def update_active_aaa_server(item, server: RemoteAaaServerInfo):
 
 class TacacsServerInfo(RemoteAaaServerInfo):
     def __init__(self, hostname, priority, secret, port, timeout, auth_mode, users: List[UserInfo], ipv4_addr: str = '',
-                 docker_name: str = '', users_per_auth_mode: Dict[str, List[UserInfo]] = None):
-        super().__init__(hostname, priority, secret, port, users, ipv4_addr, docker_name)
+                 docker_name: str = '', users_per_auth_mode: Dict[str, List[UserInfo]] = None, users_per_auth_medium: UsersPerAuthMedium = None):
+        super().__init__(hostname, priority, secret, port, users, ipv4_addr, docker_name, users_per_auth_medium)
         self.timeout = timeout
         # self.retransmit = retransmit
         self.auth_mode = auth_mode
@@ -101,6 +112,9 @@ class TacacsServerInfo(RemoteAaaServerInfo):
         self.auth_mode = auth_mode
         self.users = self.users_per_auth_mode[auth_mode]
 
+        if self.users_per_auth_medium:
+            self.__update_passwords_of_users_per_auth_medium(auth_mode)
+
         if set_on_dut:
             assert item, f"argument 'item' was not provided"
             engine = dut_engine or (
@@ -108,12 +122,18 @@ class TacacsServerInfo(RemoteAaaServerInfo):
             System().aaa.tacacs.server.server_id[self.hostname].set(AaaConsts.SERVER_AUTH_MODE, auth_mode, apply=True,
                                                                     dut_engine=engine).ignore_result()
 
+    def __update_passwords_of_users_per_auth_medium(self, new_auth_mode):
+        for medium, users_per_role in self.users_per_auth_medium.items():
+            for role, users in users_per_role.items():
+                for user in users:
+                    user.password = f"{user.password.replace('_pap', '').replace('_chap', '').replace('_login', '')}_{new_auth_mode}"
+
 
 class LdapServerInfo(RemoteAaaServerInfo):
-    def __init__(self, hostname, priority, secret, port, users: List[UserInfo],
-                 base_dn, bind_dn, timeout_bind, timeout_search, version,
-                 ssl_port=636, ipv4_addr: str = '', docker_name: str = ''):
-        super().__init__(hostname, priority, secret, port, users, ipv4_addr, docker_name)
+    def __init__(self, hostname, priority, secret, port, users: List[UserInfo], base_dn, bind_dn, timeout_bind,
+                 timeout_search, version, ssl_port=636, ipv4_addr: str = '', docker_name: str = '',
+                 users_per_auth_medium: UsersPerAuthMedium = None):
+        super().__init__(hostname, priority, secret, port, users, ipv4_addr, docker_name, users_per_auth_medium)
         self.base_dn = base_dn
         self.bind_dn = bind_dn
         self.timeout_bind = timeout_bind
@@ -151,9 +171,9 @@ class LdapServerInfo(RemoteAaaServerInfo):
 
 
 class RadiusServerInfo(RemoteAaaServerInfo):
-    def __init__(self, hostname, priority, secret, port, timeout, auth_type, users: List[UserInfo], retransmit=0, statistics=AaaConsts.DISABLED, ipv4_addr: str = '',
-                 docker_name: str = ''):
-        super().__init__(hostname, priority, secret, port, users, ipv4_addr, docker_name)
+    def __init__(self, hostname, priority, secret, port, timeout, auth_type, users: List[UserInfo], retransmit=0,
+                 statistics=AaaConsts.DISABLED, ipv4_addr: str = '', docker_name: str = '', users_per_auth_medium: UsersPerAuthMedium = None):
+        super().__init__(hostname, priority, secret, port, users, ipv4_addr, docker_name, users_per_auth_medium)
         self.timeout = timeout
         self.auth_type = auth_type
         self.retransmit = retransmit

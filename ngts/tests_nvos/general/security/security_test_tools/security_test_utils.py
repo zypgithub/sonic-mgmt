@@ -5,6 +5,7 @@ from typing import List
 import pytz
 
 from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
+from ngts.nvos_constants.constants_nvos import TestFlowType
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts
@@ -126,6 +127,69 @@ def verify_user_auth(engines, topology_obj, user: UserInfo, expect_login_success
                                      expect_accounting_logs)
 
             logging.info('\n')
+
+
+def verify_auth_mediums(test_flow: str, engines, topology_obj,
+                        remote_should_work: bool, local_should_work: bool,
+                        server: RemoteAaaServerInfo = None,
+                        remote_users_roles_to_check: List[str] = None, local_users: List[UserInfo] = None,
+                        verify_authorization: bool = True, skip_auth_mediums: List[str] = None,
+                        accounting_servers: List[RemoteAaaServerInfo] = [], expect_accounting_logs: List[bool] = [],
+                        switch_hostname: str = ''):
+    '''
+    if should check accounting:
+        accounting_preparations()
+
+    for each medium:
+        if good flow:
+            if remote_should_work:
+                (remote_should_work contains ROLES that should check)
+                for each role in remote_should_work:
+                    user = server.users_per_medium[medium][role]
+                    verify_auth_with_medium(user, expect=is_good_flow)
+
+        if bad flow:
+            pass
+
+        if should check accounting:
+            accounting_check()
+    '''
+    is_good_flow = test_flow == TestFlowType.GOOD_FLOW
+
+    assert len(accounting_servers) == len(expect_accounting_logs), \
+        f'Arguments "accounting_servers" and "expect_accounting_logs" must be lists of the same length!\n' \
+        f'Actual accounting_servers: {accounting_servers}\nActual expect_accounting_logs: {expect_accounting_logs}'
+
+    should_check_accounting = bool(accounting_servers)
+    accounting_server_mngrs = [AaaServerManager(server.ipv4_addr, server.docker_name) for server in accounting_servers]
+    if should_check_accounting:
+        assert switch_hostname, f'Must give "switch_hostname" argument when should check accounting.\n' \
+            f'Given hostname: {switch_hostname}'
+
+    auth_mediums = [medium for medium in AuthMedium.ALL_MEDIUMS if (not skip_auth_mediums) or (medium not in skip_auth_mediums)]
+    with allure.step(f'verify auth through mediums: {auth_mediums}'):
+        for medium in auth_mediums:
+            with allure.independent_step(medium):
+                sleep_before_auth()
+                time_at_server: str = datetime.now(pytz.utc).strftime('%b %d %H:%M:%S')  # our AAA servers have UTC timezone
+
+                if (is_good_flow == remote_should_work) and remote_users_roles_to_check:
+                    with allure.independent_step(f'{test_flow} remote users check'):
+                        for role in remote_users_roles_to_check:
+                            with allure.independent_step(role):
+                                user = server.users_per_auth_medium[medium][role][0]
+                                with allure.step(f'{user.username} / {user.password} ({user.role}, {medium}) - {remote_should_work}'):
+                                    verify_auth_with_medium(medium, user, remote_should_work, verify_authorization, engines, topology_obj)
+                if (is_good_flow == local_should_work) and local_users:
+                    with allure.independent_step(f'{test_flow} local users check'):
+                        for user in local_users:
+                            with allure.independent_step(f'{user.username} / {user.password} ({user.role}, {medium}) - {local_should_work}'):
+                                verify_auth_with_medium(medium, user, local_should_work, verify_authorization, engines, topology_obj)
+
+                if should_check_accounting:
+                    with allure.step('check accounting'):
+                        check_accounting(time_at_server, switch_hostname, user.username, accounting_server_mngrs,
+                                         expect_accounting_logs)
 
 
 def verify_users_auth(engines, topology_obj, users: List[UserInfo], expect_login_success: List[bool] = None,

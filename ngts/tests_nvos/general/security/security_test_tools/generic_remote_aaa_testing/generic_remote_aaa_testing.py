@@ -14,12 +14,13 @@ from ngts.nvos_tools.system.Aaa import Aaa
 from ngts.nvos_tools.system.RemoteAaaResource import RemoteAaaResource
 from ngts.nvos_tools.system.Server import ServerId
 from ngts.tests_nvos.general.security.security_test_tools.constants import AddressingType, AuthConsts, AuthMedium, \
-    AaaConsts
+    AaaConsts, UserRole
 from ngts.tests_nvos.general.security.security_test_tools.generic_remote_aaa_testing.constants import *
 from ngts.tests_nvos.general.security.security_test_tools.generic_remote_aaa_testing.generic_aaa_testing_utils import \
     detach_config
 from ngts.tests_nvos.general.security.security_test_tools.resource_utils import configure_resource
-from ngts.tests_nvos.general.security.security_test_tools.security_test_utils import verify_users_auth
+from ngts.tests_nvos.general.security.security_test_tools.security_test_utils import verify_users_auth, \
+    verify_auth_mediums
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.RemoteAaaServerInfo import RemoteAaaServerInfo, \
     update_active_aaa_server
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
@@ -266,6 +267,8 @@ def generic_aaa_test_auth(test_flow: str, test_api: str, addressing_type: str, e
 
     with allure.step(f'Configure {remote_aaa_type} server'):
         server = server_by_addr_type[addressing_type].copy()
+        assert getattr(server, 'users_per_auth_medium', None) is not None, (f'given server must have "users_per_auth_medium" attr\n'
+                                                                            f'server: {server.hostname} - {server.port} - {server.docker_name}')
         server_resource = remote_aaa_obj.server.server_id[server.hostname]
         server.configure(engines)
 
@@ -277,23 +280,19 @@ def generic_aaa_test_auth(test_flow: str, test_api: str, addressing_type: str, e
 
     if test_param:
         assert test_param_update_func, 'test_param_update_func function was not specified!'
-        for param in test_param:
-            with allure.step(f'Update test param: {param}'):
-                test_param_update_func(engines, item, server, server_resource, param)
-                if remote_aaa_type == RemoteAaaType.LDAP:
-                    wait_for_ldap_nvued_restart_workaround(item)
-            with allure.step('Test auth'):
-                remote_admin = [user for user in server.users if user.role == AaaConsts.ADMIN][0]
-                remote_monitor = [user for user in server.users if user.role == AaaConsts.MONITOR][0]
-                verify_auth(test_flow, engines, topology_obj,
-                            good_flow_users=[remote_admin, remote_monitor], bad_flow_users=[local_adminuser],
-                            skip_auth_mediums=skip_auth_mediums)
+        with allure.step(f'test through params: {test_param}'):
+            for param in test_param:
+                with allure.step(param):
+                    with allure.step(f'Update test param: {param}'):
+                        test_param_update_func(engines, item, server, server_resource, param)
+                        if remote_aaa_type == RemoteAaaType.LDAP:
+                            wait_for_ldap_nvued_restart_workaround(item)
+                    with allure.step('Test auth'):
+                        verify_auth_mediums(test_flow, engines, topology_obj, True, False,
+                                            server, UserRole.ALL_ROLES, [local_adminuser], skip_auth_mediums=skip_auth_mediums)
     else:
-        remote_admin = [user for user in server.users if user.role == AaaConsts.ADMIN][0]
-        remote_monitor = [user for user in server.users if user.role == AaaConsts.MONITOR][0]
-        verify_auth(test_flow, engines, topology_obj,
-                    good_flow_users=[remote_admin, remote_monitor], bad_flow_users=[local_adminuser],
-                    skip_auth_mediums=skip_auth_mediums)
+        verify_auth_mediums(test_flow, engines, topology_obj, True, False,
+                            server, UserRole.ALL_ROLES, [local_adminuser], skip_auth_mediums=skip_auth_mediums)
 
 
 def generic_aaa_test_bad_configured_server(test_api, engines, topology_obj, remote_aaa_type: str,
