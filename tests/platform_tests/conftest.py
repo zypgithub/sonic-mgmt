@@ -8,7 +8,7 @@ from tests.platform_tests.sfp.im.helpers import im_supported, im_ms_sku, get_por
 from .args.counterpoll_cpu_usage_args import add_counterpoll_cpu_usage_args
 from tests.common.helpers.mellanox_thermal_control_test_helper import suspend_hw_tc_service, resume_hw_tc_service
 from tests.common.platform.transceiver_utils import get_ports_with_flat_memory, \
-    get_passive_cable_port_list, get_cmis_cable_port_list
+    get_passive_cable_port_list, get_cmis_cable_ports_and_ver
 
 
 @pytest.fixture(autouse=True, scope="module")
@@ -241,9 +241,9 @@ def passive_cable_ports(duthosts):
 
 
 @pytest.fixture(scope="module")
-def cmis_cable_ports(duthosts):
-    cmis_cable_ports = {}
+def cmis_cable_ports_and_ver(duthosts):
+    cmis_cable_ports_and_ver = {}
     for dut in duthosts:
-        cmis_cable_ports.update({dut.hostname: get_cmis_cable_port_list(dut)})
-    logging.info(f"cmis_cable_ports: {cmis_cable_ports}")
-    return cmis_cable_ports
+        cmis_cable_ports_and_ver.update({dut.hostname: get_cmis_cable_ports_and_ver(dut)})
+    logging.info(f"cmis_cable_ports_and_ver: {cmis_cable_ports_and_ver}")
+    return cmis_cable_ports_and_ver
