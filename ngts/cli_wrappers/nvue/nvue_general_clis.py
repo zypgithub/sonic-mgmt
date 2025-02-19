@@ -423,12 +423,22 @@ class NvueGeneralCli(SonicGeneralCliDefault):
         with allure.step('wait for NVOS/ONIE grub menu'):
             # Set timeout based on the active status of Redmine issue #4028150
             to = 360 if is_bug_active(4028150) else 240
+            grub_menu_pointer = 0
+            onie_install_os_pointer = 1
+            esc_grub_pointer = 2
             onie_install_os = 'ONIE: Install OS'
-            grub_menu_patterns = ['ONIE\\s+', onie_install_os]
+            grub_menu_patterns = ['ONIE\\s+', onie_install_os, GrubMenuTool.GRUB_ESC_PATTERN]
             all_patterns = grub_menu_patterns + SecureBootConsts.INVALID_SIGNATURE
             output, respond = serial_engine.run_cmd('', all_patterns, timeout=to, send_without_enter=True)
 
-        if respond != 1:
+        if respond != onie_install_os_pointer:
+            if respond == esc_grub_pointer:
+                with allure.step('Grub menu new style handle'):
+                    logger.info('Hit ESC on grub new style')
+                    output, respond = serial_engine.run_cmd(GrubMenuTool.ESCAPE_CHAR, expected_value=all_patterns, timeout=to,
+                                                            send_without_enter=True)
+                    time.sleep(1)
+
             if respond >= len(grub_menu_patterns):
                 with allure.step('Secure boot error - handle'):
                     with allure.step('hit Enter till no error message'):
@@ -438,7 +448,7 @@ class NvueGeneralCli(SonicGeneralCliDefault):
                                                                     send_without_enter=True)
                             time.sleep(1)
 
-            elif respond == 0:
+            elif respond == grub_menu_pointer:
                 with allure.step("System in NVOS grub menu, entering ONIE grub menu"):
                     GrubMenuTool.select_grub_menu_item(serial_engine, 'ONIE')
 
@@ -449,7 +459,7 @@ class NvueGeneralCli(SonicGeneralCliDefault):
                                                                        'Answer "YES" to continue', '\\*ONIE:.*'],
                                                        timeout=30, send_without_enter=True)
 
-                    if respond != 2:
+                    if respond != esc_grub_pointer:
                         with allure.step("MLNX-OS system. Enter 'YES' and wait till in ONIE grub menu"):
                             serial_engine.run_cmd('YES', onie_install_os, timeout=420)
 

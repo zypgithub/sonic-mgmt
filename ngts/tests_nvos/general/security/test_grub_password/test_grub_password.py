@@ -8,6 +8,7 @@ from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.nvos_tools.infra.GrubMenuTool import GrubMenuTool
 
 
 @pytest.mark.track_serial_console
@@ -25,7 +26,10 @@ def test_grub_password(topology_obj, engines, serial_engine, devices):
         dut_device: BaseDevice = devices.dut
         with allure.step("Rebooting and entering grub cli"):
             serial_engine.serial_engine.sendline("sudo reboot now")
-            serial_engine.serial_engine.expect("select which entry is highlighted", timeout=dut_device.timeout_reboot_to_grub_menu)
+            serial_engine.serial_engine.expect(GrubMenuTool.GRUB_ESC_PATTERN, timeout=dut_device.timeout_reboot_to_grub_menu)
+            serial_engine.run_cmd(GrubMenuTool.ESCAPE_CHAR, expected_value='select which entry is highlighted',
+                                  timeout=dut_device.timeout_reboot_to_grub_menu,
+                                  send_without_enter=True)
 
         cli_grub_activation_character = random.choice(['e', 'c'])
         with allure.step("Entering cli command-line using {} character".format(cli_grub_activation_character)):
