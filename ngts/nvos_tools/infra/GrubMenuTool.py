@@ -14,7 +14,9 @@ class GrubMenuTool:
     ARROW_DOWN_CHAR = "\x1b[B"
     NUM_STEPS_TO_TOP = 6
     SELECTED_ITEM_PREFIX = '\\*'
+    ESCAPE_CHAR = '\x1b'
     MAX_GRUB_ITEMS_LIMIT = 100
+    GRUB_ESC_PATTERN = 'Press the ESC'
     NAVIGATION_FAILED = f'Grub menu navigation tool failed'
 
     @classmethod
