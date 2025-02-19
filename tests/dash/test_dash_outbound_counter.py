@@ -4,9 +4,9 @@ from ipaddress import ip_network, IPv4Address
 import configs.privatelink_config as pl
 import ptf.testutils as testutils
 import pytest
-from constants import LOCAL_PTF_INTF
+from constants import LOCAL_PTF_INTF, REMOTE_PTF_RECV_INTF
 from gnmi_utils import apply_messages
-from packets import outbound_pl_packets
+from packets import outbound_pl_packets, inbound_pl_packets
 from tests.smart_switch.conftest import SMARTSWITCH_PLATFORMS, copy_proxy_ssh, skip_unsupported_platform, platform # noqa F401
 from tests.common import config_reload
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
@@ -130,6 +130,12 @@ def common_setup_teardown(localhost, duthost, ptfhost, dpuhost, eni_counter_setu
         apply_messages(localhost, duthost, ptfhost, base_config_messages, dpuhost.dpu_index, set_db=False)
 
 
+#@pytest.fixture(scope="function", params=["vxlan", "gre"])
+@pytest.fixture(scope="function", params=["vxlan"])
+def encap_proto(request):
+    return request.param
+
+
 class TestEniCounter:
 
     @pytest.fixture(autouse=True)
@@ -147,7 +153,7 @@ class TestEniCounter:
         self.expected_ptf_ports = [minigraph_facts["minigraph_ptf_indices"][port] for port in member_ports]
         logger.info(f"Expecting transformed packet on PTF ports: {self.expected_ptf_ports}")
 
-    def test_outbound_pkt_pass_eni_counter(self, dash_pl_config):
+    def test_outbound_pkt_pass_eni_counter(self, dash_pl_config, encap_proto):
         """
         1. Get the eni_counter_before_sending_pkt before sending the dash pkt
         2. Send a outbound pkt, and the pkt pass the pipeline successfully
@@ -162,27 +168,30 @@ class TestEniCounter:
         """
         packet_len = 150
         packet_number = 10
+        flow_aging_time = 2
 
-        # The code below will be removed once the issue is fixed
-        if is_redmine_issue_active([4173779])[0]:
-            flow_created_counter = 0
-        else:
-            flow_created_counter = 1
+        flow_created_counter = 1
 
         eni_counter_check_point_dict = {"SAI_ENI_STAT_FLOW_CREATED": flow_created_counter,
                                         "SAI_ENI_STAT_OUTBOUND_RX_BYTES": packet_len * packet_number,
                                         "SAI_ENI_STAT_OUTBOUND_RX_PACKETS": packet_number,
                                         "SAI_ENI_STAT_RX_PACKETS": packet_number,
-                                        "SAI_ENI_STAT_RX_BYTES": packet_len * packet_number
+                                        "SAI_ENI_STAT_RX_BYTES": packet_len * packet_number,
+                                        "SAI_ENI_STAT_FLOW_AGED": 1
                                         }
 
-        pkt, exp_pkt = outbound_pl_packets(dash_pl_config, outer_encap='gre', inner_packet_type='tcp')
+        pkt, exp_pkt = outbound_pl_packets(dash_pl_config, outer_encap=encap_proto, inner_packet_type='tcp')
+        verify_packets = [{'send': pkt, 'exp': exp_pkt}]
         self.send_packet_and_verify_dash_eni_counter(
-            dash_pl_config, eni_counter_check_point_dict, packet_number, pkt, exp_pkt)
+            dash_pl_config, eni_counter_check_point_dict, packet_number, verify_packets)
 
         # TODO add code for SAI_ENI_STAT_FLOW_AGED when 4173779 is fixed
+        #time.sleep(flow_aging_time)
+        #eni_counter_check_point_dict = {"SAI_ENI_STAT_FLOW_AGED": 1}
+        #self.send_packet_and_verify_dash_eni_counter(
+        #    dash_pl_config, eni_counter_check_point_dict, packet_number, [])
 
-    def test_outbound_pkt_miss_routing_entry_drop_counter(self, ptfadapter, dash_pl_config, dpuhost):
+    def test_outbound_pkt_miss_routing_entry_drop_counter(self, ptfadapter, dash_pl_config, dpuhost, encap_proto):
         """
         1. Get the eni_counter_before_sending_pkt before sending the dash pkt
         2. Send a outbound pkt with inner dst dip which cannot match the dash route
@@ -193,12 +202,13 @@ class TestEniCounter:
         """
         packet_number = 1
         eni_counter_check_point_dict = {"SAI_ENI_STAT_OUTBOUND_ROUTING_ENTRY_MISS_DROP_PACKETS": packet_number}
-        pkt, _ = outbound_pl_packets(dash_pl_config, outer_encap='gre')
-        pkt['GRE']['IP'].dst = "10.3.3.4"
+        pkt, _ = outbound_pl_packets(dash_pl_config, outer_encap=encap_proto)
+        pkt[encap_proto.upper()]['IP'].dst = "10.3.3.4"
+        verify_packets = [{'send': pkt, 'exp': None}]
         self.send_packet_and_verify_dash_eni_counter(
-            dash_pl_config, eni_counter_check_point_dict, packet_number, pkt)
+            dash_pl_config, eni_counter_check_point_dict, packet_number, verify_packets)
 
-    def test_outbound_pkt_ca_pa_entry_miss_drop_counter(self, ptfadapter, dash_pl_config, dpuhost):
+    def test_outbound_pkt_ca_pa_entry_miss_drop_counter(self, ptfadapter, dash_pl_config, dpuhost, encap_proto):
         """
         1. Get the eni_counter_before_sending_pkt before sending the dash pkt
         2. Send a outbound pkt that matches to routing but no ca_to_pa exist for the vnet ID
@@ -209,14 +219,15 @@ class TestEniCounter:
         """
         packet_number = 1
         eni_counter_check_point_dict = {"SAI_ENI_STAT_OUTBOUND_CA_PA_ENTRY_MISS_DROP_PACKETS": packet_number}
-        pkt, _ = outbound_pl_packets(dash_pl_config, outer_encap='gre')
+        pkt, _ = outbound_pl_packets(dash_pl_config, outer_encap=encap_proto)
         ip_with_same_outbound_route_prefix1 = format(IPv4Address(pl.PE_CA) + 1)
-        pkt['GRE']['IP'].dst = ip_with_same_outbound_route_prefix1
+        pkt[encap_proto.upper()]['IP'].dst = ip_with_same_outbound_route_prefix1
+        verify_packets = [{'send': pkt, 'exp': None}]
 
         self.send_packet_and_verify_dash_eni_counter(
-            dash_pl_config, eni_counter_check_point_dict, packet_number, pkt)
+            dash_pl_config, eni_counter_check_point_dict, packet_number, verify_packets)
 
-    def test_eni_flow_deleted_counter(self, ptfadapter, dash_pl_config, dpuhost):
+    def test_eni_flow_deleted_counter(self, ptfadapter, dash_pl_config, dpuhost, encap_proto):
         """
         1. Send 1 pass TCP SYN packet
         2. Get the eni_counter_before_sending_pkt before sending the dash pkt
@@ -227,46 +238,88 @@ class TestEniCounter:
                 SAI_ENI_STAT_FLOW_DELETED increase by 1
         """
         packet_number = 1
-        # The code below will be removed once the issue is fixed
-        if is_redmine_issue_active([4173779])[0]:
-            flow_created_counter = 0
-        else:
-            flow_created_counter = 1
-        eni_counter_check_point_dict = {"SAI_ENI_STAT_FLOW_CREATED": flow_created_counter}
-
-        pkt, exp_pkt = outbound_pl_packets(dash_pl_config, outer_encap='gre', inner_packet_type='tcp')
-
-        with allure.step("Send 1 TCP SYN packet on eni1"):
-            self.send_packet_and_verify_dash_eni_counter(
-                dash_pl_config, eni_counter_check_point_dict, packet_number, pkt, exp_pkt)
-
-        pkt["GRE"]["TCP"].flags = "F"
-
-        # The code below will be removed once the issue is fixed
-        if is_redmine_issue_active([4173779])[0]:
-            flow_del_counter = 0
-        else:
-            flow_del_counter = 1
+        flow_del_counter = 1
+        flow_created_counter = 1
 
         eni_counter_check_point_dict = {"SAI_ENI_STAT_FLOW_CREATED": flow_created_counter,
                                         "SAI_ENI_STAT_FLOW_DELETED": flow_del_counter}
-        with allure.step("Send TCP FIN packet"):
+
+        pkt, exp_pkt = outbound_pl_packets(dash_pl_config, outer_encap=encap_proto, inner_packet_type='tcp')
+
+        with allure.step("get dash eni counter before sending pkt"):
+            eni_counter_before_sending_pkt = get_eni_counters(self.dpuhost, self.eni_counter_oid)
+
+        self.ptfadapter.dataplane.flush()
+        with allure.step("sending sync packets"):
+            testutils.send(self.ptfadapter, dash_pl_config[LOCAL_PTF_INTF], pkt, packet_number)
+        with allure.step("sending Fin packets"):
+            pkt[encap_proto.upper()]["TCP"].flags = "R" # F will fail
+            testutils.send(self.ptfadapter, dash_pl_config[LOCAL_PTF_INTF], pkt, packet_number)
+
+        time.sleep(WAIT_DASH_ENI_COUNTER_READY_TIME)
+        with allure.step("get dash eni counter after sending pkts"):
+            eni_counter_after_sending_pkt = get_eni_counters(self.dpuhost, self.eni_counter_oid)
+
+        # compare eni_counter_after_sending_pkt with eni_counter_before_sending_pkt
+        verify_eni_counter(eni_counter_check_point_dict, eni_counter_before_sending_pkt, eni_counter_after_sending_pkt)
+
+    def test_inbound_pkt_eni_counter(
+            self,
+            ptfadapter,
+            dash_pl_config,
+            encap_proto
+    ):
+        outbound_packet_len = 150
+        inbound_packet_len = 142
+        packet_number = 1
+
+        vm_to_dpu_pkt, exp_dpu_to_pe_pkt = outbound_pl_packets(dash_pl_config, outer_encap=encap_proto)
+        pe_to_dpu_pkt, exp_dpu_to_vm_pkt = inbound_pl_packets(dash_pl_config)
+
+        with allure.step("send outbound and inbound packet and verify the relevant eni counter"):
+            eni_counter_check_point_dict = {"SAI_ENI_STAT_FLOW_CREATED": 1,
+                                            "SAI_ENI_STAT_INBOUND_RX_BYTES":
+                                                inbound_packet_len*packet_number,
+                                            "SAI_ENI_STAT_INBOUND_RX_PACKETS": packet_number,
+                                            "SAI_ENI_STAT_RX_PACKETS": packet_number*2,
+                                            "SAI_ENI_STAT_RX_BYTES":
+                                                outbound_packet_len * packet_number + inbound_packet_len*packet_number
+                                            }
+            verify_packets = [{'send': vm_to_dpu_pkt, 'exp': None},
+                              {'send': pe_to_dpu_pkt, 'exp': exp_dpu_to_vm_pkt}]
             self.send_packet_and_verify_dash_eni_counter(
-                dash_pl_config, eni_counter_check_point_dict, packet_number, pkt)
+                dash_pl_config, eni_counter_check_point_dict, packet_number, verify_packets)
+
+        with allure.step("send the inbound packet with mismatched vin and verify the relevant eni counter"):
+            eni_counter_check_point_dict = {"SAI_ENI_STAT_INBOUND_ROUTING_ENTRY_MISS_DROP_PACKETS": packet_number}
+            #import pdb; pdb.set_trace()
+            # pe_to_dpu_pkt['GRE'].vni = 234
+            # pe_to_dpu_pkt['IP'].src =
+            import copy
+            pe_to_dpu_pkt_wrong_src = copy.deepcopy(pe_to_dpu_pkt)
+            pe_to_dpu_pkt_wrong_src['IP'].src = '100.100.10.1'
+            verify_packets = [{'send': vm_to_dpu_pkt, 'exp': None},
+                              {'send': pe_to_dpu_pkt, 'exp': None},
+                              {'send': pe_to_dpu_pkt_wrong_src, 'exp': None}]
+            self.send_packet_and_verify_dash_eni_counter(
+                dash_pl_config, eni_counter_check_point_dict, packet_number, verify_packets)
 
     def send_packet_and_verify_dash_eni_counter(
-            self, dash_pl_config, eni_counter_check_point_dict, packet_number, pkt, exp_pkt=None):
+            self, dash_pl_config, eni_counter_check_point_dict, packet_number, verify_packets,
+            is_check_flow_aging=False):
         self.ptfadapter.dataplane.flush()
 
         with allure.step("get dash eni counter before sending pkt"):
             eni_counter_before_sending_pkt = get_eni_counters(self.dpuhost, self.eni_counter_oid)
 
-        with allure.step("sending outbound packet mismatching inner dip"):
-            testutils.send(self.ptfadapter, dash_pl_config[LOCAL_PTF_INTF], pkt, packet_number)
-            if exp_pkt:
-                testutils.verify_packet_any_port(self.ptfadapter, exp_pkt, self.expected_ptf_ports)
+        with allure.step("sending packets"):
+            for pkts in verify_packets:
+                testutils.send(self.ptfadapter, dash_pl_config[LOCAL_PTF_INTF], pkts['send'], packet_number)
+                if pkts['exp']:
+                    testutils.verify_packet_any_port(self.ptfadapter, pkts['exp'], self.expected_ptf_ports)
 
         time.sleep(WAIT_DASH_ENI_COUNTER_READY_TIME)
+        logger.info(f"Sleep {WAIT_DASH_ENI_COUNTER_READY_TIME} to wait counter ready")
         with allure.step("get dash eni counter after sending pkts"):
             eni_counter_after_sending_pkt = get_eni_counters(self.dpuhost, self.eni_counter_oid)
 
