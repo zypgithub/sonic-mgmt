@@ -199,7 +199,7 @@ if __name__ == "__main__":
     allure_server_base_url = '{}/{}'.format(allure_server_addr, ALLURE_DOCKER_SERVICE)
 
     report_url = ''
-    file_path = os.path.join(PATH_TO_UPLOAD_URL, "allure_report_url.txt")
+    file_path = os.path.join(PATH_TO_UPLOAD_URL, f"{allure_project_id}.txt")
     logger.info(f"File Path: {file_path}")
     with open(file_path, "r") as f:
         report_url = f.read().strip()
