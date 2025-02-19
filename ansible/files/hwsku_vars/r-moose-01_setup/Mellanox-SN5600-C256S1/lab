@@ -15,4 +15,4 @@ fanout
 mgmt_subnet_mask_length="24"
 
 [fanout]
-r-liger-12          ansible_host=10.210.24.76 os=sonic
+r-moose-04          ansible_host=10.210.24.76 os=sonic

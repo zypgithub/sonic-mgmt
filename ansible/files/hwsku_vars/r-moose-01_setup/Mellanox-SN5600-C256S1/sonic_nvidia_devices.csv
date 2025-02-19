@@ -1,6 +1,6 @@
 Hostname,ManagementIp,HwSku,Type,Protocol,Os,PortConfigIni
 r-moose-01,10.210.24.105/22,Mellanox-SN5600-C256S1,DevSonic,,sonic
-r-liger-12,10.210.24.76/22,ACS-MSN4600,FanoutLeaf,,sonic,files/hwsku_vars/r-moose-01_setup/Mellanox-SN5600-C256S1/port_config.ini
+r-moose-04,10.210.24.76/22,Mellanox-SN5600-C256S1,FanoutLeaf,,sonic,files/hwsku_vars/r-moose-01_setup/Mellanox-SN5600-C256S1/port_config.ini
 r-r640-15,10.215.22.1,TestServ,Server,,
 pdu-10-208-2-47,10.208.2.47,Vertiv,Pdu,snmp,
 rcon-SWS-1-3,10.208.0.80,,ConsoleServer,ssh,sonic
