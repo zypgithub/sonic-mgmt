@@ -1030,16 +1030,18 @@ class BaseAclTest(six.with_metaclass(ABCMeta, object)):
         self._verify_acl_traffic(setup, direction, ptfadapter, pkt, False, ip_version)
         counters_sanity_check.append(1)
 
-    def test_rules_priority_forwarded(self, setup, direction, ptfadapter, counters_sanity_check, ip_version):
-        """Verify that we respect rule priorites in the forwarding case."""
+    def test_rules_priority_forwarded(self, setup, direction, ptfadapter,
+                                      counters_sanity_check, ip_version):
+        """Verify that we respect rule priorities in the forwarding case."""
         src_ip = "20.0.0.7" if ip_version == "ipv4" else "60c0:a800::7"
         pkt = self.tcp_packet(setup, direction, ptfadapter, ip_version, src_ip=src_ip)
 
         self._verify_acl_traffic(setup, direction, ptfadapter, pkt, False, ip_version)
         counters_sanity_check.append(20)
 
-    def test_rules_priority_dropped(self, setup, direction, ptfadapter, counters_sanity_check, ip_version):
-        """Verify that we respect rule priorites in the drop case."""
+    def test_rules_priority_dropped(self, setup, direction, ptfadapter,
+                                    counters_sanity_check, ip_version):
+        """Verify that we respect rule priorities in the drop case."""
         src_ip = "20.0.0.3" if ip_version == "ipv4" else "60c0:a800::4"
         pkt = self.tcp_packet(setup, direction, ptfadapter, ip_version, src_ip=src_ip)
 
@@ -1053,7 +1055,7 @@ class BaseAclTest(six.with_metaclass(ABCMeta, object)):
         pkt = self.tcp_packet(setup, direction, ptfadapter, ip_version, dst_ip=dst_ip)
 
         self._verify_acl_traffic(setup, direction, ptfadapter, pkt, False, ip_version)
-        # Because m0_l3_scenario use differnet IPs, so need to verify different acl rules.
+        # Because m0_l3_scenario use different IPs, so need to verify different acl rules.
         if direction == "uplink->downlink":
             if setup["topo"] == "m0_l3":
                 if ip_version == "ipv6":
@@ -1080,7 +1082,7 @@ class BaseAclTest(six.with_metaclass(ABCMeta, object)):
         pkt = self.tcp_packet(setup, direction, ptfadapter, ip_version, dst_ip=dst_ip)
 
         self._verify_acl_traffic(setup, direction, ptfadapter, pkt, True, ip_version)
-        # Because m0_l3_scenario use differnet IPs, so need to verify different acl rules.
+        # Because m0_l3_scenario use different IPs, so need to verify different acl rules.
         if direction == "uplink->downlink":
             if setup["topo"] == "m0_l3":
                 if ip_version == "ipv6":
