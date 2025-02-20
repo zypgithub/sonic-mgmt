@@ -119,6 +119,7 @@ def test_ldap_set_invalid_param(test_api, engines):
     )
 
 
+@pytest.mark.check_log_size
 @pytest.mark.timeout(MAX_TEST_TIMEOUT, func_only=True)
 @pytest.mark.cumulus
 @pytest.mark.security

@@ -9,6 +9,29 @@ def is_cur_test_has_marker(request, marker_name) -> bool:
     return bool(request.node.get_closest_marker(marker_name))
 
 
+def get_marker_arg_value(request, marker_name, arg_name):
+    """
+    return marker arg value
+    @param request: pytest request (default/builtin fixture)
+    @param marker_name: name of the marker to check
+    @param arg_name: arg name
+    @return: value if exists, None otherwise
+    """
+    marker = request.node.get_closest_marker(marker_name)
+    if marker:
+        return marker.kwargs.get(arg_name, None)
+    return None
+
+
+def is_cur_test_passed(request) -> bool:
+    """
+    return whether the current test has passed or not
+
+    * should be called only on function scoped fixtures after yield
+    """
+    return request.node.rep_call.outcome == 'passed'
+
+
 def get_cur_test_param_value(request, param_name):
     """
     get the value of the given param name of a parametrized test

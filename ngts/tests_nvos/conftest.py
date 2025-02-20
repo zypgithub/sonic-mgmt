@@ -1,9 +1,9 @@
 import concurrent.futures
 import datetime
 import logging
+import os
 import random
 import smtplib
-import os
 import time
 from email.mime.text import MIMEText
 from typing import Dict
@@ -17,6 +17,7 @@ from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
 from infra.tools.exceptions.setup_issue import SetupIssue
 from infra.tools.general_constants.constants import DefaultConnectionValues
+from infra.tools.linux_tools.linux_tools import scp_file
 from infra.tools.sql.connect_to_mssql import ConnectMSSQL
 from ngts.cli_wrappers.linux.linux_general_clis import LinuxGeneralCli
 from ngts.cli_wrappers.nvue.nvue_base_clis import NvueBaseCli
@@ -44,9 +45,8 @@ from ngts.nvos_tools.infra.TrafficGeneratorTool import TrafficGeneratorTool
 from ngts.nvos_tools.system.System import System
 from ngts.scripts.code_coverage.code_coverage_consts import NvosConsts
 from ngts.scripts.code_coverage.test_code_coverage import extract_python_coverage_for_nvos
-from ngts.tests_nvos.helpers.pytest_helpers import is_cur_test_has_marker
+from ngts.tests_nvos.helpers.pytest_helpers import is_cur_test_has_marker, get_marker_arg_value, is_cur_test_passed
 from ngts.tests_nvos.helpers.pytest_items_filters import run_nvos_pytest_items_modification
-from infra.tools.linux_tools.linux_tools import scp_file
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_general_utils import wait_for_ldap_nvued_restart_workaround
 
@@ -80,6 +80,31 @@ def pytest_addoption(parser):
 @pytest.hookimpl(tryfirst=True)
 def pytest_collection_modifyitems(config, items):
     run_nvos_pytest_items_modification(config, items)
+
+
+@pytest.fixture(autouse=True)
+def check_log_size(request, engines):
+    def __get_syslog_file_size_kb(filename='syslog') -> int:
+        return int(engines.dut.run_cmd(f'du -k /var/log/{filename} | cut -f1'))
+    marker_name = 'check_log_size'
+    should_check = is_cur_test_has_marker(request, marker_name)
+    if should_check:
+        with allure.step('get syslog size before (in KB)'):
+            size_before = __get_syslog_file_size_kb()
+    yield
+    if should_check:
+        with allure.step('get syslog size after (in KB)'):
+            size_after = __get_syslog_file_size_kb()
+            if size_after <= size_before:
+                logging.info('log was rotated')
+                size_after += __get_syslog_file_size_kb('syslog.1')
+            test_addition_to_syslog = size_after - size_before
+        allure.attach('syslog sizes', f'before: {size_before}KB\nafter: {size_after}KB\ntest added: {test_addition_to_syslog}KB')
+        if is_cur_test_passed(request):
+            expected_threshold = get_marker_arg_value(request, marker_name, 'expect')
+            if expected_threshold and isinstance(expected_threshold, int):
+                with allure.step(f'make sure test addition is less than expected ({expected_threshold})'):
+                    assert test_addition_to_syslog <= expected_threshold, f'test added {test_addition_to_syslog}KB to syslog. allowed: {expected_threshold}'
 
 
 @pytest.fixture(autouse=True)

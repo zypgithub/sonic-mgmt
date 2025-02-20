@@ -72,6 +72,7 @@ def test_radius_set_invalid_param(test_api, engines):
     )
 
 
+@pytest.mark.check_log_size
 @pytest.mark.timeout(MAX_TEST_TIMEOUT, func_only=True)
 @pytest.mark.security
 @pytest.mark.simx_security
