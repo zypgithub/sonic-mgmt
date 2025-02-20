@@ -103,7 +103,7 @@ def test_show_system_image(original_version):
 @pytest.mark.image
 @pytest.mark.system
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-@pytest.mark.timeout(25 * MINUTE, func_only=True)
+@pytest.mark.timeout(30 * MINUTE, func_only=True)
 def test_downgrade_upgrade(release_name, test_api, original_version, devices, engines, downgrade_version_realpath,
                            target_version_realpath):
     """

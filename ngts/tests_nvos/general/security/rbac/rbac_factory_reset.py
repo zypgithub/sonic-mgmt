@@ -116,7 +116,7 @@ def rbac_factory_reset_keep_roles():
 
         with allure.step('Verify user does exist or has default permissions'):
             user_output = OutputParsingTool.parse_json_str_to_dictionary(system.aaa.user.show()).get_returned_value()
-            ValidationTool.verify_field_value_exist_in_output_dict(user_output, test_user).verify_result(False)
+            ValidationTool.verify_field_value_exist_in_output_dict(user_output, test_user).verify_result()
 
     yield  # to prevent StopIteration on the 2nd next() call
 
@@ -174,6 +174,6 @@ def rbac_upgrade_check(engines, test_api):
 
         with allure.step('Verify user does exist or has default permissions'):
             user_output = OutputParsingTool.parse_json_str_to_dictionary(system.aaa.user.show()).get_returned_value()
-            ValidationTool.verify_field_value_exist_in_output_dict(user_output, test_user).verify_result(False)
+            ValidationTool.verify_field_value_exist_in_output_dict(user_output, test_user).verify_result()
 
     yield  # to prevent StopIteration on the 2nd next() call
