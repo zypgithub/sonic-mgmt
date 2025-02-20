@@ -85,7 +85,7 @@ def wait_until(timeout, interval, condition, *args, **kwargs):
         return False
 
 
-def get_allure_project_id(setup_name, test_script_full_path, get_dut_name_only=False, cli_type=None):
+def get_allure_project_id(setup_name, test_script_full_path, get_dut_name_only=False, allure_project_id_suffix=None):
     max_length = 70
     non_alphabetic_chars = "[^0-9a-zA-Z]+"
     if get_dut_name_only:
@@ -96,10 +96,10 @@ def get_allure_project_id(setup_name, test_script_full_path, get_dut_name_only=F
             test_script_full_path = test_script_full_path[sonic_mgmt_folder_index:]
         allure_proj = "{}-{}".format(setup_name, test_script_full_path)
     allure_proj = allure_proj[:max_length]
-    if cli_type:
-        cli_type_str = "-{}".format(cli_type)
-        allure_proj = allure_proj[:(max_length-len(cli_type_str))]
-        allure_proj += cli_type_str
+    if allure_project_id_suffix:
+        allure_project_id_suffix_str = "-{}".format(allure_project_id_suffix)
+        allure_proj = allure_proj[:(max_length-len(allure_project_id_suffix))]
+        allure_proj += allure_project_id_suffix_str
     else:
         allure_proj = allure_proj[:max_length]
     allure_proj = re.sub(non_alphabetic_chars, "-", allure_proj)

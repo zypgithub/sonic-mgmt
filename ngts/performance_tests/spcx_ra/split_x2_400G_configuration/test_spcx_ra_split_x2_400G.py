@@ -96,6 +96,7 @@ class TestSPCXRA_x2Split_400G:
                          f"on all the ports"):
             traffic_validation_jsons_list = run_validation(players=self.players, test_name=test_name,
                                                            scenario=self.scenario,
+                                                           chip_type=self.chip_type,
                                                            bw_threshold=SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size],
                                                            samples_params_dict=PerfConsts.SAMPLES_PARAMS,
                                                            tc_occ_threshold=PerfConsts.OCC_AVG_TH,
