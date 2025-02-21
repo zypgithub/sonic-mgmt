@@ -114,6 +114,84 @@ def parse_dash_proto(key: str, proto_dict: dict):
 
     return ParseDict(new_dict, message)
 
+PB_INT_TYPES = set([
+    FieldDescriptor.TYPE_INT32,
+    FieldDescriptor.TYPE_INT64,
+    FieldDescriptor.TYPE_UINT32,
+    FieldDescriptor.TYPE_UINT64,
+    FieldDescriptor.TYPE_FIXED64,
+    FieldDescriptor.TYPE_FIXED32,
+    FieldDescriptor.TYPE_SFIXED32,
+    FieldDescriptor.TYPE_SFIXED64,
+    FieldDescriptor.TYPE_SINT32,
+    FieldDescriptor.TYPE_SINT64
+])
+
+PB_CLASS_MAP = {
+    "APPLIANCE": Appliance,
+    "VNET": Vnet,
+    "ENI": Eni,
+    "VNET_MAPPING": VnetMapping,
+    "ROUTE": Route,
+    "ROUTING_TYPE": RouteType,
+    "ROUTE_GROUP": RouteGroup,
+    "ENI_ROUTE": EniRoute,
+}
+
+
+def parse_ip_address(ip_str):
+    ip_addr = ip_address(ip_str)
+    if ip_addr.version == 4:
+        encoded_val = socket.htonl(int(ip_addr))
+    else:
+        encoded_val = base64.b64encode(ip_addr.packed)
+
+    return {f"ipv{ip_addr.version}": encoded_val}
+
+
+def parse_ip_prefix(ip_prefix_str):
+    ip_addr, mask = ip_prefix_str.split("/")
+    return {"ip": parse_ip_address(ip_addr), "mask": parse_ip_address(ip_address(mask))}
+
+
+def parse_byte_field(orig_val):
+    return base64.b64encode(bytes.fromhex(orig_val.replace(":", "")))
+
+
+def parse_guid(guid_str):
+    return {"value": parse_byte_field(uuid.UUID(guid_str).hex)}
+
+
+def parse_dash_proto(key: str, proto_dict: dict):
+    """
+    Custom parser for DASH configs to allow writing configs
+    in a more human-readable format
+    """
+    table_name = re.search(r"DASH_(\w+)_TABLE", key).group(1)
+    message = PB_CLASS_MAP[table_name]()
+    field_map = message.DESCRIPTOR.fields_by_name
+    new_dict = {}
+    for key, value in proto_dict.items():
+        if field_map[key].type == field_map[key].TYPE_MESSAGE:
+
+            if field_map[key].message_type.name == "IpAddress":
+                new_dict[key] = parse_ip_address(value)
+            elif field_map[key].message_type.name == "IpPrefix":
+                new_dict[key] = parse_ip_prefix(value)
+            elif field_map[key].message_type.name == "Guid":
+                new_dict[key] = parse_guid(value)
+
+        elif field_map[key].type == field_map[key].TYPE_BYTES:
+            new_dict[key] = parse_byte_field(value)
+
+        elif field_map[key].type in PB_INT_TYPES:
+            new_dict[key] = int(value)
+
+        if key not in new_dict:
+            new_dict[key] = value
+
+    return ParseDict(new_dict, message)
+
 
 def appliance_from_json(json_obj):
     pb = Appliance()

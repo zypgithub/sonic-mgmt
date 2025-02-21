@@ -1,18 +1,19 @@
-from ipaddress import ip_address
-
-import ptf.packet as scapy
-import scapy.utils as scapy_utils
-from ptf.mask import Mask
-import ptf.testutils as testutils
-from ptf.dataplane import match_exp_pkt
-from constants import *  # noqa: F403
 import logging
 import sys
 import time
-from tests.common.helpers.assertions import pytest_assert
+from ipaddress import ip_address
+
+import ptf.packet as scapy
+import ptf.testutils as testutils
+import scapy.utils as scapy_utils
+from configs import privatelink_config as pl
+from constants import *  # noqa: F403
+from ptf.dataplane import match_exp_pkt
+from ptf.mask import Mask
 from six import StringIO
 from configs import privatelink_config as pl
 
+from tests.common.helpers.assertions import pytest_assert
 
 logger = logging.getLogger(__name__)
 
@@ -151,6 +152,7 @@ def outbound_pl_packets(config, outer_encap, inner_packet_type='udp', vxlan_udp_
         **inner_extra_conf
     )
     l4_protocol_key = get_scapy_l4_protocol_key(inner_packet_type)
+
 
     if outer_encap == 'vxlan':
         outer_packet = testutils.simple_vxlan_packet(

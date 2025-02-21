@@ -53,6 +53,7 @@ def add_npu_static_routes(duthost, dash_pl_config, dpu_index, apply_switch_basic
         cmds = []
         vm_nexthop_ip = get_interface_ip(duthost, dash_pl_config[LOCAL_DUT_INTF]).ip + 1
         pe_nexthop_ip = get_interface_ip(duthost, dash_pl_config[REMOTE_DUT_INTF]).ip + 1
+
         cmds.append(f"ip route replace {pl.APPLIANCE_VIP}/32 via {dpuhost.dpu_data_port_ip}")
         cmds.append(f"ip route replace {pl.VM1_PA}/32 via {vm_nexthop_ip}")
         cmds.append(f"ip route replace {pl.PE_PA}/32 via {pe_nexthop_ip}")
