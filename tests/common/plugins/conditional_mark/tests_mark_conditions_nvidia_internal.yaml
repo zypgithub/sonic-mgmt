@@ -522,6 +522,12 @@ drop_packets/test_wjh.py::test_dst_ip_link_local:
     conditions:
     - "'Mellanox' in hwsku"
 
+drop_packets/test_wjh.py::test_ip_pkt_with_expired_ttl:
+  skip:
+    reason: "Not supported on Mellanox devices"
+    conditions:
+      - "asic_type in ['mellanox']"
+
 drop_packets/test_wjh.py::test_l1_agg_fanout_port_down:
   skip:
     reason: "https://redmine.mellanox.com/issues/4048046"
