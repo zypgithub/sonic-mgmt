@@ -760,6 +760,12 @@
         - 3544347
 
 - Errors_list:
+    - '.*ERR nvued:.*ERROR: lifecycle\.py:.*user_config\.json data: {.*} does not contain the encryption mode required.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests_nvos/general/security/nmx_cert/test_cluster_app_mngr_security.py::test_restore_cluster_app_mngr_cert_fail_when_in_encryption_mode
+
+- Errors_list:
     - '.*ERR.*PAM-tacplus: auth failed: 2.*'
   Conditions:
     - Affected_test_cases:
