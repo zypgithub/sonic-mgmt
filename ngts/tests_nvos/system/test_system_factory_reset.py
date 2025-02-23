@@ -14,7 +14,7 @@ from ngts.tests_nvos.system.factory_reset.pre_steps import (factory_reset_no_par
                                                             factory_reset_general_pre_steps)
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_constants.constants_nvos import SystemConsts
+from ngts.nvos_constants.constants_nvos import SystemConsts, NvosConst
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 
 
@@ -73,7 +73,9 @@ def test_reset_factory_without_params(engines, devices, topology_obj, platform_p
     with allure.step("Verify operation time"):
         OperationTime.verify_operation_time(duration, devices.dut.reset_factory).verify_result()
 
-    cluster.unset(apply=True)
+    with allure.step('Check if NVL Switch'):
+        if devices.dut.switch_type == NvosConst.NVL_SWITCH_TYPE:
+            cluster.unset(apply=True)
 
 
 @pytest.mark.timeout(25 * MINUTE, func_only=True)
