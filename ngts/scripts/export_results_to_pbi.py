@@ -1,12 +1,7 @@
 import logging
-import random
-import time
-import pytest
 import os
 import sys
 import requests
-import json
-import base64
 import argparse
 import datetime
 from retry import retry
@@ -18,7 +13,6 @@ sys.path.append(sonic_mgmt_path)
 from ngts.constants.constants import InfraConst, CliType, DbConstants  # noqa: E402
 from infra.tools.sql.connect_to_mssql import ConnectMSSQL
 from ngts.nvos_constants.constants_nvos import OperationTimeConsts, TopologyConsts
-from ngts.scripts.allure_reporter import generate_report
 
 ALLURE_DOCKER_SERVICE = 'allure-docker-service'
 SUITE_PATH = 'suite_path'
@@ -72,11 +66,11 @@ def insert_data_to_pbi_db(setup_name, version, session_id, parsed_results, summa
         logger.info("Insert results to test_analytics DB")
         values = ""
         for result in parsed_results:
-            value = f"('{setup_name}', '{result[SUITE_PATH]}', '{result[TEST_NAME]}', '{result[STATUS]}', '{session_id}', '{datetime.date.today()}', '{dut_hwsku}')"
+            value = f"('{setup_name}', '{result[SUITE_PATH]}', '{result[TEST_NAME]}', '{result[STATUS]}', '{session_id}', '{datetime.date.today()}', '{dut_hwsku}', '{summary['report_url']}')"
             values = f"{values}, {value}" if values else value
 
         if values:
-            columns = f"({OperationTimeConsts.SETUP_COL}, {SUITE_PATH}, {TEST_NAME}, {STATUS}, {SESSION_ID}, {OperationTimeConsts.DATE_COL}, {DUT_HWSKU})"
+            columns = f"({OperationTimeConsts.SETUP_COL}, {SUITE_PATH}, {TEST_NAME}, {STATUS}, {SESSION_ID}, {OperationTimeConsts.DATE_COL}, {DUT_HWSKU}, {REPORT_URL})"
             query = "INSERT test_analytics {columns} values {values};".format(columns=columns, values=values)
             logger.info("Inserting data to test_analytics table")
             try:
