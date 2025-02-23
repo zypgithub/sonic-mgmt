@@ -156,7 +156,7 @@ class FactoryDefault(BaseComponent):
     def unset(self, op_param=""):
         raise Exception("unset is not implemented for system/factory-default")
 
-    def action_reset(self, engine=None, device=None, operation='reset factory', param="", topology_obj=None, system_is_ready_timeout=None, verify_duration=True, test_name=''):
+    def action_reset(self, engine=None, device=None, operation='reset factory', param="", topology_obj=None, system_is_ready_timeout=None, verify_duration=False, test_name=''):
         with allure.step("Execute factory reset {}".format(param)):
             logging.info("Execute factory reset {}".format(param))
             if not engine:
@@ -166,25 +166,14 @@ class FactoryDefault(BaseComponent):
 
             marker = TestToolkit.get_loganalyzer_marker(engine)
 
-            start_time = time.time()
-
-            res_obj, duration = OperationTime.save_duration(f'reset factory {param}', param, test_name, SendCommandTool.execute_command,
+            res_obj, duration = OperationTime.save_duration(f'reset factory {param}', "", test_name, SendCommandTool.execute_command,
                                                             self.api_obj[TestToolkit.tested_api].action_reset, engine=engine, device=device, comp="factory-default", param=param, topology_obj=topology_obj,
                                                             system_is_ready_timeout=system_is_ready_timeout)
 
             TestToolkit.add_loganalyzer_marker(engine, marker)
 
-            with allure.step("Reset factory takes: {} seconds".format(duration)):
-                logger.info("Reset factory takes: {} seconds".format(duration))
-
-            if verify_duration:
-                DutUtilsTool.wait_for_nvos_to_become_functional(engine).verify_result()
-                end_time = time.time()
-                duration = end_time - start_time
-
-                with allure.step("Reset factory till system is functional takes: {} seconds".format(duration)):
-                    logger.info("Reset factory till system is functional takes: {} seconds".format(duration))
-                    OperationTime.verify_operation_time(duration, operation).verify_result()
+            logger.info("Reset factory till system is ready takes: {} seconds".format(duration))
+            res_obj.duration = duration
 
             return res_obj
 

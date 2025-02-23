@@ -14,7 +14,8 @@ from ngts.tests_nvos.system.factory_reset.pre_steps import (factory_reset_no_par
                                                             factory_reset_general_pre_steps)
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_constants.constants_nvos import SystemConsts
+from ngts.nvos_constants.constants_nvos import SystemConsts, NvosConst
+from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 
 
 @pytest.mark.timeout(50 * MINUTE)
@@ -50,7 +51,7 @@ def test_reset_factory_without_params(engines, devices, topology_obj, platform_p
                                                                               has_loopbox, setup_name, standalone_system)
 
     with allure.step("Run reset factory without params"):
-        execute_reset_factory(engines, system, devices.dut.reset_factory, "", current_time, test_name=test_name)
+        duration = execute_reset_factory(engines, system, devices.dut.reset_factory, "", current_time, test_name=test_name)
 
     with allure.step('post factory reset steps'):
         factory_reset_no_params_post_steps(apply_and_save_port, engines, just_apply_port, health_status,
@@ -69,7 +70,12 @@ def test_reset_factory_without_params(engines, devices, topology_obj, platform_p
         assert expected_reboot_reason in reboot_reason, 'Reboot reason is {} instead of {}'.\
             format(reboot_reason, expected_reboot_reason)
 
-    cluster.unset(apply=True)
+    with allure.step("Verify operation time"):
+        OperationTime.verify_operation_time(duration, devices.dut.reset_factory).verify_result()
+
+    with allure.step('Check if NVL Switch'):
+        if devices.dut.switch_type == NvosConst.NVL_SWITCH_TYPE:
+            cluster.unset(apply=True)
 
 
 @pytest.mark.timeout(25 * MINUTE, func_only=True)
@@ -103,7 +109,7 @@ def test_reset_factory_keep_basic(engines, devices, test_api, test_name):
             output_dictionary_mgmt_show = factory_reset_keep_basic_pre_steps(engines, system)
 
     with allure.step("Run reset factory with keep basic param"):
-        execute_reset_factory(engines, system, devices.dut.reset_factory, "keep basic", current_time, test_name=test_name)
+        duration = execute_reset_factory(engines, system, devices.dut.reset_factory, "keep basic", current_time, test_name=test_name)
 
     update_timezone(system)
 
@@ -123,6 +129,9 @@ def test_reset_factory_keep_basic(engines, devices, test_api, test_name):
 
     with allure.step("Verify the setup is functional"):
         verify_the_setup_is_functional(system, engines)
+
+    with allure.step("Verify operation time"):
+        OperationTime.verify_operation_time(duration, devices.dut.reset_factory).verify_result()
 
 
 @pytest.mark.timeout(25 * MINUTE)
@@ -156,7 +165,7 @@ def test_reset_factory_keep_all_config(engines, devices, test_api, test_name):
             not_apply_port, username = factory_reset_general_pre_steps(engines, devices, system)
 
     with allure.step("Run reset factory with keep all-config param"):
-        execute_reset_factory(engines, system, devices.dut.reset_factory, "keep all-config", current_time, test_name=test_name)
+        duration = execute_reset_factory(engines, system, devices.dut.reset_factory, "keep all-config", current_time, test_name=test_name)
 
     update_timezone(system)
 
@@ -174,6 +183,9 @@ def test_reset_factory_keep_all_config(engines, devices, test_api, test_name):
 
     with allure.step("Verify the setup is functional"):
         verify_the_setup_is_functional(system, engines)
+
+    with allure.step("Verify operation time"):
+        OperationTime.verify_operation_time(duration, devices.dut.reset_factory).verify_result()
 
 
 @pytest.mark.timeout(30 * MINUTE)
@@ -207,7 +219,7 @@ def test_reset_factory_keep_only_files(engines, devices, test_api, test_name):
             not_apply_port, username = factory_reset_general_pre_steps(engines, devices, system)
 
     with allure.step("Run reset factory keep only-files"):
-        execute_reset_factory(engines, system, devices.dut.reset_factory, "keep only-files", current_time, test_name=test_name)
+        duration = execute_reset_factory(engines, system, devices.dut.reset_factory, "keep only-files", current_time, test_name=test_name)
 
     update_timezone(system)
 
@@ -219,6 +231,9 @@ def test_reset_factory_keep_only_files(engines, devices, test_api, test_name):
 
     with allure.step("Verify the setup is functional"):
         verify_the_setup_is_functional(system, engines)
+
+    with allure.step("Verify operation time"):
+        OperationTime.verify_operation_time(duration, devices.dut.reset_factory).verify_result()
 
 
 @pytest.mark.system
@@ -240,7 +255,8 @@ def execute_reset_factory(engines, system, operation, flag, current_time, topolo
     logging.info("Current time: " + str(current_time))
     topology_obj = topology_obj or (TestToolkit.topology_obj if TestToolkit else None)
     result_obj = system.factory_default.action_reset(operation=operation, param=flag, topology_obj=topology_obj, test_name=test_name)
-    assert result_obj.result, result_obj.info
+    result_obj.verify_result()
+    return result_obj.duration
 
 
 def get_last_status_line(system):
