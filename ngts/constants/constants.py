@@ -155,7 +155,7 @@ class InfraConst:
                                                                 CMD_GET_SDK_VERSION=CMD_GET_SDK_VERSION)
     SYNCD_DOCKER = 'syncd'
     NVIDIA_MAIL_SERVER = 'mail.nvidia.com'
-    HTTP_SERVER = 'http://nbu-mtr-nfs'
+    HTTP_SERVER = 'http://nbu-nfs.gtm'
     HTTTP_SERVER_FIT16 = 'http://r-fit16-clone.mtr.labs.mlnx'
     MARS_TOPO_FOLDER_PATH = '/auto/sw_regression/system/SONIC/MARS/conf/topo/'
     MARS_CMIS_FOLDER_PATH = '/auto/sw_regression/system/SONIC/MARS/conf/cmis/'
@@ -1328,7 +1328,7 @@ class MarsConstants:
     FANOUT_DEVICE_ID = "FANOUT"
     SONIC_MGMT_DIR = '/root/mars/workspace/sonic-mgmt/'
     UPDATED_FW_TAR_PATH = 'tests/platform_tests/fwutil/firmware.json'
-    HTTP_SERVER_NBU_NFS = 'http://nbu-mtr-nfs.nvidia.com'
+    HTTP_SERVER_NBU_NFS = 'http://nbu-nfs.gtm.nvidia.com'
 
     DOCKER_SONIC_MGMT_IMAGE_NAME = "docker-sonic-mgmt"
     DOCKER_NGTS_IMAGE_NAME = "docker-ngts"
