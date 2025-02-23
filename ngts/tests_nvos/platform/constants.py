@@ -45,7 +45,7 @@ class TransceiversConsts:
             transceiver_type='Wolverine',
             last_release_path=f"{TRANSCEIVERS_FIRMWARES_PATH}70_Wolverine/{TRANSCEIVERS_RELEASE}",
             test_versions_path=f"{TRANSCEIVERS_APPROVED_FIRMWARES_PATH}Wolverine/",
-            upgrade_version_name="fw_70_220_01031_dev_signed_WOLVERINE_DK.bin",
+            upgrade_version_name="fw_70_230_01031_dev_signed_WOLVERINE_DK.bin",
             downgrade_version_name="fw_70_230_01023_dev_signed_WOLVERINE_DK.bin",
             upgrade_version_number="70.230.1031",
             downgrade_version_number="70.230.1023",
@@ -65,10 +65,10 @@ class TransceiversConsts:
             transceiver_type='Louie',
             last_release_path=f"{TRANSCEIVERS_FIRMWARES_PATH}47_Louie1_4/{TRANSCEIVERS_RELEASE}",
             test_versions_path=f"{TRANSCEIVERS_APPROVED_FIRMWARES_PATH}Louie/",
-            upgrade_version_name="",
-            downgrade_version_name="",
-            upgrade_version_number="",
-            downgrade_version_number="",
-            installation_time=90
+            upgrade_version_name="fw_47_230_01018_dev_signed.bin",
+            downgrade_version_name="fw_47_230_01014_dev_signed.bin",
+            upgrade_version_number="47.230.18",
+            downgrade_version_number="47.230.14",
+            installation_time=180
         )
     }

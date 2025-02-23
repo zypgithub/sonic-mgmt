@@ -366,7 +366,7 @@ class ValidationTool:
                 else:
                     if isinstance(output_dictionary[key], dict) and isinstance(sub_dictionary[key], dict):
                         res = ValidationTool.compare_nested_dictionary_content(output_dictionary[key],
-                                                                               sub_dictionary[key])
+                                                                               sub_dictionary[key], keys_to_ignore)
                         if not res.result:
                             return res
                     elif value != output_dictionary[key]:

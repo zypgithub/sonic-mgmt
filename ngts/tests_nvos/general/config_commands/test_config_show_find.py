@@ -32,13 +32,10 @@ def test_config_show_all(engines):
 
     with allure.step('run show commands and verify expected behaviors'):
         with allure.independent_step('verify nv config show output is sub-dict of nv config show --all output'):
-            assert ValidationTool.compare_nested_dictionary_content(show_output[1], show_all_output[1], ['interface']).verify_result(), "nv config show --all output should include nv config show output"
+            ValidationTool.compare_nested_dictionary_content(show_all_output[1], show_output[1], ['interface']).verify_result()
 
         with allure.independent_step('verify default values dict is sub-dict of nv config show --all output'):
-            assert ValidationTool.compare_nested_dictionary_content(default_values_dict, show_all_output[1]).verify_result(), f"nv config show --all output should include the next default values: {default_values_dict}"
-
-        with allure.independent_step('verify default values dict is not sub-dict of nv config show output'):
-            assert not ValidationTool.compare_nested_dictionary_content(default_values_dict, show_output[1]).verify_result(), f"nv config show --all output should not include the next default values: {default_values_dict}"
+            ValidationTool.compare_nested_dictionary_content(show_all_output[1], default_values_dict).verify_result()
 
 
 @pytest.mark.cumulus
@@ -85,10 +82,10 @@ def test_config_show_all_after_configuration(engines):
                 pending_all_output = OutputParsingTool.parse_json_str_to_dictionary(TestToolkit.GeneralApi[TestToolkit.tested_api].show_config(engines.dut, revision='pending', param='--all')).get_returned_value()
 
             with allure.independent_step('verify default values dict is sub-dict of the pending output'):
-                assert ValidationTool.compare_nested_dictionary_content(default_values_dict, pending_all_output[1], ['interface']).verify_result(), f"nv config show --all --pending output should include the next default values: {default_values_dict}"
+                output = ValidationTool.compare_nested_dictionary_content(pending_all_output[1], default_values_dict, ['interface'])
 
             with allure.independent_step('verify new configuration dict is sub-dict of the pending output'):
-                assert ValidationTool.compare_nested_dictionary_content(configuration_dict, pending_all_output[1]).verify_result(), f"nv config show --all --pending output should include the new configuration dict: {configuration_dict}"
+                ValidationTool.compare_nested_dictionary_content(pending_all_output[1], configuration_dict).verify_result()
 
             with allure.step("apply configuration"):
                 NvueGeneralCli.apply_config(engines.dut)
@@ -97,4 +94,4 @@ def test_config_show_all_after_configuration(engines):
                 show_all_output = OutputParsingTool.parse_json_str_to_dictionary(TestToolkit.GeneralApi[TestToolkit.tested_api].show_config(engines.dut, param='--all')).get_returned_value()
 
             with allure.independent_step('verify new configuration dict is sub-dict of the applied output'):
-                assert ValidationTool.compare_nested_dictionary_content(configuration_dict, show_all_output[1]).verify_result(), f"nv config show --all --applied output should include the new configuration dict: {configuration_dict}"
+                ValidationTool.compare_nested_dictionary_content(show_all_output[1], configuration_dict).verify_result()

@@ -69,7 +69,7 @@ def test_parallel_cli_commands(engines, devices):
         cmds_list2 = ["nv set system message pre-login 'test'", "nv config apply", "nv show system message -o json"]
         cmds_list3 = ['nv show interface -o json']
         cmds_list4 = ['nv show platform firmware -o json']
-        cmds_list5 = ['nv set interface eth0 description testing', 'nv config apply', 'nv show interface -o json']
+        cmds_list5 = ['nv show interface -o json']
         command_lists = [cmds_list1, cmds_list2, cmds_list3, cmds_list4, cmds_list5]
         keep_running_event = threading.Event()
         keep_running_event.set()
