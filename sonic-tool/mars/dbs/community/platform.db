@@ -77,4 +77,9 @@
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/password_hardening.cases </cases>
     </test>
 
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/snmp.cases </cases>
+    </test>
+
+
 </DBDEF>

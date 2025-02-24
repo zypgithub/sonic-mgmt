@@ -9,7 +9,7 @@
             <group> SONiC </group>
 
             <!-- OPTIONAL TAGS -->
-            <tags> NTP, CRM, SNMP </tags>
+            <tags> system </tags>
 
             <ignore>
                 <!-- Case only for main hwsku, skip this case if it is non-main hwsku -->
@@ -84,10 +84,6 @@
 
     <test>
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/ntp.cases </cases>
-    </test>
-
-    <test>
-        <cases> sonic-mgmt/sonic-tool/mars/cases/community/snmp.cases </cases>
     </test>
 
     <test>
