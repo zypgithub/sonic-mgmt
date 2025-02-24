@@ -50,7 +50,12 @@ def get_test_app_ext_info(cli_obj):
     return is_support_app_ext, app_name, version, app_repository_name
 
 
-def is_evpn_support(image_branch):
+def is_evpn_support(image_branch, is_simx):
+
+    if is_simx:
+        if is_redmine_issue_active([4235367])[0]:
+            logger.info("Skip on sim due to issue of https://redmine.mellanox.com/issues/4235367")
+            return False
     logger.info(f"SONiC image version: {image_branch}")
     unsupport_version_list = ['202012', '202205']
     for version in unsupport_version_list:
@@ -120,7 +125,7 @@ def push_gate_configuration(topology_obj, cli_objects, engines, interfaces, plat
                 shared_params.app_ext_is_app_ext_supported, app_name, version, app_repository_name = \
                     get_test_app_ext_info(cli_objects.dut)
 
-        if is_evpn_support(base_sonic_branch):
+        if is_evpn_support(base_sonic_branch, is_simx):
             with allure.step('Setting "docker_routing_config_mode": "split" in config_db.json'):
                 cli_objects.dut.general.update_config_db_docker_routing_config_mode(topology_obj)
 
@@ -303,7 +308,7 @@ def push_gate_configuration(topology_obj, cli_objects, engines, interfaces, plat
         if not upgrade_params.is_upgrade_required:
             VxlanConfigTemplate.configuration(topology_obj, vxlan_config_dict)
 
-        if is_evpn_support(base_sonic_branch):
+        if is_evpn_support(base_sonic_branch, is_simx):
             VlanConfigTemplate.configuration(topology_obj, vrf_vlan_config_dict)
             VrfConfigTemplate.configuration(topology_obj, vrf_config_dict)
             IpConfigTemplate.configuration(topology_obj, vrf_ip_config_dict)
@@ -363,7 +368,7 @@ def push_gate_configuration(topology_obj, cli_objects, engines, interfaces, plat
         logger.info('Starting PushGate Common configuration cleanup')
         if not upgrade_params.is_upgrade_required:
             VxlanConfigTemplate.cleanup(topology_obj, vxlan_config_dict)
-        if is_evpn_support(base_sonic_branch):
+        if is_evpn_support(base_sonic_branch, is_simx):
             with allure.step('Removing "docker_routing_config_mode" from config_db.json'):
                 cli_objects.dut.general.update_config_db_docker_routing_config_mode(
                     topology_obj, remove_docker_routing_config_mode=True)
