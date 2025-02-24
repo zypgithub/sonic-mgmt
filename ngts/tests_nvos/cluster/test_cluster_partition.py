@@ -102,7 +102,10 @@ def test_cluster_partition(engines, devices, test_api, has_loopbox, setup_name, 
             time.sleep(2)
             ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
         if interface_wa_called:
-            next(interfaces_wa)
+            try:
+                next(interfaces_wa)
+            except StopIteration:
+                pass  # Or handle it if necessary
         cluster.unset(apply=True)
         ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
 
@@ -176,6 +179,9 @@ def test_cluster_partition_bad_flow(engines, devices, test_api, has_loopbox, sta
             partitions_mapping[default_partition_id].remove((uuid, location))
             assert err_msg in output, f"Expected message to include {err_msg}, instead\n {output}"
 
+        logger.info("Sleeping for 10 seconds")
+        time.sleep(10)
+
         with allure.step("ADD GPU To partition - Twice"):
             no_reroute = random.choice(['', 'no-reroute'])
             if default_partition_type == 'location_based':
@@ -238,7 +244,10 @@ def test_cluster_partition_bad_flow(engines, devices, test_api, has_loopbox, sta
             time.sleep(2)
             ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
         if interface_wa_called:
-            next(interfaces_wa)
+            try:
+                next(interfaces_wa)
+            except StopIteration:
+                pass  # Or handle it if necessary
         cluster.unset(apply=True)
         ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
 

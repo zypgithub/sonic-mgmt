@@ -91,7 +91,10 @@ def test_cluster_default_factory_reset(engines, devices, test_api, has_loopbox, 
 
     finally:
         if interface_wa_called:
-            next(interfaces_wa)
+            try:
+                next(interfaces_wa)
+            except StopIteration:
+                pass  # Or handle it if necessary
         engines.sonic_mgmt.run_cmd(f"sudo rm -rf {ClusterConsts.INITIAL_CONFIGURATIONS_PATH + '/*'}")
         cluster.unset(apply=True)
         ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
@@ -169,7 +172,10 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name,
 
     finally:
         if interface_wa_called:
-            next(interfaces_wa)
+            try:
+                next(interfaces_wa)
+            except StopIteration:
+                pass  # Or handle it if necessary
         engines.sonic_mgmt.run_cmd(f"sudo rm -rf {ClusterConsts.INITIAL_CONFIGURATIONS_PATH + '/*'}")
 
         with allure.step("Verify the setup is functional"):
@@ -245,7 +251,10 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name, 
 
     finally:
         if interface_wa_called:
-            next(interfaces_wa)
+            try:
+                next(interfaces_wa)
+            except StopIteration:
+                pass  # Or handle it if necessary
         engines.sonic_mgmt.run_cmd(f"sudo rm -rf {ClusterConsts.INITIAL_CONFIGURATIONS_PATH + '/*'}")
 
         with allure.step("Verify the setup is functional"):
@@ -325,7 +334,10 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
                 assert ClusterConsts.EMPTY_PARTITION_ID in output.keys(), f'Partition {ClusterConsts.EMPTY_PARTITION_ID} was deleted, while its expected to be kept'
     finally:
         if interface_wa_called:
-            next(interfaces_wa)
+            try:
+                next(interfaces_wa)
+            except StopIteration:
+                pass  # Or handle it if necessary
         if not standalone_system:
             with allure.step("Running sdn factory reset"):
                 sdn.factory_default.action_reset(param='force')
@@ -470,6 +482,7 @@ def rotate_logs(system):
 
 
 def verify_config_files_content_not_changed(sdn, initial_config_contents, engines):
+    errors_list = []
     current_config_files_content = {}
     controller_config_files_paths = ClusterTools.get_current_config_files_paths(sdn, ClusterConsts.NMX_CONTROLLER, ClusterConsts.NMX_CONTROLLER_CONFIG_FILE_TYPES)
     telemetry_config_files_paths = ClusterTools.get_current_config_files_paths(sdn, ClusterConsts.NMX_TELEMETRY, ClusterConsts.NMX_TELEMETRY_CONFIG_FILE_TYPES)
@@ -480,7 +493,9 @@ def verify_config_files_content_not_changed(sdn, initial_config_contents, engine
     assert len(current_config_files_content) == len(initial_config_contents), 'Missing configs'
     for file_type, current_file_content in current_config_files_content.items():
         init_file_content = initial_config_contents.get(file_type)
-        assert set(current_file_content.split('\n')) == set(init_file_content.split('\n')), f"Current and initial configuration for {file_type}. Current: {current_file_content}, Initial: {init_file_content}"
+        if set(current_file_content.split('\n')) != set(init_file_content.split('\n')):
+            errors_list.append(f"Configuration mismatch in file {file_type}:\nInitial: {init_file_content}\nCurrent: {current_file_content}")
+    assert not errors_list, "\n\n".join(errors_list)
 
 
 def pre_factory_reset_security_checks():

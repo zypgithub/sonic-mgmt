@@ -15,6 +15,7 @@ from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
+from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 
 logger = logging.getLogger()
 
