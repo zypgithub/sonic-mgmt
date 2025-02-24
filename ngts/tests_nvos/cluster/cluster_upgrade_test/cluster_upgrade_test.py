@@ -2,7 +2,6 @@ import copy
 import logging
 import random
 import time
-
 import pytest
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
@@ -221,7 +220,11 @@ def test_upgrade_with_nmx_enabled(test_api, devices, topology_obj, setup_name, e
                 cluster.apps.app_name[app].loglevel.action_restore_cluster()
 
             if interface_wa_called:
-                next(interfaces_wa)
+                try:
+                    next(interfaces_wa)
+                except StopIteration:
+                    pass  # Or handle it if necessary
+
             else:
                 cluster.unset(apply=True)
                 ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')

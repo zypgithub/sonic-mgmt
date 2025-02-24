@@ -23,7 +23,7 @@ from ngts.tests_nvos.system.factory_reset.helpers import add_verification_data, 
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
 from ngts.tests_nvos.constants import MINUTE
-
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 
 logger = logging.getLogger()
 # @disabled_access_ports
