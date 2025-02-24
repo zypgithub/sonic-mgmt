@@ -30,18 +30,19 @@ class TestSpcX400GTo200G:
         self.cli_object = self.players['dut']['cli']
         self.scenario = "spcx_ra"
         self.power_thresholds_by_chip_type = power_thresholds_by_chip_type
-        self.traffic_jsons = get_spcx_ra_leaf_traffic(players, conf_args)
+        self.conf_args = conf_args
 
     @pytest.mark.parametrize("packet_size", PACKET_SIZE_LIST)
     @allure.title('400G to 200G leaf test')
     @allure.description('400G<->200G test. Right side switch is leaf (200G).')
     def test_400_to_200_bw(self, request, packet_size):
+        skip_test_on_unsupported_os(self.cli_object, CliType.NVUE)
 
         test_name = get_pytest_test_name(request)
+        self.traffic_jsons = get_spcx_ra_leaf_traffic(self.players, self.conf_args)
 
         with allure.step(f"Run traffic on all the ports. Packet size is {packet_size} bytes"):
             run_traffic(self.players, self.scenario, self.traffic_jsons)
-
         with allure.step(f"Verifying the traffic for packet size {packet_size}"):
             run_validation(players=self.players, test_name=test_name, scenario=self.scenario,
                            bw_threshold=SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size],

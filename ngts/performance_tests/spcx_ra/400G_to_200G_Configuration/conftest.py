@@ -13,7 +13,6 @@ import os
 from ngts.helpers.performance.performance_setup_helpers import (save_base_configuration,
                                                                 restore_basic_configuration,
                                                                 apply_test_configuration)
-from ngts.constants.constants import BugHandlerConst
 from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts
 from ngts.helpers.performance.traffic_helpers import create_json_traffic_file
 
