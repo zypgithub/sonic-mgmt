@@ -534,6 +534,9 @@ class GorillaSwitch(IbSwitch):
         self.stats_cpu_header_num_of_lines = 12
         self.stats_temperature_header_num_of_lines = 53
         self.valid_ports_count = 64
+        self.number_of_transceivers = 64
+        self.transceivers_tables_name = "TRANSCEIVER_FIRMWARE_INFO"
+        self.transceiver_list = [f'sw{a + 1}' for a in range(32)]
         self.supports_tpm_testing = False
 
     def get_mgmt_ports(self) -> List[str]:
@@ -645,7 +648,9 @@ class BlackMambaSwitch(IbSwitch):
         self.ztp_complex_prod_json = 'complex_prod.json'
         self.ztp_complex_dev_json = 'complex.json'
         self.valid_ports_count = 144
-
+        self.number_of_transceivers = 144
+        self.transceivers_tables_name = "TRANSCEIVER_FIRMWARE_INFO"
+        self.transceiver_list = ['fnm1'] + [f'sw{a + 1}p{b}' for a in range(72) for b in (1, 2)]
         self.constants.firmware.extend(['CPLD4', 'CPLD5', 'CPLD6'])
 
     def get_mgmt_ports(self) -> List[str]:
@@ -715,6 +720,22 @@ class BlackMambaSwitch(IbSwitch):
         self.timeout_system_is_ready = 15 * MINUTE
 
 
+# -------------------------- Taipan Switch ----------------------------
+class TaipanSwitch(BlackMambaSwitch):  # All values will be updated on Taipan BU
+
+    def __init__(self):
+        super().__init__(asic_amount=4, switch_class=NvosConst.TAIPAN_SWITCH)
+
+    def _init_constants(self):
+        super()._init_constants()
+        self.number_of_transceivers = 18
+        self.transceivers_tables_name = "TRANSCEIVER_INFO"
+        self.transceiver_list = [f'els{a + 1}' for a in range(18)] + ['fnm1'] + [f'oe{b + 1}' for b in range(72)]
+
+    def _init_psu_list(self):
+        self.psu_list = []
+
+
 # -------------------------- Crocodile Switch ----------------------------
 class CrocodileSwitch(IbSwitch):
 
@@ -757,6 +778,9 @@ class CrocodileSwitch(IbSwitch):
         self.stats_power_header_num_of_lines = 17
         self.stats_temperature_header_num_of_lines = 32
         self.valid_ports_count = 73
+        self.number_of_transceivers = 73
+        self.transceivers_tables_name = "TRANSCEIVER_FIRMWARE_INFO"
+        self.transceiver_list = ['fnm1'] + [f'swA{a + 1}' for a in range(18)] + [f'swB{b + 1}' for b in range(18)]
         self.allow_cpld_update = True
         self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/crocodile_versions.json"
 
@@ -937,6 +961,9 @@ class JulietSwitch(NvLinkSwitch):
         self.power_cycle_type = 'juliet-power-cycle'
         self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/juliet_versions.json"
         self.valid_ports_count = 72
+        self.number_of_transceivers = 72
+        self.transceivers_tables_name = "TRANSCEIVER_FIRMWARE_INFO"
+        self.transceiver_list = [f'sw{a + 1}' for a in range(18)]
         self.module_offset = 9
 
     def _init_fan_list(self):

@@ -38,13 +38,14 @@ def test_transceiver_database_tables(engines, devices, test_api):
     :return:
     """
     with allure.step("Create platform object"):
-        transceivers_tables_name = "TRANSCEIVER_FIRMWARE_INFO"
-        number_of_transceivers = devices.dut.valid_ports_count
+        transceivers_tables_name = devices.dut.transceivers_tables_name
+        number_of_transceivers = devices.dut.number_of_transceivers
         with allure.step("Validate for each transceiver out of {} transceivers we have the table in STATE_DB".format(number_of_transceivers)):
             tables_in_database = Tools.DatabaseTool.sonic_db_cli_get_keys(engine=engines.dut, asic="",
                                                                           db_name=DatabaseConst.STATE_DB_NAME,
                                                                           grep_str=transceivers_tables_name).splitlines()
-            assert number_of_transceivers == len(tables_in_database), f"Test Failed: we expected {number_of_transceivers} transceivers tables in STATE_DB but we found {len(tables_in_database)}"
+            assert number_of_transceivers == len(tables_in_database), \
+                f"Test Failed: we expected {number_of_transceivers} transceivers tables in STATE_DB but we found {len(tables_in_database)}"
 
 
 @pytest.mark.platform
