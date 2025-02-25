@@ -6,10 +6,7 @@ import re
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.tools.test_utils import allure_utils as allure
-from ngts.nvos_tools.platform.Platform import Platform
-from ngts.nvos_tools.system.System import System
 from ngts.nvos_constants.constants_nvos import PlatformConsts, HealthConsts
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from retry import retry
 
 
@@ -20,7 +17,7 @@ NOT_OK = HealthConsts.NOT_OK
 
 
 @pytest.mark.platform
-def test_platform_environment_bmc_leakage(engines, devices):
+def test_platform_environment_bmc_leakage(engines, nv_command, devices):
     """
     Validate BMC Leakage sensor feature.
         Test flow:
@@ -33,20 +30,15 @@ def test_platform_environment_bmc_leakage(engines, devices):
             7. Reboot the system and check no leakages
     """
     try:
-        with allure.step("Create System object"):
-            platform = Platform()
-            system = System()
-
         with allure.step("Get leakage folder name"):
             leakage_folder_name = _get_leakage_folder_name(engines)
 
         with allure.step("Validate system health is OK"):
-            if not is_redmine_issue_active([4015156])[0]:
-                retry_validate_health_fix_or_issue(system, OK)
+            retry_validate_health_fix_or_issue(nv_command.system, OK)
 
         with allure.step("Verify default fields and values"):
-            leakage_output = OutputParsingTool.parse_json_str_to_dictionary(platform.environment.leakage.show()) \
-                .get_returned_value()
+            leakage_output = OutputParsingTool.parse_json_str_to_dictionary(
+                nv_command.platform.environment.leakage.show()).get_returned_value()
 
             with allure.step("Verify default fields"):
                 ValidationTool.verify_all_fields_value_exist_in_output_dictionary(
@@ -62,27 +54,26 @@ def test_platform_environment_bmc_leakage(engines, devices):
             _simulate_leakage(engines, random_selected_leakage, PlatformConsts.LEAK_STATUS_LEAK)
 
             with allure.step("Validate output"):
-                leakage_output = OutputParsingTool.parse_json_str_to_dictionary(platform.environment.leakage.show()) \
-                    .get_returned_value()
+                leakage_output = OutputParsingTool.parse_json_str_to_dictionary(
+                    nv_command.platform.environment.leakage.show()).get_returned_value()
                 ValidationTool.compare_values(leakage_output[random_selected_leakage]['state'],
                                               PlatformConsts.LEAKAGE_STATUS_LEAK).verify_result()
 
             with allure.step("Validate system health"):
-                retry_validate_health_fix_or_issue(system, NOT_OK)
+                retry_validate_health_fix_or_issue(nv_command.system, NOT_OK)
                 ValidationTool.compare_values(leakage_output[random_selected_leakage]['state'],
                                               PlatformConsts.LEAKAGE_STATUS_LEAK).verify_result()
-                health_output = OutputParsingTool.parse_json_str_to_dictionary(system.health.show())\
+                health_output = OutputParsingTool.parse_json_str_to_dictionary(nv_command.system.health.show())\
                     .get_returned_value()
-                if not is_redmine_issue_active([3896626])[0]:
-                    ValidationTool.compare_values(health_output[HealthConsts.STATUS_LED],
-                                                  HealthConsts.LED_NOT_OK_STATUS).verify_result()
-                history_line = system.health.history.search_line(line_to_search=random_selected_leakage)
+                ValidationTool.compare_values(health_output[HealthConsts.STATUS_LED],
+                                              HealthConsts.LED_NOT_OK_STATUS).verify_result()
+                history_line = nv_command.system.health.history.search_line(line_to_search=random_selected_leakage)
                 assert random_selected_leakage in history_line, 'Cant find leakage in health history'
 
             with allure.step("Return leakage status to default"):
                 _simulate_leakage(engines, random_selected_leakage, PlatformConsts.LEAK_STATUS_OK)
-                leakage_output = OutputParsingTool.parse_json_str_to_dictionary(platform.environment.leakage.show()) \
-                    .get_returned_value()
+                leakage_output = OutputParsingTool.parse_json_str_to_dictionary(
+                    nv_command.platform.environment.leakage.show()).get_returned_value()
                 ValidationTool.compare_values(leakage_output[random_selected_leakage]['state'],
                                               PlatformConsts.LEAKAGE_STATUS_OK).verify_result()
 
@@ -90,18 +81,17 @@ def test_platform_environment_bmc_leakage(engines, devices):
             _simulate_leakage(engines, PlatformConsts.LEAKAGE_DEFAULT_OUTPUT_FIELDS)
 
             with allure.step("Verify output of all sensors"):
-                leakage_output = OutputParsingTool.parse_json_str_to_dictionary(platform.environment.leakage.show()) \
-                    .get_returned_value()
+                leakage_output = OutputParsingTool.parse_json_str_to_dictionary(
+                    nv_command.platform.environment.leakage.show()).get_returned_value()
                 ValidationTool.validate_fields_values_in_output(PlatformConsts.LEAKAGE_DEFAULT_OUTPUT_FIELDS,
                                                                 PlatformConsts.LEAKAGE_ALL_SENSOR_NOT_OK,
                                                                 leakage_output).verify_result()
 
     finally:
         _link_back_sysfs_files(engines, PlatformConsts.LEAKAGE_DEFAULT_OUTPUT_FIELDS, leakage_folder_name)
-        if not is_redmine_issue_active([4015156])[0]:
-            retry_validate_health_fix_or_issue(system, OK)
-        leakage_output = OutputParsingTool.parse_json_str_to_dictionary(platform.environment.leakage.show()) \
-            .get_returned_value()
+        retry_validate_health_fix_or_issue(nv_command.system, OK)
+        leakage_output = OutputParsingTool.parse_json_str_to_dictionary(
+            nv_command.platform.environment.leakage.show()).get_returned_value()
         ValidationTool.validate_fields_values_in_output(PlatformConsts.LEAKAGE_DEFAULT_OUTPUT_FIELDS,
                                                         PlatformConsts.LEAKAGE_DEFAULT_OUTPUT_VALUES,
                                                         leakage_output).verify_result()

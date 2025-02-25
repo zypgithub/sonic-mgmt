@@ -74,6 +74,7 @@ class NvosConst:
     JULIET_SWITCH = "JULIET"
     CROCODILE_SWITCH = "CROCODILE"
     BLACK_MAMBA_SWITCH = "BLACK_MAMBA"
+    TAIPAN_SWITCH = "TAIPAN"
     GORILLA_SWITCH = "GORILLA"
     QTM2 = "Quantum2"
     QTM3 = "Quantum3"
@@ -867,7 +868,11 @@ class PlatformConsts:
     ENV_TEMP_STATE_FAILED = 'failed'
     HW_COMP_SWITCH = "SWITCH"
     TRANSCEIVER_STATUS = "status"
+    TRANSCEIVER_FAULT_CONDITION = "fault-condition"
     TRANSCEIVER_ERROR_STATUS = "error-status"
+    TRANSCEIVER_PORT_MAPPING = "port-mapping"
+    TRANSCEIVER_ELS_MAPPING = "els-mapping"
+    TRANSCEIVER_OE_MAPPING = "oe-mapping"
     SW_FIELD_NAMES = ('description', 'package', 'version')
     ENV_TEMP_TOLERANCE = 20  # [%]
     ENV_TEMP_MIN = 15  # [Celsius]

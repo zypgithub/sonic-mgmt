@@ -13,6 +13,8 @@ list_with_status_codes = [{'1024': {'status': 'Cable is unplugged'}}, {'1': {'st
                           {'0': {'status': 'No issue was observed'}}, {'2': {'status': 'Negotiation failure'}},
                           {'15': {'status': 'Bad signal integrity'}}, {'59': {'status': 'Other issues'}},
                           {'57': {'status': 'signal not detected'}}, {'1048': {'status': 'Modules DataPath FSM fault'}},
+                          {'1055': {'status': 'ELS laser fiber is contaminated'}},
+                          {'1056': {'status': 'ELS laser failure'}}, {'1057': {'status': 'ELS cable unplugged'}}
                           ]
 
 
