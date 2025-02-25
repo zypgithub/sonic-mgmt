@@ -225,11 +225,6 @@ def pytest_addoption(parser):
     parser.addoption("--public_docker_registry", action="store_true", default=False,
                      help="To use public docker registry for syncd swap, by default is disabled (False)")
 
-    ############################
-    #   SmartSwitch options    #
-    ############################
-    parser.addoption("--dpu-pattern", action="store", default="all", help="dpu host name")
-
     ##############################
     #   ansible inventory option #
     ##############################
@@ -244,6 +239,17 @@ def pytest_addoption(parser):
                      help="File to store the state of the parallel run")
     parser.addoption("--is_parallel_leader", action="store_true", default=False, help="Is the parallel leader")
     parser.addoption("--parallel_followers", action="store", default=0, type=int, help="Number of parallel followers")
+
+    ############################
+    #   SmartSwitch options    #
+    ############################
+    parser.addoption("--dpu-pattern", action="store", default="all", help="dpu host name")
+
+    #################################
+    #   Performance test options    #
+    #################################
+    parser.addoption("--performance-meter-run", action="store", default=1, type=int,
+                     help="Number of run for performance meter")
 
 
 def pytest_configure(config):
