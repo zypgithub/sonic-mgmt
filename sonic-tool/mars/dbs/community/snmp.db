@@ -4,15 +4,23 @@
         <!-- parameters passed to setup steps commands-->
         <default_params_type> basic_setup_step_params </default_params_type>
         <DB>
-            <info> Platform </info>
+            <info> SNMP </info>
             <owner> SONiC </owner>
             <group> SONiC </group>
 
             <!-- OPTIONAL TAGS -->
-            <tags> PLATFORM, SENSORS </tags>
+            <tags> SNMP </tags>
+
+            <ignore>
+                <!-- Case only for main hwsku, skip this case if it is non-main hwsku -->
+                <condition>
+                    <key> skip_main_hwsku_only_cases </key>
+                    <op> == </op>
+                    <value> yes </value>
+                </condition>
+            </ignore>
 
             <!-- pre db commands - executed once before DB run -->
-            <!-- copy remote tests -->
             <pre>
             </pre>
 
@@ -54,27 +62,7 @@
     </global>
 
     <test>
-        <cases> sonic-mgmt/sonic-tool/mars/cases/community/platform.cases </cases>
-    </test>
-
-    <test>
-        <cases> sonic-mgmt/sonic-tool/mars/cases/community/sensors.cases </cases>
-    </test>
-
-    <test>
-        <cases> sonic-mgmt/sonic-tool/mars/cases/community/monit.cases </cases>
-    </test>
-
-    <test>
-        <cases> sonic-mgmt/sonic-tool/mars/cases/community/container_checker.cases </cases>
-    </test>
-
-    <test>
-        <cases> sonic-mgmt/sonic-tool/mars/cases/community/memory_checker.cases </cases>
-    </test>
-
-    <test>
-        <cases> sonic-mgmt/sonic-tool/mars/cases/community/password_hardening.cases </cases>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/snmp.cases </cases>
     </test>
 
 </DBDEF>

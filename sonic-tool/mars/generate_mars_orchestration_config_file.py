@@ -21,6 +21,7 @@ community_develop_set_1_dbs = [
     'fast_reboot.db',
     'warm_reboot.db',
     'span.db',
+    'snmp.db',
     'bsl.db'
 ]
 
@@ -90,6 +91,7 @@ community_develop_as_dbs = [
     'pre_rpc.db',
     'dualtor_dscp_remapping.db',
     'rpc_qos.db',
+    'snmp.db',
     'post_rpc.db'
 ]
 
