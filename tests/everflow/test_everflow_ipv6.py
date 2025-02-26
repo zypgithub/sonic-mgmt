@@ -9,6 +9,7 @@ from ptf.mask import Mask
 import ptf.packet as scapy
 from . import everflow_test_utilities as everflow_utils
 from .everflow_test_utilities import BaseEverflowTest, DOWN_STREAM, UP_STREAM
+from tests.common.dualtor.dual_tor_utils import show_muxcable_status
 import random
 # Module-level fixtures
 from .everflow_test_utilities import setup_info      # noqa: F401
@@ -91,6 +92,8 @@ class EverflowIPv6Tests(BaseEverflowTest):
 
     @pytest.fixture(scope='function', autouse=True)
     def background_traffic(self, ptfadapter, everflow_direction, setup_info):  # noqa F811
+        show_muxcable_status(setup_info[UP_STREAM]['everflow_dut'])
+        show_muxcable_status(setup_info[DOWN_STREAM]['everflow_dut'])
         stop_thread = threading.Event()
         src_port = EverflowIPv6Tests.rx_port_ptf_id
 
