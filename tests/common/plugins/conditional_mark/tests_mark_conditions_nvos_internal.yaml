@@ -381,16 +381,6 @@ tests_nvos/system/test_system_factory_reset.py:
       - "'marlin' in testbed"
       - https://redmine.mellanox.com/issues/3484447
 
-tests_nvos/platform/test_platform_firmware_bios/test_platform_firmware_bios.py:
-  skip:
-    reason: "Testcase skipped on xdr systems due to RM issue: https://redmine.mellanox.com/issues/4241214"
-    conditions_logical_operator: or
-    conditions:
-      - "'q3400' in testbed"
-      - "'juliet' in testbed"
-      - "'mamba' in testbed"
-      - "'croc' in testbed"
-      - https://redmine.mellanox.com/issues/4241214
 
 tests_nvos/platform/test_platform_environment_leakage.py:
   skip:

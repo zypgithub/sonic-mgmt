@@ -6,6 +6,7 @@ import time
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
+import requests
 from netmiko import ConnectHandler
 from paramiko.ssh_exception import AuthenticationException
 from retry.api import retry_call, retry
@@ -292,10 +293,17 @@ def wait_for_system_table_to_exist(engine):
 
 @retry(Exception, tries=80, delay=15)
 def wait_until_cli_is_up(engine):
-    logger.info('Checking the status of nvued')
-    output = engine.run_cmd('nv show system')
-    if 'CLI is unavailable' in output:
-        raise Exception("Waiting for NVUE to become functional")
+    try:
+        logger.info('Checking the status of nvued')
+        output = engine.run_cmd('nv show system')
+        if 'CLI is unavailable' in output:
+            raise Exception("Waiting for NVUE to become functional")
+
+    except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout):
+        logger.info(f"GET request failed, running engine.disconnect() to recover")
+        engine.disconnect()
+        check_port_status_till_alive(True, engine.ip, engine.ssh_port)
+        DutUtilsTool.wait_for_nvos_to_become_functional(engine)
 
 
 @retry(Exception, tries=15, delay=10)

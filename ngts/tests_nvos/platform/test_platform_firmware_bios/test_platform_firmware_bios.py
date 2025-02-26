@@ -23,10 +23,10 @@ logger = logging.getLogger()
 def test_bios_auto_update_disabled(devices, engines, topology_obj, test_api, original_version, test_name):
     """
     Test flow:
-        1. fetch current and previous BIOS versions
+        1. fetch previous BIOS version
         2. downgrade to previous BIOS version
         3. reboot
-        4. validate BIOS version was NOT updated in nv show platform firmware
+        4. validate BIOS version was NOT updated
         5. cleanup
     """
     TestToolkit.tested_api = test_api
