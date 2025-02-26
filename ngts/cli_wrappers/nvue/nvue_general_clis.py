@@ -220,6 +220,8 @@ class NvueGeneralCli(SonicGeneralCliDefault):
 
     @staticmethod
     def replace_config(engine, file, output_type='json', verify_execution=False):
+        logging.info(f"Detaching any unapplied config")
+        NvueGeneralCli.detach_config(engine)
         logging.info("Running 'nv config replace' on dut")
         if verify_execution:
             return SendCommandTool.execute_command(NvueGeneralCli._replace_config, engine, file, output_type).verify_result()

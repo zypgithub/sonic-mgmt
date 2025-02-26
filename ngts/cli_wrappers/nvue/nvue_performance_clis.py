@@ -46,6 +46,7 @@ class NvuePerformanceCli(PerformanceCommon):
     def save_basic_configuration(self, players, dst_dir=Cl_Consts.CL_HOME_DIR):
         logging.info(f"Saving the basic configuration on {self.dut_alias}")
         self.cli_obj.general.save_config(self.engine)
+        self.engine.run_cmd(f"sudo rm {dst_dir}/startup.yaml")
         self.engine.run_cmd(f"sudo cat /etc/nvue.d/startup.yaml >> {dst_dir}/startup.yaml")
 
     def restore_basic_configuration(self, file_name="startup.yaml", config_directory=Cl_Consts.CL_HOME_DIR):

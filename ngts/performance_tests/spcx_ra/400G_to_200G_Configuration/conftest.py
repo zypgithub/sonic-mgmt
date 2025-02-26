@@ -20,7 +20,7 @@ logger = logging.getLogger()
 TESTS_SCENARIO = "spcx_ra"
 
 
-@pytest.fixture(scope='session', autouse=True)
+@pytest.fixture(scope='class', autouse=True)
 def basic_setup_configuration(players, conf_args):
     try:
         with allure.step('Save Players initial Configuration'):
@@ -38,7 +38,7 @@ def basic_setup_configuration(players, conf_args):
             restore_basic_configuration(players)
 
 
-@pytest.fixture(scope='session', autouse=True)
+@pytest.fixture(scope='class', autouse=True)
 def conf_args():
     """
     This function alters all of the jinja template files.
