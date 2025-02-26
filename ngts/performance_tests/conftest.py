@@ -3,7 +3,13 @@ import allure
 import os
 from ngts.helpers.performance.performance_setup_helpers import configure_mloops, stop_traffic
 from ngts.constants.constants import PytestConst
+from ngts.constants.performance_constants import PowerConsts
 from ngts.helpers.performance.Performance_log_print import print_players_logs, remove_players_logs
+
+
+@pytest.fixture(scope='session', autouse=True)
+def power_thresholds_by_chip_type(chip_type):
+    return PowerConsts.POWER_TH_PER_ASIC[chip_type]
 
 
 @pytest.fixture(scope="session")

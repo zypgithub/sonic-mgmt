@@ -10,11 +10,6 @@ logger = logging.getLogger()
 TESTS_SCENARIO = "spcx_ra"
 
 
-@pytest.fixture(scope='session', autouse=True)
-def power_thresholds_by_chip_type(chip_type):
-    return PowerConsts.POWER_TH_PER_ASIC[chip_type]
-
-
 def get_spcx_ra_spine_traffic(players, conf_args, template_suite="traffic_packets_json_files"):
     traffic_jsons = {}
     pkt_size = PerfConsts.PACKET_SIZE_LIST[0]

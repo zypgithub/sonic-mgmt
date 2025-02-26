@@ -30,7 +30,8 @@ def conf_args(is_ipv6):
                  "split_left": 2,
                  "scenario": TESTS_SCENARIO,
                  "packet_size": PerfConsts.PACKET_SIZE_LIST[0],
-                 "num_packets": SPCXRAConsts.PACKET_NUM_400G_x2
+                 "left_num_packets": SPCXRAConsts.PACKET_NUM_400G_x2,
+                 "right_num_packets": SPCXRAConsts.PACKET_NUM_400G_x2
                  }
     return conf_args
 

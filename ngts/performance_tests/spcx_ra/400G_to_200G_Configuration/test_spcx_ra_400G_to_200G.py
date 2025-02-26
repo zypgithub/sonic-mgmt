@@ -22,7 +22,7 @@ PACKET_SIZE_LIST = PerfConsts.PACKET_SIZE_LIST
 
 class TestSpcX400GTo200G:
     @pytest.fixture(autouse=True)
-    def setup(self, players, engines, power_thresholds_by_chip_type, conf_args):
+    def setup(self, players, engines, power_thresholds_by_chip_type, conf_args, chip_type):
         self.topology_obj = get_topology_obj(players)
         self.players = players
         self.engines = engines
@@ -31,6 +31,7 @@ class TestSpcX400GTo200G:
         self.scenario = "spcx_ra"
         self.power_thresholds_by_chip_type = power_thresholds_by_chip_type
         self.conf_args = conf_args
+        self.chip_type = chip_type
 
     @pytest.mark.parametrize("packet_size", PACKET_SIZE_LIST)
     @allure.title('400G to 200G leaf test')
@@ -44,7 +45,7 @@ class TestSpcX400GTo200G:
         with allure.step(f"Run traffic on all the ports. Packet size is {packet_size} bytes"):
             run_traffic(self.players, self.scenario, self.traffic_jsons)
         with allure.step(f"Verifying the traffic for packet size {packet_size}"):
-            run_validation(players=self.players, test_name=test_name, scenario=self.scenario,
+            run_validation(chip_type=self.chip_type, players=self.players, test_name=test_name, scenario=self.scenario,
                            bw_threshold=SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size],
                            samples_params_dict=PerfConsts.SAMPLES_PARAMS,
                            tc_occ_threshold=PerfConsts.OCC_AVG_TH,
