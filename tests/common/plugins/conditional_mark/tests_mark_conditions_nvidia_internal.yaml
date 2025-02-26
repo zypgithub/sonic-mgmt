@@ -533,7 +533,7 @@ drop_packets/test_wjh.py::test_l1_agg_fanout_port_down:
     reason: "https://redmine.mellanox.com/issues/4048046"
     conditions:
     - "https://redmine.mellanox.com/issues/4048046"
-    - "'leopard' in testbed or 'moose' in testbed or 'bobcat' in testbed"
+    - "'sn4700' in platform or 'sn56' in platform"
 
 platform_tests/fwutil/test_fwutil.py:
   skip:
