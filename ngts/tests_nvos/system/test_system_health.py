@@ -47,9 +47,15 @@ def set_unset_ps_redundancy_grid():
         platform.ps_redundancy.unset(apply=True).verify_result()
 
 
+@pytest.fixture(scope='function')
+def validate_health_history():
+    system = System()
+    system.health.history.retry_get_health_history_file_summary_line()
+
+
 @pytest.mark.system
 @pytest.mark.health
-def test_reboot_test():
+def test_reboot_test(validate_health_history):
     """
     Validate health after reboot :
     - status is OK
