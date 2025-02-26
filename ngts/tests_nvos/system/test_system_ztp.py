@@ -37,7 +37,7 @@ def test_show_ztp_command(engines, devices, serial_engine):
     system = System(None)
     try:
         with allure.step("Run nv action run system ztp"):
-            system.ztp.action_run_ztp()
+            system.ztp.action_run_ztp().verify_result()
 
         _wait_until_ztp_values_fields_changed(system, SystemConsts.ZTP_OUTPUT_FIELDS, SystemConsts.ZTP_DEFAULT_VALUES, tries=5, delay=2)
 
@@ -63,7 +63,7 @@ def test_show_ztp_command(engines, devices, serial_engine):
             NvueGeneralCli.apply_config(engines.dut)
 
         with allure.step("Run nv action run system ztp"):
-            system.ztp.action_run_ztp()
+            system.ztp.action_run_ztp().verify_result()
 
         with allure.step("Run show ztp after save and verify values"):
             system_ztp_output = OutputParsingTool.parse_json_str_to_dictionary(system.ztp.show()).get_returned_value()
@@ -76,7 +76,7 @@ def test_show_ztp_command(engines, devices, serial_engine):
             NvueGeneralCli.apply_config(engines.dut)
 
         with allure.step("Run nv action run system ztp"):
-            system.ztp.action_run_ztp()
+            system.ztp.action_run_ztp().verify_result()
 
         _wait_until_ztp_values_fields_changed(system, SystemConsts.ZTP_OUTPUT_FIELDS, SystemConsts.ZTP_DEFAULT_VALUES)
 
@@ -84,9 +84,9 @@ def test_show_ztp_command(engines, devices, serial_engine):
         logger.info("Received Exception during test_show_ztp_command: {}".format(e))
         raise e
     finally:
-        system.ztp.action_abort_ztp()
+        system.ztp.action_abort_ztp().verify_result()
         engines.dut.run_cmd('sudo rm -f /host/ztp/ztp_data_local.json')
-        system.ztp.action_run_ztp()
+        system.ztp.action_run_ztp().verify_result()
 
 
 @pytest.mark.ztp
@@ -105,14 +105,14 @@ def test_ztp_json(engines, devices):
 
     try:
         with allure.step("Run nv action run system ztp"):
-            system.ztp.action_run_ztp()
+            system.ztp.action_run_ztp().verify_result()
             _wait_until_ztp_values_fields_changed(system, SystemConsts.ZTP_OUTPUT_FIELDS, SystemConsts.ZTP_DEFAULT_VALUES, tries=5, delay=2)
 
         with allure.step("Download dummy json file"):
             _download_ztp_json_config(engines, SystemConsts.DUMMY_JSON)
 
             with allure.step("Run nv action run system ztp"):
-                system.ztp.action_run_ztp()
+                system.ztp.action_run_ztp().verify_result()
 
             with allure.step("Validate ztp error in ztp log file"):
                 _validate_ztp_log_file(
@@ -122,7 +122,7 @@ def test_ztp_json(engines, devices):
             _download_ztp_json_config(engines, SystemConsts.POSITIVE_JSON)
 
             with allure.step("Run nv action run system ztp"):
-                system.ztp.action_run_ztp()
+                system.ztp.action_run_ztp().verify_result()
 
             with allure.step("Run show ztp and verify default values"):
                 _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_RUNNING)
@@ -132,7 +132,7 @@ def test_ztp_json(engines, devices):
             _download_ztp_json_config(engines, SystemConsts.NEGATIVE_PING_JSON)
 
             with allure.step("Run nv action run system ztp"):
-                system.ztp.action_run_ztp()
+                system.ztp.action_run_ztp().verify_result()
 
             with allure.step("Run show ztp and verify default values"):
                 _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_RUNNING)
@@ -142,7 +142,7 @@ def test_ztp_json(engines, devices):
             _download_ztp_json_config(engines, SystemConsts.NEGATIVE_HALT_ON_FAILURE_JSON)
 
             with allure.step("Run nv action run system ztp"):
-                system.ztp.action_run_ztp()
+                system.ztp.action_run_ztp().verify_result()
 
             with allure.step("Run show ztp and verify default values"):
                 _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_RUNNING)
@@ -153,7 +153,7 @@ def test_ztp_json(engines, devices):
             _download_ztp_json_config(engines, SystemConsts.NEGATIVE_RESTART_ON_FAILURE_JSON)
 
             with allure.step("Run nv action run system ztp"):
-                system.ztp.action_run_ztp()
+                system.ztp.action_run_ztp().verify_result()
 
             with allure.step("Run show ztp and verify default values"):
                 _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_RUNNING)
@@ -165,16 +165,16 @@ def test_ztp_json(engines, devices):
                                                       'Waiting for 300 seconds before restarting ZTP').verify_result()
 
         with allure.step("Run nv abort run system ztp and delete json file"):
-            system.ztp.action_abort_ztp()
+            system.ztp.action_abort_ztp().verify_result()
             engines.dut.run_cmd('sudo rm -f /host/ztp/ztp_data_local.json')
 
     except Exception as e:
         logger.info("Received Exception during test_ztp_json: {}".format(e))
         raise e
     finally:
-        system.ztp.action_abort_ztp()
+        system.ztp.action_abort_ztp().verify_result()
         engines.dut.run_cmd('sudo rm -f /host/ztp/ztp_data_local.json')
-        system.ztp.action_run_ztp()
+        system.ztp.action_run_ztp().verify_result()
 
 
 @pytest.mark.ztp
@@ -191,7 +191,7 @@ def test_ztp_image(engines, devices):
 
     try:
         with allure.step("Run nv action run system ztp"):
-            system.ztp.action_run_ztp()
+            system.ztp.action_run_ztp().verify_result()
             _wait_until_ztp_values_fields_changed(system, SystemConsts.ZTP_OUTPUT_FIELDS, SystemConsts.ZTP_DEFAULT_VALUES, tries=5, delay=2)
 
         with allure.step("Download image json file"):
@@ -200,7 +200,7 @@ def test_ztp_image(engines, devices):
             _download_ztp_json_config(engines, image_json)
 
             with allure.step("Run nv action run system ztp"):
-                system.ztp.action_run_ztp()
+                system.ztp.action_run_ztp().verify_result()
 
             with allure.step("Check ztp status for image test"):
                 with allure.step("Check ztp status for download and install image"):
@@ -219,9 +219,9 @@ def test_ztp_image(engines, devices):
         logger.info("Received Exception during test_ztp_image: {}".format(e))
         raise e
     finally:
-        system.ztp.action_abort_ztp()
+        system.ztp.action_abort_ztp().verify_result()
         engines.dut.run_cmd('sudo rm -f /host/ztp/ztp_data_local.json')
-        system.ztp.action_run_ztp()
+        system.ztp.action_run_ztp().verify_result()
 
 
 @pytest.mark.ztp
@@ -245,14 +245,14 @@ def test_ztp_startup_file_commands_list(engines, devices):
 
     try:
         with allure.step("Run nv action run system ztp"):
-            system.ztp.action_run_ztp()
+            system.ztp.action_run_ztp().verify_result()
             _wait_until_ztp_values_fields_changed(system, SystemConsts.ZTP_OUTPUT_FIELDS, SystemConsts.ZTP_DEFAULT_VALUES, tries=5, delay=2)
 
         with allure.step("Download json file with wrong ip"):
             _download_ztp_json_config(engines, SystemConsts.STARTUP_FILE_WRONG_IP)
 
             with allure.step("Run nv action run system ztp"):
-                system.ztp.action_run_ztp()
+                system.ztp.action_run_ztp().verify_result()
 
                 with allure.step("Check ztp status"):
                     _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_RUNNING)
@@ -267,7 +267,7 @@ def test_ztp_startup_file_commands_list(engines, devices):
             _download_ztp_json_config(engines, SystemConsts.STARTUP_FILE_CLEAR_CONFIG_FALSE)
 
             with allure.step("Run nv action run system ztp"):
-                system.ztp.action_run_ztp()
+                system.ztp.action_run_ztp().verify_result()
 
                 with allure.step("Check ztp status"):
                     _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_RUNNING)
@@ -281,7 +281,7 @@ def test_ztp_startup_file_commands_list(engines, devices):
             _download_ztp_json_config(engines, SystemConsts.STARTUP_FILE_CLEAR_CONFIG_TRUE)
 
             with allure.step("Run nv action run system ztp"):
-                system.ztp.action_run_ztp()
+                system.ztp.action_run_ztp().verify_result()
 
                 with allure.step("Check ztp status"):
                     _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_RUNNING)
@@ -295,7 +295,7 @@ def test_ztp_startup_file_commands_list(engines, devices):
             _download_ztp_json_config(engines, SystemConsts.STARTUP_FILE_SAVE_CONFIG_TRUE)
 
             with allure.step("Run nv action run system ztp"):
-                system.ztp.action_run_ztp()
+                system.ztp.action_run_ztp().verify_result()
 
                 with allure.step("Check ztp status"):
                     _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_RUNNING)
@@ -305,24 +305,24 @@ def test_ztp_startup_file_commands_list(engines, devices):
             _download_ztp_json_config(engines, SystemConsts.STARTUP_FILE_INTERACTIVE_COMMANDS)
 
             with allure.step("Run nv action run system ztp"):
-                system.ztp.action_run_ztp()
+                system.ztp.action_run_ztp().verify_result()
 
                 with allure.step("Check ztp status"):
                     _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_RUNNING)
                     _wait_until_ztp_step_status(system, '01-startup-file', SystemConsts.ZTP_STATUS_FAILED)
 
         with allure.step("Run nv abort run system ztp and delete json file"):
-            system.ztp.action_abort_ztp()
+            system.ztp.action_abort_ztp().verify_result()
             engines.dut.run_cmd('sudo rm -f /host/ztp/ztp_data_local.json')
-            system.ztp.action_run_ztp()
+            system.ztp.action_run_ztp().verify_result()
 
     except Exception as e:
         logger.info("Received Exception during test_ztp_startup_file_commands_list: {}".format(e))
         raise e
     finally:
-        system.ztp.action_abort_ztp()
+        system.ztp.action_abort_ztp().verify_result()
         engines.dut.run_cmd('sudo rm -f /host/ztp/ztp_data_local.json')
-        system.ztp.action_run_ztp()
+        system.ztp.action_run_ztp().verify_result()
 
 
 @pytest.mark.ztp
@@ -338,14 +338,14 @@ def test_ztp_connectivity_check(engines, devices):
 
     try:
         with allure.step("Run nv action run system ztp"):
-            system.ztp.action_run_ztp()
+            system.ztp.action_run_ztp().verify_result()
             _wait_until_ztp_values_fields_changed(system, SystemConsts.ZTP_OUTPUT_FIELDS, SystemConsts.ZTP_DEFAULT_VALUES, tries=5, delay=2)
 
         with allure.step("Download ping ipv4 and ipv6 json file"):
             _download_ztp_json_config(engines, SystemConsts.CONNECTIVITY_IPV4_IPV6)
 
             with allure.step("Run nv action run system ztp"):
-                system.ztp.action_run_ztp()
+                system.ztp.action_run_ztp().verify_result()
 
                 with allure.step("Check ztp status"):
                     _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_SUCCESS)
@@ -355,7 +355,7 @@ def test_ztp_connectivity_check(engines, devices):
             _download_ztp_json_config(engines, SystemConsts.NEGATIVE_CONNECTIVITY)
 
             with allure.step("Run nv action run system ztp"):
-                system.ztp.action_run_ztp()
+                system.ztp.action_run_ztp().verify_result()
 
                 with allure.step("Check ztp status"):
                     _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_RUNNING)
@@ -368,9 +368,9 @@ def test_ztp_connectivity_check(engines, devices):
         logger.info("Received Exception during test_ztp_connectivity_check: {}".format(e))
         raise e
     finally:
-        system.ztp.action_abort_ztp()
+        system.ztp.action_abort_ztp().verify_result()
         engines.dut.run_cmd('sudo rm -f /host/ztp/ztp_data_local.json')
-        system.ztp.action_run_ztp()
+        system.ztp.action_run_ztp().verify_result()
 
 
 @pytest.mark.ztp
@@ -386,7 +386,7 @@ def test_ztp_json_complex(engines, devices):
 
     try:
         with allure.step("Run nv action run system ztp"):
-            system.ztp.action_run_ztp()
+            system.ztp.action_run_ztp().verify_result()
             _wait_until_ztp_values_fields_changed(system, SystemConsts.ZTP_OUTPUT_FIELDS, SystemConsts.ZTP_DEFAULT_VALUES, tries=5, delay=2)
 
         with allure.step("Download complex json file"):
@@ -395,7 +395,7 @@ def test_ztp_json_complex(engines, devices):
             _download_ztp_json_config(engines, image_json)
 
             with allure.step("Run nv action run system ztp"):
-                system.ztp.action_run_ztp()
+                system.ztp.action_run_ztp().verify_result()
 
                 with allure.step("Check ztp status"):
                     _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_RUNNING)
@@ -411,9 +411,9 @@ def test_ztp_json_complex(engines, devices):
         logger.info("Received Exception during test_ztp_json_complex: {}".format(e))
         raise e
     finally:
-        system.ztp.action_abort_ztp()
+        system.ztp.action_abort_ztp().verify_result()
         engines.dut.run_cmd('sudo rm -f /host/ztp/ztp_data_local.json')
-        system.ztp.action_run_ztp()
+        system.ztp.action_run_ztp().verify_result()
 
 
 @pytest.mark.ztp
@@ -437,7 +437,7 @@ def test_ztp_nmx_negative(engines, devices, setup_name, has_loopbox, standalone_
 
     try:
         with allure.step("Run nv action run system ztp"):
-            system.ztp.action_run_ztp()
+            system.ztp.action_run_ztp().verify_result()
             _wait_until_ztp_values_fields_changed(system, SystemConsts.ZTP_OUTPUT_FIELDS,
                                                   SystemConsts.ZTP_DEFAULT_VALUES, tries=5, delay=2)
 
@@ -501,7 +501,7 @@ def test_ztp_nmx_positive(engines, devices, setup_name):
 
     try:
         with allure.step("Run nv action run system ztp"):
-            system.ztp.action_run_ztp()
+            system.ztp.action_run_ztp().verify_result()
             _wait_until_ztp_values_fields_changed(system, SystemConsts.ZTP_OUTPUT_FIELDS,
                                                   SystemConsts.ZTP_DEFAULT_VALUES, tries=5, delay=2)
 
@@ -532,7 +532,7 @@ def _download_file_and_run_ztp(engines, system, file='', step='', step_status_co
         _download_ztp_json_config(engines, file)
 
     with allure.step("Run nv action run system ztp"):
-        system.ztp.action_run_ztp()
+        system.ztp.action_run_ztp().verify_result()
 
         with allure.step("Check ztp status"):
             _wait_until_ztp_step_status(system, step, step_status_code)
@@ -540,9 +540,9 @@ def _download_file_and_run_ztp(engines, system, file='', step='', step_status_co
 
 
 def _ztp_cleanup(engines, system):
-    system.ztp.action_abort_ztp()
+    system.ztp.action_abort_ztp().verify_result()
     engines.dut.run_cmd('sudo rm -f /host/ztp/ztp_data_local.json')
-    system.ztp.action_run_ztp()
+    system.ztp.action_run_ztp().verify_result()
 
 
 @pytest.mark.ztp
@@ -561,7 +561,7 @@ def test_ztp_provisioning_script_negative(engines, devices):
 
     try:
         with allure.step("Run nv action run system ztp"):
-            system.ztp.action_run_ztp()
+            system.ztp.action_run_ztp().verify_result()
 
         _wait_until_ztp_values_fields_changed(system, SystemConsts.ZTP_OUTPUT_FIELDS, SystemConsts.ZTP_DEFAULT_VALUES)
 
@@ -585,9 +585,9 @@ def test_ztp_provisioning_script_negative(engines, devices):
         logger.info("Received Exception during test_ztp_connectivity_check: {}".format(e))
         raise e
     finally:
-        system.ztp.action_abort_ztp()
+        system.ztp.action_abort_ztp().verify_result()
         engines.dut.run_cmd('sudo rm -f /host/ztp/ztp_data_local.json')
-        system.ztp.action_run_ztp()
+        system.ztp.action_run_ztp().verify_result()
 
 
 @pytest.mark.ztp
@@ -603,7 +603,7 @@ def test_ztp_provisioning_script_positive(engines, devices):
 
     try:
         with allure.step("Run nv action run system ztp"):
-            system.ztp.action_run_ztp()
+            system.ztp.action_run_ztp().verify_result()
 
         _wait_until_ztp_values_fields_changed(system, SystemConsts.ZTP_OUTPUT_FIELDS, SystemConsts.ZTP_DEFAULT_VALUES)
 
@@ -619,9 +619,9 @@ def test_ztp_provisioning_script_positive(engines, devices):
         logger.info("Received Exception during test_ztp_connectivity_check: {}".format(e))
         raise e
     finally:
-        system.ztp.action_abort_ztp()
+        system.ztp.action_abort_ztp().verify_result()
         engines.dut.run_cmd('sudo rm -f /host/ztp/ztp_data_local.json')
-        system.ztp.action_run_ztp()
+        system.ztp.action_run_ztp().verify_result()
 
 
 def _download_ztp_json_config(engines, json=''):
@@ -636,7 +636,7 @@ def _download_file_and_run_ztp(engines, system, file='', step='', status_code=''
         _download_ztp_json_config(engines, file)
 
     with allure.step("Run nv action run system ztp"):
-        system.ztp.action_run_ztp()
+        system.ztp.action_run_ztp().verify_result()
 
         with allure.step("Check ztp status"):
             _wait_until_ztp_step_status(system, step, status_code)

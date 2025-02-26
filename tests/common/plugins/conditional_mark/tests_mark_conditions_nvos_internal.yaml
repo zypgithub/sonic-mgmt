@@ -102,12 +102,6 @@ tests_nvos/ib/test_set_unset_sm_state.py::test_set_unset_sm_state_many_times:
       - "'marlin' in testbed"
       - https://redmine.mellanox.com/issues/3649754
 
-tests_nvos/interfaces/split_fnm_port/test_split_fnm_port.py::test_interface_fnm_port_split:
-  skip:
-    reason: "Testcase skipped on non croc systems"
-    conditions:
-      - "'croc' not in testbed"
-
 tests_nvos/ib/test_ibdiagnet.py:
   skip:
     reason: "Testcase skipped due to health status is not ok on marlin"
@@ -646,4 +640,45 @@ tests_nvos/system/issu/test_system_issu.py::test_system_issu_positive_flow_with_
     conditions:
       - https://redmine.mellanox.com/issues/4276503
 
+tests_nvos/system/test_system_ztp.py::test_ztp_json:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4276503"
+    conditions:
+      - https://redmine.mellanox.com/issues/4334449
+
+tests_nvos/system/test_system_ztp.py::test_ztp_image:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4276503"
+    conditions:
+      - https://redmine.mellanox.com/issues/4334449
+
+tests_nvos/system/test_system_ztp.py::test_ztp_startup_file_commands_list:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4276503"
+    conditions:
+      - https://redmine.mellanox.com/issues/4334449
+
+tests_nvos/system/test_system_ztp.py::test_ztp_connectivity_check:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4276503"
+    conditions:
+      - https://redmine.mellanox.com/issues/4334449
+
+tests_nvos/system/test_system_ztp.py::test_ztp_json_complex:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4276503"
+    conditions:
+      - https://redmine.mellanox.com/issues/4334449
+
+tests_nvos/system/test_system_ztp.py::test_ztp_provisioning_script_negative:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4276503"
+    conditions:
+      - https://redmine.mellanox.com/issues/4334449
+
+tests_nvos/system/test_system_ztp.py::test_ztp_provisioning_script_positive:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4276503"
+    conditions:
+      - https://redmine.mellanox.com/issues/4334449
 ########################## NVOS IGNORE END ##########################

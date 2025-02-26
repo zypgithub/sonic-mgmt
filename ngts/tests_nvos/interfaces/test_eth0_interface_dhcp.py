@@ -147,67 +147,44 @@ def test_interface_eth0_speed_duplex_autoneg(engines, devices, topology_obj):
                 applicable_duplex = ["full"]  # For other speeds, only "full" duplex is applicable
 
             for duplex in applicable_duplex:
-                mgmt_port.interface.link.set(op_param_name='speed', op_param_value=speed, apply=False,
+                mgmt_port.interface.link.set(op_param_name='speed', op_param_value=speed, apply=True,
                                              ask_for_confirmation=True).verify_result()
                 result = mgmt_port.interface.link.set(op_param_name='duplex', op_param_value=duplex,
                                                       apply=True, ask_for_confirmation=True)
+                check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port)
+                check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port)
                 Port.wait_for_port_state(mgmt_port, "up")
 
                 if not result:
                     SendCommandTool.execute_command(TestToolkit.GeneralApi[TestToolkit.tested_api].
                                                     apply_config, engines.dut, True).verify_result()
 
-                output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
-                    mgmt_port.interface.link.show()).get_returned_value()
-                Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
-                                                                  field_name=IbInterfaceConsts.LINK_SPEED,
-                                                                  expected_value=speed).verify_result()
-                Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
-                                                                  field_name=IbInterfaceConsts.LINK_DUPLEX,
-                                                                  expected_value=duplex).verify_result()
+                wait_for_param_changed(mgmt_port, IbInterfaceConsts.LINK_SPEED, speed)
+                wait_for_param_changed(mgmt_port, IbInterfaceConsts.LINK_DUPLEX, duplex)
 
     with allure.step('Set autoneg to off'):
         mgmt_port.interface.link.set(op_param_name=IbInterfaceConsts.LINK_AUTO_NEGOTIATE, op_param_value='off', apply=True,
                                      ask_for_confirmation=True).verify_result()
-        time.sleep(2)
-        output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
-            mgmt_port.interface.link.show()).get_returned_value()
-
-        Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
-                                                          field_name=IbInterfaceConsts.LINK_AUTO_NEGOTIATE,
-                                                          expected_value=IbInterfaceConsts.LINK_AUTO_NEG_OFF
-                                                          ).verify_result()
+        check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port)
+        check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port)
+        Port.wait_for_port_state(mgmt_port, "up")
+        wait_for_param_changed(mgmt_port, IbInterfaceConsts.LINK_AUTO_NEGOTIATE, IbInterfaceConsts.LINK_AUTO_NEG_OFF)
 
     with allure.step('Run show command on mgmt port and verify default values after unset'):
         mgmt_port.interface.link.unset(op_param=IbInterfaceConsts.LINK_AUTO_NEGOTIATE, apply=True, ask_for_confirmation=True).verify_result()
-        time.sleep(2)
-        output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
-            mgmt_port.interface.link.show()).get_returned_value()
+        check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port)
+        Port.wait_for_port_state(mgmt_port, "up")
 
-        Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
-                                                          field_name=IbInterfaceConsts.LINK_AUTO_NEGOTIATE,
-                                                          expected_value=IbInterfaceConsts.LINK_AUTO_NEG_ON
-                                                          ).verify_result()
+        wait_for_param_changed(mgmt_port, IbInterfaceConsts.LINK_AUTO_NEGOTIATE, IbInterfaceConsts.LINK_AUTO_NEG_ON)
 
         mgmt_port.interface.link.unset(op_param='duplex', apply=True, ask_for_confirmation=True).verify_result()
 
-        output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
-            mgmt_port.interface.link.show()).get_returned_value()
-
-        Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
-                                                          field_name=IbInterfaceConsts.LINK_DUPLEX,
-                                                          expected_value="full"
-                                                          ).verify_result()
+        check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port)
+        wait_for_param_changed(mgmt_port, IbInterfaceConsts.LINK_DUPLEX, 'full')
 
         mgmt_port.interface.link.unset(op_param='speed', apply=True, ask_for_confirmation=True).verify_result()
-        time.sleep(2)
-        output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
-            mgmt_port.interface.link.show()).get_returned_value()
-
-        Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
-                                                          field_name=IbInterfaceConsts.LINK_SPEED,
-                                                          expected_value="1G"
-                                                          ).verify_result()
+        check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port)
+        wait_for_param_changed(mgmt_port, IbInterfaceConsts.LINK_SPEED, "1G")
 
 
 @pytest.mark.cumulus
@@ -678,3 +655,12 @@ def wait_for_hostname_changed(system, dhcp_hostname):
     with (allure.step("Waiting for system hostname changed to {}".format(dhcp_hostname))):
         system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
         assert dhcp_hostname in system_output[SystemConsts.HOSTNAME], "hostname wasn't changed"
+
+
+@retry(Exception, tries=20, delay=2)
+def wait_for_param_changed(port_obj, param, param_to_verify):
+    with allure.step(f"Waiting for {param} changed to {param_to_verify}"):
+        output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
+            port_obj.interface.link.show()).get_returned_value()
+        current_param = output_dictionary[f'{param}']
+        assert current_param == param_to_verify, f"Current {current_param} is not as expected {param_to_verify}"
