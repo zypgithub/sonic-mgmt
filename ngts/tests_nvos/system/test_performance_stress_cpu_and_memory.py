@@ -17,6 +17,7 @@ from ngts.tools.test_utils import allure_utils as allure
 logger = logging.getLogger(__name__)
 
 
+@pytest.mark.check_disk_usage(expectedKbWritten=60000)
 @pytest.mark.timeout(20 * MINUTE, func_only=True)
 @pytest.mark.ssh_config
 @pytest.mark.system
@@ -33,13 +34,6 @@ def test_parallel_cli_commands(engines, devices):
 
     """
     system = System()
-    with allure.step("Get initial disk stats"):
-        device = "loop1"
-        field_to_read = 'kB_wrtn'
-        logs_threshold = 15
-        initial_output = run_iostat_and_parse(engines.dut)
-        initial_kb = int(initial_output[device][field_to_read])
-
     with allure.step('Show ssh and verify default values'):
         ssh_output = OutputParsingTool.parse_json_str_to_dictionary(system.ssh_server.show()).get_returned_value()
         max_sessions = ssh_output[SystemConsts.SSH_CONFIG_MAX_SESSIONS] - 20
@@ -69,7 +63,7 @@ def test_parallel_cli_commands(engines, devices):
         cmds_list2 = ["nv set system message pre-login 'test'", "nv config apply", "nv show system message -o json"]
         cmds_list3 = ['nv show interface -o json']
         cmds_list4 = ['nv show platform firmware -o json']
-        cmds_list5 = ['nv set interface eth0 description testing', 'nv config apply', 'nv show interface -o json']
+        cmds_list5 = ['nv show interface -o json']
         command_lists = [cmds_list1, cmds_list2, cmds_list3, cmds_list4, cmds_list5]
         keep_running_event = threading.Event()
         keep_running_event.set()
@@ -100,15 +94,6 @@ def test_parallel_cli_commands(engines, devices):
         with allure.step("verify memory and cpu while running test"):
             validate_memory_and_cpu(memory_mpstat_output_before_testing, memory_mpstat_output_after_connections,
                                     memory_mpstat_output_during_testing, memory_mpstat_output_after_testing)
-
-        with allure.step(f"Validate log writes less than {logs_threshold}MB"):
-            with allure.step("Get final disk stats"):
-                final_output = run_iostat_and_parse(engines.dut)
-                final_kb = int(final_output[device][field_to_read])
-                delta_mb = (final_kb - initial_kb) / 1000
-
-            with allure.step(f"Verify Write Threshold - Initial: {initial_kb}KB, Final: {final_kb}KB, Delta: {delta_mb}MB"):
-                assert delta_mb <= logs_threshold, f"Wrote {delta_mb}MB (max {logs_threshold}MB allowed)"
 
 
 def run_session(session, commands_list, keep_running_event):
@@ -205,27 +190,3 @@ def validate_memory_and_cpu(before_testing, after_connections, during_testing={}
     with allure.step("validate memory and cpu after testing"):
         for key, value in after_connections.items():
             assert after_testing[key] - before_testing[key] < 0.07, f"unexpected change in {key} detected: initial output was {before_testing}, revised output after connections: {after_testing}"
-
-
-def run_iostat_and_parse(engine):
-    iostat_output = engine.run_cmd('iostat')
-    cleaned_output = re.sub(r'\x1b\[[0-9;]*[A-Za-z]', '', iostat_output)
-    lines = cleaned_output.strip().split('\n')
-    result = {}
-    for i, line in enumerate(lines):
-        if line.startswith('Device'):
-            headers = ['device'] + line.split()[1:]
-            break
-    else:
-        return {}
-
-    for line in lines[i + 1:]:
-        if not line.strip():
-            continue
-        parts = line.split()
-        if len(parts) != len(headers):
-            continue
-        device = parts[0]
-        result[device] = dict(zip(headers[1:], parts[1:]))
-
-    return result

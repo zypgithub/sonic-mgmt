@@ -1,9 +1,9 @@
 import concurrent.futures
 import datetime
 import logging
+import os
 import random
 import smtplib
-import os
 import time
 from email.mime.text import MIMEText
 from typing import Dict
@@ -17,6 +17,7 @@ from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
 from infra.tools.exceptions.setup_issue import SetupIssue
 from infra.tools.general_constants.constants import DefaultConnectionValues
+from infra.tools.linux_tools.linux_tools import scp_file
 from infra.tools.sql.connect_to_mssql import ConnectMSSQL
 from ngts.cli_wrappers.linux.linux_general_clis import LinuxGeneralCli
 from ngts.cli_wrappers.nvue.nvue_base_clis import NvueBaseCli
@@ -44,9 +45,8 @@ from ngts.nvos_tools.infra.TrafficGeneratorTool import TrafficGeneratorTool
 from ngts.nvos_tools.system.System import System
 from ngts.scripts.code_coverage.code_coverage_consts import NvosConsts
 from ngts.scripts.code_coverage.test_code_coverage import extract_python_coverage_for_nvos
-from ngts.tests_nvos.helpers.pytest_helpers import is_cur_test_has_marker
+from ngts.tests_nvos.helpers.pytest_helpers import is_cur_test_has_marker, get_marker_arg_value, is_cur_test_passed
 from ngts.tests_nvos.helpers.pytest_items_filters import run_nvos_pytest_items_modification
-from infra.tools.linux_tools.linux_tools import scp_file
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_general_utils import wait_for_ldap_nvued_restart_workaround
 
@@ -80,6 +80,34 @@ def pytest_addoption(parser):
 @pytest.hookimpl(tryfirst=True)
 def pytest_collection_modifyitems(config, items):
     run_nvos_pytest_items_modification(config, items)
+
+
+@pytest.fixture(autouse=True)
+def check_disk_usage(request, engines):
+    marker_name = 'check_disk_usage'
+    should_check = is_cur_test_has_marker(request, marker_name)
+    if should_check:
+        with allure.step("Get initial disk stats"):
+            field_to_read = 'kB_wrtn'
+            initial_output = OutputParsingTool.run_iostat_and_parse(engines.dut)
+            device = next((devices for devices in initial_output.keys() if not devices.startswith('loop')), None)
+            initial_kb = int(initial_output[device][field_to_read])
+
+    yield
+
+    if should_check:
+        with allure.step("Fetching written data siz"):
+            final_output = OutputParsingTool.run_iostat_and_parse(engines.dut)
+            final_kb = int(final_output[device][field_to_read])
+            delta_kb = (final_kb - initial_kb)
+
+        allure.attach('Written data size', f'before: {initial_kb}KB\nafter: {final_kb}KB\ntest added: {delta_kb}KB')
+
+        if is_cur_test_passed(request):
+            expected_threshold = get_marker_arg_value(request, marker_name, 'expect')
+            if expected_threshold and isinstance(expected_threshold, int):
+                with allure.step(f'make sure test addition is less than expected ({expected_threshold})'):
+                    assert delta_kb <= expected_threshold, f"Wrote {delta_kb}KB (max {expected_threshold}KB allowed)"
 
 
 @pytest.fixture(autouse=True)

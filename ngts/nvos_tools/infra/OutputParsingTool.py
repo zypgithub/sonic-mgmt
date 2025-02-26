@@ -577,3 +577,16 @@ class OutputParsingTool:
             return ''
         reboot_reason = events[latest_reboot_event_id]['text'].split(',')[0].split(':')[1]
         return reboot_reason
+
+    def run_iostat_and_parse(engine):
+        with allure.step("Execute the iostat command and parse the output into a dictionary"):
+            iostat_output = engine.run_cmd('iostat -o JSON')
+            cleaned_output = json.loads(iostat_output)
+            host = cleaned_output['sysstat']['hosts']
+            disks = host[0]['statistics'][0]    # list of all devices
+            result = {}
+            for disk in disks['disk']:
+                disk_device = disk['disk_device']
+                result[disk_device] = {key: disk[key] for key in disk if key != 'disk_device'}
+
+            return result
