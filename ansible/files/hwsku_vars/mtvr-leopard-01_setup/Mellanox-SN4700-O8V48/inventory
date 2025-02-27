@@ -48,3 +48,4 @@ ptf-mtvr-leopard-01 ansible_host=10.245.32.122 ansible_ssh_user="{{ lookup('env'
 
 [pdu]
 pdu-10-245-2-49 ansible_host=10.245.2.49 protocol=snmp
+pdu-10-245-2-25 ansible_host=10.245.2.25 protocol=snmp
