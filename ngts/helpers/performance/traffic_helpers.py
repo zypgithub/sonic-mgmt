@@ -58,24 +58,63 @@ def generate_ip_address_dict(address_start, step, mode, list_of_ports):
     return dict(zip(list_of_ports, address_list))
 
 
-def create_json_traffic_stream(player_alias, traffic_parameters, stream_name):
-    packet = PacketGenerator(ports=traffic_parameters["ports"],
-                             packet_size=traffic_parameters["packet_size"],
-                             num_packets=traffic_parameters["num_packets"])
-    packet.add_ether_header(src=traffic_parameters["MAC"]["src"],
-                            dst=traffic_parameters["MAC"]["dst"])
+def create_json_traffic_stream(player_alias, traffic_parameters, stream_name, tc=PerfConsts.CL_ROCE_LOSSLESS_DEFAULT_TC):
+    """
+    Creates a JSON representation of a traffic stream.
+
+    Args:
+        player_alias (str): Alias for the player generating the traffic.
+        traffic_parameters (dict): Dictionary containing traffic parameters such as ports, packet size,
+                                   number of packets, MAC addresses, IP addresses, UDP ports, and AR.
+        stream_name (str): Name of the traffic stream.
+        tc (int, optional): Traffic class. Defaults to PerfConsts.CL_ROCE_LOSSLESS_DEFAULT_TC.
+
+    Returns:
+        dict: JSON representation of the traffic stream.
+    """
+    # Initialize a packet generator with specified ports, packet size, and number of packets
+    packet = PacketGenerator(
+        ports=traffic_parameters["ports"],
+        packet_size=traffic_parameters["packet_size"],
+        num_packets=traffic_parameters["num_packets"]
+    )
+
+    # Add Ethernet header with source and destination MAC addresses and traffic class
+    packet.add_ether_header(
+        src=traffic_parameters["MAC"]["src"],
+        dst=traffic_parameters["MAC"]["dst"]
+    )
+
+    # Add IP header based on whether the traffic is IPv6 or IPv4
     if traffic_parameters['is_ipv6']:
-        packet.add_ipv6_header(src=traffic_parameters["IP"]["src"],
-                               dst=traffic_parameters["IP"]["dst"])
+        packet.add_ipv6_header(
+            src=traffic_parameters["IP"]["src"],
+            dst=traffic_parameters["IP"]["dst"],
+            tc=tc
+        )
     else:
-        packet.add_ip_header(src=traffic_parameters["IP"]["src"],
-                             dst=traffic_parameters["IP"]["dst"])
-    packet.add_udp_header(source_port=traffic_parameters["UDP"]["src"],
-                          dest_port=traffic_parameters["UDP"]["dst"])
+        packet.add_ip_header(
+            src=traffic_parameters["IP"]["src"],
+            dst=traffic_parameters["IP"]["dst"],
+            tos=tc
+        )
+
+    # Add UDP header with source and destination ports
+    packet.add_udp_header(
+        source_port=traffic_parameters["UDP"]["src"],
+        dest_port=traffic_parameters["UDP"]["dst"]
+    )
+
+    # Add BTH header with acknowledgment request
     packet.add_bth_header(ar=traffic_parameters["AR"])
+
+    # Add payload header with player alias
     packet.add_payload_header(player_alias)
+
+    # Convert the packet to JSON and assign the stream name
     stream = packet.get_json()
     stream["name"] = stream_name
+
     return stream
 
 

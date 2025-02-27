@@ -1,0 +1,53 @@
+{
+    {# Path to the SDK test script #}
+    "sdk_test_info": {
+        "sdk_test_path": "sx_sdk_py_tests/tests/multi_os_tests/lossy_losless_tests/lossy_lossless_base_tg.py",
+        "sdk_test_name": "LossyLosslessTG"
+    },
+
+    "sdk_test_conf": {
+        {# Retrieve port mappings #}
+        {% set ports = get_right_left_ports_dict() %}
+        {% set right_ports = ports["right_ports"] %}
+        {% set left_ports = ports["left_ports"] %}
+        {% set all_ports = left_ports + right_ports %}
+
+        {# Define split dictionary using left split configuration #}
+        "split_dict": { "{{ conf_args.split_left | string }}": {{ all_ports | tojson }} },
+
+        {# VLAN and traffic shaping configurations #}
+        "fws_base_vlan": 200,
+        "is_ipv6": "{{ conf_args.is_ipv6 }}",
+        "shaper_val": 0.975,
+
+        {# MAC address configurations #}
+        "smac": "00:01:02:03:04:05",
+        "left_mac": "00:01:02:03:04:06",
+        "right_mac": "00:00:00:00:10:60",
+
+        {# IP configurations #}
+        "source_ip": "{{ '192:168:0:0:0:0:0:1' if conf_args.is_ipv6 else '4.4.4.4' }}",
+        "left_dst_ip": "{{ '192:168:5:1:1:1:2:0' if conf_args.is_ipv6 else '10.0.1.0' }}",
+        "right_dst_ip": "{{ '192:168:5:1:1:2:2:0' if conf_args.is_ipv6 else '192.168.1.0' }}",
+
+        {# Lossy lossless patch settings #}
+        {# DSCP lossy = 34 -> prio 4 -> pg 4 -> tc 4 #}
+        "lossy_dscp_value": 34,
+        "lossy_tc": 4,
+        "lossy_pg": 4,
+
+        {# DSCP lossless 26 -> prio 3 -> pg 1 -> tc 3 #}
+        "lossless_dscp_value": 26,
+        "lossless_tc": 3,
+        "lossless_pg": 1,
+
+        {# Returned MAC addresses #}
+        "returned_mac_addr": ["00:00:00:00:10:70", "00:00:00:00:10:90"],
+
+        {# VLAN selection based on DUT alias #}
+        "vlan": 5,
+
+        {# Buffer configuration #}
+        "pool_size": 744479
+    }
+}

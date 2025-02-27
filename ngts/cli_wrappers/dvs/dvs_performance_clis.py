@@ -32,7 +32,7 @@ class DvsPerformance(PerformanceCommon):
         templates_path = os.path.join(BugHandlerConst.NGTS_PATH, "performance_tests",
                                       template_suite, scenario, "dvs")
         env = Environment(loader=FileSystemLoader(templates_path))
-        jinja_template = env.get_template(f"{self.dut_alias}.txt")
+        jinja_template = env.get_template(f"{self.dut_alias}.jinja")
         func_dict = {"get_right_left_ports_dict": self.get_right_left_ports_dict,
                      "get_split_ports": self.get_split_ports,
                      "generate_ip_list": generate_ip_address_dict}

@@ -2,6 +2,7 @@
 
 import json
 from typing import List
+from ngts.constants.performance_constants import PerfConsts
 
 
 class PacketGenerator:
@@ -41,26 +42,27 @@ class PacketGenerator:
         }
         return packet_data
 
-    def add_ip_header(self, src: str, dst: str, ttl: int = 64, tos: int = 96) -> None:
+    def add_ip_header(self, src: str, dst: str, ttl: int = 64, tos: int = PerfConsts.CL_ROCE_LOSSLESS_DEFAULT_TC) -> None:
         """
         Adds an IP header to the packet configuration.
         Args:
             src: The source IP address as a string.
             dst: The destination IP address as a string.
             ttl: The time-to-live value for the IP packet. Defaults to 64.
-            tos: Type of service, defaults to 96 for default ROCE Lossless Traffic.
+            tos: Type of service, default is 96 for CL lossless Traffic.
         """
         self.headers["IP"] = {"src": src, "dst": dst, "ttl": ttl, "tos": tos}
 
-    def add_ipv6_header(self, src: str, dst: str, hlim: int = 64) -> None:
+    def add_ipv6_header(self, src: str, dst: str, hlim: int = 64, tc: int = PerfConsts.CL_ROCE_LOSSLESS_DEFAULT_TC) -> None:
         """
         Adds an IPv6 header to the packet configuration.
         Args:
             src: The source IP address as a string.
             dst: The destination IP address as a string.
             hlim: The hop limit value for the IPv6 packet. Defaults to 64.
+            tc: Traffic class, default is 96 for CL lossless Traffic
         """
-        self.headers["IPv6"] = {"src": src, "dst": dst, "hlim": hlim}
+        self.headers["IPv6"] = {"src": src, "dst": dst, "hlim": hlim, "tc": tc}
 
     def add_ether_header(self, src: str, dst: str) -> None:
         """
