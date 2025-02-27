@@ -449,6 +449,11 @@ class ValidationTool:
         return False
 
     @staticmethod
+    def validate_key_value(dictionary, key, value):
+        assert key in dictionary, f'Field {repr(key)} not found in output'
+        assert dictionary[key] == value, f'Field {repr(key)} expected {repr(value)} but got {repr(dictionary[key])}'
+
+    @staticmethod
     def validate_set_equal(actual: Iterable, expected: Iterable, should_be_equal=True) -> ResultObj:
         """Tests whether the two lists are identical (by set comparison: ignoring duplicates, ignoring order)."""
         actual = set(actual)
@@ -543,8 +548,8 @@ class ValidationTool:
         """
         result_obj = ResultObj(True, "port state is as expected", True)
         with allure.step("Validate Port Status"):
-            link_state = output_dictionary[IbInterfaceConsts.LINK][IbInterfaceConsts.LINK_STATE]
-            logical_state = output_dictionary[IbInterfaceConsts.LINK][IbInterfaceConsts.LINK_LOGICAL_PORT_STATE]
+            link_state = output_dictionary[IbInterfaceConsts.LINK_STATE]
+            logical_state = output_dictionary[IbInterfaceConsts.LINK_LOGICAL_PORT_STATE]
             if expected_ports_state and not expected_ports_logical_state and link_state == expected_ports_state:
                 return result_obj
             if expected_ports_logical_state and not expected_ports_state and logical_state == expected_ports_logical_state:
@@ -566,3 +571,7 @@ class ValidationTool:
         else:
             return ResultObj(False, returned_value=False,
                              info=f'String expected to contain one of {expected} but actual value is: {actual}')
+
+    @staticmethod
+    def assert_expected_value(expected, actual, description=''):
+        assert expected == actual, f'{description} wrong value: {expected=}, {actual=}'

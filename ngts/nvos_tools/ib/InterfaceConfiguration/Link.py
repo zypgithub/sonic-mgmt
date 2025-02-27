@@ -11,3 +11,4 @@ class LinkMgmt(BaseComponent):
         self.counters = BaseComponent(self, path='/counters')
         self.plan_ports = BaseComponent(self, path='/plan-ports')
         self.connection_mode = BaseComponent(self, path='/connection-mode')
+        self.phy_diag = BaseComponent(self, path='/phy-diag')
