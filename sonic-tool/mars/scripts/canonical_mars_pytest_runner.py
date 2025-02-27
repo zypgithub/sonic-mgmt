@@ -51,7 +51,7 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
         if "--target_cli_type" in self.raw_options:
             self.target_cli_type = re.search(r"--target_cli_type=(DVS|Sonic|NVUE)", self.raw_options).group(1)
             ip = "ipv6" if "is_ipv6" in self.raw_options else "ipv4"
-            allure_project_id_suffix = "{}-{}".format(self.target_cli_typ, ip)
+            allure_project_id_suffix = "{}-{}".format(self.target_cli_type, ip)
         allure_project = get_allure_project_id(self.setup_name, self.test_script,
                                                allure_project_id_suffix=allure_project_id_suffix)
         random_seed = int(time.time())
