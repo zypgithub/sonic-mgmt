@@ -40,7 +40,8 @@ FATAL_HEALTH_EVENT_SIMULATION = {
     4: "echo health_check_trigger  sx_dbg_test_fw_assert {asic} > /proc/mlx_sx/sx_core",
     5: "echo health_check_trigger  sx_dbg_test_fw_fatal_cause {asic} > /proc/mlx_sx/sx_core",
     # todo: more events and warnings
-    "warning": "echo health_check_trigger catas {asic} > /proc/mlx_sx/sx_core",
+    "warning": "echo health_check_trigger sysfs {asic} > /proc/mlx_sx/sx_core",
+
 }
 FATAL_EVENT_IDS = (4, 5)
 
@@ -75,11 +76,16 @@ def fatal_mode_setup_and_teardown(test_name, engines, events_count_setting):
 
 
 @pytest.fixture(autouse=True)
-def assert_fatal_logs(engines):
+def assert_fatal_logs(engines, request):
     """Runs at the end of each test to verify that all fatal events were logged to /var/log/fatal.log"""
     engine = engines.dut
     fatal_event_timestamps.clear()
     yield
+
+    test_name = request.node.name
+    if test_name is "test_negative_flow_with_warnings":
+        logger.info("Fatal log check not needed for test_negative_flow_with_warnings as it doesn't create fatal events")
+        return
 
     with allure.step(f'Find lines for fatal events in {FATAL_LOG_FILE}'):
         log_lines = engine.run_cmd(f'grep -h "{SAI_LOG_STRING}" {FATAL_LOG_FILE}*', validate=True).splitlines()
