@@ -12,7 +12,7 @@ r-moose-01-t1-isolated-d28u1  ansible_host=10.210.24.105 sonic_version=v2  sonic
 r-moose-01-ptf32  ansible_host=10.210.24.105 sonic_version=v2  sonic_hwsku=Mellanox-SN5600-C224O8 iface_speed=50000 serial_console="ssh -l rcon:7002 10.208.0.80" ptf_host=ptf-r-moose-01 ptf_portmap="roles/test/files/mlnx/r-moose-01_interface_to_front_map.ini" pdu_host=pdu-10-208-2-47
 r-moose-01-ptf-any  ansible_host=10.210.24.105 sonic_version=v2  sonic_hwsku=Mellanox-SN5600-C224O8 iface_speed=50000 serial_console="ssh -l rcon:7002 10.208.0.80" ptf_host=ptf-r-moose-01 ptf_portmap="roles/test/files/mlnx/r-moose-01_interface_to_front_map.ini" pdu_host=pdu-10-208-2-47
 
-moose-04 ansible_host=r-moose-04 ansible_ssh_user="{{ lookup('env','SONIC_SWITCH_USER') }}" ansible_ssh_pass="{{ lookup('env','SONIC_SWITCH_PASSWORD') }}" os=sonic
+r-moose-04 ansible_host=r-moose-04 ansible_ssh_user="{{ lookup('env','SONIC_SWITCH_USER') }}" ansible_ssh_pass="{{ lookup('env','SONIC_SWITCH_PASSWORD') }}" os=sonic
 
 [sonic:children]
 sonic_latest
