@@ -35,6 +35,8 @@ class CumulusInstallationSteps:
                 dut['engine'].run_cmd_set([f"nv set system hostname {dut_hostname}", "nv config apply -y"], patterns_list=["applied_and_saved"])
                 logging.info("Bringing up all the ports")
                 dut['cli'].interface.initialize_physical_ports()
+                logging.info("Restarting lldpd to clear LLDP neighbors")
+                dut['engine'].run_cmd("sudo systemctl restart lldpd")
 
     @staticmethod
     def update_apt_sources_list(dut):

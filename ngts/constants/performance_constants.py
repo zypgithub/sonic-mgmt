@@ -46,6 +46,7 @@ class PerfConsts:
     SDK_INSTALL_PATH = "/auto/mswg/projects/sx_mlnx_os/sx_fit_regression/libs/scripts/install_sdk_wrapper.py"
     CLEAN_SWITCH_PATH = "/auto/mswg/projects/sx_mlnx_os/sx_fit_regression/libs/scripts/sx_sdk_clean_logs.py"
     FW_BURN_PATH = "/auto/mswg/projects/sx_mlnx_os/sx_fit_regression/libs/scripts/sdk_fw_burn.py"
+    LATEST_SDK_DEB_DIR_TEMPLATE = "/auto/sw_system_release/sx_sdk_eth/latest_sx_sdk_{SDK_VERSION}/DEBS/"
 
     # File Names
     REQUIRMENTS_FILE = 'requirements.txt'
@@ -129,6 +130,7 @@ class PerfConsts:
         "DVS": SONIC_DVS_GRUB_PATH
     }
     SDK_DEB_FILE_TEMPLATE = "sys-sdk-git_1.mlnx.{SDK_VERSION}_amd64.deb"
+    LATEST_SDK_DEB_FILE_TEMPLATE = "sys-sdk-git_1.mlnx.*_amd64.deb"
 
     # Miscellaneous
     USED_SITE = "MTL"
@@ -137,6 +139,7 @@ class PerfConsts:
     ROCE_PORT = 4791
     UDP_SOURCE_PORT = 2001
     ADAPTIVE_ROUTING_ENABLED = 1
+    LATEST_SDK_VER_BRANCH = "4_7_3000"
 
     # Counters
     COUNTERS = [

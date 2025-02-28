@@ -30,7 +30,6 @@ class TestSPCXRA_x1Split_800G:
     @allure.description('Calculate the port utilization on the DUT with AR enabled and default AR profile.')
     def test_ar_perf_max_bandwidth(self, request, packet_size):
         pytest.xfail(f"test_ar_perf_max_bandwidth expected to on 800G with auto buffer mode")
-        skip_test_on_unsupported_os(cli_obj=self.cli_object, unsupported_os=CliType.NVUE)
 
         with allure.step(f"Set test correct allure title with {self.ip} parameter"):
             test_name = set_allure_title(request, self.ip)
@@ -50,7 +49,6 @@ class TestSPCXRA_x1Split_800G:
     @allure.title('test_ar_perf_max_bandwidth_ibm')
     @allure.description('Calculate the port utilization on the DUT with AR enabled and IBM enabled')
     def test_ar_perf_max_bandwidth_ibm(self, request, packet_size, ibm_fixture):
-        skip_test_on_unsupported_os(cli_obj=self.cli_object, unsupported_os=CliType.NVUE)
 
         with allure.step(f"Set test correct allure title with {self.ip} parameter"):
             test_name = set_allure_title(request, self.ip)

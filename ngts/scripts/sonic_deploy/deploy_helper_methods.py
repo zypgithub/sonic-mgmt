@@ -7,6 +7,7 @@ import json
 import allure
 import pytest
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from netmiko.ssh_exception import NetmikoAuthenticationException
 from infra.tools.topology_tools.nogaq import upload_data_to_noga
 from infra.tools.general_constants.constants import NogaConstants
 from ngts.cli_wrappers.common.general_clis_common import GeneralCliCommon
@@ -36,7 +37,7 @@ class DeployMethods:
             password = creds_dict.get('password')
             engine = LinuxSshEngine(ip, username=username, password=password)
             engine.run_cmd("echo $?")
-        except netmiko.ssh_exception.NetmikoAuthenticationException:
+        except NetmikoAuthenticationException:
             logger.error(f"Login to with {nos_name} credentials has failed")
             return None
 

@@ -273,7 +273,8 @@ class NvuePerformanceCli(PerformanceCommon):
         parameter_dict = {
             "split_left": conf_args['split_left'],
             "split_right": conf_args['split_right'],
-            "total_ports": total_dut_ports
+            "total_ports": total_dut_ports,
+            "speed": conf_args['speed']
         }
         outputText = jinja_template.render(parameter_dict=parameter_dict)
         try:

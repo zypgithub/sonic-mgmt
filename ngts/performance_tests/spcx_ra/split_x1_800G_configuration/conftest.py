@@ -33,6 +33,7 @@ def conf_args(is_ipv6):
                  "packet_size": PerfConsts.PACKET_SIZE_LIST[0],
                  "left_num_packets": SPCXRAConsts.PACKET_NUM_800G_x1,
                  "right_num_packets": SPCXRAConsts.PACKET_NUM_800G_x1,
+                 "speed": "800000000"
                  }
     return conf_args
 

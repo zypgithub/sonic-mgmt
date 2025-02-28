@@ -1,6 +1,7 @@
 import logging
 import re
 import os
+import glob
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import NvosConst
 from ngts.constants.constants import InfraConst
@@ -16,7 +17,7 @@ class CumulusGeneralCli(NvueGeneralCli):
     def __init__(self, engine, device):
         super().__init__(engine, device)
 
-    def install_traffic_generator(self):
+    def install_traffic_generator(self, latest_version=True):
         """
         Function verifies the traffic generator is functional post deploy on CL OS
 
@@ -27,13 +28,18 @@ class CumulusGeneralCli(NvueGeneralCli):
         :return: None
         """
         with allure.step('Get SDK_VER git'):
-            sdk_version = self.get_sdk_version()
+            if latest_version:
+                sdk_version = self.get_latest_sdk_version()
+            else:
+                sdk_version = self.get_sdk_version()
+
             deb_file_path = os.path.join(PerfConsts.SDK_DEB_DIR_TEMPLATE.format(SDK_VERSION=sdk_version),
                                          PerfConsts.SDK_DEB_FILE_TEMPLATE.format(SDK_VERSION=sdk_version))
             self.engine.copy_file(source_file=f'{deb_file_path}',
                                   dest_file=f'{PerfConsts.SDK_DEB_FILE_TEMPLATE.format(SDK_VERSION=sdk_version)}',
                                   file_system='/tmp/', overwrite_file=True, verify_file=False)
             self.engine.run_cmd(f'sudo dpkg -i /tmp/{PerfConsts.SDK_DEB_FILE_TEMPLATE.format(SDK_VERSION=sdk_version)}')
+
             self.engine.copy_file(source_file=f'{PerfConsts.REQUIRMENTS_DIR}/{PerfConsts.REQUIRMENTS_FILE}',
                                   dest_file=f'./{PerfConsts.REQUIRMENTS_FILE}', file_system='/tmp/',
                                   overwrite_file=True, verify_file=False)
@@ -135,3 +141,25 @@ class CumulusGeneralCli(NvueGeneralCli):
 
     def _verify_dockers_are_up(self, dockers_list):
         pass
+
+    def get_kernel_version(self):
+        kernel_version_output = self.engine.run_cmd('uname -r', validate=True)
+        kernel_version = re.search(r"(\d+\.\d+\.\d+)", kernel_version_output).group(1)
+        return kernel_version
+
+    def get_latest_sdk_version(self):
+        dut_kernel_version = self.get_kernel_version()
+        deb_file_path = os.path.join(PerfConsts.LATEST_SDK_DEB_DIR_TEMPLATE.format(SDK_VERSION=PerfConsts.LATEST_SDK_VER_BRANCH))
+        available_kernel_versions = os.listdir(deb_file_path)
+        deb_kernel_version = None
+        for kernel_version in available_kernel_versions:
+            if kernel_version.startswith(dut_kernel_version):
+                deb_file_path = os.path.join(deb_file_path, kernel_version)
+                deb_kernel_version = kernel_version
+                break
+        if not deb_kernel_version:
+            logger.warning(f"No matching kernel version found for {dut_kernel_version}")
+            return self.get_sdk_version()
+        files_available_in_deb_dir = glob.glob(os.path.join(deb_file_path, PerfConsts.LATEST_SDK_DEB_FILE_TEMPLATE))
+        sdk_version = re.search(r"sys-sdk-git_1.mlnx.(\d+.\d+.\d+)", files_available_in_deb_dir[0]).group(1)
+        return sdk_version

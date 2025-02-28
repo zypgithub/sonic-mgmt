@@ -3,6 +3,7 @@
 {% set split_right = parameter_dict.split_right %}
 {% set address_list = generate_ip_address_list("192.168.1.1", "192::1:1", mode="dual", number_of_address=(total_ports//2)*split_right) %}
 {% set mloop_ports = down_ports() %}
+{% set speed = parameter_dict.speed | int %}
 - header:
     model: sn5600
     nvue-api-version: nvue_v1
@@ -75,9 +76,6 @@
     {% for port in port_list['dut'] %}
     {% for split in range(0, split_right | int ) %}
       {{ port }}{% if split_right != 1 %}s{{ split }} {% endif %}:
-        acl:
-          acl-drop-arp:
-            inbound: {}
         bridge:
           domain:
             br_default:
@@ -113,6 +111,10 @@
         type: svi
         vlan: {{ vlan }}
     {% endfor %}
+    qos:
+      egress-shaper:
+        default-global:
+          port-max-rate: {{ (speed * 0.98) | int }}
     service:
       ntp:
         mgmt:
