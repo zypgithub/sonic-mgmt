@@ -167,6 +167,7 @@ def test_traffic_between_servers(ptfhost, rand_selected_dut, rand_unselected_dut
         lower_tor_active_server_ptf_port = lower_tor_mg_facts['minigraph_ptf_indices'][lower_tor_active_interface]
         logger.info("Toggle the interface {} to active on the lower tor.".format(lower_tor_active_interface))
         toggle_ports(rand_unselected_dut, [lower_tor_active_interface], "active")
+        toggle_ports(rand_selected_dut, [lower_tor_active_interface], "standby")
         lower_tor_uplink_interfaces = {}
         t1_ptf_ports = []
         for portchannel in lower_tor_mg_facts['minigraph_portchannels'].values():
