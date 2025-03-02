@@ -5,7 +5,6 @@ import csv
 import os
 
 from datetime import datetime, timedelta
-from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.nvos_constants.constants_nvos import ApiType, NvosConst, StatsConsts
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
@@ -871,30 +870,35 @@ def test_system_stats_big_files(engines, devices, test_api):
         with allure.step("Delete uploaded file"):
             engine.run_cmd(cmd='rm -f {}'.format(file_path))
 
-        if not is_bug_active(3938803):
-            with allure.step("Replace internal file with a huge file"):
-                file_name = 'temperature.csv'
-                file_path = StatsConsts.HUGE_FILE_PATH + file_name
-                player_engine.upload_file_using_scp(dest_username=devices.dut.default_username,
-                                                    dest_password=devices.dut.default_password,
-                                                    dest_folder=StatsConsts.INTERNAL_PATH,
-                                                    dest_ip=engines.dut.ip,
-                                                    local_file_path=file_path)
-                engine.run_cmd("sudo cp /tmp/{} /var/stats".format(file_name))
+        with allure.step("Replace internal file with a huge file"):
+            file_name = 'temperature.csv'
+            file_path = StatsConsts.HUGE_FILE_PATH + file_name
+            player_engine.upload_file_using_scp(dest_username=devices.dut.default_username,
+                                                dest_password=devices.dut.default_password,
+                                                dest_folder=StatsConsts.INTERNAL_PATH,
+                                                dest_ip=engines.dut.ip,
+                                                local_file_path=file_path)
+            engine.run_cmd("sudo cp /tmp/{} /var/stats".format(file_name))
 
-            with allure.step("Restart process..."):
-                engine.run_cmd("sudo systemctl restart stats-reportd")
+        with allure.step("Restart process..."):
+            engine.run_cmd("sudo systemctl restart stats-reportd")
 
-            with allure.step("Wait 15 seconds..."):
-                time.sleep(StatsConsts.SLEEP_15_SECONDS)
+        with allure.step("Wait 40 seconds..."):
+            time.sleep(StatsConsts.SLEEP_40_SECONDS)
 
-            with allure.step("Validate creating new category file when file size is over 600MB"):
-                validate_number_of_lines_in_external_file(engines, system, 'temperature',
-                                                          devices.dut.stats_temperature_header_num_of_lines,
-                                                          devices.dut.stats_temperature_header_num_of_lines + 100)
+        with allure.step(f"Get Temperature header number of lines"):
+            temperature_header_num_of_lines = get_header_number_of_lines(engines, 'temperature')
+            assert temperature_header_num_of_lines >= devices.dut.stats_temperature_header_num_of_lines, \
+                (f"temperature header number of lines ({temperature_header_num_of_lines}) is lower than the "
+                 f"expected minimum number of lines: {devices.dut.stats_temperature_header_num_of_lines}")
 
-            with allure.step("Delete uploaded file"):
-                engine.run_cmd(cmd='rm -f /tmp/{}'.format(file_name))
+        with allure.step("Validate creating new category file when file size is over 600MB"):
+            validate_number_of_lines_in_external_file(engines, system, 'temperature',
+                                                      temperature_header_num_of_lines,
+                                                      temperature_header_num_of_lines + 100)
+
+        with allure.step("Delete uploaded file"):
+            engine.run_cmd(cmd='rm -f /tmp/{}'.format(file_name))
 
     finally:
         set_system_stats_to_default(engine, system)
@@ -967,18 +971,17 @@ def test_validate_category_file_values(engines, devices, test_api):
                 get_returned_value()
 
             for file_name in stats_files_show:
-                if file_name == 'voltage' and not is_bug_active(3987851):
-                    with allure.step("Upload stats file to URL"):
-                        validate_upload_stats_file(engines, system, file_name, False)
+                with allure.step("Upload stats file to URL"):
+                    validate_upload_stats_file(engines, system, file_name, False)
 
-                    with allure.step("Validate external file header"):
-                        name = file_name.split('_')[1]
-                        file_path = NvosConst.MARS_RESULTS_FOLDER + file_name
-                        end_time = start_time + timedelta(minutes=6)
-                        validate_external_file_header_and_data(name, file_path, hostname, start_time, end_time)
+                with allure.step("Validate external file header"):
+                    name = file_name.split('_')[1]
+                    file_path = NvosConst.MARS_RESULTS_FOLDER + file_name
+                    end_time = start_time + timedelta(minutes=6)
+                    validate_external_file_header_and_data(name, file_path, hostname, start_time, end_time)
 
-                    with allure.step("Delete uploaded file"):
-                        player.run_cmd(cmd='rm -f {}'.format(file_path))
+                with allure.step("Delete uploaded file"):
+                    player.run_cmd(cmd='rm -f {}'.format(file_path))
 
     finally:
         set_system_stats_to_default(engine, system)
@@ -1260,3 +1263,10 @@ def check_in_range(col, value, min_val, max_val, sample, category):
 
 def check_in_range_without_na(col, value, min_val, max_val, sample, category):
     assert min_val <= int(value) <= max_val, f"{category} {col} not in range ({value} in sample #{sample}"
+
+
+def get_header_number_of_lines(engines, category):
+    with allure.step(f"Get {category} header number of lines"):
+        num_of_lines = engines.dut.run_cmd(f"grep -c '^#' /var/stats/{category}.csv") + 2
+
+    return num_of_lines
