@@ -433,3 +433,4 @@ def wait_for_port_to_become_active(port_obj):
         state = current_link_dict[IbInterfaceConsts.LINK_STATE]
         assert logical_state == "Active" and "up" in state.keys(), \
             "The logical state of interface {} is not 'Active'".format(port_obj.name)
+        sleep(PORT_UPDATE_SLEEP_TIME)
