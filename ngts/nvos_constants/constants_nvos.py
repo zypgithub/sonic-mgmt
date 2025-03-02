@@ -1412,6 +1412,7 @@ class StatsConsts:
         DISABLED = 'disabled'
 
     SLEEP_15_SECONDS = 15  # [sec]
+    SLEEP_40_SECONDS = 40  # [sec]
     SLEEP_1_MINUTE = 60  # [sec]
     SLEEP_3_MINUTES = 180  # [sec]
     SLEEP_5_MINUTES = 300  # [sec]
