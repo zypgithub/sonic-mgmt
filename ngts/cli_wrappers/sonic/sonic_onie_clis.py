@@ -295,6 +295,9 @@ def get_latest_onie_version(fw_pkg_path, platform_params):
         logger.info(f"Get latest ONIE version from specified file {fw_pkg_path}")
         fw_data = extract_fw_data(fw_pkg_path)
         chassis = platform_params.filtered_platform.upper()
+        # The chassis name of 2700a1 in firmware.json and platform_components.json is "MSN2700-A1"
+        if chassis == "MSN2700A1":
+            chassis = "MSN2700-A1"
         if chassis in fw_data["chassis"]:
             component = fw_data["chassis"][chassis]["component"]
         else:
