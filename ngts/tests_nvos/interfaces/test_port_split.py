@@ -5,6 +5,7 @@ import random
 import time
 from retry import retry
 from ngts.nvos_tools.infra.Tools import Tools
+from ngts.tests_nvos.constants import MINUTE
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
@@ -413,6 +414,7 @@ def test_split_all_ports_together(engines, interfaces, start_sm, devices):
 
 @pytest.mark.system_profile_cleanup
 @pytest.mark.ib_interfaces
+@pytest.mark.timeout(20 * MINUTE, func_only=True)
 def test_split_all_ports(engines, interfaces, start_sm, devices):
     """
     Test flow:

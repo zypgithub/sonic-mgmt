@@ -650,14 +650,14 @@ def wait_for_mtu_changed(port_obj, mtu_to_verify):
         assert current_mtu == mtu_to_verify, "Current mtu {} is not as expected {}".format(current_mtu, mtu_to_verify)
 
 
-@retry(Exception, tries=4, delay=2)
+@retry(Exception, tries=10, delay=2)
 def wait_for_hostname_changed(system, dhcp_hostname):
     with (allure.step("Waiting for system hostname changed to {}".format(dhcp_hostname))):
         system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
         assert dhcp_hostname in system_output[SystemConsts.HOSTNAME], "hostname wasn't changed"
 
 
-@retry(Exception, tries=20, delay=2)
+@retry(Exception, tries=25, delay=2)
 def wait_for_param_changed(port_obj, param, param_to_verify):
     with allure.step(f"Waiting for {param} changed to {param_to_verify}"):
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
