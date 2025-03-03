@@ -92,6 +92,15 @@ KEEP_ALL_CONFIG_CHECKERS: Dict[str, Generator[None, None, None]] = {
     API_SPIFFE_ID: api_spiffe_factory_reset_keep_all_config_check(),
 }
 
+KEEP_ALL_CONFIG_CHECKERS: Dict[str, Generator[None, None, None]] = {
+    GNMI_CERT: gnmi_cert_factory_reset_keep_all_config_check(),
+    NMX_CERT: cluster_app_mngr_security_factory_reset_keep_all_config_check(),
+    API_MTLS: api_mtls_factory_reset_keep_all_config_check(),
+    CERTS_MGMT: certs_mgmt_factory_reset_keep_only_files_check(),
+    SED_PASSWORD: sed_password_factory_reset_check(),
+    RBAC: rbac_factory_reset_keep_roles(),
+}
+
 FACTORY_RESET_TYPE_TO_CHECKER_FUNCTIONS: Dict[str, Dict[str, Generator[None, None, None]]] = {
     FactoryResetType.NO_PARAMS: NO_PARAMS_CHECKERS,
     FactoryResetType.KEEP_BASIC: KEEP_BASIC_CHECKERS,

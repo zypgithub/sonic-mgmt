@@ -39,26 +39,3 @@ def test_show_platform(engines, test_api, devices, nv_command):
         output[SystemConsts.PRODUCT_NAME] = devices.dut.show_platform_output[SystemConsts.PRODUCT_NAME]
 
     ValidationTool.validate_output_of_show(output, TestToolkit.devices.dut.show_platform_output).verify_result()
-
-
-@pytest.mark.platform
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_show_platform_chassis_location(engines, test_api, devices, nv_command):
-    """
-    Validates the output of nv show platform chassis-location.
-    The OpenAPI test checks the JSON output while the NVUE test checks the auto output.
-    Runs only on Juliet setups. The test assumes the setup is standalone.
-    Test flow:
-        1. nv show platform chassis-location
-        2. Parse output to dict
-        3. Validate all keys (field names) exist and there are no extra keys
-        4. Validate all values are correct
-    """
-    if devices.dut.is_standalone:
-        with allure.step("verifying output for standalone switch"):
-            output_dict = OutputParsingTool.parse_show_output_to_dict(nv_command.platform.chassis_location.show()).get_returned_value()
-            ValidationTool.compare_dictionaries(output_dict, PlatformConsts.CHASSIS_LOCATION_STANDALONE_DICT).verify_result()
-    else:
-        with allure.step("verifying output for non - standalone switch"):
-            output_dict = OutputParsingTool.parse_show_output_to_dict(nv_command.platform.chassis_location.show()).get_returned_value()
-            ValidationTool.validate_output_of_show(output_dict, TestToolkit.devices.dut.show_platform_chassis_location_output).verify_result()

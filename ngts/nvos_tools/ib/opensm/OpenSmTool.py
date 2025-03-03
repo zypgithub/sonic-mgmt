@@ -65,6 +65,7 @@ class OpenSmTool:
                 return ResultObj(False, "Failed to find GUID to start OpenSM")
 
         with (allure.step("Start OpenSM")):
+            # todo: remove when we get opensm 5.22 or later
             engines.hfnm.run_cmd(f"{opensm_path} -F {OPEN_SM_CFG_PATH} -g {guid} -B")
             time.sleep(5)
 

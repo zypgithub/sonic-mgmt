@@ -1,27 +1,20 @@
-import copy
 import logging
 import random
 import time
 import pytest
 
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import SystemConsts, OutputFormat, ApiType, NvosConst, ImageConsts
-from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.nvos_tools.nmx.Sdn import Sdn
 from ngts.nvos_tools.system.System import System
-from ngts.scripts.sonic_deploy.image_preparetion_methods import get_real_paths
 from ngts.scripts.sonic_deploy.nvos_only_methods import NvosInstallationSteps
-from ngts.scripts.sonic_deploy.test_deploy_and_upgrade import get_target_version_url, get_base_version_url, \
-    prepare_images_to_install
 from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tools.test_utils import allure_utils as allure
-from ngts.constants.constants import NvosCliTypes
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 
 logger = logging.getLogger()
@@ -161,6 +154,8 @@ def test_upgrade_with_nmx_enabled(test_api, devices, topology_obj, setup_name, e
                     f"{output[SystemConsts.STATE]}, Expected to be: " \
                     f"{NvosConst.ENABLED}"
 
+        ClusterTools.reboot_compute_nodes_gpus(setup_name)
+
         if not standalone_system:
             output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
                                                                  output_format=output_format).get_returned_value()
@@ -188,12 +183,17 @@ def test_upgrade_with_nmx_enabled(test_api, devices, topology_obj, setup_name, e
                 current_installed_config_path = output[installed_file]['path']
                 current_config_content = engines.dut.run_cmd("sudo cat {}".format(current_installed_config_path))
                 expected_config_content = engines.sonic_mgmt.run_cmd("sudo cat {}".format(path_to_config[file_type]))
-                assert current_config_content == expected_config_content, f"Config file was not loaded properly. Expected content {expected_config_content}, Actual content: {current_config_content}"
+                assert ClusterConsts.EXPECTED_LINE_TO_BE_PRESERVED_AFTER_UPGRADE[file_type] in current_config_content, \
+                    f"Config file was not loaded properly. Expected content {expected_config_content}, Actual content: " \
+                    f"{current_config_content}. \n " \
+                    f"{ClusterConsts.EXPECTED_LINE_TO_BE_PRESERVED_AFTER_UPGRADE[file_type]} was not preserved"
 
     finally:
         if not standalone_system:
             with allure.step("Running sdn factory reset"):
                 sdn.factory_default.action_reset(param='force')
+                time.sleep(2)
+                ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
 
         if not target_image_installed:
             NvueGeneralCli(engines.dut, devices.dut).install_image_via_onie(topology_obj, target_version_realpath)

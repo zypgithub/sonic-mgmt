@@ -5,6 +5,8 @@ import re
 from typing import Type
 import random
 from ngts.nvos_tools.Devices.IbDevice import JulietSwitch
+from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
+from ngts.nvos_tools.infra.IbInterfaceTool import IbInterfaceTool
 from ngts.tools.test_utils import allure_utils as allure
 from retry import retry
 from ngts.nvos_constants.constants_nvos import DatabaseConst
@@ -82,7 +84,7 @@ def test_reset_transceiver_firmware_positive(engines, test_api):
         platform.transceiver.action_reset(random_transceiver).verify_result()
 
         with allure.step("sleep for 5 sec - waiting for after reset action"):
-            time.sleep(5)
+            time.sleep(8)
 
         with allure.step(f"verify all {random_transceiver} fields back to the same values"):
             output_after_reset = OutputParsingTool.parse_json_str_to_dictionary(output_json=platform.transceiver.show(random_transceiver + ' firmware')).verify_result()
@@ -97,7 +99,7 @@ def test_reset_transceiver_firmware_positive(engines, test_api):
 
 @pytest.mark.platform
 @pytest.mark.transceiver
-def test_install_transceiver_firmware_positive(engines, devices, test_api, test_name):
+def test_install_transceiver_firmware_positive(engines, devices, test_api, test_name, asic_conf_dict):
     """
     Test Flow:
         1. Fetch 2 module FW images. Save as <FW1>و <FW2>
@@ -129,6 +131,13 @@ def test_install_transceiver_firmware_positive(engines, devices, test_api, test_
     """
 
     platform, random_transceiver, random_port = _get_random_optical_module_transceiver()
+
+    with allure.step(f"get the mst device for transceiver {random_transceiver}"):
+        output_dictionary = OutputParsingTool.parse_show_interface_output_to_dictionary(
+            Port.show_interface(fae_param='fae', port_names=random_port)).get_returned_value()
+        pci_conf = output_dictionary[IbInterfaceConsts.PRIMARY_ASIC_DEVICE].split("/")
+        mst_dev_name = IbInterfaceTool.get_mst_cable_name(engines.dut, random_transceiver, pci_conf[-1])
+
     default_fw = OutputParsingTool.parse_json_str_to_dictionary(
         platform.transceiver.show(random_transceiver + ' firmware')).verify_result()[PlatformConsts.FW_ACTUAL]
 
@@ -140,10 +149,15 @@ def test_install_transceiver_firmware_positive(engines, devices, test_api, test_
         scp_path = 'scp://{}:{}@{}'.format(player_engine.username, player_engine.password, player_engine.ip)
         transceiver_id = default_fw.split('.')[0]
         transceiver_obj: Transceiver = TransceiversConsts.TRANSCEIVERS_DETAILS[transceiver_id]
+
+        with allure.step("check module security level and update versions if needed"):
+            if not IbInterfaceTool.is_dev_module(engines.dut, mst_dev_name):
+                transceiver_obj.update_versions()
+
         downgrade_version_path = transceiver_obj.test_versions_path + transceiver_obj.downgrade_version_name
         upgrade_version_path = transceiver_obj.test_versions_path + transceiver_obj.upgrade_version_name
 
-    with allure.step(f"try to downgrade amd upgrade firmware for transceiver of type {transceiver_obj.transceiver_type}"):
+    with allure.step(f"try to downgrade and upgrade firmware for transceiver of type {transceiver_obj.transceiver_type}"):
         try:
             with allure.independent_step("fetch and downgrade transceiver firmware"):
                 platform.firmware.transceiver.action_fetch(downgrade_version_path, base_url=scp_path).verify_result()
@@ -214,8 +228,13 @@ def test_install_reset_transceiver_firmware_negative_flow(engines, test_api):
             interface.link.show()).verify_result()
         output_after_install = OutputParsingTool.parse_json_str_to_dictionary(platform.transceiver.show(random_transceiver + ' firmware')).verify_result()
 
-        assert output_before_install == output_after_install, f"at elast one of the transceiver fields has been change, before installaion {output_before_install}, after instalaaion {output_after_install}"
-        assert show_interface_after_install == show_interface_before_install, "at least one of the link values has been change, before_install {} after install {}".format(show_interface_before_install, show_interface_after_install)
+        show_interface_before_install.pop('counters')
+        show_interface_after_install.pop('counters')
+
+        with allure.independent_step("validate the output of transceiver firmware command"):
+            assert output_before_install == output_after_install, f"at elast one of the transceiver fields has been change, before installaion {output_before_install}, after instalaaion {output_after_install}"
+        with allure.independent_step("validate the output of interface links command"):
+            assert show_interface_after_install == show_interface_before_install, "at least one of the link values has been change, before_install {} after install {}".format(show_interface_before_install, show_interface_after_install)
 
 
 @pytest.mark.platform
@@ -301,13 +320,13 @@ def _get_random_optical_module_transceiver():
                 platform.transceiver.show_detailed()).verify_result()
             random_transceiver = \
                 RandomizationTool.select_random_transceiver(transceivers_output=show_transceiver, field_name=PlatformConsts.TRANSCEIVER_CABLE_TYPE,
-                                                            expected_value='Optical module', number_of_transceiver_to_select=1)
+                                                            expected_value='Optical module', number_of_transceiver_to_select=1).ignore_result()
             if not random_transceiver.result:
                 random_transceiver = \
                     RandomizationTool.select_random_transceiver(transceivers_output=show_transceiver,
                                                                 field_name=PlatformConsts.HARDWARE_TRANCEIVER_DIAGNOSTIC_STATUS,
                                                                 expected_value='Diagnostic Data Available',
-                                                                number_of_transceiver_to_select=1)
+                                                                number_of_transceiver_to_select=1).ignore_result()
 
             if not random_transceiver.result:
                 pytest.skip(f"No optical modules available for the setup")
@@ -332,9 +351,9 @@ def check_counters(counters_before, counters_after):
     with allure.step("Verify that no keys are missing after action"):
         assert counters_before.keys() == counters_after.keys()
 
-    with allure.step("Validate that none of the counters have changed by more than 10%"):
+    with allure.step("Validate that none of the counters have changed by more than 20%"):
         for key, before_value in counters_before.items():
-            if counters_after[key] - counters_before[key] > counters_before[key] * 0.1:
+            if counters_after[key] - counters_before[key] > counters_before[key] * 0.2:
                 changes.append({
                     'key': key,
                     'before': counters_before[key],

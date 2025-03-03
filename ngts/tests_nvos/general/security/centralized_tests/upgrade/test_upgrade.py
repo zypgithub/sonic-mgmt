@@ -8,7 +8,6 @@ from ngts.nvos_constants.constants_nvos import ImageConsts
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.tests_nvos.constants import MINUTE
-from ngts.tests_nvos.general.security.api_server.mtls.spiffe_id.test_api_mtls_spiffe_id import api_spiffe_upgrade_check
 from ngts.tests_nvos.general.security.centralized_tests.helpers.checker_skip_rules import CheckerSkipRule, \
     SkipCheckerByCond, SkipCheckerBySetup, should_skip_checker
 from ngts.tests_nvos.general.security.certificate.helpers import delete_certificates
@@ -28,14 +27,12 @@ NMX_CERT = 'NMX cert'
 API_MTLS = 'API mTLS'
 SED_PASSWORD = 'SED password'
 CERTS_MGMT = 'Certificates management'
-AAA_SPIFFE = 'AAA SPIFFE Id'
 
 UPGRADE_CHECKERS: Dict[str, Generator[None, None, None]] = {
     GNMI_CERT: gnmi_cert_upgrade_check(),
     NMX_CERT: cluster_app_mngr_security_upgrade_check(),
     API_MTLS: api_mtls_upgrade_check(),
     CERTS_MGMT: certs_mgmt_upgrade_check(),
-    AAA_SPIFFE: api_spiffe_upgrade_check(),
 }
 
 CHECKERS_SKIP_RULES: Dict[str, CheckerSkipRule] = {

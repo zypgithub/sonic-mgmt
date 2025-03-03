@@ -63,7 +63,7 @@ def test_disconnect_user_with_multiple_terminals(engines):
 
     with allure.step('disconnect {username} with {conn} connection'.format(username=username, conn=num_connections)):
         system = System()
-        system.aaa.user.action_disconnect().verify_result()
+        system.aaa.user.user_id[username].action_disconnect().verify_result()
         verify_after_disconnect(engines.dut, system, username, password)
 
 

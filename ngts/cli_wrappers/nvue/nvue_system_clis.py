@@ -362,7 +362,7 @@ class NvueSystemCli(NvueBaseCli):
         if uri is not None:
             cmd += f' uri {uri}' if uri != '' else ' uri ""'
         if external:
-            cmd += f' external_ca'
+            cmd += f' external-ca'
         logging.info(f"Running action cmd: '{cmd}' on dut using NVUE")
         return engine.run_cmd(cmd)
 

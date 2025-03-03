@@ -167,11 +167,11 @@ def get_cert_with_ca_mismatch(certs: List[CertInfo]) -> CertInfo:
     return cert_with_mismatch
 
 
-def optional_cacert_types() -> list:
-    return [CacertType.GLOBAL]
-    # TODO: bugs 4251992, 4237677, 4237752, 4237850 closed on 3000 (not on master)
-    # TODO: once merged, use the line below to use all CA types
-    # return CacertType.ALL_TYPES
+def optional_cacert_types() -> list:  # TODO: remove once closed
+    # if any(is_bug_active(bug) for bug in [4251992, 4237677, 4237752, 4237850]):
+    #     return [CacertType.GLOBAL]
+    # else:
+    return CacertType.ALL_TYPES
 
 
 def get_test_certs_dir_location(certs_dirname_prefix, dut_hostname):

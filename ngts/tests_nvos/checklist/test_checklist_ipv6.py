@@ -2,6 +2,7 @@ import logging
 import pytest
 
 from ngts.nvos_tools.infra import ExceptionTool
+from ngts.nvos_tools.infra.IpTool import IpTool
 from ngts.tools.test_utils import allure_utils as allure
 import subprocess
 
@@ -17,6 +18,9 @@ def test_checklist_ipv6(engines):
     - ssh connection
     - openapi
     """
+    if not IpTool.is_dhcp_client6_has_lease(engines.dut):
+        pytest.skip("DUT DHCP client6 has no lease; cannot run this IPv6 test.")
+
     try:
         with allure.step("Get ipv6 address for switch " + engines.dut.ip):
             logging.info("Running 'nv show interface eth0 ip address'")

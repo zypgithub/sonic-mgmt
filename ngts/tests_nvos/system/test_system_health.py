@@ -47,9 +47,15 @@ def set_unset_ps_redundancy_grid():
         platform.ps_redundancy.unset(apply=True).verify_result()
 
 
+@pytest.fixture(scope='function')
+def validate_health_history():
+    system = System()
+    system.health.history.retry_get_health_history_file_summary_line()
+
+
 @pytest.mark.system
 @pytest.mark.health
-def test_reboot_test():
+def test_reboot_test(validate_health_history):
     """
     Validate health after reboot :
     - status is OK
@@ -327,6 +333,7 @@ def test_simulate_fan_speed_fault(devices, engines, loganalyzer):
     """
     system = System()
     thermal_directory = devices.dut.fan_direction_dir
+    speed_changed = False
     system.log.rotate_logs()
     date_time = ClockTools.get_datetime_object_from_show_system_output(system.show())
     system.health.history.delete_history_file(HealthConsts.HEALTH_FIRST_FILE)
@@ -334,6 +341,9 @@ def test_simulate_fan_speed_fault(devices, engines, loganalyzer):
     verify_health_before_test()
     fan_id = random.randrange(1, len(devices.dut.fan_list) + 1)
     logger.info("Chosen fan : {}  - {}".format(fan_id, get_fan_display_name(fan_id)))
+    fan_display_name = get_fan_display_name(fan_id)
+    health_issue_dict = {fan_display_name: [FansConsts.FAN_SPEED_OUT_OF_RANGE, FansConsts.FAN_NOT_WORKING]}
+    real_speed = 0
     if loganalyzer:
         for hostname in loganalyzer.keys():
             loganalyzer[hostname].ignore_regex.extend([f"\\.*Fan low speed warning: fan{fan_id} current speed\\.*",
@@ -341,18 +351,17 @@ def test_simulate_fan_speed_fault(devices, engines, loganalyzer):
                                                        f"\\.*Insufficient number of working fans warning\\.*"])
 
     try:
-        real_speed = HWSimulator.simulate_fan_speed_fault(engines.dut, thermal_directory, 1, fan_id)
-        fan_display_name = get_fan_display_name(fan_id)
-        health_issue_dict = {fan_display_name: [FansConsts.FAN_SPEED_OUT_OF_RANGE, FansConsts.FAN_NOT_WORKING]}
+        real_speed = HWSimulator.simulate_fan_speed_fault(engines.dut, thermal_directory, fan_id, 1)
+        speed_changed = True
         retry_validate_health_fix_or_issue(engines, system, health_issue_dict, date_time, False)
 
     finally:
-        date_time = ClockTools.get_datetime_object_from_show_system_output(system.show())
-        time.sleep(1)
-        with allure.step("Fix the health issues"):
-            logger.info("Fix the health issues")
-            HWSimulator.simulate_fix_fan_speed_fault(engines.dut, thermal_directory, fan_id, real_speed)
-            retry_validate_health_fix_or_issue(engines, system, health_issue_dict, date_time, True)
+        if speed_changed:
+            with allure.step("Fix the health issues"):
+                date_time = ClockTools.get_datetime_object_from_show_system_output(system.show())
+                time.sleep(1)
+                HWSimulator.simulate_fix_fan_speed_fault(engines.dut, thermal_directory, fan_id, real_speed)
+                retry_validate_health_fix_or_issue(engines, system, health_issue_dict, date_time, True)
 
 
 @pytest.mark.system

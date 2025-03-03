@@ -107,13 +107,13 @@ class Interface(BaseComponent):
 
             return result_obj
 
-    def action_clear_counter_for_interface(self, dut_engine=None, interface_name="", fae_param=""):
+    def action_clear_counter_for_interface(self, dut_engine=None, interface_name="", fae_param="", expected_str="Cleared counters successfully"):
         with allure.step("Clear counters for interface {}".format(interface_name)):
             if not dut_engine:
                 dut_engine = TestToolkit.engines.dut
             cli_wrapper = self.port_obj._cli_wrapper if self.port_obj else self._cli_wrapper
             result_obj = SendCommandTool.execute_command_expected_str(
-                cli_wrapper.clear_stats, "Cleared counters successfully", dut_engine, interface_name, fae_param)
+                cli_wrapper.clear_stats, expected_str, dut_engine, interface_name, fae_param)
             # The expected_str is only necessary for overcoming https://redmine.mellanox.com/issues/4079803
             return result_obj
 

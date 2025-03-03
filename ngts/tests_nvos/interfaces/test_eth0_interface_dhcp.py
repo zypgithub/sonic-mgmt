@@ -1,8 +1,10 @@
 import time
 import re
 
+import allure
 import pytest
 
+from retry.api import retry_call
 from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import SystemConsts
@@ -11,6 +13,8 @@ from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.system.System import System
+from ngts.nvos_tools.platform.Platform import Platform
+from multiprocessing import Process
 
 logger = logging.getLogger()
 
@@ -145,69 +149,42 @@ def test_interface_eth0_speed_duplex_autoneg(engines, devices, topology_obj):
             for duplex in applicable_duplex:
                 mgmt_port.interface.link.set(op_param_name='speed', op_param_value=speed, apply=True,
                                              ask_for_confirmation=True).verify_result()
-
-                time.sleep(5)
-                Port.wait_for_port_state(mgmt_port, "up")
-
                 result = mgmt_port.interface.link.set(op_param_name='duplex', op_param_value=duplex,
                                                       apply=True, ask_for_confirmation=True)
-                time.sleep(5)
+                check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port)
+                check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port)
+                Port.wait_for_port_state(mgmt_port, "up")
 
                 if not result:
                     SendCommandTool.execute_command(TestToolkit.GeneralApi[TestToolkit.tested_api].
                                                     apply_config, engines.dut, True).verify_result()
 
-                output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
-                    mgmt_port.interface.link.show()).get_returned_value()
-                Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
-                                                                  field_name=IbInterfaceConsts.LINK_SPEED,
-                                                                  expected_value=speed).verify_result()
-                Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
-                                                                  field_name=IbInterfaceConsts.LINK_DUPLEX,
-                                                                  expected_value=duplex).verify_result()
+                wait_for_param_changed(mgmt_port, IbInterfaceConsts.LINK_SPEED, speed)
+                wait_for_param_changed(mgmt_port, IbInterfaceConsts.LINK_DUPLEX, duplex)
 
     with allure.step('Set autoneg to off'):
         mgmt_port.interface.link.set(op_param_name=IbInterfaceConsts.LINK_AUTO_NEGOTIATE, op_param_value='off', apply=True,
                                      ask_for_confirmation=True).verify_result()
-        time.sleep(2)
-        output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
-            mgmt_port.interface.link.show()).get_returned_value()
-
-        Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
-                                                          field_name=IbInterfaceConsts.LINK_AUTO_NEGOTIATE,
-                                                          expected_value=IbInterfaceConsts.LINK_AUTO_NEG_OFF
-                                                          ).verify_result()
+        check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port)
+        check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port)
+        Port.wait_for_port_state(mgmt_port, "up")
+        wait_for_param_changed(mgmt_port, IbInterfaceConsts.LINK_AUTO_NEGOTIATE, IbInterfaceConsts.LINK_AUTO_NEG_OFF)
 
     with allure.step('Run show command on mgmt port and verify default values after unset'):
         mgmt_port.interface.link.unset(op_param=IbInterfaceConsts.LINK_AUTO_NEGOTIATE, apply=True, ask_for_confirmation=True).verify_result()
-        time.sleep(2)
-        output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
-            mgmt_port.interface.link.show()).get_returned_value()
+        check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port)
+        Port.wait_for_port_state(mgmt_port, "up")
 
-        Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
-                                                          field_name=IbInterfaceConsts.LINK_AUTO_NEGOTIATE,
-                                                          expected_value=IbInterfaceConsts.LINK_AUTO_NEG_ON
-                                                          ).verify_result()
+        wait_for_param_changed(mgmt_port, IbInterfaceConsts.LINK_AUTO_NEGOTIATE, IbInterfaceConsts.LINK_AUTO_NEG_ON)
 
         mgmt_port.interface.link.unset(op_param='duplex', apply=True, ask_for_confirmation=True).verify_result()
 
-        output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
-            mgmt_port.interface.link.show()).get_returned_value()
-
-        Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
-                                                          field_name=IbInterfaceConsts.LINK_DUPLEX,
-                                                          expected_value="full"
-                                                          ).verify_result()
+        check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port)
+        wait_for_param_changed(mgmt_port, IbInterfaceConsts.LINK_DUPLEX, 'full')
 
         mgmt_port.interface.link.unset(op_param='speed', apply=True, ask_for_confirmation=True).verify_result()
-        time.sleep(2)
-        output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
-            mgmt_port.interface.link.show()).get_returned_value()
-
-        Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
-                                                          field_name=IbInterfaceConsts.LINK_SPEED,
-                                                          expected_value="1G"
-                                                          ).verify_result()
+        check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port)
+        wait_for_param_changed(mgmt_port, IbInterfaceConsts.LINK_SPEED, "1G")
 
 
 @pytest.mark.cumulus
@@ -582,6 +559,73 @@ def test_mgmt_interface_dhcpv6_ztp(engines, topology_obj):
         assert packets_received >= 5, f"Only {packets_received} packets received, less than 5"
 
 
+@pytest.mark.eth0
+@pytest.mark.system
+@pytest.mark.simx
+def test_mgmt_interface_dhcp_option_60(engines, topology_obj):
+    """
+    Test to verify availability of option 60(Vendor class) in dhcp
+
+    flow:
+    1. Start a subprocess to start monitoring tcpdump to validate option 60
+    2. Renew DHCP so that packet transfers starts happening
+    """
+
+    platform = Platform()
+    mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
+    mgmt_port = Port(mgmt_port_name)
+    output = OutputParsingTool.parse_json_str_to_dictionary(platform.show()).get_returned_value()
+    product_name = output['product-name']
+    hostname = engines.dut.run_cmd("hostname")
+    regex = r"Hostname.*{}.*Vendor-Class.*{}".format(hostname, product_name)
+
+    try:
+        with allure.step("Create a separate process to run tcpdump and validate option 60 in packets"):
+            tcpdump_process = Process(target=run_tcpdump_validate_option_60,
+                                      args=(engines.dut, mgmt_port_name, regex))
+            tcpdump_process.start()
+
+        with allure.step("Renew DHCP to initiate packet transfers"):
+            mgmt_port.interface.ip.dhcp_client.action('renew')
+
+    finally:
+        with allure.step("Combine with tcpdump process to finish gracefully"):
+            tcpdump_process.join()
+            assert tcpdump_process.exitcode == 0, "Vendor-Class Identifier (Option 60) not found in dhcp packets"
+
+
+@pytest.mark.eth0
+@pytest.mark.system
+@pytest.mark.simx
+def test_mgmt_interface_dhcp_option_60_conf_file(engines):
+    """
+    Test to verify availability of option 60(Vendor class identifier) in dhcp
+
+    flow:
+    1. Check vendor class identifier (DHCP option 60) is present in dh client conf file
+    """
+
+    with allure.step('Open dh client conf file and validate option 60'):
+        dh_client_conf = engines.dut.run_cmd("cat " + SystemConsts.DH_CLIENT_CONF_FILE)
+        assert "vendor-class-identifier" in dh_client_conf, "Vendor class identifier not present in dh client conf file"
+
+
+def run_tcpdump_validate_option_60(dut, mgmt_port_name, regex):
+    with allure.step('Run tcpdump and validate option 60'):
+        retry_call(validate_dhcp_option_60_tcpdump, [dut, mgmt_port_name, regex],
+                   exceptions=AssertionError, tries=5, delay=0)
+
+
+def validate_dhcp_option_60_tcpdump(dut, mgmt_port_name, regex):
+    tcpdump_output = Tools.IpTool.run_tcpdump(dut, mgmt_port_name, filter='port 67 or port 68 -c 10 -n -vv')
+    # split packets
+    tcp_dumps = tcpdump_output.split("Client-Ethernet-Address")
+    for tcpdump in tcp_dumps:
+        if re.search(regex, tcpdump, re.DOTALL):
+            return
+    assert False, "Vendor-Class Identifier (Option 60) not found in dhcp packets"
+
+
 def validate_interface_ip_address(address, output_dictionary, validate_in=True):
     """
 
@@ -611,3 +655,12 @@ def wait_for_hostname_changed(system, dhcp_hostname):
     with (allure.step("Waiting for system hostname changed to {}".format(dhcp_hostname))):
         system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
         assert dhcp_hostname in system_output[SystemConsts.HOSTNAME], "hostname wasn't changed"
+
+
+@retry(Exception, tries=20, delay=2)
+def wait_for_param_changed(port_obj, param, param_to_verify):
+    with allure.step(f"Waiting for {param} changed to {param_to_verify}"):
+        output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
+            port_obj.interface.link.show()).get_returned_value()
+        current_param = output_dictionary[f'{param}']
+        assert current_param == param_to_verify, f"Current {current_param} is not as expected {param_to_verify}"

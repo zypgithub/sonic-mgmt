@@ -367,7 +367,7 @@ class ClusterTools:
             assert ClusterConsts.EMPTY_PARTITION_ID in list(output.keys()), f'Partition {ClusterConsts.EMPTY_PARTITION_ID} was not created'
             output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.partition_id[ClusterConsts.EMPTY_PARTITION_ID].show(output_format=output_format),
                                                                  output_format=output_format).get_returned_value()
-            partitions_mapping[ClusterConsts.EMPTY_PARTITION_ID] = []
+            partitions_mapping[int(ClusterConsts.EMPTY_PARTITION_ID)] = []
             if not is_bug_active(4209873):
                 expected_output = {'health': 'healthy', 'locations': {}, 'mcast-limit': mcast_limit, 'name': ClusterConsts.EMPTY_PARTITION_NAME, 'num-gpus': 0, 'partition-type': '', 'resiliency-mode': resiliency_mode}
                 ClusterTools.validate_partition_content(output, expected_output)
@@ -375,10 +375,13 @@ class ClusterTools:
     @staticmethod
     def validate_partition_content(output, expected_output):
         for key, val in expected_output.items():
-            if key in ['locations']:
+            if key in ['locations'] and (not expected_output[key]):
                 continue
             else:
-                assert output[key] == val, f'Expected value: {val}, Actual value:{output[key]}'
+                if is_bug_active(4290901) and (val == 'user_action'):
+                    pass
+                else:
+                    assert str(output[key]) == str(val), f'Expected value: {val}, Actual value:{output[key]}'
 
     @staticmethod
     def create_empty_partition_and_add_gpu(sdn, no_reroute='', output_format=OutputFormat.json):
@@ -391,16 +394,19 @@ class ClusterTools:
         (uuid, location) = random.choice(gpus_in_partition)
         with allure.step(f"Remove GPU from partition {partition_to_remove_from}"):
             if original_partition_type == 'location_based':
-                sdn.partition.partition_id[partition_to_remove_from].location.location_id[location].action_restore_partition(reroute_param=no_reroute)
+                sdn.partition.partition_id[partition_to_remove_from].location.location_id[location].action_restore_partition(reroute_param=no_reroute).verify_result()
             else:
-                sdn.partition.partition_id[partition_to_remove_from].uuid.uuid_value[uuid].action_restore_partition(reroute_param=no_reroute)
+                sdn.partition.partition_id[partition_to_remove_from].uuid.uuid_value[uuid].action_restore_partition(reroute_param=no_reroute).verify_result()
+
+        if is_bug_active(4285786):
+            time.sleep(15)
 
         with allure.step(f"Add GPU {uuid} {location} to empty partition {ClusterConsts.EMPTY_PARTITION_ID}"):
             empty_partition_type = random.choice(['uuid', 'location'])
             if empty_partition_type == 'location':
-                sdn.partition.partition_id[ClusterConsts.EMPTY_PARTITION_ID].location.location_id[location].action_update_partition(reroute_param=no_reroute)
+                sdn.partition.partition_id[ClusterConsts.EMPTY_PARTITION_ID].location.location_id[location].action_update_partition(reroute_param=no_reroute).verify_result()
             else:
-                sdn.partition.partition_id[ClusterConsts.EMPTY_PARTITION_ID].uuid.uuid_value[uuid].action_update_partition(reroute_param=no_reroute)
+                sdn.partition.partition_id[ClusterConsts.EMPTY_PARTITION_ID].uuid.uuid_value[uuid].action_update_partition(reroute_param=no_reroute).verify_result()
         return uuid, location, ClusterConsts.EMPTY_PARTITION_ID, partition_to_remove_from
 
     @staticmethod
@@ -436,12 +442,13 @@ class ClusterTools:
     @staticmethod
     def delete_empty_partition(sdn, partitions_mapping, output_format=OutputFormat.json):
         with allure.step("Delete empty partition"):
-            start_time = time.time()
-            timeout = 20
             sdn.partition.partition_id[ClusterConsts.EMPTY_PARTITION_ID].action_delete_partition()
+            start_time = time.time()
+            timeout = 25
             while True:
                 output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
                                                                      output_format=output_format).get_returned_value()
+                logger.info("Checking if partition is deleted,")
                 if ClusterConsts.EMPTY_PARTITION_ID not in list(output.keys()):
                     elapsed_time = time.time() - start_time
                     logger.info(f"Condition met: Partition {ClusterConsts.EMPTY_PARTITION_ID} deleted after {elapsed_time:.2f} seconds")
@@ -450,9 +457,10 @@ class ClusterTools:
                 if time.time() - start_time > timeout:
                     logger.error(f"Timeout: Partition {ClusterConsts.EMPTY_PARTITION_ID} was not deleted within {timeout} seconds")
                     break
+                logger.info("Partition is not deleted. Retrying")
 
             assert ClusterConsts.EMPTY_PARTITION_ID not in list(output.keys()), f'Partition {ClusterConsts.EMPTY_PARTITION_ID} was not deleted'
-            partitions_mapping.pop(ClusterConsts.EMPTY_PARTITION_ID)
+            partitions_mapping.pop(int(ClusterConsts.EMPTY_PARTITION_ID))
 
     @staticmethod
     def verify_log_messages_log_level(log_level, system, test_api, cluster, setup_name):
@@ -551,8 +559,8 @@ class ClusterTools:
         logger.info("Adjusted fm_config file content.")  # TODO ADD A PROPER COMMENT
         engines.dut.run_cmd(
             f"""
-            sudo sed -i '/^MNNVL_TOPOLOGY=/c\\MNNVL_TOPOLOGY=gb200_nvl36r1_c2g4_topology' {path_to_generated_file} && \
-            sudo grep -q '^MNNVL_TOPOLOGY=' {path_to_generated_file} || echo 'MNNVL_TOPOLOGY=gb200_nvl36r1_c2g4_topology' | sudo tee -a {path_to_generated_file} && \
+            sudo sed -i '/^MNNVL_TOPOLOGY=/c\\MNNVL_TOPOLOGY=gb200_nvl8r1_c2g4_etf_topology' {path_to_generated_file} && \
+            sudo grep -q '^MNNVL_TOPOLOGY=' {path_to_generated_file} || echo 'MNNVL_TOPOLOGY=gb200_nvl8r1_c2g4_etf_topology' | sudo tee -a {path_to_generated_file} && \
             sudo sed -i '/^MNNVL_PARTIALLY_POPULATED_TOPOLOGY=/c\\MNNVL_PARTIALLY_POPULATED_TOPOLOGY=1' {path_to_generated_file} && \
             sudo grep -q '^MNNVL_PARTIALLY_POPULATED_TOPOLOGY=' {path_to_generated_file} || echo 'MNNVL_PARTIALLY_POPULATED_TOPOLOGY=1' | sudo tee -a {path_to_generated_file}
             """
@@ -565,7 +573,7 @@ class ClusterTools:
 
         ClusterTools.reboot_compute_nodes_gpus(setup_name)
 
-        ClusterTools().validate_cluster_enabled(cluster)
+        ClusterTools.validate_cluster_enabled(cluster)
         yield
         if ClusterTools.check_cluster_state(cluster, output_format) == 'disabled':
             ClusterTools.start_cluster(cluster, setup_name, output_format=output_format)

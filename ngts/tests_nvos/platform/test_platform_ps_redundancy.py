@@ -1,4 +1,5 @@
 import logging
+import random
 import time
 import pytest
 
@@ -8,10 +9,20 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.platform.Platform import Platform
+from ngts.tests_nvos.constants import MINUTE
 from ngts.nvos_tools.system.System import System
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
+
+
+@pytest.fixture(scope='function')
+def required_for_redundancy(devices):
+    min_required = len(devices.dut.psu_list) // 2
+    required_for_redundancy = {PlatformConsts.PS_REDUNDANCY_NO: min_required,
+                               PlatformConsts.PS_REDUNDANCY_GRID: min_required * 2,
+                               PlatformConsts.PS_REDUNDANCY_PS: min_required + 1}
+    return required_for_redundancy
 
 
 def clear_platform_ps_redundancy(platform, engines):
@@ -42,8 +53,9 @@ def test_show_platform_ps_redundancy(test_api):
 
 
 @pytest.mark.platform
+@pytest.mark.timeout(6 * MINUTE, func_only=True)
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_set_platform_ps_redundancy(engines, test_api):
+def test_set_platform_ps_redundancy(engines, test_api, required_for_redundancy):
     """nv set platform ps-redundancy"""
     TestToolkit.tested_api = test_api
 
@@ -59,6 +71,8 @@ def test_set_platform_ps_redundancy(engines, test_api):
                     get_returned_value()
                 ValidationTool.verify_field_value_in_output(output, PlatformConsts.PS_REDUNDANCY_POLICY,
                                                             policy_type).verify_result()
+                ValidationTool.verify_field_value_in_output(output, PlatformConsts.PS_REDUNDANCY_MIN_REQ,
+                                                            required_for_redundancy[policy_type]).verify_result()
 
         with allure.step("Unset platform ps-redundancy and verify show command shows default policy"):
             platform.ps_redundancy.unset(PlatformConsts.PS_REDUNDANCY_POLICY, apply=True, dut_engine=engines.dut).\
@@ -74,8 +88,9 @@ def test_set_platform_ps_redundancy(engines, test_api):
 
 
 @pytest.mark.platform
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_platform_ps_redundancy_functionality(engines, topology_obj, test_api):
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
+@pytest.mark.timeout(5 * MINUTE, func_only=True)
+def test_platform_ps_redundancy_functionality(engines, devices, topology_obj, test_api, required_for_redundancy):
     TestToolkit.tested_api = test_api
 
     with allure.step("Create Platform object"):
@@ -85,11 +100,10 @@ def test_platform_ps_redundancy_functionality(engines, topology_obj, test_api):
         system = System()
 
     try:
-        with allure.step("Verify all PSUs are up"):
-            output = OutputParsingTool.parse_json_str_to_dictionary(platform.environment.psu.show()).\
-                get_returned_value()
-            for psu in output:
-                assert output[psu][PlatformConsts.PSU_STATE] == "ok", "State of {} is not ok".format(psu)
+        with allure.step("Verify we have all PSUs "):
+            available_psus = platform.environment.get_available_psus()
+            if len(available_psus) < len(devices.dut.psu_list):
+                pytest.skip(f"DUT has {len(available_psus)} valid PSUs, less than the required minimum for this test")
 
         with allure.step("Verify health is good and no issues are found"):
             system_health_check(system, HealthConsts.OK)
@@ -98,23 +112,20 @@ def test_platform_ps_redundancy_functionality(engines, topology_obj, test_api):
             output = OutputParsingTool.parse_json_str_to_dictionary(platform.ps_redundancy.show()). \
                 get_returned_value()
             assert PlatformConsts.PS_REDUNDANCY_MIN_REQ in output, "Platform ps-redundancy show does not show min-req"
-            min_required = int(output[PlatformConsts.PS_REDUNDANCY_MIN_REQ])
-            required_for_redundancy = {PlatformConsts.PS_REDUNDANCY_NO: min_required,
-                                       PlatformConsts.PS_REDUNDANCY_GRID: min_required * 2,
-                                       PlatformConsts.PS_REDUNDANCY_PS: min_required + 1}
+
         for policy_type in PlatformConsts.PS_REDUNDANCY_POLICY_TYPE:
             with allure.step("Set platform ps-redundancy to {} and verify in functionality".format(policy_type)):
                 platform.ps_redundancy.set(PlatformConsts.PS_REDUNDANCY_POLICY, policy_type, apply=True,
                                            dut_engine=engines.dut)
                 min_for_redundancy = required_for_redundancy[policy_type]
-                platform_ps_redundancy_functionality(engines, topology_obj, system, min_for_redundancy)
+                platform_ps_redundancy_functionality(engines, topology_obj, system, policy_type, min_for_redundancy)
                 logger.info("Policy {} is validated".format(policy_type))
 
     finally:
         clear_platform_ps_redundancy(platform, engines)
 
 
-def platform_ps_redundancy_functionality(engines, topology_obj, system, min_for_redundancy):
+def platform_ps_redundancy_functionality(engines, topology_obj, system, policy_type, min_for_redundancy):
     try:
         with allure.step("Get name from NOGA"):
             noga_query_data = topology_obj.players['dut']['attributes'].noga_query_data['attributes']
@@ -131,12 +142,13 @@ def platform_ps_redundancy_functionality(engines, topology_obj, system, min_for_
             time.sleep(10)
             system_health_check(system, HealthConsts.OK)
 
-        with allure.step("Deteriorate one more PSU than redundancy threshold to fail PS redundancy"):
-            DutUtilsTool.dut_psu_control(engines, topology_obj, skip_str_bad, 'off', dhcp_hostname)
+            if policy_type != PlatformConsts.PS_REDUNDANCY_NO:
+                with allure.step("Deteriorate one more PSU than redundancy threshold to fail PS redundancy"):
+                    DutUtilsTool.dut_psu_control(engines, topology_obj, skip_str_bad, 'off', dhcp_hostname)
+                    time.sleep(10)
 
-        # Need to consult with design regarding below behaviour
-        # with allure.step("Validate System health is not OK and issues are found"):
-        #    system_health_check(system, HealthConsts.NOT_OK)
+                with allure.step("Validate System health is not OK and issues are found"):
+                    system_health_check(system, HealthConsts.NOT_OK)
 
     finally:
         with allure.step("Recover PSUs"):

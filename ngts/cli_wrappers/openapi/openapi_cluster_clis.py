@@ -108,7 +108,7 @@ class OpenApiClusterCli(OpenApiBaseCli):
 
     @staticmethod
     def action_restore_partition(engine, resource_path, reroute_param=''):
-        logging.info("Running action: 'create' on dut using OpenApi")
+        logging.info("Running action: 'restore' on dut using OpenApi")
         params = {
             "state": "start",
             "parameters": {
@@ -118,7 +118,7 @@ class OpenApiClusterCli(OpenApiBaseCli):
         # Add optional parameters if provided
         if reroute_param:
             params["parameters"][reroute_param] = True
-        return OpenApiCommandHelper.execute_action(ActionType.CREATE, engine.engine.username, engine.engine.password,
+        return OpenApiCommandHelper.execute_action(ActionType.RESTORE, engine.engine.username, engine.engine.password,
                                                    engine.ip, resource_path, params)
 
     @staticmethod

@@ -9,6 +9,7 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
+from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.system.Files import Files
 
 logger = logging.getLogger()
@@ -86,13 +87,19 @@ class Image(BaseComponent):
     def boot_next_and_verify(self, partition_id):
         self.action_boot_next(partition_id)
         images = self.get_image_field_values()
-        with allure.step("Verifying the boot next image updated successfully"):
-            if ImageConsts.PARTITION1_IMG == partition_id:
-                assert images[ImageConsts.NEXT_IMG] == '1', "Failed to set the new image to boot next"
-            elif ImageConsts.PARTITION2_IMG == partition_id:
-                assert images[ImageConsts.NEXT_IMG] == '2', "Failed to set the new image to boot next"
-            else:
-                raise ValueError(f"Invalid partition_id: {partition_id}")
+        res_obj = ValidationTool.verify_expected_output(self.parent_obj.show(), ImageConsts.BUILD_ID)
+        res_obj.ignore_result()
+        if res_obj.result:  # temp solution until 3000 GA
+            with allure.step("Verifying the boot next image updated successfully"):
+                if partition_id == ImageConsts.PARTITION1_IMG:
+                    assert images[ImageConsts.NEXT_IMG] == '1', "Failed to set the new image to boot next"
+                elif partition_id == ImageConsts.PARTITION2_IMG:
+                    assert images[ImageConsts.NEXT_IMG] == '2', "Failed to set the new image to boot next"
+                else:
+                    raise ValueError(f"Invalid partition_id: {partition_id}")
+        else:
+            with allure.step("Verifying the boot next image updated successfully"):
+                assert images[ImageConsts.NEXT_IMG] == images[partition_id], "Failed to set the new image to boot next"
 
     def verify_show_images_output(self, expected_keys_values):
         with allure.step("verify expected values"):

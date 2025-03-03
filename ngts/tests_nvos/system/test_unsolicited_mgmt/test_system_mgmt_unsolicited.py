@@ -11,6 +11,7 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_constants.constants_nvos import SystemConsts, DatabaseConst, NvosConst
 from ngts.nvos_tools.infra.Tools import Tools
+from ngts.tests_nvos.constants import MINUTE
 
 logger = logging.getLogger()
 ipv4_eth0_expected_logs = f"NOTICE mgmt-unsolicited: Detected cable connection - running script with interface eth0"
@@ -97,6 +98,7 @@ def test_system_mgmt_unsolicited_disabled(engines, devices):
 
 
 @pytest.mark.system
+@pytest.mark.timeout(3 * MINUTE, func_only=True)
 def test_system_mgmt_unsolicited_shutdown_enabled(engines, devices):
     """
     @summary:
@@ -114,6 +116,7 @@ def test_system_mgmt_unsolicited_shutdown_enabled(engines, devices):
 
 
 @pytest.mark.system
+@pytest.mark.timeout(3 * MINUTE, func_only=True)
 def test_system_mgmt_unsolicited_shutdown_disabled(engines, devices):
     """
     @summary:

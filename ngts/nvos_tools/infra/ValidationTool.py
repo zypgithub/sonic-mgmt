@@ -366,7 +366,7 @@ class ValidationTool:
                 else:
                     if isinstance(output_dictionary[key], dict) and isinstance(sub_dictionary[key], dict):
                         res = ValidationTool.compare_nested_dictionary_content(output_dictionary[key],
-                                                                               sub_dictionary[key])
+                                                                               sub_dictionary[key], keys_to_ignore)
                         if not res.result:
                             return res
                     elif value != output_dictionary[key]:
@@ -516,7 +516,7 @@ class ValidationTool:
                             if result.info == ExpectedString.Result.REGEX_FAIL:
                                 errors.append(f"Field '{key}' expected to match regex '{expected_value.regex}' "
                                               f"but value is '{actual_value}'")
-                            if result.info == ExpectedString.Result.NOT_A_NUMBER:
+                            elif result.info == ExpectedString.Result.NOT_A_NUMBER:
                                 errors.append(f"Field '{key}' expected to be a number but value is '{actual_value}'")
                             elif result.info == ExpectedString.Result.TOO_SMALL:
                                 errors.append(f"Numeric value in field '{key}' expected to be at least "
@@ -562,7 +562,7 @@ class ValidationTool:
         if isinstance(expected, str):
             expected = (expected, )
         if any(s in actual for s in expected):
-            return ResultObj(True, returned_value=actual)
+            return ResultObj(True, "", actual)
         else:
-            return ResultObj(False, returned_value=actual,
+            return ResultObj(False, returned_value=False,
                              info=f'String expected to contain one of {expected} but actual value is: {actual}')

@@ -123,10 +123,10 @@ class File(BaseComponent):
             return SendCommandTool.execute_command_expected_str(
                 self._cli_wrapper.action, expected_str,
                 engine, device, action_type='install', resource_path=resource_path,
-                param_name='force' if force else no_force,
+                param_name='force' if force else no_force, param_value=param_value,
                 expect_reboot=with_reboot, recovery_engine=recovery_engine, deny_reboot=deny_reboot,
                 topology_obj=topology_obj, track_boot_intervals=track_boot_intervals, press_y=press_y,
-                system_is_ready_timeout=system_is_ready_timeout)
+                should_succeed=should_succeed, system_is_ready_timeout=system_is_ready_timeout)
 
     def rename_and_verify(self, new_name, expected_str="", dut_engine=None):
         original_name = self.file_name

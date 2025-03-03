@@ -53,7 +53,7 @@ def test_cluster_default_factory_reset(engines, devices, test_api, has_loopbox, 
             initial_partition_output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
                                                                                    output_format=output_format).get_returned_value()
             with allure.step("Create Empty partition"):
-                ClusterTools.create_empty_partition(sdn, [])
+                ClusterTools.create_empty_partition(sdn, {})
 
         with allure.step("Run reset factory without params"):
             execute_reset_factory(engines, system, devices.dut.reset_factory, "", current_time)
@@ -135,7 +135,7 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name,
             initial_partition_output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
                                                                                    output_format=output_format).get_returned_value()
             with allure.step("Create Empty partition"):
-                ClusterTools.create_empty_partition(sdn, [])
+                ClusterTools.create_empty_partition(sdn, {})
 
         with allure.step("Run reset factory keep basic param"):
             execute_reset_factory(engines, system, devices.dut.reset_factory, "keep basic", current_time)
@@ -214,7 +214,7 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name, 
             initial_partition_output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
                                                                                    output_format=output_format).get_returned_value()
             with allure.step("Create Empty partition"):
-                ClusterTools.create_empty_partition(sdn, [])
+                ClusterTools.create_empty_partition(sdn, {})
 
         with allure.step("Run reset factory with keep only-files param"):
             execute_reset_factory(engines, system, devices.dut.reset_factory, "keep only-files", current_time)
@@ -295,7 +295,7 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
 
         if not standalone_system:
             with allure.step("Create Empty partition"):
-                ClusterTools.create_empty_partition(sdn, [])
+                ClusterTools.create_empty_partition(sdn, {})
 
         with allure.step("Run reset factory with keep all-config param"):
             execute_reset_factory(engines, system, devices.dut.reset_factory, "keep all-config", current_time)
@@ -341,6 +341,8 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
         if not standalone_system:
             with allure.step("Running sdn factory reset"):
                 sdn.factory_default.action_reset(param='force')
+                time.sleep(2)
+                ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
 
         engines.sonic_mgmt.run_cmd(f"sudo rm -rf {ClusterConsts.INITIAL_CONFIGURATIONS_PATH + '/*'}")
         for app in ClusterConsts.INITIAL_EXPECTED_APPS:
@@ -482,7 +484,10 @@ def rotate_logs(system):
 def verify_config_files_content_not_changed(sdn, initial_config_contents, engines):
     errors_list = []
     current_config_files_content = {}
-    config_files_paths = ClusterTools.get_current_config_files_paths(sdn, ClusterConsts.NMX_CONTROLLER, ClusterConsts.NMX_CONTROLLER_CONFIG_FILE_TYPES)
+    controller_config_files_paths = ClusterTools.get_current_config_files_paths(sdn, ClusterConsts.NMX_CONTROLLER, ClusterConsts.NMX_CONTROLLER_CONFIG_FILE_TYPES)
+    telemetry_config_files_paths = ClusterTools.get_current_config_files_paths(sdn, ClusterConsts.NMX_TELEMETRY, ClusterConsts.NMX_TELEMETRY_CONFIG_FILE_TYPES)
+    config_files_paths = dict(list(controller_config_files_paths.items()) + list(telemetry_config_files_paths.items()))
+
     for file_type, file_path in config_files_paths.items():
         current_config_files_content[file_type] = engines.dut.run_cmd("sudo cat {}".format(file_path))
     assert len(current_config_files_content) == len(initial_config_contents), 'Missing configs'

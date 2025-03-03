@@ -1,5 +1,7 @@
-from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts, AddressingType
-from ngts.tests_nvos.general.security.security_test_tools.tool_classes.RemoteAaaServerInfo import RadiusServerInfo
+from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts, AddressingType, AuthMedium, \
+    UserRole
+from ngts.tests_nvos.general.security.security_test_tools.tool_classes.RemoteAaaServerInfo import RadiusServerInfo, \
+    UsersPerAuthMedium
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
 
 
@@ -85,6 +87,25 @@ class RadiusPhysicalServer:
         # )
     ]
 
+    users_per_medium: UsersPerAuthMedium = {
+        AuthMedium.SSH: {
+            UserRole.ADMIN: [UserInfo('pradadm-ssh', 'pradadm-ssh', UserRole.ADMIN)],
+            UserRole.MONITOR: [UserInfo('pradmon-ssh', 'pradmon-ssh', UserRole.MONITOR)],
+        },
+        AuthMedium.OPENAPI: {
+            UserRole.ADMIN: [UserInfo('pradadm-rest', 'pradadm-rest', UserRole.ADMIN)],
+            UserRole.MONITOR: [UserInfo('pradmon-rest', 'pradmon-rest', UserRole.MONITOR)],
+        },
+        AuthMedium.RCON: {
+            UserRole.ADMIN: [UserInfo('pradadm-rcon', 'pradadm-rcon', UserRole.ADMIN)],
+            UserRole.MONITOR: [UserInfo('pradmon-rcon', 'pradmon-rcon', UserRole.MONITOR)],
+        },
+        AuthMedium.SCP: {
+            UserRole.ADMIN: [UserInfo('pradadm-scp', 'pradadm-scp', UserRole.ADMIN)],
+            UserRole.MONITOR: [UserInfo('pradmon-scp', 'pradmon-scp', UserRole.MONITOR)],
+        }
+    }
+
     SERVER_IPV4 = RadiusServerInfo(
         hostname=AaaConsts.PHYSICAL_AAA_SERVER_IPV4_ADDR,
         priority=1,
@@ -95,6 +116,7 @@ class RadiusPhysicalServer:
         auth_type=AaaConsts.PAP,
         users=USERS,
         ipv4_addr=AaaConsts.PHYSICAL_AAA_SERVER_IPV4_ADDR,
+        users_per_auth_medium=users_per_medium
     )
     # SERVER_IPV6 = SERVER_IPV4.copy()
     # SERVER_IPV6.hostname = AaaConsts.PHYSICAL_AAA_SERVER_IPV6_ADDR
@@ -122,6 +144,25 @@ class RadiusVmServer:
         ),
     ]
 
+    users_per_medium: UsersPerAuthMedium = {
+        AuthMedium.SSH: {
+            UserRole.ADMIN: [UserInfo('rad1adm-ssh', 'rad1adm-ssh', UserRole.ADMIN)],
+            UserRole.MONITOR: [UserInfo('rad1mon-ssh', 'rad1mon-ssh', UserRole.MONITOR)],
+        },
+        AuthMedium.OPENAPI: {
+            UserRole.ADMIN: [UserInfo('rad1adm-rest', 'rad1adm-rest', UserRole.ADMIN)],
+            UserRole.MONITOR: [UserInfo('rad1mon-rest', 'rad1mon-rest', UserRole.MONITOR)],
+        },
+        AuthMedium.RCON: {
+            UserRole.ADMIN: [UserInfo('rad1adm-rcon', 'rad1adm-rcon', UserRole.ADMIN)],
+            UserRole.MONITOR: [UserInfo('rad1mon-rcon', 'rad1mon-rcon', UserRole.MONITOR)],
+        },
+        AuthMedium.SCP: {
+            UserRole.ADMIN: [UserInfo('rad1adm-scp', 'rad1adm-scp', UserRole.ADMIN)],
+            UserRole.MONITOR: [UserInfo('rad1mon-scp', 'rad1mon-scp', UserRole.MONITOR)],
+        }
+    }
+
     SERVER_IPV4 = RadiusServerInfo(
         hostname=AaaConsts.VM_AAA_SERVER_IPV4_ADDR,
         priority=1,
@@ -132,7 +173,9 @@ class RadiusVmServer:
         auth_type=AaaConsts.PAP,
         users=USERS,
         ipv4_addr=AaaConsts.VM_AAA_SERVER_IPV4_ADDR,
+        users_per_auth_medium=users_per_medium
     )
+
     SERVER_IPV6 = SERVER_IPV4.copy()
     SERVER_IPV6.hostname = AaaConsts.VM_AAA_SERVER_IPV6_ADDR
     SERVER_DN = SERVER_IPV4.copy()

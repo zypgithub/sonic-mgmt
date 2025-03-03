@@ -1,6 +1,5 @@
 import logging
 import os
-import time
 
 from ngts.cli_wrappers.nvue.nvue_system_clis import NvueSystemCli
 from ngts.cli_wrappers.openapi.openapi_system_clis import OpenApiSystemCli
@@ -11,7 +10,6 @@ from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tools.test_utils import allure_utils as allure
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 
 class BaseComponent:
@@ -62,14 +60,14 @@ class BaseComponent:
         return param
 
     def show(self, op_param="", output_format=OutputFormat.json, dut_engine=None, should_succeed=True,
-             rev=ConfState.OPERATIONAL, exempted_err_msgs=None, if_returned_value=True):
+             rev=ConfState.OPERATIONAL, exempted_err_msgs=None, if_returned_value=True, check_engine_connectivity: bool = True):
         if not dut_engine:
             dut_engine = TestToolkit.engines.dut
 
         with allure.step('Execute show for {}'.format(self.get_resource_path())):
             op_param = self.update_param(op_param, rev)
             result_obj = SendCommandTool.execute_command(self._cli_wrapper.show, dut_engine, self.get_resource_path(),
-                                                         op_param, output_format, exempted_err_msgs=exempted_err_msgs)
+                                                         op_param, output_format, check_engine_connectivity, exempted_err_msgs=exempted_err_msgs)
         if if_returned_value:
             return result_obj.get_returned_value(should_succeed)
         else:
@@ -79,13 +77,14 @@ class BaseComponent:
         output = self.show(op_param, OutputFormat.json, dut_engine, should_succeed)
         return OutputParsingTool.parse_json_str_to_dictionary(output).verify_result()
 
-    def _set(self, param_name, param_value, expected_str='', apply=False, ask_for_confirmation=False, dut_engine=None, client_certs_after_apply: CertInfo = None):
+    def _set(self, param_name, param_value, expected_str='', apply=False, ask_for_confirmation=False, dut_engine=None,
+             client_certs_after_apply: CertInfo = None, check_engine_connectivity: bool = True):
         if not dut_engine:
             dut_engine = TestToolkit.engines.dut
 
         result_obj = SendCommandTool.execute_command_expected_str(self._cli_wrapper.set,
                                                                   expected_str, dut_engine,
-                                                                  self.get_resource_path(), param_name, param_value)
+                                                                  self.get_resource_path(), param_name, param_value, check_engine_connectivity)
         if result_obj.result and apply:
             with allure.step("Applying set configuration"):
                 option = ''
@@ -97,7 +96,7 @@ class BaseComponent:
         return result_obj
 
     def set(self, op_param_name="", op_param_value={}, expected_str='', apply=False, ask_for_confirmation=False,
-            dut_engine=None, client_certs_after_apply: CertInfo = None):
+            dut_engine=None, client_certs_after_apply: CertInfo = None, check_engine_connectivity: bool = True):
         if not dut_engine:
             dut_engine = TestToolkit.engines.dut
         with allure.step('Execute set for {resource_path}'.format(resource_path=self.get_resource_path())):
@@ -106,30 +105,31 @@ class BaseComponent:
                     if isinstance(op_param_value, str):
                         op_param_value = op_param_value.replace('"', '')
                     value = {op_param_name: op_param_value}
-                    return self._set('', value, expected_str, apply, ask_for_confirmation, dut_engine, client_certs_after_apply)
+                    return self._set('', value, expected_str, apply, ask_for_confirmation, dut_engine,
+                                     client_certs_after_apply, check_engine_connectivity)
                 else:
                     if op_param_value == {}:
                         op_param_value = op_param_name
                         op_param_name = ''
                         return self._set(op_param_name, op_param_value, expected_str, apply, ask_for_confirmation,
-                                         dut_engine, client_certs_after_apply)
+                                         dut_engine, client_certs_after_apply, check_engine_connectivity)
                     elif isinstance(op_param_value, dict):
                         output = ''
                         for param_name, param_value in op_param_value.items():
                             res = self._set(param_name, param_value, expected_str, apply, ask_for_confirmation,
-                                            dut_engine, client_certs_after_apply)
+                                            dut_engine, client_certs_after_apply, check_engine_connectivity)
                             output = output + "\n" + res
                         return output
                     elif isinstance(op_param_value, str) or isinstance(op_param_value, int):
                         return self._set(op_param_name, op_param_value, expected_str, apply, ask_for_confirmation,
-                                         dut_engine, client_certs_after_apply)
+                                         dut_engine, client_certs_after_apply, check_engine_connectivity)
             else:
                 logging.info('Run set with no params')
                 op_param_value = '' if TestToolkit.tested_api == ApiType.NVUE else {}
                 return self._set(op_param_name, op_param_value, expected_str, apply, ask_for_confirmation,
-                                 dut_engine, client_certs_after_apply)
+                                 dut_engine, client_certs_after_apply, check_engine_connectivity)
 
-    def unset(self, op_param="", expected_str="", apply=False, ask_for_confirmation=False, dut_engine=None):
+    def unset(self, op_param="", expected_str="", apply=False, ask_for_confirmation=False, dut_engine=None, check_engine_connectivity: bool = True):
         if not dut_engine:
             dut_engine = TestToolkit.engines.dut
         resource_path = self.get_resource_path()
@@ -137,20 +137,11 @@ class BaseComponent:
                                                                                resource_path=resource_path)):
             result_obj = SendCommandTool.execute_command_expected_str(self._cli_wrapper.unset,
                                                                       expected_str, dut_engine,
-                                                                      resource_path, op_param)
+                                                                      resource_path, op_param, check_engine_connectivity)
         if result_obj.result and apply:
             with allure.step("Applying unset configuration"):
                 result_obj = SendCommandTool.execute_command(self._general_cli_wrapper.apply_config, dut_engine,
                                                              ask_for_confirmation)
-
-        if is_redmine_issue_active([4289747])[0]:
-            if '/interface/eth0' in resource_path:
-                dut_engine.run_cmd('nv action renew interface eth0 ip dhcp-client')
-                time.sleep(10)
-            elif '/interface/eth1' in resource_path:
-                dut_engine.run_cmd('nv action renew interface eth1 ip dhcp-client')
-                time.sleep(10)
-
         return result_obj
 
     def action(self, action: str, suffix="", param_name="", param_value="", output_format=OutputFormat.json,

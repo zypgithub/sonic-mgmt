@@ -200,7 +200,7 @@ def test_ib_split_port_default_values(engines, interfaces, start_sm, devices):
             child_ports[0].interface.wait_for_port_state(NvosConsts.LINK_STATE_UP, sleep_time=30).verify_result()
             output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
                 child_ports[0].interface.link.show()).get_returned_value()
-            time.sleep(5)  # TBD remove when bug 4290449 closed
+            child_ports[0].interface.wait_for_mtu_changed(IbInterfaceConsts.SPLIT_PORT_DEFAULT_MTU)
             values_to_verify = [NvosConsts.LINK_STATE_UP, IbInterfaceConsts.SPLIT_PORT_CHILD_DEFAULT_LANES,
                                 IbInterfaceConsts.SPLIT_PORT_DEFAULT_MTU]
             ValidationTool.validate_fields_values_in_output(['state', 'lanes', 'mtu'],
@@ -213,12 +213,7 @@ def test_ib_split_port_default_values(engines, interfaces, start_sm, devices):
 
         with allure.step("Verify changed values on child port"):
             child_ports[0].interface.wait_for_port_state(NvosConsts.LINK_STATE_UP, sleep_time=30).verify_result()
-            time.sleep(5)  # TBD remove when bug time.sleep closed
-            output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
-                child_ports[0].interface.link.show()).get_returned_value()
-            Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
-                                                              field_name='mtu',
-                                                              expected_value='512').verify_result()
+            child_ports[0].interface.wait_for_mtu_changed('512')
 
     with allure.step("Negative testing on child with lanes"):
         child_ports[0].interface.link.set(op_param_name='lanes', op_param_value='1X,2X,4X', apply=True,
@@ -230,12 +225,12 @@ def test_ib_split_port_default_values(engines, interfaces, start_sm, devices):
     with allure.step("Unset parent port"):
         parent_port.interface.link.unset(op_param='breakout', apply=True, ask_for_confirmation=True).verify_result()
         parent_port.interface.wait_for_port_state(NvosConsts.LINK_STATE_UP, sleep_time=30).verify_result()
-        time.sleep(5)  # TBD remove when bug 4290449 closed
 
     with allure.step("Check default values after unset parent port"):
         values_to_verify = [IbInterfaceConsts.SPLIT_PORT_DEFAULT_LANES, IbInterfaceConsts.DEFAULT_MTU,
                             IbInterfaceConsts.SPLIT_PORT_DEFAULT_VLS]
         parent_port.interface.wait_for_port_state(NvosConsts.LINK_STATE_UP, sleep_time=30).verify_result()
+        parent_port.interface.wait_for_mtu_changed(IbInterfaceConsts.DEFAULT_MTU)
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
             parent_port.interface.link.show()).get_returned_value()
         ValidationTool.validate_fields_values_in_output(['lanes', 'mtu', 'op-vls'],
@@ -244,7 +239,7 @@ def test_ib_split_port_default_values(engines, interfaces, start_sm, devices):
 
 
 @pytest.mark.ib_interfaces
-def test_split_port_counters(engines, players, interfaces, start_sm, devices, setup_name):
+def test_split_port_counters(engines, players, interfaces, start_sm, devices):
     """
     Test flow:
         1. Send traffic
@@ -261,7 +256,7 @@ def test_split_port_counters(engines, players, interfaces, start_sm, devices, se
         assert engines.ha and engines.hb, "Traffic hosts details can't be found in Noga setup"
 
     with allure.step("Run traffic"):
-        Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, setup_name, True).verify_result()
+        Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, True).verify_result()
 
     with allure.step("Check counters before split, should be not 0"):
         split_ports, active_ports = _get_split_ports()
@@ -292,7 +287,7 @@ def test_split_port_counters(engines, players, interfaces, start_sm, devices, se
             port.interface.wait_for_port_state(NvosConsts.LINK_STATE_UP, sleep_time=30).verify_result()
 
     with allure.step("Run traffic"):
-        Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, setup_name, True).verify_result()
+        Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, True).verify_result()
 
     with allure.step("Check counters after traffic on child port, should be not 0"):
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_stats_output_to_dictionary(
@@ -308,7 +303,7 @@ def test_split_port_counters(engines, players, interfaces, start_sm, devices, se
             port.interface.wait_for_port_state(NvosConsts.LINK_STATE_UP, sleep_time=30).verify_result()
 
     with allure.step("Run traffic"):
-        Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, setup_name, True).verify_result()
+        Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, True).verify_result()
 
 
 @pytest.mark.ib_interfaces

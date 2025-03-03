@@ -4,6 +4,7 @@ import pytest
 from ngts.nvos_tools.Devices.IbDevice import JulietSwitch
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
+from ngts.tests_nvos.constants import MINUTE
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_constants.constants_nvos import PlatformConsts, NvosConst, ImageConsts
@@ -19,6 +20,7 @@ logger = logging.getLogger()
 @pytest.mark.nvos_ci
 @pytest.mark.nvl_ci
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.timeout(MINUTE, func_only=True)
 def test_show_platform_firmware(engines, devices, test_api, output_format):
     """Tests nv show platform firmware"""
     TestToolkit.tested_api = test_api

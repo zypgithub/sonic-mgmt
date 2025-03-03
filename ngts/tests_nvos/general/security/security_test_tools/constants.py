@@ -48,6 +48,12 @@ class AaaConsts:
     DISABLED = 'disabled'
 
 
+class UserRole:
+    ADMIN = 'admin'
+    MONITOR = 'monitor'
+    ALL_ROLES = [ADMIN, MONITOR]
+
+
 # aaa authentication constants
 class AuthConsts:
     AUTHENTICATION = 'authentication'

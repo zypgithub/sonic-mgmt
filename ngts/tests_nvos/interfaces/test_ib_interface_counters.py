@@ -66,7 +66,7 @@ def test_range_clear_counters_negative(engines, players, interfaces, start_sm, f
 
     out_of_range_p, out_of_range_sw, reversed_range, undefined_range = create_invalid_ranges(selected_ports[0].name)
     error_msg1 = 'does not exist'
-    error_msg2 = "is not a 'interface-name'. Valid interface types are"
+    error_msg2 = "is not a 'interface-name'"
 
     with allure.step("Create Interface"):
         interface = Interface(parent_obj=None)
@@ -77,12 +77,12 @@ def test_range_clear_counters_negative(engines, players, interfaces, start_sm, f
                                                          ).verify_result(False, error_msg1)
 
         with allure.independent_step("check out of range {}".format(out_of_range_sw)):
-            interface.action_clear_counter_for_interface(interface_name=out_of_range_sw
-                                                         ).verify_result(False, error_msg1)
+            interface.action_clear_counter_for_interface(interface_name=out_of_range_sw,
+                                                         expected_str=error_msg1).verify_result(True)
 
         with allure.independent_step("check reversed range"):
-            interface.action_clear_counter_for_interface(interface_name=reversed_range
-                                                         ).verify_result(False, error_msg2)
+            interface.action_clear_counter_for_interface(interface_name=reversed_range, expected_str=error_msg2
+                                                         ).verify_result(True)
 
         with allure.independent_step("check undefined range"):
             interface.action_clear_counter_for_interface(interface_name=undefined_range
@@ -110,7 +110,12 @@ def test_range_clear_counters_positive(engines, devices, players, interfaces, st
 
     with allure.step("Get a random active port"):
         selected_port, = Tools.RandomizationTool.get_random_traffic_port().get_returned_value()
-        selected_port_number = int(re.findall(r'\d+', selected_port.name)[0])
+        match = re.match(r'([a-zA-Z]+)(\d+)', selected_port.name)
+        assert match, "Unable to find the port number: no match found"
+
+        selected_port_name = match.group(1)
+        selected_port_number = int(match.group(2))
+        logger.info(f"Port Name: {selected_port_name}, Port Number: {selected_port_number}")
 
     file_name, user_name, ssh_connection = create_new_user(engines.dut)
 
@@ -118,30 +123,22 @@ def test_range_clear_counters_positive(engines, devices, players, interfaces, st
         Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, setup_name, True).verify_result()
 
     with allure.step("Get 4 random numbers - to define ranges"):
-        if isinstance(devices.dut, CrocodileSwitch):
-            pytest.skip("Test needs to be adapted to crocodile port names")  # todo
+        randoms = random.sample(
+            list({x + 1 for x in range(1, 18)} - {selected_port_number}), 4)
+        randoms = sorted(randoms + [selected_port_number])
+        if selected_port_number in randoms[:2]:
+            (first_range_first_point, first_range_last_point, random_port, second_range_first_point,
+             second_range_last_point) = randoms
         else:
-            # Select two non-intersecting ranges and one additional random port, e.g. 12-19, 22 and 30-72.
-            # The active port selected previously will be in the second range or be the lone port.
-            randoms = random.sample(
-                list({x + 1 for x in range(1, devices.dut.ib_ports_num // 2 + 1)} - {selected_port_number}), 4)
-            randoms = sorted(randoms + [selected_port_number])
-            if selected_port_number in randoms[:2]:
-                (first_range_first_point, first_range_last_point, random_port, second_range_first_point,
-                 second_range_last_point) = randoms
-            else:
-                (random_port, second_range_first_point, second_range_last_point, first_range_first_point,
-                 first_range_last_point) = randoms
-            p_number = random.randint(1, 2)
-            random_port = f'sw{random_port}p{p_number}'
+            (random_port, second_range_first_point, second_range_last_point, first_range_first_point,
+             first_range_last_point) = randoms
+        p_number = random.randint(1, 2)
+        random_port = f'{selected_port_name}{random_port}p{p_number}'
 
     with allure.step("Run clear counters using range for p1 or p2 only"):
         with allure.step('Run clear counter command'):
             interface.action_clear_counter_for_interface(dut_engine=ssh_connection,
-                                                         interface_name='sw{first}-{last}p{p_number}-{p_number},{random_port}'.format(
-                                                             p_number=p_number, first=second_range_first_point,
-                                                             last=second_range_last_point, random_port=random_port)
-                                                         ).verify_result()
+                                                         interface_name=f'{selected_port_name}{second_range_first_point}-{second_range_last_point}p{p_number}-{p_number},{random_port}').verify_result()
 
         verify_files_created(ssh_connection, file_name,
                              get_port_range(second_range_first_point, second_range_last_point, p_number) + [random_port])
@@ -155,9 +152,7 @@ def test_range_clear_counters_positive(engines, devices, players, interfaces, st
 
         with allure.step('Run clear counter command'):
             interface.action_clear_counter_for_interface(dut_engine=ssh_connection,
-                                                         interface_name='sw{first}-{last}p1-2,{random_port}'.format(
-                                                             first=first_range_first_point, last=first_range_last_point,
-                                                             random_port=random_port)).verify_result()
+                                                         interface_name=f'{selected_port_name}{first_range_first_point}-{first_range_last_point}p1-2,{random_port}').verify_result()
 
         verify_files_created(ssh_connection, file_name,
                              get_port_range(first_range_first_point, first_range_last_point) + [random_port])

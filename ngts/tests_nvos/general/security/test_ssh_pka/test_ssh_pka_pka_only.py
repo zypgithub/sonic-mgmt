@@ -340,7 +340,7 @@ def test_ssh_pka_connections_stress(engines):
     """
     with allure.step("create system"):
         system = System()
-        threshold = 10
+        threshold = 1
         bad_connection_timing = []
 
     try:

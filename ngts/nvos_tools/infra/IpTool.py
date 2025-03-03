@@ -9,6 +9,7 @@ from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_constants.constants_nvos import IbConsts, IpConsts
 from ngts.nvos_tools.infra import ExceptionTool
 from ngts.nvos_tools.infra.CmdRunner import CmdRunner
+from ngts.nvos_tools.infra.NvCommand import NvCommand
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 
@@ -251,3 +252,10 @@ class IpTool:
     def is_address_ipv6(address: str) -> bool:
         pattern = r'^(?:[A-F0-9]{1,4}:){7}[A-F0-9]{1,4}$'
         return bool(re.match(pattern, address, re.IGNORECASE))
+
+    @staticmethod
+    def is_dhcp_client6_has_lease(engine: LinuxSshEngine = None) -> bool:
+        with allure.step('Run show command on mgmt port and verify that each field has an appropriate value'):
+            output_dictionary = OutputParsingTool.parse_show_output_to_dict(
+                NvCommand().port['eth0'].interface.ip.dhcp_client6.show(dut_engine=engine)).get_returned_value()
+            return output_dictionary['has-lease'] == 'yes'

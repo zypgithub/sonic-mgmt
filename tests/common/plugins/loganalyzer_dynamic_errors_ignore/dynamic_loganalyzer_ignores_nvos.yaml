@@ -1102,7 +1102,7 @@
 # NVOS
 - Errors_list:
     - '.*ERR health-statsd#health_history: PSU\d: is missing or not available.*'
-    - '.*ERR health-statsd#health_history: FAN\d\/\d: is not working.*'
+    - '.*ERR health-statsd#health_history: FAN\d+\/\d: is not working.*'
     - '.*ERR health-statsd#health_history: PSU\d\/FAN: is missing.*'
     - '.*ERR health-statsd#health_history: PSU\d\/FAN: Invalid fan speed data for.*'
   Conditions:

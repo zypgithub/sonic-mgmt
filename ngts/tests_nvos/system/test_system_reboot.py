@@ -98,12 +98,14 @@ def test_reboot_command_type(engines):
 
     with allure.step('Run nv action reboot system type fast'):
         list_commands = ['nv action reboot system type fast', 'y']
-        output = engines.dut.send_config_set(list_commands, exit_config_mode=False, cmd_verify=False)
+        output = engines.dut.send_config_set(list_commands, exit_config_mode=False, cmd_verify=False,
+                                             enter_config_mode=False)
         ValidationTool.verify_substring_in_output(output, substring, err_message, True)
 
     with allure.step('Run nv action reboot system type warm'):
         list_commands = ['nv action reboot system type warm', 'y']
-        output = engines.dut.send_config_set(list_commands, exit_config_mode=False, cmd_verify=False)
+        output = engines.dut.send_config_set(list_commands, exit_config_mode=False, cmd_verify=False,
+                                             enter_config_mode=False)
         ValidationTool.verify_substring_in_output(output, substring, err_message, True)
 
 

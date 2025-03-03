@@ -359,7 +359,7 @@ class OpenApiSystemCli(OpenApiBaseCli):
         parameters = {'data': data, 'uri': uri}
         parameters = {param: val for param, val in parameters.items() if val is not None}
         if external:
-            parameters['external_ca'] = True
+            parameters['external-ca'] = True
         params = \
             {
                 "state": "start",
