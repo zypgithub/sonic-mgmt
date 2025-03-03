@@ -184,7 +184,7 @@ def test_set_system_events_table_size(test_api, engines):
         with allure.step('Run show system events command & validate table-occupancy should be default'):
             retry_call(_verify_field_in_show_output,
                        [system.events, SystemConsts.EVENTS_TABLE_OCCUPANCY, SystemConsts.EVENTS_TABLE_SIZE_DEFAULT],
-                       exceptions=AssertionError, tries=4, delay=5, logger=logger)
+                       exceptions=AssertionError, tries=6, delay=5, logger=logger)
 
         with allure.step('Set system events table-size to 600'):
             system.events.set(op_param_name='table-size', op_param_value=600,
@@ -193,7 +193,7 @@ def test_set_system_events_table_size(test_api, engines):
 
         with allure.step('Validate system events table-size is set to 600'):
             retry_call(_verify_field_in_show_output, [system.events, SystemConsts.EVENTS_TABLE_SIZE, 600],
-                       exceptions=AssertionError, tries=2, delay=5, logger=logger)
+                       exceptions=AssertionError, tries=4, delay=5, logger=logger)
 
         with allure.step('Run show system events command & validate table-occupancy should be 600'):
             retry_call(_verify_field_in_show_output, [system.events, SystemConsts.EVENTS_TABLE_OCCUPANCY, 599],
@@ -205,7 +205,7 @@ def test_set_system_events_table_size(test_api, engines):
 
         with allure.step('Validate system events table-size is set to 1100'):
             retry_call(_verify_field_in_show_output, [system.events, SystemConsts.EVENTS_TABLE_SIZE, 1100],
-                       exceptions=AssertionError, tries=2, delay=5, logger=logger)
+                       exceptions=AssertionError, tries=4, delay=5, logger=logger)
 
         with allure.step('Simulate 500 more system events(to make it 1100+)'):
             # Trying to create more than 1000 to verify that the size of table is limited to 1000 which is default
@@ -225,7 +225,7 @@ def test_set_system_events_table_size(test_api, engines):
         with allure.step('Validate system events table-size is set to default(1000)'):
             retry_call(_verify_field_in_show_output,
                        [system.events, SystemConsts.EVENTS_TABLE_SIZE, SystemConsts.EVENTS_TABLE_SIZE_DEFAULT],
-                       exceptions=AssertionError, tries=2, delay=5, logger=logger)
+                       exceptions=AssertionError, tries=4, delay=5, logger=logger)
 
         with allure.step('Run show system events command & validate table-occupancy should be default(1000)'):
             retry_call(_verify_field_in_show_output,

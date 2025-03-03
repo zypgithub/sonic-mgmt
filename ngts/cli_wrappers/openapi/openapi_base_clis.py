@@ -12,22 +12,25 @@ class OpenApiBaseCli:
     cli_name = ""
 
     @staticmethod
-    def show(engine, resource_path, op_param="", output_format=OutputFormat.json):
+    def show(engine, resource_path, op_param="", output_format=OutputFormat.json, check_engine_connectivity: bool = True):
         logging.info("Running GET method on dut using openApi for {}".format(resource_path))
-        return OpenApiCommandHelper.execute_script(engine.engine.username, engine.engine.password,
+        dut_engine = engine.engine if check_engine_connectivity else engine
+        return OpenApiCommandHelper.execute_script(dut_engine.username, dut_engine.password,
                                                    OpenApiReqType.GET, engine.ip, resource_path, op_param)
 
     @staticmethod
-    def set(engine, resource_path, op_param_name="", op_param_value=""):
+    def set(engine, resource_path, op_param_name="", op_param_value="", check_engine_connectivity: bool = True):
         logging.info("Running PATCH method on dut using openApi for {}".format(resource_path))
-        return OpenApiCommandHelper.execute_script(engine.engine.username, engine.engine.password,
+        dut_engine = engine.engine if check_engine_connectivity else engine
+        return OpenApiCommandHelper.execute_script(dut_engine.username, dut_engine.password,
                                                    OpenApiReqType.PATCH, engine.ip, resource_path, op_param_name,
                                                    op_param_value)
 
     @staticmethod
-    def unset(engine, resource_path, op_param=""):
+    def unset(engine, resource_path, op_param="", check_engine_connectivity: bool = True):
         logging.info("Running DELETE method on dut using openApi for {}".format(resource_path))
-        return OpenApiCommandHelper.execute_script(engine.engine.username, engine.engine.password,
+        dut_engine = engine.engine if check_engine_connectivity else engine
+        return OpenApiCommandHelper.execute_script(dut_engine.username, dut_engine.password,
                                                    OpenApiReqType.DELETE, engine.ip, resource_path, op_param, None)
 
     @staticmethod

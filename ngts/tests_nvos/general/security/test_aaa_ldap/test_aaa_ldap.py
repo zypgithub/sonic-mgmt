@@ -119,6 +119,7 @@ def test_ldap_set_invalid_param(test_api, engines):
     )
 
 
+@pytest.mark.check_log_size
 @pytest.mark.timeout(MAX_TEST_TIMEOUT, func_only=True)
 @pytest.mark.cumulus
 @pytest.mark.security
@@ -144,7 +145,7 @@ def test_ldap_auth(test_flow, test_api, addressing_type, engines, topology_obj, 
                           topology_obj=topology_obj, local_adminuser=local_adminuser, request=request,
                           remote_aaa_type=RemoteAaaType.LDAP,
                           remote_aaa_obj=ldap,
-                          server_by_addr_type=LdapServersP3.LDAP1_SERVERS,
+                          server_by_addr_type=LdapServersP3.LDAP3_SERVERS,
                           test_param=LdapEncryptionModes.ALL_MODES,
                           test_param_update_func=update_ldap_encryption_mode,
                           skip_auth_mediums=skip_auth_mediums)

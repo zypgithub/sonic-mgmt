@@ -88,7 +88,7 @@ class OpenApiAuthVerifier(AuthVerifier):
 
     def _authenticate(self, expect_success):
         with allure.step('For OpenApi - run show command with OpenApi request to verify authentication'):
-            System().version.show(dut_engine=self.engine)
+            System().version.show(dut_engine=self.engine, check_engine_connectivity=False)
 
 
 class RconAuthVerifier(AuthVerifier):

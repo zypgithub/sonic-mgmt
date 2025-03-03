@@ -5,6 +5,7 @@ from retry import retry
 from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
 from ngts.nvos_tools.Devices.IbDevice import JulietSwitch
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
+from ngts.nvos_tools.infra.IpTool import IpTool
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.acl.acl import Acl
@@ -285,6 +286,8 @@ def test_acl_ipv6(engines, test_api, topology_obj, sonic_mgmt_ipv6_addr):
     3. validate counters increase
     """
     TestToolkit.tested_api = test_api
+    if not IpTool.is_dhcp_client6_has_lease(engines.dut):
+        pytest.skip("DUT DHCP client6 has no lease; cannot run this IPv6 test.")
 
     with allure.step("Define ACLs with rule"):
         acl_type = 'ipv6'
@@ -609,9 +612,10 @@ def test_acl_match_dest_ip(engines, test_api, topology_obj, sonic_mgmt_ipv6_addr
         dest_ip_list = [ipv4_addr, ipv4_addr + '/32', ipv4_addr + '/255.255.255.0']
         dest_ip_test(engines, mgmt_port, 'ipv4', "AA_TEST_ACL_IPV4", dest_ip_list, ipv4_addr)
 
-    with allure.step("ACL type ipv6 test"):
-        dest_ip_list = [sonic_mgmt_ipv6_addr, sonic_mgmt_ipv6_addr + '/64']
-        dest_ip_test(engines, mgmt_port, 'ipv6', "AA_TEST_ACL_IPV6", dest_ip_list, sonic_mgmt_ipv6_addr)
+    if IpTool.is_dhcp_client6_has_lease(engines.dut):
+        with allure.step("ACL type ipv6 test"):
+            dest_ip_list = [sonic_mgmt_ipv6_addr, sonic_mgmt_ipv6_addr + '/64']
+            dest_ip_test(engines, mgmt_port, 'ipv6', "AA_TEST_ACL_IPV6", dest_ip_list, sonic_mgmt_ipv6_addr)
 
 
 @pytest.mark.acl

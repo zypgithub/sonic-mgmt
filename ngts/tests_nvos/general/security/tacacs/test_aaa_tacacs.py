@@ -8,7 +8,7 @@ from ngts.tests_nvos.general.security.security_test_tools.generic_remote_aaa_tes
 from ngts.tests_nvos.general.security.security_test_tools.resource_utils import configure_resource
 from ngts.tests_nvos.general.security.security_test_tools.switch_authenticators import SshAuthenticator
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
-from ngts.tests_nvos.general.security.tacacs.constants import TacacsConsts, TacacsDockerServer0, TacacsDockerServer1, \
+from ngts.tests_nvos.general.security.tacacs.constants import TacacsConsts, TacacsDockerServer1, \
     TacacsDockerServer2, TacacsPhysicalServer
 from ngts.tests_nvos.general.security.tacacs.tacacs_test_utils import update_tacacs_server_auth_mode, \
     get_two_different_tacacs_servers
@@ -82,6 +82,7 @@ def test_tacacs_set_invalid_param(test_api, engines):
     )
 
 
+@pytest.mark.check_log_size
 @pytest.mark.timeout(MAX_TEST_TIMEOUT, func_only=True)
 @pytest.mark.security
 @pytest.mark.simx_security
@@ -100,14 +101,16 @@ def test_tacacs_auth(test_flow, test_api, addressing_type, engines, topology_obj
             - verify auth with tacacs user - expect success
             - verify auth with local user - expect fail
     """
+    skip_auth_mediums = []
     tacacs = System().aaa.tacacs
     generic_aaa_test_auth(test_flow=test_flow, test_api=test_api, addressing_type=addressing_type, engines=engines,
                           topology_obj=topology_obj, local_adminuser=local_adminuser, request=request,
                           remote_aaa_type=RemoteAaaType.TACACS,
                           remote_aaa_obj=tacacs,
-                          server_by_addr_type=TacacsDockerServer0.SERVER_BY_ADDRESSING_TYPE,
+                          server_by_addr_type=TacacsDockerServer1.SERVER_BY_ADDRESSING_TYPE,
                           test_param=AuthMode.ALL_TYPES,
-                          test_param_update_func=update_tacacs_server_auth_mode)
+                          test_param_update_func=update_tacacs_server_auth_mode,
+                          skip_auth_mediums=skip_auth_mediums)
 
 
 @pytest.mark.security

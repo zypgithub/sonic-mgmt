@@ -1,6 +1,8 @@
 import logging
 import pytest
 import random
+
+from ngts.nvos_tools.infra.IpTool import IpTool
 from ngts.tools.test_utils import allure_utils as allure
 import string
 import time
@@ -70,7 +72,7 @@ def test_rsyslog_positive_minimal_flow_by_ipv4(engines, test_api):
 @pytest.mark.system
 @pytest.mark.syslog
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_rsyslog_positive_minimal_flow_by_ipv6(engines, test_api):
+def test_rsyslog_positive_minimal_flow_by_ipv6(engines, test_api, sonic_mgmt_ipv6_addr):
     """
     Will validate the minimal positive flow:
         set server and send UDP msg , verify the server get the msg and show commands
@@ -82,15 +84,11 @@ def test_rsyslog_positive_minimal_flow_by_ipv6(engines, test_api):
     4. Print msg that the server should not catch, validate it does not get the msg
     5. Cleanup
     """
+    if not IpTool.is_dhcp_client6_has_lease(engines.dut):
+        pytest.skip("DUT DHCP client6 has no lease; cannot run this IPv6 test.")
+
     TestToolkit.tested_api = test_api
-    remote_server_engine = engines[NvosConst.SONIC_MGMT]
-
-    ifconfig_output = remote_server_engine.run_cmd("ifconfig")
-    ipv6_addresses = re.findall(r'inet6 ([\da-f:]+)', ifconfig_output)
-    if not ipv6_addresses:
-        assert False, f"Failed to get IPV6 address for {remote_server_engine.ip}"
-
-    positive_minimal_flow(remote_server_engine, ipv6_addresses[0])
+    positive_minimal_flow(engines[NvosConst.SONIC_MGMT], sonic_mgmt_ipv6_addr)
 
 
 @pytest.mark.system

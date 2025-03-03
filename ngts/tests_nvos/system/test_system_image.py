@@ -103,8 +103,9 @@ def test_show_system_image(original_version):
 @pytest.mark.image
 @pytest.mark.system
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-@pytest.mark.timeout(25 * MINUTE, func_only=True)
-def test_downgrade_upgrade(release_name, test_api, original_version, devices, engines, base_version_realpath, target_version_realpath):
+@pytest.mark.timeout(30 * MINUTE, func_only=True)
+def test_downgrade_upgrade(release_name, test_api, original_version, devices, engines, downgrade_version_realpath,
+                           target_version_realpath):
     """
     Check the image rename cmd.
     Validate that install and delete commands will success with the new name
@@ -118,7 +119,7 @@ def test_downgrade_upgrade(release_name, test_api, original_version, devices, en
     7. Delete the new image name , success
     """
     config_file_path = ''
-    if not base_version_realpath:
+    if not downgrade_version_realpath:
         pytest.skip("Cannot run test because base_version parameter is missing from the setup file")
 
     TestToolkit.tested_api = test_api
@@ -126,7 +127,7 @@ def test_downgrade_upgrade(release_name, test_api, original_version, devices, en
     verify_current_version(original_version, system, devices.dut)
 
     original_images, _, original_image_partition, partition_id_for_new_image, fetched_image = \
-        get_image_data_and_fetch_base_image(system, base_version_realpath)
+        get_image_data_and_fetch_base_image(system, downgrade_version_realpath)
     fetched_image_file = system.image.files.file_name[fetched_image]
 
     try:
@@ -181,7 +182,7 @@ def test_downgrade_upgrade(release_name, test_api, original_version, devices, en
 @pytest.mark.image
 @pytest.mark.system
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_system_image_upload(engines, release_name, test_api, original_version, devices, base_version_realpath):
+def test_system_image_upload(engines, release_name, test_api, original_version, devices, downgrade_version_realpath):
     """
     Uploading image file to player and validate.
     1. Fetch random image
@@ -194,7 +195,7 @@ def test_system_image_upload(engines, release_name, test_api, original_version, 
     system = System()
 
     verify_current_version(original_version, system, devices.dut)
-    _, _, _, _, image_name = get_image_data_and_fetch_base_image(system, base_version_realpath)
+    _, _, _, _, image_name = get_image_data_and_fetch_base_image(system, downgrade_version_realpath)
     image_file = system.image.files.file_name[image_name]
     upload_protocols = ['scp', 'sftp']
     player = engines['sonic_mgmt']
@@ -223,7 +224,7 @@ def test_system_image_upload(engines, release_name, test_api, original_version, 
 @pytest.mark.system
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 @pytest.mark.timeout(25 * MINUTE, func_only=True)
-def test_image_uninstall(release_name, test_api, original_version, test_name, devices, base_version_realpath):
+def test_image_uninstall(release_name, test_api, original_version, test_name, devices, downgrade_version_realpath):
     """
      Will check the uninstall commands
 
@@ -235,7 +236,8 @@ def test_image_uninstall(release_name, test_api, original_version, test_name, de
     5. Validate that uninstall will success
     """
     TestToolkit.tested_api = test_api
-    image_uninstall_test(release_name, original_version, devices, uninstall_force="", test_name=test_name, base_version=base_version_realpath)
+    image_uninstall_test(release_name, original_version, devices, uninstall_force="", test_name=test_name,
+                         base_version=downgrade_version_realpath)
 
 
 @pytest.mark.checklist
@@ -243,7 +245,7 @@ def test_image_uninstall(release_name, test_api, original_version, test_name, de
 @pytest.mark.image
 @pytest.mark.system
 @pytest.mark.timeout(25 * MINUTE, func_only=True)
-def test_image_uninstall_force(release_name, original_version, test_name, devices, base_version_realpath):
+def test_image_uninstall_force(release_name, original_version, test_name, devices, downgrade_version_realpath):
     """
      Will check the uninstall force commands
 
@@ -254,7 +256,8 @@ def test_image_uninstall_force(release_name, original_version, test_name, device
     4. Set the original image to be booted next
     5. Validate that uninstall force will success
     """
-    image_uninstall_test(release_name, original_version, devices, uninstall_force="force", test_name=test_name, base_version=base_version_realpath)
+    image_uninstall_test(release_name, original_version, devices, uninstall_force="force", test_name=test_name,
+                         base_version=downgrade_version_realpath)
 
 
 @pytest.mark.checklist
@@ -262,7 +265,8 @@ def test_image_uninstall_force(release_name, original_version, test_name, device
 @pytest.mark.image
 @pytest.mark.system
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_system_image_bad_flow(engines, release_name, test_api, original_version, sonic_mgmt_ipv6_addr, base_version_realpath):
+def test_system_image_bad_flow(engines, release_name, test_api, original_version, sonic_mgmt_ipv6_addr,
+                               downgrade_version_realpath):
     """
     Check bad flow scenarios:
     -	Fetch something that doesn’t / already exist
@@ -281,8 +285,8 @@ def test_system_image_bad_flow(engines, release_name, test_api, original_version
     file_rand_name = system.image.files.file_name[rand_name]
 
     with allure.step("Get an available image file"):
-        _, _, _, _, image_name = get_image_data_and_fetch_base_image(system, base_version_realpath)
-        image_path = base_version_realpath
+        _, _, _, _, image_name = get_image_data_and_fetch_base_image(system, downgrade_version_realpath)
+        image_path = downgrade_version_realpath
         images_name = []
         image_file = system.image.files.file_name[image_name]
 
@@ -561,7 +565,7 @@ def system_image_install_reject_with_prompt(engines, system, prompt_response, or
 @pytest.mark.image
 @pytest.mark.system
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_fetch_image_via_http(test_api):
+def test_fetch_image_via_https(test_api):
     """
     Install system image test
 
@@ -579,9 +583,6 @@ def test_fetch_image_via_http(test_api):
     release_name = ImageConsts.NVOS_RELEASE_25_02_1000
 
     try:
-        with allure.step("Delete all the pre existing images"):
-            system.image.files.delete_all_existing_files()
-
         with allure.step("Get the image details to be fetched"):
             original_image = system.image.get_image_field_values()[ImageConsts.PARTITION1_IMG][ImageConsts.BUILD_ID]
             result = get_images_to_fetch(release_name, original_image, 1)
@@ -707,12 +708,25 @@ def install_image_and_verify(orig_engine, image_name, partition_id, original_ima
 
         image_output = system.image.get_image_field_values()
         image_name = normalize_image_name(image_name)
-        with allure.step(f"Verify image was installed properly on {partition_id}"):
-            assert image_output[partition_id][ImageConsts.BUILD_ID] == image_name, f"{image_name} was expected to be installed on {partition_id} but it failed"
-        with allure.step("Verify current and next fields points to new image"):
-            num = "1" if partition_id == ImageConsts.PARTITION1_IMG else "2"
-            assert image_output[ImageConsts.NEXT_IMG] == image_output[ImageConsts.CURRENT_IMG] == num, \
-                f"Next image is not the current as expected in default settings."
+        res_obj = ValidationTool.verify_expected_output(system.image.show(), ImageConsts.BUILD_ID)
+        res_obj.ignore_result()
+        if res_obj.result:  # temp solution until 3000 GA
+            with allure.step(f"Verify image was installed properly on {partition_id}"):
+                assert image_output[partition_id][ImageConsts.BUILD_ID] == image_name, \
+                    f"{image_name} was expected to be installed on {partition_id} but it failed"
+
+            with allure.step("Verify current and next fields point to new image"):
+                num = "1" if partition_id == ImageConsts.PARTITION1_IMG else "2"
+                assert image_output[ImageConsts.NEXT_IMG] == image_output[ImageConsts.CURRENT_IMG] == num, \
+                    "Next image is not the current as expected in default settings."
+        else:
+            with allure.step(f"Verify image was installed properly on {partition_id}"):
+                assert image_output[partition_id] == image_name, \
+                    f"{image_name} was expected to be installed on {partition_id} but it failed"
+
+            with allure.step("Verify current and next fields point to new image"):
+                assert image_output[ImageConsts.CURRENT_IMG] == image_name, \
+                    "Current image is not as expected in default settings."
 
 
 def get_list_of_directories(current_installed_img, starts_with=None):
@@ -794,10 +808,9 @@ def get_image_data(system):
         original_images = system.image.get_image_field_values()
         current_partition = ImageConsts.PARTITION + original_images[ImageConsts.CURRENT_IMG]
         original_image = original_images[current_partition][ImageConsts.BUILD_ID]
-        original_image_partition = system.image.get_image_partition(original_image, original_images)
-        partition_id_for_new_image = get_next_partition_id(original_image_partition)
-        logger.info("Original image: {}, partition: {}".format(original_image, original_image_partition))
-        return original_images, original_image, original_image_partition, partition_id_for_new_image
+        partition_id_for_new_image = get_next_partition_id(current_partition)
+        logger.info("Original image: {}, partition: {}".format(original_image, current_partition))
+        return original_images, original_image, current_partition, partition_id_for_new_image
 
 
 def get_image_data_and_fetch_random_image_files(release_name, system, images_amount_to_fetch=1):

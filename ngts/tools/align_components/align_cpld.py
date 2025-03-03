@@ -26,7 +26,7 @@ def perform_cpld_update(_args):
     file_name = os.path.basename(install_path)
     required_version = file_name[file_name.index("CPLD"):file_name.rindex("_")]
 
-    component = CpldComponent(Defaults.CPLD_NAME, install_path=_args.cpld_path, switch_ip=hostname,
+    component = CpldComponent(Defaults.CPLD_NAME, install_path=install_path, switch_ip=hostname,
                               required_version=required_version, ssh_user=_args.ssh_user, ssh_pass=_args.ssh_pass)
     component_manager = ComponentManager(components=[component])
 

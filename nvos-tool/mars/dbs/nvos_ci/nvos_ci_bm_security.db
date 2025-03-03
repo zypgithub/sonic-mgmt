@@ -24,6 +24,7 @@
 	</global>
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/CI/nvos_ci_bm_security.cases </cases>
+        <ignore><disabled><valid> True </valid><info> Case implementation error </info></disabled></ignore>
 	</test>
 
 </DBDEF>

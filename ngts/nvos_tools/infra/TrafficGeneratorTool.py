@@ -163,14 +163,21 @@ class TrafficGeneratorTool:
     @staticmethod
     def stop_traffic_between_2_hosts(host_a, host_b, traffic_start_time, traffic_timeout, server_file, client_file):
         with allure.step('Verify traffic results from Host A to Host B'):
+            job_server = host_a.run_cmd(IbConsts.GET_JOB_IB)
+            job_client = host_b.run_cmd(IbConsts.GET_JOB_IB)
+            assert job_server and job_client, (f"Traffic client and/or traffic server not exist. "
+                                               f"job client: {job_client}, job server: {job_server}")
             with allure.step('Wait for traffic send completion'):
                 while True:
                     job_server = host_a.run_cmd(IbConsts.GET_JOB_IB)
                     job_client = host_b.run_cmd(IbConsts.GET_JOB_IB)
                     time_diff = time.time() - traffic_start_time
-                    if not (job_server or job_client) or (time_diff > traffic_timeout):
-                        logger.info(f"job_server: {job_server}, job_client: {job_client}, diff time: {time_diff}")
+                    if not (job_server or job_client):
+                        logger.info(f"Traffic is done, diff time: {time_diff}")
                         break
+                    assert time_diff < traffic_timeout, \
+                        (f"Traffic reached timeout ({traffic_timeout} sec) before it was done. "
+                         f"job_server: {job_server}, job_client: {job_client}, time_diff: {time_diff}")
 
             with allure.step('Get traffic client and server results'):
                 server_output = host_a.run_cmd('cat ' + server_file)
@@ -188,10 +195,12 @@ class TrafficGeneratorTool:
                 assert server_output and ('error' not in server_output) and ('loss' not in server_output), \
                     f'server output failed: {server_output}'
 
-            with allure.step('Get number of packets transmitted'):
-                num_of_packets = server_output.split("packet")[0]  # TODO: Update command
-
-        return num_of_packets
+            with allure.step('Compare number of iterations transmitted'):
+                client_iterations = client_output.split("\n")[-2].split()[1]
+                server_iterations = server_output.split("\n")[-2].split()[1]
+                assert client_iterations == server_iterations, (f"Number os iterations send: {client_iterations}, "
+                                                                f"Number of iterations received: {server_iterations}")
+        return server_iterations
 
     @staticmethod
     def start_ibping_between_2_hosts(host_a, host_b):

@@ -7,7 +7,7 @@ import pytest
 from ngts.nvos_tools.infra.BmcTool import BmcTool
 from ngts.nvos_tools.infra.DMIDecodeTool import DMIDecodeTool
 from ngts.tools.test_utils import allure_utils as allure
-from ngts.nvos_constants.constants_nvos import ApiType
+from ngts.nvos_constants.constants_nvos import ApiType, PlatformConsts
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.scripts.bios_config import configure_bios
 from ngts.tests_nvos.constants import MINUTE
@@ -25,7 +25,7 @@ def restore_bios(topology_obj):
 @pytest.mark.bios
 @pytest.mark.parametrize('test_api', random.sample(ApiType.ALL_TYPES, 1))
 @pytest.mark.parametrize("platform_component_with_clear", ["bios"], indirect=True)
-def test_bios_manual_update(engines, devices, topology_obj, test_api, platform_component_with_clear, test_name):
+def test_bios_manual_update(engines, devices, topology_obj, test_api, platform_component_with_clear, test_name, nv_command):
     """
     Test flow:
         1. fetch alternate BIOS version
@@ -52,8 +52,8 @@ def test_bios_manual_update(engines, devices, topology_obj, test_api, platform_c
                                                      test_name=test_name)
         BmcTool.verify_platform_component_version(platform_component_with_clear, version_name)
         DMIDecodeTool.verify_dmi_info(engines, devices)
-        with allure.step(f"Sleep for {2 * MINUTE} seconds so background-copy will finish"):
-            time.sleep(2 * MINUTE)
+        with allure.step(f"Verify background copy status is completed in 7 minutes time"):
+            BmcTool.verify_background_copy_completed(nv_command.platform, erot_name=PlatformConsts.EROT_CPU_PATH_NAME)
     finally:
         path, filename, version_name = BmcTool.get_fw_component_version_latest(component_name)
         BmcTool.fetch_and_install_platform_component(platform_component=platform_component_with_clear, path=path,

@@ -19,6 +19,7 @@ from ngts.tests_nvos.general.security.conftest import local_adminuser
 from ngts.tests_nvos.general.security.helpers import get_cert_with_ca_mismatch
 from ngts.tests_nvos.general.security.security_test_tools.constants import AddressingType
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
+from ngts.tests_nvos.system.gnmi.conftest import gnmi_certs
 from ngts.tests_nvos.system.gnmi.constants import CERTIFICATE, DEFAULT_CERTIFICATE, GnmicErr, \
     GnmiMode
 from ngts.tests_nvos.system.gnmi.helpers import verify_gnmi_client, cleanup_gnmi_cert_tests, setup_gnmi_cert_checker

@@ -61,6 +61,11 @@ class ClusterConsts:
                            'rdm_config': "true",
                            'chassis_mapping': "true",
                            'telemetry': "true"}
+    EXPECTED_LINE_TO_BE_PRESERVED_AFTER_UPGRADE = {'sm_config': "max_op_vls 2",
+                                                   'fm_config': "LOG_FILE_MAX_SIZE=1023",
+                                                   'rdm_config': "",
+                                                   'chassis_mapping': "",
+                                                   'telemetry': ""}
     CONFIG_FILES_CONTENT_CHANGE = {
         'sm_config': lambda content: re.sub(r'^max_op_vls.*$', 'max_op_vls 2', content, flags=re.MULTILINE),
         'fm_config': lambda content: re.sub(r'^LOG_FILE_MAX_SIZE=.*$', 'LOG_FILE_MAX_SIZE=1023', content, flags=re.MULTILINE),

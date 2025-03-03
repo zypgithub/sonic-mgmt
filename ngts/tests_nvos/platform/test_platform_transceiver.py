@@ -57,7 +57,7 @@ def test_transceiver_status(engines, test_api):
 @pytest.mark.platform
 @pytest.mark.transceiver
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_transceiver_status_unplug(engines, devices, test_api):
+def test_transceiver_status_unplug(engines, devices, test_api, asic_conf_dict):
     """
     The test will check if the module_status changes to Removed after simulating unplug event.
 
@@ -74,7 +74,7 @@ def test_transceiver_status_unplug(engines, devices, test_api):
 
     with allure.step(f"Get module with state {desired_state}"):
         module_under_test, ports, mst_dev_name, module_index = _get_module_with_desire_state(
-            engines, devices, platform, desired_state)
+            engines, devices, platform, asic_conf_dict, desired_state)
 
     try:
         _verify_transceiver_status(platform, transceiver_id=module_under_test, expected_module_status='Inserted')
@@ -91,7 +91,7 @@ def test_transceiver_status_unplug(engines, devices, test_api):
 @pytest.mark.platform
 @pytest.mark.transceiver
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_transceiver_status_with_reboot(engines, devices, test_api):
+def test_transceiver_status_with_reboot(engines, devices, test_api, asic_conf_dict):
     """
     The test will check if the value of module_status is reset after reboot.
 
@@ -111,7 +111,7 @@ def test_transceiver_status_with_reboot(engines, devices, test_api):
     desired_state = NvosConsts.LINK_STATE_UP
     with allure.step(f"Get module with state {desired_state}"):
         module_under_test, ports, mst_dev_name, module_index = _get_module_with_desire_state(
-            engines, devices, platform, desired_state)
+            engines, devices, platform, asic_conf_dict, desired_state)
 
     try:
         _verify_transceiver_status(platform, transceiver_id=module_under_test, expected_module_status='Inserted')
@@ -135,7 +135,7 @@ def test_transceiver_status_with_reboot(engines, devices, test_api):
 
 @pytest.mark.platform
 @pytest.mark.transceiver
-@pytest.mark.parametrize('test_api', ApiType.NVUE)
+@pytest.mark.parametrize('test_api', [ApiType.NVUE])
 def test_transceiver_general(engines, devices, nv_command, test_api):
     """
     The test verifies all expected modules (by device) exists in transceivers detail output.
@@ -356,14 +356,14 @@ def _count_module_index(module_name, device):
     return module_index
 
 
-def _get_module_with_desire_state(engines, devices, platform, desired_state):
+def _get_module_with_desire_state(engines, devices, platform, asic_conf_dict, desired_state):
     with allure.step(f"Get module with state {desired_state}"):
         module_under_test = _get_module_with_status(platform, PlatformConsts.INSERTED)
         assert module_under_test, f"No module with state {desired_state} found"
         ports = _get_ports_for_module(module_under_test)
         assert ports, "Should be at least one port for module"
-        mst_dev_name = IbInterfaceTool.get_mst_dev_name(engine=engines.dut, module_name=module_under_test,
-                                                        port_name=ports[0].name)
+        mst_dev_name = IbInterfaceTool.get_mst_dev_name(engines=engines, module_name=module_under_test,
+                                                        asic_conf_dict=asic_conf_dict, port_name=ports[0].name)
         module_index = _count_module_index(module_under_test, devices.dut)
 
     return module_under_test, ports, mst_dev_name, module_index

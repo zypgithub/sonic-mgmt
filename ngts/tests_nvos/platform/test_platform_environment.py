@@ -172,10 +172,13 @@ def test_set_platform_environment_led(engines, devices, test_api):
     with allure.step("Execute show platform environment led and make sure all the components exist"):
         output = _verify_output(platform, PlatformConsts.ENV_LED, devices.dut.led_list)
 
+    with allure.step("Check for missing PSUs (affects the PSU_STATUS led due to redmine #4272431)"):
+        missing_psus = platform.environment.get_available_psus(invert=True)
+
     with allure.step("Check that all leds are green and UID off by default"):
         logging.info("Check that all leds are green and UID off by default")
         for led, led_prop in output.items():
-            _verify_led_color(led, led_prop)
+            _verify_led_color(led, led_prop, missing_psus)
 
     with allure.step("Negative set off to FAN or PSU, expect fail"):
         logging.info("Negative set off to FAN or PSU, expect fail")
@@ -188,7 +191,7 @@ def test_set_platform_environment_led(engines, devices, test_api):
     with allure.step("Check that all leds are green and UID off by default"):
         logging.info("Check that all leds are green and UID off by default")
         for led, led_prop in output.items():
-            _verify_led_color(led, led_prop)
+            _verify_led_color(led, led_prop, missing_psus)
 
     with allure.step("Change UID state led to on"):
         logging.info("Check UID state led to on")
@@ -211,7 +214,7 @@ def test_set_platform_environment_led(engines, devices, test_api):
     with allure.step("Check that all leds are green and UID off after unset"):
         logging.info("Check that all leds are green and UID off after unset")
         for led, led_prop in output.items():
-            _verify_led_color(led, led_prop)
+            _verify_led_color(led, led_prop, missing_psus)
 
 
 @pytest.mark.platform
@@ -735,11 +738,14 @@ def _verify_led_prop(led, led_prop):
         led_prop[PlatformConsts.ENV_LED_COLOR_LABEL] + " is not a legal value"
 
 
-def _verify_led_color(led, led_prop):
+def _verify_led_color(led, led_prop, missing_psus):
     logging.info("led {}".format(led))
     if led == PlatformConsts.ENV_UID:
         assert led_prop['color'] == PlatformConsts.ENV_LED_TURN_OFF, \
             PlatformConsts.ENV_LED_TURN_OFF + " not found for " + led
+    elif led == PlatformConsts.ENV_PSU_STATUS_LED and missing_psus:  # redmine 4272431
+        assert led_prop['color'] in [PlatformConsts.ENV_LED_COLOR_GREEN, PlatformConsts.ENV_LED_COLOR_AMBER], \
+            f"{led} color is {led_prop['color']}"
     else:
         assert led_prop['color'] == PlatformConsts.ENV_LED_COLOR_GREEN, \
             PlatformConsts.ENV_LED_COLOR_GREEN + " not found for " + led

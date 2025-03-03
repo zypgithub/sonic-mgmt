@@ -455,10 +455,11 @@ class SystemConsts:
     TECHSUPPORT_DUMP_EMPTY_FILES_TO_IGNORE = ['queue.counters_2', 'queue.counters_1.0', 'swapon', 'queue.counters_1',
                                               'queue.counters_2.0', 'queue.counters_1.1', 'queue.counters_2.1',
                                               'queue.counters_1.3', 'queue.counters_1.2', 'queue.counters_2.3',
-                                              'queue.counters_2.2', 'rsyslog.conf']
+                                              'queue.counters_2.2', 'rsyslog.conf', 'verification_test']
     TECHSUPPORT_ETC_EMPTY_FILES_TO_IGNORE = ['ifstatelock', '.lock', 'base', 'tail', 'installed', 'rules.v4',
                                              'rules.v6', 'gnmi-server_reconcile', 'lsb_release', 'usr.sbin.haveged',
-                                             'nvidia_modprobe', '.placeholder', 'installed', '.pwd.lock']
+                                             'nvidia_modprobe', '.placeholder', 'installed', '.pwd.lock',
+                                             'verification_test']
     PATH_KEY = 'path'
     LATEST_KEY = 'latest'
 
@@ -608,6 +609,7 @@ class SystemConsts:
     SHOW_VALUE_NO = 'no'
     DHCP_SHOW_FIELDS = ['has-lease', 'is-running', 'set-hostname', 'state']
     DHCP_SHOW_DEFAULT_VALUES = [SHOW_VALUE_YES, SHOW_VALUE_YES, USER_STATE_ENABLED, USER_STATE_ENABLED]
+    DH_CLIENT_CONF_FILE = "/etc/dhcp/dhclient.conf"
 
     MEMORY_PHYSICAL_KEY = 'Physical'
     MEMORY_SWAP_KEY = 'Swap'
@@ -847,6 +849,7 @@ class PlatformConsts:
     ENV_FAN = "fan"
     ENV_LED = "led"
     ENV_UID = "UID"
+    ENV_PSU_STATUS_LED = "PSU_STATUS"
     ENV_PSU = "psu"
     ENV_TEMP = 'temperature'
     ENV_COMP = [ENV_FAN, ENV_LED, ENV_PSU, ENV_TEMP]
@@ -923,22 +926,55 @@ class PlatformConsts:
     TRANSCEIVER_CABLE_TYPE = 'cable-type'
     TRANSCEIVER_CABLE_OPTICAL_MODULE = 'Optical module'
     TRANSCEIVER_CABLE_COPPER_CABLE = 'Copper cable'
-    CHASSIS_LOCATION_TRAY_ID = 'tray-index'
-    CHASSIS_LOCATION_SLOT_NUM = 'slot-number'
-    CHASSIS_LOCATION_CHAS_SN = 'chassis-sn'
-    CHASSIS_LOCATION_TOPO_ID = 'topology-id'
-    CHASSIS_LOCATION_STANDALONE_DICT = {CHASSIS_LOCATION_TRAY_ID: '0',
-                                        CHASSIS_LOCATION_SLOT_NUM: '0',
-                                        CHASSIS_LOCATION_CHAS_SN: 'N/A',
-                                        CHASSIS_LOCATION_TOPO_ID: 'Loopback'}
     EROTS_LIST = ['ERoT_BMC_0', 'ERoT_CPU_0', 'ERoT_FPGA_0', 'ERoT_NVSwitch_0', 'ERoT_NVSwitch_1']
-
     INV_STATE = 'state'
     INV_OK = 'ok'
     ASIC_CONF_FILE_PATH = "/usr/share/sonic/device/{}/asic.conf"
     INV_FAILED = 'failed'
     TIMEOUT_AFTER_BIOS_INSTALL = 720
     TIMEOUT_AFTER_FW_INSTALL = 1200
+
+
+class ChassisLocationConsts:
+    TRAY_ID = 'tray-index'
+    SLOT_NUM = 'slot-number'
+    CHAS_SN = 'chassis-sn'
+    TOPO_ID = 'topology-id'
+    LOOP_CABLE = 'Loopback'
+    ETF = "3-slot ETF Cartridge"
+    OBERON_36 = "GB200 NVL36"
+    OBERON_72 = "GB200 NVL72"
+    NA = 'N/A'
+    ALLOWED_TOPOLOGIES = [
+        LOOP_CABLE,
+        ETF,
+        OBERON_36,
+        OBERON_72,
+    ]
+    EXPECTED_STANDALONE_DICT = {TRAY_ID: '0',
+                                SLOT_NUM: '0',
+                                CHAS_SN: NA,
+                                TOPO_ID: LOOP_CABLE}
+
+
+class CableCartridgeConsts:
+    # Keys in the cable cartridge output
+    NAME = "Name"
+    KEY_SLOT_ID = "slot-id"
+    KEY_TRAY_ID = "tray-id"
+    KEY_SERIAL = "serial-number"
+    KEY_PART_NUMBER = "part-number"
+    KEY_MANUFACTURING_DATE = "manufacture-date"
+    LEFTMOST_CARTRIDGE = "cartridge1"
+    PART_NUMBER = "755-24972-0003-000"
+    # Error messages
+    ERR_MISSING_KEY = "Missing key in cable cartridge data: {}"
+    ERR_NULL_VALUE = "Key '{}' has a null or empty value"
+    ERR_MISMATCH = "'{}' '{}' does not match the expected value '{}'"
+    ERR_GENERAL_VALIDATION_FAILED = "Validation failed for key '{}'"
+    ERR_TRAY_ID_OUT_OF_RANGE = "Tray ID '{}' is out of the valid range ({}-{})"
+    # All expected keys for validation
+    ALL_KEYS = {KEY_SLOT_ID, KEY_TRAY_ID, KEY_SERIAL, KEY_PART_NUMBER, KEY_MANUFACTURING_DATE}
 
 
 class FansConsts:
@@ -1105,6 +1141,7 @@ class NtpConsts:
 
     class Listen(Enum):
         ETH0 = 'eth0'
+        ETH1 = 'eth1'
 
     AUTHENTICATION = 'authentication'
     DHCP = 'dhcp'
@@ -1146,6 +1183,8 @@ class NtpConsts:
     MULTIPLE_SERVERS_NUMBER = 11
     CONFIG_TIME_DIFF_THRESHOLD = 2.5  # [sec]
     SHOW_TIME_DIFF_THRESHOLD = 0.5  # [sec]
+    SYNCHRONIZE_NEW_LISTEN_TIME = 20  # [sec]
+    SYNCHRONIZE_TIME = 50  # [sec]
     SYNCHRONIZATION_MAX_TIME = 100  # [sec]
     SYNCHRONIZATION_TIME_AFTER_REBOOT = 60  # [sec]
     CONFIG_TIME = 10  # [sec]
@@ -1382,7 +1421,7 @@ class OperationTimeConsts:
     THRESHOLDS = {'reboot': 250 if is_bug_active(4074566) else 220,     # TODO: revert once bug closed
                   'julietscaleout_reboot': 330,
                   'julietscaleout reset factory': 390,
-                  'reset factory': 260,
+                  'reset factory': 300,
                   'install user FW': 450,
                   'install default fw': 360,
                   'port goes up': 30,

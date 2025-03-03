@@ -11,4 +11,4 @@ def clear_system_aaa(test_name):
     with allure.step(f'cleanup for RBAC test {test_name}'):
         system = System(force_api=ApiType.NVUE)
         system.aaa.user.action_disconnect()
-        system.aaa.unset(apply=True)
+        system.aaa.unset(apply=True, ask_for_confirmation=True)

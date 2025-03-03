@@ -1,5 +1,8 @@
 import json
 import logging
+from typing import Dict
+
+from retry import retry
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_constants.constants_nvos import DatabaseConst
@@ -92,6 +95,15 @@ class BmcTool:
             return component_image_info
 
     @staticmethod
+    @retry(AssertionError, tries=14, delay=30)
+    def verify_background_copy_completed(platform, erot_name):
+        with allure.step(f"Verifying {erot_name} completed background copy"):
+            firmware_shown: Dict[str, str] = OutputParsingTool.parse_json_str_to_dictionary(
+                platform.firmware.erot_id[erot_name].show()).get_returned_value()
+            background_copy_status = firmware_shown[PlatformConsts.FW_BACKGROUND_COPY_STATUS]
+            assert background_copy_status.lower() == "Completed".lower(), "Background copy status is not completed"
+
+    @staticmethod
     def get_fw_component_version_latest(component_name):
         return BmcTool._get_fw_component_version_info(component_name, "latest")
 
@@ -109,14 +121,16 @@ class BmcTool:
         """
         ip_addresses = {}
         with allure.step("Get bmc ipv4 from noga"):
-            bmc_ipv4_address = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific']['bmc_ip']
+            bmc_ipv4_address = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific'][
+                'bmc_ip']
             assert bmc_ipv4_address, "Could you please check the BMC IP box in NOGA? It appears to be empty"
             logger.info(f"the bmc IPv4 is {bmc_ipv4_address}")
             ip_addresses["IPv4"] = bmc_ipv4_address
 
         with allure.step("Sending a curl request to get the IPv6 address from the BMC"):
             curl_request = f'curl -s -k -u {BmcTool.USER_NAME}:{BmcTool._get_bmc_password(engines.dut)} https://{bmc_ipv4_address}/redfish/v1/Managers/BMC_0/EthernetInterfaces/eth0 | python3 -m json.tool'
-            eth0_details = OutputParsingTool.parse_json_str_to_dictionary(engines.dut.run_cmd(curl_request)).verify_result()
+            eth0_details = OutputParsingTool.parse_json_str_to_dictionary(
+                engines.dut.run_cmd(curl_request)).verify_result()
             ipv6_data = eth0_details["IPv6Addresses"]
             slaac_address = next(
                 (address['Address'] for address in ipv6_data if address['AddressOrigin'] == 'SLAAC'),
@@ -127,7 +141,10 @@ class BmcTool:
 
     @staticmethod
     def install_fw_image(platform_component, test_name, filename, topology_obj, name):
-        res_obj, duration = OperationTime.save_duration(f'Installation of {name} using {filename} with reboot', '', test_name,
-                                                        platform_component.files.file_name[filename].action_file_install_with_reboot,
+        component_name = platform_component.get_resource_basename().lower()
+        res_obj, duration = OperationTime.save_duration(f'{component_name} install with reboot', '',
+                                                        test_name,
+                                                        platform_component.files.file_name[
+                                                            filename].action_file_install_with_reboot,
                                                         topology_obj=topology_obj)
         return res_obj

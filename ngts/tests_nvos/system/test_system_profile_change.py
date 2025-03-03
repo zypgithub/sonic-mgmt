@@ -82,7 +82,7 @@ def test_system_profile_negative(engines, devices):
 
 @pytest.mark.system
 @pytest.mark.system_profile_cleanup
-def test_system_profile_adaptive_routing(engines, players, interfaces, start_sm, devices, setup_name):
+def test_system_profile_adaptive_routing(engines, players, interfaces, start_sm, devices):
     """
     Test flow:
         1. Check that with different routing group we have traffic
@@ -105,7 +105,7 @@ def test_system_profile_adaptive_routing(engines, players, interfaces, start_sm,
             _check_port_up_on_hosts(host)
 
     with allure.step("Run traffic"):
-        Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, setup_name, True).verify_result()
+        Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, True).verify_result()
 
     with allure.step('Change adaptive-routing-groups, check changes and traffic'):
         with allure.step("Change adaptive-routing-groups to possible value"):
@@ -140,7 +140,7 @@ def test_system_profile_adaptive_routing(engines, players, interfaces, start_sm,
                 _check_port_up_on_hosts(host)
 
         with allure.step("Run traffic"):
-            Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, setup_name, True).verify_result()
+            Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, True).verify_result()
 
     with allure.step('Change system profile to default'):
         change_profile_to_default(system, devices, engines)
@@ -158,7 +158,7 @@ def test_system_profile_adaptive_routing(engines, players, interfaces, start_sm,
                 _check_port_up_on_hosts(host)
 
         with allure.step("Run traffic"):
-            Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, setup_name, True).verify_result()
+            Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, True).verify_result()
 
 
 @pytest.mark.system

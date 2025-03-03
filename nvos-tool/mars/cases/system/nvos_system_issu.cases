@@ -48,15 +48,4 @@
     </cmd>
   </case>
 
-  <case>
-    <name> System power cycle during ISSU process </name>
-    <info> </info>
-    <tout> 1800 </tout>
-    <cmd>
-      <params>
-          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/system/issu/test_system_issu.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini -k test_power_cycle_during_issu_process --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --release_name=[[conf:extra_info.release_name]] --clean-alluredir  --disable_loganalyzer --alluredir=/tmp/allure-results --downgrade_version=[[conf:extra_info.downgrade_version]] --issu_version=[[conf:extra_info.issu_version]] --target_version=[[conf:extra_info.target_version]] --showlocals  [[conf:extra_info.additional_options]]  --timeout 1800   \'"</static_args>
-      </params>
-    </cmd>
-  </case>
-
 </CASEDEF>

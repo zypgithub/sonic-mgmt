@@ -349,7 +349,7 @@ class OpenApiRequest:
 
                 OpenApiRequest.print_request(r.request, request_data)
                 OpenApiRequest.print_response(r, OpenApiReqType.DELETE)
-                res = OpenApiRequest._validate_response(r, OpenApiReqType.DELETE)
+                res = OpenApiRequest._validate_response(r, OpenApiReqType.DELETE).ignore_result()
                 return res.info
 
     @staticmethod

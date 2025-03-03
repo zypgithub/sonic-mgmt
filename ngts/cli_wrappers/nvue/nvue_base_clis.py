@@ -32,7 +32,7 @@ class NvueBaseCli:
     sub_strings_to_search = ['ib', 'sm', 'quantum']
 
     @staticmethod
-    def show(engine, resource_path, op_param="", output_format=OutputFormat.json):
+    def show(engine, resource_path, op_param="", output_format=OutputFormat.json, check_engine_connectivity: bool = True):
         return NvueBaseCli.nvue_show(engine, resource_path, op_param, output_format)
 
     @staticmethod
@@ -48,7 +48,7 @@ class NvueBaseCli:
         return engine.run_cmd(cmd)
 
     @staticmethod
-    def set(engine, resource_path, op_param_name="", op_param_value=""):
+    def set(engine, resource_path, op_param_name="", op_param_value="", check_engine_connectivity: bool = True):
         return NvueBaseCli.nvue_set(engine, resource_path, op_param_name, op_param_value)
 
     @staticmethod
@@ -63,7 +63,7 @@ class NvueBaseCli:
         return engine.run_cmd(cmd)
 
     @staticmethod
-    def unset(engine, resource_path, op_param=""):
+    def unset(engine, resource_path, op_param="", check_engine_connectivity: bool = True):
         return NvueBaseCli.nvue_unset(engine, resource_path, op_param)
 
     @staticmethod
