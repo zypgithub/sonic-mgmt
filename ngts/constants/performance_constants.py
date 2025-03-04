@@ -128,6 +128,7 @@ class PerfConsts:
         "Cumulus": Cl_Consts.CL_GRUB_PATH,
         "DVS": SONIC_DVS_GRUB_PATH
     }
+    SDK_DEB_FILE_TEMPLATE = "sys-sdk-git_1.mlnx.{SDK_VERSION}_amd64.deb"
 
     # Miscellaneous
     USED_SITE = "MTL"
