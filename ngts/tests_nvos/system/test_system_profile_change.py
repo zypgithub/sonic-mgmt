@@ -1,5 +1,7 @@
 import logging
 import pytest
+
+from ngts.nvos_tools.infra.RegressionConfigurations import Configurations, RegressionConfigurations
 from ngts.tools.test_utils import allure_utils as allure
 import random
 import time
@@ -95,10 +97,7 @@ def test_system_profile_adaptive_routing(engines, players, interfaces, start_sm,
         assert engines.ha and engines.hb, "Traffic hosts details can't be found in Noga setup"
 
     with allure.step("Check traffic port up"):
-        active_ports = Tools.RandomizationTool.get_random_active_port(number_of_values_to_select=0).get_returned_value()
-        for port in active_ports:
-            port.interface.wait_for_port_state(state=NvosConsts.LINK_STATE_UP,
-                                               logical_state=NvosConsts.LINK_LOG_STATE_ACTIVE).verify_result()
+        default_config_active_ports = Tools.RandomizationTool.get_random_active_port(number_of_values_to_select=0).get_returned_value()
 
     with allure.step('Check host ports up'):
         for host in traffic_hosts:
@@ -130,10 +129,7 @@ def test_system_profile_adaptive_routing(engines, players, interfaces, start_sm,
 
         update_timezone(engines)
 
-        with allure.step("Check traffic port up"):
-            for port in active_ports:
-                port.interface.wait_for_port_state(state=NvosConsts.LINK_STATE_UP,
-                                                   logical_state=NvosConsts.LINK_LOG_STATE_ACTIVE).verify_result()
+        check_traffic_ports_up(engines, default_config_active_ports)
 
         with allure.step('Check host ports up'):
             for host in traffic_hosts:
@@ -148,10 +144,7 @@ def test_system_profile_adaptive_routing(engines, players, interfaces, start_sm,
         with allure.step("Start OpenSm"):
             OpenSmTool.start_open_sm(engines).verify_result()
 
-        with allure.step("Check traffic port up"):
-            for port in active_ports:
-                port.interface.wait_for_port_state(state=NvosConsts.LINK_STATE_UP,
-                                                   logical_state=NvosConsts.LINK_LOG_STATE_ACTIVE).verify_result()
+        check_traffic_ports_up(engines, default_config_active_ports)
 
         with allure.step('Check host ports up'):
             for host in traffic_hosts:
@@ -284,3 +277,10 @@ def update_timezone(engines):
         ClockTools.set_timezone(LinuxConsts.JERUSALEM_TIMEZONE, System(), apply=True).verify_result()
         with allure.step('Set timezone using timedatectl command'):
             os.popen('sudo timedatectl set-timezone {}'.format(LinuxConsts.JERUSALEM_TIMEZONE))
+
+
+def check_traffic_ports_up(engines, expected_active_ports):
+    with allure.step("Check traffic ports up"):
+        RegressionConfigurations.configure_ports_to_legacy(engines.dut)
+        active_ports = Tools.RandomizationTool.get_random_active_port(number_of_values_to_select=0).get_returned_value()
+        ValidationTool.validate_set_equal(actual=active_ports, expected=expected_active_ports)

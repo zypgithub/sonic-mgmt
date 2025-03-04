@@ -83,7 +83,7 @@ class Port(BaseComponent):
         """
         Return a list of ports which are connected to a traffic server
         """
-        with allure.step('Get a list of ports which state is up'):
+        with allure.step('Get a list of ports which state is up and logical state is Active'):
             port_requirements_object = PortRequirements(interface_type)
             port_requirements_object.set_port_state(NvosConsts.LINK_STATE_UP)
             port_requirements_object.set_port_type(port_type)

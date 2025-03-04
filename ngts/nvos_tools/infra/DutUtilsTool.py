@@ -293,17 +293,13 @@ def wait_for_system_table_to_exist(engine):
 
 @retry(Exception, tries=80, delay=15)
 def wait_until_cli_is_up(engine):
-    try:
-        logger.info('Checking the status of nvued')
-        output = engine.run_cmd('nv show system')
-        if 'CLI is unavailable' in output:
-            raise Exception("Waiting for NVUE to become functional")
-
-    except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout):
-        logger.info(f"GET request failed, running engine.disconnect() to recover")
+    logger.info('Checking the status of nvued')
+    output = engine.run_cmd('nv show system')
+    if not output:
         engine.disconnect()
-        check_port_status_till_alive(True, engine.ip, engine.ssh_port)
-        DutUtilsTool.wait_for_nvos_to_become_functional(engine)
+        raise Exception("Socket exception: Connection reset by peer (104)")
+    elif 'CLI is unavailable' in output:
+        raise Exception("Waiting for NVUE to become functional")
 
 
 @retry(Exception, tries=15, delay=10)
