@@ -582,6 +582,7 @@ class SonicInstallationSteps:
             for dut in setup_info['duts']:
                 SonicInstallationSteps.post_install_check_sonic(sonic_topo=sonic_topo, dut_name=dut['dut_name'],
                                                                 ansible_path=ansible_path)
+            sync_docker_time_to_israel(topology_obj)
 
         for dut in setup_info['duts']:
             SonicInstallationSteps.upgrade_switch(topology_obj=topology_obj, dut_name=dut['dut_name'],
@@ -896,3 +897,57 @@ def fetch_dash_api_package():
                    "definitionId=1055&artifactName=sonic-buildimage.amd64.ubuntu20_04&"
                    "target=libdashapi_1.0.0_amd64.deb' -O libdashapi_1.0.0_amd64.deb")
     assert rc == 0, "Failed to fetch the dash api package"
+
+
+def update_container_timezone(hypervisor_engine, container):
+    """
+    Updates the timezone of a specific container to Israel time.
+    :param hypervisor_engine: The engine to run commands on the hypervisor.
+    :param container: The name of the container to update.
+    """
+    cmd = f"docker exec {container} ln -sf /usr/share/zoneinfo/Asia/Jerusalem /etc/localtime"
+    hypervisor_engine.run_cmd(cmd, validate=True)
+    logger.info(f"Timezone updated for container: {container}")
+
+
+def sync_docker_time_to_israel(topology_obj):
+    """
+    Runs the NTP update process in all containers in the hypervisor.
+    :param topology_obj : A fixture that returns setup players.
+    """
+    hypervisor_engine = None
+    failed_containers = []
+
+    try:
+
+        hypervisor_engine = topology_obj.players['hypervisor']['engine']
+
+        result = hypervisor_engine.run_cmd("docker ps --format {{.Names}}", validate=True)
+        container_names = result.strip().splitlines()
+
+        if not container_names or all(name.strip() == "" for name in container_names):
+            raise Exception("No containers found")
+
+        logger.info("Starting timezone update for all containers.")
+
+        for container in container_names:
+            if 'net_vm' not in container:
+                with allure.step(f"Updating timezone for container: {container}"):
+                    try:
+                        retry_call(
+                            update_container_timezone,
+                            fargs=[hypervisor_engine, container],
+                            tries=3,
+                            delay=2,
+                            logger=logger,
+                        )
+                    except Exception as e:
+                        logger.error(f"Failed to update timezone for {container}. Error: {str(e)}")
+                        failed_containers.append(container)
+
+        if len(failed_containers) == 0:
+            logger.info("Timezone update completed for all containers.")
+        else:
+            logger.warning(f"Timezone update failed for {failed_containers}.")
+    except Exception as e:
+        logger.warning(f"Unexpected error while updating timezones: {str(e)}")
