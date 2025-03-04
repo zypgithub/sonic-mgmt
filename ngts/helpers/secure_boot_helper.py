@@ -562,6 +562,9 @@ class SonicSecureBootHelper(SecureBootHelper):
         fw_pkg_path = f'{path_to_current_folder}/../../{MarsConstants.UPDATED_FW_TAR_PATH}'
         fw_data = extract_fw_data(fw_pkg_path)
         hw_type = platform_params.filtered_platform.upper()
+        # The chassis name of 2700a1 in firmware.json and platform_components.json is "MSN2700-A1"
+        if hw_type == "MSN2700A1":
+            hw_type = "MSN2700-A1"
         dut_name = platform_params['setup_name'].strip('_setup').split('_')[-1]
         component_data = None
         try:
