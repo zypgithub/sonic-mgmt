@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import List
 from jinja2 import Environment, FileSystemLoader
 from datetime import datetime, timedelta
-from ngts.constants.constants import BugHandlerConst, InfraConst
+from ngts.constants.constants import BugHandlerConst, InfraConst, FILE_INCLUDE_FAILED_SANITY_CHECKER_CASE
 from ngts.nvos_constants.constants_nvos import SystemConsts
 from infra.tools.redmine.redmine_api import get_issue_fixed_in_version_value, get_issues_status
 from ngts.scripts.collect_simx_logs_on_not_success import dump_simx_data
@@ -260,11 +260,17 @@ def run_err_msg_bug_handler_tool(conf_path, redmine_project, branch, yaml_parsed
             action_mode = get_action_based_on_no_action_results(
                 bug_handler_file_result, branch, bug_handler_params, bug_handler_update_action)
 
-            if action_mode == "no action" and not bug_handler_no_action:
+            if action_mode == "no action":
                 logger.info("To not fail case and attach file, need update the following 3 parameters")
                 bug_handler_file_result["action"] = BugHandlerConst.BUG_HANDLER_DECISION_UPDATE
                 bug_handler_file_result["status"] = "done"
                 bug_handler_no_action = True
+            elif Path(FILE_INCLUDE_FAILED_SANITY_CHECKER_CASE).exists():
+                logger.info("Sanity checker failure, set bug handler to no action")
+                bug_handler_no_action = True
+                # pass case if there's existing ticket
+                if bug_handler_file_result["action"] == BugHandlerConst.BUG_HANDLER_DECISION_UPDATE:
+                    bug_handler_file_result["status"] = "done"
 
     if not bug_handler_no_action or bug_handler_params.get("cli_type", '') != "Sonic":
         bug_handler_cmd = f"env LOG_FORMAT_JSON=1 {bug_handler_path} --cfg {conf_path} --project {redmine_project} " \

@@ -155,9 +155,6 @@ def log_analyzer_bug_handler(duthost, request, log_errors_dir_path=None, only_ch
     test_id = request.node.nodeid
     test_rm_issues = set()
     log_analyzer_handler_info = get_log_analyzer_handler_info(duthost)
-    if Path(FILE_INCLUDE_FAILED_SANITY_CHECKER_CASE).exists():
-        only_check = True
-        logger.info("Sanity checker failed, bug handler is set to only check")
     bug_handler_actions = get_bug_handler_actions(request, log_analyzer_handler_info, only_check)
 
     if "allure_server_project_id" in request.config.option:
