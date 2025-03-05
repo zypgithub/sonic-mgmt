@@ -18,6 +18,7 @@ from ngts.cli_util.verify_cli_show_cmd import verify_show_cmd
 from ngts.conftest import cleanup_last_config_in_stack
 from ngts.helpers.reboot_reload_helper import get_supported_reboot_reload_types_list
 from ngts.helpers.interface_helpers import speed_string_to_int_in_mb
+from ngts.helpers.sonic_branch_helper import is_sanitizer_image
 from ngts.helpers import json_file_helper
 from ngts.constants.constants import SonicConst
 
@@ -429,6 +430,10 @@ def test_lags_scale(topology_obj, engines, cleanup_list):
     :param cleanup_list: list with functions to cleanup
     :return: raise assertion error on unexpected behavior
     """
+    # Skip the case on ASAN image
+    if is_sanitizer_image(topology_obj):
+        pytest.skip("Skip performance and scalability tests on ASAN image")
+
     try:
         # workaround for issue in teardown.
         # removing of LAGs take time. But in show and ASIC_DB it is presented as already removed.
