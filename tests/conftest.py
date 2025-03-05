@@ -243,11 +243,6 @@ def pytest_addoption(parser):
     parser.addoption("--is_parallel_leader", action="store_true", default=False, help="Is the parallel leader")
     parser.addoption("--parallel_followers", action="store", default=0, type=int, help="Number of parallel followers")
 
-    ############################
-    #   SmartSwitch options    #
-    ############################
-    parser.addoption("--dpu-pattern", action="store", default="all", help="dpu host name")
-
 
 def pytest_configure(config):
     if config.getoption("enable_macsec"):
