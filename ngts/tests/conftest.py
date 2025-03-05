@@ -15,6 +15,7 @@ import allure
 
 from dotted_dict import DottedDict
 from deepdiff import DeepDiff
+from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
 from ngts.constants.constants import PytestConst
 from ngts.helpers import json_file_helper
 from ngts.helpers.config_db_utils import save_config_db_json
@@ -361,9 +362,7 @@ def config_check(engines, cli_objects, topology_obj, request, sonic_version, pla
         dut_hostname = cli_objects.dut.chassis.get_hostname()
 
         module_name = request.node.name
-
         dut_data = {}
-
         with allure.step(f"Collecting running config before test on {dut_hostname}"):
             logger.info(f"Collecting running config before test on {dut_hostname}, config info save in fixture config_check attachment")
             if request.session.items[0].name in MAX_PORTS_TEST_LIST:
@@ -463,7 +462,10 @@ def config_check(engines, cli_objects, topology_obj, request, sonic_version, pla
             logger.info(f"DUT contains stale configurations after running {module_name}, reloading DUT to configurations "
                         f"before the test")
             save_config_db_json(dut_engine, dut_data["pre_running_config"])
-            cli_objects.dut.general.reload_flow(topology_obj=topology_obj, reload_force=True)
+            if isinstance(cli_objects.dut, NvueCli):
+                logger.info("reload flow is currently not supported for NVUE")
+            else:
+                cli_objects.dut.general.reload_flow(topology_obj=topology_obj, reload_force=True)
             raise Exception(config_check_error_message)
         else:
             logger.info("Config check passed for {}".format(module_name))

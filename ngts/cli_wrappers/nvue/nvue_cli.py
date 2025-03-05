@@ -28,7 +28,7 @@ class NvueCli:
     @property
     def general(self):
         if self._general is None:
-            self._general = NvueGeneralCli(engine=self.engine, device=None)
+            self._general = NvueGeneralCli(engine=self.engine, device=None, cli_obj=self, dut_alias=self.dut_alias)
         return self._general
 
     @property

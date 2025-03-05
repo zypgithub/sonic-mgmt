@@ -29,9 +29,11 @@ class NvueGeneralCli(SonicGeneralCliDefault):
     Most of the methods are inherited from SonicGeneralCli
     """
 
-    def __init__(self, engine, device=None):
+    def __init__(self, engine, device=None, cli_obj=None, dut_alias='dut'):
         self.engine = engine
         self.device = device
+        self.cli_obj = cli_obj
+        self.dut_alias = dut_alias
 
     @retry(Exception, tries=5, delay=30)
     def generate_techsupport(self, duration=60):
