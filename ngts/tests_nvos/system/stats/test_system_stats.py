@@ -1267,6 +1267,6 @@ def check_in_range_without_na(col, value, min_val, max_val, sample, category):
 
 def get_header_number_of_lines(engines, category):
     with allure.step(f"Get {category} header number of lines"):
-        num_of_lines = engines.dut.run_cmd(f"grep -c '^#' /var/stats/{category}.csv") + 2
+        num_of_lines = int(engines.dut.run_cmd(f"grep -c '^#' /var/stats/{category}.csv")) + 2
 
     return num_of_lines
