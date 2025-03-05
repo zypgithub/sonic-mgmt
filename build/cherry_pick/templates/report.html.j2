@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <style>
+    table, th, td {
+        border: 2px solid black;
+        border-collapse: collapse;
+    }
+    th, td {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+    </style>
+</head>
+<body>
+    <h3>Cherry pick commit from community report</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Subject</th>
+                <th>Short Hash</th>
+                <th>Community committer date</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for commit in commits %}
+            <tr {% if commit.cherry_pick_status == 3 %}
+                style="background-color: #db756e;" {# CONFLICT #}
+                {% elif  commit.cherry_pick_status == 1 %}
+                style="background-color: #76B900;" {# SUCCESS #}
+                {% elif  commit.cherry_pick_status == 2 %}
+                style="background-color: #daf1ff;" {# ALREADY INCLUDED #}
+                {% elif  commit.cherry_pick_status == 4 %}
+                style="background-color: #FFFFFF;" {# EMPTY COMMIT #}
+                {% endif %}>
+                {% set pr_number_match = commit.subject | extract_pr_number %}
+                <td>
+                    {% if pr_number_match %}
+                    <a href="https://github.com/sonic-net/sonic-mgmt/pull/{{ pr_number_match[-1] }}">
+                        {{ commit.subject }}
+                    </a>
+                    {% else %}
+                    {{ commit.subject }}
+                    {% endif %}
+                </td>
+                <td>{{ commit.hash[:8] }}</td>
+                <td>{{ commit.ct | format_ts }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {# Show legend of colors #}
+    {% set color_and_status = {"#db756e": "Conflict", "#76B900": "Success",
+                            "#daf1ff": "Already included", "#FFFFFF": "Empty change"} %}
+    {% for color, status in color_and_status.items() %}
+        <div style="display: flex; align-items: center; margin-top: 5px">
+            <div style="background-color: {{ color }};
+                width: 60px; height: 20px; margin-right: 10px;
+                border: 2px solid black;"></div>
+            <span style="font-size: 16px">{{ status }}</span>
+        </div>
+    {% endfor %}
+    {% if cr_on_top %}
+    <p style="margin-top: 5px">The CR link waiting for review: {{ cr_on_top }}</p>
+    {% endif %}
+</body>
+</html>

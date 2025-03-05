@@ -1,0 +1,95 @@
+import jenkins.model.*
+
+
+def get_vault_creds() {
+    def vault_config = [vaultUrl: 'https://prod.vault.nvidia.com',
+    vaultNamespace: "nbu-system-sw-sonic",
+    vaultCredentialId: 'vault-sonic-approle-prod',
+    engineVersion: 1]
+    def vault_path_prefix = "nvidia/nbu/mars/sonic/kv"
+    def secrets = [
+        [path: "${vault_path_prefix}/svc_sonic_ver_boot",
+        engineVersion: 1,
+        secretValues: [[envVar: 'BOT_USER', vaultKey: 'user'],
+        [envVar: 'BOT_API_TOKEN', vaultKey: 'gerrit_api_token']]]
+    ]
+
+    return [vault_config, secrets]
+}
+
+pipeline {
+    agent none
+    environment {
+        MAIN_NODE = 'SONIC_LITE'
+    }
+    stages {
+        stage('Main') {
+            agent { label "${MAIN_NODE}" }
+            steps {
+                script {
+                    def startDate = params.START_DATE ?: (new Date() - 10).format('yyyy-MM-dd', TimeZone.getTimeZone('UTC'))
+                    def endDate = params.END_DATE ?: new Date().format('yyyy-MM-dd', TimeZone.getTimeZone('UTC'))
+                    def internalBranch = params.BRANCH == "master"? "develop": "develop-"+params.BRANCH
+                    def skipCherryPickParam = params.IGNORE_PRS?.trim() ? "--skip ${params.IGNORE_PRS}" : ""
+                    echo "Start Date: ${startDate}"
+                    echo "End Date: ${endDate}"
+                    echo "Community branch: ${params.BRANCH},internal branch: ${internalBranch}"
+                    def originUrl = "https://git-nbu-sw.nvidia.com/r/a/switchx/sonic/sonic-mgmt"
+                    def mergeResultDir = "/.autodirect/sw_regression/system/SONIC/sonic-mgmt-merge"
+                    def (vault_config, secrets) = get_vault_creds()
+                    withVault([configuration: vault_config, vaultSecrets: secrets]) {
+                        sh """
+                        docker run -v ${mergeResultDir}:/root/merge-result --rm python:3.10.16 bash -c '
+                            set -e
+                            echo "machine git-nbu-sw.nvidia.com" >> /root/.netrc
+                            echo "login ${BOT_USER}" >> /root/.netrc
+                            echo "password ${BOT_API_TOKEN}" >> /root/.netrc
+                            cd /root
+                            git init workspace
+                            cd workspace
+                            git remote add origin ${originUrl}
+                            git config core.sparseCheckout true
+                            echo "build/cherry_pick" >> .git/info/sparse-checkout
+                            git pull --depth=1 origin develop
+                            git checkout develop
+                            cd /root
+                            git clone -b ${internalBranch} \
+                                ${originUrl} \
+                                sonic-mgmt
+                            cd sonic-mgmt
+                            mkdir -p `git rev-parse --git-dir`/hooks/
+                            curl -Lo `git rev-parse --git-dir`/hooks/commit-msg \
+                                https://git-nbu-sw.nvidia.com/r/tools/hooks/commit-msg
+                            chmod +x `git rev-parse --git-dir`/hooks/commit-msg
+                            git config --global --add safe.directory /root/sonic-mgmt
+                            git status
+                            git log -1
+                            git remote add upstream https://github.com/sonic-net/sonic-mgmt.git
+                            git config --global user.email "${BOT_USER}@nvidia.com"
+                            git config --global user.name "${BOT_USER}"
+                            git config --global gitreview.username "${BOT_USER}"
+                            git config --global gitreview.port 443
+                            git config --global gitreview.scheme https
+                            git config --global gitreview.project r/a/switchx/sonic/sonic-mgmt
+                            cd /root/workspace/build/cherry_pick
+                            pip install -r requirements.txt
+                            apt update && apt install -y git-review
+                            export GERRIT_USERNAME=${BOT_USER}
+                            export GEERIT_API_KEY=${BOT_API_TOKEN}
+                            cd /root/merge-result
+                            python /root/workspace/build/cherry_pick/main.py --loglevel DEBUG \
+                                --since "${startDate}" --until="${endDate}" \
+                                --recipients ${params.RECIPIENTS} --branch ${params.BRANCH} \
+                                --repo_path /root/sonic-mgmt --no-dry-run ${skipCherryPickParam}
+                            if [ -f "${params.BRANCH}.LAST_SUCCESS" ]; then
+                                ls -lh ${params.BRANCH}.LAST_SUCCESS;
+                                chmod 666 ${params.BRANCH}.LAST_SUCCESS;
+                            fi
+                        '
+                        """
+                    }
+                }
+            }
+        }
+    }
+}
