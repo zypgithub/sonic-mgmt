@@ -649,7 +649,7 @@ class BlackMambaSwitch(IbSwitch):
         self.ztp_complex_prod_json = 'complex_prod.json'
         self.ztp_complex_dev_json = 'complex.json'
         self.valid_ports_count = 144
-        self.number_of_transceivers = 144
+        self.number_of_transceivers = 145
         self.transceivers_tables_name = "TRANSCEIVER_FIRMWARE_INFO"
         self.transceiver_list = ['fnm1'] + [f'sw{a + 1}p{b}' for a in range(72) for b in (1, 2)]
         self.constants.firmware.extend(['CPLD4', 'CPLD5', 'CPLD6'])

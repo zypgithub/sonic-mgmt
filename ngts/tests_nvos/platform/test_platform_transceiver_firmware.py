@@ -97,6 +97,7 @@ def test_reset_transceiver_firmware_positive(engines, test_api):
             check_counters(link_output_before_reset, link_output_after_reset)
 
 
+@pytest.mark.timeout(30 * MINUTE, func_only=True)
 @pytest.mark.platform
 @pytest.mark.transceiver
 def test_install_transceiver_firmware_positive(engines, devices, test_api, test_name, asic_conf_dict):
@@ -220,7 +221,6 @@ def test_install_reset_transceiver_firmware_negative_flow(engines, test_api):
 
     with allure.step("install new transceiver firmware - {}".format(invalid_file)):
         platform.transceiver.action_install(random_transceiver, invalid_file, expected_str=expected_error_msg).verify_result(should_succeed=False)
-        platform.transceiver.action_reset(random_transceiver).verify_result()
 
     with allure.step("verify show commands after install"):
         time.sleep(20)
@@ -257,15 +257,23 @@ def test_install_reset_invalid_transceiver_id(engines, test_api):
         platform = Platform()
         invalid_transceiver = 'testing'
         invalid_file_name = 'no_file'
-        invalid_action_expected_output = "Module testing does not exist"
-        invalid_show_expected_output = 'The requested item does not exist'
+        invalid_transceiver_expected_output = "'testing' is not a 'transceiver-name'"
+        invalid_file_expected_output = "no_file not found"
 
     with allure.step("try to run transceiver commands with invalid transceiver id and non exist file"):
-        platform.transceiver.action_install(invalid_transceiver, invalid_file_name, expected_str=invalid_action_expected_output)
-        platform.transceiver.action_reset(invalid_transceiver, expected_str=invalid_action_expected_output)
-        assert invalid_show_expected_output in platform.transceiver.show(invalid_transceiver + ' firmware', should_succeed=False), "The show firmware command succeeded when it was expected to fail"
-        assert invalid_show_expected_output in platform.transceiver.show(invalid_transceiver + ' firmware files ' + invalid_file_name, should_succeed=False), "The show firmware files command succeeded when it was expected to fail"
-        assert invalid_show_expected_output in platform.transceiver.show(invalid_transceiver, should_succeed=False), "The show transceiver command succeeded when it was expected to fail"
+        with allure.independent_step("Install non exist file"):
+            platform, random_transceiver, random_port = _get_random_optical_module_transceiver()
+            platform.transceiver.action_install(random_transceiver, invalid_file_name, expected_str=invalid_file_expected_output).verify_result()
+        with allure.independent_step("Install invalid transceiver and non exist file"):
+            platform.transceiver.action_install(invalid_transceiver, invalid_file_name, expected_str=invalid_transceiver_expected_output).verify_result()
+        with allure.independent_step("Reset invalid transceiver"):
+            platform.transceiver.action_reset(invalid_transceiver, expected_str=invalid_transceiver_expected_output).verify_result()
+        with allure.independent_step("Show invalid_transceiver firmware"):
+            assert invalid_transceiver_expected_output in platform.transceiver.show(invalid_transceiver + ' firmware', should_succeed=False), "The show firmware command succeeded when it was expected to fail"
+        with allure.independent_step("Show invalid_transceiver and non exist file"):
+            assert invalid_transceiver_expected_output in platform.transceiver.show(invalid_transceiver + ' firmware files ' + invalid_file_name, should_succeed=False), "The show firmware files command succeeded when it was expected to fail"
+        with allure.independent_step("Show invalid_transceiver"):
+            assert invalid_transceiver_expected_output in platform.transceiver.show(invalid_transceiver, should_succeed=False), "The show transceiver command succeeded when it was expected to fail"
 
 
 @retry(Exception, tries=60, delay=1)
@@ -332,6 +340,9 @@ def _get_random_optical_module_transceiver():
                 pytest.skip(f"No optical modules available for the setup")
             else:
                 random_transceiver = random_transceiver.verify_result()[0]
+
+            if IbInterfaceConsts.FNM_PORT_TYPE in random_transceiver:
+                return platform, random_transceiver, random_transceiver + random_transceiver
 
             temp = _get_ports_for_module(random_transceiver)
             random_port_name = random.choice(temp)

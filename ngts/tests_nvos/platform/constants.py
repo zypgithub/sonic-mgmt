@@ -90,10 +90,10 @@ class TransceiversConsts:
             transceiver_type='Wolverine',
             last_release_path=f"{TRANSCEIVERS_FIRMWARES_PATH}70_Wolverine/{TRANSCEIVERS_RELEASE}",
             test_versions_path=f"{TRANSCEIVERS_APPROVED_FIRMWARES_PATH}Wolverine/",
-            upgrade_version_name="fw_70_230_01031_dev_signed_WOLVERINE_DK.bin",
-            downgrade_version_name="fw_70_230_01023_dev_signed_WOLVERINE_DK.bin",
-            upgrade_version_number="70.230.1031",
-            downgrade_version_number="70.230.1023",
+            upgrade_version_name="fw_70_230_01040_dev_signed_WOLVERINE_DK.bin",
+            downgrade_version_name="fw_70_230_01036_dev_signed_WOLVERINE_DK.bin",
+            upgrade_version_number="70.230.1040",
+            downgrade_version_number="70.230.1036",
             installation_time=360
         ),
         '46': Transceiver(
