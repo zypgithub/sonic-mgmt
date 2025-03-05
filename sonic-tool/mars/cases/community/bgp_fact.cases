@@ -33,4 +33,22 @@
         </cmd>
     </case>
 
+    <case>
+        <ignore>
+            <!-- daily case  -->
+            <condition>
+                <key> skip_weekend_cases </key>
+                <op> == </op>
+                <value> no </value>
+            </condition>
+        </ignore>
+        <info> BGP Router ID </info>
+        <name> bgp_router_id </name>
+        <cmd>
+             <params>
+                 <static_args> --setup-name [[conf:extra_info.setup_name]] --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 1500 --session-timeout 1500 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts bgp/test_bgp_router_id.py </static_args>
+             </params>
+        </cmd>
+    </case>
+
 </CASEDEF>
