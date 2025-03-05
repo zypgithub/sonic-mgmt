@@ -92,15 +92,10 @@ class GenerateGoldenConfigDBModule(object):
         return gold_config_db
 
     def generate(self):
-<<<<<<< HEAD
-        if self.topo_name == "mx":
-            config = self.generate_mx_golden_config_db()
-=======
         if self.topo_name == "mx" or "m0" in self.topo_name:
             config = self.generate_mgfx_golden_config_db()
         elif self.topo_name == "t1-28-lag":
             config = self.generate_smartswitch_golden_config_db()
->>>>>>> 882fb10dc ([deploy-mg] Disable default_pfcwd_status for m0/mx (#15922))
         else:
             config = "{}"
 
