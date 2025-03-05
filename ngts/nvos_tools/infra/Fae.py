@@ -17,6 +17,7 @@ from ngts.cli_wrappers.openapi.openapi_system_clis import OpenApiSystemCli
 from ngts.nvos_constants.constants_nvos import ApiType, ActionConsts
 from ngts.nvos_tools.fae.Debug import Debug
 from ngts.nvos_tools.fae.Asic import Asic
+from ngts.nvos_tools.fae.FaePowerProfile import FaePowerProfile
 from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
@@ -120,6 +121,7 @@ class FaePlatform(BaseComponent):
         self.eeprom = BaseComponent(self, path="/eeprom")
         self.debug = Debug(self)
         self.asic = Asic(self)
+        self.power_profile = FaePowerProfile(self)
 
 
 class FaeFirmware(BaseComponent):

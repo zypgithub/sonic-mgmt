@@ -977,6 +977,20 @@ class CableCartridgeConsts:
     ALL_KEYS = {KEY_SLOT_ID, KEY_TRAY_ID, KEY_SERIAL, KEY_PART_NUMBER, KEY_MANUFACTURING_DATE}
 
 
+class PowerProfileConsts:
+    DEFAULT_PROFILE_ID = 'compute'
+    PROFILES = [DEFAULT_PROFILE_ID, "networking", "reduced-bandwidth"]
+    TEST_PROFILES = ["test_profile1", "test_profile2", "test_profile3", "test_profile4", "test_profile5", "test_profile6"]  # Define 1 extra profile
+    ATTRIBUTES = [
+        'power-allocation-1', 'power-allocation-2', 'max-integral-1', 'max-integral-2',
+        'avg-p-wr-num-of-sampling-1', 'avg-p-wr-num-of-sampling-2', 'kp-factor-1',
+        'kp-factor-2', 'ki-factor-1', 'ki-factor-2', 'kd-factor-1', 'kd-factor-2',
+        'pid-up-date-num-of-sampling-1', 'pid-up-date-num-of-sampling-2'
+    ]
+    NUM_PROFILES_LIMIT = 5
+    CHARS_LIMIT = 20
+
+
 class FansConsts:
     FORWARD_DIRECTION = 'B2F'
     BACKWARD_DIRECTION = 'F2B'
