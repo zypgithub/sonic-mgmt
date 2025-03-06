@@ -119,10 +119,8 @@ class PerfConsts:
 
     # Images and Grub Paths
     SONIC_GA_IMAGE = "/auto/sw_system_release/sonic/202311/202311/dev/sonic-mellanox.bin"
-    DVS_GA_IMAGE = (
-        "/auto/sw/release/sw_system/sx_mlnx_evb/dvs-os-sonic_4.7.1920_DEV_x86-64-0/dvs-os-sonic"
-        "_4.7.1920_DEV_LK6.1.38_x86-64_installer.bin"
-    )
+    DVS_GA_IMAGE = ("/auto/sw/release/sw_system/sx_mlnx_evb/dvs-os-sonic_4.7.3106_DEV_x86-64-0/"
+                    "dvs-os-sonic_4.7.3106_DEV_LK6.1.38_x86-64_installer.bin")
     SONIC_DVS_GRUB_PATH = 'host'
     GRUB_PATH_DICT = {
         "SONiC": SONIC_DVS_GRUB_PATH,
