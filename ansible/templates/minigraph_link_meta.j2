@@ -28,29 +28,6 @@
   </LinkMetadataDeclaration>
 {% endif %}
 
-{% if not 'dualtor' in topo %}
-{% set num_of_intf = device_conn[inventory_hostname] | length %}
- <LinkMetadataDeclaration>
-    <Link xmlns:a="http://schemas.datacontract.org/2004/07/Microsoft.Search.Autopilot.Evolution">
-{% for iface_name in device_conn[inventory_hostname].keys() %}
-      {% if 'auto_neg' in device_conn[inventory_hostname][iface_name] %}
-      <a:LinkMetadata>
-        <a:Name i:nil="true"/>
-        <a:Properties>
-          <a:DeviceProperty>
-            <a:Name>AutoNegotiation</a:Name>
-            <a:Reference i:nil="true"/>
-            <a:Value>{{ device_conn[inventory_hostname][iface_name]['auto_neg'] }}</a:Value>
-          </a:DeviceProperty>
-        </a:Properties>
-        <a:Key>{{ inventory_hostname }}:{{ port_name_map[iface_name] }};{{ device_conn[inventory_hostname][iface_name]['peerdevice'] }}:{{ device_conn[inventory_hostname][iface_name]['peerport'] }}</a:Key>
-      </a:LinkMetadata>
-      {% endif %}
-{% endfor %}
- </Link>
-  </LinkMetadataDeclaration>
-{% endif %}
-
 {% if macsec_card is defined and macsec_card == True and 't2' in topo %}
   <LinkMetadataDeclaration>
     <Link xmlns:a="http://schemas.datacontract.org/2004/07/Microsoft.Search.Autopilot.Evolution">
