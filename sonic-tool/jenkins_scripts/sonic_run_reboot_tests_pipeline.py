@@ -113,7 +113,7 @@ CASES_FILE_REBOOT_TESTCASE_TEMPLATE = '''<case>
     <tout> 3600 </tout>
     <cmd>
          <params>
-             <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\\\'--log-cli-level debug  --show-capture=no -ra --showlocals  --clean-alluredir --alluredir=/tmp/allure-results --allure_server_addr=\\\"10.215.11.120\\\"\\\'" --test-scripts platform_tests/test_advanced_reboot.py::test_{test_type}_reboot </static_args>
+             <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\\\'--log-cli-level debug  --show-capture=no -ra --showlocals  --clean-alluredir --alluredir=/tmp/allure-results --allure_server_addr=\\\"10.215.11.120\\\"\\\'" --test-scripts platform_tests/test_advanced_reboot.py::test_{test_type}_reboot </static_args>
          </params>
     </cmd>
 </case>
@@ -125,7 +125,7 @@ CASES_FILE_REBOOT_WITH_UPGRADE_TESTCASE_TEMPLATE = '''<case>
     <tout> {timeout} </tout>
     <cmd>
          <params>
-             <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\\\'--neighbor_type [[conf:extra_info.neighbor_type]] --log-cli-level debug --downgrade_type=onie --show-capture=no -ra --showlocals --upgrade_type={test_type} --base_image_list={base_versions_list} --target_image_list={target_version} --restore_to_image={target_version} --clean-alluredir --alluredir=/tmp/allure-results --allure_server_addr=\\\"10.215.11.120\\\"\\\'" --test-scripts upgrade_path/test_upgrade_path.py::{upgrade_testcase} </static_args>
+             <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\\\'--neighbor_type [[conf:extra_info.neighbor_type]] --log-cli-level debug --downgrade_type=onie --show-capture=no -ra --showlocals --upgrade_type={test_type} --base_image_list={base_versions_list} --target_image_list={target_version} --restore_to_image={target_version} --clean-alluredir --alluredir=/tmp/allure-results --allure_server_addr=\\\"10.215.11.120\\\"\\\'" --test-scripts upgrade_path/test_upgrade_path.py::{upgrade_testcase} </static_args>
          </params>
     </cmd>
 </case>
@@ -137,7 +137,7 @@ CASES_FILE_REBOOT_WITH_MULTI_HOP_UPGRADE_TESTCASE_TEMPLATE = '''<case>
     <tout> {timeout} </tout>
     <cmd>
          <params>
-             <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\\\'--neighbor_type [[conf:extra_info.neighbor_type]] --log-cli-level debug --downgrade_type=onie --show-capture=no -ra --showlocals --upgrade_type={test_type} --multi_hop_upgrade_path={multi_hop_upgrade_path} --restore_to_image={target_version} --clean-alluredir --alluredir=/tmp/allure-results --allure_server_addr=\\\"10.215.11.120\\\"\\\'" --test-scripts upgrade_path/test_multi_hop_upgrade_path.py </static_args>
+             <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\\\'--neighbor_type [[conf:extra_info.neighbor_type]] --log-cli-level debug --downgrade_type=onie --show-capture=no -ra --showlocals --upgrade_type={test_type} --multi_hop_upgrade_path={multi_hop_upgrade_path} --restore_to_image={target_version} --clean-alluredir --alluredir=/tmp/allure-results --allure_server_addr=\\\"10.215.11.120\\\"\\\'" --test-scripts upgrade_path/test_multi_hop_upgrade_path.py </static_args>
          </params>
     </cmd>
 </case>
