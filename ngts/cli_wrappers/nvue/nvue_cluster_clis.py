@@ -29,6 +29,10 @@ class NvueClusterCli(NvueBaseCli):
         return NvueClusterCli.action(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=path, param_value=level)
 
     @staticmethod
+    def action_update_cluster_log_stream(engine, path, stream=''):
+        return NvueClusterCli.action(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=path, param_value=stream)
+
+    @staticmethod
     def action_update_cluster_chassis_id(engine, path, mapping_id=''):
         param_value = "chassis-id " + str(mapping_id)
         return NvueClusterCli.action(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=path, param_value=param_value)
@@ -39,6 +43,10 @@ class NvueClusterCli(NvueBaseCli):
 
     @staticmethod
     def action_restore_cluster(engine, path, param_name='', param_value=''):
+        return NvueClusterCli.action(engine, action_type=ActionType.RESTORE.replace('@', ''), resource_path=path, param_name=param_name, param_value=param_value)
+
+    @staticmethod
+    def action_restore_cluster_log_stream(engine, path, param_name='', param_value=''):
         return NvueClusterCli.action(engine, action_type=ActionType.RESTORE.replace('@', ''), resource_path=path, param_name=param_name, param_value=param_value)
 
     @staticmethod

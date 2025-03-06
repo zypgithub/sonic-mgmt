@@ -27,6 +27,12 @@ class OpenApiClusterCli(OpenApiBaseCli):
         return OpenApiClusterCli.action(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=resource_path, param_name=param_name, param_value=param_value)
 
     @staticmethod
+    def action_update_cluster_log_stream(engine, resource_path, stream):
+        param_name = "log_stream"
+        param_value = stream
+        return OpenApiClusterCli.action(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=resource_path, param_name=param_name, param_value=param_value)
+
+    @staticmethod
     def action_update_cluster_chassis_id(engine, resource_path, mapping_id=''):
         return OpenApiClusterCli.action(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=resource_path, param_name="chassis-id", param_value=mapping_id)
 
