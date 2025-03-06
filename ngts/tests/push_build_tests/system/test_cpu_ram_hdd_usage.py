@@ -18,7 +18,7 @@ BYTES_TO_MB_FACTOR = 1 / (1024 * 1024)
 FILE_NAME_IND = 0
 FILE_SIZE_IND = 1
 SDK_DUMPS_PATH = '/var/log/mellanox/sdk-dumps'
-partitions_and_expected_usage = [{'partition': '/', 'max_usage': 9000}, {'partition': '/var/log/', 'max_usage': 500}]
+partitions_and_expected_usage = [{'partition': '/', 'max_usage': 9000}, {'partition': '/var/log/', 'max_usage': 800}]
 
 logger = logging.getLogger()
 
