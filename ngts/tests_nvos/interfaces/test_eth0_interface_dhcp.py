@@ -32,54 +32,55 @@ def test_interface_eth0_enable_disable(engines, topology_obj, serial_engine):
     4. Unset it back and verify
     """
 
-    mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
-    mgmt_port = Port(mgmt_port_name)
-    serial_engine = topology_obj.players['dut_serial']['engine']
-    with allure.step('Run show command on mgmt port and verify that each field has an appropriate value'):
-        output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
-            mgmt_port.interface.link.show()).get_returned_value()
+    try:
+        mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
+        mgmt_port = Port(mgmt_port_name)
+        serial_engine = topology_obj.players['dut_serial']['engine']
+        with allure.step('Run show command on mgmt port and verify that each field has an appropriate value'):
+            output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
+                mgmt_port.interface.link.show()).get_returned_value()
 
-        Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
-                                                          field_name=IbInterfaceConsts.LINK_STATE,
-                                                          expected_value=NvosConsts.LINK_STATE_UP).verify_result()
+            Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
+                                                              field_name=IbInterfaceConsts.LINK_STATE,
+                                                              expected_value=NvosConsts.LINK_STATE_UP).verify_result()
 
-    with allure.step('Negative validation'):
-        mgmt_port.interface.link.state.set(op_param_name='invalid_value', apply=False).verify_result(False)
+        with allure.step('Negative validation'):
+            mgmt_port.interface.link.state.set(op_param_name='invalid_value', apply=False).verify_result(False)
 
-        logger.info('Check port status, should be up')
-        check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port)
-        output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
-            mgmt_port.interface.link.show()).get_returned_value()
+            logger.info('Check port status, should be up')
+            check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port)
+            output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
+                mgmt_port.interface.link.show()).get_returned_value()
 
-        Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
-                                                          field_name=IbInterfaceConsts.LINK_STATE,
-                                                          expected_value=NvosConsts.LINK_STATE_UP).verify_result()
+            Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
+                                                              field_name=IbInterfaceConsts.LINK_STATE,
+                                                              expected_value=NvosConsts.LINK_STATE_UP).verify_result()
 
-    with allure.step('Set mgmt port down and check the state updated accordingly'):
-        mgmt_port.interface.link.state.set(op_param_name=NvosConsts.LINK_STATE_DOWN, apply=True,
-                                           ask_for_confirmation=True, dut_engine=serial_engine).verify_result()
+        with allure.step('Set mgmt port down and check the state updated accordingly'):
+            mgmt_port.interface.link.state.set(op_param_name=NvosConsts.LINK_STATE_DOWN, apply=True,
+                                               ask_for_confirmation=True, dut_engine=serial_engine).verify_result()
 
-        logger.info('Check port status, should be down')
-        check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port)
-        output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
-            mgmt_port.interface.link.show(dut_engine=serial_engine)).get_returned_value()
+            logger.info('Check port status, should be down')
+            check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port)
+            output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
+                mgmt_port.interface.link.show(dut_engine=serial_engine)).get_returned_value()
 
-        Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
-                                                          field_name=IbInterfaceConsts.LINK_STATE,
-                                                          expected_value=NvosConsts.LINK_STATE_DOWN).verify_result()
+            Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
+                                                              field_name=IbInterfaceConsts.LINK_STATE,
+                                                              expected_value=NvosConsts.LINK_STATE_DOWN).verify_result()
+    finally:
+        with allure.step('Unset mgmt port and make sure the port state is up and reachable'):
+            mgmt_port.interface.link.state.unset(apply=True, ask_for_confirmation=True,
+                                                 dut_engine=serial_engine).verify_result()
+            logger.info('Check port status, should be up')
+            check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port)
 
-    with allure.step('Unset mgmt port and make sure the port state is up and reachable'):
-        mgmt_port.interface.link.state.unset(apply=True, ask_for_confirmation=True,
-                                             dut_engine=serial_engine).verify_result()
-        logger.info('Check port status, should be up')
-        check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port)
+            output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
+                mgmt_port.interface.link.show()).get_returned_value()
 
-        output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
-            mgmt_port.interface.link.show()).get_returned_value()
-
-        Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
-                                                          field_name=IbInterfaceConsts.LINK_STATE,
-                                                          expected_value=NvosConsts.LINK_STATE_UP).verify_result()
+            Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
+                                                              field_name=IbInterfaceConsts.LINK_STATE,
+                                                              expected_value=NvosConsts.LINK_STATE_UP).verify_result()
 
 
 @pytest.mark.cumulus
@@ -304,52 +305,54 @@ def test_interface_eth0_ip_address(engines, topology_obj, serial_engine):
     mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
     mgmt_port = Port(mgmt_port_name)
     switch_ip = engines.dut.ip
-    with allure.step('Run show command on mgmt port and verify default description'):
-        output_dictionary = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
-            mgmt_port.interface.ip.show()).get_returned_value()
 
-        validate_interface_ip_address(switch_ip, output_dictionary, True)
+    try:
+        with allure.step('Run show command on mgmt port and verify default description'):
+            output_dictionary = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
+                mgmt_port.interface.ip.show()).get_returned_value()
 
-    with allure.step('Negative validation for {0} ip'.format(mgmt_port_name)):
-        res = mgmt_port.interface.ip.address.set(op_param_name='aa', apply=False, ask_for_confirmation=True)
-        res.ignore_result()
-        assert not res.result or "is not a" in res.returned_value, \
-            "The operation succeeded while it is expected to fail"
+            validate_interface_ip_address(switch_ip, output_dictionary, True)
 
-    with allure.step('Disable dhcp, check mgmt port unreachable'):
-        serial_engine.serial_engine.sendline("nv set interface {} ip dhcp-client state disabled".format(mgmt_port_name))
-        serial_engine.serial_engine.sendline("nv config apply")
-        serial_engine.serial_engine.expect("Are you sure?", timeout=120)
-        serial_engine.serial_engine.sendline("y")
-        serial_engine.serial_engine.expect("applied", timeout=120)
+        with allure.step('Negative validation for {0} ip'.format(mgmt_port_name)):
+            res = mgmt_port.interface.ip.address.set(op_param_name='aa', apply=False, ask_for_confirmation=True)
+            res.ignore_result()
+            assert not res.result or "is not a" in res.returned_value, \
+                "The operation succeeded while it is expected to fail"
 
-        logger.info('Check port status, should be down')
-        check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port)
+        with allure.step('Disable dhcp, check mgmt port unreachable'):
+            serial_engine.serial_engine.sendline("nv set interface {} ip dhcp-client state disabled".format(mgmt_port_name))
+            serial_engine.serial_engine.sendline("nv config apply")
+            serial_engine.serial_engine.expect("Are you sure?", timeout=120)
+            serial_engine.serial_engine.sendline("y")
+            serial_engine.serial_engine.expect("applied", timeout=120)
 
-    with allure.step('Select random ipv4 and set it'):
-        ip_address = Tools.IpTool.select_random_ipv4_address().verify_result()
-        serial_engine.serial_engine.sendline("nv set interface {0} ip address {1}".format(mgmt_port_name, ip_address))
-        serial_engine.serial_engine.sendline("nv config apply")
-        serial_engine.serial_engine.expect("Are you sure?", timeout=120)
-        serial_engine.serial_engine.sendline("y")
-        serial_engine.serial_engine.expect("applied", timeout=120)
+            logger.info('Check port status, should be down')
+            check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port)
 
-        logger.info('Check port status, should be down')
-        check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port)
-        serial_engine.serial_engine.sendline("nv show interface {0}".format(mgmt_port_name))
-        serial_engine.serial_engine.expect(ip_address, timeout=120)
+        with allure.step('Select random ipv4 and set it'):
+            ip_address = Tools.IpTool.select_random_ipv4_address().verify_result()
+            serial_engine.serial_engine.sendline("nv set interface {0} ip address {1}".format(mgmt_port_name, ip_address))
+            serial_engine.serial_engine.sendline("nv config apply")
+            serial_engine.serial_engine.expect("Are you sure?", timeout=120)
+            serial_engine.serial_engine.sendline("y")
+            serial_engine.serial_engine.expect("applied", timeout=120)
 
-    with allure.step('Unset ipv4 and dhcp and check port reachable'):
-        serial_engine.serial_engine.sendline("nv unset interface {0}".format(mgmt_port_name))
-        serial_engine.serial_engine.sendline("nv config apply")
-        serial_engine.serial_engine.expect("Are you sure?", timeout=120)
-        serial_engine.serial_engine.sendline("y")
-        serial_engine.serial_engine.expect("applied", timeout=120)
+            logger.info('Check port status, should be down')
+            check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port)
+            serial_engine.serial_engine.sendline("nv show interface {0}".format(mgmt_port_name))
+            serial_engine.serial_engine.expect(ip_address, timeout=120)
+    finally:
+        with allure.step('Unset ipv4 and dhcp and check port reachable'):
+            serial_engine.serial_engine.sendline("nv unset interface {0}".format(mgmt_port_name))
+            serial_engine.serial_engine.sendline("nv config apply")
+            serial_engine.serial_engine.expect("Are you sure?", timeout=120)
+            serial_engine.serial_engine.sendline("y")
+            serial_engine.serial_engine.expect("applied", timeout=120)
 
-        logger.info('Check port status, should be up')
-        check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port)
-        serial_engine.serial_engine.sendline("nv show interface {0}".format(mgmt_port_name))
-        serial_engine.serial_engine.expect(switch_ip, timeout=120)
+            logger.info('Check port status, should be up')
+            check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port)
+            serial_engine.serial_engine.sendline("nv show interface {0}".format(mgmt_port_name))
+            serial_engine.serial_engine.expect(switch_ip, timeout=120)
 
 
 @pytest.mark.eth0
@@ -394,104 +397,106 @@ def test_interface_eth0_dhcp_hostname(engines, topology_obj, serial_engine):
     mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
     mgmt_port = Port(mgmt_port_name)
     system = System()
-    with allure.step('Run show ip dhcp command and check default values and dhcp hostname'):
-        output_dictionary = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
-            mgmt_port.interface.ip.dhcp_client.show()).get_returned_value()
 
-        noga_query_data = topology_obj.players['dut']['attributes'].noga_query_data['attributes']
+    try:
+        with allure.step('Run show ip dhcp command and check default values and dhcp hostname'):
+            output_dictionary = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
+                mgmt_port.interface.ip.dhcp_client.show()).get_returned_value()
 
-        system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
+            noga_query_data = topology_obj.players['dut']['attributes'].noga_query_data['attributes']
 
-        dhcp_hostname = noga_query_data['Specific']['dhcp_hostname']
-        dhcp_hostname = dhcp_hostname if dhcp_hostname else noga_query_data['Common']['Name']
-        assert dhcp_hostname, "No dhcp_hostname received from noga"
+            system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
 
-        Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
-                                                          field_name='has-lease',
-                                                          expected_value='yes').verify_result()
+            dhcp_hostname = noga_query_data['Specific']['dhcp_hostname']
+            dhcp_hostname = dhcp_hostname if dhcp_hostname else noga_query_data['Common']['Name']
+            assert dhcp_hostname, "No dhcp_hostname received from noga"
 
-        Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
-                                                          field_name='is-running',
-                                                          expected_value='yes').verify_result()
+            Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
+                                                              field_name='has-lease',
+                                                              expected_value='yes').verify_result()
 
-        Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
-                                                          field_name='set-hostname',
-                                                          expected_value='enabled').verify_result()
+            Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
+                                                              field_name='is-running',
+                                                              expected_value='yes').verify_result()
 
-        Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
-                                                          field_name='state',
-                                                          expected_value='enabled').verify_result()
+            Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
+                                                              field_name='set-hostname',
+                                                              expected_value='enabled').verify_result()
 
-        assert dhcp_hostname in system_output['hostname'], "hostname wasn't changed"
+            Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
+                                                              field_name='state',
+                                                              expected_value='enabled').verify_result()
 
-    with allure.step('Disable dhcp and unset hostname, check port down and not reachable'):
-        serial_engine.serial_engine.sendline("nv set interface {} ip dhcp-client state disabled".format(mgmt_port_name))
-        serial_engine.serial_engine.sendline("nv config apply")
-        serial_engine.serial_engine.expect("Are you sure?", timeout=expect_timeout)
-        serial_engine.serial_engine.sendline("y")
-        serial_engine.serial_engine.expect("applied", timeout=expect_timeout)
+            assert dhcp_hostname in system_output['hostname'], "hostname wasn't changed"
 
-        logger.info('Check port status, should be down')
-        check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port)
+        with allure.step('Disable dhcp and unset hostname, check port down and not reachable'):
+            serial_engine.serial_engine.sendline("nv set interface {} ip dhcp-client state disabled".format(mgmt_port_name))
+            serial_engine.serial_engine.sendline("nv config apply")
+            serial_engine.serial_engine.expect("Are you sure?", timeout=expect_timeout)
+            serial_engine.serial_engine.sendline("y")
+            serial_engine.serial_engine.expect("applied", timeout=expect_timeout)
 
-        serial_engine.serial_engine.sendline("nv show interface {} ip dhcp-client".format(mgmt_port_name))
-        serial_engine.serial_engine.expect("state         disabled", timeout=expect_timeout)
+            logger.info('Check port status, should be down')
+            check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port)
 
-    with allure.step('Disable dhcp set-hostname, check port down and not reachable'):
-        serial_engine.serial_engine.sendline("nv set interface {} ip dhcp-client set-hostname disabled".format(mgmt_port_name))
-        serial_engine.serial_engine.sendline("nv config apply")
-        serial_engine.serial_engine.expect("Are you sure?", timeout=expect_timeout)
-        serial_engine.serial_engine.sendline("y")
-        serial_engine.serial_engine.expect("applied", timeout=expect_timeout)
+            serial_engine.serial_engine.sendline("nv show interface {} ip dhcp-client".format(mgmt_port_name))
+            serial_engine.serial_engine.expect("state         disabled", timeout=expect_timeout)
 
-        logger.info('Check port status, should be down')
-        check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port)
-        serial_engine.serial_engine.sendline("nv show interface {} ip dhcp-client".format(mgmt_port_name))
-        serial_engine.serial_engine.expect("state         disabled", timeout=expect_timeout)
-        serial_engine.serial_engine.sendline("nv show interface {} ip dhcp-client6".format(mgmt_port_name))
-        serial_engine.serial_engine.expect("state         disabled", timeout=expect_timeout)
+        with allure.step('Disable dhcp set-hostname, check port down and not reachable'):
+            serial_engine.serial_engine.sendline("nv set interface {} ip dhcp-client set-hostname disabled".format(mgmt_port_name))
+            serial_engine.serial_engine.sendline("nv config apply")
+            serial_engine.serial_engine.expect("Are you sure?", timeout=expect_timeout)
+            serial_engine.serial_engine.sendline("y")
+            serial_engine.serial_engine.expect("applied", timeout=expect_timeout)
 
-    with allure.step('Set hostname and enable dhcp, check hostname not changed, check port up'):
-        serial_engine.serial_engine.sendline("nv set system hostname {}".format(SystemConsts.HOSTNAME))
-        serial_engine.serial_engine.sendline("nv config apply")
-        serial_engine.serial_engine.expect("Are you sure?", timeout=expect_timeout)
-        serial_engine.serial_engine.sendline("y")
-        serial_engine.serial_engine.expect("applied", timeout=expect_timeout)
-        logger.info('Check port status, should be down')
-        check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port)
-        serial_engine.serial_engine.sendline("nv set interface {} ip dhcp-client state enabled".format(mgmt_port_name))
-        serial_engine.serial_engine.sendline("nv config apply")
-        serial_engine.serial_engine.expect("Are you sure?", timeout=expect_timeout)
-        serial_engine.serial_engine.sendline("y")
-        serial_engine.serial_engine.expect("applied", timeout=expect_timeout)
+            logger.info('Check port status, should be down')
+            check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port)
+            serial_engine.serial_engine.sendline("nv show interface {} ip dhcp-client".format(mgmt_port_name))
+            serial_engine.serial_engine.expect("state         disabled", timeout=expect_timeout)
+            serial_engine.serial_engine.sendline("nv show interface {} ip dhcp-client6".format(mgmt_port_name))
+            serial_engine.serial_engine.expect("state         disabled", timeout=expect_timeout)
 
-        logger.info('Check port status, should be up')
-        check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port)
+        with allure.step('Set hostname and enable dhcp, check hostname not changed, check port up'):
+            serial_engine.serial_engine.sendline("nv set system hostname {}".format(SystemConsts.HOSTNAME))
+            serial_engine.serial_engine.sendline("nv config apply")
+            serial_engine.serial_engine.expect("Are you sure?", timeout=expect_timeout)
+            serial_engine.serial_engine.sendline("y")
+            serial_engine.serial_engine.expect("applied", timeout=expect_timeout)
+            logger.info('Check port status, should be down')
+            check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port)
+            serial_engine.serial_engine.sendline("nv set interface {} ip dhcp-client state enabled".format(mgmt_port_name))
+            serial_engine.serial_engine.sendline("nv config apply")
+            serial_engine.serial_engine.expect("Are you sure?", timeout=expect_timeout)
+            serial_engine.serial_engine.sendline("y")
+            serial_engine.serial_engine.expect("applied", timeout=expect_timeout)
 
-        dhcp_output = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
-            mgmt_port.interface.ip.dhcp_client.show()).get_returned_value()
+            logger.info('Check port status, should be up')
+            check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port)
 
-        Tools.ValidationTool.verify_field_value_in_output(output_dictionary=dhcp_output, field_name='state',
-                                                          expected_value='enabled').verify_result()
+            dhcp_output = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
+                mgmt_port.interface.ip.dhcp_client.show()).get_returned_value()
 
-    with allure.step('Unset dhcp, , check port up'):
-        mgmt_port.interface.ip.dhcp_client.unset(apply=True, ask_for_confirmation=True).verify_result()
-        logger.info('Check port status, should be up')
-        check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port)
+            Tools.ValidationTool.verify_field_value_in_output(output_dictionary=dhcp_output, field_name='state',
+                                                              expected_value='enabled').verify_result()
+    finally:
+        with allure.step('Unset dhcp, , check port up'):
+            mgmt_port.interface.ip.dhcp_client.unset(apply=True, ask_for_confirmation=True).verify_result()
+            logger.info('Check port status, should be up')
+            check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port)
 
-        dhcp_output = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
-            mgmt_port.interface.ip.dhcp_client.show()).get_returned_value()
+            dhcp_output = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
+                mgmt_port.interface.ip.dhcp_client.show()).get_returned_value()
 
-        Tools.ValidationTool.verify_field_value_in_output(output_dictionary=dhcp_output,
-                                                          field_name='state',
-                                                          expected_value='enabled').verify_result()
-        Tools.ValidationTool.verify_field_value_in_output(output_dictionary=dhcp_output,
-                                                          field_name='set-hostname',
-                                                          expected_value='enabled').verify_result()
+            Tools.ValidationTool.verify_field_value_in_output(output_dictionary=dhcp_output,
+                                                              field_name='state',
+                                                              expected_value='enabled').verify_result()
+            Tools.ValidationTool.verify_field_value_in_output(output_dictionary=dhcp_output,
+                                                              field_name='set-hostname',
+                                                              expected_value='enabled').verify_result()
 
-    with allure.step('Check hostname received by dhcp'):
-        system.unset(op_param=SystemConsts.HOSTNAME, apply=True, ask_for_confirmation=True, dut_engine=serial_engine)
-        wait_for_hostname_changed(system, dhcp_hostname)
+        with allure.step('Check hostname received by dhcp'):
+            system.unset(op_param=SystemConsts.HOSTNAME, apply=True, ask_for_confirmation=True, dut_engine=serial_engine)
+            wait_for_hostname_changed(system, dhcp_hostname)
 
 
 @pytest.mark.cumulus
