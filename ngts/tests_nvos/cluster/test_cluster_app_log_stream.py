@@ -13,8 +13,11 @@ from ngts.nvos_constants.constants_nvos import NvosConst
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 
 from retry import retry
+
+import re
 
 logger = logging.getLogger()
 
@@ -27,12 +30,20 @@ def test_nmxc_log_stream_set(engines, setup_name, stream_protocol, test_api):
     player = engines.sonic_mgmt
     ipv4 = player.ip
     hostname = player.run_cmd("hostname")
-    # ipv6 = player.run_cmd("hostname  -I | awk '{print $3}'")
-    url_list = [hostname, ipv4]
+    ipv6 = player.run_cmd("hostname  -I | awk '{print $3}'")
+
+    # url_list = [hostname, ipv4, f'[{ipv6}]']
+    url_list = [ipv4]
+    if not is_bug_active(4380566):
+        url_list.append(f'[{ipv6}]')
+    if not is_bug_active(4402264):
+        url_list.append(hostname)
+
     url = random.choice(url_list)
-    full_url = f'{player.username}:{player.password}@{url}:{ClusterConsts.NMXC_LOG_STREAM_DEFAULT_PORT}'
+    port = ClusterConsts.NMXC_LOG_STREAM_PORT[stream_protocol]
+    full_url = f'{player.username}:{player.password}@{url}:{port}'
     stream = f'{stream_protocol} {full_url}'
-    full_url_show = f'{player.username}:********@{url}:{ClusterConsts.NMXC_LOG_STREAM_DEFAULT_PORT}'
+    full_url_show = f'{player.username}:********@{url}:{port}'
     msg_uid = int(time.time())  # generates a unique ID using seconds elapsed since epoch
     log_msg = f"Unique Message ID {msg_uid}: Hello from NVOS"
     service = ClusterConsts.CONTROLLER_LOG_STREAM_SERVICE
@@ -49,15 +60,8 @@ def test_nmxc_log_stream_set(engines, setup_name, stream_protocol, test_api):
             assert validate_nmxc_log_stream_config(output, protocol=stream_protocol, remote_url=full_url_show), \
                 "NMX-C log stream config is not set to {}".format(stream)
 
-        with allure.step("Enable {} server on remote {}".format(stream_protocol, player.ip)):
-            enable_log_server_on_remote(player, service)
-
-        with allure.step("Stream logs to remote url"):
-            log_cmd = f'logger -n {url} -P 514 "{log_msg}"'
-            engines.dut.run_cmd(log_cmd)
-
         with allure.step("Validate logs are received at the remote"):
-            retry_validate_log_msg_on_remote(player, log_msg)
+            validate_log_msg_on_remote(engines, player, log_msg, stream_protocol, url, service)
 
         with allure.step("Unset NMX-C log stream configuration"):
             cluster.apps.app_name[ClusterConsts.NMX_CONTROLLER].logstream.action_restore_cluster_log_stream()
@@ -142,7 +146,8 @@ def test_nmxc_log_stream_set_incorrect_url(engines, setup_name, test_api):
 def helper_nmxc_log_stream_set_incorrect(setup_name, player, stream_protocol, url, expected_str="",
                                          app_name=ClusterConsts.NMX_CONTROLLER):
 
-    stream = f'{stream_protocol} {player.username}:{player.password}@{url}:{ClusterConsts.NMXC_LOG_STREAM_DEFAULT_PORT}'
+    port = ClusterConsts.NMXC_LOG_STREAM_PORT[stream_protocol]
+    stream = f'{stream_protocol} {player.username}:{player.password}@{url}:{port}'
     try:
         with allure.step("Start Cluster"):
             cluster = Cluster()
@@ -191,10 +196,10 @@ def validate_nmxc_log_stream_config(output, protocol="", remote_url="", empty=Fa
     return True
 
 
-def enable_log_server_on_remote(player, service):
+def enable_rsyslog_server_on_remote(player, service):
     check_processes_cmd = f'sudo service {service} status'
     with allure.step("Verify and update protocol config file"):
-        ret_value = verify_update_protocol_conf_file(player)
+        ret_value = verify_update_rsyslog_conf_file(player)
         if ret_value == "change":
             with allure.step("Restarting {} server on {}".format(service, player.ip)):
                 player.run_cmd(f"sudo service {service} restart")
@@ -208,7 +213,7 @@ def enable_log_server_on_remote(player, service):
         retry_check_log_server_on_remote(player, service, check_processes_cmd)
 
 
-def verify_update_protocol_conf_file(player):
+def verify_update_rsyslog_conf_file(player):
     file_name = ClusterConsts.CONTROLLER_LOG_STREAM_CONFIG_FILE
     conf_file = f"{NvosConst.MARS_RESULTS_FOLDER}{file_name}"
     config_line_1 = 'module(load="imudp")\n'
@@ -216,7 +221,7 @@ def verify_update_protocol_conf_file(player):
     config_lines = [config_line_1, config_line_2]
     cmd_copy_from_remote = f"sshpass -p {player.password} scp -o StrictHostKeyChecking=no {player.username}@" \
         f"{player.ip}:/etc/{file_name} {NvosConst.MARS_RESULTS_FOLDER}"
-    cmd_copy_to_remote = f"sshpass -p {player.password} scp -o StrictHostKeyChecking=no" \
+    cmd_copy_to_remote = f"sshpass -p {player.password} scp -o StrictHostKeyChecking=no " \
         f"{NvosConst.MARS_RESULTS_FOLDER}{file_name} {player.username}@{player.ip}:/etc/{file_name}"
 
     # Extract protocol config file from server
@@ -225,11 +230,6 @@ def verify_update_protocol_conf_file(player):
     # Update the protocol config file
     with open(conf_file, 'r') as file:
         lines = file.readlines()
-
-    if config_line_1 in lines and config_line_2 in lines:
-        # config lines already present
-        logger.info("Protocol config already present")
-        return "no change"
 
     if "#" + config_line_1 in lines and "#" + config_line_2 in lines:
         # commented config lines present
@@ -241,6 +241,11 @@ def verify_update_protocol_conf_file(player):
                 else:
                     file.write(line)
 
+    elif config_line_1 in lines and config_line_2 in lines:
+        # config lines already present
+        logger.info("Protocol config already present")
+        return "no change"
+
     else:
         # config lines not present
         logger.info("Adding config lines in protocol config file")
@@ -250,7 +255,8 @@ def verify_update_protocol_conf_file(player):
                 file.write(config_line)
 
     # Copy back the updated protocol config file and remove local copy
-    os.system(cmd_copy_to_remote)
+    player.run_cmd(cmd_copy_to_remote)
+    os.system(f"rm -rf {NvosConst.MARS_RESULTS_FOLDER}{file_name}")
     return "change"
 
 
@@ -261,9 +267,67 @@ def retry_check_log_server_on_remote(player, service, check_processes_cmd):
         "Not able to start log server on {}".format(player.ip)
 
 
+def check_elk_server_on_remote(player):
+    shared_apps = player.run_cmd('ls /usr/share')
+    if "logstash" not in shared_apps:
+        logger.info("Logstash not found on {}, Installing.".format(player.ip))
+        player.run_cmd("sudo wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | "
+                       "sudo gpg --batch --y --dearmor -o /usr/share/keyrings/elastic-keyring.gpg")
+        player.run_cmd("sudo apt-get install apt-transport-https")
+        player.run_cmd('echo "deb [signed-by=/usr/share/keyrings/elastic-keyring.gpg] https://artifacts.elastic.co/'
+                       'packages/8.x/apt stable main" | sudo tee -a /etc/apt/sources.list.d/elastic-8.x.list')
+        player.run_cmd("sudo apt-get update && sudo apt-get install logstash")
+        shared_apps = player.run_cmd('ls /usr/share')
+        assert "logstash" in shared_apps, "Unable to install Logstash in {}".format(player.ip)
+
+    logstash_cnf = 'input {\n    http {\n        port => 6001\n        codec => "json"\n        user     => "root"\n' \
+                   '        password => "12345"\n    }\n}\noutput {\n    stdout {\n        codec => rubydebug\n    }\n}'
+
+    player.run_cmd("echo '{}' > /tmp/logstash.conf".format(logstash_cnf))
+
+
+def validate_log_msg_on_remote(engines, player, log_msg, stream_protocol, url, service):
+    if stream_protocol == ClusterConsts.PROTOCOL_RSYSLOG:
+        with allure.step("Enable {} server on remote {}".format(stream_protocol, player.ip)):
+            enable_rsyslog_server_on_remote(player, service)
+        with allure.step("Stream logs to remote url for rsyslog protocol"):
+            log_cmd = f'logger -n {url} -P 514 "{log_msg}"'
+            engines.dut.run_cmd(log_cmd)
+        with allure.step("Checking log message is present on remote"):
+            retry_validate_log_msg_on_remote_rsyslog(player, log_msg)
+
+    elif stream_protocol == ClusterConsts.PROTOCOL_ELK:
+        cluster = Cluster()
+        with allure.step("Check and install for Logstash binary on remote {}".format(player.ip)):
+            check_elk_server_on_remote(player)
+        with allure.step("Checking log message is present on remote"):
+            # Set log level to info to generate frequent logs
+            cluster.apps.app_name[ClusterConsts.NMX_CONTROLLER].loglevel.action_update_cluster_log_level(level="info")
+            validate_log_msg_on_remote_elk(player, url)
+            cluster.apps.app_name[ClusterConsts.NMX_CONTROLLER].loglevel.action_restore_cluster()
+
+    elif stream_protocol == ClusterConsts.PROTOCOL_SPLUNK:
+        retry_validate_log_msg_on_remote_splunk(player, log_msg)
+
+
 @retry(Exception, tries=6, delay=10)
-def retry_validate_log_msg_on_remote(player, log_msg):
-    logger.info("Checking log message is present on remote")
+def retry_validate_log_msg_on_remote_rsyslog(player, log_msg):
     log_msg_read_cmd = f'cat /var/log/syslog | grep "{log_msg}"'
     output = player.run_cmd(log_msg_read_cmd)
     assert output, "Log msg {} not found on {}".format(log_msg, player.ip)
+
+
+def validate_log_msg_on_remote_elk(player, url):
+    logstash_cmd = "timeout 10s /usr/share/logstash/bin/logstash -f /tmp/logstash.conf > /tmp/logstash.log 2>&1"
+    player.run_cmd(logstash_cmd)
+    log_read_cmd = "cat /tmp/logstash.log"
+    logs = player.run_cmd(log_read_cmd)
+    reg = r'host.*ip".*"' + re.escape(url) + '"'
+    match = re.search(reg, logs, re.DOTALL)
+    assert match is not None, "Logs from switch are not streamed to ELK server:{}".format(reg)
+
+
+@retry(Exception, tries=6, delay=10)
+def retry_validate_log_msg_on_remote_splunk(player, log_msg):
+    logger.info("Checking log message is present on remote")
+    # TO DO: Add log validation for Splunk

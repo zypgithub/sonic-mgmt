@@ -14,6 +14,9 @@ from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.nvos_tools.nmx.Cluster import Cluster
+from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
+from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
 
 logger = logging.getLogger()
 
@@ -43,6 +46,10 @@ def test_save_reboot(engines, devices):
             18. Verify fast-recovery trigger event for trigger-id is Error
             19. cleanup - run nv unset system hostname & reboot
     """
+
+    nmx_log_stream_test = False
+    if hasattr(devices.dut, "cluster_app_nmx_controller"):
+        nmx_log_stream_test = True
 
     with allure.step('Run show system command and verify that each field has a value'):
         system = System()
@@ -95,6 +102,20 @@ def test_save_reboot(engines, devices):
         with allure.step("Validate dscp configuration with show commands"):
             output = OutputParsingTool.parse_dscp_value_from_acl(engines, acl_obj, acl_id, rule_id)
             ValidationTool.verify_field_value_in_output(output, AclConsts.DSCP, 1).verify_result()
+
+        if nmx_log_stream_test:
+            with allure.step("Start Cluster"):
+                cluster = Cluster()
+                cluster.set(op_param_name="state", op_param_value='enabled', apply=True)
+                ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled',
+                                                                 nmx_c_expected_state='up')
+
+            with allure.step("Set NMX-C log stream configuration"):
+                player = engines.sonic_mgmt
+                url = f'{player.username}:{player.password}@{player.ip}:{ClusterConsts.NMXC_LOG_STREAM_DEFAULT_PORT}'
+                url_show = f'{player.username}:********@{player.ip}:{ClusterConsts.NMXC_LOG_STREAM_DEFAULT_PORT}'
+                stream = f'{ClusterConsts.PROTOCOL_RSYSLOG} {url}'
+                cluster.apps.app_name[ClusterConsts.NMX_CONTROLLER].logstream.action_update_cluster_log_stream(stream=stream)
 
         with allure.step('set hostname to be {hostname} - with apply'.format(hostname=new_hostname_value)):
             system.set(SystemConsts.HOSTNAME, new_hostname_value, apply=True, ask_for_confirmation=True)
@@ -190,6 +211,19 @@ def test_save_reboot(engines, devices):
                     get_returned_value()
                 assert dscp_output['set']['dscp'] == 1, \
                     "The configured dscp is not present after reboot"
+
+            if nmx_log_stream_test:
+                with allure.step("Verify cluster is enabled"):
+                    output = OutputParsingTool.parse_show_output_to_dict(cluster.show()).get_returned_value()
+                    assert output[SystemConsts.STATE] == 'enabled', "Cluster was disabled instead of enabled"
+
+                with allure.step("Validate NMX-Controller log stream configuration is {}".format(stream)):
+                    output = cluster.apps.app_name[ClusterConsts.NMX_CONTROLLER].logstream.show(exempted_err_msgs="Error")
+                    output_dict = OutputParsingTool.parse_json_str_to_dictionary(output).get_returned_value()
+                    assert output_dict["protocol"] == ClusterConsts.PROTOCOL_RSYSLOG, \
+                        "Protocol is {} instead of {}".format(output_dict["protocol"], ClusterConsts.PROTOCOL_RSYSLOG)
+                    assert output_dict["remote-url"] == url_show, \
+                        "Remote-url is {} instead of {}".format(output_dict["remote-url"], url_show)
 
         finally:
             with allure.step('Cleanup - Run unset system DNS server and apply config'):
