@@ -624,7 +624,7 @@ def create_log_analyzer_yaml_file(log_errors, dump_path, project, test_name, hos
         hostname_regex = "sonic"
     else:
         hostname_regex = r'\S+'
-    bug_title = create_bug_title(hostname_regex, log_errors[0], is_serial_log)
+    bug_title = create_bug_title(hostname_regex, hostname, log_errors[0], is_serial_log)
     normalized_title = error_to_regex(bug_title)
     bug_regex = '.*' + normalized_title + '.*'
     description = f'| \n{bug_title}\n' + '\n'.join(log_errors)
@@ -645,13 +645,15 @@ def create_log_analyzer_yaml_file(log_errors, dump_path, project, test_name, hos
     return yaml_file_path
 
 
-def create_bug_title(hostname_regex, first_line, is_serial_log=False):
+def create_bug_title(hostname_regex, hostname, first_line, is_serial_log=False):
     time_pattern = r'.*\w+\s+\d+\s+\d+:\d+:\d+\.\d+\s+'
     if not re.findall(time_pattern, first_line):
         time_pattern = r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+.*'
     log_prefix = time_pattern + hostname_regex + r'\s'
     bug_title = re.sub(log_prefix, '', first_line)
     bug_title = re.sub(r'message repeated \d+ times: \[ (.*?)\]', r'\1', bug_title)
+    # mask all the hostname in the bug title
+    bug_title = bug_title.replace(hostname, '<masked_hostname>')
     if is_serial_log:
         bug_title = "[Serial log]" + bug_title
     if len(bug_title) > BugHandlerConst.BUG_TITLE_LIMIT:
