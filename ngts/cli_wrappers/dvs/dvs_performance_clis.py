@@ -43,9 +43,9 @@ class DvsPerformance(PerformanceCommon):
         self.save_configuration_file(conf_path, json_dict, dst_dut_dir="/tmp")
         return json_dict["sdk_test_info"]["sdk_test_name"]
 
-    def get_device_configuration(self, scenario, template_suite=PerfConsts.DEFAULT_PERF_TEMPLATES_DIR):
+    def get_device_configuration(self, conf_args, template_suite=PerfConsts.DEFAULT_PERF_TEMPLATES_DIR):
         conf_path = os.path.join(BugHandlerConst.NGTS_PATH, "performance_tests",
-                                 template_suite, scenario, "dvs", f"{self.dut_alias}_conf.json")
+                                 template_suite, conf_args["scenario"], "dvs", f"{self.dut_alias}_conf.json")
         with open(conf_path, "r") as f:
             conf_json = json.load(f)
         return conf_json

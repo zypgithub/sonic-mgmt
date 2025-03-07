@@ -7,6 +7,7 @@
 {% set right_address_list = generate_ip_address_list("192.168.1.2", "192::1:2", mode="dual", number_of_address=(total_ports//2)*split_right) %}
 {% set left_to_right_next_hop_list = generate_ip_address_list("192.168.1.1", "192::1:1", mode="dual", number_of_address=(total_ports//2)*split_left) %}
 {% set right_to_left_next_hop_list = generate_ip_address_list("172.16.1.1", "172::1:1", mode="dual", number_of_address=(total_ports//2)*split_right) %}
+{% set two_sided_ar = parameter_dict.two_sided_ar | string %}
 - header:
     model: sn5600
     nvue-api-version: nvue_v1
@@ -46,10 +47,12 @@
           address:
             {{ left_address_list["v4"][counter.value] }}/24 : {}
             {{ left_address_list["v6"][counter.value] }}/120 : {}
-            {% set counter.value = counter.value + 1 %}
+        {% set counter.value = counter.value + 1 %}
+        {% if two_sided_ar=='True' %}
         router:
           adaptive-routing:
             enable: on
+        {% endif %}
         type: swp
     {% endfor %}
     {% endfor %}
@@ -61,7 +64,7 @@
           address:
             {{ right_address_list["v4"][counter.value] }}/24 : {}
             {{ right_address_list["v6"][counter.value] }}/120 : {}
-            {% set counter.value = counter.value + 1 %}
+        {% set counter.value = counter.value + 1 %}
         router:
           adaptive-routing:
             enable: on

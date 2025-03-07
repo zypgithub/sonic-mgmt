@@ -3,7 +3,7 @@ import logging
 import pytest
 
 from ngts.helpers.performance.performance_setup_helpers import (run_traffic, run_validation,
-                                                                get_topology_obj, set_allure_title,
+                                                                set_allure_title,
                                                                 skip_test_on_unsupported_os)
 from ngts.constants.constants import CliType, InfraConst
 from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts
@@ -18,7 +18,6 @@ class TestSPCXRA_x2Split_400G:
 
     @pytest.fixture(autouse=True)
     def setup(self, players, engines, power_thresholds_by_chip_type, conf_args, chip_type, is_ipv6):
-        self.topology_obj = get_topology_obj(players)
         self.players = players
         self.engines = engines
         self.cli_object = self.players['dut']['cli']

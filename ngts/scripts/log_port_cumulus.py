@@ -16,7 +16,7 @@ def getLogport(handle, port='swp1s0'):
     """
 
     # Extract module and split information from the port name
-    match = re.match(r'swp(\d+)s(\d+)?', port)
+    match = re.match(r'swp(\d)s*(\d*)', port)
     if match:
         module = int(match.group(1))
         split = int(match.group(2) or 0)  # Default to 0 if there's no split part

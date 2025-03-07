@@ -7,7 +7,7 @@ import yaml
 import re
 from json.decoder import JSONDecodeError
 
-from ngts.constants.constants import BugHandlerConst
+from ngts.constants.constants import BugHandlerConst, ResultUploaderConst
 from ngts.constants.performance_constants import PerfConsts, Cl_Consts
 from dataclasses import dataclass
 from ngts.cli_wrappers.common.performance_clis_common import PerformanceCommon
@@ -186,8 +186,14 @@ class NvuePerformanceCli(PerformanceCommon):
                               file_system=Cl_Consts.CL_HOME_DIR, overwrite_file=True, verify_file=False)
         sdk_ports = self.execute_cmd(f'sudo python {Cl_Consts.CL_HOME_DIR}/{Cl_Consts.CL_LOG_PORT_FILE} --ports {ports_string}  | egrep \"^[0-9]\"')
         sdk_ports = sdk_ports.split()
-        logging.info(sdk_ports)
         return sdk_ports
+
+    def get_sdk_port(self, port: str):
+        self.engine.copy_file(source_file=f'{Cl_Consts.CL_LOG_PORT_FILE_PATH}/{Cl_Consts.CL_LOG_PORT_FILE}',
+                              dest_file=f'{Cl_Consts.CL_LOG_PORT_FILE}',
+                              file_system=Cl_Consts.CL_HOME_DIR, overwrite_file=True, verify_file=False)
+        sdk_port = self.execute_cmd(f'sudo python {Cl_Consts.CL_HOME_DIR}/{Cl_Consts.CL_LOG_PORT_FILE} --port {port}  | egrep \"^[0-9]\"')
+        return sdk_port
 
     @staticmethod
     def get_controllers_info_dicts_list(sensors_output):
@@ -274,7 +280,8 @@ class NvuePerformanceCli(PerformanceCommon):
             "split_left": conf_args['split_left'],
             "split_right": conf_args['split_right'],
             "total_ports": total_dut_ports,
-            "speed": conf_args['speed']
+            "speed": conf_args['speed'],
+            "two_sided_ar": conf_args['two_sided_ar']
         }
         outputText = jinja_template.render(parameter_dict=parameter_dict)
         try:
@@ -287,3 +294,90 @@ class NvuePerformanceCli(PerformanceCommon):
         with open(path, 'w') as f:
             f.write(outputText)
         return path
+
+    def get_device_configuration(self, conf_args, template_suite=PerfConsts.DEFAULT_PERF_TEMPLATES_DIR):
+        """
+        Returns:
+        A dict of the device configuration for the given scenario
+        """
+        self.engine.copy_file(source_file=f"{Cl_Consts.CL_LOG_PORT_FILE_PATH}/{Cl_Consts.CL_LOG_PORT_FILE}",
+                              dest_file=f"{Cl_Consts.CL_LOG_PORT_FILE}",
+                              file_system=Cl_Consts.CL_HOME_DIR, overwrite_file=True, verify_file=False)
+        right_left_port_dict = self.get_right_left_ports_dict()
+        ports_string = " ".join(right_left_port_dict["right_ports"])
+        right_side_ports_to_ip_dict = self.get_ports_to_ip_dict(ports_string, conf_args["is_ipv6"], Cl_Consts.COMMON_IP_PREFIX_RIGHT)
+        ports_string = " ".join(right_left_port_dict["left_ports"])
+        left_side_ports_to_ip_dict = self.get_ports_to_ip_dict(ports_string, conf_args["is_ipv6"], Cl_Consts.COMMON_IP_PREFIX_LEFT)
+        return {"right_side_ports_to_ip_dict": right_side_ports_to_ip_dict, "left_side_ports_to_ip_dict": left_side_ports_to_ip_dict}
+
+    def get_ports_to_ip_dict(self, ports_string, is_ipv6, ip_prefix):
+        output = self.execute_cmd(f"sudo python {Cl_Consts.CL_HOME_DIR}/{Cl_Consts.CL_LOG_PORT_FILE} --ports {ports_string}  | egrep \"^[0-9]\"")
+        port_list = output.split()
+        ports_to_ip_dict = {}
+        for index, port in enumerate(port_list):
+            if is_ipv6:
+                ports_to_ip_dict[port] = f"{ip_prefix}::{index + 1}"
+            else:
+                ports_to_ip_dict[port] = f"{ip_prefix}.{ip_prefix}.{ip_prefix}.{index + 1}"
+        return ports_to_ip_dict
+
+    def get_dut_system_information(self, session_id, setup_name):
+        """
+        Args:
+            session_id: Mars session id, i.e, 9443960
+            setup_name: i.e, nv_performance_mtvr-moose-17
+
+        Returns: a dictionary with the full dut system information, .i.e,
+         "dutSystemInformation": {
+                "marsSessionId": "9438676",
+                "setupName": "nv_performance_mtvr-moose-17",
+                "osType": "NVUE",
+                "chip": "SPECTRUM4",
+                "board": "sn5600",
+                "sdkVersion": "4.7.3094-003",
+                "hwChassisRev": "AJ",
+                "modelNumber": "MSN-9N402-00RI-7N0_Ax",
+                "hostDetails": "mtvr-moose-17, IP N/A",
+                "serialNumber": "MT2443J011Q7",
+                "onieVersion": "2023.11-5.3.0012-115200",
+                "psid": "MT_0000000955",
+                "osVersion": "Cumulus Linux 5.12.0"
+            }
+        """
+        dut_system_information = {"marsSessionId": session_id,
+                                  "setupName": setup_name,
+                                  "osType": "NVUE"}
+
+        cmd = f"sudo {Cl_Consts.CL_PYTHON_PATH} {PerfConsts.DVS_RUN_TEST_PATH} -si"
+        output = self.execute_cmd(cmd)
+
+        regex_dict = {
+            "chip": r"ASIC:\s*(SPECTRUM\d+)",
+            "board": r"Platform:\s*([a-zA-Z0-9]+)",
+            "sdkVersion": r"SDK Version:\s*([\d|.|-]*)",
+            "hwChassisRev": r"HW Revision:\s*([A-Z]+)",
+            "modelNumber": r"Model:\s*(.*)",
+            "serialNumber": r"Serial Number:\s*([A-Za-z0-9]+)",
+            "onieVersion": r"ONIE Version:\s*(.*)",
+            "psid": r"PSID:\s*([A-Za-z0-9_]+)",
+        }
+
+        for key, regex in regex_dict.items():
+            match = re.search(regex, output)
+            if match:
+                dut_system_information[key] = match.group(1)
+
+        os_regex = r"IMAGE_DESCRIPTION=\"(Cumulus Linux [\d|.]+)\""
+        os_output = self.execute_cmd("cat /etc/image-release")
+        match = re.search(os_regex, os_output)
+        if match:
+            dut_system_information["osVersion"] = match.group(1)
+
+        self.modify_board_host_internal_name(output, regex_dict, dut_system_information)
+        return dut_system_information
+
+    @staticmethod
+    def modify_board_host_internal_name(output, regex_dict, dut_system_information):
+        match = re.search(regex_dict["board"], output)
+        if match:
+            dut_system_information["board"] = ResultUploaderConst.HOST_INTERNAL_NAMES_MAP[match.group(1).lower()]

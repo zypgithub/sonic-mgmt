@@ -43,7 +43,7 @@ def get_spcx_ra_leaf_traffic(players, conf_args, template_suite="traffic_packets
 
 
 def get_spine_to_leaf_stream_list(players, spine_tg, conf_args, traffic_parameters, json_path):
-    dut_configuration = players['dut']['cli'].performance.get_device_configuration(scenario=conf_args["scenario"])
+    dut_configuration = players['dut']['cli'].performance.get_device_configuration(conf_args=conf_args)
     leaf_dst_ips = list(dut_configuration["right_side_ports_to_ip_dict"].values())
     stream_list = []
     for ip in leaf_dst_ips:
@@ -59,8 +59,10 @@ def port_group_df(request, players):
     request.getfixturevalue('basic_setup_configuration')
     port_group_df = []
     ports = players['dut']['cli'].performance.get_right_left_ports_dict()
-    for port in ports["left_ports"]:
-        port_group_df.append({"port": players['dut']['cli'].performance.get_sdk_port(port), MongoDbConsts.PORT_GROUP_NAME: "left_ports"})
-    for port in ports["right_ports"]:
-        port_group_df.append({"port": players['dut']['cli'].performance.get_sdk_port(port), MongoDbConsts.PORT_GROUP_NAME: "right_ports"})
+    sdk_ports_left = players['dut']['cli'].performance.get_sdk_ports(ports["left_ports"])
+    sdk_ports_right = players['dut']['cli'].performance.get_sdk_ports(ports["right_ports"])
+    for port in sdk_ports_left:
+        port_group_df.append({"port": port, MongoDbConsts.PORT_GROUP_NAME: "left_ports"})
+    for port in sdk_ports_right:
+        port_group_df.append({"port": port, MongoDbConsts.PORT_GROUP_NAME: "right_ports"})
     return port_group_df

@@ -13,6 +13,7 @@ from ngts.helpers.performance.performance_setup_helpers import (run_traffic, run
 from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts
 from infra.tools.exceptions.test_issue import TestIssue
 from ngts.constants.constants import CliType, InfraConst
+from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
 from ngts.performance_tests.spcx_ra.conftest import get_spcx_ra_spine_traffic
 
 logger = logging.getLogger()
@@ -40,6 +41,8 @@ class TestSPCXRA_x2Split_400G:
     @allure.title('test_ar_perf_max_bandwidth')
     @allure.description('Calculate the port utilization on the DUT with AR enabled and default AR profile.')
     def test_ar_perf_max_bandwidth(self, request, packet_size):
+        if isinstance(self.cli_object, NvueCli):
+            pytest.mark.xfail(reason="test_ar_perf_max_bandwidth expected to fail on Nvue")
 
         with allure.step(f"Set test correct allure title with {self.ip} parameter"):
             test_name = set_allure_title(request, self.is_ipv6)

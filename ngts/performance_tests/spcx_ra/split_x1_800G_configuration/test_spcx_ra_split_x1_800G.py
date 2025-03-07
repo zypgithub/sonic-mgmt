@@ -69,11 +69,10 @@ class TestSPCXRA_x1Split_800G:
     @allure.title('test_ar_perf_max_bandwidth_leaf')
     @allure.description('Calculate the port utilization on the DUT with AR enabled on one side')
     def test_ar_perf_max_bandwidth_leaf(self, request, packet_size, conf_args):
-        skip_test_on_unsupported_os(cli_obj=self.cli_object, unsupported_os=CliType.NVUE)
 
         with allure.step(f"Set test correct allure title with {self.ip} parameter"):
             test_name = set_allure_title(request, self.is_ipv6)
-            add_test_mongo_metadata(test_name, {MongoDbConsts.CONF_NAME: "x2_400G_leaf"})
+            add_test_mongo_metadata(test_name, {MongoDbConsts.CONF_NAME: "x1_800G_leaf"})
 
         conf_args["two_sided_ar"] = False
         leaf_traffic_jsons = get_spcx_ra_leaf_traffic(self.players, conf_args)
