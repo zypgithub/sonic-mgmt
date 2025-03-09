@@ -193,7 +193,7 @@ class RegressionConfigurations:
                             assert "applied" in output, "Failed to apply config"
 
                         if wait_till_port_up:
-                            ndr_port.interface.wait_for_port_state(state=NvosConsts.LINK_STATE_UP, logical_state='Active')
+                            ndr_port.interface.wait_for_port_state(state=NvosConsts.LINK_STATE_UP)
 
         except BaseException as ex:
             if throw_exception:

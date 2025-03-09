@@ -280,8 +280,7 @@ def update_timezone(engines):
 
 def check_traffic_ports_up(engines, expected_active_ports_names):
     with allure.step("Check traffic ports up"):
-        RegressionConfigurations.configure_ports_to_legacy(engines.dut)
-        time.sleep(5)
+        RegressionConfigurations.configure_ports_to_legacy(engines.dut, wait_till_port_up=True)
         active_ports = Tools.RandomizationTool.get_random_active_port(number_of_values_to_select=0).get_returned_value()
         active_port_names = [port.name for port in active_ports]
         ValidationTool.validate_set_equal(actual=active_port_names, expected=expected_active_ports_names)
