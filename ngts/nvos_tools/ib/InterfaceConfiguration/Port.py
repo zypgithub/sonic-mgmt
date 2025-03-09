@@ -1,4 +1,5 @@
 import logging
+import re
 
 import allure
 from retry import retry
@@ -71,6 +72,15 @@ class Port(BaseComponent):
         self.name_in_redis = name_in_redis
         self.interface = Interface(self, name)
         self.acl = Acl(self)
+
+        self.asic_letter = None
+        self.port_number = None
+        self.local_port = None
+        self.plane_number = None
+        try:
+            self.asic_letter, self.port_number, self.local_port, self.plane_number = self.parse_port_name(self.name)
+        except BaseException:
+            pass
 
     def __str__(self):
         return f"{self.__class__.__name__}('{self.name}')"
@@ -195,6 +205,36 @@ class Port(BaseComponent):
                 self.interface.ip.address.show(dut_engine=dut_engine)).get_returned_value())
         return ip_addresses_show[0].split("/")[0]
 
-    def update_port_name(self, name):
-        self.name = name
-        self.interface = Interface(self, name)
+    @staticmethod
+    def parse_port_name(name):
+        """swA13p2pl1 --> ('A', 13, 2, 1).   sw13p2 --> (None, 13, 2, None)"""
+        match = re.fullmatch(r'[sS][wW]([A-Za-z])?\s*(\d+)p(\d+)(?:pl(\d+))?', name)
+        if not match:
+            raise ValueError(f"Invalid port name format: {name}")
+
+        asic_letter = match.group(1)  # This can be None or 'A' or 'B'
+        port_number = int(match.group(2))
+        local_port = int(match.group(3))
+        plane_number = int(match.group(4)) if match.group(4) else None
+        result = asic_letter, port_number, local_port, plane_number
+        logger.info(f'parsed "{name}" ==> {result}')
+        return result
+
+    def get_plane_port(self, plane_number):
+        """ Port('sw1p1') --> Fae(port_name='sw1p1pl3').port """
+        if self.is_plane_port():
+            raise ValueError(f'{self=} is a plane-port')
+        from ngts.nvos_tools.infra.Fae import Fae
+        # can't import at the top of the file because of a circular import between Port.py and Fae.py
+        return Fae(port_name=f"{self.name}pl{plane_number}").port
+
+    def is_plane_port(self) -> bool:
+        return bool(re.search(r'pl\d+$', self.name))
+
+    def get_aggregated_port(self):
+        """'sw1p1pl3' --> 'sw1p1';  'sw1p1' --> 'sw1p1'"""
+        return Port(name=re.sub(r'pl\d+$', '', self.name))
+
+    def get_transceiver_name(self):
+        """ 'swA1p1pl3' --> 'swA1' """
+        return re.search(r'^\D+\d+', self.name).group(0)

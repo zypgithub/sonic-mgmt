@@ -1,7 +1,7 @@
 import logging
 import random
 from functools import lru_cache
-from typing import Tuple
+from typing import Tuple, List
 
 from retry import retry
 
@@ -10,6 +10,7 @@ from ngts.nvos_tools.Devices.IbDevice import CrocodileSwitch
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
 from ngts.nvos_tools.infra.Fae import Fae
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.system.System import System
@@ -84,13 +85,21 @@ class MultiPlanarTool:
         return selected_fae_fnm_port, selected_fae_internal_fnm_port
 
     @staticmethod
-    def select_random_plane_port(fae_aggregated_port, num_of_planes):
-        with allure.step("Choose a random plane port (of the aggregated port)"):
-            plane_num = str(random.randint(1, num_of_planes))
-            plane_port_name = fae_aggregated_port.port.name + 'pl' + plane_num
-            selected_fae_plane_port = Fae(port_name=plane_port_name)
-        allure.attach(f"Selected port: {plane_port_name}")
-        return selected_fae_plane_port
+    def select_random_plane_port(fae_aggregated_port, num_of_planes_on_port=None, device=None) -> Fae:
+        return MultiPlanarTool.select_random_plane_ports(
+            fae_aggregated_port, num_of_planes_to_return=1, num_of_planes_on_port=num_of_planes_on_port, device=device
+        )[0]
+
+    @staticmethod
+    def select_random_plane_ports(fae_aggregated_port, num_of_planes_to_return, num_of_planes_on_port=None, device=None
+                                  ) -> List[Fae]:
+        if num_of_planes_on_port is None:
+            num_of_planes_on_port = (device or TestToolkit.devices.dut).num_of_plane_ports
+        with allure.step(f"Choose {num_of_planes_to_return} random plane ports (of the aggregated port)"):
+            plane_num = random.sample(range(1, num_of_planes_on_port + 1), num_of_planes_to_return)
+            result = [Fae(port_name=f"{fae_aggregated_port.port.name}pl{p}") for p in plane_num]
+            allure.attach(f"Selected plane-ports", result)
+        return result
 
     @staticmethod
     def select_random_port_and_plane(device) -> Tuple[Port, Port, Port]:

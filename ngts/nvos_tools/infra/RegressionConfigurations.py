@@ -1,6 +1,6 @@
-import random
 import logging
 import json
+from typing import Dict, Tuple, List
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
@@ -214,6 +214,7 @@ class RegressionLinksConsts:
     TYPE_OPTICAL = "optical"
     TYPE_COPPER = "copper"
     TYPE_ACTIVE = "active"
+    SYSTEM_TYPE_SERVER = "server"
 
 
 class RegressionLinks:
@@ -226,7 +227,7 @@ class RegressionLinks:
             return connections_dict
 
     @staticmethod
-    def get_filtered_transceivers(setup_name, transceiver_type="", is_loopback=None, connected_to=""):
+    def get_filtered_transceivers(setup_name, transceiver_type="", is_loopback=None, connected_to="") -> List[str]:
         """
         Get filtered transceivers based on the given parameters.
 
@@ -260,7 +261,8 @@ class RegressionLinks:
             return filtered
 
     @staticmethod
-    def get_filtered_transceivers_and_ports(setup_name, transceiver_type="", is_loopback="", connected_to=""):
+    def get_filtered_transceivers_and_ports(setup_name, transceiver_type="", is_loopback=None, connected_to=""
+                                            ) -> Dict[str, List[str]]:
         """
         Get filtered transceivers and the ports connected to them based on the given parameters.
 
@@ -269,7 +271,7 @@ class RegressionLinks:
         :param transceiver_type: Filter by the transceiver type (optional)
         :param is_loopback: Filter by loopback status (optional)
         :param connected_to: Filter by connected entity (server/setup) and its name (optional)
-        :return: A list of tuples with (transceiver, ports)
+        :return: {transceiver_name: [port_name, ...], ...}
         """
         with allure.step(f'Get filtered transceivers and ports for {setup_name}'):
             filtered_with_ports = {}
@@ -281,3 +283,41 @@ class RegressionLinks:
                     filtered_with_ports[transceiver] = connections[transceiver][RegressionLinksConsts.PORTS_LIST]
 
             return filtered_with_ports
+
+    @staticmethod
+    def get_transceiver_data_and_port_index(setup_name: str, transceiver_name: str, port_name='') -> Tuple[Dict, int]:
+        """
+        Returns the dict describing the transceiver from the setup's json file.
+        If port_name is given, returns also the position (index) of this port in the transceiver's list of ports;
+        otherwise the second returned value is None.
+        """
+        data = RegressionLinks._get_setup_links(setup_name)[transceiver_name]
+        port_index = data[RegressionLinksConsts.CONNECTED_TO_PORTS].index(port_name) if port_name else None
+        return data, port_index
+
+    @staticmethod
+    def get_loopback_end(setup_name: str, transceiver_name: str, port_name: str) -> str:
+        """ Given a port in loopback connection, returns the name of the port at the other end of the cable. """
+        transceiver, port_index = RegressionLinks.get_transceiver_data_and_port_index(setup_name, transceiver_name,
+                                                                                      port_name)
+        if not transceiver[RegressionLinksConsts.IS_LOOPBACK]:
+            raise ValueError(f"{transceiver_name} is not a loopback connection: {transceiver}")
+
+        result = transceiver[RegressionLinksConsts.CONNECTED_TO][RegressionLinksConsts.CONNECTED_TO_PORTS][port_index]
+        logger.info(f"Port {port_name} is connected to {result}")
+        return result
+
+    @staticmethod
+    def get_connected_host_and_port(setup_name: str, transceiver_name: str, port_name: str) -> Tuple[str, str]:
+        """Returns the name of the host connected to the given port, and the name of the connected port on the host."""
+        transceiver, port_index = RegressionLinks.get_transceiver_data_and_port_index(setup_name, transceiver_name, port_name)
+        connected_to = transceiver[RegressionLinksConsts.CONNECTED_TO]
+        connected_to_type = connected_to[RegressionLinksConsts.CONNECTED_TO_SYSTEM_TYPE]
+        if connected_to_type != RegressionLinksConsts.SYSTEM_TYPE_SERVER:
+            raise ValueError(f"{transceiver_name} is connected to {connected_to_type}, expected {RegressionLinksConsts.SYSTEM_TYPE_SERVER}")
+
+        host = connected_to[RegressionLinksConsts.CONNECTED_TO_SYSTEM_NAME]
+        # todo: the current json format doesn't support a dual port going to two different devices
+        host_port = connected_to[RegressionLinksConsts.CONNECTED_TO_PORTS][port_index]
+        logger.info(f"Port {port_name} is connected to {host} port {host_port}")
+        return host, host_port

@@ -7,6 +7,7 @@ from ngts.constants.constants import InfraConst
 from ngts.nvos_constants.constants_nvos import LinkDetectionConsts
 from ngts.nvos_tools.Devices.IbDevice import BlackMambaSwitch, CrocodileSwitch
 from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
+from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.LinuxCmdBuilderTool import LinuxCmdBuilderTool
@@ -66,7 +67,7 @@ class IbInterfaceTool:
         if not (module_name or port_name):
             raise ValueError(f'{module_name=}, {port_name=}')
         fae_port_name = port_name or f"{module_name}p1"
-        asic_letter, _, _, plane_number = IbInterfaceTool.parse_port_name(port_name)
+        asic_letter, _, _, plane_number = Port.parse_port_name(port_name)
 
         with allure.step(f"Find mst_dev_name for {fae_port_name}"):
             if asic_letter or plane_number:  # Crocodile ports, e.g. swA...
@@ -107,7 +108,7 @@ class IbInterfaceTool:
 
     @staticmethod
     def get_local_port_hex(engine, port_name):
-        asic_letter, port_number, local_port, plane_number = IbInterfaceTool.parse_port_name(port_name)
+        asic_letter, port_number, local_port, plane_number = Port.parse_port_name(port_name)
         asic_number = (MultiPlanarTool.asic_letter_to_number(asic_letter)
                        if asic_letter else MultiPlanarTool.get_primary_asic(Fae(port_name=port_name)))
         docker = InfraConst.SYNCD_IBV_DOCKER.format(asic_number)
@@ -115,21 +116,6 @@ class IbInterfaceTool:
         table_output = engine.run_cmd(cmd, validate=True)
         lane_bmap = get_lane_bmap(port_name)
         return get_log_port(table_output, port_number, lane_bmap)
-
-    @staticmethod
-    def parse_port_name(name: str):
-        """swA13p2pl1 --> ('A', 13, 2, 1).   sw13p2 --> (None, 13, 2, None)"""
-        match = re.fullmatch(r'[sS][wW]([A-Za-z])?\s*(\d+)p(\d+)(?:pl(\d+))?', name)
-        if not match:
-            raise ValueError(f"Invalid port name format: {name}")
-
-        asic_letter = match.group(1)  # This can be None or 'A' or 'B'
-        port_number = int(match.group(2))
-        local_port = int(match.group(3))
-        plane_number = int(match.group(4)) if match.group(4) else None
-        result = asic_letter, port_number, local_port, plane_number
-        logger.info(f'parsed "{name}" ==> {result}')
-        return result
 
 
 def get_lane_bmap(port_name):
@@ -143,7 +129,7 @@ def get_lane_bmap(port_name):
     Returns:
         str: lane-bmap as a string representing a hex number, e.g. on Crocodile: 'swB11p2pl4' --> '0x18'
     """
-    _, _, local_port, plane_number = IbInterfaceTool.parse_port_name(port_name)
+    _, _, local_port, plane_number = Port.parse_port_name(port_name)
     lane_bmap = 0x10 ** (local_port - 1) * 2 ** ((plane_number or 1) - 1)
     lane_bmap = f'0x{lane_bmap:0>2x}'
     # p1pl1 --> 0x01, p1pl2 --> 0x02, p1pl3 --> 0x04, p1pl4 --> 0x08

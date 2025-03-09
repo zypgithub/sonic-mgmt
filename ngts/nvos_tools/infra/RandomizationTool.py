@@ -4,7 +4,7 @@ import random
 import string
 from datetime import timedelta, datetime
 from random import randint
-from typing import MutableSequence, Optional
+from typing import MutableSequence, Optional, List, Tuple
 
 import allure
 
@@ -359,9 +359,10 @@ class RandomizationTool:
         allure.attach("Shuffle result", str(items))
 
     @staticmethod
-    def get_random_transceiver_and_port(engine, setup_name, transceiver_type="", is_loopback="", connected_to="",
+    def get_random_transceiver_and_port(engine, setup_name, transceiver_type="", is_loopback=None, connected_to="",
                                         requested_ports_state=None,
-                                        requested_ports_logical_state=None):
+                                        requested_ports_logical_state=None,
+                                        forbidden_transceivers: List[str] = None) -> Tuple[str, str]:
         """
         Get a random transceiver and its port based on the given filters.
 
@@ -372,13 +373,12 @@ class RandomizationTool:
         :param connected_to: Filter by connected entity (server/setup) and its name (optional)
         :param requested_ports_state:
         :param requested_ports_logical_state:
-        :return: A random (transceiver, ports_list) tuple
-
+        :return: (transceiver_name, port_name)
         """
         with allure.step(f'Get random transceiver and ports for {setup_name}'):
             filtered_connections = RegressionLinks.get_filtered_transceivers_and_ports(setup_name, transceiver_type,
                                                                                        is_loopback, connected_to)
-            transceiver_to_remove = []
+            transceiver_to_remove = [] if forbidden_transceivers is None else forbidden_transceivers.copy()
             output_dictionary = OutputParsingTool.parse_show_interface_output_to_dictionary(Port.show_interface(engine)).verify_result()
             if requested_ports_state or requested_ports_logical_state:
                 for transceiver, ports_list in filtered_connections.items():
