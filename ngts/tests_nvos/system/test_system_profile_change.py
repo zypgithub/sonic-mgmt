@@ -1,7 +1,7 @@
 import logging
 import pytest
 
-from ngts.nvos_tools.infra.RegressionConfigurations import Configurations, RegressionConfigurations
+from ngts.nvos_tools.infra.RegressionConfigurations import RegressionConfigurations
 from ngts.tools.test_utils import allure_utils as allure
 import random
 import time
@@ -11,7 +11,6 @@ from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_constants.constants_nvos import SystemConsts
-from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
 from ngts.nvos_constants.constants_nvos import DatabaseConst
 from ngts.tests_nvos.system.clock.ClockTools import ClockTools
 from ngts.constants.constants import LinuxConsts
@@ -84,7 +83,7 @@ def test_system_profile_negative(engines, devices):
 
 @pytest.mark.system
 @pytest.mark.system_profile_cleanup
-def test_system_profile_adaptive_routing(engines, players, interfaces, start_sm, devices):
+def test_system_profile_adaptive_routing(engines, players, interfaces, start_sm, devices, setup_name):
     """
     Test flow:
         1. Check that with different routing group we have traffic
@@ -98,13 +97,13 @@ def test_system_profile_adaptive_routing(engines, players, interfaces, start_sm,
 
     with allure.step("Check traffic port up"):
         default_config_active_ports = Tools.RandomizationTool.get_random_active_port(number_of_values_to_select=0).get_returned_value()
-
+        default_config_active_ports_names = [port.name for port in default_config_active_ports]
     with allure.step('Check host ports up'):
         for host in traffic_hosts:
             _check_port_up_on_hosts(host)
 
     with allure.step("Run traffic"):
-        Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, True).verify_result()
+        Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, setup_name, True).verify_result()
 
     with allure.step('Change adaptive-routing-groups, check changes and traffic'):
         with allure.step("Change adaptive-routing-groups to possible value"):
@@ -129,14 +128,14 @@ def test_system_profile_adaptive_routing(engines, players, interfaces, start_sm,
 
         update_timezone(engines)
 
-        check_traffic_ports_up(engines, default_config_active_ports)
+        check_traffic_ports_up(engines, default_config_active_ports_names)
 
         with allure.step('Check host ports up'):
             for host in traffic_hosts:
                 _check_port_up_on_hosts(host)
 
         with allure.step("Run traffic"):
-            Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, True).verify_result()
+            Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, setup_name, True).verify_result()
 
     with allure.step('Change system profile to default'):
         change_profile_to_default(system, devices, engines)
@@ -144,14 +143,14 @@ def test_system_profile_adaptive_routing(engines, players, interfaces, start_sm,
         with allure.step("Start OpenSm"):
             OpenSmTool.start_open_sm(engines).verify_result()
 
-        check_traffic_ports_up(engines, default_config_active_ports)
+        check_traffic_ports_up(engines, default_config_active_ports_names)
 
         with allure.step('Check host ports up'):
             for host in traffic_hosts:
                 _check_port_up_on_hosts(host)
 
         with allure.step("Run traffic"):
-            Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, True).verify_result()
+            Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, setup_name, True).verify_result()
 
 
 @pytest.mark.system
@@ -279,8 +278,10 @@ def update_timezone(engines):
             os.popen('sudo timedatectl set-timezone {}'.format(LinuxConsts.JERUSALEM_TIMEZONE))
 
 
-def check_traffic_ports_up(engines, expected_active_ports):
+def check_traffic_ports_up(engines, expected_active_ports_names):
     with allure.step("Check traffic ports up"):
         RegressionConfigurations.configure_ports_to_legacy(engines.dut)
+        time.sleep(5)
         active_ports = Tools.RandomizationTool.get_random_active_port(number_of_values_to_select=0).get_returned_value()
-        ValidationTool.validate_set_equal(actual=active_ports, expected=expected_active_ports)
+        active_port_names = [port.name for port in active_ports]
+        ValidationTool.validate_set_equal(actual=active_port_names, expected=expected_active_ports_names)

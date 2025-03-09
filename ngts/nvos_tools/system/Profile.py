@@ -19,7 +19,7 @@ class Profile(BaseComponent):
             marker = TestToolkit.get_loganalyzer_marker(engine)
 
             res = SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].action_profile_change, engine, device,
-                                                  self.get_resource_path(), params_dict)
+                                                  self.get_resource_path(), params_dict).verify_result()
 
             TestToolkit.add_loganalyzer_marker(engine, marker)
 
