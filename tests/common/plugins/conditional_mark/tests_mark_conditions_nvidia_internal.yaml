@@ -896,6 +896,12 @@ platform_tests/sfp/test_show_intf_xcvr.py::test_check_show_lpmode:
     conditions:
     - "'nvda_bf' in platform"
 
+platform_tests/sfp/test_show_intf_xcvr.py::test_check_sfpshow_eeprom:
+  skip:
+    reason: "Testcase ignored due to RM issue: 4346687"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4346687"
+
 platform_tests/test_dpu_ctrl.py::test_dpu_power_off_and_on:
   skip:
     reason: "The test is skipped due to https://redmine.mellanox.com/issues/4101627"
