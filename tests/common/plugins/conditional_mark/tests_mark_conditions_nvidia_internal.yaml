@@ -691,6 +691,12 @@ platform_tests/sfp/test_sfpshow.py:
     conditions:
     - "'simx' in platform"
 
+platform_tests/sfp/test_sfpshow.py::test_check_sfpshow_eeprom:
+  skip:
+    reason: "Testcase ignored due to RM issue: 4346687"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4346687"
+
 platform_tests/sfp/test_show_intf_xcvr.py:
   skip:
     reason: "QSFP eeprom emulation is not supported currently."
