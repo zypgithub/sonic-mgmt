@@ -37,6 +37,7 @@ from ngts.nvos_tools.infra.NvCommand import NvCommand
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.PexpectTool import PexpectTool
+from ngts.nvos_tools.infra.RandomizationTool import random_api as get_random_api
 from ngts.nvos_tools.infra.RegressionConfigurations import RegressionConfigurations
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
@@ -827,8 +828,15 @@ def test_api(request):
     return request.param
 
 
+@pytest.fixture(params=[get_random_api()])
+def random_api(request):
+    """Causes the test to run on a randomly-chosen API. The fixture also returns the name of the used API."""
+    TestToolkit.tested_api = request.param
+    return request.param
+
+
 @pytest.fixture(scope='module')
-def nv_command():
+def nv_command() -> NvCommand:
     return NvCommand()
 
 

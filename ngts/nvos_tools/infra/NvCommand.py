@@ -11,6 +11,20 @@ from typing import Dict
 
 
 class NvCommand:
+    """
+    Singleton class - all instances are actually the same instance.
+    Usage example:
+        nv = NvCommand.get_instance()
+        nv.system.show()
+        nv.port['sw1p1'].set(...)
+    """
+    _instance = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
     def __init__(self):
         self.acl = Acl()
         self.fae = Fae()

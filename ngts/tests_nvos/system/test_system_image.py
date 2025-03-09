@@ -102,9 +102,8 @@ def test_show_system_image(original_version):
 @pytest.mark.simx
 @pytest.mark.image
 @pytest.mark.system
-@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 @pytest.mark.timeout(30 * MINUTE, func_only=True)
-def test_downgrade_upgrade(release_name, test_api, original_version, devices, engines, downgrade_version_realpath,
+def test_downgrade_upgrade(release_name, random_api, original_version, devices, engines, downgrade_version_realpath,
                            target_version_realpath):
     """
     Check the image rename cmd.
@@ -122,7 +121,6 @@ def test_downgrade_upgrade(release_name, test_api, original_version, devices, en
     if not downgrade_version_realpath:
         pytest.skip("Cannot run test because base_version parameter is missing from the setup file")
 
-    TestToolkit.tested_api = test_api
     system = System()
     verify_current_version(original_version, system, devices.dut)
 
@@ -160,14 +158,14 @@ def test_downgrade_upgrade(release_name, test_api, original_version, devices, en
         with allure.step('Get config file and path for target version'):
             config_file_path, config_filename = devices.dut.get_test_config_file_by_version(original_version)
 
-        TestToolkit.tested_api = 'NVUE'
+        TestToolkit.tested_api = ApiType.NVUE
         with allure.step('Apply and save pre-defined configuration'):
             NvosInstallationSteps.fetch_apply_save_config(config_filename, config_file_path, engines.dut,
                                                           scp_host_creds, system)
             logger.info("After replacing configuration file, system will ask for new password. Restoring password:")
             engines.dut.disconnect()
             engines.dut.run_cmd("true")
-        TestToolkit.tested_api = test_api
+        TestToolkit.tested_api = random_api
 
     finally:
         with allure.step(f"Run upgrade: {target_version_realpath}"):
@@ -181,7 +179,6 @@ def test_downgrade_upgrade(release_name, test_api, original_version, devices, en
 @pytest.mark.simx
 @pytest.mark.image
 @pytest.mark.system
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_system_image_upload(engines, release_name, test_api, original_version, devices, downgrade_version_realpath):
     """
     Uploading image file to player and validate.
@@ -191,7 +188,6 @@ def test_system_image_upload(engines, release_name, test_api, original_version, 
     4. Delete image file from player
     5. Delete image file from dut
     """
-    TestToolkit.tested_api = test_api
     system = System()
 
     verify_current_version(original_version, system, devices.dut)
@@ -222,9 +218,8 @@ def test_system_image_upload(engines, release_name, test_api, original_version, 
 @pytest.mark.simx
 @pytest.mark.image
 @pytest.mark.system
-@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 @pytest.mark.timeout(25 * MINUTE, func_only=True)
-def test_image_uninstall(release_name, test_api, original_version, test_name, devices, downgrade_version_realpath):
+def test_image_uninstall(release_name, random_api, original_version, test_name, devices, downgrade_version_realpath):
     """
      Will check the uninstall commands
 
@@ -235,7 +230,6 @@ def test_image_uninstall(release_name, test_api, original_version, test_name, de
     4. Set the original image to be booted next
     5. Validate that uninstall will success
     """
-    TestToolkit.tested_api = test_api
     image_uninstall_test(release_name, original_version, devices, uninstall_force="", test_name=test_name,
                          base_version=downgrade_version_realpath)
 
@@ -264,7 +258,6 @@ def test_image_uninstall_force(release_name, original_version, test_name, device
 @pytest.mark.simx
 @pytest.mark.image
 @pytest.mark.system
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_system_image_bad_flow(engines, release_name, test_api, original_version, sonic_mgmt_ipv6_addr,
                                downgrade_version_realpath):
     """
@@ -278,7 +271,6 @@ def test_system_image_bad_flow(engines, release_name, test_api, original_version
     -	Upload image that doesn’t / already exist
 
     """
-    TestToolkit.tested_api = test_api
     system = System()
     original_images, original_image, original_image_partition, partition_id_for_new_image = get_image_data(system)
     rand_name = RandomizationTool.get_random_string(10, ascii_letters=string.ascii_letters)
@@ -349,8 +341,7 @@ def test_system_image_bad_flow(engines, release_name, test_api, original_version
 @pytest.mark.checklist
 @pytest.mark.image
 @pytest.mark.system
-@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_install_multiple_images(release_name, test_name, test_api, original_version, devices):
+def test_install_multiple_images(release_name, test_name, random_api, original_version, devices):
     """
     Install system image test
 
@@ -362,7 +353,6 @@ def test_install_multiple_images(release_name, test_name, test_api, original_ver
     9. Uninstall all images that have been installed during the test
     10. Delete all images that have been fetched during the test
     """
-    TestToolkit.tested_api = test_api
     with allure.step(f"Update path with provided release name: {release_name}"):
         global BASE_IMAGE_VERSION_TO_INSTALL
         BASE_IMAGE_VERSION_TO_INSTALL = BASE_IMAGE_VERSION_TO_INSTALL.format(pre_release_name=release_name)
@@ -564,7 +554,6 @@ def system_image_install_reject_with_prompt(engines, system, prompt_response, or
 @pytest.mark.checklist
 @pytest.mark.image
 @pytest.mark.system
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_fetch_image_via_https(test_api):
     """
     Install system image test
@@ -575,7 +564,6 @@ def test_fetch_image_via_https(test_api):
     4. Delete the images that has been fetched during the test
     5. Verify the earlier fetched image does not appear in show command
     """
-    TestToolkit.tested_api = test_api
     system = System()
     image_fetched = False
     image_to_fetch = []
@@ -608,7 +596,6 @@ def test_fetch_image_via_https(test_api):
 @pytest.mark.checklist
 @pytest.mark.image
 @pytest.mark.system
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_fetch_image_with_weird_password(test_api, engines):
     """
     Install system image test
@@ -622,7 +609,6 @@ def test_fetch_image_with_weird_password(test_api, engines):
     7. Delete the use which was created during the test
     8. Delete the dummy image file created
     """
-    TestToolkit.tested_api = test_api
     system = System()
     # Create 5 passwords including 5 random special characters from the allowed special character list
     special_char_list = ['~', '@', '%', '^', '*', '_', '=', '+', '{', '}', ':', ',', '[', ']', '/', '!', "'"]
