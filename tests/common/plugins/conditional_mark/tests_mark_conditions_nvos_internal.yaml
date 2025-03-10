@@ -544,6 +544,12 @@ tests_nvos/system/test_system_profile_change.py:
     conditions:
       - https://redmine.mellanox.com/issues/3924104
 
+tests_nvos/platform/test_platform_firmware_bios/test_platform_firmware_bios.py:
+  skip:
+    reason:  "Testcase skipped on Juliet systems due to missing auto-update field"
+    conditions:
+      - "'juliet' in testbed"
+
 tests_nvos/platform/test_platform_transceiver.py:
   skip:
     reason: "Testcase skipped on non gorilla systems due to RM issue: https://redmine.mellanox.com/issues/3950840"
