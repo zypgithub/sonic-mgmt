@@ -23,10 +23,10 @@ r-leopard-72,Ethernet80,r-leopard-73,Ethernet80,200000,421,Access,True
 r-leopard-72,Ethernet84,r-leopard-73,Ethernet84,200000,422,Access,True
 r-leopard-72,Ethernet88,r-leopard-73,Ethernet88,200000,423,Access,True
 r-leopard-72,Ethernet92,r-leopard-73,Ethernet92,200000,424,Access,True
-r-leopard-72,Ethernet96,r-leopard-73,Ethernet96,200000,425,Access,True
-r-leopard-72,Ethernet100,r-leopard-73,Ethernet100,200000,426,Access,True
-r-leopard-72,Ethernet104,r-leopard-73,Ethernet104,200000,427,Access,True
-r-leopard-72,Ethernet108,r-leopard-73,Ethernet108,200000,428,Access,True
+r-leopard-72,Ethernet96,r-leopard-73,Ethernet96,200000,425,Access,False
+r-leopard-72,Ethernet100,r-leopard-73,Ethernet100,200000,426,Access,False
+r-leopard-72,Ethernet104,r-leopard-73,Ethernet104,200000,427,Access,False
+r-leopard-72,Ethernet108,r-leopard-73,Ethernet108,200000,428,Access,False
 r-leopard-72,Ethernet112,r-leopard-73,Ethernet112,200000,429,Access,True
 r-leopard-72,Ethernet116,r-leopard-73,Ethernet116,200000,430,Access,True
 r-leopard-72,Ethernet120,r-leopard-73,Ethernet120,200000,431,Access,True
