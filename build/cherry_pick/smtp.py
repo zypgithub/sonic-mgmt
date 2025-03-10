@@ -28,8 +28,18 @@ def format_ts(value: str):
 def extract_pr_number(commit_subject:str):
     return re.findall(r'#(\d+)', commit_subject)
 
+def link_pr_in_subject(commit_subject: str) -> str:
+    pr_number = extract_pr_number(commit_subject)
+    if pr_number:
+        return commit_subject.replace(
+            f'#{pr_number[-1]}',
+            f'<a href="https://github.com/sonic-net/sonic-mgmt/pull/{pr_number[-1]}">#{pr_number[-1]}</a>'
+        )
+    return commit_subject
+
 env.filters['format_ts'] = format_ts
 env.filters['extract_pr_number'] = extract_pr_number
+env.filters['link_pr_in_subject'] = link_pr_in_subject
 
 report_template = env.get_template('report.html.j2')
 

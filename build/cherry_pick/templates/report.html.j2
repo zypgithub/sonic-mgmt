@@ -33,15 +33,8 @@
                 {% elif  commit.cherry_pick_status == 4 %}
                 style="background-color: #FFFFFF;" {# EMPTY COMMIT #}
                 {% endif %}>
-                {% set pr_number_match = commit.subject | extract_pr_number %}
                 <td>
-                    {% if pr_number_match %}
-                    <a href="https://github.com/sonic-net/sonic-mgmt/pull/{{ pr_number_match[-1] }}">
-                        {{ commit.subject }}
-                    </a>
-                    {% else %}
-                    {{ commit.subject }}
-                    {% endif %}
+                    {{ commit.subject | link_pr_in_subject }}
                 </td>
                 <td>{{ commit.hash[:8] }}</td>
                 <td>{{ commit.ct | format_ts }}</td>
