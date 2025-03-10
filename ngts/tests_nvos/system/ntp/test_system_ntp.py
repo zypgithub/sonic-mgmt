@@ -527,7 +527,7 @@ def test_configure_ntp_multiple_servers(test_api):
             system.ntp.servers.set_resource(NtpConsts.SERVER1_IPV4).verify_result()
             system.ntp.servers.set_resource(server2_hostname).verify_result()
             for server_id in range(1, (NtpConsts.MULTIPLE_SERVERS_NUMBER - 2)):
-                server_name = 'server' + str(server_id)
+                server_name = 'dummy.server' + str(server_id)
                 system.ntp.servers.set_resource(server_name, apply=False)
             system.ntp.set(op_param_name=NtpConsts.STATE, op_param_value=NtpConsts.State.ENABLED.value,
                            apply=True).verify_result()
@@ -601,7 +601,7 @@ def test_configure_ntp_multiple_servers(test_api):
                 "Server {server} state should be {expected}".\
                 format(server=server2_hostname, expected=NtpConsts.State.ENABLED.value)
             for server_id in range(1, (NtpConsts.MULTIPLE_SERVERS_NUMBER - 2)):
-                server_name = 'server' + str(server_id)
+                server_name = 'dummy.server' + str(server_id)
                 assert server_list[server_name][NtpConsts.STATE] == NtpConsts.State.ENABLED.value, \
                     "Server {server} state should be {expected}". \
                     format(server=server_name, expected=NtpConsts.State.ENABLED.value)
@@ -618,7 +618,7 @@ def test_configure_ntp_multiple_servers(test_api):
                 format(server=NtpConsts.SERVER1_IPV4, expected=NtpConsts.Trusted.NO.value)
 
             for server_id in range(1, (NtpConsts.MULTIPLE_SERVERS_NUMBER - 2)):
-                server_name = 'server' + str(server_id)
+                server_name = 'dummy.server' + str(server_id)
                 server_dict = OutputParsingTool.parse_json_str_to_dictionary(
                     system.ntp.servers.show(server_name)).get_returned_value()
                 assert server_dict[NtpConsts.TRUSTED] == NtpConsts.Trusted.NO.value, \
@@ -708,7 +708,7 @@ def test_ntp_performance(test_api):
 
         with allure.step("Measure configuring time of 10 servers"):
             for server_id in range(1, NtpConsts.MULTIPLE_SERVERS_NUMBER):
-                server_name = 'server' + str(server_id)
+                server_name = 'dummy.server' + str(server_id)
                 system.ntp.servers.set_resource(server_name, apply=False)
             server_name = 'server10'
             start_time = time.time()
