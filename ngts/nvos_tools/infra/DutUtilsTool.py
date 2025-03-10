@@ -294,17 +294,14 @@ def wait_for_system_table_to_exist(engine):
 @retry(Exception, tries=80, delay=15)
 def wait_until_cli_is_up(engine):
     logger.info('Checking the status of nvued')
-    output = engine.run_cmd('nv show system')
-    if not output:
-        engine.disconnect()
-        raise Exception("Socket exception: Connection reset by peer (104)")
-    elif 'CLI is unavailable' in output:
+    output = DutUtilsTool.run_cmd_with_disconnect(engine, 'nv show system')
+    if 'CLI is unavailable' in output:
         raise Exception("Waiting for NVUE to become functional")
 
 
 @retry(Exception, tries=15, delay=10)
 def wait_on_systemctl_initialization(engine):
-    output = engine.run_cmd("sudo systemctl is-system-running")
+    output = DutUtilsTool.run_cmd_with_disconnect(engine, "sudo systemctl is-system-running")
     if "running" not in output:
         raise Exception("Waiting for systemctl to finish initializing")
 
