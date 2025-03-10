@@ -674,6 +674,13 @@
     - Affected_test_cases:
         - tests_nvos/general/security/sed/test_sed_password.py::test_back_new_pass
 
+- Errors_list:
+    - '.*ERR nvued:   ERROR: lifecycle.py:333 paramater sed-password is longer than 250.*'
+    - '.*ERR nvued:   ERROR: lifecycle.py:326 paramater sed-password is shorter than 8.*'
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/general/security/sed/test_sed_password.py::test_password_length_negative
+
 ## NVOS - commented the ignore for debug
 #- Errors_list:
 #    - '.* ERR auditd\[\d+\]: queue to plugins is full - dropping event.*'
