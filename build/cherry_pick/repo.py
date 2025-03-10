@@ -120,7 +120,7 @@ class Repo:
         return self._parse_lines_to_commits([str(line, 'utf-8') for line in process.stdout.splitlines()])
 
     def find_commit_by_subject(self, subject: str)->list[GitCommit]:
-        subject = subject.replace('"', '\\"')
+        subject = subject.replace('"', '\\"').replace("`", "\\`")
         process = subprocess.run(
             f'git --no-pager log --pretty=format:"%H|%ct|%at|%s" --grep="{subject}" -F',
             stdout=subprocess.PIPE,

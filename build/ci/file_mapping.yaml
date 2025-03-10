@@ -22,3 +22,4 @@ SONIC_BAT_ONLY:
 SONIC_COMMUNITY_BAT_ONLY:
   - tests
   - ansible/roles/test/files/ptftests
+  - build/cherry_pick  # The utility scripts for cherry pick from sonic-mgmt community

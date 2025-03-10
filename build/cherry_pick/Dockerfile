@@ -25,7 +25,7 @@ RUN set -e \
     && git config --global gitreview.port 443 \
     && git config --global gitreview.scheme https \
     && git config --global gitreview.project r/a/switchx/sonic/sonic-mgmt \
-    && apt update && apt install -y git-review
+    && apt update && apt install -y git-review vim
 ENV GERRIT_USERNAME=${GERRIT_USERNAME} \
     GEERIT_API_KEY=${GERRIT_API_TOKEN}
 COPY . /root/workspace
