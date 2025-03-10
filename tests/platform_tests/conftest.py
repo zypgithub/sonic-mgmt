@@ -212,8 +212,8 @@ def is_sw_control_feature_enabled(duthost):
 @pytest.fixture(scope="module")
 def get_sw_control_ports(duthost, is_sw_control_feature_enabled, conn_graph_facts):
     if is_sw_control_feature_enabled:
-        fw_ports = get_ports_supporting_im(duthost, conn_graph_facts)
-        return fw_ports
+        sw_ports = get_ports_supporting_im(duthost, conn_graph_facts)
+        return sw_ports
 
 
 @pytest.fixture(scope="module")

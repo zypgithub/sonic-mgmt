@@ -3,7 +3,6 @@ import allure
 
 from tests.common.fixtures.conn_graph_facts import conn_graph_facts  # noqa F401
 from .util import check_sfp_eeprom_info, is_support_dom, get_pci_cr0_path, get_pciconf0_path
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from tests.common.platform.transceiver_utils import parse_sfp_eeprom_infos
 
 pytestmark = [
@@ -30,7 +29,7 @@ def sfp_test_intfs_to_dom_map(duthosts, rand_one_dut_hostname, conn_graph_facts,
     sfp_test_intf_list = list(
         conn_graph_facts["device_conn"][duthost.hostname].keys())
 
-    if get_sw_control_ports and is_redmine_issue_active([3669629])[0]:
+    if get_sw_control_ports:
         # Exclude get_sw_control_ports from sfp_test_intf_list
         sfp_test_intf_list = [port for port in sfp_test_intf_list if port not in get_sw_control_ports]
 

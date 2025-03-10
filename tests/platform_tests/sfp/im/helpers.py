@@ -287,18 +287,22 @@ def emulate_interface_plug_in_out(duthost, interface, plug_in=True):
                       "Port did not come down after plug out event")
 
 
-def get_split_ports(duthost, port_index):
+def get_split_ports(duthost, port_index, include_down_ports=False):
     """
     @summary: This method is for check
     @param: duthost: duthosts fixture
     @param: port_index: logical port index
+    @param: include_down_ports: If True, includes ports with status 'down' in the result.
+                                If False, returns only ports with status 'up'.
+                                Default is False.
     @return: list of split port names
     """
     config_facts = duthost.config_facts(host=duthost.hostname, source="running")['ansible_facts']
     split_port_alias_pattern = r"etp{}[a-z]".format(port_index)
-    split_up_ports = [p for p, v in list(config_facts['PORT'].items()) if v.get('admin_status', None) == 'up' and
-                      re.match(split_port_alias_pattern, v['alias'])]
-    return split_up_ports
+    split_ports = [p for p, v in list(config_facts['PORT'].items())
+                   if ((v.get('admin_status') == 'up') or (include_down_ports))
+                   and re.match(split_port_alias_pattern, v['alias'])]
+    return split_ports
 
 
 def get_ports_supporting_im(duthost, conn_graph_facts):
@@ -324,7 +328,7 @@ def get_ports_supporting_im(duthost, conn_graph_facts):
         cmd = duthost.shell(f"sudo cat /sys/module/sx_core/asic0/module{int(port_number) - 1}/control")
         if int(cmd['stdout']) == IM_ENABLED:
             # Check if port is split
-            split_ports = get_split_ports(duthost, int(port_number))
+            split_ports = get_split_ports(duthost, int(port_number), include_down_ports=True)
             if split_ports:
                 ports_with_im_support += split_ports
             else:
