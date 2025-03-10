@@ -68,7 +68,7 @@ def init_arg_parser()->Args:
     args = Args(branch=parsed_args.branch, target_branch=target_branch, since=parsed_args.since,
                 until=parsed_args.until, skip=parsed_args.skip, log_level=parsed_args.loglevel,
                 recipients=parsed_args.recipients.split(",") if parsed_args.recipients else "",
-                dryrun=parsed_args.dryrun,
+                dry_run=parsed_args.dry_run,
                 reset=parsed_args.reset,
                 repo_path=parsed_args.repo_path)
     last_successful_commit_file = Path(f"{args.branch}.LAST_SUCCESS")

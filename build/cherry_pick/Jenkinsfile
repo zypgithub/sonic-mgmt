@@ -83,7 +83,6 @@ pipeline {
                                 --repo_path /root/sonic-mgmt --no-dry-run ${skipCherryPickParam}
                             if [ -f "${params.BRANCH}.LAST_SUCCESS" ]; then
                                 ls -lh ${params.BRANCH}.LAST_SUCCESS;
-                                chmod 666 ${params.BRANCH}.LAST_SUCCESS;
                             fi
                         '
                         """

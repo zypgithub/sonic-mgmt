@@ -1,3 +1,5 @@
+import os
+
 from repo import Repo
 from logger import logger
 from args import init_arg_parser, Args
@@ -32,16 +34,19 @@ def main(args: Args, git_repo: Repo):
     has_conflict, ready_for_review, tried_commits = git_repo.cherry_pick_commits(non_skip_commits_list)
     logger.info(f"has_conflict: {has_conflict}, ready_for_review: {ready_for_review}, tried_commits: {len(tried_commits)}")
     cr_on_top = ""
-    if ready_for_review and not args.dryrun:
+    if ready_for_review and not args.dry_run:
         review_output = git_repo.git_review()
         logger.info(f"review output: {review_output}")
         cr_links = extract_cr_links(review_output)
         add_topic_and_plus_2(cr_links)
+        does_last_success_file_exist = os.path.isfile(f"{args.branch}.LAST_SUCCESS")
         with open(f"{args.branch}.LAST_SUCCESS", "w") as f:
             f.write(str(tried_commits[-2]) if has_conflict else str(tried_commits[-1]))
+        if not does_last_success_file_exist:
+            os.chmod(f"{args.branch}.LAST_SUCCESS", 0o666)
         if cr_links:
             cr_on_top = cr_links[-1]
-    if len(args.recipients) > 0 and len(tried_commits) > 0 and not args.dryrun:
+    if len(args.recipients) > 0 and len(tried_commits) > 0 and not args.dry_run:
         send_email(args.recipients, has_conflict, tried_commits, cr_on_top, args.branch)
 
 if __name__ == "__main__":
