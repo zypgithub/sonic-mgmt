@@ -210,7 +210,7 @@ class MyLocators():
 
 
 class MySIDs(MyLocators):
-    TUNNEL_MODE = [SRv6.uniform_mode, SRv6.pipe_mode]
+    TUNNEL_MODE = [SRv6.pipe_mode]
     MY_SID_LIST = [
         [MyLocators.my_locator_list[0][0], MyLocators.my_locator_list[0][1], SRv6.uN, 'default'],
         [MyLocators.my_locator_list[1][0], MyLocators.my_locator_list[1][1], SRv6.uN, 'default'],
