@@ -255,6 +255,7 @@ def do_agg_test(discard_group, pkt, ptfadapter, duthost, ports_info, sniff_ports
     exp_pkt = expected_packet_mask(pkt, ip_ver=ip_ver)
     testutils.verify_no_packet_any(ptfadapter, exp_pkt, ports=sniff_ports, timeout=1)
 
+    time.sleep(1)
     # Some test cases will not increase the drop counter consistently on certain platforms
     if skip_counter_check:
         logger.info("Skipping counter check")
