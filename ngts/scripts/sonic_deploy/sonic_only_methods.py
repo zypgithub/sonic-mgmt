@@ -13,7 +13,7 @@ from ngts.scripts.sonic_deploy.community_only_methods import get_generate_minigr
     reboot_validation, execute_script, is_bf_topo, is_dualtor_topo, is_dualtor_aa_topo, generate_minigraph, \
     config_y_cable_simulator, add_host_for_y_cable_simulator
 from retry.api import retry_call
-from ngts.helpers.run_process_on_host import run_background_process_on_host, wait_until_background_procs_done
+from ngts.helpers.run_process_on_host import run_background_process_on_host
 from ngts.common.util import get_installed_dpu_info
 
 logger = logging.getLogger()
@@ -81,12 +81,13 @@ class SonicInstallationSteps:
         Start background threads for community setup
         """
         if neighbor_type == 'vsonic':
-            logger.info(f"Starting vsonic VMs")
+            logger.info("Starting vsonic VMs")
             SonicInstallationSteps.start_vsonic_vms(ansible_path=ansible_path,
                                                     setup_name=setup_name,
                                                     dut_names=[dut_name],
                                                     sonic_topo=sonic_topo)
-        add_topo_cmd = SonicInstallationSteps.get_add_topology_cmd(setup_name, dut_name, sonic_topo, neighbor_type, ptf_tag, hwsku)
+        add_topo_cmd = SonicInstallationSteps.get_add_topology_cmd(setup_name, dut_name, sonic_topo, neighbor_type,
+                                                                   ptf_tag, hwsku)
         run_background_process_on_host(threads_dict, 'add_topology', add_topo_cmd, timeout=3600, exec_path=ansible_path)
         if (not is_bf_topo(sonic_topo) and not is_dualtor_topo(sonic_topo) and "mtvr-hippo-03" != dut_name and
                 "mtvr-hippo-02" != dut_name and 'bobcat' not in dut_name and "r-moose-01" != dut_name and
@@ -262,7 +263,7 @@ class SonicInstallationSteps:
 
             for topo in topo_list:
                 if cached_vm_type == 'vsonic':
-                    logger.info(f"Stopping vsonic VMs")
+                    logger.info("Stopping vsonic VMs")
                     SonicInstallationSteps.stop_vsonic_vms(ansible_path=ansible_path,
                                                            setup_name=setup_name,
                                                            dut_names=dut_names,
@@ -436,15 +437,18 @@ class SonicInstallationSteps:
         """
         ansible_path = setup_info['ansible_path']
         cli = SonicInstallationSteps.get_dut_cli(setup_info)
-        cli.cli_obj.general.update_platform_params(platform_params, setup_name)
-        apply_base_config = False if is_performance else apply_base_config
-        cli.cli_obj.general.deploy_image_post_installtion(topology_obj, apply_base_config=apply_base_config,
-                                                          setup_name=setup_name,
-                                                          platform_params=platform_params,
-                                                          reboot_after_install=reboot_after_install,
-                                                          configure_dns=True, disable_ztp=True,
-                                                          setup_info=setup_info,
-                                                          dut_alias=dut_alias)
+        for dut in setup_info['duts']:
+            cli = dut['cli_obj']
+            dut_alias = dut['dut_alias']
+            cli.cli_obj.general.update_platform_params(platform_params, setup_name)
+            apply_base_config = False if is_performance else apply_base_config
+            cli.cli_obj.general.deploy_image_post_installtion(topology_obj, apply_base_config=apply_base_config,
+                                                              setup_name=setup_name,
+                                                              platform_params=platform_params,
+                                                              reboot_after_install=reboot_after_install,
+                                                              configure_dns=True, disable_ztp=True,
+                                                              setup_info=setup_info,
+                                                              dut_alias=dut_alias)
         dut_name = setup_info['duts'][0]['dut_name']
         dut_platform_path = f'/usr/share/sonic/device/{platform_params["platform"]}'
         sonic_mgmt_hwsku_path = '/usr/share/sonic/device/x86_64-kvm_x86_64-r0'
