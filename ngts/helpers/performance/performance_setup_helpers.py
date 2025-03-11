@@ -19,7 +19,109 @@ from ngts.cli_wrappers.dvs.dvs_cli import DvsCli
 from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
 from ngts.cli_wrappers.sonic.sonic_cli import SonicCli
 
+from dataclasses import dataclass, field
+from typing import Optional, List, Dict, Any, Callable, Tuple
+from collections import namedtuple
+
 logger = logging.getLogger()
+
+# Type alias for validation functions that take Any, float, and List[str] parameters
+ValidationFunc = Callable[[Any, float, List[str]], None]
+
+
+@dataclass
+class Validation:
+    """
+    Represents a validation operation with its function and additional arguments.
+    """
+    func: ValidationFunc
+    extra_args: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class ValidationConfig:
+    """
+    Configuration class for managing various validation settings and thresholds.
+
+    Attributes:
+        players: Test players configuration
+        test_name (str): Name of the test being run
+        scenario (str): Test scenario identifier
+        chip_type (str): Type of chip being tested
+        run_validate_counters (bool): Whether to run counter validations
+        samples_params_dict (Dict): Parameters for sampling configuration
+        tc_occ_threshold (float): Traffic class occupancy threshold
+        temperature_threshold (float): Maximum allowed temperature
+        bw_threshold (float, optional): Bandwidth threshold
+        power_threshold (float, optional): Power consumption threshold
+        port_list (List[str], optional): List of ports to validate
+        skip_first_counters_iteration (bool): Whether to skip first counter check
+        additional_validations (List[Validation], optional): Additional validations to run from test
+    """
+    players: Any
+    test_name: str
+    scenario: str
+    chip_type: str
+    run_validate_counters: bool = True
+    samples_params_dict: Dict = field(default_factory=lambda: PerfConsts.SAMPLES_PARAMS)
+    tc_occ_threshold: float = PerfConsts.OCC_AVG_TH
+    temperature_threshold: float = PerfConsts.TEMPERATURE_TH
+    bw_threshold: Optional[float] = None
+    power_threshold: Optional[float] = None
+    port_list: Optional[List[str]] = None
+    skip_first_counters_iteration: Optional[bool] = False
+    additional_validations: Optional[List[Validation]] = field(default_factory=dict)
+
+    def get_validations(self) -> Dict[str, Validation]:
+        """
+        Returns a dictionary of enabled validation configurations.
+
+        Each validation is only included if its corresponding threshold/flag is set.
+
+        Validation is of type (function_pointer, {'name of function argument': function argument value})
+        E.G: Validation(validate_counters, {'skip_first_counters_iteration': True})
+
+        Returns:
+            Dict[str, Validation]: Dictionary mapping validation names to their configurations
+        """
+        validations = {
+            # Counter validation - checks for drops and other counters (such as POC)
+            'counters': Validation(
+                validate_counters,
+                {'skip_first_counters_iteration': self.skip_first_counters_iteration}
+            ) if self.run_validate_counters else None,
+
+            # Bandwidth validation - ensures bandwidth meets threshold
+            'bandwidth': Validation(
+                validate_bw,
+                {'bw_threshold': self.bw_threshold}
+            ) if self.bw_threshold is not None else None,
+
+            # Traffic class validation - checks occupancy levels
+            'tc': Validation(
+                validate_tc,
+                {'tc_occ_threshold': self.tc_occ_threshold}
+            ) if self.tc_occ_threshold is not None else None,
+
+            # Temperature validation - ensures within limits
+            'temperature': Validation(
+                validate_temperature,
+                {'temperature_threshold': self.temperature_threshold}
+            ) if self.temperature_threshold is not None else None,
+
+            # Power consumption validation - checks power usage
+            'power': Validation(
+                validate_power,
+                {
+                    'players': self.players,
+                    'test_name': self.test_name,
+                    'chip_type': self.chip_type,
+                    'power_threshold': self.power_threshold
+                }
+            ) if self.power_threshold is not None else None,
+        }
+        validations.update(self.additional_validations)
+        return validations
 
 
 def apply_test_configuration(players, scenario, conf_args,
@@ -112,32 +214,52 @@ def attach_json_to_allure(json_path, attachment_name):
     return json_obj
 
 
-def run_validation(players, test_name, scenario, chip_type, bw_threshold,
-                   samples_params_dict=PerfConsts.SAMPLES_PARAMS,
-                   tc_occ_threshold=PerfConsts.OCC_AVG_TH,
-                   temperature_threshold=PerfConsts.TEMPERATURE_TH,
-                   power_threshold=None, run_validate_counters=True,
-                   port_list=None):
-    with allure.step("Run traffic validation on Json results"):
-        traffic_validation_jsons_list = validate_traffic_results(players, test_name, scenario, samples_params_dict)
+def run_validation(config: ValidationConfig):
+    """
+    Executes traffic validation based on the provided configuration.
 
+    Args:
+        config (ValidationConfig): Configuration object containing validation settings
+
+    Returns:
+        list: List of traffic validation JSON results
+
+    Raises:
+        TestIssue: If any validation violations are detected
+    """
+    with allure.step("Run traffic validation on Json results"):
+        # Get traffic validation results for the configured test
+        traffic_validation_jsons_list = validate_traffic_results(players=config.players, test_name=config.test_name,
+                                                                 scenario=config.scenario,
+                                                                 samples_params_dict=config.samples_params_dict)
+
+        # Process each traffic validation JSON result
         for traffic_json in traffic_validation_jsons_list:
             violations_list = []
-            if run_validate_counters:
-                validate_counters(traffic_json, violations_list)
-            if bw_threshold:
-                validate_bw(traffic_json, bw_threshold, violations_list)
-            if tc_occ_threshold:
-                validate_tc(traffic_json, tc_occ_threshold, violations_list)
-            if temperature_threshold:
-                validate_temperature(traffic_json, temperature_threshold, violations_list)
-            if power_threshold:
-                power_df_with_total, power_df_by_collectors_group_with_total = validate_power(players, chip_type, traffic_json, power_threshold, violations_list)
-                add_test_mongo_metadata(test_name, {MongoDbConsts.POWER_TOTAL: power_df_with_total.to_dict(orient='records'),
-                                                    MongoDbConsts.POWER_BY_COLLECTORS: power_df_by_collectors_group_with_total.to_dict(orient='records')})
+            skipped_validations = []
+            validations = {}
+
+            # Separate enabled and disabled validations from config
+            for name, validation in config.get_validations().items():
+                if validation is None:
+                    # Track disabled/skipped validations
+                    skipped_validations.append(name)
+                else:
+                    # Store enabled validations
+                    validations[name] = validation
+
+            # Log validation execution plan
+            logger.info(f"Skipped validations: {skipped_validations}\n")
+            logger.info(f"Validations to run: {list(validations.keys())}\n")
+
+            for name, validation in validations.items():
+                # Run validation function with its extra arguments and collect violations
+                validation.func(traffic_json, **(validation.extra_args or {}), violations_list=violations_list)
+
             if violations_list:
                 raise TestIssue("\n".join(violations_list))
-    return traffic_validation_jsons_list
+
+        return traffic_validation_jsons_list
 
 
 def set_ports_admin_state(players, port_list, port_state="up", step="Test Body"):

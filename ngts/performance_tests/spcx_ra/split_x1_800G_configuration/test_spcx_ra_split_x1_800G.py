@@ -4,10 +4,12 @@ import pytest
 from ngts.constants.constants import CliType, InfraConst
 from ngts.helpers.performance.performance_setup_helpers import (restore_basic_configuration, apply_test_configuration,
                                                                 run_traffic, run_validation, get_topology_obj,
-                                                                skip_test_on_unsupported_os, set_allure_title)
+                                                                skip_test_on_unsupported_os, set_allure_title,
+                                                                ValidationConfig)
 from ngts.helpers.performance.performance_db_helpers import add_test_mongo_metadata
 from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts, MongoDbConsts
 from ngts.performance_tests.spcx_ra.conftest import get_spcx_ra_spine_traffic, get_spcx_ra_leaf_traffic
+from infra.tools.redmine.redmine_api import is_redmine_issue_active
 logger = logging.getLogger()
 
 
@@ -39,12 +41,12 @@ class TestSPCXRA_x1Split_800G:
             run_traffic(self.players, self.scenario, self.traffic_jsons)
 
         with allure.step(f"Verifying the traffic for packet size {packet_size}"):
-            run_validation(players=self.players, test_name=test_name, scenario=self.scenario,
-                           chip_type=self.chip_type,
-                           bw_threshold=SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size],
-                           samples_params_dict=PerfConsts.SAMPLES_PARAMS,
-                           tc_occ_threshold=None,
-                           power_threshold=self.power_thresholds_by_chip_type)
+            config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
+                                      chip_type=self.chip_type,
+                                      bw_threshold=SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size],
+                                      tc_occ_threshold=None,
+                                      power_threshold=self.power_thresholds_by_chip_type)
+            run_validation(config)
 
     @pytest.mark.parametrize("packet_size", PerfConsts.PACKET_SIZE_LIST)
     @allure.title('test_ar_perf_max_bandwidth_ibm')
@@ -58,12 +60,15 @@ class TestSPCXRA_x1Split_800G:
             run_traffic(self.players, self.scenario, self.traffic_jsons)
 
         with allure.step(f"Verifying the traffic for packet size {packet_size}"):
-            run_validation(players=self.players, test_name=test_name, scenario=self.scenario,
-                           chip_type=self.chip_type,
-                           bw_threshold=SPCXRAConsts.DUT_TX_UTIL_IBM_TH_DICT[packet_size],
-                           samples_params_dict=PerfConsts.SAMPLES_PARAMS,
-                           tc_occ_threshold=None,
-                           power_threshold=self.power_thresholds_by_chip_type)
+            # TODO: Remove this once the issue 4348288 is fixed (change bw_threshold to SPCXRAConsts.DUT_TX_UTIL_IBM_TH_DICT[packet_size])
+            bw_threshold = None
+            config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
+                                      chip_type=self.chip_type,
+                                      bw_threshold=bw_threshold,
+                                      samples_params_dict=PerfConsts.SAMPLES_PARAMS,
+                                      tc_occ_threshold=None,
+                                      power_threshold=self.power_thresholds_by_chip_type)
+            run_validation(config)
 
     @pytest.mark.parametrize("packet_size", PerfConsts.PACKET_SIZE_LIST)
     @allure.title('test_ar_perf_max_bandwidth_leaf')
@@ -83,9 +88,12 @@ class TestSPCXRA_x1Split_800G:
             run_traffic(self.players, self.scenario, leaf_traffic_jsons)
 
         with allure.step(f"Verifying the traffic for packet size {packet_size}"):
-            run_validation(players=self.players, test_name=test_name, scenario=self.scenario,
-                           chip_type=self.chip_type,
-                           bw_threshold=SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size],
-                           samples_params_dict=PerfConsts.SAMPLES_PARAMS,
-                           tc_occ_threshold=None,
-                           power_threshold=self.power_thresholds_by_chip_type)
+            # TODO: Remove this once the issue 4348288 is fixed (change skip_first_counters_iteration to False)
+            skip_first_counters_iteration = True
+            config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
+                                      chip_type=self.chip_type,
+                                      bw_threshold=SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size],
+                                      power_threshold=self.power_thresholds_by_chip_type,
+                                      tc_occ_threshold=None, skip_first_counters_iteration=skip_first_counters_iteration)
+
+            run_validation(config)

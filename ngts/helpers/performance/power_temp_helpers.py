@@ -1,7 +1,8 @@
 import re
 import allure
 import pandas as pd
-from ngts.constants.performance_constants import PerfConsts, SPCControllers, PowerConsts, ValidationConsts
+from ngts.constants.performance_constants import PerfConsts, SPCControllers, PowerConsts, ValidationConsts, MongoDbConsts
+from ngts.helpers.performance.performance_db_helpers import add_test_mongo_metadata
 
 
 def validate_temperature(traffic_json, temperature_threshold, violations_list):
@@ -18,7 +19,25 @@ def validate_temperature(traffic_json, temperature_threshold, violations_list):
                                    f"please check {higher_temperature_samples}")
 
 
-def validate_power(players, chip_type, traffic_json, power_threshold, violations_list):
+def validate_power(traffic_json, players, test_name, chip_type, power_threshold, violations_list):
+    """
+    Validates power consumption samples against defined thresholds and generates power consumption reports.
+
+    This function also attaches the power consumption dataframe to mongo DB
+
+    Args:
+        traffic_json (dict): JSON containing power samples data
+        players (dict): Dictionary containing test players, including DUT CLI object
+        test_name (str): Name of the test being executed
+        chip_type (str): Type of chip being tested (e.g., 'SPC3')
+        power_threshold (dict): Dictionary containing power thresholds for different collectors
+        violations_list (list): List to store any power threshold violations
+
+    Returns:
+        tuple: A tuple containing two pandas DataFrames:
+            - power_df_with_total: Detailed power consumption data for all collectors with total
+            - power_df_by_collectors_group_with_total: Summarized power consumption by collector groups with total
+    """
     with allure.step(f"Validate all power samples are below the power_thresholds"):
         dut_cli_obj = players['dut']['cli']
         power_samples = traffic_json[ValidationConsts.POWER_SAMPLES]
@@ -29,6 +48,9 @@ def validate_power(players, chip_type, traffic_json, power_threshold, violations
         power_df_by_collectors_group_with_total = get_sum_power_df_by_collectors_group(power_df)
         allure.attach(power_df_by_collectors_group_with_total.to_html(),
                       'Power summary by collectors', allure.attachment_type.HTML)
+        add_test_mongo_metadata(test_name, {
+            MongoDbConsts.POWER_TOTAL: power_df_with_total.to_dict(orient='records'),
+            MongoDbConsts.POWER_BY_COLLECTORS: power_df_by_collectors_group_with_total.to_dict(orient='records')})
         return power_df_with_total, power_df_by_collectors_group_with_total
 
 

@@ -182,18 +182,43 @@ def validate_tc(traffic_json, tc_occ_threshold, violations_list):
                                    f"please check {higher_tc_samples}")
 
 
-def validate_counters(traffic_json, violations_list):
+def validate_counters(traffic_json, skip_first_counters_iteration, violations_list):
+    """
+    Validates counter samples from traffic data, optionally skipping the first iteration.
+
+    Args:
+        traffic_json (dict): JSON containing traffic counter samples
+        skip_first_counters_iteration (bool): Whether to skip validating the first counter sample
+        violations_list (list): List to store any validation violations found
+    """
     counters_samples = traffic_json[ValidationConsts.COUNTERS_SAMPLES]
+
     counters_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
+
+    if skip_first_counters_iteration:
+        counters_samples.popitem(last=False)
+
+    # Process each counter sample
     for sample_id, counters_sample in counters_samples.items():
         validate_counters_sample(sample_id, counters_sample, violations_list)
 
 
 def validate_counters_sample(sample_id, counters_sample, violations_list):
+    """
+    Validates a single counter sample for any non-zero counter values.
+
+    Args:
+        sample_id (str): Identifier for the counter sample
+        counters_sample (dict): Sample data containing counter values
+        violations_list (list): List to store any validation violations found
+    """
     counters_df = counters_sample[ValidationConsts.COUNTERS_DATAFRAME]
+
+    # Check each counter dictionary in the dataframe
     for counters_dict in counters_df:
         for counter_name in PerfConsts.COUNTERS:
             counter_value = counters_dict[counter_name]
+
             if counter_value > 0:
                 port = counters_dict[ValidationConsts.PORT]
                 violations_list.append(f"Port {port} {counter_name}: {counter_value} > 0, "

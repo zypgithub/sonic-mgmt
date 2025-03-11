@@ -41,12 +41,12 @@ class TestSPCXRA_x2Split_400G:
             run_traffic(self.players, self.scenario, self.traffic_jsons)
 
         with allure.step(f"Verifying the traffic for packet size {packet_size}"):
-            run_validation(players=self.players, test_name=test_name, scenario=self.scenario,
-                           chip_type=self.chip_type,
-                           bw_threshold=SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size],
-                           samples_params_dict=PerfConsts.SAMPLES_PARAMS,
-                           tc_occ_threshold=PerfConsts.OCC_AVG_TH,
-                           power_threshold=self.power_thresholds_by_chip_type)
+            config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
+                                      chip_type=self.chip_type,
+                                      bw_threshold=SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size],
+                                      tc_occ_threshold=PerfConsts.OCC_AVG_TH,
+                                      power_threshold=self.power_thresholds_by_chip_type)
+            run_validation(config)
 
     @pytest.mark.parametrize("packet_size", PACKET_SIZE_LIST)
     @allure.title('test_ar_perf_max_bandwidth_ibm')
@@ -61,9 +61,10 @@ class TestSPCXRA_x2Split_400G:
             run_traffic(self.players, self.scenario, self.traffic_jsons)
 
         with allure.step(f"Verifying the traffic for packet size {packet_size}"):
-            run_validation(players=self.players, test_name=test_name, scenario=self.scenario,
-                           chip_type=self.chip_type,
-                           bw_threshold=SPCXRAConsts.DUT_TX_UTIL_IBM_TH_DICT[packet_size],
-                           samples_params_dict=PerfConsts.SAMPLES_PARAMS,
-                           tc_occ_threshold=PerfConsts.OCC_AVG_TH,
-                           power_threshold=self.power_thresholds_by_chip_type)
+            config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
+                                      chip_type=self.chip_type,
+                                      bw_threshold=SPCXRAConsts.DUT_TX_UTIL_IBM_TH_DICT[packet_size],
+                                      samples_params_dict=PerfConsts.SAMPLES_PARAMS,
+                                      tc_occ_threshold=PerfConsts.OCC_AVG_TH,
+                                      power_threshold=self.power_thresholds_by_chip_type)
+            run_validation(config)

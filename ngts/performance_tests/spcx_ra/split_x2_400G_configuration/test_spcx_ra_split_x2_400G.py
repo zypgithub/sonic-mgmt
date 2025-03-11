@@ -5,7 +5,7 @@ import pytest
 import random
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.helpers.performance.traffic_helpers import validate_bw_per_ports, validate_counters_sample
-from ngts.helpers.performance.performance_setup_helpers import (run_traffic, run_validation, get_topology_obj,
+from ngts.helpers.performance.performance_setup_helpers import (ValidationConfig, run_traffic, run_validation, get_topology_obj,
                                                                 validate_traffic_results,
                                                                 set_ports_admin_state,
                                                                 skip_test_on_unsupported_os, get_obj_method,
@@ -51,12 +51,12 @@ class TestSPCXRA_x2Split_400G:
             run_traffic(self.players, self.scenario, self.traffic_jsons)
 
         with allure.step(f"Verifying the traffic for packet size {packet_size}"):
-            run_validation(players=self.players, test_name=test_name, scenario=self.scenario,
-                           chip_type=self.chip_type,
-                           bw_threshold=SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size],
-                           samples_params_dict=PerfConsts.SAMPLES_PARAMS,
-                           tc_occ_threshold=PerfConsts.OCC_AVG_TH,
-                           power_threshold=self.power_thresholds_by_chip_type)
+            config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
+                                      chip_type=self.chip_type,
+                                      bw_threshold=SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size],
+                                      tc_occ_threshold=PerfConsts.OCC_AVG_TH,
+                                      power_threshold=self.power_thresholds_by_chip_type)
+            run_validation(config)
 
     @pytest.mark.parametrize("packet_size", PACKET_SIZE_LIST)
     @allure.title('test_ar_perf_max_bandwidth_ibm')
@@ -70,12 +70,12 @@ class TestSPCXRA_x2Split_400G:
             run_traffic(self.players, self.scenario, self.traffic_jsons)
 
         with allure.step(f"Verifying the traffic for packet size {packet_size}"):
-            run_validation(players=self.players, test_name=test_name, scenario=self.scenario,
-                           chip_type=self.chip_type,
-                           bw_threshold=SPCXRAConsts.DUT_TX_UTIL_IBM_TH_DICT[packet_size],
-                           samples_params_dict=PerfConsts.SAMPLES_PARAMS,
-                           tc_occ_threshold=PerfConsts.OCC_AVG_TH,
-                           power_threshold=self.power_thresholds_by_chip_type)
+            config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
+                                      chip_type=self.chip_type,
+                                      bw_threshold=SPCXRAConsts.DUT_TX_UTIL_IBM_TH_DICT[packet_size],
+                                      tc_occ_threshold=PerfConsts.OCC_AVG_TH,
+                                      power_threshold=self.power_thresholds_by_chip_type)
+            run_validation(config)
 
     @allure.title('test_ar_perf_link_flap')
     @pytest.mark.parametrize("packet_size", PACKET_SIZE_LIST)
@@ -83,9 +83,6 @@ class TestSPCXRA_x2Split_400G:
     @allure.description('With full line rate traffic, verify that traffic converges '
                         'to the initial state after an interface flap.')
     def test_ar_perf_link_flap(self, request, packet_size, flap_scenario):
-        # TODO: remove when bug 4267499 is resolved
-        if is_redmine_issue_active([4267499])[0] and flap_scenario == "toggle_multiple_ports":
-            pytest.xfail(f"test_ar_perf_link_flap[toggle_multiple_ports] expected to fail while RM 4267499 is active")
 
         with allure.step(f"Set test correct allure title with {self.ip} parameter"):
             test_name = set_allure_title(request, self.is_ipv6)
@@ -98,15 +95,15 @@ class TestSPCXRA_x2Split_400G:
 
         with allure.step(f"Verifying the BW utilization is at least {SPCXRAConsts.DUT_TX_UTIL_IBM_TH_DICT[packet_size]}% "
                          f"on all the ports"):
-            traffic_validation_jsons_list = run_validation(players=self.players, test_name=test_name,
-                                                           scenario=self.scenario,
-                                                           chip_type=self.chip_type,
-                                                           bw_threshold=SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size],
-                                                           samples_params_dict=PerfConsts.SAMPLES_PARAMS,
-                                                           tc_occ_threshold=PerfConsts.OCC_AVG_TH,
-                                                           power_threshold=self.power_thresholds_by_chip_type,
-                                                           run_validate_counters=False)
-            self.validate_counters_post_congestion(traffic_validation_jsons_list)
+            # TODO: Remove this once the issue 4267499 is fixed (change bw_threshold to SPCXRAConsts.DUT_TX_UTIL_IBM_TH_DICT[packet_size] )
+            bw_threshold = None if flap_scenario == "toggle_multiple_ports" else SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size]
+            config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
+                                      chip_type=self.chip_type,
+                                      power_threshold=self.power_thresholds_by_chip_type,
+                                      bw_threshold=bw_threshold,
+                                      skip_first_counters_iteration=True)
+
+            traffic_validation_jsons_list = run_validation(config)
 
     @allure.title('test_ar_perf_reload_reboot')
     @allure.description('With full line rate traffic, verify that traffic converges to'
@@ -121,23 +118,23 @@ class TestSPCXRA_x2Split_400G:
             run_traffic(self.players, self.scenario, self.traffic_jsons)
 
         with allure.step(f"Verifying the traffic for packet size {packet_size}"):
-            run_validation(players=self.players, test_name=test_name, scenario=self.scenario,
-                           chip_type=self.chip_type,
-                           bw_threshold=SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size],
-                           samples_params_dict=PerfConsts.SAMPLES_PARAMS,
-                           tc_occ_threshold=PerfConsts.OCC_AVG_TH,
-                           power_threshold=self.power_thresholds_by_chip_type)
+            config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
+                                      chip_type=self.chip_type,
+                                      bw_threshold=SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size],
+                                      tc_occ_threshold=PerfConsts.OCC_AVG_TH,
+                                      power_threshold=self.power_thresholds_by_chip_type)
+            run_validation(config)
 
         with allure.step("Rebooting the dut."):
             self.cli_object.general.reboot(self.dut_engine, save_config=True, wait_after_ping=240)
 
         with allure.step(f"Verifying the traffic for packet size {packet_size}"):
-            run_validation(players=self.players, test_name=test_name, scenario=self.scenario,
-                           chip_type=self.chip_type,
-                           bw_threshold=SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size],
-                           samples_params_dict=PerfConsts.SAMPLES_PARAMS,
-                           tc_occ_threshold=PerfConsts.OCC_AVG_TH,
-                           power_threshold=self.power_thresholds_by_chip_type)
+            config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
+                                      chip_type=self.chip_type,
+                                      bw_threshold=SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size],
+                                      tc_occ_threshold=PerfConsts.OCC_AVG_TH,
+                                      power_threshold=self.power_thresholds_by_chip_type)
+            run_validation(config)
 
     def port_hiccup(self, test_name, packet_size):
         port_list = self.cli_object.performance.get_dut_ports()
@@ -188,14 +185,3 @@ class TestSPCXRA_x2Split_400G:
 
             if violations_list:
                 raise TestIssue("\n".join(violations_list))
-
-    def validate_counters_post_congestion(self, validation_jsons_list):
-        violations_list = []
-        for validation_json in validation_jsons_list:
-            counters_samples = validation_json["Counters_samples"]
-            counters_samples.pop('sample_params', None)
-            for sample_idx, (sample_id, counters_sample) in enumerate(counters_samples.items()):
-                if sample_idx != 0:
-                    validate_counters_sample(sample_id, counters_sample, violations_list)
-        if violations_list:
-            raise TestIssue("\n".join(violations_list))

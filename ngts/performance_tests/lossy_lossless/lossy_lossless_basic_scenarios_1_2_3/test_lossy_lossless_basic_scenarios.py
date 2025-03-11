@@ -3,7 +3,7 @@ import logging
 import pytest
 
 from ngts.helpers.general_helper import get_pytest_test_name
-from ngts.helpers.performance.performance_setup_helpers import (run_traffic, run_validation, get_topology_obj,
+from ngts.helpers.performance.performance_setup_helpers import (ValidationConfig, run_traffic, run_validation, get_topology_obj,
                                                                 set_allure_title)
 from ngts.performance_tests.lossy_lossless.lossy_lossless_basic_scenarios_1_2_3.conftest import set_allure_lossy_lossless_title
 from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts
@@ -47,9 +47,8 @@ class TestLossyLossless:
             run_traffic(self.players, self.scenario, self.traffic_jsons)
 
         with allure.step(f"Verifying the traffic for packet size {packet_size}"):
-            run_validation(players=self.players, test_name=test_name, scenario=self.scenario,
-                           chip_type=self.chip_type,
-                           bw_threshold=SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size],
-                           samples_params_dict=PerfConsts.SAMPLES_PARAMS,
-                           tc_occ_threshold=PerfConsts.OCC_AVG_TH,
-                           power_threshold=self.power_thresholds_by_chip_type)
+            config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
+                                      chip_type=self.chip_type, bw_threshold=SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size],
+                                      tc_occ_threshold=PerfConsts.OCC_AVG_TH,
+                                      power_threshold=self.power_thresholds_by_chip_type)
+            run_validation(config)
