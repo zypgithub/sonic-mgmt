@@ -510,6 +510,12 @@ platform_tests/test_cpu_memory_usage.py:
     conditions:
     - "'simx' in platform"
 
+platform_tests/test_intf_fec.py::test_verify_fec_histogram:
+  xfail:
+    reason: "Testcase xfail due to RM issue https://redmine.mellanox.com/issues/4352409"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4352409"
+
 process_monitoring/test_critical_process_monitoring.py:
   skip:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/3464488 and standalone dpu platform"
