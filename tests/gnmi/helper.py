@@ -3,6 +3,7 @@ import logging
 import pytest
 import re
 from datetime import datetime
+import json
 from tests.common.utilities import wait_until
 from tests.common.helpers.gnmi_utils import GNMIEnvironment
 
@@ -581,3 +582,25 @@ def copy_certificate_to_ptf(ptfhost):
     ptfhost.copy(src='gnmiCA.pem', dest='/root/')
     ptfhost.copy(src='gnmiclient.crt', dest='/root/')
     ptfhost.copy(src='gnmiclient.key', dest='/root/')
+
+
+def extract_gnoi_response(output):
+    """
+    Extract the JSON response from the gNOI client output
+
+    Args:
+        output: gNOI client output, the output is in the form of
+                "Module RPC: <JSON response>", e.g. "System Time\n {"time":1735921221909617549}"
+
+    Returns:
+        json response: JSON response extracted from the output
+    """
+    try:
+        if '\n' not in output:
+            logging.error("Invalid output format: {}, expecting 'Module RPC: <JSON response>'.".format(output))
+            return None
+        response_line = output.split('\n')[1]
+        return json.loads(response_line)
+    except json.JSONDecodeError:
+        logging.error("Failed to parse JSON: {}".format(response_line))
+        return None
