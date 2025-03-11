@@ -1943,6 +1943,14 @@ VM4921 ansible_host=10.245.38.84
 VM4922 ansible_host=10.245.38.85
 VM4923 ansible_host=10.245.38.86
 VM4924 ansible_host=10.245.38.87
+VM4925 ansible_host=10.245.38.88
+VM4926 ansible_host=10.245.38.89
+VM4927 ansible_host=10.245.38.90
+VM4928 ansible_host=10.245.38.91
+VM4929 ansible_host=10.245.38.92
+VM4930 ansible_host=10.245.38.93
+VM4931 ansible_host=10.245.38.94
+VM4932 ansible_host=10.245.38.95
 
 [vms_85]
 VM4925 ansible_host=10.245.46.63
