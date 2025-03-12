@@ -440,3 +440,26 @@ def get_nvue_additional_info(duthost, request):
         nvue_info['show_platform_firmware'] = "Error: Unable to fetch 'nv show platform firmware' output"
 
     return nvue_info
+
+def _set_dice_coefficient_threshold(config_file: str, dice_coefficient_threshold: float = 1.0) -> None:
+    """Set the dice coefficient threshold in the config json file.
+
+    Args:
+        config_file: path to the config json file
+        dice_coefficient_threshold: dice coefficient threshold
+    """
+    if not os.path.exists(config_file):
+        raise FileNotFoundError(f"Config file not found: {config_file}")
+    if not os.access(config_file, os.R_OK | os.W_OK):
+        raise PermissionError(f"Insufficient permissions for file: {config_file}")
+    with open(config_file, 'r') as f:
+        lines = f.readlines()
+    with open(config_file, 'w') as f:
+        for line in lines:
+            if '"comparison_threshold":' in line:
+                line = re.sub(
+                    r'"comparison_threshold":.*',
+                    f'"comparison_threshold": {dice_coefficient_threshold}',
+                    line
+                )
+            f.write(line)
