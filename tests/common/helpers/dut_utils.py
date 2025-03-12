@@ -1,9 +1,5 @@
 import logging
 import allure
-import jinja2
-import glob
-import re
-import yaml
 import os
 import jinja2
 import glob
@@ -382,102 +378,6 @@ def get_sai_sdk_dump_file(duthost, dump_file_name):
 
     duthost.fetch(src=compressed_dump_file, dest="/tmp/", flat=True)
     allure.attach.file(compressed_dump_file, dump_file_name, extension=".tar.gz")
-
-
-def create_duthost_console(duthost,localhost, conn_graph_facts, creds):  # noqa F811
-    dut_hostname = duthost.hostname
-    console_host = conn_graph_facts['device_console_info'][dut_hostname]['ManagementIp']
-    if "/" in console_host:
-        console_host = console_host.split("/")[0]
-    console_port = conn_graph_facts['device_console_link'][dut_hostname]['ConsolePort']['peerport']
-    console_type = conn_graph_facts['device_console_link'][dut_hostname]['ConsolePort']['type']
-    console_username = conn_graph_facts['device_console_link'][dut_hostname]['ConsolePort']['proxy']
-
-    console_type = "console_" + console_type
-
-    # console password and sonic_password are lists, which may contain more than one password
-    sonicadmin_alt_password = localhost.host.options['variable_manager']._hostvars[dut_hostname].get(
-        "ansible_altpassword")
-    host = ConsoleHost(console_type=console_type,
-                       console_host=console_host,
-                       console_port=console_port,
-                       sonic_username=creds['sonicadmin_user'],
-                       sonic_password=[creds['sonicadmin_password'], sonicadmin_alt_password],
-                       console_username=console_username,
-                       console_password=creds['console_password'][console_type])
-
-    return host
-
-
-def creds_on_dut(duthost):
-    """ read credential information according to the dut inventory """
-    groups = duthost.host.options['inventory_manager'].get_host(duthost.hostname).get_vars()['group_names']
-    groups.append("fanout")
-    logger.info("dut {} belongs to groups {}".format(duthost.hostname, groups))
-    exclude_regex_patterns = [
-        r'topo_.*\.yml',
-        r'breakout_speed\.yml',
-        r'lag_fanout_ports_test_vars\.yml',
-        r'qos\.yml',
-        r'sku-sensors-data\.yml',
-        r'mux_simulator_http_port_map\.yml'
-        ]
-    files = glob.glob("../ansible/group_vars/all/*.yml")
-    files += glob.glob("../ansible/vars/*.yml")
-    for group in groups:
-        files += glob.glob("../ansible/group_vars/{}/*.yml".format(group))
-    filtered_files = [
-        f for f in files if not re.search('|'.join(exclude_regex_patterns), f)
-    ]
-
-    creds = {}
-    for f in filtered_files:
-        with open(f) as stream:
-            v = yaml.safe_load(stream)
-            if v is not None:
-                creds.update(v)
-            else:
-                logging.info("skip empty var file {}".format(f))
-
-    cred_vars = [
-        "sonicadmin_user",
-        "sonicadmin_password",
-        "docker_registry_host",
-        "docker_registry_username",
-        "docker_registry_password",
-        "public_docker_registry_host"
-    ]
-    hostvars = duthost.host.options['variable_manager']._hostvars[duthost.hostname]
-    for cred_var in cred_vars:
-        if cred_var in creds:
-            creds[cred_var] = jinja2.Template(creds[cred_var]).render(**hostvars)
-    # load creds for console
-    if "console_login" not in list(hostvars.keys()):
-        console_login_creds = {}
-    else:
-        console_login_creds = hostvars["console_login"]
-    creds["console_user"] = {}
-    creds["console_password"] = {}
-
-    creds["ansible_altpasswords"] = []
-
-    # If ansible_altpasswords is empty, add ansible_altpassword to it
-    if len(creds["ansible_altpasswords"]) == 0:
-        creds["ansible_altpasswords"].append(hostvars["ansible_altpassword"])
-
-    passwords = creds["ansible_altpasswords"] + [creds["sonicadmin_password"]]
-    creds['sonicadmin_password'] = get_dut_current_passwd(
-        duthost.mgmt_ip,
-        duthost.mgmt_ipv6,
-        creds['sonicadmin_user'],
-        passwords
-    )
-
-    for k, v in list(console_login_creds.items()):
-        creds["console_user"][k] = v["user"]
-        creds["console_password"][k] = v["passwd"]
-
-    return creds
 
 
 def is_mellanox_devices(hwsku):
