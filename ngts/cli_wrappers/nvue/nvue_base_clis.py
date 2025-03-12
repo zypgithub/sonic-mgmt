@@ -42,6 +42,10 @@ class NvueBaseCli:
         cmd = "nv show {path} {params}".format(path=path, params=op_param)
         if output_format:
             cmd = f'{cmd} --output {output_format}'
+            if output_format == OutputFormat.json and '--color ' not in cmd:
+                # WA to handle a random error where the ANSI control sequences are printed, e.g. in these logs:
+                # https://allure.nvidia.com/allure-docker-service/projects/nvos-bm-10-7-148-248/reports/74/index.html#behaviors/b1a8273437954620fa374b796ffaacdd/618e33db6333e48d/
+                cmd += ' --color off'
         cmd = " ".join(cmd.split())
         cmd = cmd.replace('%2F', '/')
         logging.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
