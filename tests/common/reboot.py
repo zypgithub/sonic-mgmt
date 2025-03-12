@@ -184,16 +184,19 @@ def wait_for_startup(duthost, localhost, delay, timeout, port=SONIC_SSH_PORT):
     hostname = duthost.hostname
     dut_ip = duthost.mgmt_ip
     logger.info('waiting for ssh to startup on {}'.format(hostname))
-    is_ssh_connected, res = ssh_connection_with_retry(
+    is_ssh_connected, res, num_tries = ssh_connection_with_retry(
         localhost=localhost,
         host_ip=dut_ip,
         port=port,
         delay=delay,
         timeout=timeout,
     )
-    if not is_ssh_connected:
+    if num_tries > 1:
         collect_mgmt_config_by_console(duthost, localhost)
-        raise Exception(f'DUT {hostname} did not startup. res: {res}')
+        if not is_ssh_connected:
+            raise Exception(f'DUT {hostname} did not startup. res: {res}')
+        else:
+            raise Exception(f'DUT {hostname} did not startup at first try. res: {res}')
     logger.info('ssh has started up on {}'.format(hostname))
 
 
@@ -596,7 +599,7 @@ def ssh_connection_with_retry(localhost, host_ip, port, delay, timeout):
     }
     short_timeout = 40
     params_to_update_list=[{},{'search_regex': None, 'timeout':short_timeout}]
-    for params_to_update in params_to_update_list:
+    for num_try,params_to_update in enumerate(params_to_update_list):
         iter_connection_params = default_connection_params.copy()
         iter_connection_params.update(params_to_update)
         logger.info(f"Checking ssh connection using the following params: {iter_connection_params}")
@@ -614,7 +617,8 @@ def ssh_connection_with_retry(localhost, host_ip, port, delay, timeout):
             logger.info("Ping to dut was successful")
         else:
             logger.info("Ping to dut failed")
-    return is_ssh_connected, ssh_retry_res
+    num_tries = num_try + 1
+    return is_ssh_connected, ssh_retry_res, num_tries
 
 def collect_mgmt_config_by_console(duthost, localhost):
     logger.info("check if dut is pingable")
