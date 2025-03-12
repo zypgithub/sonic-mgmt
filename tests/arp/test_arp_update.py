@@ -47,7 +47,6 @@ def test_kernel_asic_mac_mismatch(
     tbinfo
 ):
     vlan_name, ipv4_base, ipv6_base, ip_offset = setup_vlan_arp_responder
-
     if 'dualtor' in tbinfo['topo']['name']:
         servers = mux_cable_server_ip(rand_selected_dut)
         intf = random.choice(list(servers))
