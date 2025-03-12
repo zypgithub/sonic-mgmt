@@ -88,6 +88,7 @@ def test_set_platform_ps_redundancy(engines, test_api, required_for_redundancy):
 
 
 @pytest.mark.platform
+@pytest.mark.disable_loganalyzer
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 @pytest.mark.timeout(5 * MINUTE, func_only=True)
 def test_platform_ps_redundancy_functionality(engines, devices, topology_obj, test_api, required_for_redundancy):
