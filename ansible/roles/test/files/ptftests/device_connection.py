@@ -107,16 +107,16 @@ class DeviceConnection:
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         try:
-            client.connect(self.hostname, username=self.username, password=self.password, allow_agent=False)
+            client.connect(self.hostname, username=self.username, password=self.passwords[self.password_index], allow_agent=False)
             ftp_client = client.open_sftp()
             ftp_client.get(remote_path, local_path)
             ftp_client.close()
         except AuthenticationException as authenticationException:
             logger.error('SSH Authentication failure with message: %s' %
                          authenticationException)
-            if self.alt_password is not None:
+            if len(self.passwords) > 1:
                 # attempt retry with alt_password
-                self.password = self.alt_password
+                self.password_index = (self.password_index + 1) % len(self.passwords)
                 raise AuthenticationException
         finally:
             client.close()
