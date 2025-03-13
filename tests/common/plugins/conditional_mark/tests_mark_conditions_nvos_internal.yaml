@@ -422,6 +422,18 @@ tests_nvos/system/ntp/test_system_ntp.py::test_ntp_mgmt_port_listeners:
     conditions:
       - https://redmine.mellanox.com/issues/4211804
 
+tests_nvos/system/ntp/test_system_ntp.py::test_configure_ntp_server:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4357239"
+    conditions:
+      - https://redmine.mellanox.com/issues/4357239
+
+tests_nvos/system/ntp/test_system_ntp.py::test_configure_ntp_server:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4357239"
+    conditions:
+      - https://redmine.mellanox.com/issues/4357239
+
 tests_nvos/system/test_techsupport_commands.py::test_techsupport_size:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3625777"
