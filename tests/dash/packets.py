@@ -108,12 +108,8 @@ def inbound_pl_packets(config, inner_packet_type='udp', vxlan_udp_dport=4789):
     )
 
     exp_inner_packet = generate_inner_packet(inner_packet_type)(
-        # NOTE: NASA is not supporting the rewrite of inner MAC addresses at this moment.
-        # The work is tracked under a separate FR. This change will be reverted when the support is added.
-        #eth_src=pl.ENI_MAC,
-        #eth_dst=pl.REMOTE_MAC,
-        eth_src=pl.REMOTE_MAC,
-        eth_dst=pl.ENI_MAC,
+        eth_src=pl.ENI_MAC,
+        eth_dst=pl.REMOTE_MAC,
         ip_src=pl.PE_CA,
         ip_dst=pl.VM1_CA,
         ip_id=0,
@@ -146,7 +142,7 @@ def inbound_pl_packets(config, inner_packet_type='udp', vxlan_udp_dport=4789):
 
 def outbound_pl_packets(config, outer_encap, inner_packet_type='udp', vxlan_udp_dport=4789, inner_extra_conf={}, vxlan_udp_sport=1234):
     inner_packet = generate_inner_packet(inner_packet_type)(
-        eth_src=pl.REMOTE_MAC,
+        eth_src=pl.VM_MAC,
         eth_dst=pl.ENI_MAC,
         ip_src=pl.VM1_CA,
         ip_dst=pl.PE_CA,
@@ -200,12 +196,8 @@ def outbound_pl_packets(config, outer_encap, inner_packet_type='udp', vxlan_udp_
         exp_inner_packet = scapy.Ether() / scapy.IPv6() / scapy.TCP()
     else:
         exp_inner_packet = scapy.Ether() / scapy.IPv6() / scapy.UDP()
-    # NOTE: NASA is not supporting the rewrite of inner MAC addresses at this moment.
-    # The work is tracked under a separate FR. This change will be reverted when the support is added.
-    #exp_inner_packet[scapy.Ether].src = pl.ENI_MAC
-    #exp_inner_packet[scapy.Ether].dst = pl.REMOTE_MAC
-    exp_inner_packet[scapy.Ether].src = pl.REMOTE_MAC
-    exp_inner_packet[scapy.Ether].dst = pl.ENI_MAC
+    exp_inner_packet[scapy.Ether].src = pl.ENI_MAC
+    exp_inner_packet[scapy.Ether].dst = pl.REMOTE_MAC
     exp_inner_packet[scapy.IPv6].src = exp_overlay_sip
     exp_inner_packet[scapy.IPv6].dst = exp_overlay_dip
     if inner_packet_type == 'tcp':
@@ -229,6 +221,8 @@ def outbound_pl_packets(config, outer_encap, inner_packet_type='udp', vxlan_udp_
     masked_exp_packet.set_do_not_care_packet(scapy.Ether, "src")
     masked_exp_packet.set_do_not_care_packet(scapy.Ether, "dst")
     masked_exp_packet.set_do_not_care_packet(scapy.IP, "chksum")
+    masked_exp_packet.set_do_not_care(336, 48)  # Inner Ether dst
+
 
     return outer_packet, masked_exp_packet
 
