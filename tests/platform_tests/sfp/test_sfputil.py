@@ -341,6 +341,7 @@ def test_check_sfputil_presence(duthosts, enum_rand_one_per_hwsku_frontend_hostn
             assert parsed_presence[intf] == "Present", "Interface presence is not 'Present'"
 
 
+@pytest.mark.device_type('physical')
 @pytest.mark.parametrize("cmd_sfp_error_status",
                          ["sudo sfputil show error-status", "sudo sfputil show error-status --fetch-from-hardware"])
 def test_check_sfputil_error_status(duthosts, enum_rand_one_per_hwsku_frontend_hostname,
@@ -369,15 +370,6 @@ def test_check_sfputil_error_status(duthosts, enum_rand_one_per_hwsku_frontend_h
             intf_index = physical_port_index_map[intf]
             if cmd_sfp_error_status == "sudo sfputil show error-status --fetch-from-hardware"\
                     and is_mellanox_device(duthost) and is_sw_control_enabled(duthost, intf_index):
-                # Currently, the results with fetch-from-hardware or without fetch-from-hardware are different.
-                # 'sudo sfputil show error-status' will fetch the data from db
-                # 'sudo sfputil show error-status --fetch-from-hardware' will fetch it from hardware
-                # Will check with MSFT if they should have the same results.
-                # If the results should be same for both commands,
-                # it is a real issue for 'sudo sfputil show error-status',
-                # and open a design ticket
-                # and removing cmd_sfp_error_status == "sudo sfputil show error-status --fetch-from-hardware"
-                # Otherwise, we will keep the code logic as-is
                 expected_state = get_port_expected_error_state_for_mellanox_device_on_sw_control_enabled(
                     intf, passive_cable_ports[duthost.hostname], cmis_cable_ports_and_ver[duthost.hostname])
             elif "Not supported" in sfp_error_status['stdout']:

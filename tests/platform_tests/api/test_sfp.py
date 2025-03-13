@@ -19,7 +19,7 @@ from tests.common.platform.transceiver_utils import is_sw_control_enabled,\
     get_port_expected_error_state_for_mellanox_device_on_sw_control_enabled
 from tests.common.mellanox_data import is_mellanox_device
 from collections import defaultdict
-from tests.common.platform.device_utils import platform_api_conn    # noqa F401
+
 
 from .platform_api_test_base import PlatformApiTestBase
 
@@ -931,6 +931,7 @@ class TestSfpApi(PlatformApiTestBase):
                             "Transceiver {} power override data is incorrect".format(i))
         self.assert_expectations()
 
+    @pytest.mark.device_type('physical')
     def test_get_error_description(self, duthosts, enum_rand_one_per_hwsku_hostname, localhost,
                                    platform_api_conn, passive_cable_ports, cmis_cable_ports_and_ver):  # noqa F811
         """This function tests get_error_description() API (supported on 202106 and above)"""
