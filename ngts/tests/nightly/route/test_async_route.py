@@ -26,7 +26,7 @@ IPV4 = 'ipv4'
 IPV6 = 'ipv6'
 PCAP_FILE_PATH = '/tmp/1k_packets.pcap'
 TCPDUMP_FILTER = 'udp src port 1234 and dst port 5678'
-EXPECTED_ENHANCEMENT_PERCENTAGE = 20
+TIMING_THRESHOLD_PERCENTS = 10
 
 
 def get_routes_count(dut_engine, ip_version):
@@ -75,9 +75,9 @@ def get_routes_operation_duration(dut_engine, ip_version, initial_routes_count, 
     return execution_time
 
 
-def get_sync_route_timing(ip_version, platform, action, routes_count):
+def get_expected_timing(ip_version, platform, action, routes_count):
     """
-    Retrieve expected timing value with feature disabled for particular ip_version, platform, action and routes_count
+    Retrieve expected timing value for particular ip_version, platform, action and routes_count
 
     :param str ip_version: IP version of routes
     :param str platform: name of the platform
@@ -86,16 +86,18 @@ def get_sync_route_timing(ip_version, platform, action, routes_count):
     :return float: expected timing(in sec) to perform an action
     """
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    timings_db_path = f'{current_dir}/{TIMINGS_DB_FILE}'
-    if os.path.exists(timings_db_path):
-        with open(timings_db_path, 'r') as f:
-            timings = json.loads(f.read())
-            routes_count_key = str(routes_count)
-            expected_timing = timings.get(ip_version, {}).get(platform, {}).get(routes_count_key, {}).get(action)
-            if expected_timing:
-                return expected_timing
-    logger.warning(f'Expected execution time without feature enabled for {ip_version} {platform} {action} '
-                   f'{routes_count} routes not found')
+    timings_db_paths = [f'{current_dir}/{TIMINGS_DB_FILE}', SHARED_TIMINGS_DB_FILE]
+    for timings_db_path in timings_db_paths:
+        if os.path.exists(timings_db_path):
+            with open(timings_db_path, 'r') as f:
+                timings = json.loads(f.read())
+                routes_count_key = str(routes_count)
+                expected_timing = timings.get(ip_version, {}).get(platform, {}).get(routes_count_key, {}).get(action)
+                if expected_timing:
+                    if timings_db_path == SHARED_TIMINGS_DB_FILE:
+                        logger.warning(f"Using shared timings DB file: {timings_db_path} for expected timing")
+                    return expected_timing
+    logger.warning(f'Expected execution time for {ip_version} {platform} {action} {routes_count} routes not found')
 
 
 def set_expected_execution_time(ip_version, platform, action, routes_count, execution_time):
@@ -108,10 +110,7 @@ def set_expected_execution_time(ip_version, platform, action, routes_count, exec
     :param int routes_count: number of routes
     :param float execution_time: actual routes action execution time
     """
-    if os.path.exists(TIMINGS_DB_FILE):
-        with open(TIMINGS_DB_FILE, 'r') as f:
-            timings = json.loads(f.read())
-    elif os.path.exists(SHARED_TIMINGS_DB_FILE):
+    if os.path.exists(SHARED_TIMINGS_DB_FILE):
         with open(SHARED_TIMINGS_DB_FILE, 'r') as f:
             timings = json.loads(f.read())
     else:
@@ -176,11 +175,7 @@ def test_adding_routes(cli_objects, engines, platform_params, interfaces, player
     static_routes = request.getfixturevalue(static_routes)
     new_routes_count = len(static_routes)
     platform = platform_params.platform
-    sync_route_timing = get_sync_route_timing(ip_version, platform, ADD, new_routes_count)
-
-    if sync_route_timing is None:
-        pytest.skip(f'Missing timings DB info. Please update {TIMINGS_DB_FILE} in test directory with feature '
-                    f'disabled results.')
+    expected_timing = get_expected_timing(ip_version, platform, ADD, new_routes_count)
 
     # creates a list of 1k randomly chosen routes to run traffic validation
     routes_validation_list = [static_routes[0], static_routes[-1]] + random.sample(static_routes, 998)
@@ -209,17 +204,16 @@ def test_adding_routes(cli_objects, engines, platform_params, interfaces, player
     average_execution_time = round(sum(timings) / NUMBER_OF_MEASUREMENTS, 2)
     set_expected_execution_time(ip_version, platform, ADD, new_routes_count, average_execution_time)
 
-    logger.info(f'Timing for adding {new_routes_count} routes: sync={sync_route_timing}, '
-                f'async={average_execution_time}')
+    if expected_timing is None:
+        pytest.skip(f'Missing timings DB info for {ip_version}|{platform}|{ADD}|{new_routes_count}. '
+                    f'Please update {TIMINGS_DB_FILE} in test directory.')
 
-    async_route_enhancement = (sync_route_timing - average_execution_time) / sync_route_timing * 100
-    if async_route_enhancement < EXPECTED_ENHANCEMENT_PERCENTAGE:
-        logger.warning(f'Actual enhancement is below expected value: {async_route_enhancement} < '
-                       f'{EXPECTED_ENHANCEMENT_PERCENTAGE}')
+    logger.info(f'Timing for adding {new_routes_count} routes: expected={expected_timing}, '
+                f'actual={average_execution_time}')
 
-    assert average_execution_time < sync_route_timing, \
-        (f'Time of adding {ip_version} {new_routes_count} routes with async routing = {average_execution_time}, '
-         f'time with sync routing = {sync_route_timing}')
+    assert average_execution_time < (expected_timing * (100 + TIMING_THRESHOLD_PERCENTS) / 100), \
+        (f'Actual time of adding {ip_version} {new_routes_count} routes = {average_execution_time}, '
+         f'expected time = {expected_timing}')
 
 
 @pytest.mark.parametrize(
@@ -231,11 +225,7 @@ def test_removing_routes(cli_objects, engines, platform_params, interfaces, play
     static_routes = request.getfixturevalue(static_routes)
     new_routes_count = len(static_routes)
     platform = platform_params.platform
-    sync_route_timing = get_sync_route_timing(ip_version, platform, REMOVE, new_routes_count)
-
-    if sync_route_timing is None:
-        pytest.skip(f'Missing timings DB info. Please update {TIMINGS_DB_FILE} in test directory with feature '
-                    f'disabled results.')
+    expected_timing = get_expected_timing(ip_version, platform, REMOVE, new_routes_count)
 
     routes_validation_list = [static_routes[0], static_routes[-1]] + random.sample(static_routes, 998)
     initial_routes_count = get_routes_count(engines.dut, ip_version)
@@ -262,14 +252,13 @@ def test_removing_routes(cli_objects, engines, platform_params, interfaces, play
     average_execution_time = round(sum(timings) / NUMBER_OF_MEASUREMENTS, 2)
     set_expected_execution_time(ip_version, platform, REMOVE, new_routes_count, average_execution_time)
 
-    logger.info(f'Timing for removing {new_routes_count} routes: sync={sync_route_timing}, '
-                f'async={average_execution_time}')
+    if expected_timing is None:
+        pytest.skip(f'Missing timings DB info for {ip_version}|{platform}|{REMOVE}|{new_routes_count}. '
+                    f'Please update {TIMINGS_DB_FILE} in test directory.')
 
-    async_route_enhancement = (sync_route_timing - average_execution_time) / sync_route_timing * 100
-    if async_route_enhancement < EXPECTED_ENHANCEMENT_PERCENTAGE:
-        logger.warning(f'Actual enhancement is below expected value: {async_route_enhancement} < '
-                       f'{EXPECTED_ENHANCEMENT_PERCENTAGE}')
+    logger.info(f'Timing for removing {new_routes_count} routes: expected={expected_timing}, '
+                f'actual={average_execution_time}')
 
-    assert average_execution_time < sync_route_timing, \
-        (f'Time of removing {ip_version} {new_routes_count} routes with async routing = {average_execution_time}, '
-         f'time with sync routing = {sync_route_timing}')
+    assert average_execution_time < (expected_timing * (100 + TIMING_THRESHOLD_PERCENTS) / 100), \
+        (f'Actual time of removing {ip_version} {new_routes_count} routes = {average_execution_time}, '
+         f'expected time = {expected_timing}')
