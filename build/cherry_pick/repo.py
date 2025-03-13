@@ -18,7 +18,7 @@ class GitCommit:
     at: str # author date UNIX timestamp
     subject: str # commit subject string
     hash: str # commit hash
-    # 0: initial state, 1: success, 2: already included, 3: errro
+    # 0: initial state, 1: success, 2: already included, 3: error
     # 4: empty commit
     cherry_pick_status: int = 0
 
@@ -155,6 +155,8 @@ class Repo:
         if re.search(change_id_search_pattern, last_commit_msg):
             last_commit_msg = re.sub(change_id_search_pattern, "", last_commit_msg)
         # if cherry-pick is a success, we need add new changeId
+        # but the commit message may contain single quote, so we need to escape it
+        last_commit_msg = last_commit_msg.replace("'", "'\\''")
         process = subprocess.run(f"git commit --amend -m '{last_commit_msg}'",
                            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                            shell=True, cwd=self.dir)
