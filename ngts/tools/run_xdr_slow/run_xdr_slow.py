@@ -233,11 +233,18 @@ def main():
 
         if re.match(r'[sS][wW]\s*\d+', port_name):
             # Handle all ports on the switch
-            switch_number = re.search(r'\d+', port_name).group(0)
+            port_number = re.search(r'\d+', port_name).group(0)
             for p in [1, 2]:
                 for s in [1, 2]:
-                    port = f"sw{switch_number}p{p}s{s}"
+                    port = f"sw{port_number}p{p}s{s}"
                     process_port(ssh_client, port, action)
+        elif port_name.lower() == 'all':
+            # Handle all port names from 1-18
+            for port_number in range(1, 19):
+                for p in [1, 2]:
+                    for s in [1, 2]:
+                        port = f"sw{port_number}p{p}s{s}"
+                        process_port(ssh_client, port, action)
         else:
             # Handle single port
             process_port(ssh_client, port_name, action)

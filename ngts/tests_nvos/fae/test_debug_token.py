@@ -2,6 +2,7 @@ import pytest
 
 from ngts.nvos_constants.constants_nvos import ApiType, ImageConsts
 from ngts.nvos_tools.infra.Fae import Fae
+from ngts.nvos_tools.infra.FilesTool import FilesTool, EngineFile
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.tools.test_utils import allure_utils as allure
@@ -41,6 +42,10 @@ def test_debug_token_upload_good_flow(engines, test_name, test_api):
         upload_path = ImageConsts.SCP_PATH_SERVER.format(username=player.username, password=player.password, ip=player.ip, path='/tmp/')
 
     filename = generate_and_verify_debug_token(debug_image, test_name)
+    path = f"/etc/platform_debug/info/debug_image/{filename}"
+    engine_file = EngineFile(engines.dut, path)
+    file_size = FilesTool.get_file_size_in_bytes(engines.dut, path)
+    assert file_size > 10000, f"debug token file is missing data\n{engine_file.get_content()}"
 
     with allure.step('try to upload debug info {} to {} - Positive Flow'.format(filename, upload_path)):
         output = fae.platform.debug.info.debug_image.files.file_name[filename].action_upload(upload_path=upload_path)
