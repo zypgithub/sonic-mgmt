@@ -2302,6 +2302,12 @@ srv6/test_srv6_static_config.py:
     conditions:
       - "release not in ['202412']"
 
+srv6/test_srv6_static_config.py::test_uDT46_config:
+  skip:
+    reason: "Unsupported platform"
+    conditions:
+      - "asic_type in ['mellanox']"
+
 #######################################
 #####             ssh             #####
 #######################################
