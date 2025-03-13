@@ -52,7 +52,7 @@ class ClusterTools:
                 with allure.step(f"Stop app {app} and validate its down"):
                     cluster.apps.app_name[app].action_stop_cluster_app()
                     nmx_c_expected_state = 'down' if app == ClusterConsts.NMX_CONTROLLER else ''
-                    ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='', nmx_c_expected_state=nmx_c_expected_state)
+                    ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state=nmx_c_expected_state)
                     # TBD -- once "running" is working, use it to verify app is not running
                     ClusterTools.verify_app_is_down(engines, app)
 
@@ -478,7 +478,7 @@ class ClusterTools:
         expected_log_levels_upper = [level.upper() for level in expected_log_levels]
         unexpected_log_levels = [level.upper() for level in unexpected_log_levels]
 
-        show_output = system.log.file.show_log(param=f"| grep -E \"{'|'.join(ClusterConsts.NMX_LOG_MESSAGES_TAGS)}\"").split('\n')[1:]
+        show_output = system.log.show_log(param=f"| grep -E \"{'|'.join(ClusterConsts.NMX_LOG_MESSAGES_TAGS)}\"").split('\n')[1:]
         for line in show_output:
             if ":~$" in line:  # Symbolizes start of prompt line, no need to check.
                 continue
@@ -676,6 +676,8 @@ def disabled_access_ports(func):
                 with allure.step("Unset Cluster before test starts to run, to make sure we are at the correct init state"):
                     cluster.unset(apply=True)
                     ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
+                    logger.info("Sleeping for 15 seconds to make sure nnx-t docker is down")
+                    time.sleep(15)
                 # Execute the test function
             return func(*args, **kwargs)
         finally:

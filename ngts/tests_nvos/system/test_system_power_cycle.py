@@ -70,7 +70,7 @@ def _test_command_supported(engines, devices, test_name, test_api, force_str):
         reboot_time = ClockTools.parse_datetime(output["gentime"])
         assert reboot_time >= system_time, \
             f"power-cycle command sent at {system_time.strftime('%H:%M:%S')} but 'show system reboot' shows {output}"
-        if not is_redmine_issue_active([4031927, 4030950])[0]:
+        if not is_redmine_issue_active([4247423])[0]:
             assert output["reason"] == 'power-cycle'
             assert output["user"] == 'admin'
 

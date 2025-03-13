@@ -925,11 +925,10 @@ class JulietSwitch(NvLinkSwitch):
             CableCartridgeConsts.KEY_TRAY_ID: ExpectedString(range_min=-1, range_max=18),
             CableCartridgeConsts.KEY_SLOT_ID: ExpectedString(range_min=0, range_max=28),
             CableCartridgeConsts.KEY_SERIAL: ExpectedString(regex="^\\d+$"),
-            CableCartridgeConsts.KEY_PART_NUMBER: ExpectedString(regex=f"^{CableCartridgeConsts.PART_NUMBER}$"),
+            CableCartridgeConsts.KEY_PART_NUMBER: ExpectedString(regex=f"^({'|'.join(CableCartridgeConsts.ALLOWED_PART_NUMBERS)})$"),
             CableCartridgeConsts.KEY_MANUFACTURING_DATE: ExpectedString(regex="^(0[1-9]|1[0-2])/([0-2][0-9]|3[0-1])/\\d{2} - ([0-1][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])$")
         }
         cluster_files = ['conf', 'nmx-controller', 'nmx-telemetry']
-        self.constants.firmware.extend(['CPLD4', 'EROT-FPGA', 'EROT-BMC', 'EROT', 'EROT-ASIC2', 'EROT-CPU', 'EROT-ASIC1'])
         self.constants = self.constants._replace(cluster_files=cluster_files)
         bmc_dump_files = ['bmc_debug_log_dump.tar']
         self.constants = self.constants._replace(bmc_dump_files=bmc_dump_files)
@@ -958,13 +957,21 @@ class JulietSwitch(NvLinkSwitch):
             version="35.2014.1492",
             filename="fw-QTM3-rel-35_2014_1492.mfa"
         )
+        self.bios_image_info = BaseSwitch.BiosImagesConsts(
+            current_version={
+                'path': '/auto/sw_system_release/sx_mlnx_bios/SnowyOwl/0ACTV_00.00.018/Release/erot_sign_debug/cec1736-apfw-0000012.fwpkg',
+                'filename': 'cec1736-apfw-0000012.fwpkg',
+                'version_name': '0ACTV_00.00.018d',
+                'date': '08/21/2024'},
+            alternate_version={
+                'path': '/auto/sw_system_release/sx_mlnx_bios/SnowyOwl/0ACTV_00.00.018/Release/erot_sign_debug/cec1736-apfw-0000012.fwpkg',
+                'filename': 'cec1736-apfw-0000012.fwpkg',
+                'version_name': '0ACTV_00.00.018d',
+                'date': '08/21/2024'})
 
         self.power_cycle_type = 'juliet-power-cycle'
         self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/juliet_versions.json"
         self.valid_ports_count = 72
-        self.number_of_transceivers = 72
-        self.transceivers_tables_name = "TRANSCEIVER_FIRMWARE_INFO"
-        self.transceiver_list = [f'sw{a + 1}' for a in range(18)]
         self.module_offset = 9
 
     def _init_fan_list(self):
@@ -1024,11 +1031,6 @@ class JulietSwitch(NvLinkSwitch):
                 return available_erots
         logging.info(f'no available ERoTs found for {setup_name}')
         return []
-
-    def _init_boot_time_timeouts(self):
-        super()._init_boot_time_timeouts()
-        self.timeout_system_is_ready = 20 * MINUTE
-        self.timeout_reboot_to_grub_menu = 5 * MINUTE
 
 
 # -------------------------- JulietScaleout Switch ----------------------------
@@ -1105,7 +1107,7 @@ class JulietScaleoutSwitch(JulietSwitch):
 
         self.stats_disk_header_num_of_lines = 16
         self.stats_cpu_header_num_of_lines = 12
-        self.stats_temperature_header_num_of_lines = 25
+        self.stats_temperature_header_num_of_lines = 48
         self.allow_cpld_update = True
 
         # Port 1-36 is from asic1/ Port 37-72 is from asic2

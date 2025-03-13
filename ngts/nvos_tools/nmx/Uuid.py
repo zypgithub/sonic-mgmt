@@ -31,7 +31,7 @@ class UuidVal(BaseComponent):
         engine = engine if engine else TestToolkit.engines.dut
         with allure.step('Update partition'):
             return SendCommandTool.execute_command_expected_str(self._cli_wrapper.action_update_partition,
-                                                                "Action succeeded", engine,
+                                                                "has been successfully updated", engine,
                                                                 self.get_resource_path(), reroute_param)
 
     def action_restore_partition(self, engine=None, reroute_param=''):

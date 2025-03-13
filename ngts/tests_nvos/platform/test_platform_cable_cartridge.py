@@ -12,6 +12,12 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 logger = logging.getLogger()
 
 
+@pytest.fixture(scope='function', autouse=True)
+def skip_if_missing_data(has_loopbox, standalone_system):
+    if not has_loopbox and standalone_system:
+        pytest.skip("Testcase skipped since system is standalone and doesn't have loopbox")
+
+
 @pytest.mark.platform
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_show_platform_cable_cartridge(engines, devices, test_api):

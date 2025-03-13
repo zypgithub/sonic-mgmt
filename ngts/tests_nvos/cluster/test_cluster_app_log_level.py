@@ -15,6 +15,7 @@ from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 
 logger = logging.getLogger()
 
@@ -37,18 +38,19 @@ def test_cluster_app_log_level(engines, devices, test_api, has_loopbox, standalo
             for app in ClusterConsts.INITIAL_EXPECTED_APPS:
                 ClusterTools.verify_log_level(ClusterConsts.DEFAULT_LOG_LEVEL, app, output_format, cluster)
 
-        TestToolkit.tested_api = 'NVUE'
-        with allure.step("Set log level to undefined log level"):
-            for app in ClusterConsts.INITIAL_EXPECTED_APPS:
-                output = cluster.apps.app_name[app].loglevel.action_update_cluster_log_level(level='undefined').get_returned_value(should_succeed=False)
-                assert ClusterConsts.UNDEFINED_LOG_LEVEL in output, f"Expected {ClusterConsts.UNDEFINED_LOG_LEVEL}, Actual: {output}"
-                ClusterTools.verify_log_level(ClusterConsts.DEFAULT_LOG_LEVEL, app, output_format, cluster)
-        TestToolkit.tested_api = test_api
+        if not is_bug_active(4266900):
+            TestToolkit.tested_api = 'NVUE'
+            with allure.step("Set log level to undefined log level"):
+                for app in ClusterConsts.INITIAL_EXPECTED_APPS:
+                    output = cluster.apps.app_name[app].loglevel.action_update_cluster_log_level(level='undefined').get_returned_value(should_succeed=False)
+                    assert ClusterConsts.UNDEFINED_LOG_LEVEL in output, f"Expected {ClusterConsts.UNDEFINED_LOG_LEVEL}, Actual: {output}"
+                    ClusterTools.verify_log_level(ClusterConsts.DEFAULT_LOG_LEVEL, app, output_format, cluster)
+            TestToolkit.tested_api = test_api
 
         with allure.step("Choose random log level, and set cluster app log level to"):
             log_level = random.choice(ClusterConsts.ClusterAppsLogLevelsList)
             for app in ClusterConsts.INITIAL_EXPECTED_APPS:
-                cluster.apps.app_name[app].loglevel.action_update_cluster_log_level(level=log_level).get_returned_value()
+                cluster.apps.app_name[app].loglevel.action_update_cluster_log_level(level=log_level)
                 ClusterTools.verify_log_level(log_level, app, output_format, cluster)
 
     finally:

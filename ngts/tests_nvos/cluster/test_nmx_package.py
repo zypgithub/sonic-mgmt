@@ -31,6 +31,9 @@ def enable_cluster_and_stop_apps(setup_name):
     ClusterTools.start_cluster(cluster, setup_name, OutputFormat.json)
     for app in ClusterConsts.INITIAL_EXPECTED_APPS:
         cluster.apps.app_name[app].action_stop_cluster_app().verify_result()
+    yield
+    for app in ClusterConsts.INITIAL_EXPECTED_APPS:
+        cluster.apps.app_name[app].action_start_cluster_app().verify_result()
 
 
 @pytest.fixture()
@@ -141,10 +144,10 @@ def verify_start_stop(cluster, app):
     with allure.step(f'try to start stop {app}'):
         cluster.apps.app_name[app].action_start_cluster_app().verify_result()
         nmx_c_expected_state = 'up' if app == ClusterConsts.NMX_CONTROLLER else ''
-        ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='', nmx_c_expected_state=nmx_c_expected_state)
+        ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state=nmx_c_expected_state)
         cluster.apps.app_name[app].action_stop_cluster_app().verify_result()
         nmx_c_expected_state = 'down' if app == ClusterConsts.NMX_CONTROLLER else ''
-        ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='', nmx_c_expected_state=nmx_c_expected_state)
+        ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state=nmx_c_expected_state)
 
 
 def delete_package_file(fae, filename):

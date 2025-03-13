@@ -163,6 +163,7 @@ class NvosInstallationSteps:
 
     @staticmethod
     def verify_config_after_upgrade(config_file_path, dut_engine):
+        dicts_diff = None
         with allure.step('Get actual configuration'):
             actual_config = OutputParsingTool.parse_json_str_to_dictionary(
                 NvueGeneralCli.show_config(dut_engine)).get_returned_value()

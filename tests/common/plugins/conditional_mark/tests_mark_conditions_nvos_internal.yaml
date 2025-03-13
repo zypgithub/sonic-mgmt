@@ -164,18 +164,6 @@ tests_nvos/fae/test_nmx_package.py:
     conditions:
       - "'juliet' not in testbed"
 
-tests_nvos/system/test_system_juliet_power_button.py::test_system_juliet_power_button:
-  skip:
-    reason: "Testcase skipped on non Juliet systems"
-    conditions:
-      - "'juliet' not in testbed"
-
-tests_nvos/interfaces/test_ib_show_interface.py::test_ib_show_interface_all_state_up:
-  skip:
-    reason: "Testcase skipped on Juliet systems, ability is not implemented in Juliet"
-    conditions:
-      - "'juliet' in testbed"
-
 tests_nvos/platform/test_platform.py::test_show_platform_chassis_location:
   skip:
     reason: "Testcase skipped on non Juliet systems, Juliet feature only (as a part of Uberon)"
@@ -193,12 +181,6 @@ tests_nvos/checklist/test_bios_manual_update.py:
     reason: "Testcase skipped on non Juliet systems since they has 'auto-update' which changes the upgrade's flow"
     conditions:
       - "'juliet' not in testbed"
-
-tests_nvos/interfaces/test_ib_interface_configuration.py::test_ib_interface_lanes:
-  skip:
-    reason: "Testcase skipped on XDR systems"
-    conditions:
-      - "'gorilla' not in testbed"
 
 tests_nvos/interfaces/nvl5_port/test_nvl5_port.py:
   skip:
@@ -525,25 +507,39 @@ tests_nvos/cluster/test_nmx_package.py:
     reason: "Testcase skipped on non Juliet systems, Juliet feature only"
     conditions:
       - "'juliet' not in testbed"
-      
-tests_nvos/platform/test_platform_cable_cartridge.py:
+
+tests_nvos/system/test_system_juliet_power_button.py::test_system_juliet_power_button:
   skip:
-    reason: "Testcase skipped on juliet systems with no cartridges"
+    reason: "Testcase skipped on non Juliet systems"
     conditions:
-      - "'juliet-148' not in testbed"
-      
+      - "'juliet' not in testbed"
+
+tests_nvos/interfaces/test_ib_show_interface.py::test_ib_show_interface_all_state_up:
+  skip:
+    reason: "Testcase skipped on Juliet systems, ability is not implemented in Juliet"
+    conditions:
+      - "'juliet' in testbed"
+
 tests_nvos/interfaces/test_eth0_interface_dhcp.py::test_interface_eth0_speed_duplex_autoneg:
   skip:
     reason: "Testcase skipped on Juliet systems, Juliet does not support half duplex"
     conditions:
       - "'juliet' in testbed"
-      
+
 tests_nvos/checklist/test_bios_upgrade.py::test_bios_manual_update:
   skip:
     reason: "Testcase skipped on non Juliet systems since they has 'auto-update' which changes the upgrade's flow"
     conditions:
       - "'juliet' not in testbed"
-      
+
+
+
+tests_nvos/interfaces/test_ib_interface_configuration.py::test_ib_interface_lanes:
+  skip:
+    reason: "Testcase skipped on XDR systems"
+    conditions:
+      - "'gorilla' not in testbed"
+
 tests_nvos/interfaces/test_port_split.py:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3924138"
@@ -569,12 +565,6 @@ tests_nvos/platform/test_platform_transceiver.py:
     conditions:
       - "'gorilla' not in testbed and 'juliet' not in testbed"
       - https://redmine.mellanox.com/issues/3950840
-
-tests_nvos/platform/test_platform_transceiver.py::test_transceiver_status_with_reboot:
-  skip:
-    reason: "Testcase skipped on juliet because it is statically connected system"
-    conditions:
-      - "'juliet' in testbed"
 
 tests_nvos/general/config_commands/test_config_fetch:
   skip:
@@ -636,6 +626,12 @@ tests_nvos/system/test_system_ztp.py::test_ztp_nmx_positive:
     conditions:
       - "'juliet' not in testbed"
 
+tests_nvos/platform/test_platform_transceiver.py::test_transceiver_status_with_reboot:
+  skip:
+    reason: "Testcase skipped on juliet because it is statically connected system"
+    conditions:
+      - "'juliet' in testbed"
+
 tests_nvos/platform/test_platform_environment.py::test_show_platform_environment:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4259913"
@@ -693,6 +689,18 @@ tests_nvos/system/test_system_ztp.py::test_ztp_provisioning_script_negative:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4276503"
     conditions:
       - https://redmine.mellanox.com/issues/4334449
+
+tests_nvos/system/test_system_health.py::test_ignore_health_issue:
+  skip:
+    reason: "Testcase skipped on Juliet systems, Juliet Does not have PSU"
+    conditions:
+      - "'juliet' in testbed"
+
+tests_nvos/system/test_system_health.py::test_simulate_health_problem_with_hw_simulator:
+  skip:
+    reason: "Testcase skipped on Juliet systems, Juliet Does not have PSU"
+    conditions:
+      - "'juliet' in testbed"
 
 tests_nvos/system/test_system_ztp.py::test_ztp_provisioning_script_positive:
   skip:

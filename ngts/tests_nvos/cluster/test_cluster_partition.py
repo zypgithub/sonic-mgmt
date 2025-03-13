@@ -210,7 +210,9 @@ def test_cluster_partition_bad_flow(engines, devices, test_api, has_loopbox, sta
                     output = sdn.partition.partition_id[part_id].action_create_partition_id(name=ClusterConsts.CREATED_PARTITION_NAME + '1', resiliency_mode=resiliency_mode, mcast_limit=mcast_limit, uuid=int(uuid)).verify_result(should_succeed=False)
                 err_msg = f"'{resiliency_mode}' is not one of ['full_bandwidth', 'adaptive_bandwidth', 'user_action']"
                 assert err_msg in output, f"Expected message to include {err_msg}, instead\n {output}"
+                TestToolkit.tested_api = ApiType.NVUE
                 ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format, standalone_system)
+                TestToolkit.tested_api = test_api
 
             with allure.step("Add GPU with wrong mcast_limit"):
                 resiliency_mode = random.choice(ClusterConsts.RESILIENCY_MODES)
@@ -224,7 +226,9 @@ def test_cluster_partition_bad_flow(engines, devices, test_api, has_loopbox, sta
                     output = sdn.partition.partition_id[part_id].action_create_partition_id(name=ClusterConsts.CREATED_PARTITION_NAME + '11', resiliency_mode=resiliency_mode, mcast_limit=mcast_limit, uuid=int(uuid)).verify_result(should_succeed=False)
                 err_msg = "Valid range is 0 - 1024"
                 assert err_msg in output, f"Expected message to include {err_msg}, instead\n {output}"
+                TestToolkit.tested_api = ApiType.NVUE
                 ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format, standalone_system)
+                TestToolkit.tested_api = test_api
 
         with allure.step("Running sdn factory reset"):
             sdn.factory_default.action_reset(param='force')
@@ -267,9 +271,9 @@ def remove_gpu_from_partition_and_add_to_existing_partition(sdn, original_partit
     no_reroute = random.choice(['', 'no-reroute'])
     with allure.step("Add Removed GPU to an existing partition"):
         if partition_type == 'location_based':
-            sdn.partition.partition_id[target_partition_id].location.location_id[location].action_update_partition(reroute_param=no_reroute)
+            sdn.partition.partition_id[target_partition_id].location.location_id[location].action_update_partition(reroute_param=no_reroute).verify_result()
         else:
-            sdn.partition.partition_id[target_partition_id].uuid.uuid_value[uuid].action_update_partition(reroute_param=no_reroute)
+            sdn.partition.partition_id[target_partition_id].uuid.uuid_value[uuid].action_update_partition(reroute_param=no_reroute).verify_result()
         partitions_mapping[target_partition_id].append((uuid, location))
 
     with allure.step("Checking newly updated partition"):
@@ -297,9 +301,9 @@ def remove_gpu_from_partition(sdn, original_partition_id, location, uuid, partit
     no_reroute = random.choice(['', 'no-reroute'])
     with allure.step(f"Remove GPU from partition {original_partition_id}"):
         if original_partition_type == 'location_based':
-            sdn.partition.partition_id[original_partition_id].location.location_id[location].action_restore_partition(reroute_param=no_reroute)
+            sdn.partition.partition_id[original_partition_id].location.location_id[location].action_restore_partition(reroute_param=no_reroute).verify_result()
         else:
-            sdn.partition.partition_id[original_partition_id].uuid.uuid_value[uuid].action_restore_partition(reroute_param=no_reroute)
+            sdn.partition.partition_id[original_partition_id].uuid.uuid_value[uuid].action_restore_partition(reroute_param=no_reroute).verify_result()
 
     if is_bug_active(4285786):
         time.sleep(15)
@@ -326,13 +330,11 @@ def remove_gpu_from_partition_and_add_to_new_partition(sdn, original_partition_i
         new_partition = choose_new_partition_id(used_partition_ids)
         used_partition_ids.append(new_partition)
         if partition_type == 'location_based':
-            sdn.partition.partition_id[new_partition].action_create_partition_id(name=partition_name, resiliency_mode=resiliency_mode, mcast_limit=mcast_limit, location=location)
+            sdn.partition.partition_id[new_partition].action_create_partition_id(name=partition_name, resiliency_mode=resiliency_mode, mcast_limit=mcast_limit, location=location).verify_result()
         else:
-            sdn.partition.partition_id[new_partition].action_create_partition_id(name=partition_name, resiliency_mode=resiliency_mode, mcast_limit=mcast_limit, uuid=int(uuid))
+            sdn.partition.partition_id[new_partition].action_create_partition_id(name=partition_name, resiliency_mode=resiliency_mode, mcast_limit=mcast_limit, uuid=int(uuid)).verify_result()
 
     with allure.step("Checking newly created partition"):
-        if is_bug_active(4285786):
-            time.sleep(15)
         output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
                                                              output_format=output_format).get_returned_value()
         new_partition = str(new_partition)
