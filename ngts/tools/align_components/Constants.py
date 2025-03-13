@@ -34,6 +34,7 @@ class NogaConstants:
     NAME = "NAME"
     ATTRIBUTES = 'attributes'
     BMC_IP = 'bmc_ip'
+    REMOTE_REBOOT = 'remote_reboot'
     SPECIFIC = 'Specific'
     BIOS_VERSION = 'bios_version'
     HARDWARE_COMPONENTS = 'Hardware Components'

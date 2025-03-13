@@ -23,9 +23,9 @@ class ComponentManager:
                 print(f"No update required for {component.name}. Already at {component.required_version}")
         return was_update_performed
 
-    def perform_pc(self):
+    def perform_pc(self, switch_info):
         assert self.components, "Should be at least one component"
-        self.components[0].power_cycle()
+        self.components[0].power_cycle(switch_info)
 
     def print_installed_versions(self):
         for component in self.components:

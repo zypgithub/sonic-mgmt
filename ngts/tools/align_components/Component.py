@@ -4,7 +4,7 @@ import time
 from abc import ABC, abstractmethod
 
 import rf_progress
-from Constants import RedfishCollection, Defaults
+from Constants import NogaConstants, RedfishCollection, Defaults
 from Redfish_rest_api import RedFishRestApi
 
 
@@ -28,7 +28,7 @@ class Component(ABC):
         ...
 
     @abstractmethod
-    def power_cycle(self):
+    def power_cycle(self, switch_info):
         ...
 
 
@@ -61,13 +61,13 @@ class BmcComponent(Component):
             od_task.print_error()
             return False
 
-    def power_cycle(self):
+    def power_cycle(self, switch_info):
         reset_type = "PowerCycle"
         data = {
             "ResetType": f"{reset_type}"
         }
         respond, _ = self.rf_api.post_query(RedfishCollection.RESET, data)
-        print(f"Power cycle request sent. Sleeping for 2.5 minutes...")
+        print("Power cycle request sent. Sleeping for 2.5 minutes...")
         time.sleep(150)
 
 
@@ -95,11 +95,34 @@ class CpldComponent(Component):
         except Exception as e:
             return False
 
-    def power_cycle(self):
-        pc_cmd = 'sudo echo 1 > /var/run/hw-management/system/aux_pwr_cycle'
-        self._run_ssh(pc_cmd)
-        print(f"Power cycle request sent. Sleeping for 2.5 minutes...")
+    def power_cycle(self, switch_info):
+        remote_reboot_cmd = switch_info[NogaConstants.ATTRIBUTES][NogaConstants.SPECIFIC][NogaConstants.REMOTE_REBOOT]
+        if 'auto' not in remote_reboot_cmd:
+            remote_reboot_cmd = f'/auto{remote_reboot_cmd}'
+        self._run_player_cmd(remote_reboot_cmd)
+        print("Remote reboot command sent. Sleeping for 2.5 minutes...")
         time.sleep(150)
+
+    def _run_player_cmd(self, command):
+        try:
+            path, name = command.split(' ')
+            output = subprocess.run(
+                ['/bin/bash', path, name],
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+            )
+
+            res = output.stdout.strip()
+
+            return_code = output.returncode
+            if return_code:
+                raise Exception(f"{command}\nExit Code: {return_code}\n{output}")
+            print(f'{command} successfully executed')
+            return res
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            raise
 
     def _run_ssh(self, command):
         """

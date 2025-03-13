@@ -67,7 +67,7 @@ def start_components_update(_args):
     was_update_performed = component_manager.perform_update()
 
     if was_update_performed:
-        component_manager.perform_pc()
+        component_manager.perform_pc(switch_info)
 
     component_manager.print_installed_versions()
 
