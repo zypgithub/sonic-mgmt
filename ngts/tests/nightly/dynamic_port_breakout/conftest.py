@@ -54,7 +54,7 @@ def tested_modes_lb_conf(topology_obj, ports_breakout_modes, cli_objects, sw_con
 
 
 @pytest.fixture(scope='session', autouse=True)
-def dpb_configuration(topology_obj, setup_name, engines, cli_objects, platform_params):
+def dpb_configuration(topology_obj, setup_name, engines, cli_objects, platform_params, is_air):
     """
     Pytest fixture which will clean QoS configuration from the dut before DPB test
     and will configure Qos and dynamic buffer configuration after DPB tests finished
@@ -69,7 +69,7 @@ def dpb_configuration(topology_obj, setup_name, engines, cli_objects, platform_p
     yield
 
     logger.info('Starting DPB configuration cleanup')
-    cli_objects.dut.general.apply_basic_config(topology_obj, setup_name, platform_params)
+    cli_objects.dut.general.apply_basic_config(topology_obj, setup_name, platform_params, is_air=is_air)
 
     logger.info('DPB cleanup completed')
 

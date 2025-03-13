@@ -11,7 +11,7 @@ CONFIG_DB_COPP_CONFIG = '/etc/sonic/copp_cfg.json'
 
 
 @pytest.fixture(scope='module', autouse=True)
-def copp_configuration(topology_obj, engines, interfaces, cli_objects, setup_name, platform_params):
+def copp_configuration(topology_obj, engines, interfaces, cli_objects, setup_name, platform_params, is_air):
     """
     Pytest fixture which are doing configuration for test case based on copp config
     :param topology_obj: topology object fixture
@@ -42,7 +42,7 @@ def copp_configuration(topology_obj, engines, interfaces, cli_objects, setup_nam
     IpConfigTemplate.cleanup(topology_obj, ip_config_dict)
     cli_objects.ha.general.start_service('lldpad')
 
-    cli_objects.dut.general.apply_basic_config(topology_obj, setup_name, platform_params)
+    cli_objects.dut.general.apply_basic_config(topology_obj, setup_name, platform_params, is_air=is_air)
 
     logger.info('CoPP Common cleanup completed')
 

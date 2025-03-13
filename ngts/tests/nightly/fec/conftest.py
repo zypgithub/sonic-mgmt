@@ -14,7 +14,7 @@ logger = logging.getLogger()
 
 @pytest.fixture(scope='module', autouse=True)
 def fec_configuration(topology_obj, interfaces, setup_name, engines, cli_objects, platform_params,
-                      tested_lb_dict, tested_lb_dict_for_bug_2705016_flow):
+                      tested_lb_dict, tested_lb_dict_for_bug_2705016_flow, is_air):
     """
     Pytest fixture which will clean all fec configuration leftover from the dut
 
@@ -27,7 +27,7 @@ def fec_configuration(topology_obj, interfaces, setup_name, engines, cli_objects
     yield
 
     logger.info('Starting FEC configuration cleanup')
-    cli_objects.dut.general.apply_basic_config(topology_obj, setup_name, platform_params)
+    cli_objects.dut.general.apply_basic_config(topology_obj, setup_name, platform_params, is_air=is_air)
 
     logger.info('FEC cleanup completed')
 

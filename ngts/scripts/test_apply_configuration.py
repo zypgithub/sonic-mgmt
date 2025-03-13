@@ -17,7 +17,7 @@ pytestmark = [
 @pytest.mark.reboot_reload
 @pytest.mark.disable_loganalyzer
 @allure.title('Apply Sonic Basic Configuration')
-def test_apply_basic_conf(topology_obj, setup_name, platform_params, is_simx):
+def test_apply_basic_conf(topology_obj, setup_name, platform_params, is_simx, is_air):
     """
     This script will apply basic configuration on the dut.
     :param topology_obj: topology object fixture
@@ -35,10 +35,10 @@ def test_apply_basic_conf(topology_obj, setup_name, platform_params, is_simx):
         with allure.step("Apply port_config.ini and config_db.json"):
             require_to_reload_before_qos = require_to_configure_machine_conf(is_simx, platform_params.platform)
             cli_object.general.apply_basic_config(topology_obj, setup_name, platform_params,
-                                                  reload_before_qos=require_to_reload_before_qos)
+                                                  reload_before_qos=require_to_reload_before_qos, is_air=is_air)
 
         with allure.step('Apply DNS servers configuration into /etc/resolv.conf'):
-            cli_object.ip.apply_dns_servers_into_resolv_conf(is_air_setup=platform_params.setup_name.startswith('air'))
+            cli_object.ip.apply_dns_servers_into_resolv_conf(is_air_setup=is_air)
 
     except Exception as err:
         raise AssertionError(err)

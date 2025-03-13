@@ -106,7 +106,7 @@ def test_deploy_l2_mode(cli_objects, engines, topology_obj, workspace_path):
 
 
 @allure.title('Restore default mode')
-def test_restore_default_mode(cli_objects, sonic_topo, topology_obj, workspace_path, platform_params):
+def test_restore_default_mode(cli_objects, sonic_topo, topology_obj, workspace_path, platform_params, is_air):
     """
     This test will restore the default mode
     """
@@ -120,6 +120,5 @@ def test_restore_default_mode(cli_objects, sonic_topo, topology_obj, workspace_p
         for dut in setup_info['duts']:
             general_cli_obj = dut['cli_obj']
             topology_obj.players[dut['dut_alias']]['engine'].disconnect()
-            general_cli_obj.cli_obj.ip.apply_dns_servers_into_resolv_conf(
-                is_air_setup=platform_params.setup_name.startswith('air'))
+            general_cli_obj.cli_obj.ip.apply_dns_servers_into_resolv_conf(is_air_setup=is_air)
             general_cli_obj.save_configuration()

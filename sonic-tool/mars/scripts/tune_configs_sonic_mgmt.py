@@ -42,6 +42,8 @@ if __name__ == "__main__":
     topo_file = args.topo
     topo_obj = parse_topology(topo_file)
 
+    setup_name = topo_file.split('/')[-2]
+
     sonic_mgmt_container_info = topo_obj.get_device_by_topology_id(constants.SONIC_MGMT_DEVICE_ID)
     sonic_mgmt_device_username, sonic_mgmt_device_password = topo_obj.get_user_access(sonic_mgmt_container_info.USERS[0])
     print('sonic_mgmt_repo_path : {}'.format(sonic_mgmt_repo_path))
@@ -53,7 +55,8 @@ if __name__ == "__main__":
                                       config=Config(overrides={"run": {"echo": True, "env": env_dict}}),
                                       connect_kwargs={"password": sonic_mgmt_device_password},
                                       inline_ssh_env=True)
-    cmd = "PYTHONPATH=/devts/ {ngts_path} {mgmt_repo}/sonic-tool/sonic_ngts/scripts/update_sonic_mgmt.py " \
-          "--dut=\"{dut}\" --mgmt_repo=\"{mgmt_repo}\"".format(ngts_path=constants.NGTS_PATH_PYTHON, dut=args.dut_name,
-                                                               mgmt_repo=sonic_mgmt_repo_path)
+    update_sonic_mgmt_script_path = f'{sonic_mgmt_repo_path}/sonic-tool/sonic_ngts/scripts/update_sonic_mgmt.py'
+    cmd = f'PYTHONPATH=/devts/ {constants.NGTS_PATH_PYTHON} {update_sonic_mgmt_script_path} --dut="{args.dut_name}" ' \
+          f'--mgmt_repo="{sonic_mgmt_repo_path}" --setup_name="{setup_name}"'
+
     sonic_mgmt_container.run(cmd)

@@ -78,7 +78,7 @@ def apply_dns_servers_resolve_conf(dut_engine):
 
 @pytest.fixture(scope='package', autouse=True)
 def push_gate_configuration(topology_obj, cli_objects, engines, interfaces, platform_params, upgrade_params,
-                            run_config_only, run_test_only, run_cleanup_only, shared_params,
+                            run_config_only, run_test_only, run_cleanup_only, shared_params, is_air,
                             app_extension_dict_path, acl_table_config_list, request, is_simx, sonic_branch):
     """
     Pytest fixture which are doing configuration fot test case based on push gate config
@@ -117,7 +117,7 @@ def push_gate_configuration(topology_obj, cli_objects, engines, interfaces, plat
                                                                       setup_name=platform_params.setup_name,
                                                                       platform_params=platform_params,
                                                                       reboot_after_install=reboot_after_install,
-                                                                      set_timezone='Israel',
+                                                                      set_timezone='Israel', is_air=is_air,
                                                                       disable_ztp=True, configure_dns=True)
                 base_sonic_branch = get_sonic_branch(topology_obj)
 

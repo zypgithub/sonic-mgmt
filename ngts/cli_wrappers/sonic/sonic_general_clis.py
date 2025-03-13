@@ -440,7 +440,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
     def deploy_image_post_installtion(self, topology_obj, apply_base_config=False, setup_name=None,
                                       platform_params=None, reboot_after_install=None,
                                       set_timezone='Israel', disable_ztp=False, configure_dns=False,
-                                      setup_info=None, dut_alias=None):
+                                      setup_info=None, dut_alias=None, is_air=False):
 
         with allure.step('Verify dockers are up'):
             self.verify_dockers_are_up()
@@ -466,7 +466,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             self.update_platform_params(platform_params, setup_name)
             with allure.step("Apply basic config"):
                 self.apply_basic_config(topology_obj, setup_name, platform_params, disable_ztp=disable_ztp,
-                                        configure_dns=configure_dns)
+                                        configure_dns=configure_dns, is_air=is_air)
         else:
             self.disable_ztp(disable_ztp)
 
@@ -843,10 +843,10 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                 update_platform_info_files(hostname, current_platform_summary, update_inventory=True)
 
     def apply_basic_config(self, topology_obj, setup_name, platform_params, reload_before_qos=False,
-                           disable_ztp=False, configure_dns=True):
+                           disable_ztp=False, configure_dns=True, is_air=False):
         with allure.step("Upload port_config.ini and config_db.json with reboot of dut"):
             retry_call(self.apply_config_files,
-                       fargs=[topology_obj, setup_name, platform_params],
+                       fargs=[topology_obj, setup_name, platform_params, is_air],
                        tries=3,
                        delay=10,
                        logger=logger)
@@ -879,8 +879,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
 
         if configure_dns:
             with allure.step('Apply DNS servers configuration'):
-                self.cli_obj.ip.apply_dns_servers_into_resolv_conf(
-                    is_air_setup=platform_params.setup_name.startswith('air'))
+                self.cli_obj.ip.apply_dns_servers_into_resolv_conf(is_air_setup=is_air)
 
         self.cli_obj.general.save_configuration()
 
@@ -888,12 +887,12 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         chip_gen = int((re.search(r'SN(\d)', platform_params['hwsku']).group(1))) - 1
         return f"SPC{chip_gen}"
 
-    def apply_config_files(self, topology_obj, setup_name, platform_params):
+    def apply_config_files(self, topology_obj, setup_name, platform_params, is_air):
         platform = platform_params['platform']
         hwsku = platform_params['hwsku']
         shared_path = '{}{}'.format(InfraConst.MARS_TOPO_FOLDER_PATH, setup_name)
 
-        if setup_name.startswith('air'):
+        if is_air:
             self.prepare_nvidia_air_basic_config_db_json(topology_obj, setup_name, hwsku, platform)
         elif not self.is_performance_setup(setup_name):
             # No need to modify port_config.ini for NvidiaAir setups - because ports split not supported yet

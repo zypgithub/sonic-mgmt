@@ -413,7 +413,7 @@ class SonicInstallationSteps:
     def post_installation_steps(topology_obj, sonic_topo, recover_by_reboot, setup_name, platform_params,
                                 apply_base_config, target_version, is_shutdown_bgp, reboot_after_install,
                                 deploy_only_target, fw_pkg_path, reboot, additional_apps, setup_info, dut_alias,
-                                is_performance, chip_type, deploy_dpu=False, xml_rpc=True):
+                                is_performance, chip_type, deploy_dpu=False, xml_rpc=True, is_air=False):
         """
         Post-installation steps
         :param topology_obj: topology object
@@ -434,6 +434,7 @@ class SonicInstallationSteps:
         :param is_performance: True in case when setup is performance
         :param chip_type: the type of chip
         :param deploy_dpu: deploy dpu flag
+        :param is_air: is_air fixture
         """
         ansible_path = setup_info['ansible_path']
         cli = SonicInstallationSteps.get_dut_cli(setup_info)
@@ -446,7 +447,7 @@ class SonicInstallationSteps:
                                                               setup_name=setup_name,
                                                               platform_params=platform_params,
                                                               reboot_after_install=reboot_after_install,
-                                                              configure_dns=True, disable_ztp=True,
+                                                              configure_dns=True, is_air=is_air, disable_ztp=True,
                                                               setup_info=setup_info,
                                                               dut_alias=dut_alias)
         dut_name = setup_info['duts'][0]['dut_name']
@@ -548,8 +549,7 @@ class SonicInstallationSteps:
                 for dut in setup_info['duts']:
                     general_cli_obj = dut['cli_obj']
                     topology_obj.players[dut['dut_alias']]['engine'].disconnect()
-                    general_cli_obj.cli_obj.ip.apply_dns_servers_into_resolv_conf(
-                        is_air_setup=platform_params.setup_name.startswith('air'))
+                    general_cli_obj.cli_obj.ip.apply_dns_servers_into_resolv_conf(is_air_setup=is_air)
                     general_cli_obj.save_configuration()
             if deploy_dpu:
                 with allure.step('Update the dash api in sonic-mgmt'):

@@ -14,7 +14,7 @@ logger = logging.getLogger()
 
 
 @pytest.fixture(scope='module', autouse=True)
-def auto_neg_configuration(topology_obj, setup_name, engines, cli_objects, platform_params):
+def auto_neg_configuration(topology_obj, setup_name, engines, cli_objects, platform_params, is_air):
     """
     Pytest fixture which will clean all fec configuration leftover from the dut
 
@@ -23,7 +23,7 @@ def auto_neg_configuration(topology_obj, setup_name, engines, cli_objects, platf
     yield
 
     logger.info('Starting Auto Neg configuration cleanup')
-    cli_objects.dut.general.apply_basic_config(topology_obj, setup_name, platform_params)
+    cli_objects.dut.general.apply_basic_config(topology_obj, setup_name, platform_params, is_air=is_air)
 
     logger.info('Auto Neg cleanup completed')
 

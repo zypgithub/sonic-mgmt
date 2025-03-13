@@ -199,10 +199,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dut", help="DUT name", type=str, required=True)
     parser.add_argument("--mgmt_repo", help="Path to the sonic-mgmt repo", type=str, required=True)
+    parser.add_argument("--setup_name", help="Setup name", type=str, required=False)
 
     args = parser.parse_args()
 
     dut_name = args.dut
+    setup_name = args.setup_name
     mgmt_repo = args.mgmt_repo
 
     conf_files = ConfFiles(mgmt_repo)
@@ -232,7 +234,7 @@ if __name__ == "__main__":
         This logic used for add NvidiaAir dynamic setup data into ansible related files(inventory, lab, testbed.yaml)
         It will add short info about setup: name, ip, ssh_port - which used by LogAnalyzer and other community plugins
         """
-        topology = get_topology_by_setup_name(setup_name=dut_name, slow_cli=False)
+        topology = get_topology_by_setup_name(setup_name=setup_name, slow_cli=False)
         ansible_host = topology.players['dut']['engine'].ip
         ansible_port = topology.players['dut']['engine'].ssh_port
 

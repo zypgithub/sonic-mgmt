@@ -507,7 +507,7 @@ class SonicSecureBootHelper(SecureBootHelper):
             self.serial_engine.run_cmd('y')
 
     @staticmethod
-    def restore_basic_config(topology_obj, setup_name, platform_params):
+    def restore_basic_config(topology_obj, setup_name, platform_params, is_air):
         """
         This function will restore basic configuration
         """
@@ -522,7 +522,8 @@ class SonicSecureBootHelper(SecureBootHelper):
                 dut_cli.general.init_telemetry_keys()
 
             with allure.step("Apply basic config"):
-                dut_cli.general.apply_basic_config(topology_obj, setup_name, platform_params, disable_ztp=True)
+                dut_cli.general.apply_basic_config(topology_obj, setup_name, platform_params, disable_ztp=True,
+                                                   is_air=is_air)
 
     def get_fw_components_versions(self):
         """
