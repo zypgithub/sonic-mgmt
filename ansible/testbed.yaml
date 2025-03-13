@@ -1716,7 +1716,7 @@
   ptf_ip: 10.245.46.62/20
   ptf_ipv6:
   server: server_85
-  vm_base: VM4925
+  vm_base: VM5020
   dut:
     - mtvr-gaur-03
   inv_name: lab
@@ -1730,7 +1730,7 @@
   ptf_ip: 10.245.46.62/20
   ptf_ipv6:
   server: server_85
-  vm_base: VM4925
+  vm_base: VM5020
   dut:
     - mtvr-gaur-03
   inv_name: lab
@@ -1744,7 +1744,7 @@
   ptf_ip: 10.245.46.62/20
   ptf_ipv6:
   server: server_85
-  vm_base: VM4925
+  vm_base: VM5020
   dut:
     - mtvr-gaur-03
   inv_name: lab
@@ -1758,7 +1758,7 @@
   ptf_ip: 10.245.46.62/20
   ptf_ipv6:
   server: server_85
-  vm_base: VM4925
+  vm_base: VM5020
   dut:
     - mtvr-gaur-03
   inv_name: lab
@@ -1772,7 +1772,7 @@
   ptf_ip: 10.245.46.62/20
   ptf_ipv6:
   server: server_85
-  vm_base: VM4925
+  vm_base: VM5020
   dut:
     - mtvr-bison-03
   inv_name: lab
@@ -1786,7 +1786,7 @@
   ptf_ip: 10.245.46.62/20
   ptf_ipv6:
   server: server_85
-  vm_base: VM4925
+  vm_base: VM5020
   dut:
     - mtvr-gaur-03
   inv_name: lab
@@ -1800,7 +1800,7 @@
   ptf_ip: 10.245.46.62/20
   ptf_ipv6:
   server: server_85
-  vm_base: VM4925
+  vm_base: VM5020
   dut:
     - mtvr-gaur-03
   inv_name: lab
@@ -1814,7 +1814,7 @@
   ptf_ip: 10.245.46.62/20
   ptf_ipv6:
   server: server_85
-  vm_base: VM4925
+  vm_base: VM5020
   dut:
     - mtvr-gaur-03
   inv_name: lab
@@ -1828,7 +1828,7 @@
   ptf_ip: 10.245.46.62/20
   ptf_ipv6:
   server: server_85
-  vm_base: VM4925
+  vm_base: VM5020
   dut:
     - mtvr-gaur-03
   inv_name: lab
@@ -1842,7 +1842,7 @@
   ptf_ip: 10.245.46.62/20
   ptf_ipv6:
   server: server_85
-  vm_base: VM4925
+  vm_base: VM5020
   dut:
     - mtvr-gaur-03
   inv_name: lab
@@ -1856,7 +1856,7 @@
   ptf_ip: 10.245.46.62/20
   ptf_ipv6:
   server: server_85
-  vm_base: VM4925
+  vm_base: VM5020
   dut:
     - mtvr-gaur-03
   inv_name: lab
@@ -1870,7 +1870,7 @@
   ptf_ip: 10.245.46.62/20
   ptf_ipv6:
   server: server_85
-  vm_base: VM4925
+  vm_base: VM5020
   dut:
     - mtvr-gaur-03
   inv_name: lab
@@ -1884,7 +1884,7 @@
   ptf_ip: 10.245.46.62/20
   ptf_ipv6:
   server: server_85
-  vm_base: VM4925
+  vm_base: VM5020
   dut:
     - mtvr-gaur-03
   inv_name: lab

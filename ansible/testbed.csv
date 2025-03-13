@@ -420,14 +420,14 @@ mtvr-gaur-02-t1-lag,vm-t1,t1-lag,docker-ptf-mlnx,ptf-mtvr-gaur-02,10.245.38.63/2
 mtvr-gaur-02-t1-lag-c224o8,vm-t1,t1-lag-c224o8,docker-ptf-mlnx,ptf-mtvr-gaur-02,10.245.38.63/20,,server_84,VM4901,mtvr-gaur-02,Mellanox MTR testbed
 mtvr-gaur-02-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-mtvr-gaur-02,10.245.38.63/20,,server_84,VM4901,mtvr-gaur-02,Mellanox MTR testbed
 
-mtvr-gaur-03-t0,vm-t1,t0,docker-ptf-mlnx,ptf-mtvr-gaur-03,10.245.46.62/20,,server_85,VM4925,mtvr-gaur-03,Mellanox MTR testbed
-mtvr-gaur-03-t0-c256,vm-t1,t0-c256,docker-ptf-mlnx,ptf-mtvr-gaur-03,10.245.46.62/20,,server_85,VM4925,mtvr-gaur-03,Mellanox MTR testbed
-mtvr-gaur-03-t0-64,vm-t1,t0-64,docker-ptf-mlnx,ptf-mtvr-gaur-03,10.245.46.62/20,,server_85,VM4925,mtvr-gaur-03,Mellanox MTR testbed
-mtvr-gaur-03-t0-64-256,vm-t1,t0-64-256,docker-ptf-mlnx,ptf-mtvr-gaur-03,10.245.46.62/20,,server_85,VM4925,mtvr-gaur-03,Mellanox MTR testbed
-mtvr-gaur-03-t1,vm-t1,t1,docker-ptf-mlnx,ptf-mtvr-gaur-03,10.245.46.62/20,,server_85,VM4925,mtvr-gaur-03,Mellanox MTR testbed
-mtvr-gaur-03-t1-lag,vm-t1,t1-lag,docker-ptf-mlnx,ptf-mtvr-gaur-03,10.245.46.62/20,,server_85,VM4925,mtvr-gaur-03,Mellanox MTR testbed
-mtvr-gaur-03-t1-lag-c224o8,vm-t1,t1-lag-c224o8,docker-ptf-mlnx,ptf-mtvr-gaur-03,10.245.46.62/20,,server_85,VM4925,mtvr-gaur-03,Mellanox MTR testbed
-mtvr-gaur-03-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-mtvr-gaur-03,10.245.46.62/20,,server_85,VM4925,mtvr-gaur-03,Mellanox MTR testbed
+mtvr-gaur-03-t0,vm-t1,t0,docker-ptf-mlnx,ptf-mtvr-gaur-03,10.245.46.62/20,,server_85,VM5020,mtvr-gaur-03,Mellanox MTR testbed
+mtvr-gaur-03-t0-c256,vm-t1,t0-c256,docker-ptf-mlnx,ptf-mtvr-gaur-03,10.245.46.62/20,,server_85,VM5020,mtvr-gaur-03,Mellanox MTR testbed
+mtvr-gaur-03-t0-64,vm-t1,t0-64,docker-ptf-mlnx,ptf-mtvr-gaur-03,10.245.46.62/20,,server_85,VM5020,mtvr-gaur-03,Mellanox MTR testbed
+mtvr-gaur-03-t0-64-256,vm-t1,t0-64-256,docker-ptf-mlnx,ptf-mtvr-gaur-03,10.245.46.62/20,,server_85,VM5020,mtvr-gaur-03,Mellanox MTR testbed
+mtvr-gaur-03-t1,vm-t1,t1,docker-ptf-mlnx,ptf-mtvr-gaur-03,10.245.46.62/20,,server_85,VM5020,mtvr-gaur-03,Mellanox MTR testbed
+mtvr-gaur-03-t1-lag,vm-t1,t1-lag,docker-ptf-mlnx,ptf-mtvr-gaur-03,10.245.46.62/20,,server_85,VM5020,mtvr-gaur-03,Mellanox MTR testbed
+mtvr-gaur-03-t1-lag-c224o8,vm-t1,t1-lag-c224o8,docker-ptf-mlnx,ptf-mtvr-gaur-03,10.245.46.62/20,,server_85,VM5020,mtvr-gaur-03,Mellanox MTR testbed
+mtvr-gaur-03-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-mtvr-gaur-03,10.245.46.62/20,,server_85,VM5020,mtvr-gaur-03,Mellanox MTR testbed
 
 r-r740-07-bf2-sonic-01-dpu,vm-t1,dpu,docker-ptf-mlnx,ptf-bf2-740-07-01,10.215.20.183/16,,server_55,VM2001,r-r740-07-bf2-sonic-01,Mellanox MTR testbed
 r-r740-07-bf2-sonic-01-ptf-any,vm-t1,dpu,docker-ptf-mlnx,ptf-bf2-740-07-01,10.215.20.183/16,,server_55,VM2001,r-r740-07-bf2-sonic-01,Mellanox MTR testbed
