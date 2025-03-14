@@ -26,3 +26,11 @@ tests/common/plugins/custom_skipif/Redmine.py
 .python-version
 
 sonic-dump/
+
+# Standalone bug handler build dist and build folder
+# and python venv folder
+tests/common/plugins/loganalyzer/bughandler/dist
+tests/common/plugins/loganalyzer/bughandler/build
+tests/common/plugins/loganalyzer/bughandler/.cache
+.venv
+venv

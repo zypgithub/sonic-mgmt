@@ -27,6 +27,13 @@ DEFAULT_IGNORE_FILE_LIST = ["loganalyzer_common_ignore.txt"]
 TMP_SYSLOG_FOLDER = "/tmp/syslogs"
 TMP_TECHSUPPORT_DUMP = "/tmp/"
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(filename)s:%(lineno)d][%(levelname)s]%(message)s",
+    datefmt='%H:%M:%S'
+)
+# set the perscache log level to INFO to prevent log flooding
+logging.getLogger('perscache').setLevel(logging.INFO)
 
 def run_bug_handler(action):
     """

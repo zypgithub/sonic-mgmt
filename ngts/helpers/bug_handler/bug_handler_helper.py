@@ -279,7 +279,7 @@ def run_err_msg_bug_handler_tool(conf_path, redmine_project, branch, yaml_parsed
 
         logger.info(f"Running Bug Handler CMD: {bug_handler_cmd}")
         bug_handler_output = subprocess.run(bug_handler_cmd, shell=True, capture_output=True).stdout
-        logger.info(bug_handler_output)
+        logger.info(f"Bug Handler Output: {bug_handler_output}")
         bug_handler_file_result = json.loads(bug_handler_output)
 
     if is_attachment_needed(bug_handler_file_result, update_only, bug_handler_no_action, yaml_parsed_file):
@@ -330,7 +330,12 @@ def run_bug_handler_with_no_action(conf_path, redmine_project, branch, yaml_pars
         f"--parsed_data '{yaml_parsed_file}' --no_action "
 
     logger.info(f"Running Bug Handler CMD: {bug_handler_cmd}")
-    bug_handler_output = subprocess.run(bug_handler_cmd, shell=True, capture_output=True).stdout
+    bug_handler_result = subprocess.run(bug_handler_cmd, shell=True, capture_output=True)
+    bug_handler_output = bug_handler_result.stdout
+    if bug_handler_result.returncode != 0:
+        logger.error(f"Bug Handler Failed: {bug_handler_result.stderr}")
+        raise Exception(f"Bug Handler Failed: {bug_handler_result.stderr}")
+    logger.info(f"Bug Handler Output: {bug_handler_output}")
     bug_handler_file_result = json.loads(bug_handler_output)
 
     logger.info(f"No action bug_handler_file_result:{bug_handler_file_result}")
