@@ -1133,13 +1133,25 @@ tests/nightly/lag/test_lag.py:
     conditions:
     - "https://redmine.mellanox.com/issues/4031452 and 'sn564' in platform"
 
-tests/srv6/:
+srv6/:
   skip:
     reason: "Testcase ignored due to only support SRv6 function since branch 202412"
     conditions_logical_operator: or
     conditions:
       - "'202405' in release"
       - "'202411' in release"
+
+srv6/test_srv6_dataplane.py::test_srv6_dataplane_after_config_reload:
+  skip:
+    reason: "Testcase ignored due to test issue"
+
+srv6/test_srv6_dataplane.py::test_srv6_dataplane_after_bgp_restart:
+  skip:
+    reason: "Testcase ignored due to test issue"
+
+srv6/test_srv6_dataplane.py::test_srv6_dataplane_after_reboot:
+  skip:
+    reason: "Testcase ignored due to test issue"
 
 console/test_console_driver.py:
   skip:
