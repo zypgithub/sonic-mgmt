@@ -1365,8 +1365,7 @@ class MarsConstants:
 
     DUT_LOG_BACKUP_PATH = "/.autodirect/sw_system_project/sonic/dut_logs"
 
-    BRANCH_PTF_MAPPING = {'master': '558858',
-                          '202012': '42007',
+    BRANCH_PTF_MAPPING = {'202012': '42007',
                           '202106': '42007'
                           }
 
