@@ -530,7 +530,7 @@ class GorillaSwitch(IbSwitch):
                 "CPLD3": "CPLD000268_REV0700",
             }
         )
-        self.stats_fan_header_num_of_lines = 25
+        self.stats_disk_header_num_of_lines = 16
         self.stats_cpu_header_num_of_lines = 12
         self.stats_temperature_header_num_of_lines = 53
         self.valid_ports_count = 64
@@ -637,7 +637,7 @@ class BlackMambaSwitch(IbSwitch):
                                 'PMIC-13-CEX-VDD-Out-1', 'PSU-1-12V-Out', 'PSU-2-12V-Out', 'PSU-3-12V-Out',
                                 'PSU-4-12V-Out', 'PSU-5-12V-Out', 'PSU-6-12V-Out', 'PSU-7-12V-Out', 'PSU-8-12V-Out']
 
-        self.stats_fan_header_num_of_lines = 17
+        self.stats_disk_header_num_of_lines = 16
         self.stats_cpu_header_num_of_lines = 12
         self.stats_temperature_header_num_of_lines = 45
         self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/black_mamba_versions.json"
@@ -773,7 +773,7 @@ class CrocodileSwitch(IbSwitch):
                                 'PMIC-6-ASIC2-DVDD-PL1-Out-2', 'PMIC-6-ASIC2-HVDD-PL1-Out-1', 'PMIC-7-12V-MAIN-In-1',
                                 'PMIC-7-CEX-VDD-Out-1', 'PSU-1-12V-Out', 'PSU-2-12V-Out', 'PSU-3-12V-Out',
                                 'PSU-4-12V-Out']
-        self.stats_fan_header_num_of_lines = 23
+        self.stats_disk_header_num_of_lines = 16
         self.system_profile_default_values = ['enabled', '1792', 'enabled', 'disabled', '1']
         self.stats_cpu_header_num_of_lines = 12
         self.stats_power_header_num_of_lines = 17
@@ -1103,7 +1103,7 @@ class JulietScaleoutSwitch(JulietSwitch):
             "asic-model": self.asic_type,
         })
 
-        self.stats_fan_header_num_of_lines = 21
+        self.stats_disk_header_num_of_lines = 16
         self.stats_cpu_header_num_of_lines = 12
         self.stats_temperature_header_num_of_lines = 25
         self.allow_cpld_update = True

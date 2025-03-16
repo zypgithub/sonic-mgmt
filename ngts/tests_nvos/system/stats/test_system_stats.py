@@ -799,10 +799,10 @@ def test_system_stats_big_files(engines, devices, test_api):
             system.stats.unset(apply=True).verify_result()
 
         with allure.step("set fan category history duration and interval to min values"):
-            system.stats.category.categoryName['fan'].set(
+            system.stats.category.categoryName['disk'].set(
                 op_param_name=StatsConsts.HISTORY_DURATION, op_param_value=int(StatsConsts.HISTORY_DURATION_MIN)).\
                 verify_result()
-            system.stats.category.categoryName['fan'].set(
+            system.stats.category.categoryName['disk'].set(
                 op_param_name=StatsConsts.INTERVAL, op_param_value=int(StatsConsts.INTERVAL_MIN), apply=True).\
                 verify_result()
 
@@ -814,7 +814,7 @@ def test_system_stats_big_files(engines, devices, test_api):
             engine.run_cmd("sudo systemctl restart stats-reportd")
 
         with allure.step("Replace internal file with a big file"):
-            file_name = 'fan.csv'
+            file_name = 'disk.csv'
             file_path = StatsConsts.BIG_FILE_PATH + file_name
             player_engine.upload_file_using_scp(dest_username=devices.dut.default_username,
                                                 dest_password=devices.dut.default_password,
@@ -827,7 +827,7 @@ def test_system_stats_big_files(engines, devices, test_api):
             time.sleep(StatsConsts.SLEEP_1_MINUTE)
 
         with allure.step("Validate appending big file"):
-            validate_number_of_lines_in_external_file(engines, system, 'fan', StatsConsts.BIG_FILE_NUM_OF_LINES,
+            validate_number_of_lines_in_external_file(engines, system, 'disk', StatsConsts.BIG_FILE_NUM_OF_LINES,
                                                       StatsConsts.BIG_FILE_NUM_OF_LINES + 3)
 
         with allure.step("Delete uploaded file"):
@@ -840,8 +840,9 @@ def test_system_stats_big_files(engines, devices, test_api):
             time.sleep(StatsConsts.SLEEP_15_SECONDS)
 
         with allure.step("Validate clearing big file"):
-            validate_number_of_lines_in_external_file(engines, system, 'fan', devices.dut.stats_fan_header_num_of_lines,
-                                                      devices.dut.stats_fan_header_num_of_lines + 30)
+            validate_number_of_lines_in_external_file(engines, system, 'disk',
+                                                      devices.dut.stats_disk_header_num_of_lines,
+                                                      devices.dut.stats_disk_header_num_of_lines + 30)
 
         with allure.step("Delete uploaded file"):
             engine.run_cmd(cmd='rm -f {}'.format(file_path))
