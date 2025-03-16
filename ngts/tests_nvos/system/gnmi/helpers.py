@@ -110,22 +110,19 @@ def validate_gnmi_server_docker_state(engines, should_run=True):
         f"but we expect it {should_run_str} to run"
 
 
-def validate_show_gnmi(gnmi_server_obj, engines, gnmi_state=GnmiConsts.GNMI_STATE_ENABLED,
-                       gnmi_is_running=GnmiConsts.GNMI_IS_RUNNING):
+def validate_show_gnmi(gnmi_server_obj, engines, gnmi_state=GnmiConsts.GNMI_STATE_ENABLED):
     gnmi_server_obj.compare_show_gnmi_output(
-        expected={GnmiConsts.GNMI_STATE_FIELD: gnmi_state, GnmiConsts.GNMI_IS_RUNNING_FIELD: gnmi_is_running})
-    should_run = gnmi_is_running == GnmiConsts.GNMI_IS_RUNNING
+        expected={GnmiConsts.GNMI_STATE_FIELD: gnmi_state})
+    should_run = gnmi_state == GnmiConsts.GNMI_STATE_ENABLED
     validate_gnmi_server_docker_state(engines, should_run=should_run)
 
 
 def validate_gnmi_enabled_and_running(gnmi_server_obj, engines):
-    validate_show_gnmi(gnmi_server_obj, engines, gnmi_state=GnmiConsts.GNMI_STATE_ENABLED,
-                       gnmi_is_running=GnmiConsts.GNMI_IS_RUNNING)
+    validate_show_gnmi(gnmi_server_obj, engines, gnmi_state=GnmiConsts.GNMI_STATE_ENABLED)
 
 
 def validate_gnmi_disabled_and_not_running(gnmi_server_obj, engines):
-    validate_show_gnmi(gnmi_server_obj, engines, gnmi_state=GnmiConsts.GNMI_STATE_DISABLED,
-                       gnmi_is_running=GnmiConsts.GNMI_IS_NOT_RUNNING)
+    validate_show_gnmi(gnmi_server_obj, engines, gnmi_state=GnmiConsts.GNMI_STATE_DISABLED)
 
 
 def run_gnmi_client_and_parse_output(engines, devices, xpath, target_ip, target_port=GnmiConsts.GNMI_DEFAULT_PORT,

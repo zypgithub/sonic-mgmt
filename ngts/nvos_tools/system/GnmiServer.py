@@ -1,4 +1,5 @@
 import logging
+from typing import Dict
 
 from retry import retry
 
@@ -26,8 +27,7 @@ class GnmiServer(MTLSableServerResource):
         return OutputParsingTool.parse_json_str_to_dictionary(self.show()).get_returned_value()
 
     @retry(Exception, tries=4, delay=3)
-    def compare_show_gnmi_output(self, expected={GnmiConsts.GNMI_STATE_FIELD: GnmiConsts.GNMI_STATE_ENABLED,
-                                                 GnmiConsts.GNMI_IS_RUNNING_FIELD: GnmiConsts.GNMI_IS_RUNNING}):
+    def compare_show_gnmi_output(self, expected: Dict):
         show_output = self.parsed_show_gnmi()
         msg = ''
         for key, value in expected.items():

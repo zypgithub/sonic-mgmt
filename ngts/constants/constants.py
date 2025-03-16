@@ -1710,9 +1710,6 @@ class GnmiConsts:
     GNMI_STATE_FIELD = 'state'
     GNMI_STATE_ENABLED = 'enabled'
     GNMI_STATE_DISABLED = 'disabled'
-    GNMI_IS_RUNNING_FIELD = 'is-running'
-    GNMI_IS_RUNNING = 'yes'
-    GNMI_IS_NOT_RUNNING = 'no'
     GNMI_VERSION_FIELD = 'version'
     GNMI_DEFAULT_PORT = '9339'
     SLEEP_TIME_FOR_UPDATE = 40
