@@ -406,7 +406,7 @@ def test_simulate_multi_fan_speed_fault(engines, devices, loganalyzer):
         with allure.step("Simulate fan speed fault for chosen fans:{}".format(fan_ids)):
             for fan_id in fan_ids:
                 fan_display_name = get_fan_display_name(fan_id)
-                real_speed = HWSimulator.simulate_fan_speed_fault(engines.dut, thermal_directory, 1, fan_id)
+                real_speed = HWSimulator.simulate_fan_speed_fault(engines.dut, thermal_directory, fan_id, 1)
                 fan_info[fan_id] = [fan_display_name, real_speed]
                 time.sleep(2)
 
