@@ -618,6 +618,7 @@ class SystemConsts:
 
     CPU_CORE_COUNT_KEY = 'core-count'
     CPU_MODEL_KEY = 'model'
+    CPU_CORES = 'cores'
     CPU_UTILIZATION_KEY = 'utilization'
     CPU_PERCENT_THRESH_MIN = 0.0
     CPU_PERCENT_THRESH_MAX = 60.0

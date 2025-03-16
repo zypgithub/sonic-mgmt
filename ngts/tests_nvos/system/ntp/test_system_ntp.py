@@ -677,7 +677,7 @@ def test_ntp_performance(test_api):
     5. Measure show system ntp for 10 server (All servers are configured. Clock is synchronized)
     6. Validate configuration time diff (Diff time < 2 sec)
     7. Validate show system ntp time diff (Diff time < 0.5 sec)
-    8. Validate CPU utilization (Utilization < 35%)
+    8. Validate CPU utilization (Utilization < 60%)
     9. Remove all ntp servers
     10. Validate system sync time after setting a new server (Sync time < 5 sec)
     """
@@ -707,7 +707,7 @@ def test_ntp_performance(test_api):
             system.ntp.unset(apply=True).verify_result()
 
         with allure.step("Measure configuring time of 10 servers"):
-            for server_id in range(1, NtpConsts.MULTIPLE_SERVERS_NUMBER):
+            for server_id in range(1, NtpConsts.MULTIPLE_SERVERS_NUMBER - 1):
                 server_name = 'dummy.server' + str(server_id)
                 system.ntp.servers.set_resource(server_name, apply=False)
             server_name = 'server10'
@@ -736,10 +736,12 @@ def test_ntp_performance(test_api):
 
         with allure.step("Validate cpu utilization"):
             cpu_show = OutputParsingTool.parse_json_str_to_dictionary(system.show("cpu")).get_returned_value()
-            cpu_utilization = cpu_show[SystemConsts.CPU_UTILIZATION_KEY]
-            assert cpu_utilization < SystemConsts.CPU_PERCENT_THRESH_MAX, \
-                "CPU utilization: {actual}% is higher than expected time: {expected}%".\
-                format(actual=cpu_utilization, expected=SystemConsts.CPU_PERCENT_THRESH_MAX)
+            cpu_cores = cpu_show[SystemConsts.CPU_CORES].keys()
+            for core in cpu_cores:
+                cpu_utilization = cpu_show[SystemConsts.CPU_CORES][core][SystemConsts.CPU_UTILIZATION_KEY]
+                assert cpu_utilization < SystemConsts.CPU_PERCENT_THRESH_MAX, \
+                    "CPU utilization: {actual}% is higher than expected time: {expected}%".\
+                    format(actual=cpu_utilization, expected=SystemConsts.CPU_PERCENT_THRESH_MAX)
 
         with allure.step("Remove all ntp servers"):
             system.ntp.unset(apply=True).verify_result()
