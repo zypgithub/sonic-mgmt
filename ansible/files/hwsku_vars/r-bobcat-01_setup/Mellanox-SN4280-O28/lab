@@ -9,7 +9,7 @@ r-bobcat-01-dpu-3      ansible_host=10.210.26.177 ansible_ssh_port=5024 ansible_
 sonic_latest
 
 [ptf]
-ptf-r-bobcat-01   ansible_host=10.215.6.123 ansible_ssh_user=root ansible_ssh_pass=root
+ptf-r-bobcat-01   ansible_host=10.215.28.216 ansible_ssh_user=root ansible_ssh_pass=root
 
 [lab:children]
 sonic

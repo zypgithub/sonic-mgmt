@@ -1023,7 +1023,7 @@
   topo: t0-28
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-bobcat-01
-  ptf_ip: 10.215.6.123/16
+  ptf_ip: 10.215.28.216/16
   ptf_ipv6:
   server: server_72
   vm_base: VM3701
@@ -1041,7 +1041,7 @@
   topo: t1-28-lag
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-bobcat-01
-  ptf_ip: 10.215.6.123/16
+  ptf_ip: 10.215.28.216/16
   ptf_ipv6:
   server: server_72
   vm_base: VM3701
@@ -1059,7 +1059,7 @@
   topo: ptf-any
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-bobcat-01
-  ptf_ip: 10.215.6.123/16
+  ptf_ip: 10.215.28.216/16
   ptf_ipv6:
   server: server_72
   vm_base: VM3701

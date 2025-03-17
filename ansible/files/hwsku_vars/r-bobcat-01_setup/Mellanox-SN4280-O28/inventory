@@ -41,8 +41,8 @@ r-bobcat-01-dpu-3
 
 [ptf]
 # MTR r-bobcat-01 PTF host
-ptf-r-bobcat-01 ansible_host=10.215.6.123 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
-10.215.6.123 ansible_host=10.215.6.123 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+ptf-r-bobcat-01 ansible_host=10.215.28.216 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+10.215.28.216 ansible_host=10.215.28.216 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
 
 [pdu]
 pdu-10-208-0-181 ansible_host=10.208.0.181 protocol=snmp

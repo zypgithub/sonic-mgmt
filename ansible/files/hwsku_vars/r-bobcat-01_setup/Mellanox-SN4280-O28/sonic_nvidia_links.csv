@@ -27,4 +27,4 @@ r-bobcat-01,Ethernet192,r-leopard-82,Ethernet192,400000,125,Access,on
 r-bobcat-01,Ethernet200,r-leopard-82,Ethernet200,400000,126,Access,on
 r-bobcat-01,Ethernet208,r-leopard-82,Ethernet208,400000,127,Access,on
 r-bobcat-01,Ethernet216,r-leopard-82,Ethernet216,400000,128,Access,on
-r-leopard-82,Ethernet248,arc-host70,p5p2,100000,101-132,Trunk
+r-leopard-82,Ethernet248,r-r740-14,enp21p1,100000,101-132,Trunk
