@@ -384,11 +384,6 @@ r, ".* ERR kernel:.*cisco-fpga-pci \d+:\d+:\d+\.\d+: cisco_fpga_select_new_acpi_
 r, ".* WARNING kernel:.*pcieport.*device.*error.*status/mask=.*"
 r, ".* ERR syncd\d*#syncd:.* -E-HLD-0- Trap.* is not supported.*"
 
-# Errors for config reload/reboot on mellanox platform
-# SAI implement missing for the https://github.com/sonic-net/sonic-buildimage/pull/18912 caused the err msg pop up, need to ingore the err msgs before it SAI implement is done.
-r, ".* ERR swss#orchagent:.*doAppSwitchTableTask.*Unsupported Attribute ecmp_hash_offset.*"
-r, ".* ERR swss#orchagent:.*doAppSwitchTableTask.*Unsupported Attribute lag_hash_offset.*"
-
 # Ignore ACL EGRESS feature unavailable error on fabric cards
 r, ".* ERR syncd\d*#syncd:.* SAI_API_SWITCH:brcm_sai_get_switch_attribute.* Get switch attrib 37 failed with error Feature unavailable.*"
 
@@ -404,10 +399,6 @@ r, ".* ERR swss#orchagent:.*doAppSwitchTableTask.*Unsupported Attribute lag_hash
 
 # ignore SAI_API_BUFFER for DNX platforms
 r, ".* ERR syncd\d*#syncd.*SAI_API_BUFFER.*Unsupported buffer pool.*"
-
-# Errors for syncd shutdown on mellanox platform
-r, ".* ERR kernel:.*sxd_kernel: \[error\] SDK main monitor thread does not respond"
-r, ".* ERR kernel:.*sxd_kernel: \[error\] Health-Check: device=1, cause=10 \['SDK thread issue'\] - stopping further device monitoring"
 
 # ignore TACACS login failure, which will happen when other user trying login device when running test
 r, ".* ERR sshd\[\d*\]: auth fail.*"
