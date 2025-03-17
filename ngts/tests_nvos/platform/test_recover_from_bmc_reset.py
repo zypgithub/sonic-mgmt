@@ -67,7 +67,7 @@ def test_recover_from_bmc_reset(engines, devices, topology_obj, loganalyzer):
 
             with allure.independent_step("Assert CPU usage"):
                 cpu_output = OutputParsingTool.parse_json_str_to_dictionary(system.show("cpu")).get_returned_value()
-                cpu_utilization = cpu_output[SystemConsts.CPU_UTILIZATION_KEY]
+                cpu_utilization = cpu_output[SystemConsts.CPU_TOTAL_UTILIZATION_KEY]
                 assert cpu_utilization <= CPU_MAX_UTILIZATION
 
             with allure.independent_step("Assert logs aren't flooded with BMC error messages"):

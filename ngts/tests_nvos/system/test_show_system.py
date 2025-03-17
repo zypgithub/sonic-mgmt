@@ -27,7 +27,7 @@ def test_system(test_api, engines, devices, topology_obj, nv_command, test_name)
             2. validate all fields have values
             3. set hostname to "Jaguar-NVOS"
             5. run show system message
-            # 6. verify hostname appending value is "Jaguar-NVOS"
+            6. verify hostname appending value is "Jaguar-NVOS"
             7. run nv config apply
             8. verify hostname changed to "Jaguar-NVOS"
             9. run unset system hostname
@@ -268,14 +268,16 @@ def test_show_system_cpu(test_api, engines, devices, nv_command):
         time.sleep(10)
         output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(nv_command.system.show("cpu")).get_returned_value()
 
-        assert len(output_dictionary.keys()) == 3, "Unexpected Number of keys"
+        assert len(output_dictionary.keys()) == 5, "Unexpected Number of keys"
         assert list(output_dictionary.keys())[0] == SystemConsts.CPU_CORE_COUNT_KEY, "Unexpected Key value"
-        assert list(output_dictionary.keys())[1] == SystemConsts.CPU_MODEL_KEY, "Unexpected Key value"
-        assert list(output_dictionary.keys())[2] == SystemConsts.CPU_UTILIZATION_KEY, "Unexpected Key value"
+        assert list(output_dictionary.keys())[1] == SystemConsts.CPU_CORES, "Unexpected Key value"
+        assert list(output_dictionary.keys())[2] == SystemConsts.CPU_LOAD_AVERAGE_KEY, "Unexpected Key value"
+        assert list(output_dictionary.keys())[3] == SystemConsts.CPU_MODEL_KEY, "Unexpected Key value"
+        assert list(output_dictionary.keys())[4] == SystemConsts.CPU_TOTAL_UTILIZATION_KEY, "Unexpected Key value"
         assert output_dictionary[SystemConsts.CPU_CORE_COUNT_KEY] == devices.dut.core_count, \
             "Unexpected switch core-count"
 
-        utilization = output_dictionary[SystemConsts.CPU_UTILIZATION_KEY]
+        utilization = output_dictionary[SystemConsts.CPU_TOTAL_UTILIZATION_KEY]
         assert SystemConsts.CPU_PERCENT_THRESH_MIN < utilization < SystemConsts.CPU_PERCENT_THRESH_MAX, \
             "utilization percentage is out of range"
 

@@ -158,7 +158,7 @@ def test_rsyslog_multiple_servers_configuration(engines):
         with allure.step("Validate system resources CPU utilization with 11 servers configured"):
             logging.info("Validate system resources CPU utilization with 11 servers configured")
             output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(system.show("cpu")).get_returned_value()
-            cpu_utilization = output_dictionary[SystemConsts.CPU_UTILIZATION_KEY]
+            cpu_utilization = output_dictionary[SystemConsts.CPU_TOTAL_UTILIZATION_KEY]
             assert cpu_utilization < SystemConsts.CPU_PERCENT_THRESH_MAX, \
                 "CPU utilization: {actual}% is higher than the maximum limit of: {expected}%" \
                 "".format(actual=cpu_utilization, expected=SystemConsts.CPU_PERCENT_THRESH_MAX)

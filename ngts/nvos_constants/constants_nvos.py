@@ -441,6 +441,7 @@ class SystemConsts:
     PLATFORM = 'platform'
     PRODUCT_NAME = 'product-name'
     PRODUCT_RELEASE = 'product-release'
+    MEMORY = 'memory'
     SWAP_MEMORY = 'swap-memory'
     SYSTEM_MEMORY = 'system-memory'
     UPTIME = 'uptime'
@@ -611,15 +612,17 @@ class SystemConsts:
     DHCP_SHOW_DEFAULT_VALUES = [SHOW_VALUE_YES, SHOW_VALUE_YES, USER_STATE_ENABLED, USER_STATE_ENABLED]
     DH_CLIENT_CONF_FILE = "/etc/dhcp/dhclient.conf"
 
-    MEMORY_PHYSICAL_KEY = 'Physical'
-    MEMORY_SWAP_KEY = 'Swap'
+    MEMORY_PHYSICAL_KEY = 'physical'
+    MEMORY_SWAP_KEY = 'swap'
     MEMORY_PERCENT_THRESH_MIN = 0.0
     MEMORY_PERCENT_THRESH_MAX = 70.0
 
     CPU_CORE_COUNT_KEY = 'core-count'
     CPU_MODEL_KEY = 'model'
     CPU_CORES = 'cores'
+    CPU_LOAD_AVERAGE_KEY = 'load-average'
     CPU_UTILIZATION_KEY = 'utilization'
+    CPU_TOTAL_UTILIZATION_KEY = 'total-utilization'
     CPU_PERCENT_THRESH_MIN = 0.0
     CPU_PERCENT_THRESH_MAX = 60.0
 

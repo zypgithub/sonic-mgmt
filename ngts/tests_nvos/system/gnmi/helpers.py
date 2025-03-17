@@ -42,7 +42,7 @@ def validate_memory_and_cpu_utilization():
     memory_util = output_dictionary[SystemConsts.MEMORY_PHYSICAL_KEY]["utilization"]
     assert SystemConsts.MEMORY_PERCENT_THRESH_MIN < memory_util < SystemConsts.MEMORY_PERCENT_THRESH_MAX, "Physical utilization percentage is out of range"
     output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(system.show("cpu")).get_returned_value()
-    cpu_utilization = output_dictionary[SystemConsts.CPU_UTILIZATION_KEY]
+    cpu_utilization = output_dictionary[SystemConsts.CPU_TOTAL_UTILIZATION_KEY]
     logger.info(f"cpu utilization: {cpu_utilization}")
     assert cpu_utilization < SystemConsts.CPU_PERCENT_THRESH_MAX, "CPU utilization: {actual}% is higher than the maximum limit of: {expected}%" \
                                                                   "".format(actual=cpu_utilization,
