@@ -49,8 +49,7 @@ def basic_test_configuration(request, players):
 
 @pytest.fixture(scope='session', autouse=True)
 def create_mongo_db_template_file(players, session_id, setup_name):
-    if not os.path.exists(MongoDbConsts.PERF_MONGO_DB_RESULTS_PATH):
-        create_performance_db_template(players, session_id, setup_name)
+    create_performance_db_template(players, session_id, setup_name)
 
 
 @pytest.fixture(scope='function', autouse=True)
