@@ -11,6 +11,7 @@ from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
@@ -297,6 +298,10 @@ def test_system_contact_set(test_api, engines, nv_command):
             6. Validate system contact is not present in system show
     """
     TestToolkit.tested_api = test_api
+
+    if test_api == ApiType.NVUE and is_bug_active(4362872):
+        pytest.skip("skipped for NVUE type due to bug: https://redmine.mellanox.com/issues/4362872")
+
     try:
         help_system_contact_location(engines, nv_command.system, SystemConsts.CONTACT)
 
@@ -319,6 +324,10 @@ def test_system_location_set(test_api, engines, nv_command):
             6. Validate system location is not present in system show
     """
     TestToolkit.tested_api = test_api
+
+    if test_api == ApiType.NVUE and is_bug_active(4362872):
+        pytest.skip("skipped for NVUE type due to bug: https://redmine.mellanox.com/issues/4362872")
+
     try:
         help_system_contact_location(engines, nv_command.system, SystemConsts.LOCATION)
 
@@ -338,6 +347,10 @@ def test_factory_reset_for_system_contact_location(engines, nv_command):
             5. Run system factory reset
             6. Run 'nv show system' and verify systems contact and location fields are removed
     """
+
+    if is_bug_active(4362872):
+        pytest.skip("skipped for NVUE type due to bug: https://redmine.mellanox.com/issues/4362872")
+
     try:
         with allure.step('Run set system contact command and apply config'):
             nv_command.system.set(op_param_name=SystemConsts.CONTACT, op_param_value="contact_info", apply=True,
