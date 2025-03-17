@@ -14,6 +14,7 @@ sys.path.append(sonic_mgmt_path)
 
 from infra.tools.redmine.redmine_api import get_issues_status  # noqa F401
 from ngts.constants.constants import LinuxConsts  # noqa F401
+from ruamel.yaml.emitter import Emitter  # noqa F401
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
@@ -156,6 +157,8 @@ def remove_redundant_skips(project_key):
 
         yaml = ruamel.yaml.YAML(typ='rt')
         yaml.preserve_quotes = True
+        yaml.width = 1024
+        Emitter.MAX_SIMPLE_KEY_LENGTH = 1024
         issues_list = []
         test_skips_data = None
         log_skips_data = None
@@ -188,7 +191,6 @@ def remove_redundant_skips(project_key):
         if updated_test_data == test_skips_data and updated_log_data == log_skips_data:
             logger.info("There are no closed bugs in the files since last run of this script")
         else:
-            yaml.width = 1000
 
             if "log_skips_path" in project_files[project_key].keys():
                 with open(la_skips_abs_path, 'w') as file:
