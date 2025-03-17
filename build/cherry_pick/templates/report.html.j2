@@ -22,12 +22,12 @@
     p, pre {
         margin-top: 2px;
     }
-    .legend {
+    a {
+        text-decoration: none;
+    }
+    .legend-title {
         margin-top: 10px;
         margin-bottom: 10px;
-        display: flex;
-        flex-wrap: nowrap;
-        flex-direction: row;
     }
     </style>
 </head>
@@ -75,18 +75,18 @@
     {# Show legend of colors #}
     {% set color_and_status = {"#db756e": "Conflict", "#76B900": "Success",
                             "#daf1ff": "Included", "#FFFFFF": "Empty"} %}
-    <div class="legend">
-        {% for color, status in color_and_status.items() %}
-            <div style="display: flex; align-items: center; justify-content: center;
-                        background-color: {{ color }};
-                        width: 120px; height: 22px;
-                        border: 2px solid black;
-                        text-align: center;
-                        font-size: 12px;">
-                <span>{{ status }}</span>
-            </div>
-        {% endfor %}
-    </div>
+    <h4 class="legend-title">Legend</h4>
+    <table style="border: none; margin-bottom: 10px;">
+        <tr>
+            {% for color, status in color_and_status.items() %}
+                <td style="border: 2px solid black; background-color: {{ color }}; 
+                           width: 120px; height: 22px; text-align: center; 
+                           font-size: 12px; padding: 0;">
+                    {{ status }}
+                </td>
+            {% endfor %}
+        </tr>
+    </table>
     {% if cr_on_top %}
     <p>The top CR link: {{ cr_on_top }}</p>
     {% endif %}
