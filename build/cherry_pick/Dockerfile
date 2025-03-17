@@ -31,4 +31,3 @@ ENV GERRIT_USERNAME=${GERRIT_USERNAME} \
 COPY . /root/workspace
 WORKDIR /root/workspace
 RUN pip install -r requirements.txt
-

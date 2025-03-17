@@ -10,13 +10,39 @@
         padding-left: 10px;
         padding-right: 10px;
     }
+    .exception-title {
+        color: red;
+    }
+    .exception-message {
+        font-style: italic;
+    }
+    .success-message {
+        color: #76B900;
+    }
+    p, pre {
+        margin-top: 2px;
+    }
+    .legend {
+        margin-top: 10px;
+        margin-bottom: 10px;
+        display: flex;
+        flex-wrap: nowrap;
+        flex-direction: row;
+    }
     </style>
 </head>
 <body>
+    {% if exception %}
+    <h3 class="exception-title">Cherry pick exception occurred</h3>
+    <p>The exception message:</p>
+    <pre class="exception-message">{{ exception }}</pre>
+    {% else %}
+    {% if commits | length > 0 %}
     <h3>Cherry pick commit from community report</h3>
     <table>
         <thead>
             <tr>
+                <th>No.</th>
                 <th>Subject</th>
                 <th>Short Hash</th>
                 <th>Community committer date</th>
@@ -33,6 +59,7 @@
                 {% elif  commit.cherry_pick_status == 4 %}
                 style="background-color: #FFFFFF;" {# EMPTY COMMIT #}
                 {% endif %}>
+                <td>{{ loop.index }}</td>
                 <td>
                     {{ commit.subject | link_pr_in_subject }}
                 </td>
@@ -42,20 +69,39 @@
             {% endfor %}
         </tbody>
     </table>
-
+    {% else %}
+    <p>No commit to cherry pick. You're up to date! 🎉</p>
+    {% endif %}     {# end of if commits | length > 0 #}
     {# Show legend of colors #}
     {% set color_and_status = {"#db756e": "Conflict", "#76B900": "Success",
-                            "#daf1ff": "Already included", "#FFFFFF": "Empty change"} %}
-    {% for color, status in color_and_status.items() %}
-        <div style="display: flex; align-items: center; margin-top: 5px">
-            <div style="background-color: {{ color }};
-                width: 60px; height: 20px; margin-right: 10px;
-                border: 2px solid black;"></div>
-            <span style="font-size: 16px">{{ status }}</span>
-        </div>
-    {% endfor %}
+                            "#daf1ff": "Included", "#FFFFFF": "Empty"} %}
+    <div class="legend">
+        {% for color, status in color_and_status.items() %}
+            <div style="display: flex; align-items: center; justify-content: center;
+                        background-color: {{ color }};
+                        width: 120px; height: 22px;
+                        border: 2px solid black;
+                        text-align: center;
+                        font-size: 12px;">
+                <span>{{ status }}</span>
+            </div>
+        {% endfor %}
+    </div>
     {% if cr_on_top %}
-    <p style="margin-top: 5px">The CR link waiting for review: {{ cr_on_top }}</p>
+    <p>The top CR link: {{ cr_on_top }}</p>
+    {% endif %}
+    {% if total_commits > 0 %}
+        <p>Total number of commits to cherry pick: {{ total_commits }}</p>
+        {% if not has_conflict and total_commits == commits | length %}
+        <p class="success-message">All the {{total_commits}} commit(s) have been cherry picked successfully! 🎉</p>
+        {% endif %}
+    {% endif %}
+    {% endif %}{# end of if exception condition #}
+    {% if build_url %}
+    <p>The build URL: <a href="{{ build_url }}">{{ build_url }}</a></p>
+    {% endif %}
+    {% if triggered_by %}
+    <p>Cherry pick triggered by: {{ triggered_by }}</p>
     {% endif %}
 </body>
 </html>

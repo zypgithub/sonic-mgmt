@@ -26,6 +26,7 @@ class Args:
     dry_run:bool = True
     reset:bool = True   # whether to hard reset to remote branch in the end
     repo_path: str = "repo_path"  # the path to hold repo code
+    triggered_by: str|None = None # the user name who triggered the cherry pick
 
     def __str__(self)->str:
         return f"""
@@ -39,7 +40,8 @@ class Args:
             recipients: {self.recipients}
             dry_run: {self.dry_run},
             reset: {self.reset},
-            repo_path: {self.repo_path}"""
+            repo_path: {self.repo_path},
+            triggered_by: {self.triggered_by}"""
 
 def init_arg_parser()->Args:
     parser = argparse.ArgumentParser(description="Utility to cherry pick commits from sonic_mgmt community")
@@ -59,6 +61,7 @@ def init_arg_parser()->Args:
     parser.add_argument("--no-reset", action="store_false", dest="reset",
                         help="no hard reset in the end, will keep all the cherry picked commits locally")
     parser.add_argument("--repo_path", type=str, help="repository path", default="repo_path")
+    parser.add_argument("--triggered_by", type=str, default=None, help="the user name who triggered the cherry pick")
     parsed_args = parser.parse_args()
     assert parsed_args.branch in _SUPPORTED_BRANCHES, \
         f"{parsed_args.branch} not in supported branch list: {_SUPPORTED_BRANCHES}"
@@ -70,7 +73,8 @@ def init_arg_parser()->Args:
                 recipients=parsed_args.recipients.split(",") if parsed_args.recipients else "",
                 dry_run=parsed_args.dry_run,
                 reset=parsed_args.reset,
-                repo_path=parsed_args.repo_path)
+                repo_path=parsed_args.repo_path,
+                triggered_by=parsed_args.triggered_by)
     last_successful_commit_file = Path(f"{args.branch}.LAST_SUCCESS")
     if last_successful_commit_file.exists() and last_successful_commit_file.is_file():
         lines = last_successful_commit_file.read_text(encoding="utf-8").splitlines()
