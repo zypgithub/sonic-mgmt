@@ -276,11 +276,12 @@ class TestAutoNegBase(TestAutoFecBase):
                                                                                   port,
                                                                                   port_conf_dict, check_adv_parm],
                            tries=12, delay=10, logger=logger)
-                retry_call(self.verify_mlxlink_status_cmd_output_for_port, fargs=[self.engines.dut,
-                                                                                  self.cli_objects.dut,
-                                                                                  port, port_conf_dict,
-                                                                                  self.ports_aliases_dict, self.pci_conf],
-                           tries=12, delay=10, logger=logger)
+                # mlxlink doesn't work with IM enabled, it is a known limitation
+                if not self.cli_objects.dut.im.is_im_enabled():
+                    retry_call(self.verify_mlxlink_status_cmd_output_for_port,
+                               fargs=[self.engines.dut, self.cli_objects.dut, port, port_conf_dict,
+                                      self.ports_aliases_dict, self.pci_conf],
+                               tries=12, delay=10, logger=logger)
 
     def verify_autoneg_status_cmd_output_for_port(self, dut_engine, cli_object, port, port_conf_dict,
                                                   check_adv_parm=True):
@@ -381,9 +382,11 @@ class TestAutoNegBase(TestAutoFecBase):
         logger.info("Enable auto-negotiation on dut interface {}".format(self.interfaces.dut_ha_1))
         self.configure_port_auto_neg(self.cli_objects.dut, ports_list=[self.interfaces.dut_ha_1], conf=conf,
                                      cleanup_list=cleanup_list, mode='enabled')
-        logger.info("Verify speed/type configuration didn't modify while auto neg is off on interface {}"
-                    .format(self.interfaces.ha_dut_1))
-        self.verify_auto_neg_configuration(conf={self.interfaces.dut_ha_1: conf[self.interfaces.dut_ha_1]})
+        if not self.cli_objects.dut.im.is_im_enabled():
+            # For devices with IM enabled auto-negotiation should be symmetric for both sides
+            logger.info("Verify speed/type configuration didn't modify while auto neg is off on interface {}"
+                        .format(self.interfaces.ha_dut_1))
+            self.verify_auto_neg_configuration(conf={self.interfaces.dut_ha_1: conf[self.interfaces.dut_ha_1]})
         logger.info("Enable auto negotiation on host port {}".format(self.interfaces.ha_dut_1))
         self.configure_port_auto_neg(self.cli_objects.ha, ports_list=[self.interfaces.ha_dut_1],
                                      conf=conf, cleanup_list=cleanup_list, mode='on')
@@ -492,7 +495,7 @@ class TestAutoNegBase(TestAutoFecBase):
                                          set_expected_mlxlink_autoneg=False)
             for port in lb_ports_2_list:
                 conf[port]['expected_mlxlink_autoneg'] = "Force"
-            if self.chip_type in ASIC_SUPPORTS_AN_AND_FORCE_COMBO:
+            if self.chip_type in ASIC_SUPPORTS_AN_AND_FORCE_COMBO and not self.cli_objects.dut.im.is_im_enabled():
                 logger.info("Check configuration on ports did not modify while auto neg is enabled on one loopback port")
                 self.verify_auto_neg_configuration(conf, check_adv_parm=False)
             logger.info("Enable auto negotiation mode on the second port of the loopbacks")

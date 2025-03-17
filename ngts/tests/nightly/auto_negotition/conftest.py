@@ -14,12 +14,6 @@ logger = logging.getLogger()
 
 
 @pytest.fixture(scope='module', autouse=True)
-def skip_if_im_enabled(is_sw_control_feature_enabled):
-    if is_sw_control_feature_enabled and is_redmine_issue_active([4107963])[0]:
-        pytest.skip(f"Skipping test when SW control feature enabled and RM 4107963 is active")
-
-
-@pytest.fixture(scope='module', autouse=True)
 def auto_neg_configuration(topology_obj, setup_name, engines, cli_objects, platform_params):
     """
     Pytest fixture which will clean all fec configuration leftover from the dut
