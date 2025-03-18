@@ -29,9 +29,11 @@ tests/nightly/rocev2_acl_counter:
 
 tests/nightly/route/test_async_route.py:
   skip:
-    reason: "Testcase skipped on simx platform"
+    reason: "Testcase skipped on simx platform or on ASAN image"
+    conditions_logical_operator: or
     conditions:
     - "'simx' in platform"
+    - "'ASAN' in build_version"
 
 tests/nightly/routing/test_routing.py::TestRouting::test_reboot:
   skip:
