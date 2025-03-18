@@ -63,6 +63,12 @@ class HashTest(BaseTest):
             if param not in self.test_params:
                 raise Exception("Missing required parameter {}".format(param))
 
+    def generate_random_sport(self):
+        while True:
+            port = random.randint(0, 65535)
+            if port != 53:
+                return port
+
     def setUp(self):
         '''
         @summary: Setup for the test
@@ -263,7 +269,8 @@ class HashTest(BaseTest):
             if ip_proto not in skip_protos:
                 return ip_proto
 
-    def sending_packets(self, src_port, pkt, sport, dport, ip_src, ip_dst, ip_proto, masked_exp_pkt, dst_port_lists, version='IP'):
+    def sending_packets(self, src_port, pkt, sport, dport, ip_src, ip_dst, ip_proto, masked_exp_pkt, dst_port_lists,
+                        version='IP'):
         """
         @summary: Send packets and verify they are received on expected ports
         @param src_port: Source port to send packet from
@@ -894,7 +901,7 @@ class VxlanHashTest(HashTest):
         ) if hash_key == 'dst-ip' else self.dst_ip_interval.get_first_ip()
         sport = random.randint(0, 65535) if hash_key == 'src-port' else 1234
         dport = random.randint(0, 65535) if hash_key == 'dst-port' else 80
-        outer_sport = random.randint(0, 65535) if hash_key == 'outer-src-port' else 1234
+        outer_sport = self.generate_random_sport() if hash_key == 'outer-src-port' else 1234
 
         src_mac = (self.base_mac[:-5] + "%02x" % random.randint(0, 255) + ":" + "%02x" % random.randint(0, 255)) \
             if hash_key == 'src-mac' else self.base_mac
@@ -1012,7 +1019,7 @@ class VxlanHashTest(HashTest):
             if hash_key == 'dst-mac' else self.base_mac
         router_mac = self.ptf_test_port_map[str(src_port)]['target_dest_mac']
 
-        outer_sport = random.randint(0, 65535) if hash_key == 'outer-src-port' else 1234
+        outer_sport = self.generate_random_sport() if hash_key == 'outer-src-port' else 1234
 
         if self.ipver == 'ipv6-ipv6':
             pkt_opts = {
