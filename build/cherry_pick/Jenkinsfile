@@ -89,9 +89,9 @@ pipeline {
                             cd /root/merge-result
                             python /root/workspace/build/cherry_pick/main.py --loglevel DEBUG \
                                 --since "${startDate}" --until="${endDate}" \
-                                --recipients ${params.RECIPIENTS} --branch ${params.BRANCH} \
-                                --repo_path /root/sonic-mgmt --no-dry-run ${skipCherryPickParam} \
-                                --triggered_by ${userName}
+                                --recipients "${params.RECIPIENTS}" --branch "${params.BRANCH}" \
+                                --repo_path /root/sonic-mgmt --no-dry-run "${skipCherryPickParam}" \
+                                --triggered_by "${userName}"
                             if [ -f "${params.BRANCH}.LAST_SUCCESS" ]; then
                                 ls -lh ${params.BRANCH}.LAST_SUCCESS;
                             fi
