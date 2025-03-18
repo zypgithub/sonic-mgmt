@@ -36,12 +36,20 @@ pipeline {
                     echo "Community branch: ${params.BRANCH},internal branch: ${internalBranch}"
                     def userIdCause = currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause')
                     def userName = userIdCause?.userName
+                    def causes = currentBuild.getBuildCauses()
+                    for (cause in causes) {
+                        if (cause._class.contains('TimerTriggerCause')) {
+                            userName = "timer"
+                            break
+                        }
+                    }
                     def originUrl = "https://git-nbu-sw.nvidia.com/r/a/switchx/sonic/sonic-mgmt"
                     def mergeResultDir = "/.autodirect/sw_regression/system/SONIC/sonic-mgmt-merge"
                     def (vault_config, secrets) = get_vault_creds()
                     withVault([configuration: vault_config, vaultSecrets: secrets]) {
                         sh """
-                        docker run -v ${mergeResultDir}:/root/merge-result --rm python:3.10.16 bash -c '
+                        docker run -v ${mergeResultDir}:/root/merge-result --rm -e BUILD_URL=${BUILD_URL} \
+                            python:3.10.16 bash -c '
                             set -e
                             echo "machine git-nbu-sw.nvidia.com" >> /root/.netrc
                             echo "login ${BOT_USER}" >> /root/.netrc
