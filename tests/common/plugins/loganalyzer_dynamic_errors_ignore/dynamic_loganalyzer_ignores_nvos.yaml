@@ -1920,4 +1920,31 @@
       - tests_nvos/platform/test_platform_ps_redundancy.py::test_set_platform_ps_redundancy
       - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm.py::TestNewTc::test_sensor_errors[psu_err_present]
 
+- Errors_list:
+    - '.*mst_pci: loading out-of-tree module taints kernel.*'
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/system/config_commands/test_system_message.py::test_system_reload_for_system_message
+
+- Errors_list:
+    - '.*NOHZ tick-stop error: Non-RCU local softirq work is pending, handler.*'
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/
+
+- Errors_list:
+    - '.*Got an error [N/A] while reading background-copy-status from MGX_FW_ERoT.*'
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/ib/test_ibdiagnet.py
+      Redmine:
+        - 4201057
+
+- Errors_list:
+    - '.*ethtool: could not get ethtool features for veth.*'
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/
+      Redmine:
+        - 3928371
 # --------------------------------------------------
