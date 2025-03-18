@@ -3,8 +3,8 @@ import pytest
 import os
 import logging
 from tests.common.mellanox_data import is_mellanox_device
-from tests.platform_tests.sfp.im.helpers import im_supported, im_ms_sku, get_ports_supporting_im,\
-    check_im_sai_attribute_value
+from tests.platform_tests.sfp.software_control.helpers import sc_supported, sc_ms_sku, get_ports_supporting_sc, \
+    check_sc_sai_attribute_value
 from .args.counterpoll_cpu_usage_args import add_counterpoll_cpu_usage_args
 from tests.common.helpers.mellanox_thermal_control_test_helper import suspend_hw_tc_service, resume_hw_tc_service
 from tests.common.platform.transceiver_utils import get_ports_with_flat_memory, \
@@ -206,13 +206,13 @@ def dpu_npu_port_list(duthosts):
 
 @pytest.fixture(scope="module")
 def is_sw_control_feature_enabled(duthost):
-    return im_supported(duthost) and im_ms_sku(duthost) and check_im_sai_attribute_value(duthost)
+    return sc_supported(duthost) and sc_ms_sku(duthost) and check_sc_sai_attribute_value(duthost)
 
 
 @pytest.fixture(scope="module")
 def get_sw_control_ports(duthost, is_sw_control_feature_enabled, conn_graph_facts):
     if is_sw_control_feature_enabled:
-        sw_ports = get_ports_supporting_im(duthost, conn_graph_facts)
+        sw_ports = get_ports_supporting_sc(duthost)
         return sw_ports
 
 

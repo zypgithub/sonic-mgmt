@@ -1,7 +1,7 @@
 import pytest
-
-from tests.platform_tests.sfp.im.helpers import *
-from tests.platform_tests.sfp.util import get_sfp_type, get_dev_conn, read_eeprom_by_page_and_byte,\
+import logging
+import tests.platform_tests.sfp.software_control.helpers as helpers
+from tests.platform_tests.sfp.util import get_sfp_type, get_dev_conn, read_eeprom_by_page_and_byte, \
     write_eeprom_by_page_and_byte, DICT_WRITABLE_BYTE_FOR_PAGE_0
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 from tests.common.platform.transceiver_utils import get_passive_cable_port_list
@@ -14,79 +14,81 @@ pytestmark = [
 logger = logging.getLogger()
 
 
-class TestIndependentModuleFunctional:
+class TestSoftwareControlFunctional:
 
     @pytest.fixture(autouse=True)
     def setup(self, duthosts, enum_rand_one_per_hwsku_frontend_hostname, enum_frontend_asic_index, conn_graph_facts):
         self.duthost = duthosts[enum_rand_one_per_hwsku_frontend_hostname]
-        # Check IM enabled in sai.profile. If not - whole test suite will be skipped
-        if not check_im_sai_attribute_value(self.duthost):
+        # Check Software Control enabled in sai.profile. If not - whole test suite will be skipped
+        if not helpers.check_sc_sai_attribute_value(self.duthost):
             pytest.skip("SW control feature is not enabled in sai.profile")
         self.enum_frontend_asic_index = enum_frontend_asic_index
         self.conn_graph_facts = conn_graph_facts
-        self.im_port_list = get_ports_supporting_im(self.duthost, self.conn_graph_facts)
-        self.sff_cables = get_sff_cables(self.duthost, CMD_REDIS_TRANSCEIVER_INFO, self.enum_frontend_asic_index,
-                                    self.im_port_list)
+        self.im_port_list = helpers.get_ports_supporting_sc(self.duthost)
+        self.sff_cables = helpers.get_sff_cables(self.duthost, helpers.CMD_REDIS_TRANSCEIVER_INFO,
+                                                 self.enum_frontend_asic_index, self.im_port_list)
 
-    def test_im_check_show_interfaces_transceiver_eeprom(self):
+    def test_sc_check_show_interfaces_transceiver_eeprom(self):
         """
         @summary: Check SFP transceiver info using 'show interface transceiver eeprom'
         """
         for port in self.im_port_list:
-            sfp_show_eeprom = self.duthost.command(f"{CMD_INTERFACE_TRANSCEIVER} {port}")
-            parsed_eeprom = parse_im_eeprom(sfp_show_eeprom["stdout"])
-            cleanup_placeholder(parsed_eeprom, "Vendor Date Code(YYYY-MM-DD Lot)")
-            redis_output = parse_sfp_info_from_redis(self.duthost, CMD_REDIS_TRANSCEIVER_INFO,
-                                                     self.enum_frontend_asic_index, [port])
+            sfp_show_eeprom = self.duthost.command(f"{helpers.CMD_INTERFACE_TRANSCEIVER} {port}")
+            parsed_eeprom = helpers.parse_sc_eeprom(sfp_show_eeprom["stdout"])
+            helpers.cleanup_placeholder(parsed_eeprom, "Vendor Date Code(YYYY-MM-DD Lot)")
+            redis_output = helpers.parse_sfp_info_from_redis(self.duthost, helpers.CMD_REDIS_TRANSCEIVER_INFO,
+                                                             self.enum_frontend_asic_index, [port])
 
             # Compare information from eeprom and redis
-            compare_data_from_cli_and_redis(parsed_eeprom, redis_output, port, EEPROM_TO_REDIS_KEY_MAP)
+            helpers.compare_data_from_cli_and_redis(parsed_eeprom, redis_output, port, helpers.EEPROM_TO_REDIS_KEY_MAP)
 
-    def test_check_im_sfputil_eeprom_params(self):
+    def test_check_sc_sfputil_eeprom_params(self):
         """
         @summary: Check sfputils eeprom output with  Independent Module enabled
         """
 
         for port in self.im_port_list:
-            sfp_show_eeprom = self.duthost.command(f"{CMD_SFPUTIL_EEPROM} -p {port}")
-            parsed_eeprom = parse_im_eeprom(sfp_show_eeprom["stdout"])
-            cleanup_placeholder(parsed_eeprom, "Vendor Date Code(YYYY-MM-DD Lot)")
-            redis_output = parse_sfp_info_from_redis(self.duthost, CMD_REDIS_TRANSCEIVER_INFO,
-                                                     self.enum_frontend_asic_index, [port])
+            sfp_show_eeprom = self.duthost.command(f"{helpers.CMD_SFPUTIL_EEPROM} -p {port}")
+            parsed_eeprom = helpers.parse_sc_eeprom(sfp_show_eeprom["stdout"])
+            helpers.cleanup_placeholder(parsed_eeprom, "Vendor Date Code(YYYY-MM-DD Lot)")
+            redis_output = helpers.parse_sfp_info_from_redis(self.duthost, helpers.CMD_REDIS_TRANSCEIVER_INFO,
+                                                             self.enum_frontend_asic_index, [port])
 
             # Compare information from eeprom and redis
-            compare_data_from_cli_and_redis(parsed_eeprom, redis_output, port, EEPROM_TO_REDIS_KEY_MAP)
+            helpers.compare_data_from_cli_and_redis(parsed_eeprom, redis_output, port, helpers.EEPROM_TO_REDIS_KEY_MAP)
 
-    def test_im_check_show_interfaces_transceiver_status(self):
+    def test_sc_check_show_interfaces_transceiver_status(self):
         """
         @summary: Check SFP transceiver info using 'show interface transceiver status'
         """
         for port in self.im_port_list:
-            show_transceiver_status = self.duthost.command(f"{CMD_INTERFACE_TRANSCEIVER_STATUS} {port}")
-            redis_output = parse_sfp_info_from_redis(self.duthost, CMD_REDIS_TRANSCEIVER_STATUS,
-                                                     self.enum_frontend_asic_index, [port])
+            show_transceiver_status = self.duthost.command(f"{helpers.CMD_INTERFACE_TRANSCEIVER_STATUS} {port}")
+            redis_output = helpers.parse_sfp_info_from_redis(self.duthost, helpers.CMD_REDIS_TRANSCEIVER_STATUS,
+                                                             self.enum_frontend_asic_index, [port])
             if port in self.sff_cables:
                 logger.info(f"Port {port} has SFF cable connected, skip for this test")
                 continue
-            parsed_tranceiver_status = parse_im_tranceiver_status(show_transceiver_status["stdout"])
+            parsed_tranceiver_status = helpers.parse_sc_transceiver_status(show_transceiver_status["stdout"])
             # Compare information from cli and redis
-            for cli_eeprom_key, redis_key in TRANSCEIVER_STATUS_TO_REDIS_KEY_MAP.items():
+            for cli_eeprom_key, redis_key in helpers.TRANSCEIVER_STATUS_TO_REDIS_KEY_MAP.items():
                 assert parsed_tranceiver_status[cli_eeprom_key] == redis_output[port][redis_key], \
                     f"Data from cli param {cli_eeprom_key} does not data from redis"
 
-    def test_im_ber(self):
+    def test_sc_ber(self):
         """
-        @summary: Check that BER per IM is not bigger than cable BER threshold
+        @summary: Check that BER per Software Control module is not bigger than cable BER threshold
         """
         for port in self.im_port_list:
-            mlxlink_output = get_mlxlink_ber(self.duthost, port)
-            assert int(mlxlink_output[BER_EFFECTIVE_PHYSICAL_ERRORS]) == 0, f"{BER_EFFECTIVE_PHYSICAL_ERRORS} > 0 "
-            assert mlxlink_output[BER_EFFECTIVE_PHYSICAL_BER] == '15E-255', f"{BER_EFFECTIVE_PHYSICAL_BER} > 15E-255"
+            mlxlink_output = helpers.get_mlxlink_ber(self.duthost, port)
+            assert int(mlxlink_output[helpers.BER_EFFECTIVE_PHYSICAL_ERRORS]) == 0, \
+                f"{helpers.BER_EFFECTIVE_PHYSICAL_ERRORS} > 0 "
+            assert mlxlink_output[helpers.BER_EFFECTIVE_PHYSICAL_BER] == '15E-255', \
+                f"{helpers.BER_EFFECTIVE_PHYSICAL_BER} > 15E-255"
 
     def test_read_write_eeprom_by_page_and_byte(self, enum_rand_one_per_hwsku_frontend_hostname,
-                                                      enum_frontend_asic_index, conn_graph_facts, xcvr_skip_list):
+                                                enum_frontend_asic_index, conn_graph_facts, xcvr_skip_list):
         """
-        This test is verify read and write eeprom by page and byte.
+        This test is verifying read and write eeprom by page and byte.
         1. Get all sfp type of all sfp types by reading the first byte of 0 page
         2. Verify write eeprom function for ports supporting FW module management
           2.1. Write the writable byte, verify there is no any error
@@ -101,7 +103,7 @@ class TestIndependentModuleFunctional:
         with allure.step("get passive port list"):
             passive_cable_port_list = get_passive_cable_port_list(self.duthost)
 
-        with allure.step(f"Get sfp type by reading the first byte of 0 page in eeprom"):
+        with allure.step("Get sfp type by reading the first byte of 0 page in eeprom"):
             for intf in dev_conn:
                 if intf not in xcvr_skip_list[self.duthost.hostname]:
                     sfp_type = get_sfp_type(self.duthost, intf)
@@ -123,7 +125,7 @@ class TestIndependentModuleFunctional:
                     original_port_to_eeprom_dict.update({intf: [offset, original_eeprom]})
 
                     if intf in passive_cable_port_list and sfp_type in sfp_type_not_support_write_on_passive_cable:
-                        logger.info(f"Skip test write function for cmis passive cable port :{intf}")
+                        logger.info(f"Skip test write function for cmis passive cable port: {intf}")
                     else:
                         with allure.step(f"Verify writing writable byte {offset} for port {intf} with data {data} "):
 
@@ -137,7 +139,8 @@ class TestIndependentModuleFunctional:
                             assert not output_write_eeprom, \
                                 f"Failed to write eeprom for {intf} with verify option. output is {output_write_eeprom}"
 
-                            output_read_eeprom = read_eeprom_by_page_and_byte(self.duthost, intf, sfp_type, page, offset)
+                            output_read_eeprom = read_eeprom_by_page_and_byte(self.duthost, intf, sfp_type, page,
+                                                                              offset)
 
                             assert output_read_eeprom == data, \
                                 "write data {data} doesn't match the read data {output_read_eeprom}"
