@@ -117,7 +117,7 @@ def get_setup_session_info(session):
     platform_list = []
     hwsku_list = []
     asic_list = []
-
+    mars_session_id = session.config.option.session_id
     for dut_host in dut_hosts:
         version, platform, hwsku, asic = get_dut_info(ansible_dir, dut_host)
         version_list.append(version)
@@ -147,6 +147,7 @@ def get_setup_session_info(session):
             "Platform": ", ".join(platform_list),
             "HwSKU": ", ".join(hwsku_list),
             "Executor_IP": host_executor_ip,
+            "Mars_Session": mars_session_id,
             "PyTest_args": pytest_run_cmd_args,
             "ASIC": ",".join(asic_list),
             "Random_seed": random_seed,
