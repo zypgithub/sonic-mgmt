@@ -221,6 +221,7 @@ class ConfigDbJsonConst:
     ENABLED = 'enabled'
     DEVICE_METADATA = "DEVICE_METADATA"
     MGMT_INTERFACE = "MGMT_INTERFACE"
+    INTERFACE = "INTERFACE"
     MGMT_INTERFACE_VALUE = '''{"eth0|%s/%s": {"gwaddr": "%s"}}'''
     MGMT_PORT = "MGMT_PORT"
     MGMT_PORT_VALUE = '''{"eth0":{"admin_status": "up", "alias": "eth0"}}'''

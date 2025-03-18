@@ -119,6 +119,64 @@ def create_json_traffic_stream(player_alias, traffic_parameters, stream_name, tc
     return stream
 
 
+def create_srv6_json_traffic_stream(player_alias, traffic_parameters, stream_name,
+                                    tc, BTH={}, payload=True):
+    """
+    Creates a JSON representation of a traffic stream.
+
+    Args:
+        player_alias (str): Alias for the player generating the traffic.
+        traffic_parameters (dict): Dictionary containing traffic parameters such as ports, packet size,
+                                   number of packets, MAC addresses, IP addresses, UDP ports, and AR.
+        stream_name (str): Name of the traffic stream.
+        tc (int, optional): Traffic class. Defaults to PerfConsts.CL_ROCE_LOSSLESS_DEFAULT_TC.
+
+    Returns:
+        dict: JSON representation of the traffic stream.
+    """
+    # Initialize a packet generator with specified ports, packet size, and number of packets
+    packet = PacketGenerator(
+        ports=traffic_parameters["ports"],
+        packet_size=traffic_parameters["packet_size"],
+        num_packets=traffic_parameters["num_packets"]
+    )
+
+    # Add Ethernet header with source and destination MAC addresses and traffic class
+    packet.add_ether_header(
+        src=traffic_parameters["MAC"]["src"],
+        dst=traffic_parameters["MAC"]["dst"]
+    )
+
+    packet.add_ipv6_header(
+        src=traffic_parameters["IPV6"]["src"],
+        dst=traffic_parameters["IPV6"]["dst"],
+        tc=tc
+    )
+
+    packet.add_ip_header(
+        src=traffic_parameters["IP"]["src"],
+        dst=traffic_parameters["IP"]["dst"],
+        tos=tc
+    )
+
+    # Add UDP header with source and destination ports
+    packet.add_udp_header(
+        source_port=traffic_parameters["UDP"]["src"],
+        dest_port=traffic_parameters["UDP"]["dst"]
+    )
+    if BTH:
+        packet.add_bth_header(opcode=BTH['opcode'], ar=1)
+    # Add payload header with player alias
+    if payload:
+        packet.add_payload_header(player_alias)
+
+    # Convert the packet to JSON and assign the stream name
+    stream = packet.get_json()
+    stream["name"] = stream_name
+
+    return stream
+
+
 def create_json_traffic_file(player_alias, traffic_parameters, json_path):
     stream = create_json_traffic_stream(player_alias, traffic_parameters, f"spcx_ra_{player_alias}_main_stream")
     create_json_traffic_file_with_stream_list(player_alias, traffic_parameters, json_path, stream_list=[stream])
@@ -128,8 +186,7 @@ def create_json_traffic_file_with_stream_list(player_alias, traffic_parameters, 
     traffic_json = {
         "port_groups": [
             {
-                "name": f"spcx_ra_{player_alias}",
-                "ports": traffic_parameters["ports"],
+                "name": f"{player_alias}_traffic_pattern",
                 "stream_list": stream_list
             }
         ]
@@ -175,21 +232,23 @@ def validate_tc(traffic_json, tc_occ_threshold, violations_list):
             tc_df = tc_sample[ValidationConsts.TC_DATAFRAME]
             for tc_dict in tc_df:
                 tc_name = tc_dict[ValidationConsts.TC_NAME]
-                occ_avg = tc_dict[ValidationConsts.TC_OCC_AVG]
-                if occ_avg > tc_occ_threshold:
-                    higher_tc_samples.append(f"{sample_id} - {tc_name}")
+                for tc_occ_key, tc_occ_th in tc_occ_threshold.items():
+                    tc_occ = tc_dict[tc_occ_key]
+                    if tc_occ > tc_occ_th:
+                        higher_tc_samples.append(f"{sample_id} - {tc_name} {tc_occ_key} {tc_occ} > {tc_occ_th} threshold")
         if higher_tc_samples:
             violations_list.append(f"Not all TC samples were lower than threshold {tc_occ_threshold}, "
                                    f"please check {higher_tc_samples}")
 
 
-def validate_counters(traffic_json, skip_first_counters_iteration, violations_list):
+def validate_counters(traffic_json, skip_first_counters_iteration, counters_list, violations_list):
     """
     Validates counter samples from traffic data, optionally skipping the first iteration.
 
     Args:
         traffic_json (dict): JSON containing traffic counter samples
         skip_first_counters_iteration (bool): Whether to skip validating the first counter sample
+        counters_list (list): list of counters to validate
         violations_list (list): List to store any validation violations found
     """
     counters_samples = traffic_json[ValidationConsts.COUNTERS_SAMPLES]
@@ -202,26 +261,74 @@ def validate_counters(traffic_json, skip_first_counters_iteration, violations_li
 
     # Process each counter sample
     for sample_id, counters_sample in counters_samples.items():
-        validate_counters_sample(sample_id, counters_sample, violations_list)
+        validate_counters_sample(sample_id, counters_sample, counters_list, violations_list)
 
 
-def validate_counters_sample(sample_id, counters_sample, violations_list):
+def validate_counters_sample(sample_id, counters_sample, counters_list, violations_list):
     """
     Validates a single counter sample for any non-zero counter values.
 
     Args:
         sample_id (str): Identifier for the counter sample
         counters_sample (dict): Sample data containing counter values
+        counters_list (list): list of counters to validate
         violations_list (list): List to store any validation violations found
     """
     counters_df = counters_sample[ValidationConsts.COUNTERS_DATAFRAME]
 
     # Check each counter dictionary in the dataframe
     for counters_dict in counters_df:
-        for counter_name in PerfConsts.COUNTERS:
+        for counter_name in counters_list:
             counter_value = counters_dict[counter_name]
 
             if counter_value > 0:
                 port = counters_dict[ValidationConsts.PORT]
                 violations_list.append(f"Port {port} {counter_name}: {counter_value} > 0, "
                                        f"please check {sample_id}")
+
+
+def is_ipv6(address):
+    """Check if the address is an IPv6 address."""
+    # Regex to match IPv6 address (simplified version, just checks for ':')
+    return ":" in address
+
+
+def dscp_to_tc(dscp, ecn=0):
+    """
+    Converts a DSCP value to a Traffic Class (TC) value for IPv6.
+
+    Args:
+        dscp (int): The DSCP value (0 to 63).
+        ecn (int, optional): The ECN value (0 to 3). Default is 0 (no congestion).
+
+    Returns:
+        int: The Traffic Class value (8 bits).
+    """
+    if not (0 <= dscp <= 63):
+        raise ValueError("DSCP value must be between 0 and 63.")
+
+    if not (0 <= ecn <= 3):
+        raise ValueError("ECN value must be between 0 and 3.")
+
+    # DSCP value is stored in the first 6 bits (shifted into place)
+    tc = (dscp << 2) | ecn
+
+    return tc
+
+
+def generate_mac_range(start_mac, count):
+    mac_list = []
+
+    # Convert the starting MAC address to an integer
+    start_mac_int = int(start_mac.replace(":", ""), 16)
+
+    # Generate the range of MAC addresses
+    for i in range(count):
+        # Increment the MAC address
+        current_mac_int = start_mac_int + i
+
+        # Format it back into a MAC address string
+        current_mac = ':'.join(format(current_mac_int, '012x')[i:i + 2] for i in range(0, 12, 2))
+        mac_list.append(current_mac)
+
+    return mac_list

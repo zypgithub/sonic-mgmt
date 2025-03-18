@@ -1,0 +1,64 @@
+{
+    "ACL_RULE": {
+        "table1|DROP_ARP": {
+            "ETHER_TYPE": "2054",
+            "PACKET_ACTION": "DROP",
+            "PRIORITY": "9986"
+        },
+        "table1|DROP_ICMP_IPV4": {
+            "IP_PROTOCOL": "1",
+            "PACKET_ACTION": "DROP",
+            "PRIORITY": "9987"
+        },
+        "table2|DROP_ICMP_IPV6": {
+            "ICMPV6_TYPE": "128",
+            "PACKET_ACTION": "DROP",
+            "PRIORITY": "9988"
+        }
+    },
+    "ACL_TABLE": {
+        "table1": {
+            "policy_desc": "table of ingress ports",
+            "ports": {{unconnected_ports | tojson}},
+            "stage": "ingress",
+            "type": "L3"
+        },
+        "table2": {
+            "policy_desc": "table of ingress ports",
+            "ports": {{unconnected_ports | tojson}},
+            "stage": "ingress",
+            "type": "L3V6"
+        }
+    },
+    "VLAN": {
+        {% for vlan in vlan_conf %}
+        "Vlan{{ vlan }}": {
+            "vlanid": "{{ vlan }}"
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    },
+
+    {% if dut_alias == "left_tg" %}
+    {% set vlan_ip_prefix = "10.10" %}
+    {% else %}
+    {% set vlan_ip_prefix = "20.20" %}
+    {% endif %}
+
+    "VLAN_INTERFACE": {
+        {% for vlan in vlan_conf %}
+        "Vlan{{ vlan}}": {},
+        "Vlan{{ vlan}}|{{vlan_ip_prefix}}.{{ loop.index }}.1/24": {}{% if not loop.last %},{% endif %}
+        {% endfor %}
+    },
+
+    "VLAN_MEMBER": {
+        {% for vlan, mloop in vlan_conf.items() %}
+        "Vlan{{ vlan }}|{{ mloop[0] }}": {
+            "tagging_mode": "untagged"
+        },
+        "Vlan{{ vlan }}|{{ mloop[1] }}": {
+            "tagging_mode": "untagged"
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    }
+}

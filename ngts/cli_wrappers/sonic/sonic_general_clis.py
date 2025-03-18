@@ -1226,6 +1226,12 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         init_config_db_json = json.loads(init_config_db)
         return init_config_db_json
 
+    def load_sku_init_conf(self, sku):
+        self.engine.run_cmd(f"sonic-cfggen -k {sku} -H -j /etc/sonic/init_cfg.json --print-data  > /tmp/config_db.json")
+        self.engine.run_cmd('sudo mv /tmp/config_db.json {}'.format(SonicConst.CONFIG_DB_JSON_PATH))
+        sku_json = self.cli_obj.general.get_config_db()
+        return sku_json
+
     def get_hwsku_json_as_dict(self, platform, hwsku):
         hwsku_path = f'/usr/share/sonic/device/{platform}/{hwsku}/hwsku.json'
         data = self.engine.run_cmd(f'cat {hwsku_path}')
@@ -1723,7 +1729,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             for sub_key in sub_keys:
                 self.engine.run_cmd(f'sudo sonic-db-cli CONFIG_DB HDEL "{key}" "{sub_key}"')
 
-    def install_traffic_generator(self):
+    def install_traffic_generator(self, latest_version=True):
         """
         Function verifies the traffic generator is functional post deploy on SONiC OS
 
@@ -1734,12 +1740,15 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         :return: None
         """
         with allure.step('Get SDK_VER git'):
-            syncd_sdk_version = self.get_sdk_version(InfraConst.SYNCD_DOCKER)
+            sdk_version = self.get_sdk_version()
+            if latest_version:
+                sdk_version = self.get_latest_sdk_version(cur_sdk_version=sdk_version)
+
             docker_exec_syncd_cmd = InfraConst.DOCKER_EXEC_BASH_CMD.format(DOCKER=InfraConst.SYNCD_DOCKER)
-            copy_files_to_syncd(self.engine, [PerfConsts.SDK_DEB_FILE_TEMPLATE.format(SDK_VERSION=syncd_sdk_version)],
-                                PerfConsts.SDK_DEB_DIR_TEMPLATE.format(SDK_VERSION=syncd_sdk_version))
+            copy_files_to_syncd(self.engine, [PerfConsts.SDK_DEB_FILE_TEMPLATE.format(SDK_VERSION=sdk_version.replace("-", "."))],
+                                PerfConsts.SDK_DEB_DIR_TEMPLATE.format(SDK_VERSION=sdk_version))
             self.engine.run_cmd(
-                f"{docker_exec_syncd_cmd} 'dpkg -i {PerfConsts.SDK_DEB_FILE_TEMPLATE.format(SDK_VERSION=syncd_sdk_version)}'")
+                f"{docker_exec_syncd_cmd} 'dpkg -i {PerfConsts.SDK_DEB_FILE_TEMPLATE.format(SDK_VERSION=sdk_version)}'")
 
         with allure.step('pip dependencies'):
             self.engine.run_cmd(
@@ -1752,6 +1761,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         with allure.step('apt get'):
             self.engine.run_cmd(f"{docker_exec_syncd_cmd} 'apt-get update'")
             self.engine.run_cmd(f"{docker_exec_syncd_cmd} 'echo Y | apt-get install build-essential'")
+            self.engine.run_cmd(f"{docker_exec_syncd_cmd} 'echo Y | apt-get install python3-dev'")
             self.engine.run_cmd(f"{docker_exec_syncd_cmd} 'echo Y | apt-get install swig'")
             self.engine.run_cmd(f"{docker_exec_syncd_cmd} 'apt-get install dmidecode'")
             self.engine.run_cmd(f"{docker_exec_syncd_cmd} 'touch /var/log/syslog'")
@@ -1761,11 +1771,8 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         with allure.step('Prepare SDK_VER git to run tests'):
             self.engine.run_cmd(f"{docker_exec_syncd_cmd} '{PerfConsts.EXPORT_PYTHONPATH} "
                                 f"&& {PerfConsts.DVS_RUN_TEST_PATH} -si'")
-        with allure.step('run SDK_VER traffic generator test'):
-            self.engine.run_cmd(f"{docker_exec_syncd_cmd} '{PerfConsts.EXPORT_PYTHONPATH} && "
-                                f"{PerfConsts.DVS_RUN_TEST_PATH} --names {PerfConsts.DVS_TG_NAME}'")
 
-    def get_sdk_version(self, docker_name):
+    def get_sdk_version(self, docker_name=InfraConst.SYNCD_DOCKER):
         sdk_version_output = self.engine.run_cmd(InfraConst.CMD_GET_SDK_VERSION_FROM_DOCKER.format(DOCKER=docker_name),
                                                  validate=True)
         sdk_version = re.search(r"SX-SDK ETH (\d+\.\d+\.\d+)", sdk_version_output).group(1)

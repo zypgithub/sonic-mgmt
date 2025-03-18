@@ -12,26 +12,25 @@ class PerformanceCommon:
         self.dut_alias = dut_alias
         self.cli_obj = cli_obj
 
-    def wait_for_nexthop_resolution(self, conf_args=None, number_of_nexthops=None, timeout=120):
-        """
-        Wait for the number of nexthops to be resolved on the dut
-        Implemented for Cumulus only
-        """
-        pass
-
-    def logrotate(self, daemon=''):
-        '''
-        This method is optional for dvs and sonic but mandatory for cumulus
-        Returns:
-        This method should return a cmd that rotates the log before running sdk tests.
-        '''
-        pass
-
+    # Mandatory functions to be implemented by child class
     def get_cmd_for_sdk(self, cmd, env_variables=None):
         """
         This method should be implemented in child class
         Returns:
         This method should return a cmd that is running on the sdk per OS
+        """
+        raise NotImplementedError
+
+    @staticmethod
+    def get_controllers_info_dicts_list(sensors_output):
+        """
+        returns voltage/current per controller
+        Args:
+            sensors_output: a string with the output of sensors command
+
+        Returns:
+        A list of dicts, each dict contains the values of a controller on the device i.e,
+        [{'vout1': 1.20, 'vout2': 1.20, 'iout1': 13.00, 'iout2': 94.00},...]
         """
         raise NotImplementedError
 
@@ -65,18 +64,6 @@ class PerformanceCommon:
         """
         raise NotImplementedError
 
-    def get_player_unconnected_connected_ports_aliases(self):
-        """
-        This method should be implemented in child class
-        """
-        raise NotImplementedError
-
-    def get_player_left_right_ports_aliases(self):
-        """
-        This method should be implemented in child class
-        """
-        raise NotImplementedError
-
     def restore_basic_configuration(self):
         """
         This method should be implemented in child class
@@ -95,7 +82,7 @@ class PerformanceCommon:
         """
         raise NotImplementedError
 
-    def get_sdk_ports(self):
+    def get_sdk_ports(self, ports_list):
         """
         This method should be implemented in child class
         """
@@ -120,6 +107,35 @@ class PerformanceCommon:
             }
         """
         raise NotImplementedError
+
+    # Optional Functions to be implemented by child class for topology object support
+    def get_player_unconnected_connected_ports_aliases(self):
+        """
+        This method should be implemented in child class
+        """
+        pass
+
+    def get_player_left_right_ports_aliases(self):
+        """
+        This method should be implemented in child class
+        """
+        pass
+
+    # Optional Functions
+    def wait_for_nexthop_resolution(self, conf_args=None, number_of_nexthops=None, timeout=120):
+        """
+        Wait for the number of nexthops to be resolved on the dut
+        Implemented for Cumulus only
+        """
+        pass
+
+    def logrotate(self, daemon=''):
+        '''
+        This method is optional for dvs and sonic but mandatory for cumulus
+        Returns:
+        This method should return a cmd that rotates the log before running sdk tests.
+        '''
+        pass
 
     def execute_cmd(self, cmd):
         """
@@ -153,7 +169,7 @@ class PerformanceCommon:
         logging.info("Running traffic onto the device")
         run_traffic_cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names {PerfConsts.DVS_TG_NAME}"
         self.logrotate("rsyslog")
-        self.execute_cmd(self.get_cmd_for_sdk(run_traffic_cmd, env_variables=['TG_JSON']))
+        self.execute_cmd(self.get_cmd_for_sdk(run_traffic_cmd, env_variables=[f'TG_JSON={traffic_json_path}']))
 
     def validate_traffic(self, json_path, samples_params_dict, dst_dut_dir="/tmp"):
         logging.info("Running traffic validator on the dut")
@@ -185,8 +201,7 @@ class PerformanceCommon:
         set_traffic_json_cmd = f"export TG_JSON=\"{traffic_json_path}\""
         self.execute_cmd(set_traffic_json_cmd)
 
-    @staticmethod
-    def get_test_specific_values(testname):
+    def get_test_specific_values(self, testname):
         """
 
         Args:
@@ -205,15 +220,7 @@ class PerformanceCommon:
             test_specific_values = json.load(f)
         return test_specific_values
 
-    @staticmethod
-    def get_controllers_info_dicts_list(sensors_output):
-        """
-        returns voltage/current per controller
-        Args:
-            sensors_output: a string with the output of sensors command
-
-        Returns:
-        A list of dicts, each dict contains the values of a controller on the device i.e,
-        [{'vout1': 1.20, 'vout2': 1.20, 'iout1': 13.00, 'iout2': 94.00},...]
-        """
-        raise NotImplementedError
+    def get_sensors_data(self):
+        sensors_cmd = r"sensors *-i2c-5-*"
+        output = self.execute_cmd(sensors_cmd)
+        return output

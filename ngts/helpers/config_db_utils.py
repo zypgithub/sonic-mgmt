@@ -5,21 +5,22 @@ from ngts.constants.constants import SonicConst
 LOCAL_CONFIG_DB_PATH = os.path.join('/tmp', SonicConst.CONFIG_DB_JSON)
 
 
-def save_config_db_json(engine, config_db_json):
+def save_config_db_json(engine, config_db_json, json_path=LOCAL_CONFIG_DB_PATH, remove_json_path=True):
     """
     save json to the config_db.json file
     :param engine: ssh engine object
     :param config_db_json: config db content in json format
     :return: None
     """
-    with open(LOCAL_CONFIG_DB_PATH, 'w') as f:
+    with open(json_path, 'w') as f:
         json.dump(config_db_json, f, indent=4)
         # Python JSON dump misses last newline, so add the newline at the end of the file
         f.write("\n")
-    engine.copy_file(source_file=LOCAL_CONFIG_DB_PATH, dest_file=SonicConst.CONFIG_DB_JSON,
+    engine.copy_file(source_file=json_path, dest_file=SonicConst.CONFIG_DB_JSON,
                      file_system='/tmp', overwrite_file=True, verify_file=False)
-    engine.run_cmd('sudo mv {} {}'.format(LOCAL_CONFIG_DB_PATH, SonicConst.CONFIG_DB_JSON_PATH))
-    os.remove(LOCAL_CONFIG_DB_PATH)
+    engine.run_cmd(f'sudo mv {os.path.join("/tmp", SonicConst.CONFIG_DB_JSON)} {SonicConst.CONFIG_DB_JSON_PATH}')
+    if remove_json_path:
+        os.remove(json_path)
 
 
 def save_config_into_json(engine, config_dict, config_file_name, dst_folder='/tmp'):

@@ -55,7 +55,7 @@ class TestSPCXRA_x2Split_400G:
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type,
                                       bw_threshold=SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size],
-                                      tc_occ_threshold=PerfConsts.OCC_AVG_TH,
+                                      tc_occ_threshold=PerfConsts.OCC_TH_DICT,
                                       power_threshold=self.power_thresholds_by_chip_type)
             run_validation(config)
 
@@ -79,7 +79,7 @@ class TestSPCXRA_x2Split_400G:
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type,
                                       bw_threshold=SPCXRAConsts.DUT_TX_UTIL_IBM_TH_DICT[packet_size],
-                                      tc_occ_threshold=PerfConsts.OCC_AVG_TH,
+                                      tc_occ_threshold=PerfConsts.OCC_TH_DICT,
                                       power_threshold=self.power_thresholds_by_chip_type,
                                       skip_first_counters_iteration=True)
             run_validation(config)
@@ -141,7 +141,7 @@ class TestSPCXRA_x2Split_400G:
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type,
                                       bw_threshold=SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size],
-                                      tc_occ_threshold=PerfConsts.OCC_AVG_TH,
+                                      tc_occ_threshold=PerfConsts.OCC_TH_DICT,
                                       power_threshold=self.power_thresholds_by_chip_type,
                                       skip_first_counters_iteration=True)
             run_validation(config)

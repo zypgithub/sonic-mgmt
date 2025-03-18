@@ -20,6 +20,30 @@ class Cl_Consts:
     HIGH_AR_THRESHOLD = 2000
 
 
+class ValidationConsts:
+    TC_DATAFRAME = "tc_dataframe"
+    TC_SAMPLES = "TC_samples"
+    TC_NAME = "tc"
+    TC_OCC_AVG = "occAvg"
+    TC_OCC_99 = "occ99"
+    TC_OCC_MAX = "occMax"
+    TC_MAX_WATERMARK = "maxWatermark"
+    TX_RATE = "txRate"
+    RX_RATE = "rxRate"
+    COUNTERS_SAMPLES = "Counters_samples"
+    SAMPLES_PARAMS = "sample_params"
+    COUNTERS_DATAFRAME = "counters_dataframe"
+    BW_SAMPLES = "Bandwidth_samples"
+    BW_DATAFRAME = "bandwidth_dataframe"
+    BW_STATS = 'bw_stats'
+    BW_MIN = 'min_bw'
+    PORT = "port"
+    POWER_SAMPLES = "Power_samples"
+    TEMPERATURE_SAMPLES = "Temperature_samples"
+    TEMPERATURE = "temperature"
+    SENSORS_OUTPUT = 'sensors_output'
+
+
 class PerfConsts:
     # Performance Setup Aliases
     PERF_SETUP_PLAYERS_ALIASES = ['left_tg', 'dut', 'right_tg']
@@ -33,9 +57,10 @@ class PerfConsts:
         "TC_SAMPLE_DELAY": 1,
         "COUNTERS_SAMPLE_DELAY": 1
     }
+    OCC_AVG_TH = 400
 
     # Thresholds
-    OCC_AVG_TH = 400
+    OCC_TH_DICT = {ValidationConsts.TC_OCC_AVG: OCC_AVG_TH}
     TEMPERATURE_TH = 105
 
     # CLI Types
@@ -51,7 +76,7 @@ class PerfConsts:
     SDK_INSTALL_PATH = "/auto/mswg/projects/sx_mlnx_os/sx_fit_regression/libs/scripts/install_sdk_wrapper.py"
     CLEAN_SWITCH_PATH = "/auto/mswg/projects/sx_mlnx_os/sx_fit_regression/libs/scripts/sx_sdk_clean_logs.py"
     FW_BURN_PATH = "/auto/mswg/projects/sx_mlnx_os/sx_fit_regression/libs/scripts/sdk_fw_burn.py"
-    LATEST_SDK_DEB_DIR_TEMPLATE = "/auto/sw_system_release/sx_sdk_eth/latest_{SDK_BRANCH}/DEBS/"
+    LATEST_SDK_DEB_DIR_TEMPLATE = "/auto/sw_system_release/sx_sdk_eth/lastrc_sx_sdk_{SDK_BRANCH}/DEBS/"
 
     # File Names
     REQUIRMENTS_FILE = 'requirements.txt'
@@ -108,6 +133,7 @@ class PerfConsts:
     TIMESTAMP_INDEX = 1
 
     # Log Ports
+    HEX_BASE = 16
     LOG_PORT_LEFT_TG = 0x10001
     LOG_PORT_RIGHT_TG = 0x10081
     LOG_PORTS_DICT = {LEFT_TG_ALIAS: LOG_PORT_LEFT_TG, RIGHT_TG_ALIAS: LOG_PORT_RIGHT_TG}
@@ -160,30 +186,6 @@ class SPCXRAConsts:
     PACKET_NUM_800G_x1 = 16
 
 
-class ValidationConsts:
-    TC_DATAFRAME = "tc_dataframe"
-    TC_SAMPLES = "TC_samples"
-    TC_NAME = "tc"
-    TC_OCC_AVG = "occAvg"
-    TC_OCC_99 = "occ99"
-    TC_OCC_MAX = "occMax"
-    TC_MAX_WATERMARK = "maxWatermark"
-    TX_RATE = "txRate"
-    RX_RATE = "rxRate"
-    COUNTERS_SAMPLES = "Counters_samples"
-    SAMPLES_PARAMS = "sample_params"
-    COUNTERS_DATAFRAME = "counters_dataframe"
-    BW_SAMPLES = "Bandwidth_samples"
-    BW_DATAFRAME = "bandwidth_dataframe"
-    BW_STATS = 'bw_stats'
-    BW_MIN = 'min_bw'
-    PORT = "port"
-    POWER_SAMPLES = "Power_samples"
-    TEMPERATURE_SAMPLES = "Temperature_samples"
-    TEMPERATURE = "temperature"
-    SENSORS_OUTPUT = 'sensors_output'
-
-
 class MongoDbConsts:
     PERF_MONGO_DB_FILENAME = "perf_res.db"
     PERF_MONGO_DB_RESULTS_PATH = os.path.join(PerfConsts.REQUIRMENTS_DIR, PERF_MONGO_DB_FILENAME)
@@ -211,6 +213,21 @@ class MongoDbConsts:
     MONGO_DB_DICT_PATH = "/auto/sw/projects/performance/results/mongodb/"
     MONGO_DB_UPLOADS = os.path.join(MONGO_DB_DICT_PATH, "for_upload/")
     MONGO_DB_ERRORS = os.path.join(MONGO_DB_DICT_PATH, "errors/")
+
+
+class MRCConsts:
+    HWSKU_BY_CHIP_TYPE = {
+        "SPC4": {"leaf": "Mellanox-SN5600-C256S1",
+                 "spine": "Mellanox-SN5600-C224O8"},
+        "SPC5": {"leaf": "Mellanox-SN5640-C512S2",
+                 "spine": "Mellanox-SN5640-C448O16"}
+    }
+    DUT_TX_UTIL_TH = 0.98
+    BUFFER_CELL_SIZE = 192
+    OCC_TH_DICT = {ValidationConsts.TC_OCC_AVG: 11,
+                   ValidationConsts.TC_OCC_99: 22}
+    ECN_COUNTERS = [f'tx_ecn_marked_tc_{tc}' for tc in range(7)]
+    COUNTERS_WITH_ECN = PerfConsts.COUNTERS + ECN_COUNTERS
 
 
 class PowerConsts:

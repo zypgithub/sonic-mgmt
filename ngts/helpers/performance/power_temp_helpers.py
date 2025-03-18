@@ -1,8 +1,10 @@
 import re
 import allure
 import pandas as pd
+from ngts.cli_wrappers.sonic.sonic_cli import SonicCli
 from ngts.constants.performance_constants import PerfConsts, SPCControllers, PowerConsts, ValidationConsts, MongoDbConsts
 from ngts.helpers.performance.performance_db_helpers import add_test_mongo_metadata
+from infra.tools.exceptions.test_issue import TestIssue
 
 
 def validate_temperature(traffic_json, temperature_threshold, violations_list):
@@ -57,7 +59,8 @@ def validate_power(traffic_json, players, test_name, chip_type, power_threshold,
 def get_avg_samples_power_dataframe(cli_obj, chip_type, power_samples):
     current_sum = None
     for sample_id, power_sample in power_samples.items():
-        power_df = get_power_dataframe(cli_obj, power_sample[ValidationConsts.SENSORS_OUTPUT], chip_type)
+        sensors_output = get_sensors_data(cli_obj, power_sample)
+        power_df = get_power_dataframe(cli_obj, sensors_output, chip_type)
         if current_sum is not None:
             current_sum += power_df[PowerConsts.POWER_CURRENT]
         else:
@@ -65,6 +68,15 @@ def get_avg_samples_power_dataframe(cli_obj, chip_type, power_samples):
     power_df[PowerConsts.POWER_CURRENT] = current_sum.div(len(power_samples)).round(3)
     power_df[PowerConsts.POWER_WATT] = (power_df[PowerConsts.POWER_VOLTAGE] * power_df[PowerConsts.POWER_CURRENT]).round(3)
     return power_df
+
+
+def get_sensors_data(cli_obj, power_sample):
+    sensors_output = power_sample[ValidationConsts.SENSORS_OUTPUT]
+    if not sensors_output and isinstance(cli_obj, SonicCli):
+        sensors_output = cli_obj.performance.get_sensors_data()
+    elif not sensors_output:
+        raise TestIssue("Sensors data was not collected by validator as expected by DVS/CL OS")
+    return sensors_output
 
 
 def get_power_dataframe(cli_obj, sensors_output, chip_type):

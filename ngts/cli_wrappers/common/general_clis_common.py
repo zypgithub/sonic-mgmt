@@ -5,7 +5,7 @@ import os
 import time
 import allure
 import netmiko
-
+import glob
 from ngts.cli_wrappers.interfaces.interface_general_clis import GeneralCliInterface
 from ngts.cli_wrappers.sonic.sonic_onie_clis import SonicOnieCli
 from ngts.constants.constants import InfraConst, SSHConsts
@@ -537,3 +537,27 @@ class GeneralCliCommon(GeneralCliInterface):
             else:
                 logger.info(f"Wiping the entire system for {target_cli_type} install")
                 self.reboot_by_onie_reboot_script(onie_reboot_script_path, 'uninstall')
+
+    def get_kernel_version(self):
+        kernel_version_output = self.engine.run_cmd('uname -r', validate=True)
+        kernel_version = re.search(r"(\d+\.\d+\.\d+)", kernel_version_output).group(1)
+        return kernel_version
+
+    def get_latest_sdk_version(self, cur_sdk_version):
+        dut_kernel_version = self.get_kernel_version()
+        latest_sdk_prefix = re.search(r"(\d.\d.\d)\d+-*\d*", cur_sdk_version).group(1).replace(".", "_")
+        deb_file_path = os.path.join(PerfConsts.LATEST_SDK_DEB_DIR_TEMPLATE.format(SDK_BRANCH=f"{latest_sdk_prefix}000"))
+        available_kernel_versions = os.listdir(deb_file_path)
+
+        deb_kernel_version = None
+        for kernel_version in available_kernel_versions:
+            if kernel_version.startswith(dut_kernel_version):
+                deb_file_path = os.path.join(deb_file_path, kernel_version)
+                deb_kernel_version = kernel_version
+                break
+        if not deb_kernel_version:
+            logger.warning(f"No matching kernel version found for {dut_kernel_version}")
+            return cur_sdk_version
+        files_available_in_deb_dir = glob.glob(os.path.join(deb_file_path, PerfConsts.LATEST_SDK_DEB_FILE_TEMPLATE))
+        sdk_version = re.search(r"sys-sdk-git_1.mlnx.(\d+.\d+.\d+)", files_available_in_deb_dir[0]).group(1)
+        return sdk_version

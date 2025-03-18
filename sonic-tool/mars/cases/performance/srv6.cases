@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CASEDEF>
+  <global>
+    <Test>
+      <group> PERFORMANCE </group>
+      <name> MRC SRv6 tests </name>
+      <info> MRC SRv6 tests  </info>
+      <owner> slutati </owner>
+    </Test>
+    <Case>
+      <tags> performance </tags>
+      <wrapper> [[run_time:db_tests_path]]/sonic-mgmt/sonic-tool/mars/scripts/canonical_mars_pytest_runner.py </wrapper>
+      <tout> 10800 </tout>
+      <tags>ALL</tags>
+    </Case>
+  </global>
+  <case>
+    <name> SRv6 tests </name>
+    <info> SRv6 tests </info>
+    <cmd>
+      <params>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/performance_tests/srv6/ --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --clean-alluredir --alluredir=/tmp/allure-results --target_cli_type=[[conf:extra_info.target_cli_type]] --is_ipv6 --showlocals --disable_loganalyzer\'"</static_args>
+      </params>
+    </cmd>
+  </case>
+</CASEDEF>

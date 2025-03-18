@@ -25,6 +25,7 @@ from collections import namedtuple
 
 logger = logging.getLogger()
 
+
 # Type alias for validation functions that take Any, float, and List[str] parameters
 ValidationFunc = Callable[[Any, float, List[str]], None]
 
@@ -50,7 +51,7 @@ class ValidationConfig:
         chip_type (str): Type of chip being tested
         run_validate_counters (bool): Whether to run counter validations
         samples_params_dict (Dict): Parameters for sampling configuration
-        tc_occ_threshold (float): Traffic class occupancy threshold
+        tc_occ_threshold (Dict): Traffic class occupancy threshold
         temperature_threshold (float): Maximum allowed temperature
         bw_threshold (float, optional): Bandwidth threshold
         power_threshold (float, optional): Power consumption threshold
@@ -64,11 +65,12 @@ class ValidationConfig:
     chip_type: str
     run_validate_counters: bool = True
     samples_params_dict: Dict = field(default_factory=lambda: PerfConsts.SAMPLES_PARAMS)
-    tc_occ_threshold: float = PerfConsts.OCC_AVG_TH
+    tc_occ_threshold: Dict = field(default_factory=lambda: PerfConsts.OCC_TH_DICT)
     temperature_threshold: float = PerfConsts.TEMPERATURE_TH
     bw_threshold: Optional[float] = None
     power_threshold: Optional[float] = None
     port_list: Optional[List[str]] = None
+    counters_list: List = field(default_factory=lambda: PerfConsts.COUNTERS)
     skip_first_counters_iteration: Optional[bool] = False
     additional_validations: Optional[List[Validation]] = field(default_factory=dict)
 
@@ -88,7 +90,7 @@ class ValidationConfig:
             # Counter validation - checks for drops and other counters (such as POC)
             'counters': Validation(
                 validate_counters,
-                {'skip_first_counters_iteration': self.skip_first_counters_iteration}
+                {'skip_first_counters_iteration': self.skip_first_counters_iteration, 'counters_list': self.counters_list}
             ) if self.run_validate_counters else None,
 
             # Bandwidth validation - ensures bandwidth meets threshold
@@ -192,7 +194,6 @@ def validate_traffic_results(players, test_name, scenario, samples_params_dict,
         full_path = os.path.join(BugHandlerConst.NGTS_PATH, "performance_tests",
                                  "traffic_validation_json_files",
                                  scenario, f"{hour_str}_{player_alias}_{hostname}_{test_name}_TrafficValidator.json")
-
         call_performance_function_with_threads(players, players_aliases=[player_alias],
                                                action="run traffic validator",
                                                performance_clis_function_name="validate_traffic",

@@ -20,6 +20,29 @@ def get_alias_number(port_alias):
     return re.search(r'etp(\d+)', port_alias).group(1)
 
 
+def get_alias_letter(port_alias):
+    """
+    :param port_alias:  the sonic port alias, e.g. 'etp1a'
+    :return: the letter in the alias, e.g. a
+    """
+    return re.search(r'etp\d+(\w*)', port_alias).group(1)
+
+
+def convert_letter_to_idx(port_letter):
+    """
+    Args:
+        port_letter: the letter in the port alias, e.g. a
+
+    Returns: The letter index (the port lane index) i.e,
+    a -> 0
+    b -> 1
+    c -> 2
+    ...
+    """
+    port_idx = ord(port_letter) - 97 if port_letter else 0
+    return port_idx
+
+
 def get_dut_default_ports_list(topology_obj):
     base_ports_list = []
     dut_ports = topology_obj.players_all_ports['dut']

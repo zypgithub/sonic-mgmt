@@ -149,8 +149,7 @@ class NvuePerformanceCli(PerformanceCommon):
 
     def get_cmd_for_sdk(self, cmd, env_variables=[]):
         variables = "sudo env "
-        for env in env_variables:
-            variables += f'\"{env}\"=${env} '
+        variables += " ".join(env_variables)
         return variables + Cl_Consts.CL_PYTHON_PATH + ' ' + cmd
 
     def logrotate(self, daemon):

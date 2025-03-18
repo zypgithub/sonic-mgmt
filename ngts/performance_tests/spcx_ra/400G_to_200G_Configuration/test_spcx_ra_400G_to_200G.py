@@ -50,7 +50,7 @@ class TestSpcX400GTo200G:
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type,
                                       bw_threshold=bw_threshold,
-                                      tc_occ_threshold=PerfConsts.OCC_AVG_TH,
+                                      tc_occ_threshold=PerfConsts.OCC_TH_DICT,
                                       power_threshold=self.power_thresholds_by_chip_type,
                                       skip_first_counters_iteration=skip_first_counters_iteration)
             run_validation(config)

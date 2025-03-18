@@ -138,7 +138,7 @@ class SonicVlanCliDefault(VlanCliCommon):
         """
         return self.engine.run_cmd("show vlan brief")
 
-    def get_show_vlan_brief_parsed_output(self, show_vlan_brief_output=None):
+    def get_show_vlan_brief_parsed_output(self, show_vlan_brief_output=None, data_line_index=4):
         """
         This method parses the "show vlan brief" output and returns a dictionary with the parsed data
         :param show_vlan_brief_output: output from command "show vlan brief"
@@ -146,7 +146,7 @@ class SonicVlanCliDefault(VlanCliCommon):
         """
         if not show_vlan_brief_output:
             show_vlan_brief_output = self.show_vlan_brief()
-        show_vlan_brief_parsed_dict = self.show_vlan_brief_parser(show_vlan_brief_output)
+        show_vlan_brief_parsed_dict = self.show_vlan_brief_parser(show_vlan_brief_output, data_line_index=data_line_index)
         return show_vlan_brief_parsed_dict
 
     @staticmethod

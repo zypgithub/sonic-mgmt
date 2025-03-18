@@ -49,6 +49,9 @@ class SonicChassisCli(ChassisCliCommon):
         mst_status = self.show_mst_status()
         return re.search("(.*pciconf0)", mst_status).group(1)
 
+    def get_fw_info(self):
+        return self.engine.run_cmd(f"sudo flint -d {self.get_pci_conf()} q")
+
     def parse_platform_summary(self):
         """
         Parse the output of "show platform summary"
