@@ -404,6 +404,7 @@ class IbSwitch(BaseSwitch):
                     current_version='0202-000', alternate_version='0202-002'),
         }
         self.module_offset = None  # Should be overridden in child if used for module mapping
+        self.expected_operation_durations = {}
 
     def sleep_after_system_reboot(self):
         pass
@@ -653,6 +654,9 @@ class BlackMambaSwitch(IbSwitch):
         self.transceivers_tables_name = "TRANSCEIVER_FIRMWARE_INFO"
         self.transceiver_list = ['fnm1'] + [f'sw{a + 1}p{b}' for a in range(72) for b in (1, 2)]
         self.constants.firmware.extend(['CPLD4', 'CPLD5', 'CPLD6'])
+        self.expected_operation_durations.update({
+            "Install BIOS": 550,
+        })
 
     def get_mgmt_ports(self) -> List[str]:
         return self.mgmt_ports
@@ -784,7 +788,9 @@ class CrocodileSwitch(IbSwitch):
         self.transceiver_list = ['fnm1'] + [f'swA{a + 1}' for a in range(18)] + [f'swB{b + 1}' for b in range(18)]
         self.allow_cpld_update = True
         self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/crocodile_versions.json"
-
+        self.expected_operation_durations.update({
+            "Install BIOS": 500,
+        })
         self.constants.firmware.append('CPLD4')
 
     def get_mgmt_ports(self) -> List[str]:

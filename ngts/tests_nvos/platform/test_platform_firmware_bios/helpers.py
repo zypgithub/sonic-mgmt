@@ -56,4 +56,5 @@ def fetch_and_install_bios(platform, path, name, filename, topology_obj, test_na
 
     with allure.step(f'installing Bios image {name}'):
         res, duration = OperationTime.save_duration(f'install BIOS {name}', '',
-                                                    test_name, platform.firmware.bios.files.file_name[filename].action_file_install_with_reboot, topology_obj=topology_obj)
+                                                    test_name, platform.firmware.bios.files.file_name[filename].action_file_install_with_reboot,
+                                                    topology_obj=topology_obj, system_is_ready_timeout=PlatformConsts.TIMEOUT_AFTER_BIOS_INSTALL)

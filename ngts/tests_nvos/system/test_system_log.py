@@ -646,11 +646,14 @@ def _delete_log_files(engines, system_log_obj, file_name):
                 with allure.step("Add log analyzer marker for the new log file"):
                     TestToolkit.add_loganalyzer_marker(engines.dut, marker)
 
-    with allure.step("Run show command to view system image"):
-        system.image.show()
+            with allure.step("Rotate logs"):
+                system_log_obj.rotate_logs()
 
-    with allure.step("Run nv show system log command follow to view system logs"):
-        system_log_obj.file.show_log(exit_cmd='q', expected_str='system/image')
+            with allure.step("Run show command to view system image"):
+                system.image.show()
+
+            with allure.step("Run nv show system log command follow to view system logs"):
+                system_log_obj.file.show_log(exit_cmd='q', expected_str='system/image')
 
 
 @pytest.mark.system

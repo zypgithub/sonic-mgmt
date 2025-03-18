@@ -102,3 +102,6 @@ def test_bios_auto_update_enabled(devices, engines, topology_obj, test_api, orig
 
         path, filename, version_name = FWComponentsTool.get_fw_component_version_latest(component_name)
         verify_bios_version(engines, platform, version_name)
+
+        with allure.step('Verify operation time'):
+            res.verify_duration(devices.dut.expected_operation_durations["Install BIOS"])
