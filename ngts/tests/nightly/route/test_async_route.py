@@ -44,9 +44,9 @@ def get_routes_count(dut_engine, ip_version):
         try:
             routes_count = int(re.search(r'IPv[46] UC Routes (\d+)', output).group(1))
         except Exception as e:
-            logger.error(f'Failed to parse the sx_api script output: {str(e)}')
+            raise Exception(f'Failed to parse the sx_api script output: {str(e)}')
     else:
-        logger.error('Failed to retrieve routes count')
+        raise Exception('Failed to retrieve routes count')
     return routes_count
 
 
@@ -68,9 +68,9 @@ def get_routes_operation_duration(dut_engine, ip_version, initial_routes_count, 
         try:
             execution_time = float(re.search(r'Time to execute: ([\d\.]+)', output).group(1))
         except Exception as e:
-            logger.error(f'Failed to parse the sx_api script output: {str(e)}')
+            raise Exception(f'Failed to parse the sx_api script output: {str(e)}')
     else:
-        logger.error('Failed to retrieve routes operation duration')
+        raise Exception('Failed to retrieve routes operation duration')
     logger.info(f'Time to perform an operation {execution_time}')
     return execution_time
 
