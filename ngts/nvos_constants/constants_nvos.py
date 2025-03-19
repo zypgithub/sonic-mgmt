@@ -970,7 +970,10 @@ class CableCartridgeConsts:
     KEY_PART_NUMBER = "part-number"
     KEY_MANUFACTURING_DATE = "manufacture-date"
     LEFTMOST_CARTRIDGE = "cartridge1"
-    PART_NUMBER = "755-24972-0003-000"
+    ALLOWED_PART_NUMBERS = [
+        "755-24972-0003-000",
+        "HS-32836-001",
+    ]
     # Error messages
     ERR_MISSING_KEY = "Missing key in cable cartridge data: {}"
     ERR_NULL_VALUE = "Key '{}' has a null or empty value"
