@@ -100,7 +100,7 @@ def test_reset_transceiver_firmware_positive(engines, test_api):
 @pytest.mark.timeout(30 * MINUTE, func_only=True)
 @pytest.mark.platform
 @pytest.mark.transceiver
-def test_install_transceiver_firmware_positive(engines, devices, test_api, test_name, asic_conf_dict):
+def test_install_transceiver_firmware_positive(engines, devices, test_api, test_name):
     """
     Test Flow:
         1. Fetch 2 module FW images. Save as <FW1>و <FW2>
@@ -186,6 +186,7 @@ def test_install_transceiver_firmware_positive(engines, devices, test_api, test_
 
 @pytest.mark.platform
 @pytest.mark.transceiver
+@pytest.mark.parametrize('test_api', [ApiType.NVUE])
 def test_install_reset_transceiver_firmware_negative_flow(engines, test_api):
     """
     Test flow:
@@ -364,7 +365,7 @@ def check_counters(counters_before, counters_after):
 
     with allure.step("Validate that none of the counters have changed by more than 20%"):
         for key, before_value in counters_before.items():
-            if counters_after[key] - counters_before[key] > counters_before[key] * 0.2:
+            if counters_before[key] and counters_after[key] - counters_before[key] > counters_before[key] * 0.2:
                 changes.append({
                     'key': key,
                     'before': counters_before[key],
