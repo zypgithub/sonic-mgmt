@@ -245,18 +245,10 @@
 
 - Errors_list:
   - '.* ERR memory_threshold_check: Free memory (\d+(\.\d+)?) is less then free memory threshold (\d+(\.\d+)?).*'
-  Conditions:
-  - Image_type:
-    - ASAN
-
-- Errors_list:
   - '.*ERR mlnx-fw-upgrade.sh: FW Query command: mlxfwmanager --query failed to detect spectrum device with error: Querying Mellanox devices firmware.*'
   Conditions:
   - Image_type:
     - ASAN
-    Affected_test_cases:
-    - tests/nightly/routing/test_routing.py::test_reboot
-    - tests/platform_tests/fwutil/test_fwutil.py::test_fwutil_install_file
 
 # Below ignores from temp_log_analyzer_ignores.txt in LAG folder
 - Errors_list:
