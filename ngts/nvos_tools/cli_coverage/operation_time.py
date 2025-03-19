@@ -1,3 +1,4 @@
+from typing import Tuple
 import logging
 import time
 
@@ -12,7 +13,7 @@ logger = logging.getLogger()
 class OperationTime:
 
     @staticmethod
-    def save_duration(operation, oper_params, test_name, func, *args, **kargs):
+    def save_duration(operation, oper_params, test_name, func, *args, **kargs) -> Tuple[ResultObj, float]:
         """
         save the duration of the command and add it to pytest.operation_list
         just if the operation succeed and we have test_name in the duration_time_dict
@@ -22,11 +23,11 @@ class OperationTime:
         :param func: the operation we want to measure, should return ResultObj
         :param args: args for func
         """
-        start_time = time.time()
+        start_time = time.perf_counter()
         result_obj = func(*args, **kargs)
         duration = 0
         if result_obj.result and test_name:
-            end_time = time.time()
+            end_time = time.perf_counter()
             duration = end_time - start_time
             logger.info("{operation} took {dur} seconds".format(operation=operation, dur=duration))
             duration_time_dict = OperationTime.create_duration_time_dict(operation, oper_params, duration, test_name)

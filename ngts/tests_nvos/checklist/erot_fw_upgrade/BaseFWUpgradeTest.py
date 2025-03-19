@@ -11,6 +11,9 @@ from ngts.nvos_constants.constants_nvos import PlatformConsts, NvosConst
 from ngts.nvos_tools.infra.BmcTool import BmcTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
+from ngts.nvos_tools.infra.ErotComponent import ErotComponent
+from ngts.nvos_tools.infra.ResultObj import ResultObj
 
 logger = logging.getLogger()
 
@@ -45,7 +48,7 @@ def get_active_inactive_slots(erot_name):
         return firmware_shown[active_field], firmware_shown[inactive_field]
 
 
-def fetch_and_install_erot_image(fw_component, path, version, filename):
+def fetch_and_install_erot_image(fw_component: ErotComponent, path, version, filename) -> ResultObj:
     with allure.step(f"Fetching image {version} from {filename}"):
         fw_component.action_fetch(path).verify_result()
 
@@ -53,7 +56,9 @@ def fetch_and_install_erot_image(fw_component, path, version, filename):
 
     fetched_image_file = fw_component.files.file_name[filename]
     with allure.step(f"Installing image {version} from {filename} with reboot"):
-        fetched_image_file.action_file_install_with_reboot().verify_result()
+        res_obj = fetched_image_file.action_file_install_with_reboot()
+        res_obj.verify_result()
+        return res_obj
 
 
 def verify_active_inactive_slots(erot_name, active_slot, inactive_slot):
@@ -86,7 +91,10 @@ class BaseFWUpgradeTest:
         try:
             active_slot, inactive_slot = get_active_inactive_slots(component_name)
 
-            fetch_and_install_erot_image(fw_component, prev_path, prev_version, prev_filename)
+            res_obj = fetch_and_install_erot_image(fw_component, prev_path, prev_version, prev_filename)
+            with allure.step(f"verify operation time for install erot {prev_version!r} (duration: {res_obj.duration})"):
+                OperationTime.verify_operation_time(res_obj.duration, 'install erot').verify_result()
+
             with allure.step(f"Sleep for {MINUTE} so the bg-copy will finish"):
                 time.sleep(MINUTE)
             with allure.step(f"Verifying installation was successful for each erot component"):
@@ -94,7 +102,10 @@ class BaseFWUpgradeTest:
                 # Has bug opened
                 # verify_active_inactive_slots(component_name, active_slot, inactive_slot)
         finally:
-            fetch_and_install_erot_image(fw_component, curr_path, curr_version, curr_filename)
+            res_obj = fetch_and_install_erot_image(fw_component, curr_path, curr_version, curr_filename)
+            with allure.step(f"verify operation time for install erot {curr_version!r} (duration: {res_obj.duration})"):
+                OperationTime.verify_operation_time(res_obj.duration, 'install erot').verify_result()
+
             with allure.step(f"Verifying installation was successful for each erot component"):
                 verify_installation(fw_components_names, curr_version)
             with allure.step('delete fetched firmware image files'):

@@ -16,6 +16,7 @@ from ngts.nvos_tools.infra.TpmTool import TpmTool
 from ngts.tests_nvos.constants import PRODUCTION, DEVELOPMENT
 from ngts.tests_nvos.general.security.bmc.bmc_creds.constants import ADMIN
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.nvos_tools.infra.ResultObj import ResultObj
 
 logger = logging.getLogger()
 
@@ -40,12 +41,12 @@ class BmcTool:
             raise Exception("Shutdown command failed with the following response:\n" + response)
 
     @staticmethod
-    def fetch_and_install_platform_component(platform_component, path, name, filename, topology_obj, test_name):
+    def fetch_and_install_platform_component(platform_component, path, name, filename, topology_obj, test_name) -> ResultObj:
         with allure.step(f'Fetch {name} image from: {path}'):
             platform_component.action_fetch(path).verify_result()
 
         with allure.step(f'installing image {name}'):
-            BmcTool.install_fw_image(platform_component, test_name, filename, topology_obj, name)
+            return BmcTool.install_fw_image(platform_component, test_name, filename, topology_obj, name)
 
     @staticmethod
     def verify_platform_component_version(platform_component, expected_version: str):
@@ -140,7 +141,7 @@ class BmcTool:
             return ip_addresses
 
     @staticmethod
-    def install_fw_image(platform_component, test_name, filename, topology_obj, name):
+    def install_fw_image(platform_component, test_name, filename, topology_obj, name) -> ResultObj:
         component_name = platform_component.get_resource_basename().lower()
         res_obj, duration = OperationTime.save_duration(f'{component_name} install with reboot', '',
                                                         test_name,

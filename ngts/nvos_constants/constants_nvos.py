@@ -1456,8 +1456,12 @@ class OperationTimeConsts:
                   'start stop cluster app with loopbox': 720,
                   'start stop cluster': 285,
                   'cluster update log level': 6,
-                  'install bmc': 900,
-                  'install fpga': 900,
+                  'install bmc': 1260,
+                  'install fpga': 600,
+                  'install asic': 600,
+                  'install bios': 600,
+                  'install cpld': 720,
+                  'install erot': 420,
                   ActionConsts.POWER_CYCLE: 360,
                   'juliet-power-cycle': 445
                   }

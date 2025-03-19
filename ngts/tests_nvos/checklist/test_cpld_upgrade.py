@@ -97,11 +97,18 @@ def _firmware_install_test(devices, platform: Platform, image_details, engines, 
                 dut_engine=engines.dut, force=False)
             result.verify_result()
 
+            with allure.step(f"verify operation time for install cpld {burn_filename!r} (duration: {result.duration})"):
+                OperationTime.verify_operation_time(result.duration, 'install cpld').verify_result()
+
             if has_refresh_image:
                 try:
                     with allure.step(f"Installing REFRESH image (and rebooting) {refresh_filename}"):
-                        platform.firmware.cpld.files.file_name[refresh_filename].action_file_install_with_reboot(
-                            device=devices.dut, topology_obj=topology_obj).verify_result()
+                        result_obj = platform.firmware.cpld.files.file_name[refresh_filename].action_file_install_with_reboot(
+                            device=devices.dut, topology_obj=topology_obj)
+                        result_obj.verify_result()
+
+                        with allure.step(f"verify operation time for install cpld {refresh_filename!r} (duration: {result_obj.duration})"):
+                            OperationTime.verify_operation_time(result_obj.duration, 'install cpld').verify_result()
 
                 except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout):
                     logger.info(f"GET request failed as expected because of switch reboot")

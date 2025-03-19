@@ -11,6 +11,7 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.general.security.bmc.bmc_creds.constants import BmcUsers
+from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
@@ -50,17 +51,21 @@ def test_bmc_install(engines, devices, topology_obj, test_api, platform_componen
 
     try:
         path, filename, version_name = BmcTool.get_fw_component_version_previous(component_name)
-        BmcTool.fetch_and_install_platform_component(platform_component=platform_component_with_clear, path=path,
-                                                     name=version_name, filename=filename, topology_obj=topology_obj,
-                                                     test_name=test_name)
+        res_obj = BmcTool.fetch_and_install_platform_component(platform_component=platform_component_with_clear, path=path,
+                                                               name=version_name, filename=filename, topology_obj=topology_obj,
+                                                               test_name=test_name)
+        with allure.step(f"verify operation time for install bmc {version_name!r} (duration: {res_obj.duration})"):
+            OperationTime.verify_operation_time(res_obj.duration, 'install bmc').verify_result()
         BmcTool.verify_platform_component_version(platform_component_with_clear, version_name)
         with allure.step(f"Verify background copy status is completed in 7 minutes time"):
             _check_background_copy_completed(curl_tool, path='/Chassis/MGX_ERoT_BMC_0')
     finally:
         path, filename, version_name = BmcTool.get_fw_component_version_latest(component_name)
-        BmcTool.fetch_and_install_platform_component(platform_component=platform_component_with_clear, path=path,
-                                                     name=version_name, filename=filename, topology_obj=topology_obj,
-                                                     test_name=test_name)
+        res_obj = BmcTool.fetch_and_install_platform_component(platform_component=platform_component_with_clear, path=path,
+                                                               name=version_name, filename=filename, topology_obj=topology_obj,
+                                                               test_name=test_name)
+        with allure.step(f"verify operation time for install bmc {version_name!r} (duration: {res_obj.duration})"):
+            OperationTime.verify_operation_time(res_obj.duration, 'install bmc').verify_result()
         BmcTool.verify_platform_component_version(platform_component_with_clear, version_name)
         # BmcTool.compare_bmc_version_issu_module(engines, version_name)  !TBD uncomment after merge 1800 to master
 
