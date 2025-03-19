@@ -317,13 +317,11 @@ def delete_files(fname, folder=True):
         print(f"Deleted the file: {fname}")
 
 def prepare_files_for_regex(branch):
-    
-    current_folder = os.path.dirname(os.path.abspath(__file__))
     tar_branch = branch if branch == "develop" else f"develop-{branch}"
     tarball_file = f"/auto/sw_regression/system/SONIC/MARS/tarballs/SONIC_CANONICAL-sonic-mgmt_{tar_branch}.db.1.tgz"
-
-    ignore_folder = current_folder
-
+    current_folder = os.path.dirname(os.path.abspath(__file__))
+    sonic_mgmt_unzip_folder = f"sonic-mgmt_{branch}-{int(datetime.now().timestamp())}"
+    ignore_folder = current_folder + "/" + sonic_mgmt_unzip_folder
     if os.path.exists(tarball_file):
         dynamic_ignore = f"sonic-mgmt/tests/common/plugins/loganalyzer_dynamic_errors_ignore/"
         common_file_list = [
@@ -331,17 +329,19 @@ def prepare_files_for_regex(branch):
             f"sonic-mgmt/ansible/roles/test/files/tools/loganalyzer/loganalyzer_common_expect.txt",
             f"sonic-mgmt/ansible/roles/test/files/tools/loganalyzer/loganalyzer_common_match.txt"
         ]
-        sonic_mgmt_unzip_folder = "sonic-mgmt_" + datetime.now().strftime('%H:%M')
-        ignore_folder = current_folder + "/" + sonic_mgmt_unzip_folder
-        os.mkdir(ignore_folder)
-        with tarfile.open(tarball_file, "r:gz") as tar:
-            dynamic_ignore_files = [tarinfo for tarinfo in tar.getmembers() if tarinfo.name in common_file_list or tarinfo.name.startswith(dynamic_ignore)]
-            tar.extractall(ignore_folder, dynamic_ignore_files)
-        for common_file in common_file_list:
-            f = os.path.join(ignore_folder, common_file)
-            os.system(f"mv {f} {ignore_folder}")
-        dynamic_ignore_file = os.path.join(ignore_folder, dynamic_ignore)
-        os.system(f"mv {dynamic_ignore_file} {ignore_folder}")
+        try:
+            os.makedirs(ignore_folder, exist_ok=True)
+            with tarfile.open(tarball_file, "r:gz") as tar:
+                dynamic_ignore_files = [tarinfo for tarinfo in tar.getmembers() if tarinfo.name in common_file_list or tarinfo.name.startswith(dynamic_ignore)]
+                tar.extractall(ignore_folder, dynamic_ignore_files)
+            for common_file in common_file_list:
+                f = os.path.join(ignore_folder, common_file)
+                os.system(f"mv {f} {ignore_folder}")
+            dynamic_ignore_file = os.path.join(ignore_folder, dynamic_ignore)
+            os.system(f"mv {dynamic_ignore_file} {ignore_folder}")
+        except Exception as err:
+            delete_files(ignore_folder)
+            raise err
     else:
         print(f"Could not find sonic-mgmt tarball: {tarball_file} for branch: {branch}, the branch value should be like: develop, 202311, 202305 ...Use the default ignore file")
     
@@ -408,6 +408,7 @@ def main():
     print(f"===================================================================================================")
     print(args)
     print(f"===================================================================================================")
+    regex_file_path = None
     try:
         regex_file_path = prepare_files_for_regex(args.branch)
         result = run_loganalyzer(args, regex_file_path)
@@ -430,7 +431,7 @@ def main():
         raise err
     finally:
         delete_files(TMP_SYSLOG_FOLDER)
-        if regex_file_path != os.path.dirname(os.path.abspath(__file__)):
+        if regex_file_path and regex_file_path != os.path.dirname(os.path.abspath(__file__)):
             delete_files(regex_file_path)
 
 
