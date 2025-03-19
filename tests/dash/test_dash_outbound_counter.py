@@ -273,8 +273,9 @@ class TestEniCounter:
         inbound_packet_len = 142
         packet_number = 1
 
-        vm_to_dpu_pkt, exp_dpu_to_pe_pkt = outbound_pl_packets(dash_pl_config, outer_encap=encap_proto)
-        pe_to_dpu_pkt, exp_dpu_to_vm_pkt = inbound_pl_packets(dash_pl_config)
+        vm_to_dpu_pkt, exp_dpu_to_pe_pkt = outbound_pl_packets(
+            dash_pl_config, outer_encap=encap_proto, inner_packet_type='tcp')
+        pe_to_dpu_pkt, exp_dpu_to_vm_pkt = inbound_pl_packets(dash_pl_config, inner_packet_type='tcp')
 
         with allure.step("send outbound and inbound packet and verify the relevant eni counter"):
             eni_counter_check_point_dict = {"SAI_ENI_STAT_FLOW_CREATED": 1,
@@ -290,19 +291,12 @@ class TestEniCounter:
             self.send_packet_and_verify_dash_eni_counter(
                 dash_pl_config, eni_counter_check_point_dict, packet_number, verify_packets)
 
-        with allure.step("send the inbound packet with mismatched vin and verify the relevant eni counter"):
-            eni_counter_check_point_dict = {"SAI_ENI_STAT_INBOUND_ROUTING_ENTRY_MISS_DROP_PACKETS": packet_number}
-            #import pdb; pdb.set_trace()
-            # pe_to_dpu_pkt['GRE'].vni = 234
-            # pe_to_dpu_pkt['IP'].src =
-            import copy
-            pe_to_dpu_pkt_wrong_src = copy.deepcopy(pe_to_dpu_pkt)
-            pe_to_dpu_pkt_wrong_src['IP'].src = '100.100.10.1'
-            verify_packets = [{'send': vm_to_dpu_pkt, 'exp': None},
-                              {'send': pe_to_dpu_pkt, 'exp': None},
-                              {'send': pe_to_dpu_pkt_wrong_src, 'exp': None}]
-            self.send_packet_and_verify_dash_eni_counter(
-                dash_pl_config, eni_counter_check_point_dict, packet_number, verify_packets)
+        if not is_redmine_issue_active([4364037])[0]:
+            with allure.step("send the inbound packet with mismatched vin and verify the relevant eni counter"):
+                eni_counter_check_point_dict = {"SAI_ENI_STAT_INBOUND_ROUTING_ENTRY_MISS_DROP_PACKETS": packet_number}
+                verify_packets = [{'send': pe_to_dpu_pkt, 'exp': None}]
+                self.send_packet_and_verify_dash_eni_counter(
+                    dash_pl_config, eni_counter_check_point_dict, packet_number, verify_packets)
 
     def send_packet_and_verify_dash_eni_counter(
             self, dash_pl_config, eni_counter_check_point_dict, packet_number, verify_packets,
