@@ -74,7 +74,8 @@ class LogAnalyzerError(Exception):
 
 
 class LogAnalyzer:
-    def __init__(self, ansible_host, marker_prefix, request=None, dut_run_dir="/tmp", start_marker=None, additional_files={}):
+    def __init__(self, ansible_host, marker_prefix, request=None, dut_run_dir="/tmp", start_marker=None,
+                 additional_files={}):
         self.ansible_host = ansible_host
         ansible_host.loganalyzer = self
         self.dut_run_dir = dut_run_dir
