@@ -10,7 +10,7 @@ load_dotenv()
 
 _GERRIT_USER = os.getenv("GERRIT_USERNAME")
 assert _GERRIT_USER is not None, "GERRIT_USERNAME environment variable should be set"
-_GERRIT_API_KEY = os.getenv("GEERIT_API_KEY")
+_GERRIT_API_KEY = os.getenv("GERRIT_API_KEY")
 assert _GERRIT_API_KEY is not None, "GERRIT_API_KEY environment variable should be set"
 
 _GERRIT_HTTP_HEADERS = {

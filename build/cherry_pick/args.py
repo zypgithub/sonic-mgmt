@@ -5,7 +5,7 @@ from pathlib import Path
 
 from logger import logger
 
-_SUPPORTED_BRANCHES = ["master", "202411"]
+_SUPPORTED_BRANCHES = ["master", "202411", "202412", "202505"]
 _LOG_LEVEL_MAPPING = {
     "INFO": logging.INFO,
     "DEBUG": logging.DEBUG,
@@ -46,7 +46,7 @@ class Args:
 def init_arg_parser()->Args:
     parser = argparse.ArgumentParser(description="Utility to cherry pick commits from sonic_mgmt community")
     parser.add_argument("-b", "--branch", type=str, help="the branch name of sonic_mgmt repo in gerrit",
-                        default="202411")
+                        default="202411", choices=_SUPPORTED_BRANCHES)
     parser.add_argument("-s", "--since", type=str, help="commits more recent than the specific date,\
                         only valid when last cherry pick commit unavailable", default="2025-01-01")
     parser.add_argument("-u", "--until", type=str, help="commits older than the specific date",

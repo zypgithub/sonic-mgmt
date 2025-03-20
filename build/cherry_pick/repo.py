@@ -246,3 +246,17 @@ class Repo:
             return process.stdout.decode()
         except subprocess.CalledProcessError as e:
             raise Exception(f"git review error: {e.stdout.decode()}") from e
+
+    def set_remote_url(self, remote: str, url: str)->str:
+        """
+        set remote url
+        return output on success
+        raise error on failure
+        """
+        cmd = f"git remote set-url {remote} {url} 2>&1"
+        try:
+            process = subprocess.run(cmd, capture_output=True,
+                                 cwd=self.dir, shell=True, check=True)
+            return process.stdout.decode()
+        except subprocess.CalledProcessError as e:
+            raise Exception(f"unable to set remote url: {e.stdout.decode()}") from e

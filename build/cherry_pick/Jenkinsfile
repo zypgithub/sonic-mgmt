@@ -85,7 +85,7 @@ pipeline {
                             pip install -r requirements.txt
                             apt update && apt install -y git-review
                             export GERRIT_USERNAME=${BOT_USER}
-                            export GEERIT_API_KEY=${BOT_API_TOKEN}
+                            export GERRIT_API_KEY=${BOT_API_TOKEN}
                             cd /root/merge-result
                             python /root/workspace/build/cherry_pick/main.py --loglevel DEBUG \
                                 --since "${startDate}" --until="${endDate}" \

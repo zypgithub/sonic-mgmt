@@ -6,6 +6,9 @@ from args import init_arg_parser, Args
 from smtp import send_email
 from gerrit_api import extract_cr_links, add_topic_and_plus_2
 
+_REMOTE_COMMUNITY_NAME = "upstream"
+_REMOTE_COMMUNITY_URL = "https://github.com/sonic-net/sonic-mgmt.git"
+_REMOTE_COMMUNITY_URL_202412 = "https://github.com/Azure/sonic-mgmt.msft.git"
 
 def main(args: Args, git_repo: Repo):
     logger.info(f"Parsed args as below: {args}")
@@ -15,16 +18,20 @@ def main(args: Args, git_repo: Repo):
         if skip_commit:
             skip_commit_hashes.add(skip_commit)
     logger.debug(f"{len(skip_commit_hashes)} commit hashes to be skipped")
+    if args.branch == "202412":
+        git_repo.set_remote_url(_REMOTE_COMMUNITY_NAME, _REMOTE_COMMUNITY_URL_202412)
+    else:
+        git_repo.set_remote_url(_REMOTE_COMMUNITY_NAME, _REMOTE_COMMUNITY_URL)
     logger.debug(
         f"fetch from upstream/{args.branch} output:\n"
-        f"{git_repo.fetch_remote('upstream', args.branch)}"
+        f"{git_repo.fetch_remote(_REMOTE_COMMUNITY_NAME, args.branch)}"
     )
     commits = []
     if args.last_successful_commit_hash:
         commits = git_repo.get_commits_since_commit_hash_until_date(
             args.last_successful_commit_hash,
             until=args.until,
-            branch_name=f"upstream/{args.branch}"
+            branch_name=f"{_REMOTE_COMMUNITY_NAME}/{args.branch}"
         )
         logger.info(
             f"{len(commits)} found in source repo since "
@@ -32,7 +39,7 @@ def main(args: Args, git_repo: Repo):
         )
     else:
         commits = git_repo.get_commits_by_range(
-            args.since, args.until, f"upstream/{args.branch}"
+            args.since, args.until, f"{_REMOTE_COMMUNITY_NAME}/{args.branch}"
         )
         logger.info(
             f"{len(commits)} found in source repo since "
@@ -42,7 +49,7 @@ def main(args: Args, git_repo: Repo):
         f"change to branch {args.target_branch}: "
         f"{git_repo.change_to_branch(args.target_branch)}"
     )
-    
+
     skip_commits_list = [
         commit for commit in commits
         if commit.hash in skip_commit_hashes 
