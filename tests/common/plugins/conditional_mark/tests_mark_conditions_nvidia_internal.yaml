@@ -110,12 +110,6 @@ tests/nightly/sflow/test_sflow.py:
     conditions:
     - "https://redmine.mellanox.com/issues/2271111 and 'simx' in platform"
 
-tests/push_build_tests/app_extension/test_app_ext_status.py:
-  skip:
-    reason: "Testcase ignored due to RM issue https://redmine.mellanox.com/issues/4345118"
-    conditions:
-    - "https://redmine.mellanox.com/issues/4345118"
-
 tests/push_build_tests/L3/sflow/test_sflow.py:
   skip:
     reason: "sflow still isn't supported on Simx "
