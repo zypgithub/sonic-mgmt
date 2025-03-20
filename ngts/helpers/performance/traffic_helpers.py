@@ -196,8 +196,9 @@ def validate_counters(traffic_json, skip_first_counters_iteration, violations_li
 
     counters_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
 
+    # Remove the first counter sample if skip_first_counters_iteration is True
     if skip_first_counters_iteration:
-        counters_samples.popitem(last=False)
+        counters_samples.pop(next(iter(counters_samples)))
 
     # Process each counter sample
     for sample_id, counters_sample in counters_samples.items():

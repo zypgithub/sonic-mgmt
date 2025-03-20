@@ -4,7 +4,8 @@ import pytest
 
 from ngts.helpers.performance.performance_setup_helpers import (run_traffic, run_validation,
                                                                 set_allure_title,
-                                                                skip_test_on_unsupported_os)
+                                                                skip_test_on_unsupported_os,
+                                                                ValidationConfig)
 from ngts.constants.constants import CliType, InfraConst
 from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts
 from ngts.performance_tests.spcx_ra.conftest import get_spcx_ra_spine_traffic
