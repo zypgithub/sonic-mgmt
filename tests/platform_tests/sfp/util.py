@@ -37,18 +37,34 @@ def parse_eeprom(output_lines):
     return res
 
 
-def parse_eeprom_hexdump(output_lines):
-    """
-    @summary: Parse the SFP eeprom hexdump information from command output
-    @param output_lines: Command output lines
-    @return: Returns result in a dictionary
-    """
-    res = {}
-    for line in output_lines:
-        if re.match(r".* Ethernet\d+$", line):
-            port = re.findall(r"Ethernet\d+$", line)[-1]
-            res[port] = re.sub("Ethernet\d+$", "", line).strip()
-    return res
+def parse_eeprom_hexdump(data):
+    # Define a regular expression to capture all required data
+    regex = re.compile(
+        r"EEPROM hexdump for port (\S+)\n"  # Capture port name
+        r"(?:\s+)?"  # Match and skip intermediate lines
+        r"((?:Lower|Upper) page \S+|\S+ dump)\n"  # Capture full page type string
+        r"((?:\s+[0-9a-fA-F]{8}(?: [0-9a-fA-F]{2}){8} (?: [0-9a-fA-F]{2}){8} .*\n)+)"  # Capture hex data block
+    )
+    # Dictionary to store parsed results
+    parsed_data = {}
+
+    # Find all matches in the data
+    matches = regex.findall(data)
+    for port, page_type, hex_data in matches:
+        if port not in parsed_data:
+            parsed_data[port] = {}
+
+        # Parse hex data block into individual hex values
+        hex_lines = hex_data.splitlines()
+        hex_values = [
+            value
+            for line in hex_lines
+            for value in line[9:56].split()  # Extract hex bytes from columns 9-56
+        ]
+
+        parsed_data[port][page_type] = hex_values
+
+    return parsed_data
 
 
 def get_dev_conn(duthost, conn_graph_facts, asic_index):
