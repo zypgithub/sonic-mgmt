@@ -4,6 +4,7 @@ import ipaddress
 import pandas as pd
 from ngts.helpers.performance.packet_json_generator import PacketGenerator
 from ngts.constants.performance_constants import PerfConsts, ValidationConsts
+from ast import literal_eval
 
 
 def generate_ip_address_list(address_start_v4="172.168.1.1", address_start_v6="172::1:1", step_v4=256, step_v6=0x10000,
@@ -156,7 +157,7 @@ def validate_bw_per_ports(traffic_json, bw_threshold, ports_list, violations_lis
     for sample_id, bw_sample in bw_samples.items():
         bw_df = pd.DataFrame(bw_sample[ValidationConsts.BW_DATAFRAME])
         for port in ports_list:
-            port_tx = bw_df.loc[bw_df[ValidationConsts.PORT] == hex(int(port))].loc[:, ValidationConsts.TX_RATE].values[0]
+            port_tx = bw_df.loc[bw_df[ValidationConsts.PORT] == hex(literal_eval(port))].loc[:, ValidationConsts.TX_RATE].values[0]
             if bw_threshold == 0 and port_tx > bw_threshold:
                 violations_list.append(f"Port {port} tx: {port_tx} > {bw_threshold}, "
                                        f"please check {sample_id}")

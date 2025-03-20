@@ -170,6 +170,8 @@ class TestSPCXRA_x2Split_400G:
 
     def validate_link_flap_traffic(self, test_name, ports_to_shutdown, up_ports, packet_size):
         with allure.step("Run traffic validation on Json results"):
+            ports_to_shutdown = self.cli_object.performance.get_sdk_ports(ports_to_shutdown)
+            up_ports = self.cli_object.performance.get_sdk_ports(up_ports)
             traffic_validation_jsons_list = validate_traffic_results(self.players, test_name,
                                                                      self.scenario, PerfConsts.SAMPLES_PARAMS)
 
