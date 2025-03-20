@@ -1068,7 +1068,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             localhost_type
         return self.create_extended_config_db_file(setup_name, config_db_json, file_name=config_db_json_file_name)
 
-    def update_config_db_docker_routing_config_mode(self, topology_obj, mode='split',
+    def update_config_db_docker_routing_config_mode(self, topology_obj, mode='split-unified',
                                                     remove_docker_routing_config_mode=False):
         config_db = self.get_config_db()
         config_db_localhost = config_db[ConfigDbJsonConst.DEVICE_METADATA][ConfigDbJsonConst.LOCALHOST]
