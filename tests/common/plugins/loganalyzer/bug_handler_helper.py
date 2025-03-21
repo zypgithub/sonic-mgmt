@@ -67,7 +67,8 @@ def handle_log_analyzer_errors(cli_type, branch, test_name, duthost, log_analyze
             bug_handler_params = {"duthost": duthost,
                                   "testbed": testbed,
                                   "cli_type": cli_type,
-                                  "session_id": session_id}
+                                  "session_id": session_id,
+                                  "test_name": test_name}
 
             for log_errors_file_path in log_errors_dir_path.iterdir():
                 with log_errors_file_path.open("r") as log_errors_file:

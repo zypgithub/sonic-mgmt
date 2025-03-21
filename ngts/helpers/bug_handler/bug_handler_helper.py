@@ -439,6 +439,7 @@ def get_tech_support_from_switch(bug_handler_params):
     duthost = bug_handler_params['duthost']
     testbed = bug_handler_params['testbed']
     session_id = bug_handler_params['session_id']
+    test_name = bug_handler_params['test_name']
     cli_type = bug_handler_params['cli_type']
 
     dumps_folder = os.environ.get(InfraConst.ENV_LOG_FOLDER)
@@ -460,16 +461,14 @@ def get_tech_support_from_switch(bug_handler_params):
     else:
         raise Exception(f"No such cli_type: {cli_type}")
 
-    tar_file_name = add_test_name_to_tar_file_path_on_switch(tar_file_path_on_switch, duthost)
+    tar_file_name = add_test_name_to_tar_file_path_on_switch(tar_file_path_on_switch, test_name)
     tar_file_path = os.path.join(dumps_folder, tar_file_name)
     duthost.fetch(src=tar_file_path_on_switch, dest=tar_file_path, flat=True)
     dumps_files.append(os.path.join(dumps_folder, tar_file_name))
     return dumps_files
 
 
-def add_test_name_to_tar_file_path_on_switch(tar_file_path_on_switch, duthost):
-    item = duthost.loganalyzer.request.node
-    test_name = item.name.replace('/', '_')
+def add_test_name_to_tar_file_path_on_switch(tar_file_path_on_switch, test_name):
     base_name, _ = tar_file_path_on_switch.split('/')[-1].rsplit(".tar.gz", 1)
     tar_file_with_test_name = f"{base_name}_{test_name}.tar.gz"
     return tar_file_with_test_name
