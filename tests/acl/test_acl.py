@@ -367,18 +367,14 @@ def setup(duthosts, ptfhost, rand_selected_dut, rand_unselected_dut, tbinfo, ptf
 
     # If running on a dual ToR testbed, any uplink for either ToR is an acceptable
     # source or destination port
-    selected_tor_loopback_ip_nic = unselected_tor_loopback_ip_nic = None
     if 'dualtor' in tbinfo['topo']['name'] and rand_unselected_dut is not None:
         peer_mg_facts = rand_unselected_dut.get_extended_minigraph_facts(tbinfo)
         lo_dev = "Loopback2"
-        lo_dev_nic = "Loopback3"
         for interface, neighbor in list(peer_mg_facts['minigraph_neighbors'].items()):
             if (topo == "t1" and "T2" in neighbor["name"]) or (topo == "t0" and "T1" in neighbor["name"]):
                 port_id = peer_mg_facts["minigraph_ptf_indices"][interface]
                 upstream_port_ids.append(port_id)
                 upstream_port_id_to_router_mac_map[port_id] = rand_unselected_dut.facts["router_mac"]
-        selected_tor_loopback_ip_nic = get_iface_ip(mg_facts, lo_dev_nic)
-        unselected_tor_loopback_ip_nic = get_iface_ip(peer_mg_facts, lo_dev_nic)
     else:
         lo_dev = "Loopback0"
 
@@ -588,19 +584,13 @@ def acl_table(duthosts, rand_one_dut_hostname, setup, stage, ip_version, tbinfo)
     """
     table_name = "DATA_{}_{}_TEST".format(stage.upper(), ip_version.upper())
     topo = tbinfo["topo"]["type"]
-    is_dualtor = "no"
-    if 'dualtor' in tbinfo['topo']['name']:
-        is_dualtor = "yes"
 
     acl_table_config = {
         "table_name": table_name,
         "table_ports": ",".join(setup["acl_table_ports"]['']),
         "table_stage": stage,
         "table_type": "L3" if ip_version == "ipv4" else "L3V6",
-        "loopback_ip": setup["loopback_ip"],
-        "selected_tor_loopback_ip_nic": setup["selected_tor_loopback_ip_nic"],
-        "unselected_tor_loopback_ip_nic": setup["unselected_tor_loopback_ip_nic"],
-        "is_dualtor": is_dualtor
+        "loopback_ip": setup["loopback_ip"]
     }
     logger.info("Generated ACL table configuration:\n{}".format(pprint.pformat(acl_table_config)))
 
@@ -646,7 +636,7 @@ class BaseAclTest(six.with_metaclass(ABCMeta, object)):
     ACL_COUNTERS_UPDATE_INTERVAL_SECS = 10
 
     @abstractmethod
-    def setup_rules(self, dut, rand_selected_dut, acl_table, ip_version):
+    def setup_rules(self, dut, acl_table, ip_version):
         """Setup ACL rules for testing.
 
         Args:
@@ -655,23 +645,6 @@ class BaseAclTest(six.with_metaclass(ABCMeta, object)):
 
         """
         pass
-
-    def setup_acl_params(self, dut, rand_selected_dut, acl_table):
-        table_name = acl_table["table_name"]
-        loopback_ip = acl_table["loopback_ip"]
-        is_dualtor = acl_table["is_dualtor"]
-        selected_tor_loopback_ip_nic = acl_table["selected_tor_loopback_ip_nic"]
-        unselected_tor_loopback_ip_nic = acl_table["unselected_tor_loopback_ip_nic"]
-
-        if dut is rand_selected_dut:
-            dut.host.options["variable_manager"].extra_vars.update({"loopback_ip_nic": selected_tor_loopback_ip_nic})
-        else:
-            dut.host.options["variable_manager"].extra_vars.update({"loopback_ip_nic": unselected_tor_loopback_ip_nic})
-        dut.host.options["variable_manager"].extra_vars.update({"acl_table_name": table_name})
-        dut.host.options["variable_manager"].extra_vars.update({"loopback_ip": loopback_ip})
-        dut.host.options["variable_manager"].extra_vars.update({"is_dualtor": is_dualtor})
-
-        return table_name, dut
 
     def post_setup_hook(self, dut, localhost, populate_vlan_arp_entries, tbinfo, conn_graph_facts):   # noqa F811
         """Perform actions after rules have been applied.
@@ -702,7 +675,7 @@ class BaseAclTest(six.with_metaclass(ABCMeta, object)):
         dut.command("config acl update full {}".format(remove_rules_dut_path))
 
     @pytest.fixture(scope="class", autouse=True)
-    def acl_rules(self, duthosts, rand_selected_dut, localhost, setup, acl_table, populate_vlan_arp_entries, tbinfo,
+    def acl_rules(self, duthosts, localhost, setup, acl_table, populate_vlan_arp_entries, tbinfo,
                   ip_version, conn_graph_facts):   # noqa F811
         """Setup/teardown ACL rules for the current set of tests.
 
@@ -723,61 +696,35 @@ class BaseAclTest(six.with_metaclass(ABCMeta, object)):
             loganalyzer.load_common_config()
             dut_to_analyzer_map[duthost] = loganalyzer
 
-        with SafeThreadPoolExecutor(max_workers=8) as executor:
-            for duthost in duthosts:
-                executor.submit(self.set_up_acl_rules_single_dut, acl_table, rand_selected_dut, conn_graph_facts,
-                                dut_to_analyzer_map, duthost, ip_version, localhost,
-                                populate_vlan_arp_entries, tbinfo)
-        logger.info("Set up acl_rules finished")
+            try:
+                loganalyzer.expect_regex = [LOG_EXPECT_ACL_RULE_CREATE_RE]
+                # Ignore any other errors to reduce noise
+                loganalyzer.ignore_regex = [r".*"]
+                with loganalyzer:
+                    self.setup_rules(duthost, acl_table, ip_version)
+                    # Give the dut some time for the ACL rules to be applied and LOG message generated
+                    time.sleep(30)
+
+                self.post_setup_hook(duthost, localhost, populate_vlan_arp_entries, tbinfo, conn_graph_facts)
+
+                assert self.check_rule_counters(duthost), "Rule counters should be ready!"
+
+            except LogAnalyzerError as err:
+                # Cleanup Config DB if rule creation failed
+                logger.error("ACL rule application failed, attempting to clean-up...")
+                self.teardown_rules(duthost)
+                raise err
 
         try:
             yield
         finally:
-            with SafeThreadPoolExecutor(max_workers=8) as executor:
-                for duthost, loganalyzer in list(dut_to_analyzer_map.items()):
-                    executor.submit(self.tear_down_acl_rule_single_dut, duthost, loganalyzer)
-            logger.info("Tear down acl_rules finished")
-
-    def tear_down_acl_rule_single_dut(self, duthost, loganalyzer):
-        if duthost.is_supervisor_node():
-            return
-        loganalyzer.expect_regex = [LOG_EXPECT_ACL_RULE_REMOVE_RE]
-        with loganalyzer:
-            logger.info("Removing ACL rules")
-            self.teardown_rules(duthost)
-            wait_until(60, 10, 0, check_msg_in_syslog,
-                       duthost, LOG_EXPECT_ACL_RULE_REMOVE_RE)
-
-    def set_up_acl_rules_single_dut(self, acl_table, rand_selected_dut,
-                                    conn_graph_facts, dut_to_analyzer_map, duthost, # noqa F811
-                                    ip_version, localhost,
-                                    populate_vlan_arp_entries, tbinfo):
-        logger.info("{}: ACL rule application started".format(duthost.hostname))
-        if duthost.is_supervisor_node():
-            return
-        loganalyzer = LogAnalyzer(ansible_host=duthost, marker_prefix="acl_rules")
-        loganalyzer.load_common_config()
-        dut_to_analyzer_map[duthost] = loganalyzer
-        try:
-            loganalyzer.expect_regex = [LOG_EXPECT_ACL_RULE_CREATE_RE]
-            # Ignore any other errors to reduce noise
-            loganalyzer.ignore_regex = [r".*"]
-            with loganalyzer:
-                self.setup_rules(duthost, rand_selected_dut, acl_table, ip_version)
-                # Give the dut some time for the ACL rules to be applied and LOG message generated
-                wait_until(300, 20, 0, check_msg_in_syslog,
-                           duthost, LOG_EXPECT_ACL_RULE_CREATE_RE)
-
-            self.post_setup_hook(duthost, localhost, populate_vlan_arp_entries, tbinfo, conn_graph_facts)
-
-            assert self.check_rule_counters(duthost), "Rule counters should be ready!"
-
-        except LogAnalyzerError as err:
-            # Cleanup Config DB if rule creation failed
-            logger.error("ACL rule application failed, attempting to clean-up...")
-            self.teardown_rules(duthost)
-            raise err
-        logger.info("{}: ACL rule application finished".format(duthost.hostname))
+            for duthost, loganalyzer in list(dut_to_analyzer_map.items()):
+                if duthost.is_supervisor_node():
+                    continue
+                loganalyzer.expect_regex = [LOG_EXPECT_ACL_RULE_REMOVE_RE]
+                with loganalyzer:
+                    logger.info("Removing ACL rules")
+                    self.teardown_rules(duthost)
 
     @pytest.yield_fixture(scope="class", autouse=True)
     def counters_sanity_check(self, duthosts, acl_rules, acl_table):
@@ -1259,7 +1206,7 @@ class BaseAclTest(six.with_metaclass(ABCMeta, object)):
 class TestBasicAcl(BaseAclTest):
     """Test Basic functionality of ACL rules (i.e. setup with full update on a running device)."""
 
-    def setup_rules(self, dut, rand_selected_dut, acl_table, ip_version):
+    def setup_rules(self, dut, acl_table, ip_version):
         """Setup ACL rules for testing.
 
         Args:
@@ -1267,7 +1214,11 @@ class TestBasicAcl(BaseAclTest):
             acl_table: Configuration info for the ACL table.
 
         """
-        table_name, dut = self.setup_acl_params(dut, rand_selected_dut, acl_table)
+        table_name = acl_table["table_name"]
+        loopback_ip = acl_table["loopback_ip"]
+        dut.host.options["variable_manager"].extra_vars.update({"acl_table_name": table_name})
+        dut.host.options["variable_manager"].extra_vars.update({"loopback_ip": loopback_ip})
+
         logger.info("Generating basic ACL rules config for ACL table \"{}\" on {}".format(table_name, dut))
 
         dut_conf_file_path = os.path.join(DUT_TMP_DIR, "acl_rules_{}.json".format(table_name))
@@ -1285,7 +1236,7 @@ class TestIncrementalAcl(BaseAclTest):
     multiple parts.
     """
 
-    def setup_rules(self, dut, rand_selected_dut, acl_table, ip_version):
+    def setup_rules(self, dut, acl_table, ip_version):
         """Setup ACL rules for testing.
 
         Args:
@@ -1293,8 +1244,13 @@ class TestIncrementalAcl(BaseAclTest):
             acl_table: Configuration info for the ACL table.
 
         """
-        table_name, dut = self.setup_acl_params(dut, rand_selected_dut, acl_table)
-        logger.info("Generating incremental ACL rules config for ACL table \"{}\"".format(table_name))
+        table_name = acl_table["table_name"]
+        loopback_ip = acl_table["loopback_ip"]
+        dut.host.options["variable_manager"].extra_vars.update({"acl_table_name": table_name})
+        dut.host.options["variable_manager"].extra_vars.update({"loopback_ip": loopback_ip})
+
+        logger.info("Generating incremental ACL rules config for ACL table \"{}\""
+                    .format(table_name))
 
         for part, config_file in enumerate(ACL_RULES_PART_TEMPLATES[ip_version]):
             dut_conf_file_path = os.path.join(DUT_TMP_DIR, "acl_rules_{}_part_{}.json".format(table_name, part))
