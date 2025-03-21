@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 from logger import logger
+import enum
 
 _CHRRY_PICK_EMPTY = "The previous cherry-pick is now empty, possibly due to conflict resolution"
 _CHERRY_PICK_MERGE = "is a merge but no -m option was given"
@@ -12,15 +13,21 @@ _CHERRY_PICK_MERGE = "is a merge but no -m option was given"
 _CHERRY_PICK_STATUS_SUCCESS = "SUCCESS"
 _CHERRY_PICK_STATUS_EMPTY = "EMPTY"
 
+@enum.unique
+class CherryPickStatus(enum.Enum):
+    INITIAL = 0
+    SUCCESS = 1
+    ALREADY_INCLUDED = 2
+    ERROR = 3
+    EMPTY = 4
+
 @dataclass
 class GitCommit:
     ct: str # commiter date UNIX timestamp
     at: str # author date UNIX timestamp
     subject: str # commit subject string
     hash: str # commit hash
-    # 0: initial state, 1: success, 2: already included, 3: error
-    # 4: empty commit
-    cherry_pick_status: int = 0
+    cherry_pick_status: CherryPickStatus = CherryPickStatus.INITIAL
 
     def __str__(self)->str:
         at = datetime.fromtimestamp(float(self.at), tz=ZoneInfo("Asia/Shanghai")).strftime("%Y-%m-%d %H:%M:%S%Z")
@@ -187,7 +194,7 @@ class Repo:
             target_repo_commits = self.find_commit_by_subject(commit.subject)
             for target_repo_commit in target_repo_commits:
                 if target_repo_commit.at == commit.at and target_repo_commit.subject == commit.subject:
-                    commit.cherry_pick_status = 2
+                    commit.cherry_pick_status = CherryPickStatus.ALREADY_INCLUDED
                     logger.debug(f"[{idx:03d}]success: {commit}")
                     logger.debug(f"    status: commit already included")
                     break
@@ -196,13 +203,13 @@ class Repo:
                 if is_success:
                     if msg == _CHERRY_PICK_STATUS_SUCCESS:
                         ready_for_review = True
-                        commit.cherry_pick_status = 1
+                        commit.cherry_pick_status = CherryPickStatus.SUCCESS
                     else: # empty commit
-                        commit.cherry_pick_status = 4
+                        commit.cherry_pick_status = CherryPickStatus.EMPTY
                     logger.debug(f"[{idx:03d}]success: {commit}")
                     logger.debug(f"    status: {msg}")
                 else:
-                    commit.cherry_pick_status = 3
+                    commit.cherry_pick_status = CherryPickStatus.ERROR
                     logger.debug(f"[{idx:03d}]error  : {commit}")
                     logger.debug(f"{msg}")
                     # abort current cherry pick

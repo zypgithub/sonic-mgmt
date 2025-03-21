@@ -27,7 +27,7 @@ RUN set -e \
     && git config --global gitreview.project r/a/switchx/sonic/sonic-mgmt \
     && apt update && apt install -y git-review vim
 ENV GERRIT_USERNAME=${GERRIT_USERNAME} \
-    GEERIT_API_KEY=${GERRIT_API_TOKEN}
+    GERRIT_API_KEY=${GERRIT_API_TOKEN}
 COPY . /root/workspace
 WORKDIR /root/workspace
 RUN pip install -r requirements.txt

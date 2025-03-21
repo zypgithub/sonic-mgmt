@@ -1,6 +1,6 @@
 import os
 import traceback
-from repo import Repo
+from repo import Repo, GitCommit, CherryPickStatus
 from logger import logger
 from args import init_arg_parser, Args
 from smtp import send_email
@@ -9,6 +9,19 @@ from gerrit_api import extract_cr_links, add_topic_and_plus_2
 _REMOTE_COMMUNITY_NAME = "upstream"
 _REMOTE_COMMUNITY_URL = "https://github.com/sonic-net/sonic-mgmt.git"
 _REMOTE_COMMUNITY_URL_202412 = "https://github.com/Azure/sonic-mgmt.msft.git"
+
+def _update_last_success_file(file_path: str, last_success_commit: str):
+    does_last_success_file_exist = os.path.isfile(file_path)
+    with open(file_path, "w") as f:
+        f.write(last_success_commit)
+    if not does_last_success_file_exist:
+        os.chmod(file_path, 0o666)
+
+def _get_last_non_conflict_commit(commits: list[GitCommit]) -> GitCommit|None:  
+    for commit in reversed(commits):
+        if commit.cherry_pick_status != CherryPickStatus.ERROR:
+            return commit
+    return None
 
 def main(args: Args, git_repo: Repo):
     logger.info(f"Parsed args as below: {args}")
@@ -75,18 +88,15 @@ def main(args: Args, git_repo: Repo):
         logger.info(f"review output: {review_output}")
         cr_links = extract_cr_links(review_output)
         add_topic_and_plus_2(cr_links)
-        does_last_success_file_exist = os.path.isfile(
-            f"{args.branch}.LAST_SUCCESS"
-        )
-        with open(f"{args.branch}.LAST_SUCCESS", "w") as f:
-            f.write(
-                str(tried_commits[-2]) if has_conflict else str(tried_commits[-1])
-            )
-        if not does_last_success_file_exist:
-            os.chmod(f"{args.branch}.LAST_SUCCESS", 0o666)
         if cr_links:
             cr_on_top = cr_links[-1]
-            
+    if not args.dry_run:
+        last_success_commit = _get_last_non_conflict_commit(tried_commits)
+        if last_success_commit:
+            _update_last_success_file(
+                f"{args.branch}.LAST_SUCCESS",
+                str(last_success_commit)
+            )
     if len(args.recipients) > 0 and not args.dry_run:
         send_email(
             args.recipients,
