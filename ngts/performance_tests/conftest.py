@@ -1,3 +1,4 @@
+import json
 import pytest
 import allure
 import os
@@ -9,6 +10,48 @@ from ngts.constants.performance_constants import MongoDbConsts, PowerConsts
 from ngts.helpers.performance.performance_db_helpers import (create_performance_db_template,
                                                              create_test_validation_entry_to_db,
                                                              add_test_mongo_metadata, get_perf_test_name)
+from infra.tools.exceptions.test_issue import TestIssue
+
+
+@pytest.fixture(scope="session")
+def performance_parameters(request):
+    """
+    Method for getting the file location of the parameters from nv_optimizer
+    """
+    if request.config.getoption('--parameter_file_location'):
+        try:
+            # Convert params string to JSON object
+            file_location = request.config.getoption('--parameter_file_location')
+            with open(file_location, 'r') as file:
+                params_json = json.load(file)
+            return params_json
+        except json.JSONDecodeError as e:
+            raise TestIssue(f"Failed to parse params as JSON: {e}")
+    return False
+
+
+@pytest.fixture(scope="session")
+def cleanup(request):
+    """
+    Method for getting base version from pytest arguments
+    :param request: pytest builtin
+    :return: app_extension_dict
+    """
+    if request.config.getoption(PytestConst.run_cleanup_only_arg):
+        return True
+    return False
+
+
+@pytest.fixture(scope="session")
+def init(request):
+    """
+    Method for getting base version from pytest arguments
+    :param request: pytest builtin
+    :return: app_extension_dict
+    """
+    if request.config.getoption(PytestConst.run_config_only_arg):
+        return True
+    return False
 
 
 @pytest.fixture(scope='session', autouse=True)

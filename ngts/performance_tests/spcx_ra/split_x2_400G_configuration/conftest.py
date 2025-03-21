@@ -23,7 +23,7 @@ TESTS_SCENARIO = "spcx_ra"
 @pytest.fixture(scope='class', autouse=True)
 def conf_args(is_ipv6):
     conf_args = {"run_fw_latency_optimization": "False",
-                 "auto_buffer_mode": "True",
+                 "auto_buffer_mode": "False",
                  "congestion_thresh_lo": 400,
                  "two_sided_ar": True,
                  "is_ipv6": is_ipv6,
@@ -33,7 +33,8 @@ def conf_args(is_ipv6):
                  "packet_size": PerfConsts.PACKET_SIZE_LIST[0],
                  "left_num_packets": SPCXRAConsts.PACKET_NUM_400G_x2,
                  "right_num_packets": SPCXRAConsts.PACKET_NUM_400G_x2,
-                 "speed": "400000000"
+                 "speed": "400000000",
+                 "params": None
                  }
     return conf_args
 
@@ -56,11 +57,11 @@ def basic_setup_configuration(players, conf_args):
 @pytest.fixture(scope='function', autouse=False)
 def ibm_fixture(players, conf_args):
     original_conf_args = copy.deepcopy(conf_args)
-    conf_args["auto_buffer_mode"] = "False"
-    with allure.step("Set IBM to true"):
+    conf_args["auto_buffer_mode"] = "True"
+    with allure.step("Set auto buffer mode to True"):
         players['dut']['cli'].performance.set_ibm(TESTS_SCENARIO, conf_args)
     yield
-    with allure.step("Set IBM to false"):
+    with allure.step("Set auto buffer mode to False"):
         players['dut']['cli'].performance.set_ibm(TESTS_SCENARIO, original_conf_args)
 
 

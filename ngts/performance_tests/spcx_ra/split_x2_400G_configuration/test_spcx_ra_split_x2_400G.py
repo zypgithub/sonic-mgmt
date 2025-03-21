@@ -36,11 +36,12 @@ class TestSPCXRA_x2Split_400G:
         self.ip = InfraConst.IPV6 if is_ipv6 else InfraConst.IPV4
         self.is_ipv6 = is_ipv6
         self.chip_type = chip_type
+        self.conf_args = conf_args
 
     @pytest.mark.parametrize("packet_size", PACKET_SIZE_LIST)
     @allure.title('test_ar_perf_max_bandwidth')
     @allure.description('Calculate the port utilization on the DUT with AR enabled and default AR profile.')
-    def test_ar_perf_max_bandwidth(self, request, packet_size):
+    def test_ar_perf_max_bandwidth(self, request, packet_size, ibm_fixture):
         if isinstance(self.cli_object, NvueCli):
             pytest.mark.xfail(reason="test_ar_perf_max_bandwidth expected to fail on Nvue")
 
@@ -61,10 +62,15 @@ class TestSPCXRA_x2Split_400G:
     @pytest.mark.parametrize("packet_size", PACKET_SIZE_LIST)
     @allure.title('test_ar_perf_max_bandwidth_ibm')
     @allure.description('Calculate the port utilization on the DUT with AR enabled and IBM enabled')
-    def test_ar_perf_max_bandwidth_ibm(self, request, packet_size, ibm_fixture):
+    def test_ar_perf_max_bandwidth_ibm(self, request, packet_size):
 
         with allure.step(f"Set test correct allure title with {self.ip} parameter"):
             test_name = set_allure_title(request, self.is_ipv6)
+
+        # TODO: Remove this once the issue 4335726 is fixed
+        with allure.step("Wait for nexthop resolution"):
+            if is_redmine_issue_active([4335726])[0]:
+                self.cli_object.performance.wait_for_nexthop_resolution(self.conf_args, timeout=180)
 
         with allure.step(f"Run {packet_size}B packet Traffic on all the ports"):
             run_traffic(self.players, self.scenario, self.traffic_jsons)
@@ -74,7 +80,8 @@ class TestSPCXRA_x2Split_400G:
                                       chip_type=self.chip_type,
                                       bw_threshold=SPCXRAConsts.DUT_TX_UTIL_IBM_TH_DICT[packet_size],
                                       tc_occ_threshold=PerfConsts.OCC_AVG_TH,
-                                      power_threshold=self.power_thresholds_by_chip_type)
+                                      power_threshold=self.power_thresholds_by_chip_type,
+                                      skip_first_counters_iteration=True)
             run_validation(config)
 
     @allure.title('test_ar_perf_link_flap')
@@ -86,6 +93,11 @@ class TestSPCXRA_x2Split_400G:
 
         with allure.step(f"Set test correct allure title with {self.ip} parameter"):
             test_name = set_allure_title(request, self.is_ipv6)
+
+        # TODO: Remove this once the issue 4335726 is fixed
+        with allure.step("Wait for nexthop resolution"):
+            if is_redmine_issue_active([4335726])[0]:
+                self.cli_object.performance.wait_for_nexthop_resolution(self.conf_args, timeout=180)
 
         with allure.step("Run {packet_size}B packet Traffic on all the ports"):
             run_traffic(self.players, self.scenario, self.traffic_jsons)
@@ -117,23 +129,21 @@ class TestSPCXRA_x2Split_400G:
         with allure.step("Run 4000B packet Traffic on all the ports"):
             run_traffic(self.players, self.scenario, self.traffic_jsons)
 
-        with allure.step(f"Verifying the traffic for packet size {packet_size}"):
-            config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
-                                      chip_type=self.chip_type,
-                                      bw_threshold=SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size],
-                                      tc_occ_threshold=PerfConsts.OCC_AVG_TH,
-                                      power_threshold=self.power_thresholds_by_chip_type)
-            run_validation(config)
-
         with allure.step("Rebooting the dut."):
             self.cli_object.general.reboot(self.dut_engine, save_config=True, wait_after_ping=240)
 
+        # TODO: Remove this once the issue 4335726 is fixed
+        with allure.step("Wait for nexthop resolution"):
+            if is_redmine_issue_active([4335726])[0]:
+                self.cli_object.performance.wait_for_nexthop_resolution(self.conf_args, timeout=180)
+
         with allure.step(f"Verifying the traffic for packet size {packet_size}"):
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type,
                                       bw_threshold=SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size],
                                       tc_occ_threshold=PerfConsts.OCC_AVG_TH,
-                                      power_threshold=self.power_thresholds_by_chip_type)
+                                      power_threshold=self.power_thresholds_by_chip_type,
+                                      skip_first_counters_iteration=True)
             run_validation(config)
 
     def port_hiccup(self, test_name, packet_size):

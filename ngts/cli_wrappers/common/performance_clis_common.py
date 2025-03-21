@@ -12,6 +12,13 @@ class PerformanceCommon:
         self.dut_alias = dut_alias
         self.cli_obj = cli_obj
 
+    def wait_for_nexthop_resolution(self, conf_args=None, number_of_nexthops=None, timeout=120):
+        """
+        Wait for the number of nexthops to be resolved on the dut
+        Implemented for Cumulus only
+        """
+        pass
+
     def logrotate(self, daemon=''):
         '''
         This method is optional for dvs and sonic but mandatory for cumulus

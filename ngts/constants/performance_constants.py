@@ -15,6 +15,9 @@ class Cl_Consts:
     CL_GA_IMAGE = "/auto/sw_system_project/NVOS_INFRA/cumulus_images/GA/5.10/cumulus-linux-mlx-amd64.bin.devsigned"
     COMMON_IP_PREFIX_LEFT = "130"
     COMMON_IP_PREFIX_RIGHT = "110"
+    LOW_AR_THRESHOLD = 400
+    MED_AR_THRESHOLD = 800
+    HIGH_AR_THRESHOLD = 2000
 
 
 class PerfConsts:

@@ -7,6 +7,7 @@ import yaml
 import re
 from json.decoder import JSONDecodeError
 
+from infra.tools.exceptions.real_issue import RealIssue
 from ngts.constants.constants import BugHandlerConst, ResultUploaderConst
 from ngts.constants.performance_constants import PerfConsts, Cl_Consts
 from dataclasses import dataclass
@@ -41,6 +42,8 @@ class NvuePerformanceCli(PerformanceCommon):
         full_path = os.path.join(dst_dir, "tmp.yaml")
         self.cli_obj.general.replace_config(self.engine, full_path, output_type="json", verify_execution=True)
         self.cli_obj.general.apply_config(self.engine, option="-y", verify_execution=True)
+        logging.info("Enable IBM mode")
+        self.set_ibm(scenario, conf_args)
         logging.info(f"The configuration file on {self.dut_alias} was applied successfully")
 
     def save_basic_configuration(self, players, dst_dir=Cl_Consts.CL_HOME_DIR):
@@ -63,13 +66,16 @@ class NvuePerformanceCli(PerformanceCommon):
 
     def set_ibm(self, scenario, conf_args):
         ibm_mode = True if conf_args["auto_buffer_mode"] == "False" else False
+        ctl = conf_args.get('params', {}).get("low_ar_threshold", Cl_Consts.LOW_AR_THRESHOLD)
+        ctm = conf_args.get('params', {}).get("med_ar_threshold", Cl_Consts.MED_AR_THRESHOLD)
+        cth = conf_args.get('params', {}).get("high_ar_threshold", Cl_Consts.HIGH_AR_THRESHOLD)
         logging.info(f"Set IBM mode to {ibm_mode}")
         if ibm_mode:
             txt = "\n".join([
                 "ar.p.m = 0",
-                "ar.ctl = 400",
-                "ar.ctm = 800",
-                "ar.cth = 2000",
+                f"ar.ctl = {ctl}",
+                f"ar.ctm = {ctm}",
+                f"ar.cth = {cth}",
                 "ar.srt = 10",
                 "ar.srf = 10",
                 "ar.p.bit = 0",
@@ -381,3 +387,23 @@ class NvuePerformanceCli(PerformanceCommon):
         match = re.search(regex_dict["board"], output)
         if match:
             dut_system_information["board"] = ResultUploaderConst.HOST_INTERNAL_NAMES_MAP[match.group(1).lower()]
+
+    def wait_for_nexthop_resolution(self, conf_args, number_of_nexthops=None, timeout=120):
+        """
+        Wait for the number of nexthops to be resolved on the dut
+        Implemented for Cumulus only
+        """
+        asic_model = self.cli_obj.general.get_asic_model(self.engine)
+        if number_of_nexthops is None:
+            total_dut_ports = (self.cli_obj.interface.get_physical_ports() - len(Cl_Consts.BONUS_PORTS[asic_model]))
+            number_of_nexthops = total_dut_ports * conf_args["split_left"] * conf_args["split_right"]
+        nexthop_number = 0
+        start_time = timeout
+        while nexthop_number < number_of_nexthops:
+            nexthop_number = int(self.execute_cmd("ip neighbor show | grep swp | wc -l"))
+            logging.info("Number of nexthops resolved on the dut at time {} is {}".format(start_time - timeout, nexthop_number))
+            sleep(10)
+            timeout -= 10
+            if timeout <= 0:
+                raise RealIssue("After {} seconds, the number of nexthops resolved on the dut is {}".format(start_time, nexthop_number))
+        return True
