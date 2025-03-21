@@ -31,7 +31,6 @@ from .tunnel_qos_remap_base import leaf_fanout_peer_info, start_pfc_storm, \
 from ptf import testutils
 from ptf.testutils import simple_tcp_packet
 from tests.common.fixtures.conn_graph_facts import conn_graph_facts, fanout_graph_facts     # noqa F401
-from tests.pfcwd.conftest import setup_pfc_test  # noqa F401
 from tests.common.helpers.pfc_storm import PFCStorm
 from tests.common.helpers.pfcwd_helper import send_background_traffic
 
