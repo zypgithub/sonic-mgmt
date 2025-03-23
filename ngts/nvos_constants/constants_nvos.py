@@ -986,7 +986,21 @@ class CableCartridgeConsts:
 
 class PowerProfileConsts:
     DEFAULT_PROFILE_ID = 'compute'
-    PROFILES = [DEFAULT_PROFILE_ID, "networking", "reduced-bandwidth"]
+    PROFILES = ["networking", "reduced-bandwidth", DEFAULT_PROFILE_ID]
+    PROFILES_DEFAULT_DICT = {
+        'compute': {
+            'long-term-power-allocation': '450',
+            'short-term-power-allocation': '575'
+        },
+        'networking': {
+            'long-term-power-allocation': '575',
+            'short-term-power-allocation': '575'
+        },
+        'reduced-bandwidth': {
+            'long-term-power-allocation': '380',
+            'short-term-power-allocation': '475'
+        }
+    }
     TEST_PROFILES = ["test_profile1", "test_profile2", "test_profile3", "test_profile4", "test_profile5", "test_profile6"]  # Define 1 extra profile
     ATTRIBUTES = [
         'power-allocation-1', 'power-allocation-2', 'max-integral-1', 'max-integral-2',
@@ -994,6 +1008,8 @@ class PowerProfileConsts:
         'kp-factor-2', 'ki-factor-1', 'ki-factor-2', 'kd-factor-1', 'kd-factor-2',
         'pid-up-date-num-of-sampling-1', 'pid-up-date-num-of-sampling-2'
     ]
+    FACTOR_ATTRIBUTES = ['kp-factor-1', 'kp-factor-2', 'ki-factor-1', 'ki-factor-2',
+                         'kd-factor-1', 'kd-factor-2']
     NUM_PROFILES_LIMIT = 5
     CHARS_LIMIT = 20
 

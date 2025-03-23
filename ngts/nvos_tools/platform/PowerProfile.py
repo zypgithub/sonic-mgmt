@@ -22,10 +22,13 @@ class PowerProfile(BaseComponent):
     def set_active_profile(self, profile_name, apply=False):
         return self.set(op_param_name='active', op_param_value=profile_name, apply=apply)
 
+    def unset_active_profile(self, apply=False):
+        return self.unset(op_param='active', apply=apply)
+
 
 class Available(BaseComponent):
     def __init__(self, parent_obj=None):
-        super().__init__(parent=parent_obj, path='/asic-power')
+        super().__init__(parent=parent_obj, path='/available')
         self.profile_id: Dict[str, ProfileComponent] = DefaultDict(lambda profile_name: ProfileComponent(self, profile_name=profile_name))
 
 

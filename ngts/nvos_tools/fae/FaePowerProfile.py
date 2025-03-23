@@ -28,4 +28,4 @@ class FaeProfileComponent(BaseComponent):
         super().__init__(parent=parent_obj, path=f"/{profile_name}")
 
     def set_attribute(self, attribute_name, value, apply=False):
-        return self.set(op_param_name=attribute_name, op_param_value=str(value), apply=apply)
+        return self.set(op_param_name=attribute_name, op_param_value=value, apply=apply)
