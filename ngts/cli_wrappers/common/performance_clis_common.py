@@ -224,3 +224,15 @@ class PerformanceCommon:
         sensors_cmd = r"sensors *-i2c-5-*"
         output = self.execute_cmd(sensors_cmd)
         return output
+
+    def retrieve_default_route(self):
+        """
+        Retrieve the default route on the the setup
+        """
+        try:
+            retrieve_default_route_cmd = 'ip route | grep default'
+            output = self.execute_cmd(retrieve_default_route_cmd)
+            return output
+        except Exception as e:
+            logging.warning(f"Error retrieving default route: {e}")
+            return "No route found"

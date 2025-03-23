@@ -59,6 +59,20 @@ def generate_ip_address_dict(address_start, step, mode, list_of_ports):
     return dict(zip(list_of_ports, address_list))
 
 
+def create_empty_json_traffic_file(json_path):
+    traffic_json = {
+        "port_groups": [
+            {
+                "name": f"EMPTY_TRAFFIC_STREAM",
+                "ports": [],
+                "stream_list": [PacketGenerator(ports=[], packet_size=0, num_packets=0).get_json()]
+            }
+        ]
+    }
+    with open(json_path, 'w') as json_file:
+        json.dump(traffic_json, json_file, indent=3)
+
+
 def create_json_traffic_stream(player_alias, traffic_parameters, stream_name, tc=PerfConsts.CL_ROCE_LOSSLESS_DEFAULT_TC):
     """
     Creates a JSON representation of a traffic stream.

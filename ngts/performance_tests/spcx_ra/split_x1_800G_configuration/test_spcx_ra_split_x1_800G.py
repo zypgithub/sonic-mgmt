@@ -88,10 +88,10 @@ class TestSPCXRA_x1Split_800G:
             run_traffic(self.players, self.scenario, leaf_traffic_jsons)
 
         ar_support_800g_redmine_id = 4348288
-        with allure.step(f"Verifying the traffic for packet size {packet_size}\
-                         AR support status for 800G is {get_issues_status([ar_support_800g_redmine_id])[str(ar_support_800g_redmine_id)]}"):
-            # skip_first_counters_iteration is True due to 800G AR not supported (bug SW #4348288)
-            skip_first_counters_iteration = not is_redmine_issue_active([ar_support_800g_redmine_id])[0]
+        ar_support_status = get_issues_status([ar_support_800g_redmine_id])[str(ar_support_800g_redmine_id)]
+        with allure.step(f"Verifying the traffic for packet size {packet_size}. AR support status for 800G is {ar_support_status}"):
+            # skip_first_counters_iteration is True due to 800G AR not supported (bug SW #4348288 won't fix)
+            skip_first_counters_iteration = not is_redmine_issue_active([ar_support_800g_redmine_id])[0] or ar_support_status == "Won't fix"
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type,
                                       bw_threshold=SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size],

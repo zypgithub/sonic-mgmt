@@ -4,8 +4,7 @@
             "sdk_test_path": "sx_sdk_py_tests/tests/multi_os_tests/spcx_tests/spx_ra_tg.py",
             "sdk_test_name": "SpcxTG"
         },
-    "sdk_test_conf":
-        {
+    "{{ PerfConsts.SDK_TEST_CONF }}": {
             {% set ports = get_right_left_ports_dict() %}
             {% set right_ports = ports["right_ports"] %}
             {% set left_ports = ports["left_ports"] %}
@@ -24,6 +23,13 @@
             "packet_size": 4096,
             "lossy_dscp_value": 34,
             "returned_mac_addr": ["00:00:00:00:10:70", "00:00:00:00:10:90"],
-            "vlan": {% if dut_alias=="left_tg" %} 3 {% else %} 5 {% endif %}
+            "vlan": {% if dut_alias=="left_tg" %} 3 {% else %} 5 {% endif %},
+
+            {# Configure port groups - either from provided config or default mapping #}
+            {% if conf_args.port_groups is defined %}
+            "{{ PerfConsts.PORT_GROUPS }}": {{ conf_args.port_groups[PerfConsts.PORT_GROUPS] | tojson }}
+            {% else %}
+            "{{ PerfConsts.PORT_GROUPS }}": {{ get_player_unconnected_connected_after_split(conf_args.split_left) | tojson }}
+            {% endif %}
         }
 }

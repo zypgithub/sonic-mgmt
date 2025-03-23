@@ -128,11 +128,30 @@ class ValidationConfig:
 
 def apply_test_configuration(players, scenario, conf_args,
                              players_aliases=PerfConsts.PERF_SETUP_PLAYERS_ALIASES,
-                             step="basic_test_configuration - set-up"):
-    call_performance_function_with_threads(players, players_aliases=players_aliases,
-                                           action="apply test configuration",
-                                           performance_clis_function_name="apply_configuration_file",
-                                           performance_clis_function_args=(scenario, conf_args), step=step)
+                             step="basic_test_configuration - set-up", parallel_run=True):
+    """
+    Applies test configuration to multiple players either sequentially (debug mode) or in parallel.
+
+    Args:
+        players (dict): Dictionary containing player information and CLI interfaces
+        scenario (str): The test scenario to be configured
+        conf_args (dict): Configuration arguments to be applied
+        players_aliases (list): List of player aliases to configure. Defaults to PerfConsts.PERF_SETUP_PLAYERS_ALIASES
+        step (str): Description of the current setup step. Defaults to "basic_test_configuration - set-up"
+        parallel_run (bool): If True, applies configuration parallel using threads. If False, applies in sequentially. Defaults to True
+
+    The function either:
+    - In debug mode (parallel_run=False): Sequentially applies configuration to each player
+    - In normal mode (parallel_run=True): Uses threading to apply configuration to all players in parallel
+    """
+    if parallel_run:
+        call_performance_function_with_threads(players, players_aliases=players_aliases,
+                                               action="apply test configuration",
+                                               performance_clis_function_name="apply_configuration_file",
+                                               performance_clis_function_args=(scenario, conf_args), step=step)
+    else:
+        for player_alias in players_aliases:
+            players[player_alias]['cli'].performance.apply_configuration_file(scenario, conf_args)
 
 
 def configure_mloops(players, step="basic_test_configuration - set-up"):
@@ -283,7 +302,8 @@ def call_performance_function_with_threads(players, players_aliases, action,
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     for player_alias in players_aliases:
         player_cli_obj = players[player_alias]['cli']
-        with allure.step(f"[{current_time}] Start {action} on player {player_alias}"):
+        ip_route = player_cli_obj.performance.ping_default_route()
+        with allure.step(f"[{current_time}] Start {action} on player {player_alias}. IP Route: {ip_route}"):
             performance_method = get_obj_method(player_cli_obj.performance, performance_clis_function_name)
             thread = CatchExceptionThread(target=redirect_thread_stdout,
                                           args=(performance_method,
@@ -297,7 +317,8 @@ def call_performance_function_with_threads(players, players_aliases, action,
     completion_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     for player_alias in players_aliases:
         player_cli_obj = players[player_alias]['cli']
-        with allure.step(f"[{completion_time}] Action {action} completed on {player_alias}"):
+        ip_route = player_cli_obj.performance.ping_default_route()
+        with allure.step(f"[{completion_time}] Action {action} completed on {player_alias}. IP Route: {ip_route}"):
             logging.info(f"Finished {action} on {players_aliases_str}")
 
 
@@ -311,12 +332,13 @@ def get_obj_method(cli_obj, method_name):
 
 
 def skip_test_on_unsupported_os(cli_obj, unsupported_os):
-    if unsupported_os == CliType.NVUE and isinstance(cli_obj, NvueCli):
-        pytest.skip(f"This test is not supported in {CliType.NVUE}")
-    elif unsupported_os == CliType.DVS and isinstance(cli_obj, DvsCli):
-        pytest.skip(f"This test is not supported in {CliType.DVS}")
-    elif unsupported_os == CliType.SONIC and isinstance(cli_obj, SonicCli):
-        pytest.skip(f"This test is not supported in {CliType.SONIC}")
+    with allure.step(f"Skip test on unsupported OS: {unsupported_os}"):
+        if unsupported_os == CliType.NVUE and isinstance(cli_obj, NvueCli):
+            pytest.skip(f"This test is not supported in {CliType.NVUE}")
+        elif unsupported_os == CliType.DVS and isinstance(cli_obj, DvsCli):
+            pytest.skip(f"This test is not supported in {CliType.DVS}")
+        elif unsupported_os == CliType.SONIC and isinstance(cli_obj, SonicCli):
+            pytest.skip(f"This test is not supported in {CliType.SONIC}")
 
 
 def get_topology_obj(players):

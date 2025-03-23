@@ -48,9 +48,12 @@ class ValidationConsts:
 
 class PerfConsts:
     # Performance Setup Aliases
-    PERF_SETUP_PLAYERS_ALIASES = ['left_tg', 'dut', 'right_tg']
-    PERF_SETUP_TG_ALIASES = ['left_tg', 'right_tg']
-    PERF_SETUP_DUT_ALIASES = ['dut']
+    LEFT_TG_ALIAS = "left_tg"
+    RIGHT_TG_ALIAS = "right_tg"
+    DUT_ALIAS = "dut"
+    PERF_SETUP_PLAYERS_ALIASES = [LEFT_TG_ALIAS, DUT_ALIAS, RIGHT_TG_ALIAS]
+    PERF_SETUP_TG_ALIASES = [LEFT_TG_ALIAS, RIGHT_TG_ALIAS]
+    PERF_SETUP_DUT_ALIASES = [DUT_ALIAS]
 
     # Sample Parameters
     SAMPLES_PARAMS = {
@@ -106,9 +109,11 @@ class PerfConsts:
     RIGHT_TG_ALIAS = "right_tg"
     TG_ALIAS_LIST = [LEFT_TG_ALIAS, RIGHT_TG_ALIAS]
     CL_ROCE_LOSSLESS_DEFAULT_TC = 96
+    PORT_GROUPS = "port_groups"
 
     # Configuration Files
     AR_PERF_CONFIG_FOLDER = 'config_files'
+    SDK_TEST_CONF = "sdk_test_conf"
     CUSTOM_IBM_PROFILE_JSON = 'ibm_profile.json'
     IBM_CUSTOM_PROFILE_NAME = 'ibm_profile'
     DISABLE_MAC_SCRIPT = "disable_mac_learn.py"

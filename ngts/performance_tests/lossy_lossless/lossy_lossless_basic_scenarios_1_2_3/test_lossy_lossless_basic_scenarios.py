@@ -28,8 +28,8 @@ class TestLossyLossless:
         self.power_thresholds_by_chip_type = power_thresholds_by_chip_type
         self.chip_type = chip_type
 
-    @pytest.mark.parametrize("scenario_name, num_lossy_packets,num_lossless_packets", [(1, 0, 8), (2, 8, 0),
-                                                                                       ('3a', 4, 4), ('3b', 2, 6)])
+    @pytest.mark.parametrize("scenario_name, num_lossy_packets,num_lossless_packets", [("lossy_lossless_scenario_1", 0, 8), ("lossy_lossless_scenario_2", 8, 0),
+                                                                                       ("lossy_lossless_scenario_3a", 4, 4), ("lossy_lossless_scenario_3b", 2, 6)])
     @allure.title('Lossy lossless scenarios. 400G to 400G lossy lossless test')
     @allure.description('400G<->400G test. Send lossy traffic from both sides.')
     def test_basic_loosy_lossless_tests_1_2_3(self, request, scenario_name, num_lossy_packets, num_lossless_packets,

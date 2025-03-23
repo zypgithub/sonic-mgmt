@@ -13,6 +13,7 @@ class DvsPerformance(PerformanceCommon):
     def __init__(self, topology_obj, engine, dut_alias, cli_obj):
         super().__init__(topology_obj, engine, dut_alias, cli_obj)
         self.base_ports, self.ports_lanes = self.get_base_ports()
+        self.port_groups = None
 
     def get_cmd_for_sdk(self, cmd, env_variables=None):
         """
@@ -35,12 +36,16 @@ class DvsPerformance(PerformanceCommon):
         jinja_template = env.get_template(f"{self.dut_alias}.jinja")
         func_dict = {"get_right_left_ports_dict": self.get_right_left_ports_dict,
                      "get_split_ports": self.get_split_ports,
-                     "generate_ip_list": generate_ip_address_dict}
+                     "generate_ip_list": generate_ip_address_dict,
+                     "get_player_unconnected_connected_after_split": self.get_player_unconnected_connected_after_split,
+                     "PerfConsts": PerfConsts}
         jinja_template.globals.update(func_dict)
         template_string = jinja_template.render(conf_args=conf_args, dut_alias=self.dut_alias)
+        logging.info(f"Template string: {template_string}")
         json_dict = json.loads(template_string)
         conf_path = os.path.join(templates_path, f"{self.dut_alias}_conf.json")
         self.save_configuration_file(conf_path, json_dict, dst_dut_dir="/tmp")
+        self.port_groups = json_dict[PerfConsts.SDK_TEST_CONF][PerfConsts.PORT_GROUPS]
         return json_dict["sdk_test_info"]["sdk_test_name"]
 
     def get_device_configuration(self, conf_args, template_suite=PerfConsts.DEFAULT_PERF_TEMPLATES_DIR):
@@ -107,6 +112,34 @@ class DvsPerformance(PerformanceCommon):
                 player_ports_aliases_dict[ports_aliases].append((f"{self.dut_alias}_{ports_alias}_p{port_index}",
                                                                  hex(port)))
         return player_ports_aliases_dict
+
+    def get_player_unconnected_connected_after_split(self, split_num):
+        """Get lists of unconnected and connected ports after port splitting.
+
+        This method takes a split number and returns two lists of ports after applying
+        the split configuration. It first gets the original unconnected and connected ports,
+        then applies the breakout configuration based on the split number.
+
+        Args:
+            split_num (int): The number to split the ports by (e.g., 2 for 2x split, 4 for 4x split)
+
+        Returns:
+            dict: A dictionary containing two lists of ports after splitting:
+                {
+                    "unconnected_ports": ['65537', '65539',...],  # Ports not connected to DUT
+                    "connected_ports": ['65665', '65667',...]      # Ports connected to DUT
+                }
+        """
+        all_ports_after_split = {}
+
+        tg_ports = self.get_player_unconnected_connected_ports_aliases()
+        unconnected_ports_list = [port for _, port in tg_ports['unconnected_ports']]
+        connected_ports_list = [port for _, port in tg_ports['connected_ports']]
+
+        all_ports_after_split['unconnected_ports'] = [int(port) for port in self.get_all_breakout_ports(split_num, unconnected_ports_list)]
+        all_ports_after_split['connected_ports'] = [int(port) for port in self.get_all_breakout_ports(split_num, connected_ports_list)]
+
+        return all_ports_after_split
 
     def get_tg_unconnected_ports(self):
         player_ports = self.get_player_ports()
@@ -189,7 +222,9 @@ class DvsPerformance(PerformanceCommon):
         split_ports = {}
         ports_dict = self.get_right_left_ports_dict()
         split_ports["left_split_ports"] = self.get_all_breakout_ports(left_split_num, ports_dict["left_ports"])
+        split_ports["left_split_ports"].sort()
         split_ports["right_split_ports"] = self.get_all_breakout_ports(right_split_num, ports_dict["right_ports"])
+        split_ports["right_split_ports"].sort()
 
         return split_ports
 

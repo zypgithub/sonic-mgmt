@@ -1,9 +1,9 @@
+from ngts.helpers.performance.performance_db_helpers import add_test_mongo_metadata, get_perf_test_name
 import pytest
 import logging
 import os
-from ngts.constants.performance_constants import PerfConsts
+from ngts.constants.performance_constants import MongoDbConsts, PerfConsts
 from ngts.constants.constants import BugHandlerConst
-from ngts.helpers.performance.packet_json_generator import PacketGenerator
 from ngts.helpers.performance.traffic_helpers import create_json_traffic_file_with_stream_list, create_json_traffic_stream
 
 logger = logging.getLogger()
@@ -55,3 +55,15 @@ def get_lossy_lossless_basic_traffic(players, conf_args, num_lossy_packets, num_
                                                 num_lossless_packets=num_lossless_packets)
         traffic_jsons[player_alias] = json_path
     return traffic_jsons
+
+
+@pytest.fixture(scope='function', autouse=True)
+def update_test_mongo_metadata(request, players, is_ipv6, port_group_df, scenario_name):
+    """
+    Fixture to update test metadata in MongoDB.
+    Requires scenario_name parameter to be present in the test function.
+    """
+    test_name = get_perf_test_name(request, is_ipv6)
+    add_test_mongo_metadata(test_name, {MongoDbConsts.CONF_NAME: scenario_name,
+                                        MongoDbConsts.PORT_GROUP_DF: port_group_df})
+    yield

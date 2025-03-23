@@ -5,7 +5,7 @@
         "sdk_test_name": "LossyLosslessTG"
     },
 
-    "sdk_test_conf": {
+    "{{ PerfConsts.SDK_TEST_CONF }}": {
         {# Retrieve port mappings #}
         {% set ports = get_right_left_ports_dict() %}
         {% set right_ports = ports["right_ports"] %}
@@ -48,6 +48,13 @@
         "vlan": 5,
 
         {# Buffer configuration #}
-        "pool_size": 744479
+        "pool_size": 744479,
+
+        {# Configure port groups - either from provided config or default mapping #}
+        {% if conf_args.port_groups is defined %}
+        "{{ PerfConsts.PORT_GROUPS }}": {{ conf_args.port_groups[PerfConsts.RIGHT_TG_ALIAS] | tojson }}
+        {% else %}
+        "{{ PerfConsts.PORT_GROUPS }}": {{ get_player_unconnected_connected_after_split(conf_args.split_right) | tojson }}
+        {% endif %}
     }
 }

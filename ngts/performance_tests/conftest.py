@@ -8,7 +8,7 @@ from datetime import datetime
 from ngts.helpers.performance.performance_setup_helpers import configure_mloops, stop_traffic
 from ngts.helpers.performance.Performance_log_print import print_players_logs, remove_players_logs
 from ngts.constants.constants import PytestConst
-from ngts.constants.performance_constants import MongoDbConsts, PowerConsts
+from ngts.constants.performance_constants import MongoDbConsts, PowerConsts, PerfConsts
 from ngts.helpers.performance.performance_db_helpers import (create_performance_db_template,
                                                              create_test_validation_entry_to_db,
                                                              add_test_mongo_metadata, get_perf_test_name)
@@ -94,27 +94,6 @@ def basic_test_configuration(request, players):
                 remove_players_logs()
 
 
-@pytest.fixture(scope='class', autouse=False)
-def port_group_df(request, players):
-    request.getfixturevalue('basic_setup_configuration')
-    port_group_df = []
-    ports = players['dut']['cli'].performance.get_right_left_ports_dict()
-
-    if ports['left_ports'] == [] or ports['right_ports'] == []:
-        logging.info("No ports found for left and right ports retrying after a delay of 10 seconds")
-        # TODO: remove this and implement split by middle technique to get the ports instead
-        time.sleep(10)
-        ports = players['dut']['cli'].performance.get_right_left_ports_dict()
-
-    sdk_ports_left = players['dut']['cli'].performance.get_sdk_ports(ports["left_ports"])
-    sdk_ports_right = players['dut']['cli'].performance.get_sdk_ports(ports["right_ports"])
-    for port in sdk_ports_left:
-        port_group_df.append({"port": port, MongoDbConsts.PORT_GROUP_NAME: "left_ports"})
-    for port in sdk_ports_right:
-        port_group_df.append({"port": port, MongoDbConsts.PORT_GROUP_NAME: "right_ports"})
-    return port_group_df
-
-
 @pytest.fixture(scope='session', autouse=True)
 def create_mongo_db_template_file(players, session_id, setup_name):
     create_performance_db_template(players, session_id, setup_name)
@@ -132,3 +111,78 @@ def update_test_data_in_mongo_db(request, players, is_ipv6):
         raise e
     finally:
         create_test_validation_entry_to_db(players, test_name)
+
+
+def get_all_players_ports(players, right_split_num=1, left_split_num=1):
+    """
+    Retrieves port configurations for all players in the performance test setup.
+
+    This function collects port information from both the Device Under Test (DUT)
+    and Traffic Generators (TG), applying the specified split configurations.
+
+    Args:
+        players (dict): Dictionary containing all players' information and their CLI interfaces
+        right_split_num (int, optional): Number of splits for right-side ports. Defaults to 1
+        left_split_num (int, optional): Number of splits for left-side ports. Defaults to 1
+
+    Returns:
+        dict: Dictionary with player names as keys and their port configurations as values.
+              Format: {
+                  'player_name': {
+                      'left_ports': [...],
+                      'right_ports': [...]
+                  }
+              }
+    """
+    all_ports_after_split = {}
+    for player in PerfConsts.PERF_SETUP_PLAYERS_ALIASES:
+        if player == PerfConsts.DUT_ALIAS:
+            all_ports_after_split[player] = players[player]['cli'].performance.get_split_ports(
+                right_split_num,
+                left_split_num
+            )
+        else:
+            split_num = left_split_num if player == PerfConsts.LEFT_TG_ALIAS else right_split_num
+            all_ports_after_split[player] = players[player]['cli'].performance.get_player_unconnected_connected_after_split(
+                split_num
+            )
+    return all_ports_after_split
+
+
+@pytest.fixture(scope='function', autouse=False)
+def port_group_df(request, players, conf_args=None):
+    """
+    Pytest fixture that creates a port group configuration dataframe.
+
+    This fixture generates a list of dictionaries containing port configurations
+    for the Device Under Test (DUT), organizing ports into relevant port groups.
+    It can handle both standard DUT port groups and custom port group configurations.
+
+    Args:
+        request: Pytest request object
+        players (dict): Dictionary containing all players' information
+        conf_args (dict, optional): Configuration arguments containing custom port groups
+
+    Returns:
+        list: List of dictionaries with port configurations.
+              Format: [
+                  {
+                      "port": <sdk_port>,
+                      "port_group_name": "left_ports|right_ports|port_group_name"
+                  },
+                  ...
+              ]
+    """
+    request.getfixturevalue('basic_setup_configuration')
+    port_group_df = []
+
+    port_groups = players[PerfConsts.DUT_ALIAS]['cli'].performance.port_groups
+
+    for port_group_name, port_list in port_groups.items():
+        for port in port_list:
+            port_group_df.append({
+                "port": players['dut']['cli'].performance.get_sdk_port(port),
+                MongoDbConsts.PORT_GROUP_NAME: port_group_name
+            })
+
+    return port_group_df

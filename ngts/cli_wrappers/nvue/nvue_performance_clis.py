@@ -32,6 +32,7 @@ class NvuePerformanceCli(PerformanceCommon):
 
     def __init__(self, topology_obj, engine, dut_alias, cli_obj):
         super().__init__(topology_obj, engine, dut_alias, cli_obj)
+        self.port_groups = None
 
     def apply_configuration_file(self, scenario, conf_args, template_suite=PerfConsts.DEFAULT_PERF_TEMPLATES_DIR, dst_dir=Cl_Consts.CL_HOME_DIR):
         src_file = self.get_configuration_file(scenario, conf_args, template_suite)
@@ -295,6 +296,8 @@ class NvuePerformanceCli(PerformanceCommon):
             "two_sided_ar": conf_args['two_sided_ar']
         }
         outputText = jinja_template.render(parameter_dict=parameter_dict)
+        # TODO: Add port groups to SDK level, so validator will be able to overview them (SONiC as well)
+        self.port_groups = self.get_right_left_ports_dict()
         try:
             yaml.safe_load(outputText)  # just for checking the YAML sanity
         except yaml.YAMLError as yex:
@@ -413,3 +416,15 @@ class NvuePerformanceCli(PerformanceCommon):
             if timeout <= 0:
                 raise RealIssue("After {} seconds, the number of nexthops resolved on the dut is {}".format(start_time, nexthop_number))
         return True
+
+    def retrieve_default_route(self):
+        """
+        Retrieve the default route on the the setup
+        """
+        retrieve_default_route_cmd = "nv sh vrf mgmt router rib ipv4 | grep connected | awk '{print $1}'"
+        try:
+            output = self.execute_cmd(retrieve_default_route_cmd)
+            return output
+        except Exception as e:
+            logging.warning(f"Error retrieving default route: {e}")
+            return "No route found"
