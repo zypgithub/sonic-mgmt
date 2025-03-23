@@ -191,7 +191,7 @@ def test_interface_link_diagnostics_basic_invalid_ports(engines, devices):
     with allure.step('Run nv show interface for invalid ports'):
         with allure.independent_step('non-existing port'):
             output_dictionary = any_port.show_interface(port_names='aa link diagnostics')
-            assert "Valid interface types are swp, eth, loopback, ipoib, fnm, nvl." in output_dictionary, \
+            assert "Valid interface types are swp, eth, bond, svi, sub, loopback, ipoib, fnm, nvl." in output_dictionary, \
                 "Can run command for aa transceiver"
         for port_name in ('eth0', 'ib0', 'lo'):
             with allure.independent_step(port_name):
