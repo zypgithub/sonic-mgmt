@@ -224,7 +224,7 @@ def test_cluster_partition_bad_flow(engines, devices, test_api, has_loopbox, sta
                     output = sdn.partition.partition_id[part_id].action_create_partition_id(name=ClusterConsts.CREATED_PARTITION_NAME + '11', resiliency_mode=resiliency_mode, mcast_limit=mcast_limit, location=location).verify_result(should_succeed=False)
                 else:
                     output = sdn.partition.partition_id[part_id].action_create_partition_id(name=ClusterConsts.CREATED_PARTITION_NAME + '11', resiliency_mode=resiliency_mode, mcast_limit=mcast_limit, uuid=int(uuid)).verify_result(should_succeed=False)
-                err_msg = "Valid range is 0 - 1024"
+                err_msg = "Valid range is 0 - 1024" if test_api == 'NVUE' else "1025 is greater than the maximum of 1024"
                 assert err_msg in output, f"Expected message to include {err_msg}, instead\n {output}"
                 TestToolkit.tested_api = ApiType.NVUE
                 ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format, standalone_system)
@@ -287,6 +287,8 @@ def remove_gpu_from_partition_and_add_to_existing_partition(sdn, original_partit
         if not is_bug_active(4209873):
             expected_output = {'health': 'healthy', 'locations': {}, 'mcast-limit': '', 'name': target_partition_name, 'num-gpus': number_of_gpus, 'partition-type': '', 'resiliency-mode': ''}
             ClusterTools.validate_partition_content(output, expected_output)
+        assert location in output['locations'].keys(), f"location {location} was not added to the partition {target_partition_id}"
+        assert uuid == output['locations'][location]['uuid'], f"location{location} was expected to contain uuid {uuid}, but instead it has: {output['locations'][location]['uuid']}"
 
 
 def build_uuid_location_dicts(partitions_mapping, original_partition_id):

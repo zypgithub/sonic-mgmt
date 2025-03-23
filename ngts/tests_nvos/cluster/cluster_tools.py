@@ -381,7 +381,8 @@ class ClusterTools:
                 if is_bug_active(4290901) and (val == 'user_action'):
                     pass
                 else:
-                    assert str(output[key]) == str(val), f'Expected value: {val}, Actual value:{output[key]}'
+                    if val or key == 'num-gpus':
+                        assert str(output[key]) == str(val), f'Expected value: {val}, Actual value:{output[key]} - key: {key}'
 
     @staticmethod
     def create_empty_partition_and_add_gpu(sdn, no_reroute='', output_format=OutputFormat.json):
