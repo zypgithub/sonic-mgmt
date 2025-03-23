@@ -4,8 +4,11 @@ import allure
 import os
 import time
 from retry import retry
+
+from ngts.nvos_constants.constants_nvos import NvosConst
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.tools.test_utils.nvos_config_utils import set_base_configurations
+from ngts.tests_nvos.conftest import devices
 
 logger = logging.getLogger()
 
@@ -13,7 +16,7 @@ path_to_source_code = "/auto/sw_system_project/NVOS_INFRA/ChipSim/nvos/scripts"
 chipsim_script_file_name = "run_nvos_in_chipsim.py"
 
 
-def test_run_nvos_simx_docker(topology_obj, target_version):
+def test_run_nvos_simx_docker(topology_obj, target_version, devices):
     dut_engine = topology_obj.players['dut']['engine']
 
     server_name = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific']['serial_conn_command'].split()[1]
@@ -25,7 +28,7 @@ def test_run_nvos_simx_docker(topology_obj, target_version):
         assert os.path.isdir(path_to_source_code), "Relevant script files can't be found in " + path_to_source_code
 
     with allure.step("Start the NVOS simx docker"):
-        start_simx_docker(target_version, dut_engine, server_engine)
+        start_simx_docker(target_version, dut_engine, server_engine, devices)
 
     with allure.step("Wait until the switch is ready (~5 min)"):
         wait_till_the_switch_is_ready(dut_engine.ip)
@@ -37,9 +40,15 @@ def test_run_nvos_simx_docker(topology_obj, target_version):
         set_base_configurations(dut_engine=dut_engine, apply=True)
 
 
-def start_simx_docker(target_version, dut_engine, server_engine):
-    output = server_engine.run_cmd(f"sudo {path_to_source_code}/{chipsim_script_file_name} --ip {dut_engine.ip} "
-                                   f"--nos-image {target_version}")
+def start_simx_docker(target_version, dut_engine, server_engine, devices):
+    cmd = f"sudo {path_to_source_code}/{chipsim_script_file_name} --ip {dut_engine.ip} --nos-image {target_version} "
+
+    if devices.dut.switch_class == NvosConst.JULIET_SWITCH:
+        cmd += ("--pelican-tag 2014_3104 --chipsim-version master-1.2.206 "
+                "--docker-image nbu-harbor.gtm.nvidia.com/chipsim/master/ib:1.2.206")
+
+    output = server_engine.run_cmd(cmd)
+
     time.sleep(5)
     assert "NOS installed successfully" in output, "Failed to start simx docker"
 

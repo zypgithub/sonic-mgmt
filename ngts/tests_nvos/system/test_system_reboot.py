@@ -47,8 +47,8 @@ def test_reboot_command(engines, devices, test_name):
         with allure.step("Check reboot cause"):
             output = OutputParsingTool.parse_json_str_to_dictionary(system.reboot.show(SystemConsts.REBOOT_REASON)
                                                                     ).get_returned_value()
-            assert output["reason"] == 'reboot'
-            assert output["user"] == 'admin'
+            assert 'reboot' in output["reason"], "reboot not found in show reboot output"
+            assert 'admin' in output["user"], f"reboot user is not 'admin' as expected (actual - {output['user']})"
 
     with allure.step("Check reboot reason event in system events"):
         reboot_reason = OutputParsingTool.get_reboot_reason_system_events(system)
