@@ -1115,6 +1115,7 @@
   Conditions:
     - Affected_test_cases:
       - tests_nvos/system/test_system_health.py::test_ignore_health_issue
+      - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm/TestNewTc.py::test_sensor_errors
 
 # NVOS - snmp error flows
 - Errors_list:
@@ -1942,9 +1943,16 @@
 
 - Errors_list:
     - '.*ethtool: could not get ethtool features for veth.*'
+    - '.*ethtool: could not set ethtool features for veth.*'
   Conditions:
     - Affected_test_cases:
         - tests_nvos/
       Redmine:
         - 3928371
+
+- Errors_list:
+    - ".*address/host 'dummy.server1' unusable.*"
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/system/ntp/test_system_ntp.py::test_configure_ntp_multiple_servers
 # --------------------------------------------------
