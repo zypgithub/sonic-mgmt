@@ -257,7 +257,7 @@ def test_split_port_counters(engines, players, interfaces, start_sm, devices):
         assert engines.ha and engines.hb, "Traffic hosts details can't be found in Noga setup"
 
     with allure.step("Run traffic"):
-        Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, True).verify_result()
+        Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, '', True).verify_result()
 
     with allure.step("Check counters before split, should be not 0"):
         split_ports, active_ports = _get_split_ports()

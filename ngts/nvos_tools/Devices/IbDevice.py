@@ -707,7 +707,7 @@ class BlackMambaSwitch(IbSwitch):
                                                     'fnma4p1', 'fnma4p2'}
         # because other internal fnm ports are unused currently
         self.fnm_link_speed = '800G'
-        self.fnm_internal_link_speed = '200G'
+        self.fnm_internal_link_speed = '50G'
 
     def _init_eth0_speeds(self):
         super()._init_eth0_speeds()

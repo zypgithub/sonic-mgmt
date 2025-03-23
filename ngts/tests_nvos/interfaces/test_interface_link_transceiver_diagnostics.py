@@ -86,7 +86,10 @@ def test_interface_transceiver_diagnostics_basic_no_cable(engines, devices):
 def test_interface_transceiver_diagnostics_basic_copper(engines, devices):
     platform = Platform()
     with allure.step("Run diagnostics for copper cable and verify fields in output"):
-        list_of_transceivers = list(platform.transceiver.get_dict_of_transceivers(cable_type=PlatformConsts.TRANSCEIVER_CABLE_COPPER_CABLE))
+        list_of_transceivers = list(platform.transceiver.get_dict_of_transceivers(
+            cable_type=PlatformConsts.TRANSCEIVER_CABLE_COPPER_CABLE))
+        if not list_of_transceivers:
+            pytest.skip(f"test skipped - no {PlatformConsts.TRANSCEIVER_CABLE_COPPER_CABLE} exists")
         transceiver_name = Tools.RandomizationTool.select_random_value(list_of_transceivers).get_returned_value()
         output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(
             platform.transceiver.show(transceiver_name)).get_returned_value()

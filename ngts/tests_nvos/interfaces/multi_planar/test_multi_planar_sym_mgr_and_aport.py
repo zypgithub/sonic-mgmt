@@ -98,7 +98,7 @@ def test_fae_interface_commands(engines, devices, test_api, start_sm):
                     f"External FNM port speed should be {dut_device.fnm_link_speed} instead of" \
                     f"{output_dictionary[IbInterfaceConsts.LINK_SPEED]}"
 
-        with allure.independent_step("Validate external FNM port speed"):
+        with allure.independent_step("Validate internal FNM port speed"):
             output_dictionary = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
                 selected_fae_fnm_plane_port.port.interface.link.show()).get_returned_value()
             if output_dictionary[IbInterfaceConsts.LINK_STATE] == NvosConsts.LINK_STATE_UP:

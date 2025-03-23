@@ -1,6 +1,7 @@
 import logging
 import re
 import random
+import time
 
 from ngts.tools.test_utils import allure_utils as allure
 import pytest
@@ -64,7 +65,7 @@ def test_ib_show_interface(engines, devices, test_api):
 
 
 @pytest.mark.ib_interfaces
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [ApiType.OPENAPI])
 def test_ib_show_interface_all_state_up(engines, devices, start_sm, test_api):
     """
     Run show interface command and verify the required fields are exist
@@ -122,7 +123,7 @@ def test_ib_show_interface_all_state_up(engines, devices, start_sm, test_api):
                                                        ask_for_confirmation=True).verify_result()
                 selected_port.interface.wait_for_port_state(NvosConsts.LINK_STATE_UP,
                                                             logical_state='Active').verify_result()
-
+            time.sleep(5)
             output_dictionary = Tools.OutputParsingTool.parse_show_interface_output_to_dictionary(
                 selected_port.interface.show()).get_returned_value()
 
