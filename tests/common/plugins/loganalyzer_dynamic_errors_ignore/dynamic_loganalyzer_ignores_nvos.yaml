@@ -901,6 +901,15 @@
         - tests_nvos/ib/test_ibdiagnet.py::test_ibdiagnet_run
         - tests_nvos/platform/test_install_platform_firmware.py::test_install_platform_firmware
 
+# NVOS : Errors which should be ignored in cluster partition test - bad flow. Expected to fail some actions in the error flow.
+- Errors_list:
+    - '.*ERR nvued:.*ERROR: lifecycle\.py:\d+ failed to restore partition \d+ uuid \d+ with GRPC error NMX_ST_RESOURCE_NOT_IN_USE.*ClusterGrpcError: Return code in RPC response: NMX_ST_RESOURCE_NOT_IN_USE, type: UpdatePartitionResponse.*'
+    - '.*ERR nvued:.*ERROR: lifecycle\.py:\d+ failed to create partition \d+ with GRPC error NMX_ST_RESOURCE_IN_USE.*ClusterGrpcError: Return code in RPC response: NMX_ST_RESOURCE_IN_USE, type: CreatePartitionResponse.*'
+    - '.*ERR nvued:.*ERROR: lifecycle\.py:\d+ failed to create partition \d+ with GRPC error NMX_ST_RESOURCE_IN_USE.*Traceback \(most recent call last\):.*'
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/cluster/test_cluster_partition.py::test_cluster_partition_bad_flow
+
 # NVOS : Error - Bug 3494774 related
 - Errors_list:
     - '.* ERR countermgrd: failed to get COUNTERS_PORT_NAME_MAP with: Unable to connect to redis: Cannot assign requested address.*'
