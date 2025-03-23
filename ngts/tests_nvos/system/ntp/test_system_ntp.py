@@ -943,8 +943,7 @@ def test_ntp_log(engines):
 @pytest.mark.system
 @pytest.mark.ntp
 @pytest.mark.simx
-@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_ntp_mgmt_port_listeners(topology_obj, nv_command, test_api):
+def test_ntp_mgmt_port_listeners(topology_obj, nv_command):
     """
     validate:
     - NTP synchronization when listening to each of the mgmt ports.
@@ -973,7 +972,6 @@ def test_ntp_mgmt_port_listeners(topology_obj, nv_command, test_api):
     12. Verify ntp status is synchronized, listen to eth0, and stable for 5 min
     13. Clear ntp and mgmt-ports configuration
     """
-    TestToolkit.tested_api = test_api
     serial_engine = topology_obj.players['dut_serial']['engine']
 
     try:
@@ -1021,7 +1019,8 @@ def test_ntp_mgmt_port_listeners(topology_obj, nv_command, test_api):
                                          NtpConsts.Status.UNSYNCHRONISED.value, engine_dut=serial_engine)
 
         with allure.step("Set interface eth0 state to up and eth1 state to down (SSH connection will be back)"):
-            nv_command.port['eth0'].interface.link.state.set(op_param_name=NvosConst.PORT_STATUS_UP).verify_result()
+            nv_command.port['eth0'].interface.link.state.set(op_param_name=NvosConst.PORT_STATUS_UP,
+                                                             dut_engine=serial_engine).verify_result()
             nv_command.port['eth1'].interface.link.state.set(op_param_name=NvosConst.PORT_STATUS_DOWN,
                                                              dut_engine=serial_engine, apply=True,
                                                              ask_for_confirmation=True).verify_result()
@@ -1034,9 +1033,9 @@ def test_ntp_mgmt_port_listeners(topology_obj, nv_command, test_api):
 
     finally:
         with allure.step("Clear ntp and mgmt-ports configuration"):
-            nv_command.port['eth0'].interface.link.state.unset(engine_dut=serial_engine).verify_result()
-            nv_command.port['eth1'].interface.link.state.unset(engine_dut=serial_engine).verify_result()
-            nv_command.system.ntp.unset(engine_dut=serial_engine, apply=True, ask_for_confirmation=True).verify_result()
+            nv_command.port['eth0'].interface.link.state.unset(dut_engine=serial_engine).verify_result()
+            nv_command.port['eth1'].interface.link.state.unset(dut_engine=serial_engine).verify_result()
+            nv_command.system.ntp.unset(dut_engine=serial_engine, apply=True, ask_for_confirmation=True).verify_result()
 
 
 @pytest.mark.system
@@ -1156,10 +1155,11 @@ def create_ntp_server(player_engine):
 
 
 def verify_ntp_sync_stabilization(nv_command, expected_listen, expected_time, engine_dut=None):
-    with allure.step(f"Verify ntp status is synchronized, listen to eth0, and stable for {expected_time} min"):
+    with allure.step(f"Verify ntp status is synchronized, listen to {expected_listen}, "
+                     f"and stable for {expected_time} sec"):
         start_time = time.time()
         diff_time = 0
-        while diff_time > expected_time:
+        while diff_time < expected_time:
             verify_ntp_status_and_listen(nv_command, expected_listen, NtpConsts.Status.SYNCHRONISED.value, engine_dut)
             diff_time = time.time() - start_time
 

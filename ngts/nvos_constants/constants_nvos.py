@@ -1205,7 +1205,7 @@ class NtpConsts:
     CONFIG_TIME_DIFF_THRESHOLD = 2.5  # [sec]
     SHOW_TIME_DIFF_THRESHOLD = 0.5  # [sec]
     SYNCHRONIZE_NEW_LISTEN_TIME = 20  # [sec]
-    SYNCHRONIZE_TIME = 50  # [sec]
+    SYNCHRONIZE_TIME = 80  # [sec]
     SYNCHRONIZATION_MAX_TIME = 100  # [sec]
     SYNCHRONIZATION_TIME_AFTER_REBOOT = 60  # [sec]
     CONFIG_TIME = 10  # [sec]
