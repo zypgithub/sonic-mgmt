@@ -1,5 +1,5 @@
 from smtp import send_email
-from repo import GitCommit
+from repo import GitCommit, CherryPickStatus
 import os
 import pytest
 
@@ -33,14 +33,14 @@ def test_send_email_with_no_exception():
                 "1742140902",
                 "Test commit[#1]",
                 "1111111111111111111111111111111111111111",
-                2  # already included
+                CherryPickStatus.ALREADY_INCLUDED  # already included
             ),
             GitCommit(
                 "1742242118",
                 "1742240902",
                 "Test commit[#2]",
                 "2222222222222222222222222222222222222222",
-                1  # success
+                CherryPickStatus.SUCCESS  # success
             )
         ],
         cr_on_top="https://git-nbu-sw.nvidia.com/r/c/switchx/sonic/sonic-mgmt/+/293664",

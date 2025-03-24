@@ -50,13 +50,13 @@
         </thead>
         <tbody>
             {% for commit in commits %}
-            <tr {% if commit.cherry_pick_status == 3 %}
+            <tr {% if commit.cherry_pick_status.value | int == 3 %}
                 style="background-color: #db756e;" {# CONFLICT #}
-                {% elif  commit.cherry_pick_status == 1 %}
+                {% elif  commit.cherry_pick_status.value | int == 1 %}
                 style="background-color: #76B900;" {# SUCCESS #}
-                {% elif  commit.cherry_pick_status == 2 %}
+                {% elif  commit.cherry_pick_status.value | int == 2 %}
                 style="background-color: #daf1ff;" {# ALREADY INCLUDED #}
-                {% elif  commit.cherry_pick_status == 4 %}
+                {% elif  commit.cherry_pick_status.value | int == 4 %}
                 style="background-color: #FFFFFF;" {# EMPTY COMMIT #}
                 {% endif %}>
                 <td>{{ loop.index }}</td>
