@@ -5,12 +5,13 @@ def pre(name) {
 }
 
 def set_dpu_bin(topic_map) {
+    def DPU_bin_path
     if (topic_map["IMAGE_DPU_BRANCH"] && NGCITools().ciTools.is_parameter_contains_value(topic_map["IMAGE_DPU_BRANCH"]) &&
             topic_map["IMAGE_DPU_VERSION"] && NGCITools().ciTools.is_parameter_contains_value(topic_map["IMAGE_DPU_VERSION"])) {
         error "IMAGE_BRANCH and IMAGE_VERSION cannot be defined together. remove one or both of them from Gerrit topic to continue "
     }
 
-    def dpu_branch = env.DEFAULT_DPU_BRANCH ? env.DEFAULT_DPU_BRANCH : "smart-switch-master"
+    def dpu_branch = env.GERRIT_BRANCH ? env.GERRIT_BRANCH : "smart-switch-master"
     if (topic_map["IMAGE_DPU_BRANCH"] && NGCITools().ciTools.is_parameter_contains_value(topic_map["IMAGE_DPU_BRANCH"])) {
         dpu_branch = topic_map["IMAGE_DPU_BRANCH"]
         print "DPU image branch name is defined by topic: ${dpu_branch}"
@@ -23,14 +24,24 @@ def set_dpu_bin(topic_map) {
     } else {
         def mgmt_tools = NGCITools().ciTools.load_project_lib("${env.SHARED_LIB_FILE}")
         dpu_version_name = mgmt_tools.get_dpu_lastrc_version(dpu_branch)
-        print "DPU image version is defined by lastrc link for branch: ${dpu_branch}"
-    }
 
-    def DPU_bin_path = "${env.DPU_VERSION_DIRECTORY}/${dpu_version_name}/dev/Nvidia-bluefield/sonic-nvidia-bluefield.bfb"
-    if (! new File(DPU_bin_path).exists()) {
-        error "ERROR:SONiC bin file not found: ${DPU_bin_path}"
+        // This part should throw exception in the future and align with SONIC case.
+        // It was decided to skip DPU tests if the lastrc version is not defined or found
+        // We will do it when dpu lastrc methodology will be aligned with sonic
+        if (dpu_version_name == null) {
+            echo "DPU image version is not defined by lastrc link for branch: ${dpu_branch}, in that case will skip DPU tests"
+            echo "Setting SKIP_SONIC_HW_SS_BAT to true"
+            env.SKIP_SONIC_HW_SS_BAT = true
+            DPU_bin_path = "Not Defined"
+        }
     }
-
+    // In the future we should throw exception if DPU_bin_path is not defined and remove this if
+    if (DPU_bin_path != "Not Defined") {
+        DPU_bin_path = "${env.DPU_VERSION_DIRECTORY}/${dpu_version_name}/dev/Nvidia-bluefield/sonic-nvidia-bluefield.bfb"
+        if (! new File(DPU_bin_path).exists()) {
+            error "ERROR:SONiC bin file not found: ${DPU_bin_path}"
+        }
+    }
     env.DPU_BIN = DPU_bin_path
     print "DPU_BIN = ${env.DPU_BIN}"
 }
@@ -41,17 +52,10 @@ def set_sonic_bin(topic_map, project) {
         error "IMAGE_BRANCH and IMAGE_VERSION cannot be defined together. remove one or both of them from Gerrit topic to continue "
     }
 
-    def sonic_branch = env.DEFAULT_SONIC_BRANCH ? env.DEFAULT_SONIC_BRANCH : "master"
+    def sonic_branch = env.GERRIT_BRANCH ? env.GERRIT_BRANCH : "master"
     if (topic_map["IMAGE_BRANCH"] && NGCITools().ciTools.is_parameter_contains_value(topic_map["IMAGE_BRANCH"])) {
         sonic_branch = topic_map["IMAGE_BRANCH"]
         print "SONiC image branch name is defined by topic: ${sonic_branch}"
-    } else if (project == "sonic") {
-        def branch_map = NGCITools().ciTools.read_json(NGCITools().ciTools.getFileContent("${env.SONIC_BRANCH_MAP}"))
-        sonic_branch = env.GERRIT_BRANCH.replace("develop-", "")
-        if (branch_map["${env.GERRIT_BRANCH}"] && NGCITools().ciTools.is_parameter_contains_value(branch_map["${env.GERRIT_BRANCH}"])) {
-            sonic_branch = branch_map["${env.GERRIT_BRANCH}"]
-        }
-        print "SONiC image branch name is defined by mapping file or convention develop-<branch> name : ${sonic_branch}"
     }
 
     def sonic_version_name
@@ -62,6 +66,9 @@ def set_sonic_bin(topic_map, project) {
         def mgmt_tools = NGCITools().ciTools.load_project_lib("${env.SHARED_LIB_FILE}")
         sonic_version_name = mgmt_tools.get_sonic_lastrc_version(sonic_branch)
         print "SONiC image version is defined by lastrc link for branch: ${sonic_branch}"
+        if (sonic_version_name == null) {
+            error "ERROR: SONiC image version is not defined by lastrc link for branch: ${sonic_branch}"
+        }
     }
 
     if (sonic_version_name.contains("_Public")) {
@@ -152,7 +159,7 @@ def run_step(name) {
         }
 
         set_sonic_bin(topic_map, project)
-        set_dpu_bin(topic_map) //default is always Bluefield unless given by tag
+        set_dpu_bin(topic_map)
         set_nvos_bin(topic_map, project)
 
 
