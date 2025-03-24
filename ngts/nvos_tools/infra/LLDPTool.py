@@ -1,9 +1,10 @@
 import time
 import re
 
+from retry import retry
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_constants.constants_nvos import TcpDumpConsts
-from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
+from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.tools.test_utils import allure_utils as allure
 
 
@@ -32,10 +33,17 @@ class LLDPTool:
     def start_dump_lldp_packets(engine: LinuxSshEngine, interface="eth0"):
         with allure.step(f"Dump lldp {interface} packets into {LLDPTool.file_path}"):
             engine.run_cmd(f"sudo rm -rf {LLDPTool.file_path}")
-            if is_bug_active(4265044):
-                time.sleep(2)
+            LLDPTool.verify_mgmt_ports_are_up(engine)
             engine.run_cmd(
                 f'sudo tcpdump -Q out -lne -i {interface} -vv ether proto {LLDPTool.lldp_proto} > {LLDPTool.file_path} &')
+
+    @staticmethod
+    @retry(AssertionError, 10, 5)
+    def verify_mgmt_ports_are_up(engine: LinuxSshEngine):
+        with allure.step("verify mgmt ports are up"):
+            for mgmt_port in ['eth0', 'eth1']:
+                show_output = engine.run_cmd(f"sudo ifconfig {mgmt_port}")
+                ValidationTool.verify_expected_output(show_output[0], 'UP').verify_result()
 
     @staticmethod
     def finish_dump_lldp_packets(engine: LinuxSshEngine):

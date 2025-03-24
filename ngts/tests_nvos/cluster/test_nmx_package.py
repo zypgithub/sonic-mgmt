@@ -31,9 +31,6 @@ def enable_cluster_and_stop_apps(setup_name):
     ClusterTools.start_cluster(cluster, setup_name, OutputFormat.json)
     for app in ClusterConsts.INITIAL_EXPECTED_APPS:
         cluster.apps.app_name[app].action_stop_cluster_app().verify_result()
-    yield
-    for app in ClusterConsts.INITIAL_EXPECTED_APPS:
-        cluster.apps.app_name[app].action_start_cluster_app().verify_result()
 
 
 @pytest.fixture()
