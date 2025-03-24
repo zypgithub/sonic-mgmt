@@ -96,7 +96,7 @@ class Repo:
         process = subprocess.run(
             # put commit subject last as it may contain char '|'
             f'git --no-pager log --pretty=format:"%H|%ct|%at|%s" --since="{since}" '
-            f'--until="{until}" --first-parent {branch_name}',
+            f'--until="{until}" {branch_name}',
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             cwd=self.dir,
