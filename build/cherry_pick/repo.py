@@ -95,7 +95,8 @@ class Repo:
         """
         process = subprocess.run(
             # put commit subject last as it may contain char '|'
-            f'git --no-pager log --pretty=format:"%H|%ct|%at|%s" --since="{since}" --until="{until}" {branch_name}',
+            f'git --no-pager log --pretty=format:"%H|%ct|%at|%s" --since="{since}" '
+            f'--until="{until}" --first-parent {branch_name}',
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             cwd=self.dir,
@@ -145,7 +146,7 @@ class Repo:
             bool: indicate cherry pick success or not
             str: indicate status
         """
-        process = subprocess.run(f"git cherry-pick {commit_sha}", stdout=subprocess.PIPE,
+        process = subprocess.run(f"git cherry-pick {commit_sha} -m 1", stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE, cwd=self.dir,
                                  shell=True)
         if process.returncode != 0:
