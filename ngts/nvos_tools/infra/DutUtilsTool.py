@@ -33,6 +33,7 @@ class RebootParams:
     system_is_ready_timeout: int = None
     track_boot_intervals: bool = False
     should_wait_till_system_ready: bool = True
+    check_system_is_functional: bool = True
 
 
 class DutUtilsTool:
@@ -131,15 +132,18 @@ class DutUtilsTool:
                     with allure.step('wait for ssh'):
                         dut_engine.run_cmd('echo "SSH OK"')
                     return ResultObj(result=True, info="rebooted, ssh up, but system is not ready yet")
-                with allure.step('wait for os to be functional'):
-                    if device:
-                        result_obj = device.wait_for_os_to_become_functional(dut_engine)
-                    else:
-                        result_obj = DutUtilsTool.wait_for_nvos_to_become_functional(dut_engine)
+                if reboot_params.check_system_is_functional:
+                    with allure.step('wait for os to be functional'):
+                        if device:
+                            result_obj = device.wait_for_os_to_become_functional(dut_engine)
+                        else:
+                            result_obj = DutUtilsTool.wait_for_nvos_to_become_functional(dut_engine)
 
-                    if verify_final_result:
-                        result_obj.verify_result()
-                    return result_obj
+                        if verify_final_result:
+                            result_obj.verify_result()
+                        return result_obj
+                else:
+                    return ResultObj(result=True, info="rebooted, System is ready, but postponing the check of system is functional")
 
     @staticmethod
     def wait_for_system_ready_in_serial(topology_obj, serial_engine: PexpectSerialEngine = None, wait_timeout=300):

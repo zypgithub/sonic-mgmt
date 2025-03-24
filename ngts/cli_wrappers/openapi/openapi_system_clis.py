@@ -180,7 +180,7 @@ class OpenApiSystemCli(OpenApiBaseCli):
                                                    engine.ip, resource_path, params)
 
     @staticmethod
-    def action_reset(engine, device, comp, param, topology_obj=None, system_is_ready_timeout=None):
+    def action_reset(engine, device, comp, param, topology_obj=None, system_is_ready_timeout=None, check_system_is_functional=True):
         logging.info("Running action: reset system {} on dut using OpenApi".format(comp))
         if 'keep' in param:  # OpenApi has keep as parameter, so should remove it from string 4 chars + space.
             param = param[len('keep') + 1:]
@@ -202,6 +202,7 @@ class OpenApiSystemCli(OpenApiBaseCli):
         if any(msg in result for msg in SystemConsts.REBOOT_RESPONSE_MESSAGES):
             reboot_params = RebootParams()
             reboot_params.topology_obj = topology_obj
+            reboot_params.check_system_is_functional = check_system_is_functional
             DutUtilsTool.wait_on_system_reboot(engine=engine, reboot_params=reboot_params)
 
         return result

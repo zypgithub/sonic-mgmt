@@ -169,9 +169,16 @@ class FactoryDefault(BaseComponent):
 
             res_obj, duration = OperationTime.save_duration(f'reset factory {param}', "", test_name, SendCommandTool.execute_command,
                                                             self.api_obj[TestToolkit.tested_api].action_reset, engine=engine, device=device, comp="factory-default", param=param, topology_obj=topology_obj,
-                                                            system_is_ready_timeout=system_is_ready_timeout)
-
+                                                            system_is_ready_timeout=system_is_ready_timeout, check_system_is_functional=False)
             TestToolkit.add_loganalyzer_marker(engine, marker)
+
+            engine.disconnect()
+
+            with allure.step('wait for os to be functional'):
+                if device:
+                    result_obj = device.wait_for_os_to_become_functional(engine)
+                else:
+                    result_obj = DutUtilsTool.wait_for_nvos_to_become_functional(engine)
 
             logger.info("Reset factory till system is ready takes: {} seconds".format(duration))
             res_obj.duration = duration
