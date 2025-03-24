@@ -584,7 +584,7 @@ def test_fetch_image_via_https(test_api):
 
     try:
         with allure.step("Get the image details to be fetched"):
-            original_image = system.image.get_image_field_values()[ImageConsts.PARTITION1_IMG][ImageConsts.BUILD_ID]
+            original_image = system.image.get_image_field_values()[ImageConsts.PARTITION1_IMG]
             result = get_images_to_fetch(release_name, original_image, 1)
             assert len(result) > 0, "Required images with release {} were not retrieved".format(release_name)
             image_to_fetch = result[0]
@@ -627,6 +627,9 @@ def test_fetch_image_with_weird_password(test_api, engines):
     # Create 5 passwords including 5 random special characters from the allowed special character list
     special_char_list = ['~', '@', '%', '^', '*', '_', '=', '+', '{', '}', ':', ',', '[', ']', '/', '!', "'"]
     weird_passwords = [("Password1" + special_char) for special_char in (random.sample(special_char_list, 5))]
+
+    with allure.step("Delete all the pre existing images"):
+        system.image.files.delete_all_existing_files()
 
     with allure.step("Create dummy file to be fetched"):
         cmd_to_create_file = "touch " + SystemConsts.DUMMY_IMAGE_PATH + SystemConsts.DUMMY_IMAGE
