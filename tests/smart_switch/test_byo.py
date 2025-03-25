@@ -16,10 +16,10 @@ from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 from tests.common.helpers.assertions import pytest_assert
 from tests.common.constants import RESOLV_CONF_NAMESERVERS
 from tests.common.utilities import wait_until
-sys.path.extend(["dash"])
+current_path = sys.path.copy()
+sys.path.insert(0, "dash")
 from tests.dash.conftest import add_dpu_info
-sys.path.remove("dash")
-
+sys.path = current_path
 
 logger = logging.getLogger(__name__)
 
