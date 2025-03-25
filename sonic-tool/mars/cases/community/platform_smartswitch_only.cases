@@ -65,4 +65,14 @@
         </cmd>
     </case>
 
+    <case>
+        <info> dpu component versions test </info>
+        <name> dpu component versions test </name>
+        <cmd>
+             <params>
+                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 600 --session-timeout 700 \'" --test-scripts smartswitch/platform_tests/test_component_versions_dpu.py </static_args>
+             </params>
+        </cmd>
+    </case>
+
 </CASEDEF>
