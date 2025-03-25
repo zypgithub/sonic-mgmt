@@ -342,6 +342,12 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             except KeyError:
                 logger.warning('Can not get device type from config_db.json. Key does not exist')
 
+        cur_version = self.get_image_sonic_version()
+        cur_version = int(re.match(r'[0-9]{6}', cur_version).group()) if 'master' not in cur_version else 999999
+        if cur_version < 202411:
+            if 'gnmi' in dockers_list:
+                dockers_list.remove('gnmi')
+
         for docker in dockers_list:
             try:
                 self.engine.run_cmd('docker ps | grep {}'.format(docker), validate=True)
