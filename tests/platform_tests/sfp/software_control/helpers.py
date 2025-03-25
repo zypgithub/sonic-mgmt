@@ -277,14 +277,14 @@ def get_split_ports(duthost, port_index, include_down_ports=False):
     return split_ports
 
 
-def get_ports_supporting_sc(duthost):
+def get_ports_supporting_sc(duthost, only_ports_index_up=False):
     """
     @summary: This method is for get DUT ports supporting Software Control
     @param: duthost: duthost fixture
     @param: enum_frontend_asic_index: enum_frontend_asic_index fixture
     @return: list of Software Control ports supported
     """
-    physical_ports_map = get_physical_index_to_ports_map(duthost)
+    physical_ports_map = get_physical_index_to_ports_map(duthost, only_ports_index_up=only_ports_index_up)
     ports_with_sc_support = []
     for port_number, port_name in physical_ports_map.items():
         cmd = duthost.shell(f"sudo cat /sys/module/sx_core/asic0/module{int(port_number) - 1}/control")

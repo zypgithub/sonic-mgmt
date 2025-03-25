@@ -24,7 +24,7 @@ class TestSoftwareControlFunctional:
             pytest.skip("SW control feature is not enabled in sai.profile")
         self.enum_frontend_asic_index = enum_frontend_asic_index
         self.conn_graph_facts = conn_graph_facts
-        self.sc_port_list = helpers.get_ports_supporting_sc(self.duthost)
+        self.sc_port_list = helpers.get_ports_supporting_sc(self.duthost, only_ports_index_up=True)
         self.sff_cables = helpers.get_sff_cables(self.duthost, helpers.CMD_REDIS_TRANSCEIVER_INFO,
                                                  self.enum_frontend_asic_index, self.sc_port_list)
 

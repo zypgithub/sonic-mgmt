@@ -181,7 +181,7 @@ def get_port_map(dut, asic_index=None):
     return port_mapping
 
 
-def get_physical_index_to_ports_map(duthost):
+def get_physical_index_to_ports_map(duthost, only_ports_index_up=False):
     """
     @summary: Get mapping of physical port indices to their corresponding Ethernet ports.
     @return: A dictionary where key is the physical index and value is a list of Ethernet ports
@@ -189,14 +189,27 @@ def get_physical_index_to_ports_map(duthost):
     """
     asics_name_list = [f' -n {asic.namespace}' for asic in duthost.frontend_asics] if duthost.is_multi_asic else ['']
     physical_index_to_ports_map = {}
+    ports_index_up_list = []
     for asic in asics_name_list:
         cmd = f"sonic-cfggen{asic} -d --print-data"
         db_output = json.loads(duthost.command(cmd)["stdout"])
         for port, info in db_output["PORT"].items():
+            if info.get("alias", "")[-1] == 'a' or info.get("alias", "")[-1].isdigit():
+                if info.get("admin_status", "down") == "up":
+                    ports_index_up_list.append(info["index"])
             if info["index"] in physical_index_to_ports_map:
                 physical_index_to_ports_map[info["index"]].append(port)
             else:
                 physical_index_to_ports_map[info["index"]] = [port]
+    physical_index_to_ports_map = (
+        {
+            port_up: physical_index_to_ports_map[port_up]
+            for port_up in ports_index_up_list
+            if port_up in physical_index_to_ports_map
+        }
+        if only_ports_index_up
+        else physical_index_to_ports_map
+    )
     return physical_index_to_ports_map
 
 
