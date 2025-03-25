@@ -1113,7 +1113,7 @@ class JulietScaleoutSwitch(JulietSwitch):
 
         self.stats_disk_header_num_of_lines = 16
         self.stats_cpu_header_num_of_lines = 12
-        self.stats_temperature_header_num_of_lines = 48
+        self.stats_temperature_header_num_of_lines = 25
         self.allow_cpld_update = True
 
         # Port 1-36 is from asic1/ Port 37-72 is from asic2

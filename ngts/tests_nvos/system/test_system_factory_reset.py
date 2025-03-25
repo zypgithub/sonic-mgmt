@@ -53,6 +53,11 @@ def test_reset_factory_without_params(engines, devices, topology_obj, platform_p
     with allure.step("Run reset factory without params"):
         duration = execute_reset_factory(engines, system, devices.dut.reset_factory, "", current_time, test_name=test_name)
 
+    with allure.step("Check reboot reason event in system events"):
+        reboot_reason = OutputParsingTool.get_reboot_reason_system_events(system)
+        assert expected_reboot_reason in reboot_reason, 'Reboot reason is {} instead of {}'.\
+            format(reboot_reason, expected_reboot_reason)
+
     with allure.step('post factory reset steps'):
         factory_reset_no_params_post_steps(apply_and_save_port, engines, just_apply_port, health_status,
                                            machine_type, not_apply_port, system, init_cluster_status, has_loopbox,
@@ -64,11 +69,6 @@ def test_reset_factory_without_params(engines, devices, topology_obj, platform_p
 
     with allure.step("Verify the setup is functional"):
         verify_the_setup_is_functional(system, engines)
-
-    with allure.step("Check reboot reason event in system events"):
-        reboot_reason = OutputParsingTool.get_reboot_reason_system_events(system)
-        assert expected_reboot_reason in reboot_reason, 'Reboot reason is {} instead of {}'.\
-            format(reboot_reason, expected_reboot_reason)
 
     with allure.step("Verify operation time"):
         OperationTime.verify_operation_time(duration, devices.dut.reset_factory).verify_result()
