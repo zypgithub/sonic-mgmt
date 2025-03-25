@@ -24,15 +24,15 @@ class TestSoftwareControlFunctional:
             pytest.skip("SW control feature is not enabled in sai.profile")
         self.enum_frontend_asic_index = enum_frontend_asic_index
         self.conn_graph_facts = conn_graph_facts
-        self.im_port_list = helpers.get_ports_supporting_sc(self.duthost)
+        self.sc_port_list = helpers.get_ports_supporting_sc(self.duthost)
         self.sff_cables = helpers.get_sff_cables(self.duthost, helpers.CMD_REDIS_TRANSCEIVER_INFO,
-                                                 self.enum_frontend_asic_index, self.im_port_list)
+                                                 self.enum_frontend_asic_index, self.sc_port_list)
 
     def test_sc_check_show_interfaces_transceiver_eeprom(self):
         """
         @summary: Check SFP transceiver info using 'show interface transceiver eeprom'
         """
-        for port in self.im_port_list:
+        for port in self.sc_port_list:
             sfp_show_eeprom = self.duthost.command(f"{helpers.CMD_INTERFACE_TRANSCEIVER} {port}")
             parsed_eeprom = helpers.parse_sc_eeprom(sfp_show_eeprom["stdout"])
             helpers.cleanup_placeholder(parsed_eeprom, "Vendor Date Code(YYYY-MM-DD Lot)")
@@ -47,7 +47,7 @@ class TestSoftwareControlFunctional:
         @summary: Check sfputils eeprom output with  Independent Module enabled
         """
 
-        for port in self.im_port_list:
+        for port in self.sc_port_list:
             sfp_show_eeprom = self.duthost.command(f"{helpers.CMD_SFPUTIL_EEPROM} -p {port}")
             parsed_eeprom = helpers.parse_sc_eeprom(sfp_show_eeprom["stdout"])
             helpers.cleanup_placeholder(parsed_eeprom, "Vendor Date Code(YYYY-MM-DD Lot)")
@@ -61,7 +61,7 @@ class TestSoftwareControlFunctional:
         """
         @summary: Check SFP transceiver info using 'show interface transceiver status'
         """
-        for port in self.im_port_list:
+        for port in self.sc_port_list:
             show_transceiver_status = self.duthost.command(f"{helpers.CMD_INTERFACE_TRANSCEIVER_STATUS} {port}")
             redis_output = helpers.parse_sfp_info_from_redis(self.duthost, helpers.CMD_REDIS_TRANSCEIVER_STATUS,
                                                              self.enum_frontend_asic_index, [port])
@@ -78,7 +78,7 @@ class TestSoftwareControlFunctional:
         """
         @summary: Check that BER per Software Control module is not bigger than cable BER threshold
         """
-        for port in self.im_port_list:
+        for port in self.sc_port_list:
             mlxlink_output = helpers.get_mlxlink_ber(self.duthost, port)
             assert int(mlxlink_output[helpers.BER_EFFECTIVE_PHYSICAL_ERRORS]) == 0, \
                 f"{helpers.BER_EFFECTIVE_PHYSICAL_ERRORS} > 0 "
@@ -99,7 +99,7 @@ class TestSoftwareControlFunctional:
         """
 
         portmap, dev_conn = get_dev_conn(self.duthost, conn_graph_facts, enum_frontend_asic_index)
-        sfp_type_im_port_dict = {}
+        sfp_type_sc_port_dict = {}
         with allure.step("get passive port list"):
             passive_cable_port_list = get_passive_cable_port_list(self.duthost)
 
@@ -108,18 +108,18 @@ class TestSoftwareControlFunctional:
                 if intf not in xcvr_skip_list[self.duthost.hostname]:
                     sfp_type = get_sfp_type(self.duthost, intf)
                     assert sfp_type,  f"Failed to get sfp type {sfp_type} for port {intf}"
-                    if intf in self.im_port_list:
-                        sfp_type_im_port_dict.update({intf: sfp_type})
+                    if intf in self.sc_port_list:
+                        sfp_type_sc_port_dict.update({intf: sfp_type})
 
         original_port_to_eeprom_dict = {}
         try:
-            with allure.step(f"Verify Writing eeprom for {self.im_port_list}"):
+            with allure.step(f"Verify Writing eeprom for {self.sc_port_list}"):
                 sfp_type_not_support_write_on_passive_cable = ["cmis", "sff8636"]
-                for intf in self.im_port_list:
+                for intf in self.sc_port_list:
                     page = 0
-                    offset = DICT_WRITABLE_BYTE_FOR_PAGE_0[sfp_type_im_port_dict[intf]]
+                    offset = DICT_WRITABLE_BYTE_FOR_PAGE_0[sfp_type_sc_port_dict[intf]]
                     data = "15"
-                    sfp_type = sfp_type_im_port_dict[intf]
+                    sfp_type = sfp_type_sc_port_dict[intf]
 
                     original_eeprom = read_eeprom_by_page_and_byte(self.duthost, intf, sfp_type, page, offset)
                     original_port_to_eeprom_dict.update({intf: [offset, original_eeprom]})
@@ -159,7 +159,7 @@ class TestSoftwareControlFunctional:
             raise AssertionError(err)
         finally:
             for intf, offset_data_info in original_port_to_eeprom_dict.items():
-                sfp_type = sfp_type_im_port_dict[intf]
+                sfp_type = sfp_type_sc_port_dict[intf]
                 if intf in passive_cable_port_list and sfp_type in ["cmis"]:
                     logger.info(f"Skip recover eeprom for {intf} due to it is cmis passive port")
                     continue
