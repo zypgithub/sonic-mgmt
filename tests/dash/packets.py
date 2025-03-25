@@ -412,6 +412,48 @@ def verify_tcp_packet_drop_rst_packet_sent(ptfadapter,
     verify_each_packet_on_each_port(exp_rst_pkts, received_pkts_res, ports)
 
 
+def outbound_smartswitch_vnet_packets(dash_config_info, inner_extra_conf={},
+                                      inner_packet_type='udp', vxlan_udp_dport=4789):
+
+    inner_packet = generate_inner_packet(inner_packet_type)(
+        eth_src=dash_config_info[LOCAL_ENI_MAC],
+        eth_dst=dash_config_info[REMOTE_ENI_MAC],
+        ip_src=dash_config_info[LOCAL_CA_IP],
+        ip_dst=dash_config_info[REMOTE_CA_IP]
+    )
+    set_icmp_sub_type(inner_packet, inner_packet_type)
+
+    vxlan_packet = testutils.simple_vxlan_packet(
+        eth_src=dash_config_info[LOCAL_PTF_MAC],
+        eth_dst=dash_config_info[DUT_MAC],
+        ip_src=dash_config_info[LOCAL_PA_IP],
+        ip_dst=dash_config_info[LOOPBACK_IP],
+        udp_dport=vxlan_udp_dport,
+        with_udp_chksum=False,
+        vxlan_vni=dash_config_info[VNET1_VNI],
+        ip_ttl=64,
+        inner_frame=inner_packet
+    )
+    expected_packet = testutils.simple_vxlan_packet(
+        eth_src=dash_config_info[DUT_MAC],
+        eth_dst=dash_config_info[REMOTE_PTF_MAC],
+        ip_src=dash_config_info[LOOPBACK_IP],
+        ip_dst=dash_config_info[REMOTE_PA_IP],
+        udp_dport=vxlan_udp_dport,
+        vxlan_vni=dash_config_info[VNET1_VNI],
+        ip_ttl=63,
+        ip_id=0,
+        inner_frame=inner_packet
+    )
+
+    masked_exp_packet = Mask(expected_packet)
+    masked_exp_packet.set_do_not_care_scapy(scapy.IP, "id")
+    masked_exp_packet.set_do_not_care_scapy(scapy.IP, "chksum")
+    masked_exp_packet.set_do_not_care_scapy(scapy.UDP, "sport")
+    masked_exp_packet.set_do_not_care_scapy(scapy.UDP, "chksum")
+    return inner_packet, vxlan_packet, masked_exp_packet
+
+
 def get_scapy_l4_protocol_key(inner_packet_type):
     scapy_tcp = scapy.TCP
     scapy_udp = scapy.UDP
