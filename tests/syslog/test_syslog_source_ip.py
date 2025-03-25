@@ -82,7 +82,10 @@ TEST_FORWARD_FLAGS_AND_MSGS = {
     "dialout": ("-t dialout", "dialout")}
 
 SYSLOG_THREAD_TIMEOUT = 90
+<<<<<<< HEAD   (4387ee Hot fix for classname replacement)
 
+=======
+>>>>>>> CHANGE (d6d3af Changing regex pattern to catch the correct log msg)
 
 @pytest.fixture(scope="module", autouse=True)
 def is_support_ssip(duthosts, enum_rand_one_per_hwsku_frontend_hostname):
@@ -449,9 +452,15 @@ class TestSSIP:
         Returns:
             str or None: The forward type if found, None otherwise
         """
+<<<<<<< HEAD   (4387ee Hot fix for classname replacement)
         forward_type_match = re.search(rf"{self.duthost.hostname} CRIT\s+([^:]+):", syslog_message)
         if forward_type_match:
             return forward_type_match.group(1)  # Returns the forward type value
+=======
+        forward_program_name = re.search(f"{self.duthost.hostname} {syslogUtilsConst.LOG_SEVERITY}\s+([^:]+):", syslog_message)
+        if forward_program_name:
+            return forward_program_name.group(1)
+>>>>>>> CHANGE (d6d3af Changing regex pattern to catch the correct log msg)
         return 'default'
 
     def get_forward_types(self, packets, expected_forward_types):
@@ -469,7 +478,10 @@ class TestSSIP:
             forward_type = self.extract_forward_type_from_message(message_content)
             if forward_type in expected_forward_types:
                 forward_type_counts[forward_type] += 1
+<<<<<<< HEAD   (4387ee Hot fix for classname replacement)
 
+=======
+>>>>>>> CHANGE (d6d3af Changing regex pattern to catch the correct log msg)
         return forward_type_counts
 
     def verify_rsyslog_packets(self, packets, expected_forward_types):
@@ -593,6 +605,7 @@ class TestSSIP:
             tcpdump_interface = routed_interfaces[0]
         else:
             tcpdump_interface = vrf
+<<<<<<< HEAD   (4387ee Hot fix for classname replacement)
         tcpdump_file_name = syslogUtilsConst.DUT_PCAP_FILEPATH.format(
             vrf=vrf + '_neg' if neg else vrf,
             time=time.strftime("%m%d_%H%M%S")
@@ -601,6 +614,10 @@ class TestSSIP:
             f"sudo timeout {syslogUtilsConst.TCPDUMP_CAPTURE_TIME} tcpdump -i {tcpdump_interface} "
             f"port {port if port else SYSLOG_DEFAULT_PORT} -w {tcpdump_file_name}"
         )
+=======
+        tcpdump_file_name = syslogUtilsConst.DUT_PCAP_FILEPATH.format(vrf=vrf + '_neg' if neg else vrf, time=time.strftime("%m%d_%H%M%S"))
+        tcpdump_cmd = f"sudo timeout {syslogUtilsConst.TCPDUMP_CAPTURE_TIME} tcpdump -i {tcpdump_interface} port {port if port else SYSLOG_DEFAULT_PORT} -w {tcpdump_file_name}"
+>>>>>>> CHANGE (d6d3af Changing regex pattern to catch the correct log msg)
         tcpdump_file = capture_syslog_packets(self.duthost, tcpdump_cmd, logging_data)
         return tcpdump_file
 
