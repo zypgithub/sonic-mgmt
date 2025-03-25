@@ -319,11 +319,10 @@ class SRv6Base():
 
         try:
             if exp_pro == 'forward':
-                port_index, _ = testutils.verify_packet_any_port(ptfadapter, exp_pkt, ports=ptf_dst_port_ids,
-                                                                 timeout=0.2)
+                port_index, _ = testutils.verify_packet_any_port(ptfadapter, exp_pkt, ports=ptf_dst_port_ids)
                 logger.info(f'Received packet(s) on port {ptf_dst_port_ids[port_index]}\n')
             elif exp_pro == 'drop':
-                testutils.verify_no_packet_any(ptfadapter, exp_pkt, ports=ptf_dst_port_ids, timeout=0.2)
+                testutils.verify_no_packet_any(ptfadapter, exp_pkt, ports=ptf_dst_port_ids)
                 logger.info(f'No packet received on {ptf_dst_port_ids}')
             else:
                 logger.error(f'Wrong expected process result: {exp_pro}')
