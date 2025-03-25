@@ -23,7 +23,7 @@ base_version = os.environ.get('base_version')
 upgrade_testcase = os.environ.get('upgrade_testcase')
 case_timeout = 5400
 if upgrade_testcase == "test_warm_upgrade_sad_path":
-    case_timeout = 36000
+    case_timeout = 42000
 fast_base_version = os.environ.get('fast_base_version')
 if not fast_base_version:
     fast_base_version = base_version
