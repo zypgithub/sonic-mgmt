@@ -367,6 +367,7 @@ def test_lldp_disable_dhcp(engines, devices, serial_engine):
                         check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port)
 
                     with allure.step("Verify lldp frames do not contain hostname"):
+                        LLDPTool.verify_mgmt_ports_are_up(engine=serial_engine)
                         output = LLDPTool.get_lldp_frames(engine=serial_engine, interface=interface_name)
                         interface_link = OutputParsingTool.parse_json_str_to_dictionary(mgmt_interface.interface.link.show(dut_engine=serial_engine)).get_returned_value()
                         for ip_address in ip_addresses:
