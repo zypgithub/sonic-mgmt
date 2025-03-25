@@ -8561,7 +8561,7 @@
   inv_name: lab
   comment: Mellanox MTR testbed
 
-- conf-name: gorilla-simx-84-ptf-any
+- conf-name: juliet-simx-84-ptf-any
   group-name: vm-t1
   topo: ptf-any
   ptf_image_name: docker-ptf-mlnx
@@ -8571,11 +8571,11 @@
   server: server_54
   vm_base: VM0000
   dut:
-    - gorilla-simx-84
+    - juliet-simx-84
   inv_name: lab
   comment: Mellanox MTR testbed
 
-- conf-name: gorilla-simx-85-ptf-any
+- conf-name: juliet-simx-85-ptf-any
   group-name: vm-t1
   topo: ptf-any
   ptf_image_name: docker-ptf-mlnx
@@ -8585,11 +8585,11 @@
   server: server_54
   vm_base: VM0000
   dut:
-    - gorilla-simx-85
+    - juliet-simx-85
   inv_name: lab
   comment: Mellanox MTR testbed
 
-- conf-name: gorilla-simx-86-ptf-any
+- conf-name: juliet-simx-86-ptf-any
   group-name: vm-t1
   topo: ptf-any
   ptf_image_name: docker-ptf-mlnx
@@ -8599,11 +8599,11 @@
   server: server_54
   vm_base: VM0000
   dut:
-    - gorilla-simx-86
+    - juliet-simx-86
   inv_name: lab
   comment: Mellanox MTR testbed
 
-- conf-name: gorilla-simx-87-ptf-any
+- conf-name: juliet-simx-87-ptf-any
   group-name: vm-t1
   topo: ptf-any
   ptf_image_name: docker-ptf-mlnx
@@ -8613,11 +8613,11 @@
   server: server_54
   vm_base: VM0000
   dut:
-    - gorilla-simx-87
+    - juliet-simx-87
   inv_name: lab
   comment: Mellanox MTR testbed
 
-- conf-name: gorilla-simx-88-ptf-any
+- conf-name: juliet-simx-88-ptf-any
   group-name: vm-t1
   topo: ptf-any
   ptf_image_name: docker-ptf-mlnx
@@ -8627,7 +8627,7 @@
   server: server_54
   vm_base: VM0000
   dut:
-    - gorilla-simx-88
+    - juliet-simx-88
   inv_name: lab
   comment: Mellanox MTR testbed
 

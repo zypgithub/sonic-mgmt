@@ -279,13 +279,13 @@
       <Device Hostname="gorilla-11" HwSku="ACS-MQM9700" Type="DevSonic"/>
       <Device Hostname="r-come-bf3-01" HwSku="ACS-MQM9700" Type="DevSonic"/>
       <Device Hostname="nvidia-arm-orion" HwSku="ACS-MQM9700" Type="DevSonic"/>
-      <Device Hostname="gorilla-simx-84" HwSku="ACS-MQM9700" Type="DevSonic"/>
-      <Device Hostname="gorilla-simx-85" HwSku="ACS-MQM9700" Type="DevSonic"/>
-      <Device Hostname="gorilla-simx-86" HwSku="ACS-MQM9700" Type="DevSonic"/>
-      <Device Hostname="gorilla-simx-87" HwSku="ACS-MQM9700" Type="DevSonic"/>
-      <Device Hostname="gorilla-simx-88" HwSku="ACS-MQM9700" Type="DevSonic"/>
-      <Device Hostname="gorilla-simx-89" HwSku="ACS-MQM9700" Type="DevSonic"/>
-      <Device Hostname="gorilla-simx-90" HwSku="ACS-MQM9700" Type="DevSonic"/>
+      <Device Hostname="juliet-simx-84" HwSku="ACS-MQM9700" Type="DevSonic"/>
+      <Device Hostname="juliet-simx-85" HwSku="ACS-MQM9700" Type="DevSonic"/>
+      <Device Hostname="juliet-simx-86" HwSku="ACS-MQM9700" Type="DevSonic"/>
+      <Device Hostname="juliet-simx-87" HwSku="ACS-MQM9700" Type="DevSonic"/>
+      <Device Hostname="juliet-simx-88" HwSku="ACS-MQM9700" Type="DevSonic"/>
+      <Device Hostname="juliet-simx-89" HwSku="ACS-MQM9700" Type="DevSonic"/>
+      <Device Hostname="juliet-simx-90" HwSku="ACS-MQM9700" Type="DevSonic"/>
       <Device Hostname="gorilla-simx-91" HwSku="ACS-MQM9700" Type="DevSonic"/>
       <Device Hostname="gorilla-simx-92" HwSku="ACS-MQM9700" Type="DevSonic"/>
       <Device Hostname="gorilla-simx-93" HwSku="ACS-MQM9700" Type="DevSonic"/>
