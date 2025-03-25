@@ -36,7 +36,7 @@ def test_show_platform_environment_voltage(engines, devices):
     with allure.step("Check all details of all sensors are available in show platform environment voltage"):
         sensors_absent = []
         actual_volt_absent = []
-        available_psu_list = platform.environment.get_available_psus()
+        available_psu_list = platform.environment.get_available_psus() if devices.dut.psu_list else []
         for sensor in devices.dut.voltage_sensors:
             if voltage_output[sensor]['state'] != 'ok':
                 if is_sensor_for_absent_psu(sensor, available_psu_list):

@@ -173,7 +173,7 @@ def test_set_platform_environment_led(engines, devices, test_api):
         output = _verify_output(platform, PlatformConsts.ENV_LED, devices.dut.led_list)
 
     with allure.step("Check for missing PSUs (affects the PSU_STATUS led due to redmine #4272431)"):
-        missing_psus = platform.environment.get_available_psus(invert=True)
+        missing_psus = platform.environment.get_available_psus(invert=True) if devices.dut.psu_list else []
 
     with allure.step("Check that all leds are green and UID off by default"):
         logging.info("Check that all leds are green and UID off by default")
@@ -309,7 +309,10 @@ def test_show_platform_environment_temperature(engines, devices, test_api):
 def get_available_temperature_sensor_list(device: BaseDevice):
     with allure.step('Get temperature-sensor list'):
         try:
-            missing_psus = [psu.replace('PSU', 'PSU-') for psu in Platform().environment.get_available_psus(invert=True)]
+            if device.psu_list:
+                missing_psus = [psu.replace('PSU', 'PSU-') for psu in Platform().environment.get_available_psus(invert=True)]
+            else:
+                missing_psus = []
             output = [sensor for sensor in device.temperature_sensors if not any(psu in sensor for psu in missing_psus)]
             logger.info("Available temperature sensors: " + str(output))
             return output
