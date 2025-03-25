@@ -16,13 +16,6 @@
         {% set left_ports = ports["left_ports"] %}
         {% set all_ports = left_ports + right_ports %}
 
-        {% for port in left_ports %}
-        "{{port}}|10.10.{{loop.index}}.2/24": {},
-        {% endfor %}
-
-        {% for port in right_ports %}
-        "{{port}}|20.20.{{loop.index}}.2/24": {},
-        {% endfor %}
 
         {% for port in all_ports %}
         "{{port}}|fcbb:aaaa:{{loop.index + 1}}::/48": {}{% if not loop.last %},{% endif %}

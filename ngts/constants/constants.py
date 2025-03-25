@@ -101,6 +101,16 @@ class SonicConst:
     SONIC_COMMUNITY_NOGA_GROUP = "SONiC_Community"
     SONIC_DPU_NOGA_GROUP = "SONiC_DPU"
     SONIC_NOGA_GROUPS = [SONIC_CANONICAL_NOGA_GROUP, SONIC_COMMUNITY_NOGA_GROUP, SONIC_DPU_NOGA_GROUP]
+    T1_SKU_UPSTREAM_PORTS_SPEED = {
+        "Mellanox-SN5600-C224O8": "400000",
+        "Mellanox-SN5640-C448O16": "400000"
+    }
+    HWSKU_DOWNSTREAM_PORTS_SPEED = {
+        "Mellanox-SN5600-C256S1": 100,
+        "Mellanox-SN5600-C224O8": 100,
+        "Mellanox-SN5640-C512S2": 100,
+        "Mellanox-SN5640-C448O16": 100
+    }
 
 
 class CliType:
@@ -218,6 +228,7 @@ class ConfigDbJsonConst:
     LLDP = 'lldp'
     STATUS = 'status'
     STATE = 'state'
+    SPEED = 'speed'
     ENABLED = 'enabled'
     DEVICE_METADATA = "DEVICE_METADATA"
     MGMT_INTERFACE = "MGMT_INTERFACE"

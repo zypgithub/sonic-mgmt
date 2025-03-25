@@ -1,5 +1,6 @@
 import os
 from ngts.constants.constants import NvosCliTypes, DVSCliTypes, BugHandlerConst
+from infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 
 class Cl_Consts:
@@ -59,7 +60,7 @@ class PerfConsts:
         "COUNTERS_SAMPLE_DELAY": 1
     }
     OCC_AVG_TH = 400
-    TC_NUM = 7
+    TC_NUM = 6 if is_redmine_issue_active([4393276])[0] else 7
     # Thresholds
     OCC_TH_DICT = {ValidationConsts.TC_OCC_AVG: OCC_AVG_TH}
     TEMPERATURE_TH = 105
@@ -253,12 +254,12 @@ class PowerConsts:
             "TOTAL": 754
         },
         "SPC5": {
-            r"VCORE TILES \d & \d \(VDD_Tx\)": 18,
-            r"DVDD TILES \d & \d \(DVDD_Tx\)": 18.13,
-            r"HVDD TILES \(HVDD_T\d+\)": 118,
-            r"VDDSCC": 51,
-            r"VCORE MAIN \(VDD_M\)": 345,
-            "TOTAL": 754
+            r"VCORE TILES \d & \d \(VDD_Tx\)": 28.5,
+            r"DVDD TILES \d & \d \(DVDD_Tx\)": 30.75,
+            r"HVDD TILES \(HVDD_T\d+\)": 222,
+            r"VDDSCC": 42,
+            r"VCORE MAIN \(VDD_M\)": 310,
+            "TOTAL": 811
         }
     }
     CONTROLLER_REGEX = r'\w*\d*-i2c-\d*-\d*\w*'
@@ -296,7 +297,6 @@ class SPCControllers:
             "0x6e": "VDDSCC",
         },
         "SPC5": {
-            "0x61": "HVDD TILES (HVDD_T47)",
             "0x62": "VCORE MAIN (VDD_M)",
             "0x63": "VCORE TILES 0 & 1 (VDD_Tx)",
             "0x64": "VCORE TILES 2 & 3 (VDD_Tx)",

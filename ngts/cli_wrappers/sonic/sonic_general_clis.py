@@ -144,10 +144,12 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                                      validate=True)
         return output
 
-    def get_image_sonic_version(self, only_branch=True):
+    def get_image_sonic_version(self, only_branch=True, short_version=False):
         output = self.engine.run_cmd('sudo show boot')
         if only_branch:
             pattern = r"Current:\s*SONiC-OS-([\d|\w|\-]*)\..*"
+        elif short_version:
+            pattern = r"Current:\s*SONiC-OS-([\d|\w|\-]*\..*)"
         else:
             pattern = r"Current:\s*(SONiC-OS-[\d|\w|\-]*\..*)"
         current_image = re.search(pattern, output, re.IGNORECASE).group(1)

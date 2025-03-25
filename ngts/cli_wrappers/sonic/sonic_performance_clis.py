@@ -2,19 +2,22 @@ import logging
 import os
 import json
 import re
+import time
+from retry import retry
 from collections import defaultdict
 from jsonmerge import merge
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 from infra.tools.exceptions.test_issue import TestIssue
 from ngts.helpers.system_helpers import copy_files_to_syncd
 from ngts.constants.constants import BugHandlerConst, InfraConst, CliType, SonicConst, ConfigDbJsonConst
-from ngts.constants.performance_constants import PerfConsts, PowerConsts
+from ngts.constants.performance_constants import PerfConsts, PowerConsts, MRCConsts
 from ngts.cli_wrappers.common.performance_clis_common import PerformanceCommon
 from ngts.helpers.interface_helpers import get_alias_letter, get_alias_number, convert_letter_to_idx
 from ngts.helpers.performance.traffic_helpers import generate_ip_address_dict
 from ngts.helpers.config_db_utils import save_config_db_json
 from jinja2 import Environment, FileSystemLoader
 from ngts.helpers.performance.traffic_helpers import is_ipv6
+from infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 
 class SonicPerformanceCli(PerformanceCommon):
@@ -28,7 +31,7 @@ class SonicPerformanceCli(PerformanceCommon):
         self.dut_alias = dut_alias
         self.cli_obj = cli_obj
         self.service_port_idx = -1
-        self.service_port = None
+        self.service_ports = []
         self.sonic_to_sdk_ports_dict = {}
         self.connected_ports, self.unconnected_ports = [], []
         self.mloops = []
@@ -102,7 +105,8 @@ class SonicPerformanceCli(PerformanceCommon):
                                   "setupName": setup_name,
                                   "osType": CliType.SONIC,
                                   "chip": chip_type,
-                                  "osVersion": self.cli_obj.general.get_image_sonic_version(),
+                                  "osVersion": self.cli_obj.general.get_image_sonic_version(only_branch=False,
+                                                                                            short_version=True),
                                   "sdkVersion": self.cli_obj.general.get_sdk_version(),
                                   "hostDetails": f"{dut_hostname}, {self.engine.ip}"}
         full_info = "\n".join([fw_info, platform_summary_info, platform_syseeprom_info])
@@ -144,7 +148,7 @@ class SonicPerformanceCli(PerformanceCommon):
 
     def apply_configuration_file(self, scenario, conf_args, template_suite=PerfConsts.DEFAULT_PERF_TEMPLATES_DIR):
         with allure.step(f'Apply SKU {conf_args["hwsku"]} on {self.dut_alias}'):
-            self.apply_sku(conf_args["hwsku"])
+            self.apply_sku(conf_args["hwsku"], conf_args["dut"], conf_args["chip_type"])
 
         with allure.step(f'Apply Test Configuration on {self.dut_alias}'):
             self.get_configuration_file(scenario, conf_args, template_suite)
@@ -159,7 +163,7 @@ class SonicPerformanceCli(PerformanceCommon):
         with allure.step(f'Install Traffic generator on {self.dut_alias}'):
             self.cli_obj.general.install_traffic_generator()
         self.sonic_to_sdk_ports_dict = self.get_sonic_to_sdk_port_mapping()
-        self.connected_ports, self.unconnected_ports = self.get_connected_unconnected_ports()
+        self.add_ports_connectivity_to_dut(conf_args)
 
     def disable_im_on_tg(self):
         """
@@ -168,6 +172,8 @@ class SonicPerformanceCli(PerformanceCommon):
         """
         if self.dut_alias in PerfConsts.TG_ALIAS_LIST:
             with allure.step(f'Disable IM on {self.dut_alias}'):
+                self.cli_obj.general.reload_configuration(force=True)
+                self.cli_obj.general.verify_dockers_are_up()
                 self.disable_im()
 
     def load_qos_config_on_dut(self):
@@ -179,7 +185,7 @@ class SonicPerformanceCli(PerformanceCommon):
             with allure.step(f'Load QoS configuration on {self.dut_alias}'):
                 self.cli_obj.general.reload_configuration(force=True)
                 self.cli_obj.general.verify_dockers_are_up()
-                self.cli_obj.qos.reload_qos()
+                self.cli_obj.qos.reload_qos(no_dynamic=True)
                 self.cli_obj.general.save_configuration()
 
     def get_configuration_file(self, scenario, conf_args, template_suite=PerfConsts.DEFAULT_PERF_TEMPLATES_DIR):
@@ -213,14 +219,25 @@ class SonicPerformanceCli(PerformanceCommon):
             conf_json = json.load(f)
         return conf_json
 
-    def apply_sku(self, sku):
+    def apply_sku(self, sku, sku_type, chip_type):
         hwsku_json = self.cli_obj.general.load_sku_init_conf(sku)
         self.update_sku(hwsku_json)
-        self.update_connected_unconnected_ports(hwsku_json)
+        self.update_connected_unconnected_ports(sku, hwsku_json, sku_type, chip_type)
 
-    def update_connected_unconnected_ports(self, hwsku_json):
-        ports_list = list(hwsku_json["PORT"].keys())
-        self.service_port = ports_list.pop(self.service_port_idx)
+    def get_spine_downstream_ports(self, sku, sku_ports_dict):
+        spine_downstream_ports = []
+        upstream_port_speed = SonicConst.T1_SKU_UPSTREAM_PORTS_SPEED[sku]
+        for port, port_dict in sku_ports_dict.items():
+            if port_dict[ConfigDbJsonConst.SPEED] != upstream_port_speed:
+                spine_downstream_ports.append(port)
+        return spine_downstream_ports
+
+    def update_connected_unconnected_ports(self, sku, hwsku_json, sku_type, chip_type):
+        sku_ports_dict = hwsku_json["PORT"]
+        ports_list = list(sku_ports_dict.keys())
+        if sku_type == "spine":
+            ports_list = self.get_spine_downstream_ports(sku, sku_ports_dict)
+        self.remove_service_ports(ports_list, chip_type)
         if len(ports_list) % 2 == 1:
             raise TestIssue(f"Expected port number should be even, actual port number {len(ports_list)}")
         middle = len(ports_list) // 2
@@ -230,6 +247,15 @@ class SonicPerformanceCli(PerformanceCommon):
             self.unconnected_ports, self.connected_ports = ports_list[:middle], ports_list[middle:]
         else:
             self.connected_ports, self.unconnected_ports = ports_list, []
+
+    def remove_service_ports(self, ports_list, chip_type):
+        if chip_type == "SPC4":
+            service_port = ports_list.pop(self.service_port_idx)
+            self.service_ports.append(service_port)
+        elif chip_type == "SPC5":
+            service_port1 = ports_list.pop(self.service_port_idx)
+            service_port2 = ports_list.pop(self.service_port_idx)
+            self.service_ports += [service_port1, service_port2]
 
     def update_sku(self, hwsku_json):
         self.update_sku_port_admin_status(hwsku_json)
@@ -255,13 +281,26 @@ class SonicPerformanceCli(PerformanceCommon):
 
     def configure_mloops(self):
         logging.info(f"Configure Mloop on {self.dut_alias}")
-        files_list = PerfConsts.CONFIG_FILES_DICT[self.dut_alias]
-        copy_files_to_syncd(self.engine, files_list, PerfConsts.CONFIG_FILES_DIR)
+        self.update_mloops_conf_on_syncd()
         self.execute_cmd(self.get_cmd_for_sdk(f"python3 {PerfConsts.DISABLE_MAC_SCRIPT}"))
         self.cli_obj.mac.clear_fdb()
         configure_mloops_cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names {PerfConsts.DVS_TG_MLOOP_CONFIGURATION}"
+        self.logrotate("rsyslog")
         self.execute_cmd(self.get_cmd_for_sdk(configure_mloops_cmd))
-        self.cli_obj.interface.check_link_state(ifaces=self.unconnected_ports + self.unconnected_ports)
+        self.cli_obj.interface.check_link_state(ifaces=self.unconnected_ports + self.connected_ports)
+
+    def update_mloops_conf_on_syncd(self):
+        mloops = list(zip(self.get_hex_int_sdk_ports(self.unconnected_ports),
+                          self.get_hex_int_sdk_ports(self.connected_ports)))
+        mloop_conf_file = "user_mloop_configuration.json"
+        full_path = os.path.join(PerfConsts.CONFIG_FILES_DIR, self.dut_alias, mloop_conf_file)
+        with open(full_path, 'w') as f:
+            json.dump(mloops, f)
+        logging.info(f"Configure Mloop on {self.dut_alias}")
+        files_list = PerfConsts.CONFIG_FILES_DICT[self.dut_alias]
+        copy_files_to_syncd(self.engine, files_list, PerfConsts.CONFIG_FILES_DIR)
+        copy_files_to_syncd(self.engine, [mloop_conf_file],
+                            os.path.join(PerfConsts.CONFIG_FILES_DIR, self.dut_alias))
 
     def copy_traffic_json_to_player(self, scenario, json_path, dst_dut_dir="/tmp"):
         dir_path, file_name = os.path.split(json_path)
@@ -418,8 +457,8 @@ class SonicPerformanceCli(PerformanceCommon):
         return connected_ports, unconnected_ports
 
     def remove_service_port(self, ports_list):
-        if self.service_port in ports_list:
-            ports_list.remove(self.service_port)
+        for service_port in self.service_ports:
+            ports_list.remove(service_port)
 
     def disable_im(self):
         self.execute_cmd("sudo cmis_host_mgmt.py --disable")
@@ -455,13 +494,24 @@ class SonicPerformanceCli(PerformanceCommon):
         for env_var_name, param_val in samples_params_dict.items():
             samples_params.append(f"{env_var_name}={param_val}")
         run_validator_cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names {PerfConsts.DVS_TG_VALIDATOR_NAME}"
-        ports_file = "ports.json"
-        full_path = os.path.join(PerfConsts.CONFIG_FILES_DIR, ports_file)
-        with open(full_path, 'w') as f:
-            json.dump({"unconnected_ports": self.get_hex_int_sdk_ports(self.unconnected_ports),
-                       "connected_ports": self.get_hex_int_sdk_ports(self.connected_ports)}, f)
-        copy_files_to_syncd(self.engine, [ports_file], PerfConsts.CONFIG_FILES_DIR)
+        self.logrotate("rsyslog")
         self.execute_cmd(self.get_cmd_for_sdk(run_validator_cmd, env_variables=samples_params))
         self.execute_cmd(f"docker cp {InfraConst.SYNCD_DOCKER}:/tmp/TrafficValidator.json /tmp/TrafficValidator.json")
         self.engine.copy_file(source_file="TrafficValidator.json", file_system=dst_dut_dir, dest_file=json_path,
                               overwrite_file=True, verify_file=False, direction='get')
+
+    def logrotate(self, daemon):
+        if is_redmine_issue_active([4388176])[0]:
+            logging.info(f"Rotating log for {daemon}")
+            self.execute_cmd(f"sudo /usr/sbin/logrotate -f /etc/logrotate.d/{daemon}  > /dev/null 2>&1")
+
+    def add_ports_connectivity_to_dut(self, conf_args):
+        ports_file = "ports.json"
+        full_path = os.path.join(PerfConsts.CONFIG_FILES_DIR, ports_file)
+        ports_connectivity_dict = {
+            "unconnected_ports": self.get_hex_int_sdk_ports(self.unconnected_ports),
+            "connected_ports": self.get_hex_int_sdk_ports(self.connected_ports),
+            "speed": conf_args["speed"]}
+        with open(full_path, 'w') as f:
+            json.dump(ports_connectivity_dict, f)
+        copy_files_to_syncd(self.engine, [ports_file], PerfConsts.CONFIG_FILES_DIR)

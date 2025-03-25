@@ -39,15 +39,15 @@
     },
 
     {% if dut_alias == "left_tg" %}
-    {% set vlan_ip_prefix = "10.10" %}
+    {% set vlan_ip_prefix = "dddd" %}
     {% else %}
-    {% set vlan_ip_prefix = "20.20" %}
+    {% set vlan_ip_prefix = "eeee" %}
     {% endif %}
 
     "VLAN_INTERFACE": {
         {% for vlan in vlan_conf %}
         "Vlan{{ vlan}}": {},
-        "Vlan{{ vlan}}|{{vlan_ip_prefix}}.{{ loop.index }}.1/24": {}{% if not loop.last %},{% endif %}
+        "Vlan{{ vlan}}|fcbb:{{vlan_ip_prefix}}:{{loop.index}}::/48": {}{% if not loop.last %},{% endif %}
         {% endfor %}
     },
 

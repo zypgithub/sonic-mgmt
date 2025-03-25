@@ -157,14 +157,16 @@ def restore_basic_configuration(players, players_aliases=PerfConsts.PERF_SETUP_P
                                            performance_clis_function_args=(), step=step)
 
 
-def run_traffic(players, scenario, traffic_jsons, step="Running Traffic - Test body"):
+def run_traffic(players, scenario, traffic_jsons, step="Running Traffic - Test body", attach_traffic_json=True):
+
     call_performance_function_with_threads(players, players_aliases=PerfConsts.PERF_SETUP_TG_ALIASES,
                                            action="run traffic",
                                            performance_clis_function_name="run_traffic",
                                            performance_clis_function_args=(scenario, traffic_jsons),
                                            step=step)
-    attach_json_traffic_to_allure(players, tg_players_aliases=PerfConsts.PERF_SETUP_TG_ALIASES,
-                                  traffic_jsons=traffic_jsons)
+    if attach_traffic_json:
+        attach_json_traffic_to_allure(players, tg_players_aliases=PerfConsts.PERF_SETUP_TG_ALIASES,
+                                      traffic_jsons=traffic_jsons)
 
 
 def attach_json_traffic_to_allure(players, tg_players_aliases, traffic_jsons):
