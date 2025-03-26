@@ -235,8 +235,6 @@ class SRv6Base():
                         srh_nh=self.params['srv6_next_header'][scapy_ver],
                         inner_frame=exp_inner_pkt[scapy_ver],
                     )
-                    exp_pkt = Mask(exp_pkt)
-
                 else:
                     logger.info('Create SRv6 packet with reduced SRH(no SRH header)')
                     srv6_pkt = testutils.simple_ipv6ip_packet(
@@ -255,14 +253,14 @@ class SRv6Base():
                         ipv6_tc=exp_dscp * 4 if exp_dscp else 0,
                         inner_frame=exp_inner_pkt[scapy_ver],
                     )
-                    exp_pkt = Mask(exp_pkt)
+
+                exp_pkt['IPv6'].hlim -= 1
+                exp_pkt = Mask(exp_pkt)
 
                 logger.info('Do not care packet ethernet destination address')
                 exp_pkt.set_do_not_care_packet(scapy.Ether, 'dst')
                 logger.info('Do not care packet ethernet source address')
                 exp_pkt.set_do_not_care_packet(scapy.Ether, 'src')
-                logger.info('Do not care IPv6 packet hop limit')
-                exp_pkt.set_do_not_care_packet(scapy.IPv6, 'hlim')
 
             else:
                 if seg_left or sef_list:
@@ -288,17 +286,17 @@ class SRv6Base():
                         ipv6_tc=outer_dscp * 4 if outer_dscp else 0,
                         inner_frame=inner_pkt[scapy_ver],
                     )
-                exp_pkt = Mask(exp_inner_pkt)
-                logger.info('Do not care packet ethernet destination address')
-                exp_pkt.set_do_not_care_packet(scapy.Ether, 'dst')
+
                 if inner_pkt_ver == '4':
-                    logger.info('Do not care packet TTL')
-                    exp_pkt.set_do_not_care_packet(scapy.IP, "ttl")
+                    exp_inner_pkt['IP'].ttl -= 1
+                    exp_pkt = Mask(exp_inner_pkt)
                     logger.info('Do not care packet checksum')
                     exp_pkt.set_do_not_care_packet(scapy.IP, "chksum")
                 else:
-                    logger.info('Do not care IPv6 packet hop limit')
-                    exp_pkt.set_do_not_care_packet(scapy.IPv6, 'hlim')
+                    exp_inner_pkt['IPv6'].hlim -= 1
+                    exp_pkt = Mask(exp_inner_pkt)
+                logger.info('Do not care packet ethernet destination address')
+                exp_pkt.set_do_not_care_packet(scapy.Ether, 'dst')
 
         return srv6_pkt, exp_pkt
 

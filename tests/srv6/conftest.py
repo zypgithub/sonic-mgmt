@@ -9,7 +9,7 @@ from tests.srv6.srv6_utils import SRv6Packets, create_srv6_locator, del_srv6_loc
 @pytest.fixture(scope='class')
 def default_tunnel_mode(rand_selected_dut):
     default_tunnel_mode = rand_selected_dut.shell(
-        'redis-cli -n 0 -c HGET "TUNNEL_DECAP_TABLE:IPINIP_V6_TUNNEL" "dscp_mode"')["stdout"]
+        'sonic-db-cli APPL_DB HGET "TUNNEL_DECAP_TABLE:IPINIP_V6_TUNNEL" "dscp_mode"')["stdout"]
     yield default_tunnel_mode
 
 

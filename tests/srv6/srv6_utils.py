@@ -2,7 +2,6 @@ import logging
 import time
 import requests
 import random
-import json
 import sys
 from io import StringIO
 import ptf.packet as scapy
@@ -14,7 +13,6 @@ from tests.common.helpers.dut_utils import get_available_tech_support_files, get
 from tests.common.helpers.assertions import pytest_assert
 
 logger = logging.getLogger(__name__)
-
 
 
 class SRv6():
@@ -230,12 +228,6 @@ class MySIDs(MyLocators):
     ]
 
 
-def get_default_tunnel_mode(duthost):
-    default_tunnel_mode = duthost.shell(
-        'redis-cli -n 0 -c HGET "TUNNEL_DECAP_TABLE:IPINIP_V6_TUNNEL" "dscp_mode"')["stdout"]
-    return default_tunnel_mode
-
-
 def create_srv6_locator(duthost,
                         locator_name,
                         prefix,
@@ -245,7 +237,7 @@ def create_srv6_locator(duthost,
                         arg_len=0):
     logger.info(f'Configure locator: SRV6_MY_LOCATORS|{locator_name}')
     duthost.shell(
-        f'redis-cli -n 4 -c HSET "SRV6_MY_LOCATORS|{locator_name}" '
+        f'sonic-db-cli CONFIG_DB HSET "SRV6_MY_LOCATORS|{locator_name}" '
         f'"prefix" "{prefix}" '
         f'"block_len" "{block_len}" '
         f'"node_len" "{node_len}" '
@@ -275,7 +267,7 @@ def validate_srv6_in_appl_db(duthost,
 
 def del_srv6_locator(duthost, locator_name):
     logger.info(f'Delete locator: SRV6_MY_LOCATORS|{locator_name}')
-    duthost.shell(f'redis-cli -n 4 -c DEL "SRV6_MY_LOCATORS|{locator_name}"')
+    duthost.shell(f'sonic-db-cli CONFIG_DB DEL "SRV6_MY_LOCATORS|{locator_name}"')
 
 
 def create_srv6_sid(duthost,
@@ -286,7 +278,7 @@ def create_srv6_sid(duthost,
                     decap_dscp_mode=SRv6.uniform_mode):
     logger.info(f'Configure sid: SRV6_MY_SIDS|{locator_name}|{ip_addr}/{SRv6.prefix_len}')
     duthost.shell(
-        f'redis-cli -n 4 -c HSET "SRV6_MY_SIDS|{locator_name}|{ip_addr}/{SRv6.prefix_len}" '
+        f'sonic-db-cli CONFIG_DB HSET "SRV6_MY_SIDS|{locator_name}|{ip_addr}/{SRv6.prefix_len}" '
         f'"action" "{action}" '
         f'"decap_vrf" "{decap_vrf}" '
         f'"decap_dscp_mode" "{decap_dscp_mode}"')
@@ -294,7 +286,7 @@ def create_srv6_sid(duthost,
 
 def del_srv6_sid(duthost, locator_name, ip_addr):
     logger.info(f'Delete sid: SRV6_MY_SIDS|{locator_name}|{ip_addr}/{SRv6.prefix_len}')
-    duthost.shell(f'redis-cli -n 4 -c DEL "SRV6_MY_SIDS|{locator_name}|{ip_addr}/{SRv6.prefix_len}"')
+    duthost.shell(f'sonic-db-cli CONFIG_DB DEL "SRV6_MY_SIDS|{locator_name}|{ip_addr}/{SRv6.prefix_len}"')
 
 
 def random_reboot(duthost, localhost):
@@ -311,26 +303,6 @@ def random_reboot(duthost, localhost):
         logger.info(f'Do {reboot_type}')
         reboot(duthost, localhost, reboot_type=reboot_type, wait_warmboot_finalizer=True, safe_reboot=True,
                check_intf_up_ports=True, wait_for_bgp=True)
-
-
-def get_ip_route_nexthops(duthost, destination):
-    """
-    Get nexthop interfaces for a specific destination
-    Args:
-        duthost (AnsibleHost): Device Under Test (DUT)
-        destination: get the nexthops of this route
-    Returns:
-        The nexthop interfaces
-    """
-    output = duthost.shell(f'show ip route {destination} json')['stdout']
-    ip_route_json = json.loads(output)
-    nexthop_list = []
-    for route in ip_route_json[destination]:
-        nexthop_list.extend(route["nexthops"])
-    nexthops = []
-    for nexthop in nexthop_list:
-        nexthops.append(nexthop["interfaceName"])
-    return nexthops
 
 
 def dump_packet_detail(pkt):
