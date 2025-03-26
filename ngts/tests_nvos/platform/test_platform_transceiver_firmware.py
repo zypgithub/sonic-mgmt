@@ -1,10 +1,7 @@
 import logging
 import pytest
 import time
-import re
-from typing import Type
 import random
-from ngts.nvos_tools.Devices.IbDevice import JulietSwitch
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.infra.IbInterfaceTool import IbInterfaceTool
 from ngts.tools.test_utils import allure_utils as allure
@@ -18,6 +15,7 @@ from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_constants.constants_nvos import ApiType, SystemConsts, PlatformConsts
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tests_nvos.platform.test_platform_transceiver import _get_ports_for_module
 from ngts.tests_nvos.platform.constants import *
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
@@ -173,7 +171,8 @@ def test_install_transceiver_firmware_positive(engines, devices, test_api, test_
 
             with allure.step("verify show commands after install"):
                 output_after_install = OutputParsingTool.parse_json_str_to_dictionary(platform.transceiver.show(random_transceiver + ' firmware')).verify_result()
-                _verify_expected_dict(command_output=output_after_install, default_fw=transceiver_obj.downgrade_version_number, status='OK', msg='N/A')
+                if not is_bug_active(4380004):
+                    _verify_expected_dict(command_output=output_after_install, default_fw=transceiver_obj.downgrade_version_number, status='OK', msg='N/A')
                 show_interface_after_install = OutputParsingTool.parse_json_str_to_dictionary(interface.link.show()).verify_result()
                 link_output_before_reset = show_interface_before_install.pop('counters')
                 link_output_after_reset = show_interface_after_install.pop('counters')

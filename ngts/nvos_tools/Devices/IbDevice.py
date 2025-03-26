@@ -978,6 +978,9 @@ class JulietSwitch(NvLinkSwitch):
         self.power_cycle_type = 'juliet-power-cycle'
         self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/juliet_versions.json"
         self.valid_ports_count = 72
+        self.number_of_transceivers = 72
+        self.transceivers_tables_name = "TRANSCEIVER_FIRMWARE_INFO"
+        self.transceiver_list = [f'sw{a + 1}' for a in range(18)]
         self.module_offset = 9
 
     def _init_fan_list(self):
