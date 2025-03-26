@@ -5,6 +5,7 @@ import re
 from retry import retry
 from retry.api import retry_call
 
+from ngts.cli_wrappers.sonic.sonic_interface_clis import SonicInterfaceCli
 from ngts.config_templates.ip_config_template import IpConfigTemplate
 from ngts.tests.nightly.conftest import reboot_reload_random, cleanup, save_configuration
 from ngts.constants.constants import AutonegCommandConstants, SonicConst, \
@@ -49,6 +50,7 @@ class TestFec(TestAutoFecBase):
         self.fec_modes_speed_support = fec_modes_speed_support
         self.host_speed_type_support = host_speed_type_support
         self.ports_support_autoneg = ports_support_autoneg
+        self.sonic_cli = SonicInterfaceCli(engines.dut, cli_objects)
         # For Cleanup
         self.dut_ports_basic_speeds_configuration = dut_ports_default_speeds_configuration
         self.dut_ports_basic_mlxlink_configuration = dut_ports_default_mlxlink_configuration
@@ -165,7 +167,7 @@ class TestFec(TestAutoFecBase):
                        fargs=[conf[dut_host_port], self.cli_objects.hb, host_dut_port],
                        tries=6, delay=10, logger=logger)
 
-    def test_fec_bug_2705016(self, cli_objects, cleanup_list, sw_control_ports):
+    def test_fec_bug_2705016(self, cli_objects, cleanup_list, sw_control_ports, engines):
         reboot_type = 'warm-reboot'
         tested_ports = get_tested_lb_dict_tested_ports(self.tested_lb_dict_for_bug_2705016_flow)
         ports_for_toggle_flow, ports_for_disable_enable_flow = \
@@ -273,10 +275,15 @@ class TestFec(TestAutoFecBase):
         for split_mode, fec_mode_tested_lb_dict in tested_lb_dict.items():
             for fec_mode, lb_list in fec_mode_tested_lb_dict.items():
                 for lb in lb_list:
-                    speed, interface_type = self.get_lb_config_for_fec_mode(lb, fec_mode, split_mode)
+                    speed, width_equal_interface_type = self.get_lb_config_for_fec_mode(lb, fec_mode, split_mode)
                     if speed:
                         for port in lb:
-                            self.update_port_fec_conf_dict(conf, port, speed, fec_mode, interface_type, cleanup_list)
+                            if not self.is_copper_cable(port):
+                                interface_type = "SR"
+                            else:
+                                interface_type = "CR"
+                            width = ''.join(filter(str.isdigit, width_equal_interface_type))
+                            self.update_port_fec_conf_dict(conf, port, speed, fec_mode, interface_type + str(width), cleanup_list)
                     else:
                         logger.warning(f"Could not find supported interface type with FEC mode: {fec_mode} with "
                                        f"split_mode: {split_mode} on loopback: {lb}. "

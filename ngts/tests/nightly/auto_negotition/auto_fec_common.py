@@ -1,5 +1,6 @@
 import pytest
 import logging
+import re
 from retry.api import retry_call
 from ngts.constants.constants import AutonegCommandConstants, SonicConst, LinuxConsts
 from ngts.tests.nightly.conftest import compare_actual_and_expected
@@ -90,8 +91,75 @@ class TestAutoFecBase:
             port_neighbor = self.dut_ports_interconnects[port]
             verify_lldp_neighbor_info_for_sonic_port(port, lldp_info, self.dut_hostname, self.dut_mac, port_neighbor)
 
-    @staticmethod
-    def compare_actual_and_expected_fec_output(expected_conf, actual_conf):
+    def parse_speed(self, speed_str):
+        """
+        Parses a speed string into number and unit
+        :param speed_str: string containing speed value (e.g., "10G", "1Gbps")
+        :return: dictionary with 'number' and 'unit' keys, or None if parsing fails
+        """
+        match = re.match(r'(\d+)(G|GbE|Gbps|M|Mbps)?', str(speed_str))
+        if not match:
+            return None
+        number, unit = match.groups()
+        return {'number': number, 'unit': unit}
+
+    def are_units_compatible(self, unit1, unit2):
+        """
+        Checks if two speed units are compatible with each other
+        :param unit1: first speed unit (e.g., "G", "Gbps")
+        :param unit2: second speed unit (e.g., "G", "Gbps")
+        :return: True if units are compatible, False otherwise
+        """
+        if unit1 == unit2:
+            return True
+
+        valid_units = {
+            "G": {"G", "GbE", "Gbps"},
+            "M": {"M", "Mbps"}
+        }
+        for base_unit, aliases in valid_units.items():
+            if unit1 in aliases and unit2 in aliases:
+                return True
+
+        return False
+
+    def compare_speeds_by_units(self, speed_str1, speed_str2):
+        """
+        Compares two speed strings to verify:
+          1. Both can be successfully parsed.
+          2. Their units are compatible.
+          3. Their numeric values match.
+        :param speed_str1: The first speed string (e.g., "10G")
+        :param speed_str2: The second speed string (e.g., "10Gbps")
+        :return: True if the speeds are equivalent, otherwise False
+        """
+        speed1 = self.parse_speed(speed_str1)
+        speed2 = self.parse_speed(speed_str2)
+
+        if not speed1 or not speed2:
+            return False
+
+        if not self.are_units_compatible(speed1["unit"], speed2["unit"]):
+            return False
+
+        if speed1["number"] != speed2["number"]:
+            return False
+
+        return True
+
+    def compare_fec_and_speed(self, expected_value, actual_conf_value):
+        """
+        Compares two values - can be either FEC status or speed data
+        :param expected_value: string input of the expected fec status or expected speed data
+        :param actual_conf_value: string input of the actual fec status or actual speed data
+        :return: true if the fec status/speed data are equivalent
+        """
+        if expected_value == actual_conf_value:
+            return True
+
+        return self.compare_speeds_by_units(expected_value, actual_conf_value)
+
+    def compare_actual_and_expected_fec_output(self, expected_conf, actual_conf):
         """
         :param expected_conf:
         :param actual_conf:
@@ -103,7 +171,8 @@ class TestAutoFecBase:
             for key, value in expected_conf.items():
                 if key in actual_conf.keys():
                     actual_conf_value = actual_conf[key]
-                    compare_actual_and_expected(key, value, actual_conf_value)
+                    assert self.compare_fec_and_speed(value, actual_conf_value), \
+                        "Compared {} result failed: actual - {}, expected - {}".format(key, actual_conf_value, value)
 
     def configure_auto_fec(self, ports):
         for port in ports:
