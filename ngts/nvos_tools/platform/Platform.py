@@ -3,6 +3,7 @@ import logging
 from ngts.cli_wrappers.nvue.nvue_platform_clis import NvuePlatformCli
 from ngts.cli_wrappers.openapi.openapi_platform_clis import OpenApiPlatformCli
 from ngts.nvos_constants.constants_nvos import ApiType
+from ngts.nvos_tools.platform.Asic import Asic
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
 from ngts.nvos_tools.platform.AsicPower import AsicPower
 from ngts.nvos_tools.platform.CableCartridge import CableCartridge
@@ -25,6 +26,7 @@ class Platform(BaseComponent):
                          path='/platform')
         self.firmware = Firmware(self)
         self.environment = Environment(self)
+        self.asic = Asic(self)
         self.software = Software(self)
         self.inventory = Inventory(self)
         self.ps_redundancy = PSRedundancy(self)

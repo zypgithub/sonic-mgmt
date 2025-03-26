@@ -6,9 +6,10 @@ from ngts.nvos_tools.Devices.EthDevice import Mlx2410Switch, Mlx4600Switch, Mlx4
     Mlx5400Switch, Mlx4410Switch, Mlx3750sxSwitch, Mlx3700csSwitch, Mlx3700cSwitch, Mlx3420Switch, Mlx2700Switch, \
     Mlx2201Switch, Mlx2100Switch, \
     Mlx2010Switch, Mlx3700Switch
-from ngts.nvos_tools.Devices.IbDevice import GorillaSwitch, \
-    MarlinSwitch, GorillaSwitchBF3, CrocodileSwitch, BlackMambaSwitch, CrocodileSimxSwitch, JulietScaleoutSwitch, JulietTTMSwitch, \
-    JulietNonScaleoutSwitch, JulietAriel, JulietNonScaleoutSwitchNoNCI, JulietArielPS, JulietNonScaleoutSwitchNoNCI5600
+from ngts.nvos_tools.Devices.IbDevice import (GorillaSwitch, GorillaSwitchBF3, CrocodileSwitch, BlackMambaSwitch,
+                                              CrocodileSimxSwitch, JulietScaleoutSwitch, JulietTTMSwitch,
+                                              JulietNonScaleoutSwitch, JulietAriel, JulietNonScaleoutSwitchNoNCI,
+                                              JulietArielPS, JulietNonScaleoutSwitchNoNCI5600)
 
 logger = logging.getLogger()
 
@@ -19,8 +20,6 @@ class DeviceFactory:
             'MQM9700 - Gorilla Blackbird': GorillaSwitch,
             'MQM9700 - Gorilla BF3': GorillaSwitchBF3,
             'MQM9700': GorillaSwitch,
-            'MQM9520 - marlin': MarlinSwitch,
-            'MQM9520': MarlinSwitch,
             'MSN3700': Mlx3700Switch,
             'MSN3700 - Anaconda': Mlx3700Switch,
             'Q3200-RA-Crocodile Sunbird': CrocodileSwitch,

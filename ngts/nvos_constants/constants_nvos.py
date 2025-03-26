@@ -902,6 +902,36 @@ class PlatformConsts:
     LEAKAGE_DEFAULT_OUTPUT_FIELDS = [LEAKAGE1, LEAKAGE2, LEAKAGE3, LEAKAGE4, LEAKAGE5, LEAKAGE6]
     LEAKAGE_DEFAULT_OUTPUT_VALUES = [{'state': 'ok'}]
     LEAKAGE_ALL_SENSOR_NOT_OK = [{'state': 'leak'}]
+    LONG_TERM_AVERAGE = "long-term-average"
+    SHORT_TERM_AVERAGE = "short-term-average"
+    POWER_TELEMETRY_ASIC_OUTPUT_FIELDS = [LONG_TERM_AVERAGE, SHORT_TERM_AVERAGE]
+    POWER_TELEMETRY_COUNTERS_FIELDS = ["long-power-avg-histogram-0", "long-power-avg-histogram-1",
+                                       "long-power-avg-histogram-2", "long-power-avg-histogram-3",
+                                       "long-power-avg-histogram-4", "long-power-avg-histogram-5",
+                                       "long-power-avg-histogram-6", "long-power-avg-histogram-7",
+                                       "long-power-avg-histogram-8", "long-power-avg-histogram-9",
+                                       "long-power-avg-histogram-10", "long-power-avg-histogram-11",
+                                       "long-power-avg-histogram-12", "long-power-avg-histogram-13",
+                                       "long-power-avg-histogram-14", "long-power-avg-histogram-15",
+                                       "no-shaper-bin", "power-shaper-histogram-0", "power-shaper-histogram-1",
+                                       "power-shaper-histogram-2", "power-shaper-histogram-3",
+                                       "power-shaper-histogram-4", "power-shaper-histogram-5",
+                                       "power-shaper-histogram-6", "power-shaper-histogram-7",
+                                       "power-shaper-histogram-8", "power-shaper-histogram-9",
+                                       "power-shaper-histogram-10", "power-shaper-histogram-11",
+                                       "power-shaper-histogram-12", "power-shaper-histogram-13",
+                                       "power-shaper-histogram-14", "power-shaper-histogram-15",
+                                       "short-power-avg-histogram-0", "short-power-avg-histogram-1",
+                                       "short-power-avg-histogram-2", "short-power-avg-histogram-3",
+                                       "short-power-avg-histogram-4", "short-power-avg-histogram-5",
+                                       "short-power-avg-histogram-6", "short-power-avg-histogram-7",
+                                       "short-power-avg-histogram-8", "short-power-avg-histogram-9",
+                                       "short-power-avg-histogram-10", "short-power-avg-histogram-11",
+                                       "short-power-avg-histogram-12", "short-power-avg-histogram-13",
+                                       "short-power-avg-histogram-14", "short-power-avg-histogram-15"]
+
+    POWER_TELEMETRY_COUNTERS_CHANGABLE_FIELDS = ['no-shaper-bin', 'short-power-avg-histogram-0',
+                                                 'long-power-avg-histogram-0']
     BMC_FIRMWARE_INVENTORY_LINK = '/UpdateService/FirmwareInventory'
     BMC_FIRMWARE_BMC_LINK = 'MGX_FW_BMC_0'
     BMC_FIRMWARE_EROT_LINK = 'MGX_FW_ERoT_BMC_0'

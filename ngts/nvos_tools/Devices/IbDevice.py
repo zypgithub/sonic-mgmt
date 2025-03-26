@@ -352,6 +352,7 @@ class IbSwitch(BaseSwitch):
 
         self.asic0 = 'asic0'
         self.asic1 = 'asic1'
+        self.asic_numbers = [f"ASIC{i}" for i in range(1, self.asic_amount + 1)]
         self.counters_db_name = 'COUNTERS_DB'
 
         self.voltage_sensors = ["PMIC-1-12V-ASIC-VCORE-In-1", "PMIC-1-ASIC-VCORE-Out-1", "PMIC-2-12V-ASIC-HVDD-DVDD-In-1",
@@ -623,6 +624,7 @@ class BlackMambaSwitch(IbSwitch):
 
     def _init_constants(self):
         self.asic_amount = 4
+        self.asic_numbers = [f"ASIC{i}" for i in range(1, self.asic_amount + 1)]
         super()._init_constants()
         self.ib_ports_num = 2 * 72
         self.core_count = 4
@@ -755,6 +757,7 @@ class TaipanSwitch(BlackMambaSwitch):  # All values will be updated on Taipan BU
 
     def _init_constants(self):
         super()._init_constants()
+        self.asic_numbers = [f"ASIC{i}" for i in range(1, self.asic_amount + 1)]
         self.number_of_transceivers = 18
         self.transceivers_tables_name = "TRANSCEIVER_INFO"
         self.transceiver_list = [f'els{a + 1}' for a in range(18)] + ['fnm1'] + [f'oe{b + 1}' for b in range(72)]
@@ -788,6 +791,7 @@ class CrocodileSwitch(IbSwitch):
 
     def _init_constants(self):
         super()._init_constants()
+        self.asic_numbers = [f"ASIC{i}" for i in range(1, self.asic_amount + 1)]
         self.ib_ports_num = 64
         self.core_count = 4
         self.split_ports_supported = True
@@ -944,6 +948,7 @@ class JulietSwitch(NvLinkSwitch):
 
     def _init_constants(self):
         super()._init_constants()
+        self.asic_numbers = [f"ASIC{i}" for i in range(1, self.asic_amount + 1)]
 
         self.category_list = ['temperature', 'cpu', 'disk', 'fan', 'mgmt-interface', 'voltage']
         self.category_disabled_dict = {
@@ -1100,6 +1105,7 @@ class JulietScaleoutSwitch(JulietSwitch):
     def _init_constants(self):
         super()._init_constants()
         self.asic_type = NvosConst.NVL5
+        self.asic_numbers = [f"ASIC{i}" for i in range(1, self.asic_amount + 1)]
         self.cluster_app_nmx_controller = {'addition-info': ExpectedString(regex=".*"), 'app-id': 'nmx-c-nvos', 'app-ver': None, 'capabilities': 'sm, gfm, fib, gw-api', 'components-ver': None, 'reason': '', 'status': 'ok'}
         self.cluster_app_nmx_telemetry = {'addition-info': ExpectedString(regex=".*"), 'app-id': 'nmx-telemetry', 'app-ver': None, 'capabilities': 'nvl telemetry, gnmi aggregation, syslog aggregation', 'components-ver': None, 'reason': '', 'status': 'ok'}
         self.cluster_app = {
@@ -1257,6 +1263,7 @@ class JulietTTMSwitch(JulietScaleoutSwitch):
     def _init_constants(self):
         super()._init_constants()
         self.allow_cpld_update = True
+        self.asic_numbers = [f"ASIC{i}" for i in range(1, self.asic_amount + 1)]
 
     def _init_fan_list(self):
         super()._init_fan_list()
@@ -1280,6 +1287,7 @@ class JulietAriel(JulietTTMSwitch):
 
     def _init_constants(self):
         super()._init_constants()
+        self.asic_numbers = [f"ASIC{i}" for i in range(1, self.asic_amount + 1)]
         # TODO - Need to be changed to correct values for Ariel. Double check with tamuz.
         self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
             "x86_64-nvidia_n5112_ld-r0")
@@ -1318,6 +1326,7 @@ class JulietArielPS(JulietTTMSwitch):
 
     def _init_constants(self):
         super()._init_constants()
+        self.asic_numbers = [f"ASIC{i}" for i in range(1, self.asic_amount + 1)]
         # TODO - Need to be changed to correct values for Ariel. Double check with tamuz.
         self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
             "x86_64-nvidia_n5112_ld-r0")
@@ -1377,6 +1386,7 @@ class JulietNonScaleoutSwitch(JulietScaleoutSwitch):
 
     def _init_constants(self):
         super()._init_constants()
+        self.asic_numbers = [f"ASIC{i}" for i in range(1, self.asic_amount + 1)]
         self.nvl5_access_ports_list = [
             'acp1', 'acp2', 'acp3', 'acp4', 'acp5', 'acp6',
             'acp7', 'acp8', 'acp9', 'acp10', 'acp11', 'acp12',
@@ -1449,6 +1459,7 @@ class JulietNonScaleoutSwitchNoNCI(JulietNonScaleoutSwitch):
 
     def _init_constants(self):
         super()._init_constants()
+        self.asic_numbers = [f"ASIC{i}" for i in range(1, self.asic_amount + 1)]
         self.nvl5_access_ports_list = [
             'acp1', 'acp2', 'acp3', 'acp4', 'acp5', 'acp6',
             'acp7', 'acp8', 'acp9', 'acp10', 'acp11', 'acp12',
@@ -1531,6 +1542,7 @@ class JulietNonScaleoutSwitchNoNCI5600(JulietNonScaleoutSwitchNoNCI):
 
     def _init_constants(self):
         super()._init_constants()
+        self.asic_numbers = [f"ASIC{i}" for i in range(1, self.asic_amount + 1)]
         self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
             "x86_64-nvidia_n5600_ld-r0")
         self.show_platform_output.update({
@@ -1561,29 +1573,5 @@ class CaimanSwitch(NvLinkSwitch):
         super()._init_constants()
         self.ib_ports_num = 64
         self.core_count = 4
+        self.asic_numbers = [f"ASIC{i}" for i in range(1, self.asic_amount + 1)]
         self.platform_file_path = MultiPlanarConsts.PLATFORM_FILE_FULL_PATH.format("x86_64-mlnx_mqm9700-r0")
-
-
-# -------------------------- Marlin Switch ----------------------------
-class MarlinSwitch(IbSwitch):
-
-    def __init__(self):
-        super().__init__(asic_amount=2)
-
-    def _init_constants(self):
-        super()._init_constants()
-        self.ib_ports_num = 128
-        self.core_count = 4
-        self.asic_type = NvosConst.QTM2
-        self.primary_asic = f"{IbConsts.DEVICE_ASIC_PREFIX}2"
-        self.primary_swid = f"{IbConsts.SWID}1"
-        self.primary_ipoib_interface = IbConsts.IPOIB_INT1
-        self.secondary_ipoib_interface = IbConsts.IPOIB_INT0
-        self.multi_asic_system = True
-        del self.show_platform_output['manufacturer']
-
-    def _init_available_databases(self):
-        super()._init_available_databases()
-        self.available_tables_per_asic[DatabaseConst.APPL_DB_ID] = {"ALIAS_PORT_MAP": self.get_ib_ports_num() / 2}
-        self.available_tables.update({'database0': self.available_tables_per_asic,
-                                      'database1': self.available_tables_per_asic})

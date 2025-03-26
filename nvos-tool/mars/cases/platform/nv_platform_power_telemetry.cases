@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CASEDEF>
+  <global>
+    <Test>
+      <group> NVOS </group>
+      <name> Platform Power Telemetry </name>
+      <info> </info>
+      <owner> Sviatoslav Demniak </owner>
+    </Test>
+    <Case>
+      <wrapper> [[run_time:db_tests_path]]/sonic-mgmt/sonic-tool/mars/scripts/canonical_mars_pytest_runner.py </wrapper>
+      <tout> 10800 </tout>
+      <tags>ALL</tags>
+    </Case>
+  </global>
+
+ <case>
+    <name> Power Telemetry default fields and values </name>
+    <info> </info>
+    <tout> 300 </tout>
+    <cmd>
+      <params>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/platform/test_platform_asic_power_telemetry.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini -k test_platform_asic_power_telemetry_default_fields_values --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir  --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900    --store_la_logs --ignore_la_failure\'"</static_args>
+      </params>
+    </cmd>
+    <ignore>
+        <condition>
+          <key>dut_hwsku</key>
+          <op> not in </op>
+          <value>[N5500_LD - JulietNonScaleoutSwitchGB300]</value>
+        </condition>
+    </ignore>
+  </case>
+
+ <case>
+    <name> Power Telemetry counters update </name>
+    <info> </info>
+    <tout> 600 </tout>
+    <cmd>
+      <params>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/platform/test_platform_asic_power_telemetry.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini -k test_platform_asic_power_telemetry_counters_updates --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir  --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900    --store_la_logs --ignore_la_failure\'"</static_args>
+      </params>
+    </cmd>
+    <ignore>
+        <condition>
+          <key>dut_hwsku</key>
+          <op> not in </op>
+          <value>[N5500_LD - JulietNonScaleoutSwitchGB300]</value>
+        </condition>
+    </ignore>
+  </case>
+
+ <case>
+    <name> Power telemetry negative run on not gb300 switch </name>
+    <info> </info>
+    <tout> 300 </tout>
+    <cmd>
+      <params>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/platform/test_platform_asic_power_telemetry.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini -k test_negative_platform_asic_power_telemetry_not_supported --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir  --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900    --store_la_logs --ignore_la_failure\'"</static_args>
+      </params>
+    </cmd>
+    <ignore>
+        <condition>
+          <key>dut_hwsku</key>
+          <op> in </op>
+          <value>[N5500_LD - JulietNonScaleoutSwitchGB300]</value>
+        </condition>
+    </ignore>
+  </case>
+
+</CASEDEF>
