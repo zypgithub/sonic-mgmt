@@ -12,6 +12,7 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.constants import MINUTE
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
@@ -157,13 +158,14 @@ def test_save_reboot(engines, devices):
                     output_dictionary[IbInterfaceConsts.DESCRIPTION] != new_eth0_description, \
                     "Description should not be saved after reboot"
 
-            with allure.step('Verify system contact is set to contact_info_1'):
-                ValidationTool.verify_field_value_in_output(system_output, SystemConsts.CONTACT, "contact_info_1").\
-                    verify_result()
+            if not is_bug_active(4362872):
+                with allure.step('Verify system contact is set to contact_info_1'):
+                    ValidationTool.verify_field_value_in_output(system_output, SystemConsts.CONTACT, "contact_info_1").\
+                        verify_result()
 
-            with allure.step('Verify system location is set to location_info_1'):
-                ValidationTool.verify_field_value_in_output(system_output, SystemConsts.LOCATION, "location_info_1").\
-                    verify_result()
+                with allure.step('Verify system location is set to location_info_1'):
+                    ValidationTool.verify_field_value_in_output(system_output, SystemConsts.LOCATION, "location_info_1").\
+                        verify_result()
 
         finally:
             with allure.step('Cleanup - Run unset system DNS server and apply config'):
