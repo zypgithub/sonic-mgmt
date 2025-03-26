@@ -48,7 +48,7 @@ class GnmiClient:
                         break
                     else:
                         time.sleep(3)
-            assert gnmic_installed, f'failed to install gnmic'
+            assert gnmic_installed, 'failed to install gnmic'
 
     def verify_grpcurl_installation(self):
         def _grpcurl_is_installed() -> bool:
@@ -193,7 +193,7 @@ class GnmicCmdBuilder:
 
     def __init__(self, host: str = '', port=DEFAULT_PORT):
         self.host = host
-        self.port = port
+        self.port: int = port
         self.options: str = ''
         self.operation: str = ''
 
@@ -206,7 +206,7 @@ class GnmicCmdBuilder:
         self.host = address
         return self
 
-    def port(self, port: str) -> 'GnmicCmdBuilder':
+    def set_port(self, port: int) -> 'GnmicCmdBuilder':
         self.port = port
         return self
 
@@ -215,7 +215,7 @@ class GnmicCmdBuilder:
         return self
 
     def skip_verify(self) -> 'GnmicCmdBuilder':
-        self.options += f' --skip-verify'
+        self.options += ' --skip-verify'
         return self
 
     def ca(self, cacert_path: str) -> 'GnmicCmdBuilder':
@@ -233,11 +233,11 @@ class GnmicCmdBuilder:
         return self
 
     def capabilities(self) -> 'GnmicCmdBuilder':
-        self.operation = f"capabilities"
+        self.operation = "capabilities"
         return self
 
     def debug(self) -> 'GnmicCmdBuilder':
-        self.operation += f" -d"
+        self.operation += " -d"
         return self
 
     def format_flat(self) -> 'GnmicCmdBuilder':
@@ -248,4 +248,4 @@ class GnmicCmdBuilder:
         return self.subscribe(f'interfaces/interface[name={interface_name}]/state', 'description', mode, target)
 
     def subscribe_system_events(self, mode: str = '', target: str = DEFAULT_TARGET) -> 'GnmicCmdBuilder':
-        return self.subscribe(f'system-events', '', mode, target)
+        return self.subscribe('system-events', '', mode, target)

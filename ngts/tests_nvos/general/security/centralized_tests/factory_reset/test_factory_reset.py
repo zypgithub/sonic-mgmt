@@ -1,6 +1,8 @@
 import logging
 from typing import Dict, Generator
 
+from ngts.tests_nvos.general.security.gnmi_server.mtls.spiffe_id.test_gnmi_server_spiffe_id import gnmi_spiffe_factory_reset_no_params_check, gnmi_spiffe_factory_reset_keep_all_config_check, gnmi_spiffe_factory_reset_keep_basic_check, gnmi_spiffe_upgrade_check
+
 import pytest
 
 from ngts.nvos_tools.system.System import System
@@ -42,6 +44,7 @@ SED_PASSWORD = 'SED password'
 SSH_PKA = 'SSH PKA'
 RBAC = 'RBAC'
 API_SPIFFE_ID = 'API SPIFFE ID'
+GNMI_SPIFFE_ID = 'GNMI SPIFFE ID'
 
 CHECKERS_SKIP_RULES: Dict[str, CheckerSkipRule] = {
     NMX_CERT: SkipCheckerBySetup(['juliet'], False),
@@ -59,6 +62,7 @@ NO_PARAMS_CHECKERS: Dict[str, Generator[None, None, None]] = {
     SED_PASSWORD: sed_password_factory_reset_check(),
     RBAC: rbac_factory_reset_no_params_check(),
     API_SPIFFE_ID: api_spiffe_factory_reset_no_params_check(),
+    GNMI_SPIFFE_ID: gnmi_spiffe_factory_reset_no_params_check(),
 }
 
 KEEP_BASIC_CHECKERS: Dict[str, Generator[None, None, None]] = {
@@ -70,6 +74,7 @@ KEEP_BASIC_CHECKERS: Dict[str, Generator[None, None, None]] = {
     SED_PASSWORD: sed_password_factory_reset_check(),
     RBAC: rbac_factory_reset_keep_roles(),
     API_SPIFFE_ID: api_spiffe_factory_reset_keep_basic_check(),
+    GNMI_SPIFFE_ID: gnmi_spiffe_factory_reset_keep_basic_check(),
 }
 
 KEEP_ONLY_FILES_CHECKERS: Dict[str, Generator[None, None, None]] = {
@@ -80,6 +85,7 @@ KEEP_ONLY_FILES_CHECKERS: Dict[str, Generator[None, None, None]] = {
     SED_PASSWORD: sed_password_factory_reset_check(),
     RBAC: rbac_factory_reset_no_params_check(),
     API_SPIFFE_ID: api_spiffe_factory_reset_no_params_check(),
+    GNMI_SPIFFE_ID: gnmi_spiffe_factory_reset_no_params_check(),
 }
 
 KEEP_ALL_CONFIG_CHECKERS: Dict[str, Generator[None, None, None]] = {
@@ -90,6 +96,7 @@ KEEP_ALL_CONFIG_CHECKERS: Dict[str, Generator[None, None, None]] = {
     SED_PASSWORD: sed_password_factory_reset_check(),
     RBAC: rbac_factory_reset_keep_roles(),
     API_SPIFFE_ID: api_spiffe_factory_reset_keep_all_config_check(),
+    GNMI_SPIFFE_ID: gnmi_spiffe_factory_reset_keep_all_config_check(),
 }
 
 FACTORY_RESET_TYPE_TO_CHECKER_FUNCTIONS: Dict[str, Dict[str, Generator[None, None, None]]] = {

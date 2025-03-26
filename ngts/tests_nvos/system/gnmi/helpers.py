@@ -5,7 +5,7 @@ import re
 import string
 import subprocess
 import time
-from typing import Tuple, List
+from typing import Optional, Tuple, List
 
 from retry import retry
 
@@ -447,6 +447,25 @@ def run_gnmi_client_and_verify(addr: str, user: UserInfo, expect_success: bool, 
             gnmic.ca(client_cacert.cacert)
 
     run_cmd_and_verify(gnmic.build(), client_cacert, client_cert, expect_success, timeout)
+
+
+def build_gnmic_cmd_and_verify(host: str, creds: Optional[UserInfo], expect_success: bool, client_ca: Optional[CertInfo] = None, insecured: bool = False, client_cert: Optional[CertInfo] = None, revision_num: Optional[int] = None):
+
+    with allure.step('build and verify gnmic client'):
+        gnmic = GnmicCmdBuilder(host).capabilities()
+        if creds:
+            gnmic.user_creds(creds.username, creds.password)
+        else:
+            # WA gnmic does not support not providing user and password
+            gnmic.user_creds('', '')
+        if insecured:
+            gnmic.skip_verify()
+        if client_cert:
+            gnmic.cert(client_cert.private, client_cert.public)
+        if client_ca:
+            gnmic.ca(client_ca.cacert)
+
+        run_cmd_and_verify(gnmic.build(), client_ca, client_cert, expect_success)
 
 
 def run_cmd_and_verify(cmd: str, client_cacert: CertInfo, client_cert: CertInfo, expect_success: bool, timeout=None) -> str:

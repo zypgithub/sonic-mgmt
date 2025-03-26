@@ -15,7 +15,7 @@ def import_required_certs(scp_player, engines):
     import_test_certs(scp_player, engines.dut, TEST_CERTS)
     yield
     delete_certificates()
-    delete_certificates(True)
+    delete_certificates(ca=True)
 
 
 @pytest.fixture(scope='session', autouse=True)

@@ -1,4 +1,6 @@
-from typing import List
+import logging
+import time
+from typing import List, Optional
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
@@ -18,6 +20,8 @@ from ngts.tests_nvos.general.security.test_api_server_security.constants import 
 from ngts.tests_nvos.helpers.general_helpers import run_cmd
 from ngts.tests_nvos.system.gnmi.helpers import get_scp_player
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.nvos_tools.infra.CurlCmdBuilder import CurlCmdBuilder
+from ngts.tests_nvos.general.security.api_server.mtls.spiffe_id.constants import BAD_RESPONSE_KEYWORDS
 
 
 def verify_installed_cacert(all_ca_names, expect_installed_ca):
@@ -82,6 +86,82 @@ def run_curl_and_verify(addr: str, user: UserInfo, expect_success: bool, run_ins
         f'client ca: {client_cacert.cacert_name if client_cacert else ""}\n'
         f'out: {output}\n'
         f'exception: {exc}')
+
+
+def build_curl_cmd_and_verify(host: str, creds: Optional[UserInfo], expect_success: bool, client_ca: Optional[CertInfo] = None, insecured: bool = False, client_cert: Optional[CertInfo] = None, revision_num: Optional[int] = None):
+    method = 'GET'
+    resource = System().version.get_resource_path()
+
+    cmd_builder = CurlCmdBuilder(method, host, resource)
+    if creds:
+        cmd_builder.user_creds(creds.username, creds.password)
+    if insecured or not client_cert:
+        cmd_builder.insecure()
+    if client_cert:
+        cmd_builder.client_cert(client_cert.private, client_cert.public)
+    if client_ca:
+        cmd_builder.cacert(client_ca.cacert)
+    curl_cmd = cmd_builder.build()
+
+    time.sleep(0.1)
+    logging.info(f"running request:\n{curl_cmd}\nexpect: {expect_success}")
+    try:
+        out = run_cmd(curl_cmd)
+        assert all(msg not in out for msg in BAD_RESPONSE_KEYWORDS), out
+        logging.info("show succeeded")
+        actual_success = True
+    except Exception as e:
+        logging.info("show failed")
+        actual_success = False
+        out = e
+    assert (
+        actual_success == expect_success
+    ), f"show result not as expected. expected: {expect_success}. actual: {actual_success}\ncmd: {curl_cmd}\nerr:\n{out}"
+
+
+def build_curl_set_cmd_and_verify(
+    host: str,
+    creds: Optional[UserInfo],
+    expect_success: bool,
+    client_ca: Optional[CertInfo] = None,
+    insecured: bool = False,
+    client_cert: Optional[CertInfo] = None,
+    revision_num: Optional[int] = None,
+):
+    method = 'PATCH'
+    resource = System().security.password_hardening.get_resource_path()
+    params = {"rev": revision_num}
+    payload = {"state": "disabled"}
+
+    cmd_builder = CurlCmdBuilder(method, host, resource)
+    if params:
+        cmd_builder.params(params)
+    if creds:
+        cmd_builder.user_creds(creds.username, creds.password)
+    if insecured or not client_cert:
+        cmd_builder.insecure()
+    if client_cert:
+        cmd_builder.client_cert(client_cert.private, client_cert.public)
+    if payload:
+        cmd_builder.payload(payload)
+    if client_ca:
+        cmd_builder.cacert(client_ca.cacert)
+    curl_cmd = cmd_builder.build()
+
+    time.sleep(0.1)
+    logging.info(f"running request:\n{curl_cmd}\nexpect: {expect_success}")
+    try:
+        out = run_cmd(curl_cmd)
+        assert all(msg not in out for msg in BAD_RESPONSE_KEYWORDS), out
+        logging.info("show succeeded")
+        actual_success = True
+    except Exception as e:
+        logging.info("show failed")
+        actual_success = False
+        out = e
+    assert (
+        actual_success == expect_success
+    ), f"show result not as expected. expected: {expect_success}. actual: {actual_success}\ncmd: {curl_cmd}\nerr:\n{out}"
 
 
 def verify_api_connection(test_flow, dut: LinuxSshEngine, user: UserInfo, expect_mtls: bool, server_cert: CertInfo,

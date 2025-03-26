@@ -53,6 +53,7 @@ def verify_installed_cacert(installed_app_name, expect_installed_ca=None):
 
 
 VerifyConnFunc: TypeAlias = Callable[[str, UserInfo, bool, bool, Optional[CertInfo], Optional[CertInfo], Optional[int]], None]
+VerifyBuilderFunc: TypeAlias = Callable[[str, Optional[UserInfo], bool, Optional[CertInfo], bool, Optional[CertInfo], Optional[int]], None]
 
 
 def verify_connection(test_flow, dut: LinuxSshEngine, user: UserInfo, expect_mtls: bool, server_cert: CertInfo, server_ca: CertInfo,

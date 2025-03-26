@@ -1,14 +1,11 @@
-import logging
 import os
 import random
-import time
-from typing import List, Dict, Union
+from typing import List, Dict, Optional
 
 import pytest
 
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import ApiType, UserRole, RebootTestFlowType
-from ngts.nvos_tools.infra.CurlCmdBuilder import CurlCmdBuilder
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ResultObj import ResultObj
@@ -16,17 +13,19 @@ from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.conftest import get_dut_hostname
 from ngts.tests_nvos.general.security.api_server.mtls.spiffe_id.conftest import cleanup_spiffe
 from ngts.tests_nvos.general.security.api_server.mtls.spiffe_id.constants import INVALID_SPIFFE_ERR, \
-    SPIFFE_UNIQUENESS_ERR, SecurityMode, BAD_RESPONSE_KEYWORDS, INCOMPLETE_ERR_PER_API
+    SPIFFE_UNIQUENESS_ERR, SecurityMode, INCOMPLETE_ERR_PER_API
 from ngts.tests_nvos.general.security.api_server.mtls.spiffe_id.helpers import generate_rand_spiffe_id, \
     setup_api_security_mode, get_tmp_revision_number_for_test_only
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
+from ngts.tests_nvos.system.gnmi.conftest import scp_player
 from ngts.tests_nvos.general.security.helpers import import_certs_safely, get_test_certs_dir_location, \
     set_new_random_users, import_cas_safely, generate_certs
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
 from ngts.tests_nvos.helpers.general_helpers import generate_rand_str, verify_result_obj_failure, run_cmd
-from ngts.tests_nvos.system.gnmi.conftest import scp_player
 from ngts.tests_nvos.system.gnmi.helpers import get_scp_player
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.tests_nvos.general.security.mtls.generic_testing.helpers import VerifyBuilderFunc
+from ngts.tests_nvos.general.security.test_api_server_security.helpers import build_curl_cmd_and_verify, build_curl_set_cmd_and_verify
 
 
 @pytest.mark.security
@@ -79,14 +78,14 @@ def test_api_spiffe_cli(test_api, local_admin_users: List[UserInfo], engines):
                 user_obj.spiffe_id.spiffe[spif1].unset(apply=True).verify_result()
             with allure.step('verify deleted in show'):
                 out = OutputParsingTool.parse_json_str_to_dictionary(user_obj.spiffe_id.show()).get_returned_value()
-                assert out != {}, f'show output is unexpectedly empty after unsetting a single spiffe'
+                assert out != {}, 'show output is unexpectedly empty after unsetting a single spiffe'
                 assert spif1 not in out, f'spiffe "{spif1}" unexpectedly exist in show output after unset'
         with allure.independent_step('unset all spifs'):
             with allure.step('unset'):
                 user_obj.spiffe_id.unset(apply=True).verify_result()
             with allure.step('verify deleted in show'):
                 out = OutputParsingTool.parse_json_str_to_dictionary(user_obj.spiffe_id.show()).get_returned_value()
-                assert out == {}, f'show output is not empty after unsetting all spiffes'
+                assert out == {}, 'show output is not empty after unsetting all spiffes'
 
 
 @pytest.mark.security
@@ -130,7 +129,7 @@ def test_api_spiffe_invalid_value(test_api, local_adminuser: UserInfo):
     Steps:
     1. Set invalid spiffe (empty, bad formatted string, too long?, too short?)
     2. Verify set command rejected
-    3. Verify in show – expect the value doesn’t exist
+    3. Verify in show – expect the value doesn't exist
     """
     TestToolkit.update_apis(test_api)
     user_obj = System().aaa.user.user_id[local_adminuser.username]
@@ -151,7 +150,7 @@ def test_api_spiffe_invalid_value(test_api, local_adminuser: UserInfo):
             with allure.independent_step(f'{case.name} : "{case.spif_val}"'):
                 res: ResultObj = user_obj.spiffe_id.spiffe[case.spif_val].set()
                 verify_result_obj_failure(res, case.expected_err)
-    with allure.step('Verify in show – expect the value doesn’t exist'):
+    with allure.step("Verify in show - expect the value doesn't exist"):
         out = OutputParsingTool.parse_json_str_to_dictionary(user_obj.spiffe_id.show()).get_returned_value()
         existing_invalid_spiffs = [case.spif_val for case in cases if case.spif_val in out]
         assert not existing_invalid_spiffs, f'invalid values "{existing_invalid_spiffs}" exist in show spiffe output: {out}'
@@ -162,14 +161,12 @@ def test_api_spiffe_invalid_value(test_api, local_adminuser: UserInfo):
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_api_spiffe_uniqueness_apply_together(test_api, local_admin_users: List[UserInfo]):
     """
-    Verify that can’t set same SPIFFE to multiple users
+    Verify that can't set same SPIFFE to multiple users
 
     Steps:
-    1. Set spiffe1 to user1
-    2. Set spiffe1 to user2
-    3. apply them together
-    4. Verify apply failed
-    5. verify both users don't have spiffe1
+    1. Set spiffe to user1
+    2. Try to set same spiffe to user2 - expect failure
+    3. Verify only user1 has the spiffe
     """
     TestToolkit.update_apis(test_api)
     system = System()
@@ -196,7 +193,7 @@ def test_api_spiffe_uniqueness_apply_together(test_api, local_admin_users: List[
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_api_spiffe_uniqueness_apply_separately(test_api, local_admin_users: List[UserInfo]):
     """
-    Verify that can’t set same SPIFFE to multiple users
+    Verify that can't set same SPIFFE to multiple users
 
     Steps:
     1. Set spiffe1 to user1 + apply
@@ -225,65 +222,26 @@ def test_api_spiffe_uniqueness_apply_separately(test_api, local_admin_users: Lis
                 assert spif not in out, f'spif "{spif}" unexpectedly found in user2 ({user2.username}) spiffes\n{out}'
 
 
-Cert = Union[CertInfo, None]
-User = Union[UserInfo, None]
+Cert = Optional[CertInfo]
+User = Optional[UserInfo]
 
 
 class Case:
-    def __init__(self, name: str, creds: User, cert: Cert, expect_authorized_user: Union[UserInfo, None]):
+    def __init__(self, name: str, creds: User, cert: Cert, expect_authorized_user: User):
         self.name: str = name
-        self.creds: UserInfo = creds
-        self.cert: CertInfo = cert
-        self.expect_authorized_user: UserInfo = expect_authorized_user
+        self.creds: User = creds
+        self.cert: Cert = cert
+        self.expect_authorized_user: User = expect_authorized_user
 
-    def verify_show(self, host: str, ca: CertInfo, insecured: bool):
+    def verify_show(self, host: str, ca: Cert, insecured: bool, verify_builder_func: VerifyBuilderFunc):
         expect_success = self.expect_authorized_user is not None
         with allure.step(f'check show: {expect_success}'):
-            method = 'GET'
-            resource = System().version.get_resource_path()
-            curl_cmd = self.__build_curl_request_cmd(host, method, resource, ca, insecured)
-            self.__run_curl_and_verify(curl_cmd, expect_success)
+            verify_builder_func(host, self.creds, expect_success, ca, insecured, self.cert, None)
 
-    def verify_set(self, revision, host: str, ca: CertInfo, insecured: bool):
+    def verify_set(self, revision, host: str, ca: Cert, insecured: bool, verify_builder_func: VerifyBuilderFunc):
         expect_success = self.expect_authorized_user is not None and self.expect_authorized_user.role == UserRole.ADMIN
         with allure.step(f'check set: {expect_success}'):
-            method = 'PATCH'
-            resource = System().security.password_hardening.get_resource_path()
-            params = {'rev': revision}
-            payload = {'state': 'disabled'}
-            curl_cmd = self.__build_curl_request_cmd(host, method, resource, ca, insecured, params, payload)
-            self.__run_curl_and_verify(curl_cmd, expect_success)
-
-    def __build_curl_request_cmd(self, host: str, method: str, resource: str, ca: CertInfo, insecured: bool,
-                                 params: dict = None, payload: dict = None) -> str:
-        cmd_builder = CurlCmdBuilder(method, host, resource)
-        if params:
-            cmd_builder.params(params)
-        if self.creds:
-            cmd_builder.user_creds(self.creds.username, self.creds.password)
-        if insecured or not self.cert:
-            cmd_builder.insecure()
-        if self.cert:
-            cmd_builder.client_cert(self.cert.private, self.cert.public)
-        if payload:
-            cmd_builder.payload(payload)
-        if ca:
-            cmd_builder.cacert(ca.cacert)
-        return cmd_builder.build()
-
-    def __run_curl_and_verify(self, curl_cmd, expect_success):
-        time.sleep(0.1)
-        logging.info(f'running request:\n{curl_cmd}\nexpect: {expect_success}')
-        try:
-            out = run_cmd(curl_cmd)
-            assert all(msg not in out for msg in BAD_RESPONSE_KEYWORDS), out
-            logging.info('show succeeded')
-            actual_success = True
-        except Exception as e:
-            logging.info('show failed')
-            actual_success = False
-            out = e
-        assert actual_success == expect_success, f'show result not as expected. expected: {expect_success}. actual: {actual_success}\ncmd: {curl_cmd}\nerr:\n{out}'
+            verify_builder_func(host, self.creds, expect_success, ca, insecured, self.cert, revision)
 
 
 class TestSetup:
@@ -576,8 +534,8 @@ def check_test_cases(cases: List[Case], setup: TestSetup, security_mode, revisio
         for case in cases:
             with allure.independent_step(case.name):
                 client_ca = None if security_mode == SecurityMode.UNSECURED else setup.server_cert
-                case.verify_show(engines.dut.ip, client_ca, security_mode == SecurityMode.UNSECURED)
-                case.verify_set(revision_num, engines.dut.ip, client_ca, security_mode == SecurityMode.UNSECURED)
+                case.verify_show(engines.dut.ip, client_ca, security_mode == SecurityMode.UNSECURED, build_curl_cmd_and_verify)
+                case.verify_set(revision_num, engines.dut.ip, client_ca, security_mode == SecurityMode.UNSECURED, build_curl_set_cmd_and_verify)
 
 
 @pytest.mark.track_serial_console
@@ -592,10 +550,10 @@ def test_api_spiffe_reboot_case(reboot_flow, engines, scp_player, dut_hostname):
     1. Set mtls mode
     2. Save
     3. Configure spiffe to user
-    4. Don’t save
+    4. Don't save
     5. Reboot
     6. Verify config not kept in show
-    7. Verify mtls passwordless connection using spiffe doesn’t work
+    7. Verify mtls passwordless connection using spiffe doesn't work
     """
 
     is_save_flow = reboot_flow == RebootTestFlowType.WITH_SAVE
@@ -676,7 +634,7 @@ def api_spiffe_factory_reset_keep_basic_check():
     3. Save
     4. Do factory reset
     5. Verify SPIFFE config kept in show (mtls might not be kept)
-    6. Verify mtls passwordless connection using spiffe doesn’t work
+    6. Verify mtls passwordless connection using spiffe doesn't work
     7. Set mtls again
     8. Verify mtls passwordless connection using spiffe works
     """
