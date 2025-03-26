@@ -150,7 +150,7 @@ class NvuePerformanceCli(PerformanceCommon):
     def get_cmd_for_sdk(self, cmd, env_variables=[]):
         variables = "sudo env "
         variables += " ".join(env_variables)
-        return variables + Cl_Consts.CL_PYTHON_PATH + ' ' + cmd
+        return variables + ' ' + Cl_Consts.CL_PYTHON_PATH + ' ' + cmd
 
     def logrotate(self, daemon):
         logging.info(f"Rotating log for {daemon}")

@@ -94,16 +94,16 @@ class TestSPCXRA_x2Split_400G:
         with allure.step(f"Set test correct allure title with {self.ip} parameter"):
             test_name = set_allure_title(request, self.is_ipv6)
 
-        # TODO: Remove this once the issue 4335726 is fixed
-        with allure.step("Wait for nexthop resolution"):
-            if is_redmine_issue_active([4335726])[0]:
-                self.cli_object.performance.wait_for_nexthop_resolution(self.conf_args, timeout=180)
-
         with allure.step("Run {packet_size}B packet Traffic on all the ports"):
             run_traffic(self.players, self.scenario, self.traffic_jsons)
 
         flap_scenario_method = get_obj_method(self, flap_scenario)
         flap_scenario_method(test_name, packet_size)
+
+        # TODO: Remove this once the issue 4335726 is fixed
+        with allure.step("Wait for nexthop resolution"):
+            if is_redmine_issue_active([4335726])[0]:
+                self.cli_object.performance.wait_for_nexthop_resolution(self.conf_args, timeout=180)
 
         with allure.step(f"Verifying the BW utilization is at least {SPCXRAConsts.DUT_TX_UTIL_IBM_TH_DICT[packet_size]}% "
                          f"on all the ports"):
