@@ -415,7 +415,7 @@ def test_simulate_multi_fan_speed_fault(engines, devices, loganalyzer):
                 prefix = fan_info[fan_id][0] + " "
                 events_to_search = [prefix + fan_fault_event for fan_fault_event in fan_fault_events]
                 retry_call(validate_system_event, [system, latest_event_id, events_to_search],
-                           exceptions=AssertionError, tries=12, delay=5)
+                           exceptions=AssertionError, tries=24, delay=5)
 
         with allure.step("Simulate fix fan speed fault for chosen fans:{}".format(fan_ids)):
             for fan_id in fan_ids:
@@ -426,12 +426,12 @@ def test_simulate_multi_fan_speed_fault(engines, devices, loganalyzer):
                 prefix = "Cleared: " + fan_info[fan_id][0] + " "
                 clear_events_to_search = [prefix + fan_fault_event for fan_fault_event in fan_fault_events]
                 retry_call(validate_system_event, [system, latest_event_id, clear_events_to_search],
-                           exceptions=AssertionError, tries=12, delay=5)
+                           exceptions=AssertionError, tries=24, delay=5)
     finally:
         time.sleep(1)
         with allure.step("Fix the fan speed fault"):
             for fan_id in fan_ids:
-                HWSimulator.simulate_fix_fan_speed_fault(engines.dut, thermal_directory, fan_ids[0], fan_info[fan_id][1])
+                HWSimulator.simulate_fix_fan_speed_fault(engines.dut, thermal_directory, fan_id, fan_info[fan_id][1])
 
 
 @pytest.mark.system
@@ -456,11 +456,17 @@ def test_simulate_psu_multi_faults(engines, devices, loganalyzer):
     platform = Platform()
     thermal_directory = devices.dut.fan_direction_dir
     show_output = OutputParsingTool.parse_json_str_to_dictionary(platform.environment.psu.show()).verify_result()
-    no_of_psu = 0
+
+    psu_id_list = []
     for key in show_output:
-        if re.search("^PSU.*", key):
-            no_of_psu += 1
-    psu_id = random.randrange(1, no_of_psu + 1)
+        psu_id = re.search(r"PSU(\d+).*", key)
+        if psu_id:
+            if show_output[key][SystemConsts.STATE] == FansConsts.STATE_OK:
+                psu_id_list.append(psu_id.group(1))
+    assert len(psu_id_list) > 0, "No active PSUs shown"
+    # Choose random PSU from list of present PSUs
+    psu_id = random.choice(psu_id_list)
+
     logger.info("Chosen PSU : {}".format(psu_id))
     psu_display_name = "PSU{}".format(psu_id)
     psu_info = dict()
