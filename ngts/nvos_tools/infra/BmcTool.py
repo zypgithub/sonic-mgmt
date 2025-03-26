@@ -17,12 +17,15 @@ from ngts.tests_nvos.constants import PRODUCTION, DEVELOPMENT
 from ngts.tests_nvos.general.security.bmc.bmc_creds.constants import ADMIN
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.infra.ResultObj import ResultObj
+from ngts.tests_nvos.general.security.bmc.bmc_creds.constants import BMC_USER_BACKUP_PASSWORD, ROOT
+from ngts.nvos_constants.constants_nvos import OpenApiReqType
 
 logger = logging.getLogger()
 
 
 class BmcTool:
-    BASE_URL = "https://10.0.1.1/redfish/v1/"
+    BASE_REDFISH_URL = "/redfish/v1/"
+    BASE_URL = "https://10.0.1.1" + BASE_REDFISH_URL
     USER_NAME = ADMIN
     PLATFORM_COMPONENTS_DICT = dict()
 
@@ -149,3 +152,60 @@ class BmcTool:
                                                             filename].action_file_install_with_reboot,
                                                         topology_obj=topology_obj)
         return res_obj
+
+    @staticmethod
+    def _build_curl_base(method, bmc_ip_address, component_path):
+        """Build base curl command with authentication and URL."""
+        return (
+            f"curl -s -k -u {ROOT}:{BMC_USER_BACKUP_PASSWORD} "
+            f"https://{bmc_ip_address}{BmcTool.BASE_REDFISH_URL}{component_path} -X {method} --fail-with-body"
+        )
+
+    @staticmethod
+    def send_get_request(engine, bmc_ip_address, component_path) -> ResultObj:
+        """
+        Send a GET request to BMC Redfish API.
+
+        :param engine: Engine object to execute commands
+        :param bmc_ip_address: BMC IP address
+        :param component_path: Redfish API endpoint path
+        :return: ResultObj with response or error
+        """
+
+        with allure.step(f"Send GET request to {bmc_ip_address}"):
+            curl_get_cmd = BmcTool._build_curl_base(OpenApiReqType.GET, bmc_ip_address, component_path)
+            curl_get_output = engine.run_cmd(curl_get_cmd, validate=True)
+
+            if not curl_get_output:
+                return ResultObj(False, "Received empty response from BMC")
+
+            return ResultObj(True, "", curl_get_output)
+
+    @staticmethod
+    def send_patch_request(engine, bmc_ip_address, component_path, new_values, expected_value) -> ResultObj:
+        """
+        Send a PATCH request to BMC Redfish API.
+
+        :param engine: Engine object to execute commands
+        :param bmc_ip_address: BMC IP address
+        :param component_path: Redfish API endpoint path
+        :param new_values: Dictionary of values to update
+        :param expected_value: Expected value to verify in response
+        :return: ResultObj with response or error
+        """
+        with allure.step(f"Send PATCH request to {bmc_ip_address}"):
+
+            json_data = json.dumps(new_values)
+            curl_path_cmd = (
+                f"{BmcTool._build_curl_base(OpenApiReqType.PATCH, bmc_ip_address, component_path)} "
+                f"-H 'Content-Type: application/json' -d '{json_data}'"
+            )
+            curl_patch_output = engine.run_cmd(curl_path_cmd, validate=True)
+
+            if expected_value not in curl_patch_output:
+                return ResultObj(
+                    False,
+                    f"Expected value '{expected_value}' not found in response: {curl_patch_output}"
+                )
+
+            return ResultObj(True, "", curl_patch_output)

@@ -36,6 +36,7 @@ class Platform(BaseComponent):
         self.cable_cartridge = CableCartridge(self)
         self.power_profile = PowerProfile(self)
         self.asic_power = AsicPower(self)
+        self.boot_policy = BaseComponent(self, path='/boot-policy')
 
     def set(self, op_param_name="", op_param_value=""):
         raise Exception("set is not implemented for /platform")

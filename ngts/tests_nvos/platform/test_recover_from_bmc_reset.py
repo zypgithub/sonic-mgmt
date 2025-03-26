@@ -49,6 +49,12 @@ def test_recover_from_bmc_reset(engines, devices, topology_obj, loganalyzer):
             logger.info("waiting 2:30 minutes for system to recover...")
             sleep(150)
 
+        with allure.step("Validating BMC reachability"):
+            try:
+                BmcTool.get_bmc_ip_addresses(engines, topology_obj)
+            except Exception:
+                raise Exception("Unable to reach BMC")
+
         with allure.step("Assert BMC status is ok"):
             final_bmc_status = OutputParsingTool.parse_json_str_to_dictionary(
                 platform.inventory.show('BMC')).get_returned_value()
