@@ -2,6 +2,8 @@ import json
 import pytest
 import allure
 import os
+import logging
+import time
 from datetime import datetime
 from ngts.helpers.performance.performance_setup_helpers import configure_mloops, stop_traffic
 from ngts.helpers.performance.Performance_log_print import print_players_logs, remove_players_logs
@@ -85,9 +87,32 @@ def basic_test_configuration(request, players):
     except Exception as e:
         raise e
     finally:
-        with allure.step(f"Attaching Players Logs to Allure"):
-            print_players_logs(print_to_stdout=True, players_info=players)
-            remove_players_logs()
+        test_was_skipped = request.node.rep_call.skipped if hasattr(request.node, 'rep_call') else False
+        if not test_was_skipped:
+            with allure.step(f"Attaching Players Logs to Allure"):
+                print_players_logs(print_to_stdout=True, players_info=players)
+                remove_players_logs()
+
+
+@pytest.fixture(scope='class', autouse=False)
+def port_group_df(request, players):
+    request.getfixturevalue('basic_setup_configuration')
+    port_group_df = []
+    ports = players['dut']['cli'].performance.get_right_left_ports_dict()
+
+    if ports['left_ports'] == [] or ports['right_ports'] == []:
+        logging.info("No ports found for left and right ports retrying after a delay of 10 seconds")
+        # TODO: remove this and implement split by middle technique to get the ports instead
+        time.sleep(10)
+        ports = players['dut']['cli'].performance.get_right_left_ports_dict()
+
+    sdk_ports_left = players['dut']['cli'].performance.get_sdk_ports(ports["left_ports"])
+    sdk_ports_right = players['dut']['cli'].performance.get_sdk_ports(ports["right_ports"])
+    for port in sdk_ports_left:
+        port_group_df.append({"port": port, MongoDbConsts.PORT_GROUP_NAME: "left_ports"})
+    for port in sdk_ports_right:
+        port_group_df.append({"port": port, MongoDbConsts.PORT_GROUP_NAME: "right_ports"})
+    return port_group_df
 
 
 @pytest.fixture(scope='session', autouse=True)
