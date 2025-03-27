@@ -17,13 +17,13 @@ from tests.common import reboot, port_toggle
 from tests.common.helpers.assertions import pytest_require, pytest_assert
 from tests.common.plugins.loganalyzer.loganalyzer import LogAnalyzer, LogAnalyzerError
 from tests.common.config_reload import config_reload
-from tests.common.fixtures.ptfhost_utils import copy_arp_responder_py, run_garp_service, change_mac_addresses   # noqa F401
-from tests.common.utilities import wait_until, check_msg_in_syslog
-from tests.common.dualtor.dual_tor_mock import mock_server_base_ip_addr # noqa F401
-from tests.common.helpers.constants import DEFAULT_NAMESPACE
 from tests.common.helpers.multi_thread_utils import SafeThreadPoolExecutor
-from tests.common.utilities import get_upstream_neigh_type, get_downstream_neigh_type
-from tests.common.fixtures.conn_graph_facts import conn_graph_facts # noqa F401
+from tests.common.fixtures.ptfhost_utils import \
+    copy_arp_responder_py, run_garp_service, change_mac_addresses   # noqa: F401
+from tests.common.dualtor.dual_tor_mock import mock_server_base_ip_addr     # noqa: F401
+from tests.common.helpers.constants import DEFAULT_NAMESPACE
+from tests.common.utilities import wait_until, get_upstream_neigh_type, get_downstream_neigh_type, check_msg_in_syslog
+from tests.common.fixtures.conn_graph_facts import conn_graph_facts         # noqa: F401
 from tests.common.platform.processes_utils import wait_critical_processes
 from tests.common.platform.interface_utils import check_all_interface_information
 from tests.common.utilities import get_iface_ip
@@ -663,7 +663,11 @@ class BaseAclTest(six.with_metaclass(ABCMeta, object)):
         """
         pass
 
+<<<<<<< HEAD
     def post_setup_hook(self, dut, localhost, populate_vlan_arp_entries, tbinfo, conn_graph_facts):   # noqa F811
+=======
+    def post_setup_hook(self, dut, localhost, populate_vlan_arp_entries, tbinfo, conn_graph_facts):     # noqa: F811
+>>>>>>> 0ad53b4428 ([pre-commit] Use correct comment format # noqa: not # noqa in tests/a* files (#17653))
         """Perform actions after rules have been applied.
 
         Args:
@@ -693,7 +697,11 @@ class BaseAclTest(six.with_metaclass(ABCMeta, object)):
 
     @pytest.fixture(scope="class", autouse=True)
     def acl_rules(self, duthosts, localhost, setup, acl_table, populate_vlan_arp_entries, tbinfo,
+<<<<<<< HEAD
                   ip_version, conn_graph_facts):   # noqa F811
+=======
+                  ip_version, conn_graph_facts):        # noqa: F811
+>>>>>>> 0ad53b4428 ([pre-commit] Use correct comment format # noqa: not # noqa in tests/a* files (#17653))
         """Setup/teardown ACL rules for the current set of tests.
 
         Args:
@@ -731,7 +739,11 @@ class BaseAclTest(six.with_metaclass(ABCMeta, object)):
             self.teardown_rules(duthost)
 
     def set_up_acl_rules_single_dut(self, acl_table,
+<<<<<<< HEAD
                                     conn_graph_facts, dut_to_analyzer_map, duthost, # noqa F811
+=======
+                                    conn_graph_facts, dut_to_analyzer_map, duthost,     # noqa: F811
+>>>>>>> 0ad53b4428 ([pre-commit] Use correct comment format # noqa: not # noqa in tests/a* files (#17653))
                                     ip_version, localhost,
                                     populate_vlan_arp_entries, tbinfo):
         logger.info("{}: ACL rule application started".format(duthost.hostname))
@@ -1332,7 +1344,11 @@ class TestAclWithReboot(TestBasicAcl):
     upon startup.
     """
 
+<<<<<<< HEAD
     def post_setup_hook(self, dut, localhost, populate_vlan_arp_entries, tbinfo, conn_graph_facts): # noqa F811
+=======
+    def post_setup_hook(self, dut, localhost, populate_vlan_arp_entries, tbinfo, conn_graph_facts):     # noqa: F811
+>>>>>>> 0ad53b4428 ([pre-commit] Use correct comment format # noqa: not # noqa in tests/a* files (#17653))
         """Save configuration and reboot after rules are applied.
 
         Args:
@@ -1371,7 +1387,11 @@ class TestAclWithPortToggle(TestBasicAcl):
     Verify that ACLs still function as expected after links flap.
     """
 
+<<<<<<< HEAD
     def post_setup_hook(self, dut, localhost, populate_vlan_arp_entries, tbinfo, conn_graph_facts):  # noqa F811
+=======
+    def post_setup_hook(self, dut, localhost, populate_vlan_arp_entries, tbinfo, conn_graph_facts):     # noqa: F811
+>>>>>>> 0ad53b4428 ([pre-commit] Use correct comment format # noqa: not # noqa in tests/a* files (#17653))
         """Toggle ports after rules are applied.
 
         Args:
