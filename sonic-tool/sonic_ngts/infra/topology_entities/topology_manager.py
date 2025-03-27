@@ -259,23 +259,20 @@ class TopologyManager:
         :param neighbor_entity_port_info: a dictionary with the neighbor port info
         :return: the alias for the split loopback port, e.g "dut-splt4-p1-1"
         """
-        split_loopback_template = "{}-lb-splt{}-p{}-{}"
+        split_loopback_template = "{}-lb{}-splt{}-p{}-{}"
         split_number = switch_entity_port_info['split_num']
-        lb_port_num = self.get_loopback_port_number(switch_entity_port_info, neighbor_entity_port_info)
         port_split_num = switch_entity_port_info['port_split_number']
-        connection_port_alias = split_loopback_template.format(switch_entity.alias, split_number,
+        neighbor_port_connection_alias = neighbor_entity_port_info.get('connection_alias')
+        if neighbor_port_connection_alias:
+            loopback_number_pattern = "{}-lb(\d+)-splt{}".format(switch_entity.alias, split_number)
+            lb_number = re.search(loopback_number_pattern, neighbor_port_connection_alias, re.IGNORECASE).group(1)
+        else:
+            loopback_alias_template = "{}-lb-splt{}-{}".format(switch_entity.alias, split_number, port_split_num)
+            lb_number = self.get_and_inc_connectivity_alias_count(loopback_alias_template)
+        lb_port_num = self.get_loopback_port_number(switch_entity_port_info, neighbor_entity_port_info)
+        connection_port_alias = split_loopback_template.format(switch_entity.alias, lb_number, split_number,
                                                                lb_port_num, port_split_num)
-        self.validate_split_loopback_is_singular(switch_entity, switch_entity_port_info, connection_port_alias)
         return connection_port_alias
-
-    def validate_split_loopback_is_singular(self, switch_entity, switch_entity_port_info, connection_port_alias):
-        alias_count = self.get_and_inc_connectivity_alias_count(connection_port_alias)
-        split_number = switch_entity_port_info['split_num']
-        if alias_count != 1:
-            raise TopologyEntityError("Port {} on Switch {} got the connection alias {}.\n "
-                                      "Only one loopback split to {} is allowed on the setup."
-                                      .format(switch_entity_port_info['ip'], switch_entity.hostname,
-                                              connection_port_alias, split_number))
 
     def get_loopback_connectivity_alias(self, switch_entity, switch_entity_port_info, neighbor_entity_port_info):
         """
