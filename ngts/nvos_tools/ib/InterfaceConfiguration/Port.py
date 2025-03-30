@@ -76,9 +76,11 @@ class Port(BaseComponent):
         self.asic_letter = None
         self.port_number = None
         self.local_port = None
+        self.split_number = None
         self.plane_number = None
         try:
-            self.asic_letter, self.port_number, self.local_port, self.plane_number = self.parse_port_name(self.name)
+            self.asic_letter, self.port_number, self.local_port, self.split_number, self.plane_number = (
+                self.parse_port_name(self.name))
         except BaseException:
             pass
 
@@ -207,16 +209,17 @@ class Port(BaseComponent):
 
     @staticmethod
     def parse_port_name(name):
-        """swA13p2pl1 --> ('A', 13, 2, 1).   sw13p2 --> (None, 13, 2, None)"""
-        match = re.fullmatch(r'[sS][wW]([A-Za-z])?\s*(\d+)p(\d+)(?:pl(\d+))?', name)
+        """swA13p2pl1 --> ('A', 13, 2, None, 1).   sw13p2s1 --> (None, 13, 2, 1, None)"""
+        match = re.fullmatch(r'[sS][wW]([A-Za-z])?\s*(\d+)p(\d+)(?:s(\d+))?(?:pl(\d+))?', name)
         if not match:
             raise ValueError(f"Invalid port name format: {name}")
 
         asic_letter = match.group(1)  # This can be None or 'A' or 'B'
         port_number = int(match.group(2))
         local_port = int(match.group(3))
-        plane_number = int(match.group(4)) if match.group(4) else None
-        result = asic_letter, port_number, local_port, plane_number
+        split_number = int(match.group(4)) if match.group(4) else None
+        plane_number = int(match.group(5)) if match.group(5) else None
+        result = asic_letter, port_number, local_port, split_number, plane_number
         logger.info(f'parsed "{name}" ==> {result}')
         return result
 

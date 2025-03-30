@@ -165,7 +165,7 @@ def test_ib_interface_state_up_once(engines, devices, test_api):
 
     try:
         with allure.step('verify state is down after port toggle event'):
-            IbInterfaceTool.simulate_toggle_port_event(engines.dut, port_name=port_name, sleep=5)
+            IbInterfaceTool.simulate_toggle_port_event(engines.dut, devices.dut, port_name=port_name, sleep=5)
             # in future will verify 'down by port failure' instead of just 'down'
             output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
                 selected_port.interface.link.show()).get_returned_value()

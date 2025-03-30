@@ -487,6 +487,24 @@ class IbSwitch(BaseSwitch):
     def cleanup_base_aaa_config(self, dut_engine: LinuxSshEngine):
         pass
 
+    @classmethod
+    def get_lane_bmap(cls, port: Port) -> str:
+        """
+        Calculates the lane-bmap as it would appear in the output of sx_api_ports_mapping_dump.py
+        Note: If the port given is an aggregated port, returned value is for plane-port #1.
+
+        Returns:
+            str: lane-bmap as a string representing a hex number, e.g. on Crocodile: Port('swB11p2pl4') --> '0x18'
+        """
+        # todo cls.validate_port_name(port)
+        lane_bmap = cls._get_lane_bmap(port)
+        lane_bmap = f'0x{lane_bmap:0>2X}'
+        logger.info(f"{port.name=} ==> {lane_bmap}")
+        return lane_bmap
+
+    @classmethod
+    def _get_lane_bmap(cls, port) -> int:
+        raise NotImplementedError
 
 # -------------------------- Gorilla Switch ----------------------------
 
@@ -724,6 +742,10 @@ class BlackMambaSwitch(IbSwitch):
         super()._init_boot_time_timeouts()
         self.timeout_system_is_ready = 15 * MINUTE
 
+    @classmethod
+    def _get_lane_bmap(cls, port):
+        return 0x10 ** (port.local_port - 1) * 2 ** ((port.plane_number or 1) - 1)
+
 
 # -------------------------- Taipan Switch ----------------------------
 class TaipanSwitch(BlackMambaSwitch):  # All values will be updated on Taipan BU
@@ -865,6 +887,16 @@ class CrocodileSwitch(IbSwitch):
     def _init_boot_time_timeouts(self):
         super()._init_boot_time_timeouts()
         self.timeout_system_is_ready = 10 * MINUTE
+
+    @classmethod
+    def _get_lane_bmap(cls, port):
+        # for a non-planarized port-name we assume a port with connection-mode ndr
+        if port.plane_number or port.split_number:
+            digit = (2 if port.split_number == 2 else 0) + (port.plane_number or 1)
+            digit = 2 ** (digit - 1)
+        else:
+            digit = 0xF
+        return 0x10 ** (port.local_port - 1) * digit
 
 
 # -------------------------- Crocodile Simx Switch ----------------------------
@@ -1210,6 +1242,10 @@ class JulietScaleoutSwitch(JulietSwitch):
     def _relevant_config_filename_by_version(self, version: str) -> str:
         return 'nvos_config_nvl5.yml'
 
+    @classmethod
+    def _get_lane_bmap(cls, port):
+        return (0x3 if port.split_number == 1 else 0xc) * (10 if port.local_port == 2 else 1)
+
 # -------------------------- JulietTTM Switch ----------------------------
 
 
@@ -1399,6 +1435,9 @@ class JulietNonScaleoutSwitch(JulietScaleoutSwitch):
         self.platform_inventory_switch_values.update({"hardware-version": None,
                                                       "model": ExpectedString(regex="692-9K36F-00MV-JS0")})
 
+    @classmethod
+    def _get_lane_bmap(cls, port):
+        raise NotImplementedError(f"Implemented only for sw ports. Juliet NSO doesn't have sw ports.")
 
 # -------------------------- JulietNonScaleoutNoNCISwitch Switch ----------------------------
 

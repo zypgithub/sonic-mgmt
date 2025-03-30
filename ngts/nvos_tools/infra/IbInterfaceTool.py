@@ -5,14 +5,13 @@ from functools import lru_cache
 
 from ngts.constants.constants import InfraConst
 from ngts.nvos_constants.constants_nvos import LinkDetectionConsts
-from ngts.nvos_tools.Devices.IbDevice import BlackMambaSwitch, CrocodileSwitch
+from ngts.nvos_tools.Devices.IbDevice import JulietSwitch
 from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.LinuxCmdBuilderTool import LinuxCmdBuilderTool
 from ngts.nvos_tools.infra.MultiPlanarTool import MultiPlanarTool
-from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RegisterTool import RegisterTool
 from ngts.tools.test_utils import allure_utils as allure
@@ -54,10 +53,10 @@ class IbInterfaceTool:
             time.sleep(sleep)
 
     @staticmethod
-    def simulate_toggle_port_event(engine, port_name='', sleep=0):
+    def simulate_toggle_port_event(engine, device, port_name='', sleep=0):
         with allure.step(f"Simulate toggle port event for port {port_name}"):
             mst_dev_name = IbInterfaceTool.get_mst_dev_name(engine, port_name=port_name)
-            local_port_hex = IbInterfaceTool.get_local_port_hex(engine, port_name)
+            local_port_hex = IbInterfaceTool.get_local_port_hex(engine, device, port_name)
             RegisterTool.update_prei_register(engine, mst_dev_name=mst_dev_name, local_port=local_port_hex)
             time.sleep(sleep)
 
@@ -67,7 +66,7 @@ class IbInterfaceTool:
         if not (module_name or port_name):
             raise ValueError(f'{module_name=}, {port_name=}')
         fae_port_name = port_name or f"{module_name}p1"
-        asic_letter, _, _, plane_number = Port.parse_port_name(port_name)
+        asic_letter, _, _, _, plane_number = Port.parse_port_name(port_name)
 
         with allure.step(f"Find mst_dev_name for {fae_port_name}"):
             if asic_letter or plane_number:  # Crocodile ports, e.g. swA...
@@ -107,41 +106,18 @@ class IbInterfaceTool:
         return bool(output)
 
     @staticmethod
-    def get_local_port_hex(engine, port_name):
-        asic_letter, port_number, local_port, plane_number = Port.parse_port_name(port_name)
+    def get_local_port_hex(engine, device, port_name):
+        asic_letter, port_number, _, _, _ = Port.parse_port_name(port_name)
         asic_number = (MultiPlanarTool.asic_letter_to_number(asic_letter)
                        if asic_letter else MultiPlanarTool.get_primary_asic(Fae(port_name=port_name)))
         docker = InfraConst.SYNCD_IBV_DOCKER.format(asic_number)
         cmd = f"docker exec {docker} sx_api_ports_mapping_dump.py"
         table_output = engine.run_cmd(cmd, validate=True)
-        lane_bmap = get_lane_bmap(port_name)
+        lane_bmap = device.get_lane_bmap(Port(port_name))
+        if isinstance(device, JulietSwitch) and port_number >= 10:
+            # Juliet ports 10-18 belong to ASIC B and their label_port numbering restarts at 1
+            port_number -= 9
         return get_log_port(table_output, port_number, lane_bmap)
-
-
-def get_lane_bmap(port_name):
-    """
-    Calculates the lane-bmap as it would appear in the output of sx_api_ports_mapping_dump.py
-
-    Args:
-        port_name (str): The port name string, can be aggregated (e.g. 'swA11p1', 'sw11p2') or plane-port ('swB15p1pl3')
-        Note: If the port given is an aggregated port, returned value is for plane-port #1.
-
-    Returns:
-        str: lane-bmap as a string representing a hex number, e.g. on Crocodile: 'swB11p2pl4' --> '0x18'
-    """
-    _, _, local_port, plane_number = Port.parse_port_name(port_name)
-    lane_bmap = 0x10 ** (local_port - 1) * 2 ** ((plane_number or 1) - 1)
-    lane_bmap = f'0x{lane_bmap:0>2x}'
-    # p1pl1 --> 0x01, p1pl2 --> 0x02, p1pl3 --> 0x04, p1pl4 --> 0x08
-    # p2pl1 --> 0x10, p2pl2 --> 0x20, p2pl3 --> 0x40, p2pl4 --> 0x80
-    logger.info(f'{lane_bmap=}')
-    tested_switches = (BlackMambaSwitch, CrocodileSwitch)
-    if not any(isinstance(TestToolkit.devices.dut, device) for device in tested_switches):
-        raise NotImplementedError(
-            f'get_lane_bmap function was only tested for {[device.__name__ for device in tested_switches]}. Test this '
-            f'function manually for the current switch type and add it to the supported_switches list. Current output '
-            f'for reference: get_lane_bmap({port_name}) --> {lane_bmap}')
-    return lane_bmap
 
 
 def get_log_port(table: str, label_port: int, lane_bmap: str):
