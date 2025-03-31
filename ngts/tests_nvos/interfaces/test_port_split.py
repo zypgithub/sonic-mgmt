@@ -199,9 +199,11 @@ def test_ib_split_port_default_values(engines, interfaces, start_sm, devices):
                     if parent_port.name in port.name and port.name[-2] == 's':
                         child_ports.append(port)
             child_ports[0].interface.wait_for_port_state(NvosConsts.LINK_STATE_UP, sleep_time=30).verify_result()
+            time.sleep(5)
             output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
                 child_ports[0].interface.link.show()).get_returned_value()
-            child_ports[0].interface.wait_for_mtu_changed(IbInterfaceConsts.SPLIT_PORT_DEFAULT_MTU)
+            Tools.ValidationTool.compare_values(output_dictionary[IbInterfaceConsts.LINK_MTU],
+                                                IbInterfaceConsts.SPLIT_PORT_DEFAULT_MTU, True).verify_result()
             values_to_verify = [NvosConsts.LINK_STATE_UP, IbInterfaceConsts.SPLIT_PORT_CHILD_DEFAULT_LANES,
                                 IbInterfaceConsts.SPLIT_PORT_DEFAULT_MTU]
             ValidationTool.validate_fields_values_in_output(['state', 'lanes', 'mtu'],
@@ -214,7 +216,7 @@ def test_ib_split_port_default_values(engines, interfaces, start_sm, devices):
 
         with allure.step("Verify changed values on child port"):
             child_ports[0].interface.wait_for_port_state(NvosConsts.LINK_STATE_UP, sleep_time=30).verify_result()
-            child_ports[0].interface.wait_for_mtu_changed('512')
+            child_ports[0].interface.wait_for_mtu_changed(512)
 
     with allure.step("Negative testing on child with lanes"):
         child_ports[0].interface.link.set(op_param_name='lanes', op_param_value='1X,2X,4X', apply=True,

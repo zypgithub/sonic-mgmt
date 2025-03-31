@@ -1964,4 +1964,13 @@
   Conditions:
     - Affected_test_cases:
         - tests_nvos/system/ntp/test_system_ntp.py::test_configure_ntp_multiple_servers
+
+- Errors_list:
+    - '.*ERR healthd\: Voltage sensor reading is not available.*'
+    - '.*ERR health-statsd#health_history.*'
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/platform/test_recover_from_bmc_reset.py
+      Redmine:
+        - 4371089
 # --------------------------------------------------

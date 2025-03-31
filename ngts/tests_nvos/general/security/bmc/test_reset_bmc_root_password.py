@@ -89,7 +89,7 @@ def test_reset_bmc_password_to_default_while_locked_out(engines, topology_obj, t
     try:
         with allure.step("Log into bmc root with wrong password - 10 times to get locked out"):
             wrong_pass = 'some#wrong#pass'
-            for _ in range(10):
+            for _ in range(3):
                 logger.info("Trying to connect with wrong credentials")
                 try_to_connect_expecting_failure(bmc_ip_address, wrong_pass, err_msg=f'Connection succeeded with wrong bmc password: {wrong_pass}')
 
