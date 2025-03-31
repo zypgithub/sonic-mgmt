@@ -75,6 +75,18 @@ class TransceiversConsts:
         'els15': ['oe15', 'oe33', 'oe51', 'oe69'], 'els2': ['oe16', 'oe34', 'oe52', 'oe70'],
         'els17': ['oe17', 'oe35', 'oe53', 'oe71'], 'els2': ['oe18', 'oe36', 'oe54', 'oe72']
     }
+    TRANSCEIVERS_SINGLE_ASIC_ELS_PORT_MAPPING = {
+        'els1': ['sw1p1', 'sw1p2', 'sw2p1', 'sw2p2', 'sw3p1', 'sw3p2', 'sw4p1', 'sw4p2'],
+        'els3': ['sw5p1', 'sw5p2', 'sw6p1', 'sw6p2', 'sw7p1', 'sw7p2', 'sw8p1', 'sw8p2'],
+        'els5': ['sw9p1', 'sw9p2', 'sw10p1', 'sw10p2', 'sw11p1', 'sw11p2', 'sw12p1', 'sw12p2'],
+        'els7': ['sw13p1', 'sw13p2', 'sw14p1', 'sw14p2', 'sw15p1', 'sw15p2', 'sw16p1', 'sw16p2'],
+        'els9': ['sw17p1', 'sw17p2', 'sw18p1', 'sw18p2']
+    }
+    TRANSCEIVERS_SINGLE_ASIC_ELS_OE_MAPPING = {
+        'els1': ['oe23', 'oe24', 'oe25', 'oe26'], 'els3': ['oe19', 'oe20', 'oe21', 'oe22'],
+        'els5': ['oe18', 'oe33', 'oe34', 'oe35'], 'els7': ['oe29', 'oe30', 'oe31', 'oe32'],
+        'els9': ['oe27', 'oe28']
+    }
     TRANSCEIVERS_DETAILS = {  # TODO [L.A] Add Taipan transceiver when known
         '39': Transceiver(
             transceiver_type='Xodin',

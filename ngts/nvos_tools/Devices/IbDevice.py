@@ -652,7 +652,7 @@ class BlackMambaSwitch(IbSwitch):
         self.valid_ports_count = 144
         self.number_of_transceivers = 145
         self.transceivers_tables_name = "TRANSCEIVER_FIRMWARE_INFO"
-        self.transceiver_list = ['fnm1'] + [f'sw{a + 1}p{b}' for a in range(72) for b in (1, 2)]
+        self.transceiver_list = ['fnm1'] + [f'sw{a + 1}' for a in range(72)]
         self.constants.firmware.extend(['CPLD4', 'CPLD5', 'CPLD6'])
         self.expected_operation_durations.update({
             "Install BIOS": 550,
@@ -736,6 +736,23 @@ class TaipanSwitch(BlackMambaSwitch):  # All values will be updated on Taipan BU
         self.number_of_transceivers = 18
         self.transceivers_tables_name = "TRANSCEIVER_INFO"
         self.transceiver_list = [f'els{a + 1}' for a in range(18)] + ['fnm1'] + [f'oe{b + 1}' for b in range(72)]
+
+    def _init_psu_list(self):
+        self.psu_list = []
+        self.psu_fan_list = []
+
+
+# -------------------------- Taipan Single Asic Switch ----------------------------
+class TaipanSingleAsicSwitch(TaipanSwitch):  # All values will be updated on Taipan BU
+
+    def __init__(self):
+        super().__init__(asic_amount=4, switch_class=NvosConst.TAIPAN_SINGLE_ASIC)
+
+    def _init_constants(self):
+        super()._init_constants()
+        self.number_of_transceivers = 5
+        self.transceivers_tables_name = "TRANSCEIVER_INFO"
+        self.transceiver_list = [f'els{a + 1}' for a in range(5)] + ['fnm1'] + [f'oe{b + 18}' for b in range(18)]
 
     def _init_psu_list(self):
         self.psu_list = []
