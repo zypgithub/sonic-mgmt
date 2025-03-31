@@ -14,6 +14,7 @@ ROUTE_APP_CONFIG_DEL = 'async_route_conf_del.json'
 ROUTE_APP_CONFIG_DEL_LOCAL_PATH = os.path.join('/tmp', ROUTE_APP_CONFIG_DEL)
 ROUTE_APP_CONFIG_DEL_DUT_PATH = os.path.join('/etc/sonic', ROUTE_APP_CONFIG_DEL)
 SX_API_ROUTES_FILE_NAME = 'sx_api_routes.py'
+SWSS_BULK_CONFIG_FILE_NAME = 'swss_bulk_config.py'
 IPV4 = 'ipv4'
 IPV6 = 'ipv6'
 
@@ -124,10 +125,12 @@ def number_of_routes(request, chip_type):
     :return int, int: number for routes to test for IPv4, number of routes to test for IPv6
     """
     max_scale = request.config.getoption('--max_scale')
+    ipv4_max_scale = ROUTES_MAX_SCALE.get(chip_type).get(IPV4)
+    ipv6_max_scale = ROUTES_MAX_SCALE.get(chip_type).get(IPV6)
     if max_scale:
-        return ROUTES_MAX_SCALE.get(chip_type).get(IPV4), ROUTES_MAX_SCALE.get(chip_type).get(IPV6)
+        return ipv4_max_scale, ipv6_max_scale
     else:
-        return 10000, 10000
+        return 20000, ipv6_max_scale
 
 
 @pytest.fixture
@@ -224,7 +227,7 @@ def static_routes_ipv6(interfaces, engines, topology_obj, number_of_routes):
     IpConfigTemplate.cleanup(topology_obj, ip_config_dict)
 
 
-@pytest.fixture(autouse=True, scope='session')
+@pytest.fixture(autouse=True, scope='module')
 def copy_sx_api_router_routes(engines):
     """
     Copies SX_API_ROUTES_FILE_NAME file from localhost to DUT
@@ -243,3 +246,22 @@ def copy_sx_api_router_routes(engines):
     yield
 
     engines.dut.run_cmd(f'docker exec syncd bash -c "rm -f /usr/bin/{SX_API_ROUTES_FILE_NAME}"')
+
+
+@pytest.fixture(autouse=True, scope='module')
+def copy_swss_bulk_config(engines):
+    """
+    Copies swss_bulk_config.py file from localhost to DUT
+
+    :param engines: engines fixture
+    """
+    base_dir = os.path.dirname(os.path.realpath(__file__))
+    swss_bulk_config_file = os.path.join(base_dir, SWSS_BULK_CONFIG_FILE_NAME)
+    engines.dut.copy_file(source_file=swss_bulk_config_file,
+                          file_system='/tmp',
+                          dest_file=SWSS_BULK_CONFIG_FILE_NAME,
+                          overwrite_file=True)
+
+    yield
+
+    engines.dut.run_cmd(f'sudo rm -f /tmp/{SWSS_BULK_CONFIG_FILE_NAME}')

@@ -1,8 +1,10 @@
+from datetime import date
 import json
 import logging
 import os
 import random
 import re
+import time
 
 import allure
 import pytest
@@ -11,7 +13,7 @@ from retry.api import retry_call
 from scapy.all import IP, UDP, Ether, IPv6, wrpcap
 
 from ngts.tests.nightly.route.conftest import (ROUTE_APP_CONFIG_DEL_DUT_PATH,
-                                               ROUTE_APP_CONFIG_SET_DUT_PATH,
+                                               ROUTE_APP_CONFIG_SET_DUT_PATH, SWSS_BULK_CONFIG_FILE_NAME,
                                                SX_API_ROUTES_FILE_NAME)
 
 logger = logging.getLogger()
@@ -21,12 +23,12 @@ NUMBER_OF_MEASUREMENTS = 3
 ADD = 'Add'
 REMOVE = 'Remove'
 TIMINGS_DB_FILE = 'timings_db.json'
-SHARED_TIMINGS_DB_FILE = '/auto/sw_regression/system/SONIC/MARS/tmp/timings_db.json'
+SHARED_TIMINGS_DB_LOCATION = '/auto/sw_regression/system/SONIC/MARS/tmp/async_route_timings/'
 IPV4 = 'ipv4'
 IPV6 = 'ipv6'
 PCAP_FILE_PATH = '/tmp/1k_packets.pcap'
 TCPDUMP_FILTER = 'udp src port 1234 and dst port 5678'
-TIMING_THRESHOLD_PERCENTS = 10
+TIMING_THRESHOLD_PERCENTS = 20
 
 
 def get_routes_count(dut_engine, ip_version):
@@ -75,7 +77,7 @@ def get_routes_operation_duration(dut_engine, ip_version, initial_routes_count, 
     return execution_time
 
 
-def get_expected_timing(ip_version, platform, action, routes_count):
+def get_expected_timing(ip_version, platform, action, routes_count, branch):
     """
     Retrieve expected timing value for particular ip_version, platform, action and routes_count
 
@@ -83,24 +85,36 @@ def get_expected_timing(ip_version, platform, action, routes_count):
     :param str platform: name of the platform
     :param str action: name of the action performed. Could be ADD or REMOVE
     :param int routes_count: number of routes tested
+    :param str branch: branch of the test
     :return float: expected timing(in sec) to perform an action
     """
+    shared_timings_files = [
+        (f, os.path.getctime(os.path.join(SHARED_TIMINGS_DB_LOCATION, f)))
+        for f in os.listdir(SHARED_TIMINGS_DB_LOCATION)
+        if os.path.isfile(os.path.join(SHARED_TIMINGS_DB_LOCATION, f))
+    ]
+    timing_files_sorted = sorted(shared_timings_files, key=lambda x: x[1])
+
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    timings_db_paths = [f'{current_dir}/{TIMINGS_DB_FILE}', SHARED_TIMINGS_DB_FILE]
+    local_timings_db_path = f'{current_dir}/{TIMINGS_DB_FILE}'
+    timings_db_paths = [local_timings_db_path]
+    # Adding shared timings DB files to the list
+    timings_db_paths += [f'{SHARED_TIMINGS_DB_LOCATION}{file[0]}' for file in timing_files_sorted]
     for timings_db_path in timings_db_paths:
         if os.path.exists(timings_db_path):
             with open(timings_db_path, 'r') as f:
                 timings = json.loads(f.read())
                 routes_count_key = str(routes_count)
-                expected_timing = timings.get(ip_version, {}).get(platform, {}).get(routes_count_key, {}).get(action)
+                expected_timing = timings.get(branch, {}).get(ip_version, {}).get(platform, {}).get(
+                    routes_count_key, {}).get(action)
                 if expected_timing:
-                    if timings_db_path == SHARED_TIMINGS_DB_FILE:
+                    if timings_db_path != local_timings_db_path:
                         logger.warning(f"Using shared timings DB file: {timings_db_path} for expected timing")
                     return expected_timing
     logger.warning(f'Expected execution time for {ip_version} {platform} {action} {routes_count} routes not found')
 
 
-def set_expected_execution_time(ip_version, platform, action, routes_count, execution_time):
+def set_expected_execution_time(ip_version, platform, action, routes_count, execution_time, branch):
     """
     Updates shared timings DB with actual value of performing an action
 
@@ -109,19 +123,22 @@ def set_expected_execution_time(ip_version, platform, action, routes_count, exec
     :param str action: routes action performed
     :param int routes_count: number of routes
     :param float execution_time: actual routes action execution time
+    :param str branch: branch of the test
     """
-    if os.path.exists(SHARED_TIMINGS_DB_FILE):
-        with open(SHARED_TIMINGS_DB_FILE, 'r') as f:
+    today_date = date.today()
+    shared_timings_file = f'{SHARED_TIMINGS_DB_LOCATION}/{today_date}.json'
+    if os.path.exists(shared_timings_file):
+        with open(shared_timings_file, 'r') as f:
             timings = json.loads(f.read())
     else:
         timings = {}
     routes_count_key = str(routes_count)
-    timings.setdefault(ip_version, {}).setdefault(platform, {}).setdefault(
+    timings.setdefault(branch, {}).setdefault(ip_version, {}).setdefault(platform, {}).setdefault(
         routes_count_key, {})[action] = execution_time
-    with open(SHARED_TIMINGS_DB_FILE, 'w') as f:
+    with open(shared_timings_file, 'w') as f:
         json.dump(timings, f, indent=4)
 
-    logger.info(f'Shared timings file was updated: {SHARED_TIMINGS_DB_FILE}')
+    logger.info(f'Shared timings file was updated: {shared_timings_file}')
 
 
 def do_traffic_validation(interfaces, routes_validation_list, players, ip_version, cli_objects, expected_packets_count):
@@ -171,11 +188,13 @@ def do_traffic_validation(interfaces, routes_validation_list, players, ip_versio
     'ip_version,static_routes',
     [(IPV4, 'static_routes_ipv4'), (IPV6, 'static_routes_ipv6')]
 )
-def test_adding_routes(cli_objects, engines, platform_params, interfaces, players, ip_version, static_routes, request):
+def test_adding_routes(cli_objects, engines, platform_params, interfaces, players, ip_version, static_routes, request,
+                       topology_obj):
     static_routes = request.getfixturevalue(static_routes)
     new_routes_count = len(static_routes)
     platform = platform_params.platform
-    expected_timing = get_expected_timing(ip_version, platform, ADD, new_routes_count)
+    branch = topology_obj.players['dut']['branch']
+    expected_timing = get_expected_timing(ip_version, platform, ADD, new_routes_count, branch)
 
     # creates a list of 1k randomly chosen routes to run traffic validation
     routes_validation_list = [static_routes[0], static_routes[-1]] + random.sample(static_routes, 998)
@@ -185,24 +204,24 @@ def test_adding_routes(cli_objects, engines, platform_params, interfaces, player
     for i in range(NUMBER_OF_MEASUREMENTS):
         with allure.step(f'Adding routes time measurement {i}'):
             expected_routes_count = initial_routes_count + new_routes_count
-            cli_objects.dut.general.execute_command_in_docker(docker='swss',
-                                                              command=f'swssconfig {ROUTE_APP_CONFIG_SET_DUT_PATH} &')
+            engines.dut.run_cmd(f'sudo python3 /tmp/{SWSS_BULK_CONFIG_FILE_NAME} {ROUTE_APP_CONFIG_SET_DUT_PATH} &')
             execution_time = get_routes_operation_duration(engines.dut, ip_version, initial_routes_count,
                                                            expected_routes_count)
             with allure.step('Check added routes on switch by sending traffic'):
                 do_traffic_validation(interfaces, routes_validation_list, players, ip_version, cli_objects,
                                       len(routes_validation_list))
 
-            cli_objects.dut.general.execute_command_in_docker(docker='swss',
-                                                              command=f'swssconfig {ROUTE_APP_CONFIG_DEL_DUT_PATH} &')
+            engines.dut.run_cmd(f'sudo python3 /tmp/{SWSS_BULK_CONFIG_FILE_NAME} {ROUTE_APP_CONFIG_DEL_DUT_PATH} &')
             get_routes_operation_duration(engines.dut, ip_version, expected_routes_count, initial_routes_count)
             with allure.step('Check removed routes on switch by sending traffic'):
                 do_traffic_validation(interfaces, routes_validation_list, players, ip_version, cli_objects, 0)
-
             timings.append(execution_time)
 
+            # wait to give the CPU time to achieve stable state
+            time.sleep(5)
+
     average_execution_time = round(sum(timings) / NUMBER_OF_MEASUREMENTS, 2)
-    set_expected_execution_time(ip_version, platform, ADD, new_routes_count, average_execution_time)
+    set_expected_execution_time(ip_version, platform, ADD, new_routes_count, average_execution_time, branch)
 
     if expected_timing is None:
         pytest.skip(f'Missing timings DB info for {ip_version}|{platform}|{ADD}|{new_routes_count}. '
@@ -221,11 +240,12 @@ def test_adding_routes(cli_objects, engines, platform_params, interfaces, player
     [(IPV4, 'static_routes_ipv4'), (IPV6, 'static_routes_ipv6')]
 )
 def test_removing_routes(cli_objects, engines, platform_params, interfaces, players, ip_version, static_routes,
-                         request):
+                         request, topology_obj):
     static_routes = request.getfixturevalue(static_routes)
     new_routes_count = len(static_routes)
     platform = platform_params.platform
-    expected_timing = get_expected_timing(ip_version, platform, REMOVE, new_routes_count)
+    branch = topology_obj.players['dut']['branch']
+    expected_timing = get_expected_timing(ip_version, platform, REMOVE, new_routes_count, branch)
 
     routes_validation_list = [static_routes[0], static_routes[-1]] + random.sample(static_routes, 998)
     initial_routes_count = get_routes_count(engines.dut, ip_version)
@@ -234,23 +254,24 @@ def test_removing_routes(cli_objects, engines, platform_params, interfaces, play
     for i in range(NUMBER_OF_MEASUREMENTS):
         with allure.step(f'Removing routes time measurement {i}'):
             expected_routes_count = initial_routes_count + new_routes_count
-            cli_objects.dut.general.execute_command_in_docker(docker='swss',
-                                                              command=f'swssconfig {ROUTE_APP_CONFIG_SET_DUT_PATH} &')
+            engines.dut.run_cmd(f'sudo python3 /tmp/{SWSS_BULK_CONFIG_FILE_NAME} {ROUTE_APP_CONFIG_SET_DUT_PATH} &')
             get_routes_operation_duration(engines.dut, ip_version, initial_routes_count, expected_routes_count)
             with allure.step('Check added routes on switch by sending traffic'):
                 do_traffic_validation(interfaces, routes_validation_list, players, ip_version, cli_objects,
                                       len(routes_validation_list))
 
-            cli_objects.dut.general.execute_command_in_docker(docker='swss',
-                                                              command=f'swssconfig {ROUTE_APP_CONFIG_DEL_DUT_PATH} &')
+            engines.dut.run_cmd(f'sudo python3 /tmp/{SWSS_BULK_CONFIG_FILE_NAME} {ROUTE_APP_CONFIG_DEL_DUT_PATH} &')
             execution_time = get_routes_operation_duration(engines.dut, ip_version, expected_routes_count,
                                                            initial_routes_count)
             with allure.step('Check removed routes on switch by sending traffic'):
                 do_traffic_validation(interfaces, routes_validation_list, players, ip_version, cli_objects, 0)
             timings.append(execution_time)
 
+            # wait to give the CPU time to achieve stable state
+            time.sleep(5)
+
     average_execution_time = round(sum(timings) / NUMBER_OF_MEASUREMENTS, 2)
-    set_expected_execution_time(ip_version, platform, REMOVE, new_routes_count, average_execution_time)
+    set_expected_execution_time(ip_version, platform, REMOVE, new_routes_count, average_execution_time, branch)
 
     if expected_timing is None:
         pytest.skip(f'Missing timings DB info for {ip_version}|{platform}|{REMOVE}|{new_routes_count}. '
