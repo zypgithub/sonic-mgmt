@@ -290,7 +290,7 @@ def get_cfg_facts(duthost):
 
 def check_interface_status(duthost, expected_oper='up'):
     cfg_facts = duthost.get_running_config_facts()
-    up_ports = [p for p, v in list(cfg_facts['PORT'].items()) if v.get('admin_status', None) == 'up']
+    up_ports = [p for p, v in list(cfg_facts['PORT'].items()) if v.get('admin_status', None) == expected_oper]
     output = duthost.command("show interface description")
     intf_status = parse_intf_status(output["stdout_lines"][2:])
     for intf in up_ports:
