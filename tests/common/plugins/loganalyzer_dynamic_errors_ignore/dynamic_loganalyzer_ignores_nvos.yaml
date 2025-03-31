@@ -566,6 +566,7 @@
 # NVOS
 - Errors_list:
     - '.*ERR systemd[1]: Failed to start ib-utils container.*'
+    - '.*WARNING healthd: Got system ready timeout. Notifying.*'
   Conditions:
     - Affected_test_cases:
         - tests_nvos/infra/init_flow/test_system_init_done_feature.py::test_system_ready_state_down
@@ -1973,4 +1974,10 @@
         - tests_nvos/platform/test_recover_from_bmc_reset.py
       Redmine:
         - 4371089
+
+- Errors_list:
+    - '.*pmon#psud: PSU temperature warning: PSU \d temperature too hot, temperature=\d+.\d+, threshold=\d+.\d+.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests_nvos/platform/test_platform_ps_redundancy.py::test_platform_ps_redundancy_functionality
 # --------------------------------------------------
