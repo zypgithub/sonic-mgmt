@@ -1,26 +1,36 @@
 import copy
 import os
 import random
-
-from infra.tools.exceptions.test_issue import TestIssue
+import pytest
 from ngts.constants.constants import BugHandlerConst
-from ngts.constants.performance_constants import PerfConsts, MongoDbConsts
-from ngts.helpers.performance.traffic_helpers import (create_srv6_json_traffic_stream,
-                                                      create_json_traffic_file_with_stream_list, dscp_to_tc)
-
-PORT_DEFAULT_IPV6_PREFIX = "aaaa"
-PORT_DEFAULT_IPV6_ROUTE_PREFIX = "bbbb"
-PORT_DEFAULT_SRV6_PREFIX = "bbbb:1"
-PORT_DEFAULT_SRC_PREFIX = "cccc"
+from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, MRCConsts
+from ngts.helpers.performance.traffic_helpers import create_json_traffic_file_with_stream_list
+from ngts.constants.constants import CliType
+from ngts.helpers.performance.performance_setup_helpers import skip_test_on_unsupported_os
 
 
-def get_workload_method(workload):
-    workload_to_method_dict = {
-        "workload_1": create_workload1_stream,
-        "workload_2": create_workload2_stream,
-        "workload_3": create_workload3_stream,
-    }
-    return workload_to_method_dict[workload]
+@pytest.fixture(scope='module', autouse=True)
+def skip_test_conditionally(players):
+    skip_test_on_unsupported_os(players['dut']['cli'], CliType.NVUE)
+    skip_test_on_unsupported_os(players['dut']['cli'], CliType.DVS)
+    yield
+
+
+def get_many_to_few_traffic(players, conf_args, traffic_type, dut_interfaces_ipv6_configuration_dict,
+                            egress_ports, ingress_ports, create_workload_stream, congestion=False,
+                            template_suite="traffic_packets_json_files"):
+    traffic_jsons = {}
+    ports = players['dut']['cli'].performance.get_right_left_ports_dict()
+    left_ports, right_ports = ports["left_ports"], ports["right_ports"]
+    tg_src_ports = {PerfConsts.LEFT_TG_ALIAS: left_ports,
+                    PerfConsts.RIGHT_TG_ALIAS: right_ports}
+    for tg_alias, src_ports in tg_src_ports.items():
+        get_tg_many_to_few_traffic_params(players, tg_alias, conf_args,
+                                          traffic_type, template_suite, create_workload_stream,
+                                          dut_interfaces_ipv6_configuration_dict, traffic_jsons,
+                                          egress_ports, ingress_ports, src_ports=src_ports,
+                                          congestion=congestion)
+    return traffic_jsons
 
 
 def get_tg_bisection_traffic_params(players, player_alias, conf_args, traffic_type, template_suite, create_workload_stream,
@@ -29,14 +39,22 @@ def get_tg_bisection_traffic_params(players, player_alias, conf_args, traffic_ty
     traffic_parameters = player_cli_obj.performance.get_traffic_parameters(scenario=conf_args["scenario"],
                                                                            conf_args=conf_args)
     json_path = os.path.join(BugHandlerConst.NGTS_PATH, "performance_tests", template_suite,
-                             conf_args["scenario"], f"{player_alias}_{conf_args['scenario']}.json")
+                             conf_args["scenario"], f"{player_alias}_{conf_args['scenario']}_bisection.json")
     mloops_dict = dict(player_cli_obj.performance.mloops)
     stream_list = []
     for (src_port, dst_port) in port_bisection_pairs:
-        create_workload_stream(player_alias, player_cli_obj, src_port, dst_port, traffic_parameters, traffic_type,
-                               mloops_dict, dut_interfaces_ipv6_configuration_dict, stream_list=stream_list)
+        create_workload_stream(player_alias, player_cli_obj, [src_port], dst_port, traffic_parameters, traffic_type,
+                               mloops_dict, dut_interfaces_ipv6_configuration_dict,
+                               stream_list=stream_list, ecn_enabled=is_ecn_marked(player_alias, conf_args))
     create_json_traffic_file_with_stream_list(player_alias, traffic_parameters, json_path, stream_list)
     traffic_jsons[player_alias] = json_path
+
+
+def is_ecn_marked(player_alias, conf_args):
+    if conf_args.get("dut") == "leaf" and conf_args.get("downlinks_tg") == player_alias:
+        return False
+    else:
+        return True
 
 
 def get_tg_round_robin_traffic_params(players, player_alias, conf_args, traffic_type, template_suite, create_workload_stream,
@@ -46,14 +64,16 @@ def get_tg_round_robin_traffic_params(players, player_alias, conf_args, traffic_
     traffic_parameters = player_cli_obj.performance.get_traffic_parameters(scenario=conf_args["scenario"],
                                                                            conf_args=conf_args)
     json_path = os.path.join(BugHandlerConst.NGTS_PATH, "performance_tests", template_suite,
-                             conf_args["scenario"], f"{player_alias}_{conf_args['scenario']}.json")
+                             conf_args["scenario"], f"{player_alias}_{conf_args['scenario']}_round_robin.json")
     mloops_dict = dict(player_cli_obj.performance.mloops)
+    ecn_enabled = is_ecn_marked(player_alias, conf_args)
     stream_list = []
     for (port1, port2) in cycle_ports_pairs:
         ports_cycle_flow = get_ports_cycle_flow_by_tg(port1, port2, src_ports, dst_ports, bisection_traffic)
         for (src_port, dst_port) in ports_cycle_flow:
-            create_workload_stream(player_alias, player_cli_obj, src_port, dst_port, traffic_parameters, traffic_type,
-                                   mloops_dict, dut_interfaces_ipv6_configuration_dict, stream_list=stream_list)
+            create_workload_stream(player_alias, player_cli_obj, [src_port], dst_port, traffic_parameters, traffic_type,
+                                   mloops_dict, dut_interfaces_ipv6_configuration_dict,
+                                   stream_list=stream_list, ecn_enabled=ecn_enabled)
     create_json_traffic_file_with_stream_list(player_alias, traffic_parameters, json_path, stream_list)
     traffic_jsons[player_alias] = json_path
 
@@ -80,12 +100,80 @@ def get_ports_cycle_flow_by_tg(port1, port2, tg_src_ports, other_tg_dst_ports, b
         return [(port1, port2)]
     elif port2 in tg_src_ports and port1 in other_tg_dst_ports and bisection_traffic:
         return [(port2, port1)]
-    elif port1 in tg_src_ports and port2 in tg_src_ports and bisection_traffic:
-        return [(port1, port2), (port2, port1)]
     elif port1 in tg_src_ports and port2 in tg_src_ports and not bisection_traffic:
         return [(port1, port2)]
     else:
         return []
+
+
+def get_tg_many_to_few_traffic_params(players, player_alias, conf_args,
+                                      traffic_type, template_suite, create_workload_stream,
+                                      dut_interfaces_ipv6_configuration_dict, traffic_jsons,
+                                      egress_ports, ingress_ports, src_ports, congestion):
+    player_cli_obj = players[player_alias]['cli']
+    traffic_parameters = player_cli_obj.performance.get_traffic_parameters(scenario=conf_args["scenario"],
+                                                                           conf_args=conf_args)
+    json_path = os.path.join(BugHandlerConst.NGTS_PATH, "performance_tests", template_suite,
+                             conf_args["scenario"], f"{player_alias}_{conf_args['scenario']}_many_to_few.json")
+    mloops_dict = dict(player_cli_obj.performance.mloops)
+    stream_list = []
+    tg_ingress_ports = get_ingress_ports_by_tg(ingress_ports, src_ports)
+    if tg_ingress_ports:
+        for egress_port in egress_ports:
+            create_workload_stream(player_alias, player_cli_obj, tg_ingress_ports, egress_port, traffic_parameters, traffic_type,
+                                   mloops_dict, dut_interfaces_ipv6_configuration_dict,
+                                   stream_list=stream_list, congestion=congestion, ecn_enabled=True)
+    create_json_traffic_file_with_stream_list(player_alias, traffic_parameters, json_path, stream_list)
+    traffic_jsons[player_alias] = json_path
+
+
+def get_many_to_one_traffic(players, conf_args, traffic_type, dut_interfaces_ipv6_configuration_dict,
+                            egress_ports, ingress_ports, create_workload_stream, congestion=False,
+                            template_suite="traffic_packets_json_files"):
+    traffic_jsons = {}
+    ports = players['dut']['cli'].performance.get_right_left_ports_dict()
+    left_ports, right_ports = ports["left_ports"], ports["right_ports"]
+    tg_src_ports = {PerfConsts.LEFT_TG_ALIAS: left_ports,
+                    PerfConsts.RIGHT_TG_ALIAS: right_ports}
+    ingress_egress_ports_pairing = get_ingress_egress_ports_pairing(ingress_ports, egress_ports)
+    for tg_alias, src_ports in tg_src_ports.items():
+        get_tg_many_to_one_traffic_params(players, tg_alias, conf_args,
+                                          traffic_type, template_suite, create_workload_stream,
+                                          dut_interfaces_ipv6_configuration_dict, traffic_jsons,
+                                          ingress_egress_ports_pairing, src_ports=src_ports,
+                                          congestion=congestion)
+    return traffic_jsons
+
+
+def get_tg_many_to_one_traffic_params(players, player_alias, conf_args,
+                                      traffic_type, template_suite, create_workload_stream,
+                                      dut_interfaces_ipv6_configuration_dict, traffic_jsons,
+                                      ingress_egress_ports_pairing, src_ports, congestion):
+    player_cli_obj = players[player_alias]['cli']
+    traffic_parameters = player_cli_obj.performance.get_traffic_parameters(scenario=conf_args["scenario"],
+                                                                           conf_args=conf_args)
+    json_path = os.path.join(BugHandlerConst.NGTS_PATH, "performance_tests", template_suite,
+                             conf_args["scenario"], f"{player_alias}_{conf_args['scenario']}_many_to_one.json")
+    mloops_dict = dict(player_cli_obj.performance.mloops)
+    stream_list = []
+    for ingress_ports, egress_port in ingress_egress_ports_pairing:
+        tg_ingress_ports = get_ingress_ports_by_tg(ingress_ports, src_ports)
+        if tg_ingress_ports:
+            create_workload_stream(player_alias, player_cli_obj, tg_ingress_ports, egress_port, traffic_parameters, traffic_type,
+                                   mloops_dict, dut_interfaces_ipv6_configuration_dict,
+                                   stream_list=stream_list, congestion=congestion, ecn_enabled=True)
+    create_json_traffic_file_with_stream_list(player_alias, traffic_parameters, json_path, stream_list)
+    traffic_jsons[player_alias] = json_path
+
+
+def get_ingress_egress_ports_pairing(ingress_ports, egress_ports):
+    sublist_size = len(ingress_ports) // len(egress_ports)
+    ingress_egress_ports_pairing = [ingress_ports[i:i + sublist_size] for i in range(0, len(ingress_ports), sublist_size)]
+    return list(zip(ingress_egress_ports_pairing, egress_ports))
+
+
+def get_ingress_ports_by_tg(ingress_ports, src_ports):
+    return list(set(src_ports).intersection(ingress_ports))
 
 
 def get_round_robin_traffic(players, conf_args, traffic_type, upstream, downstream, bisection_traffic,
@@ -111,17 +199,14 @@ def get_round_robin_traffic(players, conf_args, traffic_type, upstream, downstre
     traffic_jsons = {}
     ports = players['dut']['cli'].performance.get_right_left_ports_dict()
     left_ports, right_ports = ports["left_ports"], ports["right_ports"]
-    get_tg_round_robin_traffic_params(players, PerfConsts.LEFT_TG_ALIAS, conf_args,
-                                      traffic_type, template_suite, create_workload_stream,
-                                      dut_interfaces_ipv6_configuration_dict, traffic_jsons,
-                                      cycle_ports_pairs, src_ports=left_ports, dst_ports=right_ports,
-                                      bisection_traffic=bisection_traffic)
-    get_tg_round_robin_traffic_params(players, PerfConsts.RIGHT_TG_ALIAS, conf_args,
-                                      traffic_type, template_suite, create_workload_stream,
-                                      dut_interfaces_ipv6_configuration_dict, traffic_jsons,
-                                      cycle_ports_pairs, src_ports=right_ports, dst_ports=left_ports,
-                                      bisection_traffic=bisection_traffic)
-
+    tg_src_dst_ports_dict = {PerfConsts.LEFT_TG_ALIAS: (left_ports, right_ports),
+                             PerfConsts.RIGHT_TG_ALIAS: (right_ports, left_ports)}
+    for tg_alias, (src_ports, dst_ports) in tg_src_dst_ports_dict.items():
+        get_tg_round_robin_traffic_params(players, tg_alias, conf_args,
+                                          traffic_type, template_suite, create_workload_stream,
+                                          dut_interfaces_ipv6_configuration_dict, traffic_jsons,
+                                          cycle_ports_pairs, src_ports=src_ports, dst_ports=dst_ports,
+                                          bisection_traffic=bisection_traffic)
     return traffic_jsons
 
 
@@ -135,12 +220,17 @@ def get_cycle_ports_pairs(upstream, downstream):
     return cycle_pairing
 
 
-def get_upstream_downstream_port_group_df(players):
+@pytest.fixture(scope="class", autouse=False)
+def upstream_downstream_port_group_df(request, players, chip_type):
+    request.getfixturevalue('basic_setup_configuration')
     port_group_df = []
-    dut_port = copy.deepcopy(players['dut']['cli'].performance.get_dut_ports())
-    random.shuffle(dut_port)
-    mid = len(dut_port) // 2
-    upstream, downstream = dut_port[:mid], dut_port[mid:]
+    num_of_ports = MRCConsts.UPSTREAM_DOWNSTREAM_NUM_OF_PORTS_BY_CHIP_TYPE[chip_type]
+    ports = players['dut']['cli'].performance.get_right_left_ports_dict()
+    left_ports = copy.deepcopy(ports["left_ports"])
+    right_ports = copy.deepcopy(ports["right_ports"])
+    random.shuffle(left_ports)
+    random.shuffle(right_ports)
+    upstream, downstream = left_ports[:num_of_ports], right_ports[:num_of_ports]
     for port in upstream:
         port_group_df.append({"port": players['dut']['cli'].performance.get_sdk_port(port), MongoDbConsts.PORT_GROUP_NAME: "upstream"})
     for port in downstream:
@@ -148,7 +238,33 @@ def get_upstream_downstream_port_group_df(players):
     return upstream, downstream, port_group_df
 
 
-def get_spine_downstream_port_group_df(players):
+@pytest.fixture(scope="class", autouse=False)
+def victim_flow_port_group_df(request, players):
+    request.getfixturevalue('basic_setup_configuration')
+    port_group_df = []
+    ports = players['dut']['cli'].performance.get_right_left_ports_dict()
+    victim_ports_num = MRCConsts.VICTIM_PORTS_NUM
+    left_ports = copy.deepcopy(ports["left_ports"])
+    right_ports = copy.deepcopy(ports["right_ports"])
+    random.shuffle(left_ports)
+    random.shuffle(right_ports)
+    bisection_left, many_to_one_ingress_ports = left_ports[:victim_ports_num], left_ports[victim_ports_num:2 * victim_ports_num - 1]
+    bisection_right, many_to_one_egress_ports = right_ports[:victim_ports_num], right_ports[victim_ports_num:victim_ports_num + 1]
+    egress_port = many_to_one_egress_ports[0]
+    many_to_one_ingress_ports.append(egress_port)
+    for port in bisection_left:
+        port_group_df.append({"port": players['dut']['cli'].performance.get_sdk_port(port), MongoDbConsts.PORT_GROUP_NAME: "bisection_left"})
+    for port in bisection_right:
+        port_group_df.append({"port": players['dut']['cli'].performance.get_sdk_port(port), MongoDbConsts.PORT_GROUP_NAME: "bisection_right"})
+    for port in many_to_one_ingress_ports:
+        port_group_df.append({"port": players['dut']['cli'].performance.get_sdk_port(port), MongoDbConsts.PORT_GROUP_NAME: "many_to_one_ingress_ports"})
+    for port in many_to_one_egress_ports:
+        port_group_df.append({"port": players['dut']['cli'].performance.get_sdk_port(port), MongoDbConsts.PORT_GROUP_NAME: "many_to_one_egress_port"})
+    return bisection_left, bisection_right, many_to_one_ingress_ports, many_to_one_egress_ports, port_group_df
+
+
+@pytest.fixture(scope="class")
+def spine_downstream_port_group_df(players):
     port_group_df = []
     downstream = copy.deepcopy(players['dut']['cli'].performance.get_dut_ports())
     for port in downstream:
@@ -156,85 +272,9 @@ def get_spine_downstream_port_group_df(players):
     return downstream, port_group_df
 
 
-def get_dst_ip_by_traffic_type(traffic_type, dut_interfaces_ipv6_configuration_dict, dst_port):
-    if traffic_type == "IPv6":
-        return dut_interfaces_ipv6_configuration_dict[dst_port].replace(PORT_DEFAULT_IPV6_PREFIX,
-                                                                        PORT_DEFAULT_IPV6_ROUTE_PREFIX)
-    elif traffic_type == "SRv6":
-        return dut_interfaces_ipv6_configuration_dict[dst_port].replace(PORT_DEFAULT_IPV6_PREFIX,
-                                                                        PORT_DEFAULT_SRV6_PREFIX)
-    else:
-        raise TestIssue(f"Unknown traffic type {traffic_type} is not supported by workload1 traffic stream")
-
-
-def create_workload1_stream(player_alias, cli_obj, src_port, dst_port, traffic_parameters, traffic_type,
-                            mloops_dict, dut_interfaces_ipv6_configuration_dict, stream_list):
-    """
-    1 RTT probe packet (+ProbeAck) and 1 RoCE Ack, for each 50 MRC1 data packet
-    """
-    traffic_parameters["ports"] = [cli_obj.performance.get_hex_int_sdk_port(mloops_dict[src_port])]
-    traffic_parameters["IP"] = {"src": "4.4.4.4", "dst": "10.0.1.0"}
-    traffic_parameters["IPV6"]["src"] = dut_interfaces_ipv6_configuration_dict[src_port].replace(PORT_DEFAULT_IPV6_PREFIX,
-                                                                                                 PORT_DEFAULT_SRC_PREFIX)
-    traffic_parameters["IPV6"]["dst"] = get_dst_ip_by_traffic_type(traffic_type,
-                                                                   dut_interfaces_ipv6_configuration_dict, dst_port)
-
-    # MRC1
-    traffic_parameters["num_packets"] = 50
-    traffic_parameters["packet_size"] = 4096
-    mrc1_stream = create_srv6_json_traffic_stream(player_alias, traffic_parameters,
-                                                  tc=dscp_to_tc(1), stream_name=f"{src_port}_to_{dst_port}_MRC1")
-    # RTT
-    traffic_parameters["num_packets"] = 1
-    traffic_parameters["packet_size"] = 255
-    rtt_stream = create_srv6_json_traffic_stream(player_alias, traffic_parameters,
-                                                 tc=dscp_to_tc(2),
-                                                 stream_name=f"{src_port}_to_{dst_port}_RTT",
-                                                 BTH={'opcode': int(0x64)}, payload=False)
-    # ProbeAck
-    traffic_parameters["num_packets"] = 1
-    traffic_parameters["packet_size"] = 255
-    probe_ack_stream = create_srv6_json_traffic_stream(player_alias, traffic_parameters,
-                                                       tc=dscp_to_tc(14),
-                                                       stream_name=f"{src_port}_to_{dst_port}_ProbeAck",
-                                                       BTH={'opcode': int(0x64)}, payload=False)
-    # ROCE ACK
-    traffic_parameters["num_packets"] = 1
-    traffic_parameters["packet_size"] = 255
-    roce_ack_stream = create_srv6_json_traffic_stream(player_alias, traffic_parameters,
-                                                      tc=dscp_to_tc(15),
-                                                      stream_name=f"{src_port}_to_{dst_port}_ROCE_ACK",
-                                                      BTH={'opcode': int(0x11)}, payload=False)
-    stream_list.extend([mrc1_stream, rtt_stream, probe_ack_stream, roce_ack_stream])
-
-
-def create_workload2_stream():
-    """
-    MRC1 Data: 97%. 1 RTT probe packet (+ProbeAck) and 1 RoCE Ack, for each 50 MRC1 data packets.
-    If there is congestion, 1 CNP packet for each MRC1 data packet.  ?
-
-    MRC Trimmed: 1% (1G /256bytes = num of packets trimmed that should be sent),
-    SACK/NACK: 1%
-
-    MRC re-transmitting: 1%.
-    """
-    pass
-
-
-def create_workload3_stream():
-    """
-    MRC1 Data: 50%. 1 RTT probe packet (+ProbeAck) and 1 RoCE Ack, for each 20-50 MRC1 data packets.
-    If there is congestion, 1 CNP packet for each MRC1 data packet.
-
-    MRC2 Data: 40%. 1 RTT probe packet (+ProbeAck) and 1 RoCE Ack, for each 20-50 MRC2 data packets.
-    If there is congestion, 1 CNP packet for each MRC2 data packet.
-
-    GFP Data: 6%,
-    GFP control: 1%.
-
-    MRC Trimmed: 1%,
-    SACK/NACK: 1%
-
-    MRC re-transmitting: 1%
-    """
-    pass
+@pytest.fixture(scope="class", autouse=False)
+def config_optimal_trimming_size(cli_objects):
+    opt_ts = os.environ.get("OPT_TS", default=MRCConsts.OPT_TS_DEFAULT)
+    cli_objects.dut.trimming.enable_trimming_on_lossy_queue()
+    cli_objects.dut.trimming.configure_trimming_size(opt_ts)
+    yield

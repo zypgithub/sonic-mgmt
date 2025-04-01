@@ -1,0 +1,10 @@
+{
+    "BUFFER_PROFILE": {
+        "q_lossy_profile": {
+            "dynamic_th": "0",
+            "pool": "egress_lossy_pool",
+            "size": "0",
+            "packet_discard_action": "trim"
+        }
+    }
+}

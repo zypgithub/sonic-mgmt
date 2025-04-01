@@ -28,6 +28,13 @@ class SonicChassisCli(ChassisCliCommon):
         except Exception:
             raise AssertionError("Could not match platform type for switch {}".format(self.engine.ip))
 
+    def get_hwsku(self):
+        """
+        :return: the dut hwsku
+        """
+        hwsku = self.engine.run_cmd("sonic-cfggen -d -v DEVICE_METADATA.localhost.hwsku")
+        return hwsku
+
     def show_platform_summary(self):
         """
         This method execute command "show platform summary" on dut

@@ -2,6 +2,8 @@
 
 import json
 from typing import List
+import scapy.all as scapy
+from scapy.contrib.roce import BTH
 from ngts.constants.performance_constants import PerfConsts
 
 
@@ -29,6 +31,7 @@ class PacketGenerator:
         self.packet_size = packet_size
         self.headers = {}
         self.num_packets = num_packets
+        self.packet = scapy.Ether()
 
     def get_json(self) -> dict:
         """
@@ -52,6 +55,7 @@ class PacketGenerator:
             tos: Type of service, default is 96 for CL lossless Traffic.
         """
         self.headers["IP"] = {"src": src, "dst": dst, "ttl": ttl, "tos": tos}
+        self.packet /= scapy.IP(src=src, dst=dst, ttl=ttl, tos=tos)
 
     def add_ipv6_header(self, src: str, dst: str, hlim: int = 64, tc: int = PerfConsts.CL_ROCE_LOSSLESS_DEFAULT_TC) -> None:
         """
@@ -63,6 +67,7 @@ class PacketGenerator:
             tc: Traffic class, default is 96 for CL lossless Traffic
         """
         self.headers["IPv6"] = {"src": src, "dst": dst, "hlim": hlim, "tc": tc}
+        self.packet /= scapy.IPv6(src=src, dst=dst, hlim=hlim, tc=tc)
 
     def add_ether_header(self, src: str, dst: str) -> None:
         """
@@ -72,6 +77,7 @@ class PacketGenerator:
             dst: The destination IP address as a string.
         """
         self.headers["Ether"] = {"src": src, "dst": dst}
+        self.packet /= scapy.Ether(src=src, dst=dst)
 
     def add_vlan_header(self, vlan_id: int, priority: int = 0) -> None:
         """
@@ -81,6 +87,7 @@ class PacketGenerator:
             priority: An integer specifying the VLAN priority. Defaults to 0.
         """
         self.headers["VLAN"] = {"id": vlan_id, "priority": priority}
+        self.packet /= scapy.VLAN(vlan_id=vlan_id, p=priority)
 
     def add_tcp_header(self, source_port: int, dest_port: int, seq: int = 0, ack: int = 0) -> None:
         """
@@ -92,6 +99,7 @@ class PacketGenerator:
             ack: The acknowledgment number for the TCP packet. Defaults to 0.
         """
         self.headers["TCP"] = {"source_port": source_port, "dest_port": dest_port, "seq": seq, "ack": ack}
+        self.packet /= scapy.TCP(sport=source_port, dport=dest_port, seq=seq, ack=ack)
 
     def add_udp_header(self, source_port: int, dest_port: int) -> None:
         """
@@ -101,6 +109,7 @@ class PacketGenerator:
             dest_port: The destination port as an integer.
         """
         self.headers["UDP"] = {"sport": source_port, "dport": dest_port}
+        self.packet /= scapy.UDP(sport=source_port, dport=dest_port)
 
     def add_bth_header(self, opcode: int = 0, solicited_event: int = 0, mig_reg: int = 0,
                        pad_count: int = 0, header_version: int = 0, partition_key: int = 0xffff,
@@ -145,6 +154,11 @@ class PacketGenerator:
             "padding": padding,
             "i_crc": i_crc
         }
+        self.packet /= BTH(opcode=opcode, solicited=solicited_event, migreq=mig_reg,
+                           padcount=pad_count, version=header_version, pkey=partition_key,
+                           fecn=F_div_R, becn=B_div_R, resv6=reserved, dqpn=dest_qp,
+                           ackreq=ack_request, resv7=reserved_2,
+                           psn=packet_sequence_number, icrc=i_crc)
 
     def add_payload_header(self, data: str) -> None:
         """
@@ -156,7 +170,7 @@ class PacketGenerator:
         Raises:
             ValueError: If the specified packet size is too small to fit the headers and payload.
         """
-        header_size = len(json.dumps(self.headers))
+        header_size = len(self.packet)
         available_payload_size = self.packet_size - header_size
         if available_payload_size <= 0:
             raise ValueError("Packet size is too small to fit headers and payload.")

@@ -1,0 +1,10 @@
+{
+    "SCHEDULER": {
+        "zero_scheduler": {
+            "type": "DWRR",
+            "weight": "1",
+            "cir": "1",
+            "pir": "1"
+        }
+    }
+}

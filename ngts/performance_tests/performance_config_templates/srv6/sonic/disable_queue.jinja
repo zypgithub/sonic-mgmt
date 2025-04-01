@@ -1,0 +1,9 @@
+{
+    "QUEUE": {
+        {% for port in ports %}
+        "{{port}}|{{queue}}": {
+            "scheduler": "zero_scheduler"
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    }
+}

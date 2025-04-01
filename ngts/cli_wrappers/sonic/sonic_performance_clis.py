@@ -30,6 +30,7 @@ class SonicPerformanceCli(PerformanceCommon):
         self.engine = engine
         self.dut_alias = dut_alias
         self.cli_obj = cli_obj
+        self.chip_type = self.topology_obj.players[self.dut_alias]['attributes'].noga_query_data['attributes']['Specific']['chip_type']
         self.service_port_idx = -1
         self.service_ports = []
         self.sonic_to_sdk_ports_dict = {}
@@ -257,6 +258,27 @@ class SonicPerformanceCli(PerformanceCommon):
             if port_dict[ConfigDbJsonConst.SPEED] != upstream_port_speed:
                 spine_downstream_ports.append(port)
         return spine_downstream_ports
+
+    def set_class_vars(self):
+        """
+        This method sets the class variables for the performance test
+        used only for debug where we don't want to apply the sku again
+        """
+        sku = self.cli_obj.chassis.get_hwsku()
+        hwsku_json = self.cli_obj.general.get_config_db()
+        switch_role = self.get_switch_role(sku)
+        self.update_connected_unconnected_ports(sku, hwsku_json, switch_role, self.chip_type)
+        self.sonic_to_sdk_ports_dict = self.get_sonic_to_sdk_port_mapping()
+        self.mloops = self.get_mloops_tuples_list()
+
+    def get_switch_role(self, sku):
+        sku_by_chip_type = MRCConsts.HWSKU_BY_CHIP_TYPE[self.chip_type]
+        if sku in sku_by_chip_type["leaf"]:
+            return "leaf"
+        elif sku in sku_by_chip_type["spine"]:
+            return "spine"
+        else:
+            raise TestIssue(f"Unrecognized sku {sku} for chip type {self.chip_type}")
 
     def update_connected_unconnected_ports(self, sku, hwsku_json, sku_type, chip_type):
         sku_ports_dict = hwsku_json["PORT"]
@@ -531,12 +553,13 @@ class SonicPerformanceCli(PerformanceCommon):
             logging.info(f"Rotating log for {daemon}")
             self.execute_cmd(f"sudo /usr/sbin/logrotate -f /etc/logrotate.d/{daemon}  > /dev/null 2>&1")
 
-    def add_ports_connectivity_to_dut(self, conf_args):
+    def add_ports_connectivity_to_dut(self, conf_args, selected_connected_ports=None):
         ports_file = "ports.json"
         full_path = os.path.join(PerfConsts.CONFIG_FILES_DIR, ports_file)
+        connected_ports = selected_connected_ports if selected_connected_ports else self.connected_ports
         ports_connectivity_dict = {
             "unconnected_ports": self.get_hex_int_sdk_ports(self.unconnected_ports),
-            "connected_ports": self.get_hex_int_sdk_ports(self.connected_ports),
+            "connected_ports": self.get_hex_int_sdk_ports(connected_ports),
             "speed": conf_args["speed"]}
         with open(full_path, 'w') as f:
             json.dump(ports_connectivity_dict, f)

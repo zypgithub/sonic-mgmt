@@ -38,6 +38,7 @@ class ValidationConsts:
     BW_SAMPLES = "Bandwidth_samples"
     BW_DATAFRAME = "bandwidth_dataframe"
     BW_STATS = 'bw_stats'
+    BW_AVG = 'avg'
     BW_MIN = 'min_bw'
     PORT = "port"
     POWER_SAMPLES = "Power_samples"
@@ -121,6 +122,7 @@ class PerfConsts:
     LB_SCRIPT_TG = "run_lb_script.sh"
     IP_NEIGH_SCRIPT = "config_ip_neigh.sh"
     TRAFFIC_SENDER_SCRIPT_TG = "traffic_generator.py"
+    PACKETS_AGING_SCRIPT = "packets_aging.py"
     CONFIG_FILES_LIST_LEFT_TG = [DISABLE_MAC_SCRIPT, LB_FILTER_SCRIPT, LB_SCRIPT_TG]
     CONFIG_FILES_LIST_RIGHT_TG = [DISABLE_MAC_SCRIPT, LB_FILTER_SCRIPT, LB_SCRIPT_TG]
     CONFIG_FILES_DICT = {
@@ -240,12 +242,52 @@ class MRCConsts:
         "SPC5": {"leaf": "Mellanox-SN5640-C512S2",
                  "spine": "Mellanox-SN5640-C448O16"}
     }
+    UPSTREAM_DOWNSTREAM_NUM_OF_PORTS_BY_CHIP_TYPE = {
+        "SPC4": 128,
+        "SPC5": 180
+    }
+    TRAFFIC_TYPE_IPV6 = "IPv6"
+    TRAFFIC_TYPE_SRV6 = "SRv6"
+    TRAFFIC_TYPE_LIST = [TRAFFIC_TYPE_IPV6, TRAFFIC_TYPE_SRV6]
     DUT_TX_UTIL_TH = 0.98
     BUFFER_CELL_SIZE = 192
-    OCC_TH_DICT = {ValidationConsts.TC_OCC_AVG: 11,
-                   ValidationConsts.TC_OCC_99: 22}
+    HALF_MRC_DATA_PACKET_SIZE = 11
+    FULL_MRC_DATA_PACKET_SIZE = 22
+    MAX_QUEUE_BUILDUP = 260
+    MANY_TO_ONE_TRAFFIC_TC_OCC_TH = {ValidationConsts.TC_MAX_WATERMARK: HALF_MRC_DATA_PACKET_SIZE * MAX_QUEUE_BUILDUP}
+    SPINE_MANY_TO_FEW_TRAFFIC_TC_OCC_TH = {ValidationConsts.TC_MAX_WATERMARK: HALF_MRC_DATA_PACKET_SIZE * 60}
+    LEAF_MANY_TO_FEW_TRAFFIC_TC_OCC_TH = {ValidationConsts.TC_MAX_WATERMARK: HALF_MRC_DATA_PACKET_SIZE * 72}
+    OCC_TH_DICT = {ValidationConsts.TC_OCC_AVG: HALF_MRC_DATA_PACKET_SIZE,
+                   ValidationConsts.TC_OCC_99: FULL_MRC_DATA_PACKET_SIZE}
     ECN_COUNTERS = [f'tx_ecn_marked_tc_{tc}' for tc in range(PerfConsts.TC_NUM)]
     COUNTERS_WITH_ECN = PerfConsts.COUNTERS + ECN_COUNTERS
+    MRC1_DSCP = 1
+    MRC1_RTT_DSCP = 2
+    MRC2_DSCP = 3
+    MRC2_RTT_DSCP = 4
+    MRC1_RETRANSMISSION_DSCP = 5
+    MRC2_RETRANSMISSION_DSCP = 6
+    CNP_DSCP = 32
+    SACK_DSCP = 36
+    NACK_DSCP = 33
+    PROBE_ACK_DSCP = 31
+    ROCE_ACK_DSCP = 30
+    MRC_TRIMMED_DSCP = 11
+    GFP_CONTROL_DSCP = 17
+    GFP_DATA_DSCP = 41
+    MRC_TRIMMED_TC = 4
+    OPT_TS = 'OPT_TS'
+    OPT_TS_DEFAULT = 256
+    MINIMAL_TRIM_SIZE = 256
+    MAX_TRIM_SIZE_CHECKING_RANGE = 512
+    TRIMMING_TC = '4'
+    MRC1_DATA_TC = '1'
+    VICTIM_PORTS_NUM = 90
+    MRC2_DATA_TC = '2'
+    MRC_RETRANSMISSION_TC = '3'
+    MRC_CONTROL_TC = '4'
+    GFP_DATA_TC = '5'
+    VICTIM_PORTS_QUEUE_LIST = [MRC2_DATA_TC, MRC_RETRANSMISSION_TC, MRC_CONTROL_TC, GFP_DATA_TC]
 
 
 class PowerConsts:

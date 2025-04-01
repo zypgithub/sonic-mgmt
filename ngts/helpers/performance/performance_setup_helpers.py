@@ -236,7 +236,7 @@ def attach_json_to_allure(json_path, attachment_name):
     return json_obj
 
 
-def run_validation(config: ValidationConfig):
+def run_validation(config: ValidationConfig, ignore_violations=False):
     """
     Executes traffic validation based on the provided configuration.
 
@@ -278,10 +278,10 @@ def run_validation(config: ValidationConfig):
                 # Run validation function with its extra arguments and collect violations
                 validation.func(traffic_json, **(validation.extra_args or {}), violations_list=violations_list)
 
-            if violations_list:
+            if violations_list and not ignore_violations:
                 raise TestIssue("\n".join(violations_list))
 
-        return traffic_validation_jsons_list
+        return traffic_validation_jsons_list, violations_list
 
 
 def set_ports_admin_state(players, port_list, port_state="up", step="Test Body"):

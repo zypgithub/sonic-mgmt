@@ -604,6 +604,12 @@ class SonicInterfaceCli(InterfaceCliCommon):
         """
         return self.engine.run_cmd("sonic-clear counters", validate=True)
 
+    def clear_queue_counters(self):
+        """
+        clear queue counters
+        """
+        return self.engine.run_cmd("sonic-clear queuecounters", validate=True)
+
     def get_interface_supported_fec_modes(self, interface):
         """
         configure invalid fec mode on port to get actual fec modes supported on port from the error message
@@ -769,3 +775,22 @@ class SonicInterfaceCli(InterfaceCliCommon):
         :return: command output
         """
         return self.engine.run_cmd(f'redis-cli -n 4 hdel "PORT_QOS_MAP|{interface}" scheduler {port_scheduler}')
+
+    def show_queue_counters(self, interface):
+        """
+        show queue counters
+        :param interface: port name, i.e Ethernet111
+        :return: the command output
+        """
+        return self.engine.run_cmd(f"sudo show queue counters {interface}")
+
+    def parse_show_queue_counters(self, interface):
+        """
+        parse show queue counters
+        :param interface: port name, i.e Ethernet111
+        :return: dictionary, example:
+        {'TxQ': 'UC0', {'Counter/pkts': '0', 'Counter/bytes': '0', 'Drop/pkts': '0', 'Drop/bytes': 'N/A', 'Port': 'Ethernet111'}}
+        """
+        show_queue_counters_output = self.show_queue_counters(interface)
+        return generic_sonic_output_parser(show_queue_counters_output, headers_ofset=1, len_ofset=2,
+                                           data_ofset_from_start=3, data_ofset_from_end=None, column_ofset=2, output_key='TxQ')
