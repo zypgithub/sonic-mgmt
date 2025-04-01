@@ -45,6 +45,7 @@ class OutputParsingTool:
 
                  Example of the input json:
 
+
                  {
                     "description": "...",
                     "link": {
@@ -590,3 +591,12 @@ class OutputParsingTool:
                 result[disk_device] = {key: disk[key] for key in disk if key != 'disk_device'}
 
             return result
+
+    @staticmethod
+    def parse_dscp_value_from_acl(engine, acl, acl_id, rule_id):
+        with allure.step("Execute acl dscp show commands and parse output into dictionary"):
+            acl.set(acl_id).verify_result()
+            acl_id_obj = acl.acl_id[acl_id]
+            rule_id_1_obj = acl_id_obj.rule.rule_id[rule_id]
+            action_show = rule_id_1_obj.action.parse_show()
+            return action_show['set']

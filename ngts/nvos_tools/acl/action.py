@@ -10,6 +10,7 @@ class Action(BaseComponent):
     def __init__(self, parent_obj=None):
         BaseComponent.__init__(self, parent=parent_obj, path='/action')
         self.log = Log(self)
+        self.dscp = Dscp(self)
 
 
 class Log(BaseComponent):
@@ -19,3 +20,8 @@ class Log(BaseComponent):
 
     def set_log_prefix(self, log_prefix):
         return self.set(AclConsts.LOG_PREFIX, log_prefix)
+
+
+class Dscp(BaseComponent):
+    def __init__(self, parent_obj=None):
+        BaseComponent.__init__(self, parent=parent_obj, path='/set/dscp')

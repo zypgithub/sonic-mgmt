@@ -1798,12 +1798,15 @@ class BiosConsts:
 
 class AclConsts:
     ACTION = 'action'
+    SET = 'set'
     ACTION_LOG_PREFIX = 'action_log_prefix'
+    DSCP_SET_ACTION = 'dscp'
     DENY = 'deny'
     PERMIT = 'permit'
     LOG = 'log'
     LOG_PREFIX = 'log-prefix'
     MATCH = 'match'
+    ACTION = 'action'
     IP = 'ip'
     MAC = 'mac'
     TYPE = 'type'
@@ -1830,6 +1833,9 @@ class AclConsts:
     PROTOCOL = 'protocol'
     IP_PROTOCOL = 'ip_protocol'
     MAC_PROTOCOL = 'mac_protocol'
+    ICMP = 'icmp'
+    ICMPV6 = 'icmpv6'
+    ECHO_REQUEST = 'echo-request'
     ICMP_TYPE = 'icmp-type'
     ICMPV6_TYPE = 'icmpv6-type'
     STATISTICS = 'statistics'
@@ -1856,6 +1862,7 @@ class AclConsts:
     HASHLIMIT_EXPIRE = 'expire'
     HASHLIMIT_DEST_MASK = 'destination-mask'
     HASHLIMIT_SRC_MASK = 'source-mask'
+    DSCP = 'dscp'
     DEFAULT_ACLS = ["ACL_MGMT_INBOUND_CP_DEFAULT", "ACL_MGMT_INBOUND_CP_DEFAULT_IPV6", "ACL_MGMT_INBOUND_DEFAULT",
                     "ACL_MGMT_INBOUND_DEFAULT_IPV6", "ACL_MGMT_OUTBOUND_CP_DEFAULT",
                     "ACL_MGMT_OUTBOUND_CP_DEFAULT_IPV6"]

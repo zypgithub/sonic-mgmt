@@ -2,9 +2,9 @@ import logging
 import time
 
 import pytest
-
+from ngts.nvos_tools.acl.acl import Acl
 from ngts.nvos_constants.constants_nvos import FastRecoveryConsts
-from ngts.nvos_constants.constants_nvos import SystemConsts, NvosConst, ApiType
+from ngts.nvos_constants.constants_nvos import SystemConsts, NvosConst, ApiType, AclConsts, IpConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
@@ -81,6 +81,20 @@ def test_save_reboot(engines, devices):
         with allure.step('Run set system dns server ipv4 command and apply config'):
             system.dns.set(op_param_name=SystemConsts.DNS_SERVER, op_param_value=SystemConsts.DNS_SERVER_IDS["ipv4"],
                            apply=True, dut_engine=engines.dut).verify_result()
+        with allure.step('Run set acl <acl_name> rule <rule_id> action set dscp'):
+            acl_id = 'ACL_TO_BE_SAVED'
+            rule_id = 1
+            acl_type = IpConsts.IPV4
+            acl_obj = Acl()
+            acl_obj.set(acl_id).verify_result()
+            acl_id_obj = acl_obj.acl_id[acl_id]
+            acl_id_obj.set(AclConsts.TYPE, acl_type).verify_result()
+            acl_id_obj.rule.set(rule_id).verify_result()
+            rule_id_obj = acl_id_obj.rule.rule_id[rule_id]
+            rule_id_obj.action.dscp.set(1, apply=True)
+        with allure.step("Validate dscp configuration with show commands"):
+            output = OutputParsingTool.parse_dscp_value_from_acl(engines, acl_obj, acl_id, rule_id)
+            ValidationTool.verify_field_value_in_output(output, AclConsts.DSCP, 1).verify_result()
 
         with allure.step('set hostname to be {hostname} - with apply'.format(hostname=new_hostname_value)):
             system.set(SystemConsts.HOSTNAME, new_hostname_value, apply=True, ask_for_confirmation=True)
@@ -144,6 +158,10 @@ def test_save_reboot(engines, devices):
                     "The configured DNS server {} is not present in show system dns". \
                     format(SystemConsts.DNS_SERVER_IDS["ipv4"])
 
+            with allure.step("Validate dscp configuration with show commands after reboot"):
+                output = OutputParsingTool.parse_dscp_value_from_acl(engines, acl_obj, acl_id, rule_id)
+                ValidationTool.verify_field_value_in_output(output, AclConsts.DSCP, 1).verify_result()
+
             with allure.step('Verify DNS server ipv6, configured after save, is not in show system dns server output'):
                 dns_output = OutputParsingTool.parse_json_str_to_dictionary(system.dns.show(SystemConsts.DNS_SERVER)). \
                     get_returned_value()
@@ -166,6 +184,10 @@ def test_save_reboot(engines, devices):
                 with allure.step('Verify system location is set to location_info_1'):
                     ValidationTool.verify_field_value_in_output(system_output, SystemConsts.LOCATION, "location_info_1").\
                         verify_result()
+            with allure.step("verify dscp option is loaded back after reboot"):
+                dscp_output = OutputParsingTool.parse_json_str_to_dictionary(rule_id_obj.action.show).get_returned_value()
+                assert dscp_output['set']['dscp'] == 1, \
+                    "The configured dscp is not present after reboot"
 
         finally:
             with allure.step('Cleanup - Run unset system DNS server and apply config'):

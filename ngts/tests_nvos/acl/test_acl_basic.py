@@ -2,8 +2,9 @@ import logging
 import pytest
 from retry import retry
 
+from retry.api import retry_call
+import random
 from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
-from ngts.nvos_tools.Devices.IbDevice import JulietSwitch
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.IpTool import IpTool
 from ngts.nvos_tools.infra.ResultObj import ResultObj
@@ -11,7 +12,7 @@ from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.acl.acl import Acl
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.nvos_constants.constants_nvos import ApiType, AclConsts, OutputFormat
+from ngts.nvos_constants.constants_nvos import ApiType, AclConsts, OutputFormat, IpConsts
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from scapy.layers.inet import IP, TCP, ICMP
@@ -19,6 +20,7 @@ from scapy.layers.inet6 import IPv6, ICMPv6EchoRequest
 from scapy.all import *
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
+from multiprocessing import Process
 
 logger = logging.getLogger()
 
@@ -47,9 +49,10 @@ RULE_CONFIG_FUNCTION = {
     AclConsts.ICMPV6_TYPE: lambda rule_id_obj, param: rule_id_obj.match.ip.set_icmpv6_type(param),
     AclConsts.IP_PROTOCOL: lambda rule_id_obj, param: rule_id_obj.match.ip.set_protocol(param),
     AclConsts.RECENT_LIST_NAME: lambda rule_id_obj, param: rule_id_obj.match.ip.recent_list.set_name(param),
-    AclConsts.RECENT_LIST_UPDATE: lambda rule_id_obj, param: rule_id_obj.match.ip.recent_list.set_update_interval(param),
+    AclConsts.RECENT_LIST_UPDATE: lambda rule_id_obj, param: rule_id_obj.match.ip.recent_list.see_interval(param),
     AclConsts.RECENT_LIST_HIT: lambda rule_id_obj, param: rule_id_obj.match.ip.recent_list.set_hit_count(param),
     AclConsts.RECENT_LIST_ACTION: lambda rule_id_obj, param: rule_id_obj.match.ip.recent_list.set_action(param),
+    AclConsts.DSCP_SET_ACTION: lambda rule_id_obj, param: rule_id_obj.action.dscp.set(param),
     AclConsts.HASHLIMIT_NAME: lambda rule_id_obj, param: rule_id_obj.match.ip.hashlimit.set_name(param),
     AclConsts.HASHLIMIT_RATE: lambda rule_id_obj, param: rule_id_obj.match.ip.hashlimit.set_rate_limit(param),
     AclConsts.HASHLIMIT_BURST: lambda rule_id_obj, param: rule_id_obj.match.ip.hashlimit.set_burst(param),
@@ -82,7 +85,7 @@ def test_can_ping_from_eth1(engines, devices):
     except Exception:
         logger.error(f"Could not ping sonic-mgmt through eth1. Fixing...")
         gateway = Port("eth0").interface.ip.gateway.show(output_format=OutputFormat.auto).splitlines()[-1].strip()
-        engines.dut.run_cmd(f"sudo ip route add {engines.sonic_mgmt.ip} via {gateway} dev eth1")
+        devices.dut.run_cmd(f"sudo ip route add {engines.sonic_mgmt.ip} via {gateway} dev eth1")
         raise
 
 
@@ -1234,7 +1237,108 @@ def test_nmx_ports(engines, devices, test_api):
         nmx_open_ports = nmx_rule[AclConsts.MATCH][AclConsts.IP][AclConsts.TCP][AclConsts.DEST_PORT]
         assert ports_to_check <= nmx_open_ports.keys(), "Not all nmx ports are open"
 
+
+@pytest.mark.acl
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_acl_dscp_supported_values_ipv4(engines, devices, test_api, topology_obj):
+    configure_validate_dscp_acl_value(engines, devices, acl_type=IpConsts.IPV4, protocol=AclConsts.ICMP, sonic_ip=engines.sonic_mgmt.ip)
+
+
+@pytest.mark.acl
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_acl_dscp_supported_values_ipv6(engines, devices, test_api, topology_obj, sonic_mgmt_ipv6_addr):
+    configure_validate_dscp_acl_value(engines, devices, acl_type=IpConsts.IPV6, protocol=AclConsts.ICMPV6, sonic_ip=sonic_mgmt_ipv6_addr)
+
+
+@pytest.mark.acl
+@pytest.mark.disable_loganalyzer
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_acl_dscp_unsupported_values(engines, devices, test_api, topology_obj):
+    """
+    Validate ACLs dscp over ipv4.
+    steps:
+    1. config ACL with a rule and random dscp value - Unsupported
+    2. Expect the config apply to fail as unsupported value is provided
+    """
+    with allure.step("Config outbound ACLs with match protocol icmp and dscp option"):
+        acl_type = IpConsts.IPV4
+        mgmt_port_name = 'eth0'
+        rule_id_1 = '1'
+        random_dscp_value, random_dscp_value_hex = list(get_dscp_hexadecimal_dict("unsupported_dec").keys())[0], \
+            list(get_dscp_hexadecimal_dict("unsupported_dec").values())[0]
+        acl_id = "ACL_OUTBOUND_DSCP_unsupp"
+        acl = Acl()
+        acl.set(acl_id).verify_result()
+        acl_obj = acl.acl_id[acl_id]
+        acl_obj.set(AclConsts.TYPE, acl_type).verify_result()
+        acl_obj.rule.set(rule_id_1).verify_result()
+        rule_id_obj = acl_obj.rule.rule_id[rule_id_1]
+        rule_id_obj.action.dscp.set(random_dscp_value).verify_result(should_succeed=False)
+
 # ------------------- functions -------------------
+
+
+def configure_validate_dscp_acl_value(engines, devices, acl_type, protocol, sonic_ip):
+    """
+    steps:
+    1. config ACL with a rule and random dscp value - supported
+    2. Attach ACL to outbound eth0 port on switch
+    3. Check the value using nv show commands
+    4. send packet ipv4/ipv6 from switch to sonic management ip
+    5. Extract tos value from ipv4/ipv6 header (ICMP) packet
+    6. Validate tos value by converting to hexadecimal value
+    7. Unset the dscp value and check the value using nv show commands
+    """
+    with allure.step("Config outbound ACLs with match protocol icmp and dscp option"):
+        mgmt_port_name = 'eth0'
+        mgmt_port = Port(mgmt_port_name)
+        rule_id_1 = '1'
+        random_dscp_value, random_dscp_value_hex = list(get_dscp_hexadecimal_dict("supported_dec").keys())[0], \
+            list(get_dscp_hexadecimal_dict("supported_dec").values())[0]
+        rule_configuration_dict = {AclConsts.DEST_IP: 'ANY',
+                                   AclConsts.IP_PROTOCOL: protocol, AclConsts.DSCP_SET_ACTION: random_dscp_value}
+        acl_id = "ACL_OUTBOUND_DSCP"
+        config_acl_with_rule_attached_to_interface(engines.dut, acl_id,
+                                                   acl_type, rule_id_1,
+                                                   rule_configuration_dict, mgmt_port,
+                                                   AclConsts.OUTBOUND, control_plane="")
+    with allure.step("Validate configuration with show commands"):
+        acl_obj = Acl()
+        output = OutputParsingTool.parse_dscp_value_from_acl(engines, acl_obj, acl_id, rule_id_1)
+        ValidationTool.verify_field_value_in_output(output, AclConsts.DSCP, random_dscp_value).verify_result()
+    try:
+        with allure.step("Create a separate process to run tcpdump and validate option tos in packets"):
+            tcpdump_process = Process(target=run_tcpdump_validate_option_dscp,
+                                      args=(engines.sonic_mgmt, acl_type, random_dscp_value_hex))
+            tcpdump_process.start()
+        with allure.step("Ping to sonic mgmt ip to initiate packet transfers"):
+            ping_from_switch(engines.dut, sonic_ip, mgmt_port_name, count=20).verify_result()
+    finally:
+        with allure.step("Combine with tcpdump process to finish gracefully"):
+            tcpdump_process.join()
+            assert tcpdump_process.exitcode == 0, "DSCP tos value not found in dhcp packets"
+
+        with allure.step("Unset dscp option to check CLI command"):
+            acl_obj.acl_id[acl_id].rule.rule_id[rule_id_1].action.dscp.unset(apply=True)
+            output = OutputParsingTool.parse_dscp_value_from_acl(engines, acl_obj, acl_id, rule_id_1)
+            with allure.step("Verify DSCP field in ACL is removed after unset"):
+                ValidationTool.verify_field_exist_in_json_output(output, AclConsts.DSCP, should_be_found=False)
+
+
+def run_tcpdump_validate_option_dscp(dut, acl_type, regex):
+    with allure.step('Run tcpdump and validate option dscp'):
+        retry_call(validate_dscp_option_tcpdump, [dut, acl_type, regex],
+                   exceptions=AssertionError, tries=5, delay=1)
+
+
+def validate_dscp_option_tcpdump(dut, acl_type, regex):
+    if acl_type == IpConsts.IPV4:
+        command = f"sudo tcpdump -n -vv -c 200 | grep 'tos {regex}'"
+    else:
+        command = f"sudo tcpdump -n -vv -c 200 | grep 'class {regex}'"
+    tcpdump_output = dut.run_cmd(command)
+    assert tcpdump_output, "DSCP TOS value not present in packets"
+    logger.info(f"DSCP TOS value - {regex} present in tcpdump")
 
 
 def sleep():
@@ -1384,3 +1488,17 @@ def match_ip_port_test(engines, mgmt_port, acl_type, acl_id, port_list, dest_add
             packet = f"IP(src=\"{src_addr}\", dst=\"{dest_addr}\") / TCP(sport={port}, dport={port})"
             validate_counters_after_traffic(engine_send_packet, AclConsts.INBOUND, mgmt_port, acl_id, rule_id, dest_addr, packet=packet)
             rule_id = str(int(rule_id) - 1)
+
+
+def get_dscp_hexadecimal_dict(option):
+    if option == 'supported_dec':
+        rand_int = random.randint(0, 64)
+        return ({rand_int: hex(rand_int * 4)})
+    elif option == 'unsupported_dec':
+        rand_int = random.randint(64, 100)
+        return ({rand_int: hex(rand_int)})
+    elif option == 'supported_enum':
+        enum_list = [af11, af12, af13, af21, af22, af23, af31, af32, af33, af41, af42, af43, cs1, cs2, cs3, cs4, cs5, cs6, cs7, be, ef]
+        return (random.choice(enum_list))
+    else:
+        logger.info("please provide valid option")
