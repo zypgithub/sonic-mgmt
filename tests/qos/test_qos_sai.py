@@ -180,6 +180,11 @@ def check_skip_xon_hysteresis_test(xonHysteresisKey, dutQosConfig,
             " Pls see qos.yaml for the port idx's that are needed.")
 
 
+def skip_test_on_no_lossless_pg(portSpeedCableLength):
+    if portSpeedCableLength == "0_0m":
+        pytest.skip("skip the test due to no buffer lossless pg")
+
+
 class TestQosSai(QosSaiBase):
     """TestQosSai derives from QosSaiBase and contains collection of QoS SAI test cases.
 
@@ -1987,9 +1992,8 @@ class TestQosSai(QosSaiBase):
         )
 
     def testQosSaiDscpToPgMapping(
-        self, get_src_dst_asic_and_duts, duthost, request, ptfhost,
-        dutTestParams, dutConfig, dut_qos_maps, dutQosConfig,  # noqa F811
-            change_lag_lacp_timer):
+        self, get_src_dst_asic_and_duts, duthost, request, ptfhost, dutTestParams, dutConfig, dut_qos_maps,  # noqa F811
+            change_lag_lacp_timer, dutQosConfig):
         """
             Test QoS SAI DSCP to PG mapping ptf test
 
