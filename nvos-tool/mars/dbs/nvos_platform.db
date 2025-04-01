@@ -54,4 +54,7 @@
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/platform/nv_platform_power_telemetry.cases </cases>
 	</test>
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/platform/nv_platform_power_capping.cases </cases>
+	</test>
 </DBDEF>

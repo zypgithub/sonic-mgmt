@@ -5,7 +5,6 @@ from ngts.cli_wrappers.openapi.openapi_platform_clis import OpenApiPlatformCli
 from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.nvos_tools.platform.Asic import Asic
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
-from ngts.nvos_tools.platform.AsicPower import AsicPower
 from ngts.nvos_tools.platform.CableCartridge import CableCartridge
 from ngts.nvos_tools.platform.Environment import Environment
 from ngts.nvos_tools.platform.Inventory import Inventory
@@ -35,7 +34,6 @@ class Platform(BaseComponent):
         self.bmc_password = Bmc_password(self)
         self.cable_cartridge = CableCartridge(self)
         self.power_profile = PowerProfile(self)
-        self.asic_power = AsicPower(self)
         self.boot_policy = BaseComponent(self, path='/boot-policy')
 
     def set(self, op_param_name="", op_param_value=""):

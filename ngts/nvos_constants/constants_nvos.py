@@ -1017,6 +1017,7 @@ class CableCartridgeConsts:
 
 class PowerProfileConsts:
     DEFAULT_PROFILE_ID = 'compute'
+    ACTIVE = 'active'
     PROFILES = ["networking", "reduced-bandwidth", DEFAULT_PROFILE_ID]
     PROFILES_DEFAULT_DICT = {
         'compute': {
@@ -1043,6 +1044,7 @@ class PowerProfileConsts:
                          'kd-factor-1', 'kd-factor-2']
     NUM_PROFILES_LIMIT = 5
     CHARS_LIMIT = 20
+    ACTIVE_PROFILE = 'active-profile'
 
 
 class FansConsts:

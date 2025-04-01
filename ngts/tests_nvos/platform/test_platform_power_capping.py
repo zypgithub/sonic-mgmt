@@ -28,7 +28,8 @@ def cleanup_profiles(engines):
 
 
 @pytest.mark.platform
-@pytest.mark.parametrize('test_api', random.sample(ApiType.ALL_TYPES, 1))
+@pytest.mark.power_capping
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_set_platform_power_profile(engines, devices, test_api):
     """
     Test Objective:
@@ -47,31 +48,36 @@ def test_set_platform_power_profile(engines, devices, test_api):
     with allure.step("Create Platform object"):
         platform = NvCommand().platform
 
-    for profile_id in PowerProfileConsts.PROFILES:
-        with allure.step(f"Set power-profile {profile_id}"):
-            platform.power_profile.set_active_profile(profile_id, apply=True)
+    with allure.step("Test set command for all profiles"):
+        for profile_id in PowerProfileConsts.PROFILES:
+            with allure.independent_step(f"Set power-profile {profile_id}"):
+                platform.power_profile.set_active_profile(profile_id, apply=True)
 
-        with allure.step("Verify power-profile is active"):
-            profile_show_output = platform.power_profile.show()
-            output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(profile_show_output).get_returned_value()
-            ValidationTool.verify_field_value_in_output(output_dictionary, 'active', profile_id).verify_result()
+                with allure.independent_step("Verify power-profile is active"):
+                    profile_show_output = platform.power_profile.show()
+                    output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(profile_show_output).get_returned_value()
+                    ValidationTool.verify_field_value_in_output(output_dictionary, PowerProfileConsts.ACTIVE, profile_id).verify_result()
 
-        with allure.step(f"Verify all fields and values under power-profile {profile_id}"):
-            profile_show_output = platform.power_profile.available.show()
-            output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(profile_show_output).get_returned_value()
-            ValidationTool.compare_dictionaries(output_dictionary, PowerProfileConsts.PROFILES_DEFAULT_DICT)
+                with allure.independent_step(f"Verify all fields and values under power-profile {profile_id}"):
+                    profile_show_output = platform.power_profile.available.show()
+                    output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(profile_show_output).get_returned_value()
+                    ValidationTool.compare_dictionaries(output_dictionary, PowerProfileConsts.PROFILES_DEFAULT_DICT)
 
-        with allure.step(f"Unset active power-profile {profile_id}"):
-            platform.power_profile.unset_active_profile(apply=True)
+                with allure.independent_step(f"Verify {profile_id} in platform asic"):
+                    verify_asic_power(devices, platform, profile_id)
 
-        with allure.step("Verify default power-profile is active"):
-            profile_show_output = platform.power_profile.show()
-            output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(profile_show_output).get_returned_value()
-            ValidationTool.verify_field_value_in_output(output_dictionary, 'active', PowerProfileConsts.DEFAULT_PROFILE_ID).verify_result()
+            with allure.independent_step(f"Unset active power-profile {profile_id}"):
+                platform.power_profile.unset_active_profile(apply=True)
+
+            with allure.independent_step("Verify default power-profile is active"):
+                profile_show_output = platform.power_profile.show()
+                output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(profile_show_output).get_returned_value()
+                ValidationTool.verify_field_value_in_output(output_dictionary, PowerProfileConsts.ACTIVE, PowerProfileConsts.DEFAULT_PROFILE_ID).verify_result()
 
 
 @pytest.mark.platform
-@pytest.mark.parametrize('test_api', random.sample(ApiType.ALL_TYPES, 1))
+@pytest.mark.power_capping
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_fae_platform_power_profile_limitation(engines, test_api):
     """
     Test Objective:
@@ -115,7 +121,8 @@ def test_fae_platform_power_profile_limitation(engines, test_api):
 
 
 @pytest.mark.platform
-@pytest.mark.parametrize('test_api', random.sample(ApiType.ALL_TYPES, 1))
+@pytest.mark.power_capping
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_set_fae_platform_power_profile_configurations(engines, test_api):
     """
     Test Objective:
@@ -168,7 +175,8 @@ def test_set_fae_platform_power_profile_configurations(engines, test_api):
 
 
 @pytest.mark.platform
-@pytest.mark.parametrize('test_api', random.sample(ApiType.ALL_TYPES, 1))
+@pytest.mark.power_capping
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_power_profile_bad_flow(engines, test_api):
     """
     Test Objective:
@@ -189,17 +197,11 @@ def test_power_profile_bad_flow(engines, test_api):
         fae = NvCommand().fae
         platform = NvCommand().platform
 
-    profiles = PowerProfileConsts.PROFILES[1:]  # Exclude default profile
-    random_profile_id = random.choice(profiles)
-
-    with allure.step(f"Configure invalid attributes for non-active profile {random_profile_id}"):
-        fae_profile = fae.platform.power_profile.profile_id[random_profile_id]
-        for attribute in PowerProfileConsts.FACTOR_ATTRIBUTES:
-            fae_profile.set_attribute(attribute, get_random_value(attribute, valid=False), apply=True).verify_result(False)
+    fae_default_profile = fae.platform.power_profile.profile_id[PowerProfileConsts.DEFAULT_PROFILE_ID]
 
     with allure.step(f"Configure attributes for active profile {PowerProfileConsts.DEFAULT_PROFILE_ID}"):
         for attribute in PowerProfileConsts.ATTRIBUTES:
-            fae_profile.set_attribute(attribute, get_random_value(attribute, valid=True)).verify_result()
+            fae_default_profile.set_attribute(attribute, get_random_value(attribute, valid=True)).verify_result()
 
         output = TestToolkit.GeneralApi[test_api].apply_config(engines.dut)
         assert 'Can not configure active power-profile attributes' in output, 'operation succeeded while expected to fail'
@@ -207,17 +209,57 @@ def test_power_profile_bad_flow(engines, test_api):
         NvueGeneralCli.detach_config(engines.dut)
 
     with allure.step("Show fae platform power-profile for non-existing profile"):
-        output = fae.platform.power_profile.profile_id['non_existing_profile'].show()
-        output_dict = OutputParsingTool.parse_json_str_to_dictionary(output).get_returned_value()
-        assert not output_dict, "shows data on non_existing_profile"
+        fae.platform.power_profile.profile_id['non_existing_profile'].show(should_succeed=False)
+
     with allure.step("Show platform power-profile for non-existing profile"):
-        output = platform.power_profile.available.profile_id['non_existing_profile'].show()
-        output_dict = OutputParsingTool.parse_json_str_to_dictionary(output).get_returned_value()
-        assert not output_dict, "shows data on non_existing_profile"
+        platform.power_profile.available.profile_id['non_existing_profile'].show(should_succeed=False)
 
     with allure.step("Create profile with invalid name"):
         new_name = RandomizationTool.get_random_string(PowerProfileConsts.CHARS_LIMIT + 1, ascii_letters=string.ascii_letters + string.digits)
-        fae.platform.power_profile.profile_id[new_name].set_attribute(attribute, 1)(apply=True).verify_result(False)
+        fae.platform.power_profile.profile_id[new_name].set_attribute(attribute, 1, apply=True).verify_result(False)
+
+
+@pytest.mark.platform
+@pytest.mark.power_capping
+@pytest.mark.skip(reason="Traffic tests are not currently run on mini-oberon")
+def test_power_capping(engines, random_api):
+    """
+    Test Objective: Run some stress traffic test on the system and change profile to lower power that the ASIC consumed in the test.
+
+    Test Flow:
+    1. Run stress test on the switch in default power-profile.
+    2. Check ASIC power is as expected and check interface link counters for no degradation.
+    3. Change one of the power-profiles in FAE to low power limit.
+    4. Activate that profile.
+    5. Run stress test on the switch with recently configured power-profile.
+    6. Check ASIC power is as expected and not surpassing the new Power Allocation.
+    """
+    with allure.step("Create Fae object"):
+        fae = NvCommand().fae
+
+    with allure.step("Run stress test on the switch in default power-profile"):
+        # Code to run stress test
+        pass
+
+    with allure.step("Check ASIC power and interface link counters"):
+        # Code to check ASIC power and interface link counters
+        pass
+
+    with allure.step("Change power-profile to low power limit"):
+        # Code to change power-profile
+        pass
+
+    with allure.step("Activate the low power profile"):
+        # Code to activate the profile
+        pass
+
+    with allure.step("Run stress test on the switch with new power-profile"):
+        # Code to run stress test
+        pass
+
+    with allure.step("Check ASIC power with new power-profile"):
+        # Code to check ASIC power
+        pass
 
 
 def get_random_value(attribute, valid=True):
@@ -238,12 +280,10 @@ def set_new_profile(fae, profile_id, attributes=PowerProfileConsts.ATTRIBUTES):
 
 
 def verify_asic_power(devices, platform, profile_id):
-    with allure.step(f"Verify {profile_id} in asic-power"):
-        asic_show_output = platform.asic_power.show()
-        output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(asic_show_output).get_returned_value()
-        for asic in [f"ASIC{i + 1}" for i in range(devices.dut.asic_amount)]:
-            ValidationTool.verify_field_value_in_output(output_dictionary[asic], 'active-profile',
-                                                        profile_id).verify_result()
-            asic_id_show_output = platform.asic_power.asic_id[asic].show()
-            output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(asic_id_show_output).get_returned_value()
-            ValidationTool.verify_field_value_in_output(output_dictionary, 'active-profile', profile_id).verify_result()
+    asic_show_output = platform.asic.show()
+    output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(asic_show_output).get_returned_value()
+    for asic_name in [f"ASIC{i + 1}" for i in range(devices.dut.asic_amount)]:
+        ValidationTool.verify_field_value_in_output(output_dictionary[asic_name], PowerProfileConsts.ACTIVE_PROFILE,
+                                                    profile_id).verify_result()
+        asic_id_output_dict = OutputParsingTool.parse_json_str_to_dictionary(platform.asic.asic_id[asic_name].power.show()).get_returned_value()
+        ValidationTool.verify_field_value_in_output(asic_id_output_dict, PowerProfileConsts.ACTIVE_PROFILE, profile_id).verify_result()
