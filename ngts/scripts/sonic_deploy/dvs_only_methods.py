@@ -23,3 +23,4 @@ class DvsInstallationSteps:
             # TODO: FW burn on prod switch isn't functional at the moment, need to find a WA
             cli_obj = dut['cli_obj']
             cli_obj.install_sdk_and_burn_fw_flow(sdk_version)
+            dut['cli'].performance.unsplit_all_ports()
