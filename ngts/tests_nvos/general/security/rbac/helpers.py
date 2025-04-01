@@ -1,6 +1,5 @@
 import logging
 
-from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.tests_nvos.general.security.rbac.command_testers import InterfaceCommandTester, SystemCommandTester, \
     PlatformCommandTester
@@ -8,7 +7,6 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.nvos_tools.system.System import System
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
@@ -141,7 +139,3 @@ def verify_rbac_classes_in_role(system, role_name, classes_to_verify, expected_r
     # Verify each class against its expected result
     for class_name, expected in zip(classes_to_verify, expected_results):
         ValidationTool.verify_field_value_exist_in_output_dict(output_dict, class_name).verify_result(expected)
-
-
-def create_new_user(role, apply=False):
-    return System(force_api=ApiType.NVUE).aaa.user.set_new_user(role=role, apply=apply)

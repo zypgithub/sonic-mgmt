@@ -11,6 +11,7 @@ from ngts.nvos_constants.constants_nvos import SystemConsts
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.tools.test_utils import allure_utils as allure
+import threading
 
 logger = logging.getLogger()
 
@@ -39,6 +40,34 @@ class ConnectionTool:
                 return result_obj
 
             return result_obj
+
+    @staticmethod
+    def create_multiple_ssh_conns(ip: str, username: str, password: str, amount: int) -> list:
+        """
+        Create multiple SSH connections to the given IP address.
+
+        Args:
+            ip (str): The IP address to connect to.
+            username (str): The username for the SSH connections.
+            password (str): The password for the SSH connections.
+            amount (int): The number of SSH connections to create.
+
+        Returns:
+            list: A list of SSH connections
+        """
+        with allure.step(f"Create {amount} SSH connection{'' if amount == 1 else 's'} as user {username}"):
+            connections = []
+            threads = []
+
+            for _ in range(amount):
+                thread = threading.Thread(target=lambda: connections.append(ConnectionTool.create_ssh_conn(ip, username, password)))
+                threads.append(thread)
+                thread.start()
+
+            for thread in threads:
+                thread.join()
+
+            return connections
 
     @staticmethod
     def is_connected(engine, username_to_check=None):

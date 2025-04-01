@@ -1,6 +1,7 @@
 import json
 import logging
 import re
+import os
 from datetime import datetime
 
 from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
@@ -52,6 +53,32 @@ class FilesTool:
     def get_file_size_in_bytes(engine, file_path):
         output = engine.run_cmd(f'stat --format="%s" {file_path}')
         return int(output) if output.isdigit() else -1
+
+    @staticmethod
+    def create_file_with_content(engine, file_name, file_type, content):
+        """
+        Create a file with content and upload to the DUT machine.
+
+        Args:
+            engine: The test engine
+            file_name: Name of the file without extension
+            file_type: File extension (e.g., 'json', 'yaml')
+            content: Content to write to the file
+        """
+
+        # Create a temporary file locally
+        local_file = f'/tmp/{file_name}.{file_type}'
+        with open(local_file, 'w') as f:
+            f.write(content)
+
+        # Copy the file to the DUT machine
+        dest_file = f'/tmp/{file_name}.{file_type}'
+        engine.copy_file(source_file=local_file, dest_file=dest_file, file_system='/tmp', overwrite_file=True)
+
+        # Clean up local file
+        os.remove(local_file)
+
+        return dest_file
 
 
 class EngineFile:

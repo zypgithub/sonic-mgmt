@@ -37,4 +37,15 @@
     </cmd>
   </case>
 
+  <case>
+    <name> System aaa user role change triggers disconnect </name>
+    <info></info>
+    <tout> 10800 </tout>
+    <cmd>
+      <params>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/system/aaa/test_role_change_triggers_disconnect.py --raw_options "\' --rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini -v -m \"cumulus and not checklist\" --log-level=INFO --clean-alluredir --alluredir=/tmp/allure-results  --disable_cli_coverage --disable_loganalyzer --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>
+      </params>
+    </cmd>
+  </case>
+
 </CASEDEF>

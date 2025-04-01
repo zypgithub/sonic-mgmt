@@ -6,7 +6,8 @@ from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.tests_nvos.general.security.rbac.helpers import change_class_permissions, verify_user_permissions_on_interface, \
     verify_user_permissions_on_system, verify_user_permissions_on_denied_interface, run_commands_on_system, run_commands_on_interface, \
-    create_user_connection, verify_groups, verify_rbac_classes_in_role, create_new_user
+    create_user_connection, verify_groups, verify_rbac_classes_in_role
+from ngts.tests_nvos.system.aaa.helpers import create_new_user
 
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli

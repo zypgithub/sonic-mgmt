@@ -295,6 +295,9 @@ class BaseDevice(ABC):
     def cleanup_base_aaa_config(self, dut_engine: LinuxSshEngine):
         raise Exception(f"Not implemented for this switch {self.__class__.__name__}")
 
+    def bypass_password_on_sudo_commands(self, dut_engine: LinuxSshEngine):
+        pass
+
 # -------------------------- Base Appliance ----------------------------
 
 

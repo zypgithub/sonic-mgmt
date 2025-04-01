@@ -202,6 +202,8 @@ class EthSwitch(BaseSwitch):
         dut_engine.run_cmd("nv unset system aaa role monitor")
         dut_engine.run_cmd("nv config apply --assume-yes")
 
+    def bypass_password_on_sudo_commands(self, dut_engine: LinuxSshEngine):
+        dut_engine.run_cmd(f"echo '{dut_engine.password}' | sudo -S echo")
 
 # -------------------------- Mlx3700 Anaconda Switch ----------------------------
 

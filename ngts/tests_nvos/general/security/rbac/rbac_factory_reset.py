@@ -6,7 +6,8 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.system.System import System
-from ngts.tests_nvos.general.security.rbac.helpers import create_new_user, verify_rbac_classes_in_role
+from ngts.tests_nvos.general.security.rbac.helpers import verify_rbac_classes_in_role
+from ngts.tests_nvos.system.aaa.helpers import create_new_user
 
 from ngts.tools.test_utils import allure_utils as allure
 

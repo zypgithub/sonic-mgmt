@@ -60,6 +60,9 @@ class CumulusConsts:
     LINUX_BOOT_PATTERN = 'Debian GNU/Linux 12 .*'
     LOGIN_BOOT_PATTERN = 'cumulus login:.*'
     ETH_SWITCH_TYPE = "ETH"
+    ROLE_SYSTEM_ADMIN = "system-admin"
+    ROLE_NVUE_ADMIN = "nvue-admin"
+    ROLE_NVUE_MONITOR = "nvue-monitor"
 
 
 class TestConsts:
@@ -572,6 +575,7 @@ class SystemConsts:
     USER_STATE_DISABLED = 'disabled'
     USER_PASSWORD = 'password'
     USER_HASHED_PASSWORD = 'hashed-password'
+    USER_SPIFFE_ID = 'spiffe-id'
     USER_PASSWORDS_DEFAULT_VALUE = '*'
     ROLE_LABEL = USER_ROLE
     ROLE_CONFIGURATOR = 'admin'
