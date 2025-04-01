@@ -656,11 +656,12 @@ def _delete_log_files(engines, system_log_obj, file_name):
                 system_log_obj.file.show_log(exit_cmd='q', expected_str='system/image')
 
 
+@pytest.mark.check_log_size(expectedKbWritten=10000)
 @pytest.mark.system
 @pytest.mark.log
 @pytest.mark.simx
 def test_log_idle(engines):
-    expected_file_size_diff = 5120
+    expected_file_size_diff = 9000
 
     with allure.step("Create System object"):
         system = System(None)
@@ -669,14 +670,13 @@ def test_log_idle(engines):
         system.log.rotate_logs()
         syslog_size_before_idle = FilesTool.get_file_size_in_bytes(engines.dut, SyslogConsts.SYSLOG_LOG_PATH)
 
-    with allure.step("Do nothing for 3 min"):
-        time.sleep(180)
+    with allure.step("Do nothing for 5 min"):
+        time.sleep(300)
 
     with (allure.step("Check the log file")):
-        logs_output = system.log.file.show_log(exit_cmd='q')
         syslog_size_after_idle = FilesTool.get_file_size_in_bytes(engines.dut, SyslogConsts.SYSLOG_LOG_PATH)
         assert syslog_size_after_idle - syslog_size_before_idle <= expected_file_size_diff, \
-            f"Found unexpected logs during idle \n {logs_output}"
+            f"The size of the log file is more than expected threshold, before: {syslog_size_before_idle}b , after: {syslog_size_after_idle}b, expected_threshold value: {expected_file_size_diff} \n "
 
 
 def get_random_component(system):
