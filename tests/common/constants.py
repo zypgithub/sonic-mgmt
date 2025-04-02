@@ -14,6 +14,6 @@ DEFAULT_SSH_CONNECT_PARAMS = {
 }
 # resolv.conf expected nameservers
 RESOLV_CONF_NAMESERVERS = {
-    "public": ["10.211.0.124", "10.211.0.121", "10.7.77.135"]
+    "public": []
 }
 KVM_PLATFORM = 'x86_64-kvm_x86_64-r0'
