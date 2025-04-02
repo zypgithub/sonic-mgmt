@@ -794,6 +794,8 @@ qos/test_lossless_bum_traffic_drop.py:
     reason: "Test does not support dualtor topology."
     conditions:
     - "'dualtor' in topo_name"
+    - "hwsku in ['Mellanox-SN5600-C256S1', 'Mellanox-SN5600-C224O8', 'Mellanox-SN5610N-C256S2',
+                 'Mellanox-SN5610N-C224O8','Mellanox-SN5640-C512S2', 'Mellanox-SN5640-C448O16']"
 
 iface_loopback_action/test_iface_loopback_action_wjh.py:
   skip:
