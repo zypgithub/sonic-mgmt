@@ -1,7 +1,7 @@
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_constants.constants_nvos import NvosConst
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
-from infra.tools.general_constants.constants import DefaultConnectionValues
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tools.test_utils import allure_utils as allure
 import logging
 import pytest
@@ -28,6 +28,10 @@ def test_fw_dump_me(engines, devices):
     # just multi asic systems have asic_amount attribute
     syncd_ibv = "syncd-ibv0{}".format(ibv_num)
     sdk_dump_folder = "/var/log/mellanox/sdk-dumps/"
+
+    if is_bug_active(4387308):
+        dev = "_dev{}".format(ibv_num) if devices.dut.switch_class == NvosConst.JULIET_SWITCH else ""
+        sdk_dump_folder = f"/var/log/mellanox/sdk-dumps{dev}/"
 
     with allure.step('Upload sdk fw crush file to switch'):
         player_engine = engines['sonic_mgmt']
