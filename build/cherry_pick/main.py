@@ -39,12 +39,17 @@ def main(args: Args, git_repo: Repo):
         f"fetch from upstream/{args.branch} output:\n"
         f"{git_repo.fetch_remote(_REMOTE_COMMUNITY_NAME, args.branch)}"
     )
+    logger.info(
+    f"change to branch {args.target_branch}: "
+    f"{git_repo.change_to_branch(args.target_branch)}"
+    )
     commits = []
     if args.last_successful_commit_hash:
         commits = git_repo.get_commits_since_commit_hash_until_date(
             args.last_successful_commit_hash,
-            until=args.until,
-            branch_name=f"{_REMOTE_COMMUNITY_NAME}/{args.branch}"
+            args.target_branch,
+            f"{_REMOTE_COMMUNITY_NAME}/{args.branch}",
+            args.until
         )
         logger.info(
             f"{len(commits)} found in source repo since "
@@ -52,16 +57,12 @@ def main(args: Args, git_repo: Repo):
         )
     else:
         commits = git_repo.get_commits_by_range(
-            args.since, args.until, f"{_REMOTE_COMMUNITY_NAME}/{args.branch}"
+            args.since, args.until, args.target_branch, f"{_REMOTE_COMMUNITY_NAME}/{args.branch}"
         )
         logger.info(
             f"{len(commits)} found in source repo since "
             f"{args.since} until {args.until}"
         )
-    logger.info(
-        f"change to branch {args.target_branch}: "
-        f"{git_repo.change_to_branch(args.target_branch)}"
-    )
 
     skip_commits_list = [
         commit for commit in commits

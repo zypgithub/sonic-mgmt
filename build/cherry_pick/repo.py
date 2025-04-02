@@ -85,7 +85,8 @@ class Repo:
         res.sort(key=lambda x: x.ct)
         return res
 
-    def get_commits_by_range(self, since:str, until: str, branch_name:str = "")->list[GitCommit]:
+    def get_commits_by_range(self, since:str, until: str,
+                             local_branch_name: str, remote_branch_name: str)->list[GitCommit]:
         """
         input:
             since: string of date, e.g. 2024-12-03
@@ -95,8 +96,8 @@ class Repo:
         """
         process = subprocess.run(
             # put commit subject last as it may contain char '|'
-            f'git --no-pager log --pretty=format:"%H|%ct|%at|%s" --since="{since}" '
-            f'--until="{until}" {branch_name}',
+            f'git --no-pager log --pretty=format:"%H|%ct|%at|%s" --cherry-pick --right-only --first-parent '
+            f'--since="{since}" --until="{until}" {local_branch_name}...{remote_branch_name}',
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             cwd=self.dir,
@@ -106,7 +107,10 @@ class Repo:
             raise Exception(f"unable to get commits by range: {process.stderr.decode()}")
         return self._parse_lines_to_commits([str(line, 'utf-8') for line in process.stdout.splitlines()])
 
-    def get_commits_since_commit_hash_until_date(self, since_commit_hash:str, until: str, branch_name:str = "")->list[GitCommit]:
+    def get_commits_since_commit_hash_until_date(self, since_commit_hash:str, 
+                                                 local_branch_name:str,
+                                                 remote_branch_name:str,
+                                                 until: str)->list[GitCommit]:
         """
         input:
             since_commit_hash: string the commit hash you want to start from, the commit hash is non-included
@@ -115,7 +119,9 @@ class Repo:
             return a list of GitCommit sorted by committer date in ascending order
         """
         # put commit subject last as it may contain char '|'
-        cmd = f'git --no-pager log --pretty=format:"%H|%ct|%at|%s" {since_commit_hash}..{branch_name} --until="{until}"'
+        cmd = f'git --no-pager log --pretty=format:"%H|%ct|%at|%s" --cherry-pick --right-only --first-parent ' \
+              f'{local_branch_name}...{remote_branch_name} {since_commit_hash}..{remote_branch_name} ' \
+              f'--until="{until}"'
         process = subprocess.run(
             cmd,
             stdout=subprocess.PIPE,
