@@ -1632,6 +1632,7 @@
 # NVOS
 - Errors_list:
     - '.*suspended \(module .*builtin:omfwd.*\), next retry is.*'
+    - '.*suspended \(module .*builtin:omfwd.*\), retry .*'
   Conditions:
     - Affected_test_cases:
       - tests_nvos/system/syslog/test_system_syslog.py
@@ -1698,6 +1699,7 @@
     - '.*ERR health-statsd#health_history: PSU\d: is missing or not available.*'
     - '.*ERR health-statsd#health_history: PSU\d\/FAN: is missing.*'
     - '.*ERR health-statsd#health_history: PSU\d\/FAN: direction exhaust is not aligned with fan1 direction intake.*'
+    - '.*ERR health-statsd#health_history: PSU\d\/FAN: direction intake is not aligned with fan1 direction exhaust.*'
   Conditions:
     - Affected_test_cases:
       - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm.py::TestNewTc::test_sensor_errors[psu_err_direction]
