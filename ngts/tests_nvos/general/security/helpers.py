@@ -43,7 +43,7 @@ def remove_etc_host_mapping_to_dn(dn, cmd_runner=None):
     cmd_runner.run_cmd(cmd)
 
 
-def prepare_tmp_test_certs(cert_names: List[str], dest_dir, engines, dut_hostname, dut_ip=None) -> Dict[str, CertInfo]:
+def prepare_tmp_test_certs(cert_names: List[str], dest_dir, engines, dut_hostname, dut_ip=None, create_chain: bool = False) -> Dict[str, CertInfo]:
     certs_info: Dict[str, CertInfo] = {}
 
     with allure.step('arrange test certs'):
@@ -68,8 +68,24 @@ def prepare_tmp_test_certs(cert_names: List[str], dest_dir, engines, dut_hostnam
                     )
                     certs_info[cert_name] = cert_info
                 with allure.step('generate'):
-                    CertificateGenerator().generate_cert(cert_dir, 'cert', cert_info.dn, cert_info.ip, cert_info.dn,
-                                                         cert_dir, 'ca', cert_info.p12_password)
+                    if create_chain:
+                        cert_info = CertInfo(
+                            name=cert_name,
+                            info='chain cert for test',
+                            private=os.path.join(cert_dir, 'cert.key'),
+                            public=os.path.join(cert_dir, 'cert.pem'),
+                            p12_bundle=os.path.join(cert_dir, 'chain.p12'),
+                            p12_password=rand_pass,
+                            dn=dut_hostname,
+                            ip=dut_ip or engines.dut.ip,
+                            cacert=os.path.join(cert_dir, 'rCA.crt'),
+                        )
+                        certs_info[cert_name] = cert_info
+                        CertificateGenerator().generate_cert_chain(cert_dir, 'cert', cert_info.dn, cert_info.ip, cert_info.dn,
+                                                                   cert_dir, 'rCA', cert_info.p12_password)
+                    else:
+                        CertificateGenerator().generate_cert(cert_dir, 'cert', cert_info.dn, cert_info.ip, cert_info.dn,
+                                                             cert_dir, 'ca', cert_info.p12_password)
         with allure.step('chmod 777'):
             CmdRunner().run_cmd(f'chmod -R 777 {dest_dir}')
 
@@ -96,6 +112,27 @@ def import_certs_safely(certs: List[CertInfo], scp_player, override_existing=Tru
                     __import_cert(cert)
             else:
                 __import_cert(cert)
+
+
+def import_crl_safely(crl_name: str, crl_path: str, scp_player, override_existing=True):
+    system = System()
+
+    def __import_crl(crl_name: str, crl_path: str):
+        with allure.step(f'import crl {crl_name}'):
+            system.security.crl.crl_id[crl_name].action_import(
+                uri=generate_scp_uri_using_player(scp_player, crl_path)
+            ).verify_result()
+
+    with allure.step('import test certs'):
+        current_crls = OutputParsingTool.parse_json_str_to_dictionary(
+            system.security.crl.show()).get_returned_value()
+        if crl_name in current_crls:
+            if override_existing:
+                with allure.step(f'crl {crl_name} already exist. delete existing one before import'):
+                    system.security.crl.crl_id[crl_name].action_delete().verify_result()
+                __import_crl(crl_name, crl_path)
+        else:
+            __import_crl(crl_name, crl_path)
 
 
 def delete_certs_safely(certs: List[CertInfo]):
@@ -189,13 +226,13 @@ def get_test_certs_dir_location(certs_dirname_prefix, dut_hostname):
 
 
 def setup_certs_for_tests(certs_dirname_prefix: str, certs_names: List[str], engines, dut_hostname, import_to_dut=False,
-                          scp_player=None, dut_ip=None, import_cas=False) -> Tuple[str, List[CertInfo]]:
+                          scp_player=None, dut_ip=None, import_cas=False, create_chain=False) -> Tuple[str, List[CertInfo]]:
     with allure.step('prepare temp test certs in shared location'):
         certs_location = get_test_certs_dir_location(certs_dirname_prefix, dut_hostname)
         if dut_ip and IpTool.is_address_ipv6(dut_ip):
             certs_names = [cert_name if 'ipv6' in cert_name else f'{cert_name}-ipv6' for cert_name in certs_names]
         certs_info: Dict[str, CertInfo] = prepare_tmp_test_certs(certs_names, certs_location, engines, dut_hostname,
-                                                                 dut_ip)
+                                                                 dut_ip, create_chain)
         certs = list(certs_info.values())
     if import_to_dut:
         with allure.step('import certs to dut'):

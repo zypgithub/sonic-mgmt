@@ -105,4 +105,7 @@
     <test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_rbac.cases </cases>
     </test>
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_crl.cases </cases>
+	</test>
 </DBDEF>

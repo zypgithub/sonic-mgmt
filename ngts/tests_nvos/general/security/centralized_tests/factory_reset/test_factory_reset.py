@@ -17,6 +17,7 @@ from ngts.tests_nvos.general.security.centralized_tests.helpers.checker_skip_rul
 from ngts.tests_nvos.general.security.certificate.helpers import delete_certificates
 from ngts.tests_nvos.general.security.certificate.test_cert_cacert_mgmt import certs_mgmt_factory_reset_no_params_check, \
     certs_mgmt_factory_reset_keep_only_files_check
+from ngts.tests_nvos.general.security.crl.test_crl import crl_factory_reset_keep_all_config_check
 from ngts.tests_nvos.general.security.nmx_cert.test_cluster_app_mngr_security import \
     cluster_app_mngr_security_factory_reset_no_params_check, \
     cluster_app_mngr_security_factory_reset_keep_all_config_check
@@ -45,6 +46,7 @@ SSH_PKA = 'SSH PKA'
 RBAC = 'RBAC'
 API_SPIFFE_ID = 'API SPIFFE ID'
 GNMI_SPIFFE_ID = 'GNMI SPIFFE ID'
+CRL = 'CRL'
 
 CHECKERS_SKIP_RULES: Dict[str, CheckerSkipRule] = {
     NMX_CERT: SkipCheckerBySetup(['juliet'], False),
@@ -97,6 +99,7 @@ KEEP_ALL_CONFIG_CHECKERS: Dict[str, Generator[None, None, None]] = {
     RBAC: rbac_factory_reset_keep_roles(),
     API_SPIFFE_ID: api_spiffe_factory_reset_keep_all_config_check(),
     GNMI_SPIFFE_ID: gnmi_spiffe_factory_reset_keep_all_config_check(),
+    CRL: crl_factory_reset_keep_all_config_check(),
 }
 
 FACTORY_RESET_TYPE_TO_CHECKER_FUNCTIONS: Dict[str, Dict[str, Generator[None, None, None]]] = {

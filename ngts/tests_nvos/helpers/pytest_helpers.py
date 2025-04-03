@@ -48,4 +48,6 @@ def get_cur_test_param_value(request, param_name):
     try:
         return request.node.callspec.params[param_name]
     except Exception:
+        import logging
+        logging.info(f"The requested {param_name} does not exist in the current test")
         return None
