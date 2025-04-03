@@ -663,11 +663,7 @@ class BaseAclTest(six.with_metaclass(ABCMeta, object)):
         """
         pass
 
-<<<<<<< HEAD
-    def post_setup_hook(self, dut, localhost, populate_vlan_arp_entries, tbinfo, conn_graph_facts):   # noqa F811
-=======
     def post_setup_hook(self, dut, localhost, populate_vlan_arp_entries, tbinfo, conn_graph_facts):     # noqa: F811
->>>>>>> 0ad53b4428 ([pre-commit] Use correct comment format # noqa: not # noqa in tests/a* files (#17653))
         """Perform actions after rules have been applied.
 
         Args:
@@ -697,11 +693,7 @@ class BaseAclTest(six.with_metaclass(ABCMeta, object)):
 
     @pytest.fixture(scope="class", autouse=True)
     def acl_rules(self, duthosts, localhost, setup, acl_table, populate_vlan_arp_entries, tbinfo,
-<<<<<<< HEAD
-                  ip_version, conn_graph_facts):   # noqa F811
-=======
                   ip_version, conn_graph_facts):        # noqa: F811
->>>>>>> 0ad53b4428 ([pre-commit] Use correct comment format # noqa: not # noqa in tests/a* files (#17653))
         """Setup/teardown ACL rules for the current set of tests.
 
         Args:
@@ -739,11 +731,7 @@ class BaseAclTest(six.with_metaclass(ABCMeta, object)):
             self.teardown_rules(duthost)
 
     def set_up_acl_rules_single_dut(self, acl_table,
-<<<<<<< HEAD
-                                    conn_graph_facts, dut_to_analyzer_map, duthost, # noqa F811
-=======
                                     conn_graph_facts, dut_to_analyzer_map, duthost,     # noqa: F811
->>>>>>> 0ad53b4428 ([pre-commit] Use correct comment format # noqa: not # noqa in tests/a* files (#17653))
                                     ip_version, localhost,
                                     populate_vlan_arp_entries, tbinfo):
         logger.info("{}: ACL rule application started".format(duthost.hostname))
@@ -1344,11 +1332,7 @@ class TestAclWithReboot(TestBasicAcl):
     upon startup.
     """
 
-<<<<<<< HEAD
-    def post_setup_hook(self, dut, localhost, populate_vlan_arp_entries, tbinfo, conn_graph_facts): # noqa F811
-=======
     def post_setup_hook(self, dut, localhost, populate_vlan_arp_entries, tbinfo, conn_graph_facts):     # noqa: F811
->>>>>>> 0ad53b4428 ([pre-commit] Use correct comment format # noqa: not # noqa in tests/a* files (#17653))
         """Save configuration and reboot after rules are applied.
 
         Args:
@@ -1387,11 +1371,7 @@ class TestAclWithPortToggle(TestBasicAcl):
     Verify that ACLs still function as expected after links flap.
     """
 
-<<<<<<< HEAD
-    def post_setup_hook(self, dut, localhost, populate_vlan_arp_entries, tbinfo, conn_graph_facts):  # noqa F811
-=======
     def post_setup_hook(self, dut, localhost, populate_vlan_arp_entries, tbinfo, conn_graph_facts):     # noqa: F811
->>>>>>> 0ad53b4428 ([pre-commit] Use correct comment format # noqa: not # noqa in tests/a* files (#17653))
         """Toggle ports after rules are applied.
 
         Args:
