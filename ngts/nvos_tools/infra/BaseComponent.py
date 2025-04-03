@@ -96,7 +96,7 @@ class BaseComponent:
         return result_obj
 
     def set(self, op_param_name="", op_param_value={}, expected_str='', apply=False, ask_for_confirmation=False,
-            dut_engine=None, client_certs_after_apply: CertInfo = None, check_engine_connectivity: bool = True):
+            dut_engine=None, client_certs_after_apply: CertInfo = None, check_engine_connectivity: bool = True) -> 'ResultObj':
         if not dut_engine:
             dut_engine = TestToolkit.engines.dut
         with allure.step('Execute set for {resource_path}'.format(resource_path=self.get_resource_path())):

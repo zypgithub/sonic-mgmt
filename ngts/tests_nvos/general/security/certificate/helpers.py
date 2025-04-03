@@ -77,6 +77,16 @@ def delete_certificates(ca: bool = False):
                 cert_obj.cert_id[cert_name].action_delete().verify_result()
 
 
+def delete_crl():
+    security_obj = System().security
+    crl_resource = security_obj.crl
+    with allure.step('delete crls from the system'):
+        current_crls = OutputParsingTool.parse_json_str_to_dictionary(crl_resource.show()).get_returned_value()
+        for crl_name in current_crls:
+            with allure.step(f'delete {crl_name}'):
+                crl_resource.crl_id[crl_name].action_delete().verify_result()
+
+
 def import_test_certs(scp_player: LinuxSshEngine, dut_engine: LinuxSshEngine, certs: List[CertInfo], external_cas=False):
     import_certificates(scp_player, dut_engine, certs)
     import_certificates(scp_player, dut_engine, certs, True, external_cas)
