@@ -2,16 +2,17 @@ import logging
 import time
 from typing import Dict, List, Optional, Tuple
 
-from ngts.nvos_constants.constants_nvos import ClusterApps
+from ngts.nvos_constants.constants_nvos import ClusterApps, ClusterConsts
 from ngts.nvos_tools.infra.CrlValidator import CrlClient
 from ngts.nvos_tools.infra.CurlCmdBuilder import CurlCmdBuilder
 from ngts.nvos_tools.infra.CurlTool import CurlTool
 from ngts.nvos_tools.infra.GrpcCmdBuilder import GrpcCmdBuilder
 from ngts.nvos_tools.nmx.Cluster import Cluster
-from ngts.tests_nvos.general.security.api_server.mtls.spiffe_id.constants import BAD_RESPONSE_KEYWORDS
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tests_nvos.general.security.helpers import import_cas_safely, import_certs_safely, import_crl_safely
-from ngts.tests_nvos.general.security.nmx_cert.constants import CA_CERTIFICATE, CERTIFICATE
+from ngts.tests_nvos.general.security.nmx_cert.conftest import disable_cluster
+from ngts.tests_nvos.general.security.nmx_cert.constants import CA_CERTIFICATE, CERTIFICATE, EncryptionMode
+from ngts.tests_nvos.general.security.nmx_cert.helpers import disable_cluster_app_manager_state, enable_cluster, enable_cluster_app_manager_state
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import (
     UserInfo,
 )
@@ -171,11 +172,12 @@ class GnmiCrlClient(CrlClient):
 
 
 class NmxCrlClient(CrlClient):
-    def __init__(self, host: str, app_name: str, port: int):
-        super().__init__(host)
+    def __init__(self, host: str, ip: str, app_name: str, port: int, proto_path: str = ''):
+        super().__init__(host, ip)
         self.app_name: str = app_name
         self.port: int = port
         self.cluster = Cluster()
+        self.proto_path: str = proto_path
         # Makes sure gnmic and grpcurl are installed on the test player
         verify_gnmi_client_tools_installed()
 
@@ -192,9 +194,12 @@ class NmxCrlClient(CrlClient):
 
         nmx_app = self.cluster.apps.app_name[self.app_name]
 
-        with allure.step("setup mtls by binding test certs"):
+        with allure.step("Enable cluster and setup mtls by binding test certs"):
+            enable_cluster()
+            enable_cluster_app_manager_state(nmx_app.manager)
             nmx_app.manager.certificate.action_update(server_cert.name).verify_result()
             nmx_app.manager.ca_certificate.action_update(client_ca_cert.cacert_name).verify_result()
+            nmx_app.manager.encryption.action_update(EncryptionMode.MTLS).verify_result()
         return server_cert, client_ca_cert
 
     def bind_crl(self, dest: str, crl_name: str, should_succeed: bool = True):
@@ -222,7 +227,7 @@ class NmxCrlClient(CrlClient):
         self,
         user: Optional[UserInfo] = None,
         expect_success: bool = True,
-        run_insecure: bool = True,
+        run_insecure: bool = False,
         client_cacert: Optional[CertInfo] = None,
         client_cert: Optional[CertInfo] = None,
         port: Optional[int] = None,
@@ -237,10 +242,11 @@ class NmxCrlClient(CrlClient):
         if not port:
             port = self.port
 
-        payload: Dict[str, str] = {"gatewayId": "sasha", "major_version": "PROTO_MSG_MAJOR_VERSION", "minor_version": "PROTO_MSG_MINOR_VERSION"}
+        payload: Dict[str, str] = {"gatewayId": "sasha",
+                                   "major_version": "PROTO_MSG_MAJOR_VERSION", "minor_version": "PROTO_MSG_MINOR_VERSION"}
         grpc = GrpcCmdBuilder(self.host, port)
-        if user:
-            grpc.user_creds(user.username, user.password)
+        # if user:
+        #     grpc.user_creds(user.username, user.password)
         if run_insecure or not client_cert:
             grpc.skip_verify()
         if client_cert:
@@ -251,6 +257,8 @@ class NmxCrlClient(CrlClient):
             grpc.endpoint(endpoint)
         if payload:
             grpc.payload(payload)
+        if self.proto_path:
+            grpc.proto(self.proto_path)
         grpc_cmd = grpc.build()
         self.verify_result(grpc_cmd, expect_success)
 
@@ -264,14 +272,16 @@ class NmxCrlClient(CrlClient):
         app_manager.ca_certificate.action_restore().verify_result()
         app_manager.encryption.action_restore().verify_result()
         app_manager.crl.action_restore().verify_result()
-        app_manager.action_restore().verify_result()
+        disable_cluster_app_manager_state(app_manager)
+        disable_cluster()
 
 
 class NmxControllerCrlClient(NmxCrlClient):
-    def __init__(self, host: str):
-        super().__init__(host, ClusterApps.NMX_CONTROLLER, 9371)
+    def __init__(self, host: str, ip: str):
+        super().__init__(host, ip, ClusterApps.NMX_CONTROLLER, 9370)
 
 
 class NmxTelemetryCrlClient(NmxCrlClient):
-    def __init__(self, host: str):
-        super().__init__(host, ClusterApps.NMX_TELEMETRY, 9351)
+    def __init__(self, host: str, ip: str):
+        proto_path = ClusterConsts.NMX_TELEMETRY_PROTO_PATH
+        super().__init__(host, ip, ClusterApps.NMX_TELEMETRY, 9351, proto_path)

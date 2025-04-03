@@ -1423,6 +1423,7 @@ class ClusterConsts:
     NMX_TELEMETRY = ClusterApps.NMX_TELEMETRY
     NMX_CONTROLLER_PREFIX = 'nmx-c'
     NMX_TELEMETRY_PREFIX = 'nmx-t'
+    NMX_TELEMETRY_PROTO_PATH = '/auto/sw_system_project/NVOS_INFRA/verification_files/nmx/nmx-telemetry.proto'
     TELEMETRY_SERVICES = ['nmx-connector', 'ib-telemetry']
     CONTROLLER_SERVICES = ['nmxc-sdn', 'nmxc-fib', 'redis']
     INITIAL_EXPECTED_APPS = [NMX_CONTROLLER, NMX_TELEMETRY]

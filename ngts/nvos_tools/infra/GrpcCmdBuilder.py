@@ -1,5 +1,5 @@
 import json
-from typing import Dict
+from typing import Dict, Optional, Union
 
 
 class GrpcCmdBuilder:
@@ -8,38 +8,43 @@ class GrpcCmdBuilder:
     def __init__(self, host: str, port: int):
         self.host = host
         self.port = port
-        self.endpoint: str = ''
+        self.endpoint_loc: str = ''
         self.options: str = ''
 
     def address(self, address: str) -> 'GrpcCmdBuilder':
         self.host = address
         return self
 
-    def user_creds(self, username: str, password: str) -> 'GrpcCmdBuilder':
-        self.options += f" -u {username} -p {password}"
+    def option(self, key: str, value: Optional[Union[str, int]] = None) -> 'GrpcCmdBuilder':
+        """Adds a generic option flag or key-value option. Prefer specific methods where available."""
+        self.options += f" -{key}"
+        if value is not None:
+            self.options += f" {str(value)}"
         return self
+
+    def user_creds(self, username: str, password: str) -> 'GrpcCmdBuilder':
+        return self.option("u", username).option("p", password)
 
     def skip_verify(self) -> 'GrpcCmdBuilder':
-        self.options += f' -plaintext'
-        return self
+        return self.option("plaintext")
 
     def ca(self, cacert_path: str) -> 'GrpcCmdBuilder':
-        self.options += f' -cacert {cacert_path}'
-        return self
+        return self.option("cacert", cacert_path)
 
     def cert(self, key_path: str, public_path: str) -> 'GrpcCmdBuilder':
-        self.options += f' -key {key_path} -cert {public_path}'
-        return self
+        return self.option("key", key_path).option("cert", public_path)
 
-    def endpoint(self, endpoint: str) -> 'GrpcCmdBuilder':
-        self.endpoint = endpoint
-        return self
+    def proto(self, proto_path: str) -> 'GrpcCmdBuilder':
+        return self.option("proto", proto_path)
 
     def payload(self, payload: Dict[str, str]) -> 'GrpcCmdBuilder':
-        self.options += f" -d '{json.dumps(payload)}'"
+        return self.option("d", json.dumps(payload))
+
+    def endpoint(self, endpoint: str) -> 'GrpcCmdBuilder':
+        self.endpoint_loc = endpoint
         return self
 
     def build(self) -> str:
-        self.endpoint.strip()
+        self.endpoint_loc.strip()
         self.options.strip()
-        return GrpcCmdBuilder.CMD_TEMPLATE.format(host=self.host, port=self.port, opts=self.options, endpoint=self.endpoint).strip()
+        return GrpcCmdBuilder.CMD_TEMPLATE.format(host=self.host, port=self.port, opts=self.options, endpoint=self.endpoint_loc).strip()
