@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 CACHE_EXPIRATION_TIMEOUT = 43200
 CACHE_FILE_PATH = '/tmp/noga_cache'
 CACHE_FILE_NAME = '/tmp/noga_cache.sqlite'
-URL = 'https://noga.mellanox.com/app/server/php/rest_api/'
+URL = 'https://noga.nvidia.com/app/server/php/rest_api/'
 
 
 def get_noga_resource(**kwargs):

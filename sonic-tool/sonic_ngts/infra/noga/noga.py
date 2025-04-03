@@ -13,7 +13,7 @@ def get_noga_resource(**kwargs):
     :param kwargs: query arguments
     :return: query data
     """
-    url = 'https://noga.mellanox.com/app/server/php/rest_api'
+    url = 'https://noga.nvidia.com/app/server/php/rest_api'
     return call_noga_rest_api_with_retry(url, **dict(api_cmd='get_resources', **kwargs))
 
 
@@ -23,7 +23,7 @@ def get_noga_resource_data(**kwargs):
     :param kwargs: query arguments
     :return: query data
     """
-    url = 'https://noga.mellanox.com/app/server/php/rest_api/'
+    url = 'https://noga.nvidia.com/app/server/php/rest_api/'
     return call_noga_rest_api_with_retry(url, **dict(api_cmd='get_resource_data', **kwargs))
 
 
