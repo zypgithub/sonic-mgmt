@@ -58,7 +58,7 @@ class PerfConsts:
         "COUNTERS_SAMPLE_DELAY": 1
     }
     OCC_AVG_TH = 400
-
+    TC_NUM = 7
     # Thresholds
     OCC_TH_DICT = {ValidationConsts.TC_OCC_AVG: OCC_AVG_TH}
     TEMPERATURE_TH = 105
@@ -197,18 +197,20 @@ class MongoDbConsts:
     TEST_NAME = "testName"
     TIME_STAMP = "timeStamp"
     TIME_REGEX_FORMAT = "%d-%m-%Y %H:%M:%S"
+    TIME_REGEX_FORMAT_FOR_MONGO_DB = "%d-%m-%Y_%H:%M:%S"
     IF_OUT_DISCARDS = "ifOutDiscards"
     MAC_CONTROL_FRAMES_TRANSMITTED = "aMacControlFramesTransmitted"
     MAC_CONTROL_FRAMES_RECEIVED = "aMacControlFramesReceived"
     PAUSE_MAC_CONTROL_FRAMES_TRANSMITTED = "aPauseMacCtrlFramesTransmitted"
     PAUSE_MAC_CONTROL_FRAMES_RECEIVED = "aPauseMacCtrlFramesReceived"
+    MONGO_DB_ECN_COUNTERS = [f'txEcnMarkedTc{tc}' for tc in range(PerfConsts.TC_NUM)]
     POWER_TOTAL = "powerTotal"
     POWER_BY_COLLECTORS = "powerByCollectors"
     ALLURE_URL = "allureUrl"
     TEST_RESULT = "result"
     VALIDATOR_RESULTS = "validatorResults"
     CONF_NAME = "configurationName"
-    COLLECTION = ":COLLECTION:SwitchPerformanceCollection\n",
+    COLLECTION = ":COLLECTION:SwitchPerformanceCollection\n"
     CRITERIA = ":CRITERIA_FIELD:testType\n"
     MONGO_DB_DICT_PATH = "/auto/sw/projects/performance/results/mongodb/"
     MONGO_DB_UPLOADS = os.path.join(MONGO_DB_DICT_PATH, "for_upload/")
@@ -226,7 +228,7 @@ class MRCConsts:
     BUFFER_CELL_SIZE = 192
     OCC_TH_DICT = {ValidationConsts.TC_OCC_AVG: 11,
                    ValidationConsts.TC_OCC_99: 22}
-    ECN_COUNTERS = [f'tx_ecn_marked_tc_{tc}' for tc in range(7)]
+    ECN_COUNTERS = [f'tx_ecn_marked_tc_{tc}' for tc in range(PerfConsts.TC_NUM)]
     COUNTERS_WITH_ECN = PerfConsts.COUNTERS + ECN_COUNTERS
 
 

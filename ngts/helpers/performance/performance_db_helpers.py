@@ -4,7 +4,7 @@ import pandas as pd
 from datetime import datetime
 
 from ngts.constants.constants import InfraConst
-from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, ValidationConsts, PowerConsts
+from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, ValidationConsts, PowerConsts, MRCConsts
 
 
 def create_performance_db_template(players, session_id, setup_name):
@@ -148,12 +148,22 @@ def restructure_counters(validation_json):
     counters_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
     counters_df_list = collect_all_samples_into_df_list(counters_samples, ValidationConsts.COUNTERS_DATAFRAME)
     max_df = pd.concat(counters_df_list).groupby(level=0).max()
-    counters_df = max_df.rename(columns={'if_out_discards': MongoDbConsts.IF_OUT_DISCARDS,
-                                         'a_mac_control_frames_transmitted': MongoDbConsts.MAC_CONTROL_FRAMES_TRANSMITTED,
-                                         'a_mac_control_frames_received': MongoDbConsts.MAC_CONTROL_FRAMES_RECEIVED,
-                                         'a_pause_mac_ctrl_frames_transmitted': MongoDbConsts.PAUSE_MAC_CONTROL_FRAMES_TRANSMITTED,
-                                         'a_pause_mac_ctrl_frames_received': MongoDbConsts.PAUSE_MAC_CONTROL_FRAMES_RECEIVED})
+    updated_columns_names = get_updated_columns_names()
+    counters_df = max_df.rename(columns=updated_columns_names)
     return counters_df
+
+
+def get_updated_columns_names():
+    updated_columns_names = {
+        'if_out_discards': MongoDbConsts.IF_OUT_DISCARDS,
+        'a_mac_control_frames_transmitted': MongoDbConsts.MAC_CONTROL_FRAMES_TRANSMITTED,
+        'a_mac_control_frames_received': MongoDbConsts.MAC_CONTROL_FRAMES_RECEIVED,
+        'a_pause_mac_ctrl_frames_transmitted': MongoDbConsts.PAUSE_MAC_CONTROL_FRAMES_TRANSMITTED,
+        'a_pause_mac_ctrl_frames_received': MongoDbConsts.PAUSE_MAC_CONTROL_FRAMES_RECEIVED
+    }
+    ecn_counters_columns_names = dict(list(zip(MRCConsts.ECN_COUNTERS, MongoDbConsts.MONGO_DB_ECN_COUNTERS)))
+    updated_columns_names.update(ecn_counters_columns_names)
+    return updated_columns_names
 
 
 def collect_all_samples_into_df_list(samples, sample_df_key):
@@ -219,6 +229,7 @@ def restructure_tc(validation_json):
         tc_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
         df_list = collect_all_samples_into_df_list(tc_samples, ValidationConsts.TC_DATAFRAME)
         df_result = get_base_df(df_list)
+        df_result.drop("occMaxByPort", axis=1, inplace=True)
         df_result[ValidationConsts.TC_OCC_AVG] = calculate_avg_on_all_samples(df_list, tc_samples, ValidationConsts.TC_OCC_AVG)
         df_result[ValidationConsts.TC_OCC_99] = calculate_avg_on_all_samples(df_list, tc_samples, ValidationConsts.TC_OCC_99)
         df_result[ValidationConsts.TC_OCC_MAX] = calculate_avg_on_all_samples(df_list, tc_samples, ValidationConsts.TC_OCC_MAX)
