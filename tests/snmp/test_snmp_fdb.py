@@ -99,8 +99,10 @@ def check_snmp_facts(duthost, localhost, hostip, creds_all_duts, config_portchan
         duthost, localhost, host=hostip, version="v2c",
         community=creds_all_duts[duthost.hostname]["snmp_rocommunity"], wait=True)['ansible_facts']
     if 'snmp_fdb' not in snmp_facts:
+        logger.info("'snmp_fdb' not in snmp_facts")
         return False
     if 'snmp_interfaces' not in snmp_facts:
+        logger.info("'snmp_interfaces' not in snmp_facts")
         return False
     for key in snmp_facts['snmp_fdb']:
         # key is string: vlan.mac
@@ -111,8 +113,10 @@ def check_snmp_facts(duthost, localhost, hostip, creds_all_duts, config_portchan
             dummy_mac_cnt += 1
             idx = str(snmp_facts['snmp_fdb'][key])
             if idx not in snmp_facts['snmp_interfaces']:
+                logger.info(f"{idx} not in snmp_facts['snmp_interfaces']")
                 return False
             if 'name' not in snmp_facts['snmp_interfaces'][idx]:
+                logger.info(f"'name' not in snmp_facts['snmp_interfaces'][{idx}]")
                 return False
             if snmp_facts['snmp_interfaces'][idx]['name'] in config_portchannels:
                 recv_portchannels_cnt += 1
