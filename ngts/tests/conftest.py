@@ -15,6 +15,8 @@ import allure
 
 from dotted_dict import DottedDict
 from deepdiff import DeepDiff
+from enum import Enum
+
 from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
 from ngts.constants.constants import PytestConst
 from ngts.helpers import json_file_helper
@@ -25,6 +27,12 @@ from ngts.tools.ports_modifier import reload_config, MAX_PORTS_TEST_LIST
 logger = logging.getLogger()
 RAM_SYNCD_USAGE_ASAN_COEFFICIENT = 4
 CPU_SDK_USAGE_SIMX_COEFFICIENT = 6
+
+
+class NtpDaemon(Enum):
+    NTP = 1
+    NTPSEC = 2
+    CHRONY = 3
 
 
 @pytest.fixture(scope='session', autouse=True)
@@ -145,8 +153,26 @@ def run_cleanup_only(request):
     return request.config.getoption(PytestConst.run_cleanup_only_arg)
 
 
+def get_ntp_daemon_in_use(host):
+    ntpsec_conf_stat = host.stat("/etc/ntpsec/ntp.conf")
+    if ntpsec_conf_stat["exists"]:
+        return NtpDaemon.NTPSEC
+    chrony_conf_stat = host.stat("/etc/chrony/chrony.conf")
+    if chrony_conf_stat["exists"]:
+        return NtpDaemon.CHRONY
+    ntp_conf_stat = host.stat("/etc/ntp.conf")
+    if ntp_conf_stat["exists"]:
+        return NtpDaemon.NTP
+    pytest.fail("Unable to determine NTP daemon in use")
+
+
+@pytest.fixture(scope="session")
+def ntp_daemon_in_use(cli_objects):
+    return get_ntp_daemon_in_use(cli_objects.dut.general)
+
+
 @pytest.fixture(scope='session')
-def expected_cpu_usage_dict(platform, sonic_branch, is_simx, chip_type):
+def expected_cpu_usage_dict(platform, sonic_branch, is_simx, chip_type, ntp_daemon_in_use):
     """
     Pytest fixture which used to return the expected cpu usage dictionary
     :param platform: platform fixture
@@ -156,12 +182,12 @@ def expected_cpu_usage_dict(platform, sonic_branch, is_simx, chip_type):
     :return: expected cpu usage dictionary
     """
     expected_cpu_usage_file = "expected_cpu_usage.yaml"
-    return get_expected_cpu_or_ram_usage_dict(expected_cpu_usage_file, sonic_branch, platform,
+    return get_expected_cpu_or_ram_usage_dict(expected_cpu_usage_file, sonic_branch, platform, ntp_daemon_in_use,
                                               is_simx=is_simx, chip_type=chip_type)
 
 
 @pytest.fixture(scope='session')
-def expected_ram_usage_dict(platform, sonic_branch, is_sanitizer_image):
+def expected_ram_usage_dict(platform, sonic_branch, is_sanitizer_image, ntp_daemon_in_use):
     """
     Pytest fixture which used to return the expected ram usage dictionary
     :param platform: platform fixture
@@ -171,7 +197,7 @@ def expected_ram_usage_dict(platform, sonic_branch, is_sanitizer_image):
     """
     expected_ram_usage_file = "expected_ram_usage.yaml"
     return get_expected_cpu_or_ram_usage_dict(expected_ram_usage_file, sonic_branch,
-                                              platform, is_sanitizer_image=is_sanitizer_image)
+                                              platform, ntp_daemon_in_use, is_sanitizer_image=is_sanitizer_image)
 
 
 @pytest.fixture(scope='session')
@@ -184,7 +210,7 @@ def platform(platform_params):
     return platform_params.hwsku.split('-')[platform_index]
 
 
-def get_expected_cpu_or_ram_usage_dict(expected_cpu_or_ram_usage_file, sonic_branch, platform,
+def get_expected_cpu_or_ram_usage_dict(expected_cpu_or_ram_usage_file, sonic_branch, platform, ntp_daemon_in_use,
                                        is_sanitizer_image=False, is_simx=False, chip_type=None):
     """
     Get the expected cpu or ram usage dictionary
@@ -208,6 +234,9 @@ def get_expected_cpu_or_ram_usage_dict(expected_cpu_or_ram_usage_file, sonic_bra
                                          expected_cpu_or_ram_usage_dict)
     update_cpu_usage_for_simx(expected_cpu_or_ram_usage_file, is_simx,
                               chip_type, expected_cpu_or_ram_usage_dict)
+    if ntp_daemon_in_use == NtpDaemon.CHRONY:
+        expected_cpu_or_ram_usage_dict['chronyd'] = expected_cpu_or_ram_usage_dict['ntpd']
+        del expected_cpu_or_ram_usage_dict['ntpd']
     return expected_cpu_or_ram_usage_dict
 
 
