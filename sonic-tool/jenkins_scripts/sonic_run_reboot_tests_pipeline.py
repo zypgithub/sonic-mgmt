@@ -191,7 +191,7 @@ def prepare_cases_files(reboot_type_iterations_dict, reboot_type_base_ver_images
                 file_data += CASES_FILE_REBOOT_WITH_MULTI_HOP_UPGRADE_TESTCASE_TEMPLATE.format(test_type=r_type,
                                                                                                multi_hop_upgrade_path=base_ver_images,
                                                                                                target_version=target_ver,
-                                                                                               timeout=case_timeout)
+                                                                                               timeout=10800)
             else:
                 if base_ver_images and target_ver:
                     for base_ver in base_ver_images.split(','):
