@@ -247,3 +247,10 @@ class PerformanceCommon:
         except Exception as e:
             logging.warning(f"Error retrieving default route: {e}")
             return "No route found"
+
+    def restart_daemon(self, daemon):
+        """
+        This method is optional for dvs and sonic but mandatory for cumulus
+        it restarts the daemon on the dut
+        """
+        pass

@@ -32,7 +32,7 @@ class NvuePerformanceCli(PerformanceCommon):
 
     def __init__(self, topology_obj, engine, dut_alias, cli_obj):
         super().__init__(topology_obj, engine, dut_alias, cli_obj)
-        self.port_groups = None
+        self.port_groups = self.get_right_left_ports_dict()
 
     def apply_configuration_file(self, scenario, conf_args, template_suite=PerfConsts.DEFAULT_PERF_TEMPLATES_DIR, dst_dir=Cl_Consts.CL_HOME_DIR):
         src_file = self.get_configuration_file(scenario, conf_args, template_suite)
@@ -66,7 +66,7 @@ class NvuePerformanceCli(PerformanceCommon):
     def set_ibm(self, scenario, conf_args):
         ibm_mode = True if conf_args["auto_buffer_mode"] == "False" else False
         if conf_args['params']:
-            ctl = conf_args.get('params', {}).get("low_ar_thres", Cl_Consts.LOW_AR_THRESHOLD)
+            ctl = conf_args.get('params', {}).get("low_ar_thresh", Cl_Consts.LOW_AR_THRESHOLD)
             ctm = conf_args.get('params', {}).get("med_ar_thresh", Cl_Consts.MED_AR_THRESHOLD)
             cth = conf_args.get('params', {}).get("high_ar_thresh", Cl_Consts.HIGH_AR_THRESHOLD)
         else:
@@ -443,3 +443,6 @@ class NvuePerformanceCli(PerformanceCommon):
         except Exception as e:
             logging.warning(f"Error retrieving default route: {e}")
             return "No route found"
+
+    def restart_daemon(self, daemon):
+        self.execute_cmd(f"sudo systemctl restart {daemon}")

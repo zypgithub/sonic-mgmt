@@ -26,7 +26,7 @@ def performance_parameters(request):
             file_location = request.config.getoption('--parameter_file_location')
             with open(file_location, 'r') as file:
                 params_json = json.load(file)
-            return params_json
+            return params_json["parameter_set"]
         except json.JSONDecodeError as e:
             raise TestIssue(f"Failed to parse params as JSON: {e}")
     return False

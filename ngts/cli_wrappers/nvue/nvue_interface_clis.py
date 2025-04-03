@@ -56,7 +56,7 @@ class NvueInterfaceCli(SonicInterfaceCli):
         self.cli_obj.general.apply_config(self.engine, option="-y", verify_execution=True)
 
     def get_lldp_neighbors(self, output_type="json"):
-        lldp_neighbors = self.engine.run_cmd(f"nv sh interface lldp -o {output_type}")
+        lldp_neighbors = self.engine.run_cmd(f"nv sh interface lldp -o {output_type}", print_output=False)
         try:
             lldp_neighbors = json.loads(lldp_neighbors)
         except json.JSONDecodeError as j:
