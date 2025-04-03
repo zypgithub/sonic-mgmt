@@ -595,7 +595,7 @@ def debug_kernel_check(engines, test_name, setup_name, session_id):
                 s = smtplib.SMTP(InfraConst.NVIDIA_MAIL_SERVER)
                 email_contents = MIMEText(context)
                 email_contents['Subject'] = "debug kernel issue nvos"
-                email_contents['To'] = ", ".join(['bshpigel@nvidia.com', 'ncaro@nvidia.com', 'yport@nvidia.com'])
+                email_contents['To'] = "ncaro-org@exchange.nvidia.com"
                 s.sendmail('noreply@debugkernel.com', email_contents['To'], email_contents.as_string())
                 logger.info("Mail was sent to: {}".format(email_contents['To']))
             finally:
