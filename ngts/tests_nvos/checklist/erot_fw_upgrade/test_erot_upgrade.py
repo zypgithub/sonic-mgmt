@@ -38,7 +38,7 @@ def test_erot_upgrade_all(engines, devices, topology_obj, test_api, test_name):
         test = BaseFWUpgradeTest(firmware_component=platform.firmware.erot_id[FW_COMPONENT_EROT.upper()])
 
     with allure.step(f"Fetch, install and assert prev & curr versions (through {test_api}) for {FW_COMPONENT_EROT}"):
-        test.test(engines=engines, switch=devices.dut, topology_obj=topology_obj, test_api=test_api)
+        test.test(engines=engines, switch=devices.dut, topology_obj=topology_obj, test_api=test_api, test_name=test_name)
 
 
 @pytest.mark.timeout(25 * MINUTE, func_only=True)
