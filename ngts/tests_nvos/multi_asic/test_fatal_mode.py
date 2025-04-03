@@ -19,6 +19,7 @@ from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.system.clock.ClockConsts import ClockConsts
 from ngts.tests_nvos.system.clock.ClockTools import ClockTools
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 
 logger = logging.getLogger()
 fatal_event_timestamps = []
@@ -432,7 +433,11 @@ def _assert_system_fatal_mode(fatal: bool, state_just_changed=False):
                                          exceptions=AssertionError, tries=6, delay=3)
         else:
             with allure.step("Check system health status"):
-                health_dict = _assert_health_fatal(system, fatal)
+                if is_bug_active(4380136):
+                    health_dict = retry_call(_assert_health_fatal, [system, True],
+                                             exceptions=AssertionError, tries=6, delay=10)
+                else:
+                    health_dict = _assert_health_fatal(system, fatal)
 
         with allure.step("Assert LED color"):
             expected_color = HealthConsts.LED_NOT_OK_STATUS if fatal else HealthConsts.LED_OK_STATUS

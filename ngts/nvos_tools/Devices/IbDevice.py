@@ -1004,12 +1004,12 @@ class JulietSwitch(NvLinkSwitch):
 
         self.nmx_cluster_apps_versions = self.NmxClusterAppsConsts(
             burn_path={
-                ClusterConsts.NMX_CONTROLLER: "/auto/sw/release/NMX/NMX-controller/package/0.8.1/nmx-c-nvlink_0.8.1_2024-12-17_14-24.tar.gz",
-                ClusterConsts.NMX_TELEMETRY: "/auto/sw/release/NMX/NMX-telemetry/nmx-telemetry_0.8.6_2024-12-16.tgz"
+                ClusterConsts.NMX_CONTROLLER: "/auto/sw/release/NMX/NMX-controller/package/1.0.0/nmx-c-nvlink_1.0.0_2025-03-20_13-56.tar.gz",
+                ClusterConsts.NMX_TELEMETRY: "/auto/sw/release/NMX/NMX-telemetry/nmx-telemetry_1.0.4_2025-03-14.tgz"
             },
             burn_version_names={
-                ClusterConsts.NMX_CONTROLLER: "0.8.1",
-                ClusterConsts.NMX_TELEMETRY: "0.8.6"
+                ClusterConsts.NMX_CONTROLLER: "1.0.0",
+                ClusterConsts.NMX_TELEMETRY: "1.0.4"
             }
         )
         self.supported_commands.extend([ActionConsts.POWER_CYCLE])

@@ -3,6 +3,7 @@ import pytest
 import random
 
 from ngts.nvos_tools.infra.IpTool import IpTool
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tools.test_utils import allure_utils as allure
 import string
 import time
@@ -788,8 +789,10 @@ def test_rsyslog_bad_params(test_api):
             logging.info("Configure and validate trap, should fail")
             system.syslog.set_trap("").verify_result(False, expected_value=[INCOMPLETE_COMMAND,
                                                                             f"{IS_NOT_ONE_OF} ['debug', 'info', 'notice', 'warn', 'error', 'critical', None]"])
-            system.syslog.set_trap(rand_str).verify_result(False, expected_value=[f"{IS_NOT_ONE_OF} ['debug', 'info', 'notice', 'warn', 'error', 'critical']",
-                                                                                  f"{IS_NOT_ONE_OF} ['debug', 'info', 'notice', 'warn', 'error', 'critical', None]"])
+            if is_bug_active(4283380):
+                system.syslog.set_trap(rand_str).verify_result(False)
+            else:
+                system.syslog.set_trap(rand_str).verify_result(False, expected_value=f"{IS_NOT_ONE_OF} ['debug', 'info', 'notice', 'warn', 'error', 'critical']")
 
         # TODO change when bug 3390504 will be fixed
         with allure.independent_step("Configure and validate format, should fail"):
@@ -814,17 +817,21 @@ def test_rsyslog_bad_params(test_api):
             system.syslog.servers.servers_dict[server_name].set_protocol("").verify_result(False,
                                                                                            expected_value=[INCOMPLETE_COMMAND,
                                                                                                            f"{IS_NOT_ONE_OF} ['tcp', 'udp', None]"])
-            system.syslog.servers.servers_dict[server_name].set_protocol(rand_str).verify_result(False,
-                                                                                                 expected_value=[f"{IS_NOT_ONE_OF} ['tcp', 'udp']",
-                                                                                                                 f"{IS_NOT_ONE_OF} ['tcp', 'udp', None]"])
+            if is_bug_active(4283380):
+                system.syslog.servers.servers_dict[server_name].set_protocol(rand_str).verify_result(False)
+            else:
+                system.syslog.servers.servers_dict[server_name].set_protocol(rand_str).verify_result(False,
+                                                                                                     expected_value=f"{IS_NOT_ONE_OF} ['tcp', 'udp']")
 
         with allure.independent_step("Configure and validate trap, should fail"):
             logging.info("Configure and validate trap, should fail")
             system.syslog.servers.servers_dict[server_name].set_trap("").verify_result(False, expected_value=[INCOMPLETE_COMMAND,
                                                                                                               f"{IS_NOT_ONE_OF} ['debug', 'info', 'notice', 'warn', 'error', 'critical', None]"])
-            system.syslog.servers.servers_dict[server_name].set_trap(rand_str).verify_result(False,
-                                                                                             expected_value=[f"{IS_NOT_ONE_OF} ['debug', 'info', 'notice', 'warn', 'error', 'critical']",
-                                                                                                             f"{IS_NOT_ONE_OF} ['debug', 'info', 'notice', 'warn', 'error', 'critical', None]"])
+            if is_bug_active(4283380):
+                system.syslog.servers.servers_dict[server_name].set_trap(rand_str).verify_result(False)
+            else:
+                system.syslog.servers.servers_dict[server_name].set_trap(rand_str).verify_result(False,
+                                                                                                 expected_value=f"{IS_NOT_ONE_OF} ['debug', 'info', 'notice', 'warn', 'error', 'critical']")
 
         with allure.independent_step("Configure and validate vrf, should fail"):
             logging.info("Configure and validate vrf, should fail")

@@ -21,7 +21,7 @@ from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
 logger = logging.getLogger()
 
 
-@pytest.fixture(scope='module', autouse=True)
+@pytest.fixture(scope='function', autouse=True)
 def enable_stop_cluster(setup_name):
     cluster = Cluster()
     ClusterTools.start_cluster(cluster, setup_name, OutputFormat.json)

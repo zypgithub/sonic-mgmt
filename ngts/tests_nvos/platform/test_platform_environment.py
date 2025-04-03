@@ -700,7 +700,7 @@ def verify_sensor_group_by_tolerance(output, category):
         logging.info("Check that {} temps are within the specified range from mean by tolerance of {}%"
                      .format(category, PlatformConsts.ENV_TEMP_TOLERANCE))
     sensors = {temp: float(temp_prop[PlatformConsts.ENV_TEMP_CURR_PROP]) for temp, temp_prop in output.items()
-               if category in temp.upper() and temp_prop.get("state") != 'absent'}
+               if temp.startswith(category) and temp_prop.get("state") != 'absent'}
     assert sensors, f'Output is missing sensor category "{category}"'
     sensor_mean_temp = sum(sensors.values()) / len(sensors)
 
