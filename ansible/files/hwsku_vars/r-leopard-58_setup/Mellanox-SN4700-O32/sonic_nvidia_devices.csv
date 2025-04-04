@@ -1,6 +1,6 @@
-Hostname,ManagementIp,HwSku,Type,Protocol,Os
+Hostname,ManagementIp,HwSku,Type,Protocol,Os,PortConfigIni
 r-leopard-58,10.210.25.116/22,Mellanox-SN4700-O32,DevSonic,,sonic
-r-leopard-59,10.210.25.3/22,Mellanox-SN4700-O32,FanoutLeaf,,sonic
+r-leopard-59,10.210.25.3/22,Mellanox-SN4700-O32,FanoutLeaf,,sonic,files/hwsku_vars/r-leopard-58_setup/Mellanox-SN4700-O32/port_config.ini
 r-sonic-03,10.213.103.1,TestServ,Server,,
 pdu-10-208-0-186,10.208.0.186,Raritan,Pdu,snmp,
 rcon-sws-2-4,10.208.0.49,,ConsoleServer,ssh,sonic
