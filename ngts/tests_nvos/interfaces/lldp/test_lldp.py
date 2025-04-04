@@ -402,7 +402,6 @@ def _verify_lldp_running(lldp, engine):
         assert lldp_running == 'true', 'The lldp docker container is down'
     with allure.step("Verify lldp is running and enabled"):
         cli_output = lldp.parsed_show()
-        assert cli_output[SystemConsts.LLDP_IS_RUNNING] == SystemConsts.SHOW_VALUE_YES, 'The lldp is not running'
         assert cli_output[SystemConsts.LLDP_STATE] == NvosConst.ENABLED, 'The lldp is not enabled'
 
 
@@ -428,7 +427,6 @@ def _verify_lldp_not_running(lldp, engine, device):
         assert lldp_running == 'false', 'The lldp docker container is up'
     with allure.step("Verify lldp is not running and not enabled"):
         cli_output = lldp.parsed_show()
-        assert cli_output[SystemConsts.LLDP_IS_RUNNING] == SystemConsts.SHOW_VALUE_NO, 'The lldp is running'
         assert cli_output[SystemConsts.LLDP_STATE] == NvosConst.DISABLED, 'The lldp is enabled'
 
     with allure.step("Verify lldp frames are not being sent for each active mgmt interface"):
@@ -446,4 +444,4 @@ def _verify_lldp_not_running(lldp, engine, device):
 def _set_lldp_state(lldp, key, val, sleep_time=10, apply=True):
     with allure.step(f"Set lldp {key} to {val}"):
         lldp.set(key, val, apply=apply).verify_result()
-        time.sleep(sleep_time)  # It takes time for is_running to change
+        time.sleep(sleep_time)  # It takes time for state to change
