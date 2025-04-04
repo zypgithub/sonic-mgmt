@@ -401,7 +401,8 @@ class NvuePerformanceCli(PerformanceCommon):
         asic_model = self.cli_obj.general.get_asic_model(self.engine)
         if number_of_nexthops is None:
             total_dut_ports = (self.cli_obj.interface.get_physical_ports() - len(Cl_Consts.BONUS_PORTS[asic_model]))
-            number_of_nexthops = total_dut_ports * conf_args["split_left"] * conf_args["split_right"]
+            number_of_nexthops = total_dut_ports * (conf_args["split_left"] + conf_args["split_right"])
+            logging.info(f"Number of nexthops to resolve: {number_of_nexthops}")
         nexthop_number = 0
         start_time = timeout
         while nexthop_number < number_of_nexthops:

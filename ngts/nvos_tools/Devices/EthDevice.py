@@ -541,6 +541,56 @@ class Mlx5400Switch(EthSwitch):
     def _init_led_list(self):
         self.led_list = ["FAN1", "FAN2", "FAN3", "FAN4", "PSU", "SYSTEM"]
 
+# -------------------------- Mlx5640 Switch -----------------------------
+
+
+class Mlx5640Switch(EthSwitch):
+    def __init__(self):
+        super().__init__(asic_amount=1)
+
+    def _init_constants(self):
+        super()._init_constants()
+        self.core_count = 16
+        self.ib_ports_num = 66
+        self.asic_type = 'Spectrum-5'
+        self.constants.firmware.append(PlatformConsts.FW_SPECTRUM5)
+        self.show_platform_output.update({
+            "product-name": "SN5640",
+            "asic-model": self.asic_type
+        })
+        self.voltage_sensors = ["PMIC-1-PSU-13V5-RAIL-IN1", "PMIC-2-PSU-13V5-RAIL-IN1", "PMIC-3-PSU-13V5-RAIL-IN1",
+                                "PMIC-4-PSU-13V5-RAIL-IN1", "PMIC-5-PSU-13V5-RAIL-IN1", "PMIC-6-PSU-13V5-RAIL-IN1",
+                                "PMIC-7-PSU-13V5-RAIL-IN1", "PMIC-8-PSU-13V5-RAIL-IN1", "PMIC-9-PSU-13V5-RAIL-IN1",
+                                "PMIC-10-HVDD_T03-1V2-RAIL-OUT1", "PMIC-10-HVDD_T47-1V2-RAIL-OUT2", "PMIC-10-PSU-13V5-RAIL-IN1",
+                                "PMIC-11-PSU-13V5-RAIL-IN1", "PMIC-11-VDDSCC-0V75-RAIL-OUT1", "PMIC-12-COMEX-IN-VDDCR-INPUT-VOLT ",
+                                "PMIC-12-COMEX-OUT2-VDDCR_SOC-VOLT", "PMIC-12-COMEX-OUT-VDDCR_CPU-VOLT", "PMIC-13-COMEX-VDD_MEM-INPUT-VOLT",
+                                "PMIC-13-COMEX-VDD_MEM-OUTPUT-VOLT", "PSU-1L-12V-RAIL-OUT", "PSU-1L-220V-RAIL-IN", "PSU-2L-12V-RAIL-OUT", "PSU-2L-220V-RAIL-IN",
+                                "PSU-3R-12V-RAIL-OUT", "PSU-3R-220V-RAIL-IN", "PSU-4R-12V-RAIL-OUT", "PSU-4R-220V-RAIL-IN"]
+
+    def _init_platform_lists(self):
+        self.fan_prop_auto = {"Fan State": "state", "Current Speed (RPM)": "current-speed",
+                              "Fan Direction": "direction"}
+        self.platform_environment_fan_values = {
+            "state": FansConsts.STATE_OK, "direction": None, "current-speed": None,
+            "min-speed": ExpectedString(range_min=2800, range_max=10000),
+            "max-speed": ExpectedString(range_min=10000, range_max=40000)}
+        self.platform_environment_absent_fan_values = {
+            "state": FansConsts.STATE_ABSENT, "direction": "N/A", "current-speed": "N/A",
+            "min-speed": "N/A", "max-speed": "N/A"}
+        self.platform_inventory_items = self.fan_list + self.psu_list + self.psu_fan_list \
+            + [PlatformConsts.HW_COMP_SWITCH]
+
+    def _init_temperature(self):
+        super()._init_temperature()
+        self.temperature_sensors = ["Asic-Temp-Sensor", "CPU-Package-Sensor", "Main-Board-Ambient-Sensor",
+                                    "PSU1-Temp-Sensor", "PSU2-Temp-Sensor", "PSU3-Temp-Sensor", "PSU4-Temp-Sensor",
+                                    "Port-Ambient-Sensor"]
+
+    def _init_fan_list(self):
+        self.fan_list = ["FAN1/1", "FAN1/2", "FAN2/1", "FAN2/2", "FAN3/1", "FAN3/2", "FAN4/1", "FAN4/2", "Fan5/1", "Fan5/2"]
+
+    def _init_led_list(self):
+        self.led_list = ["FAN1", "FAN2", "FAN3", "FAN4", "FAN5", "PSU", "SYSTEM"]
 
 # -------------------------- Mlx410 Switch -----------------------------
 

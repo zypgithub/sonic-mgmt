@@ -7,7 +7,8 @@ class Cl_Consts:
     CL_LOG_PORT_FILE = 'log_port_cumulus.py'
     BONUS_PORTS = {
         'Spectrum-3': [],
-        'Spectrum-4': ['swp65']
+        'Spectrum-4': ['swp65'],
+        'Spectrum-5': ['swp65', 'swp66']
     }
     CL_HOME_DIR = "/home/cumulus"
     CL_PYTHON_PATH = "/home/cumulus/sdk_env/bin/python3.11"
@@ -178,6 +179,14 @@ class PerfConsts:
         "a_pause_mac_ctrl_frames_received"
     ]
 
+    # Timeouts
+    TIMEOUT_FOR_NEXTHOP_RESOLUTION = 180
+    TIMEOUT_FOR_UNINSTALL_MODE = {
+        "SPC3": 900,
+        "SPC4": 900,
+        "SPC5": 480
+    }
+
 
 class SPCXRAConsts:
     DUT_TX_UTIL_AUTO_TH_DICT = {4096: 0.92}
@@ -242,6 +251,14 @@ class PowerConsts:
             r"VDDSCC": 46,
             r"VCORE MAIN \(VDD_M\)": 345,
             "TOTAL": 754
+        },
+        "SPC5": {
+            r"VCORE TILES \d & \d \(VDD_Tx\)": 18,
+            r"DVDD TILES \d & \d \(DVDD_Tx\)": 18.13,
+            r"HVDD TILES \(HVDD_T\d+\)": 118,
+            r"VDDSCC": 51,
+            r"VCORE MAIN \(VDD_M\)": 345,
+            "TOTAL": 754
         }
     }
     CONTROLLER_REGEX = r'\w*\d*-i2c-\d*-\d*\w*'
@@ -265,6 +282,20 @@ class SPCControllers:
             "0x6e": "VCORE & 1.8V_Tile",
         },
         "SPC4": {
+            "0x61": "HVDD TILES (HVDD_T47)",
+            "0x62": "VCORE MAIN (VDD_M)",
+            "0x63": "VCORE TILES 0 & 1 (VDD_Tx)",
+            "0x64": "VCORE TILES 2 & 3 (VDD_Tx)",
+            "0x65": "VCORE TILES 4 & 5 (VDD_Tx)",
+            "0x66": "VCORE TILES 6 & 7 (VDD_Tx)",
+            "0x67": "DVDD TILES 0 & 1 (DVDD_Tx)",
+            "0x68": "DVDD TILES 2 & 3 (DVDD_Tx)",
+            "0x69": "DVDD TILES 4 & 5 (DVDD_Tx)",
+            "0x6a": "DVDD TILES 6 & 7 (DVDD_Tx)",
+            "0x6c": "HVDD TILES (HVDD_T03)",
+            "0x6e": "VDDSCC",
+        },
+        "SPC5": {
             "0x61": "HVDD TILES (HVDD_T47)",
             "0x62": "VCORE MAIN (VDD_M)",
             "0x63": "VCORE TILES 0 & 1 (VDD_Tx)",

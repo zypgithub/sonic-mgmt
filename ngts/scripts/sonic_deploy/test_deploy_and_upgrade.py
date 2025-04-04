@@ -124,7 +124,7 @@ def test_deploy_and_upgrade(topology_obj, is_simx, is_performance, base_version,
             pre_install_threads = {}
             pre_installation_steps(
                 sonic_topo, neighbor_type, base_version, target_version, setup_info, port_number, is_simx,
-                pre_install_threads, destination_hwsku, request)
+                pre_install_threads, destination_hwsku, chip_type, request)
 
         with allure.step('installation'):
             install_threads = []
@@ -171,7 +171,7 @@ def test_deploy_and_upgrade(topology_obj, is_simx, is_performance, base_version,
             except AssertionError:
                 # Give it another try if the background processes in the pre-installation steps fail
                 pre_installation_steps(sonic_topo, neighbor_type, base_version, target_version, setup_info, port_number,
-                                       is_simx, pre_install_threads, destination_hwsku, request)
+                                       is_simx, pre_install_threads, destination_hwsku, chip_type, request)
                 wait_until_background_procs_done(pre_install_threads)
             logger.info("Pre-installation background processes are done")
 
@@ -203,7 +203,7 @@ def test_deploy_and_upgrade(topology_obj, is_simx, is_performance, base_version,
 
 
 def pre_installation_steps(sonic_topo, neighbor_type, base_version, target_version, setup_info, port_number, is_simx,
-                           threads_dict, destination_hwsku, request):
+                           threads_dict, destination_hwsku, chip_type, request):
     """
     Pre-installation steps
     :param sonic_topo: sonic_topo fixture
@@ -233,7 +233,7 @@ def pre_installation_steps(sonic_topo, neighbor_type, base_version, target_versi
     replace_nos = request.config.getoption('--target_cli_type')
     if replace_nos:
         dut_list = setup_info['duts']
-        DeployMethods.multi_nos_pre_installation_steps(dut_list, replace_nos)
+        DeployMethods.multi_nos_pre_installation_steps(dut_list, replace_nos, chip_type)
 
 
 def post_installation_steps(topology_obj, sonic_topo, recover_by_reboot, deploy_dpu,

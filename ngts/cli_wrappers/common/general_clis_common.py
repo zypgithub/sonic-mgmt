@@ -520,15 +520,11 @@ class GeneralCliCommon(GeneralCliInterface):
 
             self.engine.reload([f'{onie_reboot_script_path} {mode}'], wait_after_ping=timeout, ssh_after_reload=False)
 
-    def uninstall_os_flow(self, current_os, target_cli_type):
+    def uninstall_os_flow(self, current_os, target_cli_type, chip_type):
         logger.info(target_cli_type)
         if current_os == "Cumulus":
-            if target_cli_type == "NVUE":
-                logger.info("Skipping uninstall mode since cumulus would wipe out the system")
-                self.engine.reload("sudo onie-select -i -f && sudo reboot", wait_after_ping=120, ssh_after_reload=False)
-            else:
-                logger.info("Cumulus/NVOS detected wiping out the entire system")
-                self.engine.reload("sudo onie-select -k -f && sudo reboot", wait_after_ping=900, ssh_after_reload=False)
+            logger.info("Cumulus/NVOS detected wiping out the entire system")
+            self.engine.reload("sudo onie-select -k -f && sudo reboot", wait_after_ping=PerfConsts.TIMEOUT_FOR_UNINSTALL_MODE[chip_type], ssh_after_reload=False)
         else:
             onie_reboot_script_path = self.prepare_onie_reboot_script_on_dut()
             if target_cli_type == "NVUE":

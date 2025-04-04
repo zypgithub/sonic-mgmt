@@ -5,7 +5,7 @@ from ngts.nvos_tools.Devices.EthDevice import Mlx2410Switch, Mlx4600Switch, Mlx4
     Mlx5600Switch, \
     Mlx5400Switch, Mlx4410Switch, Mlx3750sxSwitch, Mlx3700csSwitch, Mlx3700cSwitch, Mlx3420Switch, Mlx2700Switch, \
     Mlx2201Switch, Mlx2100Switch, \
-    Mlx2010Switch, Mlx3700Switch
+    Mlx2010Switch, Mlx3700Switch, Mlx5640Switch
 from ngts.nvos_tools.Devices.IbDevice import (GorillaSwitch, GorillaSwitchBF3, CrocodileSwitch, BlackMambaSwitch,
                                               CrocodileSimxSwitch, JulietScaleoutSwitch, JulietTTMSwitch,
                                               JulietNonScaleoutSwitch, JulietAriel, JulietNonScaleoutSwitchNoNCI,
@@ -30,6 +30,7 @@ class DeviceFactory:
             'QM3000 - Black Mamba': BlackMambaSwitch,
             'Q3400-RA Black Mamba': BlackMambaSwitch,
             'Mellanox SN5600': Mlx5600Switch,
+            'Mellanox SN5640': Mlx5640Switch,
             'Mellanox SN5400': Mlx5400Switch,
             'Mellanox SN4700': Mlx4700Switch,
             'Mellanox SN4600': Mlx4600Switch,
@@ -61,6 +62,8 @@ class DeviceFactory:
             if device_name not in DeviceFactory.device_type_dict.keys():
                 if "5600" in device_name:
                     device_name = 'Mellanox SN5600'
+                elif "5640" in device_name:
+                    device_name = 'Mellanox SN5640'
                 elif "4600C" in device_name:
                     device_name = 'Mellanox SN4600c'
                 else:

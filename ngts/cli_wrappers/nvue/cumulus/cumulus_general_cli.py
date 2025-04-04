@@ -18,7 +18,7 @@ class CumulusGeneralCli(NvueGeneralCli):
     def __init__(self, engine, device):
         super().__init__(engine, device)
 
-    def install_traffic_generator(self, latest_version=True):
+    def install_traffic_generator(self, latest_version=False):
         """
         Function verifies the traffic generator is functional post deploy on CL OS
 

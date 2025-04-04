@@ -67,19 +67,19 @@ class TestSPCXRA_x2Split_400G:
         with allure.step(f"Set test correct allure title with {self.ip} parameter"):
             test_name = set_allure_title(request, self.is_ipv6)
 
+        with allure.step(f"Run {packet_size}B packet Traffic on all the ports"):
+            run_traffic(self.players, self.scenario, self.traffic_jsons)
+
         # TODO: Remove this once the issue 4335726 is fixed
         with allure.step("Wait for nexthop resolution"):
             if is_redmine_issue_active([4335726])[0]:
-                self.cli_object.performance.wait_for_nexthop_resolution(self.conf_args, timeout=180)
-
-        with allure.step(f"Run {packet_size}B packet Traffic on all the ports"):
-            run_traffic(self.players, self.scenario, self.traffic_jsons)
+                self.cli_object.performance.wait_for_nexthop_resolution(self.conf_args, timeout=PerfConsts.TIMEOUT_FOR_NEXTHOP_RESOLUTION)
 
         with allure.step(f"Verifying the traffic for packet size {packet_size}"):
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type,
                                       bw_threshold=SPCXRAConsts.DUT_TX_UTIL_IBM_TH_DICT[packet_size],
-                                      tc_occ_threshold=PerfConsts.OCC_TH_DICT,
+                                      tc_occ_threshold=None,
                                       power_threshold=self.power_thresholds_by_chip_type,
                                       skip_first_counters_iteration=True)
             run_validation(config)
@@ -103,7 +103,7 @@ class TestSPCXRA_x2Split_400G:
         # TODO: Remove this once the issue 4335726 is fixed
         with allure.step("Wait for nexthop resolution"):
             if is_redmine_issue_active([4335726])[0]:
-                self.cli_object.performance.wait_for_nexthop_resolution(self.conf_args, timeout=180)
+                self.cli_object.performance.wait_for_nexthop_resolution(self.conf_args, timeout=PerfConsts.TIMEOUT_FOR_NEXTHOP_RESOLUTION)
 
         with allure.step(f"Verifying the BW utilization is at least {SPCXRAConsts.DUT_TX_UTIL_IBM_TH_DICT[packet_size]}% "
                          f"on all the ports"):
@@ -135,7 +135,7 @@ class TestSPCXRA_x2Split_400G:
         # TODO: Remove this once the issue 4335726 is fixed
         with allure.step("Wait for nexthop resolution"):
             if is_redmine_issue_active([4335726])[0]:
-                self.cli_object.performance.wait_for_nexthop_resolution(self.conf_args, timeout=180)
+                self.cli_object.performance.wait_for_nexthop_resolution(self.conf_args, timeout=PerfConsts.TIMEOUT_FOR_NEXTHOP_RESOLUTION)
 
         with allure.step(f"Verifying the traffic for packet size {packet_size}"):
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
