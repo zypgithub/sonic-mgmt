@@ -109,8 +109,8 @@ class CpldComponent(Component):
             output = subprocess.run(
                 ['/bin/bash', path, name],
                 check=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
+                capture_output=True,
+                text=True
             )
 
             res = output.stdout.strip()
@@ -120,9 +120,11 @@ class CpldComponent(Component):
                 raise Exception(f"{command}\nExit Code: {return_code}\n{output}")
             print(f'{command} successfully executed')
             return res
-        except Exception as e:
-            print(f"An error occurred: {e}")
-            raise
+        except subprocess.CalledProcessError as e:
+            print(f"Command failed with return code {e.returncode}")
+            print(e.output)
+            print(e.stderr)
+            print("Power cycle failed. Please do one manually.")
 
     def _run_ssh(self, command):
         """

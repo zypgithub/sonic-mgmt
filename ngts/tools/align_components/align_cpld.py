@@ -13,7 +13,7 @@ def perform_cpld_update(_args):
     if _args.cpld_path:
         install_path = _args.cpld_path
     else:
-        json_dict = create_json_dict(_args.file_path)
+        json_dict = create_json_dict(_args.fw_versions_json_file)
         provisioning = switch_info[NogaConstants.ATTRIBUTES][NogaConstants.HARDWARE_COMPONENTS][
             NogaConstants.BIOS_VERSION]
         provisioning = 'prod' if provisioning == 'OPN' else 'dev'

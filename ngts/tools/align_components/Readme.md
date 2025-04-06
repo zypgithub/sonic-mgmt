@@ -20,7 +20,7 @@ cp -r ./align_components /auto/sw_system_project/NVOS_INFRA/verification_files/p
 #### You need to provide parameters:
 All flags are used as params (--setup_name=NVOS_juliet_10_7_148_136)
 * setup_name - is REQUIRED to be able to get required information from noga.
-* file_path - is used to find the path to the json file 
+* fw_versions_json_file - is used to find the path to the json file 
   * If this param doesn't exist and no component path provided => will default to juliet_versions.json
 * erot_path, bmc_path, fpga_path, bios_path, pldm_path - providing path to install specified component, by providing any of this params the file will not be checked.
 * bmc_user - User to connect to bmc (Optional, default is root)
@@ -32,7 +32,7 @@ All flags are used as params (--setup_name=NVOS_juliet_10_7_148_136)
 * Verifies BMC_IP exists.
 * Checks if component path is provided?
   * Yes → for each provided path for component perform update
-  * No → perform update via file_path provided or default path '/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/juliet_versions.json'
+  * No → perform update via fw_versions_json_file provided or default path '/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/juliet_versions.json'
 * Compares installed against required version.
   * If they match → skip update
   * If they do not match → Update required component.

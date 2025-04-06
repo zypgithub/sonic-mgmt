@@ -29,7 +29,7 @@ def start_components_update(_args):
     provisioning = 'prod' if provisioning == 'OPN' else 'dev'
     update_via_parameter = bool(_args.bmc_path or _args.bios_path or _args.erot_path or _args.fpga_path)
     rf_api = RedFishRestApi(bmc_ip, _args.bmc_user, _args.bmc_pass)
-    json_dict = create_json_dict(_args.file_path)
+    json_dict = create_json_dict(_args.fw_versions_json_file)
 
     components_mapping = {
         Defaults.BMC_NAME: "bmc_path",
@@ -133,7 +133,7 @@ def parse_args():
     parser.add_argument('--bmc_pass',
                         help='Bmc password', required=False, type=parse_mars_default, default=Defaults.DEFAULT_BMC_PASSWORD)
 
-    parser.add_argument('--file_path',
+    parser.add_argument('--fw_versions_json_file',
                         help='Path to file containing required version',
                         default='/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/juliet_versions.json',
                         type=parse_mars_default)
