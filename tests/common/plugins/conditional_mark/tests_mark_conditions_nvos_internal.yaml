@@ -26,12 +26,6 @@ tests_nvos/general/security/certificate/test_cacert_mgmt.py:
       - https://redmine.mellanox.com/issues/4237752
       - https://redmine.mellanox.com/issues/4237850
 
-tests_nvos/general/security/certificate/test_certificate_mgmt.py:
-  skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4375532"
-    conditions:
-      - https://redmine.mellanox.com/issues/4375532
-
 tests_nvos/system/gnmi/test_gnmi_cert.py::test_gnmi_cert_unset_cert:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4222040"
