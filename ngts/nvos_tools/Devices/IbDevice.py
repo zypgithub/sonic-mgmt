@@ -619,8 +619,8 @@ class GorillaSwitchBF3(GorillaSwitch):
 # -------------------------- BlackMamba Switch ----------------------------
 class BlackMambaSwitch(IbSwitch):
 
-    def __init__(self):
-        super().__init__(asic_amount=4, switch_class=NvosConst.BLACK_MAMBA_SWITCH)
+    def __init__(self, switch_class=NvosConst.BLACK_MAMBA_SWITCH):
+        super().__init__(asic_amount=4, switch_class=switch_class)
 
     def _init_constants(self):
         self.asic_amount = 4
@@ -752,12 +752,11 @@ class BlackMambaSwitch(IbSwitch):
 # -------------------------- Taipan Switch ----------------------------
 class TaipanSwitch(BlackMambaSwitch):  # All values will be updated on Taipan BU
 
-    def __init__(self):
-        super().__init__(asic_amount=4, switch_class=NvosConst.TAIPAN_SWITCH)
+    def __init__(self, switch_class=NvosConst.TAIPAN_SWITCH):
+        super().__init__(switch_class=switch_class)
 
     def _init_constants(self):
         super()._init_constants()
-        self.asic_numbers = [f"ASIC{i}" for i in range(1, self.asic_amount + 1)]
         self.number_of_transceivers = 18
         self.transceivers_tables_name = "TRANSCEIVER_INFO"
         self.transceiver_list = [f'els{a + 1}' for a in range(18)] + ['fnm1'] + [f'oe{b + 1}' for b in range(72)]
@@ -771,13 +770,13 @@ class TaipanSwitch(BlackMambaSwitch):  # All values will be updated on Taipan BU
 class TaipanSingleAsicSwitch(TaipanSwitch):  # All values will be updated on Taipan BU
 
     def __init__(self):
-        super().__init__(asic_amount=4, switch_class=NvosConst.TAIPAN_SINGLE_ASIC)
+        super().__init__(switch_class=NvosConst.TAIPAN_SINGLE_ASIC)
 
     def _init_constants(self):
         super()._init_constants()
-        self.number_of_transceivers = 5
+        self.number_of_transceivers = 4
         self.transceivers_tables_name = "TRANSCEIVER_INFO"
-        self.transceiver_list = [f'els{a + 1}' for a in range(5)] + ['fnm1'] + [f'oe{b + 18}' for b in range(18)]
+        self.transceiver_list = [f'els{a + 1}' for a in range(4)] + ['fnm1'] + [f'oe{b + 18}' for b in range(18)]
 
     def _init_psu_list(self):
         self.psu_list = []

@@ -175,6 +175,7 @@ mamba-44      ansible_host=10.7.145.44 ansible_hostv6="" sonic_version=v2 hwsku=
 mamba-112      ansible_host=10.7.148.112 ansible_hostv6="" sonic_version=v2 hwsku="ACS-QM3000" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 mamba-248      ansible_host=10.7.148.248 ansible_hostv6="" sonic_version=v2 hwsku="ACS-QM3000" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 mamba-150      ansible_host=10.7.148.150 ansible_hostv6="" sonic_version=v2 hwsku="ACS-QM3000" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
+taipan-190      ansible_host=10.7.145.190 ansible_hostv6="" sonic_version=v2 hwsku="ACS-QM3451-LD" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 mtvr-q3400-06      ansible_host=10.245.21.54 ansible_hostv6="" sonic_version=v2 hwsku="ACS-QM3000" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 mtvr-q3400-05      ansible_host=10.245.23.5 ansible_hostv6="" sonic_version=v2 hwsku="ACS-QM3000" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 mtvr-q3400-04      ansible_host=10.245.21.52 ansible_hostv6="" sonic_version=v2 hwsku="ACS-QM3000" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
