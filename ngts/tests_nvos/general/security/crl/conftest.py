@@ -11,7 +11,8 @@ api_client = pytest.param(ApiCrlClient, id="rest")
 gnmi_client = pytest.param(GnmiCrlClient, id="gnmi")
 nmx_controller_client = pytest.param(NmxControllerCrlClient, id="nmx_c")
 nmx_telemetry_client = pytest.param(NmxTelemetryCrlClient, id="nmx_t")
-clients = [api_client, gnmi_client, nmx_controller_client, nmx_telemetry_client]
+# TODO: add nmx controller and telemetry clients after they are merged
+clients = [api_client, gnmi_client]
 
 
 @pytest.fixture(scope="function")
