@@ -9,7 +9,7 @@ from ngts.nvos_tools.Devices.EthDevice import Mlx2410Switch, Mlx4600Switch, Mlx4
 from ngts.nvos_tools.Devices.IbDevice import (GorillaSwitch, GorillaSwitchBF3, CrocodileSwitch, BlackMambaSwitch,
                                               CrocodileSimxSwitch, JulietScaleoutSwitch, JulietTTMSwitch,
                                               JulietNonScaleoutSwitch, JulietAriel, JulietNonScaleoutSwitchNoNCI,
-                                              JulietArielPS, JulietNonScaleoutSwitchNoNCI5600)
+                                              JulietArielPS, JulietNonScaleoutSwitchNoNCI5600, TaipanSingleAsicSwitch)
 
 logger = logging.getLogger()
 
@@ -29,7 +29,6 @@ class DeviceFactory:
             'QM8790 - Black Mamba': BlackMambaSwitch,
             'QM3000 - Black Mamba': BlackMambaSwitch,
             'Q3400-RA Black Mamba': BlackMambaSwitch,
-            'Q3400-RA Black_Mamba': BlackMambaSwitch,
             'Mellanox SN5600': Mlx5600Switch,
             'Mellanox SN5400': Mlx5400Switch,
             'Mellanox SN4700': Mlx4700Switch,
@@ -53,6 +52,7 @@ class DeviceFactory:
             'N5200_LD - JulietNonScaleoutSwitchNoNCI': JulietNonScaleoutSwitchNoNCI,
             'N5112_LD - JulietArielPS': JulietArielPS,
             'N5600_LD - JulietNonScaleoutSwitchNoNCI': JulietNonScaleoutSwitchNoNCI5600,
+            'Q3450_LD - Taipan': TaipanSingleAsicSwitch
         }
 
     @staticmethod
