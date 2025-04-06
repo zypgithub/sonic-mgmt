@@ -503,12 +503,6 @@ qos/test_qos_sai.py::TestQosSai::testQosSaiQSharedWatermark:
     conditions:
     - "https://redmine.mellanox.com/issues/3097795 and '202111' in release"
 
-platform_tests/test_advanced_reboot.py::test_fast_reboot_from_other_vendor:
-  skip:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/3225815"
-    conditions:
-    - https://redmine.mellanox.com/issues/3225815
-
 platform_tests/test_cpu_memory_usage.py:
   skip:
     reason: "Testcase ignored due to simx"
