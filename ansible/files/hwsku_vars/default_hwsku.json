@@ -21,11 +21,11 @@
     },
     "r-bobcat-01_setup": {
         "default_hwsku": "Mellanox-SN4280-O28",
-        "support_hwsku": ["Mellanox-SN4280-O28"]
+        "support_hwsku": ["Mellanox-SN4280-O28", "Mellanox-SN4280-O8C80"]
     },
     "r-bobcat-03_setup": {
         "default_hwsku": "Mellanox-SN4280-O28",
-        "support_hwsku": ["Mellanox-SN4280-O28"]
+        "support_hwsku": ["Mellanox-SN4280-O28", "Mellanox-SN4280-O8C80"]
     },
     "CI_sonic_COMMUNITY_SPC": {
         "default_hwsku": "ACS-MSN3700",
@@ -201,14 +201,14 @@
     },
     "mtvr-bobcat-03_setup": {
         "default_hwsku": "Mellanox-SN4280-O28",
-        "support_hwsku": ["Mellanox-SN4280-O28"]
+        "support_hwsku": ["Mellanox-SN4280-O28", "Mellanox-SN4280-O8C80"]
     },
     "mtvr-bobcat-04_setup": {
         "default_hwsku": "Mellanox-SN4280-O28",
-        "support_hwsku": ["Mellanox-SN4280-O28"]
+        "support_hwsku": ["Mellanox-SN4280-O28", "Mellanox-SN4280-O8C80"]
     },
     "mtvr-bobcat-05_setup": {
         "default_hwsku": "Mellanox-SN4280-O28",
-        "support_hwsku": ["Mellanox-SN4280-O28"]
+        "support_hwsku": ["Mellanox-SN4280-O28", "Mellanox-SN4280-O8C80"]
     }
 }

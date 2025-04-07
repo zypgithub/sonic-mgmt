@@ -1,0 +1,43 @@
+[sonic_latest]
+# MTR testbed r-bobcat-01 topologies
+r-bobcat-01  ansible_host=10.210.26.177  sonic_version=v2  sonic_hwsku=Mellanox-SN4280-O8C80 switch_type="switch" iface_speed=400000 serial_console="ssh -l rcon:7002 0.208.0.85" ptf_host=ptf-r-bobcat-01 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" fanout_switch=r-leopard-82 dut_mac="B0:CF:0E:0E:35:00" pdu_host="pdu-10-208-0-181,pdu-10-208-2-14" base_mac=B0:CF:0E:0E:35:00 serial=MT2419XZ07VD model=MSN4280-WS2RXO-NS syseeprom_info="{'0x28': u'x86_64-nvidia_sn4280-r0', '0x29': u'2023.11-5.3.0012-9600', '0x22': u'MSN4280-WS2RXO-NS', '0x23': u'MT2419XZ07VD', '0x21': u'SN4280', '0x26': u'0', '0x24': u'B0:CF:0E:0E:35:00', '0x25': u'05/12/2024 12:29:03', '0xfe': u'0xDEA813CD', '0x2b': u'Nvidia', '0x2a': u'254'}"
+r-bobcat-01-t0-88-o8c80  ansible_host=10.210.26.177  sonic_version=v2  sonic_hwsku=Mellanox-SN4280-O8C80 switch_type="switch" iface_speed=400000 serial_console="ssh -l rcon:7002 0.208.0.85" ptf_host=ptf-r-bobcat-01 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" fanout_switch=r-leopard-82 dut_mac="B0:CF:0E:0E:35:00" pdu_host="pdu-10-208-0-181,pdu-10-208-2-14" base_mac=B0:CF:0E:0E:35:00 serial=MT2419XZ07VD model=MSN4280-WS2RXO-NS syseeprom_info="{'0x28': u'x86_64-nvidia_sn4280-r0', '0x29': u'2023.11-5.3.0012-9600', '0x22': u'MSN4280-WS2RXO-NS', '0x23': u'MT2419XZ07VD', '0x21': u'SN4280', '0x26': u'0', '0x24': u'B0:CF:0E:0E:35:00', '0x25': u'05/12/2024 12:29:03', '0xfe': u'0xDEA813CD', '0x2b': u'Nvidia', '0x2a': u'254'}"
+r-bobcat-01-dpu-0   ansible_host=10.210.26.177 ansible_ssh_port=5021 sonic_version=v2 sonic_hwsku=Nvidia-bf3-com-dpu switch_type="dpu" iface_speed=400000 serial_console="ssh -l rcon:7002 0.208.0.85" ptf_host=ptf-r-bobcat-01 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" fanout_switch=r-leopard-82 dut_mac="B0:CF:0E:0E:35:00" pdu_host="pdu-10-208-0-181,pdu-10-208-2-14" base_mac=B0:CF:0E:0E:35:00 serial=MT2419XZ07VD model=MSN4280-WS2RXO-NS syseeprom_info="{'0x28': u'arm64-nvda_bf-bf3comdpu', '0x29': u'2023.11-5.3.0012-9600', '0x22': u'Nvidia-bf3-com-dpu', '0x23': u'MT2419XZ07VD', '0x21': u'SN4280', '0x26': u'0', '0x24': u'B0:CF:0E:0E:35:00', '0x25': u'05/12/2024 12:29:03', '0xfe': u'0xDEA813CD', '0x2b': u'Nvidia', '0x2a': u'254'}"
+r-bobcat-01-dpu-1   ansible_host=10.210.26.177 ansible_ssh_port=5022 sonic_version=v2 sonic_hwsku=Nvidia-bf3-com-dpu switch_type="dpu" iface_speed=400000 serial_console="ssh -l rcon:7002 0.208.0.85" ptf_host=ptf-r-bobcat-01 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" fanout_switch=r-leopard-82 dut_mac="B0:CF:0E:0E:35:00" pdu_host="pdu-10-208-0-181,pdu-10-208-2-14" base_mac=B0:CF:0E:0E:35:00 serial=MT2419XZ07VD model=MSN4280-WS2RXO-NS syseeprom_info="{'0x28': u'arm64-nvda_bf-bf3comdpu', '0x29': u'2023.11-5.3.0012-9600', '0x22': u'Nvidia-bf3-com-dpu', '0x23': u'MT2419XZ07VD', '0x21': u'SN4280', '0x26': u'0', '0x24': u'B0:CF:0E:0E:35:00', '0x25': u'05/12/2024 12:29:03', '0xfe': u'0xDEA813CD', '0x2b': u'Nvidia', '0x2a': u'254'}"
+r-bobcat-01-dpu-2   ansible_host=10.210.26.177 ansible_ssh_port=5023 sonic_version=v2 sonic_hwsku=Nvidia-bf3-com-dpu switch_type="dpu" iface_speed=400000 serial_console="ssh -l rcon:7002 0.208.0.85" ptf_host=ptf-r-bobcat-01 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" fanout_switch=r-leopard-82 dut_mac="B0:CF:0E:0E:35:00" pdu_host="pdu-10-208-0-181,pdu-10-208-2-14" base_mac=B0:CF:0E:0E:35:00 serial=MT2419XZ07VD model=MSN4280-WS2RXO-NS syseeprom_info="{'0x28': u'arm64-nvda_bf-bf3comdpu', '0x29': u'2023.11-5.3.0012-9600', '0x22': u'Nvidia-bf3-com-dpu', '0x23': u'MT2419XZ07VD', '0x21': u'SN4280', '0x26': u'0', '0x24': u'B0:CF:0E:0E:35:00', '0x25': u'05/12/2024 12:29:03', '0xfe': u'0xDEA813CD', '0x2b': u'Nvidia', '0x2a': u'254'}"
+r-bobcat-01-dpu-3   ansible_host=10.210.26.177 ansible_ssh_port=5024 sonic_version=v2 sonic_hwsku=Nvidia-bf3-com-dpu switch_type="dpu" iface_speed=400000 serial_console="ssh -l rcon:7002 0.208.0.85" ptf_host=ptf-r-bobcat-01 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" fanout_switch=r-leopard-82 dut_mac="B0:CF:0E:0E:35:00" pdu_host="pdu-10-208-0-181,pdu-10-208-2-14" base_mac=B0:CF:0E:0E:35:00 serial=MT2419XZ07VD model=MSN4280-WS2RXO-NS syseeprom_info="{'0x28': u'arm64-nvda_bf-bf3comdpu', '0x29': u'2023.11-5.3.0012-9600', '0x22': u'Nvidia-bf3-com-dpu', '0x23': u'MT2419XZ07VD', '0x21': u'SN4280', '0x26': u'0', '0x24': u'B0:CF:0E:0E:35:00', '0x25': u'05/12/2024 12:29:03', '0xfe': u'0xDEA813CD', '0x2b': u'Nvidia', '0x2a': u'254'}"
+
+r-leopard-82 ansible_host=r-leopard-82 ansible_ssh_user="{{ lookup('env','SONIC_SWITCH_USER') }}" ansible_ssh_pass="{{ lookup('env','SONIC_SWITCH_PASSWORD') }}" os=sonic
+
+[sonic:children]
+sonic_latest
+
+[leaf_topo_1]
+# MTR r-bobcat-01 topologies
+r-bobcat-01
+r-bobcat-01-t0-88-o8c80
+r-bobcat-01-dpu-0
+r-bobcat-01-dpu-1
+r-bobcat-01-dpu-2
+r-bobcat-01-dpu-3
+
+[leaf_topo_1:vars]
+podset_number=200
+
+[lab]
+# MTR r-bobcat-01 topologies
+r-bobcat-01
+r-bobcat-01-t0-88-o8c80
+r-bobcat-01-dpu-0
+r-bobcat-01-dpu-1
+r-bobcat-01-dpu-2
+r-bobcat-01-dpu-3
+
+[ptf]
+# MTR r-bobcat-01 PTF host
+ptf-r-bobcat-01 ansible_host=10.215.28.216 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+10.215.28.216 ansible_host=10.215.28.216 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+
+[pdu]
+pdu-10-208-0-181 ansible_host=10.208.0.181 protocol=snmp
+pdu-10-208-2-14 ansible_host=10.208.2.14 protocol=snmp

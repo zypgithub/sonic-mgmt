@@ -1054,9 +1054,9 @@
   inv_name: lab
   comment: Mellanox MTR testbed
 
-- conf-name: r-bobcat-01-ptf-any
+- conf-name: r-bobcat-01-t0-88-o8c80
   group-name: vm-t2
-  topo: ptf-any
+  topo: t0-88-o8c80
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-bobcat-01
   ptf_ip: 10.215.28.216/16
@@ -1108,9 +1108,9 @@
   inv_name: lab
   comment: Mellanox MTR testbed
 
-- conf-name: mtvr-bobcat-03-ptf-any
+- conf-name: mtvr-bobcat-03-t0-88-o8c80
   group-name: vm-t1
-  topo: ptf-any
+  topo: t0-88-o8c80
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-mtvr-bobcat-03
   ptf_ip: 10.245.44.122/20
