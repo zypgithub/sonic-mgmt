@@ -38,7 +38,7 @@ class GrpcCmdBuilder:
         return self.option("proto", proto_path)
 
     def payload(self, payload: Dict[str, str]) -> 'GrpcCmdBuilder':
-        return self.option("d", json.dumps(payload))
+        return self.option("d", f"'{json.dumps(payload)}'")
 
     def endpoint(self, endpoint: str) -> 'GrpcCmdBuilder':
         self.endpoint_loc = endpoint

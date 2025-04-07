@@ -118,15 +118,16 @@ def test_crl_core_functionality(engines, validator_with_cleanup):
     system = System()
 
     admin = _generate_random_admin_with_apply(engines.dut, system)
-    with allure.step("Make request via client application and see it fails"):
-        crl_validator.run_client(admin, expect_success=False, client_cert=revoked_cert, client_cacert=server_cert)
+    with allure.step("Core test flow"):
+        with allure.independent_step("Make request via client application and see it fails"):
+            crl_validator.run_client(admin, expect_success=False, client_cert=revoked_cert, client_cacert=server_cert)
 
-    with allure.step("Try to delete CRL file"):
-        system.security.crl.crl_id[crl_name].action_delete().verify_result(should_succeed=False)
+        with allure.independent_step("Try to delete CRL file"):
+            system.security.crl.crl_id[crl_name].action_delete().verify_result(should_succeed=False)
 
-    crl_validator.unbind_crl()
-    with allure.step("Make request via client application and see it is successful"):
-        crl_validator.run_client(admin, expect_success=True, client_cert=revoked_cert, client_cacert=server_cert)
+        crl_validator.unbind_crl()
+        with allure.independent_step("Make request via client application and see it is successful"):
+            crl_validator.run_client(admin, expect_success=True, client_cert=revoked_cert, client_cacert=server_cert)
 
 
 @pytest.mark.system

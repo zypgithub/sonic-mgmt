@@ -245,10 +245,6 @@ class NmxCrlClient(CrlClient):
         payload: Dict[str, str] = {"gatewayId": "sasha",
                                    "major_version": "PROTO_MSG_MAJOR_VERSION", "minor_version": "PROTO_MSG_MINOR_VERSION"}
         grpc = GrpcCmdBuilder(self.host, port)
-        # if user:
-        #     grpc.user_creds(user.username, user.password)
-        if run_insecure or not client_cert:
-            grpc.skip_verify()
         if client_cert:
             grpc.cert(client_cert.private, client_cert.public)
         if client_cacert:
@@ -278,10 +274,10 @@ class NmxCrlClient(CrlClient):
 
 class NmxControllerCrlClient(NmxCrlClient):
     def __init__(self, host: str, ip: str):
-        super().__init__(host, ip, ClusterApps.NMX_CONTROLLER, 9370)
+        super().__init__(host, ip, ClusterApps.NMX_CONTROLLER, ClusterConsts.NMX_CONTROLLER_ENVOY_PORT)
 
 
 class NmxTelemetryCrlClient(NmxCrlClient):
     def __init__(self, host: str, ip: str):
-        proto_path = ClusterConsts.NMX_TELEMETRY_PROTO_PATH
-        super().__init__(host, ip, ClusterApps.NMX_TELEMETRY, 9351, proto_path)
+        super().__init__(host, ip, ClusterApps.NMX_TELEMETRY,
+                         ClusterConsts.NMX_TELEMETRY_ENVOY_PORT, ClusterConsts.NMX_TELEMETRY_PROTO_PATH)
