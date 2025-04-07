@@ -418,7 +418,7 @@ sflow/test_sflow.py:
     conditions:
     - "'dualtor' in topo_name"
 
-sflow/test_sflow.py::TestSflowCollector::test_sflow_config:
+sflow/test_sflow.py::TestSflowCollector:
   skip:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4389689"
     conditions:
