@@ -5,14 +5,12 @@ from typing import Dict, List, Optional, Tuple
 from ngts.nvos_constants.constants_nvos import ClusterApps, ClusterConsts
 from ngts.nvos_tools.infra.CrlValidator import CrlClient
 from ngts.nvos_tools.infra.CurlCmdBuilder import CurlCmdBuilder
-from ngts.nvos_tools.infra.CurlTool import CurlTool
 from ngts.nvos_tools.infra.GrpcCmdBuilder import GrpcCmdBuilder
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tests_nvos.general.security.helpers import import_cas_safely, import_certs_safely, import_crl_safely
-from ngts.tests_nvos.general.security.nmx_cert.conftest import disable_cluster
 from ngts.tests_nvos.general.security.nmx_cert.constants import CA_CERTIFICATE, CERTIFICATE, EncryptionMode
-from ngts.tests_nvos.general.security.nmx_cert.helpers import disable_cluster_app_manager_state, enable_cluster, enable_cluster_app_manager_state
+from ngts.tests_nvos.general.security.nmx_cert.helpers import disable_cluster_app_manager_state, enable_cluster, disable_cluster, enable_cluster_app_manager_state
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import (
     UserInfo,
 )
@@ -219,9 +217,13 @@ class NmxCrlClient(CrlClient):
             nmx_app.manager.crl.action_update(crl_name).verify_result(should_succeed=should_succeed)
 
         with allure.step("verify crl shown in mtls"):
-            output = nmx_app.manager.crl.parse_show()
-            assert 'crl' in output, "No crl found in output"
-            assert crl_name in output['crl'], f"Expected CRL '{crl_name}' not found in show output"
+            with allure.independent_step("verify crl shown in nmx app manager output"):
+                output = nmx_app.manager.parse_show()
+                assert 'crl' in output, "No crl found in output"
+            with allure.independent_step("verify crl shown in nmx app manager crl output"):
+                output = nmx_app.manager.crl.parse_show()
+                assert 'crl' in output, "No crl found in output"
+                assert crl_name in output['crl'], f"Expected CRL '{crl_name}' not found in show output"
 
     def run_client(
         self,
@@ -245,10 +247,8 @@ class NmxCrlClient(CrlClient):
         payload: Dict[str, str] = {"gatewayId": "sasha",
                                    "major_version": "PROTO_MSG_MAJOR_VERSION", "minor_version": "PROTO_MSG_MINOR_VERSION"}
         grpc = GrpcCmdBuilder(self.host, port)
-        # if user:
-        #     grpc.user_creds(user.username, user.password)
-        if run_insecure or not client_cert:
-            grpc.skip_verify()
+        if user:
+            grpc.user_creds(user.username, user.password)
         if client_cert:
             grpc.cert(client_cert.private, client_cert.public)
         if client_cacert:
@@ -268,20 +268,20 @@ class NmxCrlClient(CrlClient):
 
     def cleanup(self):
         app_manager = self.cluster.apps.app_name[self.app_name].manager
-        app_manager.certificate.action_restore().verify_result()
-        app_manager.ca_certificate.action_restore().verify_result()
         app_manager.encryption.action_restore().verify_result()
         app_manager.crl.action_restore().verify_result()
+        app_manager.certificate.action_restore().verify_result()
+        app_manager.ca_certificate.action_restore().verify_result()
         disable_cluster_app_manager_state(app_manager)
         disable_cluster()
 
 
 class NmxControllerCrlClient(NmxCrlClient):
     def __init__(self, host: str, ip: str):
-        super().__init__(host, ip, ClusterApps.NMX_CONTROLLER, 9370)
+        super().__init__(host, ip, ClusterApps.NMX_CONTROLLER, ClusterConsts.NMX_CONTROLLER_ENVOY_PORT)
 
 
 class NmxTelemetryCrlClient(NmxCrlClient):
     def __init__(self, host: str, ip: str):
-        proto_path = ClusterConsts.NMX_TELEMETRY_PROTO_PATH
-        super().__init__(host, ip, ClusterApps.NMX_TELEMETRY, 9351, proto_path)
+        super().__init__(host, ip, ClusterApps.NMX_TELEMETRY,
+                         ClusterConsts.NMX_TELEMETRY_ENVOY_PORT, ClusterConsts.NMX_TELEMETRY_PROTO_PATH)

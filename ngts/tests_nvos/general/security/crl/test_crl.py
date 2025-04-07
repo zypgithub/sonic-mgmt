@@ -1,6 +1,5 @@
 import logging
 import os
-import time
 
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.constants.constants import GnmiConsts
@@ -22,6 +21,7 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.crl.helpers import ApiCrlClient, GnmiCrlClient
 from ngts.tests_nvos.general.security.test_api_server_security.constants import CA_CERTIFICATE
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmicCmdBuilder
 from ngts.tests_nvos.system.gnmi.constants import CERTIFICATE, GnmiMode
 from ngts.tests_nvos.system.gnmi.helpers import get_scp_player
@@ -118,15 +118,19 @@ def test_crl_core_functionality(engines, validator_with_cleanup):
     system = System()
 
     admin = _generate_random_admin_with_apply(engines.dut, system)
-    with allure.step("Make request via client application and see it fails"):
-        crl_validator.run_client(admin, expect_success=False, client_cert=revoked_cert, client_cacert=server_cert)
+    with allure.step("Core test flow"):
+        with allure.independent_step("Make request via client application and see it fails"):
+            crl_validator.run_client(admin, expect_success=False, client_cert=revoked_cert, client_cacert=server_cert)
 
-    with allure.step("Try to delete CRL file"):
-        system.security.crl.crl_id[crl_name].action_delete().verify_result(should_succeed=False)
+        with allure.independent_step("Try to delete CRL file"):
+            if is_bug_active(4395527):
+                logger.warning("Bug 4395527 is active, skipping delete CRL file")
+            else:
+                system.security.crl.crl_id[crl_name].action_delete().verify_result(should_succeed=False)
 
-    crl_validator.unbind_crl()
-    with allure.step("Make request via client application and see it is successful"):
-        crl_validator.run_client(admin, expect_success=True, client_cert=revoked_cert, client_cacert=server_cert)
+        crl_validator.unbind_crl()
+        with allure.independent_step("Make request via client application and see it is successful"):
+            crl_validator.run_client(admin, expect_success=True, client_cert=revoked_cert, client_cacert=server_cert)
 
 
 @pytest.mark.system
@@ -406,9 +410,9 @@ def test_continious_application(engines, validator_with_cleanup):
     crl_name = "test_crl_continuous"
     crl_path = crl_validator.revoke_cert(crl_name=crl_name, cert=client_cert)
 
-    admin = _generate_random_admin_with_apply(engines.dut, crl_validator.system)
+    admin = _generate_random_admin_with_apply(engines.dut, crl_validator.app.system)
     gnmic_cmd = (
-        GnmicCmdBuilder(crl_validator.host)
+        GnmicCmdBuilder(crl_validator.app.host)
         .user_creds(admin.username, admin.password)
         .ca(server_cert.cacert)
         .cert(client_cert.private, client_cert.public)
