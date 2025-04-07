@@ -23,7 +23,10 @@ def test_verify_secure_is_enabled(topology_obj):
     assert 'enabled' in secure_boot_state, "Secure boot not enabled as expected"
 
     logger.info("Check the secure boot is dev or prod")
-    mst_info = engine.run_cmd('sudo flint -d /dev/mst/mt53120_pciconf0 q full')
+    device = engine.run_cmd('ls /dev/mst/ | egrep mt.*_pciconf0')
+    if not device:
+        pytest.fail(f"The mst device is not found.")
+    mst_info = engine.run_cmd(f'sudo flint -d /dev/mst/{device} q full')
     assert SonicSecureBootConsts.SECURE_FW_MSG in mst_info, "Secure fw is not enabled"
     if SonicSecureBootConsts.SECURE_FW_DEV_MSG in mst_info:
         logger.info("The system is dev secured")
