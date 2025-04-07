@@ -28,6 +28,11 @@ class BmcTool:
     BASE_URL = "https://10.0.1.1" + BASE_REDFISH_URL
     USER_NAME = ADMIN
     PLATFORM_COMPONENTS_DICT = dict()
+    FW_VERSIONS_JSON_FILE = None
+
+    @classmethod
+    def set_fw_versions_json_file(cls, path):
+        cls.FW_VERSIONS_JSON_FILE = path
 
     @staticmethod
     def _get_bmc_password(engine: LinuxSshEngine):
@@ -75,7 +80,7 @@ class BmcTool:
     @staticmethod
     def _get_fw_component_version_info(component_name, version):
         device = TestToolkit.devices.dut
-        fw_path = device.fw_versions_json_file_path
+        fw_path = BmcTool.FW_VERSIONS_JSON_FILE or device.fw_versions_json_file_path
         with allure.step(f'Read platform components info from json {fw_path}'):
             if not BmcTool.PLATFORM_COMPONENTS_DICT:
                 with open(fw_path, 'r') as file:
@@ -88,7 +93,7 @@ class BmcTool:
     @staticmethod
     def get_fw_component_version_dict(component_name, version):
         device = TestToolkit.devices.dut
-        fw_path = device.fw_versions_json_file_path
+        fw_path = BmcTool.FW_VERSIONS_JSON_FILE or device.fw_versions_json_file_path
         with allure.step(f'Read platform components info from json {fw_path}'):
             if not BmcTool.PLATFORM_COMPONENTS_DICT:
                 with open(fw_path, 'r') as file:
