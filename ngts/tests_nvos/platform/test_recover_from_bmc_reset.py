@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime
 from time import sleep
+import pytest
 
 from ngts.nvos_constants.constants_nvos import SystemConsts, PlatformConsts, FansConsts, HealthConsts
 from ngts.nvos_tools.infra.BmcTool import BmcTool
@@ -11,6 +12,8 @@ from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.system.System import System
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.switch_recovery import recover_dut_with_remote_reboot
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
+from ngts.nvos_tools.Devices.IbDevice import JulietNonScaleoutSwitchGB300
 
 logger = logging.getLogger()
 
@@ -22,6 +25,8 @@ BMC_LOG_LINES_MAX = 30
 
 
 def test_recover_from_bmc_reset(engines, devices, topology_obj, loganalyzer):
+    if is_bug_active(4359149) and isinstance(devices.dut, JulietNonScaleoutSwitchGB300):
+        pytest.skip("Skipping test because we have a bug in bmc reset factory for gb300.")
     system = System()
     platform = Platform()
     engine = engines.dut

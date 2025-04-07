@@ -42,15 +42,15 @@ def test_platform_environment_bmc_leakage(engines, nv_command, devices):
 
             with allure.step("Verify default fields"):
                 ValidationTool.verify_all_fields_value_exist_in_output_dictionary(
-                    leakage_output, PlatformConsts.LEAKAGE_DEFAULT_OUTPUT_FIELDS).verify_result()
+                    leakage_output, devices.dut.list_of_leakages).verify_result()
 
             with allure.step("Verify default values"):
-                ValidationTool.validate_fields_values_in_output(PlatformConsts.LEAKAGE_DEFAULT_OUTPUT_FIELDS,
+                ValidationTool.validate_fields_values_in_output(devices.dut.list_of_leakages,
                                                                 PlatformConsts.LEAKAGE_DEFAULT_OUTPUT_VALUES,
                                                                 leakage_output).verify_result()
 
         with allure.step("Simulate leakage on random sensor and validate output"):
-            random_selected_leakage = random.choice(PlatformConsts.LEAKAGE_DEFAULT_OUTPUT_FIELDS)
+            random_selected_leakage = random.choice(devices.dut.list_of_leakages)
             _simulate_leakage(engines, random_selected_leakage, PlatformConsts.LEAK_STATUS_LEAK)
 
             with allure.step("Validate output"):
@@ -78,21 +78,21 @@ def test_platform_environment_bmc_leakage(engines, nv_command, devices):
                                               PlatformConsts.LEAKAGE_STATUS_OK).verify_result()
 
         with allure.step("Simulate leakage on all sensors and validate output"):
-            _simulate_leakage(engines, PlatformConsts.LEAKAGE_DEFAULT_OUTPUT_FIELDS)
+            _simulate_leakage(engines, devices.dut.list_of_leakages)
 
             with allure.step("Verify output of all sensors"):
                 leakage_output = OutputParsingTool.parse_json_str_to_dictionary(
                     nv_command.platform.environment.leakage.show()).get_returned_value()
-                ValidationTool.validate_fields_values_in_output(PlatformConsts.LEAKAGE_DEFAULT_OUTPUT_FIELDS,
+                ValidationTool.validate_fields_values_in_output(devices.dut.list_of_leakages,
                                                                 PlatformConsts.LEAKAGE_ALL_SENSOR_NOT_OK,
                                                                 leakage_output).verify_result()
 
     finally:
-        _link_back_sysfs_files(engines, PlatformConsts.LEAKAGE_DEFAULT_OUTPUT_FIELDS, leakage_folder_name)
+        _link_back_sysfs_files(engines, devices.dut.list_of_leakages, leakage_folder_name)
         retry_validate_health_fix_or_issue(nv_command.system, OK)
         leakage_output = OutputParsingTool.parse_json_str_to_dictionary(
             nv_command.platform.environment.leakage.show()).get_returned_value()
-        ValidationTool.validate_fields_values_in_output(PlatformConsts.LEAKAGE_DEFAULT_OUTPUT_FIELDS,
+        ValidationTool.validate_fields_values_in_output(devices.dut.list_of_leakages,
                                                         PlatformConsts.LEAKAGE_DEFAULT_OUTPUT_VALUES,
                                                         leakage_output).verify_result()
 

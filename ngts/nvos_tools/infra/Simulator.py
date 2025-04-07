@@ -13,6 +13,9 @@ class HWSimulator:
 
     @staticmethod
     def simulate_fan_fault(engine, thermal_directory, fan_id):
+        if not fan_id:
+            logger.info("No fan specified, skip")
+            return
         with allure.step("Simulate fan {} fault".format(fan_id)):
             logger.info("Simulate fan {} fault".format(fan_id))
             file = "fan{}_fault".format(fan_id)
@@ -20,6 +23,9 @@ class HWSimulator:
 
     @staticmethod
     def simulate_fix_fan_fault(engine, thermal_directory, fan_id):
+        if not fan_id:
+            logger.info("No fan specified, skip")
+            return
         with allure.step("Simulate fix fan {} fault".format(fan_id)):
             logger.info("Simulate fix fan {} fault".format(fan_id))
             file = "fan{}_fault".format(fan_id)
@@ -27,6 +33,9 @@ class HWSimulator:
 
     @staticmethod
     def simulate_fan_speed_fault(engine, thermal_directory, fan_id, new_val):
+        if not fan_id:
+            logger.info("No fan specified, skip")
+            return
         with allure.step("Simulate fan {} speed fault".format(fan_id)):
             logger.info("Simulate fan {} speed fault".format(fan_id))
             file = "fan{}_speed_get".format(fan_id)
@@ -37,6 +46,9 @@ class HWSimulator:
 
     @staticmethod
     def simulate_fix_fan_speed_fault(engine, thermal_directory, fan_id, speed_value):
+        if not fan_id:
+            logger.info("No fan specified, skip")
+            return
         with allure.step("Simulate fix fan {} speed fault".format(fan_id)):
             logger.info("Simulate fix fan {} speed fault".format(fan_id))
             file = "fan{}_speed_get".format(fan_id)
@@ -44,6 +56,9 @@ class HWSimulator:
 
     @staticmethod
     def simulate_psu_fault(engine, thermal_directory, psu_id):
+        if not psu_id:
+            logger.info("No psu specified, skip")
+            return
         with allure.step("Simulate psu {} fault".format(psu_id)):
             logger.info("Simulate psu {} fault".format(psu_id))
             file = "psu{}_status".format(psu_id)
@@ -51,6 +66,9 @@ class HWSimulator:
 
     @staticmethod
     def simulate_fix_psu_fault(engine, thermal_directory, psu_id):
+        if not psu_id:
+            logger.info("No psu specified, skip")
+            return
         with allure.step("Simulate fix psu {} fault".format(psu_id)):
             logger.info("Simulate fix psu {} fault".format(psu_id))
             file = "psu{}_status".format(psu_id)
@@ -58,6 +76,9 @@ class HWSimulator:
 
     @staticmethod
     def simulate_psu_temp_fault(engine, thermal_directory, psu_id, new_val=80000):
+        if not psu_id:
+            logger.info("No psu specified, skip")
+            return
         with allure.step("Simulate psu {} temperature fault".format(psu_id)):
             logger.info("Simulate psu {} temperature fault".format(psu_id))
             file = "psu{}_temp1".format(psu_id)

@@ -195,6 +195,8 @@ def test_ignore_health_issue(engines, devices, loganalyzer):
         6. Remove the ignore from PSU issue too and Validate
         7. Fix PSU and FAN health issue
     """
+    if len(devices.dut.fan_list) == 0 and len(devices.dut.psu_list) == 0:
+        pytest.skip("Skipping test because setup has no fans and no psus")
     system = System()
     thermal_directory = devices.dut.fan_direction_dir
     validate_psu_redundancy(devices, Platform())
@@ -288,6 +290,8 @@ def test_simulate_health_problem_with_hw_simulator(devices, engines, set_unset_p
             7. validate health status changed to "OK"
             8. validate devices appear in the detailed health report as OK
     """
+    if len(devices.dut.fan_list) == 0 and len(devices.dut.psu_list) == 0:
+        pytest.skip("Skipping test because setup has no fans and no psus")
     validate_psu_redundancy(devices, Platform())
     system = System()
     thermal_directory = devices.dut.fan_direction_dir
@@ -331,6 +335,8 @@ def test_simulate_fan_speed_fault(devices, engines, loganalyzer):
             7. validate health status changed to "OK"
             8. validate devices appear in the detailed health report as OK
     """
+    if len(devices.dut.fan_list) == 0:
+        pytest.skip("System has no fans. Skipping")
     system = System()
     thermal_directory = devices.dut.fan_direction_dir
     speed_changed = False
@@ -377,6 +383,8 @@ def test_simulate_multi_fan_speed_fault(engines, devices, loganalyzer):
             5. Simulate fan speed fault fix for the chosen fans
             6. Validate fan speed fault system clear events for these fans
     """
+    if len(devices.dut.fan_list) == 0:
+        pytest.skip("System has no fans. Skipping")
     system = System()
     platform = Platform()
     thermal_directory = devices.dut.fan_direction_dir
@@ -452,6 +460,8 @@ def test_simulate_psu_multi_faults(engines, devices, loganalyzer):
             10. Simulate PSU temperature in range for the chosen PSU
             11. Validate Cleared:PSU temperature fault system event for this PSU
     """
+    if len(devices.dut.psu_list) == 0:
+        pytest.skip("System has no psus. Skipping")
     system = System()
     platform = Platform()
     thermal_directory = devices.dut.fan_direction_dir
@@ -663,6 +673,8 @@ def validate_docker_is_up(engine, docker):
 
 
 def validate_psu_redundancy(devices, platform):
+    if not devices.dut.psu_list:
+        pytest.skip(f"DUT has 0 valid PSUs, we cant simulate psu fault due to ps-redundancy")
     valid_psus = platform.environment.get_available_psus()
     if len(valid_psus) == len(devices.dut.psu_list) / 2:
         pytest.skip(f"DUT has {len(valid_psus)} valid PSUs, we cant simulate psu fault due to ps-redundancy")
@@ -719,8 +731,14 @@ def get_system_health_monitoring_config_file_path():
 def simulate_fan_and_psu_health_issue(engines, devices):
     thermal_directory = devices.dut.fan_direction_dir
     with allure.step("simulate_fan_and_psu_health_issue"):
-        psu_id = int(random.choice(Platform().environment.get_available_psus()).replace('PSU', ''))
-        fan_id = random.randrange(1, len(devices.dut.fan_list) + 1)
+        if devices.dut.psu_list:
+            psu_id = int(random.choice(Platform().environment.get_available_psus()).replace('PSU', ''))
+        else:
+            psu_id = None
+        if devices.dut.fan_list:
+            fan_id = random.randrange(1, len(devices.dut.fan_list) + 1)
+        else:
+            fan_id = None
         logger.info("Chosen PSU : {}\n Chosen fan : {}  - {}".format(psu_id, fan_id, get_fan_display_name(fan_id)))
         HWSimulator.simulate_fan_fault(engines.dut, thermal_directory, fan_id)
         HWSimulator.simulate_psu_fault(engines.dut, thermal_directory, psu_id)
@@ -728,9 +746,12 @@ def simulate_fan_and_psu_health_issue(engines, devices):
 
 
 def get_fan_display_name(fan_id):
-    section = 1 if fan_id % 2 == 1 else 2
-    num = math.floor(fan_id / 2) + fan_id % 2
-    return "FAN{}/{}".format(num, section)
+    if fan_id:
+        section = 1 if fan_id % 2 == 1 else 2
+        num = math.floor(fan_id / 2) + fan_id % 2
+        return "FAN{}/{}".format(num, section)
+    else:
+        return None
 
 
 def ignore_health_issue(components_list_to_ignore, health_config_file: EngineFile, ignore_psu_redundancy=None):

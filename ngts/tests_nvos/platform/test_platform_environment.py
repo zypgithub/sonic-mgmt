@@ -61,7 +61,7 @@ def test_show_platform_environment(engines, devices, test_api, output_format):
 @pytest.mark.simx
 @pytest.mark.skynet
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_show_platform_environment_fan(engines, devices, test_api, output_format):
+def test_show_platform_environment_fan(engines, devices, test_api, output_format, skip_for_fanless_setup):
     """
     Show platform environment fan test
     """
@@ -326,7 +326,7 @@ def get_available_temperature_sensor_list(device: BaseDevice):
 
 @pytest.mark.platform
 @pytest.mark.simx
-def test_platform_environment_events_performance(engines, devices):
+def test_platform_environment_events_performance(engines, devices, skip_for_fanless_setup):
     """
      Simulate an event and verify that show event is not flooded with multiple entries
 
@@ -407,7 +407,7 @@ def test_platform_environment_events_performance(engines, devices):
 @pytest.mark.cumulus
 @pytest.mark.platform
 @pytest.mark.simx
-def test_platform_environment_fan_direction_mismatch(engines, devices):
+def test_platform_environment_fan_direction_mismatch(engines, devices, skip_for_fanless_setup):
     """
     Set FAN direction test
 
@@ -637,7 +637,7 @@ def assert_led_color(led: str, ok: bool):
 
 
 @contextmanager
-def fan_error_context(fan: str, device, engine):
+def fan_error_context(fan: str, device, engine, skip_for_fanless_setup):
     """
     with fan_error_context("FAN1/2", devices.dut, engines.dut):
         # this code runs while FAN1/2 status = failed

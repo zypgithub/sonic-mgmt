@@ -13,6 +13,8 @@ from ngts.nvos_tools.platform.Platform import Platform
 from ngts.tests_nvos.general.security.bmc.bmc_creds.constants import BmcUsers, CURL_AUTHORIZATION_ERR_MSGS
 from ngts.tests_nvos.general.security.bmc.bmc_creds.helpers import enable_mctp_pcie_ctrl_service_in_bmc
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
+from ngts.nvos_tools.Devices.IbDevice import JulietNonScaleoutSwitchGB300
 
 logger = logging.getLogger()
 
@@ -26,6 +28,8 @@ def test_bmc_creds_flow(engines, devices, topology_obj):
     3. run show cmd - triggers bmc user password initialization via TPM
     4. verify bmc admin can login only with TPM password
     """
+    if is_bug_active(4359149) and isinstance(devices.dut, JulietNonScaleoutSwitchGB300):
+        pytest.skip("Skipping test because we have a bug in bmc reset factory for gb300.")
 
     def check_auth_with_curl(dut_engine: LinuxSshEngine, username: str, password: str, expect_success: bool):
         curl_cmd = f'curl -k -u {username}:{password} https://10.0.1.1/redfish/v1/AccountService/Accounts'

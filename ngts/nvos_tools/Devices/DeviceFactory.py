@@ -9,7 +9,7 @@ from ngts.nvos_tools.Devices.EthDevice import Mlx2410Switch, Mlx4600Switch, Mlx4
 from ngts.nvos_tools.Devices.IbDevice import (GorillaSwitch, GorillaSwitchBF3, CrocodileSwitch, BlackMambaSwitch,
                                               CrocodileSimxSwitch, JulietScaleoutSwitch, JulietTTMSwitch,
                                               JulietNonScaleoutSwitch, JulietAriel, JulietNonScaleoutSwitchNoNCI,
-                                              JulietArielPS, JulietNonScaleoutSwitchNoNCI5600, TaipanSingleAsicSwitch)
+                                              JulietArielPS, JulietNonScaleoutSwitchNoNCI5600, TaipanSingleAsicSwitch, JulietNonScaleoutSwitchGB300)
 
 logger = logging.getLogger()
 
@@ -53,7 +53,8 @@ class DeviceFactory:
             'N5200_LD - JulietNonScaleoutSwitchNoNCI': JulietNonScaleoutSwitchNoNCI,
             'N5112_LD - JulietArielPS': JulietArielPS,
             'N5600_LD - JulietNonScaleoutSwitchNoNCI': JulietNonScaleoutSwitchNoNCI5600,
-            'Q3450_LD - Taipan': TaipanSingleAsicSwitch
+            'Q3450_LD - Taipan': TaipanSingleAsicSwitch,
+            'N5500_LD - JulietNonScaleoutSwitchGB300': JulietNonScaleoutSwitchGB300
         }
 
     @staticmethod

@@ -216,7 +216,6 @@ tests_nvos/multi_asic/test_interface_ipoib.py::test_interface_ipoib_mapping_basi
     conditions:
       - https://redmine.mellanox.com/issues/3975478
 
-
 tests_nvos/system/test_techsupport_feature.py::test_techsupport_bmc_badflow:
   skip:
     reason: "Testcase skipped on non Juliet systems, only Juliet has BMC"
@@ -601,12 +600,6 @@ tests_nvos/general/security/bmc/bmc_creds/test_bmc_creds.py::test_bmc_creds_flow
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4146744"
     conditions:
       - https://redmine.mellanox.com/issues/4146744
-
-tests_nvos/platform/test_install_platform_firmware.py::test_install_platform_firmware:
-  skip:
-    reason: "Testcase skipped on Juliet systems until valid images are provided"
-    conditions:
-      - "'juliet' in testbed"
 
 tests_nvos/system/test_system_ztp.py::test_ztp_nmx_negative:
   skip:

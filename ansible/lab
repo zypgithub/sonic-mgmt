@@ -169,6 +169,9 @@ juliet-126      ansible_host=10.7.148.126 ansible_hostv6="" sonic_version=v2 hws
 juliet-136      ansible_host=10.7.148.136 ansible_hostv6="" sonic_version=v2 hwsku="ACS-N5110_LD" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 juliet-144      ansible_host=10.7.148.144 ansible_hostv6="" sonic_version=v2 hwsku="ACS-N5110_LD" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 juliet-195      ansible_host=10.7.148.195 ansible_hostv6="" sonic_version=v2 hwsku="ACS-N5200_LD" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
+juliet-85      ansible_host=10.7.145.85 ansible_hostv6="" sonic_version=v2 hwsku="ACS-N5500_LD" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
+juliet-184      ansible_host=10.7.148.184 ansible_hostv6="" sonic_version=v2 hwsku="ACS-N5500_LD" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
+juliet-191      ansible_host=10.7.148.191 ansible_hostv6="" sonic_version=v2 hwsku="ACS-N5500_LD" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 nvidia-arm-orion      ansible_host=10.210.24.241 ansible_hostv6="" sonic_version=v2 hwsku="ACS-MQM9700" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 bm-bu-bsp      ansible_host=10.7.144.155 ansible_hostv6="" sonic_version=v2 hwsku="ACS-QM3000" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 mamba-44      ansible_host=10.7.145.44 ansible_hostv6="" sonic_version=v2 hwsku="ACS-QM3000" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000

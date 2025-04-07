@@ -1035,6 +1035,8 @@ class JulietSwitch(NvLinkSwitch):
         self.transceivers_tables_name = "TRANSCEIVER_FIRMWARE_INFO"
         self.transceiver_list = [f'sw{a + 1}' for a in range(18)]
         self.module_offset = 9
+        self.leakage_sensors_count = 6
+        self.list_of_leakages = [f"LEAKAGE-{i}" for i in range(1, self.leakage_sensors_count + 1)]
 
     def _init_fan_list(self):
         super()._init_fan_list()
@@ -1066,6 +1068,10 @@ class JulietSwitch(NvLinkSwitch):
             'PDB-Conv-2-Temp', 'PDB-Conv-3-Temp', 'PDB-Conv-4-Temp', 'PMIC-1-Temp', 'PMIC-2-Temp', 'PMIC-3-Temp',
             'PMIC-4-Temp', 'PMIC-5-Temp', 'PMIC-6-Temp', 'PMIC-7-Temp', 'PMIC-8-Temp',
             'SWB-ASIC1-PCB-Temp', 'SWB-ASIC2-PCB-Temp', 'SODIMM-1-Temp']
+
+    def _init_psu_list(self):
+        self.psu_list = []
+        self.psu_fan_list = []
 
     def _init_gnmi_consts(self):
         super()._init_gnmi_consts()
@@ -1447,6 +1453,103 @@ class JulietNonScaleoutSwitch(JulietScaleoutSwitch):
     @classmethod
     def _get_lane_bmap(cls, port):
         raise NotImplementedError(f"Implemented only for sw ports. Juliet NSO doesn't have sw ports.")
+
+# -------------------------- JulietNonScaleoutSwitchGB300 Switch ----------------------------
+
+
+class JulietNonScaleoutSwitchGB300(JulietNonScaleoutSwitch):
+
+    def __init__(self):
+        super().__init__()
+
+    def _init_constants(self):
+        super()._init_constants()
+        self.category_list = ['temperature', 'cpu', 'disk', 'mgmt-interface', 'voltage']
+        self.category_disabled_dict = {
+            self.category_list[0]: self.category_default_disabled_dict,
+            self.category_list[1]: self.category_default_disabled_dict,
+            self.category_list[2]: self.category_disk_default_disable_dict,
+            self.category_list[3]: self.category_default_disabled_dict,
+            self.category_list[3]: self.category_default_disabled_dict
+        }
+        self.category_list_default_dict = {
+            self.category_list[0]: self.category_default_dict,
+            self.category_list[1]: self.category_default_dict,
+            self.category_list[2]: self.category_disk_default_dict,
+            self.category_list[3]: self.category_default_dict,
+            self.category_list[4]: self.category_default_dict
+        }
+        self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/juliet_gb300_versions.json"
+        # will be updated
+        self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
+            "x86_64-nvidia_n5500_ld-r0")
+        self.show_platform_output.update({
+            "product-name": "N5500_LD",
+            "asic-model": self.asic_type,
+        })
+        self.constants.firmware.remove("CPLD4")
+        stats_dump_files = ["cpu.csv.gz", "disk.csv.gz", "mgmt-interface.csv.gz",
+                            "temperature.csv.gz", "voltage.csv.gz"]
+        self.constants = self.constants._replace(stats_dump_files=stats_dump_files)
+        log_dump_files = ["audit.log.gz", "auth.log.gz", "btmp.gz", "cron.log.gz",
+                          "firewall_packet_capture.log.gz", "health_history.gz",
+                          "nv-cli.log.gz", "nvued.log.gz", "syslog.gz", "wtmp.gz", "ztp.log.gz"]
+        self.constants = self.constants._replace(log_dump_files=log_dump_files)
+        self.voltage_sensors = [
+            "HSC-VinDC-In",
+            "HSC-VinDC-Out",
+            "PDB-1-Conv-In-1",
+            "PDB-1-Conv-Out-1",
+            "PMIC-1-12V-VDD-ASIC1-In-1",
+            "PMIC-1-ASIC1-VDD-Out-1",
+            "PMIC-2-12V-HVDD-DVDD-ASIC1-In-1",
+            "PMIC-2-ASIC1-DVDD-PL0-Out-2",
+            "PMIC-2-ASIC1-HVDD-PL0-Out-1",
+            "PMIC-3-12V-HVDD-DVDD-ASIC1-In-1",
+            "PMIC-3-ASIC1-DVDD-PL1-Out-2",
+            "PMIC-3-ASIC1-HVDD-PL1-Out-1",
+            "PMIC-4-12V-VDD-ASIC2-In-1",
+            "PMIC-4-ASIC2-VDD-Out-1",
+            "PMIC-5-12V-HVDD-DVDD-ASIC2-In-1",
+            "PMIC-5-ASIC2-DVDD-PL0-Out-2",
+            "PMIC-5-ASIC2-HVDD-PL0-Out-1",
+            "PMIC-6-12V-HVDD-DVDD-ASIC2-In-1",
+            "PMIC-6-ASIC2-DVDD-PL1-Out-2",
+            "PMIC-6-ASIC2-HVDD-PL1-Out-1",
+            "PMIC-7-12V-MAIN-In-1",
+            "PMIC-7-CPU-Out-1",
+            "PMIC-7-SOC-Out-2"
+        ]
+        self.leakage_sensors_count = 4
+        self.list_of_leakages = [f"LEAKAGE-{i}" for i in range(1, self.leakage_sensors_count + 1)]
+
+    def _init_fan_list(self):
+        # GB300 is 100% liquid cooled
+        self.fan_list = []
+        self.fan_led_list = []
+
+    def _init_platform_lists(self):
+        super()._init_platform_lists()
+        self.platform_environment_fan_values = {}
+        self.platform_inventory_switch_values.update({"hardware-version": None,
+                                                      "model": ExpectedString(regex="692-9K33R-00MV-JES")})
+
+    def _init_led_list(self):
+        super()._init_led_list()
+        self.led_list = ["STATUS", "UID"]
+
+    def _init_temperature(self):
+        super()._init_temperature()
+        self.temperature_sensors = [
+            "ASIC1",
+            "ASIC2",
+            "CPU-Pack-Temp",
+            "Drive-Temp",
+            "HSC-VinDC-Temp",
+            "PDB-Conv-1-Temp",
+            "PMIC-7-Temp",
+            "SODIMM-1-Temp"
+        ]
 
 # -------------------------- JulietNonScaleoutNoNCISwitch Switch ----------------------------
 

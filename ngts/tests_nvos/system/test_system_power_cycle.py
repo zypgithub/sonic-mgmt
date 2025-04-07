@@ -71,7 +71,7 @@ def _test_command_supported(engines, devices, test_name, test_api, force_str):
         assert reboot_time >= system_time, \
             f"power-cycle command sent at {system_time.strftime('%H:%M:%S')} but 'show system reboot' shows {output}"
         if not is_redmine_issue_active([4247423])[0]:
-            assert output["reason"] == 'power-cycle'
+            assert output["reason"] == 'Power Cycle'
             assert output["user"] == 'admin'
 
     with allure.step("Assert power-cycle duration was not too long"):

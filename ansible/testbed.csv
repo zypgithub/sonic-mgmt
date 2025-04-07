@@ -587,6 +587,9 @@ juliet-156-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54
 juliet-160-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,juliet-160,Mellanox MTR testbed
 juliet-158-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,juliet-158,Mellanox MTR testbed
 juliet-142-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,juliet-142,Mellanox MTR testbed
+juliet-85-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,juliet-85,Mellanox MTR testbed
+juliet-184-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,juliet-184,Mellanox MTR testbed
+juliet-191-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,juliet-191,Mellanox MTR testbed
 juliet-144-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,juliet-144,Mellanox MTR testbed
 juliet-148-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,juliet-148,Mellanox MTR testbed
 juliet-68-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,juliet-68,Mellanox MTR testbed
