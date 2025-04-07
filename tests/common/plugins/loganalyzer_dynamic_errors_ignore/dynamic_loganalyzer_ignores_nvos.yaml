@@ -567,6 +567,7 @@
 - Errors_list:
     - '.*ERR systemd[1]: Failed to start ib-utils container.*'
     - '.*WARNING healthd: Got system ready timeout. Notifying.*'
+    - '.*WARNING nvued: WARNING: .* System is not ready.*'
   Conditions:
     - Affected_test_cases:
         - tests_nvos/infra/init_flow/test_system_init_done_feature.py::test_system_ready_state_down
