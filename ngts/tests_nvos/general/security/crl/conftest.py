@@ -12,7 +12,7 @@ gnmi_client = pytest.param(GnmiCrlClient, id="gnmi")
 nmx_controller_client = pytest.param(NmxControllerCrlClient, id="nmx_c")
 nmx_telemetry_client = pytest.param(NmxTelemetryCrlClient, id="nmx_t")
 # TODO: add nmx controller and telemetry clients after they are merged
-clients = [api_client, gnmi_client]
+clients = [api_client, gnmi_client, nmx_controller_client]
 
 
 @pytest.fixture(scope="function")
@@ -26,7 +26,7 @@ def system_with_cleanup():
     delete_crl()
 
 
-@pytest.fixture(scope="function", params=[clients])
+@pytest.fixture(scope="function", params=clients)
 def validator_with_cleanup(request, dut_hostname, engines, dut_ipv6_addr):
     ip = dut_ipv6_addr if get_cur_test_param_value(
         request, "addressing_type") == AddressingType.IPV6 else engines.dut.ip
