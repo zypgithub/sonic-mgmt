@@ -142,6 +142,16 @@ reboot_ctrl_dict = {
     }
 }
 
+'''
+command : command to reboot the smartswitch DUT
+'''
+reboot_ss_ctrl_dict = {
+    REBOOT_TYPE_COLD: {
+        "command": "reboot",
+        "timeout": 300,
+        "cause": r"'reboot'|Non-Hardware \(reboot|^reboot"
+    }
+}
 MAX_NUM_REBOOT_CAUSE_HISTORY = 10
 REBOOT_TYPE_HISTOYR_QUEUE = deque([], MAX_NUM_REBOOT_CAUSE_HISTORY)
 REBOOT_CAUSE_HISTORY_TITLE = ["name", "cause", "time", "user", "comment"]
@@ -227,6 +237,28 @@ def perform_reboot(duthost, pool, reboot_command, reboot_helper=None, reboot_kwa
 
 
 @support_ignore_loganalyzer
+def reboot_smartswitch(duthost, reboot_type=REBOOT_TYPE_COLD):
+    """
+    reboots SmartSwitch or a DPU
+    :param duthost: DUT host object
+    :param reboot_type: reboot type (cold)
+    """
+
+    if reboot_type not in reboot_ss_ctrl_dict:
+        logger.info("Skipping the reboot test as the reboot type {} is not supported".format(reboot_type))
+        return
+
+    hostname = duthost.hostname
+    dut_datetime = duthost.get_now_time(utc_timezone=True)
+
+    logging.info("Rebooting the DUT {} with type {}".format(hostname, reboot_type))
+
+    reboot_res = duthost.command(reboot_ss_ctrl_dict[reboot_type]["command"])
+
+    return [reboot_res, dut_datetime]
+
+
+@support_ignore_loganalyzer
 def reboot(duthost, localhost, reboot_type='cold', delay=10,
            timeout=0, wait=0, wait_for_ssh=True, wait_warmboot_finalizer=False, warmboot_finalizer_timeout=0,
            reboot_helper=None, reboot_kwargs=None, return_after_reconnect=False, plt_reboot_ctrl_overwrite=True,
@@ -286,7 +318,12 @@ def reboot(duthost, localhost, reboot_type='cold', delay=10,
     console_thread_res = pool.apply_async(
         collect_console_log, args=(duthost, localhost, timeout + wait_conlsole_connection))
     time.sleep(wait_conlsole_connection)
-    reboot_res, dut_datetime = perform_reboot(duthost, pool, reboot_command, reboot_helper, reboot_kwargs, reboot_type)
+    # Perform reboot
+    if duthost.is_smartswitch():
+        reboot_res, dut_datetime = reboot_smartswitch(duthost, reboot_type)
+    else:
+        reboot_res, dut_datetime = perform_reboot(duthost, pool, reboot_command, reboot_helper,
+                                                  reboot_kwargs, reboot_type)
 
     wait_for_shutdown(duthost, localhost, delay, timeout, reboot_res, port)
 
