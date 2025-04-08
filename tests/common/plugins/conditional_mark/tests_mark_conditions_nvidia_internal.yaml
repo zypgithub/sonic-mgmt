@@ -415,31 +415,9 @@ clock/test_clock.py:
 sflow/test_sflow.py:
   skip:
     reason: "Testcase ignored due to community sflow test had not been adapted to the dualtor setup"
+    conditions_logical_operator: or
     conditions:
     - "'dualtor' in topo_name"
-
-sflow/test_sflow.py::TestSflowCollector:
-  skip:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4389689"
-    conditions:
-    - "https://redmine.mellanox.com/issues/4389689"
-
-sflow/test_sflow.py::TestReboot::testRebootSflowEnable:
-  skip:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4389689"
-    conditions:
-    - "https://redmine.mellanox.com/issues/4389689"
-
-sflow/test_sflow.py::TestReboot::testFastreboot:
-  skip:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4389689"
-    conditions:
-    - "https://redmine.mellanox.com/issues/4389689"
-
-sflow/test_sflow.py::TestReboot::testWarmreboot:
-  skip:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4389689"
-    conditions:
     - "https://redmine.mellanox.com/issues/4389689"
 
 snmp/test_snmp_phy_entity.py::test_transceiver_info:
