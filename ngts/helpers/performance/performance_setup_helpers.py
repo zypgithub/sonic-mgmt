@@ -331,8 +331,7 @@ def get_performance_pytest_test_name(request, is_ipv6):
     Returns:
         the test name with the ip parameter, i.e, test_ar_perf_max_bandwidth[4096-IPv6]
     """
-    test_name = get_pytest_test_name(request)
-    test_name_with_ip_param = get_perf_test_name(test_name, is_ipv6)
+    test_name_with_ip_param = get_perf_test_name(request, is_ipv6)
     return test_name_with_ip_param
 
 

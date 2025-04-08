@@ -63,7 +63,7 @@ def conf_args():
 
 @pytest.fixture(scope='function', autouse=True)
 def update_test_mongo_metadata(request, players, is_ipv6, port_group_df):
-    test_name = get_perf_test_name(request.node.name, is_ipv6)
+    test_name = get_perf_test_name(request, is_ipv6)
     add_test_mongo_metadata(test_name, {MongoDbConsts.CONF_NAME: "400G_to_200G_leaf",
                                         MongoDbConsts.PORT_GROUP_DF: port_group_df})
     yield

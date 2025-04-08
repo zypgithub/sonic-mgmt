@@ -68,7 +68,7 @@ def ibm_fixture(players, conf_args):
 
 @pytest.fixture(scope='function', autouse=True)
 def update_test_mongo_metadata(request, players, is_ipv6, port_group_df):
-    test_name = get_perf_test_name(request.node.name, is_ipv6)
+    test_name = get_perf_test_name(request, is_ipv6)
     add_test_mongo_metadata(test_name, {MongoDbConsts.CONF_NAME: "x1_800G_spine",
                                         MongoDbConsts.PORT_GROUP_DF: port_group_df})
     yield

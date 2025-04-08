@@ -98,7 +98,7 @@ def create_mongo_db_template_file(players, session_id, setup_name):
 @pytest.fixture(scope='function', autouse=True)
 def update_test_data_in_mongo_db(request, players, is_ipv6):
     try:
-        test_name = get_perf_test_name(request.node.name, is_ipv6)
+        test_name = get_perf_test_name(request, is_ipv6)
         time_now = datetime.now().strftime(MongoDbConsts.TIME_REGEX_FORMAT)
         add_test_mongo_metadata(test_name, {MongoDbConsts.TEST_NAME: test_name,
                                             MongoDbConsts.TIME_STAMP: time_now})
