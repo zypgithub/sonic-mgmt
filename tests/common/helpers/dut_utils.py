@@ -680,7 +680,7 @@ def get_dpu_names_and_ssh_ports(duthost, dpuhost_names, ansible_adhoc):
     dpu_name_ssh_port_dict = {}
     for dpuhost_name, dpu_host_ssh_port in dpuhost_ssh_port_dict.items():
         if duthost_name in dpuhost_name:
-            res = re.match(f"{duthost_name}.*dpu.*(\d+)", dpuhost_name)
+            res = re.match(fr"{duthost_name}.*dpu.*(\d+)", dpuhost_name)
             if res:
                 dpuhost_index = res[1]
             else:
