@@ -1,0 +1,4 @@
+Hostname,ManagementIp,HwSku,Type,Protocol,Os
+r-bison-12,10.210.25.212/22,Mellanox-SN5640-C512S2,DevSonic,,sonic
+pdu-10-208-2-15,10.208.2.15,Vertiv,Pdu,snmp,
+pdu-10-208-2-42,10.208.2.42,Vertiv,Pdu,snmp,
