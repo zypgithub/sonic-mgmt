@@ -160,7 +160,7 @@ def apply_acl_rule(setup_info, tbinfo, setup_mirror_session_dest_ip_route, ip_ve
         "mirror_session_info": mirror_session_info,
         "monitor_port_ptf_ids": monitor_port_ptf_ids
     }
-    time.sleep(2)
+    time.sleep(60)
 
     yield ret
 
