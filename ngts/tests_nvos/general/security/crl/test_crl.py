@@ -1,6 +1,5 @@
 import logging
 import os
-import time
 
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.constants.constants import GnmiConsts

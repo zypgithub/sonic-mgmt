@@ -1422,7 +1422,7 @@ class ClusterConsts:
     NMX_CONTROLLER_PREFIX = 'nmx-c'
     NMX_TELEMETRY_PREFIX = 'nmx-t'
     NMX_CONTROLLER_ENVOY_PORT = 9370
-    NMX_TELEMETRY_ENVOY_PORT = 9352
+    NMX_TELEMETRY_ENVOY_PORT = 9351
     NMX_TELEMETRY_PROTO_PATH = '/auto/sw_system_project/NVOS_INFRA/verification_files/nmx/nmx-telemetry.proto'
     TELEMETRY_SERVICES = ['nmx-connector', 'ib-telemetry']
     CONTROLLER_SERVICES = ['nmxc-sdn', 'nmxc-fib', 'redis']

@@ -5,7 +5,6 @@ from typing import Dict, List, Optional, Tuple
 from ngts.nvos_constants.constants_nvos import ClusterApps, ClusterConsts
 from ngts.nvos_tools.infra.CrlValidator import CrlClient
 from ngts.nvos_tools.infra.CurlCmdBuilder import CurlCmdBuilder
-from ngts.nvos_tools.infra.CurlTool import CurlTool
 from ngts.nvos_tools.infra.GrpcCmdBuilder import GrpcCmdBuilder
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
@@ -219,9 +218,13 @@ class NmxCrlClient(CrlClient):
             nmx_app.manager.crl.action_update(crl_name).verify_result(should_succeed=should_succeed)
 
         with allure.step("verify crl shown in mtls"):
-            output = nmx_app.manager.crl.parse_show()
-            assert 'crl' in output, "No crl found in output"
-            assert crl_name in output['crl'], f"Expected CRL '{crl_name}' not found in show output"
+            with allure.independent_step("verify crl shown in nmx app manager output"):
+                output = nmx_app.manager.parse_show()
+                assert 'crl' in output, "No crl found in output"
+            with allure.independent_step("verify crl shown in nmx app manager crl output"):
+                output = nmx_app.manager.crl.parse_show()
+                assert 'crl' in output, "No crl found in output"
+                assert crl_name in output['crl'], f"Expected CRL '{crl_name}' not found in show output"
 
     def run_client(
         self,
@@ -245,6 +248,8 @@ class NmxCrlClient(CrlClient):
         payload: Dict[str, str] = {"gatewayId": "sasha",
                                    "major_version": "PROTO_MSG_MAJOR_VERSION", "minor_version": "PROTO_MSG_MINOR_VERSION"}
         grpc = GrpcCmdBuilder(self.host, port)
+        if user:
+            grpc.user_creds(user.username, user.password)
         if client_cert:
             grpc.cert(client_cert.private, client_cert.public)
         if client_cacert:

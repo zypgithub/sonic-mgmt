@@ -12,6 +12,7 @@ from ngts.tests_nvos.general.security.centralized_tests.helpers.checker_skip_rul
     SkipCheckerByCond, SkipCheckerBySetup, should_skip_checker
 from ngts.tests_nvos.general.security.certificate.helpers import delete_certificates
 from ngts.tests_nvos.general.security.certificate.test_cert_cacert_mgmt import certs_mgmt_upgrade_check
+from ngts.tests_nvos.general.security.crl.test_crl import crl_factory_reset_keep_all_config_check
 from ngts.tests_nvos.general.security.nmx_cert.test_cluster_app_mngr_security import \
     cluster_app_mngr_security_upgrade_check
 from ngts.tests_nvos.general.security.test_api_server_security.test_api_mtls import api_mtls_upgrade_check
@@ -27,19 +28,22 @@ NMX_CERT = 'NMX cert'
 API_MTLS = 'API mTLS'
 SED_PASSWORD = 'SED password'
 CERTS_MGMT = 'Certificates management'
+CRL = 'CRL'
 
 UPGRADE_CHECKERS: Dict[str, Generator[None, None, None]] = {
     GNMI_CERT: gnmi_mtls_upgrade_check(),
     NMX_CERT: cluster_app_mngr_security_upgrade_check(),
     API_MTLS: api_mtls_upgrade_check(),
     CERTS_MGMT: certs_mgmt_upgrade_check(),
+    CRL: crl_factory_reset_keep_all_config_check(),
 }
 
 CHECKERS_SKIP_RULES: Dict[str, CheckerSkipRule] = {
     API_MTLS: SkipCheckerByCond(is_bug_active(4103432)),  # TODO: remove once bug #4103432 closed
     NMX_CERT: SkipCheckerBySetup(['juliet'], False),
     SED_PASSWORD: SkipCheckerBySetup(['gorilla']),
-    TPM_ATTESTATION: SkipCheckerBySetup(['gorilla'])
+    TPM_ATTESTATION: SkipCheckerBySetup(['gorilla']),
+    CRL: SkipCheckerBySetup(['juliet'], False),
 }
 
 
