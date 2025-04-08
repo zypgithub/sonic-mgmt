@@ -62,7 +62,7 @@ class TestSRv6Leaf(TestSRv6Base):
     @pytest.mark.parametrize("traffic_type", ["IPv6", "SRv6"])
     def test_leaf_srv6(self, request, traffic_type, workload, packet_size=4096):
 
-        test_name = get_perf_test_name(request, self.ip)
+        test_name = get_perf_test_name(request.node.name, self.ip)
         with allure.step(f"Set test configuration description"):
             add_test_mongo_metadata(test_name,
                                     {MongoDbConsts.CONF_NAME:
