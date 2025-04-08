@@ -169,12 +169,12 @@ def check_warmboot_finalizer_inactive(duthost):
     return 'inactive' == stdout.strip()
 
 
-def wait_for_shutdown(duthost, localhost, delay, timeout, reboot_res, port=SONIC_SSH_PORT):
+def wait_for_shutdown(duthost, localhost, delay, timeout, reboot_res):
     hostname = duthost.hostname
     dut_ip = duthost.mgmt_ip
     logger.info('waiting for ssh to drop on {}'.format(hostname))
     res = localhost.wait_for(host=dut_ip,
-                             port=port,
+                             port=SONIC_SSH_PORT,
                              state='absent',
                              search_regex=SONIC_SSH_REGEX,
                              delay=delay,
@@ -187,7 +187,7 @@ def wait_for_shutdown(duthost, localhost, delay, timeout, reboot_res, port=SONIC
         raise Exception('DUT {} did not shutdown'.format(hostname))
 
 
-def wait_for_startup(duthost, localhost, delay, timeout, port=SONIC_SSH_PORT):
+def wait_for_startup(duthost, localhost, delay, timeout):
     # TODO: add serial output during reboot for better debuggability
     #       This feature requires serial information to be present in
     #       testbed information
@@ -197,7 +197,7 @@ def wait_for_startup(duthost, localhost, delay, timeout, port=SONIC_SSH_PORT):
     is_ssh_connected, res, num_tries = ssh_connection_with_retry(
         localhost=localhost,
         host_ip=dut_ip,
-        port=port,
+        port=SONIC_SSH_PORT,
         delay=delay,
         timeout=timeout,
     )
@@ -235,7 +235,6 @@ def perform_reboot(duthost, pool, reboot_command, reboot_helper=None, reboot_kwa
         reboot_res = pool.apply_async(execute_reboot_helper)
     return [reboot_res, dut_datetime]
 
-
 @support_ignore_loganalyzer
 def reboot_smartswitch(duthost, reboot_type=REBOOT_TYPE_COLD):
     """
@@ -257,12 +256,11 @@ def reboot_smartswitch(duthost, reboot_type=REBOOT_TYPE_COLD):
 
     return [reboot_res, dut_datetime]
 
-
 @support_ignore_loganalyzer
 def reboot(duthost, localhost, reboot_type='cold', delay=10,
            timeout=0, wait=0, wait_for_ssh=True, wait_warmboot_finalizer=False, warmboot_finalizer_timeout=0,
            reboot_helper=None, reboot_kwargs=None, return_after_reconnect=False, plt_reboot_ctrl_overwrite=True,
-           safe_reboot=False, check_intf_up_ports=False, port=SONIC_SSH_PORT, wait_for_bgp=False, wait_for_ibgp=True):
+           safe_reboot=False, check_intf_up_ports=False, wait_for_bgp=False,  wait_for_ibgp=True):
     """
     reboots DUT
     :param duthost: DUT host object
@@ -325,7 +323,7 @@ def reboot(duthost, localhost, reboot_type='cold', delay=10,
         reboot_res, dut_datetime = perform_reboot(duthost, pool, reboot_command, reboot_helper,
                                                   reboot_kwargs, reboot_type)
 
-    wait_for_shutdown(duthost, localhost, delay, timeout, reboot_res, port)
+    wait_for_shutdown(duthost, localhost, delay, timeout, reboot_res)
 
     # Release event to proceed poweron for PDU.
     power_on_event.set()
@@ -334,7 +332,7 @@ def reboot(duthost, localhost, reboot_type='cold', delay=10,
     if not wait_for_ssh:
         return
     try:
-        wait_for_startup(duthost, localhost, delay, timeout, port)
+        wait_for_startup(duthost, localhost, delay, timeout)
     except Exception as err:
         logger.error('collecting console log thread result: {} on {}'.format(console_thread_res.get(), hostname))
         pool.terminate()
@@ -709,43 +707,3 @@ def check_determine_reboot_cause_service(dut):
     assert sub_state == "exited", f"Service 'determine-reboot-cause' did not exit cleanly. \
             Current sub-state: {sub_state}"
 
-
-def try_create_dut_console(duthost, localhost, conn_graph_facts, creds):
-    try:
-        dut_sonsole = create_duthost_console(duthost, localhost, conn_graph_facts, creds)
-    except Exception as err:
-        logger.warning(f"Fail to create dut console. Please check console config or if console works ro not. {err}")
-        return None
-    logger.info("creating dut console succeeds")
-    return dut_sonsole
-
-
-def collect_console_log(duthost, localhost, timeout):
-    logger.info("start: collect console log")
-    creds = creds_on_dut(duthost)
-    conn_graph_facts = get_graph_facts(duthost, localhost, [duthost.hostname])
-    dut_console = try_create_dut_console(duthost, localhost, conn_graph_facts, creds)
-    if dut_console:
-        logger.info(f"sleep {timeout} to collect console log....")
-        time.sleep(timeout)
-        dut_console.disconnect()
-        logger.info('end: collect console log')
-    else:
-        logger.warning("dut console is not ready, we cannot get log by console")
-
-
-def collect_mgmt_config_by_console(duthost, localhost):
-    logger.info("check if dut is pingable")
-    localhost.shell(f"ping -c 5 {duthost.mgmt_ip}", module_ignore_errors=True)
-
-    logger.info("Start: collect mgmt config by console")
-    creds = creds_on_dut(duthost)
-    conn_graph_facts = get_graph_facts(duthost, localhost, [duthost.hostname])
-    dut_console = try_create_dut_console(duthost, localhost, conn_graph_facts, creds)
-    if dut_console:
-        dut_console.send_command("ip a s eth0")
-        dut_console.send_command("show ip int")
-        dut_console.disconnect()
-        logger.info('End: collect mgmt config by  console  ...')
-    else:
-        logger.warning("dut console is not ready, we can get mgmt config by console")

@@ -13,8 +13,7 @@ from tests.common.utilities import wait_until
 from tests.common.platform.processes_utils import wait_critical_processes
 from tests.common.platform.transceiver_utils import check_transceiver_basic
 from tests.common.platform.interface_utils import check_all_interface_information, get_port_map
-from tests.common.platform.interface_utils import check_interface_status_of_up_ports
-from tests.common.reboot import reboot, SONIC_SSH_PORT
+from tests.common.reboot import reboot
 from tests.common.config_reload import config_force_option_supported, config_system_checks_passed
 
 pytestmark = [
@@ -51,25 +50,13 @@ def delayed_services(duthosts, enum_rand_one_per_hwsku_hostname):
     return delayed_services
 
 
-@pytest.fixture(scope="module")
-def is_dpu_dut(duthost):
-    return 'dpu' in duthost.facts['platform']
-
-
 def test_reload_configuration(duthosts, enum_rand_one_per_hwsku_hostname,
-                              conn_graph_facts, xcvr_skip_list, is_dpu_dut):       # noqa F811
+                              conn_graph_facts, xcvr_skip_list):       # noqa F811
     """
     @summary: This test case is to reload the configuration and check platform status
     """
     duthost = duthosts[enum_rand_one_per_hwsku_hostname]
-    if is_dpu_dut:
-        check_interface_method = check_interface_status_of_up_ports
-        check_interface_method_args = (duthost,)
-    else:
-        interfaces = conn_graph_facts.get("device_conn", {}).get(duthost.hostname, {})
-        check_interface_method = check_all_interface_information
-        check_interface_method_args = (duthost, interfaces, xcvr_skip_list,)
-
+    interfaces = conn_graph_facts.get("device_conn", {}).get(duthost.hostname, {})
     asic_type = duthost.facts["asic_type"]
 
     if config_force_option_supported(duthost):
@@ -85,17 +72,17 @@ def test_reload_configuration(duthosts, enum_rand_one_per_hwsku_hostname,
     max_wait_time_for_transceivers = 300
     if duthost.facts["platform"] in ["x86_64-cel_e1031-r0", "x86_64-88_lc0_36fh_m-r0"]:
         max_wait_time_for_transceivers = 900
-    assert wait_until(max_wait_time_for_transceivers, 20, 0, check_interface_method, *check_interface_method_args), \
-        "Not all transceivers are detected in {} seconds".format(max_wait_time_for_transceivers)
+    assert wait_until(max_wait_time_for_transceivers, 20, 0, check_all_interface_information,
+                      duthost, interfaces, xcvr_skip_list), "Not all transceivers are detected \
+    in {} seconds".format(max_wait_time_for_transceivers)
 
-    if not is_dpu_dut:
-        logging.info("Check transceiver status")
-        for asic_index in duthost.get_frontend_asic_ids():
-            # Get the interfaces pertaining to that asic
-            interface_list = get_port_map(duthost, asic_index)
-            interfaces_per_asic = {k: v for k, v in list(interface_list.items()) if k in interfaces}
-            check_transceiver_basic(duthost, asic_index,
-                                    interfaces_per_asic, xcvr_skip_list)
+    logging.info("Check transceiver status")
+    for asic_index in duthost.get_frontend_asic_ids():
+        # Get the interfaces pertaining to that asic
+        interface_list = get_port_map(duthost, asic_index)
+        interfaces_per_asic = {k: v for k, v in list(interface_list.items()) if k in interfaces}
+        check_transceiver_basic(duthost, asic_index,
+                                interfaces_per_asic, xcvr_skip_list)
 
     if asic_type in ["mellanox"]:
 
@@ -172,8 +159,6 @@ def test_reload_configuration_checks(duthosts, enum_rand_one_per_hwsku_hostname,
 
     if not config_force_option_supported(duthost):
         return
-    ssh_port = \
-        duthost.host.options['variable_manager']._hostvars[duthost.hostname].get('ansible_ssh_port', SONIC_SSH_PORT)
 
     timeout = 0
     if duthost.get_facts().get("modular_chassis"):
@@ -181,7 +166,7 @@ def test_reload_configuration_checks(duthosts, enum_rand_one_per_hwsku_hostname,
 
     reboot(duthost, localhost, reboot_type="cold", return_after_reconnect=True, wait=5,
            timeout=timeout,
-           plt_reboot_ctrl_overwrite=False, port=ssh_port)
+           plt_reboot_ctrl_overwrite=False)
 
     # Check if all database containers have started
     # Some device after reboot may take some longer time to have database container started up
