@@ -463,6 +463,24 @@ platform_tests/cli/test_show_platform.py::test_show_platform_fan:
     conditions:
       - "https://redmine.mellanox.com/issues/4244427 and 'sn5640_simx' in platform"
 
+platform_tests/daemon/test_pcied.py::test_pmon_pcied_term_and_start_status:
+  xfail:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4398394"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4398394"
+
+platform_tests/daemon/test_pcied.py::test_pmon_pcied_kill_and_start_status:
+  xfail:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4398394"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4398394"
+
+platform_tests/daemon/test_syseepromd.py::test_pmon_syseepromd_kill_and_start_status:
+  xfail:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4398394"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4398394"
+
 passw_hardening/test_passw_hardening.py:
   skip:
     reason: "Testcase skipped because the test is related to performance, no meaningful to run it on simx platform "
