@@ -710,7 +710,8 @@ def duthosts_ipv6_mgmt_only(duthosts, backup_and_restore_config_db_on_duts):
                     finally:
                         ssh_client.close()
 
-        if not ipv6_address[duthost.hostname] and not has_available_ipv6_addr:
+        if (not ipv6_address[duthost.hostname] and not has_available_ipv6_addr or
+                ipaddress.IPv6Address(ipv6_address[duthost.hostname][0]).is_link_local):
             pytest.skip(f"{duthost.hostname} doesn't have IPv6 Management IP address or doesn't have available IPv6 "
                         f"Management IP address")
         if ipv6_address[duthost.hostname] and not has_available_ipv6_addr:
