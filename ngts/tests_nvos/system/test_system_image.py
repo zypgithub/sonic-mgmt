@@ -566,31 +566,26 @@ def test_fetch_image_via_https(test_api):
     """
     system = System()
     image_fetched = False
-    image_to_fetch = []
     # Selecting a random release to attempt image fetching
     release_name = ImageConsts.NVOS_RELEASE_25_02_1000
+    image_file = BASE_IMAGE_VERSION_TO_INSTALL.format(pre_release_name=release_name)
+    image_to_fetch = BASE_IMAGE_VERSION_TO_INSTALL_PATH.format(pre_release_name=release_name, base_image=image_file)
 
     try:
-        with allure.step("Get the image details to be fetched"):
-            original_image = system.image.get_image_field_values()[ImageConsts.PARTITION1_IMG]
-            result = get_images_to_fetch(release_name, original_image, 1)
-            assert len(result) > 0, "Required images with release {} were not retrieved".format(release_name)
-            image_to_fetch = result[0]
-
-        with allure.step("Fetch an image {}".format(SystemConsts.NBU_NFS_SERVER + image_to_fetch[1])):
-            system.image.action_fetch(SystemConsts.NBU_NFS_SERVER + image_to_fetch[1])
+        with allure.step("Fetch an image {}".format(SystemConsts.NBU_NFS_SERVER + image_to_fetch)):
+            system.image.action_fetch(SystemConsts.NBU_NFS_SERVER + image_to_fetch)
             image_fetched = True
 
         with allure.step("Verify fetched image is shown in the show command"):
-            system.image.files.verify_show_files_output(expected_files=[image_to_fetch[0]])
+            system.image.files.verify_show_files_output(expected_files=[image_file])
 
     finally:
         if image_fetched:
             with allure.step("Delete the image that has been fetched during the test"):
-                system.image.files.delete_files([image_to_fetch[0]])
+                system.image.files.delete_files([image_file])
 
             with allure.step("Verify earlier fetched image is not shown in the show command"):
-                system.image.files.verify_show_files_output(unexpected_files=[image_to_fetch[0]])
+                system.image.files.verify_show_files_output(unexpected_files=[image_file])
 
 
 @pytest.mark.checklist
