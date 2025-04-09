@@ -85,7 +85,12 @@ def pytest_collection_modifyitems(session, config, items):
             skip = pytest.mark.skip(reason=f'{platform} platform does not support split to maximum ports')
             add_marker(items, skip)
             return
-
+        # TODO: need to remove once the ticket closed.
+        from infra.tools.redmine.redmine_api import is_redmine_issue_active
+        if is_redmine_issue_active([4398874])[0]:
+            skip = pytest.mark.skip(reason='https://redmine.mellanox.com/issues/4398874')
+            add_marker(items, skip)
+            return
         platform_max_ports_num = max_ports_num_per_platform[platform]
         if config.option.ports_number == "max":
             expected_ports_num = platform_max_ports_num
