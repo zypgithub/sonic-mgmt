@@ -318,6 +318,7 @@ class PlatformTypesConstants:
     PLATFORM_LIONFISH = 'x86_64-mlnx_msn3420-r0'
     PLATFORM_OCELOT = 'x86_64-mlnx_msn4410-r0'
     PLATFORM_PANTHER = 'x86_64-mlnx_msn2700-r0'
+    PLATFORM_PANTHER_A1 = 'x86_64-mlnx_msn2700a1-r0'
     PLATFORM_SPIDER = 'x86_64-mlnx_msn2410-r0'
     PLATFORM_TIGON = 'x86_64-mlnx_msn4600c-r0'
     PLATFORM_TIGRIS = 'x86_64-mlnx_msn3800-r0'

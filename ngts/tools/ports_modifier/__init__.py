@@ -47,6 +47,7 @@ def pytest_collection_modifyitems(session, config, items):
     if len(items) == 1 and items[0].name in MAX_PORTS_TEST_LIST and config.option.ports_number:
         minimum_ports_number = 4
         max_ports_num_per_platform = {PlatformTypesConstants.PLATFORM_PANTHER: 60,
+                                      PlatformTypesConstants.PLATFORM_PANTHER_A1: 60,
                                       PlatformTypesConstants.PLATFORM_LIONFISH: 93,
                                       PlatformTypesConstants.PLATFORM_ANACONDA: 116,
                                       PlatformTypesConstants.PLATFORM_ANACONDA_C: 116,
