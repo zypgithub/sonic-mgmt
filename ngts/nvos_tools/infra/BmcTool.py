@@ -24,8 +24,9 @@ logger = logging.getLogger()
 
 
 class BmcTool:
+    BMC_LOCAL_IP = "10.0.1.1"
     BASE_REDFISH_URL = "/redfish/v1/"
-    BASE_URL = "https://10.0.1.1" + BASE_REDFISH_URL
+    BASE_URL = "https://" + BMC_LOCAL_IP + BASE_REDFISH_URL
     USER_NAME = ADMIN
     PLATFORM_COMPONENTS_DICT = dict()
     FW_VERSIONS_JSON_FILE = None
@@ -121,12 +122,10 @@ class BmcTool:
         return BmcTool._get_fw_component_version_info(component_name, "previous")
 
     @staticmethod
-    def get_bmc_ip_addresses(engines, topology_obj):
+    def get_bmc_ip_addresses(engines, topology_obj) -> Dict[str, str]:
         """
         get ipv4 using noga and ipv6 using curl -k -u <user>>:<password> https://<bmc_ip>/redfish/v1/Managers/BMC_0/EthernetInterfaces/eth0
-        :param engines:
-        :param topology_obj:
-        :return:
+        :return: {"IPv4": ... , "IPv6": ...}
         """
         ip_addresses = {}
         with allure.step("Get bmc ipv4 from noga"):
@@ -163,7 +162,7 @@ class BmcTool:
         """Build base curl command with authentication and URL."""
         return (
             f"curl -s -k -u {ROOT}:{BMC_USER_BACKUP_PASSWORD} "
-            f"https://{bmc_ip_address}{BmcTool.BASE_REDFISH_URL}{component_path} -X {method} --fail-with-body"
+            f"https://{bmc_ip_address}{BmcTool.BASE_REDFISH_URL}{component_path} -X {method} --fail && echo"
         )
 
     @staticmethod
