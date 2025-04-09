@@ -489,6 +489,12 @@ qos/test_qos_sai.py::TestQosSai::testQosSaiQSharedWatermark:
     conditions:
     - "https://redmine.mellanox.com/issues/3097795 and '202111' in release"
 
+qos/test_qos_sai.py::TestQosSai::testQosSaiPgSharedWatermark[single_asic-wm_pg_shared_lossless]:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4398086 on r-panther-01"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4398086 and 'r-panther-01' in testbed"
+
 platform_tests/test_cpu_memory_usage.py:
   skip:
     reason: "Testcase ignored due to simx"
