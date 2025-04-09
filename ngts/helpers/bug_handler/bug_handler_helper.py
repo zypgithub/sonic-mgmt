@@ -7,7 +7,6 @@ import logging
 import allure
 import math
 import pathlib
-import shlex
 
 from retry.api import retry
 from pathlib import Path
@@ -286,10 +285,6 @@ def run_err_msg_bug_handler_tool(conf_path, redmine_project, branch, yaml_parsed
     if is_attachment_needed(bug_handler_file_result, update_only, bug_handler_no_action, yaml_parsed_file):
         ticket_id = get_ticket_id(bug_handler_file_result)
         tar_file_path_list = get_tech_support_from_switch(bug_handler_params)
-        # shlex.quote is used to quote the tar_file_path to in case file name
-        # contains special characters like '[', ']', ' ', etc...
-        # e.g. sysdump[ipv4].tar.gz will be quoted as 'sysdump[ipv4].tar.gz'
-        tar_file_path_list = [shlex.quote(tar_file_path) for tar_file_path in tar_file_path_list]
         tar_file_path_list = [handle_file_size_exceedance(tar_file_path) for tar_file_path in tar_file_path_list]
         upload_script = BugHandlerConst.BUG_HANDLER_UPLOAD_ATTACHMENT_SCRIPT
         upload_cmd = f"env LOG_FORMAT_JSON=1 {upload_script} --bug_id {ticket_id}  --attachments {' '.join(tar_file_path_list)}"
@@ -305,9 +300,14 @@ def run_err_msg_bug_handler_tool(conf_path, redmine_project, branch, yaml_parsed
 
 
 def handle_file_size_exceedance(tar_file_path):
-    logger.info(f"get the sysdump size of {tar_file_path}")
-    tar_file_size = subprocess.run(f'stat -c%s {tar_file_path}', shell=True, capture_output=True).stdout
-    decoded_output = tar_file_size.decode('utf-8')
+    # add double quotes to the tar_file_path to avoid whitespace characters
+    # in the file name to be interpreted as command line arguments
+    result = subprocess.run(f'stat -c%s "{tar_file_path}"', shell=True, capture_output=True)
+    if result.returncode != 0:
+        logger.error(f"Failed to get the sysdump size of {tar_file_path} "
+                     f"with error: {result.stderr.decode('utf-8')}")
+        raise Exception(f"Failed to get the sysdump size of {tar_file_path}")
+    decoded_output = result.stdout.decode('utf-8')
     cleaned_output = decoded_output.strip()
     tar_file_size = int(cleaned_output)
 
