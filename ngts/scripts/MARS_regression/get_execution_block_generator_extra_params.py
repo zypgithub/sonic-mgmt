@@ -15,6 +15,10 @@ def get_test_group_map_by_regression_set(setup_set_name):
     return TEST_GROUP_MAP[setup_set_name]
 
 
+def get_all_regression_set_tests_list(test_group_map):
+    return [test_name for test_name, _ in test_group_map.items()]
+
+
 def get_daily_platform_agnostic_tests_group_name(setup_group_name):
     weekdays_no_friday = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Saturday', 'Sunday']
     today_name = datetime.today().strftime('%A')
@@ -56,11 +60,16 @@ def print_execution_block_generator_in_mars_format(db_paths):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Parse input arguments')
     parser.add_argument('--setup_name', type=str, help='Mars setup name')
+    parser.add_argument('--run_all_tests', type=str, default='False', help='Flag to run all tests of the setup\'s regression set (community_set1, community_set2 or canonical). Use "True" or "False".')
     args = parser.parse_args()
     setup_name = args.setup_name
+    run_all_tests = args.run_all_tests.lower() == 'true'
     setup_set_name, setup_group_name = get_setup_set_and_group(setup_name)
     test_group_map = get_test_group_map_by_regression_set(setup_set_name)
-    platform_agnostic_tests_group_name = get_daily_platform_agnostic_tests_group_name(setup_group_name)
-    daily_tests_per_setup = get_tests_list(test_group_map, platform_agnostic_tests_group_name)
+    if run_all_tests:
+        daily_tests_per_setup = get_all_regression_set_tests_list(test_group_map)
+    else:
+        platform_agnostic_tests_group_name = get_daily_platform_agnostic_tests_group_name(setup_group_name)
+        daily_tests_per_setup = get_tests_list(test_group_map, platform_agnostic_tests_group_name)
     daily_tests_per_setup = filter_control_tests(daily_tests_per_setup, setup_name, setup_set_name)
     print_execution_block_generator_in_mars_format(daily_tests_per_setup)
