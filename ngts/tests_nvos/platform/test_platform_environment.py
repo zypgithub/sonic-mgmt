@@ -480,7 +480,7 @@ def _verify_fan_direction_mismatch_behaviour(engines, devices, feature_enable):
         with allure.step("Get the latest event"):
             last_event = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.events.show("last 1")).\
                 get_returned_value()
-            latest_event_id = list(last_event)[0]
+            latest_event_id = int(list(last_event)[0])
 
         with allure.step("Change direction of {} to wrong dir({}) and verify".format(fan_to_check, wrong_dir)):
             _set_platform_environment_fan_direction(engines, devices, platform, fan_to_check, def_dir, wrong_dir)
@@ -496,7 +496,7 @@ def _verify_fan_direction_mismatch_behaviour(engines, devices, feature_enable):
             with allure.step("Validate system event regarding Health status: Health status is not ok"):
                 events = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.events.show("last")).\
                     get_returned_value()
-                newer_events = [events[event]['text'] for event in list(events) if event > latest_event_id]
+                newer_events = [events[event]['text'] for event in list(events) if int(event) > latest_event_id]
                 assert PlatformConsts.HEALTH_STATUS_NOT_OK_EVENT in newer_events, \
                     "Health status not ok event not found in events"
                 health_changed_to_not_ok = True
@@ -518,7 +518,7 @@ def _verify_fan_direction_mismatch_behaviour(engines, devices, feature_enable):
             with allure.step("Validate system event regarding clear Health status- Cleared: Health status is not ok"):
                 events0 = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.events.show("last")).\
                     get_returned_value()
-                newer_events = [events0[event]['text'] for event in list(events0) if event > latest_event_id]
+                newer_events = [events0[event]['text'] for event in list(events0) if int(event) > latest_event_id]
                 assert "Cleared: " + PlatformConsts.HEALTH_STATUS_NOT_OK_EVENT in newer_events, \
                     "Clear health event not found in events"
 
