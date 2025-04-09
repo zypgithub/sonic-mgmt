@@ -634,10 +634,10 @@ def upgrade_params(base_version, target_version, wjh_deb_url):
     upgrade_data.target_version = target_version
     upgrade_data.wjh_deb_url = wjh_deb_url
     upgrade_data.is_upgrade_required = False
-    if base_version and target_version:
+    if base_version and target_version and base_version != target_version:
         upgrade_data.is_upgrade_required = True
     else:
-        logger.info('Either one or all the upgrade arguments is missing, skipping the upgrade flow')
+        logger.info('Either one or all the upgrade arguments is missing, or base and target version are same, skipping the upgrade flow')
     return upgrade_data
 
 
