@@ -199,7 +199,7 @@ def parse_show_interfaces_transceiver_eeprom(interfaces_transceiver_eeprom_outpu
             split_line = line.split(': ')
 
             # if 0 spaces at the beginning - means that it's interface definition line - will get port name from it
-            if num_of_spaces_at_the_begining == 0:
+            if num_of_spaces_at_the_begining == 0 and len(split_line) == 2:
                 port, status = split_line
                 result[port] = {'Status': status}
 
