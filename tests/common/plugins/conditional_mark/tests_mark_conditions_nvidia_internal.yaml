@@ -107,8 +107,10 @@ tests/nightly/copp/test_copp.py:
 tests/nightly/sflow/test_sflow.py:
   skip:
     reason: "Test is not supported on simx"
+    conditions_logical_operator: or
     conditions:
     - "https://redmine.mellanox.com/issues/2271111 and 'simx' in platform"
+    - "https://redmine.mellanox.com/issues/4389689"
 
 tests/push_build_tests/L3/sflow/test_sflow.py:
   skip:
