@@ -125,11 +125,26 @@ class Events(BaseComponent):
         BaseComponent.__init__(self, parent=parent_obj, path='/events')
 
     def show_last(self, last_events_count=1):
+        system = System()
         with allure.step("Show last system event"):
             logging.info("Show last system event")
-            return SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].show,
-                                                   TestToolkit.engines.dut, self.get_resource_path(),
-                                                   'last ' + str(last_events_count))
+            if TestToolkit.tested_api == ApiType.OPENAPI:
+                return SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].show,
+                                                       TestToolkit.engines.dut, self.get_resource_path(),
+                                                       SystemConsts.SYSTEM_LAST_EVENT + str(last_events_count))
+            else:
+                return system.events.show(SystemConsts.SYSTEM_LAST_EVENT + str(last_events_count))
+
+    def show_recent(self, recent_events_count=1):
+        system = System()
+        with allure.step("Show recent system event"):
+            logging.info("Show recent system event")
+            if TestToolkit.tested_api == ApiType.OPENAPI:
+                return SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].show,
+                                                       TestToolkit.engines.dut, self.get_resource_path(),
+                                                       SystemConsts.SYSTEM_RECENT_EVENT + str(recent_events_count))
+            else:
+                return system.events.show(SystemConsts.SYSTEM_RECENT_EVENT + str(recent_events_count))
 
 
 class Documentation(BaseComponent):

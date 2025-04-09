@@ -464,7 +464,7 @@ def _assert_system_fatal_mode(fatal: bool, state_just_changed=False):
             with allure.step(f"Assert system-event was raised for {'entering' if fatal else 'exiting'} fatal mode"):
                 event_text = ('' if fatal else 'Cleared: ') + FATAL_EVENT_STRING
                 event_list = OutputParsingTool.parse_json_str_to_dictionary(
-                    system.events.show('recent 3')).get_returned_value()
+                    system.events.show_recent('3')).get_returned_value()
                 event_list = [x for x in event_list.values() if x['text'] == event_text]
                 if not event_list:
                     raise AssertionError('Expected system-event not found: ' + event_text)

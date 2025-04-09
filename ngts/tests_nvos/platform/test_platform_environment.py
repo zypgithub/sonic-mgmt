@@ -478,7 +478,7 @@ def _verify_fan_direction_mismatch_behaviour(engines, devices, feature_enable):
                 wrong_dir = FansConsts.FORWARD_DIRECTION
 
         with allure.step("Get the latest event"):
-            last_event = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.events.show("last 1")).\
+            last_event = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.events.show_last()).\
                 get_returned_value()
             latest_event_id = int(list(last_event)[0])
 
@@ -494,12 +494,15 @@ def _verify_fan_direction_mismatch_behaviour(engines, devices, feature_enable):
 
         if state == FansConsts.STATE_NOT_OK:
             with allure.step("Validate system event regarding Health status: Health status is not ok"):
-                events = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.events.show("last")).\
+                events = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.events.show(SystemConsts.SYSTEM_LAST_EVENT)).\
                     get_returned_value()
-                newer_events = [events[event]['text'] for event in list(events) if int(event) > latest_event_id]
-                assert PlatformConsts.HEALTH_STATUS_NOT_OK_EVENT in newer_events, \
-                    "Health status not ok event not found in events"
-                health_changed_to_not_ok = True
+                   if test_api == ApiType.OPENAPI and is_bug_active(4396664):
+                        pytest.skip("Skipping this test due to Rm bug for OpenApi: https://redmine.mellanox.com/issues/4396664")
+                    else:
+                        newer_events = [events[event]['text'] for event in list(events) if event > latest_event_id]
+                        assert PlatformConsts.HEALTH_STATUS_NOT_OK_EVENT in newer_events, \
+                        "Health status not ok event not found in events"
+                        health_changed_to_not_ok = True
 
         with allure.step("Validate Issues should {} seen in System Health Report".format(should_str)):
             health_issues = output_dict['issues']
@@ -516,7 +519,7 @@ def _verify_fan_direction_mismatch_behaviour(engines, devices, feature_enable):
 
         if health_changed_to_not_ok:
             with allure.step("Validate system event regarding clear Health status- Cleared: Health status is not ok"):
-                events0 = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.events.show("last")).\
+                events0 = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.events.show(SystemConsts.SYSTEM_LAST_EVENT)).\
                     get_returned_value()
                 newer_events = [events0[event]['text'] for event in list(events0) if int(event) > latest_event_id]
                 assert "Cleared: " + PlatformConsts.HEALTH_STATUS_NOT_OK_EVENT in newer_events, \
