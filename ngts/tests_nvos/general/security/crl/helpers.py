@@ -9,9 +9,8 @@ from ngts.nvos_tools.infra.GrpcCmdBuilder import GrpcCmdBuilder
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tests_nvos.general.security.helpers import import_cas_safely, import_certs_safely, import_crl_safely
-from ngts.tests_nvos.general.security.nmx_cert.conftest import disable_cluster
 from ngts.tests_nvos.general.security.nmx_cert.constants import CA_CERTIFICATE, CERTIFICATE, EncryptionMode
-from ngts.tests_nvos.general.security.nmx_cert.helpers import disable_cluster_app_manager_state, enable_cluster, enable_cluster_app_manager_state
+from ngts.tests_nvos.general.security.nmx_cert.helpers import disable_cluster_app_manager_state, enable_cluster, disable_cluster, enable_cluster_app_manager_state
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import (
     UserInfo,
 )
@@ -269,9 +268,9 @@ class NmxCrlClient(CrlClient):
 
     def cleanup(self):
         app_manager = self.cluster.apps.app_name[self.app_name].manager
+        app_manager.encryption.action_restore().verify_result()
         app_manager.certificate.action_restore().verify_result()
         app_manager.ca_certificate.action_restore().verify_result()
-        app_manager.encryption.action_restore().verify_result()
         app_manager.crl.action_restore().verify_result()
         disable_cluster_app_manager_state(app_manager)
         disable_cluster()
