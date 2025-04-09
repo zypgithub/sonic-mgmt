@@ -967,9 +967,11 @@ arp/test_wr_arp.py:
 
 platform_tests/test_advanced_reboot.py::test_warm_reboot:
   skip:
-    reason: "The WR not supported on SN5600-C224O8, SN5600-C256S1 hwsku"
+    reason: "The WR not supported on SN5600-C224O8, SN5600-C256S1 hwsku and redmine issue https://redmine.mellanox.com/issues/4398791 at arc-switch1004"
+    conditions_logical_operator: or
     conditions:
     - "hwsku in ['Mellanox-SN5600-C256S1', 'Mellanox-SN5600-C224O8']"
+    - "https://redmine.mellanox.com/issues/4398791 and 'arc-switch1004' in testbed"
 
 platform_tests/test_advanced_reboot.py::test_fast_reboot:
   skip:
