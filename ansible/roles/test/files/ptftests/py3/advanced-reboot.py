@@ -753,34 +753,15 @@ class ReloadTest(BaseTest):
             port.socket.setsockopt(
                 socket.SOL_SOCKET, socket.SO_RCVBUF, self.SOCKET_RECV_BUFFER_SIZE)
 
-        self.start_background_pcap()
+        self.dataplane.flush()
+        if config["log_dir"] is not None:
+            filename = os.path.join(config["log_dir"], str(self)) + ".pcap"
+            self.dataplane.start_pcap(filename)
 
         self.log("Enabling arp_responder")
         self.cmd(["supervisorctl", "restart", "arp_responder"])
 
         return
-
-    def start_background_pcap(self):
-        if self.vmhost_external_port:
-            self.background_pcap = '/tmp/' + f"{str(self)}.{self.test_params['dut_hostname']}.vmhost" + ".pcap"
-            cmd = f"sudo nohup tcpdump -i {self.vmhost_external_port} -w {self.background_pcap}"
-            self.vmhost_connection.execCommand(cmd + " > /dev/null 2>&1 &")
-            self.log(f'Background tcpdump is started on vmhost port, pcap file: {self.background_pcap}')
-        elif config["log_dir"] is not None:
-            self.dataplane.flush()
-            self.background_pcap = \
-                os.path.join(config["log_dir"], str(self)) + ".pcap"
-            self.dataplane.start_pcap(self.background_pcap)
-            self.log(f'Background tcpdump is started on ptf, pcap file: {self.background_pcap}')
-
-    def stop_background_pcap(self):
-        if self.vmhost_external_port:
-            cmd = f"sudo nohup tcpdump -i {self.vmhost_external_port} -w {self.background_pcap}"
-            self.vmhost_connection.execCommand(f'sudo pkill -f "{cmd}"')
-            self.vmhost_connection.fetch(self.background_pcap, self.background_pcap)
-        elif config["log_dir"] is not None:
-            self.dataplane.stop_pcap()
-        self.log(f'Background tcpdump is stopped')
 
     def setup_fdb(self):
         """ simulate traffic generated from servers to help populate FDB """
@@ -815,7 +796,8 @@ class ReloadTest(BaseTest):
         # Stop watching DUT
         self.watching = False
 
-        self.stop_background_pcap()
+        if config["log_dir"] is not None:
+            self.dataplane.stop_pcap()
         self.log_fp.close()
 
     def get_if(self, iff, cmd):
