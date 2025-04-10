@@ -23,7 +23,8 @@ from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 @pytest.mark.checklist
 @pytest.mark.reset_factory
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_reset_factory_without_params(engines, devices, topology_obj, platform_params, test_api, has_loopbox, setup_name, standalone_system, test_name):
+def test_reset_factory_without_params(engines, devices, topology_obj, platform_params, test_api, has_loopbox,
+                                      setup_name, standalone_system, test_name, handle_la_marker_in_manufacture):
     """
     Validate reset factory without params cleanup done as expected
 
@@ -139,7 +140,7 @@ def test_reset_factory_keep_basic(engines, devices, test_api, test_name):
 @pytest.mark.checklist
 @pytest.mark.reset_factory
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_reset_factory_keep_all_config(engines, devices, test_api, test_name):
+def test_reset_factory_keep_all_config(engines, devices, test_api, test_name, handle_la_marker_in_manufacture):
     """
     Validate reset factory with keep all config param cleanup done as expected
 

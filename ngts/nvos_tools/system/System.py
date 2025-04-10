@@ -165,12 +165,9 @@ class FactoryDefault(BaseComponent):
             if not device:
                 device = TestToolkit.devices.dut
 
-            marker = TestToolkit.get_loganalyzer_marker(engine)
-
             res_obj, duration = OperationTime.save_duration(f'reset factory {param}', "", test_name, SendCommandTool.execute_command,
                                                             self.api_obj[TestToolkit.tested_api].action_reset, engine=engine, device=device, comp="factory-default", param=param, topology_obj=topology_obj,
                                                             system_is_ready_timeout=system_is_ready_timeout, check_system_is_functional=False)
-            TestToolkit.add_loganalyzer_marker(engine, marker)
 
             engine.disconnect()
 
