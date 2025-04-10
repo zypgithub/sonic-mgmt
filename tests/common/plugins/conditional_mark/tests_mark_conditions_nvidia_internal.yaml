@@ -1115,6 +1115,13 @@ smartswitch/platform_tests/test_reload_dpu.py::test_dpu_check_post_dpu_mem_exhau
     conditions:
       - https://redmine.mellanox.com/issues/4362877
 
+container_hardening/test_container_hardening.py::test_container_privileged.*what-just-happened:
+  regex: true
+  skip:
+    reason: "Testcase ignored due to Watch dog is not enabled"
+    conditions:
+      - https://redmine.mellanox.com/issues/4400983
+
 ########################## NVIDIA INTERNAL COMMUNITY IGNORE END ############################
 
 
