@@ -5,6 +5,7 @@ import re
 import time
 from collections import defaultdict
 from functools import wraps
+from retry import retry
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_constants.constants_nvos import IbConsts, OutputFormat, SystemConsts
@@ -595,6 +596,14 @@ class ClusterTools:
         else:
             return None
 
+    @retry(Exception, tries=4, delay=5)
+    def wait_until_app_expected_status(cluster, app, expected_status):
+        with allure.step(f"Waiting for {app} to be in {expected_status} status"):
+            output = OutputParsingTool.parse_show_output_to_dict(
+                cluster.apps.running.show(output_format=OutputFormat.json)).get_returned_value()
+            app_status = output[app]['status']
+            assert app_status == expected_status, f"App {app} status is {app_status} instead of {expected_status}"
+
 
 def summarize_switch_ports(ports_list):
     # Dictionary to store ranges for each prefix
@@ -736,3 +745,89 @@ def summarize_ports(ports_list):
         return ','.join(ports_list)
 
     return f'{prefix}{min_num}-{max_num}'
+
+
+class ClusterSimulation:
+    # simulation for the SDN maintenance state tests
+    # simulate the cluster as topology of 2 racks
+
+    def start_sdn_cluster_simulation(engines, setup_name):
+        with allure.step("Start of sdn cluster simulation"):
+            cluster = Cluster()
+
+            with allure.step("Disable cluster"):
+                ClusterTools.stop_cluster(cluster)
+
+            with allure.step("Generate simulator_config.json file"):
+                ClusterSimulation.generate_simulator_config_file(engines.dut)
+
+            with allure.step("Apply the patch for /usr/share/cluster_pkgs/nmx-controller/job.json"):
+                ClusterSimulation.apply_patch_for_nmc_controller_job(engines.dut)
+
+            with allure.step("Enable cluster"):
+                ClusterTools.start_cluster(cluster, setup_name)
+
+            with allure.step("Config fm config"):
+                ClusterSimulation.config_fm_config(engines.dut)
+
+            with allure.step("Wait for nmx-controller to be in ok status"):
+                ClusterTools.wait_until_app_expected_status(cluster, ClusterConsts.NMX_CONTROLLER, "ok")
+
+    @staticmethod
+    def end_of_sdn_cluster_simulation(engines, setup_name):
+        with allure.step("End of sdn cluster simulation"):
+            cluster = Cluster()
+
+            with allure.step("Disable cluster"):
+                ClusterTools.stop_cluster(cluster)
+
+            with allure.step("Restore /usr/share/cluster_pkgs/nmx-controller/job.json"):
+                ClusterSimulation.restore_nmc_controller_job(engines.dut)
+
+            with allure.step("Enable cluster"):
+                ClusterTools.start_cluster(cluster, setup_name)
+
+            with allure.step("Reset sdn factory default"):
+                Sdn().factory_default.action_reset(param='force')
+
+    @staticmethod
+    def generate_simulator_config_file(engine):
+        with allure.step("Generate simulator_config.json file in /etc/cluster_infra/conf"):
+            file_cont = '{"alids_start_id": 1024, "topology_id": 129, "vendor_id": 713, "gpu_pcie_id": 10496, "switch_pcie_id": 54004, \
+                    "partition_start_id": 32766, "partition_default_name": "Default Partition", "gpu_description": "GB100 Nvidia Technologies", \
+                    "switch_description": "MF0;mc-gb-nvl-020-001-switch:N5110_LD/U", "chassis1_serial_number": "27XYZ27000001", \
+                    "chassis2_serial_number": "27XYZ27000002", "nmxc_uid_start": 0, "gpu_reset_probability": 0, "gpu_reset_timeout": 10, \
+                    "switch_reset_probability": 0, "switch_reset_timeout": 10, "max_gpu_down": 0, "gpu_down_probability": 0, "max_switch_down": 0, \
+                    "switch_down_probability": 0}'
+            cmd = f"echo '{file_cont}' | sudo tee /etc/cluster_infra/conf/simulator_config.json"
+            engine.run_cmd(cmd)
+
+    @staticmethod
+    def apply_patch_for_nmc_controller_job(engine):
+        with allure.step("Apply the patch for /usr/share/cluster_pkgs/nmx-controller/job.json"):
+            # Backup and modify job.json
+            cmd_backup = "sudo mv /usr/share/cluster_pkgs/nmx-controller/job.json /usr/share/cluster_pkgs/nmx-controller/job.json.bak"
+            engine.run_cmd(cmd_backup)
+            cmd_modify = "cat /usr/share/cluster_pkgs/nmx-controller/job.json.bak | sed 's/\"\\/cfg\\/sdn_configs\\/fm_config\\.org\"$/\"\\/cfg\\/sdn_configs\\/fm_config\\.org\"\\,\\n                \"--sim-mode\"/' | sudo tee /usr/share/cluster_pkgs/nmx-controller/job.json"
+            engine.run_cmd(cmd_modify)
+
+    @staticmethod
+    def restore_nmc_controller_job(engine):
+        with allure.step("Restore /usr/share/cluster_pkgs/nmx-controller/job.json"):
+            cmd_restore = "sudo mv /usr/share/cluster_pkgs/nmx-controller/job.json.bak /usr/share/cluster_pkgs/nmx-controller/job.json"
+            engine.run_cmd(cmd_restore)
+
+    @staticmethod
+    def config_fm_config(engine):
+        with allure.step("Config fm config"):
+            cmd = "nv action generate sdn config app nmx-controller type fm_config"
+            engine.run_cmd(cmd, validate=True)
+            # Get the latest fm_config file
+            cmd_get_latest = "ls -Art /host/cluster_infra/app_config/nmx-controller/fm_config/ | tail -n 1"
+            latest_fm_config = engine.run_cmd(cmd_get_latest, validate=True).strip()
+            fm_config_path = f"/host/cluster_infra/app_config/nmx-controller/fm_config/{latest_fm_config}"
+            # Append the new configuration line
+            cmd_modify = f"sed '$ a MNNVL_TOPOLOGY=gb200_nvl72r2_c2g4_topology' {fm_config_path} | sudo tee /host/cluster_infra/app_config/nmx-controller/fm_config/fm_cfg"
+            engine.run_cmd(cmd_modify, validate=True)
+            cmd = "nv action install sdn config app nmx-controller type fm_config files fm_cfg"
+            engine.run_cmd(cmd, validate=True)
