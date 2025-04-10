@@ -1982,10 +1982,40 @@
   Conditions:
     - Affected_test_cases:
       - tests_nvos/platform/test_platform_ps_redundancy.py::test_platform_ps_redundancy_functionality
+
 # NVOS: Ignore Leakage errors in leakage inducing tests
 - Errors_list:
     - '.*ERR health-statsd#health_history: LEAKAGE-\d: detected leakage'
   Conditions:
     - Affected_test_cases:
       - tests_nvos/platform/test_platform_environment_leakage.py::test_platform_environment_bmc_leakage
+
+# NVOS: Expected logs during manufacture
+- Errors_list:
+    - '.*crashkernel=\d+M'
+    - '.*Command line: BOOT_IMAGE=.*'
+    - '.*kexec: Reserving the low 1M of memory for crashkernel.*'
+    - '.*Reserving .* memory .* for crashkernel .*'
+    - '.*Kernel command line: BOOT_IMAGE=.*'
+    - '.*DMA: preallocated .* pool for atomic allocations.*'
+    - '.*DPC: error containment capabilities:.*'
+    - '.*GPT: Use GNU Parted to correct GPT errors.*'
+    - '.*NOHZ tick-stop error: Non-RCU local softirq work is pending, handler #08!!!.*'
+    - '.*ERR rsyslogd: cannot connect to [\d\.]+:\d+: (Connection timed out|Network is unreachable).*'
+    - '.*ERR rsyslogd: omfwd: remote server at [\d\.]+:\d+ seems to have closed connection.*'
+    - '.*TPM interrupt not working, polling instead.*'
+    - '.*Failed to get link config: No such device.*'
+    - '.*ERR configmgrd: Failed to get primary ASIC for.*'
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/cluster/cluster_upgrade_test/cluster_upgrade_test.py
+
+# NVOS: Expected logs during factory-reset
+- Errors_list:
+    - '.*TPM interrupt not working, polling instead.*'
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/system/test_system_factory_reset.py
+        - tests_nvos/cluster/test_cluster_factory_reset.py
+
 # --------------------------------------------------

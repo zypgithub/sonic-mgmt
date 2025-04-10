@@ -23,7 +23,8 @@ from ngts.cli_wrappers.linux.linux_general_clis import LinuxGeneralCli
 from ngts.cli_wrappers.nvue.nvue_base_clis import NvueBaseCli
 from ngts.cli_wrappers.openapi.openapi_command_builder import OpenApiRequest
 from ngts.constants.constants import DbConstants, CliType, DebugKernelConsts, InfraConst, CoreDumpConsts
-from ngts.nvos_constants.constants_nvos import ApiType, OperationTimeConsts, OutputFormat, NvosConst, TestConsts
+from ngts.nvos_constants.constants_nvos import ApiType, OperationTimeConsts, OutputFormat, NvosConst, TestConsts, \
+    SyslogConsts
 from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
 from ngts.nvos_tools.Devices.DeviceFactory import DeviceFactory
 from ngts.nvos_tools.cli_coverage.nvue_cli_coverage import NVUECliCoverage
@@ -46,6 +47,8 @@ from ngts.nvos_tools.infra.TrafficGeneratorTool import TrafficGeneratorTool
 from ngts.nvos_tools.system.System import System
 from ngts.scripts.code_coverage.code_coverage_consts import NvosConsts
 from ngts.scripts.code_coverage.test_code_coverage import extract_python_coverage_for_nvos
+from ngts.tests.nightly.logging.test_log_analyzer_errors_during_deploy_sonic import get_oldest_syslog_id, \
+    get_new_start_string, insert_new_start_string
 from ngts.tests_nvos.helpers.pytest_helpers import is_cur_test_has_marker, get_marker_arg_value, is_cur_test_passed
 from ngts.tests_nvos.helpers.pytest_items_filters import run_nvos_pytest_items_modification
 from ngts.tools.test_utils import allure_utils as allure
@@ -847,3 +850,26 @@ def verify_result_objects():
     if errors:
         raise Exception(f'There are {len(errors)} ResultObj instances that contain a failed result (see documentation '
                         f'of ResultObj class):\n\n' + ('\n' + '-' * 80 + '\n\n').join(errors))
+
+
+@pytest.fixture
+def handle_la_marker_in_manufacture(engines, loganalyzer):
+    """
+    When the test ends, injects the log-analyzer test-start marker as the first line in the log.
+    This is intended for tests that cause all log files to be deleted, e.g. by manufacture or factory-reset.
+    This fixture calls the 'loganalyzer' fixture just to ensure that these 2 fixtures run in the correct order.
+    """
+    try:
+        marker = engines.dut.run_cmd(r"grep -oE '\S+ \S+ start-LogAnalyzer-.*' " + SyslogConsts.SYSLOG_LOG_PATH,
+                                     validate=True).splitlines()[-1]
+        marker_find_exception = None
+    except BaseException as e:
+        marker_find_exception = e
+        logger.warning("Failed to find LA start marker. LA will fail after the test finishes.")
+    yield
+
+    if marker_find_exception:
+        raise marker_find_exception
+    oldest_syslog_id = get_oldest_syslog_id(engines.dut)
+    new_marker = get_new_start_string(engines.dut, oldest_syslog_id, marker)
+    insert_new_start_string(engines.dut, oldest_syslog_id, new_marker)
