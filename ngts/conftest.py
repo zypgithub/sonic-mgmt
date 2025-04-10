@@ -464,12 +464,15 @@ def show_platform_summary(topology_obj):
 
 
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)
-def pytest_runtest_makereport(item, call):
+def pytest_runtest_makereport(item: pytest.Item, call):
     """
     Pytest hook which are executed in all phases: Setup, Call, Teardown
     :param item: pytest builtin
     :param call: pytest builtin
     """
+    # Filter out unnecessary logs captured on "stdout" and "stderr"
+    # allure will only attach log file to save disk space
+    item._report_sections = list([report for report in item._report_sections if report[1] not in ("stdout", "stderr")])
     # execute all other hooks to obtain the report object
     outcome = yield
     rep = outcome.get_result()
