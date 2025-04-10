@@ -1,10 +1,15 @@
 import logging
 import pytest
+import os
+import allure
+import sys
 
 from .loganalyzer import LogAnalyzer, DisableLogrotateCronContext
 from tests.common.errors import RunAnsibleModuleFail
 from tests.common.helpers.parallel import parallel_run, reset_ansible_local_tmp
 
+# inject dut hostname into log file name to avoid collision
+LOG_ANALYZER_LOG_FILE = '/tmp/loganalyzer-[{0}].log'
 
 def pytest_addoption(parser):
     parser.addoption("--disable_loganalyzer", action="store_true", default=False,
@@ -48,8 +53,24 @@ def analyzer_add_marker(analyzers, node=None, results=None):
 
 @reset_ansible_local_tmp
 def analyze_logs(analyzers, markers, node=None, results=None, fail_test=True, store_la_logs=False):
-    dut_analyzer = analyzers[node.hostname]
-    dut_analyzer.analyze(markers[node.hostname], fail_test, store_la_logs=store_la_logs)
+    file_handler = None
+    log_file = LOG_ANALYZER_LOG_FILE.format(node.hostname)
+    if os.path.exists(log_file):
+        os.remove(log_file)
+    if store_la_logs:
+        file_handler = logging.FileHandler(log_file)
+        formatter = logging.Formatter('[%(asctime)s][%(levelname)s] %(message)s')
+        formatter.datefmt = '%Y-%m-%d %H:%M:%S'
+        file_handler.setFormatter(formatter)
+        file_handler.setLevel(logging.INFO)
+        logging.getLogger().addHandler(file_handler)
+    try:
+        dut_analyzer = analyzers[node.hostname]
+        dut_analyzer.analyze(markers[node.hostname], fail_test, store_la_logs=store_la_logs)
+    finally:
+        if file_handler:
+            logging.getLogger().removeHandler(file_handler)
+            file_handler.close()
 
 
 @pytest.fixture(scope="module")
@@ -108,5 +129,13 @@ def loganalyzer(duthosts, request, log_rotate_modular_chassis):
         raise Exception(f"Some duthost objects are None so loganalyzer can't run: {duthosts=}. This is probably due to "
                         f"a network error.")
     logging.info("Starting to analyse on all DUTs")
-    parallel_run(analyze_logs, [analyzers, markers], {'fail_test': fail_test, 'store_la_logs': store_la_logs},
+    try:
+        parallel_run(analyze_logs, [analyzers, markers], {'fail_test': fail_test, 'store_la_logs': store_la_logs},
                  duthosts, timeout=360)
+    finally:
+        # only attach allure log when exception occurred in parallel_run to save space
+        for duthost in duthosts:
+            log_file = LOG_ANALYZER_LOG_FILE.format(duthost.hostname)
+            if sys.exc_info()[0] is not None and os.path.exists(log_file):
+                allure.attach.file(log_file, name=os.path.basename(log_file),
+                                   attachment_type=allure.attachment_type.TEXT)
