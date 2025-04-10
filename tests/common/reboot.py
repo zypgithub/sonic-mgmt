@@ -15,7 +15,6 @@ from .utilities import wait_until, get_plt_reboot_ctrl
 from tests.common.helpers.dut_utils import ignore_t2_syslog_msgs, create_duthost_console, creds_on_dut
 from tests.common.fixtures.conn_graph_facts import get_graph_facts
 
-
 logger = logging.getLogger(__name__)
 
 # Create the waiting power on event
@@ -149,9 +148,19 @@ reboot_ss_ctrl_dict = {
     REBOOT_TYPE_COLD: {
         "command": "reboot",
         "timeout": 300,
-        "cause": r"'reboot'|Non-Hardware \(reboot|^reboot"
+        "wait": 120,
+        "cause": r"'reboot'|Non-Hardware \(reboot|^reboot",
+        "test_reboot_cause_only": False
+        },
+    REBOOT_TYPE_WATCHDOG: {
+        "command": "watchdogutil arm -s 5",
+        "timeout": 300,
+        "wait": 120,
+        "cause": "Watchdog",
+        "test_reboot_cause_only": True
     }
 }
+
 MAX_NUM_REBOOT_CAUSE_HISTORY = 10
 REBOOT_TYPE_HISTOYR_QUEUE = deque([], MAX_NUM_REBOOT_CAUSE_HISTORY)
 REBOOT_CAUSE_HISTORY_TITLE = ["name", "cause", "time", "user", "comment"]
@@ -235,6 +244,7 @@ def perform_reboot(duthost, pool, reboot_command, reboot_helper=None, reboot_kwa
         reboot_res = pool.apply_async(execute_reboot_helper)
     return [reboot_res, dut_datetime]
 
+
 @support_ignore_loganalyzer
 def reboot_smartswitch(duthost, reboot_type=REBOOT_TYPE_COLD):
     """
@@ -255,6 +265,7 @@ def reboot_smartswitch(duthost, reboot_type=REBOOT_TYPE_COLD):
     reboot_res = duthost.command(reboot_ss_ctrl_dict[reboot_type]["command"])
 
     return [reboot_res, dut_datetime]
+
 
 @support_ignore_loganalyzer
 def reboot(duthost, localhost, reboot_type='cold', delay=10,
