@@ -532,6 +532,12 @@ process_monitoring/test_critical_process_monitoring.py:
     conditions:
     - "https://redmine.mellanox.com/issues/3464488 and 'nvda_bf-9009' in platform"
 
+process_monitoring/test_critical_process_monitoring.py::test_monitoring_critical_processes:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4401383 on hwsku Mellanox-SN2700"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4401383 and hwsku in ['Mellanox-SN2700']"
+
 platform_tests/test_auto_negotiation.py:
   skip:
     reason: "Testcase ignored due to platform 3800 and the fanout of r-tigon-11 setup is 3800"
