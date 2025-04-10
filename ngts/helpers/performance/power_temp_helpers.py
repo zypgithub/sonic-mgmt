@@ -3,7 +3,7 @@ import allure
 import pandas as pd
 from ngts.cli_wrappers.sonic.sonic_cli import SonicCli
 from ngts.constants.performance_constants import PerfConsts, SPCControllers, PowerConsts, ValidationConsts, MongoDbConsts
-from ngts.helpers.performance.performance_db_helpers import add_test_mongo_metadata
+from ngts.helpers.performance.performance_db_helpers import add_test_mongo_metadata, get_base_df, calculate_avg_on_all_samples
 from infra.tools.exceptions.test_issue import TestIssue
 
 
@@ -57,16 +57,14 @@ def validate_power(traffic_json, players, test_name, chip_type, power_threshold,
 
 
 def get_avg_samples_power_dataframe(cli_obj, chip_type, power_samples):
-    current_sum = None
+    df_list = []
     for sample_id, power_sample in power_samples.items():
         sensors_output = get_sensors_data(cli_obj, power_sample)
         power_df = get_power_dataframe(cli_obj, sensors_output, chip_type)
-        if current_sum is not None:
-            current_sum += power_df[PowerConsts.POWER_CURRENT]
-        else:
-            current_sum = power_df[PowerConsts.POWER_CURRENT]
-    power_df[PowerConsts.POWER_CURRENT] = current_sum.div(len(power_samples)).round(3)
-    power_df[PowerConsts.POWER_WATT] = (power_df[PowerConsts.POWER_VOLTAGE] * power_df[PowerConsts.POWER_CURRENT]).round(3)
+        df_list.append(power_df)
+    df_result = get_base_df(df_list)
+    power_df[PowerConsts.POWER_CURRENT] = calculate_avg_on_all_samples(df_list, power_samples, PowerConsts.POWER_CURRENT)
+    power_df[PowerConsts.POWER_WATT] = calculate_avg_on_all_samples(df_list, power_samples, PowerConsts.POWER_WATT)
     return power_df
 
 
@@ -111,14 +109,23 @@ def get_power_dataframe(cli_obj, sensors_output, chip_type):
         for index in [1, 2]:
             if controller_info_dict.get(f"vout{index}"):
                 controller_dict_df_entry = {}
+                voltage = controller_info_dict[f"vout{index}"]
+                current = controller_info_dict[f"iout{index}"]
                 controller_dict_df_entry[PowerConsts.POWER_SUPPLY] = controller_name
                 controller_dict_df_entry[PowerConsts.POWER_SUPPLY_ADDRESS] = address
-                controller_dict_df_entry[PowerConsts.POWER_VOLTAGE] = controller_info_dict[f"vout{index}"]
-                controller_dict_df_entry[PowerConsts.POWER_CURRENT] = controller_info_dict[f"iout{index}"]
-                controller_dict_df_entry[PowerConsts.POWER_WATT] = (controller_dict_df_entry[PowerConsts.POWER_VOLTAGE] *
-                                                                    controller_dict_df_entry[PowerConsts.POWER_CURRENT])
+                controller_dict_df_entry[PowerConsts.POWER_VOLTAGE] = voltage
+                controller_dict_df_entry[PowerConsts.POWER_CURRENT] = current
+                controller_dict_df_entry[PowerConsts.POWER_WATT] = get_controller_power(index, controller_info_dict, voltage, current)
                 power_dp.append(controller_dict_df_entry)
     return pd.DataFrame(power_dp)
+
+
+def get_controller_power(index, controller_info_dict, voltage, current):
+    if controller_info_dict.get(f"pout{index}"):
+        power = controller_info_dict.get(f"pout{index}")
+    else:
+        power = current * voltage
+    return power
 
 
 def get_sum_power_df_by_collectors_group(power_df):

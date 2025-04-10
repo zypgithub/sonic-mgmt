@@ -42,8 +42,7 @@ class SonicPerformanceCli(PerformanceCommon):
         new_cmd = f"{docker_exec_syncd_cmd} '{PerfConsts.EXPORT_PYTHONPATH} {variables} && {cmd}'"
         return new_cmd
 
-    @staticmethod
-    def get_controllers_info_dicts_list(sensors_output):
+    def get_controllers_info_dicts_list(self, sensors_output):
         """
         returns voltage/current per controller
         Args:
@@ -54,22 +53,49 @@ class SonicPerformanceCli(PerformanceCommon):
         [{'vout1': 1.20, 'vout2': 1.20, 'iout1': 13.00, 'iout2': 94.00},...]
         """
         controllers_info_dicts_list = []
-        controllers_info_str_list = re.split(PowerConsts.CONTROLLER_REGEX, sensors_output)
-        for controller_info_str in controllers_info_str_list:
+        controller_names_list = re.findall(PowerConsts.CONTROLLER_REGEX, sensors_output)
+        controllers_info_str_list = self.get_controllers_info_str_list(sensors_output)
+        for idx, controller_info_str in enumerate(controllers_info_str_list):
+            controller_name = controller_names_list[idx]
+            is_controller_name_vddscc = 'i2c-5-6e' in controller_name
             controller_info_list = controller_info_str.splitlines()
             if controller_info_list:
                 controllers_info_dict = {}
                 for controller_info in controller_info_list:
-                    regex_pattern = r"(Rail|Curr)\s*\((out\d+)\):\s+(\d*\.*\d*)\s+([mV|A|V]*)"
+                    regex_pattern = r"(Rail|Curr|Pwr)\s*\((out\d+)\):\s+(\d*\.*\d*)\s+([mV|A|V|W]*)"
                     controller_info_parsed = re.search(regex_pattern, controller_info)
                     if controller_info_parsed:
                         key = controller_info_parsed.group(2)
                         value = controller_info_parsed.group(3)
                         measure_unit = controller_info_parsed.group(4)
-                        key = f"v{key}" if "V" in measure_unit else f"i{key}"
-                        controllers_info_dict[key] = float(value) / 1000 if 'm' in measure_unit else float(value)
+                        key = self.get_sensors_output_key(key, measure_unit)
+                        if is_controller_name_vddscc and '1' in key:
+                            controllers_info_dict[key] = float(value) / 1000 if 'm' in measure_unit else float(value)
+                        elif not is_controller_name_vddscc:
+                            controllers_info_dict[key] = float(value) / 1000 if 'm' in measure_unit else float(value)
+                        else:
+                            pass
                 controllers_info_dicts_list.append(controllers_info_dict)
         return controllers_info_dicts_list
+
+    @staticmethod
+    def get_sensors_output_key(key, measure_unit):
+        if "V" in measure_unit:
+            key = f"v{key}"
+        elif 'A' in measure_unit:
+            key = f"i{key}"
+        elif 'W' in measure_unit:
+            key = f"p{key}"
+        else:
+            raise TestIssue(f"Unrecognized measure unit {measure_unit} in sensors output parsing")
+        return key
+
+    @staticmethod
+    def get_controllers_info_str_list(sensors_output):
+        controllers_info_str_list = re.split(PowerConsts.CONTROLLER_REGEX, sensors_output)
+        if '' in controllers_info_str_list:
+            controllers_info_str_list.remove('')
+        return controllers_info_str_list
 
     def get_dut_system_information(self, session_id, setup_name):
         """
