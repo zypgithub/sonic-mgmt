@@ -4,7 +4,6 @@ import time
 import re
 import json
 from bmp.helper import enable_bmp_neighbor_table, enable_bmp_rib_in_table, enable_bmp_rib_out_table
-from bmp.helper import disable_bmp_neighbor_table, disable_bmp_rib_in_table, disable_bmp_rib_out_table
 
 logger = logging.getLogger(__name__)
 
@@ -127,8 +126,3 @@ def test_bmp_population(duthosts, rand_one_dut_hostname, localhost):
     enable_bmp_rib_out_table(duthost)
     for idx, neighbor_v6addr in enumerate(neighbor_v6addrs):
         check_dut_bmp_rib_out_status(duthost, neighbor_v6addr)
-
-    # disable all table to avoid further impact to other test cases
-    disable_bmp_neighbor_table(duthost)
-    disable_bmp_rib_in_table(duthost)
-    disable_bmp_rib_out_table(duthost)
