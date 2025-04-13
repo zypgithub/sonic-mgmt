@@ -2187,10 +2187,7 @@ class QosSaiBase(QosBase):
                     logger.info(f"{srcport} has only lossy queue")
             if is_lossy_queue_only:
                 is_lossy_queue_only = True
-                if is_redmine_issue_active([4313090])[0]:
-                    queue_table_postfix_list = ['4', '5']
-                else:
-                    queue_table_postfix_list = ['0-3', '4', '5']
+                queue_table_postfix_list = ['0-3', '4', '5']
                 queue_to_dscp_map = {'0-3': '1', '4': '11', '5': '31'}
                 queues = random.choice(queue_table_postfix_list)
             else:
