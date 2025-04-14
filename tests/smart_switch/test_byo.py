@@ -32,6 +32,8 @@ pytestmark = [
     pytest.mark.topology('any'),
 ]
 
+if not RESOLV_CONF_NAMESERVERS['public']:
+    RESOLV_CONF_NAMESERVERS['public'] = ["10.211.0.124", "10.245.1.121", "10.7.77.135"]
 
 @pytest.fixture(scope="module", params=["pull", "image", "file"])
 def option(request):
