@@ -1,0 +1,43 @@
+[sonic_latest]
+# MTR testbed mtvr-bobcat-04 topologies
+mtvr-bobcat-04  ansible_host=10.245.21.113  sonic_version=v2  sonic_hwsku=Mellanox-SN4280-O8C80 switch_type="switch" iface_speed=400000 serial_console="ssh -l rcon:7030 10.245.2.42" ptf_host=ptf-mtvr-bobcat-04 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" fanout_switch=mtvr-leopard-07 dut_mac="B0:CF:0E:1E:88:00" pdu_host="pdu-10-245-2-15，pdu-10-245-2-34" base_mac=B0:CF:0E:1E:88:00 serial=MT2428XZ0695  model=MSN4280-WS2RXO-NS syseeprom_info="{'0x21': 'SN4280', '0x22': 'MSN4280-WS2RXO-NS', '0x23': 'MT2428XZ0695', '0x24': 'B0:CF:0E:1E:88:00', '0x25': '11/13/2024 18:10:25', '0x26': '16', '0x28': 'x86_64-nvidia_sn4280-r0', '0x29': '2024.08-5.3.0015-9600-dev', '0x2a': '222', '0x2b': 'Nvidia', '0xfe': '0x6BFDC241'}"
+mtvr-bobcat-04-t0-88-o8c80  ansible_host=10.245.21.113  sonic_version=v2  sonic_hwsku=Mellanox-SN4280-O8C80 switch_type="switch" iface_speed=400000 serial_console="ssh -l rcon:7030 10.245.2.42" ptf_host=ptf-mtvr-bobcat-04 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" fanout_switch=mtvr-leopard-07 dut_mac="B0:CF:0E:1E:88:00" pdu_host="pdu-10-245-2-15，pdu-10-245-2-34" base_mac=B0:CF:0E:1E:88:00 serial=MT2428XZ0695  model=MSN4280-WS2RXO-NS syseeprom_info="{'0x21': 'SN4280', '0x22': 'MSN4280-WS2RXO-NS', '0x23': 'MT2428XZ0695', '0x24': 'B0:CF:0E:1E:88:00', '0x25': '11/13/2024 18:10:25', '0x26': '16', '0x28': 'x86_64-nvidia_sn4280-r0', '0x29': '2024.08-5.3.0015-9600-dev', '0x2a': '222', '0x2b': 'Nvidia', '0xfe': '0x6BFDC241'}"
+mtvr-bobcat-04-dpu-0   ansible_host=10.245.21.113 ansible_ssh_port=5021 sonic_version=v2 sonic_hwsku=Nvidia-bf3-com-dpu switch_type="dpu" iface_speed=400000 serial_console="ssh -l rcon:7030 10.245.2.42" ptf_host=ptf-mtvr-bobcat-04 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" fanout_switch=mtvr-leopard-07 dut_mac="B0:CF:0E:1E:88:DE" pdu_host="pdu-10-245-2-15，pdu-10-245-2-34" base_mac=B0:CF:0E:1E:88:DE serial=MT2428XZ0JRH model=SA004902 syseeprom_info="{'0x22': u'SA004902', '0x23': u'MT2428XZ0JRH', '0x21': u'BF-3 P-SERIES BASED COM EXPRESS RE-SPIN MODULE, 64GB DDR5, WITH DENSILINK, DPU MODE', '0x24': u'B0:CF:0E:1E:88:DE', '0x27': u'A4', '0xfe': u'0x9A172711'}"
+mtvr-bobcat-04-dpu-1   ansible_host=10.245.21.113 ansible_ssh_port=5022 sonic_version=v2 sonic_hwsku=Nvidia-bf3-com-dpu switch_type="dpu" iface_speed=400000 serial_console="ssh -l rcon:7030 10.245.2.42" ptf_host=ptf-mtvr-bobcat-04 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" fanout_switch=mtvr-leopard-07 dut_mac="B0:CF:0E:1E:88:E6" pdu_host="pdu-10-245-2-15，pdu-10-245-2-34" base_mac=B0:CF:0E:1E:88:E6 serial=MT2428XZ067V model=SA004902 syseeprom_info="{'0x22': u'SA004902', '0x23': u'MT2428XZ067V', '0x21': u'BF-3 P-SERIES BASED COM EXPRESS RE-SPIN MODULE, 64GB DDR5, WITH DENSILINK, DPU MODE', '0x24': u'B0:CF:0E:1E:88:E6', '0x27': u'A4', '0xfe': u'0x1A3EBDAD'}"
+mtvr-bobcat-04-dpu-2   ansible_host=10.245.21.113 ansible_ssh_port=5023 sonic_version=v2 sonic_hwsku=Nvidia-bf3-com-dpu switch_type="dpu" iface_speed=400000 serial_console="ssh -l rcon:7030 10.245.2.42" ptf_host=ptf-mtvr-bobcat-04 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" fanout_switch=mtvr-leopard-07 dut_mac="B0:CF:0E:1E:88:EE" pdu_host="pdu-10-245-2-15，pdu-10-245-2-34" base_mac=B0:CF:0E:1E:88:EE serial=MT2428XZ0JVW model=SA004902 syseeprom_info="{'0x22': u'SA004902', '0x23': u'MT2428XZ0JVW', '0x21': u'BF-3 P-SERIES BASED COM EXPRESS RE-SPIN MODULE, 64GB DDR5, WITH DENSILINK, DPU MODE', '0x24': u'B0:CF:0E:1E:88:EE', '0x27': u'A4', '0xfe': u'0xF6AF9216'}"
+mtvr-bobcat-04-dpu-3   ansible_host=10.245.21.113 ansible_ssh_port=5024 sonic_version=v2 sonic_hwsku=Nvidia-bf3-com-dpu switch_type="dpu" iface_speed=400000 serial_console="ssh -l rcon:7030 10.245.2.42" ptf_host=ptf-mtvr-bobcat-04 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" fanout_switch=mtvr-leopard-07 dut_mac="B0:CF:0E:1E:88:F6" pdu_host="pdu-10-245-2-15，pdu-10-245-2-34" base_mac=B0:CF:0E:1E:88:F6 serial=MT2428XZ0JML model=SA004902 syseeprom_info="{'0x22': u'SA004902', '0x23': u'MT2428XZ0JML', '0x21': u'BF-3 P-SERIES BASED COM EXPRESS RE-SPIN MODULE, 64GB DDR5, WITH DENSILINK, DPU MODE', '0x24': u'B0:CF:0E:1E:88:F6', '0x27': u'A4', '0xfe': u'0x84F46C2D'}"
+
+mtvr-leopard-07 ansible_host=mtvr-leopard-07 ansible_ssh_user="{{ lookup('env','SONIC_SWITCH_USER') }}" ansible_ssh_pass="{{ lookup('env','SONIC_SWITCH_PASSWORD') }}" os=sonic
+
+[sonic:children]
+sonic_latest
+
+[leaf_topo_1]
+# MTR mtvr-bobcat-04 topologies
+mtvr-bobcat-04
+mtvr-bobcat-04-t0-88-o8c80
+mtvr-bobcat-04-dpu-0
+mtvr-bobcat-04-dpu-1
+mtvr-bobcat-04-dpu-2
+mtvr-bobcat-04-dpu-3
+
+[leaf_topo_1:vars]
+podset_number=200
+
+[lab]
+# MTR mtvr-bobcat-04 topologies
+mtvr-bobcat-04
+mtvr-bobcat-04-t0-88-o8c80
+mtvr-bobcat-04-dpu-0
+mtvr-bobcat-04-dpu-1
+mtvr-bobcat-04-dpu-2
+mtvr-bobcat-04-dpu-3
+
+[ptf]
+# MTR mtvr-bobcat-04 PTF host
+ptf-mtvr-bobcat-04 ansible_host=10.245.44.152 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+10.245.44.152 ansible_host=10.245.44.152 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+
+[pdu]
+pdu-10-245-2-15 ansible_host=10.245.2.15 protocol=snmp
+pdu-10-245-2-34 ansible_host=10.245.2.34 protocol=snmp
