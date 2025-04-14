@@ -54,6 +54,7 @@ class System(BaseComponent):
         self.snmp_server = SnmpServer(self)
         self.security = Security(self)
         self.ssh_server = BaseComponent(self, path='/ssh-server')
+        self.system_cli = BaseComponent(self, path='/cli')
         self.serial_console = BaseComponent(self, path='/serial-console')
         self.syslog = Syslog(self)
         self.ntp = Ntp(self)
