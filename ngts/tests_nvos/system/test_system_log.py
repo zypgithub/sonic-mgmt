@@ -1,7 +1,9 @@
 import logging
 import random
+import re
 import time
 import pytest
+from typing import List
 
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import LogComponentsConsts, SyslogConsts
@@ -662,6 +664,14 @@ def _delete_log_files(engines, system_log_obj, file_name):
 @pytest.mark.simx
 def test_log_idle(engines):
     expected_file_size_diff = 9000
+    # Split patterns to avoid Catastrophic Backtracking
+    list_of_expected_patterns: List[str] = [
+        r'\w{3}\s+\d+\s+\d+\:\d+\:[\d\.]+\s+[\w\-]+\s+INFO\s*.+\s*(Starting system activity accounting tool|Starting Rotate log files\.\.\.|logrotate\.service: Succeeded\.|Finished Rotate log files\.)[^\n]*[\n]?',
+        r'\w{3}\s+\d+\s+\d+\:\d+\:[\d\.]+\s+[\w\-]+\s+INFO\s*.+\s*(sysstat-collect\.service: Succeeded|Finished system activity accounting tool\.)[^\n]*[\n]?',
+        r'\w{3}\s+\d+\s+\d+\:\d+\:[\d\.]+\s+[\w\-]+\s+INFO nvued\s*.+\s*(log\s*rotate|Log\s*rotate)[^\n]*[\n]?',
+        r'\w{3}\s+\d+\s+\d+\:\d+\:[\d\.]+\s+[\w\-]+\s+INFO nvued.+Ran Job running ActionKey\(\'@rotate\', \'/system/log\', \(\), \d+, \(\)\)[^\n]*[\n]?',
+        r'\w{3}\s+\d+\s+\d+\:\d+\:[\d\.]+\s+[\w\-]+\s+INFO nvued.+\"GET /nvue_v1/action/\d+ HTTP/1\.1\" 200 -[^\n]*[\n]?'
+    ]
 
     with allure.step("Create System object"):
         system = System(None)
@@ -670,13 +680,23 @@ def test_log_idle(engines):
         system.log.rotate_logs()
         syslog_size_before_idle = FilesTool.get_file_size_in_bytes(engines.dut, SyslogConsts.SYSLOG_LOG_PATH)
 
-    with allure.step("Do nothing for 5 min"):
-        time.sleep(300)
+    with allure.step("Do nothing for 10 min"):
+        time.sleep(600)
 
-    with (allure.step("Check the log file")):
+    with (allure.step("Check the log file size")):
         syslog_size_after_idle = FilesTool.get_file_size_in_bytes(engines.dut, SyslogConsts.SYSLOG_LOG_PATH)
         assert syslog_size_after_idle - syslog_size_before_idle <= expected_file_size_diff, \
-            f"The size of the log file is more than expected threshold, before: {syslog_size_before_idle}b , after: {syslog_size_after_idle}b, expected_threshold value: {expected_file_size_diff} \n "
+            f"The size of the log file is more than expected threshold, before: {syslog_size_before_idle}b , \
+                after: {syslog_size_after_idle}b, expected_threshold value: {expected_file_size_diff} \n "
+
+    with (allure.step("Check the log file content")):
+        syslog_idle_output: str = engines.dut.run_cmd(f'cat {SyslogConsts.SYSLOG_LOG_PATH}')
+        # Filter out logs
+        logs_after_check: str = syslog_idle_output
+        for pattern in list_of_expected_patterns:
+            logs_after_check = re.sub(pattern, '', logs_after_check)
+        assert len(logs_after_check) == 0, f'These unexpected logs found during idle: \n {logs_after_check} \n \
+            No logs should be recorded during idle'
 
 
 def get_random_component(system):
