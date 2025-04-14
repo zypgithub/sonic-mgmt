@@ -84,7 +84,7 @@ def test_reset_factory_without_params(engines, devices, topology_obj, platform_p
 @pytest.mark.checklist
 @pytest.mark.reset_factory
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_reset_factory_keep_basic(engines, devices, test_api, test_name):
+def test_reset_factory_keep_basic(engines, devices, test_api, test_name, handle_la_marker_in_manufacture):
     """
     Validate reset factory with keep basic param cleanup done as expected
 
