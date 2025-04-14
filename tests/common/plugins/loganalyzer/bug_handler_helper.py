@@ -3,21 +3,28 @@ import re
 import json
 import logging
 from pathlib import Path
-from infra.tools.redmine.redmine_api import REDMINE_ISSUES_URL
 import time
+import sys
 from paramiko.ssh_exception import SSHException
-import pathlib
-from retry.api import retry
+import allure as raw_allure
 
+
+from tests.common.helpers.parallel import parallel_run
+from infra.tools.redmine.redmine_api import REDMINE_ISSUES_URL
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
-from ngts.constants.constants import BugHandlerConst, InfraConst, NvosCliTypes, FILE_INCLUDE_FAILED_SANITY_CHECKER_CASE
+from ngts.constants.constants import BugHandlerConst, InfraConst, NvosCliTypes
 from ngts.helpers.bug_handler.bug_handler_helper import create_session_tmp_folder, clear_files, bug_handler_wrapper_err_msg, \
     create_log_analyzer_yaml_file, group_log_errors_by_timestamp, summarize_la_bug_handler
 from ngts.scripts.allure_reporter import predict_allure_report_link
+from tests.common.helpers.parallel import reset_ansible_local_tmp
+from tests.common.plugins.loganalyzer.loganalyzer import LogAnalyzer
 
 logger = logging.getLogger()
 PYTEST_RUN_CMD = 'pytest_run_cmd'
 PI_LINK = "https://app.powerbi.com/groups/9b79a1d8-7408-4848-90c5-9dd5dab8493d/reports/89874ebf-554e-45be-b941-f4966fdda0ae/ReportSectionbb345ebc8fb547a45dfd?experience=power-bi"
+
+# inject dut hostname into log file name to avoid collision
+LOG_ANALYZER_LOG_FILE = '/tmp/loganalyzer-[{0}].log'
 
 def handle_log_analyzer_errors(cli_type, branch, test_name, duthost, log_analyzer_bug_metadata, testbed,
                                bug_handler_action, log_errors_dir_path=None, is_serial_log=False):
@@ -103,14 +110,14 @@ def handle_log_analyzer_errors(cli_type, branch, test_name, duthost, log_analyze
         return summarize_la_bug_handler(bug_handler_dumps_results, bug_handler_action), la_errors
 
 
-def skip_loganalyzer_bug_handler(duthost, request):
+def skip_bug_handler(duthost, request):
     """
     return True if the bug handler will be skipped.
     """
     hostname = duthost.hostname
     log_errors_dir_path = Path(BugHandlerConst.LOG_ERRORS_DIR_PATH.format(hostname=hostname))
 
-    def _skip_loganalyzer_bug_handler(duthost, request):
+    def _skip_bug_handler(duthost, request):
         if not request:
             logger.warning("Skip the loganalyzer bug handler, To run the it, "
                            "'request' is needed when create LogAnalyzer")
@@ -139,7 +146,7 @@ def skip_loganalyzer_bug_handler(duthost, request):
 
         return False
 
-    if _skip_loganalyzer_bug_handler(duthost, request):
+    if _skip_bug_handler(duthost, request):
         if log_errors_dir_path.exists():
             for log_errors_file in log_errors_dir_path.iterdir():
                 log_errors_file.unlink()
@@ -464,3 +471,59 @@ def _set_dice_coefficient_threshold(config_file: str, dice_coefficient_threshold
                     line
                 )
             f.write(line)
+
+def bug_handler_wrapper(analyzers, duthosts, la_results):
+    """
+    The wrapper function for log_analyzer_bug_handler.
+    Will be called in parallel_run to run log_analyzer_bug_handler in parallel
+    for each DUT.
+    """
+    if not isinstance(la_results, dict):
+        logging.error(f'Expect la_results is a dict, but got {type(la_results)}: {la_results}')
+        return
+    for node, la_result in la_results.items():
+        if "failed" in la_result:
+            logging.error(f'Failed to run log analyzer on {node}')
+            return
+    try:
+        # run bug handler in seperated step to decouple from analyze_logs
+        bh_results = parallel_run(bug_handler_processing, [analyzers, la_results], {}, duthosts, timeout=360)
+        for node in bh_results.keys():
+            if 'failed' in bh_results[node]:
+                logging.error(f'Failed to run bug handler on {node}')
+    finally:
+        # only attach allure log when exception occurred in parallel_run to save space
+        for duthost in duthosts:
+            log_file = LOG_ANALYZER_LOG_FILE.format(duthost.hostname)
+            if sys.exc_info()[0] is not None and os.path.exists(log_file):
+                raw_allure.attach.file(log_file, name=os.path.basename(log_file),
+                                   attachment_type=raw_allure.attachment_type.TEXT)
+
+@reset_ansible_local_tmp
+def bug_handler_processing(analyzers, la_results: dict, node=None, results=None):
+    """
+    Will be called in parallel_run to run log_analyzer_bug_handler concurrently
+    for each DUT.
+    """
+    file_handler = None
+    log_file = LOG_ANALYZER_LOG_FILE.format(node.hostname)
+    if os.path.exists(log_file):
+        os.remove(log_file)
+    file_handler = logging.FileHandler(log_file)
+    formatter = logging.Formatter('[%(asctime)s][%(levelname)s] %(message)s')
+    formatter.datefmt = '%Y-%m-%d %H:%M:%S'
+    file_handler.setFormatter(formatter)
+    file_handler.setLevel(logging.INFO)
+    logging.getLogger().addHandler(file_handler)
+    try:
+        analyzer: LogAnalyzer = analyzers[node.hostname]
+        analyzer_summary = la_results[node.hostname]
+        if skip_bug_handler(analyzer.ansible_host, analyzer.request):
+            logging.info("Bug handler is skipped for %s, will verify log analyzer summary", node.hostname)
+            analyzer._verify_log(analyzer_summary)
+        else:
+            log_analyzer_bug_handler(analyzer.ansible_host, analyzer.request)
+    finally:
+        if file_handler:
+            logging.getLogger().removeHandler(file_handler)
+            file_handler.close()
