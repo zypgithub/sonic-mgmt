@@ -2117,12 +2117,6 @@ qos/test_tunnel_qos_remap.py:
     conditions:
       - "asic_type in ['vs']"
 
-qos/test_tunnel_qos_remap.py::test_pfc_pause_extra_lossless_active:
-  xfail:
-    reason: "On mellanox platform, test skip due to github issue https://github.com/sonic-net/sonic-mgmt/issues/17252"
-    conditions:
-      - "asic_type in ['mellanox'] and https://github.com/sonic-net/sonic-mgmt/issues/17252"
-
 qos/test_tunnel_qos_remap.py::test_pfc_watermark_extra_lossless_active:
   xfail:
     reason: "test_pfc_watermark_extra_lossless_active is not support on broadcom platform yet"
