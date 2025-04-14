@@ -1124,6 +1124,18 @@ container_hardening/test_container_hardening.py::test_container_privileged.*what
     conditions:
       - https://redmine.mellanox.com/issues/4400983
 
+pc/test_lag_2.py::test_lag:
+  skip:
+    reason: "Testcase skipped due to https://redmine.mellanox.com/issues/4397221"
+    conditions:
+      - https://redmine.mellanox.com/issues/4397221
+
+bgp/test_bgp_dual_asn.py::test_bgp_dual_asn_v4:
+  skip:
+    reason: "Testcase skipped due to https://redmine.mellanox.com/issues/4397221"
+    conditions:
+      - https://redmine.mellanox.com/issues/4397221
+
 ########################## NVIDIA INTERNAL COMMUNITY IGNORE END ############################
 
 
