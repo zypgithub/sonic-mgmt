@@ -330,6 +330,6 @@ def get_perf_test_name(request, is_ipv6):
         i.e, TestSPCXRA_x1Split_800G_test_ar_perf_link_flap[port_repeated_toggle-4096-IPv6]
     """
     ip = InfraConst.IPV6 if is_ipv6 else InfraConst.IPV4
-    test_name = request.node.name + "_" + request.node.cls.__name__
+    test_name = request.node.cls.__name__ + "_" + request.node.name
     test_name_with_ip_param = test_name.replace("]", f"-{ip}]")
     return test_name_with_ip_param
