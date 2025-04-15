@@ -312,7 +312,7 @@
 			"component": {
 				"CPLD1": [
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4600C/FUI000186/FUI000186.mpfa",
+						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4600C/FUI000186/FUI000186.mpfa",
 						"version": "CPLD000120_REV1200",
 						"reboot": [
 							"power off",
@@ -320,7 +320,7 @@
 						]
 					},
 					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4600C/FUI000154/FUI000154.mpfa",
+						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4600C/FUI000154/FUI000154.mpfa",
 						"version": "CPLD000120_REV0900",
 						"reboot": [
 							"power off",
