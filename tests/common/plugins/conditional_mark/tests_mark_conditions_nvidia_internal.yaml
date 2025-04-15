@@ -541,6 +541,12 @@ platform_tests/test_auto_negotiation.py:
     - "'3800' in platform"
     - "'r-tigon-11' in testbed"
 
+memory_checker/test_memory_checker.py:
+  skip:
+    reason: "Testcase ignored due to RM: https://redmine.mellanox.com/issues/4404148"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4404148"
+
 # SONiC can't enable loop-back filter feature
 # Test case is skipped, because SONiC does not have a control to adjust loop-back filter settings.
 # Default SONiC behavior is to forward the traffic, so loop-back filter does not triggers for IP packets.
