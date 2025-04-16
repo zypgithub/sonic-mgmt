@@ -73,9 +73,9 @@ class IbSwitch(BaseSwitch):
 
     def show_setup_versions(self, dut_engine: LinuxSshEngine = None):
         outputs = {
-            'system version': dut_engine.run_cmd('nv show system version'),
-            'platform firmware': dut_engine.run_cmd('nv show platform firmware'),
-            'fae platform firmware': dut_engine.run_cmd('nv show fae platform firmware'),
+            'system version': dut_engine.run_cmd('nv show system version', timeout=30),
+            'platform firmware': dut_engine.run_cmd('nv show platform firmware', timeout=30),
+            'fae platform firmware': dut_engine.run_cmd('nv show fae platform firmware', timeout=30),
         }
         res = [f'{title.upper()}:\n{output}\n' for title, output in outputs.items()]
         return '\n'.join(res)
