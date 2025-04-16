@@ -1487,7 +1487,9 @@ class JulietNonScaleoutSwitchGB300(JulietNonScaleoutSwitch):
             "product-name": "N5500_LD",
             "asic-model": self.asic_type,
         })
-        self.constants.firmware.remove("CPLD4")
+        self.constants = self.constants._replace(
+            firmware=[f for f in self.constants.firmware if f != "CPLD4"]
+        )
         stats_dump_files = ["cpu.csv.gz", "disk.csv.gz", "mgmt-interface.csv.gz",
                             "temperature.csv.gz", "voltage.csv.gz"]
         self.constants = self.constants._replace(stats_dump_files=stats_dump_files)
