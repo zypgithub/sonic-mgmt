@@ -441,7 +441,6 @@ class SonicInstallationSteps:
         for dut in setup_info['duts']:
             cli = dut['cli_obj']
             dut_alias = dut['dut_alias']
-            cli.cli_obj.general.update_platform_params(platform_params, setup_name)
             apply_base_config = False if is_performance else apply_base_config
             cli.cli_obj.general.deploy_image_post_installtion(topology_obj, apply_base_config=apply_base_config,
                                                               setup_name=setup_name,

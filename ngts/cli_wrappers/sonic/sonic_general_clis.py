@@ -844,10 +844,13 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             if platform_params["hwsku"] != current_platform_summary["HwSKU"] \
                     or platform_params["platform"] != current_platform_summary["Platform"] \
                     or self.is_performance_setup(setup_name):
+                logger.info(f'Updating the platform_params for {setup_name}')
+                logger.info(f'Current platform_params: \n{platform_params}')
                 platform_params["hwsku"] = current_platform_summary["HwSKU"]
                 platform_params["platform"] = current_platform_summary["Platform"]
                 hostname = self.cli_obj.chassis.get_hostname()
                 update_platform_info_files(hostname, current_platform_summary, update_inventory=True)
+                logger.info(f'Updated platform_params: \n{platform_params}')
 
     def apply_basic_config(self, topology_obj, setup_name, platform_params, reload_before_qos=False,
                            disable_ztp=False, configure_dns=True, is_air=False):
