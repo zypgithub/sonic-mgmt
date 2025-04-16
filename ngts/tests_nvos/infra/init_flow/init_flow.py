@@ -1,4 +1,5 @@
 import logging
+import re
 
 import pytest
 import time
@@ -94,7 +95,7 @@ def test_check_firmware(engines):
         all_firmware = OutputParsingTool.parse_json_str_to_dictionary(fae.platform.firmware.show()).get_returned_value()
         errors = []
         for item, properties in all_firmware.items():
-            if PlatformConsts.FW_ASIC not in item:
+            if not re.fullmatch(PlatformConsts.FW_ASIC + r'\d*', item):
                 continue  # check only the asics, not bios and other firmware
             logger.info(f"Checking {item}")
             installed_fw = properties['installed-firmware']
