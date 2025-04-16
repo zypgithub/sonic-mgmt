@@ -836,6 +836,12 @@ platform_tests/test_reload_config.py::test_reload_configuration:
     - "'simx' in platform"
     - "https://redmine.mellanox.com/issues/4209112 and 'r-gaur-04' in testbed"
 
+platform_tests/test_reload_config.py::test_reload_configuration_checks:
+  skip:
+    reason: "Skipped due to RM #4406016 on bobcat platform"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4406016 and '4280' in platform"
+
 qos/test_lossless_bum_traffic_drop.py:
   skip:
     reason: "Test does not support dualtor topology."
