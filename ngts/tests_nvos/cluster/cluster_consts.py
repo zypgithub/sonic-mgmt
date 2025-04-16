@@ -56,18 +56,18 @@ class ClusterConsts:
     NMX_TELEMETRY_PREFIX = 'nmx-t'
     INITIAL_APPS_PATH = '/usr/local/cluster_pkgfiles/'
     INFRA_PACKAGES_PATH = '/host/cluster_infra/packages/'
-    CONFIG_FILES_CHANGE = {'sm_config': "sudo sed -i \"/^max_op_vls /c\\max_op_vls 2\" {file_path}",
+    CONFIG_FILES_CHANGE = {'sm_config': "true",
                            'fm_config': "sudo sed -i \"/^LOG_FILE_MAX_SIZE=/c\\LOG_FILE_MAX_SIZE=1023\" {file_path}",
                            'rdm_config': "true",
                            'chassis_mapping': "true",
                            'telemetry': "true"}
-    EXPECTED_LINE_TO_BE_PRESERVED_AFTER_UPGRADE = {'sm_config': "max_op_vls 2",
+    EXPECTED_LINE_TO_BE_PRESERVED_AFTER_UPGRADE = {'sm_config': "",
                                                    'fm_config': "LOG_FILE_MAX_SIZE=1023",
                                                    'rdm_config': "",
                                                    'chassis_mapping': "",
                                                    'telemetry': ""}
     CONFIG_FILES_CONTENT_CHANGE = {
-        'sm_config': lambda content: re.sub(r'^max_op_vls.*$', 'max_op_vls 2', content, flags=re.MULTILINE),
+        'sm_config': lambda content: content,
         'fm_config': lambda content: re.sub(r'^LOG_FILE_MAX_SIZE=.*$', 'LOG_FILE_MAX_SIZE=1023', content, flags=re.MULTILINE),
         'rdm_config': lambda content: content,
         'chassis_mapping': lambda content: content,
