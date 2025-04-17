@@ -243,7 +243,7 @@ class SonicImClis:
             with allure.step('Check if SPC3 or higher and is Microsoft SKU applied at system'):
                 if self.is_system_supports_im() and self.is_ms_hwsku():
                     with allure.step('Check if setup having cables that supports IM'):
-                        if "simx" not in platform_params.host_name:
+                        if "simx" not in platform_params.platform:
                             with allure.step('Check if SONiC branch supports IM'):
                                 if sonic_branch not in skip_for_release:
                                     with allure.step('Check if IM enabled by default, if not - enable it'):
