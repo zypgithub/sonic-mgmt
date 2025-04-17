@@ -498,13 +498,10 @@ def _verify_fan_direction_mismatch_behaviour(engines, devices, feature_enable):
             with allure.step("Validate system event regarding Health status: Health status is not ok"):
                 events = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.events.show(SystemConsts.SYSTEM_LAST_EVENT)).\
                     get_returned_value()
-                   if test_api == ApiType.OPENAPI and is_bug_active(4396664):
-                        pytest.skip("Skipping this test due to Rm bug for OpenApi: https://redmine.mellanox.com/issues/4396664")
-                    else:
-                        newer_events = [events[event]['text'] for event in list(events) if event > latest_event_id]
-                        assert PlatformConsts.HEALTH_STATUS_NOT_OK_EVENT in newer_events, \
-                        "Health status not ok event not found in events"
-                        health_changed_to_not_ok = True
+                newer_events = [events[event]['text'] for event in list(events) if event > latest_event_id]
+                assert PlatformConsts.HEALTH_STATUS_NOT_OK_EVENT in newer_events, \
+                    "Health status not ok event not found in events"
+                health_changed_to_not_ok = True
 
         with allure.step("Validate Issues should {} seen in System Health Report".format(should_str)):
             health_issues = output_dict['issues']
@@ -642,7 +639,7 @@ def assert_led_color(led: str, ok: bool):
 
 
 @contextmanager
-def fan_error_context(fan: str, device, engine, skip_for_fanless_setup):
+def fan_error_context(fan: str, device, engine):
     """
     with fan_error_context("FAN1/2", devices.dut, engines.dut):
         # this code runs while FAN1/2 status = failed
