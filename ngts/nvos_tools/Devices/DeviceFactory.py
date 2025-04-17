@@ -29,6 +29,7 @@ class DeviceFactory:
             'QM8790 - Black Mamba': BlackMambaSwitch,
             'QM3000 - Black Mamba': BlackMambaSwitch,
             'Q3400-RA Black Mamba': BlackMambaSwitch,
+            'Q3400-RA Black_Mamba': BlackMambaSwitch,
             'Mellanox SN5600': Mlx5600Switch,
             'Mellanox SN5640': Mlx5640Switch,
             'Mellanox SN5400': Mlx5400Switch,
