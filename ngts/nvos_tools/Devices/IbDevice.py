@@ -760,10 +760,48 @@ class TaipanSwitch(BlackMambaSwitch):  # All values will be updated on Taipan BU
         self.number_of_transceivers = 18
         self.transceivers_tables_name = "TRANSCEIVER_INFO"
         self.transceiver_list = [f'els{a + 1}' for a in range(18)] + ['fnm1'] + [f'oe{b + 1}' for b in range(72)]
+        self.constants.firmware.append('CPLD7')
+        self.show_platform_output.update({
+            "product-name": "Q3450_LD",
+            "asic-model": self.asic_type,
+        })
+        self.voltage_sensors = [
+            "HSC-1-VinDC-In", "HSC-1-VinDC-Out", "HSC-2-VinDC-In", "HSC-2-VinDC-Out", "HSCC-1-Conv-In-1",
+            "HSCC-1-Conv-Out-1", "HSCC-2-Conv-In-1", "HSCC-2-Conv-Out-1", "PMIC-1-12V-VDD-ASIC1-In-1",
+            "PMIC-1-ASIC1-VDD-Out-1", "PMIC-2-12V-HVDD-DVDD-ASIC1-In-1", "PMIC-2-ASIC1-DVDD-PL0-Out-2",
+            "PMIC-2-ASIC1-HVDD-PL0-Out-1", "PMIC-3-12V-HVDD-DVDD-ASIC1-In-1", "PMIC-3-ASIC1-DVDD-PL1-Out-2",
+            "PMIC-3-ASIC1-HVDD-PL1-Out-1", "PMIC-4-12V-VDD-ASIC2-In-1", "PMIC-4-ASIC2-VDD-Out-1",
+            "PMIC-5-12V-HVDD-DVDD-ASIC2-In-1", "PMIC-5-ASIC2-DVDD-PL0-Out-2", "PMIC-5-ASIC2-HVDD-PL0-Out-1",
+            "PMIC-6-12V-HVDD-DVDD-ASIC2-In-1", "PMIC-6-ASIC2-DVDD-PL1-Out-2", "PMIC-6-ASIC2-HVDD-PL1-Out-1",
+            "PMIC-7-12V-VDD-ASIC3-In-1", "PMIC-7-ASIC3-VDD-Out-1", "PMIC-8-12V-HVDD-DVDD-ASIC3-In-1",
+            "PMIC-8-ASIC3-DVDD-PL0-Out-2", "PMIC-8-ASIC3-HVDD-PL0-Out-1", "PMIC-9-12V-HVDD-DVDD-ASIC3-In-1",
+            "PMIC-9-ASIC3-DVDD-PL1-Out-2", "PMIC-9-ASIC3-HVDD-PL1-Out-1", "PMIC-10-12V-VDD-ASIC4-In-1",
+            "PMIC-10-ASIC4-VDD-Out-1", "PMIC-11-12V-HVDD-DVDD-ASIC4-In-1", "PMIC-11-ASIC4-DVDD-PL0-Out-2",
+            "PMIC-11-ASIC4-HVDD-PL0-Out-1", "PMIC-12-12V-HVDD-DVDD-ASIC4-In-1", "PMIC-12-ASIC4-DVDD-PL1-Out-2",
+            "PMIC-12-ASIC4-HVDD-PL1-Out-1", "PMIC-13-12V-MAIN-In-1", "PMIC-13-CEX-VDD-Out-1",
+        ]
 
     def _init_psu_list(self):
         self.psu_list = []
         self.psu_fan_list = []
+
+    def _init_fan_list(self):
+        super()._init_fan_list()
+        self.fan_list = ["FAN1/1", "FAN1/2", "FAN2/1", "FAN2/2"]
+
+    def _init_led_list(self):
+        super()._init_led_list()
+        self.led_list = ['FAN1', 'FAN2', 'STATUS', 'UID']
+
+    def _init_temperature(self):
+        super()._init_temperature()
+        self.temperature_sensors = [
+            "ASIC1", "ASIC2", "ASIC3", "ASIC4", "Ambient-Port-Side-Temp",
+            "CPU-Core-0-Temp", "CPU-Core-1-Temp", "CPU-Core-2-Temp", "CPU-Core-3-Temp",
+            "CPU-Pack-Temp", "Drive-Temp", "PCH-Temp",
+            "PMIC-1-Temp", "PMIC-2-Temp", "PMIC-3-Temp", "PMIC-4-Temp", "PMIC-5-Temp", "PMIC-6-Temp", "PMIC-7-Temp",
+            "PMIC-8-Temp", "PMIC-9-Temp", "PMIC-10-Temp", "PMIC-11-Temp", "PMIC-12-Temp", "PMIC-13-Temp",
+            "SODIMM-1-Temp", "SODIMM-2-Temp"]
 
 
 # -------------------------- Taipan Single Asic Switch ----------------------------

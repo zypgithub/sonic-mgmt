@@ -226,6 +226,9 @@ def test_show_platform_environment_psu(engines, devices, test_api):
     """
     Show platform environment psu test
     """
+    if not devices.dut.psu_list:
+        pytest.skip("Device has no PSUs")
+
     TestToolkit.tested_api = test_api
 
     with allure.step("Create System object"):
@@ -301,9 +304,8 @@ def test_show_platform_environment_temperature(engines, devices, test_api):
 
     verify_sensor_group_by_tolerance(output, PlatformConsts.ENV_CPU)
     verify_sensor_group_by_tolerance(output, PlatformConsts.FW_ASIC)
-    with allure.step('Check is Juliet Device'):
-        if not isinstance(TestToolkit.devices.dut, JulietSwitch):
-            verify_sensor_group_by_tolerance(output, PlatformConsts.ENV_PSU.upper())
+    if devices.dut.psu_list:
+        verify_sensor_group_by_tolerance(output, PlatformConsts.ENV_PSU.upper())
 
 
 def get_available_temperature_sensor_list(device: BaseDevice):
