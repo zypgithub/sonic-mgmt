@@ -15,8 +15,17 @@ from ngts.helpers.performance.performance_setup_helpers import (save_base_config
                                                                 apply_test_configuration)
 from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts, MongoDbConsts
 from ngts.helpers.performance.performance_db_helpers import get_perf_test_name, add_test_mongo_metadata
+from ngts.constants.constants import CliType
+from ngts.helpers.performance.performance_setup_helpers import skip_test_on_unsupported_os
+
 logger = logging.getLogger()
 TESTS_SCENARIO = "spcx_ra"
+
+
+@pytest.fixture(scope='module', autouse=True)
+def skip_test_conditionally(players):
+    skip_test_on_unsupported_os(players['dut']['cli'], CliType.NVUE)
+    yield
 
 
 @pytest.fixture(scope='class', autouse=True)

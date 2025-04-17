@@ -307,11 +307,11 @@ def get_obj_method(cli_obj, method_name):
 
 def skip_test_on_unsupported_os(cli_obj, unsupported_os):
     if unsupported_os == CliType.NVUE and isinstance(cli_obj, NvueCli):
-        pytest.skip(f"This test is not supported in {CliType.NVUE}, no support for reboot")
+        pytest.skip(f"This test is not supported in {CliType.NVUE}")
     elif unsupported_os == CliType.DVS and isinstance(cli_obj, DvsCli):
-        pytest.skip(f"This test is not supported in {CliType.DVS}, no support for reboot")
+        pytest.skip(f"This test is not supported in {CliType.DVS}")
     elif unsupported_os == CliType.SONIC and isinstance(cli_obj, SonicCli):
-        pytest.skip(f"This test is not supported in {CliType.SONIC}, no support for reboot")
+        pytest.skip(f"This test is not supported in {CliType.SONIC}")
 
 
 def get_topology_obj(players):
