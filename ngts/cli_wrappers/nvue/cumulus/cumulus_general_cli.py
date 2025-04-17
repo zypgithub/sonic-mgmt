@@ -130,6 +130,19 @@ class CumulusGeneralCli(NvueGeneralCli):
             engine.disconnect()  # force engines.dut to reconnect
             DutUtilsTool.wait_for_cumulus_to_become_functional(engine=engine)
 
+    def modify_sudoers_for_cumulus(self):
+        self.engine.run_cmd(f'echo {self.device.password} | sudo -S echo')
+        # Create a temporary sudoers file with the new entry
+        sudoers_entry = "cumulus ALL=(ALL) NOPASSWD: ALL\n"
+
+        # Add the entry to sudoers using visudo
+        cmd = f'echo "{sudoers_entry}" | sudo EDITOR="tee -a" visudo'
+        self.engine.run_cmd(cmd)
+
+        # Verify the entry was added
+        sudoers_content = self.read_file('/etc/sudoers', is_sudo=True)
+        assert "cumulus ALL=(ALL) NOPASSWD: ALL" in sudoers_content, "Failed to add cumulus user to sudoers file"
+
     def init_telemetry_keys(self):
         pass
 

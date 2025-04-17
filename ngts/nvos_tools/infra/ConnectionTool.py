@@ -18,7 +18,7 @@ logger = logging.getLogger()
 
 class ConnectionTool:
     @staticmethod
-    def create_ssh_conn(ip, username, password):
+    def create_ssh_conn(ip, username, password, port=22, retry=True):
         """
         Create an SSH connection to the specified IP address.
 
@@ -34,7 +34,7 @@ class ConnectionTool:
             result_obj = ResultObj(False, "Couldn't connect - ")
 
             try:
-                ssh_conn = LinuxSshEngine(ip=ip, username=username, password=password)
+                ssh_conn = LinuxSshEngine(ip=ip, username=username, password=password, ssh_port=port, retry=retry)
 
                 if ConnectionTool.is_connected(ssh_conn).verify_result():
                     result_obj.returned_value = ssh_conn

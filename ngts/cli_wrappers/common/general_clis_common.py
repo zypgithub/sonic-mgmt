@@ -109,6 +109,9 @@ class GeneralCliCommon(GeneralCliInterface):
     def mkdir(self, path, flags=''):
         return self.engine.run_cmd(f'mkdir {flags} {path}')
 
+    def who(self, flags=''):
+        return self.engine.run_cmd(f'who {flags}')
+
     def which(self, path):
         return self.engine.run_cmd(f'which {path}')
 
@@ -231,7 +234,7 @@ class GeneralCliCommon(GeneralCliInterface):
         logger.info(f"{file}: {file_stat}")
         return file_stat
 
-    def read_file(self, file_path):
+    def read_file(self, file_path, is_sudo=False):
         """
         Read file content.
         :param file_path:  file path.
@@ -240,7 +243,8 @@ class GeneralCliCommon(GeneralCliInterface):
         file_status = self.stat(file_path)
         if not file_status['exists']:
             raise Exception(f'{file_path} not exist')
-        return self.engine.run_cmd(f"cat {file_path}")
+        prefix = "sudo " if is_sudo else ""
+        return self.engine.run_cmd(f"{prefix}cat {file_path}")
 
     def get_performance_ports_list(self, topology_obj):
         """
