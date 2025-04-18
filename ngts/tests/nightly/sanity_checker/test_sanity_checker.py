@@ -143,7 +143,8 @@ def test_cpld_version_check(topology_obj, engines, platform_params, cli_objects,
                             assert current_cpld_ver == latest_cpld_ver, \
                                 f'Current {defined_cpld} version: {current_cpld_ver} is not latest: {latest_cpld_ver}'
                     except Exception as err:
-                        logger.info(f"Fail to restore cpld \n. {err}")
+                        raise Exception(f"Fail to restore cpld \n. {err}")
+                    finally:
                         with allure.step(f'Start bpg all'):
                             dut_topology_obj.bgp.startup_bgp_all()
                 else:
