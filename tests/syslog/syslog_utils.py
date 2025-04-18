@@ -13,7 +13,6 @@ class syslogUtilsConst:
     # TSHARK_START_TIME should be smaller than TCPDUMP_CAPTURE_TIME
     TSHARK_START_TIME = 5 if 5 < TCPDUMP_CAPTURE_TIME else TCPDUMP_CAPTURE_TIME * 0.5
     PACKETS_NUM = 2
-    LOG_SEVERITY = "CRIT"
 
 
 def add_syslog_server(dut, syslog_server_ip, source=None, vrf=None, port=None):
@@ -140,13 +139,10 @@ def capture_syslog_packets(dut, tcpdump_cmd, logging_data):
 
     logging.debug("Generating log message from DUT")
     # Generate syslog msgs from the DUT
-<<<<<<< HEAD   (4387ee Hot fix for classname replacement)
     default_priority = '--priority CRIT'
-=======
->>>>>>> CHANGE (d6d3af Changing regex pattern to catch the correct log msg)
     for flag, msg in logging_data:
         for i in range(syslogUtilsConst.PACKETS_NUM):
-            dut.shell(f"logger --priority {syslogUtilsConst.LOG_SEVERITY} {flag} '{msg} {i + 1}'")
+            dut.shell(f"logger {default_priority} {flag} {msg} {i + 1}")
             time.sleep(0.2)
 
     # wait for stoping tcpdump
