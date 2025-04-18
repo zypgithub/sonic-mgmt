@@ -14,6 +14,9 @@ from dash_api.route_type_pb2 import RoutingType, ActionType, RouteType, RouteTyp
 from dash_api.vnet_mapping_pb2 import VnetMapping
 from dash_api.vnet_pb2 import Vnet
 from dash_api.pa_validation_pb2 import PaValidation
+from dash_api.meter_policy_pb2 import MeterPolicy
+from dash_api.meter_rule_pb2 import MeterRule
+
 from google.protobuf.descriptor import FieldDescriptor
 from google.protobuf.json_format import ParseDict
 from dash_api.route_rule_pb2 import RouteRule
@@ -52,7 +55,9 @@ PB_CLASS_MAP = {
     "ROUTE_RULE": RouteRule,
     "ACL_GROUP": AclGroup,
     "ACL_RULE": AclRule,
-    "PA_VALIDATION": PaValidation
+    "PA_VALIDATION": PaValidation,
+    "METER_POLICY": MeterPolicy,
+    "METER_RULE": MeterRule
 }
 
 
