@@ -1,3 +1,4 @@
+import json
 import pytest
 import logging
 
@@ -5,8 +6,7 @@ logger = logging.getLogger()
 
 
 @pytest.mark.disable_loganalyzer
-def test_add_session_info(topology_obj, sonic_topo, chip_type, sonic_version, sonic_branch, platform_params,
-                          sonic_session_facts_prefix):
+def test_add_session_info(topology_obj, sonic_topo, chip_type, sonic_version, sonic_branch, sonic_session_facts_prefix):
     """
         The function collects the data required for the get_dynamic_info function of mars script sonic_add_session_info.
         Currently, it will get the following:
@@ -24,15 +24,15 @@ def test_add_session_info(topology_obj, sonic_topo, chip_type, sonic_version, so
         :param sonic_version: sonic_version fixture
         :param chip_type: chip_type fixture
         :param sonic_branch: sonic_branch fixture
-        :param platform_params: platform_params fixture
         :param sonic_session_facts_prefix: sonic_session_facts_prefix fixture
         :raise AssertionError: in case of script failure.
     """
+    dut_summary = json.loads(topology_obj.players['dut']['engine'].run_cmd("show platform summary --json"))
     res = {
         "version": "SONiC." + sonic_version,  # sonic_version fixture doesn't contain the prefix SONiC.
-        "platform": platform_params['platform'],
-        "hwsku": platform_params['hwsku'],
-        "asic": platform_params['asic_type'],
+        "platform": dut_summary['platform'],  # reading the platform from the switch
+        "hwsku": dut_summary['hwsku'],  # reading the actual hwsku from the switch
+        "asic": dut_summary['asic_type'],  # reading the asic type from the switch
         "topology": sonic_topo,
         "chip_type": chip_type,
         "sonic_branch": sonic_branch
