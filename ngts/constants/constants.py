@@ -1645,7 +1645,9 @@ class BugHandlerConst:
         {"MLNX_OS": "mlnxOS-Eth",
          "NVUE": "'NVOS - Design'",
          "Sonic": "SONiC-Design"}
-    BUG_HANDLER_CONF_FILE = {"SONiC-Design": os.path.join(NGTS_PATH, "helpers/bug_handler/sonic_bug_handler.conf"),
+    SONIC_BUG_HANDLER_CONF_FILE = os.path.join(NGTS_PATH, "helpers/bug_handler/sonic_bug_handler.conf")
+    BUG_HANDLER_CONF_FILE = {"SONiC-Design": SONIC_BUG_HANDLER_CONF_FILE,
+                             "SONiC-Verification": SONIC_BUG_HANDLER_CONF_FILE,
                              "'NVOS - Design'": os.path.join(NGTS_PATH, "helpers/bug_handler/nvos_bug_handler.conf")}
     BUG_HANDLER_PYTHON_PATH = "/mswg/projects/swvt/MARS/scripts/python37_wrapper.sh"
     BUG_HANDLER_PATH = "/auto/sw_tools/Internal/BugHandling/RELEASES/1_4_3/bin/"

@@ -7,7 +7,7 @@ import time
 import sys
 from paramiko.ssh_exception import SSHException
 import allure as raw_allure
-
+import pytest
 
 from tests.common.helpers.parallel import parallel_run
 from infra.tools.redmine.redmine_api import REDMINE_ISSUES_URL
@@ -25,6 +25,7 @@ PI_LINK = "https://app.powerbi.com/groups/9b79a1d8-7408-4848-90c5-9dd5dab8493d/r
 
 # inject dut hostname into log file name to avoid collision
 LOG_ANALYZER_LOG_FILE = '/tmp/loganalyzer-[{0}].log'
+KEY_IS_TEST_FUNCTION_FAILED = "is_test_function_failed"
 
 def handle_log_analyzer_errors(cli_type, branch, test_name, duthost, log_analyzer_bug_metadata, testbed,
                                bug_handler_action, log_errors_dir_path=None, is_serial_log=False):
@@ -64,6 +65,8 @@ def handle_log_analyzer_errors(cli_type, branch, test_name, duthost, log_analyze
                 session_id = f"manual_run_{timestamp}"
             session_tmp_folder = create_session_tmp_folder(session_id)
             redmine_project = BugHandlerConst.CLI_TYPE_REDMINE_PROJECT[cli_type]
+            if log_analyzer_bug_metadata.get(KEY_IS_TEST_FUNCTION_FAILED, False) and cli_type == "Sonic":
+                redmine_project = "SONiC-Verification"
             conf_path = BugHandlerConst.BUG_HANDLER_CONF_FILE[redmine_project]
 
             bug_handler_create_action = bug_handler_action.get("create", False)
@@ -122,13 +125,6 @@ def skip_bug_handler(duthost, request):
             logger.warning("Skip the loganalyzer bug handler, To run the it, "
                            "'request' is needed when create LogAnalyzer")
             return True
-        if "rep_setup" in request.node.__dict__ and request.node.rep_setup.failed:
-            logger.warning("Skip the loganalyzer bug handler: the test failed in the fixture setup, "
-                           "no need to run the bug handler")
-            return True
-        if "rep_call" in request.node.__dict__ and request.node.rep_call.failed:
-            logger.warning("Skip the loganalyzer bug handler: the test is failed, no need to run the bug handler")
-            return True
 
         if not (log_errors_dir_path.exists() and len(list(log_errors_dir_path.iterdir())) > 0):
             logger.warning(f"Skip the loganalyzer bug handler: No err msg detected")
@@ -154,7 +150,9 @@ def skip_bug_handler(duthost, request):
     return False
 
 
-def log_analyzer_bug_handler(duthost, request, log_errors_dir_path=None, only_check=False, is_serial_log=False):
+def log_analyzer_bug_handler(duthost, request, log_errors_dir_path=None,
+                             only_check=False, is_serial_log=False,
+                             is_test_function_failed=False):
     """
     If the run_log_analyzer_bug_handler is True, run this function to handle the err msg detected in the loganalyzer
     """
@@ -189,16 +187,16 @@ def log_analyzer_bug_handler(duthost, request, log_errors_dir_path=None, only_ch
                         'detected_in_version': log_analyzer_handler_info['version'],
                         'setup_name': setup_name,
                         'report_url': allure_report_url,
-                        'powerbi_url': PI_LINK}
+                        'powerbi_url': PI_LINK,
+                        KEY_IS_TEST_FUNCTION_FAILED: _is_test_function_failed(request)}
 
     if "components" in log_analyzer_handler_info:
         bug_handler_dict["components"] = log_analyzer_handler_info["components"]
 
-    if log_analyzer_handler_info['cli_type'] == 'NVUE':
+    cli_type = log_analyzer_handler_info['cli_type']
+    if cli_type == 'NVUE':
         bug_handler_dict.update(get_nvue_additional_info(duthost, request))
-
-    log_analyzer_res, la_error_messages = handle_log_analyzer_errors(log_analyzer_handler_info['cli_type'],
-                                                  log_analyzer_handler_info['branch'], test_name, duthost,
+    log_analyzer_res, la_error_messages = handle_log_analyzer_errors(cli_type, log_analyzer_handler_info['branch'], test_name, duthost,
                                                   bug_handler_dict, setup_name, bug_handler_actions,
                                                   log_errors_dir_path, is_serial_log)
     logger.info(f"Log Analyzer result: {json.dumps(log_analyzer_res, indent=2)}")
@@ -228,8 +226,18 @@ def log_analyzer_bug_handler(duthost, request, log_errors_dir_path=None, only_ch
             test_rm_issues.add(bug_id)
     elif log_analyzer_res[BugHandlerConst.BUG_HANDLER_DECISION_UPDATE]:
         created_bug_items = log_analyzer_res[BugHandlerConst.BUG_HANDLER_DECISION_UPDATE]
+        if is_test_function_failed:
+            error_msg += f"There are {len(created_bug_items)} related bug found\n"
         for index, (bug_id, bug_title) in enumerate(created_bug_items.items(), start=1):
             test_rm_issues.add(bug_id)
+            if is_test_function_failed:
+                error_msg += f"{index}) {REDMINE_ISSUES_URL+str(bug_id)}:  {bug_title}\n"
+    elif log_analyzer_res[BugHandlerConst.BUG_HANDLER_DECISION_SKIP] and is_test_function_failed:
+        skipped_bug_items = log_analyzer_res[BugHandlerConst.BUG_HANDLER_DECISION_SKIP]
+        error_msg += f"There are {len(skipped_bug_items)} related bug found but skipped\n"
+        for index, (bug_id, bug_title) in enumerate(skipped_bug_items.items(), start=1):
+            test_rm_issues.add(bug_id)
+            error_msg += f"{index}) {REDMINE_ISSUES_URL+str(bug_id)}:  {bug_title}\n"
     if log_analyzer_res[BugHandlerConst.BUG_HANDLER_FAILURE]:
         la_error_messages = f"{BugHandlerConst.BUG_HANDLER_FAILURE_EXCEPTION}, due to the following:" \
                             f"{json.dumps(log_analyzer_res[BugHandlerConst.BUG_HANDLER_FAILURE], indent=2)}"
@@ -518,12 +526,18 @@ def bug_handler_processing(analyzers, la_results: dict, node=None, results=None)
     try:
         analyzer: LogAnalyzer = analyzers[node.hostname]
         analyzer_summary = la_results[node.hostname]
-        if skip_bug_handler(analyzer.ansible_host, analyzer.request):
+        duthost, request = analyzer.ansible_host, analyzer.request
+        if skip_bug_handler(duthost, request):
             logging.info("Bug handler is skipped for %s, will verify log analyzer summary", node.hostname)
             analyzer._verify_log(analyzer_summary)
         else:
-            log_analyzer_bug_handler(analyzer.ansible_host, analyzer.request)
+            log_analyzer_bug_handler(duthost, request, is_test_function_failed=_is_test_function_failed(request))
     finally:
         if file_handler:
             logging.getLogger().removeHandler(file_handler)
             file_handler.close()
+
+def _is_test_function_failed(request: pytest.FixtureRequest) -> bool:
+    if "rep_setup" in request.node.__dict__ and request.node.rep_setup.failed:
+            return True
+    return "rep_call" in request.node.__dict__ and request.node.rep_call.failed
