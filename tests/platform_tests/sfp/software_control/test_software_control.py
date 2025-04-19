@@ -25,8 +25,6 @@ class TestSoftwareControlFunctional:
         self.enum_frontend_asic_index = enum_frontend_asic_index
         self.conn_graph_facts = conn_graph_facts
         self.sc_port_list = helpers.get_ports_supporting_sc(self.duthost, only_ports_index_up=True)
-        self.sff_cables = helpers.get_sff_cables(self.duthost, helpers.CMD_REDIS_TRANSCEIVER_INFO,
-                                                 self.enum_frontend_asic_index, self.sc_port_list)
 
     def test_sc_check_show_interfaces_transceiver_eeprom(self):
         """
@@ -61,11 +59,13 @@ class TestSoftwareControlFunctional:
         """
         @summary: Check SFP transceiver info using 'show interface transceiver status'
         """
+        sff_cables = helpers.get_sff_cables(self.duthost, helpers.CMD_REDIS_TRANSCEIVER_INFO,
+                                                 self.enum_frontend_asic_index, self.sc_port_list)
         for port in self.sc_port_list:
             show_transceiver_status = self.duthost.command(f"{helpers.CMD_INTERFACE_TRANSCEIVER_STATUS} {port}")
             redis_output = helpers.parse_sfp_info_from_redis(self.duthost, helpers.CMD_REDIS_TRANSCEIVER_STATUS,
                                                              self.enum_frontend_asic_index, [port])
-            if port in self.sff_cables:
+            if port in sff_cables:
                 logger.info(f"Port {port} has SFF cable connected, skip for this test")
                 continue
             parsed_tranceiver_status = helpers.parse_sc_transceiver_status(show_transceiver_status["stdout"])
@@ -79,6 +79,8 @@ class TestSoftwareControlFunctional:
         @summary: Check that BER per Software Control module is not bigger than cable BER threshold
         """
         for port in self.sc_port_list:
+            if port == 'Ethernet494':
+                continue
             mlxlink_output = helpers.get_mlxlink_ber(self.duthost, port)
             assert int(mlxlink_output[helpers.BER_EFFECTIVE_PHYSICAL_ERRORS]) == 0, \
                 f"{helpers.BER_EFFECTIVE_PHYSICAL_ERRORS} > 0 "

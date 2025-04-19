@@ -3,8 +3,8 @@ import json
 import re
 import pytest
 import logging
-
-from tests.common.platform.interface_utils import get_physical_port_indices, get_physical_index_to_ports_map
+import functools
+from tests.common.platform.interface_utils import get_physical_index_to_interfaces_map, get_interface_index_and_subport
 
 logger = logging.getLogger()
 
@@ -242,6 +242,13 @@ def parse_sc_transceiver_status(output_lines):
     return parse_output_to_dict(output_lines, TRANCEIVER_CLI_KEYS)
 
 
+@functools.lru_cache(maxsize=1)
+def get_mst_path(duthost):
+    mst_path_pciconf = duthost.shell('sudo ls /dev/mst/ | grep cr0')['stdout']
+    mst_path = f"/dev/mst/{mst_path_pciconf}"
+    return mst_path
+
+
 def get_mlxlink_ber(duthost, interface):
     """
     @summary: Parse the  output
@@ -249,13 +256,10 @@ def get_mlxlink_ber(duthost, interface):
     @param interface: DUT interface
     @return: BER values dictionary
     """
-    # Get name of pci_cr0
-    mst_path_pciconf = duthost.shell('sudo ls /dev/mst/ | grep cr0')['stdout']
-    mst_path = f"/dev/mst/{mst_path_pciconf}"
-    # Get interface port number
-    physical_port_index_map = get_physical_port_indices(duthost, interface)
-    physical_port_index = physical_port_index_map[interface]
-    cmd = duthost.command(f"mlxlink -d {mst_path} -p {physical_port_index} -c")['stdout']
+    mst_path = get_mst_path(duthost)
+    port_index, subport = get_interface_index_and_subport(duthost, interface)
+    port_full_path = f"{port_index}/{subport}" if subport not in ['','0','1'] else port_index
+    cmd = duthost.command(f"mlxlink -d {mst_path} -p {port_full_path} -c")['stdout']
     return parse_output_to_dict(cmd, BER_KEY_MAP)
 
 
@@ -284,7 +288,7 @@ def get_ports_supporting_sc(duthost, only_ports_index_up=False):
     @param: enum_frontend_asic_index: enum_frontend_asic_index fixture
     @return: list of Software Control ports supported
     """
-    physical_ports_map = get_physical_index_to_ports_map(duthost, only_ports_index_up=only_ports_index_up)
+    physical_ports_map = get_physical_index_to_interfaces_map(duthost, only_ports_index_up=only_ports_index_up)
     ports_with_sc_support = []
     for port_number, port_name in physical_ports_map.items():
         cmd = duthost.shell(f"sudo cat /sys/module/sx_core/asic0/module{int(port_number) - 1}/control")
