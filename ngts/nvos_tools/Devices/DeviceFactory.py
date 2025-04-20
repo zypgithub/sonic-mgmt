@@ -55,7 +55,7 @@ class DeviceFactory:
             'N5112_LD - JulietArielPS': JulietArielPS,
             'N5600_LD - JulietNonScaleoutSwitchNoNCI': JulietNonScaleoutSwitchNoNCI5600,
             'Q3450_LD - Taipan': TaipanSingleAsicSwitch,
-            'N5500_LD - JulietNonScaleoutSwitchGB300': JulietNonScaleoutSwitchGB300
+            'N5500_LD - JulietNonScaleoutSwitchGB300': JulietNonScaleoutSwitchGB300,
         }
 
     @staticmethod

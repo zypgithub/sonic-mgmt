@@ -694,4 +694,10 @@ tests_nvos/system/test_system_ztp.py::test_ztp_provisioning_script_positive:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4276503"
     conditions:
       - https://redmine.mellanox.com/issues/4334449
+
+tests_nvos/cluster/test_cluster_state.py::test_cluster_state:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4407627"
+    conditions:
+      - https://redmine.mellanox.com/issues/4407627
 ########################## NVOS IGNORE END ##########################

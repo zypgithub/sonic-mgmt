@@ -18,6 +18,7 @@ from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
 from infra.tools.exceptions.setup_issue import SetupIssue
 from infra.tools.general_constants.constants import DefaultConnectionValues
 from infra.tools.linux_tools.linux_tools import scp_file
+from ngts.nvos_tools.infra.BmcTool import BmcTool
 from infra.tools.sql.connect_to_mssql import ConnectMSSQL
 from ngts.cli_wrappers.linux.linux_general_clis import LinuxGeneralCli
 from ngts.cli_wrappers.nvue.nvue_base_clis import NvueBaseCli
@@ -850,6 +851,13 @@ def verify_result_objects():
     if errors:
         raise Exception(f'There are {len(errors)} ResultObj instances that contain a failed result (see documentation '
                         f'of ResultObj class):\n\n' + ('\n' + '-' * 80 + '\n\n').join(errors))
+
+
+@pytest.fixture(scope='session', autouse=True)
+def update_fw_versions_json_file(fw_versions_json_file):
+    logging.info(f'fw_versions_json_file path: {fw_versions_json_file}')
+    BmcTool.set_fw_versions_json_file(fw_versions_json_file)
+    return fw_versions_json_file
 
 
 @pytest.fixture
