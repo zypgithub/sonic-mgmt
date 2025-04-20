@@ -808,7 +808,7 @@ class TaipanSwitch(BlackMambaSwitch):  # All values will be updated on Taipan BU
 class TaipanSingleAsicSwitch(TaipanSwitch):  # All values will be updated on Taipan BU
 
     def __init__(self):
-        super().__init__(switch_class=NvosConst.TAIPAN_SINGLE_ASIC)
+        super().__init__(switch_class=NvosConst.TAIPAN_SINGLE_ASIC_SWITCH)
 
     def _init_constants(self):
         super()._init_constants()
