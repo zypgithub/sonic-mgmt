@@ -322,7 +322,8 @@ def get_bug_handler_actions(request, log_analyzer_handler_info, only_check=False
         "sonic_dpu_build": True,
         "sonic_ci": True,
         "sonic_dpu_ci": True,
-        "sonic_ci_app_extension": True
+        "sonic_ci_app_extension": True,
+        "nvos_ci": False
     }
 
     project_bug_update_map = {
@@ -333,7 +334,8 @@ def get_bug_handler_actions(request, log_analyzer_handler_info, only_check=False
         "sonic_dpu_build": False,
         "sonic_ci": False,
         "sonic_dpu_ci": False,
-        "sonic_ci_app_extension": False
+        "sonic_ci_app_extension": False,
+        "nvos_ci": False
     }
 
     project_bug_only_check_map = {
@@ -344,7 +346,8 @@ def get_bug_handler_actions(request, log_analyzer_handler_info, only_check=False
         "sonic_dpu_build": False,
         "sonic_ci": False,
         "sonic_dpu_ci": False,
-        "sonic_ci_app_extension": False
+        "sonic_ci_app_extension": False,
+        "nvos_ci": False
     }
 
     if not only_check:
