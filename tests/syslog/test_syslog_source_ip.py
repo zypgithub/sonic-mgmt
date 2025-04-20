@@ -449,9 +449,9 @@ class TestSSIP:
         Returns:
             str or None: The forward type if found, None otherwise
         """
-        forward_type_match = re.search(rf"{self.duthost.hostname} CRIT\s+([^:]+):", syslog_message)
-        if forward_type_match:
-            return forward_type_match.group(1)  # Returns the forward type value
+        forward_program_name = re.search(f"{self.duthost.hostname} {syslogUtilsConst.LOG_SEVERITY}\s+([^:]+):", syslog_message)
+        if forward_program_name:
+            return forward_program_name.group(1)
         return 'default'
 
     def get_forward_types(self, packets, expected_forward_types):
@@ -596,7 +596,7 @@ class TestSSIP:
         tcpdump_file_name = syslogUtilsConst.DUT_PCAP_FILEPATH.format(
             vrf=vrf + '_neg' if neg else vrf,
             time=time.strftime("%m%d_%H%M%S")
-            )
+        )
         tcpdump_cmd = (
             f"sudo timeout {syslogUtilsConst.TCPDUMP_CAPTURE_TIME} tcpdump -i {tcpdump_interface} "
             f"port {port if port else SYSLOG_DEFAULT_PORT} -w {tcpdump_file_name}"
