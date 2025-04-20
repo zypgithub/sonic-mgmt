@@ -445,13 +445,8 @@ def get_nvue_additional_info(duthost, request):
         nvue_info['show_system'] = command_results.get("nv show system reboot history", {}).get('stdout', '')
         nvue_info['show_platform_firmware'] = command_results.get("nv show platform firmware", {}).get('stdout', '')
 
-        # Use `request.getfixturevalue` to access the session-scoped fixture
-        session_data = request.getfixturevalue("session_data")
-        nvue_info['history'] = session_data.get(request.node.name, {}).get('history', "")
-
     except Exception as e:
         logging.error(f"Failed to retrieve NVUE information from {duthost}: {e}")
-        nvue_info['history'] = "Error: Unable to fetch last executed commands"
         nvue_info['show_system'] = "Error: Unable to fetch 'nv show system reboot history' output"
         nvue_info['show_platform_firmware'] = "Error: Unable to fetch 'nv show platform firmware' output"
 

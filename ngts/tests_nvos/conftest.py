@@ -25,7 +25,7 @@ from ngts.cli_wrappers.nvue.nvue_base_clis import NvueBaseCli
 from ngts.cli_wrappers.openapi.openapi_command_builder import OpenApiRequest
 from ngts.constants.constants import DbConstants, CliType, DebugKernelConsts, InfraConst, CoreDumpConsts
 from ngts.nvos_constants.constants_nvos import ApiType, OperationTimeConsts, OutputFormat, NvosConst, TestConsts, \
-    SyslogConsts
+    SyslogConsts, SystemConsts
 from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
 from ngts.nvos_tools.Devices.DeviceFactory import DeviceFactory
 from ngts.nvos_tools.cli_coverage.nvue_cli_coverage import NVUECliCoverage
@@ -510,7 +510,7 @@ def eth_handle_exception():
 
 
 @pytest.fixture(scope="function", autouse=True)
-def list_of_executed_commands(engines, run_cli_coverage_flow, request, session_data):
+def list_of_executed_commands(engines, run_cli_coverage_flow, request):
     pytest.s_time = time.time()
     logging.info(f'------- TEST STARTED - {request.node.name} -------')
     if 'no_log_test_wrapper' not in request.keywords:
@@ -527,8 +527,14 @@ def list_of_executed_commands(engines, run_cli_coverage_flow, request, session_d
                 LinuxGeneralCli(engines.dut).get_history).get_returned_value()
             allure.attach("List of commands", commands_list)
 
-        session_data[request.node.name] = {"history": commands_list}
-
+        with allure.step(f"Save list of commands to {SystemConsts.LIST_OF_COMMANDS_FILE_PATH}"):
+            file_path = SystemConsts.LIST_OF_COMMANDS_FILE_PATH
+            engines.dut.run_cmd(
+                f"history | sudo tee {file_path} > /dev/null && "
+                f"sudo sed -i '$d' {file_path} && "
+                f"sudo sed -i 's/^ *//' {file_path} && "
+                f"sudo sed -i '1i === Executed Commands ===' {file_path}"
+            )
     except BaseException as err:
         logging.warning(f"Failed to get list of executed commands - {err}")
 
@@ -700,19 +706,6 @@ def insert_operation_duration_to_db(setup_name, type, version, session_id, relea
         mssql_connection_obj.disconnect_db()
 
 
-@pytest.fixture(scope="session")
-def session_data():
-    """
-    Fixture to hold session-wide data for executed commands and additional metadata.
-
-    This fixture acts as a centralized storage for data that needs to persist throughout the test session.
-    It can be used for various purposes, such as:
-    - Holding log outputs or diagnostic information for bug handling after running loganalyzer.
-    - Keeping track of test-related context data.
-    """
-    return {}
-
-
 @pytest.fixture(autouse=True)
 def disable_cli_coverage(request):
     """
@@ -881,3 +874,10 @@ def handle_la_marker_in_manufacture(engines, loganalyzer):
     oldest_syslog_id = get_oldest_syslog_id(engines.dut)
     new_marker = get_new_start_string(engines.dut, oldest_syslog_id, marker)
     insert_new_start_string(engines.dut, oldest_syslog_id, new_marker)
+
+
+@pytest.fixture(scope='session', autouse=True)
+def update_fw_versions_json_file(fw_versions_json_file):
+    logging.info(f'fw_versions_json_file path: {fw_versions_json_file}')
+    BmcTool.set_fw_versions_json_file(fw_versions_json_file)
+    return fw_versions_json_file
