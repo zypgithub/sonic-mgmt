@@ -1,4 +1,5 @@
 import logging
+import re
 import pytest
 
 from retry import retry
@@ -324,6 +325,42 @@ def test_system_snmp_load_test(engines, topology_obj):
         ValidationTool.validate_fields_values_in_output([SystemConsts.SNMP_STATE], [SystemConsts.SNMP_ENABLED_STATE],
                                                         system_snmp_output).verify_result()
         logging.info("All expected fields were found")
+
+    with allure.step("SNMP unset"):
+        system.snmp_server.unset(apply=True).verify_result()
+
+
+@pytest.mark.system
+def test_system_snmp_mismtach_system_image(engines):
+    """
+    Test flow:
+        1. Enable snmp
+        2. Get nvos version via snmpget
+        3. Get nvos version via nv show system image
+        4. Compare
+    """
+    snmp_descr_nvos_pattern = r'NVOS Software Version:\s*(\w+(-|.)[\d.-]+)'
+    sysDescr_OID = '1.3.6.1.2.1.1.1.0'
+    system = System()
+    ip_address = engines.dut.ip
+
+    with allure.step("Enable SNMP"):
+        HostMethods.start_snmp_server(engine=engines.dut, state=NvosConst.ENABLED, readonly_community='qwerty12',
+                                      listening_address=ip_address)
+
+    with allure.step("Get Version Via SNMP sysDescr"):
+        snmpget_output: str = HostMethods.host_snmp_get(engines.sonic_mgmt, ip_address, get_param=sysDescr_OID)
+        match = re.search(snmp_descr_nvos_pattern, snmpget_output)
+        assert match is not None, 'NVOS Software Version not in SNMP sysDescr'
+        snmp_nvos_version = match.group(1)
+
+    with allure.step("Get Version Via NVUe System Image"):
+        system_image_output = OutputParsingTool.parse_json_str_to_dictionary(system.version.show()).get_returned_value()
+        system_image_nvos_version = system_image_output["image"]
+        assert system_image_nvos_version, "system_image_nvos_version is None - parsing failed."
+
+    with allure.step("Compare Version Outputs"):
+        assert snmp_nvos_version == system_image_nvos_version, f"Version outputs mismatch! snmp returned: {snmp_nvos_version} NVUe returned: {system_image_nvos_version}"
 
     with allure.step("SNMP unset"):
         system.snmp_server.unset(apply=True).verify_result()
