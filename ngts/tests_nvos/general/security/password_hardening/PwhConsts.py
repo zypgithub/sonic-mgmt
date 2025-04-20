@@ -93,11 +93,11 @@ class PwhConsts:
     ERR_ITEM_NOT_EXIST = 'The requested item does not exist.'
     ERR_INVALID_SET_CMD = 'Invalid Command: set system security password-hardening'
     ERR_INCOMPLETE_SET_CMD = 'Error: Incomplete Command'
-    ERR_INVALID_SET_ENABLE_DISABLED = "is not one of ['enabled', 'disabled']"
+    ERR_INVALID_SET_ENABLE_DISABLED = """is not one of ["enabled", "disabled"]"""
     ERR_PW_SHOULD_CONTAIN = 'Password should contain at least '
     ERR_MAX_RANGE = 'Error: At {}: {} is greater than the maximum of {}'
     ERR_MIN_RANGE = 'Error: At {}: {} is less than the minimum of {}'
-    ERR_RANGE = 'Error: Valid range is {} - {}'
+    ERR_RANGE = 'Error: Valid range for {} is {} - {}'
     ERR_VALUE_LESS_THAN_MIN = "Error: At {}: {} is less than the minimum of {}"
     ERR_VALUE_GREATER_THAN_MAX = "Error: At {}: {} is greater than the maximum of {}"
     ERR_EXP_WARN_LEQ_EXP = 'expiration-warning should be equal or smaller than expiration'
