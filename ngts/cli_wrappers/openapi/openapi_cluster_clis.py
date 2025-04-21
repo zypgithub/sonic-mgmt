@@ -3,6 +3,7 @@ import logging
 from ngts.cli_wrappers.openapi.openapi_base_clis import OpenApiBaseCli
 from ngts.nvos_constants.constants_nvos import ActionType, ImageConsts
 from .openapi_command_builder import OpenApiCommandHelper
+from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
 
 logger = logging.getLogger()
 
@@ -37,7 +38,7 @@ class OpenApiClusterCli(OpenApiBaseCli):
         return OpenApiClusterCli.action(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=resource_path, param_name="chassis-id", param_value=mapping_id)
 
     @staticmethod
-    def action_update(engine, path, param_name='', param_val=''):
+    def action_update(engine, resource_path, param_name='', param_val=''):
         logging.info("Running action: 'generate' on dut using OpenApi")
         parameters = {} if not param_name and not param_val else {param_name: param_val}
         params = \
@@ -179,3 +180,12 @@ class OpenApiClusterCli(OpenApiBaseCli):
 
         return OpenApiCommandHelper.execute_action(ActionType.RESET, engine.engine.username, engine.engine.password,
                                                    engine.ip, resource_path, params)
+
+    @staticmethod
+    def action_update_sdn_transceiver_maintenance_state(engine, path, maintenance_state=''):
+        param_value = maintenance_state
+        return OpenApiClusterCli.action(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=path, param_name=ClusterConsts.MAINTENANCE_STATE, param_value=param_value)
+
+    @staticmethod
+    def action_restore_sdn_transceiver_maintenance_state(engine, path):
+        return OpenApiClusterCli.action(engine, action_type=ActionType.RESTORE.replace('@', ''), resource_path=path, param_name=ClusterConsts.MAINTENANCE_STATE)

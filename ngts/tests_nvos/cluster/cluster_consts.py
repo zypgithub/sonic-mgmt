@@ -87,3 +87,7 @@ class ClusterConsts:
     NMXC_LOG_STREAM_DEFAULT_PORT = "514"
     CONTROLLER_LOG_STREAM_CONFIG_FILE = "rsyslog.conf"
     CONTROLLER_LOG_STREAM_SERVICE = "rsyslog"
+
+    # maintenance state constants
+    MAINTENANCE_STATE = 'maintenance-state'
+    MAINTENANCE_STATE_OPTIONS = ['up', 'diag', 'down']

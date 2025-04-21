@@ -2,6 +2,7 @@ from ngts.cli_wrappers.nvue.nvue_base_clis import NvueBaseCli, check_output
 from ngts.cli_wrappers.sonic.sonic_general_clis import *
 from ngts.nvos_constants.constants_nvos import ActionType
 from ngts.nvos_constants.constants_nvos import ImageConsts
+from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
 
 logger = logging.getLogger()
 server_ip = "10.237.116.60"
@@ -125,3 +126,12 @@ class NvueClusterCli(NvueBaseCli):
         cmd = f"nv action reset {path} {param}"
         logging.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
         return engine.run_cmd(cmd)
+
+    @staticmethod
+    def action_update_sdn_transceiver_maintenance_state(engine, path, maintenance_state=''):
+        param_value = ClusterConsts.MAINTENANCE_STATE + " " + maintenance_state
+        return NvueClusterCli.action(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=path, param_value=param_value)
+
+    @staticmethod
+    def action_restore_sdn_transceiver_maintenance_state(engine, path):
+        return NvueClusterCli.action(engine, action_type=ActionType.RESTORE.replace('@', ''), resource_path=path, param_name=ClusterConsts.MAINTENANCE_STATE)

@@ -9,6 +9,7 @@ from ngts.nvos_tools.nmx.Config import Config
 from ngts.nvos_tools.nmx.State import State
 from ngts.nvos_tools.nmx.Partition import Partition
 from ngts.nvos_tools.nmx.FactoryDefault import FactoryDefault
+from ngts.nvos_tools.nmx.Transceivers import Transceivers
 
 logger = logging.getLogger()
 
@@ -22,3 +23,4 @@ class Sdn(BaseComponent):
         self.state = State(self)
         self.partition = Partition(self)
         self.factory_default = FactoryDefault(self)
+        self.transceivers = Transceivers(self)
