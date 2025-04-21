@@ -1296,4 +1296,16 @@ tests/nightly/auto_negotition/test_auto_neg.py::TestAutoNeg::test_auto_neg_toggl
     conditions:
     - "https://redmine.mellanox.com/issues/3937842 and ('sn5400' in platform)"
 
+show_techsupport/test_techsupport_fw_stuck_dump_dpu.py:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4402135"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4402135 and 'bf3comdpu' in platform"
+
+smartswitch/platform_tests/test_platform_dpu.py::test_npu_dpu_date:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4286414"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4286414 and '4280' in platform"
+
 ########################## NVIDIA INTERNAL HIPPO BRINGUP IGNORE END ############################
