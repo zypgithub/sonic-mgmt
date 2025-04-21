@@ -482,9 +482,13 @@ def pytest_runtest_makereport(item: pytest.Item, call):
     :param item: pytest builtin
     :param call: pytest builtin
     """
-    # Filter out unnecessary logs captured on "stdout" and "stderr"
+    # Filter out unnecessary logs captured on "stderr"
     # allure will only attach log file to save disk space
-    item._report_sections = list([report for report in item._report_sections if report[1] not in ("stdout", "stderr")])
+    sections_to_remove = set(["stderr"])
+    if item.name not in {"test_deploy_and_upgrade"}:
+        # also remove stdout for tests that are not test_deploy_and_upgrade
+        sections_to_remove.add("stdout")
+    item._report_sections = list([report for report in item._report_sections if report[1] not in sections_to_remove])
     # execute all other hooks to obtain the report object
     outcome = yield
     rep = outcome.get_result()
