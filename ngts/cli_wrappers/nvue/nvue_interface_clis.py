@@ -33,7 +33,12 @@ class NvueInterfaceCli(SonicInterfaceCli):
 
     def get_interface_mac_address(self, interface, verify_execution=False):
         if verify_execution:
-            output = SendCommandTool.execute_command(NvueInterfaceCli._get_interface_mac_address, self.engine, interface).verify_result()
+            try:
+                output = SendCommandTool.execute_command(NvueInterfaceCli._get_interface_mac_address, self.engine, interface).verify_result()
+            except Exception as e:
+                logging.error(self.get_interface_status())
+                logging.error(f"Error getting interface mac address for {interface}: {e}")
+                raise
         else:
             output = NvueInterfaceCli._get_interface_mac_address(self.engine, interface)
         output_json = json.loads(output)
@@ -98,3 +103,8 @@ class NvueInterfaceCli(SonicInterfaceCli):
         except ValueError:
             pass
         return down_ports
+
+    def get_interface_status(self):
+        output = self.engine.run_cmd("nv sh interface status -o json")
+        output = json.loads(output)
+        return output

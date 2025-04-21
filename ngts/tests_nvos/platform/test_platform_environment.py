@@ -226,6 +226,9 @@ def test_show_platform_environment_psu(engines, devices, test_api):
     """
     Show platform environment psu test
     """
+    if not devices.dut.psu_list:
+        pytest.skip("Device has no PSUs")
+
     TestToolkit.tested_api = test_api
 
     with allure.step("Create System object"):
@@ -301,9 +304,8 @@ def test_show_platform_environment_temperature(engines, devices, test_api):
 
     verify_sensor_group_by_tolerance(output, PlatformConsts.ENV_CPU)
     verify_sensor_group_by_tolerance(output, PlatformConsts.FW_ASIC)
-    with allure.step('Check is Juliet Device'):
-        if not isinstance(TestToolkit.devices.dut, JulietSwitch):
-            verify_sensor_group_by_tolerance(output, PlatformConsts.ENV_PSU.upper())
+    if devices.dut.psu_list:
+        verify_sensor_group_by_tolerance(output, PlatformConsts.ENV_PSU.upper())
 
 
 def get_available_temperature_sensor_list(device: BaseDevice):
@@ -478,9 +480,9 @@ def _verify_fan_direction_mismatch_behaviour(engines, devices, feature_enable):
                 wrong_dir = FansConsts.FORWARD_DIRECTION
 
         with allure.step("Get the latest event"):
-            last_event = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.events.show("last 1")).\
+            last_event = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.events.show_last()).\
                 get_returned_value()
-            latest_event_id = list(last_event)[0]
+            latest_event_id = int(list(last_event)[0])
 
         with allure.step("Change direction of {} to wrong dir({}) and verify".format(fan_to_check, wrong_dir)):
             _set_platform_environment_fan_direction(engines, devices, platform, fan_to_check, def_dir, wrong_dir)
@@ -494,7 +496,7 @@ def _verify_fan_direction_mismatch_behaviour(engines, devices, feature_enable):
 
         if state == FansConsts.STATE_NOT_OK:
             with allure.step("Validate system event regarding Health status: Health status is not ok"):
-                events = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.events.show("last")).\
+                events = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.events.show(SystemConsts.SYSTEM_LAST_EVENT)).\
                     get_returned_value()
                 newer_events = [events[event]['text'] for event in list(events) if event > latest_event_id]
                 assert PlatformConsts.HEALTH_STATUS_NOT_OK_EVENT in newer_events, \
@@ -516,9 +518,9 @@ def _verify_fan_direction_mismatch_behaviour(engines, devices, feature_enable):
 
         if health_changed_to_not_ok:
             with allure.step("Validate system event regarding clear Health status- Cleared: Health status is not ok"):
-                events0 = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.events.show("last")).\
+                events0 = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.events.show(SystemConsts.SYSTEM_LAST_EVENT)).\
                     get_returned_value()
-                newer_events = [events0[event]['text'] for event in list(events0) if event > latest_event_id]
+                newer_events = [events0[event]['text'] for event in list(events0) if int(event) > latest_event_id]
                 assert "Cleared: " + PlatformConsts.HEALTH_STATUS_NOT_OK_EVENT in newer_events, \
                     "Clear health event not found in events"
 
@@ -637,7 +639,7 @@ def assert_led_color(led: str, ok: bool):
 
 
 @contextmanager
-def fan_error_context(fan: str, device, engine, skip_for_fanless_setup):
+def fan_error_context(fan: str, device, engine):
     """
     with fan_error_context("FAN1/2", devices.dut, engines.dut):
         # this code runs while FAN1/2 status = failed

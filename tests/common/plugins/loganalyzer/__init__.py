@@ -4,7 +4,7 @@ import pytest
 from .loganalyzer import LogAnalyzer, DisableLogrotateCronContext
 from tests.common.errors import RunAnsibleModuleFail
 from tests.common.helpers.parallel import parallel_run, reset_ansible_local_tmp
-
+from .bug_handler_helper import bug_handler_wrapper
 
 def pytest_addoption(parser):
     parser.addoption("--disable_loganalyzer", action="store_true", default=False,
@@ -49,7 +49,9 @@ def analyzer_add_marker(analyzers, node=None, results=None):
 @reset_ansible_local_tmp
 def analyze_logs(analyzers, markers, node=None, results=None, fail_test=True, store_la_logs=False):
     dut_analyzer = analyzers[node.hostname]
-    dut_analyzer.analyze(markers[node.hostname], fail_test, store_la_logs=store_la_logs)
+    analyzer_summary=dut_analyzer.analyze(markers[node.hostname], fail_test, store_la_logs=store_la_logs)
+    # results is a ProxyDict passed from parallel_run
+    results[node.hostname] = analyzer_summary
 
 
 @pytest.fixture(scope="module")
@@ -108,5 +110,6 @@ def loganalyzer(duthosts, request, log_rotate_modular_chassis):
         raise Exception(f"Some duthost objects are None so loganalyzer can't run: {duthosts=}. This is probably due to "
                         f"a network error.")
     logging.info("Starting to analyse on all DUTs")
-    parallel_run(analyze_logs, [analyzers, markers], {'fail_test': fail_test, 'store_la_logs': store_la_logs},
-                 duthosts, timeout=360)
+    la_results = parallel_run(analyze_logs, [analyzers, markers], {'fail_test': fail_test, 'store_la_logs': store_la_logs},
+                duthosts, timeout=240)
+    bug_handler_wrapper(analyzers, duthosts, la_results)

@@ -1,6 +1,6 @@
-Hostname,ManagementIp,HwSku,Type,Protocol,Os
+Hostname,ManagementIp,HwSku,Type,Protocol,Os,PortConfigIni
 mtvr-bobcat-03,10.245.21.112/22,Mellanox-SN4280-O28,DevSonic,,sonic
-mtvr-leopard-06,10.245.21.114/22,ACS-MSN4700,FanoutLeaf,,sonic
+mtvr-leopard-06,10.245.21.114/22,ACS-MSN4700,FanoutLeaf,,sonic,files/hwsku_vars/mtvr-bobcat-03_setup/Mellanox-SN4280-O28/port_config.ini
 mtvr-dl360-04,10.245.44.120,TestServ,Server,,
 pdu-10-245-2-15,10.245.2.15,Vertiv,Pdu,snmp,
 pdu-10-245-2-34,10.245.2.34,Vertiv,Pdu,snmp,

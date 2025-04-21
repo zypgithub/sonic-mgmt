@@ -147,6 +147,7 @@ def update_platform_info_files(hostname, platform_params, update_inventory=False
         json.dump(data, platform_info_f)
 
     if update_inventory:
+        logger.info(f"Updating the inventory file with hwsku {platform_params['hwsku']}")
         pattern = r"({}.*sonic_hwsku=)(\S*)".format(hostname)
         replacement = r"\1{}".format(platform_params["hwsku"])
         with open(INVENTORY_FILE_PATH, "r") as inventory_file:

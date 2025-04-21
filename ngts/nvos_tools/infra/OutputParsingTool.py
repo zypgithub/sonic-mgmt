@@ -568,7 +568,7 @@ class OutputParsingTool:
 
     @staticmethod
     def get_reboot_reason_system_events(system):
-        events = OutputParsingTool.parse_json_str_to_dictionary(system.events.show('last 10000')).get_returned_value()
+        events = OutputParsingTool.parse_json_str_to_dictionary(system.events.show_last('10000')).get_returned_value()
         latest_reboot_event_id = '-1'
         reboot_events = [event_id for event_id in events if 'System reboot occured' in events[event_id]['text']]
         for event_id in reboot_events:

@@ -14,6 +14,7 @@ from tests.smartswitch.common.device_utils_dpu import check_dpu_link_and_status,
 from tests.common.platform.device_utils import platform_api_conn, start_platform_api_service  # noqa: F401,F403
 from tests.smartswitch.common.reboot import perform_reboot
 from tests.common.helpers.multi_thread_utils import SafeThreadPoolExecutor
+from infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 pytestmark = [
     pytest.mark.topology('smartswitch', 't1')
@@ -21,6 +22,18 @@ pytestmark = [
 
 kernel_panic_cmd = "sudo nohup bash -c 'sleep 5 && echo c > /proc/sysrq-trigger' &"
 memory_exhaustion_cmd = "sudo nohup bash -c 'sleep 5 && tail /dev/zero' &"
+
+
+@pytest.fixture(scope="function", autouse=True)
+def arm_watchdog_on_dpus(dpuhosts):
+    """
+    Arm watchdog on DPUs.
+    """
+    # This is a workaround, when the ticket is fixed, the fixture should be removed
+    if is_redmine_issue_active([4402258])[0]:
+        for dpuhost in dpuhosts:
+            logging.info("Arming watchdog on DPU")
+            dpuhost.shell("sudo watchdogutil arm")
 
 
 def test_dpu_status_post_switch_reboot(duthosts,

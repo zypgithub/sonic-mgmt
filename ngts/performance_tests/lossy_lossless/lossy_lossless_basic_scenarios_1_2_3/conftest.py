@@ -5,6 +5,7 @@ conftest.py
 Defines the methods and fixtures which will be used by pytest for only performance setups.
 
 """
+from ngts.helpers.performance.performance_db_helpers import add_test_mongo_metadata, get_perf_test_name
 import pytest
 import logging
 import allure
@@ -13,7 +14,7 @@ from ngts.helpers.general_helper import get_pytest_test_name
 from ngts.helpers.performance.performance_setup_helpers import (save_base_configuration,
                                                                 restore_basic_configuration,
                                                                 apply_test_configuration)
-from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts
+from ngts.constants.performance_constants import MongoDbConsts, PerfConsts, SPCXRAConsts
 
 logger = logging.getLogger()
 TESTS_SCENARIO = "lossy_lossless"
@@ -32,6 +33,14 @@ def basic_setup_configuration(players, conf_args):
     finally:
         with allure.step('Restore Base Configuration on all Players'):
             restore_basic_configuration(players)
+
+
+@pytest.fixture(scope='function', autouse=True)
+def update_test_mongo_metadata(request, is_ipv6, port_group_df):
+    test_name = get_perf_test_name(request.node.name, is_ipv6)
+    add_test_mongo_metadata(test_name, {MongoDbConsts.CONF_NAME: f"{TESTS_SCENARIO}_basic_scenarios",
+                                        MongoDbConsts.PORT_GROUP_DF: port_group_df})
+    yield
 
 
 @pytest.fixture(scope='session', autouse=True)

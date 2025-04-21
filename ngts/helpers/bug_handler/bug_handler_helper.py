@@ -463,6 +463,13 @@ def get_tech_support_from_switch(bug_handler_params):
         tar_file_path_on_switch = _generate_sonic_techsupport(duthost)
     elif cli_type == "NVUE":
         tar_file_path_on_switch = _generate_nvue_techsupport(duthost)
+
+        # Copy the executed commands file
+        commands_file_name = f"{test_name}_list_of_executed_commands.txt"
+        commands_file_path = os.path.join(dumps_folder, commands_file_name)
+        duthost.fetch(src=SystemConsts.LIST_OF_COMMANDS_FILE_PATH, dest=commands_file_path, flat=True)
+        dumps_files.append(commands_file_path)
+
     else:
         raise Exception(f"No such cli_type: {cli_type}")
 

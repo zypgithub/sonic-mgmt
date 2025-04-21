@@ -99,6 +99,7 @@ class PerfConsts:
     DVS_TG_MLOOP_CONFIGURATION = "ConfigureMloopOnTG"
     DVS_TG_REMOVE_MLOOP_CONFIGURATION = "RemoveMloopOnTG"
     DVS_GET_PORTS = "GetPorts"
+    DVS_UNSPLIT_ALL_PORTS = "UnsplitAllPorts"
 
     # Traffic Generator Aliases
     LEFT_TG_ALIAS = "left_tg"

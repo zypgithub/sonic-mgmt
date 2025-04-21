@@ -3,6 +3,7 @@ import allure
 import csv
 import logging
 import json
+import pytest
 from collections import defaultdict
 from ngts.constants.constants import SonicConst
 from ngts.scripts.test_rpc_check_and_set_topology import run_testbed_cli_script
@@ -10,6 +11,16 @@ from ngts.scripts.sonic_deploy.test_deploy_and_upgrade import get_info_from_topo
 
 
 logger = logging.getLogger()
+
+
+@pytest.fixture(scope="function", autouse=True)
+def confirm_setup_ready(cli_objects):
+    admin_up_ports = cli_objects.dut.interface.get_admin_up_ports()
+
+    yield
+
+    cli_objects.dut.general.verify_dockers_are_up()
+    cli_objects.dut.interface.check_link_state(ifaces=admin_up_ports)
 
 
 def read_csv_config(csv_path, dut_name):
@@ -42,10 +53,7 @@ def read_csv_config(csv_path, dut_name):
                 if default_autoneg_on:
                     port_config[row[port_index]]['autoneg'] = 'on'
                 else:
-                    if row[autoneg_index] == 'True':
-                        port_config[row[port_index]]['autoneg'] = 'on'
-                    else:
-                        port_config[row[port_index]]['autoneg'] = 'off'
+                    port_config[row[port_index]]['autoneg'] = row[autoneg_index]
 
     return port_config
 
@@ -92,7 +100,6 @@ def test_deploy_l2_mode(cli_objects, engines, topology_obj, workspace_path):
     csv_path = setup_info['ansible_path'] + 'files/sonic_nvidia_links.csv'
     ansible_cmd = f"ansible-playbook -i lab testbed_set_l2_mode.yml --vault-password-file=vault -l {dut_name} -vvv"
     csv_port_config = read_csv_config(csv_path, dut_name)
-    active_phy_port = cli_objects.dut.interface.get_active_phy_port()
     passive_phy_ports = cli_objects.dut.interface.get_passive_phy_ports()
 
     with allure.step("Deploy L2 mode"):
@@ -101,8 +108,6 @@ def test_deploy_l2_mode(cli_objects, engines, topology_obj, workspace_path):
     with allure.step("Update port speed and autoneg configuration based on link csv file"):
         update_config_db(engines.dut, csv_port_config, passive_phy_ports)
         cli_objects.dut.general.reload_configuration(force=True)
-        cli_objects.dut.general.verify_dockers_are_up()
-        cli_objects.dut.interface.check_link_state(ifaces=[active_phy_port])
 
 
 @allure.title('Restore default mode')

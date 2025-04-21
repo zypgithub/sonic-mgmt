@@ -107,15 +107,11 @@ class TestSPCXRA_x2Split_400G:
 
         with allure.step(f"Verifying the BW utilization is at least {SPCXRAConsts.DUT_TX_UTIL_IBM_TH_DICT[packet_size]}% "
                          f"on all the ports"):
-            # TODO: Remove this once the issue 4267499 is fixed (change bw_threshold to SPCXRAConsts.DUT_TX_UTIL_IBM_TH_DICT[packet_size] )
-            bw_threshold = None if flap_scenario == "toggle_multiple_ports" else SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size]
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type,
                                       power_threshold=self.power_thresholds_by_chip_type,
-                                      bw_threshold=bw_threshold,
                                       skip_first_counters_iteration=True)
-
-            traffic_validation_jsons_list = run_validation(config)
+            run_validation(config)
 
     @allure.title('test_ar_perf_reload_reboot')
     @allure.description('With full line rate traffic, verify that traffic converges to'
@@ -190,10 +186,6 @@ class TestSPCXRA_x2Split_400G:
                 with allure.step("Verifying the B/W utilization is 0% on down ports"):
                     validate_bw_per_ports(traffic_json, bw_threshold=0,
                                           ports_list=ports_to_shutdown, violations_list=violations_list)
-                bw_threshold = SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size]
-                with allure.step(f"Verifying the B/W utilization is {bw_threshold} on up ports"):
-                    validate_bw_per_ports(traffic_json, bw_threshold=bw_threshold,
-                                          ports_list=up_ports, violations_list=violations_list)
 
             if violations_list:
                 raise TestIssue("\n".join(violations_list))

@@ -54,7 +54,7 @@ class BaseComponent:
 
     def update_param(self, param, rev):
         if self._api_to_use == ApiType.OPENAPI:
-            param = param.replace('/', "%2F").replace(' ', "/")
+            param = param.replace('/', "%2F").replace(' ', "/").replace('--', '?')
         if rev and rev != ConfState.OPERATIONAL:
             param += ('?rev=' + rev) if self._api_to_use == ApiType.OPENAPI else f' --{rev}'
         return param

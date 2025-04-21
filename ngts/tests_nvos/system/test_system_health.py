@@ -407,8 +407,7 @@ def test_simulate_multi_fan_speed_fault(engines, devices, loganalyzer):
 
     try:
         with allure.step("Get the latest event"):
-            last_event = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.events.show_last().
-                                                                              verify_result()).get_returned_value()
+            last_event = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.events.show_last()).get_returned_value()
             latest_event_id = list(last_event)[0]
 
         with allure.step("Simulate fan speed fault for chosen fans:{}".format(fan_ids)):
@@ -492,8 +491,7 @@ def test_simulate_psu_multi_faults(engines, devices, loganalyzer):
 
     try:
         with allure.step("Get the latest event"):
-            last_event = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.events.show_last().
-                                                                              verify_result()).get_returned_value()
+            last_event = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.events.show_last()).get_returned_value()
             latest_event_id = list(last_event)[0]
 
         with allure.step("Simulate PSU temperature fault for chosen PSU:{}".format(psu_id)):
@@ -518,8 +516,7 @@ def test_simulate_psu_multi_faults(engines, devices, loganalyzer):
                        exceptions=AssertionError, tries=12, delay=5)
 
         with allure.step("Get the latest event to be used as new marker"):
-            last_event = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.events.show_last().
-                                                                              verify_result()).get_returned_value()
+            last_event = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.events.show_last()).get_returned_value()
             latest_event_id = list(last_event)[0]
 
         with allure.step("Simulate fix PSU absent for chosen PSU:{}".format(psu_id)):
@@ -620,8 +617,7 @@ def test_simulate_health_problem_with_docker_stop(devices, engines):
             # DatabaseTool.redis_cli_hset(engines.dut, DatabaseConst.CONFIG_DB_NAME, "FEATURE|{}".format(docker_to_stop), NvosConst.DOCKER_AUTO_RESTART, NvosConst.DOCKER_STATUS_DISABLED)
 
         with allure.step("Get the latest event"):
-            last_event = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.events.show_last().
-                                                                              verify_result()).get_returned_value()
+            last_event = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.events.show_last()).get_returned_value()
             latest_event_id = list(last_event)[0]
 
         with allure.step("stop {} docker".format(docker_to_stop)):
@@ -661,7 +657,7 @@ def test_simulate_health_problem_with_docker_stop(devices, engines):
 
 
 def validate_system_event(system, latest_event_id, events_to_search):
-    events = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.events.show("last")). \
+    events = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.events.show(SystemConsts.SYSTEM_LAST_EVENT)). \
         get_returned_value()
     newer_events = [events[event]['text'] for event in list(events) if event > latest_event_id]
     assert bool(set(events_to_search) & set(newer_events)), "None of events:{} found in events".format(events_to_search)

@@ -305,7 +305,10 @@ def add_allure_url_into_perf_test(report_url, test_case_name, is_ipv6):
         None
     """
     test_name = test_case_name.split("::")[-1]
-    perf_test_name = get_perf_test_name(test_name, is_ipv6)
+    class_name = test_case_name.split("::")[-2]
+    full_test_name = class_name + "_" + test_name
+    ip = InfraConst.IPV6 if is_ipv6 else InfraConst.IPV4
+    perf_test_name = full_test_name.replace("]", f"-{ip}]")
     test_info_path = os.path.join(PerfConsts.REQUIRMENTS_DIR, f"{perf_test_name}_info_dump.json")
     if os.path.exists(test_info_path):
         with open(test_info_path, "r+") as f:
@@ -316,15 +319,17 @@ def add_allure_url_into_perf_test(report_url, test_case_name, is_ipv6):
             json.dump(db_json, f, indent=4)
 
 
-def get_perf_test_name(test_name, is_ipv6):
+def get_perf_test_name(request, is_ipv6):
     """
     Args:
-        test_name: i.e, test_ar_perf_link_flap[port_repeated_toggle-4096]
+        request: pytest request object
         is_ipv6: is the test running with the ipv6 flag, i.e, True
 
     Returns:
-        name of the test including the ip flag info, i.e, test_ar_perf_link_flap[port_repeated_toggle-4096-IPv6]
+        name of the test including the class and ip flag info,
+        i.e, TestSPCXRA_x1Split_800G_test_ar_perf_link_flap[port_repeated_toggle-4096-IPv6]
     """
     ip = InfraConst.IPV6 if is_ipv6 else InfraConst.IPV4
+    test_name = request.node.cls.__name__ + "_" + request.node.name
     test_name_with_ip_param = test_name.replace("]", f"-{ip}]")
     return test_name_with_ip_param

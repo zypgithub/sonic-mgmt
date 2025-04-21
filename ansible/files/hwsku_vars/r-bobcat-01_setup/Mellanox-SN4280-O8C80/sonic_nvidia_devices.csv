@@ -4,4 +4,4 @@ r-leopard-82,10.210.26.108/22,ACS-MSN4700,FanoutLeaf,,sonic,files/hwsku_vars/r-b
 r-r740-14,10.215.28.180,TestServ,Server,,
 pdu-10-208-0-181,10.208.0.181,Raritan,Pdu,snmp,
 pdu-10-208-2-14,10.208.2.14,Emerson,Pdu,snmp,
-rcon-sws-2-6,10.208.0.85,,ConsoleServer,ssh,sonic
+rcon-sws-2-6,10.208.0.47,,ConsoleServer,ssh,sonic

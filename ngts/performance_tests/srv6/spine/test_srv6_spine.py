@@ -55,7 +55,7 @@ class TestSRv6Spine(TestSRv6Base):
         In order to recreate this full mesh we just define all the spine downstream ports as both
         downstream and upstream this way get the traffic pattern as seen above.
         """
-        test_name = get_perf_test_name(request.node.name, self.ip)
+        test_name = get_perf_test_name(request, self.ip)
         with allure.step(f"Set test configuration description"):
             add_test_mongo_metadata(test_name,
                                     {MongoDbConsts.CONF_NAME:
@@ -65,4 +65,4 @@ class TestSRv6Spine(TestSRv6Base):
             add_test_mongo_metadata(test_name, {MongoDbConsts.PORT_GROUP_DF: port_group_df})
 
         self.round_robin_traffic_test_runner(test_name, traffic_type, workload, upstream=downstream,
-                                             downstream=downstream, packet_size=packet_size)
+                                             downstream=downstream, bisection_traffic=False, packet_size=packet_size)

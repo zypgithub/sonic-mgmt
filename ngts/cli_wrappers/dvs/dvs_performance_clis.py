@@ -351,3 +351,11 @@ class DvsPerformance(PerformanceCommon):
         match = re.search(regex_dict["board"], output)
         if match:
             dut_system_information["board"] = ResultUploaderConst.HOST_INTERNAL_NAMES_MAP[match.group(1).lower()]
+
+    def unsplit_all_ports(self):
+        """
+        This method unsplit all SPC5 ports
+        """
+        logging.info("Unsplit all SPC5 ports")
+        get_player_ports_cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names {PerfConsts.DVS_UNSPLIT_ALL_PORTS}"
+        self.execute_cmd(get_player_ports_cmd)

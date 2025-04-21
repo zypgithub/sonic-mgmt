@@ -85,7 +85,10 @@ def update_t1_test_ports(duthost, mg_facts, test_ports, tbinfo):
     Find out active IP interfaces and use the list to
     remove inactive ports from test_ports
     """
-    ip_ifaces = duthost.get_active_ip_interfaces(tbinfo, asic_index=0)
+    ip_ifaces = {}
+    for asic in duthost.asics:
+        ip_int = duthost.get_active_ip_interfaces(tbinfo, asic_index=asic.asic_index)
+        ip_ifaces.update(ip_int)
     port_list = []
     for iface in list(ip_ifaces.keys()):
         if iface.startswith("PortChannel"):
@@ -316,8 +319,8 @@ def set_pfc_timer_cisco_8000(duthost, asic_id, script, port):
     duthost.shell(f"show platform npu script {asic_arg} -s {script_name}")
 
 
-@pytest.fixture(scope='module', autouse=True)
-def clear_ptf_ip_addr(duthosts, ptfhost, enum_rand_one_per_hwsku_frontend_hostname):
+@pytest.fixture(autouse=True, scope="session")
+def cleanup(duthosts, ptfhost, enum_rand_one_per_hwsku_frontend_hostname):
     """
     Fixture that remove ip address of ethX interface at ptf and clear arp at dut
     :param duthosts: dut instance
@@ -326,6 +329,5 @@ def clear_ptf_ip_addr(duthosts, ptfhost, enum_rand_one_per_hwsku_frontend_hostna
     """
     duthost = duthosts[enum_rand_one_per_hwsku_frontend_hostname]
     yield
-    logger.info("Remove ip address of ethX interface at PTF")
-    ptfhost.script("./scripts/remove_ip.sh")
+    ptfhost.remove_ip_addresses()
     duthost.command("sonic-clear arp")

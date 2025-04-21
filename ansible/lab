@@ -110,11 +110,11 @@ mtvr-bobcat-06-dpu-0      ansible_host=10.245.21.128 ansible_ssh_port=5021 ansib
 mtvr-bobcat-06-dpu-1      ansible_host=10.245.21.128 ansible_ssh_port=5022 ansible_hostv6="fe80::e42:a1ff:fe44:44c0" sonic_version=v2 hwsku="Nvidia-bf3-com-dpu" iface_speed=400000  mgmt_subnet_mask_length=22 vm_base=VM0000
 mtvr-bobcat-06-dpu-2      ansible_host=10.245.21.128 ansible_ssh_port=5023 ansible_hostv6="fe80::e42:a1ff:fe44:44c0" sonic_version=v2 hwsku="Nvidia-bf3-com-dpu" iface_speed=400000  mgmt_subnet_mask_length=22 vm_base=VM0000
 mtvr-bobcat-06-dpu-3      ansible_host=10.245.21.128 ansible_ssh_port=5024 ansible_hostv6="fe80::e42:a1ff:fe44:44c0" sonic_version=v2 hwsku="Nvidia-bf3-com-dpu" iface_speed=400000  mgmt_subnet_mask_length=22 vm_base=VM0000
-mtvr-bobcat-07      ansible_host=10.245.20.245 ansible_hostv6="fe80::e42:a1ff:fe44:44c0" sonic_version=v2 hwsku="Mellanox-SN4280-O28" iface_speed=25000  mgmt_subnet_mask_length=22 vm_base=VM0000
-mtvr-bobcat-07-dpu-0      ansible_host=10.245.20.245 ansible_ssh_port=5021 ansible_hostv6="fe80::e42:a1ff:fe44:44c0" sonic_version=v2 hwsku="Nvidia-bf3-com-dpu" iface_speed=400000  mgmt_subnet_mask_length=22 vm_base=VM0000
-mtvr-bobcat-07-dpu-1      ansible_host=10.245.20.245 ansible_ssh_port=5022 ansible_hostv6="fe80::e42:a1ff:fe44:44c0" sonic_version=v2 hwsku="Nvidia-bf3-com-dpu" iface_speed=400000  mgmt_subnet_mask_length=22 vm_base=VM0000
-mtvr-bobcat-07-dpu-2      ansible_host=10.245.20.245 ansible_ssh_port=5023 ansible_hostv6="fe80::e42:a1ff:fe44:44c0" sonic_version=v2 hwsku="Nvidia-bf3-com-dpu" iface_speed=400000  mgmt_subnet_mask_length=22 vm_base=VM0000
-mtvr-bobcat-07-dpu-3      ansible_host=10.245.20.245 ansible_ssh_port=5024 ansible_hostv6="fe80::e42:a1ff:fe44:44c0" sonic_version=v2 hwsku="Nvidia-bf3-com-dpu" iface_speed=400000  mgmt_subnet_mask_length=22 vm_base=VM0000
+mtvr-bobcat-07      ansible_host=10.245.20.26 ansible_hostv6="fe80::e42:a1ff:fe44:44c0" sonic_version=v2 hwsku="Mellanox-SN4280-O28" iface_speed=25000  mgmt_subnet_mask_length=22 vm_base=VM0000
+mtvr-bobcat-07-dpu-0      ansible_host=10.245.20.26 ansible_ssh_port=5021 ansible_hostv6="fe80::e42:a1ff:fe44:44c0" sonic_version=v2 hwsku="Nvidia-bf3-com-dpu" iface_speed=400000  mgmt_subnet_mask_length=22 vm_base=VM0000
+mtvr-bobcat-07-dpu-1      ansible_host=10.245.20.26 ansible_ssh_port=5022 ansible_hostv6="fe80::e42:a1ff:fe44:44c0" sonic_version=v2 hwsku="Nvidia-bf3-com-dpu" iface_speed=400000  mgmt_subnet_mask_length=22 vm_base=VM0000
+mtvr-bobcat-07-dpu-2      ansible_host=10.245.20.26 ansible_ssh_port=5023 ansible_hostv6="fe80::e42:a1ff:fe44:44c0" sonic_version=v2 hwsku="Nvidia-bf3-com-dpu" iface_speed=400000  mgmt_subnet_mask_length=22 vm_base=VM0000
+mtvr-bobcat-07-dpu-3      ansible_host=10.245.20.26 ansible_ssh_port=5024 ansible_hostv6="fe80::e42:a1ff:fe44:44c0" sonic_version=v2 hwsku="Nvidia-bf3-com-dpu" iface_speed=400000  mgmt_subnet_mask_length=22 vm_base=VM0000
 r-boxer-sw01      ansible_host=10.210.25.53 ansible_hostv6="fe80::e42:a1ff:fe44:44c0" sonic_version=v2 hwsku="ACS-MSN2010" iface_speed=25000  mgmt_subnet_mask_length=22 vm_base=VM0000
 r-anaconda-51      ansible_host=10.210.26.51 ansible_hostv6="fe80::e42:a1ff:fe44:44c0" sonic_version=v2 hwsku="ACS-MSN3700" iface_speed=25000  mgmt_subnet_mask_length=22 vm_base=VM0000
 r-anaconda-15      ansible_host=10.210.25.61 ansible_hostv6="fe80::e42:a1ff:fe44:44c0" sonic_version=v2 hwsku="ACS-MSN3700C" iface_speed=25000  mgmt_subnet_mask_length=22 vm_base=VM0000
@@ -156,7 +156,7 @@ juliet-130      ansible_host=10.7.148.130 ansible_hostv6="" sonic_version=v2 hws
 juliet-52      ansible_host=10.7.145.52 ansible_hostv6="" sonic_version=v2 hwsku="ACS-N5110_LD" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 juliet-54      ansible_host=10.7.145.54 ansible_hostv6="" sonic_version=v2 hwsku="ACS-N5110_LD" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 juliet-56      ansible_host=10.7.145.56 ansible_hostv6="" sonic_version=v2 hwsku="ACS-N5110_LD" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
-juliet-128      ansible_host=10.7.148.128 ansible_hostv6="" sonic_version=v2 hwsku="ACS-N5110_LD" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
+juliet-128      ansible_host=10.7.148.128 ansible_hostv6="" sonic_version=v2 hwsku="ACS-N5500_LD" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 juliet-152      ansible_host=10.7.148.152 ansible_hostv6="" sonic_version=v2 hwsku="ACS-N5112_LD" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 juliet-158      ansible_host=10.7.148.158 ansible_hostv6="" sonic_version=v2 hwsku="ACS-N5110_LD" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 juliet-154      ansible_host=10.7.148.154 ansible_hostv6="" sonic_version=v2 hwsku="ACS-N5110_LD" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
@@ -179,6 +179,7 @@ mamba-112      ansible_host=10.7.148.112 ansible_hostv6="" sonic_version=v2 hwsk
 mamba-248      ansible_host=10.7.148.248 ansible_hostv6="" sonic_version=v2 hwsku="ACS-QM3000" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 mamba-150      ansible_host=10.7.148.150 ansible_hostv6="" sonic_version=v2 hwsku="ACS-QM3000" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 taipan-190      ansible_host=10.7.145.190 ansible_hostv6="" sonic_version=v2 hwsku="ACS-QM3451-LD" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
+taipan-104      ansible_host=10.7.145.104 ansible_hostv6="" sonic_version=v2 hwsku="ACS-QM3450-LD" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 mtvr-q3400-06      ansible_host=10.245.21.54 ansible_hostv6="" sonic_version=v2 hwsku="ACS-QM3000" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 mtvr-q3400-05      ansible_host=10.245.23.5 ansible_hostv6="" sonic_version=v2 hwsku="ACS-QM3000" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 mtvr-q3400-04      ansible_host=10.245.21.52 ansible_hostv6="" sonic_version=v2 hwsku="ACS-QM3000" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000

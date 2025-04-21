@@ -280,9 +280,10 @@ def call_performance_function_with_threads(players, players_aliases, action,
     players_aliases_str = ",".join(players_aliases)
     logging.info(f"Start {action} on {players_aliases_str}")
     threads_list = []
+    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     for player_alias in players_aliases:
         player_cli_obj = players[player_alias]['cli']
-        with allure.step(f"Start {action} on player {player_alias}"):
+        with allure.step(f"[{current_time}] Start {action} on player {player_alias}"):
             performance_method = get_obj_method(player_cli_obj.performance, performance_clis_function_name)
             thread = CatchExceptionThread(target=redirect_thread_stdout,
                                           args=(performance_method,
@@ -293,7 +294,11 @@ def call_performance_function_with_threads(players, players_aliases, action,
         th.start()
     with allure.step(f"Check {action} on {players_aliases_str} was applied correctly"):
         parse_threads_exceptions_at_join(threads_list, players, step)
-    logging.info(f"Finished {action} on {players_aliases_str}")
+    completion_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    for player_alias in players_aliases:
+        player_cli_obj = players[player_alias]['cli']
+        with allure.step(f"[{completion_time}] Action {action} completed on {player_alias}"):
+            logging.info(f"Finished {action} on {players_aliases_str}")
 
 
 def get_obj_method(cli_obj, method_name):
@@ -307,11 +312,11 @@ def get_obj_method(cli_obj, method_name):
 
 def skip_test_on_unsupported_os(cli_obj, unsupported_os):
     if unsupported_os == CliType.NVUE and isinstance(cli_obj, NvueCli):
-        pytest.skip(f"This test is not supported in {CliType.NVUE}, no support for reboot")
+        pytest.skip(f"This test is not supported in {CliType.NVUE}")
     elif unsupported_os == CliType.DVS and isinstance(cli_obj, DvsCli):
-        pytest.skip(f"This test is not supported in {CliType.DVS}, no support for reboot")
+        pytest.skip(f"This test is not supported in {CliType.DVS}")
     elif unsupported_os == CliType.SONIC and isinstance(cli_obj, SonicCli):
-        pytest.skip(f"This test is not supported in {CliType.SONIC}, no support for reboot")
+        pytest.skip(f"This test is not supported in {CliType.SONIC}")
 
 
 def get_topology_obj(players):
@@ -331,8 +336,7 @@ def get_performance_pytest_test_name(request, is_ipv6):
     Returns:
         the test name with the ip parameter, i.e, test_ar_perf_max_bandwidth[4096-IPv6]
     """
-    test_name = get_pytest_test_name(request)
-    test_name_with_ip_param = get_perf_test_name(test_name, is_ipv6)
+    test_name_with_ip_param = get_perf_test_name(request, is_ipv6)
     return test_name_with_ip_param
 
 

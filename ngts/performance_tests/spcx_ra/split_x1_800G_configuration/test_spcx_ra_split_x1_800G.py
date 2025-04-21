@@ -9,7 +9,8 @@ from ngts.helpers.performance.performance_setup_helpers import (restore_basic_co
 from ngts.helpers.performance.performance_db_helpers import add_test_mongo_metadata
 from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts, MongoDbConsts
 from ngts.performance_tests.spcx_ra.conftest import get_spcx_ra_spine_traffic, get_spcx_ra_leaf_traffic
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from infra.tools.redmine.redmine_api import is_redmine_issue_active, get_issues_status
+
 logger = logging.getLogger()
 
 
@@ -59,12 +60,12 @@ class TestSPCXRA_x1Split_800G:
             run_traffic(self.players, self.scenario, self.traffic_jsons)
 
         with allure.step(f"Verifying the traffic for packet size {packet_size}"):
-            # TODO: Remove this once the issue 4348288 is fixed (change bw_threshold to SPCXRAConsts.DUT_TX_UTIL_IBM_TH_DICT[packet_size])
+            # Not testing BW due to Bug SW #4348288- 800G AR is NOT supported. Keeping test for future reference.
             bw_threshold = None
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type,
-                                      bw_threshold=bw_threshold,
                                       samples_params_dict=PerfConsts.SAMPLES_PARAMS,
+                                      bw_threshold=bw_threshold,
                                       tc_occ_threshold=None,
                                       power_threshold=self.power_thresholds_by_chip_type)
             run_validation(config)
@@ -86,9 +87,11 @@ class TestSPCXRA_x1Split_800G:
         with allure.step(f"Run {packet_size}B packet Traffic on all the ports"):
             run_traffic(self.players, self.scenario, leaf_traffic_jsons)
 
-        with allure.step(f"Verifying the traffic for packet size {packet_size}"):
-            # TODO: Remove this once the issue 4348288 is fixed (change skip_first_counters_iteration to False)
-            skip_first_counters_iteration = True
+        ar_support_800g_redmine_id = 4348288
+        with allure.step(f"Verifying the traffic for packet size {packet_size}. 
+                         AR support status for 800G is {get_issues_status([ar_support_800g_redmine_id])[str(ar_support_800g_redmine_id)]}"):
+            # skip_first_counters_iteration is True due to 800G AR not supported (bug SW #4348288)
+            skip_first_counters_iteration = not is_redmine_issue_active([ar_support_800g_redmine_id])[0]
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type,
                                       bw_threshold=SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size],

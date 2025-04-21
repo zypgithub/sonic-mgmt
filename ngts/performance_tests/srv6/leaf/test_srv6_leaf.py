@@ -40,7 +40,7 @@ class TestSRv6Leaf(TestSRv6Base):
         skip_test_on_unsupported_os(cli_obj=self.cli_object, unsupported_os=CliType.DVS)
 
         with allure.step(f"Set test correct allure title with {self.ip} parameter"):
-            test_name = get_perf_test_name(request.node.name, self.ip)
+            test_name = get_perf_test_name(request, self.ip)
             add_test_mongo_metadata(test_name, {MongoDbConsts.CONF_NAME: f"bisection-{workload}-{traffic_type}",
                                                 MongoDbConsts.PORT_GROUP_DF: port_group_df})
         with allure.step(f"Run {packet_size}B packet Traffic on all the ports"):
@@ -62,7 +62,7 @@ class TestSRv6Leaf(TestSRv6Base):
     @pytest.mark.parametrize("traffic_type", ["IPv6", "SRv6"])
     def test_leaf_srv6(self, request, traffic_type, workload, packet_size=4096):
 
-        test_name = get_perf_test_name(request.node.name, self.ip)
+        test_name = get_perf_test_name(request, self.ip)
         with allure.step(f"Set test configuration description"):
             add_test_mongo_metadata(test_name,
                                     {MongoDbConsts.CONF_NAME:

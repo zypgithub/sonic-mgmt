@@ -351,7 +351,7 @@ def main():
         send_takeover_notification(topo)
 
     logger.info("Set hypervisor timezone to IST")
-    test_server.run('sudo timedatectl set-timezone Israel')
+    retry_call(test_server.run, fargs=["sudo timedatectl set-timezone Israel"], tries=3, delay=5, logger=logger)
 
     logger.info("Pull docker image to ensure that it is up to date")
     retry_call(test_server.run, fargs=["docker pull {}/{}:{}".format(registry_url, docker_image_name, docker_tag)],
@@ -400,7 +400,7 @@ def main():
 
 def get_docker_default_tag(docker_name):
     latest = "latest"
-    default_list = {'docker-ngts': '1.2.397'}
+    default_list = {'docker-ngts': '1.2.403'}
     return default_list.get(docker_name, latest)
 
 

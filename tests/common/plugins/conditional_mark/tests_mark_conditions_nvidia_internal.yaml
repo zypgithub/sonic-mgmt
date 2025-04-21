@@ -196,6 +196,7 @@ tests/nightly/fec/test_fec.py::TestFec::test_fec_capabilities_loopback_ports:
     conditions_logical_operator: or
     conditions:
     - "'2201' in platform"
+    - "https://redmine.mellanox.com/issues/4252039"
   xfail:
     reason: "Testcase may fail due to RM https://redmine.mellanox.com/issues/3971501 on r-leopard-56"
     conditions:
@@ -520,17 +521,17 @@ platform_tests/test_cpu_memory_usage.py:
     conditions:
     - "'simx' in platform"
 
-platform_tests/test_intf_fec.py::test_verify_fec_histogram:
-  xfail:
-    reason: "Testcase xfail due to RM issue https://redmine.mellanox.com/issues/4352409"
-    conditions:
-    - "https://redmine.mellanox.com/issues/4352409"
-
 process_monitoring/test_critical_process_monitoring.py:
   skip:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/3464488 and standalone dpu platform"
     conditions:
     - "https://redmine.mellanox.com/issues/3464488 and 'nvda_bf-9009' in platform"
+
+process_monitoring/test_critical_process_monitoring.py::test_monitoring_critical_processes:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4401383 on hwsku Mellanox-SN2700"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4401383 and hwsku in ['Mellanox-SN2700']"
 
 platform_tests/test_auto_negotiation.py:
   skip:
@@ -539,6 +540,12 @@ platform_tests/test_auto_negotiation.py:
     conditions:
     - "'3800' in platform"
     - "'r-tigon-11' in testbed"
+
+memory_checker/test_memory_checker.py:
+  skip:
+    reason: "Testcase ignored due to RM: https://redmine.mellanox.com/issues/4404148"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4404148"
 
 # SONiC can't enable loop-back filter feature
 # Test case is skipped, because SONiC does not have a control to adjust loop-back filter settings.
@@ -575,7 +582,7 @@ drop_packets/test_wjh.py::test_l1_agg_fanout_port_down:
     reason: "https://redmine.mellanox.com/issues/4048046"
     conditions:
     - "https://redmine.mellanox.com/issues/4048046"
-    - "'sn4700' in platform or 'sn56' in platform"
+    - "'leopard' in testbed or 'moose' in testbed or 'bobcat' in testbed or 'bison' in testbed"
 
 platform_tests/fwutil/test_fwutil.py:
   skip:
@@ -829,9 +836,16 @@ platform_tests/test_reload_config.py::test_reload_configuration:
     - "'simx' in platform"
     - "https://redmine.mellanox.com/issues/4209112 and 'r-gaur-04' in testbed"
 
+platform_tests/test_reload_config.py::test_reload_configuration_checks:
+  skip:
+    reason: "Skipped due to RM #4406016 on bobcat platform"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4406016 and '4280' in platform"
+
 qos/test_lossless_bum_traffic_drop.py:
   skip:
     reason: "Test does not support dualtor topology."
+    conditions_logical_operator: or
     conditions:
     - "'dualtor' in topo_name"
     - "hwsku in ['Mellanox-SN5600-C256S1', 'Mellanox-SN5600-C224O8', 'Mellanox-SN5610N-C256S2',
@@ -1115,6 +1129,31 @@ smartswitch/platform_tests/test_reload_dpu.py::test_dpu_check_post_dpu_mem_exhau
     conditions:
       - https://redmine.mellanox.com/issues/4362877
 
+container_hardening/test_container_hardening.py::test_container_privileged.*what-just-happened:
+  regex: true
+  skip:
+    reason: "Testcase ignored due to Watch dog is not enabled"
+    conditions:
+      - https://redmine.mellanox.com/issues/4400983
+
+pc/test_lag_2.py::test_lag:
+  skip:
+    reason: "Testcase skipped due to https://redmine.mellanox.com/issues/4397221"
+    conditions:
+      - https://redmine.mellanox.com/issues/4397221
+
+bgp/test_bgp_dual_asn.py::test_bgp_dual_asn_v4:
+  skip:
+    reason: "Testcase skipped due to https://redmine.mellanox.com/issues/4397221"
+    conditions:
+      - https://redmine.mellanox.com/issues/4397221
+
+dns/test_dns_resolv_conf.py:
+  skip:
+    reason: "Testcase skipped due to https://redmine.mellanox.com/issues/4405737 on bobcat setup"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4405737 and '4280' in platform"
+
 ########################## NVIDIA INTERNAL COMMUNITY IGNORE END ############################
 
 
@@ -1256,5 +1295,17 @@ tests/nightly/auto_negotition/test_auto_neg.py::TestAutoNeg::test_auto_neg_toggl
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/3937842"
     conditions:
     - "https://redmine.mellanox.com/issues/3937842 and ('sn5400' in platform)"
+
+show_techsupport/test_techsupport_fw_stuck_dump_dpu.py:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4402135"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4402135 and 'bf3comdpu' in platform"
+
+smartswitch/platform_tests/test_platform_dpu.py::test_npu_dpu_date:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4286414"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4286414 and '4280' in platform"
 
 ########################## NVIDIA INTERNAL HIPPO BRINGUP IGNORE END ############################

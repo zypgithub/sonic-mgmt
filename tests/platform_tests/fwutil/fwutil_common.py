@@ -21,12 +21,7 @@ POWER_CYCLE = "power off"
 FAST_REBOOT = "fast"
 
 DEVICES_PATH = "usr/share/sonic/device"
-TIMEOUT = 2100
-
-#TODO: WA for Bug SW #4347135, revert it when the issue is fixed
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
-if is_redmine_issue_active([4347135])[0]:
-    TIMEOUT = 3600
+TIMEOUT = 1200
 
 REBOOT_TYPES = {
     COLD_REBOOT: "reboot",
@@ -89,7 +84,7 @@ def complete_install(duthost, localhost, boot_type, res, pdu_ctrl, auto_reboot=F
             duthost.command("sonic-installer set-default {}".format(current))
             reboot(duthost, pdu_ctrl, boot_type, pdu_delay)
             logger.info("Waiting on switch to shutdown...")
-            localhost.wait_for(host=hn, port=22, state='stopped', delay=1, timeout=timeout)
+            localhost.wait_for(host=hn, port=22, state='stopped', delay=1, timeout=60)
             # Wait for 30s in case there is ssh flap
             time.sleep(30)
             logger.info("Waiting on switch to come up in SONiC....")

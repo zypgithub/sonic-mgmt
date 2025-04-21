@@ -35,13 +35,13 @@ class TestSRv6Base:
         self.vlan_interface_configuration_dict = {}
 
     def round_robin_traffic_test_runner(self, test_name, traffic_type, workload,
-                                        upstream, downstream, packet_size=4096):
+                                        upstream, downstream, bisection_traffic=True, packet_size=4096):
         skip_test_on_unsupported_os(cli_obj=self.cli_object, unsupported_os=CliType.NVUE)
         skip_test_on_unsupported_os(cli_obj=self.cli_object, unsupported_os=CliType.DVS)
 
         with allure.step(f"Run {packet_size}B packet Traffic on all the ports"):
             traffic_jsons = get_round_robin_traffic(self.players, self.conf_args, traffic_type,
-                                                    upstream, downstream,
+                                                    upstream, downstream, bisection_traffic,
                                                     self.dut_interfaces_ipv6_configuration_dict,
                                                     create_workload_stream=get_workload_method(workload))
             run_traffic(self.players, self.scenario, traffic_jsons, attach_traffic_json=False)

@@ -21,8 +21,6 @@ from tests.common.platform.interface_utils import check_all_interface_informatio
 from tests.common.platform.daemon_utils import check_pmon_daemon_status
 from tests.common.platform.processes_utils import wait_critical_processes, check_critical_processes
 from tests.common.helpers.assertions import pytest_assert
-from tests.common.utilities import get_inventory_files, get_host_visible_vars
-
 
 pytestmark = [
     pytest.mark.disable_loganalyzer,
@@ -66,19 +64,9 @@ def teardown_module(duthosts, enum_rand_one_per_hwsku_hostname,
             check_interfaces_and_services(lc, interfaces, xcvr_skip_list)
 
 
-@pytest.fixture(scope="module")
-def is_reboot_cause_supported(request, enum_rand_one_per_hwsku_hostname):
-    inv_files = get_inventory_files(request)
-    dut_vars = get_host_visible_vars(inv_files, enum_rand_one_per_hwsku_hostname)
-    reboot_cause_unsupported_types = ["dpu"]
-    if dut_vars.get('switch_type') in reboot_cause_unsupported_types:
-        return False
-    return True
-
-
 def reboot_and_check(localhost, dut, interfaces, xcvr_skip_list,
                      reboot_type=REBOOT_TYPE_COLD, reboot_helper=None,
-                     reboot_kwargs=None, duthosts=None, is_reboot_cause_supported=True):
+                     reboot_kwargs=None, duthosts=None):
     """
     Perform the specified type of reboot and check platform status.
     @param localhost: The Localhost object.
@@ -102,8 +90,7 @@ def reboot_and_check(localhost, dut, interfaces, xcvr_skip_list,
     logging.info("Append the latest reboot type to the queue")
     REBOOT_TYPE_HISTOYR_QUEUE.append(reboot_type)
 
-    check_interfaces_and_services(dut, interfaces, xcvr_skip_list, reboot_type=reboot_type,
-                                  is_reboot_cause_supported=is_reboot_cause_supported)
+    check_interfaces_and_services(dut, interfaces, xcvr_skip_list, reboot_type=reboot_type)
     if dut.is_supervisor_node():
         for lc in duthosts.frontend_nodes:
             wait_for_startup(lc, localhost, delay=10, timeout=600)
@@ -111,8 +98,7 @@ def reboot_and_check(localhost, dut, interfaces, xcvr_skip_list,
 
 
 def check_interfaces_and_services(dut, interfaces, xcvr_skip_list,
-                                  interfaces_wait_time=None, reboot_type=None,
-                                  is_reboot_cause_supported=True):
+                                  interfaces_wait_time=None, reboot_type=None):
     """
     Perform a further check after reboot-cause, including transceiver status, interface status
     @param localhost: The Localhost object.
@@ -166,7 +152,7 @@ def check_interfaces_and_services(dut, interfaces, xcvr_skip_list,
         logging.info("Check sysfs")
         check_sysfs(dut)
 
-    if is_reboot_cause_supported and reboot_type is not None:
+    if reboot_type is not None:
         logging.info("Check the determine-reboot-cause service")
         os_version = dut.os_version.split(".")[0]
         if os_version < "202106":
@@ -194,14 +180,13 @@ def check_interfaces_and_services(dut, interfaces, xcvr_skip_list,
 
 
 def test_cold_reboot(duthosts, enum_rand_one_per_hwsku_hostname,
-                     localhost, conn_graph_facts, xcvr_skip_list, is_reboot_cause_supported):      # noqa F811
+                     localhost, conn_graph_facts, xcvr_skip_list):      # noqa F811
     """
     @summary: This test case is to perform cold reboot and check platform status
     """
     duthost = duthosts[enum_rand_one_per_hwsku_hostname]
     reboot_and_check(localhost, duthost, conn_graph_facts.get("device_conn", {}).get(duthost.hostname, {}),
-                     xcvr_skip_list, reboot_type=REBOOT_TYPE_COLD, duthosts=duthosts,
-                     is_reboot_cause_supported=is_reboot_cause_supported)
+                     xcvr_skip_list, reboot_type=REBOOT_TYPE_COLD, duthosts=duthosts)
 
 
 def test_soft_reboot(duthosts, enum_rand_one_per_hwsku_hostname,
@@ -236,6 +221,9 @@ def test_fast_reboot(duthosts, enum_rand_one_per_hwsku_hostname,
     if duthost.is_multi_asic:
         pytest.skip("Multi-ASIC devices not supporting fast reboot")
 
+    if duthost.is_smartswitch():
+        pytest.skip("Smart Switch devices does not support fast reboot")
+
     reboot_and_check(localhost, duthost, conn_graph_facts.get("device_conn", {}).get(duthost.hostname, {}),
                      xcvr_skip_list, reboot_type=REBOOT_TYPE_FAST, duthosts=duthosts)
 
@@ -250,6 +238,9 @@ def test_warm_reboot(duthosts, enum_rand_one_per_hwsku_hostname,
 
     if duthost.is_multi_asic:
         pytest.skip("Multi-ASIC devices not supporting warm reboot")
+
+    if duthost.is_smartswitch():
+        pytest.skip("Smart Switch devices does not support warm reboot")
 
     asic_type = duthost.facts["asic_type"]
 
@@ -298,7 +289,7 @@ def test_watchdog_reboot(duthosts, enum_rand_one_per_hwsku_hostname,
 
 
 def test_continuous_reboot(duthosts, enum_rand_one_per_hwsku_hostname,
-                           localhost, conn_graph_facts, xcvr_skip_list, is_reboot_cause_supported):        # noqa F811
+                           localhost, conn_graph_facts, xcvr_skip_list):        # noqa F811
     """
     @summary: This test case is to perform 3 cold reboot in a row
     """
@@ -307,8 +298,7 @@ def test_continuous_reboot(duthosts, enum_rand_one_per_hwsku_hostname,
         "ls /dev/C0-*", module_ignore_errors=True)["stdout"].split())
     for i in range(3):
         reboot_and_check(localhost, duthost, conn_graph_facts.get("device_conn", {}).get(duthost.hostname, {}),
-                         xcvr_skip_list, reboot_type=REBOOT_TYPE_COLD, duthosts=duthosts,
-                         is_reboot_cause_supported=is_reboot_cause_supported)
+                         xcvr_skip_list, reboot_type=REBOOT_TYPE_COLD, duthosts=duthosts)
     ls_ending_out = set(duthost.shell(
         "ls /dev/C0-*", module_ignore_errors=True)["stdout"].split())
     pytest_assert(ls_ending_out == ls_starting_out,

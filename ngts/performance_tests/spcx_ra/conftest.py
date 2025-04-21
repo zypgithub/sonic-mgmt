@@ -53,24 +53,3 @@ def get_spine_to_leaf_stream_list(players, spine_tg, conf_args, traffic_paramete
         stream = create_json_traffic_stream(spine_tg, traffic_parameters, stream_name)
         stream_list.append(stream)
     create_json_traffic_file_with_stream_list(spine_tg, traffic_parameters, json_path, stream_list)
-
-
-@pytest.fixture(scope='class', autouse=False)
-def port_group_df(request, players):
-    request.getfixturevalue('basic_setup_configuration')
-    port_group_df = []
-    ports = players['dut']['cli'].performance.get_right_left_ports_dict()
-
-    if ports['left_ports'] == [] or ports['right_ports'] == []:
-        logging.info("No ports found for left and right ports retrying after a delay of 10 seconds")
-        # TODO: remove this and implement split by middle technique to get the ports instead
-        time.sleep(10)
-        ports = players['dut']['cli'].performance.get_right_left_ports_dict()
-
-    sdk_ports_left = players['dut']['cli'].performance.get_sdk_ports(ports["left_ports"])
-    sdk_ports_right = players['dut']['cli'].performance.get_sdk_ports(ports["right_ports"])
-    for port in sdk_ports_left:
-        port_group_df.append({"port": port, MongoDbConsts.PORT_GROUP_NAME: "left_ports"})
-    for port in sdk_ports_right:
-        port_group_df.append({"port": port, MongoDbConsts.PORT_GROUP_NAME: "right_ports"})
-    return port_group_df

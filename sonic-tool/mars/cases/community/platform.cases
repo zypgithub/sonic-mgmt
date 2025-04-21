@@ -142,7 +142,25 @@
     </case>
 
     <case>
-        <info> Test SFP Util </info>
+        <ignore>
+            <!-- weekend case -->
+            <condition>
+                <key> skip_weekend_cases </key>
+                <op> == </op>
+                <value> yes </value>
+            </condition>
+        </ignore>
+        <info> Test SFP Util Weekly </info>
+        <name> sfp_util_weekly </name>
+        <cmd>
+             <params>
+                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 7200 --session-timeout 7200 --all_ports --allure_server_addr=\"10.215.11.120\"\'" --test-scripts platform_tests/sfp/test_sfputil.py </static_args>
+             </params>
+        </cmd>
+    </case>
+
+    <case>
+        <info> Test SFP Util Daily </info>
         <name> sfp_util </name>
         <cmd>
              <params>

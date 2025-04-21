@@ -54,6 +54,7 @@ class System(BaseComponent):
         self.snmp_server = SnmpServer(self)
         self.security = Security(self)
         self.ssh_server = BaseComponent(self, path='/ssh-server')
+        self.system_cli = BaseComponent(self, path='/cli')
         self.serial_console = BaseComponent(self, path='/serial-console')
         self.syslog = Syslog(self)
         self.ntp = Ntp(self)
@@ -125,11 +126,26 @@ class Events(BaseComponent):
         BaseComponent.__init__(self, parent=parent_obj, path='/events')
 
     def show_last(self, last_events_count=1):
+        system = System()
         with allure.step("Show last system event"):
             logging.info("Show last system event")
-            return SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].show,
-                                                   TestToolkit.engines.dut, self.get_resource_path(),
-                                                   'last ' + str(last_events_count))
+            if TestToolkit.tested_api == ApiType.OPENAPI:
+                return SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].show,
+                                                       TestToolkit.engines.dut, self.get_resource_path(),
+                                                       SystemConsts.SYSTEM_LAST_EVENT + str(last_events_count))
+            else:
+                return system.events.show(SystemConsts.SYSTEM_LAST_EVENT + str(last_events_count))
+
+    def show_recent(self, recent_events_count=1):
+        system = System()
+        with allure.step("Show recent system event"):
+            logging.info("Show recent system event")
+            if TestToolkit.tested_api == ApiType.OPENAPI:
+                return SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].show,
+                                                       TestToolkit.engines.dut, self.get_resource_path(),
+                                                       SystemConsts.SYSTEM_RECENT_EVENT + str(recent_events_count))
+            else:
+                return system.events.show(SystemConsts.SYSTEM_RECENT_EVENT + str(recent_events_count))
 
 
 class Documentation(BaseComponent):
@@ -165,12 +181,9 @@ class FactoryDefault(BaseComponent):
             if not device:
                 device = TestToolkit.devices.dut
 
-            marker = TestToolkit.get_loganalyzer_marker(engine)
-
             res_obj, duration = OperationTime.save_duration(f'reset factory {param}', "", test_name, SendCommandTool.execute_command,
                                                             self.api_obj[TestToolkit.tested_api].action_reset, engine=engine, device=device, comp="factory-default", param=param, topology_obj=topology_obj,
                                                             system_is_ready_timeout=system_is_ready_timeout, check_system_is_functional=False)
-            TestToolkit.add_loganalyzer_marker(engine, marker)
 
             engine.disconnect()
 

@@ -47,7 +47,7 @@ class QosBase:
         "t0", "t0-56", "t0-56-po2vlan", "t0-64", "t0-116", "t0-118", "t0-35", "dualtor-56", "dualtor-64",
         "dualtor-120", "dualtor", "dualtor-64-breakout", "dualtor-aa", "t0-120", "t0-80", "t0-backend",
         "t0-56-o8v48", "t0-8-lag", "t0-standalone-32", "t0-standalone-64", "t0-standalone-128",
-        "t0-standalone-256", "t0-28", "t0-isolated-d16u16s1", "t0-isolated-d16u16s2"
+        "t0-standalone-256", "t0-28", "t0-isolated-d16u16s1", "t0-isolated-d16u16s2", "t0-88-o8c80"
     ]
     SUPPORTED_T1_TOPOS = ["t1-lag", "t1-64-lag", "t1-56-lag", "t1-backend", "t1-28-lag", "t1-32-lag",
                           "t1-isolated-d28u1"]
@@ -2187,10 +2187,7 @@ class QosSaiBase(QosBase):
                     logger.info(f"{srcport} has only lossy queue")
             if is_lossy_queue_only:
                 is_lossy_queue_only = True
-                if is_redmine_issue_active([4313090])[0]:
-                    queue_table_postfix_list = ['4', '5']
-                else:
-                    queue_table_postfix_list = ['0-3', '4', '5']
+                queue_table_postfix_list = ['0-3', '4', '5']
                 queue_to_dscp_map = {'0-3': '1', '4': '11', '5': '31'}
                 queues = random.choice(queue_table_postfix_list)
             else:

@@ -41,7 +41,7 @@ class AdvancedReboot:
     Test cases can trigger test start utilizing runRebootTestcase API.
     """
 
-    def __init__(self, request, duthosts, duthost, ptfhost, localhost, vmhost, tbinfo, creds, **kwargs):
+    def __init__(self, request, duthosts, duthost, ptfhost, localhost, tbinfo, creds, **kwargs):
         """
         Class constructor.
         @param request: pytest request object
@@ -86,7 +86,6 @@ class AdvancedReboot:
         self.duthost = duthost
         self.ptfhost = ptfhost
         self.localhost = localhost
-        self.vmhost = vmhost
         self.tbinfo = tbinfo
         self.creds = creds
         self.moduleIgnoreErrors = kwargs["allow_fail"] if "allow_fail" in kwargs else False
@@ -103,7 +102,6 @@ class AdvancedReboot:
         self.lagMemberCnt = 0
         self.vlanMaxCnt = 0
         self.hostMaxCnt = HOST_MAX_COUNT
-        self.capture_on_vmhost = True if vmhost.external_port else False
         if "dualtor" in self.getTestbedType():
             self.dual_tor_mode = True
             peer_duthost = get_peerhost(duthosts, duthost)
@@ -191,13 +189,6 @@ class AdvancedReboot:
             attr['mgmt_addr'] for dev, attr in list(self.mgFacts['minigraph_devices'].items())
             if attr['hwsku'] == 'Arista-VM'
         ]
-        if self.capture_on_vmhost:
-            self.rebootData['vmhost_mgmt_ip'] = self.vmhost.mgmt_ip
-            self.rebootData['vmhost_external_port'] = self.vmhost.external_port
-            self.rebootData['vmhost_username'] = \
-                self.duthost.host.options['variable_manager']._hostvars[self.vmhost.hostname]['vm_host_user']
-            self.rebootData['vmhost_password'] = \
-                self.duthost.host.options['variable_manager']._hostvars[self.vmhost.hostname]['vm_host_password']
 
         self.hostMaxLen = len(self.rebootData['arista_vms']) - 1
         self.lagMemberCnt = len(list(self.mgFacts['minigraph_portchannels'].values())[0]['members'])
@@ -466,7 +457,7 @@ class AdvancedReboot:
         if rebootOper is None:
             rebootLog = '/tmp/{0}.log'.format(reboot_file_prefix)
             rebootReport = '/tmp/{0}-report.json'.format(reboot_file_prefix)
-            capturePcap = '/tmp/capture.pcap'
+            capturePcap = '/tmp/capture.pcapng'
             filterPcap = '/tmp/capture_filtered.pcap'
             syslogFile = '/tmp/syslog'
             sairedisRec = '/tmp/sairedis.rec'
@@ -925,14 +916,6 @@ class AdvancedReboot:
             "kvm_support": True,
         }
 
-        if self.capture_on_vmhost:
-            params.update({
-                "vmhost_username": self.rebootData['vmhost_username'],
-                "vmhost_password": self.rebootData['vmhost_password'],
-                "vmhost_mgmt_ip": self.rebootData['vmhost_mgmt_ip'],
-                "vmhost_external_port": self.rebootData['vmhost_external_port']
-            })
-
         if self.dual_tor_mode:
             params.update({
                 "peer_ports_file": self.rebootData['peer_ports_file'],
@@ -1073,8 +1056,8 @@ class AdvancedReboot:
 
 
 @pytest.fixture
-def get_advanced_reboot(request, duthosts, enum_rand_one_per_hwsku_frontend_hostname, ptfhost, localhost, vmhost,
-                        tbinfo, creds):
+def get_advanced_reboot(request, duthosts, enum_rand_one_per_hwsku_frontend_hostname, ptfhost, localhost, tbinfo,
+                        creds):
     """
     Pytest test fixture that provides access to AdvancedReboot test fixture
         @param request: pytest request object
@@ -1082,7 +1065,6 @@ def get_advanced_reboot(request, duthosts, enum_rand_one_per_hwsku_frontend_host
         @param ptfhost: PTFHost for interacting with PTF through ansible
         @param localhost: Localhost for interacting with localhost through ansible
         @param tbinfo: fixture provides information about testbed
-        @param vmhost: AnsibleHost instance of the test server
     """
     duthost = duthosts[enum_rand_one_per_hwsku_frontend_hostname]
     instances = []
@@ -1092,7 +1074,7 @@ def get_advanced_reboot(request, duthosts, enum_rand_one_per_hwsku_frontend_host
         API that returns instances of AdvancedReboot class
         """
         assert len(instances) == 0, "Only one instance of reboot data is allowed"
-        advancedReboot = AdvancedReboot(request, duthosts, duthost, ptfhost, localhost, vmhost, tbinfo, creds, **kwargs)
+        advancedReboot = AdvancedReboot(request, duthosts, duthost, ptfhost, localhost, tbinfo, creds, **kwargs)
         instances.append(advancedReboot)
         return advancedReboot
 

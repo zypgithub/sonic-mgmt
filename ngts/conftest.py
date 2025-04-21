@@ -98,6 +98,7 @@ def pytest_addoption(parser):
     parser.addoption('--downgrade_version', action='store', default=None, help='Path to downgrade SONiC version')
     parser.addoption('--issu_version', action='store', default=None, help='Path to issu SONiC version')
     parser.addoption('--target_version', action='store', default=None, help='Path to target SONiC version')
+    parser.addoption('--fw_versions_json_file', action='store', default=None, help='Path to component_versions json file')
     parser.addoption('--wjh_deb_url', action='store', default=None, help='URL path to WJH deb package')
     parser.addoption("--session_id", action="store", default=None, help="Number of mars session id.")
     parser.addoption("--mars_key_id", action="store", default=None, help="mars key id.")
@@ -295,6 +296,17 @@ def setup_name(request):
 
 
 @pytest.fixture(scope='session')
+def fw_versions_json_file(request):
+    """
+    Method for get fw versions json file from pytest arguments - example:
+    "fw_versions_json_file": "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/juliet_versions_2200.json"
+    :param request: pytest builtin
+    :return: file path
+    """
+    return request.config.getoption('--fw_versions_json_file')
+
+
+@pytest.fixture(scope='session')
 def has_loopbox(setup_name):
     """
     Method to check if system has loopbox.
@@ -464,12 +476,15 @@ def show_platform_summary(topology_obj):
 
 
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)
-def pytest_runtest_makereport(item, call):
+def pytest_runtest_makereport(item: pytest.Item, call):
     """
     Pytest hook which are executed in all phases: Setup, Call, Teardown
     :param item: pytest builtin
     :param call: pytest builtin
     """
+    # Filter out unnecessary logs captured on "stdout" and "stderr"
+    # allure will only attach log file to save disk space
+    item._report_sections = list([report for report in item._report_sections if report[1] not in ("stdout", "stderr")])
     # execute all other hooks to obtain the report object
     outcome = yield
     rep = outcome.get_result()

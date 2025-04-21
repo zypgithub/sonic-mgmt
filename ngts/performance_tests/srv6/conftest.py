@@ -40,7 +40,8 @@ def get_tg_bisection_traffic_params(players, player_alias, conf_args, traffic_ty
 
 
 def get_tg_round_robin_traffic_params(players, player_alias, conf_args, traffic_type, template_suite, create_workload_stream,
-                                      dut_interfaces_ipv6_configuration_dict, traffic_jsons, cycle_ports_pairs, src_ports, dst_ports):
+                                      dut_interfaces_ipv6_configuration_dict, traffic_jsons,
+                                      cycle_ports_pairs, src_ports, dst_ports, bisection_traffic):
     player_cli_obj = players[player_alias]['cli']
     traffic_parameters = player_cli_obj.performance.get_traffic_parameters(scenario=conf_args["scenario"],
                                                                            conf_args=conf_args)
@@ -49,7 +50,7 @@ def get_tg_round_robin_traffic_params(players, player_alias, conf_args, traffic_
     mloops_dict = dict(player_cli_obj.performance.mloops)
     stream_list = []
     for (port1, port2) in cycle_ports_pairs:
-        ports_cycle_flow = get_ports_cycle_flow_by_tg(port1, port2, src_ports, dst_ports)
+        ports_cycle_flow = get_ports_cycle_flow_by_tg(port1, port2, src_ports, dst_ports, bisection_traffic)
         for (src_port, dst_port) in ports_cycle_flow:
             create_workload_stream(player_alias, player_cli_obj, src_port, dst_port, traffic_parameters, traffic_type,
                                    mloops_dict, dut_interfaces_ipv6_configuration_dict, stream_list=stream_list)
@@ -57,7 +58,7 @@ def get_tg_round_robin_traffic_params(players, player_alias, conf_args, traffic_
     traffic_jsons[player_alias] = json_path
 
 
-def get_ports_cycle_flow_by_tg(port1, port2, tg_src_ports, other_tg_dst_ports):
+def get_ports_cycle_flow_by_tg(port1, port2, tg_src_ports, other_tg_dst_ports, bisection_traffic):
     """
     In round-robin port i ↔ port j:
     Means 1 packet ingress port i and egress port j and 1 packet ingress port j and egress port i
@@ -70,21 +71,24 @@ def get_ports_cycle_flow_by_tg(port1, port2, tg_src_ports, other_tg_dst_ports):
         port2: the first port in the pair, i.e. Ethernet33
         tg_src_ports: the tg ports ("src_ports")
         other_tg_dst_ports:  the other tg ports ("dst ports")
+        bisection_traffic: True if the ports should send to each other
 
     Returns:
     list of the relevant traffic pairs the tg need's to send.
     """
     if port1 in tg_src_ports and port2 in other_tg_dst_ports:
         return [(port1, port2)]
-    elif port2 in tg_src_ports and port1 in other_tg_dst_ports:
+    elif port2 in tg_src_ports and port1 in other_tg_dst_ports and bisection_traffic:
         return [(port2, port1)]
-    elif port1 in tg_src_ports and port2 in tg_src_ports:
+    elif port1 in tg_src_ports and port2 in tg_src_ports and bisection_traffic:
         return [(port1, port2), (port2, port1)]
-    elif port1 in other_tg_dst_ports and port2 in other_tg_dst_ports:
+    elif port1 in tg_src_ports and port2 in tg_src_ports and not bisection_traffic:
+        return [(port1, port2)]
+    else:
         return []
 
 
-def get_round_robin_traffic(players, conf_args, traffic_type, upstream, downstream,
+def get_round_robin_traffic(players, conf_args, traffic_type, upstream, downstream, bisection_traffic,
                             dut_interfaces_ipv6_configuration_dict, create_workload_stream,
                             template_suite="traffic_packets_json_files"):
     """
@@ -110,11 +114,13 @@ def get_round_robin_traffic(players, conf_args, traffic_type, upstream, downstre
     get_tg_round_robin_traffic_params(players, PerfConsts.LEFT_TG_ALIAS, conf_args,
                                       traffic_type, template_suite, create_workload_stream,
                                       dut_interfaces_ipv6_configuration_dict, traffic_jsons,
-                                      cycle_ports_pairs, src_ports=left_ports, dst_ports=right_ports)
+                                      cycle_ports_pairs, src_ports=left_ports, dst_ports=right_ports,
+                                      bisection_traffic=bisection_traffic)
     get_tg_round_robin_traffic_params(players, PerfConsts.RIGHT_TG_ALIAS, conf_args,
                                       traffic_type, template_suite, create_workload_stream,
                                       dut_interfaces_ipv6_configuration_dict, traffic_jsons,
-                                      cycle_ports_pairs, src_ports=right_ports, dst_ports=left_ports)
+                                      cycle_ports_pairs, src_ports=right_ports, dst_ports=left_ports,
+                                      bisection_traffic=bisection_traffic)
 
     return traffic_jsons
 

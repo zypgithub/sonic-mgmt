@@ -15,10 +15,17 @@ from ngts.helpers.performance.performance_setup_helpers import (save_base_config
                                                                 apply_test_configuration)
 from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts, MongoDbConsts
 from ngts.helpers.performance.performance_db_helpers import get_perf_test_name, add_test_mongo_metadata
-from ngts.helpers.performance.traffic_helpers import create_json_traffic_file
+from ngts.constants.constants import CliType
+from ngts.helpers.performance.performance_setup_helpers import skip_test_on_unsupported_os
 
 logger = logging.getLogger()
 TESTS_SCENARIO = "spcx_ra"
+
+
+@pytest.fixture(scope='module', autouse=True)
+def skip_test_conditionally(players):
+    skip_test_on_unsupported_os(players['dut']['cli'], CliType.NVUE)
+    yield
 
 
 @pytest.fixture(scope='class', autouse=True)
@@ -63,7 +70,7 @@ def conf_args():
 
 @pytest.fixture(scope='function', autouse=True)
 def update_test_mongo_metadata(request, players, is_ipv6, port_group_df):
-    test_name = get_perf_test_name(request.node.name, is_ipv6)
+    test_name = get_perf_test_name(request, is_ipv6)
     add_test_mongo_metadata(test_name, {MongoDbConsts.CONF_NAME: "400G_to_200G_leaf",
                                         MongoDbConsts.PORT_GROUP_DF: port_group_df})
     yield
