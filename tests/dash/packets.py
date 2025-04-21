@@ -12,6 +12,7 @@ from ptf.dataplane import match_exp_pkt
 from ptf.mask import Mask
 from six import StringIO
 from configs import privatelink_config as pl
+from constants import VXLAN_UDP_BASE_SRC_PORT, VXLAN_UDP_SRC_PORT_MASK
 
 from tests.common.helpers.assertions import pytest_assert
 
@@ -130,6 +131,7 @@ def inbound_pl_packets(config, inner_packet_type='udp', vxlan_udp_dport=4789):
         ip_ttl=254,
         ip_id=0,
         udp_dport=vxlan_udp_dport,
+        udp_sport=VXLAN_UDP_BASE_SRC_PORT,
         vxlan_vni=int(pl.VM_VNI),
         inner_frame=exp_inner_packet
     )
@@ -137,7 +139,8 @@ def inbound_pl_packets(config, inner_packet_type='udp', vxlan_udp_dport=4789):
     masked_exp_packet = Mask(exp_vxlan_packet)
     masked_exp_packet.set_do_not_care_packet(scapy.Ether, "src")
     masked_exp_packet.set_do_not_care_packet(scapy.Ether, "dst")
-    masked_exp_packet.set_do_not_care_packet(scapy.UDP, "sport")
+    # 34 is the sport offset, 2 is the length of UDP sport field
+    masked_exp_packet.set_do_not_care(8 * (34 + 2) - VXLAN_UDP_SRC_PORT_MASK, VXLAN_UDP_SRC_PORT_MASK)
     masked_exp_packet.set_do_not_care_packet(scapy.UDP, "chksum")
 
     return gre_packet, masked_exp_packet

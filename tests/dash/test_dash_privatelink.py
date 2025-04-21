@@ -5,7 +5,7 @@ from ipaddress import ip_interface, ip_network
 import configs.privatelink_config as pl
 import ptf.testutils as testutils
 import pytest
-from constants import LOCAL_PTF_INTF, LOCAL_DUT_INTF, REMOTE_DUT_INTF, REMOTE_PTF_RECV_INTF, REMOTE_PTF_SEND_INTF
+from constants import LOCAL_PTF_INTF, LOCAL_DUT_INTF, REMOTE_DUT_INTF, REMOTE_PTF_RECV_INTF, REMOTE_PTF_SEND_INTF, VXLAN_UDP_BASE_SRC_PORT
 from gnmi_utils import apply_messages
 from packets import outbound_pl_packets, inbound_pl_packets
 from tests.dash.conftest import get_interface_ip
@@ -54,7 +54,7 @@ def add_npu_static_routes(duthost, dash_pl_config, dpu_index, apply_switch_basic
 
 
 @pytest.fixture(autouse=True, scope="module")
-def common_setup_teardown(localhost, duthost, ptfhost, dpu_index, dpuhosts, skip_config):
+def common_setup_teardown(localhost, duthost, ptfhost, dpu_index, dpuhosts, skip_config, set_vxlan_udp_sport_range):
     if skip_config:
         return
     dpuhost = dpuhosts[dpu_index]
@@ -98,6 +98,9 @@ def common_setup_teardown(localhost, duthost, ptfhost, dpu_index, dpuhosts, skip
     apply_messages(localhost, duthost, ptfhost, meter_rule_messages, dpu_index, False)
     apply_messages(localhost, duthost, ptfhost, route_and_mapping_messages, dpu_index, False)
     apply_messages(localhost, duthost, ptfhost, base_config_messages, dpu_index, False)
+
+    if str(VXLAN_UDP_BASE_SRC_PORT) in dpuhost.shell("redis-cli -n 0 hget SWITCH_TABLE:switch vxlan_sport")['stdout']:
+        config_reload(dpuhost, safe_reload=True)
 
 
 # added by nvidia
