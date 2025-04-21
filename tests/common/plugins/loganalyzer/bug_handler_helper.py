@@ -493,7 +493,7 @@ def bug_handler_wrapper(analyzers, duthosts, la_results):
             return
     try:
         # run bug handler in seperated step to decouple from analyze_logs
-        bh_results = parallel_run(bug_handler_processing, [analyzers, la_results], {}, duthosts, timeout=360)
+        bh_results = parallel_run(bug_handler_processing, [analyzers, la_results], {}, duthosts, timeout=720)
         for node in bh_results.keys():
             if 'failed' in bh_results[node]:
                 logging.error(f'Failed to run bug handler on {node}')
