@@ -706,4 +706,10 @@ tests_nvos/cluster/sdn_maintenance_state/test_sdn_maintenance_state.py:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4410603"
     conditions:
       - https://redmine.mellanox.com/issues/4410603
+
+tests_nvos/general/security/password_hardening/test_password_hardening_nvos.py::test_password_hardening_expiration_warning_functionality:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4410775"
+    conditions:
+      - https://redmine.mellanox.com/issues/4410775
 ########################## NVOS IGNORE END ##########################
