@@ -716,4 +716,10 @@ tests_nvos/interfaces/test_ib_interface_phy_diag.py::test_link_down_reason:
     conditions:
       - https://redmine.mellanox.com/issues/4402922
 
+tests_nvos/general/security/password_hardening/test_password_hardening_nvos.py::test_password_hardening_expiration_warning_functionality:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4410775"
+    conditions:
+      - https://redmine.mellanox.com/issues/4410775
+
 ########################## NVOS IGNORE END ##########################
