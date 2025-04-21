@@ -285,6 +285,8 @@ def run_err_msg_bug_handler_tool(conf_path, redmine_project, branch, yaml_parsed
     if is_attachment_needed(bug_handler_file_result, update_only, bug_handler_no_action, yaml_parsed_file):
         ticket_id = get_ticket_id(bug_handler_file_result)
         tar_file_path_list = get_tech_support_from_switch(bug_handler_params)
+        if bug_handler_params.get("cli_type", '') == "NVUE":
+            tar_file_path_list.append(get_executed_list_of_commands_from_nvos_switch(bug_handler_params))
         tar_file_path_list = [handle_file_size_exceedance(tar_file_path) for tar_file_path in tar_file_path_list]
         upload_script = BugHandlerConst.BUG_HANDLER_UPLOAD_ATTACHMENT_SCRIPT
         upload_cmd = f"env LOG_FORMAT_JSON=1 {upload_script} --bug_id {ticket_id}  --attachments {' '.join(tar_file_path_list)}"
@@ -466,6 +468,23 @@ def get_tech_support_from_switch(bug_handler_params):
     duthost.fetch(src=tar_file_path_on_switch, dest=tar_file_path, flat=True)
     dumps_files.append(os.path.join(dumps_folder, tar_file_name))
     return dumps_files
+
+
+def get_executed_list_of_commands_from_nvos_switch(bug_handler_params):
+    duthost = bug_handler_params['duthost']
+    testbed = bug_handler_params['testbed']
+    session_id = bug_handler_params['session_id']
+    test_name = bug_handler_params['test_name']
+
+    dumps_folder = os.environ.get(InfraConst.ENV_LOG_FOLDER)
+    if not dumps_folder:  # default value is empty string, defined in steps file
+        dumps_folder = create_result_dir(testbed, session_id, InfraConst.CASES_DUMPS_DIR)
+
+    logger.info(f"Copy the executed commands file")
+    commands_file_name = f"{test_name}_list_of_executed_commands.txt"
+    commands_file_path = os.path.join(dumps_folder, commands_file_name)
+    duthost.fetch(src=SystemConsts.LIST_OF_COMMANDS_FILE_PATH, dest=commands_file_path, flat=True)
+    return commands_file_path
 
 
 def add_test_name_to_tar_file_path_on_switch(tar_file_path_on_switch, test_name):
