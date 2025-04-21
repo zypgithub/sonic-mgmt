@@ -88,7 +88,7 @@ class TestSPCXRA_x1Split_800G:
             run_traffic(self.players, self.scenario, leaf_traffic_jsons)
 
         ar_support_800g_redmine_id = 4348288
-        with allure.step(f"Verifying the traffic for packet size {packet_size}. 
+        with allure.step(f"Verifying the traffic for packet size {packet_size}\
                          AR support status for 800G is {get_issues_status([ar_support_800g_redmine_id])[str(ar_support_800g_redmine_id)]}"):
             # skip_first_counters_iteration is True due to 800G AR not supported (bug SW #4348288)
             skip_first_counters_iteration = not is_redmine_issue_active([ar_support_800g_redmine_id])[0]
