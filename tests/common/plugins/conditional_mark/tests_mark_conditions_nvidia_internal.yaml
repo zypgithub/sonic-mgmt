@@ -1308,4 +1308,10 @@ smartswitch/platform_tests/test_platform_dpu.py::test_npu_dpu_date:
     conditions:
     - "https://redmine.mellanox.com/issues/4286414 and '4280' in platform"
 
+platform_tests/api/test_sfp.py::test_get_transceiver_info:
+  skip:
+    reason: "Testcase ignored on leopard due to RM issue: https://redmine.mellanox.com/issues/4396617"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4396617 and '4700' in platform"
+
 ########################## NVIDIA INTERNAL HIPPO BRINGUP IGNORE END ############################
