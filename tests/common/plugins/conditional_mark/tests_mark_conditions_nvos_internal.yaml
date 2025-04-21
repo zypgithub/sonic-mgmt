@@ -700,4 +700,10 @@ tests_nvos/cluster/test_cluster_state.py::test_cluster_state:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4407627"
     conditions:
       - https://redmine.mellanox.com/issues/4407627
+
+tests_nvos/cluster/sdn_maintenance_state/test_sdn_maintenance_state.py:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4410603"
+    conditions:
+      - https://redmine.mellanox.com/issues/4410603
 ########################## NVOS IGNORE END ##########################
