@@ -8,7 +8,6 @@ from retry.api import retry_call
 from infra.tools.connection_tools.onie_engine import OnieEngine
 from infra.tools.general_constants.air_constants import SonicNvidiaAirConstants
 from ngts.constants.constants import InfraConst, PlatformTypesConstants, SonicDeployConstants
-from ngts.constants.performance_constants import PerfConsts
 from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.helpers.json_file_helper import extract_fw_data
 from ngts.helpers.run_process_on_host import run_process_on_host

@@ -100,6 +100,16 @@ class GnmiClient:
                                                             debug_mode, None, True)
         return process
 
+    def gnmic_subscribe_interface_speed_and_keep_session_alive(self, mode: str, interface_name: str, username: str = '',
+                                                               password: str = '',
+                                                               skip_cert_verify: bool = False, cacert='',
+                                                               debug_mode: bool = True) -> subprocess.Popen:
+
+        _, _, process = self._run_gnmic_subscribe_interface(mode, interface_name, username, password, skip_cert_verify,
+                                                            cacert, debug_mode, None, True,
+                                                            False, 'infiniband/state/speed')
+        return process
+
     def gnmic_subscribe_system_events(self, mode: str, username: str = '', password: str = '',
                                       skip_cert_verify: bool = False, cacert='', debug_mode: bool = True,
                                       cmd_time=None, keep_session_alive: bool = True,
@@ -127,9 +137,11 @@ class GnmiClient:
 
     def _run_gnmic_subscribe_interface(self, mode: str, interface_name: str, username: str = '', password: str = '',
                                        skip_cert_verify: bool = False, cacert='', debug_mode: bool = True,
-                                       cmd_time=None, keep_session_alive: bool = False, wait_till_done: bool = False) -> \
+                                       cmd_time=None, keep_session_alive: bool = False, wait_till_done: bool = False,
+                                       interface_path: str = None) -> \
             Tuple[str, str, subprocess.Popen]:
-        return self.gnmic_subscribe(f'interfaces/interface[name={interface_name}]/state', 'description', mode, True,
+        path = interface_path or 'state/description'
+        return self.gnmic_subscribe(f'interfaces/interface[name={interface_name}]', path, mode, True,
                                     username, password, skip_cert_verify, cacert, debug_mode, cmd_time,
                                     keep_session_alive, wait_till_done)
 

@@ -1926,6 +1926,7 @@
     - Affected_test_cases:
         - tests_nvos/general/config_commands/test_config_delete_attach_revision.py::test_config_attach_negative_flow
 
+# --------------------------------------------------
 # NVOS: Tests for the PS-redundancy feature should ignore errors related to that feature
 - Errors_list:
     - '.*ERR health-statsd#health_history: PSU-Redundancy: Power redundancy policy .* requires .*'

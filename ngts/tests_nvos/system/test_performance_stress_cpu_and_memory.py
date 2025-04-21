@@ -105,7 +105,7 @@ def test_parallel_cli_commands(engines, devices):
             with allure.step("Get final disk stats"):
                 final_output = run_iostat_and_parse(engines.dut)
                 final_kb = int(final_output[device][field_to_read])
-                delta_mb = (final_kb - initial_kb) / 1000
+                delta_mb = (final_kb - initial_kb) / 1024
 
             with allure.step(f"Verify Write Threshold - Initial: {initial_kb}KB, Final: {final_kb}KB, Delta: {delta_mb}MB"):
                 assert delta_mb <= logs_threshold, f"Wrote {delta_mb}MB (max {logs_threshold}MB allowed)"

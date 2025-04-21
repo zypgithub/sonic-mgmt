@@ -92,10 +92,10 @@ class TransceiversConsts:
             transceiver_type='Xodin',
             last_release_path=f"{TRANSCEIVERS_FIRMWARES_PATH}39_Xodin/{TRANSCEIVERS_RELEASE}",
             test_versions_path=f"{TRANSCEIVERS_APPROVED_FIRMWARES_PATH}Xodin/",
-            upgrade_version_name="fw_39_230_00024_dev_signed.bin",
-            downgrade_version_name="fw_39_230_00020_dev_signed.bin",
-            upgrade_version_number="39.230.24",
-            downgrade_version_number="39.230.20",
+            upgrade_version_name="fw_39_230_00032_dev_signed.bin",
+            downgrade_version_name="fw_39_230_00030_dev_signed.bin",
+            upgrade_version_number="39.230.32",
+            downgrade_version_number="39.230.30",
             installation_time=180
         ),
         '70': Transceiver(

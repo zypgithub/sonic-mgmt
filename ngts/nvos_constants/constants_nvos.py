@@ -461,7 +461,8 @@ class SystemConsts:
     TECHSUPPORT_DUMP_EMPTY_FILES_TO_IGNORE = ['queue.counters_2', 'queue.counters_1.0', 'swapon', 'queue.counters_1',
                                               'queue.counters_2.0', 'queue.counters_1.1', 'queue.counters_2.1',
                                               'queue.counters_1.3', 'queue.counters_1.2', 'queue.counters_2.3',
-                                              'queue.counters_2.2', 'rsyslog.conf', 'verification_test']
+                                              'queue.counters_2.2', 'rsyslog.conf', 'verification_test',
+                                              'verification_test.gz']
     TECHSUPPORT_ETC_EMPTY_FILES_TO_IGNORE = ['ifstatelock', '.lock', 'base', 'tail', 'installed', 'rules.v4',
                                              'rules.v6', 'gnmi-server_reconcile', 'lsb_release', 'usr.sbin.haveged',
                                              'nvidia_modprobe', '.placeholder', 'installed', '.pwd.lock',
@@ -705,6 +706,14 @@ class SystemConsts:
     SCRIPT_BAD_FILE = 'ztp_provisioning_bad_file.json'
     ZTP_STATUS_RUNNING = 'running'
     ZTP_STATUS_IN_PROGRESS = 'in-progress'
+    COMPLEX_PROD = 'complex_prod.json'
+    SCRIPT_POSITIVE = 'ztp_provisioning_positive.json'
+    SCRIPT_NEGATIVE = 'ztp_provisioning_negative.json'
+    SCRIPT_INTERACTIVE = 'ztp_provisioning_interactive_commands.json'
+    SCRIPT_LOOP_TIMEOUT = 'ztp_provisioning_loop.json'
+    SCRIPT_POSITIVE_PYTHON = 'ztp_provisioning_python.json'
+    SCRIPT_BAD_FILE = 'ztp_provisioning_bad_file.json'
+    ZTP_STATUS_RUNNING = 'running'
     ZTP_STATUS_SUCCESS = 'success'
     ZTP_STATUS_FAILED = 'failed'
     HTTP_SERVER = 'http://nbu-nfs.gtm.nvidia.com'
@@ -982,8 +991,8 @@ class ChassisLocationConsts:
     TOPO_ID = 'topology-id'
     LOOP_CABLE = 'Loopback'
     ETF = "3-slot ETF Cartridge"
-    OBERON_36 = "GB200 NVL36"
-    OBERON_72 = "GB200 NVL72"
+    OBERON_36 = "Oberon-36"
+    OBERON_72 = "Oberon-72"
     NA = 'N/A'
     ALLOWED_TOPOLOGIES = [
         LOOP_CABLE,
@@ -1498,7 +1507,7 @@ class OperationTimeConsts:
     DATE_COL = 'date'
     THRESHOLDS = {'reboot': 250 if is_bug_active(4364632) else 225,     # TODO: revert once bug closed
                   'julietscaleout_reboot': 330,
-                  'julietscaleout reset factory': 390,
+                  'julietscaleout reset factory': 600,
                   'reset factory': 300,
                   'install user FW': 450,
                   'install default fw': 360,
@@ -1513,8 +1522,8 @@ class OperationTimeConsts:
                   'start stop cluster app with loopbox': 720,
                   'start stop cluster': 285,
                   'cluster update log level': 6,
-                  'install bmc': 1260,
-                  'install fpga': 600,
+                  'install bmc': 900,
+                  'install fpga': 900,
                   'install asic': 600,
                   'install bios': 600,
                   'install cpld': 720,

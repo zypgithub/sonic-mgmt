@@ -80,7 +80,7 @@ def test_cluster_partition(engines, devices, test_api, has_loopbox, setup_name, 
 
         # At this point we have 4 partitions. default, empty, 1, 1
 
-        remove_gpu_from_partition_and_add_to_existing_partition(sdn, new_partition_id2, new_partition_id1, partitions_mapping, used_partition_ids, partition_type_2, partition_name1)
+        remove_gpu_from_partition_and_add_to_existing_partition(sdn, new_partition_id2, new_partition_id1, partitions_mapping, used_partition_ids, partition_type_2, partition_name1, partition_type_1)
 
         # TODO - Once we have a way to test the reroute option, cover the gaps. (need to run nv action update sdn partition <partition_id> reroute)
         # And also, need to run with no-reroute randomization.
@@ -211,7 +211,7 @@ def test_cluster_partition_bad_flow(engines, devices, test_api, has_loopbox, sta
                 err_msg = f"'{resiliency_mode}' is not one of ['full_bandwidth', 'adaptive_bandwidth', 'user_action']"
                 assert err_msg in output, f"Expected message to include {err_msg}, instead\n {output}"
                 TestToolkit.tested_api = ApiType.NVUE
-                ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format, standalone_system)
+                ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format, standalone_system, has_loopbox)
                 TestToolkit.tested_api = test_api
 
             with allure.step("Add GPU with wrong mcast_limit"):
@@ -227,7 +227,7 @@ def test_cluster_partition_bad_flow(engines, devices, test_api, has_loopbox, sta
                 err_msg = "Valid range is 0 - 1024" if test_api == 'NVUE' else "1025 is greater than the maximum of 1024"
                 assert err_msg in output, f"Expected message to include {err_msg}, instead\n {output}"
                 TestToolkit.tested_api = ApiType.NVUE
-                ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format, standalone_system)
+                ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format, standalone_system, has_loopbox)
                 TestToolkit.tested_api = test_api
 
         with allure.step("Running sdn factory reset"):
@@ -261,16 +261,15 @@ def choose_new_partition_id(used_partition_ids):
     return random.choice(list(available_partitions))
 
 
-def remove_gpu_from_partition_and_add_to_existing_partition(sdn, original_partition_id, target_partition_id, partitions_mapping, used_partition_ids, original_partition_type, target_partition_name, output_format=OutputFormat.json):
+def remove_gpu_from_partition_and_add_to_existing_partition(sdn, original_partition_id, target_partition_id, partitions_mapping, used_partition_ids, original_partition_type, target_partition_name, target_partition_type, output_format=OutputFormat.json):
     # Remove GPU from default partition, and add it to a newly created one - randomize adding it by uuid or location.
-    partition_type = random.choice(ClusterConsts.PARTITION_TYPES)
     gpus_in_partition = partitions_mapping[original_partition_id]
     (uuid, location) = random.choice(gpus_in_partition)
 
     remove_gpu_from_partition(sdn, original_partition_id, location, uuid, partitions_mapping, original_partition_type)
     no_reroute = random.choice(['', 'no-reroute'])
     with allure.step("Add Removed GPU to an existing partition"):
-        if partition_type == 'location_based':
+        if target_partition_type == 'location_based':
             sdn.partition.partition_id[target_partition_id].location.location_id[location].action_update_partition(reroute_param=no_reroute).verify_result()
         else:
             sdn.partition.partition_id[target_partition_id].uuid.uuid_value[uuid].action_update_partition(reroute_param=no_reroute).verify_result()

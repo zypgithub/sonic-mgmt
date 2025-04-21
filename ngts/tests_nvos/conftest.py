@@ -31,6 +31,7 @@ from ngts.nvos_tools.Devices.DeviceFactory import DeviceFactory
 from ngts.nvos_tools.cli_coverage.nvue_cli_coverage import NVUECliCoverage
 from ngts.nvos_tools.ib.opensm.OpenSmTool import OpenSmTool
 from ngts.nvos_tools.infra import ExceptionTool
+from ngts.nvos_tools.infra.BmcTool import BmcTool
 from ngts.nvos_tools.infra.CmdRunner import CmdRunner
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.nvos_tools.infra.DiskTool import DiskTool
@@ -85,6 +86,31 @@ def pytest_addoption(parser):
 @pytest.hookimpl(tryfirst=True)
 def pytest_collection_modifyitems(config, items):
     run_nvos_pytest_items_modification(config, items)
+
+
+@pytest.fixture(autouse=True)
+def check_log_size(request, engines):
+    def __get_syslog_file_size_kb(filename='syslog') -> int:
+        return int(engines.dut.run_cmd(f'du -k /var/log/{filename} | cut -f1'))
+    marker_name = 'check_log_size'
+    should_check = is_cur_test_has_marker(request, marker_name)
+    if should_check:
+        with allure.step('get syslog size before (in KB)'):
+            size_before = __get_syslog_file_size_kb()
+    yield
+    if should_check:
+        with allure.step('get syslog size after (in KB)'):
+            size_after = __get_syslog_file_size_kb()
+            if size_after <= size_before:
+                logging.info('log was rotated')
+                size_after += __get_syslog_file_size_kb('syslog.1')
+            test_addition_to_syslog = size_after - size_before
+        allure.attach('syslog sizes', f'before: {size_before}KB\nafter: {size_after}KB\ntest added: {test_addition_to_syslog}KB')
+        if is_cur_test_passed(request):
+            expected_threshold = get_marker_arg_value(request, marker_name, 'expect')
+            if expected_threshold and isinstance(expected_threshold, int):
+                with allure.step(f'make sure test addition is less than expected ({expected_threshold})'):
+                    assert test_addition_to_syslog <= expected_threshold, f'test added {test_addition_to_syslog}KB to syslog. allowed: {expected_threshold}'
 
 
 @pytest.fixture(autouse=True)
@@ -874,10 +900,3 @@ def handle_la_marker_in_manufacture(engines, loganalyzer):
     oldest_syslog_id = get_oldest_syslog_id(engines.dut)
     new_marker = get_new_start_string(engines.dut, oldest_syslog_id, marker)
     insert_new_start_string(engines.dut, oldest_syslog_id, new_marker)
-
-
-@pytest.fixture(scope='session', autouse=True)
-def update_fw_versions_json_file(fw_versions_json_file):
-    logging.info(f'fw_versions_json_file path: {fw_versions_json_file}')
-    BmcTool.set_fw_versions_json_file(fw_versions_json_file)
-    return fw_versions_json_file

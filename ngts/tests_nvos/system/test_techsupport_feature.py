@@ -173,7 +173,7 @@ def test_techsupport_bmc_badflow(engines, test_name):
                 assert not files_list, f'bmc folder is not empty and got: {files_list}'
 
             with allure.step('verify error msg in logs'):
-                output = engines.dut.run_cmd("cat /var/log/syslog | grep 'bmc_techsupport.py'")
+                output = engines.dut.run_cmd("cat /var/log/syslog | grep -a 'bmc_techsupport.py'")
                 assert re.search(r'Failed to (extract|collect) BMC debug log dump',
                                  output), f"Expected to find 'Failed to extract/collect BMC debug log dump' in output. Got: {output}"
     finally:

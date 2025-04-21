@@ -48,8 +48,6 @@ def validate_firmware_components(platform, firmware_items, dut_engine):
     errors = {}
     for component in firmware_items:
         try:
-            if component == 'transceiver':
-                continue
             with allure.step(f"Test output of nv show platform firmware {component}"):
                 output = OutputParsingTool.parse_show_output_to_dict(
                     platform.firmware.show(component, dut_engine=dut_engine, output_format=OutputFormat.json),

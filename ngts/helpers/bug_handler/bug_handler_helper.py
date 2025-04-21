@@ -15,6 +15,7 @@ from jinja2 import Environment, FileSystemLoader
 from datetime import datetime, timedelta
 from ngts.constants.constants import BugHandlerConst, InfraConst, FILE_INCLUDE_FAILED_SANITY_CHECKER_CASE
 from ngts.nvos_constants.constants_nvos import SystemConsts
+from ngts.nvos_tools.infra import ExceptionTool
 from infra.tools.redmine.redmine_api import get_issue_fixed_in_version_value, get_issues_status
 from ngts.scripts.collect_simx_logs_on_not_success import dump_simx_data
 from infra.tools.topology_tools.topology_setup_utils import get_topology_by_setup_name
@@ -284,6 +285,7 @@ def run_err_msg_bug_handler_tool(conf_path, redmine_project, branch, yaml_parsed
 
     if is_attachment_needed(bug_handler_file_result, update_only, bug_handler_no_action, yaml_parsed_file):
         ticket_id = get_ticket_id(bug_handler_file_result)
+        logger.info(f"the RM ticket id is: {ticket_id}")
         tar_file_path_list = get_tech_support_from_switch(bug_handler_params)
         if bug_handler_params.get("cli_type", '') == "NVUE":
             tar_file_path_list.append(get_executed_list_of_commands_from_nvos_switch(bug_handler_params))
@@ -291,12 +293,20 @@ def run_err_msg_bug_handler_tool(conf_path, redmine_project, branch, yaml_parsed
         upload_script = BugHandlerConst.BUG_HANDLER_UPLOAD_ATTACHMENT_SCRIPT
         upload_cmd = f"env LOG_FORMAT_JSON=1 {upload_script} --bug_id {ticket_id}  --attachments {' '.join(tar_file_path_list)}"
         logger.info(f"Running uploading attachment command: {upload_cmd}")
-        upload_attachment_output = subprocess.run(upload_cmd, shell=True, capture_output=True).stdout
+        upload_attachment_output = subprocess.run(upload_cmd, shell=True, capture_output=True)
+        upload_attachment_output, upload_error = upload_attachment_output.stdout, upload_attachment_output.stderr
         logger.info(upload_attachment_output)
 
-        upload_attachment_result = json.loads(upload_attachment_output)
-        if "error" in upload_attachment_result:
-            logger.error(f"Failed to upload the file: {upload_attachment_result}")
+        if not upload_error:
+            try:
+                upload_attachment_result = json.loads(upload_attachment_output)
+                if "error" in upload_attachment_result:
+                    upload_error = str(upload_attachment_result)
+            except Exception as e:
+                upload_error = ExceptionTool.format_exception(e)
+        if upload_error:
+            logger.error(f"Failed to upload the file: {upload_error}")
+
         bug_handler_file_result["file_name"] = ",".join(tar_file_path_list)
     return bug_handler_file_result
 
@@ -500,6 +510,7 @@ def get_executed_list_of_commands_from_nvos_switch(bug_handler_params):
 
 
 def add_test_name_to_tar_file_path_on_switch(tar_file_path_on_switch, test_name):
+    test_name = test_name.replace('/', '_')
     base_name, _ = tar_file_path_on_switch.split('/')[-1].rsplit(".tar.gz", 1)
     tar_file_with_test_name = f"{base_name}_{test_name}.tar.gz"
     return tar_file_with_test_name

@@ -1,4 +1,5 @@
 import pytest
+import logging
 
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.tools.test_utils import allure_utils as allure
@@ -14,6 +15,9 @@ def skip_for_fanless_setup(devices):
     """
     if len(devices.dut.fan_list) == 0:
         pytest.skip("Skipping all tests in this module because setup has no fans")
+
+
+logger = logging.getLogger()
 
 
 @pytest.fixture(scope='module')

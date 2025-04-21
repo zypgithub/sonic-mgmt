@@ -488,6 +488,18 @@ class ValidationTool:
             f"Unexpected fields: {[f'{k} ({v})' for k, v in actual.items() if k in excess]}"))
 
     @staticmethod
+    def validate_subset_in_superset(subset: Iterable, superset: Iterable, should_be_included=True) -> ResultObj:
+        """Checks whether all elements of `subset` are present in `superset`."""
+        subset = set(subset)
+        superset = set(superset)
+        missing = subset - superset
+        is_included = not missing
+        return ResultObj(
+            (is_included == should_be_included),
+            f"Missing from superset: {missing}" if missing else "All elements are included."
+        )
+
+    @staticmethod
     def validate_output_of_show(actual: Dict, expected: Dict, should_be_valid=True, allow_extra_fields=False) -> ResultObj:
         with allure.step(f"Verify output is {'valid' if should_be_valid else 'invalid'}"):
             with allure.step(f"Testing keys: {expected.keys()}"):

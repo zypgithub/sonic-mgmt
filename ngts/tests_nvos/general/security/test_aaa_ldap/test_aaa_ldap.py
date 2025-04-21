@@ -418,8 +418,7 @@ def test_ldap_filter_passwd(test_api, engines, request, topology_obj):
     with allure.step(f'Verify user {test_user.username} can not auth'):
         with loganalyzer_ignore():  # supposed to be able to ignore LA here because failthrough enabled
             verify_user_auth(engines, topology_obj, test_user,
-                             expect_login_success=False,
-                             skip_auth_mediums=skip_auth_mediums)  # TODO: need all auth mediums?
+                             expect_login_success=False, skip_auth_mediums=skip_auth_mediums)  # TODO: need all auth mediums?
 
     with allure.step('Sanity: clear filter and check the opposite'):
         with allure.step('Clear passwd filter'):
@@ -520,8 +519,7 @@ def test_ldap_filter_shadow(test_api, engines, request, topology_obj):
     with allure.step(f'Verify user {test_user.username} can not auth'):
         with loganalyzer_ignore():  # supposed to be able to ignore LA here because failthrough enabled
             verify_user_auth(engines, topology_obj, test_user,
-                             expect_login_success=False,
-                             skip_auth_mediums=skip_auth_mediums)  # TODO: need all auth mediums?
+                             expect_login_success=False, skip_auth_mediums=skip_auth_mediums)  # TODO: need all auth mediums?
 
     with allure.step('Sanity: clear filter and check the opposite'):
         with allure.step('Clear shadow filter'):
@@ -576,8 +574,7 @@ def test_ldap_filter_combo(test_api, engines, request, topology_obj):
                 with loganalyzer_ignore(
                         cond=not user_can_auth):  # supposed to be able to ignore LA here because failthrough enabled
                     verify_user_auth(engines, topology_obj, user, expect_login_success=user_can_auth,
-                                     verify_authorization=False,
-                                     skip_auth_mediums=skip_auth_mediums)  # TODO: need all auth mediums?
+                                     verify_authorization=False, skip_auth_mediums=skip_auth_mediums)  # TODO: need all auth mediums?
 
         check_user_getent_and_auth(ldapadm1, adm1_exists, adm1_can_auth)
         with allure.step(

@@ -269,7 +269,7 @@ class ClusterTools:
         return ResultObj(result=True)
 
     @staticmethod
-    def verify_apps_running(engines, devices, cluster, expected_state, output_format, standalone_system):
+    def verify_apps_running(engines, devices, cluster, expected_state, output_format, standalone_system, has_loopbox):
         with allure.step("Running 'nv show cluster apps running' command and verifying output"):
             for app in ClusterConsts.INITIAL_EXPECTED_APPS:
                 output = OutputParsingTool.parse_show_output_to_dict(
@@ -383,8 +383,7 @@ class ClusterTools:
                 if (is_bug_active(4290901) and (val == 'user_action')) or val == '':
                     pass
                 else:
-                    if val or key == 'num-gpus':
-                        assert str(output[key]) == str(val), f'Expected value: {val}, Actual value:{output[key]} - key: {key}'
+                    assert str(output[key]) == str(val), f'Expected value: {val}, Actual value:{output[key]}'
 
     @staticmethod
     def create_empty_partition_and_add_gpu(sdn, no_reroute='', output_format=OutputFormat.json):

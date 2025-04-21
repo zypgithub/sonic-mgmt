@@ -10,6 +10,7 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.tools.test_utils import allure_utils as allure
 from typing import Tuple
+from ngts.tests_nvos.helpers import redmine_helpers
 
 logger = logging.getLogger()
 
@@ -87,22 +88,33 @@ def get_asic_dict(platform):
     return asic_dictionary
 
 
-def install_new_image_fw(platform, test_name, fw_file_name):
+def install_new_image_fw(platform, test_name, fw_file_name, devices=None):
     with allure.step('new fw image installation'):
         res_obj, duration = OperationTime.save_duration('reboot with new user FW', '', test_name,
                                                         platform.firmware.asic.files.file_name[fw_file_name].action_file_install_with_reboot)
+        with allure.step('Verify operation time'):
+            # XXX: remove after the bug is closed: https://redmine.mellanox.com/issues/4221742
+            if devices.dut.switch_type == "NVL":
+                if redmine_helpers.is_bug_active(4221742):
+                    duration *= 2
+            OperationTime.verify_operation_time(duration, 'reboot with new user FW').verify_result()
 
     return res_obj
 
 
-def install_default_image_fw(system, test_name, fw_has_changed):
+def install_default_image_fw(system, test_name, fw_has_changed, devices=None):
     with allure.step('Rebooting the dut after image installation'):
         logging.info("Rebooting dut")
         if fw_has_changed:
             res_obj, duration = OperationTime.save_duration('reboot with default FW installation', '', test_name,
                                                             system.reboot.action_reboot, system_is_ready_timeout=PlatformConsts.TIMEOUT_AFTER_FW_INSTALL)
             res = res_obj
-            OperationTime.verify_operation_time(duration, 'reboot with default FW installation').verify_result()
+            with allure.step('Verify operation time'):
+                # XXX: remove after the bug is closed: https://redmine.mellanox.com/issues/4221742
+                if devices.dut.switch_type == "NVL":
+                    if redmine_helpers.is_bug_active(4221742):
+                        duration *= 2
+                OperationTime.verify_operation_time(duration, 'reboot with default FW installation').verify_result()
         else:
             res = system.reboot.action_reboot()
 

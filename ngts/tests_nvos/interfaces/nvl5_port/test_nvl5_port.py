@@ -1,11 +1,16 @@
+import random
 import time
+from weakref import finalize
 
 import pytest
 import logging
+from retry.api import retry_call
 
+from ngts.constants.constants import GnmiConsts
 from ngts.nvos_constants.constants_nvos import ApiType, MultiPlanarConsts, NvosConst
+from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
 from ngts.nvos_tools.Devices.IbDevice import JulietNonScaleoutSwitch
-from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
+from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port, PortRequirements
 from ngts.nvos_tools.ib.opensm.OpenSmTool import OpenSmTool
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
@@ -14,6 +19,9 @@ from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
+from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
+from ngts.tests_nvos.system.gnmi.constants import GnmiMode, GnmicErr
+from ngts.tests_nvos.system.gnmi.helpers import verify_msg_not_in_out_or_err, verify_msg_in_out_or_err
 # from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts [TBD]
 from ngts.tools.test_utils.allure_utils import step as allure_step
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
@@ -22,6 +30,8 @@ from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.platform.Platform import Platform
+from ngts.tools.test_utils import allure_utils as allure
+
 
 logger = logging.getLogger()
 
@@ -254,8 +264,101 @@ def test_nvl5_negative(engines, devices, test_api):
                                              ask_for_confirmation=True).verify_result(False)
             selected_port.interface.link.set(op_param_name='speed', op_param_value='ndr', apply=True,
                                              ask_for_confirmation=True).verify_result(False)
+            selected_port.interface.link.set(op_param_name='speed', op_param_value='800G', apply=True,
+                                             ask_for_confirmation=True).verify_result(False)
+            selected_port.interface.link.set(op_param_name='speed', op_param_value='100G', apply=True,
+                                             ask_for_confirmation=True).verify_result(False)
+            selected_port.interface.link.set(op_param_name='speed', op_param_value='555G', apply=True,
+                                             ask_for_confirmation=True).verify_result(False)
     finally:
         NvueGeneralCli.detach_config(TestToolkit.engines.dut)
+
+
+@pytest.mark.ib_interfaces
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_interface_xdr_slow_speed_access_ports(engines, devices, test_api, setup_name, standalone_system, has_loopbox):
+    if not has_loopbox and standalone_system:
+        pytest.skip("Skipping test - no connected access ports")
+    acp_ports_range = f'acp1-{str(len(devices.dut.nvl5_access_ports_list))}'
+    set_unset_interface_xdr_slow_speed(engines, devices, test_api, setup_name,
+                                       standalone_system, acp_ports_range, prefix='acp')
+
+
+@pytest.mark.ib_interfaces
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_interface_xdr_slow_speed_trunk_ports(engines, devices, test_api, setup_name, standalone_system):
+    if isinstance(devices.dut, JulietNonScaleoutSwitch):
+        pytest.skip("Skipping test - no connected trunk ports")
+    set_unset_interface_xdr_slow_speed(engines, devices, test_api, setup_name,
+                                       standalone_system, "sw1-18p1-2s1-2", prefix='sw')
+
+
+@pytest.mark.ib_interfaces
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def set_unset_interface_xdr_slow_speed(engines, devices, test_api, setup_name, standalone_system,
+                                       group_all_ports: str, prefix: str):
+    """
+    Configure xdr slow speed on all trunk / access ports
+    Relevant CLI commands:
+    - nv set interface <interface-id> link speed 200G/400G
+    - nv unset interface <interface-id> link speed
+    - nv show interface <interface-id> link
+
+    Flow:
+    1. Select all up ports for validation
+    2. Set all ports speed to 200G.
+    3. Verify the value using the "show" command.
+    4. Unset all ports speed.
+    5. Verify the default value (400G) is restored.
+    """
+    TestToolkit.tested_api = test_api
+    with allure.step(f"Select {devices.dut.nvl5_port_type} ports"):
+        port_names = [port.name for port in RandomizationTool.select_random_ports(requested_ports_type=devices.dut.nvl5_port_type, num_of_ports_to_select=0).get_returned_value() if port.name.startswith(prefix)]
+        up_ports = [MgmtPort(port_name) for port_name in port_names]
+        selected_port = random.choice(up_ports)
+
+    with allure.step('set up streamed gnmi session - subscribe client to port speed'):
+        client = GnmiClient(engines.dut.ip, GnmiConsts.GNMI_DEFAULT_PORT, 'admin',
+                            'admin', verify_tools_installed=True)
+        session = client.gnmic_subscribe_interface_speed_and_keep_session_alive(GnmiMode.STREAM, selected_port.name,
+                                                                                skip_cert_verify=True)
+
+    with allure.step(f"Create instance for all ports"):
+        all_ports = MgmtPort(group_all_ports)
+
+    speed = IbInterfaceConsts.XDR_SLOW_SPEED
+    try:
+        with allure.step(f"Test speed {speed}"):
+            all_ports.interface.link.set(op_param_name=IbInterfaceConsts.LINK_SPEED, op_param_value=speed, apply=True,
+                                         ask_for_confirmation=True).verify_result()
+            if not standalone_system:
+                with allure.step(f"Reset the GPUs on non standalone_system: {setup_name}"):
+                    ClusterTools.reboot_compute_nodes_gpus(setup_name)
+
+            up_ports[0].interface.wait_for_port_speed(up_ports[0], speed)
+
+            with allure.step(f"Validate xdr slow speed on ports"):
+                retry_call(validate_ports_state_and_speed, [speed, port_names, prefix], exceptions=AssertionError, tries=6,
+                           delay=10)
+
+    # Unset port speed and verify default (400G) is restored
+    finally:
+        with allure.step(f"Test unset xdr slow speed"):
+            all_ports.interface.link.unset(op_param=IbInterfaceConsts.LINK_SPEED, apply=True, ask_for_confirmation=True).verify_result()
+            if not standalone_system:
+                with allure.step(f"Reset the GPUs on non standalone_system: {setup_name}"):
+                    ClusterTools.reboot_compute_nodes_gpus(setup_name)
+            up_ports[0].interface.wait_for_port_speed(up_ports[0], devices.dut.nvl5_port_speed)
+
+            with allure.step(f"Validate unset xdr slow speed on ports"):
+                retry_call(validate_ports_state_and_speed, [devices.dut.nvl5_port_speed, port_names, prefix], exceptions=AssertionError, tries=6,
+                           delay=10)
+
+        with allure.step('verify that client received the xdr speed in the existing streaming session'):
+            out, err = client.close_session_and_get_out_and_err(session)
+            verify_msg_not_in_out_or_err(GnmicErr.AUTH_FAIL, out, err)
+            with allure.independent_step(f'check that "{IbInterfaceConsts.XDR_SLOW_SPEED}" was streamed'):
+                verify_msg_in_out_or_err('200', out)
 
 
 def show_interface_and_validate(engines, devices, ports_list, command=''):
@@ -274,3 +377,12 @@ def toggle_port_state(selected_port, port_state, test_name=''):
                                                         sleep_time=0.2)
         res_obj.verify_result()
         OperationTime.verify_operation_time(duration, 'port goes {}'.format(port_state)).verify_result()
+
+
+def validate_ports_state_and_speed(speed, expected_ports: list, prefix: str, state=NvosConsts.LINK_STATE_UP):
+    port_requirements = PortRequirements()
+    port_requirements.set_port_speed(speed)
+    port_requirements.set_port_state(state)
+    actual_ports = [port.name for port in Port.get_list_of_ports(port_requirements_object=port_requirements) if port.name.startswith(prefix)]
+
+    ValidationTool.validate_subset_in_superset(expected_ports, actual_ports).verify_result()

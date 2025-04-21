@@ -87,6 +87,14 @@ class Interface(BaseComponent):
 
             return result_obj
 
+    @retry(Exception, tries=10, delay=5)
+    def wait_for_port_speed(self, port_obj, speed_to_verify):
+        with allure.step(f"Waiting for port {port_obj.name} speed changed to {speed_to_verify}"):
+            output_dictionary = OutputParsingTool.parse_show_interface_link_output_to_dictionary(self.port_obj.interface.link.show()).get_returned_value()
+            current_speed = output_dictionary[IbInterfaceConsts.LINK_SPEED]
+            assert current_speed == speed_to_verify, "Current speed {} is not as expected {}".\
+                format(current_speed, speed_to_verify)
+
     @retry(Exception, tries=10, delay=2)
     def wait_for_mtu_changed(self, mtu_to_verify):
         with allure.step("Waiting for ib0 port mtu changed to {}".format(mtu_to_verify)):

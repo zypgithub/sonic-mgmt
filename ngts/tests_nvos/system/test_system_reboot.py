@@ -13,6 +13,7 @@ from ngts.nvos_tools.system.System import System
 from ngts.nvos_constants.constants_nvos import SystemConsts
 from ngts.tools.test_utils import allure_utils as allure
 from retry.api import retry_call
+from infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 
 @pytest.mark.system

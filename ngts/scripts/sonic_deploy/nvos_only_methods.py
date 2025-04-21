@@ -25,6 +25,8 @@ from ngts.tests_nvos.general.post_upgrade_switch.constants import UPGRADE_STATUS
 from ngts.tests_nvos.general.post_upgrade_switch.install_steps_timer import InstallStepsTimer
 from ngts.tests_nvos.general.security.bmc.bmc_creds.constants import BmcUsers
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.tools.test_utils.nvos_config_utils import clear_conf
+from ngts.tests_nvos.platform.test_platform_firmware import validate_firmware_keys, validate_firmware_components
 
 logger = logging.getLogger()
 
@@ -64,6 +66,12 @@ class NvosInstallationSteps:
             dut_device = cli_obj.device
             dut_engine = cli_obj.engine
             TestToolkit.is_eth_dut(dut_device)  # initialize this field in TestToolkit global object
+
+            with allure.step("Test output of nv show platform firmware"):
+                platform = Platform()
+                firmware_items = dut_device.constants.firmware
+                validate_firmware_keys(platform, firmware_items, dut_engine)
+                validate_firmware_components(platform, firmware_items, dut_engine)
 
         if dut_device.has_bmc:
             with allure.step('reset password of bmc root user'):

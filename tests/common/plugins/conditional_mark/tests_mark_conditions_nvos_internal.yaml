@@ -513,6 +513,12 @@ tests_nvos/interfaces/test_ib_show_interface.py::test_ib_show_interface_all_stat
     conditions:
       - "'juliet' in testbed"
 
+tests_nvos/platform/test_platform_firmware_bios/test_platform_firmware_bios.py:
+  skip:
+    reason: "Testcase skipped on Juliet systems, feature is pruned in Juliet"
+    conditions:
+      - "'juliet' in testbed"
+
 tests_nvos/interfaces/test_eth0_interface_dhcp.py::test_interface_eth0_speed_duplex_autoneg:
   skip:
     reason: "Testcase skipped on Juliet systems, Juliet does not support half duplex"
@@ -524,8 +530,6 @@ tests_nvos/checklist/test_bios_upgrade.py::test_bios_manual_update:
     reason: "Testcase skipped on non Juliet systems since they has 'auto-update' which changes the upgrade's flow"
     conditions:
       - "'juliet' not in testbed"
-
-
 
 tests_nvos/interfaces/test_ib_interface_configuration.py::test_ib_interface_lanes:
   skip:
@@ -614,6 +618,12 @@ tests_nvos/system/test_system_ztp.py::test_ztp_nmx_positive:
       - "'juliet' not in testbed"
 
 tests_nvos/platform/test_platform_transceiver.py::test_transceiver_status_with_reboot:
+  skip:
+    reason: "Testcase skipped on juliet because it is statically connected system"
+    conditions:
+      - "'juliet' in testbed"
+
+tests_nvos/fae/test_asic_error_injection.py::test_asic_error_injection:
   skip:
     reason: "Testcase skipped on juliet because it is statically connected system"
     conditions:

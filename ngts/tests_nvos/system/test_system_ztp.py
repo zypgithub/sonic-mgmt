@@ -84,9 +84,7 @@ def test_show_ztp_command(engines, devices, serial_engine):
         logger.info("Received Exception during test_show_ztp_command: {}".format(e))
         raise e
     finally:
-        system.ztp.action_abort_ztp().verify_result()
-        engines.dut.run_cmd('sudo rm -f /host/ztp/ztp_data_local.json')
-        system.ztp.action_run_ztp().verify_result()
+        _ztp_cleanup(engines, system)
 
 
 @pytest.mark.ztp
@@ -172,9 +170,7 @@ def test_ztp_json(engines, devices):
         logger.info("Received Exception during test_ztp_json: {}".format(e))
         raise e
     finally:
-        system.ztp.action_abort_ztp().verify_result()
-        engines.dut.run_cmd('sudo rm -f /host/ztp/ztp_data_local.json')
-        system.ztp.action_run_ztp().verify_result()
+        _ztp_cleanup(engines, system)
 
 
 @pytest.mark.ztp
@@ -219,9 +215,7 @@ def test_ztp_image(engines, devices):
         logger.info("Received Exception during test_ztp_image: {}".format(e))
         raise e
     finally:
-        system.ztp.action_abort_ztp().verify_result()
-        engines.dut.run_cmd('sudo rm -f /host/ztp/ztp_data_local.json')
-        system.ztp.action_run_ztp().verify_result()
+        _ztp_cleanup(engines, system)
 
 
 @pytest.mark.ztp
@@ -320,9 +314,7 @@ def test_ztp_startup_file_commands_list(engines, devices):
         logger.info("Received Exception during test_ztp_startup_file_commands_list: {}".format(e))
         raise e
     finally:
-        system.ztp.action_abort_ztp().verify_result()
-        engines.dut.run_cmd('sudo rm -f /host/ztp/ztp_data_local.json')
-        system.ztp.action_run_ztp().verify_result()
+        _ztp_cleanup(engines, system)
 
 
 @pytest.mark.ztp
@@ -368,9 +360,7 @@ def test_ztp_connectivity_check(engines, devices):
         logger.info("Received Exception during test_ztp_connectivity_check: {}".format(e))
         raise e
     finally:
-        system.ztp.action_abort_ztp().verify_result()
-        engines.dut.run_cmd('sudo rm -f /host/ztp/ztp_data_local.json')
-        system.ztp.action_run_ztp().verify_result()
+        _ztp_cleanup(engines, system)
 
 
 @pytest.mark.ztp
@@ -411,9 +401,7 @@ def test_ztp_json_complex(engines, devices):
         logger.info("Received Exception during test_ztp_json_complex: {}".format(e))
         raise e
     finally:
-        system.ztp.action_abort_ztp().verify_result()
-        engines.dut.run_cmd('sudo rm -f /host/ztp/ztp_data_local.json')
-        system.ztp.action_run_ztp().verify_result()
+        _ztp_cleanup(engines, system)
 
 
 @pytest.mark.ztp
@@ -526,25 +514,6 @@ def test_ztp_nmx_positive(engines, devices, setup_name):
         _ztp_cleanup(engines, system)
 
 
-def _download_file_and_run_ztp(engines, system, file='', step='', step_status_code=SystemConsts.ZTP_STATUS_SUCCESS,
-                               ztp_status_code=SystemConsts.ZTP_STATUS_SUCCESS):
-    with allure.step("Download json file"):
-        _download_ztp_json_config(engines, file)
-
-    with allure.step("Run nv action run system ztp"):
-        system.ztp.action_run_ztp().verify_result()
-
-        with allure.step("Check ztp status"):
-            _wait_until_ztp_step_status(system, step, step_status_code)
-            _wait_until_ztp_status(system, ztp_status_code)
-
-
-def _ztp_cleanup(engines, system):
-    system.ztp.action_abort_ztp().verify_result()
-    engines.dut.run_cmd('sudo rm -f /host/ztp/ztp_data_local.json')
-    system.ztp.action_run_ztp().verify_result()
-
-
 @pytest.mark.ztp
 @pytest.mark.system
 @pytest.mark.timeout(6 * MINUTE, func_only=True)
@@ -590,6 +559,12 @@ def test_ztp_provisioning_script_negative(engines, devices):
         system.ztp.action_run_ztp().verify_result()
 
 
+def _ztp_cleanup(engines, system):
+    system.ztp.action_abort_ztp().verify_result()
+    engines.dut.run_cmd('sudo rm -f /host/ztp/ztp_data_local.json')
+    system.ztp.action_run_ztp().verify_result()
+
+
 @pytest.mark.ztp
 @pytest.mark.system
 def test_ztp_provisioning_script_positive(engines, devices):
@@ -619,9 +594,7 @@ def test_ztp_provisioning_script_positive(engines, devices):
         logger.info("Received Exception during test_ztp_connectivity_check: {}".format(e))
         raise e
     finally:
-        system.ztp.action_abort_ztp().verify_result()
-        engines.dut.run_cmd('sudo rm -f /host/ztp/ztp_data_local.json')
-        system.ztp.action_run_ztp().verify_result()
+        _ztp_cleanup(engines, system)
 
 
 def _download_ztp_json_config(engines, json=''):
@@ -631,7 +604,8 @@ def _download_ztp_json_config(engines, json=''):
         f'-o /host/ztp/ztp_data_local.json')
 
 
-def _download_file_and_run_ztp(engines, system, file='', step='', status_code=''):
+def _download_file_and_run_ztp(engines, system, file='', step='', step_status_code=SystemConsts.ZTP_STATUS_SUCCESS,
+                               ztp_status_code=SystemConsts.ZTP_STATUS_SUCCESS):
     with allure.step("Download json file"):
         _download_ztp_json_config(engines, file)
 
@@ -639,8 +613,8 @@ def _download_file_and_run_ztp(engines, system, file='', step='', status_code=''
         system.ztp.action_run_ztp().verify_result()
 
         with allure.step("Check ztp status"):
-            _wait_until_ztp_step_status(system, step, status_code)
-            _wait_until_ztp_status(system, status_code)
+            _wait_until_ztp_step_status(system, step, step_status_code)
+            _wait_until_ztp_status(system, ztp_status_code)
 
 
 def _validate_ztp_log_file(engines, string_to_validate=''):

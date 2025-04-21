@@ -171,7 +171,7 @@ def test_upgrade_with_nmx_enabled(test_api, devices, topology_obj, setup_name, e
             assert location not in locations, f"uuid {uuid} was not deleted from {partition_to_remove_from} although it was removed with no-reroute. See current locations: {locations}"
 
         with allure.step("Validate apps are still running"):
-            ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format, standalone_system)
+            ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format, standalone_system, has_loopbox)
         with allure.step("Check log level"):
             for app in ClusterConsts.INITIAL_EXPECTED_APPS:
                 ClusterTools.verify_log_level(log_levels[app], app, output_format, cluster)
