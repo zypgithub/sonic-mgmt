@@ -171,8 +171,6 @@ def get_sum_power_df_by_collectors_group(power_df):
     new_rows = pd.DataFrame(power_df_to_concat)
     power_df_by_collectors_group = pd.concat([power_df_by_group, new_rows], ignore_index=True)
     power_df_by_collectors_group_with_total = append_total_power(power_df_by_collectors_group)
-    allure.attach(power_df_by_collectors_group_with_total.to_html(),
-                  'Power summary by collectors', allure.attachment_type.HTML)
     return power_df_by_collectors_group_with_total
 
 

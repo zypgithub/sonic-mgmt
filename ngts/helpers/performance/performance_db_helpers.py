@@ -106,12 +106,10 @@ def create_test_validation_entry_to_db(players, test_name):
                                                                                               ports_group_df,
                                                                                               power_total,
                                                                                               power_by_collectors_group)
-    with open(MongoDbConsts.PERF_MONGO_DB_RESULTS_PATH, "r+") as f:
-        db_json = json.load(f)
-        db_json["result"] = test_specific_values
+
     test_info_path = os.path.join(PerfConsts.REQUIRMENTS_DIR, f"{test_name}_info_dump.json")
     with open(test_info_path, "w") as f:
-        json.dump(db_json, f, indent=4)
+        json.dump(test_specific_values, f, indent=4)
 
 
 def restructure_validator_results(validation_json, ports_group_df, power_total, power_by_collectors_group):
@@ -313,8 +311,7 @@ def add_allure_url_into_perf_test(report_url, test_case_name, is_ipv6):
     if os.path.exists(test_info_path):
         with open(test_info_path, "r+") as f:
             db_json = json.load(f)
-            test_info_dict = db_json[MongoDbConsts.TEST_RESULT]
-            test_info_dict[MongoDbConsts.ALLURE_URL] = report_url
+            db_json[MongoDbConsts.ALLURE_URL] = report_url
         with open(test_info_path, "w") as f:
             json.dump(db_json, f, indent=4)
 

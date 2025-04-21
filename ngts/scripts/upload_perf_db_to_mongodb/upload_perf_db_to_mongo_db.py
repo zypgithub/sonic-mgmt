@@ -15,6 +15,8 @@ logger = logging.getLogger()
 @allure.title('Upload Performance Database into MongoDB')
 def test_upload_perf_db():
     try:
+        with open(MongoDbConsts.PERF_MONGO_DB_RESULTS_PATH, "r+") as f:
+            dut_system_information_template_json = json.load(f)
         lines = [MongoDbConsts.COLLECTION, MongoDbConsts.CRITERIA]
         destination_path = MongoDbConsts.MONGO_DB_UPLOADS
         for root, dirs, files in os.walk(PerfConsts.REQUIRMENTS_DIR):
@@ -23,7 +25,8 @@ def test_upload_perf_db():
                     test_info_path = os.path.join(root, file)
                     with open(test_info_path, "r+") as f:
                         test_specific_values = json.load(f)
-                        test_specific_values_str = json.dumps(test_specific_values) + "\n"
+                        dut_system_information_template_json.update({'result': test_specific_values})
+                        test_specific_values_str = json.dumps(dut_system_information_template_json) + "\n"
                         lines.append(test_specific_values_str)
         time_now = datetime.now().strftime(MongoDbConsts.TIME_REGEX_FORMAT_FOR_MONGO_DB)
         final_mongo_db_results_path = os.path.join(PerfConsts.REQUIRMENTS_DIR, f'switch_perf_db_{time_now}.db')
