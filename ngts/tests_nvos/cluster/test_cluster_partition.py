@@ -285,7 +285,7 @@ def remove_gpu_from_partition_and_add_to_existing_partition(sdn, original_partit
         number_of_gpus = len(partitions_mapping[target_partition_id])
         # TODO - location/uuid as sets. When do not have guarantee on order.
         if not is_bug_active(4209873):
-            expected_output = {'health': 'healthy', 'locations': {}, 'mcast-limit': '', 'name': target_partition_name, 'num-gpus': number_of_gpus, 'partition-type': '', 'resiliency-mode': ''}
+            expected_output = {'health': 'healthy', 'locations': {}, 'mcast-limit': '', 'name': target_partition_name, 'num-gpus': number_of_gpus, 'partition-type': target_partition_type, 'resiliency-mode': ''}
             ClusterTools.validate_partition_content(output, expected_output)
         assert location in output['locations'].keys(), f"location {location} was not added to the partition {target_partition_id}"
         assert uuid == output['locations'][location]['uuid'], f"location{location} was expected to contain uuid {uuid}, but instead it has: {output['locations'][location]['uuid']}"

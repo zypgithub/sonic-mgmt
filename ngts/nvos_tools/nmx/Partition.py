@@ -42,14 +42,14 @@ class PartitionId(BaseComponent):
         engine = engine if engine else TestToolkit.engines.dut
         with allure.step('Create partition'):
             return SendCommandTool.execute_command_expected_str(self._cli_wrapper.action_create_partition,
-                                                                "Action succeeded", engine,
+                                                                "successfully created", engine,
                                                                 self.get_resource_path(), name, resiliency_mode, mcast_limit, uuid, location)
 
     def action_update_partition(self, engine=None, reroute=''):
         engine = engine if engine else TestToolkit.engines.dut
         with allure.step('Update partition'):
             return SendCommandTool.execute_command_expected_str(self._cli_wrapper.action_update_partition,
-                                                                "Action succeeded", engine,
+                                                                "successfully updated", engine,
                                                                 self.get_resource_path(), reroute)
 
     def action_restore_partition(self, engine=None, no_reroute=''):

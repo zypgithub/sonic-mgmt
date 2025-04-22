@@ -38,7 +38,7 @@ class ClusterTools:
                 with allure.step(f"Validate app {app} is up"):
                     ClusterTools.reboot_compute_nodes_gpus(setup_name)
                     ClusterTools.verify_app_is_up(engines, app)
-                    if app == ClusterConsts.NMX_CONTROLLER:
+                    if app == ClusterConsts.NMX_CONTROLLER and (has_loopbox or not standalone_system):
                         ClusterTools.verify_lid_value(devices)
                         ClusterTools.verify_interface_up(devices, has_loopbox, setup_name)
                 with allure.step("Running 'nv show cluster apps running' command and verifying output"):
@@ -63,7 +63,7 @@ class ClusterTools:
                     ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state=nmx_c_expected_state)
                     ClusterTools.reboot_compute_nodes_gpus(setup_name)
                 ClusterTools.verify_app_is_up(engines, app)
-                if app == ClusterConsts.NMX_CONTROLLER:
+                if app == ClusterConsts.NMX_CONTROLLER and (has_loopbox or not standalone_system):
                     ClusterTools.verify_lid_value(devices)
                     ClusterTools.verify_interface_up(devices, has_loopbox, setup_name)
                 with allure.step("Running 'nv show cluster apps running' command and verifying output"):
@@ -212,7 +212,7 @@ class ClusterTools:
         if setup_name in Configurations.non_standalone_systems:
             interface_types = ['acp']
         if setup_name not in Configurations.non_standalone_systems and has_loopbox:
-            interface_types = ['fnm']
+            interface_types = ['fnm', 'acp']
         else:
             interface_types = []
         for interface_type in interface_types:
@@ -281,7 +281,8 @@ class ClusterTools:
                 else:
                     assert app_status == expected_state, f"App {app} status is {app_status} instead of {expected_state}"
                 ClusterTools.verify_app_is_up(engines, app)
-            ClusterTools.verify_lid_value(devices)
+            if has_loopbox or not standalone_system:
+                ClusterTools.verify_lid_value(devices)
 
     @staticmethod
     def verify_app_version(cluster, app, expected_version):
@@ -379,7 +380,7 @@ class ClusterTools:
             if key in ['locations'] and (not expected_output[key]):
                 continue
             else:
-                if is_bug_active(4290901) and (val == 'user_action'):
+                if (is_bug_active(4290901) and (val == 'user_action')) or val == '':
                     pass
                 else:
                     if val or key == 'num-gpus':
@@ -549,42 +550,93 @@ class ClusterTools:
             time.sleep(10)
 
     @staticmethod
-    def wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name, standalone_system):
-        fm_config = ClusterConsts.NMX_CONTROLLER_CONFIG_FILE_TYPES[0]
-        output = sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[fm_config].action_generate_sdn().get_returned_value()
-        generated_file_name = ClusterTools().get_generated_sdn_file(output, 'config')
-        output_format = OutputFormat.json
-        output = OutputParsingTool.parse_show_output_to_dict(sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[fm_config].files.show(output_format=output_format),
-                                                             output_format=output_format).get_returned_value()
-        path_to_generated_file = output[generated_file_name]['path']
-        original_content = engines.dut.run_cmd(f"cat {path_to_generated_file}")
-        logger.info("Adjusted fm_config file content.")  # TODO ADD A PROPER COMMENT
-        engines.dut.run_cmd(
-            f"""
-            sudo sed -i '/^MNNVL_TOPOLOGY=/c\\MNNVL_TOPOLOGY=gb200_nvl8r1_c2g4_etf_topology' {path_to_generated_file} && \
-            sudo grep -q '^MNNVL_TOPOLOGY=' {path_to_generated_file} || echo 'MNNVL_TOPOLOGY=gb200_nvl8r1_c2g4_etf_topology' | sudo tee -a {path_to_generated_file} && \
-            sudo sed -i '/^MNNVL_PARTIALLY_POPULATED_TOPOLOGY=/c\\MNNVL_PARTIALLY_POPULATED_TOPOLOGY=1' {path_to_generated_file} && \
-            sudo grep -q '^MNNVL_PARTIALLY_POPULATED_TOPOLOGY=' {path_to_generated_file} || echo 'MNNVL_PARTIALLY_POPULATED_TOPOLOGY=1' | sudo tee -a {path_to_generated_file}
-            """
-        )
+    def edit_config_file(path, edit_commands, engines):
+        engines.dut.run_cmd("\n".join(edit_commands).replace("{file}", path))
 
-        sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[fm_config].files.file_name[generated_file_name].action_file_install(force=False)
+    @staticmethod
+    def edit_fm_config(sdn, engines, get_generated_file_info):
+        fm_config = ClusterConsts.NMX_CONTROLLER_CONFIG_FILE_TYPES[0]
+        fm_generated_file_name, fm_path = get_generated_file_info(fm_config)
+        fm_original_content = engines.dut.run_cmd(f"cat {fm_path}")
+        logger.info("Adjusting fm_config file.")
+        ClusterTools().edit_config_file(fm_path, [
+            "sudo sed -i '/^MNNVL_TOPOLOGY=/c\\MNNVL_TOPOLOGY=gb200_nvl8r1_c2g4_etf_topology' {file} && \\",
+            "sudo grep -q '^MNNVL_TOPOLOGY=' {file} || echo 'MNNVL_TOPOLOGY=gb200_nvl8r1_c2g4_etf_topology' | sudo tee -a {file} && \\",
+            "sudo sed -i '/^MNNVL_PARTIALLY_POPULATED_TOPOLOGY=/c\\MNNVL_PARTIALLY_POPULATED_TOPOLOGY=1' {file} && \\",
+            "sudo grep -q '^MNNVL_PARTIALLY_POPULATED_TOPOLOGY=' {file} || echo 'MNNVL_PARTIALLY_POPULATED_TOPOLOGY=1' | sudo tee -a {file}"
+        ], engines)
+        sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[fm_config].files.file_name[
+            fm_generated_file_name].action_file_install(force=False)
+        return fm_config, fm_generated_file_name, fm_path, fm_original_content
+
+    @staticmethod
+    def edit_sm_config(sdn, engines, get_generated_file_info):
+        sm_config = ClusterConsts.NMX_CONTROLLER_CONFIG_FILE_TYPES[1]
+        sm_generated_file_name, sm_path = get_generated_file_info(sm_config)
+        sm_original_content = engines.dut.run_cmd(f"cat {sm_path}")
+        logger.info("Adjusting sm_config file.")
+        ClusterTools().edit_config_file(sm_path, [
+            "# Ensure nvlink_enable=FALSE",
+            "sudo sed -i '/^nvlink_enable[ ]*TRUE/c\\nvlink_enable FALSE' {file} && \\",
+            "sudo grep -q '^nvlink_enable' {file} || echo 'nvlink_enable FALSE' | sudo tee -a {file}",
+
+            "# Comment plugin_name grpc_mgr",
+            "sudo sed -i '/^[ ]*plugin_name[ ]\\+grpc_mgr/s/^/#/' {file}",
+
+            "# Comment plugin_options -grpc_mgr",
+            "sudo sed -i '/^[ ]*plugin_options[ ]\\+-grpc_mgr[ ]\\+--config_file[ ]\\+/s/^/#/' {file}"
+        ], engines)
+        sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[sm_config].files.file_name[
+            sm_generated_file_name].action_file_install(force=False)
+        return sm_config, sm_generated_file_name, sm_path, sm_original_content
+
+    @staticmethod
+    def wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name,
+                                                       standalone_system):
+        def get_generated_file_info(config_type):
+            output = sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[
+                config_type].action_generate_sdn().get_returned_value()
+            file_name = ClusterTools().get_generated_sdn_file(output, 'config')
+            output_dict = OutputParsingTool.parse_show_output_to_dict(
+                sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[config_type].files.show(
+                    output_format=output_format),
+                output_format=output_format).get_returned_value()
+            path = output_dict[file_name]['path']
+            return file_name, path
+
+        output_format = OutputFormat.json
+
+        fm_config, fm_generated_file_name, fm_path, fm_original_content = ClusterTools().edit_fm_config(sdn, engines,
+                                                                                                        get_generated_file_info)
+
+        if has_loopbox:
+            sm_config, sm_generated_file_name, sm_path, sm_original_content = ClusterTools().edit_sm_config(sdn, engines,
+                                                                                                            get_generated_file_info)
 
         ClusterTools().stop_app(cluster, ClusterConsts.NMX_CONTROLLER)
         ClusterTools().start_app(cluster, ClusterConsts.NMX_CONTROLLER, has_loopbox, standalone_system)
-
         ClusterTools.reboot_compute_nodes_gpus(setup_name)
-
         ClusterTools.validate_cluster_enabled(cluster)
+
         yield
+
         if ClusterTools.check_cluster_state(cluster, output_format) == 'disabled':
             ClusterTools.start_cluster(cluster, setup_name, output_format=output_format)
-        if "Exists" in engines.dut.run_cmd(f'test -e {path_to_generated_file} && echo "Exists" || echo "Does not exist"'):
-            cleanup_command = f"echo '{original_content}' | sudo tee {path_to_generated_file} > /dev/null"
-            engines.dut.run_cmd(cleanup_command)
 
-            sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[fm_config].files.file_name[generated_file_name].action_file_install(force=False)
-            sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[fm_config].files.file_name[generated_file_name].action_delete()
+        if "Exists" in engines.dut.run_cmd(f'test -e {fm_path} && echo "Exists" || echo "Does not exist"'):
+            engines.dut.run_cmd(f"echo '{fm_original_content}' | sudo tee {fm_path} > /dev/null")
+            sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[fm_config].files.file_name[
+                fm_generated_file_name].action_file_install(force=False)
+            sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[fm_config].files.file_name[
+                fm_generated_file_name].action_delete()
+
+        if has_loopbox and "Exists" in engines.dut.run_cmd(
+                f'test -e {sm_path} && echo "Exists" || echo "Does not exist"'):
+            engines.dut.run_cmd(f"echo '{sm_original_content}' | sudo tee {sm_path} > /dev/null")
+            sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[sm_config].files.file_name[
+                sm_generated_file_name].action_file_install(force=False)
+            sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[sm_config].files.file_name[
+                sm_generated_file_name].action_delete()
 
     @staticmethod
     def get_generated_sdn_file(output, file_type):
@@ -663,7 +715,7 @@ def disabled_access_ports(func):
                 TestToolkit.tested_api = 'NVUE'
                 if not hasattr(devices.dut, 'nvl5_access_ports_list'):
                     has_access_ports = False
-                if has_access_ports and standalone_system:
+                if has_access_ports and standalone_system and not has_loopbox:
                     port_name = summarize_ports(devices.dut.nvl5_access_ports_list)
                     selected_port = Port(port_name, "", "")
                     port_state = NvosConsts.LINK_STATE_DOWN
@@ -692,13 +744,18 @@ def disabled_access_ports(func):
             return func(*args, **kwargs)
         finally:
             if isinstance(devices.dut, JulietSwitch):
-                if has_access_ports:
+                if has_access_ports and standalone_system and not has_loopbox:
                     port_name = summarize_ports(devices.dut.nvl5_access_ports_list)
                     selected_port = Port(port_name, "", "")
                     port_state = NvosConsts.LINK_STATE_UP
                     selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True).verify_result()
                     TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
-
+                if not standalone_system:
+                    for port in Configurations.ports_to_disable[setup_name]:
+                        selected_port = Port(port, "", "")
+                        port_state = NvosConsts.LINK_STATE_UP
+                        selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True).verify_result()
+                    TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
                 if interface_wa_called:
                     try:
                         next(interfaces_wa)
