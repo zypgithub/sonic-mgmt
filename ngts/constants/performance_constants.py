@@ -208,7 +208,7 @@ class MongoDbConsts:
     TEST_NAME = "testName"
     TIME_STAMP = "timeStamp"
     TIME_REGEX_FORMAT = "%d-%m-%Y %H:%M:%S"
-    TIME_REGEX_FORMAT_FOR_MONGO_DB = "%d-%m-%Y_%H:%M:%S"
+    TIME_REGEX_FORMAT_FOR_MONGO_DB = "%d-%m-%Y_%H-%M-%S"
     IF_OUT_DISCARDS = "ifOutDiscards"
     MAC_CONTROL_FRAMES_TRANSMITTED = "aMacControlFramesTransmitted"
     MAC_CONTROL_FRAMES_RECEIVED = "aMacControlFramesReceived"

@@ -13,6 +13,7 @@ from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts
 from ngts.constants.constants import CliType
 from ngts.performance_tests.spcx_ra.conftest import get_spcx_ra_leaf_traffic
+from ngts.helpers.performance.performance_db_helpers import get_perf_test_name
 
 logger = logging.getLogger()
 
@@ -21,7 +22,7 @@ PACKET_SIZE_LIST = PerfConsts.PACKET_SIZE_LIST
 
 class TestSpcX400GTo200G:
     @pytest.fixture(autouse=True)
-    def setup(self, players, engines, power_thresholds_by_chip_type, conf_args, chip_type):
+    def setup(self, players, engines, power_thresholds_by_chip_type, conf_args, chip_type, is_ipv6):
         self.topology_obj = get_topology_obj(players)
         self.players = players
         self.engines = engines
@@ -31,6 +32,7 @@ class TestSpcX400GTo200G:
         self.power_thresholds_by_chip_type = power_thresholds_by_chip_type
         self.conf_args = conf_args
         self.chip_type = chip_type
+        self.is_ipv6 = is_ipv6
 
     @pytest.mark.parametrize("packet_size", PACKET_SIZE_LIST)
     @allure.title('400G to 200G leaf test')
@@ -38,7 +40,7 @@ class TestSpcX400GTo200G:
     def test_400_to_200_bw(self, request, packet_size):
         skip_test_on_unsupported_os(self.cli_object, CliType.NVUE)
 
-        test_name = get_pytest_test_name(request)
+        test_name = get_perf_test_name(request, self.is_ipv6)
         self.traffic_jsons = get_spcx_ra_leaf_traffic(self.players, self.conf_args)
 
         with allure.step(f"Run traffic on all the ports. Packet size is {packet_size} bytes"):
