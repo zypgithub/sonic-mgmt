@@ -488,10 +488,14 @@ class SystemConsts:
     REBOOT_REASON_POWER_BUTTON = 'power button'
 
     VERSION_BUILD_DATE = 'build-date'
+    VERSION_BUILD_ID = 'build-id'
     # VERSION_BUILT_BY = 'built-by'
     VERSION_IMAGE = 'image'
     VERSION_KERNEL = 'kernel'
     VERSION_ONIE = 'onie'
+    VERSION_BASE_OS = 'base-os'
+    VERSION_PRODUCT_RELEASE = 'product-release'
+    SW_FIELD_NAMES = ('description', 'package', 'version')
 
     PROFILE_ADAPTIVE_ROUTING = 'adaptive-routing'
     PROFILE_ADAPTIVE_ROUTING_GROUPS = 'adaptive-routing-groups'
@@ -889,7 +893,6 @@ class PlatformConsts:
     TRANSCEIVER_PORT_MAPPING = "port-mapping"
     TRANSCEIVER_ELS_MAPPING = "els-mapping"
     TRANSCEIVER_OE_MAPPING = "oe-mapping"
-    SW_FIELD_NAMES = ('description', 'package', 'version')
     ENV_TEMP_TOLERANCE = 20  # [%]
     ENV_TEMP_MIN = 15  # [Celsius]
     ENV_TEMP_MAX = 90  # [Celsius]

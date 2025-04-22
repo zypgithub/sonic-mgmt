@@ -71,17 +71,6 @@
   </case>
 
   <case>
-    <name> Platform Software </name>
-    <info> </info>
-    <tout> 10800 </tout>
-    <cmd>
-      <params>
-          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/platform/test_platform_software.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini -v -m cumulus --log-level=INFO --clean-alluredir  --alluredir=/tmp/allure-results  --disable_cli_coverage --disable_loganalyzer --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>
-      </params>
-    </cmd>
-  </case>
-
-  <case>
     <name> Platform Cumulus Only Tests </name>
     <info> </info>
     <tout> 10800 </tout>

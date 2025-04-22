@@ -9,7 +9,6 @@ from ngts.nvos_tools.platform.CableCartridge import CableCartridge
 from ngts.nvos_tools.platform.Environment import Environment
 from ngts.nvos_tools.platform.Inventory import Inventory
 from ngts.nvos_tools.platform.PowerProfile import PowerProfile
-from ngts.nvos_tools.platform.Software import Software
 from ngts.nvos_tools.system.Firmware import Firmware
 from ngts.nvos_tools.system.Transceiver import Transceiver
 from ngts.nvos_tools.platform.PSRedundancy import PSRedundancy
@@ -26,7 +25,6 @@ class Platform(BaseComponent):
         self.firmware = Firmware(self)
         self.environment = Environment(self)
         self.asic = Asic(self)
-        self.software = Software(self)
         self.inventory = Inventory(self)
         self.ps_redundancy = PSRedundancy(self)
         self.transceiver = Transceiver(self)

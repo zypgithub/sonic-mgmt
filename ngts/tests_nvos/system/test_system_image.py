@@ -512,8 +512,7 @@ def system_image_install_reject_with_prompt(engines, system, prompt_response, or
             assert respond == 0, "Password prompt did not come up {out}".format(out=output)
 
         with allure.step("Extract Image name before attempting installing new image"):
-            version_output = OutputParsingTool.parse_json_str_to_dictionary(system.version.show()).get_returned_value()
-            image_name = version_output['image']
+            image_name = system.version.get_nvos_image_version()
 
         with allure.step("Attempt install image and reject the prompt"):
             # Get the last action-job-id
@@ -542,8 +541,7 @@ def system_image_install_reject_with_prompt(engines, system, prompt_response, or
                 output['state'] == 'action_success', "Image install command failed:{out}".format(out=output)
 
         with allure.step("Verify image is unchanged"):
-            version_output = OutputParsingTool.parse_json_str_to_dictionary(system.version.show()).get_returned_value()
-            image_name_post = version_output['image']
+            image_name_post = system.version.get_nvos_image_version()
             assert image_name == image_name_post, "Image name changed even though image install command was aborted"
 
     finally:
@@ -825,6 +823,5 @@ def get_image_data_and_fetch_base_image(system, base_version):
 
 def verify_current_version(original_version, system, device):
     with allure.step(f"Verify that current image is {original_version}"):
-        current_version = OutputParsingTool.parse_json_str_to_dictionary(system.version.show()).get_returned_value()[
-            'image']
+        current_version = system.version.get_nvos_image_version()
         assert current_version == original_version, f"Current version is invalid: {current_version}, expected: {original_version}"

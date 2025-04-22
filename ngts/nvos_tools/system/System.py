@@ -35,6 +35,7 @@ from ngts.nvos_tools.system.SnmpServer import SnmpServer
 from ngts.nvos_tools.system.Stats import Stats
 from ngts.nvos_tools.system.Syslog import Syslog
 from ngts.nvos_tools.system.Techsupport import TechSupport
+from ngts.nvos_tools.system.Version import Version
 from ngts.nvos_tools.system.Ztp import Ztp
 from ngts.tools.test_utils import allure_utils as allure
 
@@ -63,7 +64,7 @@ class System(BaseComponent):
         self.techsupport = TechSupport(self)
         self.image = Image(self)
         self.message = BaseComponent(self, path='/message')
-        self.version = BaseComponent(self, path='/version')
+        self.version = Version(self)
         self.events = Events(self)
         self.dns = BaseComponent(self, path='/dns')
         self.reboot = Reboot(self)

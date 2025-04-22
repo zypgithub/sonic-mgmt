@@ -161,27 +161,6 @@ def test_system_message(test_api, engines, devices, nv_command):
 
 
 @pytest.mark.system
-@pytest.mark.simx
-@pytest.mark.nvos_ci
-@pytest.mark.nvos_chipsim_ci
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_show_system_version(test_api, engines, devices, nv_command):
-    """
-    Run show system version command and verify version values
-        Test flow
-        1. run show system version
-        2. validate values in db
-    """
-    TestToolkit.tested_api = test_api
-
-    with allure.step('Run show system command and verify that each field has a value'):
-        version_output = OutputParsingTool.parse_json_str_to_dictionary(nv_command.system.version.show()).get_returned_value()
-
-        ValidationTool.verify_all_fields_value_exist_in_output_dictionary(
-            version_output, nv_command.system.get_expected_fields(devices.dut, 'version')).verify_result()
-
-
-@pytest.mark.system
 @pytest.mark.cumulus
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_show_system_reboot(test_api, engines, devices, nv_command):

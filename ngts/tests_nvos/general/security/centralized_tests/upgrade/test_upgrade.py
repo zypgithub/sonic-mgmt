@@ -114,8 +114,7 @@ def test_downgrade_upgrade(base_version_realpath, target_version_realpath, devic
 
 def is_cur_version_as_expected(system: System, expected_version: str) -> ResultObj:
     expected_version = expected_version.split('/')[-1].replace('.bin', '').replace('arm64-', '').replace('amd64-', '')
-    out = OutputParsingTool.parse_json_str_to_dictionary(system.version.show()).get_returned_value()
-    cur_version = out['image']
+    cur_version = system.version.get_nvos_image_version()
     with allure.step(f'check if {expected_version} (orig) == {cur_version} (cur)'):
         res = expected_version == cur_version
         return ResultObj(res,

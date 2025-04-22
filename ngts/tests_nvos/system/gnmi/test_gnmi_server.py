@@ -465,8 +465,7 @@ def test_gnmi_extend_telemetry(test_api, engines, devices):
     fae = Fae()
 
     with allure.step("Get system version from nvue"):
-        system_version = OutputParsingTool.parse_json_str_to_dictionary(system.version.show()).get_returned_value()[
-            'image']
+        system_version = system.version.get_nvos_image_version()
 
     with allure.step("Subscribe to the gnmi server and check system version"):
         gnmi_stream_updates = run_gnmi_client_and_parse_output(engines, devices, devices.dut.version_xpath,
