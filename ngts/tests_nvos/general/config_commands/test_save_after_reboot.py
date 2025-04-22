@@ -67,7 +67,7 @@ def test_save_reboot(engines, devices):
             time.sleep(10)
 
         with allure.step('Extract last system event to verify post reboot'):
-            output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show_last('1')).get_returned_value()
+            output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show_events_last_recent_entries(SystemConsts.SYSTEM_LAST_EVENT, '1')).get_returned_value()
             event_time = output[str(list(output.keys())[0])]["time-created"]
 
         with allure.step('Run set system contact contact_info_1 command and apply config'):
@@ -141,7 +141,7 @@ def test_save_reboot(engines, devices):
                     verify_result()
 
             with allure.step('Verify that the system event before the reboot is present post reboot as well'):
-                output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show_last(10000)).get_returned_value()
+                output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show_events_last_recent_entries(SystemConsts.SYSTEM_LAST_EVENT, '10000')).get_returned_value()
                 assert event_time in output, 'Event {} removed from system events table post reboot'.format(event_time)
 
             # TODO: Fix fae recovery

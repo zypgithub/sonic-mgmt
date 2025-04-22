@@ -756,10 +756,8 @@ class SystemConsts:
     DUMMY_IMAGE = "dummy.bin"
     DUMMY_IMAGE_PATH = "/tmp/"
 
-    SYSTEM_LAST_EVENT = '--last '
-    SYSTEM_LAST_EVENT_OLD = 'last'
-    SYSTEM_RECENT_EVENT = '--recent '
-    SYSTEM_RECENT_EVENT_OLD = 'recent'
+    SYSTEM_LAST_EVENT = 'last'
+    SYSTEM_RECENT_EVENT = 'recent'
 
     DNS_SERVER = 'server'
     DNS_SERVER_IPV4 = "8.8.8.8"

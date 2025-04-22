@@ -6,7 +6,7 @@ from typing import List
 from .ResultObj import ResultObj
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
-from ...nvos_constants.constants_nvos import OutputFormat, ApiType, ConfState
+from ...nvos_constants.constants_nvos import OutputFormat, ApiType, ConfState, SystemConsts
 
 logger = logging.getLogger()
 
@@ -568,7 +568,7 @@ class OutputParsingTool:
 
     @staticmethod
     def get_reboot_reason_system_events(system):
-        events = OutputParsingTool.parse_json_str_to_dictionary(system.events.show_last('10000')).get_returned_value()
+        events = OutputParsingTool.parse_json_str_to_dictionary(system.events.show_events_last_recent_entries(SystemConsts.SYSTEM_LAST_EVENT, '10000')).get_returned_value()
         latest_reboot_event_id = '-1'
         reboot_events = [event_id for event_id in events if 'System reboot occured' in events[event_id]['text']]
         for event_id in reboot_events:

@@ -356,8 +356,8 @@ def _verify_system_event(events_dict_before_testing, events_dict_after_testing, 
         expected_health_issue_event = {'resource': 'System', 'severity': 'INFORMATIONAL' if is_ok else 'WARNING', 'text': 'Health status is ok' if is_ok else 'Health status is not ok'}
 
     with allure.step("get all events that happened during testing"):
-        events_output = {key: value for key, value in events_dict_after_testing[SystemConsts.SYSTEM_LAST_EVENT].items() if
-                         key not in events_dict_before_testing[SystemConsts.SYSTEM_LAST_EVENT]}
+        events_output = {key: value for key, value in events_dict_after_testing.items() if
+                         key not in events_dict_before_testing}
         for event in events_output.values():
             event.pop('time-created')
 

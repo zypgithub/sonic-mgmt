@@ -378,8 +378,8 @@ def test_platform_environment_events_performance(engines, devices, skip_for_fanl
         with allure.step('Run show system events command & validate there is 1 FAN direction issue per FAN'):
             output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show()).get_returned_value()
             fan_error_set = set()
-            for events_no in output[SystemConsts.SYSTEM_LAST_EVENT]:
-                output_err_msg = str(output[SystemConsts.SYSTEM_LAST_EVENT][events_no])
+            for events_no in output:
+                output_err_msg = str(output[events_no])
                 if FansConsts.FAN_DIRECTION_MISMATCH_ERR in output_err_msg:
                     err_found = True
                 elif FansConsts.FAN_DIRECTION_MISMATCH_ERR_CROC in output_err_msg:
@@ -387,7 +387,7 @@ def test_platform_environment_events_performance(engines, devices, skip_for_fanl
                     err_found = True
                     op_param_val = " | grep '" + str(FansConsts.FAN_DIRECTION_MISMATCH_ERR_CROC) + "'"
                 if err_found:
-                    fan = output[SystemConsts.SYSTEM_LAST_EVENT][events_no]["text"]
+                    fan = output[events_no]["text"]
                     assert (fan not in fan_error_set), 'Fan mismatch event occurred more times for FAN:{}'.format(fan)
                     fan_error_set.add(fan)
                     logger.info("Fan direction mismatch Event captured for : {}".format(fan))
@@ -480,7 +480,7 @@ def _verify_fan_direction_mismatch_behaviour(engines, devices, feature_enable):
                 wrong_dir = FansConsts.FORWARD_DIRECTION
 
         with allure.step("Get the latest event"):
-            last_event = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.events.show_last()).\
+            last_event = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.events.show_events_last_recent_entries(SystemConsts.SYSTEM_LAST_EVENT)).\
                 get_returned_value()
             latest_event_id = int(list(last_event)[0])
 
@@ -496,9 +496,9 @@ def _verify_fan_direction_mismatch_behaviour(engines, devices, feature_enable):
 
         if state == FansConsts.STATE_NOT_OK:
             with allure.step("Validate system event regarding Health status: Health status is not ok"):
-                events = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.events.show(SystemConsts.SYSTEM_LAST_EVENT)).\
+                events = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.events.show_events_last_recent_entries(SystemConsts.SYSTEM_LAST_EVENT, '')).\
                     get_returned_value()
-                newer_events = [events[event]['text'] for event in list(events) if event > latest_event_id]
+                newer_events = [events[event]['text'] for event in list(events) if int(event) > int(latest_event_id)]
                 assert PlatformConsts.HEALTH_STATUS_NOT_OK_EVENT in newer_events, \
                     "Health status not ok event not found in events"
                 health_changed_to_not_ok = True
@@ -518,9 +518,9 @@ def _verify_fan_direction_mismatch_behaviour(engines, devices, feature_enable):
 
         if health_changed_to_not_ok:
             with allure.step("Validate system event regarding clear Health status- Cleared: Health status is not ok"):
-                events0 = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.events.show(SystemConsts.SYSTEM_LAST_EVENT)).\
+                events0 = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.events.show_events_last_recent_entries(SystemConsts.SYSTEM_LAST_EVENT, '')).\
                     get_returned_value()
-                newer_events = [events0[event]['text'] for event in list(events0) if int(event) > latest_event_id]
+                newer_events = [events0[event]['text'] for event in list(events0) if int(event) > int(latest_event_id)]
                 assert "Cleared: " + PlatformConsts.HEALTH_STATUS_NOT_OK_EVENT in newer_events, \
                     "Clear health event not found in events"
 

@@ -43,11 +43,11 @@ def test_show_system_events(test_api, engines):
 
     with allure.step('Run show system events command & validate there are 50(default) no of events in the output'):
         output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show()).get_returned_value()
-        no_of_events = len(output[SystemConsts.SYSTEM_LAST_EVENT_OLD])
+        no_of_events = len(output) - 2
         assert no_of_events is 50, 'No of events in show output is {} instead of {}'.format(no_of_events, 50)
 
     with allure.step('Run show system events last command & validate there are 20(default) events in the output'):
-        output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show(SystemConsts.SYSTEM_LAST_EVENT)).get_returned_value()
+        output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show_events_last_recent_entries(SystemConsts.SYSTEM_LAST_EVENT, '')).get_returned_value()
         if test_api == ApiType.OPENAPI and is_bug_active(4396664):
             pytest.skip("Skipping this test due to Rm bug for OpenApi: https://redmine.mellanox.com/issues/4396664")
         else:
@@ -55,13 +55,13 @@ def test_show_system_events(test_api, engines):
             assert no_of_events is 20, 'No of events in show output is {} instead of {}'.format(no_of_events, 20)
 
     with allure.step('Run show system events last 25 command, validate there are 25 events in the output'):
-        output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show_last('25')).get_returned_value()
+        output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show_events_last_recent_entries(SystemConsts.SYSTEM_LAST_EVENT, '25')).get_returned_value()
         no_of_events = len(output)
         assert no_of_events is 25, 'No of events in show output is {} instead of {}'.format(no_of_events, 25)
 
     with allure.step('Run show system events recent 5 command, validate there are events in the output'):
         # show events last <param> displays events in the last <param> minutes
-        output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show_recent()).get_returned_value()
+        output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show_events_last_recent_entries(SystemConsts.SYSTEM_RECENT_EVENT)).get_returned_value()
         no_of_events = len(output)
         assert no_of_events > 0, 'There are no events found'
 
@@ -123,7 +123,7 @@ def test_system_events_maximum(test_api, engines):
 
         with allure.step('Run show system events command & validate there are 10000(max) no of events in the output'):
             # Trying to display more than 10000 to verify that the size of display is limited to 10000 which is max
-            output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show_last(10100)).\
+            output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show_events_last_recent_entries(SystemConsts.SYSTEM_LAST_EVENT, '10100')).\
                 get_returned_value()
             no_of_events = len(output)
             assert no_of_events == 10000, 'No of events in show output is {} instead of {}'.format(no_of_events, 10000)

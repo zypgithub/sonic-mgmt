@@ -126,27 +126,23 @@ class Events(BaseComponent):
     def __init__(self, parent_obj=None):
         BaseComponent.__init__(self, parent=parent_obj, path='/events')
 
-    def show_last(self, last_events_count=1):
+    def show_events_last_recent_entries(self, query_param, events_count='1'):
         system = System()
-        with allure.step("Show last system event"):
-            logging.info("Show last system event")
+        query_param_api = '?' + query_param
+        query_param_nvue = '--' + query_param
+        if events_count:
+            events_count_api = '=' + str(events_count)
+        else:
+            events_count_api = str(events_count) + '/'
+        events_count_nvue = ' ' + str(events_count)
+        with allure.step("Show system event --last/--recent"):
+            logging.info("Show system event --last/--recent")
             if TestToolkit.tested_api == ApiType.OPENAPI:
                 return SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].show,
                                                        TestToolkit.engines.dut, self.get_resource_path(),
-                                                       SystemConsts.SYSTEM_LAST_EVENT + str(last_events_count))
+                                                       query_param_api + events_count_api).get_returned_value()
             else:
-                return system.events.show(SystemConsts.SYSTEM_LAST_EVENT + str(last_events_count))
-
-    def show_recent(self, recent_events_count=1):
-        system = System()
-        with allure.step("Show recent system event"):
-            logging.info("Show recent system event")
-            if TestToolkit.tested_api == ApiType.OPENAPI:
-                return SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].show,
-                                                       TestToolkit.engines.dut, self.get_resource_path(),
-                                                       SystemConsts.SYSTEM_RECENT_EVENT + str(recent_events_count))
-            else:
-                return system.events.show(SystemConsts.SYSTEM_RECENT_EVENT + str(recent_events_count))
+                return system.events.show(query_param_nvue + events_count_nvue)
 
 
 class Documentation(BaseComponent):
