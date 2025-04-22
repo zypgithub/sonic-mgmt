@@ -706,4 +706,11 @@ tests_nvos/cluster/sdn_maintenance_state/test_sdn_maintenance_state.py:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4410603"
     conditions:
       - https://redmine.mellanox.com/issues/4410603
+
+tests_nvos/general/security/bmc/test_reset_bmc_root_password.py::test_reset_bmc_password_to_default_while_locked_out:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4412532"
+    conditions:
+      - https://redmine.mellanox.com/issues/4412532
+
 ########################## NVOS IGNORE END ##########################
