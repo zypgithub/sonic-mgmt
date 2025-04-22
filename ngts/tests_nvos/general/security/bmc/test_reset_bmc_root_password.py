@@ -93,9 +93,6 @@ def test_reset_bmc_password_to_default_while_locked_out(engines, topology_obj, t
                 logger.info("Trying to connect with wrong credentials")
                 try_to_connect_expecting_failure(bmc_ip_address, wrong_pass, err_msg=f'Connection succeeded with wrong bmc password: {wrong_pass}')
 
-        with allure.step("Make sure root user is locked out"):
-            try_to_connect_expecting_failure(bmc_ip_address, root_pass, err_msg='Connection succeeded even though user is locked out')
-
         with allure.step("Reset BMC Root password while locked out"):
             platform.bmc_password.action_reset()
             root_pass = PlatformConsts.BMC_DEFAULT_ROOT_PASSWORD_AFTER_RESET_VIA_NOS

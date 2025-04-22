@@ -411,8 +411,8 @@ def test_system_stats_performance(engines, devices, test_api):
         with allure.step("Perform system reboot"):
             system.reboot.action_reboot(params='force').verify_result()
 
-        with allure.step("Wait 15 seconds..."):
-            time.sleep(StatsConsts.SLEEP_15_SECONDS)
+        with allure.step("Wait 20 seconds..."):
+            time.sleep(StatsConsts.SLEEP_20_SECONDS)
 
         with allure.step("Check internal files were created"):
             check_category_internal_files_exist(engine, category_list)

@@ -712,5 +712,4 @@ tests_nvos/general/security/bmc/test_reset_bmc_root_password.py::test_reset_bmc_
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4412532"
     conditions:
       - https://redmine.mellanox.com/issues/4412532
-
 ########################## NVOS IGNORE END ##########################
