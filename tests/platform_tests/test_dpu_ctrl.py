@@ -64,7 +64,7 @@ def test_dpu_power_off_and_on(duthosts, localhost, dpu_npu_port_list, rand_one_d
     4. Check the corresponding PCI links are removed by checking the output of "lspci -D | grep Blue"
     5. Check the corresponding bridge-midplane are removed by checking the output of "ip link | grep "dpu""
     6. reboot switch randomly( None(skip reboot), cold, soft)
-    7, repeat step 2 ~ step 5
+    7, repeat step 9 ~ step 12
     8. Power on the selected dpus
     9. Check dpus are up
     10. Check the corresponding dpu npu port is up and the dpu ip can be pingable
@@ -93,7 +93,7 @@ def test_dpu_power_off_and_on(duthosts, localhost, dpu_npu_port_list, rand_one_d
         with allure.step(f"dut {reboot_type} reboot  after power off dpu"):
             logger.info("Do {} reboot".format(reboot_type))
             reboot(duthost, localhost, reboot_type=reboot_type, reboot_helper=None, reboot_kwargs=None)
-            do_verification_after_power_off_dpu(duthost, test_dpu_list, test_dpu_npu_port_list,
+            do_verification_after_power_on_dpu(duthost, test_dpu_list, test_dpu_npu_port_list,
                                                 dpu_bridge_midplane_ip_map)
 
     with allure.step(f"Power on {dpu_list_arg} {force_option_arg}"):
@@ -180,7 +180,7 @@ def verify_dpu_pci_links(duthost, dpu_list, is_link_existing):
         else:
             assert DPU_PIC_ID_RISHIM_MAP[dpu]['pci_id'] not in ",".join(dpu_pci_links), \
                 f"For {dpu}, the pic_id:{DPU_PIC_ID_RISHIM_MAP[dpu]['pci_id']} still exists in {dpu_pci_links}"
-            assert len(dpu_pci_links) == (len(DPU_LIST) -len(dpu_list)), \
+            assert len(dpu_pci_links) == (len(DPU_LIST) -len(dpu_list)) * 2, \
                 f"pci links number is not correct. test dpu list: {dpu_list}\n, dpu_pci_link: {dpu_pci_links}"
 
 
