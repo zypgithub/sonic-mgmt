@@ -10,8 +10,10 @@ from packets import outbound_pl_packets, inbound_pl_packets
 from tests.smart_switch.conftest import SMARTSWITCH_PLATFORMS, copy_proxy_ssh, skip_unsupported_platform, platform # noqa F401
 from tests.common import config_reload
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
+from tests.common.helpers.assertions import pytest_assert
+from tests.common.utilities import wait_until
 from dash_eni_counter_utils import get_eni_counters, get_eni_counter_oid, verify_eni_counter, \
-    WAIT_DASH_ENI_COUNTER_READY_TIME, eni_counter_setup
+    eni_counter_setup, ENI_COUNTER_READY_MAX_TIME
 import time
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
 
@@ -130,9 +132,13 @@ def common_setup_teardown(localhost, duthost, ptfhost, dpuhost, eni_counter_setu
         apply_messages(localhost, duthost, ptfhost, base_config_messages, dpuhost.dpu_index, set_db=False)
 
 
-#@pytest.fixture(scope="function", params=["vxlan", "gre"])
-@pytest.fixture(scope="function", params=["vxlan"])
-def encap_proto(request):
+@pytest.fixture(scope="function", params=["vxlan", "gre"])
+def outer_encap(request):
+    return request.param
+
+
+@pytest.fixture(scope="function", params=['udp', 'tcp'])
+def inner_packet_type(request):
     return request.param
 
 
@@ -153,7 +159,7 @@ class TestEniCounter:
         self.expected_ptf_ports = [minigraph_facts["minigraph_ptf_indices"][port] for port in member_ports]
         logger.info(f"Expecting transformed packet on PTF ports: {self.expected_ptf_ports}")
 
-    def test_outbound_pkt_pass_eni_counter(self, dash_pl_config, encap_proto):
+    def test_outbound_pkt_pass_eni_counter(self, dash_pl_config, outer_encap, inner_packet_type):
         """
         1. Get the eni_counter_before_sending_pkt before sending the dash pkt
         2. Send a outbound pkt, and the pkt pass the pipeline successfully
@@ -161,18 +167,16 @@ class TestEniCounter:
         4. Check the following counter change as follows by comparing eni_counter_before_sending_pkt
         with eni_counter_after_sending_pkt
                SAI_ENI_STAT_FLOW_CREATED:  +1
-               SAI_ENI_STAT_OUTBOUND_RX_BYTES:  +len(packet)
-               SAI_ENI_STAT_OUTBOUND_RX_PACKETS: +1
-               SAI_ENI_STAT_RX_PACKETS: +1
-               SAI_ENI_STAT_RX_BYTES: +len(packet)
+               SAI_ENI_STAT_OUTBOUND_RX_BYTES:  +len(packet)*packet_number
+               SAI_ENI_STAT_OUTBOUND_RX_PACKETS: +packet_number
+               SAI_ENI_STAT_RX_PACKETS: +packet_number
+               SAI_ENI_STAT_RX_BYTES: +len(packet)*packet_number
+               SAI_ENI_STAT_FLOW_AGED: +1
         """
-        packet_len = 150
+        packet_len = 150 if outer_encap == "vxlan" else 142
         packet_number = 10
-        flow_aging_time = 2
 
-        flow_created_counter = 1
-
-        eni_counter_check_point_dict = {"SAI_ENI_STAT_FLOW_CREATED": flow_created_counter,
+        eni_counter_check_point_dict = {"SAI_ENI_STAT_FLOW_CREATED": 1,
                                         "SAI_ENI_STAT_OUTBOUND_RX_BYTES": packet_len * packet_number,
                                         "SAI_ENI_STAT_OUTBOUND_RX_PACKETS": packet_number,
                                         "SAI_ENI_STAT_RX_PACKETS": packet_number,
@@ -180,18 +184,13 @@ class TestEniCounter:
                                         "SAI_ENI_STAT_FLOW_AGED": 1
                                         }
 
-        pkt, exp_pkt = outbound_pl_packets(dash_pl_config, outer_encap=encap_proto, inner_packet_type='tcp')
+        pkt, exp_pkt = outbound_pl_packets( \
+            dash_pl_config, outer_encap=outer_encap, inner_packet_type=inner_packet_type)
         verify_packets = [{'send': pkt, 'exp': exp_pkt}]
         self.send_packet_and_verify_dash_eni_counter(
             dash_pl_config, eni_counter_check_point_dict, packet_number, verify_packets)
 
-        # TODO add code for SAI_ENI_STAT_FLOW_AGED when 4173779 is fixed
-        #time.sleep(flow_aging_time)
-        #eni_counter_check_point_dict = {"SAI_ENI_STAT_FLOW_AGED": 1}
-        #self.send_packet_and_verify_dash_eni_counter(
-        #    dash_pl_config, eni_counter_check_point_dict, packet_number, [])
-
-    def test_outbound_pkt_miss_routing_entry_drop_counter(self, ptfadapter, dash_pl_config, dpuhost, encap_proto):
+    def test_outbound_pkt_miss_routing_entry_drop_counter(self, dash_pl_config, outer_encap, inner_packet_type):
         """
         1. Get the eni_counter_before_sending_pkt before sending the dash pkt
         2. Send a outbound pkt with inner dst dip which cannot match the dash route
@@ -202,13 +201,13 @@ class TestEniCounter:
         """
         packet_number = 1
         eni_counter_check_point_dict = {"SAI_ENI_STAT_OUTBOUND_ROUTING_ENTRY_MISS_DROP_PACKETS": packet_number}
-        pkt, _ = outbound_pl_packets(dash_pl_config, outer_encap=encap_proto)
-        pkt[encap_proto.upper()]['IP'].dst = "10.3.3.4"
+        pkt, _ = outbound_pl_packets(dash_pl_config, outer_encap, inner_packet_type)
+        pkt[outer_encap.upper()]['IP'].dst = "10.3.3.4"
         verify_packets = [{'send': pkt, 'exp': None}]
         self.send_packet_and_verify_dash_eni_counter(
             dash_pl_config, eni_counter_check_point_dict, packet_number, verify_packets)
 
-    def test_outbound_pkt_ca_pa_entry_miss_drop_counter(self, ptfadapter, dash_pl_config, dpuhost, encap_proto):
+    def test_outbound_pkt_ca_pa_entry_miss_drop_counter(self, dash_pl_config, outer_encap):
         """
         1. Get the eni_counter_before_sending_pkt before sending the dash pkt
         2. Send a outbound pkt that matches to routing but no ca_to_pa exist for the vnet ID
@@ -219,19 +218,19 @@ class TestEniCounter:
         """
         packet_number = 1
         eni_counter_check_point_dict = {"SAI_ENI_STAT_OUTBOUND_CA_PA_ENTRY_MISS_DROP_PACKETS": packet_number}
-        pkt, _ = outbound_pl_packets(dash_pl_config, outer_encap=encap_proto)
+        pkt, _ = outbound_pl_packets(dash_pl_config, outer_encap=outer_encap)
         ip_with_same_outbound_route_prefix1 = format(IPv4Address(pl.PE_CA) + 1)
-        pkt[encap_proto.upper()]['IP'].dst = ip_with_same_outbound_route_prefix1
+        pkt[outer_encap.upper()]['IP'].dst = ip_with_same_outbound_route_prefix1
         verify_packets = [{'send': pkt, 'exp': None}]
 
         self.send_packet_and_verify_dash_eni_counter(
             dash_pl_config, eni_counter_check_point_dict, packet_number, verify_packets)
 
-    def test_eni_flow_deleted_counter(self, ptfadapter, dash_pl_config, dpuhost, encap_proto):
+    def test_eni_flow_deleted_counter(self, dash_pl_config, outer_encap):
         """
         1. Send 1 pass TCP SYN packet
         2. Get the eni_counter_before_sending_pkt before sending the dash pkt
-        3. Send 1 pass FIN packet
+        3. Send 1 pass RST packet
         4. Get the eni_counter_after_sending_pkt before sending the dash pkt
         4. Check the following counter change as follows by comparing eni_counter_before_sending_pkt
         with eni_counter_after_sending_pkt
@@ -244,7 +243,7 @@ class TestEniCounter:
         eni_counter_check_point_dict = {"SAI_ENI_STAT_FLOW_CREATED": flow_created_counter,
                                         "SAI_ENI_STAT_FLOW_DELETED": flow_del_counter}
 
-        pkt, exp_pkt = outbound_pl_packets(dash_pl_config, outer_encap=encap_proto, inner_packet_type='tcp')
+        pkt, _ = outbound_pl_packets(dash_pl_config, outer_encap, inner_packet_type='tcp')
 
         with allure.step("get dash eni counter before sending pkt"):
             eni_counter_before_sending_pkt = get_eni_counters(self.dpuhost, self.eni_counter_oid)
@@ -253,10 +252,10 @@ class TestEniCounter:
         with allure.step("sending sync packets"):
             testutils.send(self.ptfadapter, dash_pl_config[LOCAL_PTF_INTF], pkt, packet_number)
         with allure.step("sending Fin packets"):
-            pkt[encap_proto.upper()]["TCP"].flags = "R" # F will fail
+            pkt[outer_encap.upper()]["TCP"].flags = "R"
             testutils.send(self.ptfadapter, dash_pl_config[LOCAL_PTF_INTF], pkt, packet_number)
 
-        time.sleep(WAIT_DASH_ENI_COUNTER_READY_TIME)
+        time.sleep(ENI_COUNTER_READY_MAX_TIME)
         with allure.step("get dash eni counter after sending pkts"):
             eni_counter_after_sending_pkt = get_eni_counters(self.dpuhost, self.eni_counter_oid)
 
@@ -265,17 +264,33 @@ class TestEniCounter:
 
     def test_inbound_pkt_eni_counter(
             self,
-            ptfadapter,
             dash_pl_config,
-            encap_proto
+            outer_encap,
+            inner_packet_type
     ):
-        outbound_packet_len = 150
+        """
+        1. Get the eni_counter_before_sending_pkt before sending the dash pkt
+        2. Send a outbound pkt and a inbound pkt
+        3. Get the eni_counter_after_sending_pkt after sending the dash pkt
+        4. Check the following counter change as follows by comparing eni_counter_before_sending_pkt
+        with eni_counter_after_sending_pkt
+               SAI_ENI_STAT_FLOW_CREATED: +1
+               SAI_ENI_STAT_INBOUND_RX_BYTES: +len(inbound_packet)*packet_number
+               SAI_ENI_STAT_INBOUND_RX_PACKETS: +packet_number
+               SAI_ENI_STAT_RX_PACKETS: +packet_number*2
+               SAI_ENI_STAT_RX_BYTES: +len(inbound_packet)*packet_number + len(outbound_packet)*packet_number
+        5. Send a inbound pkt without inbound route
+        6. Get the eni_counter_after_sending_pkt after sending the inbound pkt
+        7. Check the following counter change as follows by comparing eni_counter_before_sending_pkt
+        with eni_counter_after_sending_pkt
+               SAI_ENI_STAT_INBOUND_ROUTING_ENTRY_MISS_DROP_PACKETS: +packet_number
+        """
+        outbound_packet_len = 150 if outer_encap == "vxlan" else 142
         inbound_packet_len = 142
         packet_number = 1
 
-        vm_to_dpu_pkt, exp_dpu_to_pe_pkt = outbound_pl_packets(
-            dash_pl_config, outer_encap=encap_proto, inner_packet_type='tcp')
-        pe_to_dpu_pkt, exp_dpu_to_vm_pkt = inbound_pl_packets(dash_pl_config, inner_packet_type='tcp')
+        vm_to_dpu_pkt, _ = outbound_pl_packets(dash_pl_config, outer_encap, inner_packet_type)
+        pe_to_dpu_pkt, exp_dpu_to_vm_pkt = inbound_pl_packets(dash_pl_config, inner_packet_type)
 
         with allure.step("send outbound and inbound packet and verify the relevant eni counter"):
             eni_counter_check_point_dict = {"SAI_ENI_STAT_FLOW_CREATED": 1,
@@ -284,23 +299,22 @@ class TestEniCounter:
                                             "SAI_ENI_STAT_INBOUND_RX_PACKETS": packet_number,
                                             "SAI_ENI_STAT_RX_PACKETS": packet_number*2,
                                             "SAI_ENI_STAT_RX_BYTES":
-                                                outbound_packet_len * packet_number + inbound_packet_len*packet_number
+                                                outbound_packet_len * packet_number + inbound_packet_len*packet_number,
+                                                "SAI_ENI_STAT_FLOW_AGED": 1
                                             }
             verify_packets = [{'send': vm_to_dpu_pkt, 'exp': None},
                               {'send': pe_to_dpu_pkt, 'exp': exp_dpu_to_vm_pkt}]
             self.send_packet_and_verify_dash_eni_counter(
                 dash_pl_config, eni_counter_check_point_dict, packet_number, verify_packets)
 
-        if not is_redmine_issue_active([4364037])[0]:
-            with allure.step("send the inbound packet with mismatched vin and verify the relevant eni counter"):
-                eni_counter_check_point_dict = {"SAI_ENI_STAT_INBOUND_ROUTING_ENTRY_MISS_DROP_PACKETS": packet_number}
-                verify_packets = [{'send': pe_to_dpu_pkt, 'exp': None}]
-                self.send_packet_and_verify_dash_eni_counter(
-                    dash_pl_config, eni_counter_check_point_dict, packet_number, verify_packets)
+        with allure.step("send the inbound packet without inbound route and verify the relevant eni counter"):
+            eni_counter_check_point_dict = {"SAI_ENI_STAT_INBOUND_ROUTING_ENTRY_MISS_DROP_PACKETS": packet_number}
+            verify_packets = [{'send': pe_to_dpu_pkt, 'exp': None}]
+            self.send_packet_and_verify_dash_eni_counter(
+                dash_pl_config, eni_counter_check_point_dict, packet_number, verify_packets)
 
     def send_packet_and_verify_dash_eni_counter(
-            self, dash_pl_config, eni_counter_check_point_dict, packet_number, verify_packets,
-            is_check_flow_aging=False):
+            self, dash_pl_config, eni_counter_check_point_dict, packet_number, verify_packets):
         self.ptfadapter.dataplane.flush()
 
         with allure.step("get dash eni counter before sending pkt"):
@@ -311,11 +325,13 @@ class TestEniCounter:
                 testutils.send(self.ptfadapter, dash_pl_config[LOCAL_PTF_INTF], pkts['send'], packet_number)
                 if pkts['exp']:
                     testutils.verify_packet_any_port(self.ptfadapter, pkts['exp'], self.expected_ptf_ports)
+        def _verify_eni_counter():
+            with allure.step("get dash eni counter after sending pkts"):
+                eni_counter_after_sending_pkt = get_eni_counters(self.dpuhost, self.eni_counter_oid)
 
-        time.sleep(WAIT_DASH_ENI_COUNTER_READY_TIME)
-        logger.info(f"Sleep {WAIT_DASH_ENI_COUNTER_READY_TIME} to wait counter ready")
-        with allure.step("get dash eni counter after sending pkts"):
-            eni_counter_after_sending_pkt = get_eni_counters(self.dpuhost, self.eni_counter_oid)
+            # compare eni_counter_after_sending_pkt with eni_counter_before_sending_pkt
+            return verify_eni_counter( \
+                eni_counter_check_point_dict, eni_counter_before_sending_pkt, eni_counter_after_sending_pkt)
 
-        # compare eni_counter_after_sending_pkt with eni_counter_before_sending_pkt
-        verify_eni_counter(eni_counter_check_point_dict, eni_counter_before_sending_pkt, eni_counter_after_sending_pkt)
+        pytest_assert(wait_until(ENI_COUNTER_READY_MAX_TIME, 2, 0, _verify_eni_counter), \
+                       "The actual eni counter is not as expected")

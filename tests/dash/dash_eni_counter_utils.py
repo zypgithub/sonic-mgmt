@@ -5,8 +5,8 @@ import pytest
 
 
 logger = logging.getLogger(__name__)
-WAIT_DASH_ENI_COUNTER_READY_TIME = 2
-
+ENI_COUNTER_POLL_INTERVAL = 1000 # 1 second
+ENI_COUNTER_READY_MAX_TIME = 10 # 10 seconds
 
 def get_eni_counter_status(dpuhost):
     cmd_get_eni_counter_status = "sonic-db-cli FLEX_COUNTER_DB HGETALL FLEX_COUNTER_GROUP_TABLE:ENI_STAT_COUNTER"
@@ -58,6 +58,7 @@ def verify_eni_counter(eni_counter_check_point_dict, eni_counter_before_sending_
         assert not eni_counter_mismatch_expected_diff, \
             f"The eni counter change does not meet the expected one. " \
             f"eni_counter_mismatch_expected_diff: {eni_counter_mismatch_expected_diff}"
+        return True
 
 
 @pytest.fixture(scope="module")
@@ -66,9 +67,9 @@ def eni_counter_setup(dpuhost):
     if original_eni_counter_status.get("FLEX_COUNTER_STATUS") != "enable":
         logger.info("enable eni counter")
         set_eni_counter_status(dpuhost, "enable")
-    eni_counter_interval = 1000
-    logger.info(f"set eni counter interval: {eni_counter_interval}")
-    set_eni_counter_interval(dpuhost, eni_counter_interval)
+
+    logger.info(f"set eni counter interval: {ENI_COUNTER_POLL_INTERVAL}")
+    set_eni_counter_interval(dpuhost, ENI_COUNTER_POLL_INTERVAL)
 
     yield
 
