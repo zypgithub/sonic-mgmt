@@ -87,6 +87,14 @@ def pytest_addoption(parser):
         help="Skip certificates cleanup after test"
     )
 
+    parser.addoption(
+        "--dpu_index",
+        action="store",
+        default=0,
+        type=int,
+        help="The default dpu used for the test"
+    )
+
 
 @pytest.fixture(scope="module")
 def config_only(request):
@@ -491,5 +499,5 @@ def add_dpu_info(dpuhosts, duthost):
 
 
 @pytest.fixture(scope="module")
-def dpu_index():
-    return 0
+def dpu_index(request):
+    return request.config.getoption("--dpu_index")
