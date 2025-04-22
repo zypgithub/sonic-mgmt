@@ -663,6 +663,12 @@ platform_tests/api/test_sfp.py::TestSfpApi::test_get_error_description:
     - "https://redmine.mellanox.com/issues/4220524 and ('sn5610n' in platform or 'sn5600' in platform)"
     - "https://redmine.mellanox.com/issues/4258343 and ('sn4' in platform or 'sn5' in platform)"
 
+platform_tests/api/test_sfp.py::TestSfpApi::test_get_transceiver_info:
+  skip:
+    reason: "Testcase ignored on leopard due to RM issue: https://redmine.mellanox.com/issues/4396617"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4396617 and '4700' in platform"
+
 platform_tests/api/test_chassis.py::TestChassisApi::test_psus:
   skip:
     reason: "Skipped due to RM https://redmine.mellanox.com/issues/4257471"
@@ -1307,11 +1313,5 @@ smartswitch/platform_tests/test_platform_dpu.py::test_npu_dpu_date:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4286414"
     conditions:
     - "https://redmine.mellanox.com/issues/4286414 and '4280' in platform"
-
-platform_tests/api/test_sfp.py::test_get_transceiver_info:
-  skip:
-    reason: "Testcase ignored on leopard due to RM issue: https://redmine.mellanox.com/issues/4396617"
-    conditions:
-    - "https://redmine.mellanox.com/issues/4396617 and '4700' in platform"
 
 ########################## NVIDIA INTERNAL HIPPO BRINGUP IGNORE END ############################
