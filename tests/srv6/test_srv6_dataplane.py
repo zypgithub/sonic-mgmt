@@ -10,13 +10,8 @@ import ptf.packet as scapy
 import ptf.testutils as testutils
 from ptf.testutils import simple_ipv6_sr_packet, send_packet, verify_no_packet_any
 from ptf.mask import Mask
-<<<<<<< HEAD   (0521b4 Skip test_dns_resolv_conf test on bobcat due to RM #4405737)
 from srv6_utils import runSendReceive, verify_appl_db_sid_entry_exist, SRv6, dump_packet_detail, \
     validate_srv6_in_appl_db, validate_techsupport_generation, get_neighbor_mac
-=======
-from tests.srv6.srv6_utils import runSendReceive, verify_appl_db_sid_entry_exist, SRv6, \
-    validate_srv6_in_appl_db, validate_techsupport_generation
->>>>>>> CHANGE (033590 Move some SRv6 functions to srv6_helper.py)
 from tests.common.reboot import reboot
 from tests.common.portstat_utilities import parse_portstat
 from tests.common.utilities import wait_until
