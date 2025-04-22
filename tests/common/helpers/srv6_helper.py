@@ -1,19 +1,193 @@
-import pytest
-import time
-import random
 import logging
-import string
 import sys
 from io import StringIO
-from scapy.all import Raw
-from scapy.layers.inet6 import IPv6, UDP
-from scapy.layers.l2 import Ether
 import ptf.testutils as testutils
 import ptf.packet as scapy
 from ptf.mask import Mask
-from tests.srv6.srv6_utils import SRv6, SRv6Packets
 
 logger = logging.getLogger(__name__)
+
+
+class SRv6():
+    uN = 'uN'
+    prefix_len = '48'
+    pipe_mode = 'pipe'
+    uniform_mode = 'uniform'
+
+
+class SRv6Packets():
+    '''
+    Define the ipv6 packets used in srv6 test
+    Each item was defined with actions and packet type as well as segment left and segment list, destination ip
+    '''
+    srv6_packets = [
+        {
+            'action': SRv6.uN,
+            'packet_type': 'reduced_srh',
+            'srh_seg_left': None,
+            'srh_seg_list': None,
+            'inner_dscp': None,
+            'outer_dscp': None,
+            'dst_ipv6': '2001:1000:0100:0200::',
+            'exp_dst_ipv6': '2001:1000:0200::',
+            'exp_inner_dscp_pipe': None,
+            'exp_outer_dscp_uniform': None,
+            'exp_srh_seg_left': None,
+            'inner_pkt_ver': '4',
+            'exp_process_result': 'forward',
+        },
+        {
+            'action': SRv6.uN,
+            'packet_type': 'reduced_srh',
+            'srh_seg_left': None,
+            'srh_seg_list': None,
+            'inner_dscp': None,
+            'outer_dscp': None,
+            'dst_ipv6': '2001:1001:0200:0300::',
+            'exp_dst_ipv6': '2001:1001:0300::',
+            'exp_inner_dscp_pipe': None,
+            'exp_outer_dscp_uniform': None,
+            'exp_srh_seg_left': None,
+            'inner_pkt_ver': '6',
+            'exp_process_result': 'forward'
+        },
+        {
+            'action': SRv6.uN,
+            'packet_type': 'one_u_sid',
+            'srh_seg_left': 1,
+            'inner_dscp': None,
+            'outer_dscp': None,
+            'srh_seg_list': ['2001:2000:0300:0400:0500:0600::'],
+            'dst_ipv6': '2001:2000:0300::',
+            'exp_dst_ipv6': '2001:2000:0300:0400:0500:0600::',
+            'exp_inner_dscp_pipe': None,
+            'exp_outer_dscp_uniform': None,
+            'exp_srh_seg_left': 0,
+            'inner_pkt_ver': '4',
+            'exp_process_result': 'forward'
+        },
+        {
+            'action': SRv6.uN,
+            'packet_type': 'one_u_sid',
+            'srh_seg_left': 1,
+            'inner_dscp': None,
+            'outer_dscp': None,
+            'srh_seg_list': ['2001:2001:0400:0500:0600::'],
+            'dst_ipv6': '2001:2001:0400:0500::',
+            'exp_dst_ipv6': '2001:2001:0500::',
+            'exp_inner_dscp_pipe': None,
+            'exp_outer_dscp_uniform': None,
+            'exp_srh_seg_left': 1,
+            'inner_pkt_ver': '6',
+            'exp_process_result': 'forward'
+        },
+        {
+            'action': SRv6.uN,
+            'packet_type': 'two_u_sid',
+            'srh_seg_left': 1,
+            'inner_dscp': None,
+            'outer_dscp': None,
+            'srh_seg_list': [
+                '2001:3000:0500:0600::',
+                '2001:3000:0600:0700:0800:0900:0a00::'
+            ],
+            'dst_ipv6': '2001:3000:0500::',
+            'exp_dst_ipv6': '2001:3000:0500:0600::',
+            'exp_inner_dscp_pipe': None,
+            'exp_outer_dscp_uniform': None,
+            'exp_srh_seg_left': 0,
+            'inner_pkt_ver': '4',
+            'exp_process_result': 'forward'
+        },
+        {
+            'action': SRv6.uN,
+            'packet_type': 'two_u_sid',
+            'srh_seg_left': 2,
+            'inner_dscp': None,
+            'outer_dscp': None,
+            'srh_seg_list': [
+                '2001:3001:0500::',
+                '2001:3000:0600:0700:0800:0900:0a00::'
+            ],
+            'dst_ipv6': '2001:3001:0600::',
+            'exp_dst_ipv6': '2001:3000:0600:0700:0800:0900:0a00::',
+            'exp_inner_dscp_pipe': None,
+            'exp_outer_dscp_uniform': None,
+            'exp_srh_seg_left': 1,
+            'inner_pkt_ver': '6',
+            'exp_process_result': 'forward'
+        },
+        {
+            'action': SRv6.uN,
+            'packet_type': 'reduced_srh',
+            'srh_seg_left': None,
+            'srh_seg_list': None,
+            'inner_dscp': 20,
+            'outer_dscp': 40,
+            'dst_ipv6': '2001:4000:0700::',
+            'exp_dst_ipv6': None,
+            'exp_srh_seg_left': None,
+            'exp_inner_dscp_pipe': 20,
+            'exp_outer_dscp_uniform': 40,
+            'inner_pkt_ver': '4',
+            'exp_process_result': 'forward'
+        },
+        {
+            'action': SRv6.uN,
+            'packet_type': 'one_u_sid',
+            'srh_seg_left': 0,
+            'inner_dscp': 32,
+            'outer_dscp': 31,
+            'srh_seg_list': [
+                '2001:3001:0500::',
+                '2001:3000:0600:0700:0800:0900:0a00::'
+            ],
+            'dst_ipv6': '2001:4001:0800::',
+            'exp_inner_dscp_pipe': 32,
+            'exp_outer_dscp_uniform': 31,
+            'exp_dst_ipv6': None,
+            'exp_srh_seg_left': None,
+            'inner_pkt_ver': '4',
+            'exp_process_result': 'forward'
+        },
+        {
+            'action': SRv6.uN,
+            'packet_type': 'two_u_sid',
+            'srh_seg_left': 0,
+            'inner_dscp': 2,
+            'outer_dscp': 62,
+            'srh_seg_list': [
+                '2001:3001:0500::',
+                '2001:3000:0600:0700:0800:0900:0a00::'
+            ],
+            'dst_ipv6': '2001:5000:0900::',
+            'exp_inner_dscp_pipe': 2,
+            'exp_outer_dscp_uniform': 62,
+            'exp_dst_ipv6': None,
+            'exp_srh_seg_left': None,
+            'inner_pkt_ver': '6',
+            'exp_process_result': 'forward'
+        },
+        {
+            'action': SRv6.uN,
+            'packet_type': 'reduced_srh',
+            'srh_seg_left': None,
+            'srh_seg_list': None,
+            'inner_dscp': 63,
+            'outer_dscp': 1,
+            'dst_ipv6': '2001:5001:0a00::',
+            'exp_inner_dscp_pipe': 63,
+            'exp_outer_dscp_uniform': 1,
+            'exp_dst_ipv6': None,
+            'exp_srh_seg_left': None,
+            'inner_pkt_ver': '6',
+            'exp_process_result': 'forward'
+        }
+    ]
+    srv6_next_header = {
+        scapy.IP: 4,
+        scapy.IPv6: 41
+    }
 
 
 def dump_packet_detail(pkt):
@@ -48,7 +222,7 @@ def create_srv6_packet(
         inner_dst_ipv6):
     """
     Create SRv6 packets for testing
-    
+
     Args:
         outer_src_mac (str): Outer source MAC address
         outer_dst_mac (str): Outer destination MAC address
@@ -70,7 +244,7 @@ def create_srv6_packet(
         inner_dst_ip (str): Inner destination IPv4 address
         inner_src_ipv6 (str): Inner source IPv6 address
         inner_dst_ipv6 (str): Inner destination IPv6 address
-    
+
     Returns:
         tuple: (srv6_pkt, exp_pkt) - Created SRv6 packet and expected packet
     """
@@ -214,7 +388,7 @@ def send_verify_srv6_packet(
         packet_num=10):
     """
     Send and verify SRv6 packets
-    
+
     Args:
         ptfadapter: PTF adapter object
         pkt: Packet to send

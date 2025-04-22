@@ -6,11 +6,9 @@ import string
 from scapy.all import Raw
 from scapy.layers.inet6 import IPv6, UDP
 from scapy.layers.l2 import Ether
-import ptf.packet as scapy
-import ptf.testutils as testutils
 from ptf.testutils import simple_ipv6_sr_packet, send_packet, verify_no_packet_any
 from ptf.mask import Mask
-from srv6_utils import runSendReceive, verify_appl_db_sid_entry_exist, SRv6, dump_packet_detail, \
+from srv6_utils import runSendReceive, verify_appl_db_sid_entry_exist, SRv6, \
     validate_srv6_in_appl_db, validate_techsupport_generation, get_neighbor_mac
 from tests.common.reboot import reboot
 from tests.common.portstat_utilities import parse_portstat
