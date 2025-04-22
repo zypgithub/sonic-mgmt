@@ -99,6 +99,9 @@
 		<cases> sonic-mgmt/nvos-tool/mars/cases/system/nvos_system_events.cases </cases>
 	</test>
 	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/system/nvos_system_version.cases </cases>
+	</test>
+	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/system/nvos_system_ssd_cleanup.cases </cases>
 	</test>
 	<test>

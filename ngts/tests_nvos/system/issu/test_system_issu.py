@@ -81,8 +81,7 @@ def test_system_issu_positive_basic_flow(engines, devices, issu_version, target_
             f"ISSU status is {issu_status}, instead of: {IssuConsts.IssuStatus.NO_ISSU.value}"
 
     with (allure.step('Verify image version')):
-        system_version = OutputParsingTool.parse_json_str_to_dictionary(
-            system.version.show()).get_returned_value()['image']
+        system_version = system.version.get_nvos_image_version()
         expected_version = target_version.split('/')[-1].replace('amd64-', '').replace('.bin', '')
         assert system_version == expected_version, (f'system image is: {system_version}, '
                                                     f'instead of {expected_version}')
@@ -112,8 +111,7 @@ def test_system_issu_positive_flow_with_traffic(engines, devices, issu_version, 
     expected_version = target_version.split('/')[-1].replace('amd64-', '').replace('.bin', '')
 
     with (allure.step('Verify image versions')):
-        system_version = OutputParsingTool.parse_json_str_to_dictionary(
-            system.version.show()).get_returned_value()['image']
+        system_version = system.version.get_nvos_image_version()
         if system_version == expected_version:
             fw_version = OutputParsingTool.parse_json_str_to_dictionary(
                 Platform().firmware.show(dut_engine=dut_engine)).get_returned_value()['ASIC']['actual-firmware']
@@ -200,8 +198,7 @@ def test_system_issu_positive_flow(engines, devices, issu_version, target_versio
     expected_version = target_version.split('/')[-1].replace('amd64-', '').replace('.bin', '')
 
     with (allure.step('Verify image versions')):
-        system_version = OutputParsingTool.parse_json_str_to_dictionary(
-            system.version.show()).get_returned_value()['image']
+        system_version = system.version.get_nvos_image_version()
         if system_version == expected_version:
             fw_version = OutputParsingTool.parse_json_str_to_dictionary(
                 Platform().firmware.show(dut_engine=dut_engine)).get_returned_value()['ASIC']['actual-firmware']
@@ -481,8 +478,7 @@ def test_power_cycle_during_issu_process(topology_obj, engines, devices, issu_ve
                 remote_reboot_dut(topology_obj)
 
     with (allure.step('Verify image versions')):
-        system_version = OutputParsingTool.parse_json_str_to_dictionary(
-            system.version.show()).get_returned_value()['image']
+        system_version = system.version.get_nvos_image_version()
         expected_version = issu_version.split('/')[-1].replace('amd64-', '').replace('.bin', '')
         assert system_version == expected_version, (f'system image is: {system_version}, '
                                                     f'instead of {expected_version}')
@@ -814,8 +810,7 @@ def post_issu_installation_steps(engines, devices, target_version, fw_expected, 
                 f"ISSU status is {issu_status}, instead of: {IssuConsts.IssuStatus.NO_ISSU.value}"
 
         with (allure.step('Verify image versions')):
-            system_version = OutputParsingTool.parse_json_str_to_dictionary(
-                system.version.show()).get_returned_value()['image']
+            system_version = system.version.get_nvos_image_version()
             expected_version = target_version.split('/')[-1].replace('amd64-', '').replace('.bin', '')
             assert system_version == expected_version, (f'system image is: {system_version}, '
                                                         f'instead of {expected_version}')
@@ -916,8 +911,7 @@ def install_system_image_and_start_opensm(engines, dut_device, system, image_ver
 
     with (allure.step('Verify image versions, and recover to target version if needed')):
         expected_version = image_version.split('/')[-1].replace('amd64-', '').replace('.bin', '')
-        system_version = OutputParsingTool.parse_json_str_to_dictionary(
-            system.version.show()).get_returned_value()['image']
+        system_version = system.version.get_nvos_image_version()
 
         if system_version == expected_version:
             logger.info(f'image version {system_version} is already installed')

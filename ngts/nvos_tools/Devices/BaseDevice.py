@@ -347,13 +347,13 @@ class BaseSwitch(BaseDevice):
     def _init_constants(self):
         super()._init_constants()
         system_dic = {
-            'system': [SystemConsts.BUILD, SystemConsts.HOSTNAME, SystemConsts.PLATFORM, SystemConsts.PRODUCT_NAME,
+            'system': [SystemConsts.HOSTNAME, SystemConsts.PLATFORM, SystemConsts.PRODUCT_NAME,
                        SystemConsts.PRODUCT_RELEASE, SystemConsts.MEMORY, SystemConsts.UPTIME, SystemConsts.TIMEZONE,
                        SystemConsts.HEALTH_STATUS, SystemConsts.DATE_TIME, SystemConsts.STATUS],
             'message': [SystemConsts.PRE_LOGIN_MESSAGE, SystemConsts.POST_LOGIN_MESSAGE],
             'reboot': [SystemConsts.REBOOT_REASON],
-            'version': [SystemConsts.VERSION_BUILD_DATE, SystemConsts.VERSION_IMAGE, SystemConsts.VERSION_KERNEL,
-                        SystemConsts.VERSION_ONIE]
+            'version': [SystemConsts.VERSION_BASE_OS, SystemConsts.VERSION_IMAGE, SystemConsts.VERSION_KERNEL,
+                        SystemConsts.VERSION_ONIE, SystemConsts.VERSION_PRODUCT_RELEASE]
         }
         dump_files = ['APPL_DB.json', 'ASIC_DB.json', 'boot.conf', 'bridge.fdb', 'bridge.vlan', 'CONFIG_DB.json',
                       'COUNTERS_DB_1.json', 'COUNTERS_DB_2.json', 'COUNTERS_DB.json', 'date.counter_1',
