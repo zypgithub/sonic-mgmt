@@ -4,7 +4,7 @@ import pytest
 from collections import namedtuple, Counter
 from ngts.helpers.counterpoll_helper import CounterpollHelper
 from ngts.helpers.sonic_branch_helper import is_sanitizer_image
-from ngts.constants.constants import CounterpollConstants
+from ngts.constants.constants import CounterpollConstants, SonicConst
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 
 
@@ -35,22 +35,16 @@ def counterpoll_type(request):
 
 
 @pytest.fixture()
-def restore_counter_poll(engines, cli_objects):
+def restore_counter_poll(cli_objects, topology_obj):
     """
     Pytest fixture used to restore original counterpoll configuration
-    :param engines: engines fixture
     :param cli_objects: cli_objects fixture
+    :param topology_obj: topology_obj fixture
     """
     cli_obj = cli_objects.dut
-    with allure.step("Get original counterpoll configuration"):
-        counter_poll_show = cli_obj.counterpoll.parse_counterpoll_show()
-        parsed_counterpoll_before = CounterpollHelper.get_parsed_counterpoll_show(counter_poll_show)
     yield
-    with allure.step("Get tested counterpoll configuration"):
-        counter_poll_show = cli_obj.counterpoll.parse_counterpoll_show()
-        parsed_counterpoll_after = CounterpollHelper.get_parsed_counterpoll_show(counter_poll_show)
-    with allure.step("Restore counterpoll status"):
-        CounterpollHelper.restore_counterpoll_status(engines, parsed_counterpoll_before, parsed_counterpoll_after)
+    with allure.step("Reload config to refresh running configuration"):
+        cli_obj.general.reboot_reload_flow(r_type=SonicConst.CONFIG_RELOAD_CMD, topology_obj=topology_obj)
 
 
 @pytest.fixture(scope='module')
