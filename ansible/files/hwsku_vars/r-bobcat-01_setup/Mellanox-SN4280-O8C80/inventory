@@ -39,5 +39,5 @@ ptf-r-bobcat-01 ansible_host=10.215.28.216 ansible_ssh_user="{{ lookup('env','PT
 10.215.28.216 ansible_host=10.215.28.216 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
 
 [pdu]
-pdu-10-208-0-181 ansible_host=10.208.0.181 protocol=snmp
-pdu-10-208-2-14 ansible_host=10.208.2.14 protocol=snmp
+pdu-10-208-0-23 ansible_host=10.208.0.23 protocol=snmp
+pdu-10-208-0-24 ansible_host=10.208.0.24 protocol=snmp
