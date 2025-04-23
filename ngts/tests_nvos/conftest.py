@@ -271,8 +271,7 @@ def mst_device(request, engines):
 
 @pytest.fixture(scope='session')
 def original_version(engines):
-    version = OutputParsingTool.parse_json_str_to_dictionary(System().version.show()).get_returned_value()[
-        'image']
+    version = System().version.get_nvos_image_version()
     return version
 
 
