@@ -75,7 +75,8 @@ def create_empty_json_traffic_file(json_path):
         json.dump(traffic_json, json_file, indent=3)
 
 
-def create_json_traffic_stream(player_alias, traffic_parameters, stream_name, tc=PerfConsts.CL_ROCE_LOSSLESS_DEFAULT_TC):
+def create_json_traffic_stream(player_alias, traffic_parameters, stream_name, tc=PerfConsts.CL_ROCE_LOSSLESS_DEFAULT_TC,
+                               ip_protocol=PerfConsts.IP_PROTOCOL_UDP):
     """
     Creates a JSON representation of a traffic stream.
 
@@ -117,10 +118,16 @@ def create_json_traffic_stream(player_alias, traffic_parameters, stream_name, tc
         )
 
     # Add UDP header with source and destination ports
-    packet.add_udp_header(
-        source_port=traffic_parameters["UDP"]["src"],
-        dest_port=traffic_parameters["UDP"]["dst"]
-    )
+    if ip_protocol == PerfConsts.IP_PROTOCOL_UDP:
+        packet.add_udp_header(
+            source_port=traffic_parameters["UDP"]["src"],
+            dest_port=traffic_parameters["UDP"]["dst"]
+        )
+    else:
+        packet.add_tcp_header(
+            sport=traffic_parameters[PerfConsts.IP_PROTOCOL_TCP]["sport"],
+            dport=traffic_parameters[PerfConsts.IP_PROTOCOL_TCP]["dport"]
+        )
 
     # Add BTH header with acknowledgment request
     packet.add_bth_header(ar=traffic_parameters["AR"])

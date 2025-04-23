@@ -303,7 +303,8 @@ def call_performance_function_with_threads(players, players_aliases, action,
     for player_alias in players_aliases:
         player_cli_obj = players[player_alias]['cli']
         ip_route = player_cli_obj.performance.retrieve_default_route()
-        with allure.step(f"[{current_time}] Start {action} on player {player_alias}. IP Route: {ip_route}"):
+        logger.debug(f"{current_time} Action {action} started on {player_alias}. IP Route: {ip_route}")
+        with allure.step(f"[{current_time}] Start {action} on player {player_alias}."):
             performance_method = get_obj_method(player_cli_obj.performance, performance_clis_function_name)
             thread = CatchExceptionThread(target=redirect_thread_stdout,
                                           args=(performance_method,
@@ -318,8 +319,7 @@ def call_performance_function_with_threads(players, players_aliases, action,
     for player_alias in players_aliases:
         player_cli_obj = players[player_alias]['cli']
         ip_route = player_cli_obj.performance.retrieve_default_route()
-        with allure.step(f"[{completion_time}] Action {action} completed on {player_alias}. IP Route: {ip_route}"):
-            logging.info(f"Finished {action} on {players_aliases_str}")
+        logger.debug(f"{completion_time} Action {action} completed on {player_alias}. IP Route: {ip_route}")
 
 
 def get_obj_method(cli_obj, method_name):
@@ -366,3 +366,7 @@ def set_allure_title(request, is_ipv6):
     test_name = get_performance_pytest_test_name(request, is_ipv6)
     allure.dynamic.title(test_name)
     return test_name
+
+
+def create_acl_dump(players):
+    return players[PerfConsts.DUT_ALIAS]['cli'].performance.create_acl_dump()

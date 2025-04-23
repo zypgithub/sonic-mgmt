@@ -43,14 +43,14 @@ def get_spcx_ra_leaf_traffic(players, conf_args, template_suite="traffic_packets
     return traffic_jsons
 
 
-def get_spine_to_leaf_stream_list(players, spine_tg, conf_args, traffic_parameters, json_path):
+def get_spine_to_leaf_stream_list(players, spine_tg, conf_args, traffic_parameters, json_path, ip_protocol=PerfConsts.IP_PROTOCOL_UDP):
     dut_configuration = players['dut']['cli'].performance.get_device_configuration(conf_args=conf_args)
     leaf_dst_ips = list(dut_configuration["right_side_ports_to_ip_dict"].values())
     stream_list = []
     for ip in leaf_dst_ips:
         stream_name = f"spine_to_leaf_ip_{ip}"
         traffic_parameters["IP"]["dst"] = ip
-        stream = create_json_traffic_stream(spine_tg, traffic_parameters, stream_name)
+        stream = create_json_traffic_stream(spine_tg, traffic_parameters, stream_name, ip_protocol=ip_protocol)
         stream_list.append(stream)
     create_json_traffic_file_with_stream_list(spine_tg, traffic_parameters, json_path, stream_list)
 

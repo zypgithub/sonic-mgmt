@@ -254,3 +254,7 @@ class PerformanceCommon:
         it restarts the daemon on the dut
         """
         pass
+
+    def create_acl_dump(self):
+        create_acl_dump_cmd = "sx_api_flex_acl_dump.py"
+        return self.execute_cmd(self.get_cmd_for_sdk(create_acl_dump_cmd))

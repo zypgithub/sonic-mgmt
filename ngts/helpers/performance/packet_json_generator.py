@@ -89,7 +89,7 @@ class PacketGenerator:
         self.headers["VLAN"] = {"id": vlan_id, "priority": priority}
         self.packet /= scapy.VLAN(vlan_id=vlan_id, p=priority)
 
-    def add_tcp_header(self, source_port: int, dest_port: int, seq: int = 0, ack: int = 0) -> None:
+    def add_tcp_header(self, sport: int, dport: int, seq: int = 0, ack: int = 0) -> None:
         """
         Adds a TCP header to the packet configuration.
         Args:
@@ -98,8 +98,9 @@ class PacketGenerator:
             seq: The sequence number for the TCP packet. Defaults to 0.
             ack: The acknowledgment number for the TCP packet. Defaults to 0.
         """
-        self.headers["TCP"] = {"source_port": source_port, "dest_port": dest_port, "seq": seq, "ack": ack}
-        self.packet /= scapy.TCP(sport=source_port, dport=dest_port, seq=seq, ack=ack)
+
+        self.headers["TCP"] = {"sport": sport, "dport": dport, "seq": seq, "ack": ack}
+        self.packet /= scapy.TCP(sport=sport, dport=dport, seq=seq, ack=ack)
 
     def add_udp_header(self, source_port: int, dest_port: int) -> None:
         """

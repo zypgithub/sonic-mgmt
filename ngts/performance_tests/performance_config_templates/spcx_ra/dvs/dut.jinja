@@ -34,10 +34,10 @@
         {% endif %}
 
         {# IP configuration - handles both IPv4 and IPv6 #}
-        "source_ip": {% if conf_args.is_ipv6 %} "192:168:0:0:0:0:0:1" {% else %} "4.4.4.4" {% endif %},
-        "dip_left_to_right": {% if conf_args.is_ipv6 %} "192:168:5:1:1:1:2:0" {% else %} "10.0.1.0" {% endif %},
-        "dip_right_to_left": {% if conf_args.is_ipv6 %} "192:168:5:1:1:2:2:0" {% else %} "192.168.1.0" {% endif %},
-        "neigh_mask": {% if conf_args.is_ipv6 %} "FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF" {% else %} "255.255.255.255" {% endif %},
+        "source_ip": {% if conf_args.is_ipv6 %}"192:168:0:0:0:0:0:1"{% else %}"4.4.4.4"{% endif %},
+        "dip_left_to_right": {% if conf_args.is_ipv6 %}"192:168:5:1:1:1:2:0"{% else %}"10.0.1.0"{% endif %},
+        "dip_right_to_left": {% if conf_args.is_ipv6 %}"192:168:5:1:1:2:2:0"{% else %}"192.168.1.0"{% endif %},
+        "neigh_mask": {% if conf_args.is_ipv6 %}"FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF"{% else %}"255.255.255.255"{% endif %},
 
         {# MAC address configuration #}
         "egress_rif_mac": "00:00:00:00:10:60",
@@ -79,6 +79,38 @@
         {% set ip_mode = "v4" %}
         {% endif %}
 
-        "right_side_ports_to_ip_dict": {{ generate_ip_list(address_start = ip_address, step = 1, mode = ip_mode, list_of_ports = right_split_ports ) | tojson }}
+        "right_side_ports_to_ip_dict": {{ generate_ip_list(address_start = ip_address, step = 1, mode = ip_mode, list_of_ports = right_split_ports ) | tojson }},
+
+        {% if conf_args.ecmp_type_stateless is defined %}
+        "ecmp_type_stateless": "{{ conf_args.ecmp_type_stateless }}",
+        {% else %}
+        "ecmp_type_stateless": "False",
+        {% endif %}
+
+        {% if conf_args.ecmp_size is defined %}
+        "ecmp_size": {{ conf_args.ecmp_size }},
+        {% else %}
+        "ecmp_size": 512,
+        {% endif %}
+
+        {% if conf_args.create_acls is defined %}
+        "create_acls": "{{ conf_args.create_acls }}",
+        {% else %}
+        "create_acls": "False",
+        {% endif %}
+
+        {% if conf_args.create_goto_acl is defined %}
+        "create_goto_acl": "{{ conf_args.create_goto_acl }}",
+        "goto_acl_destination_port": {{ conf_args.goto_acl_destination_port }},
+        {% else %}
+        "create_goto_acl": "False",
+        "goto_acl_destination_port": 0,
+        {% endif %}
+
+        {% if conf_args.hash_type is defined %}
+        "hash_type": "{{ conf_args.hash_type }}"
+        {% else %}
+        "hash_type": "crc"
+        {% endif %}
     }
 }

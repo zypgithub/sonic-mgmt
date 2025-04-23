@@ -179,7 +179,10 @@ class PerfConsts:
     DVS_WELCOME_MESSAGE = "Welcome to the NVIDIA Switch Development System"
     ROCE_PORT = 4791
     UDP_SOURCE_PORT = 2001
+    UDP_DOURCE_PORT = 80
     ADAPTIVE_ROUTING_ENABLED = 1
+    IP_PROTOCOL_UDP = "UDP"
+    IP_PROTOCOL_TCP = "TCP"
 
     # Counters
     COUNTERS = [
