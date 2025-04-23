@@ -61,7 +61,7 @@ def conf_args(players):
     return conf_args
 
 
-def set_allure_lossy_lossless_title(request, scenario):
+def set_allure_lossy_lossless_title(request, scenario, is_ipv6):
     """
     Adds scenario name to allure title.
     """
@@ -70,7 +70,7 @@ def set_allure_lossy_lossless_title(request, scenario):
                            "lossy_lossless_scenario_3a": '50% lossless traffic, 50% lossy traffic',
                            "lossy_lossless_scenario_3b": '75% lossless traffic, 25% lossy traffic'}
 
-    test_name = get_pytest_test_name(request)
+    test_name = get_perf_test_name(request, is_ipv6)
     test_name_with_scenario = re.sub(r'\[.*?\]', test_name, f"- Scenario {scenario}: {scenario_names_dict[scenario]}")
 
     allure.dynamic.title(test_name_with_scenario)

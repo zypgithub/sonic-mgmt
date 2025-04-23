@@ -108,6 +108,16 @@ class PerformanceCommon:
         """
         raise NotImplementedError
 
+    def get_os_ports_name_mapping(self):
+        """
+        This method should be implemented in child class
+        Returns:
+        a list of dicts with os port name for each port
+        i.e,
+        [{'osPortName': 'Ethernet0', 'port': '0x100f1'},...]
+        """
+        raise NotImplementedError
+
     # Optional Functions to be implemented by child class for topology object support
     def get_player_unconnected_connected_ports_aliases(self):
         """
@@ -122,6 +132,7 @@ class PerformanceCommon:
         pass
 
     # Optional Functions
+
     def wait_for_nexthop_resolution(self, conf_args=None, number_of_nexthops=None, timeout=120):
         """
         Wait for the number of nexthops to be resolved on the dut

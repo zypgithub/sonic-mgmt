@@ -99,11 +99,13 @@ def create_test_validation_entry_to_db(players, test_name):
     test_specific_values = cli_object.performance.get_test_specific_values(test_name)
     validation_json = test_specific_values.pop(MongoDbConsts.VALIDATOR_RESULTS, None)
     ports_group_df = pd.DataFrame(test_specific_values.pop(MongoDbConsts.PORT_GROUP_DF))
+    os_ports_name_mapping_df = pd.DataFrame(test_specific_values.pop(ValidationConsts.OS_PORTS_NAME_MAPPING_DATAFRAME))
     power_total = test_specific_values.pop(MongoDbConsts.POWER_TOTAL, [])
     power_by_collectors_group = test_specific_values.pop(MongoDbConsts.POWER_BY_COLLECTORS, [])
     if validation_json:
         test_specific_values[MongoDbConsts.VALIDATOR_RESULTS] = restructure_validator_results(validation_json,
                                                                                               ports_group_df,
+                                                                                              os_ports_name_mapping_df,
                                                                                               power_total,
                                                                                               power_by_collectors_group)
 
@@ -112,7 +114,7 @@ def create_test_validation_entry_to_db(players, test_name):
         json.dump(test_specific_values, f, indent=4)
 
 
-def restructure_validator_results(validation_json, ports_group_df, power_total, power_by_collectors_group):
+def restructure_validator_results(validation_json, ports_group_df, os_ports_name_mapping_df, power_total, power_by_collectors_group):
     """
     Args:
         validation_json: the JSON from the SDK TrafficValidator
@@ -125,11 +127,13 @@ def restructure_validator_results(validation_json, ports_group_df, power_total, 
         an updated dict with the validator info for mongo db
     """
     test_validation_to_mongo_db = {}
-    test_validation_to_mongo_db[MongoDbConsts.BW_COUTERS_DATA] = get_bw_counters_data(validation_json, ports_group_df)
+    test_validation_to_mongo_db[MongoDbConsts.BW_COUTERS_DATA] = get_bw_counters_data(validation_json, ports_group_df, os_ports_name_mapping_df)
     test_validation_to_mongo_db[MongoDbConsts.TC_DATA] = restructure_tc(validation_json)
     test_validation_to_mongo_db[MongoDbConsts.TEMP_DATA] = restructure_temp(validation_json)
     test_validation_to_mongo_db[MongoDbConsts.POWER_TOTAL] = restructure_power(power_total)
     test_validation_to_mongo_db[MongoDbConsts.POWER_BY_COLLECTORS] = restructure_power(power_by_collectors_group)
+    if not test_validation_to_mongo_db[MongoDbConsts.TC_DATA]:
+        test_validation_to_mongo_db.pop(MongoDbConsts.TC_DATA)
     return test_validation_to_mongo_db
 
 
@@ -197,12 +201,12 @@ def calculate_avg_on_all_samples(df_list, samples, sample_key):
     return round(sum(df[sample_key] for df in df_list) / len(samples), 3)
 
 
-def get_bw_counters_data(validation_json, ports_group_df):
+def get_bw_counters_data(validation_json, ports_group_df, os_ports_name_mapping_df):
     """
     Args:
         validation_json: the JSON from the SDK TrafficValidator
         ports_group_df: a list of dicts with group name for each port
-
+        os_ports_name_mapping_df: a list of dicts with os port name for each port
     Returns:
         all the bandwidth and counters data for each port with the port group
     """
@@ -210,6 +214,8 @@ def get_bw_counters_data(validation_json, ports_group_df):
     bw_df = restructure_bw(validation_json)
     bw_counters_data = pd.merge(counters_df, bw_df, on=ValidationConsts.PORT)
     merged_df = pd.merge(bw_counters_data, ports_group_df, on=ValidationConsts.PORT)
+    if not os_ports_name_mapping_df.empty:
+        merged_df = pd.merge(merged_df, os_ports_name_mapping_df, on=ValidationConsts.PORT)
     return merged_df.to_dict(orient='records')
 
 

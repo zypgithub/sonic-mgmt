@@ -2,8 +2,7 @@ import allure
 import logging
 from ngts.performance_tests.lossy_lossless.lossy_lossless_10_to_1.conftest import get_many_to_1_traffic
 import pytest
-
-from ngts.helpers.general_helper import get_pytest_test_name
+from ngts.helpers.performance.performance_db_helpers import get_perf_test_name
 from ngts.helpers.performance.performance_setup_helpers import (ValidationConfig, run_traffic, run_validation,
                                                                 get_topology_obj)
 from ngts.constants.performance_constants import PerfConsts
@@ -15,7 +14,7 @@ PACKET_SIZE_LIST = PerfConsts.PACKET_SIZE_LIST
 
 class TestLossyLosslessManyToOne:
     @pytest.fixture(autouse=True)
-    def setup(self, players, engines, power_thresholds_by_chip_type, conf_args, chip_type):
+    def setup(self, players, engines, power_thresholds_by_chip_type, conf_args, chip_type, is_ipv6):
         self.topology_obj = get_topology_obj(players)
         self.players = players
         self.engines = engines
@@ -26,6 +25,7 @@ class TestLossyLosslessManyToOne:
         self.scenario = "lossy_lossless"
         self.power_thresholds_by_chip_type = power_thresholds_by_chip_type
         self.chip_type = chip_type
+        self.is_ipv6 = is_ipv6
 
     @pytest.fixture
     def scenario_name(self):
@@ -34,7 +34,7 @@ class TestLossyLosslessManyToOne:
     @allure.title('Lossy lossless scenario 4. Many to 1')
     @allure.description('Lossy lossless scenario 4. Send many (10) to 1 one sided traffic')
     def test_basic_loosy_lossless_scenario_4_many_to_1(self, request, scenario_name, packet_size=4096):
-        test_name = get_pytest_test_name(request)
+        test_name = get_perf_test_name(request, self.is_ipv6)
         num_lossy_packets = 8
         num_lossless_packets = 0
         self.traffic_jsons = get_many_to_1_traffic(self.conf_args, num_lossy_packets, num_lossless_packets)

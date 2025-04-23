@@ -4,7 +4,7 @@ import re
 import json
 from ngts.helpers.performance.traffic_helpers import generate_ip_address_dict
 from ngts.constants.constants import BugHandlerConst, ResultUploaderConst
-from ngts.constants.performance_constants import PerfConsts, PowerConsts
+from ngts.constants.performance_constants import PerfConsts, PowerConsts, ValidationConsts
 from ngts.cli_wrappers.common.performance_clis_common import PerformanceCommon
 from jinja2 import Environment, FileSystemLoader
 
@@ -148,6 +148,22 @@ class DvsPerformance(PerformanceCommon):
     def get_dut_ports(self):
         player_ports = self.get_player_ports()
         return player_ports["connected_ports"]
+
+    def get_os_ports_name_mapping(self):
+        """
+        This method should be implemented in child class
+        Returns:
+        a list of dicts with os port name for each port
+        i.e,
+        [{'osPortName': 'Ethernet0', 'port': '0x100f1'},...]
+        """
+        os_ports_name_mapping = []
+        dut_ports = self.get_dut_ports()
+        sdk_ports = self.get_sdk_ports(dut_ports)
+        for port in sdk_ports:
+            os_ports_name_mapping.append({ValidationConsts.PORT: port,
+                                          ValidationConsts.OS_PORT_NAME: port})
+        return os_ports_name_mapping
 
     def get_base_ports(self):
         """

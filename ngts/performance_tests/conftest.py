@@ -8,7 +8,7 @@ from datetime import datetime
 from ngts.helpers.performance.performance_setup_helpers import configure_mloops, stop_traffic
 from ngts.helpers.performance.Performance_log_print import print_players_logs, remove_players_logs
 from ngts.constants.constants import PytestConst
-from ngts.constants.performance_constants import MongoDbConsts, PowerConsts, PerfConsts
+from ngts.constants.performance_constants import MongoDbConsts, PowerConsts, PerfConsts, ValidationConsts
 from ngts.helpers.performance.performance_db_helpers import (create_performance_db_template,
                                                              create_test_validation_entry_to_db,
                                                              add_test_mongo_metadata, get_perf_test_name)
@@ -92,6 +92,17 @@ def basic_test_configuration(request, players):
             with allure.step(f"Attaching Players Logs to Allure"):
                 print_players_logs(print_to_stdout=True, players_info=players)
                 remove_players_logs()
+
+
+@pytest.fixture(scope='function', autouse=True)
+def os_ports_name_mapping_df(request, players, is_ipv6):
+    request.getfixturevalue('basic_setup_configuration')
+    os_ports_name_mapping_df = players['dut']['cli'].performance.get_os_ports_name_mapping()
+    test_name = get_perf_test_name(request, is_ipv6)
+    add_test_mongo_metadata(test_name,
+                            {ValidationConsts.OS_PORTS_NAME_MAPPING_DATAFRAME:
+                                os_ports_name_mapping_df})
+    return os_ports_name_mapping_df
 
 
 @pytest.fixture(scope='session', autouse=True)
@@ -181,7 +192,7 @@ def port_group_df(request, players, conf_args=None):
     for port_group_name, port_list in port_groups.items():
         for port in port_list:
             port_group_df.append({
-                "port": players['dut']['cli'].performance.get_sdk_port(port),
+                ValidationConsts.PORT: players['dut']['cli'].performance.get_sdk_port(port),
                 MongoDbConsts.PORT_GROUP_NAME: port_group_name
             })
 

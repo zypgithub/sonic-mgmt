@@ -41,6 +41,8 @@ class ValidationConsts:
     BW_AVG = 'avg'
     BW_MIN = 'min_bw'
     PORT = "port"
+    OS_PORT_NAME = "osPortName"
+    OS_PORTS_NAME_MAPPING_DATAFRAME = "osPortsNameMappingDataframe"
     POWER_SAMPLES = "Power_samples"
     TEMPERATURE_SAMPLES = "Temperature_samples"
     TEMPERATURE = "temperature"

@@ -9,7 +9,7 @@ from json.decoder import JSONDecodeError
 
 from infra.tools.exceptions.real_issue import RealIssue
 from ngts.constants.constants import BugHandlerConst, ResultUploaderConst
-from ngts.constants.performance_constants import PerfConsts, Cl_Consts
+from ngts.constants.performance_constants import PerfConsts, Cl_Consts, ValidationConsts
 from dataclasses import dataclass
 from ngts.cli_wrappers.common.performance_clis_common import PerformanceCommon
 from jinja2 import Environment, FileSystemLoader
@@ -146,6 +146,22 @@ class NvuePerformanceCli(PerformanceCommon):
                 list_of_ports.pop(list_of_ports.index(ports))
             return list_of_ports
 
+    def get_os_ports_name_mapping(self):
+        """
+        This method should be implemented in child class
+        Returns:
+        a list of dicts with os port name for each port
+        i.e,
+        [{'osPortName': 'Ethernet0', 'port': '0x100f1'},...]
+        """
+        os_ports_name_mapping = []
+        dut_ports = self.get_dut_ports()
+        for port in dut_ports:
+            sdk_port = self.get_sdk_port(port)
+            os_ports_name_mapping.append({ValidationConsts.PORT: sdk_port,
+                                          ValidationConsts.OS_PORT_NAME: port})
+        return os_ports_name_mapping
+
     def get_cmd_for_sdk(self, cmd, env_variables=[]):
         variables = "sudo env "
         variables += " ".join(env_variables)
@@ -196,6 +212,7 @@ class NvuePerformanceCli(PerformanceCommon):
                               file_system=Cl_Consts.CL_HOME_DIR, overwrite_file=True, verify_file=False)
         sdk_ports = self.execute_cmd(f'sudo python {Cl_Consts.CL_HOME_DIR}/{Cl_Consts.CL_LOG_PORT_FILE} --ports {ports_string}  | egrep \"^[0-9]\"')
         sdk_ports = sdk_ports.split()
+        sdk_ports = [hex(int(port)) for port in sdk_ports]
         return sdk_ports
 
     def get_sdk_port(self, port: str):
@@ -203,7 +220,7 @@ class NvuePerformanceCli(PerformanceCommon):
                               dest_file=f'{Cl_Consts.CL_LOG_PORT_FILE}',
                               file_system=Cl_Consts.CL_HOME_DIR, overwrite_file=True, verify_file=False)
         sdk_port = self.execute_cmd(f'sudo python {Cl_Consts.CL_HOME_DIR}/{Cl_Consts.CL_LOG_PORT_FILE} --port {port}  | egrep \"^[0-9]\"')
-        return sdk_port
+        return hex(int(sdk_port))
 
     @staticmethod
     def get_controllers_info_dicts_list(sensors_output):

@@ -10,7 +10,7 @@ from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 from infra.tools.exceptions.test_issue import TestIssue
 from ngts.helpers.system_helpers import copy_files_to_syncd
 from ngts.constants.constants import BugHandlerConst, InfraConst, CliType, SonicConst, ConfigDbJsonConst
-from ngts.constants.performance_constants import PerfConsts, PowerConsts, MRCConsts
+from ngts.constants.performance_constants import PerfConsts, PowerConsts, ValidationConsts, MRCConsts
 from ngts.cli_wrappers.common.performance_clis_common import PerformanceCommon
 from ngts.helpers.interface_helpers import get_alias_letter, get_alias_number, convert_letter_to_idx
 from ngts.helpers.performance.traffic_helpers import generate_ip_address_dict
@@ -34,8 +34,10 @@ class SonicPerformanceCli(PerformanceCommon):
         self.service_port_idx = -1
         self.service_ports = []
         self.sonic_to_sdk_ports_dict = {}
+        self.sdk_to_sonic_ports_dict = {}
         self.connected_ports, self.unconnected_ports = [], []
         self.mloops = []
+        self.port_groups = {}
 
     def get_cmd_for_sdk(self, cmd, env_variables=[]):
         docker_exec_syncd_cmd = InfraConst.DOCKER_EXEC_BASH_CMD.format(DOCKER=InfraConst.SYNCD_DOCKER)
@@ -189,8 +191,9 @@ class SonicPerformanceCli(PerformanceCommon):
 
         with allure.step(f'Install Traffic generator on {self.dut_alias}'):
             self.cli_obj.general.install_traffic_generator()
-        self.sonic_to_sdk_ports_dict = self.get_sonic_to_sdk_port_mapping()
+        self.sonic_to_sdk_ports_dict, self.sdk_to_sonic_ports_dict = self.get_sonic_to_sdk_port_mapping()
         self.add_ports_connectivity_to_dut(conf_args)
+        self.port_groups = self.get_right_left_ports_dict()
 
     def disable_im_on_tg(self):
         """
@@ -268,8 +271,9 @@ class SonicPerformanceCli(PerformanceCommon):
         hwsku_json = self.cli_obj.general.get_config_db()
         switch_role = self.get_switch_role(sku)
         self.update_connected_unconnected_ports(sku, hwsku_json, switch_role, self.chip_type)
-        self.sonic_to_sdk_ports_dict = self.get_sonic_to_sdk_port_mapping()
+        self.sonic_to_sdk_ports_dict, self.sdk_to_sonic_ports_dict = self.get_sonic_to_sdk_port_mapping()
         self.mloops = self.get_mloops_tuples_list()
+        self.port_groups = self.get_right_left_ports_dict()
 
     def get_switch_role(self, sku):
         sku_by_chip_type = MRCConsts.HWSKU_BY_CHIP_TYPE[self.chip_type]
@@ -435,11 +439,25 @@ class SonicPerformanceCli(PerformanceCommon):
         { 'Ethernet0': '0x100f1',...}
         """
         sonic_to_sdk_ports_dict = {}
+        sdk_to_sonic_ports_dict = {}
         sdk_port_mapping_dict = self.get_sdk_port_mapping()
         sonic_port_mapping = self.get_sonic_port_mapping()
         for (port_number, port, idx) in sonic_port_mapping:
             sonic_to_sdk_ports_dict[port] = sdk_port_mapping_dict[port_number][idx]
-        return sonic_to_sdk_ports_dict
+            sdk_to_sonic_ports_dict[sdk_port_mapping_dict[port_number][idx]] = port
+        return sonic_to_sdk_ports_dict, sdk_to_sonic_ports_dict
+
+    def get_os_ports_name_mapping(self):
+        """
+        Returns: a list of dicts with os port name for each port
+        i.e,
+        [{'osPortName': 'Ethernet0', 'port': '0x100f1'},...]
+        """
+        os_ports_name_mapping_df = []
+        for sdk_port, sonic_port in self.sdk_to_sonic_ports_dict.items():
+            os_ports_name_mapping_df.append({ValidationConsts.OS_PORT_NAME: sonic_port,
+                                             ValidationConsts.PORT: sdk_port})
+        return os_ports_name_mapping_df
 
     def get_traffic_parameters(self, scenario, conf_args):
         """

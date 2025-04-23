@@ -16,7 +16,7 @@ PACKET_SIZE_LIST = PerfConsts.PACKET_SIZE_LIST
 
 class TestLossyLossless:
     @pytest.fixture(autouse=True)
-    def setup(self, players, engines, power_thresholds_by_chip_type, conf_args, chip_type):
+    def setup(self, players, engines, power_thresholds_by_chip_type, conf_args, chip_type, is_ipv6):
         self.topology_obj = get_topology_obj(players)
         self.players = players
         self.engines = engines
@@ -27,6 +27,7 @@ class TestLossyLossless:
         self.scenario = "lossy_lossless"
         self.power_thresholds_by_chip_type = power_thresholds_by_chip_type
         self.chip_type = chip_type
+        self.is_ipv6 = is_ipv6
 
     @pytest.mark.parametrize("scenario_name, num_lossy_packets,num_lossless_packets", [("lossy_lossless_scenario_1", 0, 8), ("lossy_lossless_scenario_2", 8, 0),
                                                                                        ("lossy_lossless_scenario_3a", 4, 4), ("lossy_lossless_scenario_3b", 2, 6)])
@@ -36,7 +37,7 @@ class TestLossyLossless:
                                               packet_size=4096):
 
         with allure.step(f"Set test correct allure title with {scenario_name} parameter"):
-            test_name = set_allure_lossy_lossless_title(request, scenario_name)
+            test_name = set_allure_lossy_lossless_title(request, scenario_name, self.is_ipv6)
 
         self.traffic_jsons = get_lossy_lossless_basic_traffic(self.players, self.conf_args, num_lossy_packets,
                                                               num_lossless_packets)

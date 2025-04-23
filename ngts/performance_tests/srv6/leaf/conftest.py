@@ -1,7 +1,7 @@
 import allure
 import pytest
 from ngts.constants.constants import SonicConst
-from ngts.constants.performance_constants import PerfConsts, MRCConsts, MongoDbConsts
+from ngts.constants.performance_constants import PerfConsts, MRCConsts
 from ngts.helpers.performance.performance_setup_helpers import apply_test_configuration
 from ngts.performance_tests.srv6.conftest import get_tg_bisection_traffic_params
 
