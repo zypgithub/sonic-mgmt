@@ -1312,4 +1312,22 @@ smartswitch/platform_tests/test_platform_dpu.py::test_npu_dpu_date:
     conditions:
     - "https://redmine.mellanox.com/issues/4286414 and '4280' in platform"
 
+smartswitch/platform_tests/test_reload_dpu.py::test_cold_reboot_switch:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4401509"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4401509 and '4280' in platform"
+
+dash/test_dash_crm.py::test_dash_pa_validation:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4291276"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4291276 and '4280' in platform"
+
+dash/test_dash_crm.py::test_dash_outbound_ca_to_pa:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4291276"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4291276 and '4280' in platform"
+
 ########################## NVIDIA INTERNAL HIPPO BRINGUP IGNORE END ############################
