@@ -352,6 +352,12 @@ tests/nightly/auto_negotition/test_auto_neg.py::TestAutoNeg::test_auto_neg_conf:
     conditions:
     - "https://redmine.mellanox.com/issues/3518706 and 'msn4410' in platform"
 
+tests/nightly/auto_negotition/test_auto_neg_negative.py::TestAutoNegNegative::test_negative_advertised_speed_type_mismatch:
+  xfail:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4366226"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4366226"
+
 tests/nightly/dynamic_port_breakout/test_dpb_introp.py::TestDPBInterop::test_dpb_configuration_interop:
   skip:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/3421305"
