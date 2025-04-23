@@ -43,11 +43,9 @@ tests/nightly/routing/test_routing.py::TestRouting::test_reboot:
 
 tests/nightly/component_versions/test_component_versions.py:
   skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4017774 or due RM 4258591"
-    conditions_logical_operator: or
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4411856"
     conditions:
-    - "https://redmine.mellanox.com/issues/4017774"
-    - "https://redmine.mellanox.com/issues/4258591 and 'sn5640_simx' in platform"
+    - "https://redmine.mellanox.com/issues/4411856"
 
 tests/nightly/fec/test_fec.py::TestFec::test_fec_bug_2705016:
   skip:
